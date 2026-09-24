@@ -15,6 +15,8 @@ public static class Tokens
         return Brushes.Gray;
     }
 
+    public static FontFamily Sans => Application.Current?.TryFindResource("Sans", out var r) == true && r is FontFamily f ? f : FontFamily.Default;
+
     public static FontFamily Mono => Application.Current?.TryFindResource("Mono", out var r) == true && r is FontFamily f ? f : FontFamily.Default;
 
     /// <summary>Switches between Graphite (dark) and Paper (light).</summary>

@@ -1,0 +1,218 @@
+<!-- CAPS Molecule (design/boards/Sketch.dc.html): 2D sketch or SMILES → 3D molecule with conformers. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.MoleculePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <!-- element keys: 28 × 28, mono, amber outline when chosen -->
+    <Style Selector="ToggleButton.el">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontFamily" Value="{DynamicResource Mono}" />
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Background" Value="{DynamicResource Bg1B}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ToggleButton.el:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource DimB}" />
+    </Style>
+    <Style Selector="ToggleButton.el:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccB}" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="32" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Bg1B}" />
+    </Style>
+  </p:PageBase.Styles>
+
+  <Grid ColumnDefinitions="*,360,400">
+    <!-- sketch and preview: the tool strip over both -->
+    <Grid Grid.ColumnSpan="2" RowDefinitions="48,*">
+      <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <ToggleButton x:Name="ToolDraw" Classes="tool" IsChecked="True" Click="OnTool" Tag="draw" ToolTip.Tip="Draw: click places an atom, drag grows a bond, click a bond cycles its order">
+            <v:Icon Kind="bond" Size="18" />
+          </ToggleButton>
+          <ToggleButton x:Name="ToolRing" Classes="tool" Click="OnTool" Tag="ring" ToolTip.Tip="Ring: a benzene ring on empty space, on an atom, or fused on a bond">
+            <v:Icon Kind="hex" Size="18" />
+          </ToggleButton>
+          <ToggleButton x:Name="ToolCharge" Classes="tool" Click="OnTool" Tag="charge" ToolTip.Tip="Charge: click an atom for +1, −1, 0">
+            <v:Icon Kind="plus" Size="18" />
+          </ToggleButton>
+          <ToggleButton x:Name="ToolErase" Classes="tool" Click="OnTool" Tag="erase" ToolTip.Tip="Erase an atom or a bond">
+            <v:Icon Kind="scissors" Size="18" />
+          </ToggleButton>
+          <Button Classes="tool" Click="OnClear" ToolTip.Tip="Clear the sketch">
+            <v:Icon Kind="close" Size="18" />
+          </Button>
+          <Border Width="1" Height="22" Background="{DynamicResource LineB}" Margin="8,0" />
+          <StackPanel x:Name="Elements" Orientation="Horizontal" Spacing="4">
+            <ToggleButton Classes="el" Content="C" Tag="6" IsChecked="True" Click="OnElement" />
+            <ToggleButton Classes="el" Content="N" Tag="7" Click="OnElement" />
+            <ToggleButton Classes="el" Content="O" Tag="8" Click="OnElement" />
+            <ToggleButton Classes="el" Content="S" Tag="16" Click="OnElement" />
+            <ToggleButton Classes="el" Content="F" Tag="9" Click="OnElement" />
+            <ToggleButton Classes="el" Content="Cl" Tag="17" Click="OnElement" />
+            <ToggleButton Classes="el" Content="Br" Tag="35" Click="OnElement" />
+            <ToggleButton Classes="el" Content="P" Tag="15" Click="OnElement" />
+            <ToggleButton Classes="el" Content="I" Tag="53" Click="OnElement" />
+            <ToggleButton Classes="el" Content="Si" Tag="14" Click="OnElement" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,360">
+        <Panel>
+          <v:SketchCanvas x:Name="Sketch" />
+          <Border Classes="hud" Margin="12" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10,4">
+            <TextBlock Text="2D sketch" FontSize="12" />
+          </Border>
+        </Panel>
+
+        <!-- preview and conformers -->
+        <Grid Grid.Column="1" RowDefinitions="*,Auto" Background="{DynamicResource Bg0B}">
+          <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,1">
+            <Panel>
+              <v:MolView x:Name="Preview" />
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="12" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Border Classes="hud" Padding="10,4"><TextBlock Text="3D preview · live" FontSize="12" /></Border>
+                <Border Classes="hud" Padding="10,4" IsVisible="{Binding MolBuilding}"><TextBlock Text="building…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
+              </StackPanel>
+              <TextBlock Text="The 3D structure appears as you draw" Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !MolHasDoc}" />
+            </Panel>
+          </Border>
+          <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0" MinHeight="200">
+            <StackPanel Margin="14,12,14,12" Spacing="8">
+              <TextBlock Text="CONFORMERS" Classes="h3" />
+              <Grid ColumnDefinitions="36,76,*" Margin="10,0">
+                <TextBlock Text="#" Classes="h3" FontSize="10" />
+                <TextBlock Grid.Column="1" Text="E REL." Classes="h3" FontSize="10" HorizontalAlignment="Right" Margin="0,0,14,0" />
+                <TextBlock Grid.Column="2" Text="METHOD" Classes="h3" FontSize="10" />
+              </Grid>
+              <ListBox ItemsSource="{Binding MolConformers}" SelectedIndex="{Binding MolConf}" Background="Transparent" MaxHeight="220">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ConformerRow">
+                    <Grid ColumnDefinitions="36,76,*" Margin="10,0" Height="32">
+                      <TextBlock Text="{Binding Number}" Classes="mono" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Energy}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0" />
+                      <TextBlock Grid.Column="2" Text="{Binding Method}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <TextBlock Text="kcal/mol above the lowest; drag the preview to turn it" Classes="dim" IsVisible="{Binding MolHasDoc}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- inspector -->
+    <Border Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <TextBlock Text="Structure" Classes="h2" VerticalAlignment="Center" />
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <Button Click="OnSave" IsEnabled="{Binding MolCanUse}" ToolTip.Tip="Save the chosen conformer (mol2, PDB, XYZ or LAMMPS data)">
+              <v:Icon Kind="save" Size="16" />
+            </Button>
+            <Button Grid.Column="1" Click="OnPack" IsEnabled="{Binding MolCanUse}" HorizontalAlignment="Stretch" ToolTip.Tip="Save it and add it to Pack's list of molecules">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="pack" Size="16" VerticalAlignment="Center" /><TextBlock Text="Use in Pack" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Grid.Column="2" Classes="primary" Click="OnOpenInStudio" IsEnabled="{Binding MolCanUse}" ToolTip.Tip="Open the chosen conformer as the Studio document">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="16" VerticalAlignment="Center" /><TextBlock Text="Open in Studio" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="IDENTIFIERS" Classes="h3" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="SMILES" Classes="label" />
+                  <TextBox Text="{Binding MolSmiles}" Classes="mono" Watermark="e.g. C=Cc1ccccc1" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding MolError}" Classes="err" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding MolHasError}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="PROPERTIES" Classes="h3" />
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="24,24,24,24,24" >
+                  <TextBlock Text="Formula" Classes="label" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding MolFormula}" Classes="mono" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="1" Text="Mol. weight" Classes="label" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MolMass}" Classes="mono" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="2" Text="Atoms" Classes="label" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MolAtoms}" Classes="mono" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="3" Text="Stereocentres" Classes="label" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MolStereo}" Classes="mono" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="4" Text="Valence check" Classes="label" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MolValence}" Classes="mono" Classes.ok="{Binding MolOk}" Classes.err="{Binding MolHasError}"
+                             VerticalAlignment="Center" MaxWidth="240" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="12">
+                <TextBlock Text="3D EMBEDDING" Classes="h3" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Method" Classes="label" />
+                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
+                      <ComboBoxItem Content="Distance bounds" />
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Conformers" Classes="label" />
+                    <NumericUpDown Value="{Binding MolConfCount}" Minimum="1" Maximum="50" Increment="1" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Spacing="6">
+                    <TextBlock Text="Clean with" Classes="label" />
+                    <ComboBox ItemsSource="{Binding CleanChoices}" SelectedIndex="{Binding MolClean}" HorizontalAlignment="Stretch">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CleanChoice"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Hydrogens" Classes="label" />
+                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
+                      <ComboBoxItem Content="Add, from valences" />
+                    </ComboBox>
+                  </StackPanel>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" MaxWidth="340"
+                             Text="Blaney &amp; Dixon, Rev. Comput. Chem. 5, 299 (1994); 4D → 3D as in Riniker &amp; Landrum, J. Chem. Inf. Model. 55, 2562 (2015)" />
+                </StackPanel>
+                <TextBlock Text="{Binding MolNotes}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</p:PageBase>

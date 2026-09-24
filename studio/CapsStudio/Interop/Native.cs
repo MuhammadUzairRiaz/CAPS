@@ -211,6 +211,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_equilibrate")] public static extern int Equilibrate(IntPtr doc, byte[] protocol, in CapsEquilOpts o, CapsEquilProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_internal_distances")] public static extern int InternalDistances(IntPtr doc, [Out] int[] n, [Out] double[] ratio, int cap, out int chains, out double b2);
     [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_smiles_depict")] public static extern int SmilesDepict([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_smiles_write")] public static extern int SmilesWrite([MarshalAs(UnmanagedType.LPUTF8Str)] string graph, byte[]? smiles, int cap);
     [DllImport(Lib, EntryPoint = "caps_build_smiles")] public static extern IntPtr BuildSmiles([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, [MarshalAs(UnmanagedType.LPUTF8Str)] string? ff, in CapsBuildOpts o, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pack")] public static extern IntPtr Pack(byte[] text, [MarshalAs(UnmanagedType.LPUTF8Str)] string baseDir, int threads, CapsPackProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_template")] public static extern int ReactionTemplate([MarshalAs(UnmanagedType.LPUTF8Str)] string name, byte[] text, int cap);
@@ -286,6 +288,25 @@ public sealed class CapsDocument : IDisposable
         var n = Native.SmilesInfo(smiles, null, 0);
         var buf = new byte[Math.Max(1, n)];
         Native.SmilesInfo(smiles, buf, buf.Length);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+
+    /// <summary>The 2D drawing of a SMILES (JSON graph with coordinates, bond length 1).</summary>
+    public static string SmilesDepict(string smiles)
+    {
+        var n = Native.SmilesDepict(smiles, null, 0);
+        var buf = new byte[Math.Max(1, n)];
+        Native.SmilesDepict(smiles, buf, buf.Length);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+
+    /// <summary>SMILES from a graph in the caps_smiles_depict JSON form.</summary>
+    public static string SmilesWrite(string graphJson)
+    {
+        var n = Native.SmilesWrite(graphJson, null, 0);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        var buf = new byte[Math.Max(1, n)];
+        Native.SmilesWrite(graphJson, buf, buf.Length);
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
     }
 
@@ -491,7 +512,7 @@ public sealed class CapsDocument : IDisposable
     private static void Check(int rc) { if (rc < 0) throw new InvalidOperationException(Native.LastError()); }
 
     public CapsSummary Summary() { lock (_lock) { Check(Native.Summary(_h, out var s)); return s; } }
-    public void SetFrame(long f) { lock (_lock) Check(Native.SetFrame(_h, f)); }
+    public void SetFrame(long f) { lock (_lock) { Alive(); Check(Native.SetFrame(_h, f)); } }
     public void SetWrap(bool wrap) { lock (_lock) Check(Native.SetWrap(_h, wrap ? 1 : 0)); }
     public CapsAtomInfo Atom(int i) { lock (_lock) { Check(Native.Atom(_h, i, out var a)); return a; } }
 
@@ -509,11 +530,16 @@ public sealed class CapsDocument : IDisposable
     public unsafe void Render(in CapsCamera cam, in CapsRenderOpts opt, byte[] rgba)
     {
         lock (_lock)
+        {
+            Alive();
             fixed (byte* p = rgba) Check(Native.Render(_h, cam, opt, p));
+        }
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
-    public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) Check(Native.ExportPng(_h, cam, opt, path)); }
+    public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }
+    /// <summary>Throws once the document is closed (a view may still hold it while a newer one replaces it).</summary>
+    private void Alive() { if (_h == IntPtr.Zero) throw new ObjectDisposedException(nameof(CapsDocument)); }
     public void ExportSvg(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) Check(Native.ExportSvg(_h, cam, opt, path)); }
 
     public CapsMolecule[] Molecules()

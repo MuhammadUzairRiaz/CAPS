@@ -40,6 +40,31 @@ internal static class Screenshot
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
             if (kv[0] == "quick") w.ViewModel.QuickText = kv[1];
+            if (kv[0] == "molecule")
+            {
+                w.ViewModel.OpenBuilder(kv[1]);
+                var t = w.ViewModel.BuildMolecule();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            // pointer input in window coordinates: click=X,Y  drag=X1,Y1,X2,Y2 (after any building so the layout is settled)
+            if (kv[0] is "click" or "drag")
+            {
+                var v = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var a = new Point(v[0], v[1]);
+                w.MouseMove(a);
+                w.MouseDown(a, Avalonia.Input.MouseButton.Left);
+                if (kv[0] == "drag")
+                {
+                    var b = new Point(v[2], v[3]);
+                    for (var k = 1; k <= 8; k++) w.MouseMove(new Point(a.X + (b.X - a.X) * k / 8, a.Y + (b.Y - a.Y) * k / 8), Avalonia.Input.RawInputModifiers.LeftMouseButton);
+                    w.MouseUp(b, Avalonia.Input.MouseButton.Left);
+                }
+                else w.MouseUp(a, Avalonia.Input.MouseButton.Left);
+                for (var i = 0; i < 40; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "wait")
+                for (var i = 0; i < int.Parse(kv[1]) / 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            if (kv[0] == "conformers") w.ViewModel.MolConfCount = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);

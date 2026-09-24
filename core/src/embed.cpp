@@ -324,7 +324,7 @@ Model make_model(const MolGraph& g) {
 }
 
 // The embedding error and its gradient. squeeze > 0 pulls the fourth coordinate to zero.
-double error(const Model& M, const std::vector<double>& x, std::vector<double>& gr, double squeeze) {
+double error(const Model& M, const std::vector<double>& x, std::vector<double>& gr, double squeeze, int keep = 3) {
   std::fill(gr.begin(), gr.end(), 0.0);
   double e = 0;
   for (const auto& p : M.pairs) {
@@ -380,15 +380,163 @@ double error(const Model& M, const std::vector<double>& x, std::vector<double>& 
     add(p.c, ga + gb + gd, -s);
   }
   if (squeeze > 0)
-    for (int i = 0; i < M.n; ++i) {
-      const double w = x[size_t(i) * D + 3];
-      e += squeeze * w * w;
-      gr[size_t(i) * D + 3] += 2 * squeeze * w;
-    }
+    for (int i = 0; i < M.n; ++i)
+      for (int t = keep; t < D; ++t) {
+        const double w = x[size_t(i) * D + size_t(t)];
+        e += squeeze * w * w;
+        gr[size_t(i) * D + size_t(t)] += 2 * squeeze * w;
+      }
   return e;
 }
 
 }  // namespace
+
+std::vector<Vec3> depict(const MolGraph& g0, uint64_t seed) {
+  // the written atoms only (implicit hydrogens are labels, not atoms)
+  MolGraph g;
+  const int nw = g0.heavy > 0 ? std::min<int>(g0.heavy, int(g0.atoms.size())) : int(g0.atoms.size());
+  g.atoms.assign(g0.atoms.begin(), g0.atoms.begin() + nw);
+  for (const auto& b : g0.bonds)
+    if (b.a < nw && b.b < nw) g.bonds.push_back(b);
+  Model M;
+  M.n = nw;
+  const size_t n = size_t(nw);
+  if (!n) return {};
+  M.adj.assign(n, {});
+  for (const auto& b : g.bonds) M.adj[size_t(b.a)].push_back({b.b, b.order}), M.adj[size_t(b.b)].push_back({b.a, b.order});
+  M.topo.assign(n, std::vector<int>(n, 4));
+  for (size_t s0 = 0; s0 < n; ++s0) {
+    M.topo[s0][s0] = 0;
+    std::vector<int> q{int(s0)};
+    for (size_t h = 0; h < q.size(); ++h) {
+      const int u = q[h];
+      if (M.topo[s0][size_t(u)] >= 3) continue;
+      for (auto [w, o] : M.adj[size_t(u)])
+        if (M.topo[s0][size_t(w)] == 4) { M.topo[s0][size_t(w)] = M.topo[s0][size_t(u)] + 1; q.push_back(w); }
+    }
+  }
+  auto key = [](int a, int b) { return a < b ? std::make_pair(a, b) : std::make_pair(b, a); };
+  std::map<std::pair<int, int>, std::pair<double, double>> bnd;
+  std::map<std::tuple<int, int, int>, double> ang;
+  for (const auto& b : g.bonds) {
+    bnd[key(b.a, b.b)] = {0.99, 1.01};
+    M.pairs.push_back({b.a, b.b, 0.99, 1.01, 2.0});
+  }
+  // angles: ring interiors, the rest shared out
+  for (int j = 0; j < nw; ++j) {
+    const auto& nb = M.adj[size_t(j)];
+    const size_t k = nb.size();
+    if (k < 2) continue;
+    std::vector<std::tuple<int, int, int>> ps;   // (ring size or 0, a, b)
+    for (size_t x = 0; x < k; ++x)
+      for (size_t y = x + 1; y < k; ++y) {
+        const int rs = ring_size(M, nb[x].first, j, nb[y].first);
+        ps.push_back({rs > 0 && rs <= 8 ? rs : 0, nb[x].first, nb[y].first});
+      }
+    auto interior = [](int rs) { return 180.0 * (rs - 2) / rs; };
+    auto set = [&](int a, int b, double deg) { ang[{std::min(a, b), j, std::max(a, b)}] = deg; };
+    if (k == 2) {
+      auto [rs, a, b] = ps[0];
+      bool linear = false;
+      for (auto [w, o] : nb) linear |= o == 3;
+      if (nb[0].second == 2 && nb[1].second == 2) linear = true;
+      set(a, b, rs ? interior(rs) : linear ? 180 : 120);
+    } else if (k == 3) {
+      std::sort(ps.begin(), ps.end(), [](const auto& u, const auto& v) {
+        const int ru = std::get<0>(u) ? std::get<0>(u) : 99, rv = std::get<0>(v) ? std::get<0>(v) : 99;
+        return ru < rv;
+      });
+      const int r0 = std::get<0>(ps[0]), r1 = std::get<0>(ps[1]);
+      if (r0 && r1) {   // fused: two ring interiors, the third angle is what is left
+        const double a0 = interior(r0), a1 = interior(r1);
+        set(std::get<1>(ps[0]), std::get<2>(ps[0]), a0);
+        set(std::get<1>(ps[1]), std::get<2>(ps[1]), a1);
+        set(std::get<1>(ps[2]), std::get<2>(ps[2]), 360 - a0 - a1);
+      } else if (r0) {
+        const double a0 = interior(r0);
+        set(std::get<1>(ps[0]), std::get<2>(ps[0]), a0);
+        set(std::get<1>(ps[1]), std::get<2>(ps[1]), (360 - a0) / 2);
+        set(std::get<1>(ps[2]), std::get<2>(ps[2]), (360 - a0) / 2);
+      } else
+        for (auto [rs, a, b] : ps) set(a, b, 120);
+    } else {
+      for (auto [rs, a, b] : ps) set(a, b, rs ? interior(rs) : -1);   // −1: 90 to 180, sorted out by the contacts
+    }
+  }
+  for (const auto& [t, deg] : ang) {
+    const auto [a, j, b] = t;
+    auto kk = key(a, b);
+    if (bnd.count(kk)) continue;
+    if (deg < 0) { M.pairs.push_back({a, b, std::sqrt(2.0), 2.0, 0.5}); continue; }
+    const double d = std::sqrt(2 - 2 * std::cos(deg * kPi / 180));
+    M.pairs.push_back({a, b, d * 0.99, d * 1.01, 1.0});
+    bnd[kk] = {d, d};
+  }
+  // 1-4: chains zig-zag (trans), double bonds as written, the rest between cis and trans
+  std::map<std::pair<int, int>, int> side;
+  for (const auto& b : g.bonds)
+    if (b.dir) side[{b.a, b.b}] = -b.dir, side[{b.b, b.a}] = b.dir;
+  auto A = [&](int a, int j, int b) { auto it = ang.find({std::min(a, b), j, std::max(a, b)}); return it == ang.end() || it->second < 0 ? 120.0 : it->second; };
+  std::set<std::pair<int, int>> done14;
+  for (const auto& b : g.bonds) {
+    const int j = b.a, k = b.b;
+    for (auto [i, oi] : M.adj[size_t(j)])
+      for (auto [l, ol] : M.adj[size_t(k)]) {
+        if (i == k || l == j || i == l) continue;
+        auto kk = key(i, l);
+        if (bnd.count(kk) || done14.count(kk)) continue;
+        done14.insert(kk);
+        const double t1 = A(i, j, k) * kPi / 180, t2 = A(j, k, l) * kPi / 180;
+        const Vec3 pi{std::cos(t1), std::sin(t1), 0};
+        auto at = [&](double phi) { return norm(Vec3{1 - std::cos(t2), std::sin(t2) * std::cos(phi), std::sin(t2) * std::sin(phi)} - pi); };
+        const double cis = at(0), trans = at(kPi);
+        const bool ring = ring_size(M, i, j, k) || ring_size(M, j, k, l);
+        double lo = cis, hi = trans, w = 0.2;
+        int si = 0, sl = 0;
+        if (auto it = side.find({j, i}); it != side.end()) si = it->second;
+        if (auto it = side.find({k, l}); it != side.end()) sl = -it->second;
+        if (!si) for (auto [x, ox] : M.adj[size_t(j)]) if (x != i && x != k) if (auto it = side.find({j, x}); it != side.end()) si = -it->second;
+        if (!sl) for (auto [x, ox] : M.adj[size_t(k)]) if (x != l && x != j) if (auto it = side.find({k, x}); it != side.end()) sl = it->second;
+        if (b.order == 2 && si && sl) { lo = hi = si == sl ? trans : cis; w = 1.0; }
+        else if (!ring && M.adj[size_t(j)].size() == 2 && M.adj[size_t(k)].size() == 2) { lo = hi = trans; w = 0.5; }
+        else if (ring) continue;
+        M.pairs.push_back({i, l, lo * 0.98, hi * 1.02, w});
+      }
+  }
+  for (int i = 0; i < nw; ++i)
+    for (int j = i + 1; j < nw; ++j)
+      if (!bnd.count(key(i, j)) && !done14.count(key(i, j))) M.pairs.push_back({i, j, 1.0, 1e9, 0.5});
+  // several starts; the lowest error wins
+  std::mt19937_64 rng(seed * 0x9E3779B97F4A7C15ull + 777);
+  const double side_len = 2.0 * std::max(2.0, std::sqrt(double(n)) * 1.2);
+  std::uniform_real_distribution<double> U(-side_len / 2, side_len / 2);
+  std::vector<double> best;
+  double best_e = std::numeric_limits<double>::infinity();
+  for (int attempt = 0; attempt < 8; ++attempt) {
+    std::vector<double> x(n * D);
+    for (double& v : x) v = U(rng);
+    auto fg = [&M](double sq) { return [&M, sq](const std::vector<double>& xx, std::vector<double>& gg) { return error(M, xx, gg, sq, 2); }; };
+    lbfgs(x, fg(0.0), 1500, 1e-6);
+    lbfgs(x, fg(0.1), 1500, 1e-6);
+    for (size_t i = 0; i < n; ++i) x[i * D + 2] = x[i * D + 3] = 0;
+    const double e = lbfgs(x, fg(50.0), 2000, 1e-7);
+    if (e < best_e) best_e = e, best = x;
+  }
+  std::vector<Vec3> p(n);
+  Vec3 c{0, 0, 0};
+  for (size_t i = 0; i < n; ++i) p[i] = {best[i * D], best[i * D + 1], 0}, c = c + p[i];
+  c = c * (1.0 / double(n));
+  // principal axis horizontal
+  double sxx = 0, syy = 0, sxy = 0;
+  for (auto& v : p) {
+    v = v - c;
+    sxx += v[0] * v[0], syy += v[1] * v[1], sxy += v[0] * v[1];
+  }
+  const double th = 0.5 * std::atan2(2 * sxy, sxx - syy);
+  const double cs = std::cos(-th), sn = std::sin(-th);
+  for (auto& v : p) v = {v[0] * cs - v[1] * sn, v[0] * sn + v[1] * cs, 0};
+  return p;
+}
 
 std::vector<int> chirality_check(const MolGraph& g, const std::vector<Vec3>& pos) {
   std::vector<int> out;

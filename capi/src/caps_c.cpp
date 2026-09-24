@@ -1421,3 +1421,88 @@ extern "C" caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, 
   }
 }
 
+
+extern "C" int32_t caps_smiles_depict(const char* smiles, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    caps::MolGraph g = caps::parse_smiles(smiles ? smiles : "");
+    caps::MolGraph gh = g;
+    caps::add_hydrogens(gh);
+    j = mol_json(caps::molecule_info(gh));
+    if (!m_problems_empty(j)) j["error"] = j["problems"][size_t(0)].str();
+    const auto p = caps::depict(g);
+    caps::Json atoms = caps::Json::array();
+    for (size_t i = 0; i < g.atoms.size(); ++i) {
+      const auto& a = g.atoms[i];
+      caps::Json x = caps::Json::object();
+      x["z"] = double(a.element);
+      x["symbol"] = std::string(a.element ? caps::element(a.element).symbol : "*");
+      x["x"] = p[i][0];
+      x["y"] = p[i][1];
+      x["h"] = double(std::max(0, gh.atoms[i].hcount));
+      x["charge"] = double(a.charge);
+      x["isotope"] = double(a.isotope);
+      x["hcount"] = double(a.hcount);
+      x["aromatic"] = a.aromatic;
+      x["bracket"] = a.bracket;
+      x["chiral"] = double(a.chiral);
+      x["map"] = double(a.map);
+      caps::Json o = caps::Json::array();
+      for (int v : a.order) o.push_back(double(v));
+      x["order"] = o;
+      atoms.push_back(x);
+    }
+    caps::Json bonds = caps::Json::array();
+    for (const auto& b : g.bonds) {
+      caps::Json x = caps::Json::object();
+      x["a"] = double(b.a);
+      x["b"] = double(b.b);
+      x["order"] = double(b.order);
+      x["dir"] = double(b.dir);
+      bonds.push_back(x);
+    }
+    j["atoms"] = atoms;
+    j["bonds"] = bonds;
+  } catch (const caps::SmilesError& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+    j["position"] = double(e.position);
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(), json, cap);
+}
+
+extern "C" int32_t caps_smiles_write(const char* graph_json, char* smiles, int32_t cap) {
+  return guard([&] {
+    const caps::Json j = caps::Json::parse(graph_json ? graph_json : "");
+    caps::MolGraph g;
+    for (const auto& x : j["atoms"].items()) {
+      caps::MolAtom a;
+      a.element = int(x.num("z", 6));
+      a.charge = int(x.num("charge", 0));
+      a.isotope = int(x.num("isotope", 0));
+      a.hcount = int(x.num("hcount", -1));
+      a.aromatic = x.has("aromatic") && x["aromatic"].boolean();
+      a.bracket = x.has("bracket") && x["bracket"].boolean();
+      a.chiral = int(x.num("chiral", 0));
+      a.map = int(x.num("map", 0));
+      if (x.has("order"))
+        for (const auto& v : x["order"].items()) a.order.push_back(int(v.number()));
+      g.atoms.push_back(a);
+    }
+    const int n = int(g.atoms.size());
+    for (const auto& x : j["bonds"].items()) {
+      caps::MolBond b;
+      b.a = int(x.num("a", -1));
+      b.b = int(x.num("b", -1));
+      b.order = int(x.num("order", 1));
+      b.dir = int(x.num("dir", 0));
+      if (b.a < 0 || b.b < 0 || b.a >= n || b.b >= n || b.a == b.b) throw std::runtime_error("a bond refers to a missing atom");
+      g.bonds.push_back(b);
+    }
+    g.heavy = n;
+    return report_out(caps::write_smiles(g), smiles, cap);
+  });
+}

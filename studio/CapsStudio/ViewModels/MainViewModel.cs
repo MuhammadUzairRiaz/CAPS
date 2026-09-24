@@ -297,7 +297,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     // ---------------------------------------------------------------- modules
-    private int _module = 8;   // 0 Grow, 1 Analyze, 2 Relax, 3 Dynamics, 4 Equilibrate, 5 Pack, 6 React, 7 Field, 8 Studio
+    private int _module = 8;   // 0 Grow, 1 Analyze, 2 Relax, 3 Dynamics, 4 Equilibrate, 5 Pack, 6 React, 7 Field, 8 Studio, 9 Molecule
     public bool IsGrow => _module == 0;
     public bool IsAnalyze => _module == 1;
     public bool IsRelax => _module == 2;
@@ -309,7 +309,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -329,6 +329,8 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsReact));
         Raise(nameof(IsField));
         Raise(nameof(IsStudio));
+        Raise(nameof(IsMolecule));
+        Raise(nameof(IsStudioRail));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));
         RenderRequested?.Invoke();   // the Field page has its own view
