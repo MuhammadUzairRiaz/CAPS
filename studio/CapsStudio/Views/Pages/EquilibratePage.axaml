@@ -1,0 +1,145 @@
+<!-- CAPS Equilibrate (design/boards/Convergence.dc.html): density, energy and Rg; internal distances; criteria; protocol. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.EquilibratePage" x:DataType="vm:MainViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="22,16,22,16" RowSpacing="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="3">
+        <TextBlock Text="Equilibrate · convergence" Classes="title" />
+        <TextBlock Classes="muted"><Run Text="Published protocols, then production blocks until density, energy and Rg stop drifting · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Border Classes="chip" Height="26" IsVisible="{Binding EqCriteriaText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="{Binding EqCriteriaText}" Foreground="{DynamicResource TextB}" /></StackPanel>
+        </Border>
+        <Button Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save trajectory…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanEquilibrate}" IsVisible="{Binding !EqRunning}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="equil" Size="16" VerticalAlignment="Center" /><TextBlock Text="Equilibrate" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCancel" IsVisible="{Binding EqRunning}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="16" VerticalAlignment="Center" /><TextBlock Text="Stop" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
+      <!-- left: the three monitored quantities -->
+      <Grid RowDefinitions="*,*,*" RowSpacing="16">
+        <Border Classes="card">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead"><TextBlock Text="Density" Classes="h2" VerticalAlignment="Center" /></Border>
+            <v:LinePlot Grid.Row="1" x:Name="DensityPlot" Margin="10,6,12,8" AutoRange="True" XLabel="time (ps)" YLabel="density (g/cm³)" />
+          </Grid>
+        </Border>
+        <Border Grid.Row="1" Classes="card">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead"><TextBlock Text="Potential energy" Classes="h2" VerticalAlignment="Center" /></Border>
+            <v:LinePlot Grid.Row="1" x:Name="EnergyPlot" Margin="10,6,12,8" AutoRange="True" XLabel="time (ps)" YLabel="E_pot (kcal/mol)" />
+          </Grid>
+        </Border>
+        <Border Grid.Row="2" Classes="card">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead"><TextBlock Text="Radius of gyration" Classes="h2" VerticalAlignment="Center" /></Border>
+            <v:LinePlot Grid.Row="1" x:Name="RgPlot" Margin="10,6,12,8" AutoRange="True" XLabel="production block" YLabel="⟨Rg⟩ (Å)" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- right: protocol, criteria, internal distances, report -->
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="16">
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding EqTotal}" Classes="dim" VerticalAlignment="Center" />
+                  <TextBlock Text="Protocol" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10" IsEnabled="{Binding !EqRunning}">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Protocols}" SelectedIndex="{Binding EqProtocol}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding EqIsNamed}">
+                  <TextBlock Text="T final (K)" Classes="label" /><TextBlock Grid.Column="1" Text="T max (K)" Classes="label" />
+                  <TextBlock Grid.Column="2" Text="P final (atm)" Classes="label" /><TextBlock Grid.Column="3" Text="Time × " Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding EqTFinalD}" Increment="10" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqTMaxD}" Increment="10" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding EqPFinalD}" Increment="1" FormatString="0.##" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="3" Value="{Binding EqScaleD}" Increment="0.1" FormatString="0.###" ToolTip.Tip="Shortens (or lengthens) every stage; 1 is the published schedule" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding EqIsAnnealing}">
+                  <TextBlock Text="T low (K)" Classes="label" /><TextBlock Grid.Column="1" Text="T high (K)" Classes="label" />
+                  <TextBlock Grid.Column="2" Text="Ramp · hold (ps)" Classes="label" /><TextBlock Grid.Column="3" Text="Cycles" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding EqTLowD}" Increment="10" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqTHighD}" Increment="10" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding EqRampD}" Increment="10" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="3" Value="{Binding EqCyclesD}" Increment="1" FormatString="0" />
+                </Grid>
+                <CheckBox Classes="toggle" Content="Production blocks until converged" IsChecked="{Binding EqUntilConverged}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding EqUntilConverged}">
+                  <TextBlock Text="Block (ps)" Classes="label" /><TextBlock Grid.Column="1" Text="At most (blocks)" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding EqBlockD}" Minimum="0.1" Increment="5" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqMaxBlocksD}" Minimum="1" Increment="1" FormatString="0" />
+                </Grid>
+                <Expander Header="Stages (editable text)" Padding="0,8,0,0">
+                  <TextBox Text="{Binding EqText}" AcceptsReturn="True" Classes="mono" FontSize="11.5" MinHeight="160" MaxHeight="300" TextWrapping="NoWrap" />
+                </Expander>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Criteria" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,10,16,14" Spacing="8">
+                <TextBlock Text="Switch on production blocks: after the protocol, CAPS runs NPT blocks and stops when density, energy and Rg change less than the tolerance twice in a row." Classes="muted" TextWrapping="Wrap"
+                           IsVisible="{Binding EqCriteriaText, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                <ItemsControl ItemsSource="{Binding EqCriteria}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CriterionRow">
+                      <Border Classes="choice" Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                          <v:Icon Kind="{Binding Icon}" Size="15" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                            <TextBlock Classes="dim"><Run Text="{Binding Rule}" /><Run Text=" · " /><Run Text="{Binding Now}" /></TextBlock>
+                          </StackPanel>
+                          <TextBlock Grid.Column="2" Text="{Binding State}" Classes="mono" FontSize="11.5" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Classes="choice">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <v:Icon Kind="chart" Size="15" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="Internal distances" FontWeight="SemiBold" />
+                      <TextBlock Text="shown below; a check against RIS chain statistics is coming" Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Height="300">
+            <Grid RowDefinitions="38,*,Auto">
+              <Border Classes="phead"><TextBlock Text="Mean-square internal distances" Classes="h2" VerticalAlignment="Center" /></Border>
+              <v:LinePlot Grid.Row="1" x:Name="ChainPlot" Margin="10,6,12,4" AutoRange="True" XLabel="n (bonds apart)" YLabel="⟨R²(n)⟩ / (n ⟨b²⟩)" />
+              <TextBlock Grid.Row="2" Text="{Binding ChainNote}" Classes="dim" Margin="16,0,16,10" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Report" Classes="h2" VerticalAlignment="Center" /></Border>
+              <TextBlock Margin="16,12,16,16" Text="{Binding EqLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</p:PageBase>

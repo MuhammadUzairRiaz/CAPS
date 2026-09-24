@@ -63,6 +63,7 @@ struct caps_doc {
   bool wrap = false;
   std::unique_ptr<FieldState> field;
   std::string analysis;   // last caps_analyze result (JSON)
+  std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
 };
 
 namespace {
@@ -659,6 +660,19 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     d->traj = std::move(out);
     d->current = d->traj.frames() - 1;
     refresh(d);
+    {
+      std::ostringstream j;
+      j << "{\"converged\":" << (rep.converged ? "true" : "false") << ",\"blocks\":" << rep.blocks << ",\"block_ps\":" << e.block_ps << ",\"checks\":[";
+      for (size_t k = 0; k < rep.checks.size(); ++k) {
+        const auto& c = rep.checks[k];
+        j << (k ? "," : "") << "{\"quantity\":\"" << c.quantity << "\",\"ok\":" << (c.ok ? "true" : "false") << ",\"change\":" << c.change
+          << ",\"tolerance\":" << c.tolerance << ",\"blocks\":[";
+        for (size_t b = 0; b < c.blocks.size(); ++b) j << (b ? "," : "") << c.blocks[b];
+        j << "]}";
+      }
+      j << "]}";
+      d->eq_checks = j.str();
+    }
     if (report && cap > 0) {
       std::string t;
       for (const auto& n : rep.notes) t += n + "\n";
@@ -676,6 +690,18 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
       report[cap - 1] = 0;
     }
     return e.until_converged && !rep.converged ? 1 : 0;
+  });
+}
+
+int32_t caps_equilibrate_checks(caps_doc* d, char* json, int32_t cap) {
+  return guard([&] {
+    const int32_t need = int32_t(d->eq_checks.size() + 1);
+    if (json && cap > 0) {
+      const size_t m = std::min<size_t>(size_t(cap - 1), d->eq_checks.size());
+      std::memcpy(json, d->eq_checks.data(), m);
+      json[m] = 0;
+    }
+    return need;
   });
 }
 

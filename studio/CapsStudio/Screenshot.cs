@@ -57,6 +57,9 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
             if (kv[0] == "eqprotocol") w.ViewModel.EqProtocol = int.Parse(kv[1]);
+            if (kv[0] == "equntil") w.ViewModel.EqUntilConverged = kv[1] == "1";
+            if (kv[0] == "eqblock") w.ViewModel.EqBlockD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "eqmax") w.ViewModel.EqMaxBlocksD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "eqscale") w.ViewModel.EqScaleD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "eq")
             {
