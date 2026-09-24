@@ -1,0 +1,259 @@
+<!-- CAPS Settings (design/boards/Settings.dc.html): appearance, the 3D view, force fields, compute, files. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SettingsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.tile.sel"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Button.tile.sel:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Button.nav">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    </Style>
+    <Style Selector="Button.nav.on /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    </Style>
+    <Style Selector="Button.nav.on"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Border.swatch"><Setter Property="Width" Value="14" /><Setter Property="Height" Value="14" /><Setter Property="CornerRadius" Value="3" /></Style>
+  </p:PageBase.Styles>
+
+  <Grid RowDefinitions="*,32">
+    <Grid ColumnDefinitions="240,*,380">
+      <!-- categories -->
+      <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" Padding="12,16">
+        <ItemsControl x:Name="Nav">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </Border>
+
+      <!-- the chosen category -->
+      <ScrollViewer Grid.Column="1">
+        <Panel Margin="40,34,40,34" MaxWidth="760" HorizontalAlignment="Left">
+          <!-- Appearance -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Appearance" Classes="title" />
+              <TextBlock Text="Theme, scale and colour palettes. Changes apply live and are saved per user." Classes="muted" />
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <TextBlock Text="Theme" Classes="h2" />
+              <UniformGrid Columns="3" Margin="-6,0">
+                <Button Classes="tile thumb" Classes.sel="{Binding ThemeDark}" Margin="6,0" Click="OnThemeDark">
+                  <StackPanel>
+                    <Border Height="96" Background="#0F1113" CornerRadius="10,10,0,0" ClipToBounds="True">
+                      <Grid ColumnDefinitions="*,70" Margin="12">
+                        <Border Background="#16191C" CornerRadius="4">
+                          <Canvas Width="60" Height="40">
+                            <Line StartPoint="20,24" EndPoint="36,14" Stroke="#A5ABB1" StrokeThickness="2" />
+                            <Line StartPoint="36,14" EndPoint="44,30" Stroke="#A5ABB1" StrokeThickness="2" />
+                            <Ellipse Canvas.Left="12" Canvas.Top="16" Width="16" Height="16" Fill="#8B969E" />
+                            <Ellipse Canvas.Left="30" Canvas.Top="7" Width="12" Height="12" Fill="#E35049" />
+                            <Ellipse Canvas.Left="38" Canvas.Top="24" Width="12" Height="12" Fill="#2271DB" />
+                          </Canvas>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="6" Margin="10,4,0,0">
+                          <Border Height="4" Background="#A5ABB1" CornerRadius="2" />
+                          <Border Height="4" Width="40" HorizontalAlignment="Left" Background="#868D94" CornerRadius="2" />
+                          <Border Height="4" Background="#F0A83C" CornerRadius="2" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                    <TextBlock Text="Graphite (dark)" Margin="12,10" FontSize="12.5" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="tile thumb" Classes.sel="{Binding ThemeLight}" Margin="6,0" Click="OnThemeLight">
+                  <StackPanel>
+                    <Border Height="96" Background="#F4F2EE" CornerRadius="10,10,0,0" ClipToBounds="True">
+                      <Grid ColumnDefinitions="*,70" Margin="12">
+                        <Border Background="#FFFFFF" CornerRadius="4">
+                          <Canvas Width="60" Height="40">
+                            <Line StartPoint="20,24" EndPoint="36,14" Stroke="#6B7178" StrokeThickness="2" />
+                            <Line StartPoint="36,14" EndPoint="44,30" Stroke="#6B7178" StrokeThickness="2" />
+                            <Ellipse Canvas.Left="12" Canvas.Top="16" Width="16" Height="16" Fill="#8B969E" />
+                            <Ellipse Canvas.Left="30" Canvas.Top="7" Width="12" Height="12" Fill="#E35049" />
+                            <Ellipse Canvas.Left="38" Canvas.Top="24" Width="12" Height="12" Fill="#2271DB" />
+                          </Canvas>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="6" Margin="10,4,0,0">
+                          <Border Height="4" Background="#6B7178" CornerRadius="2" />
+                          <Border Height="4" Width="40" HorizontalAlignment="Left" Background="#A5ABB1" CornerRadius="2" />
+                          <Border Height="4" Background="#C9851F" CornerRadius="2" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                    <TextBlock Text="Paper (light)" Margin="12,10" FontSize="12.5" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="tile thumb" Classes.sel="{Binding ThemeSystem}" Margin="6,0" Click="OnThemeSystem">
+                  <StackPanel>
+                    <Grid Height="96" ColumnDefinitions="*,*" ClipToBounds="True">
+                      <Border Background="#0F1113" CornerRadius="10,0,0,0" />
+                      <Border Grid.Column="1" Background="#F4F2EE" CornerRadius="0,10,0,0" />
+                      <Canvas Grid.ColumnSpan="2" Width="60" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Line StartPoint="20,24" EndPoint="36,14" Stroke="#868D94" StrokeThickness="2" />
+                        <Line StartPoint="36,14" EndPoint="44,30" Stroke="#868D94" StrokeThickness="2" />
+                        <Ellipse Canvas.Left="12" Canvas.Top="16" Width="16" Height="16" Fill="#8B969E" />
+                        <Ellipse Canvas.Left="30" Canvas.Top="7" Width="12" Height="12" Fill="#E35049" />
+                        <Ellipse Canvas.Left="38" Canvas.Top="24" Width="12" Height="12" Fill="#2271DB" />
+                      </Canvas>
+                    </Grid>
+                    <TextBlock Text="Match system" Margin="12,10" FontSize="12.5" />
+                  </StackPanel>
+                </Button>
+              </UniformGrid>
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <TextBlock Text="Interface scale" Classes="h2" />
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="14">
+                <Slider Minimum="80" Maximum="150" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding SetScale}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding ScaleText}" Classes="mono" VerticalAlignment="Center" Width="48" TextAlignment="Right" />
+                <Border Grid.Column="2" Classes="chip" VerticalAlignment="Center"><TextBlock Text="Ctrl + / Ctrl −" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
+              </Grid>
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <TextBlock Text="Element and category palette" Classes="h2" />
+              <ItemsControl ItemsSource="{Binding PaletteChoices}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PaletteChoice">
+                    <Button Classes="tile" Padding="14,10" Click="OnPalette" Tag="{Binding Index}" MaxWidth="520" HorizontalAlignment="Left" Width="520">
+                      <StackPanel Orientation="Horizontal" Spacing="14">
+                        <ItemsControl ItemsSource="{Binding Swatches}" VerticalAlignment="Center">
+                          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String"><Border Classes="swatch" Background="{Binding}" /></DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock x:Name="PaletteNote" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
+                         Text="Atoms, molecule and chain colours follow the palette in the view, the builder preview and exported figures. The monochrome palette separates elements by lightness alone, so figures read in greyscale." />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- 3D view -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="3D view" Classes="title" />
+              <TextBlock Text="How structures are drawn when they open. The Studio's toolbar changes them for the session." Classes="muted" />
+            </StackPanel>
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
+              <TextBlock Text="Display style" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.Styles}" SelectedIndex="{Binding SetStyle}" HorizontalAlignment="Stretch" />
+              <TextBlock Grid.Row="1" Text="Background" VerticalAlignment="Center" />
+              <Border Grid.Row="1" Grid.Column="1" Classes="seg" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                  <RadioButton Classes="seg" Content="Dark" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                  <RadioButton Classes="seg" Content="White" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                </StackPanel>
+              </Border>
+              <TextBlock Grid.Row="2" Text="Outlines" VerticalAlignment="Center" />
+              <CheckBox Grid.Row="2" Grid.Column="1" Classes="toggle" IsChecked="{Binding SetOutlines}" />
+              <TextBlock Grid.Row="3" Text="Depth cue" VerticalAlignment="Center" />
+              <CheckBox Grid.Row="3" Grid.Column="1" Classes="toggle" IsChecked="{Binding SetDepthCue}" />
+            </Grid>
+          </StackPanel>
+
+          <!-- Force fields -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Force fields" Classes="title" />
+              <TextBlock Text="The force field Field offers first, and the one the molecule builder cleans structures up with." Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="20" MaxWidth="700" HorizontalAlignment="Left">
+              <TextBlock Text="Default force field" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding SetForceField}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FfEntry"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Grid.Row="1" Text="Library" VerticalAlignment="Top" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                <TextBlock Text="{Binding Field.LibraryNote}" Classes="muted" />
+                <TextBlock Text="{Binding LibraryPath}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+
+          <!-- Compute -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Compute" Classes="title" />
+              <TextBlock Text="Where calculations run. Every CAPS engine runs on this machine's CPU." Classes="muted" />
+            </StackPanel>
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="18" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
+              <TextBlock Text="Worker threads" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                <NumericUpDown Value="{Binding SetThreadsD}" Minimum="0" Maximum="64" Increment="1" FormatString="0" Width="110" />
+                <TextBlock Text="{Binding ThreadsText}" Classes="muted" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Grid.Row="1" Text="Results" VerticalAlignment="Top" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Classes="muted" TextWrapping="Wrap"
+                         Text="0 uses one thread per core, up to 16. Each worker owns a fixed share of the work, so a run gives the same numbers for the same thread count." />
+            </Grid>
+          </StackPanel>
+
+          <!-- Files -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=4}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Files" Classes="title" />
+              <TextBlock Text="What CAPS keeps, and where." Classes="muted" />
+            </StackPanel>
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14" ColumnSpacing="20" MaxWidth="700" HorizontalAlignment="Left">
+              <TextBlock Text="Settings" />
+              <TextBlock Grid.Column="1" Text="{Binding SettingsPath}" Classes="mono" FontSize="12" />
+              <TextBlock Grid.Row="1" Text="Recent files" VerticalAlignment="Center" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="{Binding RecentPath}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                <Button Classes="small" Content="Clear the list" Click="OnClearRecent" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Text="Force-field library" />
+              <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LibraryPath}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+              <TextBlock Grid.Row="3" Text="Samples" />
+              <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SamplesPath}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+            </Grid>
+          </StackPanel>
+        </Panel>
+      </ScrollViewer>
+
+      <!-- right: shortcuts -->
+      <StackPanel Grid.Column="2" Spacing="14" Margin="0,34,40,0">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Keyboard" Classes="h2" VerticalAlignment="Center" />
+            </Border>
+            <ItemsControl x:Name="Keys" Margin="16,10,16,12" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+
+    <!-- footer -->
+    <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock VerticalAlignment="Center" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}">
+          <Run Text="Settings saved to " /><Run Text="{Binding SettingsPath}" />
+        </TextBlock>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <Button Classes="link" Content="Export" Click="OnExport" FontSize="11.5" />
+          <TextBlock Text="·" Classes="dim" VerticalAlignment="Center" />
+          <Button Classes="link" Content="Import" Click="OnImport" FontSize="11.5" />
+          <TextBlock Text="·" Classes="dim" VerticalAlignment="Center" />
+          <Button Classes="link" Content="Reset" Click="OnReset" FontSize="11.5" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</p:PageBase>

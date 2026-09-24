@@ -20,6 +20,8 @@ internal static class Screenshot
             .SetupWithoutStarting();
 
         // never touch the user's recent list: $CAPS_RECENT_DIR, else a scratch folder
+        ViewModels.AppSettings.Override = Environment.GetEnvironmentVariable("CAPS_SETTINGS") is { Length: > 0 } sf ? sf
+            : Path.Combine(Path.GetTempPath(), "caps-screenshot-settings.json");
         ViewModels.RecentFiles.Override = Environment.GetEnvironmentVariable("CAPS_RECENT_DIR") is { Length: > 0 } rd ? rd
             : Path.Combine(Path.GetTempPath(), "caps-screenshot-recent");
         var w = new MainWindow { Width = 1440, Height = 900 };
@@ -40,6 +42,9 @@ internal static class Screenshot
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
             if (kv[0] == "quick") w.ViewModel.QuickText = kv[1];
+            if (kv[0] == "settab") { w.ViewModel.SetModule(10); w.ViewModel.SettingsTab = int.Parse(kv[1]); }
+            if (kv[0] == "colours") w.ViewModel.SetPalette = int.Parse(kv[1]);
+            if (kv[0] == "theme") w.ViewModel.SetTheme = kv[1];
             if (kv[0] == "palette") { w.ViewModel.PaletteOpen = true; w.ViewModel.PaletteQuery = kv[1]; }
             if (kv[0] == "molecule")
             {

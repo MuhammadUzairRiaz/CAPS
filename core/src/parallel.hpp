@@ -76,7 +76,10 @@ class ThreadPool {
 };
 
 // Default worker count: performance cores where the OS says, otherwise hardware threads, at most 16.
+int max_threads();   // caps/config.hpp: 0 = automatic
+
 inline int default_threads() {
+  if (const int n = max_threads(); n > 0) return n;
   const unsigned h = std::thread::hardware_concurrency();
   return static_cast<int>(std::clamp(h == 0 ? 1u : h, 1u, 16u));
 }

@@ -11,9 +11,11 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 12, "native ABI version 12");
+        Check(Native.AbiVersion() == 13, "native ABI version 13");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
+        AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
+        if (File.Exists(AppSettings.Override)) File.Delete(AppSettings.Override);
         RecentFiles.Override = Path.Combine(outDir, "caps-selftest-recent");
         if (Directory.Exists(RecentFiles.Override)) Directory.Delete(RecentFiles.Override, true);
         var vm = new MainViewModel();
@@ -275,6 +277,15 @@ internal static class SelfTest
         vm.BuildMolecule().GetAwaiter().GetResult();
         vm.OpenMoleculeInStudio();
         Check(vm.IsStudio && vm.Document?.Summary().Atoms == 13, "molecule: opened in the Studio as the document");
+
+        // Settings: saved to the file, applied to the renderer
+        vm.SetPalette = 1;
+        vm.SetThreads = 2;
+        var reread = AppSettings.Load();
+        var okabe = new byte[64 * 64 * 4];
+        Check(reread.Palette == 1 && reread.Threads == 2 && File.Exists(AppSettings.FilePath), $"settings: saved to {AppSettings.FilePath}");
+        vm.ResetSettings();
+        Check(AppSettings.Load().Palette == 0 && vm.SetThreads == 0, "settings: reset to the defaults");
 
         // Close goes back to Start
         vm.SetModule(1);
