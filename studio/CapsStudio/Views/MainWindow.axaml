@@ -26,10 +26,20 @@
         </Viewbox>
         <TextBlock Grid.Column="1" Text="{Binding Crumb}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" Margin="4,0,18,0" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Bottom">
-          <Button Classes="doctab on" IsVisible="{Binding HasDocument}" ToolTip.Tip="{Binding Title}">
+          <Button Classes="doctab on" IsVisible="{Binding NoDocument}" Click="OnModuleStudio" ToolTip.Tip="Start">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <local:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+              <TextBlock Text="Start" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="doctab on" IsVisible="{Binding HasDocument}" ToolTip.Tip="{Binding Title}" Click="OnModuleStudio">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <local:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
               <TextBlock Text="{Binding Title}" MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              <Button Classes="tool" Width="18" MinWidth="18" Height="18" MinHeight="18" Padding="0" Click="OnCloseDocument" IsEnabled="{Binding Idle}"
+                      ToolTip.Tip="Close (⌘W)" VerticalAlignment="Center">
+                <local:Icon Kind="close" Size="12" />
+              </Button>
             </StackPanel>
           </Button>
           <Button Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Margin="4,0,0,3" Command="{Binding $parent[local:MainWindow].OpenCommand}"
@@ -63,7 +73,7 @@
       <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
       <Border Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
         <DockPanel>
-          <Button DockPanel.Dock="Bottom" Classes="rail" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center" ToolTip.Tip="Settings">
+          <Button x:Name="SettingsButton" DockPanel.Dock="Bottom" Classes="rail" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center" ToolTip.Tip="Settings">
             <local:Icon Kind="gear" Size="19" />
             <Button.Flyout>
               <MenuFlyout Placement="RightEdgeAlignedBottom">
@@ -378,24 +388,6 @@
                 </MultiBinding>
               </TextBlock.IsVisible>
             </TextBlock>
-            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="2" CornerRadius="14"
-                    Margin="40" Background="{DynamicResource Bg1B}">
-              <Border.IsVisible>
-                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                  <Binding Path="NoDocument" />
-                  <Binding Path="IsStudio" />
-                </MultiBinding>
-              </Border.IsVisible>
-              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" MaxWidth="560">
-                <TextBlock Text="Open a structure or trajectory" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Classes="muted"
-                           Text="Drop a file here or open one. LAMMPS data and dump, GROMACS .gro, PDB and XYZ are read now. A dump can be dropped together with its data file for types, masses and bonds." />
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                  <Button Classes="primary" Content="Open file…" Command="{Binding $parent[local:MainWindow].OpenCommand}" />
-                  <Button Content="Open sample (polystyrene)" Click="OnOpenSample" IsVisible="{Binding $parent[local:MainWindow].HasSamples}" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
             <!-- HUD (Main board): selection and system chips, live monitors -->
             <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasDocument}">
               <Border Classes="chip" Background="{DynamicResource HudB}" IsVisible="{Binding HasSelection}">
@@ -727,6 +719,15 @@
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
       <!-- React (design/boards/React.dc.html) -->
+      <!-- Start (design/boards/Start): the Studio with nothing open -->
+      <pages:StartPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
+        <pages:StartPage.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="NoDocument" />
+            <Binding Path="IsStudio" />
+          </MultiBinding>
+        </pages:StartPage.IsVisible>
+      </pages:StartPage>
       <pages:ReactPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsReact}" />
 
       <!-- Equilibrate (design/boards/Convergence.dc.html) -->

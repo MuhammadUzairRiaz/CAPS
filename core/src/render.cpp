@@ -214,6 +214,9 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   auto extend = [&](const Vec3& p) { const Vec3 r = v.rot(p); ex = std::max(ex, std::fabs(r[0] - v.pan_x)); ey = std::max(ey, std::fabs(r[1] - v.pan_y)); ez = std::max(ez, std::fabs(r[2])); };
   for (const auto& c : corners) extend(c);
   for (size_t i = 0; i < n; ++i) if (show[i]) extend(s.atoms[i].pos);
+  // the atoms' own size, and a smallest frame so a small molecule is not blown up to fill the view
+  const double pad = opt.style == Style::SpaceFilling ? 2.0 : 1.0;
+  ex = std::max(ex + pad, 2.5); ey = std::max(ey + pad, 2.5);
   v.scale = std::min(W * 0.45 / ex, H * 0.45 / ey) * cam.zoom;
   v.persp = cam.perspective;
   v.dist = ez / std::tan(cam.fov_deg * M_PI / 360.0) + ez;

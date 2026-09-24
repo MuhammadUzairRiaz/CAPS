@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         OpenCommand = new RelayCommand(OpenDialog);
         InitializeComponent();
         DataContext = _vm;
+        _vm.LoadRecent();
         _vm.InitProtocol();
         _vm.LoadReactionSet();
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta), Command = OpenCommand });
@@ -166,7 +167,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task OpenDialog()
+    public async Task OpenDialog()
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
@@ -181,7 +182,7 @@ public partial class MainWindow : Window
         OpenMany(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
 
-    private void OpenMany(List<string> paths)
+    public void OpenMany(List<string> paths)
     {
         if (paths.Count == 0) return;
         // Dropped together: a dump plus a data file pair up (dump is the trajectory, data is the topology).
@@ -198,7 +199,7 @@ public partial class MainWindow : Window
         if (files != null) OpenMany(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
 
-    private void OnOpenSample(object? sender, RoutedEventArgs e)
+    public void OnOpenSample(object? sender, RoutedEventArgs e)
     {
         if (_samples != null) TryOpen(Path.Combine(_samples, "ps_melt.lammpstrj"), Path.Combine(_samples, "ps_melt.data"));
     }
@@ -245,6 +246,8 @@ public partial class MainWindow : Window
     private void OnColourItem(object? s, RoutedEventArgs e) { if (s is MenuItem { Tag: string t }) _vm.ColourIndex = int.Parse(t); }
     private void OnPerspectiveOn(object? s, RoutedEventArgs e) => _vm.Perspective = true;
     private void OnPerspectiveOff(object? s, RoutedEventArgs e) => _vm.Perspective = false;
+    public void ShowSettings() => SettingsButton.Flyout?.ShowAt(SettingsButton);
+    private void OnCloseDocument(object? s, RoutedEventArgs e) { e.Handled = true; _vm.CloseDocument(); }
     private void OnThemeDark(object? s, RoutedEventArgs e) { Tokens.Use(false); RequestRender(); }
     private void OnThemeLight(object? s, RoutedEventArgs e) { Tokens.Use(true); RequestRender(); }
     private void OnCommandPalette(object? s, RoutedEventArgs e) => _vm.Status = "Command palette: coming with the command layer (design board CommandPalette)";
@@ -415,6 +418,7 @@ public partial class MainWindow : Window
     private void OnKey(object? sender, KeyEventArgs e)
     {
         if (_vm.Document == null || _vm.Busy || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
+        if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control) { _vm.CloseDocument(); e.Handled = true; return; }
         switch (e.Key)
         {
             case Key.Left: _vm.StepFrame(-1); e.Handled = true; break;
