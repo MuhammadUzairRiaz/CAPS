@@ -64,6 +64,15 @@ internal static class SelfTest
         Check(gaff >= 0, $"force-field library: {vm.Field.LibraryNote}");
         if (gaff >= 0)
         {
+            // the core call on its own first, so a failure names its cause
+            try
+            {
+                var file = vm.Field.Library[gaff].File;
+                var done = vm.Document!.FieldAssign(file, null, 1);
+                Check(vm.Document.FieldReport().Length > 1000, $"field assign in the core: complete {done}, report {vm.Document.FieldReport().Length} chars, {file}");
+                vm.Document.FieldClear();
+            }
+            catch (Exception e) { Check(false, "field assign in the core: " + e.Message); }
             vm.Field.FfIndex = gaff;
             vm.Field.ChargeMode = 1;
             vm.Field.Assign().GetAwaiter().GetResult();
