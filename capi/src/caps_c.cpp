@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -428,6 +429,32 @@ int32_t caps_save(caps_doc* d, const char* path) {
       else caps::write_lammps_data(d->frame, p);
     }
     return 0;
+  });
+}
+
+int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_t cap) {
+  return guard([&] {
+    caps::ForceField ff;
+    if (d->field && d->field->complete) ff = *d->field->ff;
+    else ff = caps::assign_gaff(d->frame);
+    const auto tmp = std::filesystem::temp_directory_path() / ("caps_input_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + ".in");
+    caps::write_lammps_input(d->frame, ff, caps::EnergyOptions{}, data_name && *data_name ? data_name : "system.data", tmp.string());
+    std::ifstream in(tmp);
+    std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+    std::filesystem::remove(tmp);
+    // keep the setup only: the deck's thermo and run 0 lines are for single-point checks
+    std::string out;
+    std::istringstream ls(s);
+    for (std::string line; std::getline(ls, line);)
+      if (line.rfind("thermo_style", 0) != 0 && line.rfind("thermo_modify", 0) != 0 && line.rfind("run ", 0) != 0) out += line + "\n";
+    const int32_t need = int32_t(out.size() + 1);
+    if (text && cap > 0) {
+      const size_t m = std::min<size_t>(size_t(cap - 1), out.size());
+      std::memcpy(text, out.data(), m);
+      text[m] = 0;
+    }
+    return need;
   });
 }
 

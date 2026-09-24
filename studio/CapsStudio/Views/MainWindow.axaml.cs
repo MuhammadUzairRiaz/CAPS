@@ -364,7 +364,8 @@ public partial class MainWindow : Window
     private async void OnEqRun(object? s, RoutedEventArgs e) => await _vm.RunEquilibrate();
     private void OnEqCancel(object? s, RoutedEventArgs e) => _vm.CancelEquilibrate();
 
-    private async void OnSaveTrajectory(object? s, RoutedEventArgs e)
+    private async void OnSaveTrajectory(object? s, RoutedEventArgs e) => await SaveTrajectoryAsync();
+    public async Task SaveTrajectoryAsync()
     {
         if (_vm.Document == null) return;
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
