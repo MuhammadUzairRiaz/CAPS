@@ -27,6 +27,12 @@ public abstract class ObservableObject : INotifyPropertyChanged
 public sealed record Row(string Key, string Value);
 public sealed record MoleculeRow(string Molecule, string Atoms, string Mass, string Rg, string Kappa2);
 /// <summary>A structure block of a Pack input: name, where it goes, how many, its colour and file.</summary>
+/// <summary>A pre-flight check: what, and ok / check / fail.</summary>
+public sealed record CheckRow(string Title, string State)
+{
+    public string Icon => State == "ok" ? "check" : State == "fail" ? "xcircle" : "alert";
+    public Avalonia.Media.IBrush Brush => CapsStudio.Tokens.Brush(State == "ok" ? "OkB" : State == "fail" ? "ErrB" : "WarnB");
+}
 public sealed record PackItem(string Name, string Detail, string Count, string Colour, string File)
 {
     public Avalonia.Media.IBrush Brush => Avalonia.Media.Brush.Parse(Colour);
@@ -649,6 +655,69 @@ public sealed class MainViewModel : ObservableObject
     public decimal? MdTauPD { get => (decimal)_mdTauP; set { _mdTauP = Math.Clamp((double)(value ?? 1000m), 10, 1e7); Raise(); } }
     public decimal? MdFrameEveryD { get => _mdFrameEvery; set { _mdFrameEvery = Math.Clamp((int)(value ?? 1000), 1, 1_000_000); Raise(); Raise(nameof(MdEstimate)); } }
     public decimal? MdSeedD { get => _mdSeed; set { _mdSeed = Math.Max(0, (int)(value ?? 1)); Raise(); } }
+    // ---- pre-flight and export (Dynamics board)
+    public ObservableCollection<CheckRow> MdPreflight { get; } = new();
+    private string _mdPreflightSummary = "", _mdDeck = "";
+    public string MdPreflightSummary { get => _mdPreflightSummary; private set => Set(ref _mdPreflightSummary, value); }
+    /// <summary>The LAMMPS input for this run (setup from the core, ensemble lines from the settings).</summary>
+    public string MdDeck { get => _mdDeck; private set => Set(ref _mdDeck, value); }
+
+    public void RefreshPreflight()
+    {
+        MdPreflight.Clear();
+        if (_doc == null) { MdPreflightSummary = ""; MdDeck = ""; return; }
+        var inv = CultureInfo.InvariantCulture;
+        var s = _doc.Summary();
+        // force field
+        if (Field.Assigned)
+            MdPreflight.Add(new CheckRow(Field.Complete ? "All atoms typed, no missing parameters" : "The Field assignment is incomplete: runs are blocked",
+                Field.Complete ? "ok" : "fail"));
+        else
+        {
+            string ff;
+            try { ff = _doc.FieldInfo(); } catch (Exception e) { ff = "error: " + e.Message; }
+            var ok = !ff.StartsWith("error", StringComparison.Ordinal) && !ff.Contains("Cannot", StringComparison.Ordinal);
+            MdPreflight.Add(new CheckRow(ok ? "All atoms typed with the built-in GAFF (C and H)" : "Built-in GAFF cannot type this structure: assign a force field in Field", ok ? "ok" : "fail"));
+        }
+        // charge
+        var q = s.HasCharges != 0 ? s.TotalCharge : 0;
+        MdPreflight.Add(new CheckRow(string.Format(inv, "Net charge {0:+0.000;−0.000;0.000} e", q), Math.Abs(q) < 1e-3 ? "ok" : "check"));
+        // box against the cut-off
+        if (s.CellValid != 0)
+        {
+            var w = Math.Min(s.CellA, Math.Min(s.CellB, s.CellC));
+            MdPreflight.Add(new CheckRow(string.Format(inv, "Box {0:F1} Å ≥ 2 r_c ({1:F0} Å) in every direction", w, 2 * _relaxCutoff), w >= 2 * _relaxCutoff ? "ok" : "check"));
+        }
+        else MdPreflight.Add(new CheckRow("No periodic cell: the run is in vacuum", "check"));
+        if (_mdEnsemble == 2 && s.CellValid == 0) MdPreflight.Add(new CheckRow("NPT needs a periodic cell", "fail"));
+        // time step
+        MdPreflight.Add(new CheckRow(string.Format(inv, "Δt {0:0.##} fs with hydrogens, no bond constraints", _mdDt), _mdDt <= 1.0 ? "ok" : _mdDt <= 2.0 ? "check" : "fail"));
+        // velocities
+        MdPreflight.Add(new CheckRow(_mdNewVelocities ? string.Format(inv, "New velocities at {0:0} K (seed {1})", _mdTemp, _mdSeed) : "Velocities from the structure, or drawn at the target if it has none", "ok"));
+        var fails = MdPreflight.Count(r => r.State == "fail");
+        var checks = MdPreflight.Count(r => r.State == "check");
+        MdPreflightSummary = $"{MdPreflight.Count - fails - checks} / {MdPreflight.Count} ok";
+        // LAMMPS deck
+        try
+        {
+            var setup = _doc.LammpsInput("system.data");
+            var steps = _mdSteps;
+            var ens = _mdEnsemble switch
+            {
+                0 => "fix 1 all nve",
+                1 => _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
+                                         : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1),
+                _ => string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}\nfix 3 all press/berendsen iso {3:0.##} {3:0.##} {4:0.##} modulus 22222",
+                    _mdTemp, _mdTauT, _mdSeed + 1, _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
+            };
+            MdDeck = "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
+                     (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
+                     string.Format(inv, "timestep {0:0.###}\n{1}\nthermo {2}\ndump d all custom {3} traj.lammpstrj id mol type xu yu zu\nrun {4}\n",
+                         _mdDt, ens, Math.Max(1, _mdFrameEvery / 10), _mdFrameEvery, steps);
+        }
+        catch (Exception e) { MdDeck = "# cannot write the LAMMPS input: " + e.Message; }
+    }
+
     public string MdEstimate => string.Format(CultureInfo.InvariantCulture, "{0:0.###} ps · {1:N0} frames recorded",
         _mdSteps * _mdDt / 1000, _mdSteps / Math.Max(1, _mdFrameEvery) + 1);
 

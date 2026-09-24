@@ -720,75 +720,6 @@
         </TabControl>
         <ScrollViewer IsVisible="{Binding !IsStudio}">
           <StackPanel>
-          <!-- Dynamics -->
-          <StackPanel IsVisible="{Binding IsDynamics}">
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="STRUCTURE" Classes="h3" />
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
-                           Text="Grow and relax a cell, or open one. Dynamics starts from the frame shown in the viewer." />
-                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasDocument}" />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="ENSEMBLE" Classes="h3" />
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Ensembles}" SelectedIndex="{Binding MdEnsemble}" HorizontalAlignment="Stretch" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Temperature (K)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Thermostat τ (fs)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding MdTempD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdTauTD}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" IsEnabled="{Binding MdHasThermostat}" />
-                </Grid>
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Thermostats}" SelectedIndex="{Binding MdThermostat}" HorizontalAlignment="Stretch" IsEnabled="{Binding MdHasThermostat}" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasBarostat}">
-                  <TextBlock Text="Pressure (atm)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Barostat τ (fs)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding MdPressureD}" Minimum="-100000" Maximum="100000" Increment="100" FormatString="0.#" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdTauPD}" Minimum="10" Maximum="10000000" Increment="100" FormatString="0" />
-                </Grid>
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Barostats}" SelectedIndex="{Binding MdBarostat}" HorizontalAlignment="Stretch" IsEnabled="{Binding MdHasBarostat}" />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="RUN" Classes="h3" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Time step (fs)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Steps" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding MdDtD}" Minimum="0.1" Maximum="5" Increment="0.25" FormatString="0.##" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdStepsD}" Minimum="0" Maximum="1000000000" Increment="5000" FormatString="0" />
-                  <TextBlock Grid.Row="2" Text="Frame every (steps)" Classes="dim" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.Column="1" Text="Seed" Classes="dim" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="3" Value="{Binding MdFrameEveryD}" Minimum="1" Maximum="1000000" Increment="500" FormatString="0" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding MdSeedD}" Minimum="0" Maximum="999999" Increment="1" FormatString="0" />
-                </Grid>
-                <TextBlock Text="{Binding MdEstimate}" Classes="dim" />
-                <CheckBox Content="New velocities (else continue the last run)" IsChecked="{Binding MdNewVelocities}" />
-                <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Velocity Verlet with the Field force field (or GAFF for C and H when none is assigned), damped shifted force electrostatics and LJ tail corrections; the cut-off and electrostatics follow the Relax panel. A 200-step NVE run matches LAMMPS to 10⁻⁵ Å (scripts/check_lammps.sh)." />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Classes="primary" Content="Run" Click="OnMdRun" IsEnabled="{Binding CanRun}" />
-                  <Button Content="Cancel" Click="OnMdCancel" IsEnabled="{Binding MdRunning}" />
-                </StackPanel>
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
-                  <TextBlock Text="{Binding MdLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section" IsVisible="{Binding HasDocument}">
-              <StackPanel Spacing="8">
-                <TextBlock Text="SAVE" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
-                  <Button Content="Trajectory…" Click="OnSaveTrajectory" ToolTip.Tip="All frames as a LAMMPS dump (id mol type xu yu zu)" />
-                  <Button Content="LAMMPS data…" Click="OnSaveData" ToolTip.Tip="The shown frame with the force field; velocities are included for the last frame" />
-                  <Button Content="PDB…" Click="OnSavePdb" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
           <!-- Equilibrate -->
           <StackPanel IsVisible="{Binding IsEquilibrate}">
             <Border Classes="section">
@@ -941,6 +872,9 @@
       </Border>
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
+      <!-- Dynamics (design/boards/Dynamics.dc.html) -->
+      <pages:DynamicsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsDynamics}" />
+
       <!-- Relax (design/boards/Relax.dc.html) -->
       <pages:RelaxPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsRelax}" />
 
