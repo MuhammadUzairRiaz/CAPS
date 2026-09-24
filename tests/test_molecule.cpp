@@ -138,3 +138,71 @@ TEST(Embed, DisconnectedPartsDoNotOverlap) {
   EXPECT_GT(norm(p[0] - p[1]), 2.3);
   EXPECT_GT(norm(p[0] - p[2]), 2.3);
 }
+
+namespace {
+// (S) at the alpha carbon of alanine built from `smi`, found by elements: with H away, N → COOH → CH3 anticlockwise
+bool alanine_is_S(const std::string& smi) {
+  const BuildResult r = build_molecule(smi, {});
+  const auto& g = r.graph;
+  const auto& p = r.conformers.front().pos;
+  auto nbrs = [&](int i) {
+    std::vector<int> v;
+    for (const auto& b : g.bonds) {
+      if (b.a == i) v.push_back(b.b);
+      if (b.b == i) v.push_back(b.a);
+    }
+    return v;
+  };
+  int N = -1, CA = -1, CO = -1, CM = -1, H = -1;
+  for (size_t i = 0; i < g.atoms.size(); ++i) if (g.atoms[i].element == 7) N = int(i);
+  for (int v : nbrs(N)) if (g.atoms[size_t(v)].element == 6) CA = v;
+  for (int v : nbrs(CA)) {
+    const int z = g.atoms[size_t(v)].element;
+    if (z == 1) H = v;
+    if (z != 6) continue;
+    int o = 0;
+    for (int w : nbrs(v)) o += g.atoms[size_t(w)].element == 8;
+    (o ? CO : CM) = v;
+  }
+  const Vec3 n = cross(p[size_t(CO)] - p[size_t(N)], p[size_t(CM)] - p[size_t(N)]);
+  return dot(n, p[size_t(CA)] - p[size_t(H)]) > 0;
+}
+}  // namespace
+
+TEST(Smiles, WriterRoundTrips) {
+  for (const char* smi : {"CC(=O)Oc1ccccc1C(=O)O", "C1CC2CCC1C2", "c1ccc2cc3ccccc3cc2c1", "[NH4+].[Cl-]", "F/C=C/F", "F/C=C\\F",
+                          "N[C@@H](C)C(=O)O", "OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O", "C%10CCCCC%10", "[2H]C([2H])([2H])O", "N#Cc1ccccc1"}) {
+    MolGraph g = parse_smiles(smi);
+    const std::string w = write_smiles(g);
+    MolGraph h = parse_smiles(w);
+    EXPECT_EQ(write_smiles(h), w) << smi << " → " << w;   // idempotent
+    add_hydrogens(g);
+    add_hydrogens(h);
+    EXPECT_EQ(molecule_info(g).formula, molecule_info(h).formula) << smi << " → " << w;
+    EXPECT_EQ(molecule_info(g).stereocentres, molecule_info(h).stereocentres) << smi << " → " << w;
+    EXPECT_EQ(molecule_info(g).stereo_bonds, molecule_info(h).stereo_bonds) << smi << " → " << w;
+  }
+}
+
+TEST(Smiles, WriterKeepsTheConfiguration) {
+  EXPECT_TRUE(alanine_is_S("N[C@@H](C)C(=O)O"));
+  EXPECT_TRUE(alanine_is_S("C[C@@H](C(=O)O)N"));   // L-alanine as PubChem writes it
+  EXPECT_FALSE(alanine_is_S("N[C@H](C)C(=O)O"));
+  EXPECT_TRUE(alanine_is_S(write_smiles(parse_smiles("N[C@@H](C)C(=O)O"))));
+  // start the writing from another atom: move the carboxyl oxygen to the front
+  MolGraph g = parse_smiles("OC(=O)[C@@H](C)N");
+  EXPECT_EQ(alanine_is_S("OC(=O)[C@@H](C)N"), alanine_is_S(write_smiles(g)));
+}
+
+TEST(Depict, RingsAreRegularAndChainsZigZag) {
+  const MolGraph g = parse_smiles("c1ccc2ccccc2c1CCCC");
+  const auto p = depict(g);
+  ASSERT_EQ(p.size(), g.atoms.size());
+  for (const auto& b : g.bonds) EXPECT_NEAR(norm(p[size_t(b.a)] - p[size_t(b.b)]), 1.0, 0.05);
+  // naphthalene: every ring 1-3 distance √3
+  EXPECT_NEAR(norm(p[0] - p[2]), std::sqrt(3.0), 0.08);
+  // no two atoms on top of each other
+  for (size_t i = 0; i < p.size(); ++i)
+    for (size_t j = i + 1; j < p.size(); ++j) EXPECT_GT(norm(p[i] - p[j]), 0.8) << i << " " << j;
+  for (const auto& v : p) EXPECT_EQ(v[2], 0.0);
+}

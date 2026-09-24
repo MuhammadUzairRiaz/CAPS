@@ -30,7 +30,11 @@ public partial class StartPage : PageBase
 
     private void OnBuilder(object? s, RoutedEventArgs e)
     {
-        if ((s as Control)?.Tag is StartBuilder b && b.Available) Vm.SetModule(b.Module);
+        if ((s as Control)?.Tag is StartBuilder b && b.Available)
+        {
+            if (b.Module == 9) Vm.OpenBuilder();
+            else Vm.SetModule(b.Module);
+        }
     }
 
     private void OnRecent(object? s, RoutedEventArgs e)
