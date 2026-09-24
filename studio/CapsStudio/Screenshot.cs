@@ -46,6 +46,19 @@ internal static class Screenshot
             if (kv[0] == "colours") w.ViewModel.SetPalette = int.Parse(kv[1]);
             if (kv[0] == "theme") w.ViewModel.SetTheme = kv[1];
             if (kv[0] == "jobs") w.ViewModel.SetModule(11);
+            if (kv[0] == "bench")
+            {
+                w.ViewModel.SetModule(12);
+                w.ViewModel.LoadBench();
+                w.ViewModel.BenchQuick = true;
+                w.ViewModel.BenchRepeats = 1;
+                if (kv[1] != "0")
+                {
+                    var t = w.ViewModel.RunBench(true);
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                }
+                w.ViewModel.SelectedBench = w.ViewModel.BenchItems.FirstOrDefault(b => b.Id == "T5");
+            }
             if (kv[0] == "palette") { w.ViewModel.PaletteOpen = true; w.ViewModel.PaletteQuery = kv[1]; }
             if (kv[0] == "molecule")
             {

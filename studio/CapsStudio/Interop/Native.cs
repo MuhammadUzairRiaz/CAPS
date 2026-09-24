@@ -210,6 +210,24 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_protocol_text")] public static extern int ProtocolText([MarshalAs(UnmanagedType.LPUTF8Str)] string name, in CapsProtocolParams p, byte[] text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate")] public static extern int Equilibrate(IntPtr doc, byte[] protocol, in CapsEquilOpts o, CapsEquilProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_internal_distances")] public static extern int InternalDistances(IntPtr doc, [Out] int[] n, [Out] double[] ratio, int cap, out int chains, out double b2);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate int BenchProgressFn([MarshalAs(UnmanagedType.LPUTF8Str)] string table, [MarshalAs(UnmanagedType.LPUTF8Str)] string what, double fraction, IntPtr user);
+    [DllImport(Lib, EntryPoint = "caps_bench_list")] public static extern int BenchList(byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bench_run")] private static extern int BenchRun([MarshalAs(UnmanagedType.LPUTF8Str)] string id, [MarshalAs(UnmanagedType.LPUTF8Str)] string samples,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string? forcefields, int repeats, int quick, BenchProgressFn? progress, IntPtr user, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bench_write")] public static extern int BenchWrite([MarshalAs(UnmanagedType.LPUTF8Str)] string tables, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir);
+
+    /// <summary>Runs one bench table (the progress callback runs on the calling thread; false cancels) and returns its JSON.</summary>
+    public static string BenchRunJson(string id, string samples, string? forcefields, int repeats, bool quick, Func<string, string, double, bool>? progress)
+    {
+        BenchProgressFn? cb = progress == null ? null : (t, w, f, _) => progress(t, w, f) ? 0 : 1;
+        var buf = new byte[1 << 20];
+        var n = BenchRun(id, samples, forcefields, repeats, quick ? 1 : 0, cb, IntPtr.Zero, buf, buf.Length);
+        GC.KeepAlive(cb);
+        if (n < 0) throw new InvalidOperationException(LastError());
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
+    }
+
     [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
     [DllImport(Lib, EntryPoint = "caps_set_threads")] public static extern void SetThreads(int threads);
     [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);

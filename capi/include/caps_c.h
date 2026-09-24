@@ -1,4 +1,4 @@
-/* CAPS C ABI v13 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v14 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 13  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads */
+#define CAPS_ABI_VERSION 14  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -341,6 +341,17 @@ caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_
    monochrome) and the worker threads of the parallel loops (0 = one per hardware thread, at most 16). */
 void caps_set_palette(int32_t palette);
 void caps_set_threads(int32_t threads);
+
+/* Bench (ABI 14): the built-in validation suite. caps_bench_list gives the tables as JSON [{id, title, scope, columns[],
+   status: "not run", note}]. caps_bench_run runs one table (samples: the directory with ps_melt.data and water.pdb;
+   forcefields: data/forcefields, or NULL) and returns it as JSON {id, title, scope, columns[], rows[{cells[], status}],
+   status, note, seconds}. caps_bench_write writes results.md, results.tex and one CSV per table from a JSON array of
+   tables into `dir`. Sizes as caps_field_report: the length needed including the final NUL, or -1 on error. */
+typedef int32_t (*caps_bench_progress_fn)(const char* table, const char* what, double fraction, void* user);
+int32_t caps_bench_list(char* json, int32_t cap);
+int32_t caps_bench_run(const char* id, const char* samples, const char* forcefields, int32_t repeats, int32_t quick,
+                       caps_bench_progress_fn progress, void* user, char* json, int32_t cap);
+int32_t caps_bench_write(const char* tables_json, const char* dir);
 
 #ifdef __cplusplus
 }

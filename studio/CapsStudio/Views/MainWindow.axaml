@@ -169,11 +169,14 @@
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" IsEnabled="False" ToolTip.Tip="Validation suite that regenerates the paper tables — coming" ToolTip.ShowOnDisabled="True">
-            <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <local:Icon Kind="bench" Size="19" HorizontalAlignment="Center" />
-              <TextBlock Text="Bench" HorizontalAlignment="Center" FontSize="10.5" />
-            </StackPanel>
+          <Button Classes="rail" Classes.on="{Binding IsBench}" Click="OnModuleBench" ToolTip.Tip="The validation suite that regenerates the paper tables">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="bench" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Bench" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
           </Button>
           </StackPanel>
         </DockPanel>
@@ -718,6 +721,8 @@
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
       <!-- React (design/boards/React.dc.html) -->
+      <!-- Bench (design/boards/Bench) -->
+      <pages:BenchPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBench}" />
       <!-- Jobs (design/boards/Jobs, FailedJob) -->
       <pages:JobsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsJobs}" />
       <!-- Settings (design/boards/Settings) -->

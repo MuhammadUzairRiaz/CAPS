@@ -1,0 +1,137 @@
+<!-- CAPS Bench (design/boards/Bench.dc.html): the validation suite, its tables, the chosen table, the environment. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.BenchPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="ListBox#Tables ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="MinHeight" Value="0" /><Setter Property="CornerRadius" Value="6" /></Style>
+    <Style Selector="ListBox#Tables ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+    <Style Selector="ListBox#Tables ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+    <Style Selector="TextBlock.state"><Setter Property="FontSize" Value="12" /><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="TextBlock.state.pass"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="TextBlock.state.fail"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="TextBlock.state.running"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Ellipse.dot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.dot.pass"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.dot.fail"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="Ellipse.dot.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
+  </p:PageBase.Styles>
+
+  <Grid RowDefinitions="Auto,*,32" Margin="0">
+    <!-- header -->
+    <Grid ColumnDefinitions="*,Auto" Margin="24,20,24,16">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Validation &amp; benchmarks" FontSize="20" FontWeight="SemiBold" />
+        <TextBlock Text="One command regenerates the tables as Markdown, CSV and LaTeX" Classes="muted" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Border Classes="chip" Height="30" CornerRadius="6" Padding="10,0" BorderBrush="{DynamicResource LineB}" BorderThickness="1">
+          <TextBlock Text="{Binding BenchCommand}" Classes="mono" FontSize="12" Foreground="{DynamicResource TextB}" />
+        </Border>
+        <TextBlock Text="Repeats" Classes="label" VerticalAlignment="Center" Margin="6,0,0,0" />
+        <NumericUpDown Value="{Binding BenchRepeats}" Minimum="1" Maximum="10" Increment="1" FormatString="0" Width="84" IsEnabled="{Binding BenchIdle}" />
+        <CheckBox Content="Quick" IsChecked="{Binding BenchQuick}" IsEnabled="{Binding BenchIdle}" ToolTip.Tip="Shorter runs: a first look, not the paper numbers" />
+        <Button Click="OnExport" IsEnabled="{Binding BenchIdle}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="Export for paper" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Classes="primary" Click="OnRunAll" IsVisible="{Binding BenchIdle}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="Run suite" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCancel" IsVisible="{Binding BenchRunning}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock Text="Stop" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16" Margin="24,0,24,16">
+      <!-- the tables -->
+      <Border Classes="card" CornerRadius="10">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="44" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Border Classes="chip ok"><TextBlock Text="{Binding BenchPassText}" /></Border>
+                <Border Classes="chip err" IsVisible="{Binding BenchAnyFail}"><TextBlock Text="{Binding BenchFailText}" /></Border>
+              </StackPanel>
+              <TextBlock Text="Benchmark tables" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="44,190,*,64,84" Margin="26,10,16,4">
+            <TextBlock Grid.Column="1" Text="TABLE" Classes="h3" FontSize="10" />
+            <TextBlock Grid.Column="2" Text="SCOPE" Classes="h3" FontSize="10" />
+            <TextBlock Grid.Column="3" Text="ROWS" Classes="h3" FontSize="10" HorizontalAlignment="Right" Margin="0,0,12,0" />
+            <TextBlock Grid.Column="4" Text="STATUS" Classes="h3" FontSize="10" />
+          </Grid>
+          <ListBox x:Name="Tables" ItemsSource="{Binding BenchItems}" SelectedItem="{Binding SelectedBench}" Background="Transparent" Padding="10,0,10,10">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:BenchItem">
+                <Grid ColumnDefinitions="44,190,*,64,84" Height="36" Margin="16,0,6,0">
+                  <TextBlock Text="{Binding Id}" Classes="mono" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding Scope}" Classes="muted" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                  <TextBlock Grid.Column="3" Text="{Binding RowsText}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                  <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Ellipse Classes="dot" Classes.pass="{Binding IsPass}" Classes.fail="{Binding IsFail}" Classes.running="{Binding IsRunning}" Width="7" Height="7" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Status}" Classes="state" Classes.pass="{Binding IsPass}" Classes.fail="{Binding IsFail}" Classes.running="{Binding IsRunning}" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <!-- the chosen table, the environment -->
+      <Grid Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="16">
+        <Border Classes="card" CornerRadius="10">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Height="44" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock x:Name="Seconds" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  <Button x:Name="RunOne" Classes="small" Click="OnRunOne" IsEnabled="{Binding BenchIdle}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="play" Size="13" VerticalAlignment="Center" /><TextBlock Text="Run table" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+                <TextBlock x:Name="DetailTitle" Classes="h2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </DockPanel>
+            </Border>
+            <Border DockPanel.Dock="Bottom" Margin="16,0,16,14" Padding="12,10" CornerRadius="8" Background="{DynamicResource Bg2B}" x:Name="NoteBox">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                <TextBlock Grid.Column="1" x:Name="Note" TextWrapping="Wrap" FontSize="12" Classes="muted" />
+              </Grid>
+            </Border>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" Margin="16,12,16,12">
+              <Grid x:Name="Detail" />
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+        <Border Grid.Row="1" Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Environment" Classes="h2" VerticalAlignment="Center" />
+            </Border>
+            <ItemsControl ItemsSource="{Binding BenchEnvironment}" Margin="16,8,16,12">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:JobFact">
+                  <Grid ColumnDefinitions="110,*" Margin="0,3">
+                    <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12" />
+                    <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextAlignment="Right" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <!-- footer -->
+    <Border Grid.Row="2" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding BenchProgress}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="Results are kept in ~/.caps/bench.json · the same suite runs as caps bench" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+  </Grid>
+</p:PageBase>
