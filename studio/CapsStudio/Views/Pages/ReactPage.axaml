@@ -1,0 +1,143 @@
+<!-- CAPS React (design/boards/React.dc.html): templates and protocol; conversion and gel point; Flory–Stockmayer; system. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ReactPage" x:DataType="vm:MainViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="22,16,22,16" RowSpacing="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="3">
+        <TextBlock Text="React · crosslinking" Classes="title" />
+        <TextBlock Text="Form bonds by distance, retype, relax, and track the gel point" Classes="muted" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Click="OnSave" IsEnabled="{Binding HasDocument}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save network…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanReact}" IsVisible="{Binding !Reacting}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="react" Size="16" VerticalAlignment="Center" /><TextBlock Text="Crosslink" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCancel" IsVisible="{Binding Reacting}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="16" VerticalAlignment="Center" /><TextBlock Text="Stop" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="480,*,360" ColumnSpacing="16">
+      <ScrollViewer>
+        <StackPanel Spacing="16" IsEnabled="{Binding !Reacting}">
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="atom-mapped" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="Reaction templates" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReactionSets}" SelectedIndex="{Binding RxSet}" HorizontalAlignment="Stretch" />
+                <TextBox Text="{Binding RxText}" AcceptsReturn="True" Classes="mono" FontSize="11.5" MinHeight="180" MaxHeight="320" TextWrapping="NoWrap" />
+                <TextBlock Text="pre → post with mapped atoms; bonds form, break or move; types are reassigned after each bond" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Protocol" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <RadioButton Classes="choice" GroupName="rxp" IsChecked="True">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Polymatic cycle" FontWeight="SemiBold" />
+                    <TextBlock Text="Abbott, Hart &amp; Colina, Theor. Chem. Acc. 132, 1334 (2013): react → retype → minimise → optional MD" Classes="dim" TextWrapping="Wrap" />
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton Classes="choice" GroupName="rxp" IsEnabled="False" ToolTip.Tip="coming" ToolTip.ShowOnDisabled="True">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="REACTER-style during MD" FontWeight="SemiBold" />
+                    <TextBlock Text="Gissinger, Jensen &amp; Wise, Polymer 128, 211 (2017) · coming" Classes="dim" TextWrapping="Wrap" />
+                  </StackPanel>
+                </RadioButton>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Capture (Å, 0 = template)" Classes="label" /><TextBlock Grid.Column="1" Text="Target conversion" Classes="label" /><TextBlock Grid.Column="2" Text="Cycles at most" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RxCaptureD}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.##" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxTargetD}" Minimum="0.001" Maximum="1" Increment="0.05" FormatString="0.###" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxCyclesD}" Minimum="1" Increment="10" FormatString="0" />
+                  <TextBlock Grid.Row="2" Text="Reactions per cycle" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="MD per cycle (ps)" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="T (K)" Classes="label" Margin="0,8,0,0" />
+                  <NumericUpDown Grid.Row="3" Value="{Binding RxPerCycleD}" Minimum="1" Increment="1" FormatString="0" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding RxMdPsD}" Minimum="0" Increment="1" FormatString="0.#" IsEnabled="{Binding RxRelax}" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding RxTempD}" Minimum="1" Increment="10" FormatString="0" IsEnabled="{Binding RxRelax}" />
+                </Grid>
+                <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
+                  <CheckBox Classes="toggle" Content="Relax after each cycle" IsChecked="{Binding RxRelax}" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding RxSeedD}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="Seed" />
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid Grid.Column="1" RowDefinitions="*,*" RowSpacing="16">
+        <Border Classes="card">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding Reacting}"><TextBlock Text="reacting" Foreground="{DynamicResource AccB}" /></Border>
+                <TextBlock Text="Conversion" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <v:LinePlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" AutoRange="True" XLabel="cycle" YLabel="conversion α" />
+          </Grid>
+        </Border>
+        <Border Grid.Row="1" Classes="card">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead"><TextBlock Text="Gel point" Classes="h2" VerticalAlignment="Center" /></Border>
+            <v:LinePlot Grid.Row="1" x:Name="GelPlot" Margin="10,6,12,8" AutoRange="True" XLabel="conversion α" YLabel="largest cluster (mass fraction)" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <ScrollViewer Grid.Column="2">
+        <StackPanel Spacing="16">
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Flory–Stockmayer check" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <Border Classes="inset"><TextBlock Text="α_c = 1 / √( r (f_A − 1)(f_B − 1) )" Classes="mono" FontSize="13" HorizontalAlignment="Center" /></Border>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="r" Classes="label" /><TextBlock Grid.Column="1" Text="f_A" Classes="label" /><TextBlock Grid.Column="2" Text="f_B" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RxRatioD}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.##" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxFaD}" Minimum="1" Increment="1" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxFbD}" Minimum="1" Increment="1" FormatString="0.#" />
+                </Grid>
+                <UniformGrid Columns="2">
+                  <Border Classes="inset" Margin="0,0,5,0"><StackPanel Spacing="2"><TextBlock Text="α_c theory" Classes="label" /><TextBlock Text="{Binding RxAlphaC}" Classes="mono acc" FontSize="16" /></StackPanel></Border>
+                  <Border Classes="inset" Margin="5,0,0,0"><StackPanel Spacing="2"><TextBlock Text="simulated gel point" Classes="label" /><TextBlock Text="{Binding RxGelText}" Classes="mono" FontSize="16" /></StackPanel></Border>
+                </UniformGrid>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
+                  <TextBlock Text="Flory, J. Am. Chem. Soc. 63, 3083 (1941); Stockmayer, J. Chem. Phys. 11, 45 (1943). Simulated: peak of the reduced weight-average mass." Classes="dim" TextWrapping="Wrap" MaxWidth="300" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="System" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="6">
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Structure" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Title}" Classes="mono" FontSize="12" MaxWidth="200" TextTrimming="CharacterEllipsis" /></Grid>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Contents" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding HudInfo}" Classes="mono" FontSize="12" /></Grid>
+                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Report" Classes="h2" VerticalAlignment="Center" /></Border>
+              <TextBlock Margin="16,12,16,16" Text="{Binding RxLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</p:PageBase>
