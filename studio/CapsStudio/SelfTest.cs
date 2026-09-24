@@ -42,6 +42,18 @@ internal static class SelfTest
         Check(Math.Abs(s.Density - 0.386) < 0.001, $"density {s.Density:F4} g/cm³");
         Check(s.Format == "lammps-dump", $"format '{s.Format}'");
 
+        // Command palette: filters commands, offers a typed SMILES, runs the chosen one
+        vm.PaletteOpen = true;
+        vm.PaletteQuery = "colour mol";
+        var ids = vm.PaletteRows.Where(r => r.IsCommand).Select(r => r.Id).ToList();
+        vm.PaletteRun();
+        Check(ids.FirstOrDefault() == "view.colour molecule" && vm.ColourIndex == 1 && !vm.PaletteOpen, "palette: " + string.Join(", ", ids.Take(3)));
+        vm.ColourIndex = 0;
+        vm.PaletteOpen = true;
+        vm.PaletteQuery = "c1ccccc1O";
+        Check(vm.PaletteRows.Any(r => r.Id == "builder.molecule.open"), "palette: a typed SMILES builds in 3D");
+        vm.PaletteOpen = false;
+
         var a = vm.Document.Atom(40);
         Check(a.Id == 41 && a.ElementSymbol == "H", $"atom 41: {a.ElementSymbol}, mol {a.Mol}, q {a.Charge:+0.0000}");
         var nb = vm.Document.Neighbours(40, 3);

@@ -40,6 +40,7 @@ internal static class Screenshot
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
             if (kv[0] == "quick") w.ViewModel.QuickText = kv[1];
+            if (kv[0] == "palette") { w.ViewModel.PaletteOpen = true; w.ViewModel.PaletteQuery = kv[1]; }
             if (kv[0] == "molecule")
             {
                 w.ViewModel.OpenBuilder(kv[1]);
