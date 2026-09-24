@@ -1175,6 +1175,7 @@ public sealed class MainViewModel : ObservableObject
     private CancellationTokenSource? _rxCancel;
     private readonly List<CapsReactCycle> _rxRows = new();
     public event Action? ReactChanged;
+    public void RaiseGel() => Raise(nameof(RxGelText));
     public IReadOnlyList<CapsReactCycle> ReactRows => _rxRows;
 
     public int RxSet { get => _rxSet; set { if (Set(ref _rxSet, value)) LoadReactionSet(); } }
@@ -1190,9 +1191,30 @@ public sealed class MainViewModel : ObservableObject
     public decimal? RxCaptureD { get => (decimal)_rxCapture; set { _rxCapture = Math.Clamp((double)(value ?? 0m), 0, 20); Raise(); } }
     public decimal? RxMdPsD { get => (decimal)_rxMdPs; set { _rxMdPs = Math.Clamp((double)(value ?? 0m), 0, 10000); Raise(); } }
     public decimal? RxTempD { get => (decimal)_rxTemp; set { _rxTemp = Math.Clamp((double)(value ?? 300m), 1, 5000); Raise(); } }
-    public decimal? RxFaD { get => (decimal)_rxFa; set { _rxFa = Math.Max(1, (double)(value ?? 2m)); Raise(); Raise(nameof(FloryText)); } }
-    public decimal? RxFbD { get => (decimal)_rxFb; set { _rxFb = Math.Max(1, (double)(value ?? 4m)); Raise(); Raise(nameof(FloryText)); } }
-    public decimal? RxRatioD { get => (decimal)_rxRatio; set { _rxRatio = Math.Clamp((double)(value ?? 1m), 0.01, 1); Raise(); Raise(nameof(FloryText)); } }
+    public decimal? RxFaD { get => (decimal)_rxFa; set { _rxFa = Math.Max(1, (double)(value ?? 2m)); Raise(); Raise(nameof(FloryText)); Raise(nameof(RxAlphaC)); } }
+    public decimal? RxFbD { get => (decimal)_rxFb; set { _rxFb = Math.Max(1, (double)(value ?? 4m)); Raise(); Raise(nameof(FloryText)); Raise(nameof(RxAlphaC)); } }
+    public decimal? RxRatioD { get => (decimal)_rxRatio; set { _rxRatio = Math.Clamp((double)(value ?? 1m), 0.01, 1); Raise(); Raise(nameof(FloryText)); Raise(nameof(RxAlphaC)); } }
+    /// <summary>α_c = 1/√(r (fA−1)(fB−1)), or "—".</summary>
+    public string RxAlphaC
+    {
+        get
+        {
+            var d = _rxRatio * (_rxFa - 1) * (_rxFb - 1);
+            return d > 0 ? (1 / Math.Sqrt(d)).ToString("F3", CultureInfo.InvariantCulture) : "—";
+        }
+    }
+    /// <summary>Simulated gel point: the conversion where the reduced weight-average mass peaks (cluster analysis).</summary>
+    public string RxGelText
+    {
+        get
+        {
+            if (_rxRows.Count < 3) return "—";
+            var best = _rxRows.MaxBy(r => r.ReducedMw);
+            var last = _rxRows[^1];
+            if (best.Cycle == last.Cycle) return string.Format(CultureInfo.InvariantCulture, "not reached (α {0:F3})", last.Conversion);
+            return string.Format(CultureInfo.InvariantCulture, "α {0:F3}", best.Conversion);
+        }
+    }
     public string FloryText
     {
         get
