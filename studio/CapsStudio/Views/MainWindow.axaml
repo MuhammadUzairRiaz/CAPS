@@ -720,86 +720,6 @@
         </TabControl>
         <ScrollViewer IsVisible="{Binding !IsStudio}">
           <StackPanel>
-          <!-- Equilibrate -->
-          <StackPanel IsVisible="{Binding IsEquilibrate}">
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="STRUCTURE" Classes="h3" />
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
-                           Text="Grow and relax a cell, or open one. The protocol starts from the frame shown in the viewer." />
-                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasDocument}" />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="PROTOCOL" Classes="h3" />
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Protocols}" SelectedIndex="{Binding EqProtocol}" HorizontalAlignment="Stretch" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4" IsEnabled="{Binding EqIsNamed}">
-                  <TextBlock Text="T final (K)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="T max (K)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding EqTFinalD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqTMaxD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" />
-                  <TextBlock Grid.Row="2" Text="P final (atm)" Classes="dim" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.Column="1" Text="P max (atm)" Classes="dim" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="3" Value="{Binding EqPFinalD}" Minimum="-100000" Maximum="1000000" Increment="1" FormatString="0.##" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding EqPMaxD}" Minimum="1" Maximum="1000000" Increment="1000" FormatString="0" />
-                  <TextBlock Grid.Row="4" Text="Time scale" Classes="dim" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="5" Value="{Binding EqScaleD}" Minimum="0.001" Maximum="100" Increment="0.1" FormatString="0.###" />
-                </Grid>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4" IsVisible="{Binding EqIsAnnealing}">
-                  <TextBlock Text="Cycles" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="T low / high (K)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding EqCyclesD}" Minimum="1" Maximum="100" Increment="1" FormatString="0" />
-                  <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="4">
-                    <NumericUpDown Value="{Binding EqTLowD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" ShowButtonSpinner="False" />
-                    <NumericUpDown Grid.Column="1" Value="{Binding EqTHighD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" ShowButtonSpinner="False" />
-                  </Grid>
-                  <TextBlock Grid.Row="2" Text="Ramp (ps)" Classes="dim" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.Column="1" Text="Hold (ps)" Classes="dim" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="3" Value="{Binding EqRampD}" Minimum="0.1" Maximum="1000000" Increment="10" FormatString="0.#" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding EqHoldD}" Minimum="0.1" Maximum="1000000" Increment="10" FormatString="0.#" />
-                </Grid>
-                <TextBlock Text="Stages (editable; one per line)" Classes="dim" />
-                <TextBox Text="{Binding EqText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo" FontSize="10.5" Height="190" />
-                <TextBlock Text="{Binding EqTotal}" Classes="dim" TextWrapping="Wrap" />
-                <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Larsen, Lin, Hart and Colina, Macromolecules 44, 6944 (2011): Pmax 5×10⁴ bar. Choose T max about 200–300 K above Tg. Editing a named protocol's text is kept until a parameter changes." />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="CONVERGENCE" Classes="h3" />
-                <CheckBox Content="Extend with NPT blocks until converged" IsChecked="{Binding EqUntilConverged}" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding EqUntilConverged}">
-                  <TextBlock Text="Block (ps)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="At most (blocks)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding EqBlockD}" Minimum="0.1" Maximum="1000000" Increment="10" FormatString="0.#" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqMaxBlocksD}" Minimum="1" Maximum="1000" Increment="1" FormatString="0" />
-                </Grid>
-                <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Converged when two successive block-to-block changes stay within 0.5 % in density, 0.005 kcal/mol per atom in energy and 2 % in mean Rg." />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Classes="primary" Content="Run protocol" Click="OnEqRun" IsEnabled="{Binding CanEquilibrate}" />
-                  <Button Content="Cancel" Click="OnEqCancel" IsEnabled="{Binding EqRunning}" />
-                </StackPanel>
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
-                  <TextBlock Text="{Binding EqLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section" IsVisible="{Binding HasDocument}">
-              <StackPanel Spacing="8">
-                <TextBlock Text="SAVE" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
-                  <Button Content="Trajectory…" Click="OnSaveTrajectory" />
-                  <Button Content="LAMMPS data…" Click="OnSaveData" />
-                  <Button Content="PDB…" Click="OnSavePdb" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
           <!-- React -->
           <StackPanel IsVisible="{Binding IsReact}">
             <Border Classes="section">
@@ -872,6 +792,9 @@
       </Border>
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
+      <!-- Equilibrate (design/boards/Convergence.dc.html) -->
+      <pages:EquilibratePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsEquilibrate}" />
+
       <!-- Dynamics (design/boards/Dynamics.dc.html) -->
       <pages:DynamicsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsDynamics}" />
 

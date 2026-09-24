@@ -1,4 +1,4 @@
-/* CAPS C ABI v10 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v11 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 10  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input */
+#define CAPS_ABI_VERSION 11  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -149,6 +149,10 @@ typedef int32_t (*caps_equil_progress_fn)(int32_t stage, int32_t stages, const c
 /* Run a protocol (text as from caps_protocol_text, or written by hand) from the current frame. On success the document
    holds the recorded frames and shows the last one; returns 0, 1 when the convergence checks did not pass, -1 on
    error / cancel (the document is unchanged). */
+/* The convergence checks of the last caps_equilibrate run with until_converged, as JSON:
+   {"converged", "blocks", "block_ps", "checks": [{"quantity", "ok", "change", "tolerance", "blocks": [block means]}]}.
+   Returns the length needed including the final NUL (json = NULL to size); empty before a run. */
+int32_t caps_equilibrate_checks(caps_doc* d, char* json, int32_t cap);
 int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opts* o, caps_equil_progress_fn progress, void* user,
                          char* report, int32_t report_cap);
 

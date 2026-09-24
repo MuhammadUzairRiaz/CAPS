@@ -33,6 +33,12 @@ public sealed record CheckRow(string Title, string State)
     public string Icon => State == "ok" ? "check" : State == "fail" ? "xcircle" : "alert";
     public Avalonia.Media.IBrush Brush => CapsStudio.Tokens.Brush(State == "ok" ? "OkB" : State == "fail" ? "ErrB" : "WarnB");
 }
+/// <summary>A convergence criterion: what, the rule, the latest value, pass / not yet.</summary>
+public sealed record CriterionRow(string Title, string Rule, string Now, string State)
+{
+    public string Icon => State == "pass" ? "check" : "alert";
+    public Avalonia.Media.IBrush Brush => CapsStudio.Tokens.Brush(State == "pass" ? "OkB" : "WarnB");
+}
 public sealed record PackItem(string Name, string Detail, string Count, string Colour, string File)
 {
     public Avalonia.Media.IBrush Brush => Avalonia.Media.Brush.Parse(Colour);
@@ -931,6 +937,7 @@ public sealed class MainViewModel : ObservableObject
             finished = true;
             EqLog = report;
             AfterRun(doc, " · equilibrated");
+            LoadEqChecks(doc.EquilibrateChecks());
             Status = _eqUntil && !converged ? "Protocol finished; the convergence checks did not pass — see the Equilibrate panel"
                                             : $"Equilibrated · {Frames} frames · save the trajectory or the final structure";
         }
@@ -949,6 +956,44 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public void CancelEquilibrate() => _eqCancel?.Cancel();
+
+    // ---- convergence (Convergence board): criteria and block means
+    public ObservableCollection<CriterionRow> EqCriteria { get; } = new();
+    private string _eqCriteriaText = "", _eqPhase = "set up";
+    public string EqCriteriaText { get => _eqCriteriaText; private set => Set(ref _eqCriteriaText, value); }
+    /// <summary>Mean Rg per production block (Å).</summary>
+    public (double X, double Y)[] EqRgBlocks { get; private set; } = [];
+    public event Action? EqChecksChanged;
+
+    private void LoadEqChecks(string json)
+    {
+        EqCriteria.Clear();
+        EqRgBlocks = [];
+        var inv = CultureInfo.InvariantCulture;
+        if (json.Length > 0)
+        {
+            using var js = System.Text.Json.JsonDocument.Parse(json);
+            var root = js.RootElement;
+            foreach (var c in root.GetProperty("checks").EnumerateArray())
+            {
+                var q = c.GetProperty("quantity").GetString() ?? "";
+                var ok = c.GetProperty("ok").GetBoolean();
+                var ch = c.GetProperty("change").GetDouble();
+                var tol = c.GetProperty("tolerance").GetDouble();
+                var energy = q.StartsWith("potential", StringComparison.Ordinal);
+                var rule = energy ? string.Format(inv, "change < {0:0.###} kcal/mol per atom between blocks, twice", tol)
+                                  : string.Format(inv, "change < {0:0.#} % between blocks, twice", 100 * tol);
+                var now = energy ? string.Format(inv, "last {0:0.####}", ch) : string.Format(inv, "last {0:0.##} %", 100 * ch);
+                EqCriteria.Add(new CriterionRow(char.ToUpperInvariant(q[0]) + q[1..], rule, now, ok ? "pass" : "not yet"));
+                if (q.Contains("Rg", StringComparison.Ordinal))
+                    EqRgBlocks = c.GetProperty("blocks").EnumerateArray().Select((v, k) => ((double)(k + 1), v.GetDouble())).ToArray();
+            }
+            var met = EqCriteria.Count(r => r.State == "pass");
+            EqCriteriaText = $"{met} of {EqCriteria.Count} criteria met";
+        }
+        else EqCriteriaText = "";
+        EqChecksChanged?.Invoke();
+    }
 
     // ---------------------------------------------------------------- Pack
     private double _packX = 40, _packY = 40, _packZ = 40, _packTol = 2.0;
