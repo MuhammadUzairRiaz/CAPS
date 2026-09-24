@@ -313,10 +313,11 @@ public sealed partial class MainViewModel
         {
             case "Relax":
                 f.Add(new("minimiser", Minimisers[Math.Clamp(RelaxMethod, 0, Minimisers.Length - 1)]));
-                f.Add(new("electrostatics", RelaxCoulomb ? $"DSF · rc {_relaxCutoff:F0} Å" : "off"));
+                f.Add(new("electrostatics", RelaxCoulomb ? $"{ElectrostaticsText} · rc {_relaxCutoff:F0} Å" : "off"));
                 f.Add(new("vdW", $"cut {_relaxCutoff:F0} Å"));
                 break;
             case "Dynamics":
+                f.Add(new("electrostatics", ElectrostaticsText));
                 f.Add(new("ensemble", Ensembles[Math.Clamp(MdEnsemble, 0, Ensembles.Length - 1)]));
                 f.Add(new("timestep", $"{_mdDt:F2} fs · {MdStepsD:N0} steps"));
                 f.Add(new("temperature", $"{_mdTemp:F0} K"));

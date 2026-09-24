@@ -38,7 +38,7 @@ public sealed partial class MainViewModel
     private void ApplyAll()
     {
         Tokens.UseTheme(_settings.Theme);
-        try { Native.SetPalette(_settings.Palette); Native.SetThreads(_settings.Threads); } catch { /* an older core: defaults */ }
+        try { Native.SetPalette(_settings.Palette); Native.SetThreads(_settings.Threads); ApplyElectrostatics(); } catch { /* an older core: defaults */ }
         _viewBackground = _settings.Background; Raise(nameof(ViewBackground)); Raise(nameof(ViewIsLight));
         _outlines = _settings.Outlines; Raise(nameof(Outlines));
         _depthCue = _settings.DepthCue; Raise(nameof(DepthCue));
@@ -49,7 +49,8 @@ public sealed partial class MainViewModel
         if (clean >= 0) _molClean = clean;
         ScaleChanged?.Invoke(_settings.Scale);
         foreach (var n in new[] { nameof(SetTheme), nameof(SetScale), nameof(ScaleText), nameof(SetPalette), nameof(SetThreads), nameof(ThreadsText),
-                                  nameof(SetBackground), nameof(SetOutlines), nameof(SetDepthCue), nameof(SetStyle), nameof(SetForceField) })
+                                  nameof(SetBackground), nameof(SetOutlines), nameof(SetDepthCue), nameof(SetStyle), nameof(SetForceField),
+                                  nameof(SetElectrostatics), nameof(PmeOn), nameof(SetEwaldExponent), nameof(SetPmeSpacing), nameof(SetPmeOrder) })
             Raise(n);
         RenderRequested?.Invoke();
         MolViewChanged?.Invoke();
@@ -141,6 +142,33 @@ public sealed partial class MainViewModel
             Changed("Default force field");
         }
     }
+
+    // ---- electrostatics (Force fields tab): damped shifted force or particle-mesh Ewald
+    private void ApplyElectrostatics() => Native.SetElectrostatics(_settings.Electrostatics, _settings.EwaldRtol, _settings.PmeSpacing, _settings.PmeOrder);
+    public int SetElectrostatics
+    {
+        get => _settings.Electrostatics;
+        set { if (_settings.Electrostatics == value) return; _settings.Electrostatics = value; ApplyElectrostatics(); Raise(); Raise(nameof(PmeOn)); Changed("Electrostatics"); }
+    }
+    public bool PmeOn => _settings.Electrostatics == 1;
+    public int SetEwaldExponent
+    {
+        get => (int)Math.Round(Math.Log10(_settings.EwaldRtol));
+        set { var v = Math.Pow(10, Math.Clamp(value, -10, -3)); if (Math.Abs(v - _settings.EwaldRtol) < 1e-15) return; _settings.EwaldRtol = v; ApplyElectrostatics(); Raise(); Changed("Ewald tolerance"); }
+    }
+    public decimal SetPmeSpacing
+    {
+        get => (decimal)_settings.PmeSpacing;
+        set { var v = Math.Clamp((double)value, 0.3, 3.0); if (Math.Abs(v - _settings.PmeSpacing) < 1e-9) return; _settings.PmeSpacing = v; ApplyElectrostatics(); Raise(); Changed("PME grid spacing"); }
+    }
+    public decimal SetPmeOrder
+    {
+        get => _settings.PmeOrder;
+        set { var v = Math.Clamp((int)value, 3, 10); if (v == _settings.PmeOrder) return; _settings.PmeOrder = v; ApplyElectrostatics(); Raise(); Changed("PME order"); }
+    }
+    public string ElectrostaticsText => _settings.Electrostatics == 1
+        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, "PME · β from erfc(β rc) = 1e{0} · grid ≤ {1:F2} Å · order {2}", SetEwaldExponent, _settings.PmeSpacing, _settings.PmeOrder)
+        : "DSF · α 0.2 Å⁻¹";
 
     public string SettingsPath => AppSettings.DisplayPath;
     public string RecentPath => "~/.caps/recent.json";

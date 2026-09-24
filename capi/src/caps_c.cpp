@@ -74,6 +74,21 @@ namespace {
 
 thread_local std::string g_error;
 
+// Electrostatics chosen in the Studio's Settings (caps_set_electrostatics): applied to every energy evaluation here.
+struct Elec {
+  int mode = 0;   // 0 DSF, 1 PME
+  double rtol = 1e-5, spacing = 1.0;
+  int order = 5;
+} g_elec;
+
+caps::EnergyOptions elec(caps::EnergyOptions e = {}) {
+  e.electrostatics = g_elec.mode == 1 ? caps::EnergyOptions::Electrostatics::PME : caps::EnergyOptions::Electrostatics::DSF;
+  e.ewald_rtol = g_elec.rtol;
+  e.pme_spacing = g_elec.spacing;
+  e.pme_order = g_elec.order;
+  return e;
+}
+
 template <class F>
 int32_t guard(F&& f) {
   try {
@@ -336,7 +351,7 @@ void field_run(caps_doc* d) {
   r["notes"] = notes;
   r["complete"] = F.complete;
   if (F.ff) {
-    caps::Evaluator ev(*F.ff, caps::EnergyOptions{});
+    caps::Evaluator ev(*F.ff, elec());
     std::vector<double> x, f;
     for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
     const caps::EnergyTerms e = ev.compute(x, s.cell, f);
@@ -425,13 +440,13 @@ int32_t caps_save(caps_doc* d, const char* path) {
     else if (ends(".xyz")) caps::write_xyz(d->frame, p);
     else if (ends(".mol2")) caps::write_mol2(d->frame, p);
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
-      if (d->field->complete) caps::write_lammps_data_ff(d->frame, *d->field->ff, caps::EnergyOptions{}, p);
+      if (d->field->complete) caps::write_lammps_data_ff(d->frame, *d->field->ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
     } else {
       caps::ForceField ff;
       bool typed = true;
       try { ff = caps::assign_gaff(d->frame); } catch (const caps::FieldError&) { typed = false; }
-      if (typed) caps::write_lammps_data_ff(d->frame, ff, caps::EnergyOptions{}, p);
+      if (typed) caps::write_lammps_data_ff(d->frame, ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
     }
     return 0;
@@ -444,7 +459,7 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
     if (d->field && d->field->complete) ff = *d->field->ff;
     else ff = caps::assign_gaff(d->frame);
     const auto tmp = std::filesystem::temp_directory_path() / ("caps_input_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + ".in");
-    caps::write_lammps_input(d->frame, ff, caps::EnergyOptions{}, data_name && *data_name ? data_name : "system.data", tmp.string());
+    caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string());
     std::ifstream in(tmp);
     std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();
@@ -478,6 +493,7 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     r.pressure = o->pressure;
     if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
     r.energy.coulomb = o->coulomb != 0;
+    r.energy = elec(r.energy);
     r.energy.threads = o->threads;
     if (progress)
       r.progress = [&](const caps::RelaxProgress& p) {
@@ -547,6 +563,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.frame_every = std::max(0, o->frame_every);
     if (o->cutoff > 0) m.energy.cutoff = o->cutoff;
     m.energy.coulomb = o->coulomb != 0;
+    m.energy = elec(m.energy);
     m.energy.tail = o->tail != 0;
     m.energy.threads = o->threads;
     if (progress)
@@ -627,6 +644,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.seed = o->seed;
     if (o->cutoff > 0) e.md.energy.cutoff = o->cutoff;
     e.md.energy.coulomb = o->coulomb != 0;
+    e.md.energy = elec(e.md.energy);
     e.md.energy.tail = o->tail != 0;
     e.md.energy.threads = o->threads;
     if (o->frame_ps > 0) e.frame_ps = o->frame_ps;
@@ -793,6 +811,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     if (o->temperature > 0) r.temperature = o->temperature;
     if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
     r.energy.coulomb = o->coulomb != 0;
+    r.energy = elec(r.energy);
     if (progress)
       r.progress = [&](const caps::CycleRow& c) {
         caps_react_cycle row{c.cycle, c.reactions, c.total, c.clusters.clusters, c.atoms, c.conversion, c.clusters.largest_fraction,
@@ -1014,7 +1033,7 @@ int32_t caps_field_info(caps_doc* d, char* text, int32_t cap) {
   return guard([&] {
     const auto assigned = field_for_run(d);
     const caps::ForceField ff = assigned ? *assigned : caps::assign_gaff(d->frame);
-    caps::Evaluator ev(ff, caps::EnergyOptions{});
+    caps::Evaluator ev(ff, elec());
     std::vector<double> x, f;
     for (const auto& a : d->frame.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
     const caps::EnergyTerms e = ev.compute(x, d->frame.cell, f);
@@ -1175,6 +1194,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       if (p->probe > 0) o.probe = p->probe;
       if (p->grid > 0) o.grid = p->grid;
       if (p->cutoff > 0) o.energy.cutoff = p->cutoff;
+      o.energy = elec(o.energy);
       if (p->threads > 0) o.threads = p->threads;
     }
     caps_mech_opts mo{};
@@ -1684,4 +1704,11 @@ extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opt
     g_error = e.what();
     return nullptr;
   }
+}
+
+extern "C" void caps_set_electrostatics(int32_t mode, double ewald_rtol, double pme_spacing, int32_t pme_order) {
+  g_elec.mode = mode == 1 ? 1 : 0;
+  if (ewald_rtol > 0) g_elec.rtol = ewald_rtol;
+  if (pme_spacing > 0) g_elec.spacing = pme_spacing;
+  if (pme_order >= 3 && pme_order <= 12) g_elec.order = pme_order;
 }
