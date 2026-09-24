@@ -13,6 +13,7 @@
 #include "caps/molecule.hpp"
 #include "caps/relax.hpp"
 #include "caps/typing.hpp"
+#include "caps/uff.hpp"
 
 namespace caps {
 namespace {
@@ -186,6 +187,32 @@ double ideal_angle(const MolGraph& g, const Model& M, int i, int j, int k) {
   return 109.47;
 }
 
+// The angle i-j-k at a square-planar (Ni, Pd, Pt, Au with four neighbours), five- or six-coordinate centre j, from the
+// order the neighbours are written in: square planar 1-3 and 2-4 trans; trigonal bipyramid 1 and 5 axial; octahedron
+// 1 and 6 axial, 2-4 and 3-5 trans. 0 for other centres.
+double polyhedral_angle(const MolGraph& g, const Model& M, int j, int i, int k) {
+  const size_t nb = M.adj[size_t(j)].size();
+  const int z = g.atoms[size_t(j)].element;
+  const bool square = nb == 4 && (z == 28 || z == 46 || z == 78 || z == 79);
+  if (!square && nb != 5 && nb != 6) return 0;
+  // written order: the atom's order list (bracket hydrogens, -2, are its added hydrogens in order), else bond order
+  std::vector<int> ord;
+  for (int w : g.atoms[size_t(j)].order)
+    if (w >= 0) ord.push_back(w);
+  for (auto [w, o] : M.adj[size_t(j)])
+    if (std::find(ord.begin(), ord.end(), w) == ord.end()) ord.push_back(w);
+  const auto pi = std::find(ord.begin(), ord.end(), i) - ord.begin(), pk = std::find(ord.begin(), ord.end(), k) - ord.begin();
+  const long a = std::min(pi, pk), b = std::max(pi, pk);
+  if (square) return b - a == 2 ? 180 : 90;
+  if (nb == 5) {
+    const bool ax_a = a == 0 || a == 4, ax_b = b == 0 || b == 4;
+    return ax_a && ax_b ? 180 : ax_a || ax_b ? 90 : 120;
+  }
+  if (a == 0 && b == 5) return 180;
+  if (a == 0 || b == 5) return 90;
+  return b - a == 2 ? 180 : 90;
+}
+
 Model make_model(const MolGraph& g) {
   Model M;
   M.n = int(g.atoms.size());
@@ -245,6 +272,14 @@ Model make_model(const MolGraph& g) {
         if (b12.count(kk)) continue;   // 3-ring: already a bond
         const double tol = M.hyb[size_t(j)] == 1 ? 0.01 : 0.03;
         auto it = b13.find(kk);
+        // square-planar metals, trigonal bipyramids and octahedra: the angle from the neighbours' written order
+        // (OpenSMILES @SP1, @TB1, @OH1 defaults)
+        const double poly = polyhedral_angle(g, M, j, i, k);
+        if (poly > 0) {
+          const double dp = std::sqrt(std::max(0.0, a * a + c * c - 2 * a * c * std::cos(poly * kPi / 180)));
+          if (it == b13.end()) b13[kk] = {dp - 0.05, dp + 0.05};
+          continue;
+        }
         if (it == b13.end()) b13[kk] = {d - tol, d + tol};
         else it->second = {std::min(it->second.first, d - tol), std::max(it->second.second, d + tol)};
       }
@@ -596,8 +631,20 @@ std::vector<Vec3> embed(const MolGraph& g, const EmbedOptions& o) {
 }
 
 std::shared_ptr<const ForceField> molecule_forcefield(const MolGraph& g, const std::string& path, const std::string& charges,
-                                                      std::vector<std::string>& notes, std::string* name) {
+                                                      std::vector<std::string>& notes, std::string* name, const std::vector<Vec3>* pos) {
   if (path.empty()) return nullptr;
+  if (is_uff(path)) {
+    try {
+      auto ff = std::make_shared<ForceField>(assign_uff(molecule_system(g, pos ? *pos : std::vector<Vec3>(g.atoms.size()))));
+      if (name) *name = "UFF";
+      for (const auto& note : ff->notes)
+        if (note.find("closest") != std::string::npos || note.find("more than six") != std::string::npos) notes.push_back(note);
+      return ff;
+    } catch (const std::exception& e) {
+      notes.push_back(std::string("no UFF clean-up: ") + e.what());
+      return nullptr;
+    }
+  }
   try {
     FFDef def = load_forcefield(path);
     if (name) *name = def.name;
@@ -667,15 +714,22 @@ BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
       R.notes.push_back("a stereocentre with three neighbours (lone pair) is built without its configuration");
 
   std::string ffname;
-  const auto ff = molecule_forcefield(R.graph, o.forcefield, o.charges, R.notes, &ffname);
-  R.method = ff ? "CAPS distance-bounds embedding + " + ffname + " minimisation" : "CAPS distance-bounds embedding";
-
+  std::shared_ptr<const ForceField> ff;
   const int nconf = std::max(1, o.conformers);
   for (int k = 0; k < nconf; ++k) {
     EmbedOptions eo;
     eo.seed = o.seed + uint64_t(k) * 7919;
     Conformer c;
     c.pos = embed(R.graph, eo);
+    if (k == 0) {   // UFF places five-coordinate axial pairs from the first embedding (all embeddings share them)
+      ff = molecule_forcefield(R.graph, o.forcefield, o.charges, R.notes, &ffname, &c.pos);
+      if (!ff && !o.forcefield.empty() && !is_uff(o.forcefield)) {   // UFF covers every element the other cannot type
+        std::vector<std::string> un;
+        ff = molecule_forcefield(R.graph, "uff", o.charges, un, &ffname, &c.pos);
+        if (ff) R.notes.push_back("cleaned up with UFF instead");
+      }
+      R.method = ff ? "CAPS distance-bounds embedding + " + ffname + " minimisation" : "CAPS distance-bounds embedding";
+    }
     if (ff) {
       std::string why;
       if (minimise_molecule(R.graph, ff, o.ftol, c.pos, &c.energy, &why)) c.minimised = true;

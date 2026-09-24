@@ -100,6 +100,8 @@ public sealed class FieldViewModel : ObservableObject
             // force fields that type automatically first, then the validated ones
             foreach (var x in list.OrderByDescending(x => x.AutoTyping).ThenByDescending(x => x.Status == "validated").ThenBy(x => x.Name))
                 Library.Add(x);
+            // UFF (built into the core): every element, typed from bonds, hybridisation and oxidation state
+            Library.Insert(Math.Min(1, Library.Count), new FfEntry("uff", "UFF (Rappé 1992) · every element", "1992", "validated", "uff", true));
             LibraryNote = $"{Library.Count} force fields · {Library.Count(x => x.AutoTyping)} with automatic typing";
             FfIndex = Library.Count > 0 ? 0 : -1;
         }

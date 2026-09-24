@@ -104,6 +104,18 @@ internal static class SelfTest
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
         }
+        // UFF from the same library: every atom typed from its bonds (polystyrene: C_3, C_R, H_)
+        var uffFf = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");
+        if (uffFf >= 0)
+        {
+            vm.Field.FfIndex = uffFf;
+            vm.Field.ChargeMode = 0;
+            vm.Field.Assign().GetAwaiter().GetResult();
+            Check(vm.Field.Assigned && vm.Field.Complete && vm.Field.Swatches.Select(x => x.Name).OrderBy(x => x).SequenceEqual(["C_3", "C_R", "H_"]),
+                  $"Field UFF: {vm.Field.TypedText} · {string.Join(" ", vm.Field.Swatches.Select(x => x.Label))} {vm.Field.Log}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+        }
+        else Check(false, "force-field library has no UFF entry");
 
         // Analyze › Properties: density, g(r), Rg, MSD and free volume over the three frames; export
         {
@@ -275,6 +287,14 @@ internal static class SelfTest
         Check(sk.Contains("\"atoms\"") && CapsDocument.SmilesWrite(sk).Length > 0, "molecule: sketch graph round trip " + CapsDocument.SmilesWrite(sk));
         vm.MolSmiles = "C1CC";
         Check(!vm.MolOk && vm.MolHasError, "molecule: bad SMILES reported: " + vm.MolError);
+        // UFF: a siloxane (silicone rubber) cleaned up with every element typed
+        var uffIx = vm.CleanChoices.ToList().FindIndex(c => c.File == "uff");
+        vm.MolSmiles = "C[Si](C)(C)O[Si](C)(C)O[Si](C)(C)C";
+        vm.MolClean = uffIx;
+        vm.BuildMolecule().GetAwaiter().GetResult();
+        Check(uffIx >= 0 && vm.MolConformers.Count >= 1 && vm.MolConformers[0].Minimised && vm.MolMethodUsed.Contains("UFF"),
+              $"molecule: UFF clean-up of a siloxane · {vm.MolMethodUsed} {vm.MolNotes}");
+        vm.MolClean = 0;
         vm.MolSmiles = "N[C@@H](C)C(=O)O";
         vm.BuildMolecule().GetAwaiter().GetResult();
         vm.OpenMoleculeInStudio();

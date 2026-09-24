@@ -25,6 +25,7 @@
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
 #include "caps/typing.hpp"
+#include "caps/uff.hpp"
 #include "caps/json.hpp"
 
 #include <map>
@@ -184,8 +185,14 @@ void field_run(caps_doc* d) {
   caps::merge_forcefield(def, F.extra);
   const caps::System& s = d->frame;
   const size_t n = s.atoms.size();
+  const bool uff = caps::is_uff(F.ff_path);
   bool rules = !def.typing.empty();
-  if (rules) {
+  if (uff) {   // UFF: typed from elements, hybridisation and oxidation state
+    F.typing = caps::TypingResult{};
+    F.typing.types = caps::uff_types(s, &F.typing.why);
+    F.typing.rule.assign(n, -1);
+    F.typing.candidates.assign(n, {});
+  } else if (rules) {
     F.typing = caps::assign_types(s, def);
   } else {   // no typing rules: the file's atom names are the types
     F.typing = caps::TypingResult{};
@@ -205,7 +212,15 @@ void field_run(caps_doc* d) {
     if (t.empty() || !known.count(t)) { t.clear(); ++untyped; }
   F.rep = caps::ParamReport{};
   F.ff.reset();
-  if (!untyped) F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
+  if (!untyped && uff) {
+    caps::UffOptions uo;
+    uo.keep_charges = F.charges == "keep";
+    uo.labels = F.types;
+    F.ff = std::make_shared<caps::ForceField>(caps::assign_uff(s, uo));
+    for (const auto& note : F.ff->notes) F.rep.notes.push_back(note);
+  } else if (!untyped) {
+    F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
+  }
   F.complete = F.ff && F.rep.missing.empty();
 
   // types into the document: colour by type shows the force-field types
@@ -237,7 +252,8 @@ void field_run(caps_doc* d) {
   r["version"] = def.version;
   r["source"] = def.source;
   r["file"] = F.ff_path;
-  r["typing"] = rules ? (def.typing_source.empty() ? F.ff_path : def.typing_source) : std::string("atom names in the file");
+  r["typing"] = uff ? std::string("UFF typer: element, hybridisation, conjugation, oxidation state")
+                    : rules ? (def.typing_source.empty() ? F.ff_path : def.typing_source) : std::string("atom names in the file");
   r["rules"] = double(def.typing.size());
   r["charges"] = F.charges;
   caps::Json refs = caps::Json::array();
@@ -269,6 +285,9 @@ void field_run(caps_doc* d) {
       a["desc"] = tr.description;
       a["prio"] = double(tr.priority);
       a["src"] = rule_src;
+    } else if (uff) {
+      a["rule"] = "UFF typer";
+      a["src"] = "UFF";
     } else {
       a["rule"] = rules ? "no rule matched" : "file";
       a["src"] = rules ? "" : "file";
@@ -864,8 +883,8 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
   return guard([&] {
     auto F = std::make_unique<FieldState>();
     F->ff_path = ff_path ? ff_path : "";
-    F->base = caps::load_forcefield(F->ff_path);
-    if (rules_path && *rules_path) {
+    F->base = caps::is_uff(F->ff_path) ? caps::uff_definition() : caps::load_forcefield(F->ff_path);
+    if (rules_path && *rules_path && !caps::is_uff(F->ff_path)) {
       F->base.typing.clear();
       caps::load_typing(F->base, rules_path);
     }

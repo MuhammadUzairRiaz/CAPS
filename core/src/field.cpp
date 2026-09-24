@@ -499,6 +499,10 @@ inline Class2Out inversion(const InversionTerm& t, const Vec3& a, const Vec3& b,
     if (t.form == 1) {   // 1 − cos ω
       o.e += t.kw / 3 * (1 - std::cos(w));
       c = t.kw / 3 * std::sin(w) * sg;
+    } else if (t.form == 2) {   // UFF pyramidal centres: C0 + C1 cos ω + C2 cos 2ω, minimum at ω0 (LAMMPS improper fourier)
+      const double C2 = 1, C1 = -4 * std::cos(t.w0), C0 = -(C1 * std::cos(t.w0) + C2 * std::cos(2 * t.w0));
+      o.e += t.kw / 3 * (C0 + C1 * std::cos(w) + C2 * std::cos(2 * w));
+      c = -t.kw / 3 * (C1 * std::sin(w) + 2 * C2 * std::sin(2 * w)) * sg;
     } else {
       o.e += t.kw / 3 * dw * dw;
       c = 2 * t.kw / 3 * dw * sg;
@@ -931,6 +935,25 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
           if (t.form == 2) {   // K (1 + cos θ): linear centres (LAMMPS angle cosine, DREIDING)
             o.e = t.a * (1 + c);
             dEdth = -t.a * std::sin(th);
+          } else if (t.form == 3) {   // UFF K [C0 + C1 cos θ + C2 cos 2θ] with the C from θ0 (LAMMPS angle fourier)
+            const double s0 = std::sin(t.b), c0 = std::cos(t.b);
+            const double C2 = 1 / (4 * std::max(s0 * s0, 1e-8)), C1 = -4 * C2 * c0, C0 = C2 * (2 * c0 * c0 + 1);
+            o.e = t.a * (C0 + C1 * c + C2 * std::cos(2 * th));
+            dEdth = -t.a * (C1 * std::sin(th) + 2 * C2 * std::sin(2 * th));
+          } else if (t.form > 10) {   // UFF K (1 − cos nθ) / n², n = form − 10; n = 1 is K (1 + cos θ) (LAMMPS cosine/periodic)
+            const int nn = t.form - 10;
+            if (nn == 1) {
+              o.e = t.a * (1 + c);
+              dEdth = -t.a * std::sin(th);
+            } else {
+              o.e = t.a * (1 - std::cos(nn * th)) / (nn * nn);
+              dEdth = t.a * std::sin(nn * th) / nn;
+            }
+            if (c > 0.8660) {   // UFF's wall below 30°, where these periodic forms have a spurious minimum (as RDKit)
+              const double w = std::exp(-20 * (th - t.b + 0.25));
+              o.e += w;
+              dEdth += -20 * w;
+            }
           } else {
             o.e = t.a * dc * dc;
             dEdth = -2 * t.a * dc * std::sin(th);

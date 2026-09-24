@@ -1,5 +1,6 @@
 // CAPS polymer builder: chains of any repeat unit grown into a periodic cell (see polymer.hpp).
 #include "caps/polymer.hpp"
+#include "caps/uff.hpp"
 
 #include <algorithm>
 #include <array>
@@ -143,7 +144,12 @@ Template make_template(const std::string& name, const std::string& smiles, const
   std::vector<Vec3> pos = embed(g, eo);
   if (!ff.empty()) {
     std::vector<std::string> fn;
-    const auto f = molecule_forcefield(g, ff, "gasteiger", fn);
+    auto f = molecule_forcefield(g, ff, "gasteiger", fn, nullptr, &pos);
+    if (!f && !is_uff(ff)) {   // units the chosen force field cannot type (silicones, phosphazenes …): UFF
+      std::vector<std::string> un;
+      f = molecule_forcefield(g, "uff", "gasteiger", un, nullptr, &pos);
+      if (f) fn.clear();
+    }
     std::string why;
     if (!f || !minimise_molecule(g, f, 0.05, pos, nullptr, &why))
       notes.push_back(name + ": unit geometry from the embedding" + (fn.empty() ? (why.empty() ? "" : " (" + why + ")") : " (" + fn.front() + ")"));
@@ -668,7 +674,6 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     }
     std::vector<Vec3> best, trial(size_t(t.n));
     double best_m = -1e9;
-    int dbg_a = -1, dbg_b = -1;
     std::vector<double> gv(t.group_kind.size());
     for (int tr = 0; tr < trials; ++tr) {
       const double root_t = draw(root_kind, 0);
@@ -695,7 +700,6 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
       }
       // worst margin against everything placed, and within the unit beyond three bonds
       double worst = 1e9;
-      int wa = -1, wb = -1;
       for (int a = 0; a < t.n && worst > best_m; ++a) {
         const Vec3& x = trial[size_t(a)];
         cell.near(x, [&](int id) {
@@ -709,13 +713,13 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
           }
           const double d = norm(cell.mi(x - cell.x[size_t(id)]));
           const double m = d - f * limit(t.z[size_t(a)], cell.z[size_t(id)]);
-          if (m < worst) worst = m, wa = a, wb = cell.chain[size_t(id)] == ci ? cell.local[size_t(id)] : -1000 - cell.chain[size_t(id)];
+          if (m < worst) worst = m;
         });
         for (int b = a + 1; b < t.n; ++b)
           if (auto it = excl[size_t(a)].find(base + b); it == excl[size_t(a)].end() || it->second > 3) {
             const double f = it == excl[size_t(a)].end() ? 1.0 : 0.85;
             const double m = norm(cell.mi(x - trial[size_t(b)])) - f * limit(t.z[size_t(a)], t.z[size_t(b)]);
-            if (m < worst) worst = m, wa = a, wb = base + b;
+            if (m < worst) worst = m;
           }
       }
       // look ahead: the next unit's head must have room at this unit's free valence (else the chain folds into itself)
@@ -736,17 +740,16 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
             }
           }
           const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limit(6, cell.z[size_t(id)]);
-          if (m < worst) worst = m, wa = -2, wb = cell.local[size_t(id)];
+          if (m < worst) worst = m;
         });
         for (int b = 0; b < t.n; ++b)
           if (auto it = ex.find(base + b); it == ex.end() || it->second > 3) {
             const double m = norm(cell.mi(nx - trial[size_t(b)])) - (it == ex.end() ? 1.0 : 0.85) * limit(6, t.z[size_t(b)]);
-            if (m < worst) worst = m, wa = -2, wb = base + b;
+            if (m < worst) worst = m;
           }
       }
       if (worst > best_m) {
         best_m = worst;
-        dbg_a = wa, dbg_b = wb;
         best = trial;
         if (o.comfortable > 0 && worst >= o.comfortable) break;
       }

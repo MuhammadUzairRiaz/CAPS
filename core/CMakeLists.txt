@@ -27,6 +27,7 @@ add_library(caps_core STATIC
   src/image.cpp
   src/svg.cpp
   src/smiles.cpp
+  src/uff.cpp
   src/embed.cpp
   src/bench.cpp
   src/polymer.cpp
