@@ -107,8 +107,14 @@ ForceField assign_gaff(const System& s);
 struct EnergyOptions {
   double cutoff = 10.0;          // Å, LJ and Coulomb
   double skin = 2.0;             // Å, neighbour-list margin (the LAMMPS default for units real)
-  bool coulomb = true;           // damped shifted force (Fennell & Gezelter, J. Chem. Phys. 2006)
+  bool coulomb = true;           // electrostatics on
+  // Long-range electrostatics: damped shifted force (Fennell & Gezelter, J. Chem. Phys. 2006), a cut-off method,
+  // or smooth particle-mesh Ewald (Essmann et al. 1995; reciprocal part in Fortran), periodic cells only.
+  enum class Electrostatics { DSF, PME } electrostatics = Electrostatics::DSF;
   double dsf_alpha = 0.2;        // Å⁻¹
+  double ewald_rtol = 1e-5;      // PME: erfc(β rc) = ewald_rtol sets the Ewald coefficient β (as GROMACS)
+  double pme_spacing = 1.0;      // PME: largest grid spacing, Å
+  int pme_order = 5;             // PME: B-spline order (5, as LAMMPS pppm)
   double force_cap = 0.0;        // > 0: LJ becomes linear inside the radius where |F| reaches the cap (push-off)
   int threads = 0;               // worker threads for pair terms; 0 = one per hardware thread (at most 16)
   bool tail = true;              // LJ long-range tail corrections to energy and pressure (homogeneous fluid beyond rc)
