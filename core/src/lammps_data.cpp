@@ -4,6 +4,7 @@
 // "skip" lines for the types of the other sub-styles, as LAMMPS reads them.
 //
 // Checked term by term, energies and forces, against LAMMPS for each force-field family (bench/ff/check_data_lammps.py).
+#include <cstdio>
 #include <algorithm>
 #include <array>
 #include <cmath>

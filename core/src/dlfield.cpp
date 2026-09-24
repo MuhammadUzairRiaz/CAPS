@@ -1,6 +1,7 @@
 // DL_FIELD force-field libraries (C. W. Yong, STFC Daresbury Laboratory): .par parameters, .sf atom types,
 // .bci bond charge increments. Each family's columns are interpreted the way DL_FIELD writes them for LAMMPS
 // (bench/ff/compare_dlfield.py checks CAPS against DL_FIELD's own LAMMPS output, term by term).
+#include <tuple>
 #include <algorithm>
 #include <cmath>
 #include <fstream>

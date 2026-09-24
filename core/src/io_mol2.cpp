@@ -1,5 +1,6 @@
 // Tripos mol2 reader and writer (the preferred input for force-field assignment: explicit bonds, bond orders,
 // atom types and charges, so nothing is guessed from distances).
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <fstream>

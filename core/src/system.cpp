@@ -1,5 +1,6 @@
 #include "caps/system.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <numeric>
 #include <unordered_map>

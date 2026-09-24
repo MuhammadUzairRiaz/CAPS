@@ -9,6 +9,7 @@
 // track a few units; a chain that cannot continue restarts elsewhere.
 #include "caps/grow.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cmath>
 #include <random>

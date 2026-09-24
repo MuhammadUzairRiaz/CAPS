@@ -1,6 +1,7 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
 
+#include <tuple>
 #include <algorithm>
 #include <cmath>
 #include <fstream>
