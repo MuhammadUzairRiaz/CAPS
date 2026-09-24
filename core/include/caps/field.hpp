@@ -26,12 +26,16 @@ struct HarmonicTorsion { uint32_t i, j, k, l; double k2, chi0; };          // k2
 // Inversion (LAMMPS improper_style inversion/harmonic, DL_POLY / DL_FIELD "inversion"): c is the centre;
 // E = (K/3) Σ (ω − ω0)² over the three angles ω between one bond from c and the plane of the other two (0 ≤ ω ≤ π/2).
 // form 0: E = (K/3) Σ (ω − ω0)²; form 1 (DREIDING "plan", LAMMPS umbrella with ω0 = 0 over the three
-// permutations at K/3): E = (K/3) Σ (1 − cos ω).
+// permutations at K/3): E = (K/3) Σ (1 − cos ω); form 2 (UFF P, As, Sb, Bi): E = (K/3) Σ [C0 + C1 cos ω + C2 cos 2ω] with
+// C2 = 1, C1 = −4 cos ω0, C0 = −(C1 cos ω0 + C2 cos 2ω0) (LAMMPS improper fourier).
 struct InversionTerm { uint32_t c, a, b, d; double kw, w0; int form = 0; };
 
 // Other bonded forms. Bonds: form 1 Morse D [1 − e^(−α(r − r0))]² (a = D, b = α, c = r0); form 2 GROMOS quartic
 // K (r² − r0²)² as LAMMPS bond gromos (K = ¼ of GROMOS's kb; a = K, b = r0). Angles: form 1 K (cos θ − cos θ0)² (LAMMPS cosine/squared; a = K, b = θ0);
-// form 2 K (1 + cos θ) (LAMMPS cosine, linear centres).
+// form 2 K (1 + cos θ) (LAMMPS cosine, linear centres); form 3 (UFF) K [C0 + C1 cos θ + C2 cos 2θ] with C2 = 1/(4 sin²θ0),
+// C1 = −4 C2 cos θ0, C0 = C2 (2 cos²θ0 + 1) (LAMMPS fourier; a = K, b = θ0); forms 11–14 (UFF) K (1 − cos nθ)/n² with
+// n = form − 10, n = 1 meaning K (1 + cos θ), plus UFF's wall e^(−20 (θ − θ0 + 0.25)) below 30° (LAMMPS cosine/periodic,
+// without the wall; b = θ0).
 // Urey–Bradley: K (r13 − r0)² between the end atoms of an angle, counted as angle energy (CHARMM).
 struct BondX { uint32_t i, j; int form; double a, b, c; };
 struct AngleX { uint32_t i, j, k; int form; double a, b; };

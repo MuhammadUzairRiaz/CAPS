@@ -17,6 +17,7 @@
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/typing.hpp"
+#include "caps/uff.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/grow.hpp"
@@ -119,6 +120,12 @@ ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& 
   if (!o.count("--ff")) {
     if (!quiet) std::printf("force field: the built-in GAFF (C and H); give --ff for another\n");
     return assign_gaff(s0);
+  }
+  if (is_uff(o["--ff"])) {
+    UffOptions uo;
+    uo.keep_charges = o.count("--charges") && o["--charges"] == "keep";
+    if (!quiet) std::printf("force field: UFF (every element; %s)\n", uo.keep_charges ? "charges from the file" : "no charges");
+    return assign_uff(s0, uo);
   }
   FFDef def = load_forcefield(o["--ff"]);
   if (o.count("--typing")) load_typing(def, o["--typing"]);
@@ -455,59 +462,71 @@ int main(int argc, char** argv) {
       if (sub == "apply") {
         if (pos.size() < 2 || !o.count("--ff")) return usage();
         System s = load(pos[1], o);
-        FFDef ff = load_forcefield(o["--ff"]);
-        if (o.count("--overlay")) merge_forcefield(ff, load_forcefield(o["--overlay"]));
-        if (o.count("--typing"))
-          for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
-            std::string f;
-            std::getline(ts, f, ',');
-            if (!f.empty()) load_typing(ff, f);
-          }
-        std::vector<std::string> types;
-        // without --types, atoms are typed by the force field's rules when it has them (else the file's atom names)
-        const bool auto_type = !ff.typing.empty() && !o.count("--types") && !o.count("--names");
-        if (auto_type) {
-          const TypingResult r = assign_types(s, ff);
-          for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
-          if (r.untyped) {
-            std::string l;
-            for (size_t i = 0; i < s.atoms.size(); ++i)
-              if (r.types[i].empty()) l += " " + std::to_string(i + 1) + element(s.atoms[i].element).symbol;
-            throw std::runtime_error(std::to_string(r.untyped) + " atoms match no typing rule:" + l + " (give them with --types)");
-          }
-          std::printf("typed %zu atoms automatically (%d ambiguous; caps ff type --explain shows why)\n", s.atoms.size(), r.ambiguous);
-          types = r.types;
-        }
-        if (auto_type) {
-        } else if (o.count("--types")) {
-          // one line per atom, or "index type" lines (1-based) to change only some atoms
-          for (const auto& a : s.atoms) types.push_back(a.name);
-          std::ifstream tf(o["--types"]);
-          if (!tf) throw std::runtime_error("cannot open " + o["--types"]);
-          std::string line;
-          size_t k = 0;
-          while (std::getline(tf, line)) {
-            if (auto h = line.find('#'); h != std::string::npos) line = line.substr(0, h);
-            std::istringstream ls(line);
-            std::vector<std::string> w;
-            for (std::string x; ls >> x;) w.push_back(x);
-            if (w.empty()) continue;
-            if (w.size() >= 2) {
-              const size_t i = std::stoul(w[0]);
-              if (i < 1 || i > types.size()) throw std::runtime_error("atom " + w[0] + " out of range in " + o["--types"]);
-              types[i - 1] = w[1];
-            } else {
-              if (k >= types.size()) throw std::runtime_error("more types than atoms in " + o["--types"]);
-              types[k++] = w[0];
-            }
-          }
-        } else {
-          for (const auto& a : s.atoms) types.push_back(a.name);
-        }
-        const std::string charges = o.count("--charges") ? o["--charges"] : (s.has_charges ? "keep" : "types");
+        const bool uff = is_uff(o["--ff"]);
+        ForceField f;
         ParamReport rep;
-        const ForceField f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
-        for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
+        double cutoff = 10.0;
+        if (uff) {
+          UffOptions uo;
+          uo.keep_charges = o.count("--charges") && o["--charges"] == "keep";
+          f = assign_uff(s, uo);
+          for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
+        } else {
+          FFDef ff = load_forcefield(o["--ff"]);
+          if (o.count("--overlay")) merge_forcefield(ff, load_forcefield(o["--overlay"]));
+          if (o.count("--typing"))
+            for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
+              std::string f;
+              std::getline(ts, f, ',');
+              if (!f.empty()) load_typing(ff, f);
+            }
+          std::vector<std::string> types;
+          // without --types, atoms are typed by the force field's rules when it has them (else the file's atom names)
+          const bool auto_type = !ff.typing.empty() && !o.count("--types") && !o.count("--names");
+          if (auto_type) {
+            const TypingResult r = assign_types(s, ff);
+            for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
+            if (r.untyped) {
+              std::string l;
+              for (size_t i = 0; i < s.atoms.size(); ++i)
+                if (r.types[i].empty()) l += " " + std::to_string(i + 1) + element(s.atoms[i].element).symbol;
+              throw std::runtime_error(std::to_string(r.untyped) + " atoms match no typing rule:" + l + " (give them with --types)");
+            }
+            std::printf("typed %zu atoms automatically (%d ambiguous; caps ff type --explain shows why)\n", s.atoms.size(), r.ambiguous);
+            types = r.types;
+          }
+          if (auto_type) {
+          } else if (o.count("--types")) {
+            // one line per atom, or "index type" lines (1-based) to change only some atoms
+            for (const auto& a : s.atoms) types.push_back(a.name);
+            std::ifstream tf(o["--types"]);
+            if (!tf) throw std::runtime_error("cannot open " + o["--types"]);
+            std::string line;
+            size_t k = 0;
+            while (std::getline(tf, line)) {
+              if (auto h = line.find('#'); h != std::string::npos) line = line.substr(0, h);
+              std::istringstream ls(line);
+              std::vector<std::string> w;
+              for (std::string x; ls >> x;) w.push_back(x);
+              if (w.empty()) continue;
+              if (w.size() >= 2) {
+                const size_t i = std::stoul(w[0]);
+                if (i < 1 || i > types.size()) throw std::runtime_error("atom " + w[0] + " out of range in " + o["--types"]);
+                types[i - 1] = w[1];
+              } else {
+                if (k >= types.size()) throw std::runtime_error("more types than atoms in " + o["--types"]);
+                types[k++] = w[0];
+              }
+            }
+          } else {
+            for (const auto& a : s.atoms) types.push_back(a.name);
+          }
+          const std::string charges = o.count("--charges") ? o["--charges"] : (s.has_charges ? "keep" : "types");
+          ParamReport rep;
+          f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
+          cutoff = ff.cutoff;
+          for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
+        }
         for (const auto& n : rep.notes) std::printf("note: %s\n", n.c_str());
         if (!rep.missing.empty()) {
           std::printf("missing parameters (%zu):\n", rep.missing.size());
@@ -536,11 +555,13 @@ int main(int argc, char** argv) {
             std::printf("improper2 %u %u %u %u  %.10g %.10g  %.10g %.10g %.10g %.10g %.10g %.10g\n", d.i + 1, d.j + 1, d.k + 1, d.l + 1, d.kchi,
                         d.chi0 * R, d.m1, d.m2, d.m3, d.theta1 * R, d.theta2 * R, d.theta3 * R);
           for (const auto& d : f.inversions)
-            std::printf("inversion %u %u %u %u  %.10g %.10g %s\n", d.c + 1, d.a + 1, d.b + 1, d.d + 1, d.kw, d.w0 * R, d.form == 1 ? "planar" : "harmonic");
+            std::printf("inversion %u %u %u %u  %.10g %.10g %s\n", d.c + 1, d.a + 1, d.b + 1, d.d + 1, d.kw, d.w0 * R,
+                        d.form == 1 ? "planar" : d.form == 2 ? "fourier" : "harmonic");
           for (const auto& b : f.bonds_x)
             std::printf("bondx %u %u  %s %.10g %.10g %.10g\n", b.i + 1, b.j + 1, b.form == 1 ? "morse" : "gromos", b.a, b.b, b.c);
           for (const auto& a : f.angles_x)
-            std::printf("anglex %u %u %u  %s %.10g %.10g\n", a.i + 1, a.j + 1, a.k + 1, a.form == 2 ? "cosine" : "cosine/squared", a.a, a.b * R);
+            std::printf("anglex %u %u %u  %s %.10g %.10g\n", a.i + 1, a.j + 1, a.k + 1,
+                        a.form == 2 ? "cosine" : a.form == 3 ? "fourier" : a.form > 10 ? ("periodic/" + std::to_string(a.form - 10)).c_str() : "cosine/squared", a.a, a.b * R);
           for (const auto& u : f.urey_bradley) std::printf("ub %u %u  %.10g %.10g\n", u.i + 1, u.k + 1, u.kub, u.r0);
           for (const auto& [ab, pf] : f.pair_func)
             std::printf("pairfunc %s %s  %s %.10g %.10g %.10g\n", f.type_names[ab.first].c_str(), f.type_names[ab.second].c_str(),
@@ -563,7 +584,7 @@ int main(int argc, char** argv) {
             }
         }
         EnergyOptions eo;
-        eo.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : ff.cutoff;
+        eo.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : cutoff;
         if (o.count("--no-tail")) eo.tail = false;
         electrostatics(eo, o);
         Evaluator ev(f, eo);

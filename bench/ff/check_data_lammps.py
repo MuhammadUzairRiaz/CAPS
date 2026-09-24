@@ -54,6 +54,11 @@ CASES = [
     # a cusp of K(χ − χ0)² where the two programs take different one-sided slopes.)
     ("COMPASS polystyrene + class I overlay (hybrid in every kind)", ("compass-ps",), "compass-published-moltemplate", "types", "keys"),
     ("CGenFF toluene (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff-dlfield", "gasteiger", "rules"),
+    # UFF (every element): Fourier and periodic angles (linear, trigonal, square planar, octahedral, trigonal
+    # bipyramid), sp2 and pyramidal-P inversions (improper fourier), group-16 torsions, full 1-4 van der Waals
+    ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
+                                               "FP(F)(F)(F)F.C[Si](C)(C)O[Si](C)(C)C.CSSC"), "uff", "types", "rules"),
+    ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
 ]
 
 
@@ -65,6 +70,8 @@ OVERLAY = """{"format": "caps-forcefield", "version": 1, "name": "class I test o
 
 
 def ff_file(fid):
+    if fid == "uff":   # built in: typed from elements and bonds
+        return "uff"
     p = os.path.join(FF, fid + ".json")
     return p if os.path.exists(p) else None
 
@@ -74,6 +81,10 @@ def structure(src, base):
     kind = src[0]
     if kind == "file":
         return src[1], None
+    if kind == "smiles":   # built and cleaned up by CAPS with UFF
+        m = os.path.join(work, base + ".mol2")
+        subprocess.run([CAPS, "build", src[1], "--ff", "uff", "-o", m], capture_output=True, check=True)
+        return m, None
     if kind == "compass-ps":   # polystyrene melt with COMPASS types (from the GAFF2 typing: c3 → c4, ca → c3a, H → h1)
         ps = os.path.join(ROOT, "samples", "ps_melt.data")
         gt = os.path.join(work, base + ".gaff")

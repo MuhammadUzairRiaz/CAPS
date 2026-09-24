@@ -9,7 +9,7 @@
 //                 coordinates in four dimensions, then squeezed into three (as in ETKDG, Riniker & Landrum,
 //                 J. Chem. Inf. Model. 55, 2562 (2015), without its experimental torsion preferences).
 //  build_molecule Several embeddings, each minimised with a force field from CAPS Field when one is given (GAFF2 by
-//                 default in the Studio); conformers ranked by energy.
+//                 default in the Studio, or UFF for any element); conformers ranked by energy.
 #pragma once
 #include <cstdint>
 #include <stdexcept>
@@ -91,7 +91,7 @@ std::string write_smiles(const MolGraph& g);
 struct BuildOptions {
   int conformers = 1;
   uint64_t seed = 1;
-  std::string forcefield;   // caps-forcefield JSON with typing rules; empty: embedding only
+  std::string forcefield;   // caps-forcefield JSON with typing rules, or "uff"; empty: embedding only
   std::string charges = "gasteiger";
   double ftol = 0.05;       // kcal/mol/Å
 };
@@ -112,10 +112,12 @@ struct BuildResult {
 };
 
 BuildResult build_molecule(const std::string& smiles, const BuildOptions& o = {});
-// A force field for a molecule (hydrogens added) from a caps-forcefield JSON with typing rules; null (with the reason
-// in notes) when it cannot type or parameterise every atom.
+// A force field for a molecule (hydrogens added) from a caps-forcefield JSON with typing rules, or UFF when path is
+// "uff" (then pos, an embedding, sets the axial pairs of five-coordinate centres); null (with the reason in notes)
+// when it cannot type or parameterise every atom.
 std::shared_ptr<const ForceField> molecule_forcefield(const MolGraph& g, const std::string& path, const std::string& charges,
-                                                      std::vector<std::string>& notes, std::string* name = nullptr);
+                                                      std::vector<std::string>& notes, std::string* name = nullptr,
+                                                      const std::vector<Vec3>* pos = nullptr);
 // Minimises pos with ff (no cell); false (and why) when it fails or inverts a specified centre.
 bool minimise_molecule(const MolGraph& g, const std::shared_ptr<const ForceField>& ff, double ftol, std::vector<Vec3>& pos,
                        double* energy = nullptr, std::string* why = nullptr);

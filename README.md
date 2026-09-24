@@ -17,10 +17,11 @@ The product and engineering specification is `REDESIGN_PROMPT.md`. The screen de
 | Analysis: molecule shape (Rg, gyration tensor, κ²), g(r) with cell list, distance / angle / dihedral | `core/src/analysis.cpp` | working, tested |
 | Renderer: ball-and-stick, space filling, sticks, no-H, backbone; colour by element / molecule / type / distance; outlines, depth cue, picking | `core/src/render.cpp` | working |
 | Figure export: PNG (dark, white or transparent with a real alpha channel) and SVG (no background shape when transparent) | `core/src/image.cpp`, `svg.cpp` | working, tested |
-| Grow: all-atom polymer chains grown inside a periodic cubic cell. Any repeat unit written as SMILES with two attachment points (`*CC(*)c1ccccc1`); homopolymers and copolymers of up to eight units (alternating, block, random with a share per unit, gradient, pattern); tacticity by mirrored units; unit templates embedded and cleaned with GAFF2; periodic contact checks against every placed atom, look-ahead, back-tracking and restarts. A curated polystyrene grower with GAFF names and Gasteiger charges | `core/src/polymer.cpp`, `grow.cpp` | working, tested |
+| Grow: all-atom polymer chains grown inside a periodic cubic cell. Any repeat unit written as SMILES with two attachment points (`*CC(*)c1ccccc1`); homopolymers and copolymers of up to eight units (alternating, block, random with a share per unit, gradient, pattern); tacticity by mirrored units; unit templates embedded and cleaned with GAFF2 (UFF for units GAFF2 cannot type, such as silicones); periodic contact checks against every placed atom, look-ahead, back-tracking and restarts. A curated polystyrene grower with GAFF names and Gasteiger charges | `core/src/polymer.cpp`, `grow.cpp` | working, tested |
 | Polymer library: 111 repeat units as SMILES and 16 copolymer presets (natural rubber, ENR-25/50, high-cis BR, NBR, butyl, chloroprene, E-SBR, SBR, SAN, EVA …) | `data/polymers/library.json` | data |
-| Molecule builder: SMILES parser and writer (chirality, E/Z, rings, brackets), 2D depiction, distance-bounds embedding (4D → 3D) with chirality and planarity, GAFF2 clean-up, conformers ranked by energy | `core/src/smiles.cpp`, `embed.cpp` | working, tested |
+| Molecule builder: SMILES parser and writer (chirality, E/Z, rings, brackets), 2D depiction, distance-bounds embedding (4D → 3D) with chirality, planarity and square-planar / trigonal-bipyramidal / octahedral centres, GAFF2 or UFF clean-up (UFF whenever the chosen force field cannot type every atom), conformers ranked by energy | `core/src/smiles.cpp`, `embed.cpp` | working, tested |
 | Field (first slice): GAFF 1.81 typing for hydrocarbons (c3, ca, hc, ha) with the reason for each type; bonds, angles, Fourier torsions, impropers, LJ with arithmetic mixing, damped shifted force electrostatics or particle-mesh Ewald, AMBER 1-4 scaling; periodic neighbour list that includes images in cells narrower than twice the cut-off; multithreaded pair terms | `core/src/field.cpp` | working, tested against LAMMPS |
+| UFF, the Universal Force Field (Rappé et al. 1992), for every element H–Lr: typed from elements and bonds (hybridisation from the steric number, conjugation, oxidation state, metal coordination geometry), UFF's bond, Fourier / periodic angle, torsion and inversion rules and full 1-4 van der Waals; clean-up in the molecule and polymer builders, and a force field for Field, Relax, Dynamics and LAMMPS export | `core/src/uff.cpp` | working, tested against LAMMPS |
 | Particle-mesh Ewald: smooth PME (Essmann et al. 1995) — reciprocal part in Fortran 2018 (B-spline spreading, mixed-radix FFT, influence function, forces, virial tensor; the plain Ewald sum as a reference), run on the evaluator's threads; real space, self and exclusion terms in C++; agrees with LAMMPS's Ewald sum | `core/fortran/caps_kspace.f90`, `core/src/kspace.cpp` | working, tested against LAMMPS |
 | Relax: steepest descent, Polak–Ribière CG, L-BFGS (m = 10) and FIRE; capped-force push-off; affine compression to a target density; isotropic box relaxation to a pressure; one frame recorded per stage | `core/src/relax.cpp` | working, tested |
 | LAMMPS data export with the force field (coefficients, angles, dihedrals, impropers, velocities and the matching styles); LAMMPS dump export of whole trajectories | `core/src/relax.cpp`, `io_lammps.cpp` | working, tested |
@@ -326,11 +327,17 @@ The data file's header and the input script hold the matching LAMMPS commands. S
 | Check (`bench/ff/check_data_lammps.py`, LAMMPS `run 0` on the written files) | Result |
 |---|---|
 | PCFF and COMPASS from DL_FIELD (class II + Fourier, hybrid), CVFF, OPLS-AA, GAFF, GAFF2, DREIDING (umbrella), ionic crystals (Buckingham, periodic), a periodic polystyrene melt with GAFF2 and with PCFF, COMPASS with a class I overlay (hybrid in every kind, skip lines in every class II section) | 16 of 16: every energy term to ≤ 6 × 10⁻⁷ (relative), every force to ≤ 1.4 × 10⁻⁶ kcal/mol/Å |
+| UFF: a mixed molecule set (P, S, Si, Pt, F, Cl; Fourier and cosine/periodic angles, umbrella and fourier impropers) and a periodic polystyrene melt | 2 of 2: energy terms ≤ 2 × 10⁻⁷ (relative), forces ≤ 2.8 × 10⁻⁶ kcal/mol/Å |
 | CGenFF (separate 1-4 LJ) | refused with the reason |
 
 Found on the way: CAPS's damped-shifted-force self energy left out the force-shift part of the shift constant that
 LAMMPS `coul/dsf` includes (the r → 0 limit of the same pair potential). A constant, so forces were already equal;
 Coulomb energies now equal LAMMPS's too (2.2 kcal/mol for favipiravir with PCFF's bond-increment charges).
+
+UFF is built in rather than kept as JSON: `--ff uff` (CLI), "UFF · every element" (molecule builder) and "UFF (Rappé
+1992) · every element" (Field) type any structure from its elements and bonds. The atomic parameters are the UFF table
+as RDKit distributes it (BSD licence, `licenses/RDKit-UFF-parameters.txt`); CAPS writes its own typer and terms. UFF
+runs without charges by default, as a clean-up force field; `--charges keep` uses the file's.
 
 GAFF and DL_FIELD's OPLS carry no charges on their types: use `--charges gasteiger` (or charges from the file). Water
 defaults to each force field's TIP3P (or CVFF's own); other water models are one-line overlay rules files.
