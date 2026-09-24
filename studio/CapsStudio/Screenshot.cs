@@ -19,6 +19,9 @@ internal static class Screenshot
             .WithCapsFonts()
             .SetupWithoutStarting();
 
+        // never touch the user's recent list: $CAPS_RECENT_DIR, else a scratch folder
+        ViewModels.RecentFiles.Override = Environment.GetEnvironmentVariable("CAPS_RECENT_DIR") is { Length: > 0 } rd ? rd
+            : Path.Combine(Path.GetTempPath(), "caps-screenshot-recent");
         var w = new MainWindow { Width = 1440, Height = 900 };
         w.Show();
         if (!string.IsNullOrEmpty(file)) w.OpenOnStart(file, string.IsNullOrEmpty(topo) ? null : topo);
@@ -36,6 +39,7 @@ internal static class Screenshot
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
+            if (kv[0] == "quick") w.ViewModel.QuickText = kv[1];
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);

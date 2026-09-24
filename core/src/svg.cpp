@@ -76,6 +76,10 @@ std::string render_svg(const System& s, const Camera& cam, const RenderOptions& 
   for (const auto& c : corners) { const Vec3 r = rot(c); ex = std::max(ex, std::fabs(r[0] - cam.pan_x)); ey = std::max(ey, std::fabs(r[1] - cam.pan_y)); }
   for (size_t i = 0; i < n; ++i)
     if (show[i]) { const Vec3 r = rot(s.atoms[i].pos); ex = std::max(ex, std::fabs(r[0] - cam.pan_x)); ey = std::max(ey, std::fabs(r[1] - cam.pan_y)); }
+  {
+    const double pad = opt.style == Style::SpaceFilling ? 2.0 : 1.0;   // as the raster view (render.cpp)
+    ex = std::max(ex + pad, 2.5); ey = std::max(ey + pad, 2.5);
+  }
   const double scale = std::min(W * 0.45 / ex, H * 0.45 / ey) * cam.zoom;
   auto P = [&](const Vec3& p, double& x, double& y, double& z) { const Vec3 r = rot(p); x = W / 2 + r[0] * scale; y = H / 2 - r[1] * scale; z = r[2]; };
 

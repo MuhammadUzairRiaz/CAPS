@@ -44,7 +44,7 @@ public sealed record PackItem(string Name, string Detail, string Count, string C
     public Avalonia.Media.IBrush Brush => Avalonia.Media.Brush.Parse(Colour);
 }
 
-public sealed class MainViewModel : ObservableObject
+public sealed partial class MainViewModel : ObservableObject
 {
     public static readonly string[] Styles = ["Ball & stick", "Space filling", "Sticks", "No hydrogens", "Backbone"];
     public static readonly string[] ColourModes = ["Element", "Molecule", "Type", "Distance to molecule centre"];
@@ -290,7 +290,11 @@ public sealed class MainViewModel : ObservableObject
                 m.Length > 500 ? " · first 500 listed" : "");
     }
 
-    public void Open(string path, string? topology = null) => Show(CapsDocument.Open(path, topology), System.IO.Path.GetFileName(path));
+    public void Open(string path, string? topology = null)
+    {
+        Show(CapsDocument.Open(path, topology), System.IO.Path.GetFileName(path));
+        if (_doc?.Path == path) Remember(path, topology);
+    }
 
     // ---------------------------------------------------------------- modules
     private int _module = 8;   // 0 Grow, 1 Analyze, 2 Relax, 3 Dynamics, 4 Equilibrate, 5 Pack, 6 React, 7 Field, 8 Studio
@@ -1334,6 +1338,7 @@ public sealed class MainViewModel : ObservableObject
         GrownUnsaved = false;
         Title = System.IO.Path.GetFileName(path);
         Status = $"Saved {path}";
+        Remember(path, null);
     }
 
     private void Show(CapsDocument doc, string title)
@@ -1376,7 +1381,8 @@ public sealed class MainViewModel : ObservableObject
         SummaryRows.Clear();
         StatusCounts = string.Format(inv, "{0:N0} atoms · {1:N0} bonds{2}", s.Atoms, s.Bonds, s.Frames > 1 ? $" · {s.Frames:N0} frames" : "");
         StatusCell = "Cell: none (non-periodic)";
-        HudInfo = s.CellValid != 0 ? string.Format(inv, "{0:N0} molecules · {1:F3} g/cm³", s.Molecules, s.Density) : string.Format(inv, "{0:N0} molecules", s.Molecules);
+        var mols = string.Format(inv, s.Molecules == 1 ? "{0:N0} molecule" : "{0:N0} molecules", s.Molecules);
+        HudInfo = s.CellValid != 0 ? string.Format(inv, "{0} · {1:F3} g/cm³", mols, s.Density) : mols;
         SummaryRows.Add(new("Format", s.Format));
         SummaryRows.Add(new("Atoms", s.Atoms.ToString("N0", inv)));
         SummaryRows.Add(new("Bonds", $"{s.Bonds.ToString("N0", inv)} · {(s.BondsFromFile != 0 ? "from file" : "perceived")}"));
