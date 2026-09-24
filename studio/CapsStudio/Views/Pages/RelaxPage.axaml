@@ -1,0 +1,140 @@
+<!-- CAPS Relax (design/boards/Relax.dc.html): method, push-off and cell; energy and force; constraints; stop criteria. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.RelaxPage" x:DataType="vm:MainViewModel">
+  <p:PageBase.Resources>
+    <v:IntEqualsConverter x:Key="Eq" />
+  </p:PageBase.Resources>
+  <Grid RowDefinitions="Auto,*" Margin="22,16,22,16" RowSpacing="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="3">
+        <TextBlock Text="Relax · CAPS Relax" Classes="title" />
+        <TextBlock Classes="muted"><Run Text="Energy minimisation with the same force field as Dynamics · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Click="OnSave" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Save the structure (LAMMPS data carries the force field)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Classes="primary" Click="OnRelax" IsEnabled="{Binding CanRelax}" IsVisible="{Binding !Relaxing}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="relax" Size="16" VerticalAlignment="Center" /><TextBlock Text="Minimise" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCancel" IsVisible="{Binding Relaxing}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="16" VerticalAlignment="Center" /><TextBlock Text="Cancel" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="470,*,*" RowDefinitions="300,*" ColumnSpacing="16" RowSpacing="16">
+      <!-- left column: method, push-off and cell -->
+      <ScrollViewer Grid.RowSpan="2">
+        <StackPanel Spacing="16" IsEnabled="{Binding !Relaxing}">
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Method" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="8">
+                <RadioButton Classes="choice" GroupName="rmethod" IsChecked="{Binding RelaxMethod, Converter={StaticResource Eq}, ConverterParameter=0}">
+                  <StackPanel Spacing="2"><TextBlock Text="Steepest descent" FontWeight="SemiBold" /><TextBlock Text="Robust first pass for bad contacts" Classes="dim" /></StackPanel>
+                </RadioButton>
+                <RadioButton Classes="choice" GroupName="rmethod" IsChecked="{Binding RelaxMethod, Converter={StaticResource Eq}, ConverterParameter=1}">
+                  <StackPanel Spacing="2"><TextBlock Text="Polak–Ribière conjugate gradient" FontWeight="SemiBold" /><TextBlock Text="Low memory, smooth landscapes" Classes="dim" /></StackPanel>
+                </RadioButton>
+                <RadioButton Classes="choice" GroupName="rmethod" IsChecked="{Binding RelaxMethod, Converter={StaticResource Eq}, ConverterParameter=2}">
+                  <StackPanel Spacing="2"><TextBlock Text="L-BFGS" FontWeight="SemiBold" /><TextBlock Text="Liu &amp; Nocedal, Math. Program. 45, 503 (1989) · m = 10" Classes="dim" /></StackPanel>
+                </RadioButton>
+                <RadioButton Classes="choice" GroupName="rmethod" IsChecked="{Binding RelaxMethod, Converter={StaticResource Eq}, ConverterParameter=3}">
+                  <StackPanel Spacing="2"><TextBlock Text="FIRE" FontWeight="SemiBold" /><TextBlock Text="Bitzek et al., Phys. Rev. Lett. 97, 170201 (2006)" Classes="dim" /></StackPanel>
+                </RadioButton>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Push-off &amp; cell" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="12">
+                <CheckBox Classes="toggle" Content="Soft-core push-off before minimising" IsChecked="{Binding RelaxPushoff}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
+                  <TextBlock Text="Auhl et al., J. Chem. Phys. 119, 12718 (2003): LJ forces capped at 5 → 20 → 100 → 500 kcal/mol/Å" Classes="dim" TextWrapping="Wrap" MaxWidth="400" />
+                </StackPanel>
+                <CheckBox Classes="toggle" Content="Compress to a target density" IsChecked="{Binding RelaxCompress}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RelaxCompress}">
+                  <TextBlock Text="Target density (g/cm³)" Classes="label" /><TextBlock Grid.Column="1" Text="Step per stage" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxDensityD}" Minimum="0.05" Maximum="3" Increment="0.05" FormatString="0.000" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxStepD}" Minimum="0.005" Maximum="0.5" Increment="0.01" FormatString="0.000" />
+                </Grid>
+                <CheckBox Classes="toggle" Content="Relax box volume (isotropic)" IsChecked="{Binding RelaxBox}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Pressure (atm)" Classes="label" /><TextBlock Grid.Column="1" Text="Cut-off (Å)" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxPressureD}" Increment="1" FormatString="0.0" IsEnabled="{Binding RelaxBox}" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxCutoffD}" Minimum="4" Maximum="30" Increment="0.5" FormatString="0.0" />
+                </Grid>
+                <CheckBox Classes="toggle" Content="Electrostatics (damped shifted force)" IsChecked="{Binding RelaxCoulomb}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- energy and force -->
+      <Border Grid.Column="1" Classes="card">
+        <Grid RowDefinitions="38,*">
+          <Border Classes="phead">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding Relaxing}"><TextBlock Text="running" Foreground="{DynamicResource AccB}" /></Border>
+              <TextBlock Text="Energy" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <v:LinePlot Grid.Row="1" x:Name="EnergyPlot" Margin="10,6,12,8" AutoRange="True" XLabel="iteration" YLabel="E (kcal/mol)" />
+        </Grid>
+      </Border>
+      <Border Grid.Column="2" Classes="card">
+        <Grid RowDefinitions="38,*">
+          <Border Classes="phead">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Foreground="{DynamicResource MutedB}"><Run Text="target " /><Run Text="{Binding RelaxFtolD}" /></TextBlock></Border>
+              <TextBlock Text="Max force" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <v:LinePlot Grid.Row="1" x:Name="ForcePlot" Margin="10,6,12,8" AutoRange="True" XLabel="iteration" YLabel="log₁₀ |F|max (kcal/mol/Å)" />
+        </Grid>
+      </Border>
+
+      <!-- constraints (coming) and the report -->
+      <Border Grid.Row="1" Grid.Column="1" Classes="card">
+        <Grid RowDefinitions="38,Auto,*">
+          <Border Classes="phead"><TextBlock Text="Constraints &amp; restraints" Classes="h2" VerticalAlignment="Center" /></Border>
+          <StackPanel Grid.Row="1" Margin="16,12,16,8" Spacing="8" IsEnabled="False" ToolTip.Tip="Fixed atoms and restraints arrive with Relax 2" ToolTip.ShowOnDisabled="True">
+            <Border Classes="choice"><StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="pin" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Fixed atoms" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="coming" Classes="dim" VerticalAlignment="Center" /></StackPanel></Border>
+            <Border Classes="choice"><StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Distance restraint" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="coming" Classes="dim" VerticalAlignment="Center" /></StackPanel></Border>
+          </StackPanel>
+          <ScrollViewer Grid.Row="2" Margin="16,4,16,12">
+            <TextBlock Text="{Binding RelaxLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- stop criteria -->
+      <Border Grid.Row="1" Grid.Column="2" Classes="card">
+        <Grid RowDefinitions="38,*">
+          <Border Classes="phead"><TextBlock Text="Stop when any is met" Classes="h2" VerticalAlignment="Center" /></Border>
+          <StackPanel Grid.Row="1" Margin="16,12,16,16" Spacing="10" IsEnabled="{Binding !Relaxing}">
+            <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+              <TextBlock Text="|F|max below (kcal/mol/Å)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+              <NumericUpDown Grid.Column="1" Value="{Binding RelaxFtolD}" Minimum="0.001" Maximum="100" Increment="0.05" FormatString="0.###" TextAlignment="Right" />
+            </Grid>
+            <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+              <TextBlock Text="Iterations (per stage)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+              <NumericUpDown Grid.Column="1" Value="{Binding RelaxIterationsD}" Minimum="10" Maximum="1000000" Increment="1000" FormatString="0" TextAlignment="Right" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <TextBlock Text="ΔE per step (relative)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+              <TextBlock Grid.Column="1" Text="&lt; 1e-8" Classes="mono" VerticalAlignment="Center" />
+            </Grid>
+            <TextBlock Text="The criterion that stopped each stage goes into the report." Classes="dim" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</p:PageBase>

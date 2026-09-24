@@ -1,0 +1,163 @@
+<!-- CAPS Pack (design/boards/Pack.dc.html): molecules and regions, objective, input; the packed cell, convergence and the guarantee. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.PackPage" x:DataType="vm:MainViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="22,16,22,16" RowSpacing="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="3">
+        <TextBlock Text="Pack · CAPS Pack" Classes="title" />
+        <TextBlock Text="Native packing with region constraints — no external packer" Classes="muted" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Click="OnSave" IsVisible="{Binding GrownUnsaved}" ToolTip.Tip="Save the packed cell">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save cell…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnOpenInput" IsEnabled="{Binding Idle}" ToolTip.Tip="Open a packmol-format input (.inp)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="16" VerticalAlignment="Center" /><TextBlock Text="Open input…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Classes="primary" Click="OnPack" IsEnabled="{Binding Idle}" IsVisible="{Binding !Packing}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Pack" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCancel" IsVisible="{Binding Packing}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="16" VerticalAlignment="Center" /><TextBlock Text="Cancel" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
+      <ScrollViewer>
+        <StackPanel Spacing="16">
+          <!-- Molecules & regions -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding PackCellText}" Classes="dim" VerticalAlignment="Center" />
+                  <TextBlock Text="Molecules &amp; regions" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,12,16,16" Spacing="8">
+                <TextBlock Text="Nothing to pack yet: add a molecule, open an input, or start from the example." Classes="muted" TextWrapping="Wrap" IsVisible="{Binding !HasPackItems}" />
+                <ItemsControl ItemsSource="{Binding PackItems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PackItem">
+                      <Border Classes="choice" Margin="0,0,0,8" ToolTip.Tip="{Binding File}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                          <Border Width="3" CornerRadius="2" Background="{Binding Brush}" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Detail}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="2" Text="{Binding Count}" Classes="mono" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <WrapPanel IsEnabled="{Binding Idle}">
+                  <Button Classes="small" Margin="0,0,8,6" Click="OnAddMolecule">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add molecule" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button Classes="small" Margin="0,0,8,6" Click="OnExample" IsVisible="{Binding $parent[v:MainWindow].HasSamples}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Water example" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button Classes="small" Margin="0,0,8,6" Click="OnNew">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="file" Size="14" VerticalAlignment="Center" /><TextBlock Text="New input" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Border Classes="chip" Margin="0,4,0,6" VerticalAlignment="Top"><TextBlock Text="box · cube · sphere · cylinder · plane" Foreground="{DynamicResource MutedB}" /></Border>
+                </WrapPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Objective -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Objective" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="12">
+                <Border Classes="inset" Padding="14,12">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="f = Σ(i&lt;j) max(0, d_tol² − |x_i − x_j|²)²" Classes="mono" FontSize="13" />
+                    <TextBlock Text="  + Σ(i) w · g_region(x_i)" Classes="mono" FontSize="13" />
+                  </StackPanel>
+                </Border>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
+                  <TextBlock Text="Overlap penalty after Martínez et al., J. Comput. Chem. 30, 2157 (2009). Rigid bodies: centre of mass + rotation, analytic gradients." Classes="dim" TextWrapping="Wrap" MaxWidth="480" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Tolerance d_tol" Classes="label" /><TextBlock Grid.Column="1" Text="Optimiser" Classes="label" /><TextBlock Grid.Column="2" Text="Neighbour list" Classes="label" />
+                  <TextBox Grid.Row="1" Text="{Binding PackTolText}" IsReadOnly="True" Classes="mono" ToolTip.Tip="Set with the tolerance line of the input" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="L-BFGS (m = 10)" IsReadOnly="True" />
+                  <TextBox Grid.Row="1" Grid.Column="2" Text="Cell list, threaded" IsReadOnly="True" />
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Input -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="packmol syntax" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="Input" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,12,16,16" Spacing="8">
+                <TextBox Text="{Binding PackText}" AcceptsReturn="True" Classes="mono" FontSize="12" MinHeight="180" MaxHeight="360" TextWrapping="NoWrap"
+                         VerticalContentAlignment="Top" IsEnabled="{Binding Idle}" />
+                <TextBlock Text="{Binding PackBaseNote}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Report" Classes="h2" VerticalAlignment="Center" /></Border>
+              <TextBlock Margin="16,12,16,16" Text="{Binding PackLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid Grid.Column="1" RowDefinitions="*,250" RowSpacing="16">
+        <Border Classes="card" ClipToBounds="True">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding Packing}">
+                  <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="overlap minimisation" Foreground="{DynamicResource AccB}" /></StackPanel>
+                </Border>
+                <TextBlock Text="Packed cell" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <Decorator Grid.Row="1" x:Name="ViewSlot" />
+          </Grid>
+        </Border>
+        <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="16">
+          <Border Classes="card">
+            <Grid RowDefinitions="38,*">
+              <Border Classes="phead"><TextBlock Text="Convergence" Classes="h2" VerticalAlignment="Center" /></Border>
+              <v:LinePlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" AutoRange="True" XLabel="round" YLabel="log₁₀ penalty" />
+            </Grid>
+          </Border>
+          <Border Grid.Column="1" Classes="card">
+            <Grid RowDefinitions="38,*">
+              <Border Classes="phead"><TextBlock Text="Guarantee" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Grid.Row="1" Margin="14,12" Spacing="10">
+                <UniformGrid Columns="2">
+                  <Border Classes="inset" Margin="0,0,5,5"><StackPanel Spacing="2"><TextBlock Text="d_min now" Classes="label" /><TextBlock Text="{Binding PackDmin}" Classes="mono acc" FontSize="16" /></StackPanel></Border>
+                  <Border Classes="inset" Margin="5,0,0,5"><StackPanel Spacing="2"><TextBlock Text="target" Classes="label" /><TextBlock Text="{Binding PackTolText}" Classes="mono" FontSize="16" /></StackPanel></Border>
+                  <Border Classes="inset" Margin="0,5,5,0"><StackPanel Spacing="2"><TextBlock Text="in violation" Classes="label" /><TextBlock Text="{Binding PackBad}" Classes="mono" FontSize="16" /></StackPanel></Border>
+                  <Border Classes="inset" Margin="5,5,0,0"><StackPanel Spacing="2"><TextBlock Text="round" Classes="label" /><TextBlock Text="{Binding PackLoop}" Classes="mono" FontSize="16" /></StackPanel></Border>
+                </UniformGrid>
+                <TextBlock Text="Fails loudly if d_min is not met: a cell below tolerance is never written." Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
+</p:PageBase>

@@ -1,0 +1,28 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
+
+namespace CapsStudio.Views.Pages;
+
+public partial class PackPage : PageBase
+{
+    public PackPage()
+    {
+        AvaloniaXamlLoader.Load(this);
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+                vm.PackCurveChanged += () => this.FindControl<LinePlot>("ConvPlot")!.SetData(vm.PackCurve.ToArray());
+        };
+        this.FindControl<LinePlot>("ConvPlot")!.RefY = null;
+    }
+    public Decorator Slot => this.FindControl<Decorator>("ViewSlot")!;
+
+    private async void OnPack(object? s, RoutedEventArgs e) => await Vm.RunPack();
+    private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelPack();
+    private void OnNew(object? s, RoutedEventArgs e) => Vm.NewPackInput();
+    private void OnExample(object? s, RoutedEventArgs e) => Window?.PackExample();
+    private async void OnAddMolecule(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackAddAsync(); }
+    private async void OnOpenInput(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackOpenAsync(); }
+    private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
+}

@@ -26,6 +26,11 @@ public abstract class ObservableObject : INotifyPropertyChanged
 
 public sealed record Row(string Key, string Value);
 public sealed record MoleculeRow(string Molecule, string Atoms, string Mass, string Rg, string Kappa2);
+/// <summary>A structure block of a Pack input: name, where it goes, how many, its colour and file.</summary>
+public sealed record PackItem(string Name, string Detail, string Count, string Colour, string File)
+{
+    public Avalonia.Media.IBrush Brush => Avalonia.Media.Brush.Parse(Colour);
+}
 
 public sealed class MainViewModel : ObservableObject
 {
@@ -893,7 +898,60 @@ public sealed class MainViewModel : ObservableObject
     public decimal? PackSeedD { get => _packSeed; set { _packSeed = Math.Max(0, (int)(value ?? 1)); Raise(); } }
     public bool PackPeriodic { get => _packPeriodic; set => Set(ref _packPeriodic, value); }
     public bool Packing { get => _packing; private set { if (Set(ref _packing, value)) RaiseBusy(); } }
-    public string PackText { get => _packText; set => Set(ref _packText, value); }
+    public string PackText { get => _packText; set { if (Set(ref _packText, value)) ParsePackText(); } }
+
+    // the input read back as the board's "Molecules & regions" list, and the objective's settings
+    public ObservableCollection<PackItem> PackItems { get; } = new();
+    private string _packTolText = "2.0 Å", _packCellText = "no periodic cell";
+    public string PackTolText { get => _packTolText; private set => Set(ref _packTolText, value); }
+    public string PackCellText { get => _packCellText; private set => Set(ref _packCellText, value); }
+    public bool HasPackItems => PackItems.Count > 0;
+    private static readonly string[] PackColours = ["#F0A83C", "#6CC4D8", "#DE775D", "#9B7AD5", "#7DC884", "#D6AC5C", "#E9ECEF", "#2271DB"];
+
+    private void ParsePackText()
+    {
+        PackItems.Clear();
+        var inv = CultureInfo.InvariantCulture;
+        string? file = null;
+        var number = "1";
+        var fixedMol = false;
+        var constraints = new List<string>();
+        foreach (var raw in _packText.Split('\n'))
+        {
+            var line = raw.Split('#')[0].Trim();
+            if (line.Length == 0) continue;
+            var w = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            var key = w[0].ToLowerInvariant();
+            if (file == null)
+            {
+                if (key == "tolerance" && w.Length > 1) PackTolText = w[1] + " Å";
+                else if (key == "pbc" && w.Length >= 7)
+                    PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[4], w[5], w[6]);
+                else if (key == "structure" && w.Length > 1) { file = line[(line.IndexOf(' ') + 1)..].Trim(); number = "1"; fixedMol = false; constraints.Clear(); }
+            }
+            else if (key == "end") 
+            {
+                var name = Path.GetFileNameWithoutExtension(file);
+                var colour = PackColours[PackItems.Count % PackColours.Length];
+                PackItems.Add(new PackItem(name, constraints.Count > 0 ? string.Join(" · ", constraints) : "anywhere in the cell",
+                    fixedMol ? "fixed" : $"× {number}", colour, file));
+                file = null;
+            }
+            else if (key == "number" && w.Length > 1) number = w[1];
+            else if (key == "fixed") fixedMol = true;
+            else if (key is "inside" or "outside" or "over" or "below" or "above") constraints.Add(line);
+        }
+        Raise(nameof(HasPackItems));
+    }
+
+    // live convergence and the guarantee (Pack board)
+    public List<(double X, double Y)> PackCurve { get; } = new();
+    public event Action? PackCurveChanged;
+    private int _packLoop, _packBad;
+    private string _packDmin = "—";
+    public int PackLoop { get => _packLoop; private set => Set(ref _packLoop, value); }
+    public int PackBad { get => _packBad; private set => Set(ref _packBad, value); }
+    public string PackDmin { get => _packDmin; private set => Set(ref _packDmin, value); }
     public string PackBaseDir { get => _packBaseDir; set { if (Set(ref _packBaseDir, value)) Raise(nameof(PackBaseNote)); } }
     public string PackBaseNote => "relative structure paths are read from " + _packBaseDir;
     public string PackLog { get => _packLog; private set => Set(ref _packLog, value); }
@@ -936,6 +994,11 @@ public sealed class MainViewModel : ObservableObject
         var baseDir = _packBaseDir;
         PackLog = "Packing…";
         Status = "Packing…";
+        PackCurve.Clear();
+        PackCurveChanged?.Invoke();
+        PackLoop = 0;
+        PackBad = 0;
+        PackDmin = "—";
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var inv = CultureInfo.InvariantCulture;
         var lastUi = 0L;
@@ -948,7 +1011,18 @@ public sealed class MainViewModel : ObservableObject
                     lastUi = sw.ElapsedMilliseconds;
                     var line = loop == 0 ? string.Format(inv, "placing molecules… {0:F1} s", sw.Elapsed.TotalSeconds)
                         : string.Format(inv, "round {0} of at most {1} · penalty {2:G3} · {3} molecules in violation · {4:F1} s", loop, loops, f, bad, sw.Elapsed.TotalSeconds);
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_packing) PackLog = line; });
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        if (!_packing) return;
+                        PackLog = line;
+                        if (loop > 0)
+                        {
+                            PackLoop = loop;
+                            PackBad = bad;
+                            PackCurve.Add((loop, Math.Log10(Math.Max(f, 1e-12))));
+                            PackCurveChanged?.Invoke();
+                        }
+                    });
                 }
                 return !token.IsCancellationRequested;
             }, "packed"));
@@ -957,6 +1031,9 @@ public sealed class MainViewModel : ObservableObject
             GrownUnsaved = true;
             Packing = false;
             PackLog = report;
+            PackBad = 0;
+            var m = System.Text.RegularExpressions.Regex.Match(report, @"smallest distance between molecules ([0-9.]+) Å");
+            if (m.Success) PackDmin = m.Groups[1].Value + " Å";
             Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms) · save it, or relax and run dynamics";
         }
         catch (Exception e)

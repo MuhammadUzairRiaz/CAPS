@@ -223,7 +223,7 @@ public partial class MainWindow : Window
     private readonly Panel _viewHome;
     private void PlaceViewport()
     {
-        Decorator? slot = _vm.IsGrow ? GrowPageView.Slot : null;
+        Decorator? slot = _vm.IsGrow ? GrowPageView.Slot : _vm.IsPack ? PackPageView.Slot : null;
         if (slot != null && ViewHost.Parent != slot)
         {
             _viewHome.Children.Remove(ViewHost);
@@ -328,11 +328,15 @@ public partial class MainWindow : Window
     private async void OnReactRun(object? s, RoutedEventArgs e) => await _vm.RunReact();
     private void OnReactCancel(object? s, RoutedEventArgs e) => _vm.CancelReact();
     private void OnPackNew(object? s, RoutedEventArgs e) => _vm.NewPackInput();
-    private void OnPackExample(object? s, RoutedEventArgs e) { if (_samples != null) _vm.AddPackExample(_samples); }
+    private void OnPackExample(object? s, RoutedEventArgs e) => PackExample();
+    public void PackExample() { if (_samples != null) _vm.AddPackExample(_samples); }
+    public Task PackAddAsync() => PackAdd();
+    public Task PackOpenAsync() => PackOpen();
     private async void OnPackRun(object? s, RoutedEventArgs e) => await _vm.RunPack();
     private void OnPackCancel(object? s, RoutedEventArgs e) => _vm.CancelPack();
 
-    private async void OnPackAdd(object? s, RoutedEventArgs e)
+    private async void OnPackAdd(object? s, RoutedEventArgs e) => await PackAdd();
+    private async Task PackAdd()
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
@@ -343,7 +347,8 @@ public partial class MainWindow : Window
         foreach (var f in files) if (f.TryGetLocalPath() is string p) _vm.AddPackStructure(p);
     }
 
-    private async void OnPackOpen(object? s, RoutedEventArgs e)
+    private async void OnPackOpen(object? s, RoutedEventArgs e) => await PackOpen();
+    private async Task PackOpen()
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
