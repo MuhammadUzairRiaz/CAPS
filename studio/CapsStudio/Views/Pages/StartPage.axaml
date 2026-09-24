@@ -1,0 +1,179 @@
+<!-- CAPS Start (design/boards/Start.dc.html): the Studio with nothing open. Quick start, builders, recent work,
+     guided starts, a Packmol input, this machine. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.StartPage" x:DataType="vm:MainViewModel"
+            Background="{DynamicResource Bg0B}" DragDrop.AllowDrop="True">
+  <Grid ColumnDefinitions="*,340" ColumnSpacing="28" Margin="40,34,40,24">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="22" Margin="0,0,4,0">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Start" FontSize="26" FontWeight="SemiBold" LetterSpacing="-0.4" />
+          <TextBlock Text="Type a structure, pick a builder, or open recent work." Classes="muted" FontSize="13.5" />
+        </StackPanel>
+
+        <!-- Quick start: a file path, SMILES or a module name -->
+        <Border Height="52" Padding="16,0,10,0" CornerRadius="10" Background="{DynamicResource Bg1B}" BorderThickness="1"
+                BorderBrush="{DynamicResource AccB}">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+            <v:Icon Kind="search" Size="17" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+            <TextBox x:Name="Quick" Grid.Column="1" Text="{Binding QuickText}" Classes="mono bare" FontSize="15" VerticalAlignment="Center"
+                     Watermark="SMILES, a file path, or a module name" KeyDown="OnQuickKey" />
+            <Border Grid.Column="2" Classes="chip" Classes.ok="{Binding QuickOk}" Classes.err="{Binding QuickBad}" IsVisible="{Binding QuickHasBadge}">
+              <TextBlock Text="{Binding QuickBadge}" />
+            </Border>
+            <Button Grid.Column="3" Classes="primary small" Click="OnQuickGo" IsEnabled="{Binding QuickReady}">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <v:Icon Kind="cube" Size="14" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding QuickAction}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Builders -->
+        <ItemsControl ItemsSource="{Binding Builders}" Margin="-6">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StartBuilder">
+              <Button Classes="tile" Margin="6" Click="OnBuilder" Tag="{Binding}" IsEnabled="{Binding Available}" ToolTip.Tip="{Binding Note}"
+                      ToolTip.ShowOnDisabled="True">
+                <Grid ColumnDefinitions="38,*" ColumnSpacing="12">
+                  <Border Width="38" Height="38" CornerRadius="8" Background="{DynamicResource Bg3B}" VerticalAlignment="Top">
+                    <v:Icon Kind="{Binding Icon}" Size="18" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="3">
+                    <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Text}" Classes="muted" FontSize="12" TextWrapping="Wrap" LineHeight="17" />
+                  </StackPanel>
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Recent work, or the samples when nothing has been opened yet -->
+        <StackPanel Spacing="10" IsVisible="{Binding HasRecent}">
+          <TextBlock Text="Recent" FontSize="13" FontWeight="SemiBold" />
+          <ItemsControl ItemsSource="{Binding Recent}" Margin="-6">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RecentItem">
+                <Button Classes="tile thumb" Margin="6" Click="OnRecent" Tag="{Binding}" ToolTip.Tip="{Binding Path}">
+                  <StackPanel>
+                    <Border Height="150" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1"
+                            CornerRadius="10,10,0,0" ClipToBounds="True">
+                      <Panel>
+                        <Image Source="{Binding Thumb}" Stretch="UniformToFill" IsVisible="{Binding HasThumb}" />
+                        <v:Icon Kind="cube" Size="28" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding !HasThumb}" />
+                      </Panel>
+                    </Border>
+                    <StackPanel Margin="12,10" Spacing="3">
+                      <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <StackPanel Spacing="10" IsVisible="{Binding !HasRecent}">
+          <TextBlock Text="Samples made by CAPS" FontSize="13" FontWeight="SemiBold" />
+          <Border Classes="card" Padding="14" IsVisible="{Binding $parent[v:MainWindow].HasSamples}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Polystyrene cell · 10 × DP 8" FontSize="13" FontWeight="Medium" />
+                <TextBlock Text="1,300 atoms · 1,370 bonds · a short trajectory with its data file" Classes="muted" FontSize="11.5" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="small" Content="Open" Click="OnSample" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <TextBlock Text="Structures you open or save appear here with a picture." Classes="dim" FontSize="12" />
+        </StackPanel>
+
+        <!-- Drop zone -->
+        <Panel Height="56">
+          <Rectangle Stroke="{DynamicResource LineB}" StrokeThickness="1.5" StrokeDashArray="4,3" RadiusX="10" RadiusY="10" />
+          <Button Classes="ghost" BorderThickness="0" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Normal" Click="OnOpen">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <v:Icon Kind="download" Size="16" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+              <TextBlock Text="Drop or open LAMMPS data and dump, GROMACS .gro, PDB, XYZ or mol2" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Panel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Right column -->
+    <StackPanel Grid.Column="1" Spacing="14">
+      <Border Classes="card" CornerRadius="10">
+        <StackPanel>
+          <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="with the sample" Foreground="{DynamicResource MutedB}" /></Border>
+              <TextBlock Text="Learn" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <ItemsControl ItemsSource="{Binding Guides}" Margin="12,8,12,10">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StartGuide">
+                <Button Classes="row" Click="OnGuide" Tag="{Binding}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <v:Icon Kind="play" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding Where}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" CornerRadius="10">
+        <StackPanel>
+          <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="From a recipe" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Margin="16" Spacing="12">
+            <TextBlock TextWrapping="Wrap" FontSize="12.5" LineHeight="19"
+                       Text="Open a Packmol input. Its structures, counts, regions and tolerance carry over into Pack, which checks every contact before it returns a cell." />
+            <Button Click="OnRecipe" HorizontalAlignment="Stretch" FontSize="12">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <v:Icon Kind="download" Size="15" VerticalAlignment="Center" />
+                <TextBlock Text="Import Packmol input" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" CornerRadius="10">
+        <StackPanel>
+          <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="small" FontSize="12" Click="OnSettings" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <v:Icon Kind="gear" Size="14" VerticalAlignment="Center" />
+                  <TextBlock Text="Settings" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <TextBlock Text="This machine" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Grid Margin="16,12,16,14" ColumnDefinitions="Auto,*" RowDefinitions="26,26,26" ColumnSpacing="12">
+            <TextBlock Text="Threads" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding MachineThreads}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Text="Rendering" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MachineRender}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Text="Remote hosts" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="none" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Grid>
+</p:PageBase>

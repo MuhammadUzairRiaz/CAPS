@@ -244,6 +244,12 @@
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="TextBox:focus"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <!-- a text box drawn by its container (the Start board's quick-start box) -->
+  <Style Selector="TextBox.bare"><Setter Property="MinHeight" Value="0" /><Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="TextBox.bare /template/ Border#PART_BorderElement, TextBox.bare:pointerover /template/ Border#PART_BorderElement, TextBox.bare:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
   <Style Selector="TextBox.mono, NumericUpDown">
     <Setter Property="FontFamily" Value="{DynamicResource Mono}" />
   </Style>
@@ -307,6 +313,47 @@
   <Style Selector="Border.chip.warn TextBlock"><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
   <Style Selector="Border.chip.acc"><Setter Property="Background" Value="{DynamicResource AccB}" /></Style>
   <Style Selector="Border.chip.acc TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /></Style>
+  <Style Selector="Border.chip.ok"><Setter Property="Background" Value="{DynamicResource OkBgB}" /></Style>
+  <Style Selector="Border.chip.ok TextBlock"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+  <Style Selector="Border.chip.err"><Setter Property="Background" Value="{DynamicResource ErrBgB}" /></Style>
+  <Style Selector="Border.chip.err TextBlock"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+  <!-- Start board tiles: builders and recent work -->
+  <Style Selector="Button.tile">
+    <Setter Property="Background" Value="{DynamicResource Bg1B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="14" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DimB}" />
+  </Style>
+  <Style Selector="Button.tile:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg1B}" />
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+  <Style Selector="Button.tile.thumb"><Setter Property="Padding" Value="0" /></Style>
+  <Style Selector="Button.row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Bg2B}" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Bg2B}" />
+  </Style>
   <Style Selector="ToggleButton.chip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />
     <Setter Property="Foreground" Value="{DynamicResource MutedB}" />

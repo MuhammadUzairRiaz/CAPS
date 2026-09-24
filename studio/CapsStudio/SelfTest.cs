@@ -14,8 +14,28 @@ internal static class SelfTest
         Check(Native.AbiVersion() == 11, "native ABI version 11");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
+        RecentFiles.Override = Path.Combine(outDir, "caps-selftest-recent");
+        if (Directory.Exists(RecentFiles.Override)) Directory.Delete(RecentFiles.Override, true);
         var vm = new MainViewModel();
+
+        // Start: the quick-start box recognises SMILES, files and modules
+        Check(MainViewModel.IsSmiles("C=Cc1ccccc1") && MainViewModel.IsSmiles("CC(=O)O[C@@H]1CCCC1") && MainViewModel.IsSmiles("[Na+].[Cl-]")
+              && !MainViewModel.IsSmiles("Pack") && !MainViewModel.IsSmiles("C(C") && !MainViewModel.IsSmiles("hello world"), "SMILES grammar");
+        vm.QuickText = "C=Cc1ccccc1";
+        var k1 = vm.QuickKind;
+        vm.QuickText = Path.Combine(dir, "ps_melt.data");
+        var k2 = vm.QuickKind;
+        vm.QuickText = "equil";
+        var k3 = vm.QuickKind;
+        vm.QuickGo();
+        Check(k1 == 2 && k2 == 1 && k3 == 3 && vm.IsEquilibrate, $"quick start: SMILES {k1}, file {k2}, module {k3} → Equilibrate {vm.IsEquilibrate}");
+        vm.SetModule(8);
+        vm.QuickText = "";
+
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+        for (var i = 0; i < 100 && RecentFiles.Load().Count == 0; i++) Thread.Sleep(50);
+        var recent = RecentFiles.Load();
+        Check(recent.Count == 1 && recent[0].Name == "ps_melt.lammpstrj" && recent[0].Topology != null, $"recent: {string.Join(", ", recent.Select(r => r.Name))}");
         var s = vm.Document!.Summary();
         Check(s.Atoms == 1300 && s.Bonds == 1370 && s.Molecules == 10, $"summary: {s.Atoms} atoms, {s.Bonds} bonds, {s.Molecules} molecules");
         Check(s.Frames == 3 && vm.HasFrames, $"frames: {s.Frames}");
@@ -219,6 +239,11 @@ internal static class SelfTest
         try { CapsDocument.Pack(packText.Replace("number 300", "number 900"), dir, null, "x"); }
         catch (InvalidOperationException e) { packFailed = e.Message.Contains("could not pack"); }
         Check(packFailed, "pack: an overfull cell fails with a reason and no structure");
+
+        // Close goes back to Start
+        vm.SetModule(1);
+        vm.CloseDocument();
+        Check(vm.NoDocument && vm.IsStudio && vm.Title == "", "close: back to Start with no document");
 
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
         return fails == 0 ? 0 : 1;
