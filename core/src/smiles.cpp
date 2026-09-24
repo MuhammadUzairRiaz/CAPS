@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <functional>
 #include <map>
 #include <set>
 #include <sstream>
@@ -368,6 +369,124 @@ MolInfo molecule_info(const MolGraph& g) {
   m.formula = f.str();
   m.problems = valence_problems(g);
   return m;
+}
+
+std::string write_smiles(const MolGraph& g) {
+  const int n = g.heavy > 0 ? std::min<int>(g.heavy, int(g.atoms.size())) : int(g.atoms.size());
+  std::vector<std::vector<std::pair<int, int>>> adj(static_cast<size_t>(n));   // (neighbour, bond index)
+  for (size_t k = 0; k < g.bonds.size(); ++k) {
+    const auto& b = g.bonds[k];
+    if (b.a >= n || b.b >= n) continue;
+    adj[size_t(b.a)].push_back({b.b, int(k)});
+    adj[size_t(b.b)].push_back({b.a, int(k)});
+  }
+  // pass 1: spanning tree and ring closures
+  std::vector<int> seen(static_cast<size_t>(n), 0);
+  std::vector<std::vector<std::pair<int, int>>> kids(static_cast<size_t>(n));
+  struct Closure { int anc, desc, bond, number = 0; };
+  std::vector<Closure> rings;
+  std::vector<char> used(g.bonds.size(), 0);
+  std::function<void(int)> dfs = [&](int u) {
+    seen[size_t(u)] = 1;
+    for (auto [v, bi] : adj[size_t(u)]) {
+      if (used[size_t(bi)]) continue;
+      used[size_t(bi)] = 1;
+      if (!seen[size_t(v)]) {
+        kids[size_t(u)].push_back({v, bi});
+        dfs(v);
+      } else
+        rings.push_back({v, u, bi});   // v is an ancestor still open: the ring bond opens at v, closes at u
+    }
+  };
+  std::vector<int> roots;
+  for (int i = 0; i < n; ++i)
+    if (!seen[size_t(i)]) roots.push_back(i), dfs(i);
+
+  auto sym = [&](const MolBond& b, int from) {
+    const bool ar = g.atoms[size_t(b.a)].aromatic && g.atoms[size_t(b.b)].aromatic;
+    if (b.order == 2) return std::string("=");
+    if (b.order == 3) return std::string("#");
+    if (b.order == 4) return ar ? std::string() : std::string(":");
+    if (b.dir) {
+      const int d = from == b.a ? b.dir : -b.dir;
+      return std::string(d > 0 ? "/" : "\\");
+    }
+    return ar ? std::string("-") : std::string();
+  };
+  std::vector<int> free_numbers;
+  int next_number = 1;
+  std::string out;
+  std::function<void(int, int)> write = [&](int u, int from_bond) {
+    const MolAtom& a = g.atoms[size_t(u)];
+    // neighbours in the order this writing gives them
+    std::vector<int> w;
+    if (from_bond >= 0) w.push_back(g.bonds[size_t(from_bond)].a == u ? g.bonds[size_t(from_bond)].b : g.bonds[size_t(from_bond)].a);
+    const bool own_h = a.bracket && a.hcount > 0 && std::find(a.order.begin(), a.order.end(), -2) != a.order.end();
+    if (own_h) w.push_back(-2);
+    std::string digits;
+    for (auto& r : rings)
+      if (r.desc == u) {
+        digits += (r.number < 10 ? std::to_string(r.number) : "%" + std::to_string(r.number));
+        free_numbers.push_back(r.number);
+        w.push_back(r.anc);
+      }
+    for (auto& r : rings)
+      if (r.anc == u) {
+        if (!free_numbers.empty()) {
+          std::sort(free_numbers.begin(), free_numbers.end());
+          r.number = free_numbers.front();
+          free_numbers.erase(free_numbers.begin());
+        } else
+          r.number = next_number++;
+        digits += sym(g.bonds[size_t(r.bond)], u) + (r.number < 10 ? std::to_string(r.number) : "%" + std::to_string(r.number));
+        w.push_back(r.desc);
+      }
+    for (auto [v, bi] : kids[size_t(u)]) w.push_back(v);
+    // chirality: the written order is a permutation of the parsed one; an odd permutation swaps @ and @@
+    int chiral = 0;
+    if (a.chiral) {
+      std::vector<int> o = a.order;
+      std::vector<int> ws = w, os = o;
+      std::sort(ws.begin(), ws.end());
+      std::sort(os.begin(), os.end());
+      if (ws == os) {
+        int inv = 0;
+        std::vector<int> idx;
+        for (int x : w) idx.push_back(int(std::find(o.begin(), o.end(), x) - o.begin()));
+        for (size_t p = 0; p < idx.size(); ++p)
+          for (size_t q = p + 1; q < idx.size(); ++q) inv += idx[p] > idx[q];
+        chiral = inv % 2 ? 3 - a.chiral : a.chiral;
+      }
+    }
+    std::string e = a.element ? element(a.element).symbol : "*";
+    if (a.aromatic) for (auto& c : e) c = char(std::tolower(static_cast<unsigned char>(c)));
+    const bool bracket = a.bracket || (a.element && !organic(a.element)) || a.charge || a.isotope || a.map || chiral || a.element == 1;
+    if (bracket) {
+      std::string t = "[";
+      if (a.isotope) t += std::to_string(a.isotope);
+      t += e;
+      if (chiral) t += chiral == 1 ? "@" : "@@";
+      if (a.hcount > 0) t += a.hcount == 1 ? "H" : "H" + std::to_string(a.hcount);
+      if (a.charge) t += (a.charge > 0 ? "+" : "-") + (std::abs(a.charge) > 1 ? std::to_string(std::abs(a.charge)) : "");
+      if (a.map) t += ":" + std::to_string(a.map);
+      e = t + "]";
+    }
+    out += e + digits;
+    const auto& ks = kids[size_t(u)];
+    for (size_t c = 0; c < ks.size(); ++c) {
+      const auto [v, bi] = ks[c];
+      const bool last = c + 1 == ks.size();
+      if (!last) out += "(";
+      out += sym(g.bonds[size_t(bi)], u);
+      write(v, bi);
+      if (!last) out += ")";
+    }
+  };
+  for (size_t r = 0; r < roots.size(); ++r) {
+    if (r) out += ".";
+    write(roots[r], -1);
+  }
+  return out;
 }
 
 System molecule_system(const MolGraph& g, const std::vector<Vec3>& pos) {

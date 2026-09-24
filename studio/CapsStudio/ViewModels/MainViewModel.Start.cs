@@ -22,7 +22,7 @@ public sealed partial class MainViewModel
 
     public StartBuilder[] Builders { get; } =
     [
-        new("Molecule", "From SMILES, InChI, a name or a 2D sketch", "hex", -1, "The molecule builder comes with the Sketch board"),
+        new("Molecule", "From SMILES or a 2D sketch", "hex", 9, "Draw or type a molecule; 3D with conformers, cleaned with a force field"),
         new("Polymer", "Repeat units, sequence, tacticity", "grow", 0, "Polystyrene chains with a chosen tacticity, in Grow"),
         new("Crystal", "Space group, lattice, CIF import", "cube", -1, "The crystal builder comes with the Crystal board"),
         new("Amorphous cell", "Grow and pack a periodic cell", "pack", 0, "Grow chains into a periodic cell at a target density"),
@@ -95,7 +95,7 @@ public sealed partial class MainViewModel
     public int QuickKind { get; private set; }
     public string QuickBadge { get; private set; } = "";
     public string QuickAction { get; private set; } = "Open";
-    public bool QuickReady => QuickKind is 1 or 3;
+    public bool QuickReady => QuickKind is 1 or 2 or 3;
     public bool QuickHasBadge => QuickBadge.Length > 0;
     private int _quickModule = -1;
 
@@ -127,7 +127,7 @@ public sealed partial class MainViewModel
         {
             case 1: return ExpandHome(_quick.Trim().Trim('"', '\''));
             case 3: SetModule(_quickModule); return null;
-            case 2: Status = "SMILES is recognised; building 3D molecules from SMILES arrives with the molecule builder"; return null;
+            case 2: OpenBuilder(_quick.Trim()); return null;
             default: return null;
         }
     }

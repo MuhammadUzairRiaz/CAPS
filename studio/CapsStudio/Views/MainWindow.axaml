@@ -83,7 +83,7 @@
             </Button.Flyout>
           </Button>
           <StackPanel Spacing="2" Margin="0,8,0,0" HorizontalAlignment="Center">
-          <Button Classes="rail" Classes.on="{Binding IsStudio}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
+          <Button Classes="rail" Classes.on="{Binding IsStudioRail}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
             <Panel Width="60" Height="52">
               <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -719,6 +719,8 @@
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
       <!-- React (design/boards/React.dc.html) -->
+      <!-- Molecule (design/boards/Sketch): sketch or SMILES to 3D -->
+      <pages:MoleculePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMolecule}" />
       <!-- Start (design/boards/Start): the Studio with nothing open -->
       <pages:StartPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
         <pages:StartPage.IsVisible>

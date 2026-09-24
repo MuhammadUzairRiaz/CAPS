@@ -249,6 +249,21 @@ internal static class SelfTest
         catch (InvalidOperationException e) { packFailed = e.Message.Contains("could not pack"); }
         Check(packFailed, "pack: an overfull cell fails with a reason and no structure");
 
+        // Molecule builder: SMILES → 3D with GAFF2, then into the Studio
+        vm.OpenBuilder("N[C@@H](C)C(=O)O");
+        Check(vm.MolOk && vm.MolFormula == "C₃H₇NO₂", $"molecule: {vm.MolFormula} · {vm.MolMass} · {vm.MolStereo} stereocentre");
+        vm.BuildMolecule().GetAwaiter().GetResult();
+        Check(vm.MolDoc != null && vm.MolDoc.Summary().Atoms == 13 && vm.MolConformers.Count >= 1 && vm.MolConformers[0].Minimised,
+              $"molecule: {vm.MolConformers.Count} conformers · {vm.MolMethodUsed} {vm.MolNotes}");
+        var sk = CapsDocument.SmilesDepict("c1ccccc1O");
+        Check(sk.Contains("\"atoms\"") && CapsDocument.SmilesWrite(sk).Length > 0, "molecule: sketch graph round trip " + CapsDocument.SmilesWrite(sk));
+        vm.MolSmiles = "C1CC";
+        Check(!vm.MolOk && vm.MolHasError, "molecule: bad SMILES reported: " + vm.MolError);
+        vm.MolSmiles = "N[C@@H](C)C(=O)O";
+        vm.BuildMolecule().GetAwaiter().GetResult();
+        vm.OpenMoleculeInStudio();
+        Check(vm.IsStudio && vm.Document?.Summary().Atoms == 13, "molecule: opened in the Studio as the document");
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

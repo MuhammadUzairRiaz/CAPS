@@ -328,6 +328,13 @@ typedef struct {
   uint64_t seed;                   /* 1 */
 } caps_build_opts;
 int32_t caps_smiles_info(const char* smiles, char* json, int32_t cap);
+/* The 2D drawing of a SMILES, as JSON: the caps_smiles_info fields plus atoms [{z, symbol, x, y, h (hydrogens drawn as a
+   label), charge, isotope, hcount (-1 implicit), aromatic, bracket, chiral, map, order[]}] and bonds [{a, b, order, dir}];
+   bond length 1. Returns the length needed including the final NUL (json = NULL to size). */
+int32_t caps_smiles_depict(const char* smiles, char* json, int32_t cap);
+/* SMILES from a graph in the JSON form caps_smiles_depict gives (x, y, h and symbol are not needed). Returns the length
+   needed including the final NUL, or -1 when the graph is not valid (caps_last_error explains). */
+int32_t caps_smiles_write(const char* graph_json, char* smiles, int32_t cap);
 caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_build_opts* o, char* report, int32_t cap);
 
 #ifdef __cplusplus

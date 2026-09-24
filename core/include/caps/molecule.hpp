@@ -78,6 +78,13 @@ std::vector<Vec3> embed(const MolGraph& g, const EmbedOptions& o = {});
 // Signed volumes of the specified tetrahedral centres: +1 when the geometry matches the SMILES, -1 when inverted.
 std::vector<int> chirality_check(const MolGraph& g, const std::vector<Vec3>& pos);
 
+// 2D drawing coordinates (z = 0, bond length 1, long axis horizontal) for the atoms written in the SMILES (the first
+// g.heavy; added hydrogens are not drawn): ring polygons, fused rings sharing edges, zig-zag chains, E/Z as written.
+std::vector<Vec3> depict(const MolGraph& g, uint64_t seed = 1);
+// SMILES for the written atoms of g (as parse_smiles leaves it): depth-first, ring closures numbered from 1, bracket
+// atoms where needed, tetrahedral chirality and E/Z carried over. parse_smiles(write_smiles(g)) is the same molecule.
+std::string write_smiles(const MolGraph& g);
+
 struct BuildOptions {
   int conformers = 1;
   uint64_t seed = 1;
