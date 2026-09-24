@@ -1,0 +1,224 @@
+<!-- CAPS Jobs (design/boards/Jobs.dc.html, FailedJob.dc.html): every run with its progress, curves, log and provenance. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.JobsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="ListBox#JobList ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,0,4" /><Setter Property="CornerRadius" Value="8" /></Style>
+    <Style Selector="ListBox#JobList ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+    <Style Selector="ListBox#JobList ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+    <Style Selector="ProgressBar.thin"><Setter Property="MinHeight" Value="3" /><Setter Property="Height" Value="3" /><Setter Property="CornerRadius" Value="2" />
+      <Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="ProgressBar.thin.failed"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="ProgressBar.thin.done"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="TextBlock.state"><Setter Property="FontSize" Value="11.5" /><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="TextBlock.state.running"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="TextBlock.state.done"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="TextBlock.state.failed"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="Ellipse.dot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.dot.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Ellipse.dot.done"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.dot.failed"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
+  </p:PageBase.Styles>
+
+  <Grid ColumnDefinitions="300,*">
+    <!-- job list -->
+    <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="48" Padding="16,0,10,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="small" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="New" VerticalAlignment="Center" /></StackPanel>
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                  <MenuItem Header="Grow a cell" Click="OnNew" Tag="0" />
+                  <MenuItem Header="Pack molecules" Click="OnNew" Tag="5" />
+                  <MenuItem Header="Relax" Click="OnNew" Tag="2" />
+                  <MenuItem Header="Dynamics" Click="OnNew" Tag="3" />
+                  <MenuItem Header="Equilibrate" Click="OnNew" Tag="4" />
+                  <MenuItem Header="React" Click="OnNew" Tag="6" />
+                  <MenuItem Header="Analyze" Click="OnNew" Tag="1" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <TextBlock Text="Jobs" Classes="h2" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="16,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="link" Content="Clear finished" Click="OnClear" FontSize="11.5" IsVisible="{Binding HasJobs}" />
+            <TextBlock Text="{Binding JobsSummary}" Classes="dim" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <ListBox x:Name="JobList" ItemsSource="{Binding Jobs}" SelectedItem="{Binding SelectedJob}" Background="Transparent" Padding="10">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:Job">
+              <StackPanel Margin="12,10" Spacing="4">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                  <Ellipse Classes="dot" Classes.running="{Binding IsRunning}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}" Width="7" Height="7" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding StatusText}" Classes="state" Classes.running="{Binding IsRunning}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}" />
+                </Grid>
+                <TextBlock Text="{Binding Where}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" Margin="15,0,0,0" />
+                <ProgressBar Classes="thin" Classes.failed="{Binding IsFailed}" Minimum="0" Maximum="1" Value="{Binding Progress}" Margin="15,4,0,0"
+                             IsVisible="{Binding IsRunning}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- empty -->
+    <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" MaxWidth="460" IsVisible="{Binding !HasSelectedJob}">
+      <v:Icon Kind="jobs" Size="28" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" />
+      <TextBlock Text="No jobs yet" Classes="heading" HorizontalAlignment="Center" />
+      <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                 Text="Runs from Grow, Pack, Relax, Dynamics, Equilibrate, React and Analyze appear here as they start, with their curves, log and the provenance needed to repeat them." />
+    </StackPanel>
+
+    <!-- the chosen job -->
+    <ScrollViewer Grid.Column="1" IsVisible="{Binding HasSelectedJob}">
+      <StackPanel x:Name="Detail" Margin="24,20,24,24" Spacing="16" DataContext="{Binding SelectedJob}" x:DataType="vm:Job">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Subtitle}" Classes="muted" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Border Classes="chip" BorderBrush="{DynamicResource AccB}" BorderThickness="1" IsVisible="{Binding IsRunning}">
+              <TextBlock Text="{Binding StageText}" Foreground="{DynamicResource AccB}" />
+            </Border>
+            <Border Classes="chip" Classes.ok="{Binding IsDone}" Classes.err="{Binding IsFailed}" IsVisible="{Binding !IsRunning}">
+              <TextBlock Text="{Binding StatusText}" />
+            </Border>
+            <Button Click="OnOpenStudio">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Open in Studio" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Click="OnGoModule" ToolTip.Tip="The page this job runs from">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="sliders" Size="15" VerticalAlignment="Center" /><TextBlock Text="Settings" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Click="OnCancel" IsVisible="{Binding IsRunning}">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock Text="Cancel" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- what happened (failed) -->
+        <Border Classes="card" CornerRadius="10" BorderBrush="{DynamicResource ErrB}" IsVisible="{Binding IsFailed}">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Copy diagnostics" Click="OnCopyJson" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <v:Icon Kind="alert" Size="15" Foreground="{DynamicResource ErrB}" />
+                  <TextBlock Text="What happened" Classes="h2" />
+                </StackPanel>
+              </DockPanel>
+            </Border>
+            <TextBlock Margin="16,12,16,14" Text="{Binding Error}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,12" IsVisible="{Binding HasSuggestion}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <v:Icon Kind="wand" Size="15" Foreground="{DynamicResource AccB}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Suggested recovery" Classes="h3" />
+                  <TextBlock Text="{Binding Suggestion}" TextWrapping="Wrap" FontSize="12.5" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="primary small" Content="{Binding SuggestButton}" Click="OnSuggest" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- progress: the protocol's stages, or a bar -->
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Duration}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <TextBlock x:Name="ProgressTitle" Text="Progress" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <StackPanel Margin="16,14" Spacing="10">
+              <UniformGrid x:Name="StageBar" Rows="1" Height="22" />
+              <ProgressBar x:Name="Bar" Classes="thin" Classes.failed="{Binding IsFailed}" Classes.done="{Binding IsDone}" Height="6" MinHeight="6" Minimum="0" Maximum="1" Value="{Binding Progress}" />
+              <StackPanel x:Name="StageLegend" Orientation="Horizontal" Spacing="8" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- curves -->
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="16" x:Name="Curves">
+          <Border Classes="card" CornerRadius="10" Height="230">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="40" Padding="16,0">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding IsRunning}"><TextBlock Text="live" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="{Binding CurveA}" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <v:LinePlot x:Name="PlotA" Margin="8,0,12,10" />
+            </DockPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="card" CornerRadius="10" Height="230">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="40" Padding="16,0">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding IsRunning}"><TextBlock Text="live" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="{Binding CurveB}" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <v:LinePlot x:Name="PlotB" Margin="8,0,12,10" />
+            </DockPanel>
+          </Border>
+        </Grid>
+
+        <!-- log and provenance -->
+        <Grid ColumnDefinitions="*,380" ColumnSpacing="16">
+          <Border Classes="card" CornerRadius="10">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="structured · JSON" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="Log" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <ItemsControl ItemsSource="{Binding Log}" Margin="16,10,16,14" MaxHeight="320">
+                <ItemsControl.Template>
+                  <ControlTemplate><ScrollViewer><ItemsPresenter /></ScrollViewer></ControlTemplate>
+                </ItemsControl.Template>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:JobLine">
+                    <Grid ColumnDefinitions="70,*" Margin="0,2">
+                      <TextBlock Text="{Binding Time}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="card" CornerRadius="10" VerticalAlignment="Top">
+            <StackPanel>
+              <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small" Content="Copy JSON" Click="OnCopyJson" VerticalAlignment="Center" />
+                  <TextBlock Text="Provenance manifest" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <ItemsControl ItemsSource="{Binding Provenance}" Margin="16,10,16,14">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:JobFact">
+                    <Grid ColumnDefinitions="120,*" Margin="0,3">
+                      <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12" />
+                      <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextAlignment="Right" TextWrapping="Wrap" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</p:PageBase>

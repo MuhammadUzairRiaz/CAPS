@@ -45,6 +45,7 @@ internal static class Screenshot
             if (kv[0] == "settab") { w.ViewModel.SetModule(10); w.ViewModel.SettingsTab = int.Parse(kv[1]); }
             if (kv[0] == "colours") w.ViewModel.SetPalette = int.Parse(kv[1]);
             if (kv[0] == "theme") w.ViewModel.SetTheme = kv[1];
+            if (kv[0] == "jobs") w.ViewModel.SetModule(11);
             if (kv[0] == "palette") { w.ViewModel.PaletteOpen = true; w.ViewModel.PaletteQuery = kv[1]; }
             if (kv[0] == "molecule")
             {

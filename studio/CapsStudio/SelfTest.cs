@@ -18,7 +18,9 @@ internal static class SelfTest
         if (File.Exists(AppSettings.Override)) File.Delete(AppSettings.Override);
         RecentFiles.Override = Path.Combine(outDir, "caps-selftest-recent");
         if (Directory.Exists(RecentFiles.Override)) Directory.Delete(RecentFiles.Override, true);
+        if (File.Exists(MainViewModel.JobsFile)) File.Delete(MainViewModel.JobsFile);
         var vm = new MainViewModel();
+        vm.HookJobs();
 
         // Start: the quick-start box recognises SMILES, files and modules
         Check(MainViewModel.IsSmiles("C=Cc1ccccc1") && MainViewModel.IsSmiles("CC(=O)O[C@@H]1CCCC1") && MainViewModel.IsSmiles("[Na+].[Cl-]")
@@ -286,6 +288,10 @@ internal static class SelfTest
         Check(reread.Palette == 1 && reread.Threads == 2 && File.Exists(AppSettings.FilePath), $"settings: saved to {AppSettings.FilePath}");
         vm.ResetSettings();
         Check(AppSettings.Load().Palette == 0 && vm.SetThreads == 0, "settings: reset to the defaults");
+
+        // Jobs: the runs above were recorded with their log and provenance
+        Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
+              $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");
 
         // Close goes back to Start
         vm.SetModule(1);
