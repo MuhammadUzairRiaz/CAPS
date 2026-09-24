@@ -1033,11 +1033,11 @@
                   </Border>
                   <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="16,12,16,6">
                     <TextBox Text="{Binding Field.FilterText}" Watermark="Filter: type, element, atom (C12), rule text, charge" />
-                    <Border Grid.Column="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="7" Padding="2">
+                    <Border Grid.Column="1" Classes="seg">
                       <StackPanel Orientation="Horizontal">
-                        <RadioButton GroupName="ffilter" Content="All" IsChecked="{Binding Field.FilterAll}" Margin="6,0" />
-                        <RadioButton GroupName="ffilter" Content="Untyped" IsChecked="{Binding Field.FilterUntyped}" Margin="6,0" />
-                        <RadioButton GroupName="ffilter" Content="Overridden" IsChecked="{Binding Field.FilterOverridden}" Margin="6,0" />
+                        <RadioButton Classes="seg" GroupName="ffilter" Content="All" IsChecked="{Binding Field.FilterAll}" />
+                        <RadioButton Classes="seg" GroupName="ffilter" Content="Untyped" IsChecked="{Binding Field.FilterUntyped}" />
+                        <RadioButton Classes="seg" GroupName="ffilter" Content="Overridden" IsChecked="{Binding Field.FilterOverridden}" />
                       </StackPanel>
                     </Border>
                   </Grid>
