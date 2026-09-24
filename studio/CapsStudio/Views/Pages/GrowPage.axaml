@@ -47,19 +47,20 @@
                   <TextBlock Grid.Column="4" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
                 </Grid>
                 <Grid ColumnDefinitions="*,86,86,110,80" ColumnSpacing="8">
-                  <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7" VerticalAlignment="Center" ToolTip.Tip="{Binding GrowComponentName}">
                     <Ellipse Width="8" Height="8" Fill="{DynamicResource AccB}" VerticalAlignment="Center" />
-                    <TextBlock VerticalAlignment="Center"><Run Text="PS " /><Run Text="{Binding GrowTacticityName}" /></TextBlock>
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding GrowComponentName}" TextTrimming="CharacterEllipsis" />
+                  </Grid>
                   <NumericUpDown Grid.Column="1" Value="{Binding GrowChainsD}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" TextAlignment="Right" />
                   <NumericUpDown Grid.Column="2" Value="{Binding GrowDpD}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" TextAlignment="Right" />
                   <TextBlock Grid.Column="3" Text="Đ 1.00" Classes="mono" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
                   <TextBlock Grid.Column="4" Text="{Binding GrowAtomsText}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
-                  <Button Classes="small" IsEnabled="False" ToolTip.Tip="Other monomers arrive with the polymer builder" ToolTip.ShowOnDisabled="True">
-                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add polymer" VerticalAlignment="Center" /></StackPanel>
+                  <Button Classes="small" Click="OnChoosePolymer" ToolTip.Tip="Any repeat units: homopolymers and copolymers, from the library or SMILES">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Choose polymer…" VerticalAlignment="Center" /></StackPanel>
                   </Button>
+                  <Button Classes="small ghost" Click="OnUsePs" IsVisible="{Binding GrowHasSpec}" Content="Back to polystyrene" />
                   <Button Classes="small" IsEnabled="False" ToolTip.Tip="Solvents and gases: use Pack for now" ToolTip.ShowOnDisabled="True">
                     <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add solvent / gas" VerticalAlignment="Center" /></StackPanel>
                   </Button>

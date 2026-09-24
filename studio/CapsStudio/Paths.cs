@@ -35,6 +35,8 @@ public static class Paths
     public static string? ForceFields => Find(Path.Combine("data", "forcefields"), "catalogue.json");
     /// <summary>data/reference/polymers.json, or null.</summary>
     public static string? References => Find(Path.Combine("data", "reference"), "polymers.json") is { } d ? Path.Combine(d, "polymers.json") : null;
+    /// <summary>data/polymers/library.json (repeat units as SMILES), or null.</summary>
+    public static string? Polymers => Find(Path.Combine("data", "polymers"), "library.json") is { } d ? Path.Combine(d, "library.json") : null;
     /// <summary>The samples directory, or null.</summary>
     public static string? Samples => Find("samples", "ps_melt.data");
 }

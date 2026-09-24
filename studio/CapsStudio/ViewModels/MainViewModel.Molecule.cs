@@ -18,7 +18,7 @@ public sealed partial class MainViewModel
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     public bool IsMolecule => _module == 9;
     /// <summary>The rail's Studio entry covers the molecule builder too.</summary>
-    public bool IsStudioRail => _module is 8 or 9;
+    public bool IsStudioRail => _module is 8 or 9 or 13;
 
     /// <summary>Opens the builder with a SMILES (Start's quick-start box, the Molecule builder tile).</summary>
     public void OpenBuilder(string? smiles = null)
