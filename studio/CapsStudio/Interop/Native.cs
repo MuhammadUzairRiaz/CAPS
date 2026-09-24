@@ -210,6 +210,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_protocol_text")] public static extern int ProtocolText([MarshalAs(UnmanagedType.LPUTF8Str)] string name, in CapsProtocolParams p, byte[] text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate")] public static extern int Equilibrate(IntPtr doc, byte[] protocol, in CapsEquilOpts o, CapsEquilProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_internal_distances")] public static extern int InternalDistances(IntPtr doc, [Out] int[] n, [Out] double[] ratio, int cap, out int chains, out double b2);
+    [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
+    [DllImport(Lib, EntryPoint = "caps_set_threads")] public static extern void SetThreads(int threads);
     [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_smiles_depict")] public static extern int SmilesDepict([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_smiles_write")] public static extern int SmilesWrite([MarshalAs(UnmanagedType.LPUTF8Str)] string graph, byte[]? smiles, int cap);

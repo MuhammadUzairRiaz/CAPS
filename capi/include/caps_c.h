@@ -1,4 +1,4 @@
-/* CAPS C ABI v12 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v13 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 12  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder */
+#define CAPS_ABI_VERSION 13  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -336,6 +336,11 @@ int32_t caps_smiles_depict(const char* smiles, char* json, int32_t cap);
    needed including the final NUL, or -1 when the graph is not valid (caps_last_error explains). */
 int32_t caps_smiles_write(const char* graph_json, char* smiles, int32_t cap);
 caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_build_opts* o, char* report, int32_t cap);
+
+/* Settings (ABI 13), process-wide: the colour palette of elements and molecules/chains (0 CAPS, 1 Okabe–Ito, 2
+   monochrome) and the worker threads of the parallel loops (0 = one per hardware thread, at most 16). */
+void caps_set_palette(int32_t palette);
+void caps_set_threads(int32_t threads);
 
 #ifdef __cplusplus
 }

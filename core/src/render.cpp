@@ -2,8 +2,10 @@
 // Spheres and bond capsules are rasterised as depth-correct impostors into a supersampled buffer,
 // then outlined from depth discontinuities and averaged down with a real alpha channel.
 #include "caps/render.hpp"
+#include "caps/config.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <limits>
 
@@ -126,7 +128,58 @@ void line(Buffers& B, double ax, double ay, double az, double bx, double by, dou
 
 }  // namespace
 
-unsigned molecule_colour(int k) { return kMol[((k % 10) + 10) % 10]; }
+unsigned molecule_colour(int k) {
+  if (palette() != Palette::Caps) return category_colour(k);
+  return kMol[((k % 10) + 10) % 10];
+}
+
+namespace {
+std::atomic<int> g_palette{0}, g_threads{0};
+}
+
+void set_palette(Palette p) { g_palette = int(p); }
+Palette palette() { return Palette(g_palette.load()); }
+void set_max_threads(int n) { g_threads = n < 0 ? 0 : n; }
+int max_threads() { return g_threads.load(); }
+
+unsigned element_colour(int z) {
+  switch (palette()) {
+    case Palette::Caps: return element(z).rgb;
+    case Palette::OkabeIto:   // Okabe & Ito (2008) colour-universal design; carbon stays neutral
+      switch (z) {
+        case 1: return 0xE9ECEF;
+        case 6: return 0x9AA1A8;
+        case 7: return 0x56B4E9;
+        case 8: return 0xD55E00;
+        case 16: return 0xF0E442;
+        case 15: return 0xE69F00;
+        case 9: case 17: case 35: case 53: return 0x009E73;
+        case 14: return 0x0072B2;
+        default: return 0xCC79A7;
+      }
+    case Palette::Monochrome:   // lightness only, so categories read in greyscale
+      switch (z) {
+        case 1: return 0xF0F0F0;
+        case 6: return 0x7C7C7C;
+        case 7: return 0xB4B4B4;
+        case 8: return 0x4A4A4A;
+        case 16: return 0xD8D8D8;
+        default: return 0x9C9C9C;
+      }
+  }
+  return element(z).rgb;
+}
+
+unsigned category_colour(int k) {
+  static const unsigned okabe[] = {0xE69F00, 0x56B4E9, 0x009E73, 0xF0E442, 0x0072B2, 0xD55E00, 0xCC79A7, 0x9AA1A8};
+  static const unsigned mono[] = {0xE8E8E8, 0x6E6E6E, 0xB8B8B8, 0x4A4A4A, 0xD0D0D0, 0x8E8E8E};
+  const int i = ((k % 8) + 8) % 8;
+  switch (palette()) {
+    case Palette::OkabeIto: return okabe[i];
+    case Palette::Monochrome: return mono[((k % 6) + 6) % 6];
+    default: return kMol[((k % 10) + 10) % 10];
+  }
+}
 
 unsigned viridis(double t) {
   t = std::clamp(t, 0.0, 1.0) * 8;
@@ -177,7 +230,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   std::vector<RGB> colour(n);
   for (size_t i = 0; i < n; ++i) {
     const Atom& a = s.atoms[i];
-    unsigned c = element(a.element).rgb;
+    unsigned c = element_colour(a.element);
     switch (opt.colour_by) {
       case ColourBy::Element: break;
       case ColourBy::Molecule: {

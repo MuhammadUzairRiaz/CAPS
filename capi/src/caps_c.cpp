@@ -16,6 +16,7 @@
 #include "caps/io.hpp"
 #include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
+#include "caps/config.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
@@ -1506,3 +1507,6 @@ extern "C" int32_t caps_smiles_write(const char* graph_json, char* smiles, int32
     return report_out(caps::write_smiles(g), smiles, cap);
   });
 }
+
+extern "C" void caps_set_palette(int32_t p) { caps::set_palette(p == 1 ? caps::Palette::OkabeIto : p == 2 ? caps::Palette::Monochrome : caps::Palette::Caps); }
+extern "C" void caps_set_threads(int32_t n) { caps::set_max_threads(n); }
