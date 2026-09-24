@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 9, "native ABI version 9");
+        Check(Native.AbiVersion() == 10, "native ABI version 10");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         var vm = new MainViewModel();

@@ -210,6 +210,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_field_assign")] public static extern int FieldAssign(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string ff, [MarshalAs(UnmanagedType.LPUTF8Str)] string? rules, int charges);
     [DllImport(Lib, EntryPoint = "caps_analyze")] public static extern int Analyze(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, CapsAnalyzeProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_analyze_ex")] public static extern int AnalyzeEx(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, in CapsMechOpts m, CapsAnalyzeProgress? progress, IntPtr user);
+    [DllImport(Lib, EntryPoint = "caps_lammps_input")] public static extern int LammpsInput(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dataName, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
@@ -426,6 +427,19 @@ public sealed class CapsDocument : IDisposable
             if (n <= 1) return "";
             var buf = new byte[n];
             Native.AnalyzeReport(_h, buf, n);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
+        }
+    }
+
+    /// <summary>The LAMMPS input setup (styles, read_data, neighbour list) for the data file Save writes.</summary>
+    public string LammpsInput(string dataName)
+    {
+        lock (_lock)
+        {
+            var n = Native.LammpsInput(_h, dataName, null, 0);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            var buf = new byte[n];
+            Native.LammpsInput(_h, dataName, buf, n);
             return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
         }
     }

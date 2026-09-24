@@ -1,4 +1,4 @@
-/* CAPS C ABI v9 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v10 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 9   /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg */
+#define CAPS_ABI_VERSION 10  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -273,6 +273,10 @@ int32_t caps_analyze_report(caps_doc* d, char* json, int32_t cap);
 /* Save the current frame: .data (LAMMPS full; with GAFF coefficients, angles and dihedrals when every atom can be
    typed), .pdb or .xyz by extension. */
 int32_t caps_save(caps_doc* d, const char* path);
+/* The LAMMPS input that goes with the LAMMPS data file caps_save writes (same force field: the Field assignment when
+   complete, else GAFF of C and H): units, styles, special bonds, read_data <data_name>, neighbour settings, ending
+   before any run command. Returns the length needed including the final NUL (text = NULL to size the buffer). */
+int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_t cap);
 
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);
