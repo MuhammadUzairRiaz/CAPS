@@ -46,6 +46,20 @@ internal static class Screenshot
             if (kv[0] == "colours") w.ViewModel.SetPalette = int.Parse(kv[1]);
             if (kv[0] == "theme") w.ViewModel.SetTheme = kv[1];
             if (kv[0] == "jobs") w.ViewModel.SetModule(11);
+            if (kv[0] == "polymer")
+            {
+                w.ViewModel.SetModule(13);
+                w.ViewModel.LoadPolymerLibrary();
+                if (w.ViewModel.PolymerLibrary.FirstOrDefault(e => e.Id == kv[1]) is { } entry) w.ViewModel.UseLibrary(entry, null);
+                var t = w.ViewModel.BuildPolyPreview();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "polygrow")
+            {
+                w.ViewModel.SendPolymerToGrow();
+                var t = w.ViewModel.Grow();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             if (kv[0] == "bench")
             {
                 w.ViewModel.SetModule(12);

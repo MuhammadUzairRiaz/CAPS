@@ -25,7 +25,10 @@
   {
    "id": "P005",
    "name": "Polybutadiene",
-   "smiles": "[*]CC=CC[*]"
+   "smiles": "[*]CC=CC[*]",
+   "tags": [
+    "rubber"
+   ]
   },
   {
    "id": "P006",
@@ -59,7 +62,7 @@
   },
   {
    "id": "P012",
-   "name": "Poly(NN\u0002dimethylacrylamide)",
+   "name": "Poly(N,N-dimethylacrylamide)",
    "smiles": "[*]CC(C(=O)N(C)C)[*]"
   },
   {
@@ -74,42 +77,45 @@
   },
   {
    "id": "P015",
-   "name": "Poly trans 1 4 Isoprene",
-   "smiles": "[*]C/C=C(C)/C[*]"
+   "name": "Trans-1,4-Polyisoprene",
+   "smiles": "[*]C/C=C(C)/C[*]",
+   "tags": [
+    "rubber"
+   ]
   },
   {
    "id": "P016",
-   "name": "Poly Vinyl Alcohol",
+   "name": "Polyvinyl alcohol",
    "smiles": "[*]CC(O)[*]"
   },
   {
    "id": "P017",
-   "name": "Nylon 6 6",
+   "name": "Nylon 6,6",
    "smiles": "[*]C(=O)CCCCC(=O)NCCCCCCN[*]"
   },
   {
    "id": "P018",
-   "name": "Poly Acrylamide",
+   "name": "Polyacrylamide",
    "smiles": "[*]CC(C(=O)N)[*]"
   },
   {
    "id": "P019",
-   "name": "Poly Methyl Methacrylate",
+   "name": "Poly(methyl methacrylate)",
    "smiles": "[*]CC(C)(C(=O)OC)[*]"
   },
   {
    "id": "P020",
-   "name": "Poly Methyl Acrylate",
+   "name": "Poly(methyl acrylate)",
    "smiles": "[*]CC(C(=O)OC)[*]"
   },
   {
    "id": "P021",
-   "name": "Poly Methacrylic Acid",
+   "name": "Poly(methacrylic acid)",
    "smiles": "[*]CC(C)(C(=O)O)[*]"
   },
   {
    "id": "P022",
-   "name": "Poly Acrylic Acid",
+   "name": "Poly(acrylic acid)",
    "smiles": "[*]CC(C(=O)O)[*]"
   },
   {
@@ -124,7 +130,7 @@
   },
   {
    "id": "P025",
-   "name": "Poly Ethyl Acrylate",
+   "name": "Poly(ethyl acrylate)",
    "smiles": "[*]CC(C(=O)OCC)[*]"
   },
   {
@@ -174,22 +180,22 @@
   },
   {
    "id": "P035",
-   "name": "Poly 4 fluorostyrene",
+   "name": "Poly(4-fluorostyrene)",
    "smiles": "[*]C(c1ccc(F)cc1)C[*]"
   },
   {
    "id": "P036",
-   "name": "Poly 2 chlorostyrene",
+   "name": "Poly(2-chlorostyrene)",
    "smiles": "[*]C(c1c(Cl)cccc1)C[*]"
   },
   {
    "id": "P037",
-   "name": "Poly 3 chlorostyrene",
+   "name": "Poly(3-chlorostyrene)",
    "smiles": "[*]C(c1cc(Cl)ccc1)C[*]"
   },
   {
    "id": "P038",
-   "name": "Poly 4 chlorostyrene",
+   "name": "Poly(4-chlorostyrene)",
    "smiles": "[*]C(c1ccc(Cl)cc1)C[*]"
   },
   {
@@ -209,7 +215,7 @@
   },
   {
    "id": "P042",
-   "name": "poly(N-vinylacetamide)",
+   "name": "Poly(N-vinylacetamide)",
    "smiles": "[*]C(NC(=O)C)C[*]"
   },
   {
@@ -224,7 +230,7 @@
   },
   {
    "id": "P045",
-   "name": "Poly ethylene terephthalate",
+   "name": "Poly(ethylene terephthalate)",
    "smiles": "[*]OCCOC(=O)c1ccc(C(=O)[*])cc1"
   },
   {
@@ -244,12 +250,12 @@
   },
   {
    "id": "P049",
-   "name": "Poly(1 4-cyclohexylidene dimethylterephthalate)",
+   "name": "Poly(1,4-cyclohexylidene dimethylterephthalate)",
    "smiles": "C1CC(C[*])CCC1COC(=O)c1ccc(C(=O)O[*])cc1"
   },
   {
    "id": "P050",
-   "name": "Poly(1 4-cyclohexane dimethylene terephthalate)",
+   "name": "Poly(1,4-cyclohexane dimethylene terephthalate)",
    "smiles": "C1CC(CO[*])CCC1COC(=O)c1ccc(C(=O)[*])cc1"
   },
   {
@@ -259,32 +265,35 @@
   },
   {
    "id": "P052",
-   "name": "nylon 3",
+   "name": "Nylon 3",
    "smiles": "[*]C(=O)CCN[*]"
   },
   {
    "id": "P053",
-   "name": "poly(vinyl butyl ether)",
+   "name": "Poly(vinyl butyl ether)",
    "smiles": "[*]CC(OCCCC)[*]"
   },
   {
    "id": "P054",
-   "name": "poly(isobutyl vinyl ether)",
+   "name": "Poly(isobutyl vinyl ether)",
    "smiles": "[*]CC(OCC(C)C)[*]"
   },
   {
    "id": "P055",
-   "name": "poly(e-caprolactone)",
+   "name": "Poly(e-caprolactone)",
    "smiles": "[*]C(=O)CCCCCO[*]"
   },
   {
    "id": "P056",
-   "name": "cis 1,4 polyisoprene",
-   "smiles": "[*]C/C=C(C)\\C[*]"
+   "name": "Cis-1,4-Polyisoprene (natural rubber)",
+   "smiles": "[*]C/C=C(C)\\C[*]",
+   "tags": [
+    "rubber"
+   ]
   },
   {
    "id": "P057",
-   "name": "poly(p-phenylene oxide)",
+   "name": "Poly(p-phenylene oxide)",
    "smiles": "c1cc([*])ccc1O[*]"
   },
   {
@@ -299,7 +308,7 @@
   },
   {
    "id": "P060",
-   "name": "poly(methylene oxide)",
+   "name": "Poly(methylene oxide)",
    "smiles": "[*]CO[*]"
   },
   {
@@ -439,7 +448,7 @@
   },
   {
    "id": "P088",
-   "name": "poly(ethylene 2,6-naphthalate",
+   "name": "Poly(ethylene 2,6-naphthalate)",
    "smiles": "O=C(O[*])C1=CC(C=CC(C(OCC[*])=O)=C2)=C2C=C1"
   },
   {
@@ -469,12 +478,12 @@
   },
   {
    "id": "P094",
-   "name": "nylon 46",
+   "name": "Nylon 46",
    "smiles": "[*]C(=O)CCCCC(=O)NCCCCN[*]"
   },
   {
    "id": "P095",
-   "name": "nylon 12",
+   "name": "Nylon 12",
    "smiles": "[*]C(=O)CCCCCCCCCCCN[*]"
   },
   {
@@ -485,7 +494,10 @@
   {
    "id": "P097",
    "name": "Polychloroprene",
-   "smiles": "[*]CC(Cl)=CC[*]"
+   "smiles": "[*]CC(Cl)=CC[*]",
+   "tags": [
+    "rubber"
+   ]
   },
   {
    "id": "P098",
@@ -516,6 +528,70 @@
    "id": "P103",
    "name": "Poly(1-heptene)",
    "smiles": "[*]CC(CCCCC)[*]"
+  },
+  {
+   "id": "P201",
+   "name": "Polydimethylsiloxane (silicone rubber)",
+   "smiles": "*O[Si](C)(C)*",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P202",
+   "name": "Polyisobutylene",
+   "smiles": "*CC(*)(C)C",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P203",
+   "name": "Cis-1,4-Polybutadiene",
+   "smiles": "[*]C/C=C\\C[*]",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P204",
+   "name": "Trans-1,4-Polybutadiene",
+   "smiles": "[*]C/C=C/C[*]",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P205",
+   "name": "1,2-Polybutadiene (vinyl)",
+   "smiles": "*CC(*)C=C",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P206",
+   "name": "Trans-Polychloroprene",
+   "smiles": "[*]C/C(Cl)=C/C[*]",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P207",
+   "name": "Epoxidised isoprene unit",
+   "smiles": "[*]CC1(C)OC1C[*]",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P208",
+   "name": "Polyepichlorohydrin",
+   "smiles": "*CC(CCl)O*",
+   "tags": [
+    "rubber"
+   ]
   }
  ],
  "copolymers": [
@@ -534,6 +610,9 @@
    "weights": [
     0.5,
     0.5
+   ],
+   "tags": [
+    "rubber"
    ]
   },
   {
@@ -547,6 +626,9 @@
    "weights": [
     0.137,
     0.863
+   ],
+   "tags": [
+    "rubber"
    ]
   },
   {
@@ -620,6 +702,135 @@
     "P019"
    ],
    "sequence": "gradient"
+  },
+  {
+   "id": "C101",
+   "name": "Natural rubber (cis-1,4-polyisoprene)",
+   "units": [
+    "P056"
+   ],
+   "sequence": "homopolymer",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C102",
+   "name": "ENR-25 (25 mol % epoxidised)",
+   "units": [
+    "P056",
+    "P207"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.75,
+    0.25
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C103",
+   "name": "ENR-50 (50 mol % epoxidised)",
+   "units": [
+    "P056",
+    "P207"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.5,
+    0.5
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C104",
+   "name": "High-cis BR (97 % cis, 2 % trans, 1 % vinyl)",
+   "units": [
+    "P203",
+    "P204",
+    "P205"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.97,
+    0.02,
+    0.01
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C105",
+   "name": "NBR (33 wt % acrylonitrile)",
+   "units": [
+    "P203",
+    "P011"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.666,
+    0.334
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C106",
+   "name": "Butyl rubber (IIR, 2 mol % isoprene)",
+   "units": [
+    "P202",
+    "P056"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.98,
+    0.02
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C107",
+   "name": "Chloroprene rubber (CR, mostly trans)",
+   "units": [
+    "P206",
+    "P097"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.9,
+    0.1
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C108",
+   "name": "E-SBR (23.5 wt % styrene; butadiene 70 % trans, 15 % cis, 15 % vinyl)",
+   "units": [
+    "P013",
+    "P204",
+    "P203",
+    "P205"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.137,
+    0.604,
+    0.13,
+    0.129
+   ],
+   "tags": [
+    "rubber"
+   ]
   }
  ],
  "copolymer_note": "weights are unit (mole) fractions, converted from the weight fractions in the names"

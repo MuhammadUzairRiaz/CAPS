@@ -297,7 +297,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     // ---------------------------------------------------------------- modules
-    private int _module = 8;   // 0 Grow, 1 Analyze, 2 Relax, 3 Dynamics, 4 Equilibrate, 5 Pack, 6 React, 7 Field, 8 Studio, 9 Molecule, 10 Settings, 11 Jobs, 12 Bench
+    private int _module = 8;   // 0 Grow, 1 Analyze, 2 Relax, 3 Dynamics, 4 Equilibrate, 5 Pack, 6 React, 7 Field, 8 Studio, 9 Molecule, 10 Settings, 11 Jobs, 12 Bench, 13 Polymer
     public bool IsGrow => _module == 0;
     public bool IsAnalyze => _module == 1;
     public bool IsRelax => _module == 2;
@@ -309,7 +309,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -334,6 +334,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsSettings));
         Raise(nameof(IsJobs));
         Raise(nameof(IsBench));
+        Raise(nameof(IsPolymer));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));
         RenderRequested?.Invoke();   // the Field page has its own view
@@ -387,12 +388,29 @@ public sealed partial class MainViewModel : ObservableObject
     public string GrowElapsedText => string.Format(CultureInfo.InvariantCulture, "{0:F1} s", _growElapsed);
     public string GrowTacticityName => Tacticities[Math.Clamp(_growTact, 0, 2)].ToLowerInvariant();
     public string GrowSizeLabel => _growUseBox ? "Box edge (Å)" : "Target density (g/cm³)";
-    public string GrowAtomsText => (_growChains * (16L * _growDp + 2)).ToString("N0", CultureInfo.InvariantCulture);
+    public string GrowAtomsText => (GrowVaries ? "≈ " : "") + (_growChains * GrowChainSize().Atoms).ToString("N0", CultureInfo.InvariantCulture);
+    /// <summary>Random and gradient copolymers draw each chain's sequence, so sizes vary from chain to chain.</summary>
+    private bool GrowVaries => _growSpec != null && (_growSpec.Contains("\"random\"") || _growSpec.Contains("\"gradient\""));
     /// <summary>The same build from the command line.</summary>
     public string GrowCommand => string.Format(CultureInfo.InvariantCulture,
-        "caps grow -o PS_{0}x{1}.data --chains {0} --dp {1} {2} --tacticity {3} --seed {4} --scale {5}{6}",
+        "caps grow -o {7}_{0}x{1}.data --chains {0} --dp {1} {2} --tacticity {3} --seed {4} --scale {5}{6}{8}",
         _growChains, _growDp, _growUseBox ? $"--box {_growBox}" : $"--density {_growDensity}", Tacticities[_growTact].ToLowerInvariant(), _growSeed, _growScale,
-        _growCurve ? "" : " --trans");
+        _growCurve ? "" : " --trans", _growSpec == null ? "PS" : "polymer", GrowUnitsArg());
+    private string GrowUnitsArg()
+    {
+        if (_growSpec == null) return "";
+        var j = System.Text.Json.Nodes.JsonNode.Parse(_growSpec)!;
+        var units = string.Join(",", (j["units"] as System.Text.Json.Nodes.JsonArray ?? []).Select(u => (string?)u!["smiles"]));
+        var seq = (string?)j["sequence"] ?? "homopolymer";
+        var extra = seq switch
+        {
+            "random" => " --weights " + string.Join(",", (j["weights"] as System.Text.Json.Nodes.JsonArray ?? []).Select(w => ((double?)w ?? 1).ToString(CultureInfo.InvariantCulture))),
+            "block" => " --blocks " + string.Join(",", (j["blocks"] as System.Text.Json.Nodes.JsonArray ?? []).Select(w => (int?)w ?? 1)),
+            "pattern" => " --pattern " + (string?)j["pattern"],
+            _ => "",
+        };
+        return $" --units '{units}' --sequence {seq}{extra}";
+    }
     public bool GrownUnsaved { get => _grownUnsaved; private set => Set(ref _grownUnsaved, value); }
 
     // decimal views for NumericUpDown
@@ -408,8 +426,9 @@ public sealed partial class MainViewModel : ObservableObject
         get
         {
             var inv = CultureInfo.InvariantCulture;
-            var atoms = _growChains * (16L * _growDp + 2);
-            var mass = _growChains * (_growDp * (8 * 12.011 + 8 * 1.008) + 2 * 1.008);
+            var (perAtoms, perMass) = GrowChainSize();
+            var atoms = _growChains * perAtoms;
+            var mass = _growChains * perMass;
             var box = _growUseBox ? _growBox : Math.Cbrt(mass / 6.02214076e23 / _growDensity) * 1e8;
             var rho = _growUseBox && _growBox > 0 ? mass / 6.02214076e23 / Math.Pow(_growBox * 1e-8, 3) : _growDensity;
             return string.Format(inv, "{0:N0} atoms · {1:N0} g/mol per chain · box {2:F2} Å · {3:F3} g/cm³", atoms, mass / _growChains, box, rho);
@@ -426,6 +445,7 @@ public sealed partial class MainViewModel : ObservableObject
             Raise(nameof(GrowAtomsText));
             Raise(nameof(GrowDoneText));
             Raise(nameof(GrowTacticityName));
+            Raise(nameof(GrowComponentName));
             Raise(nameof(GrowSizeLabel));
         }
     }
@@ -441,12 +461,20 @@ public sealed partial class MainViewModel : ObservableObject
             Chains = _growChains, Dp = _growDp, Tacticity = _growTact, Seed = (ulong)_growSeed,
             Box = _growUseBox ? _growBox : 0, Density = _growUseBox ? 0 : _growDensity, ContactScale = _growScale, Curve = _growCurve ? 1 : 0,
         };
-        var label = $"PS_{_growChains}x{_growDp}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
+        var spec = _growSpec;
+        if (spec != null)
+        {
+            var sj = System.Text.Json.Nodes.JsonNode.Parse(spec)!.AsObject();
+            sj["dp"] = _growDp;
+            spec = sj.ToJsonString();
+        }
+        var stem = spec == null ? "PS" : string.Concat(_growSpecName.Where(char.IsLetterOrDigit).Take(16));
+        var label = $"{stem}_{_growChains}x{_growDp}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
         GrowLog = "Growing…";
         GrowDone = 0;
         GrowRestarts = 0;
         GrowElapsed = 0;
-        Status = $"Growing {_growChains} chains of polystyrene, DP {_growDp}…";
+        Status = $"Growing {_growChains} chains of {(spec == null ? "polystyrene" : _growSpecName)}, DP {_growDp}…";
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
@@ -462,7 +490,7 @@ public sealed partial class MainViewModel : ObservableObject
                 var s0 = seed;
                 try
                 {
-                    result = await Task.Run(() => CapsDocument.Grow(oa, (d, t, r) =>
+                    Func<int, int, int, bool> onProgress = (d, t, r) =>
                     {
                         if (sw.ElapsedMilliseconds - lastUi > 150)
                         {
@@ -476,7 +504,9 @@ public sealed partial class MainViewModel : ObservableObject
                             });
                         }
                         return !token.IsCancellationRequested;
-                    }, label.Replace($"seed{_growSeed}", $"seed{s0}")));
+                    };
+                    var lbl = label.Replace($"seed{_growSeed}", $"seed{s0}");
+                    result = await Task.Run(() => spec == null ? CapsDocument.Grow(oa, onProgress, lbl) : CapsDocument.GrowChains(spec, oa, onProgress, lbl));
                 }
                 catch (InvalidOperationException e) when (e.Message != "cancelled")
                 {

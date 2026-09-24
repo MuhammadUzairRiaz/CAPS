@@ -21,4 +21,6 @@ public partial class GrowPage : PageBase
         if (clip != null) await clip.SetTextAsync(Vm.GrowCommand);
         Vm.Status = "Copied: " + Vm.GrowCommand;
     }
+    private void OnChoosePolymer(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.SetModule(13);
+    private void OnUsePs(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.UsePolystyreneInGrow();
 }
