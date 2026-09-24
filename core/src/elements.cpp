@@ -51,7 +51,7 @@ const Element kTable[] = {
 };
 constexpr int kCount = sizeof(kTable) / sizeof(kTable[0]);
 
-// Heavier elements (Rb–Rn, U): IUPAC weights, Cordero covalent radii, Bondi van der Waals radii where tabulated,
+// Heavier elements (Rb–Lr; Bk–Lr covalent radii from Pyykkö & Atsumi 2009): IUPAC weights, Cordero covalent radii, Bondi van der Waals radii where tabulated,
 // Jmol colours.
 const Element kExtra[] = {
     {37, "Rb", 85.468, 2.20, 1.70, 0x702EB0},
@@ -104,7 +104,23 @@ const Element kExtra[] = {
     {84, "Po", 209.0, 1.40, 1.70, 0xAB5C00},
     {85, "At", 210.0, 1.50, 1.70, 0x754F45},
     {86, "Rn", 222.0, 1.50, 1.70, 0x428296},
+    {87, "Fr", 223.0, 2.60, 1.70, 0x420066},
+    {88, "Ra", 226.0, 2.21, 1.70, 0x007D00},
+    {89, "Ac", 227.0, 2.15, 1.70, 0x70ABFA},
+    {90, "Th", 232.04, 2.06, 1.70, 0x00BAFF},
+    {91, "Pa", 231.04, 2.00, 1.70, 0x00A1FF},
     {92, "U", 238.03, 1.96, 1.86, 0x008FFF},
+    {93, "Np", 237.0, 1.90, 1.70, 0x0080FF},
+    {94, "Pu", 244.0, 1.87, 1.70, 0x006BFF},
+    {95, "Am", 243.0, 1.80, 1.70, 0x545CF2},
+    {96, "Cm", 247.0, 1.69, 1.70, 0x785CE3},
+    {97, "Bk", 247.0, 1.68, 1.70, 0x8A4FE3},
+    {98, "Cf", 251.0, 1.68, 1.70, 0xA136D4},
+    {99, "Es", 252.0, 1.65, 1.70, 0xB31FD4},
+    {100, "Fm", 257.0, 1.67, 1.70, 0xB31FBA},
+    {101, "Md", 258.0, 1.73, 1.70, 0xB30DA6},
+    {102, "No", 259.0, 1.76, 1.70, 0xBD0D87},
+    {103, "Lr", 266.0, 1.61, 1.70, 0xC70066},
 };
 
 std::string upper(std::string_view s) {
@@ -115,7 +131,7 @@ std::string upper(std::string_view s) {
 
 }  // namespace
 
-int max_element() { return 92; }
+int max_element() { return 103; }
 
 const Element& element(int z) {
   if (z > 0 && z < kCount) return kTable[z];

@@ -127,6 +127,16 @@ Layout build(const System& s, const ForceField& ff) {
   for (const auto& a : ff.angles_x) {
     if (a.form == 1) L.angles.add("cosine/squared", num({a.a, a.b * R2D}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     else if (a.form == 2) L.angles.add("cosine", num({a.a}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
+    else if (a.form == 3) {
+      const double s0 = std::sin(a.b), c0 = std::cos(a.b);
+      const double C2 = 1 / (4 * std::max(s0 * s0, 1e-8)), C1 = -4 * C2 * c0, C0 = C2 * (2 * c0 * c0 + 1);
+      L.angles.add("fourier", num({a.a, C0, C1, C2}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
+    } else if (a.form > 10 && a.form <= 16) {
+      // cosine/periodic: E = (2/n²) C [1 − B (−1)ⁿ cos nθ]; C = K/2, B = (−1)ⁿ, or B = 1 for n = 1 (1 + cos θ)
+      const int n = a.form - 10;
+      const int B = n == 1 ? 1 : (n % 2 ? -1 : 1);
+      L.angles.add("cosine/periodic", num({a.a / 2}) + " " + std::to_string(B) + " " + std::to_string(n), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
+    }
     else throw FieldError("angle form " + std::to_string(a.form) + " has no LAMMPS style");
   }
   // dihedrals: the Fourier terms of one atom quadruple make one dihedral_style fourier entry
@@ -175,6 +185,11 @@ Layout build(const System& s, const ForceField& ff) {
       const uint32_t o[3] = {v.a, v.b, v.d};
       for (int p = 0; p < 3; ++p)
         L.impropers.add("umbrella", num({v.kw / 3, 0.0}), {}, {v.c, o[(p + 1) % 3], o[(p + 2) % 3], o[p]}, lab({v.c, v.a, v.b, v.d}));
+    } else if (v.form == 2) {
+      // improper fourier: the centre first, ω between the I-L axis and the I-J-K plane; "all" sums the three
+      // permutations, each at K/3
+      const double C2 = 1, C1 = -4 * std::cos(v.w0), C0 = -(C1 * std::cos(v.w0) + C2 * std::cos(2 * v.w0));
+      L.impropers.add("fourier", num({v.kw / 3, C0, C1, C2}) + " 1", {}, {v.c, v.a, v.b, v.d}, lab({v.c, v.a, v.b, v.d}));
     } else {
       throw FieldError("inversion form " + std::to_string(v.form) + " has no LAMMPS style");
     }

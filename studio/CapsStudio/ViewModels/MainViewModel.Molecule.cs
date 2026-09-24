@@ -137,6 +137,8 @@ public sealed partial class MainViewModel
                 }
                 foreach (var id in order) if (found.Remove(id, out var c)) list.Add(c);
                 list.AddRange(found.Values);
+                // UFF types every element from its bonds alone (silicones, phosphazenes, halogens, metal complexes)
+                list.Insert(Math.Min(1, list.Count), new CleanChoice("UFF · every element", "uff"));
             }
             catch { /* no library: embedding only */ }
         }
