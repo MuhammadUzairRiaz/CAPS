@@ -16,6 +16,9 @@
 #include <string>
 #include <vector>
 
+#include <memory>
+
+#include "caps/field.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -109,6 +112,13 @@ struct BuildResult {
 };
 
 BuildResult build_molecule(const std::string& smiles, const BuildOptions& o = {});
+// A force field for a molecule (hydrogens added) from a caps-forcefield JSON with typing rules; null (with the reason
+// in notes) when it cannot type or parameterise every atom.
+std::shared_ptr<const ForceField> molecule_forcefield(const MolGraph& g, const std::string& path, const std::string& charges,
+                                                      std::vector<std::string>& notes, std::string* name = nullptr);
+// Minimises pos with ff (no cell); false (and why) when it fails or inverts a specified centre.
+bool minimise_molecule(const MolGraph& g, const std::shared_ptr<const ForceField>& ff, double ftol, std::vector<Vec3>& pos,
+                       double* energy = nullptr, std::string* why = nullptr);
 // The graph as a System (element, bonds with orders, molecule 1, names like C1 H9) at the given positions.
 System molecule_system(const MolGraph& g, const std::vector<Vec3>& pos);
 
