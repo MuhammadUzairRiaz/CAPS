@@ -1,0 +1,40 @@
+namespace CapsStudio;
+
+/// <summary>Where CAPS keeps its shipped resources (data/ with force fields, typing rules and reference values;
+/// samples/). Looked up in this order: $CAPS_HOME; next to the executable (Windows installer, AppImage, tarball);
+/// ../Resources (macOS .app bundle); ../share/caps (Linux /usr prefix: .deb, PKGBUILD, Flatpak /app); and the
+/// development tree (studio/CapsStudio/bin/... → the repository).</summary>
+public static class Paths
+{
+    private static IEnumerable<string> Roots()
+    {
+        var env = Environment.GetEnvironmentVariable("CAPS_HOME");
+        if (!string.IsNullOrEmpty(env)) yield return env;
+        var baseDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        yield return baseDir;
+        var parent = Path.GetDirectoryName(baseDir);
+        if (parent != null)
+        {
+            yield return Path.Combine(parent, "Resources");
+            yield return Path.Combine(parent, "share", "caps");
+        }
+        for (var dir = parent; dir != null; dir = Path.GetDirectoryName(dir)) yield return dir;
+    }
+
+    private static string? Find(string relative, string probe)
+    {
+        foreach (var root in Roots())
+        {
+            var cand = Path.Combine(root, relative);
+            if (File.Exists(Path.Combine(cand, probe))) return cand;
+        }
+        return null;
+    }
+
+    /// <summary>The force-field library directory (data/forcefields), or null.</summary>
+    public static string? ForceFields => Find(Path.Combine("data", "forcefields"), "catalogue.json");
+    /// <summary>data/reference/polymers.json, or null.</summary>
+    public static string? References => Find(Path.Combine("data", "reference"), "polymers.json") is { } d ? Path.Combine(d, "polymers.json") : null;
+    /// <summary>The samples directory, or null.</summary>
+    public static string? Samples => Find("samples", "ps_melt.data");
+}

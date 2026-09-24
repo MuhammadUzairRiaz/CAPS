@@ -1,0 +1,262 @@
+CRYST1   60.000   60.000   60.000  90.00  90.00  90.00 P 1           1
+HETATM    1 c3   STY A   1      42.283   9.968   6.755  1.00  0.00           C
+HETATM    2 c3   STY A   1      43.496  10.872   6.987  1.00  0.00           C
+HETATM    3 c3   STY A   1      43.733  11.894   5.873  1.00  0.00           C
+HETATM    4 c3   STY A   1      42.750  13.066   5.883  1.00  0.00           C
+HETATM    5 c3   STY A   1      43.051  14.140   4.836  1.00  0.00           C
+HETATM    6 c3   STY A   1      42.039  15.288   4.813  1.00  0.00           C
+HETATM    7 c3   STY A   1      40.583  14.832   4.704  1.00  0.00           C
+HETATM    8 c3   STY A   1      39.583  15.979   4.541  1.00  0.00           C
+HETATM    9 c3   STY A   1      39.611  16.995   5.684  1.00  0.00           C
+HETATM   10 c3   STY A   1      38.859  18.293   5.381  1.00  0.00           C
+HETATM   11 c3   STY A   1      39.496  19.138   4.276  1.00  0.00           C
+HETATM   12 c3   STY A   1      38.808  20.486   4.049  1.00  0.00           C
+HETATM   13 c3   STY A   1      39.326  21.251   2.829  1.00  0.00           C
+HETATM   14 c3   STY A   1      38.834  22.697   2.747  1.00  0.00           C
+HETATM   15 c3   STY A   1      39.044  23.349   1.379  1.00  0.00           C
+HETATM   16 c3   STY A   1      38.125  22.805   0.283  1.00  0.00           C
+HETATM   17 hc   STY A   1      41.398  10.598   6.675  1.00  0.00           H
+HETATM   18 hc   STY A   1      42.436   9.426   5.822  1.00  0.00           H
+HETATM   19 ca   STY A   1      44.723  10.000   7.098  1.00  0.00           C
+HETATM   20 ca   STY A   1      45.119   9.512   8.338  1.00  0.00           C
+HETATM   21 ca   STY A   1      46.249   8.709   8.440  1.00  0.00           C
+HETATM   22 ca   STY A   1      46.982   8.392   7.302  1.00  0.00           C
+HETATM   23 ca   STY A   1      46.585   8.880   6.062  1.00  0.00           C
+HETATM   24 ca   STY A   1      45.456   9.683   5.960  1.00  0.00           C
+HETATM   25 ha   STY A   1      44.550   9.758   9.222  1.00  0.00           H
+HETATM   26 ha   STY A   1      46.557   8.330   9.403  1.00  0.00           H
+HETATM   27 ha   STY A   1      47.859   7.768   7.381  1.00  0.00           H
+HETATM   28 ha   STY A   1      47.155   8.634   5.178  1.00  0.00           H
+HETATM   29 ha   STY A   1      45.148  10.062   4.997  1.00  0.00           H
+HETATM   30 hc   STY A   1      43.343  11.415   7.921  1.00  0.00           H
+HETATM   31 hc   STY A   1      43.643  11.381   4.915  1.00  0.00           H
+HETATM   32 hc   STY A   1      44.741  12.293   5.985  1.00  0.00           H
+HETATM   33 ca   STY A   1      42.796  13.710   7.248  1.00  0.00           C
+HETATM   34 ca   STY A   1      43.981  14.268   7.714  1.00  0.00           C
+HETATM   35 ca   STY A   1      44.024  14.861   8.970  1.00  0.00           C
+HETATM   36 ca   STY A   1      42.881  14.896   9.761  1.00  0.00           C
+HETATM   37 ca   STY A   1      41.696  14.339   9.296  1.00  0.00           C
+HETATM   38 ca   STY A   1      41.654  13.746   8.039  1.00  0.00           C
+HETATM   39 ha   STY A   1      44.869  14.240   7.099  1.00  0.00           H
+HETATM   40 ha   STY A   1      44.945  15.294   9.331  1.00  0.00           H
+HETATM   41 ha   STY A   1      42.915  15.357  10.737  1.00  0.00           H
+HETATM   42 ha   STY A   1      40.809  14.366   9.910  1.00  0.00           H
+HETATM   43 ha   STY A   1      40.733  13.312   7.678  1.00  0.00           H
+HETATM   44 hc   STY A   1      41.750  12.675   5.694  1.00  0.00           H
+HETATM   45 hc   STY A   1      43.053  13.667   3.854  1.00  0.00           H
+HETATM   46 hc   STY A   1      44.035  14.556   5.047  1.00  0.00           H
+HETATM   47 ca   STY A   1      42.350  16.169   3.627  1.00  0.00           C
+HETATM   48 ca   STY A   1      42.700  17.499   3.822  1.00  0.00           C
+HETATM   49 ca   STY A   1      42.987  18.310   2.730  1.00  0.00           C
+HETATM   50 ca   STY A   1      42.922  17.790   1.443  1.00  0.00           C
+HETATM   51 ca   STY A   1      42.572  16.459   1.247  1.00  0.00           C
+HETATM   52 ca   STY A   1      42.286  15.648   2.340  1.00  0.00           C
+HETATM   53 ha   STY A   1      42.750  17.904   4.823  1.00  0.00           H
+HETATM   54 ha   STY A   1      43.259  19.344   2.882  1.00  0.00           H
+HETATM   55 ha   STY A   1      43.145  18.420   0.594  1.00  0.00           H
+HETATM   56 ha   STY A   1      42.522  16.055   0.247  1.00  0.00           H
+HETATM   57 ha   STY A   1      42.014  14.614   2.188  1.00  0.00           H
+HETATM   58 hc   STY A   1      42.150  15.858   5.736  1.00  0.00           H
+HETATM   59 hc   STY A   1      40.328  14.282   5.610  1.00  0.00           H
+HETATM   60 hc   STY A   1      40.495  14.177   3.837  1.00  0.00           H
+HETATM   61 ca   STY A   1      38.195  15.388   4.468  1.00  0.00           C
+HETATM   62 ca   STY A   1      37.673  14.701   5.557  1.00  0.00           C
+HETATM   63 ca   STY A   1      36.395  14.158   5.489  1.00  0.00           C
+HETATM   64 ca   STY A   1      35.639  14.302   4.332  1.00  0.00           C
+HETATM   65 ca   STY A   1      36.161  14.989   3.242  1.00  0.00           C
+HETATM   66 ca   STY A   1      37.439  15.533   3.310  1.00  0.00           C
+HETATM   67 ha   STY A   1      38.260  14.589   6.457  1.00  0.00           H
+HETATM   68 ha   STY A   1      35.990  13.624   6.336  1.00  0.00           H
+HETATM   69 ha   STY A   1      34.647  13.880   4.279  1.00  0.00           H
+HETATM   70 ha   STY A   1      35.574  15.101   2.343  1.00  0.00           H
+HETATM   71 ha   STY A   1      37.844  16.067   2.463  1.00  0.00           H
+HETATM   72 hc   STY A   1      39.811  16.502   3.613  1.00  0.00           H
+HETATM   73 hc   STY A   1      40.651  17.245   5.893  1.00  0.00           H
+HETATM   74 hc   STY A   1      39.158  16.535   6.562  1.00  0.00           H
+HETATM   75 ca   STY A   1      38.815  19.120   6.644  1.00  0.00           C
+HETATM   76 ca   STY A   1      37.618  19.275   7.332  1.00  0.00           C
+HETATM   77 ca   STY A   1      37.578  20.036   8.495  1.00  0.00           C
+HETATM   78 ca   STY A   1      38.735  20.643   8.968  1.00  0.00           C
+HETATM   79 ca   STY A   1      39.932  20.488   8.280  1.00  0.00           C
+HETATM   80 ca   STY A   1      39.973  19.727   7.117  1.00  0.00           C
+HETATM   81 ha   STY A   1      36.718  18.803   6.964  1.00  0.00           H
+HETATM   82 ha   STY A   1      36.647  20.156   9.030  1.00  0.00           H
+HETATM   83 ha   STY A   1      38.704  21.234   9.871  1.00  0.00           H
+HETATM   84 ha   STY A   1      40.832  20.960   8.648  1.00  0.00           H
+HETATM   85 ha   STY A   1      40.903  19.607   6.582  1.00  0.00           H
+HETATM   86 hc   STY A   1      37.845  18.036   5.073  1.00  0.00           H
+HETATM   87 hc   STY A   1      39.453  18.572   3.346  1.00  0.00           H
+HETATM   88 hc   STY A   1      40.535  19.327   4.547  1.00  0.00           H
+HETATM   89 ca   STY A   1      37.331  20.237   3.859  1.00  0.00           C
+HETATM   90 ca   STY A   1      36.405  20.911   4.646  1.00  0.00           C
+HETATM   91 ca   STY A   1      35.046  20.682   4.471  1.00  0.00           C
+HETATM   92 ca   STY A   1      34.611  19.778   3.509  1.00  0.00           C
+HETATM   93 ca   STY A   1      35.537  19.104   2.721  1.00  0.00           C
+HETATM   94 ca   STY A   1      36.897  19.333   2.896  1.00  0.00           C
+HETATM   95 ha   STY A   1      36.743  21.613   5.395  1.00  0.00           H
+HETATM   96 ha   STY A   1      34.326  21.206   5.083  1.00  0.00           H
+HETATM   97 ha   STY A   1      33.555  19.600   3.373  1.00  0.00           H
+HETATM   98 ha   STY A   1      35.200  18.402   1.973  1.00  0.00           H
+HETATM   99 ha   STY A   1      37.616  18.809   2.284  1.00  0.00           H
+HETATM  100 hc   STY A   1      38.967  21.104   4.933  1.00  0.00           H
+HETATM  101 hc   STY A   1      38.997  20.726   1.932  1.00  0.00           H
+HETATM  102 hc   STY A   1      40.415  21.263   2.871  1.00  0.00           H
+HETATM  103 ca   STY A   1      39.580  23.510   3.778  1.00  0.00           C
+HETATM  104 ca   STY A   1      38.913  23.994   4.897  1.00  0.00           C
+HETATM  105 ca   STY A   1      39.599  24.743   5.846  1.00  0.00           C
+HETATM  106 ca   STY A   1      40.953  25.007   5.675  1.00  0.00           C
+HETATM  107 ca   STY A   1      41.620  24.523   4.556  1.00  0.00           C
+HETATM  108 ca   STY A   1      40.934  23.775   3.607  1.00  0.00           C
+HETATM  109 ha   STY A   1      37.861  23.789   5.029  1.00  0.00           H
+HETATM  110 ha   STY A   1      39.081  25.119   6.715  1.00  0.00           H
+HETATM  111 ha   STY A   1      41.487  25.589   6.412  1.00  0.00           H
+HETATM  112 ha   STY A   1      42.672  24.729   4.423  1.00  0.00           H
+HETATM  113 ha   STY A   1      41.452  23.399   2.737  1.00  0.00           H
+HETATM  114 hc   STY A   1      37.767  22.708   2.970  1.00  0.00           H
+HETATM  115 hc   STY A   1      40.076  23.178   1.074  1.00  0.00           H
+HETATM  116 hc   STY A   1      38.860  24.419   1.478  1.00  0.00           H
+HETATM  117 ca   STY A   1      38.435  23.537  -1.001  1.00  0.00           C
+HETATM  118 ca   STY A   1      37.558  24.503  -1.480  1.00  0.00           C
+HETATM  119 ca   STY A   1      37.844  25.177  -2.662  1.00  0.00           C
+HETATM  120 ca   STY A   1      39.007  24.884  -3.364  1.00  0.00           C
+HETATM  121 ca   STY A   1      39.884  23.919  -2.885  1.00  0.00           C
+HETATM  122 ca   STY A   1      39.598  23.245  -1.704  1.00  0.00           C
+HETATM  123 ha   STY A   1      36.654  24.730  -0.934  1.00  0.00           H
+HETATM  124 ha   STY A   1      37.162  25.927  -3.034  1.00  0.00           H
+HETATM  125 ha   STY A   1      39.229  25.408  -4.283  1.00  0.00           H
+HETATM  126 ha   STY A   1      40.788  23.691  -3.431  1.00  0.00           H
+HETATM  127 ha   STY A   1      40.280  22.494  -1.332  1.00  0.00           H
+HETATM  128 hc   STY A   1      38.331  21.742   0.161  1.00  0.00           H
+HETATM  129 hc   STY A   1      42.114   9.241   7.549  1.00  0.00           H
+HETATM  130 hc   STY A   1      37.062  22.925   0.495  1.00  0.00           H
+CONECT    1   17   18  129    2
+CONECT    2   19   30    1    3
+CONECT    3   31   32    2    4
+CONECT    4   33   44    3    5
+CONECT    5   45   46    4    6
+CONECT    6   47   58    5    7
+CONECT    7   59   60    6    8
+CONECT    8   61   72    7    9
+CONECT    9   73   74    8   10
+CONECT   10   75   86    9   11
+CONECT   11   87   88   10   12
+CONECT   12   89  100   11   13
+CONECT   13  101  102   12   14
+CONECT   14  103  114   13   15
+CONECT   15  115  116   14   16
+CONECT   16  117  128  130   15
+CONECT   17    1
+CONECT   18    1
+CONECT   19   20   24    2
+CONECT   20   19   21   25
+CONECT   21   20   22   26
+CONECT   22   21   23   27
+CONECT   23   22   24   28
+CONECT   24   23   19   29
+CONECT   25   20
+CONECT   26   21
+CONECT   27   22
+CONECT   28   23
+CONECT   29   24
+CONECT   30    2
+CONECT   31    3
+CONECT   32    3
+CONECT   33   34   38    4
+CONECT   34   33   35   39
+CONECT   35   34   36   40
+CONECT   36   35   37   41
+CONECT   37   36   38   42
+CONECT   38   37   33   43
+CONECT   39   34
+CONECT   40   35
+CONECT   41   36
+CONECT   42   37
+CONECT   43   38
+CONECT   44    4
+CONECT   45    5
+CONECT   46    5
+CONECT   47   48   52    6
+CONECT   48   47   49   53
+CONECT   49   48   50   54
+CONECT   50   49   51   55
+CONECT   51   50   52   56
+CONECT   52   51   47   57
+CONECT   53   48
+CONECT   54   49
+CONECT   55   50
+CONECT   56   51
+CONECT   57   52
+CONECT   58    6
+CONECT   59    7
+CONECT   60    7
+CONECT   61   62   66    8
+CONECT   62   61   63   67
+CONECT   63   62   64   68
+CONECT   64   63   65   69
+CONECT   65   64   66   70
+CONECT   66   65   61   71
+CONECT   67   62
+CONECT   68   63
+CONECT   69   64
+CONECT   70   65
+CONECT   71   66
+CONECT   72    8
+CONECT   73    9
+CONECT   74    9
+CONECT   75   76   80   10
+CONECT   76   75   77   81
+CONECT   77   76   78   82
+CONECT   78   77   79   83
+CONECT   79   78   80   84
+CONECT   80   79   75   85
+CONECT   81   76
+CONECT   82   77
+CONECT   83   78
+CONECT   84   79
+CONECT   85   80
+CONECT   86   10
+CONECT   87   11
+CONECT   88   11
+CONECT   89   90   94   12
+CONECT   90   89   91   95
+CONECT   91   90   92   96
+CONECT   92   91   93   97
+CONECT   93   92   94   98
+CONECT   94   93   89   99
+CONECT   95   90
+CONECT   96   91
+CONECT   97   92
+CONECT   98   93
+CONECT   99   94
+CONECT  100   12
+CONECT  101   13
+CONECT  102   13
+CONECT  103  104  108   14
+CONECT  104  103  105  109
+CONECT  105  104  106  110
+CONECT  106  105  107  111
+CONECT  107  106  108  112
+CONECT  108  107  103  113
+CONECT  109  104
+CONECT  110  105
+CONECT  111  106
+CONECT  112  107
+CONECT  113  108
+CONECT  114   14
+CONECT  115   15
+CONECT  116   15
+CONECT  117  118  122   16
+CONECT  118  117  119  123
+CONECT  119  118  120  124
+CONECT  120  119  121  125
+CONECT  121  120  122  126
+CONECT  122  121  117  127
+CONECT  123  118
+CONECT  124  119
+CONECT  125  120
+CONECT  126  121
+CONECT  127  122
+CONECT  128   16
+CONECT  129    1
+CONECT  130   16
+END

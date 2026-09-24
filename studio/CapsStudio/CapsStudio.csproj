@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>CapsStudio</AssemblyName>
+    <RootNamespace>CapsStudio</RootNamespace>
+    <Version>0.1.0</Version>
+    <Product>CAPS Studio</Product>
+    <ApplicationIcon>Assets/caps.ico</ApplicationIcon>
+    <Company>CAPS</Company>
+    <!-- where CMake put libcaps (override for packaging: -p:CapsNativeDir=...) -->
+    <CapsNativeDir Condition="'$(CapsNativeDir)' == ''">$(MSBuildThisFileDirectory)../../build/capi</CapsNativeDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Headless" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/caps_256.png" />
+    <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+  </ItemGroup>
+
+  <!-- Native core built by CMake (../../build/capi). Copied next to the app so P/Invoke finds it. -->
+  <ItemGroup>
+    <None Include="$(CapsNativeDir)/libcaps.dylib" CopyToOutputDirectory="PreserveNewest" LinkBase="." Condition="Exists('$(CapsNativeDir)/libcaps.dylib')" />
+    <None Include="$(CapsNativeDir)/libcaps.so" CopyToOutputDirectory="PreserveNewest" LinkBase="." Condition="Exists('$(CapsNativeDir)/libcaps.so')" />
+    <None Include="$(CapsNativeDir)/caps.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="." Condition="Exists('$(CapsNativeDir)/caps.dll')" />
+    <None Include="$(CapsNativeDir)/Release/caps.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="." Condition="Exists('$(CapsNativeDir)/Release/caps.dll')" />
+  </ItemGroup>
+
+</Project>

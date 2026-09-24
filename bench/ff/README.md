@@ -1,0 +1,95 @@
+# Force-field validation
+
+Every converted force field in `data/forcefields` is checked against the program it came from, interaction by
+interaction, and every CAPS energy form is checked against LAMMPS.
+
+## Tools
+
+| Script | What it checks |
+|---|---|
+| `check_forms.cpp` (+ `check_forms_cmp.py`) | each CAPS functional form with random coefficients against the LAMMPS style it mirrors (class II, Morse / GROMOS bonds, cosine angles, Urey–Bradley, umbrella inversion, Buckingham, Morse pair, separate 1-4 LJ) |
+| `compare_moltemplate.py` | a moltemplate conversion against moltemplate's output and LAMMPS |
+| `compare_class2.py` | class II (COMPASS) conversions: every cross term, bond increments, LAMMPS CLASS2 energies / forces |
+| `run_reftool.py` | runs a private copy of the reference tool (`build/reftool_work`) on a structure; `--dlpoly` keeps the DL_POLY FIELD, `--keys` shows library keys |
+| `compare_reftool.py` | a the reference tool conversion against the reference tool's LAMMPS output, with LAMMPS energies and forces |
+| `compare_field.py` | a the reference tool conversion against the reference tool's DL_POLY FIELD file, term by term (`--from-config` for proteins, `--from-field` for ionic systems) |
+| `validate_family.py` | a whole library on its own molecule templates (`template_pdb.py`) or ionic formula units (`ionic_pdb.py`) |
+| `build_library.py` | builds `data/forcefields` with each entry's version, references, status and evidence |
+| `validate_typing.py` | automatic typing of a library's own molecule templates (mol2 without bond orders) against the template types; `--apply` also parameterises each one |
+| `compare_msi_types.py` | automatic typing against Materials Studio's types in msi2lmp data files |
+| `check_data_lammps.py` | LAMMPS data files written by CAPS, run in LAMMPS: every energy term and force, for each force-field family, hybrid styles included |
+| `validate_rtf_types.py` | automatic typing against a CHARMM topology's residues (CGenFF's own model compounds); `--apply` parameterises them |
+
+LAMMPS with CLASS2, MOFFF and CORESHELL is built at `~/lammps/build-class2/lmp`.
+
+## Results (the reference tool 4.13, FIELD-file comparison unless noted)
+
+| Library | Result |
+|---|---|
+| PCFF, CVFF, COMPASS, OPLS 2005, GAFF 16 / 25 | also against the reference tool's LAMMPS output: energies and forces ≤ 6e-5 kcal/mol/Å |
+| PCFF | 57 / 59 templates (open: one auto-torsion precedence case, two template-listed inversions) |
+| CVFF | 20 / 20 |
+| COMPASS | 7 / 7 |
+| OPLS 2005 | 59 / 60 (aniline: the reference tool's template fixes an improper's atom order) |
+| CL&P | 24 / 24 |
+| AMBER | BPTI (6PTI), methyl glucoside |
+| CHARMM | 48 / 48 |
+| CHARMM22 proteins | 35 / 35 templates, SOD1 protein |
+| CHARMM36 proteins | 4 / 4 templates, BPTI |
+| CHARMM36 nucleic acids | the reference tool's nucleic-acid example |
+| CGenFF | 60 / 60 |
+| CHARMM19 | 3 / 3 templates, C18 alkane |
+| DREIDING | 29 / 29 |
+| GROMOS 54A7 | octane (the other templates are chain residues) |
+| TraPPE-UA | 23 / 25 (the two are the reference tool's C-C-O-H torsion error) |
+| TraPPE-EH | 9 / 9 |
+| Inorganic halides, GaN, binary oxides, ternary oxides, zeolites | 14 / 14, 1 / 1, 17 / 17 (+ Al2O3, MgO shell models), 12 / 12, 4 / 4 |
+
+Templates the reference tool itself cannot build (chain residues, some nucleotides) are skipped. Two kinds of difference are
+reported but not counted as failures: *template policy* (the reference tool places impropers only where its molecule templates
+list them; CAPS applies the rules at every planar centre they match) and *convention* (same rule and atoms, another
+order of symmetric outer atoms; the reference tool's harmonic approximation of GROMOS bonds).
+
+## What the validation found in the source tools
+
+- moltemplate COMPASS: bond-increment charges doubled with `Data Bond List`; up to 55 % of class II cross-term
+  reference lengths / angles on the wrong bond or angle (canonical atom sort after matching).
+- the reference tool PCFF / COMPASS / CVFF: no class II cross terms (DL_POLY cannot evaluate them).
+- the reference tool LAMMPS export: CHARMM 1-4 van der Waals dropped (`special_bonds lj 0 0 0` with dihedral weight 0),
+  DREIDING inversions dropped, GROMOS not written; its DL_POLY FIELD file is complete.
+- the reference tool GROMOS: quartic bonds written as a harmonic approximation.
+- the reference tool TraPPE-UA: the C-C-O-H torsion takes terms from the O-C-C-O entry; the library's `CH2 CH2 OA HA` torsion is
+  continued by rows keyed `CH3 CH2 OA HA`.
+- the reference tool FIELD files: large fixed-width values run together (`7425.64200011530.500000`).
+- the reference tool libraries: `buckinghsm` (read as Buckingham, as the reference tool reads four characters); wrong masses for
+  `HC_benzyl` (12.0115, PCFF), `C_benzene` (1.00797, CVFF), `O_thioester` (15.0994), and in GAFF 2025
+  `C_carboxylate`, `O_carboxylate`, `HCN_azetidine`; CAPS keeps the first, correct entry and notes the others.
+- the reference tool GAFF 2025: one carbonyl improper written with the key's end atom moved; CAPS follows the key.
+- the reference tool units: eV → kcal/mol 23.061, kJ → kcal 0.23901, K → kcal 0.0019872041 (rounded); CAPS uses the exact
+  constants, so values agree to ~2e-5 relative.
+
+## Automatic typing
+
+| Rules | Check | Result |
+|---|---|---|
+| `data/typing/pcff-reftool.typing.json` | 92 the reference tool PCFF templates (chain-residue fragments left out) | 1387 / 1400 atoms, 87 molecules fully right |
+| `data/typing/cvff-reftool.typing.json` | 23 the reference tool CVFF templates | 272 / 278 atoms (the rest: TIP3P / SPC water) |
+| `data/typing/cvff-reftool.typing.json` | Materials Studio typing in the msi2lmp examples | 811 / 823 atoms |
+| `data/typing/cgenff-reftool.typing.json` | the 494 model compounds of `top_all36_cgenff.rtf` (CGenFF 3.0.1) | 9024 / 9174 atoms, 417 residues fully right (97.7 % with the RTF's partial bond orders) |
+| `data/typing/gaff-amber16-reftool.typing.json` | 32 the reference tool GAFF templates (water models aside) | 365 / 373 atoms |
+| `data/typing/gaff-amber25-reftool.typing.json` | 27 the reference tool GAFF2 templates | 304 / 316 atoms |
+| `data/typing/opls2005-reftool.typing.json` | 99 the reference tool OPLS 2005 templates | 1368 / 1398 atoms, 91 molecules fully right |
+
+the reference tool's templates are not consistent with one another: its PCFF templates give the carbons of furan, oxazole and
+indole `cp` but those of pyrrole, isoxazole and benzoxazole `c5`; neutral histidine carbons `ci` (the charged-ring type).
+CAPS follows the cff91 definition (`c5`: aromatic carbon in a five-membered ring). Materials Studio's own examples differ
+too (ethane and the cff97 phenylalanine use generic `c`, crambin `c1`/`c2`/`c3`; crambin and nylon type NH3+ `n4`/`hn`,
+the cff97 example `n+`/`h+`); CAPS follows the majority. Where the libraries lack parameters for a correctly typed
+group (PCFF nitroso N=O, charged-imidazole N–H; CVFF sulfate S–O−), CAPS reports the missing terms, as the reference tool does.
+
+GAFF rules follow antechamber's definition files (`ATOMTYPE_GFF.DEF`, `ATOMTYPE_GFF2.DEF`) in order, and its
+electron-withdrawing set for h1–h5 (N O S F Cl Br I, from antechamber's ring.c). the reference tool's GAFF templates depart from
+antechamber for H on carbons next to O or S (hc where antechamber gives h1) and for azobenzene N (n2, where antechamber's
+conjugation rule gives ne / nf); CAPS follows antechamber. CGenFF rules follow the type definitions in the CGenFF
+topology; the reference tool's CGenFF templates often use CHARMM's generic HA for alkane H (CGenFF: HGA1–3), which CAPS does not
+copy. OPLS residue-specific keys (amino-acid side-chain CB atoms, sugars, nucleic bases) need a user overlay.

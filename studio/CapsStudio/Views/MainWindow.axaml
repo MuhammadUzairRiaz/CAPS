@@ -1,0 +1,1595 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CapsStudio.ViewModels"
+        xmlns:local="using:CapsStudio.Views"
+        x:Class="CapsStudio.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="CAPS Studio"
+        Icon="/Assets/caps_256.png"
+        Width="1440" Height="900" MinWidth="1024" MinHeight="640">
+
+  <Grid RowDefinitions="44,*,26">
+
+    <!-- Top bar (design/generator/lib.py topbar): logo, document tabs, command palette, compute -->
+    <Border Grid.Row="0" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="72,Auto,Auto,*,Auto">
+        <Viewbox Width="30" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip.Tip="CAPS · Chain Assembly and Packing Suite">
+          <Canvas Width="30" Height="30">
+            <Path Data="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" Stroke="{DynamicResource AccB}" StrokeThickness="2" />
+            <Path Data="M15 9.5 V11.7 M19.8 17.8 L17.9 16.7 M10.2 17.8 L12.1 16.7" Stroke="{DynamicResource TextB}" StrokeThickness="1.4" />
+            <Ellipse Canvas.Left="11.6" Canvas.Top="11.6" Width="6.8" Height="6.8" Fill="{DynamicResource AccB}" />
+            <Ellipse Canvas.Left="13" Canvas.Top="5.5" Width="4" Height="4" Fill="{DynamicResource TextB}" />
+            <Ellipse Canvas.Left="19.5" Canvas.Top="16.8" Width="4" Height="4" Fill="{DynamicResource TextB}" />
+            <Ellipse Canvas.Left="6.5" Canvas.Top="16.8" Width="4" Height="4" Fill="{DynamicResource TextB}" />
+          </Canvas>
+        </Viewbox>
+        <TextBlock Grid.Column="1" Text="{Binding Crumb}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" Margin="4,0,18,0" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Bottom">
+          <Button Classes="doctab on" IsVisible="{Binding HasDocument}" ToolTip.Tip="{Binding Title}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <local:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Title}" MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Margin="4,0,0,3" Command="{Binding $parent[local:MainWindow].OpenCommand}"
+                  ToolTip.Tip="Open a structure or trajectory (⌘O)" IsEnabled="{Binding Idle}">
+            <local:Icon Kind="plus" Size="15" />
+          </Button>
+        </StackPanel>
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10" Margin="0,0,14,0" VerticalAlignment="Center">
+          <Button Width="300" Height="30" MinHeight="30" Padding="10,0" HorizontalContentAlignment="Stretch" FontWeight="Normal" Click="OnCommandPalette"
+                  ToolTip.Tip="Command palette (⌘K)">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              <local:Icon Kind="search" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="Run a command or find anything" Foreground="{DynamicResource DimB}" FontSize="12.5" VerticalAlignment="Center" />
+              <Border Grid.Column="2" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="4" Padding="5,1">
+                <TextBlock Text="⌘K" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" />
+              </Border>
+            </Grid>
+          </Button>
+          <Button Classes="ghost" Height="30" MinHeight="30" Padding="10,0" FontWeight="Normal" FontSize="12" ToolTip.Tip="Where calculations run">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource OkB}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ComputeText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
+
+      <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
+      <Border Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
+        <DockPanel>
+          <Button DockPanel.Dock="Bottom" Classes="rail" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center" ToolTip.Tip="Settings">
+            <local:Icon Kind="gear" Size="19" />
+            <Button.Flyout>
+              <MenuFlyout Placement="RightEdgeAlignedBottom">
+                <MenuItem Header="Theme: Graphite (dark)" Click="OnThemeDark" />
+                <MenuItem Header="Theme: Paper (light)" Click="OnThemeLight" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <StackPanel Spacing="2" Margin="0,8,0,0" HorizontalAlignment="Center">
+          <Button Classes="rail" Classes.on="{Binding IsStudio}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="hex" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Studio" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Grow amorphous polymer cells">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="grow" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Grow" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsPack}" Click="OnModulePack" ToolTip.Tip="Pack molecules into regions (packmol input accepted)">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="pack" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Pack" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Energy minimisation, push-off and compression">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="relax" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Relax" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Molecular dynamics: NVE, NVT, NPT">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="dyn" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Dynamics" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsEquilibrate}" Click="OnModuleEquilibrate" ToolTip.Tip="Published equilibration protocols with convergence checks">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="equil" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Equilibrate" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsReact}" Click="OnModuleReact" ToolTip.Tip="Crosslinking and reactions from atom-mapped templates">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="react" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="React" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsAnalyze}" Click="OnModuleAnalyze" ToolTip.Tip="Properties with errors, compared with experiment">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="chart" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Analyze" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsField}" Click="OnModuleField" ToolTip.Tip="Force fields: typing, charges and parameters, explained">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="tag" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Field" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" IsEnabled="False" ToolTip.Tip="Every long operation with progress, logs and checkpoints — coming" ToolTip.ShowOnDisabled="True">
+            <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <local:Icon Kind="jobs" Size="19" HorizontalAlignment="Center" />
+              <TextBlock Text="Jobs" HorizontalAlignment="Center" FontSize="10.5" />
+            </StackPanel>
+          </Button>
+          <Button Classes="rail" IsEnabled="False" ToolTip.Tip="Validation suite that regenerates the paper tables — coming" ToolTip.ShowOnDisabled="True">
+            <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <local:Icon Kind="bench" Size="19" HorizontalAlignment="Center" />
+              <TextBlock Text="Bench" HorizontalAlignment="Center" FontSize="10.5" />
+            </StackPanel>
+          </Button>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Centre: toolbar, viewport, frame bar -->
+      <!-- Toolbar (Main board): tools, builder tools, view options on the right -->
+      <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
+        <DockPanel VerticalAlignment="Center">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+            <Button Classes="tool" ToolTip.Tip="Display style" IsEnabled="{Binding HasDocument}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="18" VerticalAlignment="Center" /><TextBlock Text="{Binding StyleText}" VerticalAlignment="Center" /></StackPanel>
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem Header="Ball &amp; stick" Tag="0" Click="OnStyleItem" /><MenuItem Header="Space filling" Tag="1" Click="OnStyleItem" />
+                  <MenuItem Header="Sticks" Tag="2" Click="OnStyleItem" /><MenuItem Header="No hydrogens" Tag="3" Click="OnStyleItem" />
+                  <MenuItem Header="Backbone" Tag="4" Click="OnStyleItem" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <Button Classes="tool" ToolTip.Tip="Colour atoms by" IsEnabled="{Binding HasDocument}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="18" VerticalAlignment="Center" /><TextBlock Text="{Binding ColourText}" VerticalAlignment="Center" /></StackPanel>
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem Header="Element" Tag="0" Click="OnColourItem" /><MenuItem Header="Molecule" Tag="1" Click="OnColourItem" />
+                  <MenuItem Header="Type" Tag="2" Click="OnColourItem" /><MenuItem Header="Distance to molecule centre" Tag="3" Click="OnColourItem" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <Button Classes="tool" ToolTip.Tip="Projection and camera" IsEnabled="{Binding HasDocument}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="cube" Size="18" VerticalAlignment="Center" /><TextBlock Text="{Binding ProjectionText}" VerticalAlignment="Center" /></StackPanel>
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem Header="Perspective" Click="OnPerspectiveOn" /><MenuItem Header="Orthographic" Click="OnPerspectiveOff" />
+                  <Separator />
+                  <MenuItem Header="Reset view (R)" Click="OnResetView" /><MenuItem Header="Top" Click="OnViewTop" />
+                  <MenuItem Header="Front" Click="OnViewFront" /><MenuItem Header="Side" Click="OnViewSide" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <Rectangle Classes="vsep" />
+            <ToggleButton Classes="tool" IsChecked="{Binding ShowRdf}" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Analysis dock: g(r), thermo, minimisation, molecules, chains">
+              <local:Icon Kind="chart" Size="18" />
+            </ToggleButton>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="2">
+            <Button Classes="tool" Classes.on="{Binding !MeasureTool}" Click="OnToolSelect" ToolTip.Tip="Select: click an atom · ⇧ click adds (up to 4 measure)"><local:Icon Kind="cursor" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Lasso select — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="lasso" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Translate — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="move" Size="18" /></Button>
+            <Button Classes="tool" Click="OnResetView" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Reset the view (R); drag in the view rotates"><local:Icon Kind="rotate" Size="18" /></Button>
+            <Rectangle Classes="vsep" />
+          <Button Classes="tool" ToolTip.Tip="Place atom — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="atom" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Draw bond — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="bond" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Fragment — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="hex" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Fuse ring — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="ring" Size="18" /></Button>
+            <Button Height="36" MinHeight="36" Padding="10,0" Margin="4,0,0,0" IsEnabled="False" ToolTip.Tip="Element for new atoms — builder coming" ToolTip.ShowOnDisabled="True">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Width="22" Height="22" CornerRadius="4" Background="#8B969E"><TextBlock Text="C" FontWeight="Bold" FontSize="12" Foreground="#0F1113" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <TextBlock Text="sp³" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <local:Icon Kind="chev" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Rectangle Classes="vsep" />
+            <Button Classes="tool" Classes.on="{Binding MeasureTool}" Click="OnToolMeasure" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Measure: click 2–4 atoms for a distance, angle or dihedral"><local:Icon Kind="ruler" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Pin monitor — coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="pin" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Mirror / invert — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="mirror" Size="18" /></Button>
+            <Rectangle Classes="vsep" />
+          <Button Classes="tool" ToolTip.Tip="Auto-clean — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="wand" Size="18" VerticalAlignment="Center" /><TextBlock Text="Auto-clean" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="tool" ToolTip.Tip="Undo — command layer coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="undo" Size="18" /></Button>
+          <Button Classes="tool" ToolTip.Tip="Redo — command layer coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="redo" Size="18" /></Button>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="0,*,Auto,Auto">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+        <!-- Project (Main board): documents and what is in them; fragments for the builder -->
+        <Border Grid.Column="0" Width="260" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsStudio}">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Classes="phead">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Command="{Binding $parent[local:MainWindow].OpenCommand}" ToolTip.Tip="Add a file">
+                  <local:Icon Kind="plus" Size="16" />
+                </Button>
+                <TextBlock Text="Project" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+              <StackPanel>
+                <Border Classes="phead">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="Monomers ▾" Foreground="{DynamicResource MutedB}" /></Border>
+                    <TextBlock Text="Fragments" Classes="h2" VerticalAlignment="Center" />
+                  </DockPanel>
+                </Border>
+                <StackPanel Margin="10" Spacing="10" IsEnabled="False" ToolTip.Tip="The builder arrives with Studio editing" ToolTip.ShowOnDisabled="True">
+                  <Border Classes="inset" Padding="8,0" Height="30">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <local:Icon Kind="search" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                      <TextBlock Text="Search fragments" Foreground="{DynamicResource DimB}" FontSize="12" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Border>
+                  <UniformGrid Columns="3">
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="ring" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Benzene" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="hex" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Cyclohexane" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="link" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Ester" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="link" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Amide" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="atom" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Methyl" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="bond" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Vinyl" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="flask" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Water" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="atom" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Na⁺ / Cl⁻" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <local:Icon Kind="hex" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Styrene" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                  </UniformGrid>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <ScrollViewer>
+              <StackPanel Margin="6,8" Spacing="1">
+                <Border Height="26" Padding="10,0" CornerRadius="5">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <local:Icon Kind="chev" Size="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                    <local:Icon Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                    <TextBlock Text="Open documents" Foreground="{DynamicResource MutedB}" FontSize="12.5" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+                <Border Height="26" Padding="24,0,8,0" CornerRadius="5" Background="{DynamicResource Bg3B}" IsVisible="{Binding HasDocument}">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <local:Icon Kind="chevr" Size="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                    <local:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="180" />
+                  </StackPanel>
+                </Border>
+                <ItemsControl ItemsSource="{Binding MoleculeRows}" IsVisible="{Binding HasDocument}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MoleculeRow">
+                      <Border Height="26" Padding="38,0,8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                          <local:Icon Kind="hex" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                          <TextBlock FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center">
+                            <Run Text="Molecule " /><Run Text="{Binding Molecule}" /><Run Text=" · " /><Run Text="{Binding Atoms}" /><Run Text=" atoms" />
+                          </TextBlock>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Height="26" Padding="38,0,8,0" IsVisible="{Binding Field.Assigned}">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <local:Icon Kind="tag" Size="14" Foreground="{DynamicResource SelB}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Field.ForceFieldName}" FontSize="12.5" Foreground="{DynamicResource SelB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="180" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+        <Border Grid.Column="1" x:Name="ViewHost" Background="{DynamicResource Bg0B}" ClipToBounds="True" Focusable="True">
+          <Panel>
+            <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <!-- Empty state -->
+            <Border IsVisible="{Binding NoDocument}" BorderBrush="{DynamicResource LineB}" BorderThickness="2" CornerRadius="14"
+                    Margin="40" Background="{DynamicResource Bg1B}">
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" MaxWidth="560">
+                <TextBlock Text="Open a structure or trajectory" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Classes="muted"
+                           Text="Drop a file here or open one. LAMMPS data and dump, GROMACS .gro, PDB and XYZ are read now. A dump can be dropped together with its data file for types, masses and bonds." />
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                  <Button Classes="primary" Content="Open file…" Command="{Binding $parent[local:MainWindow].OpenCommand}" />
+                  <Button Content="Open sample (polystyrene)" Click="OnOpenSample" IsVisible="{Binding $parent[local:MainWindow].HasSamples}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <!-- HUD (Main board): selection and system chips, live monitors -->
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasDocument}">
+              <Border Classes="chip" Background="{DynamicResource HudB}" IsVisible="{Binding HasSelection}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding HudSelection}" Foreground="{DynamicResource TextB}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="chip" Background="{DynamicResource HudB}">
+                <TextBlock Text="{Binding HudInfo}" Foreground="{DynamicResource MutedB}" />
+              </Border>
+            </StackPanel>
+            <Border Classes="hud" Width="230" Padding="12,10" Margin="14,12" HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding HasMeasure}">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <local:Icon Kind="pin" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                  <TextBlock Text="LIVE MONITORS" Classes="h3" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{Binding MeasureText}" Classes="mono" Foreground="{DynamicResource AccB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border IsVisible="{Binding ShowLegend}" Classes="hud"
+                    Padding="12,10" Margin="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="190">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Distance to molecule centre" Classes="dim" />
+                <Rectangle Height="10" RadiusX="2" RadiusY="2">
+                  <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                      <GradientStop Offset="0" Color="#440154" /><GradientStop Offset="0.125" Color="#472D7B" /><GradientStop Offset="0.25" Color="#3B528B" />
+                      <GradientStop Offset="0.375" Color="#2C728E" /><GradientStop Offset="0.5" Color="#21918C" /><GradientStop Offset="0.625" Color="#28AE80" />
+                      <GradientStop Offset="0.75" Color="#5EC962" /><GradientStop Offset="0.875" Color="#ADDC30" /><GradientStop Offset="1" Color="#FDE725" />
+                    </LinearGradientBrush>
+                  </Rectangle.Fill>
+                </Rectangle>
+                <Grid ColumnDefinitions="*,*">
+                  <TextBlock Text="{Binding LegendLo}" Classes="mono" FontSize="11" />
+                  <TextBlock Grid.Column="1" Text="{Binding LegendHi}" Classes="mono" FontSize="11" HorizontalAlignment="Right" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <TextBlock x:Name="HintText" IsVisible="False" />
+          </Panel>
+        </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,10" Height="230">
+          <Border.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="HasDocument" />
+              <Binding Path="ShowRdf" />
+            </MultiBinding>
+          </Border.IsVisible>
+          <TabControl x:Name="AnalysisTabs" Padding="0" Margin="0,-6,0,0">
+            <TabItem Header="g(r)" FontSize="13">
+              <Grid ColumnDefinitions="*,220" ColumnSpacing="18">
+                <local:LinePlot x:Name="RdfPlot" XLabel="r (Å)" YLabel="g(r)" />
+                <StackPanel Grid.Column="1" Spacing="8">
+                  <TextBlock Text="RADIAL DISTRIBUTION" Classes="h3" />
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.RdfPairs}" SelectedIndex="{Binding RdfPairIndex}" HorizontalAlignment="Stretch" />
+                  <CheckBox Content="Only between molecules" IsChecked="{Binding RdfInter}" />
+                  <TextBlock Text="{Binding RdfNote}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+
+            </TabItem>
+            <TabItem Header="Minimisation" FontSize="13">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+                <local:LinePlot x:Name="EnergyPlot" XLabel="iteration" YLabel="energy (kcal/mol)" AutoRange="True" />
+                <local:LinePlot Grid.Column="1" x:Name="ForcePlot" XLabel="iteration" YLabel="log₁₀ |F|max · dashed: tolerance" AutoRange="True" />
+              </Grid>
+            </TabItem>
+            <TabItem Header="Thermo" FontSize="13">
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <local:LinePlot x:Name="TempPlot" XLabel="time (ps)" YLabel="T (K) · dashed: target" AutoRange="True" />
+                <local:LinePlot Grid.Column="1" x:Name="PressPlot" XLabel="time (ps)" YLabel="pressure (atm)" AutoRange="True" />
+                <local:LinePlot Grid.Column="2" x:Name="DensPlot" XLabel="time (ps)" YLabel="density (g/cm³)" AutoRange="True" />
+              </Grid>
+            </TabItem>
+            <TabItem Header="Molecules" FontSize="13">
+              <Grid RowDefinitions="Auto,*,Auto">
+                <Grid ColumnDefinitions="70,70,110,90,90" Margin="0,4,0,4">
+                  <TextBlock Text="MOL" Classes="h3" /><TextBlock Grid.Column="1" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="2" Text="MASS (g/mol)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="RG (Å)" Classes="h3" HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="4" Text="κ²" Classes="h3" HorizontalAlignment="Right" />
+                </Grid>
+                <ScrollViewer Grid.Row="1">
+                  <ItemsControl ItemsSource="{Binding MoleculeRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:MoleculeRow">
+                        <Grid ColumnDefinitions="70,70,110,90,90" Margin="0,1">
+                          <TextBlock Text="{Binding Molecule}" Classes="mono" /><TextBlock Grid.Column="1" Text="{Binding Atoms}" Classes="mono" HorizontalAlignment="Right" />
+                          <TextBlock Grid.Column="2" Text="{Binding Mass}" Classes="mono" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="{Binding Rg}" Classes="mono" HorizontalAlignment="Right" />
+                          <TextBlock Grid.Column="4" Text="{Binding Kappa2}" Classes="mono" HorizontalAlignment="Right" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <TextBlock Grid.Row="2" Text="{Binding MoleculeNote}" Classes="dim" Margin="0,4,0,0" />
+              </Grid>
+            </TabItem>
+            <TabItem Header="Network" FontSize="13">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+                <local:LinePlot x:Name="ConvPlot" XLabel="cycle" YLabel="conversion α" AutoRange="True" />
+                <local:LinePlot Grid.Column="1" x:Name="GelPlot" XLabel="conversion α" YLabel="largest cluster (mass fraction)" AutoRange="True" />
+              </Grid>
+            </TabItem>
+            <TabItem Header="Chains" FontSize="13">
+              <Grid ColumnDefinitions="*,260" ColumnSpacing="18">
+                <local:LinePlot x:Name="ChainPlot" XLabel="n (backbone bonds apart)" YLabel="⟨R²(n)⟩ / (n ⟨b²⟩)" AutoRange="True" />
+                <StackPanel Grid.Column="1" Spacing="8">
+                  <TextBlock Text="INTERNAL DISTANCES" Classes="h3" />
+                  <TextBlock Text="{Binding ChainNote}" Classes="dim" TextWrapping="Wrap" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap"
+                             Text="Mean-square distance between backbone atoms n bonds apart, divided by n ⟨b²⟩ (Theodorou and Suter 1985). Chains packed in strained shapes overshoot or bend away from a smooth rise to a plateau." />
+                </StackPanel>
+              </Grid>
+            </TabItem>
+          </TabControl>
+        </Border>
+
+        <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,8" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+            <Button Content="{Binding PlayLabel}" Click="OnPlay" Width="64" Margin="0,0,12,0" ToolTip.Tip="Play / pause (Space) · ← → step frames" />
+            <TextBlock Grid.Column="1" Text="Frame" Classes="muted" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <Slider Grid.Column="2" Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" />
+            <TextBlock Grid.Column="3" Text="{Binding FrameLabel}" Classes="mono" VerticalAlignment="Center" Margin="12,0,0,0" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- Inspector -->
+      <Border Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <Panel>
+        <!-- Studio inspector (Main board): Atom · Molecule · View · File -->
+        <TabControl IsVisible="{Binding IsStudio}" Padding="0" Margin="0">
+          <TabControl.Styles>
+            <Style Selector="TabItem"><Setter Property="Margin" Value="6,0,0,0" /></Style>
+          </TabControl.Styles>
+          <TabItem Header="Atom">
+            <ScrollViewer>
+              <StackPanel>
+                <Border Classes="section" IsVisible="{Binding !HasAtom}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="SELECTED ATOM" Classes="h3" />
+                    <TextBlock Text="Click an atom in the view. ⇧ click adds up to four for a distance, angle or dihedral." Classes="muted" TextWrapping="Wrap" FontSize="12.5" />
+                  </StackPanel>
+                </Border>
+                <Border Classes="section" IsVisible="{Binding HasAtom}">
+                  <StackPanel Spacing="10">
+                    <TextBlock Classes="h3"><Run Text="SELECTED ATOM · " /><Run Text="{Binding PickedTitle}" /></TextBlock>
+                    <Grid ColumnDefinitions="70,*" ColumnSpacing="8" RowDefinitions="Auto,Auto">
+                      <TextBlock Text="Element" Classes="label" /><TextBlock Grid.Column="1" Text="Type" Classes="label" />
+                      <TextBox Grid.Row="1" Text="{Binding PickedElement}" IsReadOnly="True" Classes="mono" />
+                      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PickedType}" IsReadOnly="True" Classes="mono" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+                      <TextBlock Text="x (Å)" Classes="label" /><TextBlock Grid.Column="1" Text="y (Å)" Classes="label" /><TextBlock Grid.Column="2" Text="z (Å)" Classes="label" />
+                      <TextBox Grid.Row="1" Text="{Binding PickedX}" IsReadOnly="True" Classes="mono" />
+                      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PickedY}" IsReadOnly="True" Classes="mono" />
+                      <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding PickedZ}" IsReadOnly="True" Classes="mono" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding PickedRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:Row">
+                          <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                            <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12.5" />
+                            <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12.5" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+                <Border Classes="section" IsVisible="{Binding HasAtom}">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="FORCE-FIELD TYPE" Classes="h3" />
+                    <WrapPanel>
+                      <Border Classes="chip acc" Margin="0,0,6,0"><TextBlock Text="{Binding PickedFf}" /></Border>
+                      <Border Classes="chip" Background="{DynamicResource Bg3B}" Margin="0,0,6,0"><TextBlock Text="{Binding PickedType}" Classes="mono" Foreground="{DynamicResource TextB}" /></Border>
+                      <Border Classes="chip"><TextBlock Text="{Binding PickedCharge}" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
+                    </WrapPanel>
+                    <Border Classes="inset">
+                      <TextBlock Text="{Binding PickedWhy}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MutedB}" LineHeight="18" />
+                    </Border>
+                  </StackPanel>
+                </Border>
+                <Border Classes="section" IsVisible="{Binding HasAtom}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="NEAREST ATOMS" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding NeighbourRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:Row">
+                          <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                            <TextBlock Text="{Binding Key}" Classes="mono" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+                <Border Classes="section" IsVisible="{Binding HasDocument}">
+                  <StackPanel Spacing="9">
+                    <TextBlock Text="VALIDATION" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding Notes}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,2">
+                            <local:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" VerticalAlignment="Top" />
+                            <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" FontSize="12" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="Molecule">
+            <ScrollViewer>
+              <StackPanel>
+                <Border Classes="section">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="MOLECULES" Classes="h3" />
+                    <Grid ColumnDefinitions="50,60,*,64,54">
+                      <TextBlock Text="Mol" Classes="label" /><TextBlock Grid.Column="1" Text="Atoms" Classes="label" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="2" Text="Mass" Classes="label" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="Rg (Å)" Classes="label" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="4" Text="κ²" Classes="label" HorizontalAlignment="Right" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding MoleculeRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MoleculeRow">
+                          <Grid ColumnDefinitions="50,60,*,64,54" Margin="0,2">
+                            <TextBlock Text="{Binding Molecule}" Classes="mono" /><TextBlock Grid.Column="1" Text="{Binding Atoms}" Classes="mono" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="2" Text="{Binding Mass}" Classes="mono" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="{Binding Rg}" Classes="mono" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="4" Text="{Binding Kappa2}" Classes="mono" HorizontalAlignment="Right" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding MoleculeNote}" Classes="dim" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="View">
+            <ScrollViewer>
+              <StackPanel>
+                <Border Classes="section">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="DISPLAY" Classes="h3" />
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="Background" Classes="label" />
+                      <Border Classes="seg">
+                        <UniformGrid Columns="2">
+                          <RadioButton Classes="seg" GroupName="vbg" Content="Dark" IsChecked="{Binding !ViewIsLight}" Click="OnViewBgDark" />
+                          <RadioButton Classes="seg" GroupName="vbg" Content="White (paper)" IsChecked="{Binding ViewIsLight}" Click="OnViewBgLight" />
+                        </UniformGrid>
+                      </Border>
+                    </StackPanel>
+                    <ToggleSwitch Content="Outlines" IsChecked="{Binding Outlines}" OnContent="" OffContent="" />
+                    <ToggleSwitch Content="Depth cue" IsChecked="{Binding DepthCue}" OnContent="" OffContent="" />
+                    <ToggleSwitch Content="Cell edges" IsChecked="{Binding ShowCell}" OnContent="" OffContent="" />
+                    <ToggleSwitch Content="Wrap atoms into the cell" IsChecked="{Binding Wrap}" OnContent="" OffContent="" />
+                  </StackPanel>
+                </Border>
+                <Border Classes="section">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="EXPORT FIGURE" Classes="h3" />
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="Background" Classes="label" />
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.Backgrounds}" SelectedIndex="{Binding ExportBackground}" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="Size" Classes="label" />
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.SizePresets}" SelectedIndex="{Binding SizePreset}" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="primary" Click="OnExportPng">
+                        <StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="download" Size="16" VerticalAlignment="Center" /><TextBlock Text="Export PNG…" VerticalAlignment="Center" /></StackPanel>
+                      </Button>
+                      <Button Content="Export SVG…" Click="OnExportSvg" />
+                    </StackPanel>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Transparent keeps an alpha channel in PNG and writes no background shape in SVG. Same camera as the view." />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="File">
+            <ScrollViewer>
+              <StackPanel>
+                <Border Classes="section">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="FILE" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding SummaryRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:Row">
+                          <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                            <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12.5" />
+                            <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12.5" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+        </TabControl>
+        <ScrollViewer IsVisible="{Binding !IsStudio}">
+          <StackPanel>
+          <!-- Grow -->
+          <StackPanel IsVisible="{Binding IsGrow}">
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="POLYMER" Classes="h3" />
+                <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False">
+                  <ComboBoxItem Content="Polystyrene (C8H8)n, all-atom" />
+                </ComboBox>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Chains" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Units per chain (DP)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding GrowChainsD}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowDpD}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" />
+                </Grid>
+                <TextBlock Text="Tacticity" Classes="dim" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Tacticities}" SelectedIndex="{Binding GrowTacticity}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="CELL" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                  <RadioButton Content="Target density" IsChecked="{Binding GrowUseDensity, Mode=OneWay}" GroupName="cell" Click="OnGrowDensityMode" />
+                  <RadioButton Content="Box edge" IsChecked="{Binding GrowUseBox}" GroupName="cell" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Density (g/cm³)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Box edge (Å)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding GrowDensityD}" Minimum="0.01" Maximum="2" Increment="0.05" FormatString="0.000" IsEnabled="{Binding GrowUseDensity}" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowBoxD}" Minimum="0" Maximum="1000" Increment="1" FormatString="0.00" IsEnabled="{Binding GrowUseBox}" />
+                </Grid>
+                <TextBlock Text="{Binding GrowEstimate}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="GROWTH" Classes="h3" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Contact scale" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Seed" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding GrowScaleD}" Minimum="0.5" Maximum="1.2" Increment="0.05" FormatString="0.00" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowSeedD}" Minimum="0" Maximum="999999" Increment="1" FormatString="0" />
+                </Grid>
+                <CheckBox Content="Allow gauche torsions (±60°)" IsChecked="{Binding GrowCurve}" />
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Contact limits C–C 3.0, C–H 2.45, H–H 2.0 Å, periodic. Full limits reach about 0.4–0.5 g/cm³; a lower contact scale reaches more, and then needs minimisation before dynamics." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Build cell" Click="OnGrowBuild" IsEnabled="{Binding Idle}" />
+                  <Button Content="Cancel" Click="OnGrowCancel" IsEnabled="{Binding Growing}" />
+                </StackPanel>
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
+                  <TextBlock Text="{Binding GrowLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" IsVisible="{Binding HasDocument}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SAVE" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
+                  <Button Content="LAMMPS data…" Click="OnSaveData" ToolTip.Tip="LAMMPS full; carries the Field force field when one is assigned and complete, else GAFF when every atom is C or H" />
+                  <Button Content="PDB…" Click="OnSavePdb" />
+                  <Button Content="XYZ…" Click="OnSaveXyz" />
+                </StackPanel>
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding GrownUnsaved}" Text="This cell is not saved yet." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Relax -->
+          <StackPanel IsVisible="{Binding IsRelax}">
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="STRUCTURE" Classes="h3" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
+                           Text="Grow a cell or open a structure first. Relax works on the frame shown in the viewer." />
+                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasDocument}" />
+                <Button Content="Check force field" Click="OnCheckField" IsEnabled="{Binding CanRelax}" />
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8" IsVisible="{Binding HasFieldInfo}">
+                  <TextBlock Text="{Binding FieldInfoText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="MINIMISE" Classes="h3" />
+                <TextBlock Text="Method" Classes="dim" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Minimisers}" SelectedIndex="{Binding RelaxMethod}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="|F|max tolerance (kcal/mol/Å)" Classes="dim" TextWrapping="Wrap" />
+                  <TextBlock Grid.Column="1" Text="Iterations" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxFtolD}" Minimum="0.001" Maximum="100" Increment="0.1" FormatString="0.###" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxIterationsD}" Minimum="10" Maximum="1000000" Increment="1000" FormatString="0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="PUSH-OFF &amp; CELL" Classes="h3" />
+                <CheckBox Content="Soft push-off before minimising" IsChecked="{Binding RelaxPushoff}" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="LJ forces capped at 5, 20, 100, 500 kcal/mol/Å, stage by stage (Auhl et al., J. Chem. Phys. 2003)." />
+                <CheckBox Content="Compress to a density" IsChecked="{Binding RelaxCompress}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RelaxCompress}">
+                  <TextBlock Text="Density (g/cm³)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Step per stage" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxDensityD}" Minimum="0.05" Maximum="3" Increment="0.05" FormatString="0.000" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxStepD}" Minimum="0.005" Maximum="0.5" Increment="0.01" FormatString="0.000" />
+                </Grid>
+                <CheckBox Content="Relax box volume (isotropic)" IsChecked="{Binding RelaxBox}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Pressure (atm)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Cut-off (Å)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxPressureD}" Minimum="-100000" Maximum="100000" Increment="100" FormatString="0" IsEnabled="{Binding RelaxBox}" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxCutoffD}" Minimum="4" Maximum="30" Increment="1" FormatString="0.0" />
+                </Grid>
+                <CheckBox Content="Electrostatics (damped shifted force)" IsChecked="{Binding RelaxCoulomb}" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding !Field.Assigned}"
+                           Text="Without a Field assignment: GAFF 1.81 for C and H with Gasteiger charges; forces match LAMMPS lj/cut/coul/dsf with special_bonds amber. Box relaxation is 0 K mechanical equilibrium; the density at a temperature needs Dynamics." />
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding Field.Assigned}"
+                           Text="Uses the force field assigned in Field (its styles, charges and 1-4 scaling). Box relaxation is 0 K mechanical equilibrium; the density at a temperature needs Dynamics." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Relax" Click="OnRelax" IsEnabled="{Binding CanRelax}" />
+                  <Button Content="Cancel" Click="OnRelaxCancel" IsEnabled="{Binding Relaxing}" />
+                </StackPanel>
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
+                  <TextBlock Text="{Binding RelaxLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" IsVisible="{Binding HasDocument}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SAVE" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
+                  <Button Content="LAMMPS data…" Click="OnSaveData" ToolTip.Tip="LAMMPS full; carries the Field force field when one is assigned and complete, else GAFF when every atom is C or H" />
+                  <Button Content="PDB…" Click="OnSavePdb" />
+                  <Button Content="XYZ…" Click="OnSaveXyz" />
+                </StackPanel>
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding GrownUnsaved}" Text="This cell is not saved yet." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Dynamics -->
+          <StackPanel IsVisible="{Binding IsDynamics}">
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="STRUCTURE" Classes="h3" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
+                           Text="Grow and relax a cell, or open one. Dynamics starts from the frame shown in the viewer." />
+                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasDocument}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="ENSEMBLE" Classes="h3" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Ensembles}" SelectedIndex="{Binding MdEnsemble}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Temperature (K)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Thermostat τ (fs)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding MdTempD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdTauTD}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" IsEnabled="{Binding MdHasThermostat}" />
+                </Grid>
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Thermostats}" SelectedIndex="{Binding MdThermostat}" HorizontalAlignment="Stretch" IsEnabled="{Binding MdHasThermostat}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasBarostat}">
+                  <TextBlock Text="Pressure (atm)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Barostat τ (fs)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding MdPressureD}" Minimum="-100000" Maximum="100000" Increment="100" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdTauPD}" Minimum="10" Maximum="10000000" Increment="100" FormatString="0" />
+                </Grid>
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Barostats}" SelectedIndex="{Binding MdBarostat}" HorizontalAlignment="Stretch" IsEnabled="{Binding MdHasBarostat}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="RUN" Classes="h3" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Time step (fs)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="Steps" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding MdDtD}" Minimum="0.1" Maximum="5" Increment="0.25" FormatString="0.##" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdStepsD}" Minimum="0" Maximum="1000000000" Increment="5000" FormatString="0" />
+                  <TextBlock Grid.Row="2" Text="Frame every (steps)" Classes="dim" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="Seed" Classes="dim" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="3" Value="{Binding MdFrameEveryD}" Minimum="1" Maximum="1000000" Increment="500" FormatString="0" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding MdSeedD}" Minimum="0" Maximum="999999" Increment="1" FormatString="0" />
+                </Grid>
+                <TextBlock Text="{Binding MdEstimate}" Classes="dim" />
+                <CheckBox Content="New velocities (else continue the last run)" IsChecked="{Binding MdNewVelocities}" />
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Velocity Verlet with the Field force field (or GAFF for C and H when none is assigned), damped shifted force electrostatics and LJ tail corrections; the cut-off and electrostatics follow the Relax panel. A 200-step NVE run matches LAMMPS to 10⁻⁵ Å (scripts/check_lammps.sh)." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Run" Click="OnMdRun" IsEnabled="{Binding CanRun}" />
+                  <Button Content="Cancel" Click="OnMdCancel" IsEnabled="{Binding MdRunning}" />
+                </StackPanel>
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
+                  <TextBlock Text="{Binding MdLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" IsVisible="{Binding HasDocument}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SAVE" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
+                  <Button Content="Trajectory…" Click="OnSaveTrajectory" ToolTip.Tip="All frames as a LAMMPS dump (id mol type xu yu zu)" />
+                  <Button Content="LAMMPS data…" Click="OnSaveData" ToolTip.Tip="The shown frame with the force field; velocities are included for the last frame" />
+                  <Button Content="PDB…" Click="OnSavePdb" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Equilibrate -->
+          <StackPanel IsVisible="{Binding IsEquilibrate}">
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="STRUCTURE" Classes="h3" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
+                           Text="Grow and relax a cell, or open one. The protocol starts from the frame shown in the viewer." />
+                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasDocument}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="PROTOCOL" Classes="h3" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Protocols}" SelectedIndex="{Binding EqProtocol}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4" IsEnabled="{Binding EqIsNamed}">
+                  <TextBlock Text="T final (K)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="T max (K)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding EqTFinalD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqTMaxD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" />
+                  <TextBlock Grid.Row="2" Text="P final (atm)" Classes="dim" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="P max (atm)" Classes="dim" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="3" Value="{Binding EqPFinalD}" Minimum="-100000" Maximum="1000000" Increment="1" FormatString="0.##" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding EqPMaxD}" Minimum="1" Maximum="1000000" Increment="1000" FormatString="0" />
+                  <TextBlock Grid.Row="4" Text="Time scale" Classes="dim" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="5" Value="{Binding EqScaleD}" Minimum="0.001" Maximum="100" Increment="0.1" FormatString="0.###" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4" IsVisible="{Binding EqIsAnnealing}">
+                  <TextBlock Text="Cycles" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="T low / high (K)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding EqCyclesD}" Minimum="1" Maximum="100" Increment="1" FormatString="0" />
+                  <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="4">
+                    <NumericUpDown Value="{Binding EqTLowD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" ShowButtonSpinner="False" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding EqTHighD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" ShowButtonSpinner="False" />
+                  </Grid>
+                  <TextBlock Grid.Row="2" Text="Ramp (ps)" Classes="dim" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="Hold (ps)" Classes="dim" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="3" Value="{Binding EqRampD}" Minimum="0.1" Maximum="1000000" Increment="10" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding EqHoldD}" Minimum="0.1" Maximum="1000000" Increment="10" FormatString="0.#" />
+                </Grid>
+                <TextBlock Text="Stages (editable; one per line)" Classes="dim" />
+                <TextBox Text="{Binding EqText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo" FontSize="10.5" Height="190" />
+                <TextBlock Text="{Binding EqTotal}" Classes="dim" TextWrapping="Wrap" />
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Larsen, Lin, Hart and Colina, Macromolecules 44, 6944 (2011): Pmax 5×10⁴ bar. Choose T max about 200–300 K above Tg. Editing a named protocol's text is kept until a parameter changes." />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="CONVERGENCE" Classes="h3" />
+                <CheckBox Content="Extend with NPT blocks until converged" IsChecked="{Binding EqUntilConverged}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding EqUntilConverged}">
+                  <TextBlock Text="Block (ps)" Classes="dim" />
+                  <TextBlock Grid.Column="1" Text="At most (blocks)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding EqBlockD}" Minimum="0.1" Maximum="1000000" Increment="10" FormatString="0.#" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqMaxBlocksD}" Minimum="1" Maximum="1000" Increment="1" FormatString="0" />
+                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Converged when two successive block-to-block changes stay within 0.5 % in density, 0.005 kcal/mol per atom in energy and 2 % in mean Rg." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Run protocol" Click="OnEqRun" IsEnabled="{Binding CanEquilibrate}" />
+                  <Button Content="Cancel" Click="OnEqCancel" IsEnabled="{Binding EqRunning}" />
+                </StackPanel>
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
+                  <TextBlock Text="{Binding EqLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" IsVisible="{Binding HasDocument}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SAVE" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
+                  <Button Content="Trajectory…" Click="OnSaveTrajectory" />
+                  <Button Content="LAMMPS data…" Click="OnSaveData" />
+                  <Button Content="PDB…" Click="OnSavePdb" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Pack -->
+          <StackPanel IsVisible="{Binding IsPack}">
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="CELL" Classes="h3" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="x (Å)" Classes="dim" /><TextBlock Grid.Column="1" Text="y (Å)" Classes="dim" /><TextBlock Grid.Column="2" Text="z (Å)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding PackXD}" Minimum="5" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PackYD}" Minimum="5" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding PackZD}" Minimum="5" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Tolerance (Å)" Classes="dim" /><TextBlock Grid.Column="1" Text="Seed" Classes="dim" /><TextBlock Grid.Column="2" Text="Number" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding PackTolD}" Minimum="0.5" Maximum="10" Increment="0.1" FormatString="0.0#" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PackSeedD}" Minimum="0" Maximum="999999" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding PackCountD}" Minimum="1" Maximum="10000000" Increment="10" FormatString="0" ShowButtonSpinner="False" />
+                </Grid>
+                <CheckBox Content="Periodic cell (minimum image)" IsChecked="{Binding PackPeriodic}" />
+                <WrapPanel>
+                  <Button Content="New input" Click="OnPackNew" Margin="0,0,6,6" />
+                  <Button Content="Add structure…" Click="OnPackAdd" Margin="0,0,6,6" ToolTip.Tip="Adds a structure block with the number above, inside the whole cell" />
+                  <Button Content="Open packmol input…" Click="OnPackOpen" Margin="0,0,6,6" />
+                  <Button Content="Example: water" Click="OnPackExample" Margin="0,0,6,6" IsVisible="{Binding $parent[local:MainWindow].HasSamples}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="MOLECULES &amp; REGIONS" Classes="h3" />
+                <TextBox Text="{Binding PackText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo" FontSize="10.5" Height="220" />
+                <TextBlock Text="{Binding PackBaseNote}" Classes="dim" TextWrapping="Wrap" />
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Regions: inside / outside box, cube, sphere, cylinder; over / below plane; fixed x y z a b g with center. Objective after Martínez et al., J. Comput. Chem. 30, 2157 (2009); rigid bodies, L-BFGS." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Pack" Click="OnPackRun" IsEnabled="{Binding Idle}" />
+                  <Button Content="Cancel" Click="OnPackCancel" IsEnabled="{Binding Packing}" />
+                </StackPanel>
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
+                  <TextBlock Text="{Binding PackLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" IsVisible="{Binding HasDocument}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SAVE" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
+                  <Button Content="LAMMPS data…" Click="OnSaveData" />
+                  <Button Content="PDB…" Click="OnSavePdb" />
+                  <Button Content="XYZ…" Click="OnSaveXyz" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- React -->
+          <StackPanel IsVisible="{Binding IsReact}">
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="STRUCTURE" Classes="h3" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
+                           Text="Pack or grow the reactive mixture first; React works on the frame shown in the viewer." />
+                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="REACTION TEMPLATES" Classes="h3" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReactionSets}" SelectedIndex="{Binding RxSet}" HorizontalAlignment="Stretch" />
+                <TextBox Text="{Binding RxText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo" FontSize="10.5" Height="200" />
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="atom (map, element, H=, H>=, degree=, ring3, not_aromatic, bonded …) · initiators · capture · probability · min_path · form · break · move · delete · sites. Epoxy–amine needs O and N parameters to relax; until the Field module types them, run it with relaxation off (topology only)." />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="CYCLES" Classes="h3" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Cycles" Classes="dim" /><TextBlock Grid.Column="1" Text="Per cycle" Classes="dim" /><TextBlock Grid.Column="2" Text="Target α" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RxCyclesD}" Minimum="1" Maximum="100000" FormatString="0" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxPerCycleD}" Minimum="1" Maximum="100000" FormatString="0" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxTargetD}" Minimum="0.001" Maximum="1" Increment="0.05" FormatString="0.###" ShowButtonSpinner="False" />
+                  <TextBlock Grid.Row="2" Text="Capture (Å, 0 = template)" Classes="dim" Margin="0,4,0,0" Grid.ColumnSpan="2" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Seed" Classes="dim" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="3" Value="{Binding RxCaptureD}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.0#" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding RxSeedD}" Minimum="0" Maximum="999999" FormatString="0" ShowButtonSpinner="False" />
+                </Grid>
+                <CheckBox Content="Relax after each cycle (retype, minimise)" IsChecked="{Binding RxRelax}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RxRelax}">
+                  <TextBlock Text="Dynamics per cycle (ps)" Classes="dim" /><TextBlock Grid.Column="1" Text="at T (K)" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RxMdPsD}" Minimum="0" Maximum="10000" Increment="1" FormatString="0.##" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxTempD}" Minimum="1" Maximum="5000" Increment="50" FormatString="0" />
+                </Grid>
+                <TextBlock Text="Gel point check" Classes="dim" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="fA" Classes="dim" /><TextBlock Grid.Column="1" Text="fB" Classes="dim" /><TextBlock Grid.Column="2" Text="r" Classes="dim" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RxFaD}" Minimum="1" Maximum="100" Increment="1" FormatString="0.##" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxFbD}" Minimum="1" Maximum="100" Increment="1" FormatString="0.##" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxRatioD}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.##" ShowButtonSpinner="False" />
+                </Grid>
+                <TextBlock Text="{Binding FloryText}" Classes="dim" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Run reactions" Click="OnReactRun" IsEnabled="{Binding CanReact}" />
+                  <Button Content="Cancel" Click="OnReactCancel" IsEnabled="{Binding Reacting}" />
+                </StackPanel>
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
+                  <TextBlock Text="{Binding RxLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" IsVisible="{Binding HasDocument}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SAVE" Classes="h3" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
+                  <Button Content="LAMMPS data…" Click="OnSaveData" />
+                  <Button Content="PDB…" Click="OnSavePdb" />
+                  <Button Content="Trajectory…" Click="OnSaveTrajectory" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+        </Panel>
+      </Border>
+
+      <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
+      <!-- Analyze › Properties: calculations over the frames, results compared with experiment -->
+      <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsAnalyze}">
+        <Border.Styles>
+          <Style Selector="ToggleButton.chip">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+          </Style>
+          <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccB}" />
+            <Setter Property="Foreground" Value="#16191C" />
+          </Style>
+          <Style Selector="ToggleButton.chip:disabled /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="0.45" />
+          </Style>
+        </Border.Styles>
+        <Grid RowDefinitions="Auto,*,Auto" Margin="22,16,22,0">
+          <!-- header -->
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="3">
+              <TextBlock FontSize="20" FontWeight="SemiBold">
+                <Run Text="Analyze · " /><Run Text="{Binding Analyze.SourceText}" />
+              </TextBlock>
+              <TextBlock Classes="muted" Text="Properties with their uncertainty and method, compared against experiment, ready for the paper tables" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Compare with" Classes="dim" />
+                <ComboBox Width="220" ItemsSource="{Binding Analyze.References}" SelectedIndex="{Binding Analyze.RefIndex}" />
+              </StackPanel>
+              <Button Content="Export CSV / LaTeX…" Click="OnAnalyzeExport" IsEnabled="{Binding Analyze.HasResults}" VerticalAlignment="Bottom" />
+              <Button Classes="primary" Content="Run selected" Click="OnAnalyzeRun" IsVisible="{Binding Analyze.NotWorking}" VerticalAlignment="Bottom">
+                <Button.IsEnabled>
+                  <MultiBinding Converter="{x:Static BoolConverters.And}">
+                    <Binding Path="HasDocument" />
+                    <Binding Path="Idle" />
+                  </MultiBinding>
+                </Button.IsEnabled>
+              </Button>
+              <Button Content="Cancel" Click="OnAnalyzeCancel" IsVisible="{Binding Analyze.Working}" VerticalAlignment="Bottom" />
+            </StackPanel>
+          </Grid>
+
+          <Grid Grid.Row="1" ColumnDefinitions="300,*" ColumnSpacing="16" Margin="0,14,0,12">
+            <!-- calculations and source -->
+            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}">
+              <ScrollViewer>
+                <StackPanel Margin="16,12" Spacing="10" IsEnabled="{Binding Analyze.NotWorking}">
+                  <TextBlock Text="CALCULATIONS" Classes="h3" />
+                  <ItemsControl ItemsSource="{Binding Analyze.Groups}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CalcGroup">
+                        <StackPanel Spacing="5" Margin="0,0,0,4">
+                          <TextBlock Text="{Binding Name}" Classes="dim" />
+                          <ItemsControl ItemsSource="{Binding Chips}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:CalcChip">
+                                <ToggleButton Classes="chip" Content="{Binding Label}" IsChecked="{Binding IsOn}" IsEnabled="{Binding Available}" ToolTip.Tip="{Binding Tip}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <TextBlock Text="SOURCE" Classes="h3" Margin="0,6,0,0" />
+                  <TextBlock Text="Trajectory" Classes="dim" />
+                  <TextBlock Text="{Binding Analyze.SourceText}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Analyze.FramesText}" Classes="mono" FontSize="11" />
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+                    <Grid.Styles><Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style></Grid.Styles>
+                    <TextBlock Text="First frame" Classes="dim" /><TextBlock Grid.Column="1" Text="Last (−1: end)" Classes="dim" /><TextBlock Grid.Column="2" Text="Every" Classes="dim" />
+                    <NumericUpDown Grid.Row="1" Value="{Binding Analyze.FirstD}" Minimum="0" Increment="1" FormatString="0" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.LastD}" Minimum="-1" Increment="1" FormatString="0" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.StrideD}" Minimum="1" Increment="1" FormatString="0" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+                    <TextBlock Text="ps per frame (0: file)" Classes="dim" /><TextBlock Grid.Column="1" Text="MD step (fs)" Classes="dim" />
+                    <NumericUpDown Grid.Row="1" Value="{Binding Analyze.FramePsD}" Minimum="0" Increment="0.5" FormatString="0.###" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.TimestepFsD}" Minimum="0.01" Increment="0.5" FormatString="0.##" />
+                  </Grid>
+
+                  <TextBlock Text="GROUPS" Classes="h3" Margin="0,6,0,0" />
+                  <TextBlock Text="g(r) pair" Classes="dim" />
+                  <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.Pairs}" SelectedIndex="{Binding Analyze.PairIndex}" HorizontalAlignment="Stretch" />
+                  <CheckBox Content="Only between molecules" IsChecked="{Binding Analyze.InterOnly}" />
+
+                  <TextBlock Text="SETTINGS" Classes="h3" Margin="0,6,0,0" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                    <TextBlock Text="Probe radius (Å)" Classes="dim" /><TextBlock Grid.Column="1" Text="Grid (Å)" Classes="dim" />
+                    <NumericUpDown Grid.Row="1" Value="{Binding Analyze.ProbeD}" Minimum="0" Increment="0.1" FormatString="0.00" ToolTip.Tip="0: points outside every van der Waals sphere; He 1.28 Å, N₂ 1.82 Å" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.GridD}" Minimum="0.1" Maximum="2" Increment="0.1" FormatString="0.00" />
+                    <TextBlock Grid.Row="2" Text="Fit MSD from" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="to (fraction of run)" Classes="dim" Margin="0,4,0,0" />
+                    <NumericUpDown Grid.Row="3" Value="{Binding Analyze.FitFromD}" Minimum="0" Maximum="0.95" Increment="0.05" FormatString="0.00" />
+                    <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.FitToD}" Minimum="0.05" Maximum="1" Increment="0.05" FormatString="0.00" />
+                  </Grid>
+                  <!-- protocols: shown when switched on -->
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.TgChip.IsOn}">
+                    <TextBlock Text="COOLING PROTOCOL (Tg)" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                      <TextBlock Text="From (K)" Classes="dim" /><TextBlock Grid.Column="1" Text="To (K)" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.TgFromD}" Minimum="10" Maximum="2000" Increment="10" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.TgToD}" Minimum="10" Maximum="2000" Increment="10" FormatString="0" />
+                      <TextBlock Grid.Row="2" Text="Step (K)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="NPT per step (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.TgStepD}" Minimum="1" Increment="5" FormatString="0" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.TgPsD}" Minimum="1" Increment="50" FormatString="0" />
+                    </Grid>
+                    <TextBlock Text="Equilibrate at the start temperature first (ps)" Classes="dim" />
+                    <NumericUpDown Value="{Binding Analyze.EqPsD}" Minimum="0" Increment="10" FormatString="0" />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Fit: two lines, free hinge, bootstrap error. Runs on a copy of the current frame; simulated cooling rates are 10⁹–10¹¹ K/s, so Tg comes out above experiment." />
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.TensileChip.IsOn}">
+                    <TextBlock Text="DEFORMATION (stress–strain)" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                      <TextBlock Text="Axis" Classes="dim" /><TextBlock Grid.Column="1" Text="Temperature (K)" Classes="dim" />
+                      <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:AnalyzeViewModel.Axes}" SelectedIndex="{Binding Analyze.TensAxis}" HorizontalAlignment="Stretch" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.TensTD}" Minimum="1" Increment="10" FormatString="0" />
+                      <TextBlock Grid.Row="2" Text="Rate (1/ps)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Final strain" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.TensRateD}" Minimum="0.000001" Increment="0.0005" FormatString="0.######" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.TensMaxD}" Minimum="0.005" Maximum="2" Increment="0.05" FormatString="0.###" />
+                    </Grid>
+                    <TextBlock Text="{Binding Analyze.TensRateText}" Classes="mono" FontSize="11" />
+                    <TextBlock Text="NPT first (ps)" Classes="dim" />
+                    <NumericUpDown Value="{Binding Analyze.EqPsD}" Minimum="0" Increment="10" FormatString="0" />
+                    <CheckBox Content="Lateral faces fixed (uniaxial strain)" IsChecked="{Binding Analyze.TensFixed}" />
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.StrainChip.IsOn}">
+                    <TextBlock Text="STATIC ELASTIC CONSTANTS" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+                      <TextBlock Text="Strain ±" Classes="dim" /><TextBlock Grid.Column="1" Text="Configurations" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.CijStrainD}" Minimum="0.000001" Maximum="0.01" Increment="0.0001" FormatString="0.######" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.CijConfigsD}" Minimum="1" Maximum="50" Increment="1" FormatString="0" />
+                    </Grid>
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.FluctChip.IsOn}">
+                    <TextBlock Text="STRESS FLUCTUATIONS" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+                      <TextBlock Text="NVT temperature (K)" Classes="dim" /><TextBlock Grid.Column="1" Text="Sampled (ps)" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.FluctTD}" Minimum="1" Increment="10" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.FluctPsD}" Minimum="1" Increment="50" FormatString="0" />
+                    </Grid>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Bonded systems converge slowly: the fluctuation term cancels most of the Born term. Check the block errors; the static method is cheaper." />
+                  </StackPanel>
+                  <TextBlock Classes="dim" TextWrapping="Wrap"
+                             Text="Energies use the force field assigned in Field; without one, the built-in GAFF typing of C and H. Protocols (Tg, stress–strain, static Cij) run on a copy of the current frame. Grey calculations are not built yet." />
+                </StackPanel>
+              </ScrollViewer>
+            </Border>
+
+            <!-- results -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,*,280" RowSpacing="12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding Analyze.Log}" Classes="muted" TextWrapping="Wrap" />
+                <ProgressBar Value="{Binding Analyze.Progress}" Minimum="0" Maximum="1" Height="4" IsVisible="{Binding Analyze.Working}" />
+              </StackPanel>
+              <ScrollViewer Grid.Row="1">
+                <ItemsControl ItemsSource="{Binding Analyze.Results}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ResultCard">
+                      <Border Width="272" Margin="0,0,12,12" Padding="14,12" CornerRadius="10" BorderBrush="{DynamicResource LineB}" BorderThickness="1"
+                              Background="{DynamicResource Bg1B}" ToolTip.Tip="{Binding Method}">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="{Binding Name}" Classes="dim" />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding ValueText}" FontSize="24" FontWeight="SemiBold" Classes="mono" />
+                            <TextBlock Text="{Binding ErrorText}" Classes="mono" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding UnitText}" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                          </StackPanel>
+                          <StackPanel IsVisible="{Binding HasRef}" Spacing="1">
+                            <TextBlock Text="{Binding RefText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding RefSource}" Classes="dim" FontSize="11" TextWrapping="Wrap" FontStyle="Italic" />
+                            <TextBlock Text="{Binding Verdict}" Foreground="{Binding VerdictBrush}" FontSize="11" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <TextBlock Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" Classes="mono" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+                          <TextBlock Text="{Binding NotesText}" IsVisible="{Binding HasNotes}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource WarnB}" />
+                          <TextBlock Text="{Binding Method}" Classes="dim" FontSize="10.5" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <Border Grid.Row="2" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" Padding="14,10"
+                      IsVisible="{Binding Analyze.HasResults}">
+                <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="CURVE" Classes="h3" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Analyze.Curves}" SelectedIndex="{Binding Analyze.CurveIndex}" MinWidth="320" HorizontalAlignment="Left" />
+                  </Grid>
+                  <local:LinePlot Grid.Row="1" x:Name="PropPlot" AutoRange="True" />
+                </Grid>
+              </Border>
+            </Grid>
+          </Grid>
+
+          <TextBlock Grid.Row="2" Classes="dim" Margin="0,0,0,10">
+            <Run Text="{Binding Analyze.RunInfo}" /><Run Text=" · hover a card for its method · experiment ranges from data/reference/polymers.json" />
+          </TextBlock>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsField}">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="22,16,22,0">
+          <!-- header -->
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="3">
+              <TextBlock Text="Force field · typing report" FontSize="20" FontWeight="SemiBold" />
+              <TextBlock Classes="muted" Text="Explain every type, override with provenance, and block runs with missing parameters" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" IsEnabled="{Binding Field.NotWorking}">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Force field" Classes="dim" />
+                <ComboBox Width="300" ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding Field.FfIndex}" ToolTip.Tip="{Binding Field.FfNote}" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Charges" Classes="dim" />
+                <ComboBox Width="170" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" />
+              </StackPanel>
+              <Button Classes="primary" Content="Assign · retype all" Click="OnFieldAssign" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom" />
+              <Button Content="Export ▾" VerticalAlignment="Bottom" IsEnabled="{Binding Field.Assigned}">
+                <Button.Flyout>
+                  <MenuFlyout>
+                    <MenuItem Header="LAMMPS data with this force field…" Click="OnSaveData" />
+                    <MenuItem Header="Types file (caps ff apply --types)…" Click="OnFieldSaveTypes" />
+                  </MenuFlyout>
+                </Button.Flyout>
+              </Button>
+              <Button Content="Clear" Click="OnFieldClear" IsEnabled="{Binding Field.Assigned}" VerticalAlignment="Bottom"
+                      ToolTip.Tip="End the assignment and restore the file's own types and charges" />
+            </StackPanel>
+          </Grid>
+
+          <!-- chips -->
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,14,0,12" IsVisible="{Binding Field.Assigned}">
+            <Border Background="{DynamicResource Bg2B}" CornerRadius="11" Padding="9,3">
+              <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" /><TextBlock Text="{Binding Field.TypedText}" FontSize="11.5" /></StackPanel>
+            </Border>
+            <Border Background="{DynamicResource Bg2B}" CornerRadius="11" Padding="9,3">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource ErrB}" IsVisible="{Binding Field.HasUntyped}" />
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" IsVisible="{Binding !Field.HasUntyped}" />
+                <TextBlock Text="{Binding Field.UntypedText}" FontSize="11.5" />
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource Bg2B}" CornerRadius="11" Padding="9,3">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource ErrB}" IsVisible="{Binding Field.HasMissing}" />
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" IsVisible="{Binding !Field.HasMissing}" />
+                <TextBlock Text="{Binding Field.MissingText}" FontSize="11.5" />
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource Bg2B}" CornerRadius="11" Padding="9,3">
+              <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" /><TextBlock Text="{Binding Field.EstimatedText}" FontSize="11.5" /></StackPanel>
+            </Border>
+            <Border Background="{DynamicResource Bg2B}" CornerRadius="11" Padding="9,3">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" IsVisible="{Binding Field.ChargeOdd}" />
+                <TextBlock Text="{Binding Field.ChargeText}" Classes="mono" FontSize="11" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- body -->
+          <Grid Grid.Row="2" ColumnDefinitions="*,440" ColumnSpacing="16" Margin="0,0,0,12">
+            <!-- no structure / not assigned -->
+            <Border Grid.ColumnSpan="2" IsVisible="{Binding !Field.Assigned}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10"
+                    Background="{DynamicResource Bg1B}" Margin="0,14,0,0" VerticalAlignment="Top">
+              <StackPanel Spacing="10" Margin="24" MaxWidth="720" HorizontalAlignment="Left">
+                <TextBlock Text="{Binding Field.LibraryNote}" Classes="muted" />
+                <TextBlock Text="Open or build a structure, choose a force field and assign it." FontSize="15" FontWeight="SemiBold" IsVisible="{Binding NoDocument}" />
+                <TextBlock Text="{Binding Field.Log}" TextWrapping="Wrap" />
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Typing works from the bonds alone (mol2, PDB with CONECT, xyz, LAMMPS data): CAPS perceives bond orders, charges, rings and aromaticity, then applies the force field's SMARTS rules. PCFF, CVFF, GAFF, GAFF2, OPLS-AA and CGenFF have rules; other force fields take the atom names in the file as types." />
+              </StackPanel>
+            </Border>
+
+            <!-- atoms + why -->
+            <Grid RowDefinitions="*,Auto" RowSpacing="12" IsVisible="{Binding Field.Assigned}">
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}">
+                <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                  <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="16,11">
+                    <TextBlock Text="Atoms" FontWeight="SemiBold" />
+                  </Border>
+                  <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="16,12,16,6">
+                    <TextBox Text="{Binding Field.FilterText}" Watermark="Filter: type, element, atom (C12), rule text, charge" />
+                    <Border Grid.Column="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="7" Padding="2">
+                      <StackPanel Orientation="Horizontal">
+                        <RadioButton GroupName="ffilter" Content="All" IsChecked="{Binding Field.FilterAll}" Margin="6,0" />
+                        <RadioButton GroupName="ffilter" Content="Untyped" IsChecked="{Binding Field.FilterUntyped}" Margin="6,0" />
+                        <RadioButton GroupName="ffilter" Content="Overridden" IsChecked="{Binding Field.FilterOverridden}" Margin="6,0" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+                  <Grid Grid.Row="2" ColumnDefinitions="70,44,74,90,*,190" Margin="28,6,16,4">
+                    <TextBlock Text="ATOM" Classes="h3" /><TextBlock Grid.Column="1" Text="EL." Classes="h3" /><TextBlock Grid.Column="2" Text="TYPE" Classes="h3" />
+                    <TextBlock Grid.Column="3" Text="Q (E)" Classes="h3" HorizontalAlignment="Right" Margin="0,0,14,0" />
+                    <TextBlock Grid.Column="4" Text="RULE (SMARTS)" Classes="h3" /><TextBlock Grid.Column="5" Text="SOURCE" Classes="h3" />
+                  </Grid>
+                  <ListBox Grid.Row="3" ItemsSource="{Binding Field.Rows}" SelectedItem="{Binding Field.SelectedRow}" Background="Transparent" Margin="12,0,12,4">
+                    <ListBox.Styles>
+                      <Style Selector="ListBoxItem">
+                        <Setter Property="Padding" Value="16,2" />
+                        <Setter Property="MinHeight" Value="24" />
+                        <Setter Property="CornerRadius" Value="5" />
+                      </Style>
+                      <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                        <Setter Property="Background" Value="#2E343A" />
+                      </Style>
+                      <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter">
+                        <Setter Property="Background" Value="#353C43" />
+                      </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemsPanel>
+                      <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:FieldAtomRow">
+                        <Grid ColumnDefinitions="70,44,74,90,*,190" Height="18">
+                          <TextBlock Text="{Binding Atom}" Classes="mono" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Element}" Classes="mono" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="2" Text="{Binding TypeShown}" Classes="mono" Foreground="{Binding TypeBrush}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="3" Text="{Binding Charge}" Classes="mono" HorizontalAlignment="Right" Margin="0,0,14,0" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="4" Text="{Binding Rule}" Classes="mono" Foreground="{Binding RuleBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Rule}" />
+                          <TextBlock Grid.Column="5" Text="{Binding Source}" Classes="mono" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        </Grid>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <TextBlock Grid.Row="4" Text="{Binding Field.RowsNote}" Classes="dim" Margin="16,2,16,10" />
+                </Grid>
+              </Border>
+              <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}">
+                <StackPanel>
+                  <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="16,11">
+                    <TextBlock Text="{Binding Field.WhyTitle}" FontWeight="SemiBold" />
+                  </Border>
+                  <StackPanel Margin="16,12" Spacing="10">
+                    <TextBlock Text="{Binding Field.WhyText}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Field.HasSelection}" IsEnabled="{Binding Field.NotWorking}">
+                      <TextBlock Text="Set type by hand" Classes="dim" VerticalAlignment="Center" />
+                      <ComboBox ItemsSource="{Binding Field.OverrideTypes}" SelectedItem="{Binding Field.OverrideType}" MinWidth="120" />
+                      <Button Content="Set" Click="OnFieldOverride" ToolTip.Tip="The atom keeps this type through retyping; it is listed as overridden" />
+                      <Button Content="Back to the rule" Click="OnFieldResetOverride" IsVisible="{Binding Field.SelectedOverridden}" />
+                    </StackPanel>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <!-- types in 3D + missing -->
+            <Grid Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="12" IsVisible="{Binding Field.Assigned}">
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" ClipToBounds="True">
+                <Grid RowDefinitions="Auto,*">
+                  <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="16,9">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <TextBlock Text="Types in 3D" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <ItemsControl Grid.Column="1" ItemsSource="{Binding Field.Swatches}" HorizontalAlignment="Right" Margin="12,0,0,0">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Right" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:FieldTypeSwatch">
+                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="8,2,0,2" ToolTip.Tip="{Binding Description}">
+                              <Ellipse Width="8" Height="8" Fill="{Binding Colour}" VerticalAlignment="Center" />
+                              <TextBlock Text="{Binding Label}" Classes="mono" FontSize="11" />
+                            </StackPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Grid>
+                  </Border>
+                  <Border Grid.Row="1" x:Name="FieldViewHost" Background="{DynamicResource Bg0B}" ClipToBounds="True" Focusable="True" MinHeight="240">
+                    <Panel>
+                      <Image x:Name="FieldImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                      <TextBlock Classes="dim" Margin="10" VerticalAlignment="Bottom" Text="Coloured by force-field type · click an atom to explain it · drag to rotate" />
+                    </Panel>
+                  </Border>
+                </Grid>
+              </Border>
+              <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}">
+                <StackPanel>
+                  <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="16,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="Missing before run" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="#3A2323" IsVisible="{Binding Field.Incomplete}">
+                        <TextBlock Text="Blocks Relax and Dynamics" Foreground="{DynamicResource ErrB}" FontSize="11" />
+                      </Border>
+                      <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="#1F3324" IsVisible="{Binding Field.Complete}">
+                        <TextBlock Text="Ready to run" Foreground="{DynamicResource OkB}" FontSize="11" />
+                      </Border>
+                    </Grid>
+                  </Border>
+                  <StackPanel Margin="16,10" Spacing="8" IsEnabled="{Binding Field.NotWorking}">
+                    <ListBox ItemsSource="{Binding Field.Missing}" SelectedItem="{Binding Field.SelectedMissing}" MaxHeight="170" Background="Transparent"
+                             IsVisible="{Binding Field.Incomplete}">
+                      <ListBox.Styles>
+                        <Style Selector="ListBoxItem"><Setter Property="Padding" Value="0,2" /></Style>
+                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+                        <Style Selector="ListBoxItem:selected Border.miss"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+                      </ListBox.Styles>
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FieldMissingRow">
+                          <Border Classes="miss" BorderBrush="#5A2E2B" BorderThickness="1" CornerRadius="6" Background="#2A1B1B" Padding="10,6">
+                            <StackPanel Spacing="1">
+                              <TextBlock Text="{Binding Title}" Classes="mono" FontWeight="SemiBold" />
+                              <TextBlock Text="{Binding Detail}" Classes="dim" />
+                            </StackPanel>
+                          </Border>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Classes="dim" TextWrapping="Wrap"
+                               Text="CAPS never guesses parameters. Choose a source: import them from a published file, or enter them by hand; anything entered by hand is flagged estimated in the report and the output." />
+                    <StackPanel Spacing="6" IsVisible="{Binding Field.CanEnterRule}">
+                      <Grid ColumnDefinitions="Auto,*,Auto,110" ColumnSpacing="6">
+                        <TextBlock Text="{Binding Field.EntryKind}" Classes="mono" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Field.EntryTypes}" ToolTip.Tip="Atom types (as the force field looks them up); * matches any" />
+                        <TextBlock Grid.Column="2" Text="style" Classes="dim" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="3" Text="{Binding Field.EntryStyle}" />
+                      </Grid>
+                      <TextBox Text="{Binding Field.EntryParams}" Watermark="{Binding Field.EntryHint}" />
+                      <TextBlock Text="{Binding Field.EntryHint}" Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Content="Import parameters…" Click="OnFieldImport" ToolTip.Tip="caps-forcefield JSON or moltemplate .lt; its rules are added over the force field" />
+                      <Button Content="Enter manually (estimated)" Click="OnFieldAddRule" IsEnabled="{Binding Field.CanEnterRule}" />
+                      <Button Content="Remove added" Click="OnFieldRemoveRules" IsVisible="{Binding Field.HasEntered}" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Field.Entered}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" TextWrapping="Wrap" /></DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding Field.EnergyText}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding Field.Complete}" />
+                    <ItemsControl ItemsSource="{Binding Field.Notes}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="dim" TextWrapping="Wrap" Margin="0,1" /></DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Grid>
+
+          <!-- footer -->
+          <Border Grid.Row="3" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,6" Margin="-22,0" >
+            <Grid ColumnDefinitions="*,Auto" Margin="22,0">
+              <TextBlock Text="{Binding Field.FooterTyper}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="1" Text="{Binding Field.FooterDb}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" MaxWidth="700" />
+            </Grid>
+          </Border>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Status bar (lib.py statusbar): counts on the left, what the mouse does and the renderer on the right -->
+    <Border Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,0">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusCounts}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
+          <TextBlock Text="{Binding StatusSelection}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
+          <TextBlock Text="{Binding StatusCell}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center"
+                   Margin="18,0" TextTrimming="CharacterEllipsis" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+          <TextBlock Text="Mouse: pick · drag rotates · ⇧ drag pans" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+          <TextBlock Text="Double precision" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+          <TextBlock x:Name="RenderStat" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

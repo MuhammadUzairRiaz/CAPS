@@ -1,0 +1,66 @@
+// CAPS Grow: all-atom polymer chains built from internal coordinates and grown inside a periodic cell.
+#pragma once
+#include <cstdint>
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "caps/system.hpp"
+
+namespace caps {
+
+enum class Tacticity { Atactic, Isotactic, Syndiotactic };
+
+Tacticity tacticity_from_string(const std::string& s);   // "atactic" | "isotactic" | "syndiotactic"
+const char* to_string(Tacticity t);
+
+struct GrowOptions {
+  std::string polymer = "polystyrene";   // the only monomer in this slice
+  int chains = 10;
+  int dp = 8;                            // degree of polymerisation (monomer units per chain)
+  Tacticity tacticity = Tacticity::Atactic;
+  uint64_t seed = 1;
+  double box = 0.0;                      // cubic cell edge, Å; 0 = derive from density
+  double density = 0.0;                  // target g/cm^3 when box == 0
+  bool curve = true;                     // allow gauche backbone torsions (false: near-trans only)
+  int trials = 120;                      // torsion / ring trials per growth step (the roomiest is kept)
+  double comfortable = 0.0;              // stop trying once a trial clears every limit by this much, Å
+  bool escalate = false;                 // back up further (and try harder) where a step keeps failing
+  int max_backtracks = 0;                // per chain start; 0 = 400, or 40 × dp when escalating
+  int max_restarts = 400;                // new start points per chain before giving up
+  double accept = -0.05;                 // worst allowed (distance − limit), Å
+  // Called once per growth round with (chains finished, chains, restarts so far); return false to cancel.
+  std::function<bool(int, int, int)> progress;
+  double contact_scale = 1.0;            // scales the contact limits (C–C 3.0, C–H 2.45, H–H 2.0 Å); < 1 needs Relax afterwards
+};
+
+struct GrowReport {
+  int chains_placed = 0;
+  int restarts = 0;
+  int backtracks = 0;
+  double worst_margin = 0.0;             // smallest (distance − limit) over accepted non-bonded pairs, Å
+  double box = 0.0;
+  double density = 0.0;
+  std::vector<std::string> notes;
+};
+
+struct GrowError : std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
+// Mass of one chain (g/mol) for a monomer and degree of polymerisation, H end caps included.
+double chain_mass(const std::string& polymer, int dp);
+
+// Cell edge (Å) that gives the target density for the requested chains.
+double box_for_density(const GrowOptions& o);
+
+// Grow all chains into a periodic cubic cell. Positions are unwrapped (each chain continuous).
+// Atoms carry GAFF-style names (c3, ca, hc, ha), types 1–4, molecule ids and Gasteiger–Marsili charges.
+// Throws GrowError when a chain cannot be placed within the limits.
+System grow(const GrowOptions& o, GrowReport* report = nullptr);
+
+// Gasteiger–Marsili partial charges for C/H systems (sp3 C, aromatic C, H). Returns one charge per atom.
+std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aromatic, int iterations = 6);
+
+}  // namespace caps
