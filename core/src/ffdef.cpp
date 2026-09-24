@@ -1,6 +1,7 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
 
+#include <filesystem>
 #include <tuple>
 #include <algorithm>
 #include <cmath>
@@ -330,9 +331,9 @@ FFDef load_forcefield(const std::string& path) {
     for (const auto& n : j["notes"].items()) ff.notes.push_back(n.str());
   if (j.has("typing")) {
     if (j["typing"].is_string()) {
-      const auto slash = path.find_last_of('/');
-      const std::string f = j["typing"].str();
-      load_typing(ff, f.empty() || f[0] == '/' || slash == std::string::npos ? f : path.substr(0, slash + 1) + f);
+      // relative to the force-field file (either separator: Windows paths use backslashes)
+      const std::filesystem::path f(j["typing"].str());
+      load_typing(ff, (f.empty() || f.is_absolute() ? f : std::filesystem::path(path).parent_path() / f).lexically_normal().string());
     } else {
       ff.typing = typing_from(j["typing"], path);
       ff.typing_source = path;

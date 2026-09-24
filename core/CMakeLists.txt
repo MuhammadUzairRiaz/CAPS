@@ -26,6 +26,8 @@ add_library(caps_core STATIC
   src/render.cpp
   src/image.cpp
   src/svg.cpp
+  src/smiles.cpp
+  src/embed.cpp
 )
 target_include_directories(caps_core PUBLIC include)
 target_link_libraries(caps_core PUBLIC ZLIB::ZLIB Threads::Threads)
