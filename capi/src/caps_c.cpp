@@ -17,6 +17,7 @@
 #include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
 #include "caps/config.hpp"
+#include "caps/bench.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
@@ -1510,3 +1511,83 @@ extern "C" int32_t caps_smiles_write(const char* graph_json, char* smiles, int32
 
 extern "C" void caps_set_palette(int32_t p) { caps::set_palette(p == 1 ? caps::Palette::OkabeIto : p == 2 ? caps::Palette::Monochrome : caps::Palette::Caps); }
 extern "C" void caps_set_threads(int32_t n) { caps::set_max_threads(n); }
+
+namespace {
+caps::Json bench_json(const caps::BenchTable& t) {
+  caps::Json j = caps::Json::object();
+  j["id"] = t.id;
+  j["title"] = t.title;
+  j["scope"] = t.scope;
+  caps::Json cols = caps::Json::array();
+  for (const auto& c : t.columns) cols.push_back(c);
+  j["columns"] = cols;
+  caps::Json rows = caps::Json::array();
+  for (const auto& r : t.rows) {
+    caps::Json row = caps::Json::object(), cells = caps::Json::array();
+    for (const auto& c : r.cells) cells.push_back(c);
+    row["cells"] = cells;
+    row["status"] = r.status;
+    rows.push_back(row);
+  }
+  j["rows"] = rows;
+  j["status"] = t.status;
+  j["note"] = t.note;
+  j["seconds"] = t.seconds;
+  return j;
+}
+
+caps::BenchTable bench_from(const caps::Json& j) {
+  caps::BenchTable t;
+  t.id = j.text("id");
+  t.title = j.text("title");
+  t.scope = j.text("scope");
+  t.status = j.text("status");
+  t.note = j.text("note");
+  t.seconds = j.num("seconds", 0);
+  if (j.has("columns")) for (const auto& c : j["columns"].items()) t.columns.push_back(c.str());
+  if (j.has("rows"))
+    for (const auto& r : j["rows"].items()) {
+      caps::BenchRow row;
+      row.status = r.text("status");
+      for (const auto& c : r["cells"].items()) row.cells.push_back(c.str());
+      t.rows.push_back(row);
+    }
+  return t;
+}
+}  // namespace
+
+extern "C" int32_t caps_bench_list(char* json, int32_t cap) {
+  return guard([&] {
+    caps::Json a = caps::Json::array();
+    for (const auto& id : caps::bench_ids()) a.push_back(bench_json(caps::bench_describe(id)));
+    return report_out(a.dump(), json, cap);
+  });
+}
+
+extern "C" int32_t caps_bench_run(const char* id, const char* samples, const char* forcefields, int32_t repeats, int32_t quick,
+                                  caps_bench_progress_fn progress, void* user, char* json, int32_t cap) {
+  return guard([&] {
+    caps::BenchOptions o;
+    o.samples = samples ? samples : "";
+    o.forcefields = forcefields ? forcefields : "";
+    o.repeats = repeats > 0 ? repeats : 3;
+    o.quick = quick != 0;
+    if (progress) o.progress = [&](const std::string& t, const std::string& w, double f) { return progress(t.c_str(), w.c_str(), f, user) == 0; };
+    return report_out(bench_json(caps::run_bench(id ? id : "", o)).dump(), json, cap);
+  });
+}
+
+extern "C" int32_t caps_bench_write(const char* tables_json, const char* dir) {
+  return guard([&] {
+    const caps::Json a = caps::Json::parse(tables_json ? tables_json : "[]");
+    std::vector<caps::BenchTable> ts;
+    for (const auto& j : a.items()) ts.push_back(bench_from(j));
+    const std::string d = dir ? dir : ".";
+    std::filesystem::create_directories(d);
+    std::ofstream(d + "/results.md") << caps::bench_markdown(ts);
+    std::ofstream(d + "/results.tex") << caps::bench_latex(ts);
+    for (const auto& t : ts)
+      if (!t.rows.empty()) std::ofstream(d + "/" + t.id + ".csv") << caps::bench_csv(t);
+    return 0;
+  });
+}

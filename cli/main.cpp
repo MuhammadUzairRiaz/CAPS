@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "caps/analysis.hpp"
+#include "caps/bench.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
@@ -47,6 +48,7 @@ int usage() {
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
                "  caps convert FILE OUT.data|OUT.xyz|OUT.pdb [--topology DATA]\n"
+               "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
@@ -86,7 +88,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -211,6 +213,55 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "bench") {
+    try {
+      BenchOptions b;
+      // the shipped data: $CAPS_HOME, the working directory, or the source tree this was built from
+      auto find = [](const std::string& rel, const std::string& probe) {
+        std::vector<std::string> roots;
+        if (const char* h = std::getenv("CAPS_HOME")) roots.push_back(h);
+        roots.push_back(".");
+        roots.push_back(CAPS_SOURCE_ROOT);
+        for (const auto& r : roots)
+          if (std::filesystem::exists(r + "/" + rel + "/" + probe)) return r + "/" + rel;
+        return rel;
+      };
+      b.samples = o.count("--samples") ? o["--samples"] : find("samples", "ps_melt.data");
+      b.forcefields = o.count("--forcefields") ? o["--forcefields"] : find("data/forcefields", "catalogue.json");
+      if (o.count("--repeats")) b.repeats = std::stoi(o["--repeats"]);
+      b.quick = o.count("--quick") > 0;
+      std::vector<std::string> ids = pos;
+      if (ids.empty() || o.count("--all")) ids = bench_ids();
+      b.progress = [](const std::string& id, const std::string& what, double f) {
+        std::fprintf(stderr, "\r%-4s %-40s %3.0f %%", id.c_str(), what.c_str(), 100 * f);
+        return true;
+      };
+      std::vector<BenchTable> tables;
+      for (const auto& id : ids) {
+        tables.push_back(run_bench(id, b));
+        const auto& t = tables.back();
+        std::fprintf(stderr, "\r%-60s\r", "");
+        std::printf("%-4s %-28s %-8s %zu rows  %.1f s\n", t.id.c_str(), t.title.c_str(), t.status.c_str(), t.rows.size(), t.seconds);
+      }
+      const std::string md = bench_markdown(tables);
+      if (o.count("--out")) {
+        const std::string dir = o["--out"];
+        std::filesystem::create_directories(dir);
+        std::ofstream(dir + "/results.md") << md;
+        std::ofstream(dir + "/results.tex") << bench_latex(tables);
+        for (const auto& t : tables)
+          if (!t.rows.empty()) std::ofstream(dir + "/" + t.id + ".csv") << bench_csv(t);
+        std::printf("wrote %s/results.md, results.tex and one CSV per table\n", dir.c_str());
+      } else
+        std::printf("\n%s", md.c_str());
+      bool fail = false;
+      for (const auto& t : tables) fail |= t.status == "fail";
+      return fail ? 1 : 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps bench: %s\n", e.what());
       return 1;
     }
   }
