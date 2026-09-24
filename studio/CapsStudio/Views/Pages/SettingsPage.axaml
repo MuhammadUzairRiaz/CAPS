@@ -171,13 +171,32 @@
               <TextBlock Text="Force fields" Classes="title" />
               <TextBlock Text="The force field Field offers first, and the one the molecule builder cleans structures up with." Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
-            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="20" MaxWidth="700" HorizontalAlignment="Left">
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="20" MaxWidth="700" HorizontalAlignment="Left">
               <TextBlock Text="Default force field" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding SetForceField}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:FfEntry"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
+              <TextBlock Grid.Row="2" Text="Electrostatics" VerticalAlignment="Center" />
+              <Border Grid.Row="2" Grid.Column="1" Classes="seg" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                  <RadioButton Classes="seg" Content="Damped shifted force" GroupName="elec" IsChecked="{Binding SetElectrostatics, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                  <RadioButton Classes="seg" Content="Particle-mesh Ewald" GroupName="elec" IsChecked="{Binding SetElectrostatics, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                </StackPanel>
+              </Border>
+              <StackPanel Grid.Row="3" Grid.Column="1" Spacing="10">
+                <Grid ColumnDefinitions="Auto,86,Auto,80,Auto,72" ColumnSpacing="8" IsVisible="{Binding PmeOn}">
+                  <TextBlock Text="Ewald tolerance 1e" Classes="label" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding SetEwaldExponent}" Minimum="-10" Maximum="-3" Increment="1" FormatString="0" />
+                  <TextBlock Grid.Column="2" Text="Grid ≤ Å" Classes="label" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="3" Value="{Binding SetPmeSpacing}" Minimum="0.3" Maximum="3" Increment="0.1" FormatString="0.0" />
+                  <TextBlock Grid.Column="4" Text="Order" Classes="label" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="5" Value="{Binding SetPmeOrder}" Minimum="3" Maximum="10" Increment="1" FormatString="0" />
+                </Grid>
+                <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="12"
+                           Text="Particle-mesh Ewald sums the electrostatics of periodic cells in full (the reciprocal part runs in Fortran); cells without periodic faces keep the damped shifted force. Relax, Dynamics, Equilibrate, Analyze and the LAMMPS input all follow this choice." />
+              </StackPanel>
               <TextBlock Grid.Row="1" Text="Library" VerticalAlignment="Top" />
               <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
                 <TextBlock Text="{Binding Field.LibraryNote}" Classes="muted" />

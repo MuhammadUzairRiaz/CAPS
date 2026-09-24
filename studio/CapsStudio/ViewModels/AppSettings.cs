@@ -16,6 +16,10 @@ public sealed class AppSettings
     public bool DepthCue { get; set; } = true;
     public int Style { get; set; }                        // ball & stick …
     public string ForceField { get; set; } = "gaff-amber25-dlfield";
+    public int Electrostatics { get; set; }               // 0 damped shifted force, 1 particle-mesh Ewald
+    public double EwaldRtol { get; set; } = 1e-5;
+    public double PmeSpacing { get; set; } = 1.0;
+    public int PmeOrder { get; set; } = 5;
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>
@@ -54,6 +58,10 @@ public sealed class AppSettings
         Threads = Math.Clamp(Threads, 0, 64);
         Background = Math.Clamp(Background, 0, 1);
         Style = Math.Clamp(Style, 0, 4);
+        Electrostatics = Math.Clamp(Electrostatics, 0, 1);
+        EwaldRtol = Math.Clamp(EwaldRtol, 1e-10, 1e-2);
+        PmeSpacing = Math.Clamp(PmeSpacing, 0.3, 3.0);
+        PmeOrder = Math.Clamp(PmeOrder, 3, 10);
         if (Theme is not ("dark" or "light" or "system")) Theme = "dark";
         return this;
     }
