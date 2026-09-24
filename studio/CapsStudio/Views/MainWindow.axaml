@@ -720,78 +720,15 @@
         </TabControl>
         <ScrollViewer IsVisible="{Binding !IsStudio}">
           <StackPanel>
-          <!-- React -->
-          <StackPanel IsVisible="{Binding IsReact}">
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="STRUCTURE" Classes="h3" />
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
-                           Text="Pack or grow the reactive mixture first; React works on the frame shown in the viewer." />
-                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="REACTION TEMPLATES" Classes="h3" />
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReactionSets}" SelectedIndex="{Binding RxSet}" HorizontalAlignment="Stretch" />
-                <TextBox Text="{Binding RxText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo" FontSize="10.5" Height="200" />
-                <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="atom (map, element, H=, H>=, degree=, ring3, not_aromatic, bonded …) · initiators · capture · probability · min_path · form · break · move · delete · sites. Epoxy–amine needs O and N parameters to relax; until the Field module types them, run it with relaxation off (topology only)." />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="CYCLES" Classes="h3" />
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Cycles" Classes="dim" /><TextBlock Grid.Column="1" Text="Per cycle" Classes="dim" /><TextBlock Grid.Column="2" Text="Target α" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding RxCyclesD}" Minimum="1" Maximum="100000" FormatString="0" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxPerCycleD}" Minimum="1" Maximum="100000" FormatString="0" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxTargetD}" Minimum="0.001" Maximum="1" Increment="0.05" FormatString="0.###" ShowButtonSpinner="False" />
-                  <TextBlock Grid.Row="2" Text="Capture (Å, 0 = template)" Classes="dim" Margin="0,4,0,0" Grid.ColumnSpan="2" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Seed" Classes="dim" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="3" Value="{Binding RxCaptureD}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.0#" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding RxSeedD}" Minimum="0" Maximum="999999" FormatString="0" ShowButtonSpinner="False" />
-                </Grid>
-                <CheckBox Content="Relax after each cycle (retype, minimise)" IsChecked="{Binding RxRelax}" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RxRelax}">
-                  <TextBlock Text="Dynamics per cycle (ps)" Classes="dim" /><TextBlock Grid.Column="1" Text="at T (K)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding RxMdPsD}" Minimum="0" Maximum="10000" Increment="1" FormatString="0.##" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxTempD}" Minimum="1" Maximum="5000" Increment="50" FormatString="0" />
-                </Grid>
-                <TextBlock Text="Gel point check" Classes="dim" />
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="fA" Classes="dim" /><TextBlock Grid.Column="1" Text="fB" Classes="dim" /><TextBlock Grid.Column="2" Text="r" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding RxFaD}" Minimum="1" Maximum="100" Increment="1" FormatString="0.##" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxFbD}" Minimum="1" Maximum="100" Increment="1" FormatString="0.##" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxRatioD}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.##" ShowButtonSpinner="False" />
-                </Grid>
-                <TextBlock Text="{Binding FloryText}" Classes="dim" TextWrapping="Wrap" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Classes="primary" Content="Run reactions" Click="OnReactRun" IsEnabled="{Binding CanReact}" />
-                  <Button Content="Cancel" Click="OnReactCancel" IsEnabled="{Binding Reacting}" />
-                </StackPanel>
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
-                  <TextBlock Text="{Binding RxLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section" IsVisible="{Binding HasDocument}">
-              <StackPanel Spacing="8">
-                <TextBlock Text="SAVE" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
-                  <Button Content="LAMMPS data…" Click="OnSaveData" />
-                  <Button Content="PDB…" Click="OnSavePdb" />
-                  <Button Content="Trajectory…" Click="OnSaveTrajectory" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
           </StackPanel>
         </ScrollViewer>
         </Panel>
       </Border>
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
+      <!-- React (design/boards/React.dc.html) -->
+      <pages:ReactPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsReact}" />
+
       <!-- Equilibrate (design/boards/Convergence.dc.html) -->
       <pages:EquilibratePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsEquilibrate}" />
 
