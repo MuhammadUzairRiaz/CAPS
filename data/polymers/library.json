@@ -1,0 +1,626 @@
+{
+ "format": "caps-polymer-library 1",
+ "description": "Repeat units written as SMILES with two attachment points (head first).",
+ "polymers": [
+  {
+   "id": "P001",
+   "name": "Polyethylene",
+   "smiles": "[*]CC[*]"
+  },
+  {
+   "id": "P002",
+   "name": "Polyvinyl chloride",
+   "smiles": "[*]CC(Cl)[*]"
+  },
+  {
+   "id": "P003",
+   "name": "Polyvinyl fluoride",
+   "smiles": "[*]CC(F)[*]"
+  },
+  {
+   "id": "P004",
+   "name": "Polypropylene",
+   "smiles": "[*]CC(C)[*]"
+  },
+  {
+   "id": "P005",
+   "name": "Polybutadiene",
+   "smiles": "[*]CC=CC[*]"
+  },
+  {
+   "id": "P006",
+   "name": "Polybutene-1",
+   "smiles": "[*]CC(CC)[*]"
+  },
+  {
+   "id": "P007",
+   "name": "Polyvinylidene fluoride",
+   "smiles": "[*]C(F)(F)C[*]"
+  },
+  {
+   "id": "P008",
+   "name": "Polyvinylidene chloride",
+   "smiles": "[*]C(Cl)(Cl)C[*]"
+  },
+  {
+   "id": "P009",
+   "name": "Poly(benzyl methacrylates)",
+   "smiles": "[*]CC(C)(C(=O)OCc1ccccc1)[*]"
+  },
+  {
+   "id": "P010",
+   "name": "Polyvinyl ethyl ether",
+   "smiles": "[*]CC(OCC)[*]"
+  },
+  {
+   "id": "P011",
+   "name": "Polyacrylonitrile",
+   "smiles": "[*]CC(C#N)[*]"
+  },
+  {
+   "id": "P012",
+   "name": "Poly(NN\u0002dimethylacrylamide)",
+   "smiles": "[*]CC(C(=O)N(C)C)[*]"
+  },
+  {
+   "id": "P013",
+   "name": "Polystyrene",
+   "smiles": "[*]CC([*])C1=CC=CC=C1"
+  },
+  {
+   "id": "P014",
+   "name": "Polyethylene oxide",
+   "smiles": "[*]CCO[*]"
+  },
+  {
+   "id": "P015",
+   "name": "Poly trans 1 4 Isoprene",
+   "smiles": "[*]C/C=C(C)/C[*]"
+  },
+  {
+   "id": "P016",
+   "name": "Poly Vinyl Alcohol",
+   "smiles": "[*]CC(O)[*]"
+  },
+  {
+   "id": "P017",
+   "name": "Nylon 6 6",
+   "smiles": "[*]C(=O)CCCCC(=O)NCCCCCCN[*]"
+  },
+  {
+   "id": "P018",
+   "name": "Poly Acrylamide",
+   "smiles": "[*]CC(C(=O)N)[*]"
+  },
+  {
+   "id": "P019",
+   "name": "Poly Methyl Methacrylate",
+   "smiles": "[*]CC(C)(C(=O)OC)[*]"
+  },
+  {
+   "id": "P020",
+   "name": "Poly Methyl Acrylate",
+   "smiles": "[*]CC(C(=O)OC)[*]"
+  },
+  {
+   "id": "P021",
+   "name": "Poly Methacrylic Acid",
+   "smiles": "[*]CC(C)(C(=O)O)[*]"
+  },
+  {
+   "id": "P022",
+   "name": "Poly Acrylic Acid",
+   "smiles": "[*]CC(C(=O)O)[*]"
+  },
+  {
+   "id": "P023",
+   "name": "Poly(vinyl octyl ether)",
+   "smiles": "[*]C(OCCCCCCCC)C[*]"
+  },
+  {
+   "id": "P024",
+   "name": "Poly(vinyl propyl ether)",
+   "smiles": "[*]C(OCCC)C[*]"
+  },
+  {
+   "id": "P025",
+   "name": "Poly Ethyl Acrylate",
+   "smiles": "[*]CC(C(=O)OCC)[*]"
+  },
+  {
+   "id": "P026",
+   "name": "Polyvinylamine",
+   "smiles": "[*]CC(N)[*]"
+  },
+  {
+   "id": "P027",
+   "name": "Polyvinyl methyl ether",
+   "smiles": "[*]CC(OC)[*]"
+  },
+  {
+   "id": "P028",
+   "name": "Poly(tetramethylene terephthalate)",
+   "smiles": "[*]OCCCCOC(=O)c1ccc(C(=O)[*])cc1"
+  },
+  {
+   "id": "P029",
+   "name": "Poly(N-vinyl-2-pyrrolidone)",
+   "smiles": "[*]CC(N1CCCC1=O)[*]"
+  },
+  {
+   "id": "P030",
+   "name": "Poly(N-vinylcarbazole)",
+   "smiles": "[*]CC(N1C2=C(C=CC=C2)C2=C1C=CC=C2)[*]"
+  },
+  {
+   "id": "P031",
+   "name": "Poly(2-vinylpyridine)",
+   "smiles": "[*]CC(C1=CC=CC=N1)[*]"
+  },
+  {
+   "id": "P032",
+   "name": "Poly(vinyl propionate)",
+   "smiles": "[*]C(OC(=O)CC)C[*]"
+  },
+  {
+   "id": "P033",
+   "name": "Polyvinyl acetate",
+   "smiles": "[*]CC(OC(C)=O)[*]"
+  },
+  {
+   "id": "P034",
+   "name": "Poly(butyl acrylate)",
+   "smiles": "[*]CC(C(=O)OCCCC)[*]"
+  },
+  {
+   "id": "P035",
+   "name": "Poly 4 fluorostyrene",
+   "smiles": "[*]C(c1ccc(F)cc1)C[*]"
+  },
+  {
+   "id": "P036",
+   "name": "Poly 2 chlorostyrene",
+   "smiles": "[*]C(c1c(Cl)cccc1)C[*]"
+  },
+  {
+   "id": "P037",
+   "name": "Poly 3 chlorostyrene",
+   "smiles": "[*]C(c1cc(Cl)ccc1)C[*]"
+  },
+  {
+   "id": "P038",
+   "name": "Poly 4 chlorostyrene",
+   "smiles": "[*]C(c1ccc(Cl)cc1)C[*]"
+  },
+  {
+   "id": "P039",
+   "name": "Poly(propyl acrylate)",
+   "smiles": "[*]CC(C(=O)OCCC)[*]"
+  },
+  {
+   "id": "P040",
+   "name": "Parylene",
+   "smiles": "[*]CC1=CC=C(C[*])C=C1"
+  },
+  {
+   "id": "P041",
+   "name": "Poly methyl vinyl ketone",
+   "smiles": "[*]C(C(=O)C)C[*]"
+  },
+  {
+   "id": "P042",
+   "name": "poly(N-vinylacetamide)",
+   "smiles": "[*]C(NC(=O)C)C[*]"
+  },
+  {
+   "id": "P043",
+   "name": "Poly(2-methylpentadiene)",
+   "smiles": "*C(C)C(*)C(C)=C"
+  },
+  {
+   "id": "P044",
+   "name": "Poly(acetaldehyde)",
+   "smiles": "[*]C(C)O[*]"
+  },
+  {
+   "id": "P045",
+   "name": "Poly ethylene terephthalate",
+   "smiles": "[*]OCCOC(=O)c1ccc(C(=O)[*])cc1"
+  },
+  {
+   "id": "P046",
+   "name": "Poly(decamethylene terephthalate)",
+   "smiles": "[*]OCCCCCCCCCCOC(=O)c1ccc(C(=O)[*])cc1"
+  },
+  {
+   "id": "P047",
+   "name": "Poly(decamethylene sebacate)",
+   "smiles": "[*]OCCCCCCCCCCOC(=O)CCCCCCCCC(=O)[*]"
+  },
+  {
+   "id": "P048",
+   "name": "Poly(decamethylene adipate)",
+   "smiles": "[*]OCCCCCCCCCCOC(=O)CCCCC(=O)[*]"
+  },
+  {
+   "id": "P049",
+   "name": "Poly(1 4-cyclohexylidene dimethylterephthalate)",
+   "smiles": "C1CC(C[*])CCC1COC(=O)c1ccc(C(=O)O[*])cc1"
+  },
+  {
+   "id": "P050",
+   "name": "Poly(1 4-cyclohexane dimethylene terephthalate)",
+   "smiles": "C1CC(CO[*])CCC1COC(=O)c1ccc(C(=O)[*])cc1"
+  },
+  {
+   "id": "P051",
+   "name": "Poly(4-methylstyrene)",
+   "smiles": "[*]C(c1ccc(C)cc1)C[*]"
+  },
+  {
+   "id": "P052",
+   "name": "nylon 3",
+   "smiles": "[*]C(=O)CCN[*]"
+  },
+  {
+   "id": "P053",
+   "name": "poly(vinyl butyl ether)",
+   "smiles": "[*]CC(OCCCC)[*]"
+  },
+  {
+   "id": "P054",
+   "name": "poly(isobutyl vinyl ether)",
+   "smiles": "[*]CC(OCC(C)C)[*]"
+  },
+  {
+   "id": "P055",
+   "name": "poly(e-caprolactone)",
+   "smiles": "[*]C(=O)CCCCCO[*]"
+  },
+  {
+   "id": "P056",
+   "name": "cis 1,4 polyisoprene",
+   "smiles": "[*]C/C=C(C)\\C[*]"
+  },
+  {
+   "id": "P057",
+   "name": "poly(p-phenylene oxide)",
+   "smiles": "c1cc([*])ccc1O[*]"
+  },
+  {
+   "id": "P058",
+   "name": "Poly(4-vinylphenol)",
+   "smiles": "[*]C(c1ccc(O)cc1)C[*]"
+  },
+  {
+   "id": "P059",
+   "name": "Poly(octyl methacrylate)",
+   "smiles": "CCCCCCCCOC(=O)C([*])(C)C[*]"
+  },
+  {
+   "id": "P060",
+   "name": "poly(methylene oxide)",
+   "smiles": "[*]CO[*]"
+  },
+  {
+   "id": "P061",
+   "name": "Poly(4-methoxystyrene)",
+   "smiles": "[*]C(c1ccc(OC)cc1)C[*]"
+  },
+  {
+   "id": "P062",
+   "name": "Poly(pentyl methacrylate)",
+   "smiles": "CCCCCOC(=O)C([*])(C)C([*])"
+  },
+  {
+   "id": "P063",
+   "name": "Poly(p-phenylene vinylene)",
+   "smiles": "[*]C1=CC=C(C=C[*])C=C1"
+  },
+  {
+   "id": "P064",
+   "name": "Vinylcyclohexene dioxide resin",
+   "smiles": "[*]OCC(O)(C1CC(O)C(C[*])CC1)"
+  },
+  {
+   "id": "P065",
+   "name": "Poly(vinyl benzoate)",
+   "smiles": "[*]C(OCOc1ccccc1)C[*]"
+  },
+  {
+   "id": "P066",
+   "name": "Poly(vinyl cyclohexane)",
+   "smiles": "[*]C(C1CCCCC1)C[*]"
+  },
+  {
+   "id": "P067",
+   "name": "Poly(vinyl cyclopentane)",
+   "smiles": "[*]C(C1CCCC1)C[*]"
+  },
+  {
+   "id": "P068",
+   "name": "Poly(vinyl cyclopropane)",
+   "smiles": "[*]C(C1CC1)C[*]"
+  },
+  {
+   "id": "P069",
+   "name": "1,4-Butanediol diglycidyl ether resin",
+   "smiles": "[*]CC(O)COCCCOC(O)CO[*]"
+  },
+  {
+   "id": "P070",
+   "name": "Nylon 6,T",
+   "smiles": "[*]C(=O)c1ccc(C(=O)NCCCCCCN[*])cc1"
+  },
+  {
+   "id": "P071",
+   "name": "Polyethersulfone",
+   "smiles": "C1=CC(=CC=C1[*])S(=O)(=O)C2=CC=C(C=C2)O[*]"
+  },
+  {
+   "id": "P072",
+   "name": "Polyphenylsulfone",
+   "smiles": "[*]C1=CC=C(C=C1)S(=O)(=O)C2=CC=C(C=C2)OC3=CC=C(C=C3)C4=CC=C(C=C4)O[*]"
+  },
+  {
+   "id": "P073",
+   "name": "Polysulfone",
+   "smiles": "[*]c1ccc(S(=O)(=O)c2ccc(Oc3ccc(C(C)(C)c4ccc(O[*])cc4)cc3)cc2)cc1"
+  },
+  {
+   "id": "P074",
+   "name": "Polyaniline",
+   "smiles": "[*]Nc1ccc(Nc2ccc(Nc3ccc(Nc4ccc(C[*])cc4)cc3)cc2)cc1"
+  },
+  {
+   "id": "P075",
+   "name": "Polyamide 11",
+   "smiles": "[*]NCCCCCCCCCCC(=O)[*]"
+  },
+  {
+   "id": "P076",
+   "name": "Polylactic Acid",
+   "smiles": "[*]C(C)C(=O)O[*]"
+  },
+  {
+   "id": "P077",
+   "name": "Poly(N-isopropylacrylamide)",
+   "smiles": "[*]CC(C(=O)NC(C)C)[*]"
+  },
+  {
+   "id": "P078",
+   "name": "Poly(isopropyl vinyl ether)",
+   "smiles": "[*]CC(OC(C)C)[*]"
+  },
+  {
+   "id": "P079",
+   "name": "Poly(phenylglycidyl ether)",
+   "smiles": "[*]C1C(O1)COC2=CC=CC=C2[*]"
+  },
+  {
+   "id": "P080",
+   "name": "Poly(1-tetradecene)",
+   "smiles": "*CC(*)(CCCCCCCCCCCC)"
+  },
+  {
+   "id": "P081",
+   "name": "Poly(p-xylylene sebacamide)",
+   "smiles": "*NCc1ccccc1CNC(=O)CCCCCCCCC(=O)*"
+  },
+  {
+   "id": "P082",
+   "name": "Poly(methyl vinyl ketone)",
+   "smiles": "[*]CC(C(=O)C)[*]"
+  },
+  {
+   "id": "P083",
+   "name": "Poly(hydroxybutyrate)",
+   "smiles": "[*]OC(C)CC(=O)[*]"
+  },
+  {
+   "id": "P084",
+   "name": "Poly(norbornene)",
+   "smiles": "[*]C1CCC(CC[*])C1"
+  },
+  {
+   "id": "P085",
+   "name": "Poly(ether ether ketone)",
+   "smiles": "c1cc(O[*])ccc1C(=O)c2ccc(Oc3ccc([*])cc3)cc2"
+  },
+  {
+   "id": "P086",
+   "name": "Carilon",
+   "smiles": "[*]CCC(=O)[*]"
+  },
+  {
+   "id": "P087",
+   "name": "Nylon 6,12",
+   "smiles": "[*]C(=O)CCCCCCCCCCC(=O)NCCCCCCN[*]"
+  },
+  {
+   "id": "P088",
+   "name": "poly(ethylene 2,6-naphthalate",
+   "smiles": "O=C(O[*])C1=CC(C=CC(C(OCC[*])=O)=C2)=C2C=C1"
+  },
+  {
+   "id": "P089",
+   "name": "Poly(p-phenylene terephthalamide)",
+   "smiles": "[*]C(C1=CC=C(C(NC2=CC=C(N[*])C=C2)=O)C=C1)=O"
+  },
+  {
+   "id": "P090",
+   "name": "Poly(4-methyl-1-pentene)",
+   "smiles": "[*]CC([*])CC(C)C"
+  },
+  {
+   "id": "P091",
+   "name": "Poly(1-decene)",
+   "smiles": "[*]CC(CCCCCCCCC)[*]"
+  },
+  {
+   "id": "P092",
+   "name": "Poly(styrene oxide)",
+   "smiles": "[*]CC(c1ccccc1)O[*]"
+  },
+  {
+   "id": "P093",
+   "name": "Polyoxytetramethylene",
+   "smiles": "[*]OCCC[*]"
+  },
+  {
+   "id": "P094",
+   "name": "nylon 46",
+   "smiles": "[*]C(=O)CCCCC(=O)NCCCCN[*]"
+  },
+  {
+   "id": "P095",
+   "name": "nylon 12",
+   "smiles": "[*]C(=O)CCCCCCCCCCCN[*]"
+  },
+  {
+   "id": "P096",
+   "name": "Poly(4,4-dimethyl-1-pentene)",
+   "smiles": "[*]CC(CC(C)(C)(C))[*]"
+  },
+  {
+   "id": "P097",
+   "name": "Polychloroprene",
+   "smiles": "[*]CC(Cl)=CC[*]"
+  },
+  {
+   "id": "P098",
+   "name": "Polybutylene succinate",
+   "smiles": "[*]OCCCCOC(=O)CCC(=O)[*]"
+  },
+  {
+   "id": "P099",
+   "name": "Poly(1-hexene)",
+   "smiles": "[*]CC(CCCC)[*]"
+  },
+  {
+   "id": "P100",
+   "name": "Poly(hexene oxide)",
+   "smiles": "[*]CC(CCCC)O[*]"
+  },
+  {
+   "id": "P101",
+   "name": "Poly(methylglycidyl ether)",
+   "smiles": "[*]OCC(COC)[*]"
+  },
+  {
+   "id": "P102",
+   "name": "Poly(vinyl hexyl ether)",
+   "smiles": "[*]CC(OCCCCCC)[*]"
+  },
+  {
+   "id": "P103",
+   "name": "Poly(1-heptene)",
+   "smiles": "[*]CC(CCCCC)[*]"
+  }
+ ],
+ "copolymers": [
+  {
+   "id": "C001",
+   "name": "Epoxidised natural rubber (50 %)",
+   "units": [
+    "P056",
+    "[*]CC1(C)OC1C[*]"
+   ],
+   "unit_names": [
+    "cis-1,4-isoprene",
+    "epoxidised isoprene"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.5,
+    0.5
+   ]
+  },
+  {
+   "id": "C002",
+   "name": "Styrene–butadiene rubber (SBR, 23.5 wt % styrene)",
+   "units": [
+    "P013",
+    "P005"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.137,
+    0.863
+   ]
+  },
+  {
+   "id": "C003",
+   "name": "Acrylonitrile–butadiene–styrene terpolymer (random, 1 : 1 : 2 units)",
+   "units": [
+    "P011",
+    "P005",
+    "P013"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.25,
+    0.25,
+    0.5
+   ]
+  },
+  {
+   "id": "C004",
+   "name": "Poly(styrene-b-methyl methacrylate)",
+   "units": [
+    "P013",
+    "P019"
+   ],
+   "sequence": "block",
+   "blocks": [
+    20,
+    20
+   ]
+  },
+  {
+   "id": "C005",
+   "name": "Ethylene–vinyl acetate (EVA, 18 wt % vinyl acetate)",
+   "units": [
+    "P001",
+    "P033"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.933,
+    0.067
+   ]
+  },
+  {
+   "id": "C006",
+   "name": "Poly(ethylene-alt-propylene)",
+   "units": [
+    "P001",
+    "P004"
+   ],
+   "sequence": "alternating"
+  },
+  {
+   "id": "C007",
+   "name": "Styrene–acrylonitrile (SAN, 25 wt % acrylonitrile)",
+   "units": [
+    "P013",
+    "P011"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.604,
+    0.396
+   ]
+  },
+  {
+   "id": "C008",
+   "name": "PS–PMMA gradient",
+   "units": [
+    "P013",
+    "P019"
+   ],
+   "sequence": "gradient"
+  }
+ ],
+ "copolymer_note": "weights are unit (mole) fractions, converted from the weight fractions in the names"
+}

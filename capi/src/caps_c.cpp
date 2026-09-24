@@ -18,6 +18,7 @@
 #include "caps/molecule.hpp"
 #include "caps/config.hpp"
 #include "caps/bench.hpp"
+#include "caps/polymer.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
@@ -1590,4 +1591,97 @@ extern "C" int32_t caps_bench_write(const char* tables_json, const char* dir) {
       if (!t.rows.empty()) std::ofstream(d + "/" + t.id + ".csv") << caps::bench_csv(t);
     return 0;
   });
+}
+
+namespace {
+caps::ChainSpec spec_from(const std::string& text) {
+  const caps::Json j = caps::Json::parse(text);
+  caps::ChainSpec c;
+  if (j.has("units"))
+    for (const auto& u : j["units"].items()) c.units.push_back({u.text("name"), u.text("smiles")});
+  c.sequence = caps::sequence_from_string(j.text("sequence", "homopolymer"));
+  c.dp = int(j.num("dp", 20));
+  if (j.has("blocks")) for (const auto& b : j["blocks"].items()) c.blocks.push_back(int(b.number()));
+  if (j.has("weights")) for (const auto& w : j["weights"].items()) c.weights.push_back(w.number());
+  c.pattern = j.text("pattern");
+  c.pm = j.num("pm", 0.5);
+  c.forcefield = j.text("forcefield");
+  const std::string tac = j.text("tacticity", "atactic");
+  c.tacticity = caps::tacticity_from_string(tac);
+  return c;
+}
+}  // namespace
+
+extern "C" int32_t caps_unit_info(const char* smiles, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::UnitInfo u = caps::repeat_unit_info(smiles ? smiles : "");
+    j["ok"] = true;
+    j["formula"] = u.formula;
+    j["mass"] = u.mass;
+    j["atoms"] = double(u.atoms);
+    j["head_element"] = u.head_element;
+    j["tail_element"] = u.tail_element;
+    j["stereocentres"] = double(u.stereocentres);
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(), json, cap);
+}
+
+extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    if (c.units.empty()) throw std::runtime_error("no repeat unit");
+    const auto seq = caps::chain_sequence(c, seed);
+    const caps::MolGraph g = caps::chain_graph(c, seq);
+    const caps::MolInfo m = caps::molecule_info(g);
+    caps::Json s = caps::Json::array();
+    for (int k : seq) s.push_back(double(k));
+    j["ok"] = true;
+    j["sequence"] = s;
+    j["formula"] = m.formula;
+    j["mass"] = m.mass;
+    j["atoms"] = double(m.atoms);
+    j["smiles"] = g.smiles;
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(), json, cap);
+}
+
+extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    caps::GrowOptions g;
+    g.chains = o->chains;
+    if (o->dp > 0) c.dp = o->dp;
+    c.tacticity = o->tacticity == 1 ? caps::Tacticity::Isotactic : o->tacticity == 2 ? caps::Tacticity::Syndiotactic : caps::Tacticity::Atactic;
+    g.seed = o->seed;
+    g.box = o->box;
+    g.density = o->density;
+    g.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+    g.curve = o->curve != 0;
+    if (progress) g.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::GrowReport rep;
+    caps::System s = caps::grow_chains(c, g, &rep);
+    auto* d = new caps_doc;
+    d->traj.topology = s;
+    std::vector<caps::Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    d->traj.positions.push_back(std::move(p));
+    d->traj.cells.push_back(s.cell);
+    d->traj.timesteps.push_back(0);
+    refresh(d);
+    std::string t;
+    for (const auto& n : rep.notes) t += n + "\n";
+    report_out(t, report, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
 }

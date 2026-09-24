@@ -24,6 +24,7 @@
 #include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
 #include "caps/pack.hpp"
+#include "caps/polymer.hpp"
 #include "caps/react.hpp"
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
@@ -53,6 +54,8 @@ int usage() {
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
+               "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
+               "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json]   any repeat units (else polystyrene)\n"
                "  caps field   FILE [--topology DATA] [--forces OUT.txt]   GAFF types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff 10]\n"
@@ -202,7 +205,30 @@ int main(int argc, char** argv) {
       g.escalate = o.count("--escalate");
       if (!o.count("-o")) return usage();
       GrowReport rep;
-      System s = grow(g, &rep);
+      System s;
+      if (o.count("--units")) {
+        // any repeat units (SMILES with two attachment points), comma separated
+        auto split = [](const std::string& t) {
+          std::vector<std::string> v;
+          std::string cur;
+          for (char c : t) {
+            if (c == ',') { v.push_back(cur); cur.clear(); } else cur += c;
+          }
+          if (!cur.empty()) v.push_back(cur);
+          return v;
+        };
+        ChainSpec spec;
+        for (const auto& u : split(o["--units"])) spec.units.push_back({u, u});
+        spec.dp = g.dp;
+        spec.tacticity = g.tacticity;
+        if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
+        if (o.count("--weights")) for (const auto& w : split(o["--weights"])) spec.weights.push_back(std::stod(w));
+        if (o.count("--blocks")) for (const auto& b : split(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
+        if (o.count("--pattern")) spec.pattern = o["--pattern"];
+        if (o.count("--ff")) spec.forcefield = o["--ff"];
+        s = grow_chains(spec, g, &rep);
+      } else
+        s = grow(g, &rep);
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
