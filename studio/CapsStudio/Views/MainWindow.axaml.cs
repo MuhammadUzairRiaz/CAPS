@@ -50,6 +50,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = _vm;
         _vm.LoadRecent();
+        AddWindowCommands();
         _vm.InitProtocol();
         _vm.LoadReactionSet();
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta), Command = OpenCommand });
@@ -250,7 +251,55 @@ public partial class MainWindow : Window
     private void OnCloseDocument(object? s, RoutedEventArgs e) { e.Handled = true; _vm.CloseDocument(); }
     private void OnThemeDark(object? s, RoutedEventArgs e) { Tokens.Use(false); RequestRender(); }
     private void OnThemeLight(object? s, RoutedEventArgs e) { Tokens.Use(true); RequestRender(); }
-    private void OnCommandPalette(object? s, RoutedEventArgs e) => _vm.Status = "Command palette: coming with the command layer (design board CommandPalette)";
+    private void OnCommandPalette(object? s, RoutedEventArgs e) => TogglePalette();
+
+    public void TogglePalette()
+    {
+        _vm.PaletteOpen = !_vm.PaletteOpen;
+        if (_vm.PaletteOpen) Dispatcher.UIThread.Post(() => PaletteBox.Focus(), DispatcherPriority.Input);
+    }
+
+    private void OnPaletteBackdrop(object? s, PointerPressedEventArgs e) => _vm.PaletteOpen = false;
+
+    private void OnPaletteKey(object? s, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Down: _vm.PaletteMove(1); PaletteList.ScrollIntoView(_vm.PaletteIndex); e.Handled = true; break;
+            case Key.Up: _vm.PaletteMove(-1); PaletteList.ScrollIntoView(_vm.PaletteIndex); e.Handled = true; break;
+            case Key.Enter: _vm.PaletteRun(); e.Handled = true; break;
+            case Key.Escape: _vm.PaletteOpen = false; e.Handled = true; break;
+        }
+    }
+
+    private void OnPaletteTapped(object? s, TappedEventArgs e)
+    {
+        if ((e.Source as Control)?.DataContext is PaletteRow r && r.IsCommand) _vm.PaletteRun(r);
+    }
+
+    /// <summary>Palette commands that need the window (file dialogs, the view's size).</summary>
+    private void AddWindowCommands()
+    {
+        _vm.AddCommand(new PaletteCommand { Title = "Open a structure or trajectory…", Id = "document.open", Icon = "folder", Shortcut = "⌘O", Section = "File",
+            Keywords = "load file lammps gromacs pdb xyz mol2", Run = () => _ = OpenDialog() });
+        _vm.AddCommand(new PaletteCommand { Title = "Save as LAMMPS data…", Id = "document.save data", Icon = "save", Shortcut = "⌘S", Section = "File",
+            Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("data", "LAMMPS data") });
+        _vm.AddCommand(new PaletteCommand { Title = "Save as PDB…", Id = "document.save pdb", Icon = "save", Section = "File",
+            Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("pdb", "PDB") });
+        _vm.AddCommand(new PaletteCommand { Title = "Save as mol2…", Id = "document.save mol2", Icon = "save", Section = "File",
+            Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("mol2", "Tripos mol2") });
+        _vm.AddCommand(new PaletteCommand { Title = "Save the trajectory (LAMMPS dump)…", Id = "trajectory.save", Icon = "save", Section = "File",
+            Enabled = () => _vm.HasDocument && _vm.HasFrames && _vm.Idle, Run = () => _ = SaveTrajectoryAsync() });
+        _vm.AddCommand(new PaletteCommand { Title = "Export figure (PNG)…", Id = "export.png", Icon = "download", Section = "File", Keywords = "image picture render",
+            Enabled = () => _vm.HasDocument, Run = () => _ = Export("png") });
+        _vm.AddCommand(new PaletteCommand { Title = "Export figure (SVG)…", Id = "export.svg", Icon = "download", Section = "File", Keywords = "vector image",
+            Enabled = () => _vm.HasDocument, Run = () => _ = Export("svg") });
+        _vm.OpenRequested += what =>
+        {
+            var parts = what.Split('\n');
+            OpenMany(parts.Where(File.Exists).ToList());
+        };
+    }
 
     // ---- Analyze › Properties
     private async void OnAnalyzeRun(object? s, RoutedEventArgs e) { if (_vm.Idle) await _vm.Analyze.Run(); }
@@ -417,8 +466,10 @@ public partial class MainWindow : Window
     // Viewer keys; ignored while typing in a text box or choosing in a list.
     private void OnKey(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.K && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control) { TogglePalette(); e.Handled = true; return; }
+        if (_vm.PaletteOpen) return;
+        if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control && _vm.Document != null) { _vm.CloseDocument(); e.Handled = true; return; }
         if (_vm.Document == null || _vm.Busy || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
-        if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control) { _vm.CloseDocument(); e.Handled = true; return; }
         switch (e.Key)
         {
             case Key.Left: _vm.StepFrame(-1); e.Handled = true; break;
