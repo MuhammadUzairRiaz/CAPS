@@ -19,6 +19,13 @@ public static class Tokens
 
     public static FontFamily Mono => Application.Current?.TryFindResource("Mono", out var r) == true && r is FontFamily f ? f : FontFamily.Default;
 
+    /// <summary>Graphite (dark), Paper (light) or the system's choice.</summary>
+    public static void UseTheme(string theme)
+    {
+        if (Application.Current != null)
+            Application.Current.RequestedThemeVariant = theme switch { "light" => ThemeVariant.Light, "system" => ThemeVariant.Default, _ => ThemeVariant.Dark };
+    }
+
     /// <summary>Switches between Graphite (dark) and Paper (light).</summary>
     public static void Use(bool light)
     {

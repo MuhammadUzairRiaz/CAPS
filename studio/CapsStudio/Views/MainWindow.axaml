@@ -9,6 +9,7 @@
         Icon="/Assets/caps_256.png"
         Width="1440" Height="900" MinWidth="1024" MinHeight="640">
 
+  <LayoutTransformControl x:Name="ScaleRoot">
   <Grid RowDefinitions="44,*,26">
 
     <!-- Top bar (design/generator/lib.py topbar): logo, document tabs, command palette, compute -->
@@ -73,14 +74,9 @@
       <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
       <Border Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
         <DockPanel>
-          <Button x:Name="SettingsButton" DockPanel.Dock="Bottom" Classes="rail" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center" ToolTip.Tip="Settings">
+          <Button x:Name="SettingsButton" DockPanel.Dock="Bottom" Classes="rail" Classes.on="{Binding IsSettings}" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center"
+                  ToolTip.Tip="Settings" Click="OnSettingsRail">
             <local:Icon Kind="gear" Size="19" />
-            <Button.Flyout>
-              <MenuFlyout Placement="RightEdgeAlignedBottom">
-                <MenuItem Header="Theme: Graphite (dark)" Click="OnThemeDark" />
-                <MenuItem Header="Theme: Paper (light)" Click="OnThemeLight" />
-              </MenuFlyout>
-            </Button.Flyout>
           </Button>
           <StackPanel Spacing="2" Margin="0,8,0,0" HorizontalAlignment="Center">
           <Button Classes="rail" Classes.on="{Binding IsStudioRail}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
@@ -719,6 +715,8 @@
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
       <!-- React (design/boards/React.dc.html) -->
+      <!-- Settings (design/boards/Settings) -->
+      <pages:SettingsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSettings}" />
       <!-- Molecule (design/boards/Sketch): sketch or SMILES to 3D -->
       <pages:MoleculePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMolecule}" />
       <!-- Start (design/boards/Start): the Studio with nothing open -->
@@ -1280,4 +1278,5 @@
       </Border>
     </Panel>
   </Grid>
+  </LayoutTransformControl>
 </Window>

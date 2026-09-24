@@ -20,13 +20,12 @@ public sealed class RecentItem
     [System.Text.Json.Serialization.JsonIgnore] public bool HasThumb => Thumb != null;
 }
 
-/// <summary>The recent-files list, kept in the user's application-data folder (CAPS/recent.json) with a thumbnail
-/// of each structure (CAPS/thumbs). Nothing here is required: a missing or unreadable list is an empty one.</summary>
+/// <summary>The recent-files list, kept next to the settings (~/.caps/recent.json) with a thumbnail of each structure
+/// (~/.caps/thumbs). Nothing here is required: a missing or unreadable list is an empty one.</summary>
 public static class RecentFiles
 {
     public const int Max = 12;
-    private static string Dir => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CAPS");
-    private static string ListPath => System.IO.Path.Combine(Dir, "recent.json");
+    private static string Dir => AppSettings.Folder;
     /// <summary>Tests and screenshots point the list elsewhere so they never touch the user's own.</summary>
     public static string? Override { get; set; }
     private static string Root => Override ?? Dir;
@@ -69,6 +68,18 @@ public static class RecentFiles
             thumb?.Invoke(ThumbPath(path));
         }
         catch { /* the list is a convenience; failing to write it never stops the work */ }
+    }
+
+    public static void Clear()
+    {
+        try
+        {
+            var p = System.IO.Path.Combine(Root, "recent.json");
+            if (File.Exists(p)) File.Delete(p);
+            var t = System.IO.Path.Combine(Root, "thumbs");
+            if (Directory.Exists(t)) Directory.Delete(t, true);
+        }
+        catch { }
     }
 
     public static void Forget(string path)
