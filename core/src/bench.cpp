@@ -16,6 +16,7 @@
 #include "caps/dynamics.hpp"
 #include "caps/field.hpp"
 #include "caps/io.hpp"
+#include "caps/kspace.hpp"
 #include "caps/molecule.hpp"
 #include "caps/pack.hpp"
 #include "caps/relax.hpp"
@@ -212,6 +213,25 @@ void t1(BenchTable& t, const BenchOptions& o) {
   const bool ok = diff < 1e-4 * std::max(1.0, std::fabs(e0.virial));
   t.rows.push_back({{"Virial · Σ r·f vs dE/dλ (no tail)", thousands(long(n)), num(diff, 2) + " kcal/mol", num(std::fabs(e0.virial), 4) + " kcal/mol", ok ? "pass" : "fail"},
                     ok ? "pass" : "fail"});
+  // PME's reciprocal part against the plain Ewald sum (both in Fortran), with the default grid
+  step(o, "T1", "PME vs Ewald", 0.95);
+  {
+    std::vector<double> xs = flat(s);
+    const double beta = ewald_beta(10.0, 1e-5);
+    const PmeGrid g = pme_grid(s.cell, beta, 1.0, 5);
+    std::vector<double> fp(xs.size(), 0.0), fe(xs.size(), 0.0);
+    double vp[6], ve[6];
+    const int km = int(std::ceil(0.55 * std::max({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)})));
+    const int kmax[3] = {km, km, km};
+    const double ep = pme_reciprocal(xs, ff.charge, s.cell, g, fp, vp), ee = ewald_reciprocal(xs, ff.charge, s.cell, beta, kmax, fe, ve);
+    double rms = 0, err = 0;
+    for (size_t k = 0; k < xs.size(); ++k) rms += fe[k] * fe[k], err += (fp[k] - fe[k]) * (fp[k] - fe[k]);
+    const double rel = std::sqrt(err / std::max(rms, 1e-30));
+    const bool okp = rel < 1e-3 && std::fabs(ep - ee) < 1e-3 * std::max(1.0, std::fabs(ee));
+    t.rows.push_back({{"PME reciprocal vs Ewald sum (" + std::to_string(g.k[0]) + "³ grid, order 5)", thousands(long(n)), num(rel, 2) + " (relative)",
+                       fmt("%.4f", ee) + " kcal/mol", okp ? "pass" : "fail"},
+                      okp ? "pass" : "fail"});
+  }
   t.note = "Central differences (h = 1e-4 Å, λ = 1 ± 1e-5) of the total energy with the pair list frozen; pass: |ΔF| < 1e-3 kcal/mol/Å, virial within 1e-4 relative. "
            "The LJ tail pressure is the homogeneous-fluid correction, which counts pairs crossing the cut-off and so is not the derivative "
            "at a frozen pair list; it and the full virial tensor are compared with LAMMPS in bench/ff/check_data_lammps.py.";
@@ -283,7 +303,25 @@ void t4(BenchTable& t, const BenchOptions& o) {
     }
     t.rows.push_back({{"PS melt" + std::string(big ? " × 8" : ""), thousands(long(s.atoms.size())), std::to_string(threads), mean_sd(nsd, "%.1f"), "info"}, "info"});
   }
-  t.note = "Built-in GAFF, 10 Å cut-off, DSF Coulomb, dt 1 fs, Bussi thermostat; mean ± sd over the repeats.";
+  {
+    // the same melt with particle-mesh Ewald
+    std::vector<double> nsd;
+    for (int r = 0; r < std::max(1, o.repeats); ++r) {
+      step(o, "T4", "1.3k atoms, PME", 0.9);
+      System run = base;
+      DynamicsOptions d;
+      d.steps = o.quick ? 300 : 2000;
+      d.thermo_every = int(d.steps);
+      d.frame_every = 0;
+      d.seed = uint64_t(r + 1);
+      d.energy.electrostatics = EnergyOptions::Electrostatics::PME;
+      DynamicsReport rep;
+      run_dynamics(run, d, &rep);
+      nsd.push_back(rep.ns_per_day);
+    }
+    t.rows.push_back({{"PS melt, PME (1 Å grid, order 5)", thousands(long(base.atoms.size())), std::to_string(threads), mean_sd(nsd, "%.1f"), "info"}, "info"});
+  }
+  t.note = "Built-in GAFF, 10 Å cut-off, DSF Coulomb (PME where named), dt 1 fs, Bussi thermostat; mean ± sd over the repeats.";
 }
 
 // ---- T5: NVE drift
