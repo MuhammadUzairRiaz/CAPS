@@ -6,7 +6,7 @@ analysis, with a desktop Studio. It is independent software and lives in its own
 The product and engineering specification is `REDESIGN_PROMPT.md`. The screen designs are in `design/`
 (open `design/index.html`); they are the reference for every Studio screen.
 
-## What works today (v0.1: the visualizer, Grow, Pack, Relax, Dynamics, Equilibrate, React, Field and Analyze)
+## What works today (v0.1)
 
 | Part | Where | Status |
 |---|---|---|
@@ -17,8 +17,11 @@ The product and engineering specification is `REDESIGN_PROMPT.md`. The screen de
 | Analysis: molecule shape (Rg, gyration tensor, κ²), g(r) with cell list, distance / angle / dihedral | `core/src/analysis.cpp` | working, tested |
 | Renderer: ball-and-stick, space filling, sticks, no-H, backbone; colour by element / molecule / type / distance; outlines, depth cue, picking | `core/src/render.cpp` | working |
 | Figure export: PNG (dark, white or transparent with a real alpha channel) and SVG (no background shape when transparent) | `core/src/image.cpp`, `svg.cpp` | working, tested |
-| Grow: all-atom polystyrene (atactic / isotactic / syndiotactic) grown inside a periodic cubic cell; exact internal geometry, periodic contact checks against every placed atom, all chains grown together, back-tracking and restarts; GAFF-style names and types, Gasteiger–Marsili charges | `core/src/grow.cpp` | working, tested |
-| Field (first slice): GAFF 1.81 typing for hydrocarbons (c3, ca, hc, ha) with the reason for each type; bonds, angles, Fourier torsions, impropers, LJ with arithmetic mixing, damped shifted force electrostatics, AMBER 1-4 scaling; periodic neighbour list that includes images in cells narrower than twice the cut-off; multithreaded pair terms | `core/src/field.cpp` | working, tested against LAMMPS |
+| Grow: all-atom polymer chains grown inside a periodic cubic cell. Any repeat unit written as SMILES with two attachment points (`*CC(*)c1ccccc1`); homopolymers and copolymers of up to eight units (alternating, block, random with a share per unit, gradient, pattern); tacticity by mirrored units; unit templates embedded and cleaned with GAFF2; periodic contact checks against every placed atom, look-ahead, back-tracking and restarts. A curated polystyrene grower with GAFF names and Gasteiger charges | `core/src/polymer.cpp`, `grow.cpp` | working, tested |
+| Polymer library: 111 repeat units as SMILES and 16 copolymer presets (natural rubber, ENR-25/50, high-cis BR, NBR, butyl, chloroprene, E-SBR, SBR, SAN, EVA …) | `data/polymers/library.json` | data |
+| Molecule builder: SMILES parser and writer (chirality, E/Z, rings, brackets), 2D depiction, distance-bounds embedding (4D → 3D) with chirality and planarity, GAFF2 clean-up, conformers ranked by energy | `core/src/smiles.cpp`, `embed.cpp` | working, tested |
+| Field (first slice): GAFF 1.81 typing for hydrocarbons (c3, ca, hc, ha) with the reason for each type; bonds, angles, Fourier torsions, impropers, LJ with arithmetic mixing, damped shifted force electrostatics or particle-mesh Ewald, AMBER 1-4 scaling; periodic neighbour list that includes images in cells narrower than twice the cut-off; multithreaded pair terms | `core/src/field.cpp` | working, tested against LAMMPS |
+| Particle-mesh Ewald: smooth PME (Essmann et al. 1995) — reciprocal part in Fortran 2018 (B-spline spreading, mixed-radix FFT, influence function, forces, virial tensor; the plain Ewald sum as a reference), run on the evaluator's threads; real space, self and exclusion terms in C++; agrees with LAMMPS's Ewald sum | `core/fortran/caps_kspace.f90`, `core/src/kspace.cpp` | working, tested against LAMMPS |
 | Relax: steepest descent, Polak–Ribière CG, L-BFGS (m = 10) and FIRE; capped-force push-off; affine compression to a target density; isotropic box relaxation to a pressure; one frame recorded per stage | `core/src/relax.cpp` | working, tested |
 | LAMMPS data export with the force field (coefficients, angles, dihedrals, impropers, velocities and the matching styles); LAMMPS dump export of whole trajectories | `core/src/relax.cpp`, `io_lammps.cpp` | working, tested |
 | Dynamics: velocity Verlet; NVE, NVT (Bussi velocity rescaling, Langevin BAOAB) and isotropic NPT (stochastic cell rescaling, Berendsen); LJ tail corrections; velocities carried between runs; thermo log; multithreaded | `core/src/dynamics.cpp` | working, tested against LAMMPS |
@@ -27,20 +30,19 @@ The product and engineering specification is `REDESIGN_PROMPT.md`. The screen de
 | Pack: rigid molecules packed into boxes, cubes, spheres, cylinders and half-spaces (inside / outside), fixed molecules, periodic or not; overlap penalty after Martínez et al. over centre + rotation, L-BFGS, multithreaded cell list, worst molecules moved between rounds; reads packmol input files; never returns a cell below tolerance | `core/src/pack.cpp` | working, tested, benchmarked against packmol |
 | React: atom-mapped templates (form, break, move, delete); distance capture and probability (REACTER style); cycles of react → retype → minimise → optional dynamics (Polymatic cycle); conversion counted per reactive group; cluster analysis, gel point from the reduced weight-average mass, Flory–Stockmayer α_c | `core/src/react.cpp` | working, tested |
 | Analyze: density, g(r), S(q) (direct reciprocal-lattice sum + g(r) transform), X-ray and neutron scattering, Rg, end-to-end distance, C_n and C∞, persistence length, MSD, D (Einstein), end-to-end and segmental relaxation (KWW), cohesive energy density and δ, free volume by probe insertion, pore size distribution; block-average errors; JSON / CSV output | `core/src/properties.cpp` | working, tested against MDAnalysis and analytic cases |
-| C ABI v9 for the GUI and other languages (v2 `caps_relax`, `caps_field_info`; v3 `caps_md`, `caps_save_trajectory`; v4 `caps_protocol_text`, `caps_equilibrate`, `caps_internal_distances`; v5 `caps_pack`; v6 `caps_reaction_template`, `caps_react`; v7 `caps_field_*`; v8 `caps_analyze`, `caps_analyze_report`; v9 `caps_analyze_ex` with mechanics and Tg) | `capi/` | working |
-| `caps` command line: info, render, shape, rdf, convert, grow, pack, contacts, field, relax, md, equilibrate, chains, react, ff, analyze, elastic, tensile, tg | `cli/` | working |
-| CAPS Studio (Avalonia, .NET 10): Grow panel (build, cancel, save); Relax panel (method, tolerances, push-off, compression, box, live energy and force plots, cancel); Dynamics panel (NVE / NVT / NPT, thermostat and barostat, live temperature, pressure and density plots, cancel, save trajectory); Equilibrate panel (protocol, parameters, editable stage text, convergence blocks); Pack panel (packmol-syntax input with add-structure and open-input helpers); React panel (templates, cycles, dynamics between cycles, gel-point check) with a Network tab; Field page (choose a library force field and charges, type every atom, atom table with the rule and source of each type, why-card and per-atom type overrides, types coloured in 3D, missing parameters that block Relax / Dynamics, import or hand entry flagged estimated, export types or LAMMPS data); Analyze › Properties page (calculation chips, frames and groups, result cards with errors, methods and the comparison with experiment from `data/reference/polymers.json`, curves, export CSV / LaTeX); Chains tab (internal distances); open / drop files, orbit / pan / zoom, pick and measure up to four atoms, frames, g(r) and molecule tables, figure export | `studio/CapsStudio` | working |
+| C ABI v16 for the GUI and other languages (`capi/include/caps_c.h` lists every call and the version that added it) | `capi/` | working |
+| `caps` command line: info, render, shape, rdf, convert, build (SMILES → 3D), grow, pack, contacts, field, relax, md, equilibrate, chains, react, ff, analyze, elastic, tensile, tg, bench | `cli/` | working |
+| Bench: the built-in validation suite (forces, virial and PME against finite differences and Ewald, packing, MD throughput, NVE drift, thread scaling, reproducibility, rendering, the molecule builder) with Markdown, CSV and LaTeX export | `core/src/bench.cpp` | working |
+| CAPS Studio (Avalonia, .NET 10), one page per design board: Start (quick start, builders, recent work), Studio (3D view, inspector, measurements, frames, figure export), Molecule builder (2D sketcher, SMILES, conformers), Polymer builder (library, units, sequences, tacticity), Grow, Pack, Relax, Dynamics, Equilibrate (convergence), React, Analyze (properties, mechanics, Tg), Field (typing and parameters), Jobs (runs with curves, log, provenance), Bench, Settings (theme, palettes, electrostatics, threads), command palette (⌘K) | `studio/CapsStudio` | working |
 
-Not built yet (see the roadmap in `REDESIGN_PROMPT.md`): other monomers in Grow, force-field parameters beyond C/H (so epoxy–amine
-networks react topology-only for now), learning templates from reactant / product pairs, per-atom
-constraints and ellipsoids in Pack, GPU kernels,
-double-bridging / end-bridging Monte Carlo, Nosé–Hoover chains and MTK, anisotropic cells, constraints (SHAKE / RATTLE / LINCS), r-RESPA, restraints and fixed atoms in Relax,
-Ewald / PME, the Fortran
-numeric kernels (PME, Ewald, RIS — planned for the Field and Dynamics phases), the Vulkan viewport, Python bindings.
+Not built yet (see the roadmap in `REDESIGN_PROMPT.md`): branched, star and comb architectures; crystal, surface and solvation builders; a UFF-type all-element force field for clean-up; learning reaction templates from reactant / product pairs; per-atom constraints and ellipsoids in Pack; GPU kernels; double-bridging / end-bridging Monte Carlo; Nosé–Hoover chains and MTK; anisotropic cells; constraints (SHAKE / RATTLE / LINCS); r-RESPA; restraints and fixed atoms in Relax; the Vulkan viewport; Python bindings.
 
 ## Build
 
-Requirements: CMake ≥ 3.24, a C++20 compiler, zlib, and the .NET 10 SDK (`brew install dotnet`).
+Requirements: CMake ≥ 3.24, a C++20 compiler, a Fortran 2018 compiler (gfortran: `brew install gcc`, `apt install gfortran`),
+zlib, and the .NET 10 SDK (`brew install dotnet`). The Fortran kernels need no Fortran runtime, so the built library
+depends on nothing beyond the system. On Windows the native core builds with MinGW-w64 (MSYS2 UCRT64: gcc, g++,
+gfortran, cmake, ninja), statically linked.
 
 ```bash
 scripts/build.sh      # C++ core + tests, then the Studio + its self-test
@@ -57,7 +59,24 @@ build/cli/caps render samples/ps_melt.data -o figure.svg --bg white --colour mol
 build/cli/caps rdf samples/ps_melt.data --pair C-C --inter
 ```
 
-Grow a cell:
+Build a molecule and grow polymers (any repeat unit, `*` marks the head then the tail):
+
+```bash
+build/cli/caps build "N[C@@H](C)C(=O)O" -o alanine.mol2 --conformers 5 --ff data/forcefields/gaff-amber25-dlfield.json
+build/cli/caps grow --units '[*]C/C=C(C)\C[*]' --chains 10 --dp 30 --density 0.5 -o natural_rubber.data
+build/cli/caps grow --units '[*]C/C=C\C[*],*CC(*)c1ccccc1' --sequence random --weights 0.86,0.14 --chains 10 --dp 30 --density 0.5 -o sbr.data
+build/cli/caps grow --units '*CC(*)(C)C(=O)OC' --chains 10 --dp 20 --density 0.5 --scale 0.7 -o pmma.data   # crowded backbones: reduced contacts, then relax
+```
+
+Particle-mesh Ewald instead of the damped shifted force (periodic cells):
+
+```bash
+build/cli/caps md cell.data -o out.data --steps 20000 --pme                 # β from erfc(β rc) = 1e-5, 1 Å grid, order 5
+build/cli/caps md cell.data -o out.data --pme --ewald-rtol 1e-6 --pme-spacing 0.8 --pme-order 6
+python3 bench/ff/check_data_lammps.py --pme                                   # against LAMMPS's Ewald sum
+```
+
+Grow a polystyrene cell with the curated grower:
 
 ```bash
 build/cli/caps grow -o cell.data --chains 10 --dp 8 --density 0.4 --tacticity atactic --seed 1
