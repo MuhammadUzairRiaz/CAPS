@@ -47,7 +47,7 @@ internal static class SelfTest
             vm.Field.FfIndex = gaff;
             vm.Field.ChargeMode = 1;
             vm.Field.Assign().GetAwaiter().GetResult();
-            Check(vm.Field.Assigned && vm.Field.Complete, $"Field: {vm.Field.ForceFieldName} · {vm.Field.TypedText} · {vm.Field.MissingText}");
+            Check(vm.Field.Assigned && vm.Field.Complete, $"Field: {vm.Field.ForceFieldName} · {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
             Check(vm.Field.Swatches.Select(x => x.Name).OrderBy(x => x).SequenceEqual(["c3", "ca", "ha", "hc"]), "polystyrene types c3 ca ha hc: " + string.Join(" ", vm.Field.Swatches.Select(x => x.Label)));
             vm.Field.SelectAtom(0);
             Check(vm.Field.WhyText.StartsWith("Rule "), "why: " + vm.Field.WhyText);
