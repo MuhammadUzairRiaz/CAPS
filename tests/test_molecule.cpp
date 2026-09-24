@@ -1,0 +1,140 @@
+#include <gtest/gtest.h>
+
+#include <cmath>
+#include <string>
+#include <vector>
+
+#include "caps/molecule.hpp"
+
+using namespace caps;
+
+namespace {
+
+const std::string kGaff = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/gaff-amber25-dlfield.json";
+
+double dihedral(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d) {
+  const Vec3 b1 = b - a, b2 = c - b, b3 = d - c;
+  const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
+  const Vec3 m = cross(n1, b2 * (1.0 / norm(b2)));
+  return std::atan2(dot(m, n2), dot(n1, n2)) * 180 / 3.14159265358979323846;
+}
+
+int count(const MolGraph& g, int z) {
+  int k = 0;
+  for (const auto& a : g.atoms) k += a.element == z;
+  return k;
+}
+
+}  // namespace
+
+TEST(Smiles, ParsesTheGrammar) {
+  MolGraph g = parse_smiles("CC(=O)Oc1ccccc1C(=O)O");   // aspirin
+  EXPECT_EQ(g.heavy, 13);
+  add_hydrogens(g);
+  EXPECT_EQ(count(g, 1), 8);
+  EXPECT_EQ(molecule_info(g).formula, "C9H8O4");
+  EXPECT_NEAR(molecule_info(g).mass, 180.16, 0.01);
+  EXPECT_EQ(molecule_info(g).rings, 1);
+
+  g = parse_smiles("[NH4+].[Cl-]");
+  EXPECT_EQ(g.parts, 2);
+  add_hydrogens(g);
+  EXPECT_EQ(molecule_info(g).formula, "ClH4N");   // Hill order without carbon: alphabetical
+  EXPECT_EQ(molecule_info(g).charge, 0);
+
+  g = parse_smiles("c1ccc2c(c1)[nH]c1ccccc12");   // carbazole: fused aromatic rings, [nH]
+  add_hydrogens(g);
+  EXPECT_EQ(molecule_info(g).formula, "C12H9N");
+  EXPECT_EQ(molecule_info(g).rings, 3);
+
+  g = parse_smiles("C%10CCCCC%10");
+  add_hydrogens(g);
+  EXPECT_EQ(molecule_info(g).formula, "C6H12");
+
+  g = parse_smiles("c1ccsc1");   // thiophene: aromatic s takes no hydrogen
+  add_hydrogens(g);
+  EXPECT_EQ(molecule_info(g).formula, "C4H4S");
+
+  g = parse_smiles("[2H]C([2H])([2H])O");
+  EXPECT_EQ(g.atoms[0].isotope, 2);
+}
+
+TEST(Smiles, RejectsWhatIsNotSmiles) {
+  for (const char* bad : {"C(C", "CC)", "C1CC", "C==C", "Q", "CH4", "[C", "C.", "C(=)C", "[Xy]"}) EXPECT_THROW(parse_smiles(bad), SmilesError) << bad;
+  MolGraph g = parse_smiles("C(C)(C)(C)(C)C");   // five bonds on a carbon
+  add_hydrogens(g);
+  EXPECT_FALSE(valence_problems(g).empty());
+}
+
+TEST(Smiles, ChiralNeighbourOrder) {
+  MolGraph g = parse_smiles("N[C@@H](C)C(=O)O");
+  add_hydrogens(g);
+  const MolAtom& c = g.atoms[1];
+  ASSERT_EQ(c.order.size(), 4u);
+  EXPECT_EQ(c.order[0], 0);                     // N, the atom before
+  EXPECT_EQ(g.atoms[size_t(c.order[1])].element, 1);   // its own hydrogen comes next
+  EXPECT_EQ(c.order[2], 2);                     // methyl
+  EXPECT_EQ(c.order[3], 3);                     // carboxyl
+}
+
+TEST(Embed, LAlanineIsS) {
+  // N[C@@H](C)C(=O)O is L-alanine, (S): with H pointing away, N → COOH → CH3 runs anticlockwise
+  const BuildResult r = build_molecule("N[C@@H](C)C(=O)O", {});
+  const auto& p = r.conformers.front().pos;
+  const int H = r.graph.atoms[1].order[1];
+  const Vec3 view = p[1] - p[size_t(H)];   // from the side opposite the hydrogen
+  const Vec3 n = cross(p[3] - p[0], p[2] - p[0]);   // N → C(OOH) → CH3
+  EXPECT_GT(dot(n, view), 0);
+  for (int s : chirality_check(r.graph, p)) EXPECT_EQ(s, 1);
+
+  const BuildResult d = build_molecule("N[C@H](C)C(=O)O", {});
+  const auto& q = d.conformers.front().pos;
+  const int Hd = d.graph.atoms[1].order[1];
+  EXPECT_LT(dot(cross(q[3] - q[0], q[2] - q[0]), q[1] - q[size_t(Hd)]), 0);
+}
+
+TEST(Embed, DoubleBondGeometry) {
+  // F–C=C–F dihedral; the atom indices of the four atoms in SMILES order
+  auto torsion = [](const std::string& smi, int a, int b, int c, int d) {
+    const BuildResult r = build_molecule(smi, {});
+    const auto& p = r.conformers.front().pos;
+    return std::fabs(dihedral(p[size_t(a)], p[size_t(b)], p[size_t(c)], p[size_t(d)]));
+  };
+  EXPECT_GT(torsion("F/C=C/F", 0, 1, 2, 3), 175);    // E
+  EXPECT_LT(torsion("F/C=C\\F", 0, 1, 2, 3), 5);    // Z
+  EXPECT_GT(torsion("C(\\F)=C/F", 1, 0, 2, 3), 175); // the same E, written from the other side
+  EXPECT_LT(torsion("C(/F)=C/F", 1, 0, 2, 3), 5);    // Z
+  EXPECT_LT(torsion("CC=CC", 0, 1, 2, 3) * (180 - torsion("CC=CC", 0, 1, 2, 3)), 5 * 180);   // unspecified: planar either way
+}
+
+TEST(Embed, AromaticRingIsFlatAndBondsAreSensible) {
+  const BuildResult r = build_molecule("c1ccccc1", {});
+  const auto& p = r.conformers.front().pos;
+  for (const auto& b : r.graph.bonds) {
+    const double d = norm(p[size_t(b.a)] - p[size_t(b.b)]);
+    const bool ch = r.graph.atoms[size_t(b.a)].element == 1 || r.graph.atoms[size_t(b.b)].element == 1;
+    EXPECT_NEAR(d, ch ? 1.07 : 1.40, 0.05);
+  }
+  EXPECT_LT(std::fabs(dihedral(p[0], p[1], p[2], p[3])), 5);
+}
+
+TEST(Embed, GaffCleanUpGivesAChairCyclohexane) {
+  BuildOptions o;
+  o.forcefield = kGaff;
+  o.conformers = 4;
+  const BuildResult r = build_molecule("C1CCCCC1", o);
+  ASSERT_TRUE(r.conformers.front().minimised) << (r.notes.empty() ? "" : r.notes.front());
+  const auto& p = r.conformers.front().pos;
+  for (int k = 0; k < 6; ++k) {
+    const double t = dihedral(p[size_t(k)], p[size_t((k + 1) % 6)], p[size_t((k + 2) % 6)], p[size_t((k + 3) % 6)]);
+    EXPECT_NEAR(std::fabs(t), 55, 8) << "ring torsion " << k;
+  }
+  for (size_t k = 1; k < r.conformers.size(); ++k) EXPECT_GE(r.conformers[k].energy, r.conformers[0].energy);
+}
+
+TEST(Embed, DisconnectedPartsDoNotOverlap) {
+  const BuildResult r = build_molecule("O.O.O", {});
+  const auto& p = r.conformers.front().pos;
+  EXPECT_GT(norm(p[0] - p[1]), 2.3);
+  EXPECT_GT(norm(p[0] - p[2]), 2.3);
+}

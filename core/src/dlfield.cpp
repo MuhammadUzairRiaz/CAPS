@@ -784,7 +784,7 @@ FFDef import_dlfield(const std::string& par, const std::string& sf, const std::s
   }
   // ---- automatic parameters (lib/supplementary/<ff>_*_auto): the Accelrys cff91_auto / cvff_auto tables ----
   {
-    const std::string dir = par.substr(0, par.find_last_of('/') + 1) + "supplementary/";
+    const std::string dir = par.substr(0, par.find_last_of("/\\") + 1) + "supplementary/";
     std::string prefix = pf.potential;
     for (auto& c : prefix) c = char(std::tolower(static_cast<unsigned char>(c)));
     auto table = [&](const std::string& name) {

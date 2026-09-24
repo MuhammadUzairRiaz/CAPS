@@ -21,6 +21,7 @@
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/mechanics.hpp"
+#include "caps/molecule.hpp"
 #include "caps/pack.hpp"
 #include "caps/react.hpp"
 #include "caps/relax.hpp"
@@ -46,6 +47,8 @@ int usage() {
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
                "  caps convert FILE OUT.data|OUT.xyz|OUT.pdb [--topology DATA]\n"
+               "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
+               "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "  caps field   FILE [--topology DATA] [--forces OUT.txt]   GAFF types, terms, energy (and per-atom forces)\n"
@@ -208,6 +211,43 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "build") {
+    try {
+      if (pos.empty() || !o.count("-o")) return usage();
+      BuildOptions b;
+      if (o.count("--conformers")) b.conformers = std::stoi(o["--conformers"]);
+      if (o.count("--seed")) b.seed = std::stoull(o["--seed"]);
+      if (o.count("--ff")) b.forcefield = o["--ff"];
+      const BuildResult r = build_molecule(pos[0], b);
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - std::strlen(e)) == e; };
+      auto write = [&](const System& s, const std::string& path) {
+        if (ends(".pdb")) write_pdb(s, path);
+        else if (ends(".xyz")) write_xyz(s, path);
+        else if (ends(".mol2")) write_mol2(s, path);
+        else write_lammps_data(s, path);
+      };
+      if (o.count("--all") && r.conformers.size() > 1) {
+        const auto dot = out.find_last_of('.');
+        for (size_t k = 0; k < r.conformers.size(); ++k)
+          write(molecule_system(r.graph, r.conformers[k].pos), out.substr(0, dot) + "_" + std::to_string(k + 1) + out.substr(dot));
+      } else
+        write(r.system, out);
+      std::printf("%s · %.2f g/mol · %d atoms (%d heavy) · %d rings · %d stereocentres\n", r.info.formula.c_str(), r.info.mass, r.info.atoms,
+                  r.info.heavy, r.info.rings, r.info.stereocentres + r.info.stereo_bonds);
+      std::printf("%s\n", r.method.c_str());
+      const double e0 = r.conformers.front().energy;
+      for (size_t k = 0; k < r.conformers.size(); ++k)
+        std::printf("  conformer %zu  %s\n", k + 1,
+                    r.conformers[k].minimised ? (std::to_string(r.conformers[k].energy - e0).substr(0, 6) + " kcal/mol").c_str() : "not minimised");
+      for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
+      std::printf("wrote %s\n", out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps build: %s\n", e.what());
       return 1;
     }
   }

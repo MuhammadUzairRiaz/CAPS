@@ -1,0 +1,538 @@
+// Distance-bounds embedding and the molecule builder (see molecule.hpp).
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <limits>
+#include <map>
+#include <memory>
+#include <random>
+#include <set>
+
+#include "caps/elements.hpp"
+#include "caps/ffdef.hpp"
+#include "caps/molecule.hpp"
+#include "caps/relax.hpp"
+#include "caps/typing.hpp"
+
+namespace caps {
+namespace {
+
+constexpr double kPi = 3.14159265358979323846;
+constexpr int D = 4;   // embedding dimensions (the fourth is squeezed out)
+
+struct Pair {
+  int i, j;
+  double lb, ub;
+  double w;
+};
+
+struct Chiral {
+  int c, n1, n2, n3;
+  int sign;       // +1 or −1 for V = (n1−c)·((n2−c)×(n3−c))
+  double vmin;
+};
+
+struct Planar {
+  int c, n0, n1, n2;   // for a double bond: n0 on c, c=n1, n2 on n1 (the four atoms coplanar)
+};
+
+// Limited-memory BFGS with a backtracking line search; returns the final value.
+double lbfgs(std::vector<double>& x, const std::function<double(const std::vector<double>&, std::vector<double>&)>& fg, int maxit,
+             double gtol) {
+  const size_t n = x.size();
+  const int m = 8;
+  std::vector<std::vector<double>> S, Y;
+  std::vector<double> rho;
+  std::vector<double> g(n), gn(n), d(n), xn(n);
+  double f = fg(x, g);
+  for (int it = 0; it < maxit; ++it) {
+    double gmax = 0;
+    for (double v : g) gmax = std::max(gmax, std::fabs(v));
+    if (gmax < gtol) break;
+    // two-loop recursion
+    d = g;
+    std::vector<double> alpha(S.size());
+    for (int k = int(S.size()) - 1; k >= 0; --k) {
+      double a = 0;
+      for (size_t t = 0; t < n; ++t) a += S[size_t(k)][t] * d[t];
+      a *= rho[size_t(k)];
+      alpha[size_t(k)] = a;
+      for (size_t t = 0; t < n; ++t) d[t] -= a * Y[size_t(k)][t];
+    }
+    if (!S.empty()) {
+      double sy = 0, yy = 0;
+      for (size_t t = 0; t < n; ++t) sy += S.back()[t] * Y.back()[t], yy += Y.back()[t] * Y.back()[t];
+      const double gamma = yy > 0 ? sy / yy : 1;
+      for (double& v : d) v *= gamma;
+    } else {
+      double gn2 = 0;
+      for (double v : g) gn2 += v * v;
+      const double sc = 0.1 / std::sqrt(gn2 + 1e-30);
+      for (double& v : d) v *= sc;
+    }
+    for (size_t k = 0; k < S.size(); ++k) {
+      double b = 0;
+      for (size_t t = 0; t < n; ++t) b += Y[k][t] * d[t];
+      b *= rho[k];
+      for (size_t t = 0; t < n; ++t) d[t] += S[k][t] * (alpha[k] - b);
+    }
+    double slope = 0;
+    for (size_t t = 0; t < n; ++t) slope -= g[t] * d[t];
+    if (slope >= 0) {   // not a descent direction: restart along −g
+      S.clear(); Y.clear(); rho.clear();
+      double gn2 = 0;
+      for (double v : g) gn2 += v * v;
+      const double sc = 0.1 / std::sqrt(gn2 + 1e-30);
+      for (size_t t = 0; t < n; ++t) d[t] = g[t] * sc;
+      slope = -gn2 * sc;
+    }
+    double step = 1, fn = 0;
+    bool ok = false;
+    for (int ls = 0; ls < 30; ++ls) {
+      for (size_t t = 0; t < n; ++t) xn[t] = x[t] - step * d[t];
+      fn = fg(xn, gn);
+      if (fn <= f + 1e-4 * step * slope) { ok = true; break; }
+      step *= 0.5;
+    }
+    if (!ok) break;
+    std::vector<double> s(n), y(n);
+    double sy = 0;
+    for (size_t t = 0; t < n; ++t) s[t] = xn[t] - x[t], y[t] = gn[t] - g[t], sy += s[t] * y[t];
+    if (sy > 1e-12) {
+      if (int(S.size()) == m) { S.erase(S.begin()); Y.erase(Y.begin()); rho.erase(rho.begin()); }
+      S.push_back(std::move(s));
+      Y.push_back(std::move(y));
+      rho.push_back(1 / sy);
+    }
+    const double df = f - fn;
+    x.swap(xn);
+    g.swap(gn);
+    f = fn;
+    if (df < 1e-12 * (1 + std::fabs(f))) break;
+  }
+  return f;
+}
+
+double radius(int z) {
+  // single-bond covalent radii (Cordero et al. 2008; sp3 carbon)
+  return z == 1 ? 0.31 : element(z).covalent > 0 ? element(z).covalent : 0.77;
+}
+
+struct Model {
+  int n = 0;
+  std::vector<std::vector<std::pair<int, int>>> adj;   // neighbour, bond order
+  std::vector<int> hyb;                                 // 1 sp, 2 sp2, 3 sp3
+  std::vector<Pair> pairs;
+  std::vector<Chiral> chiral;
+  std::vector<Planar> planar;
+  std::vector<Planar> flat;                             // across double and aromatic bonds: dihedral 0 or 180
+  std::vector<std::vector<int>> topo;                   // topological distance, capped at 4 (4 = ≥ 4)
+};
+
+int ring_size(const Model& M, int i, int j, int k) {
+  // smallest ring through i-j-k: shortest path i → k avoiding j (breadth first, up to 8 atoms)
+  std::vector<int> dist(size_t(M.n), -1);
+  std::vector<int> q{i};
+  dist[size_t(i)] = 0;
+  for (size_t h = 0; h < q.size(); ++h) {
+    const int u = q[h];
+    if (dist[size_t(u)] >= 6) break;
+    for (auto [w, o] : M.adj[size_t(u)]) {
+      if (w == j || dist[size_t(w)] >= 0) continue;
+      if (u == i && w == k) continue;   // not the direct i-k bond of a 3-ring... handled below
+      dist[size_t(w)] = dist[size_t(u)] + 1;
+      if (w == k) return dist[size_t(w)] + 2;
+      q.push_back(w);
+    }
+  }
+  for (auto [w, o] : M.adj[size_t(i)])
+    if (w == k) return 3;
+  return 0;
+}
+
+double bond_length(const MolGraph& g, const Model& M, int i, int j, int order) {
+  double r = radius(g.atoms[size_t(i)].element) + radius(g.atoms[size_t(j)].element);
+  if (order == 2) r -= 0.19;
+  else if (order == 3) r -= 0.32;
+  else if (order == 4) r -= 0.12;
+  else if (M.hyb[size_t(i)] < 3 && M.hyb[size_t(j)] < 3 && g.atoms[size_t(i)].element != 1 && g.atoms[size_t(j)].element != 1)
+    r -= 0.05;   // conjugated single bond
+  return r;
+}
+
+double ideal_angle(const MolGraph& g, const Model& M, int i, int j, int k) {
+  const int rs = ring_size(M, i, j, k);
+  if (rs == 3) return 60;
+  if (rs == 4) return 90;
+  if (rs == 5) return 108;
+  const int h = M.hyb[size_t(j)];
+  const size_t nb = M.adj[size_t(j)].size();
+  if (h == 1) return 180;
+  // exocyclic angles at a small-ring atom
+  int small = 0;
+  for (auto [a, oa] : M.adj[size_t(j)])
+    for (auto [b, ob] : M.adj[size_t(j)])
+      if (a < b) {
+        const int r = ring_size(M, a, j, b);
+        if (r >= 3 && r <= 5 && !(a == i && b == k) && !(a == k && b == i)) small = small ? std::min(small, r) : r;
+      }
+  if (h == 2) {
+    if (small && nb == 3) return (360.0 - (small == 3 ? 60 : small == 4 ? 90 : 108)) / 2;
+    return 120;
+  }
+  if (nb > 4) return 90;
+  if (small && rs == 0) return small == 3 ? 117 : small == 4 ? 113 : 111;
+  (void)g;
+  return 109.47;
+}
+
+Model make_model(const MolGraph& g) {
+  Model M;
+  M.n = int(g.atoms.size());
+  const size_t n = size_t(M.n);
+  M.adj.assign(n, {});
+  for (const auto& b : g.bonds) {
+    M.adj[size_t(b.a)].push_back({b.b, b.order});
+    M.adj[size_t(b.b)].push_back({b.a, b.order});
+  }
+  // hybridisation
+  M.hyb.assign(n, 3);
+  for (size_t i = 0; i < n; ++i) {
+    const int z = g.atoms[i].element;
+    int dbl = 0, tri = 0, aro = 0;
+    for (auto [w, o] : M.adj[i]) dbl += o == 2, tri += o == 3, aro += o == 4;
+    if (z > 10 && !aro) continue;   // S, P, Si …: tetrahedral (sulfones, phosphates)
+    if (tri || dbl >= 2) M.hyb[i] = 1;
+    else if (dbl || aro) M.hyb[i] = 2;
+  }
+  for (size_t i = 0; i < n; ++i) {   // amide, aniline and enamine nitrogen: planar
+    if (g.atoms[i].element != 7 || M.hyb[i] != 3 || M.adj[i].size() != 3 || g.atoms[i].charge > 0) continue;
+    for (auto [w, o] : M.adj[i])
+      if (M.hyb[size_t(w)] == 2) { M.hyb[i] = 2; break; }
+  }
+  // topological distances up to 3
+  M.topo.assign(n, std::vector<int>(n, 4));
+  for (size_t s = 0; s < n; ++s) {
+    M.topo[s][s] = 0;
+    std::vector<int> q{int(s)};
+    for (size_t h = 0; h < q.size(); ++h) {
+      const int u = q[h];
+      if (M.topo[s][size_t(u)] >= 3) continue;
+      for (auto [w, o] : M.adj[size_t(u)])
+        if (M.topo[s][size_t(w)] == 4) { M.topo[s][size_t(w)] = M.topo[s][size_t(u)] + 1; q.push_back(w); }
+    }
+  }
+  // bounds
+  std::map<std::pair<int, int>, std::pair<double, double>> b12, b13, b14;
+  std::map<std::pair<int, int>, double> len;
+  auto key = [](int a, int b) { return a < b ? std::make_pair(a, b) : std::make_pair(b, a); };
+  for (const auto& b : g.bonds) {
+    const double r = bond_length(g, M, b.a, b.b, b.order);
+    len[key(b.a, b.b)] = r;
+    b12[key(b.a, b.b)] = {r * 0.99, r * 1.01};
+  }
+  auto L = [&](int a, int b) { return len.at(key(a, b)); };
+  std::map<std::tuple<int, int, int>, double> ang;   // (i, j, k) i<k, radians
+  for (int j = 0; j < M.n; ++j)
+    for (auto [i, oi] : M.adj[size_t(j)])
+      for (auto [k, ok] : M.adj[size_t(j)]) {
+        if (i >= k) continue;
+        const double th = ideal_angle(g, M, i, j, k) * kPi / 180;
+        ang[{i, j, k}] = th;
+        const double a = L(i, j), c = L(j, k);
+        const double d = std::sqrt(std::max(0.0, a * a + c * c - 2 * a * c * std::cos(th)));
+        auto kk = key(i, k);
+        if (b12.count(kk)) continue;   // 3-ring: already a bond
+        const double tol = M.hyb[size_t(j)] == 1 ? 0.01 : 0.03;
+        auto it = b13.find(kk);
+        if (it == b13.end()) b13[kk] = {d - tol, d + tol};
+        else it->second = {std::min(it->second.first, d - tol), std::max(it->second.second, d + tol)};
+      }
+  auto A = [&](int i, int j, int k) { return i < k ? ang.at({i, j, k}) : ang.at({k, j, i}); };
+  // E/Z: the side of each directional substituent, normalised to "seen from the double bond outwards"
+  std::map<std::pair<int, int>, int> side;   // (double-bond atom, substituent) → +1 / −1
+  for (const auto& b : g.bonds) {
+    if (!b.dir) continue;
+    side[{b.a, b.b}] = -b.dir;   // written a→b as '/': b is below a, seen from a
+    side[{b.b, b.a}] = b.dir;
+  }
+  auto dist14 = [&](int i, int j, int k, int l, double phi) {
+    const double a = L(i, j), b = L(j, k), c = L(k, l), t1 = A(i, j, k), t2 = A(j, k, l);
+    const Vec3 pi{a * std::cos(t1), a * std::sin(t1), 0};
+    const Vec3 pl{b - c * std::cos(t2), c * std::sin(t2) * std::cos(phi), c * std::sin(t2) * std::sin(phi)};
+    return norm(pl - pi);
+  };
+  for (const auto& b : g.bonds) {
+    const int j = b.a, k = b.b;
+    for (auto [i, oi] : M.adj[size_t(j)]) {
+      if (i == k) continue;
+      for (auto [l, ol] : M.adj[size_t(k)]) {
+        if (l == j || l == i) continue;
+        auto kk = key(i, l);
+        if (b12.count(kk) || b13.count(kk)) continue;
+        double lo = dist14(i, j, k, l, 0), hi = dist14(i, j, k, l, kPi);
+        if (b.order == 2 && ring_size(M, j, k, l) == 0 && ring_size(M, i, j, k) == 0) {
+          // a specified double bond fixes cis or trans
+          int si = 0, sl = 0;
+          if (auto it = side.find({j, i}); it != side.end()) si = it->second;
+          if (auto it = side.find({k, l}); it != side.end()) sl = -it->second;
+          // a substituent without a mark is opposite to the marked one on the same atom
+          if (!si) for (auto [x, ox] : M.adj[size_t(j)]) if (x != i && x != k) if (auto it = side.find({j, x}); it != side.end()) si = -it->second;
+          if (!sl) for (auto [x, ox] : M.adj[size_t(k)]) if (x != l && x != j) if (auto it = side.find({k, x}); it != side.end()) sl = it->second;
+          if (si && sl) {
+            const double d = si == sl ? hi : lo;   // same side marks: trans
+            lo = hi = d;
+            lo -= 0.05, hi += 0.05;
+          }
+        }
+        auto it = b14.find(kk);
+        if (it == b14.end()) b14[kk] = {lo - 0.05, hi + 0.05};
+        else it->second = {std::min(it->second.first, lo - 0.05), std::max(it->second.second, hi + 0.05)};
+      }
+    }
+  }
+  for (const auto& [k, v] : b12) M.pairs.push_back({k.first, k.second, v.first, v.second, 1.0});
+  for (const auto& [k, v] : b13) M.pairs.push_back({k.first, k.second, v.first, v.second, 1.0});
+  for (const auto& [k, v] : b14)
+    if (!b12.count(k) && !b13.count(k)) M.pairs.push_back({k.first, k.second, v.first, v.second, 0.5});
+  for (int i = 0; i < M.n; ++i)
+    for (int j = i + 1; j < M.n; ++j) {
+      if (M.topo[size_t(i)][size_t(j)] < 4 && (b12.count(key(i, j)) || b13.count(key(i, j)) || b14.count(key(i, j)))) continue;
+      if (M.topo[size_t(i)][size_t(j)] < 3) continue;
+      const double lb = 0.75 * (element(g.atoms[size_t(i)].element).vdw + element(g.atoms[size_t(j)].element).vdw);
+      M.pairs.push_back({i, j, lb, 1e9, 0.3});
+    }
+  // chirality (four neighbours)
+  for (int c = 0; c < M.n; ++c) {
+    const MolAtom& a = g.atoms[size_t(c)];
+    if (!a.chiral || a.order.size() != 4) continue;
+    if (std::any_of(a.order.begin(), a.order.end(), [](int v) { return v < 0; })) continue;
+    const double r1 = L(c, a.order[1]), r2 = L(c, a.order[2]), r3 = L(c, a.order[3]);
+    M.chiral.push_back({c, a.order[1], a.order[2], a.order[3], a.chiral == 1 ? -1 : 1, 0.45 * r1 * r2 * r3});
+  }
+  for (int c = 0; c < M.n; ++c)
+    if (M.hyb[size_t(c)] == 2 && M.adj[size_t(c)].size() == 3)
+      M.planar.push_back({c, M.adj[size_t(c)][0].first, M.adj[size_t(c)][1].first, M.adj[size_t(c)][2].first});
+  for (const auto& b : g.bonds) {
+    if (b.order != 2 && b.order != 4) continue;
+    if (M.hyb[size_t(b.a)] != 2 || M.hyb[size_t(b.b)] != 2) continue;   // cumulenes and S=O, P=O are not planar
+    for (auto [i, oi] : M.adj[size_t(b.a)])
+      for (auto [l, ol] : M.adj[size_t(b.b)])
+        if (i != b.b && l != b.a && i != l) M.flat.push_back({b.a, i, b.b, l});
+  }
+  return M;
+}
+
+// The embedding error and its gradient. squeeze > 0 pulls the fourth coordinate to zero.
+double error(const Model& M, const std::vector<double>& x, std::vector<double>& gr, double squeeze) {
+  std::fill(gr.begin(), gr.end(), 0.0);
+  double e = 0;
+  for (const auto& p : M.pairs) {
+    const double* a = &x[size_t(p.i) * D];
+    const double* b = &x[size_t(p.j) * D];
+    double d[D], d2 = 0;
+    for (int t = 0; t < D; ++t) d[t] = a[t] - b[t], d2 += d[t] * d[t];
+    double coef = 0;
+    if (d2 > p.ub * p.ub) {
+      const double u2 = p.ub * p.ub, f = d2 / u2 - 1;
+      e += p.w * f * f;
+      coef = p.w * 2 * f * 2 / u2;
+    } else if (d2 < p.lb * p.lb) {
+      const double l2 = p.lb * p.lb, den = l2 + d2, f = 2 * l2 / den - 1;
+      e += p.w * f * f;
+      coef = p.w * 2 * f * (-2 * l2 / (den * den)) * 2;
+    } else
+      continue;
+    for (int t = 0; t < D; ++t) {
+      gr[size_t(p.i) * D + size_t(t)] += coef * d[t];
+      gr[size_t(p.j) * D + size_t(t)] -= coef * d[t];
+    }
+  }
+  auto P = [&](int i) { return Vec3{x[size_t(i) * D], x[size_t(i) * D + 1], x[size_t(i) * D + 2]}; };
+  auto add = [&](int i, const Vec3& v, double s) { for (int t = 0; t < 3; ++t) gr[size_t(i) * D + size_t(t)] += s * v[t]; };
+  for (const auto& c : M.chiral) {
+    const Vec3 pc = P(c.c), a = P(c.n1) - pc, b = P(c.n2) - pc, d = P(c.n3) - pc;
+    const double V = dot(a, cross(b, d)) * c.sign;
+    if (V >= c.vmin) continue;
+    const double f = c.vmin - V;
+    e += 1.0 * f * f;
+    const double s = -2.0 * f * c.sign;   // dE/dV
+    const Vec3 ga = cross(b, d), gb = cross(d, a), gd = cross(a, b);
+    add(c.n1, ga, s); add(c.n2, gb, s); add(c.n3, gd, s);
+    add(c.c, ga + gb + gd, -s);
+  }
+  for (const auto& p : M.planar) {
+    const Vec3 pc = P(p.c), a = P(p.n0) - pc, b = P(p.n1) - pc, d = P(p.n2) - pc;
+    const double V = dot(a, cross(b, d));
+    e += 0.5 * V * V;
+    const double s = 1.0 * V;
+    const Vec3 ga = cross(b, d), gb = cross(d, a), gd = cross(a, b);
+    add(p.n0, ga, s); add(p.n1, gb, s); add(p.n2, gd, s);
+    add(p.c, ga + gb + gd, -s);
+  }
+  for (const auto& p : M.flat) {
+    const Vec3 pj = P(p.c), a = P(p.n0) - pj, b = P(p.n1) - pj, d = P(p.n2) - pj;
+    const double V = dot(a, cross(b, d));
+    e += 0.5 * V * V;
+    const double s = 1.0 * V;
+    const Vec3 ga = cross(b, d), gb = cross(d, a), gd = cross(a, b);
+    add(p.n0, ga, s); add(p.n1, gb, s); add(p.n2, gd, s);
+    add(p.c, ga + gb + gd, -s);
+  }
+  if (squeeze > 0)
+    for (int i = 0; i < M.n; ++i) {
+      const double w = x[size_t(i) * D + 3];
+      e += squeeze * w * w;
+      gr[size_t(i) * D + 3] += 2 * squeeze * w;
+    }
+  return e;
+}
+
+}  // namespace
+
+std::vector<int> chirality_check(const MolGraph& g, const std::vector<Vec3>& pos) {
+  std::vector<int> out;
+  for (size_t c = 0; c < g.atoms.size(); ++c) {
+    const MolAtom& a = g.atoms[c];
+    if (!a.chiral || a.order.size() != 4 || std::any_of(a.order.begin(), a.order.end(), [](int v) { return v < 0; })) continue;
+    const Vec3 p = pos[c];
+    const double V = dot(pos[size_t(a.order[1])] - p, cross(pos[size_t(a.order[2])] - p, pos[size_t(a.order[3])] - p));
+    out.push_back((V < 0) == (a.chiral == 1) ? 1 : -1);
+  }
+  return out;
+}
+
+std::vector<Vec3> embed(const MolGraph& g, const EmbedOptions& o) {
+  if (g.atoms.empty()) throw std::runtime_error("nothing to embed");
+  const Model M = make_model(g);
+  const size_t n = size_t(M.n);
+  std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 12345);
+  const double side = 2.0 * std::max(3.0, 2.5 * std::cbrt(double(n)));
+  std::uniform_real_distribution<double> U(-side / 2, side / 2);
+  std::vector<Vec3> best;
+  double best_err = std::numeric_limits<double>::infinity();
+  for (int attempt = 0; attempt < std::max(1, o.attempts); ++attempt) {
+    std::vector<double> x(n * D);
+    for (double& v : x) v = U(rng);
+    auto fg = [&](double sq) {
+      return [&M, sq](const std::vector<double>& xx, std::vector<double>& gg) { return error(M, xx, gg, sq); };
+    };
+    lbfgs(x, fg(0.0), 2000, 1e-5);          // four dimensions: room to untangle
+    lbfgs(x, fg(0.2), 2000, 1e-5);          // squeeze into three
+    for (size_t i = 0; i < n; ++i) x[i * D + 3] = 0;
+    // last pass in three dimensions: the fourth coordinate is frozen at zero by a stiff squeeze
+    const double e = lbfgs(x, fg(50.0), 3000, 1e-6);
+    std::vector<Vec3> p(n);
+    for (size_t i = 0; i < n; ++i) p[i] = {x[i * D], x[i * D + 1], x[i * D + 2]};
+    // acceptance: bonds within 5 %, every specified centre the right way round
+    bool ok = true;
+    for (const auto& pr : M.pairs) {
+      if (M.topo[size_t(pr.i)][size_t(pr.j)] != 1) continue;
+      const double d = norm(p[size_t(pr.i)] - p[size_t(pr.j)]), r = 0.5 * (pr.lb + pr.ub);
+      if (std::fabs(d - r) > 0.05 * r) { ok = false; break; }
+    }
+    for (int s : chirality_check(g, p)) ok = ok && s > 0;
+    if (ok && e < best_err) {
+      best_err = e;
+      best = std::move(p);
+      break;
+    }
+  }
+  if (best.empty()) throw std::runtime_error("could not embed the molecule with its bond lengths and stereochemistry; check the SMILES");
+  // centre at the origin
+  Vec3 c{0, 0, 0};
+  for (const auto& v : best) c = c + v;
+  c = c * (1.0 / double(best.size()));
+  for (auto& v : best) v = v - c;
+  return best;
+}
+
+BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
+  BuildResult R;
+  R.graph = parse_smiles(smiles);
+  add_hydrogens(R.graph);
+  R.info = molecule_info(R.graph);
+  if (!R.info.problems.empty()) throw std::runtime_error(R.info.problems.front());
+  for (const auto& a : R.graph.atoms)
+    if (a.chiral && a.order.size() != 4)
+      R.notes.push_back("a stereocentre with three neighbours (lone pair) is built without its configuration");
+
+  std::shared_ptr<const ForceField> ff;
+  std::string ffname;
+  if (!o.forcefield.empty()) {
+    try {
+      FFDef def = load_forcefield(o.forcefield);
+      ffname = def.name;
+      System s0 = molecule_system(R.graph, std::vector<Vec3>(R.graph.atoms.size()));
+      const TypingResult t = assign_types(s0, def);
+      std::vector<std::string> types = t.types;
+      int untyped = 0;
+      for (const auto& x : types) untyped += x.empty();
+      if (untyped) R.notes.push_back(std::to_string(untyped) + " atoms have no " + def.name + " type; the geometry is the embedding's");
+      else {
+        ParamReport pr;
+        try {
+          ff = std::make_shared<ForceField>(parameterize(s0, def, types, o.charges, &pr, true));
+        } catch (const std::exception&) {
+          if (o.charges == "types") throw;
+          pr = ParamReport{};
+          ff = std::make_shared<ForceField>(parameterize(s0, def, types, "types", &pr, true));   // Gasteiger covers C, H, N, O only
+          R.notes.push_back("charges from the force field's types (Gasteiger covers C, H, N and O only)");
+        }
+        if (!pr.missing.empty())
+          R.notes.push_back(std::to_string(pr.missing.size()) + " " + def.name + " terms are missing and left out of the clean-up (first: " +
+                            pr.missing.front() + ")");
+      }
+    } catch (const std::exception& e) {
+      R.notes.push_back(std::string("no force-field clean-up: ") + e.what());
+    }
+  }
+  R.method = ff ? "CAPS distance-bounds embedding + " + ffname + " minimisation" : "CAPS distance-bounds embedding";
+
+  const int nconf = std::max(1, o.conformers);
+  for (int k = 0; k < nconf; ++k) {
+    EmbedOptions eo;
+    eo.seed = o.seed + uint64_t(k) * 7919;
+    Conformer c;
+    c.pos = embed(R.graph, eo);
+    if (ff) {
+      System s = molecule_system(R.graph, c.pos);
+      RelaxOptions ro;
+      ro.field = ff;
+      ro.pushoff = false;
+      ro.ftol = o.ftol;
+      ro.max_iterations = 20000;
+      RelaxReport rep;
+      try {
+        relax(s, ro, &rep);
+        std::vector<Vec3> p;
+        for (const auto& a : s.atoms) p.push_back(a.pos);
+        const auto chk = chirality_check(R.graph, p);
+        if (std::all_of(chk.begin(), chk.end(), [](int v) { return v > 0; })) {
+          c.pos = std::move(p);
+          c.energy = rep.final.total();
+          c.minimised = true;
+        } else
+          R.notes.push_back("conformer " + std::to_string(k + 1) + ": minimisation inverted a centre; kept the embedding");
+      } catch (const std::exception& e) {
+        R.notes.push_back("conformer " + std::to_string(k + 1) + " not minimised: " + e.what());
+      }
+    }
+    R.conformers.push_back(std::move(c));
+  }
+  std::stable_sort(R.conformers.begin(), R.conformers.end(), [](const Conformer& a, const Conformer& b) {
+    if (a.minimised != b.minimised) return a.minimised;
+    return a.energy < b.energy;
+  });
+  // near-identical minima (same energy to 0.01 kcal/mol) are one conformer
+  std::vector<Conformer> uniq;
+  for (auto& c : R.conformers)
+    if (uniq.empty() || !c.minimised || std::fabs(c.energy - uniq.back().energy) > 0.01) uniq.push_back(std::move(c));
+  if (uniq.size() < R.conformers.size())
+    R.notes.push_back(std::to_string(R.conformers.size() - uniq.size()) + " embeddings reached a minimum already found");
+  R.conformers = std::move(uniq);
+  R.system = molecule_system(R.graph, R.conformers.front().pos);
+  return R;
+}
+
+}  // namespace caps
