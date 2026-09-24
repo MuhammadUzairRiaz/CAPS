@@ -160,11 +160,14 @@
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" IsEnabled="False" ToolTip.Tip="Every long operation with progress, logs and checkpoints — coming" ToolTip.ShowOnDisabled="True">
-            <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <local:Icon Kind="jobs" Size="19" HorizontalAlignment="Center" />
-              <TextBlock Text="Jobs" HorizontalAlignment="Center" FontSize="10.5" />
-            </StackPanel>
+          <Button Classes="rail" Classes.on="{Binding IsJobs}" Click="OnModuleJobs" ToolTip.Tip="Every run with its progress, curves, log and provenance">
+            <Panel Width="60" Height="52">
+              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="jobs" Size="19" HorizontalAlignment="Center" />
+                <TextBlock Text="Jobs" HorizontalAlignment="Center" FontSize="10.5" />
+              </StackPanel>
+            </Panel>
           </Button>
           <Button Classes="rail" IsEnabled="False" ToolTip.Tip="Validation suite that regenerates the paper tables — coming" ToolTip.ShowOnDisabled="True">
             <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -715,6 +718,8 @@
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
       <!-- React (design/boards/React.dc.html) -->
+      <!-- Jobs (design/boards/Jobs, FailedJob) -->
+      <pages:JobsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsJobs}" />
       <!-- Settings (design/boards/Settings) -->
       <pages:SettingsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSettings}" />
       <!-- Molecule (design/boards/Sketch): sketch or SMILES to 3D -->

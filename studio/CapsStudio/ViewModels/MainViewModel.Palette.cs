@@ -49,6 +49,7 @@ public sealed partial class MainViewModel
             ("Relax", 2, "relax", "minimise minimize energy"), ("Dynamics", 3, "dyn", "md nvt npt lammps"),
             ("Equilibrate", 4, "equil", "protocol 21-step annealing convergence"), ("React", 6, "react", "crosslink cure gel"),
             ("Analyze", 1, "chart", "properties density rdf tg modulus"), ("Field", 7, "tag", "force field typing gaff opls"),
+            ("Jobs", 11, "jobs", "runs progress log provenance history"), ("Settings", 10, "gear", "preferences theme palette threads"),
         };
         foreach (var (name, m, icon, words) in modules)
             AddCommand(new PaletteCommand
