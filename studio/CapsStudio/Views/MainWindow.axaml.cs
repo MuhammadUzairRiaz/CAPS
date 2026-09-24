@@ -51,6 +51,7 @@ public partial class MainWindow : Window
         DataContext = _vm;
         _vm.ScaleChanged += k => ScaleRoot.LayoutTransform = Math.Abs(k - 1) < 1e-9 ? null : new Avalonia.Media.ScaleTransform(k, k);
         _vm.LoadSettings();
+        _vm.HookJobs();
         _vm.LoadRecent();
         AddWindowCommands();
         _vm.InitProtocol();
@@ -251,6 +252,7 @@ public partial class MainWindow : Window
     private void OnPerspectiveOff(object? s, RoutedEventArgs e) => _vm.Perspective = false;
     public void ShowSettings() => _vm.SetModule(10);
     private void OnSettingsRail(object? s, RoutedEventArgs e) => _vm.SetModule(10);
+    private void OnModuleJobs(object? s, RoutedEventArgs e) => _vm.SetModule(11);
     private void OnCloseDocument(object? s, RoutedEventArgs e) { e.Handled = true; _vm.CloseDocument(); }
     private void OnThemeDark(object? s, RoutedEventArgs e) { Tokens.Use(false); RequestRender(); }
     private void OnThemeLight(object? s, RoutedEventArgs e) { Tokens.Use(true); RequestRender(); }
