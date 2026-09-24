@@ -595,6 +595,67 @@ std::vector<Vec3> embed(const MolGraph& g, const EmbedOptions& o) {
   return best;
 }
 
+std::shared_ptr<const ForceField> molecule_forcefield(const MolGraph& g, const std::string& path, const std::string& charges,
+                                                      std::vector<std::string>& notes, std::string* name) {
+  if (path.empty()) return nullptr;
+  try {
+    FFDef def = load_forcefield(path);
+    if (name) *name = def.name;
+    System s0 = molecule_system(g, std::vector<Vec3>(g.atoms.size()));
+    const TypingResult t = assign_types(s0, def);
+    int untyped = 0;
+    for (const auto& x : t.types) untyped += x.empty();
+    if (untyped) {
+      notes.push_back(std::to_string(untyped) + " atoms have no " + def.name + " type; the geometry is the embedding's");
+      return nullptr;
+    }
+    ParamReport pr;
+    std::shared_ptr<const ForceField> ff;
+    try {
+      ff = std::make_shared<ForceField>(parameterize(s0, def, t.types, charges, &pr, true));
+    } catch (const std::exception&) {
+      if (charges == "types") throw;
+      pr = ParamReport{};
+      ff = std::make_shared<ForceField>(parameterize(s0, def, t.types, "types", &pr, true));   // Gasteiger covers C, H, N, O only
+      notes.push_back("charges from the force field's types (Gasteiger covers C, H, N and O only)");
+    }
+    if (!pr.missing.empty())
+      notes.push_back(std::to_string(pr.missing.size()) + " " + def.name + " terms are missing and left out of the clean-up (first: " + pr.missing.front() + ")");
+    return ff;
+  } catch (const std::exception& e) {
+    notes.push_back(std::string("no force-field clean-up: ") + e.what());
+    return nullptr;
+  }
+}
+
+bool minimise_molecule(const MolGraph& g, const std::shared_ptr<const ForceField>& ff, double ftol, std::vector<Vec3>& pos, double* energy,
+                       std::string* why) {
+  if (!ff) return false;
+  System s = molecule_system(g, pos);
+  RelaxOptions ro;
+  ro.field = ff;
+  ro.pushoff = false;
+  ro.ftol = ftol;
+  ro.max_iterations = 20000;
+  RelaxReport rep;
+  try {
+    relax(s, ro, &rep);
+  } catch (const std::exception& e) {
+    if (why) *why = e.what();
+    return false;
+  }
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  const auto chk = chirality_check(g, p);
+  if (!std::all_of(chk.begin(), chk.end(), [](int v) { return v > 0; })) {
+    if (why) *why = "minimisation inverted a centre";
+    return false;
+  }
+  pos = std::move(p);
+  if (energy) *energy = rep.final.total();
+  return true;
+}
+
 BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
   BuildResult R;
   R.graph = parse_smiles(smiles);
@@ -605,36 +666,8 @@ BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
     if (a.chiral && a.order.size() != 4)
       R.notes.push_back("a stereocentre with three neighbours (lone pair) is built without its configuration");
 
-  std::shared_ptr<const ForceField> ff;
   std::string ffname;
-  if (!o.forcefield.empty()) {
-    try {
-      FFDef def = load_forcefield(o.forcefield);
-      ffname = def.name;
-      System s0 = molecule_system(R.graph, std::vector<Vec3>(R.graph.atoms.size()));
-      const TypingResult t = assign_types(s0, def);
-      std::vector<std::string> types = t.types;
-      int untyped = 0;
-      for (const auto& x : types) untyped += x.empty();
-      if (untyped) R.notes.push_back(std::to_string(untyped) + " atoms have no " + def.name + " type; the geometry is the embedding's");
-      else {
-        ParamReport pr;
-        try {
-          ff = std::make_shared<ForceField>(parameterize(s0, def, types, o.charges, &pr, true));
-        } catch (const std::exception&) {
-          if (o.charges == "types") throw;
-          pr = ParamReport{};
-          ff = std::make_shared<ForceField>(parameterize(s0, def, types, "types", &pr, true));   // Gasteiger covers C, H, N, O only
-          R.notes.push_back("charges from the force field's types (Gasteiger covers C, H, N and O only)");
-        }
-        if (!pr.missing.empty())
-          R.notes.push_back(std::to_string(pr.missing.size()) + " " + def.name + " terms are missing and left out of the clean-up (first: " +
-                            pr.missing.front() + ")");
-      }
-    } catch (const std::exception& e) {
-      R.notes.push_back(std::string("no force-field clean-up: ") + e.what());
-    }
-  }
+  const auto ff = molecule_forcefield(R.graph, o.forcefield, o.charges, R.notes, &ffname);
   R.method = ff ? "CAPS distance-bounds embedding + " + ffname + " minimisation" : "CAPS distance-bounds embedding";
 
   const int nconf = std::max(1, o.conformers);
@@ -644,27 +677,9 @@ BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
     Conformer c;
     c.pos = embed(R.graph, eo);
     if (ff) {
-      System s = molecule_system(R.graph, c.pos);
-      RelaxOptions ro;
-      ro.field = ff;
-      ro.pushoff = false;
-      ro.ftol = o.ftol;
-      ro.max_iterations = 20000;
-      RelaxReport rep;
-      try {
-        relax(s, ro, &rep);
-        std::vector<Vec3> p;
-        for (const auto& a : s.atoms) p.push_back(a.pos);
-        const auto chk = chirality_check(R.graph, p);
-        if (std::all_of(chk.begin(), chk.end(), [](int v) { return v > 0; })) {
-          c.pos = std::move(p);
-          c.energy = rep.final.total();
-          c.minimised = true;
-        } else
-          R.notes.push_back("conformer " + std::to_string(k + 1) + ": minimisation inverted a centre; kept the embedding");
-      } catch (const std::exception& e) {
-        R.notes.push_back("conformer " + std::to_string(k + 1) + " not minimised: " + e.what());
-      }
+      std::string why;
+      if (minimise_molecule(R.graph, ff, o.ftol, c.pos, &c.energy, &why)) c.minimised = true;
+      else R.notes.push_back("conformer " + std::to_string(k + 1) + (why == "minimisation inverted a centre" ? ": " + why + "; kept the embedding" : " not minimised: " + why));
     }
     R.conformers.push_back(std::move(c));
   }

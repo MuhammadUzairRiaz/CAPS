@@ -1,4 +1,4 @@
-/* CAPS C ABI v14 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v15 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 14  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench */
+#define CAPS_ABI_VERSION 15  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -352,6 +352,16 @@ int32_t caps_bench_list(char* json, int32_t cap);
 int32_t caps_bench_run(const char* id, const char* samples, const char* forcefields, int32_t repeats, int32_t quick,
                        caps_bench_progress_fn progress, void* user, char* json, int32_t cap);
 int32_t caps_bench_write(const char* tables_json, const char* dir);
+
+/* Polymer builder (ABI 15). A chain spec is JSON: {units: [{name, smiles}], sequence: "homopolymer" | "alternating" |
+   "block" | "random" | "gradient" | "pattern", dp, blocks: [..], weights: [..], pattern: "AAB", pm, forcefield}; the
+   repeat-unit SMILES carry two attachment points, head first. caps_unit_info: {ok, error, formula, mass, atoms,
+   head_element, tail_element, stereocentres}. caps_chain_preview: {ok, error, sequence: [unit index …], formula, mass,
+   atoms, smiles} of one chain drawn with `seed`. caps_grow_chains grows o->chains chains of the spec (o->dp, when > 0,
+   overrides the spec's; o->tacticity applies) into a periodic cell; NULL on error or cancel. */
+int32_t caps_unit_info(const char* smiles, char* json, int32_t cap);
+int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char* json, int32_t cap);
+caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap);
 
 #ifdef __cplusplus
 }
