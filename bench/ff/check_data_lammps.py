@@ -8,7 +8,10 @@ and COMPASS: hybrid styles with skip lines in the class II sections), DREIDING (
 (Buckingham pairs, periodic; Gasteiger charges, as DL_FIELD keeps ionic charges in its templates), a periodic polymer melt (tail corrections), and CHARMM-type force fields, whose separate
 1-4 Lennard-Jones parameters LAMMPS cannot reproduce without switching (the writer refuses them; reported as such).
 
-usage: check_data_lammps.py [--only substring] [--keep DIR]
+With --pme, CAPS uses particle-mesh Ewald on a fine grid (β from ewald-rtol 1e-7, spacing 0.5 Å, order 6) and LAMMPS
+its Ewald sum (kspace_style ewald): both converge to the same electrostatics; only periodic cases are run.
+
+usage: check_data_lammps.py [--only substring] [--keep DIR] [--pme]
 Needs LMP (default ~/lammps/build-class2/lmp) with CLASS2, MOLECULE, EXTRA-MOLECULE, EXTRA-PAIR and MOFFF.
 """
 import math, os, re, subprocess, sys, tempfile
@@ -24,6 +27,7 @@ LIB = os.environ.get("DLFIELD", "~/project/dl_f_4.13") + "/lib"
 FF = os.path.join(ROOT, "data", "forcefields")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")
+PME = "--pme" in sys.argv
 work = arg("--keep", "") or tempfile.mkdtemp()
 os.makedirs(work, exist_ok=True)
 
@@ -157,6 +161,10 @@ for label, src, fid, charges, typing in CASES:
            "--lammps-input", os.path.join(d, "case.in"), "--forces", os.path.join(d, "caps_f.txt")]
     if typing == "keys" and tfile:
         cmd += ["--types", tfile]
+    if PME:
+        if src[0] not in ("file", "ionic-first"):
+            continue
+        cmd += ["--pme", "--ewald-rtol", "1e-7", "--pme-spacing", "0.5", "--pme-order", "6"]
     if src[0] == "compass-ps":
         ov = os.path.join(work, base + ".overlay.json")
         with open(ov, "w") as f:
@@ -180,7 +188,9 @@ for label, src, fid, charges, typing in CASES:
         continue
     lm = {"bond": le["E_bond"], "angle": le["E_angle"], "dihedral": le["E_dihed"], "improper": le["E_impro"], "vdw": le["E_vdwl"],
           "coulomb": le["E_coul"] + le["E_long"]}
-    de = max(abs(ce[k] - lm[k]) / max(1.0, abs(ce[k])) for k in ce)
+    # with PME both codes reach the Ewald limit only to their discretisation and the real-space erfc approximation
+    # (Abramowitz–Stegun, 1.5e-7 per pair, as LAMMPS): the Coulomb term is compared to 1e-3 kcal/mol absolute there
+    de = max(abs(ce[k] - lm[k]) / (max(1.0, abs(ce[k])) if not (PME and k == "coulomb") else 100.0) for k in ce)
     mw = re.search(r"virial tensor \(kcal/mol\): xx (\S+)  yy (\S+)  zz (\S+)  xy (\S+)  xz (\S+)  yz (\S+)", r.stdout)
     cw = list(map(float, mw.groups()))
     lw = [le[f"c_pv[{k}]"] * le["Volume"] / 68568.415 for k in range(1, 7)]

@@ -26,7 +26,7 @@ dotnet publish "$ROOT/studio/CapsStudio/CapsStudio.csproj" -c Release -r "$RID" 
        -p:CapsNativeDir="$WORK/native/capi" -p:Version="$VERSION" -o "$APP" > "$WORK/publish.log"
 cp "$WORK/native/cli/caps" "$APP/"
 mkdir -p "$APP/data"
-cp -R "$ROOT/data/forcefields" "$ROOT/data/typing" "$ROOT/data/reference" "$APP/data/"
+cp -R "$ROOT/data/forcefields" "$ROOT/data/typing" "$ROOT/data/reference" "$ROOT/data/polymers" "$APP/data/"
 cp -R "$ROOT/samples" "$APP/"
 find "$APP" -maxdepth 1 -name "*.pdb" -delete
 strip "$APP/caps" "$APP/libcaps.so" 2>/dev/null || true

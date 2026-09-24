@@ -91,7 +91,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -173,6 +173,14 @@ int axis_of(const std::string& a) {
   if (a == "y" || a == "1") return 1;
   if (a == "z" || a == "2") return 2;
   throw std::invalid_argument("axis must be x, y or z");
+}
+
+// --pme [--ewald-rtol 1e-5] [--pme-spacing 1.2] [--pme-order 4]: particle-mesh Ewald instead of damped shifted force
+void electrostatics(EnergyOptions& e, std::map<std::string, std::string>& o) {
+  if (o.count("--pme")) e.electrostatics = EnergyOptions::Electrostatics::PME;
+  if (o.count("--ewald-rtol")) e.ewald_rtol = std::stod(o["--ewald-rtol"]);
+  if (o.count("--pme-spacing")) e.pme_spacing = std::stod(o["--pme-spacing"]);
+  if (o.count("--pme-order")) e.pme_order = std::stoi(o["--pme-order"]);
 }
 
 void save_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& out) {
@@ -557,6 +565,7 @@ int main(int argc, char** argv) {
         EnergyOptions eo;
         eo.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : ff.cutoff;
         if (o.count("--no-tail")) eo.tail = false;
+        electrostatics(eo, o);
         Evaluator ev(f, eo);
         std::vector<double> x, g;
         for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
@@ -1039,6 +1048,7 @@ int main(int argc, char** argv) {
       r.pushoff = !o.count("--no-pushoff");
       if (o.count("--cutoff")) r.energy.cutoff = std::stod(o["--cutoff"]);
       r.energy.coulomb = !o.count("--no-coulomb");
+      electrostatics(r.energy, o);
       const bool quiet = o.count("--quiet");
       std::string last;
       r.progress = [&](const RelaxProgress& p) {
@@ -1084,6 +1094,7 @@ int main(int argc, char** argv) {
       if (o.count("--skin")) d.energy.skin = std::stod(o["--skin"]);
       if (o.count("--threads")) d.energy.threads = std::stoi(o["--threads"]);
       d.energy.coulomb = !o.count("--no-coulomb");
+      electrostatics(d.energy, o);
       d.new_velocities = o.count("--new-velocities");
       const bool quiet = o.count("--quiet");
       Trajectory traj;

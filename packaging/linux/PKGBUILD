@@ -8,7 +8,7 @@ arch=('x86_64' 'aarch64')
 url="https://github.com/MuhammadUzairRiaz/CAPS"
 license=('LicenseRef-proprietary')
 depends=('zlib' 'fontconfig' 'libice' 'libsm' 'libx11' 'icu' 'gcc-libs')
-makedepends=('cmake' 'dotnet-sdk>=10' 'git')
+makedepends=('cmake' 'gcc-fortran' 'dotnet-sdk>=10' 'git')
 options=('!strip' '!debug')
 source=("$pkgname-$pkgver::git+$url.git#tag=v$pkgver")
 sha256sums=('SKIP')
@@ -29,7 +29,7 @@ package() {
   find "$pkgdir/opt/caps" -maxdepth 1 -name "*.pdb" -delete
   install -Dm755 build/cli/caps "$pkgdir/opt/caps/caps"
   install -d "$pkgdir/opt/caps/data"
-  cp -R data/forcefields data/typing data/reference "$pkgdir/opt/caps/data/"
+  cp -R data/forcefields data/typing data/reference data/polymers "$pkgdir/opt/caps/data/"
   cp -R samples "$pkgdir/opt/caps/"
   ln -s /opt/caps/CapsStudio "$pkgdir/usr/bin/caps-studio"
   ln -s /opt/caps/caps "$pkgdir/usr/bin/caps"

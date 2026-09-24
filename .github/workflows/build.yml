@@ -32,18 +32,37 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Linux packages
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y zlib1g-dev libfontconfig1 libice6 libsm6
+        run: sudo apt-get update && sudo apt-get install -y zlib1g-dev gfortran libfontconfig1 libice6 libsm6
+      - name: Fortran (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew list gcc >/dev/null 2>&1 || brew install gcc
+          echo "FC=$(ls $(brew --prefix)/bin/gfortran-* | sort -V | tail -1)" >> "$GITHUB_ENV"
+      # Windows: the native core with MinGW-w64 (UCRT64: gcc, g++, gfortran); .NET loads caps.dll through the C ABI
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-fortran mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+      - name: Native core (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
       - name: Configure
+        if: runner.os != 'Windows'
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
+        if: runner.os != 'Windows'
         run: cmake --build build --config Release --parallel
       - name: Core tests
+        if: runner.os != 'Windows'
         run: ctest --test-dir build -C Release --output-on-failure
       - name: Studio build
         shell: bash
-        run: |
-          native=build/capi; [ "$RUNNER_OS" = Windows ] && native=build/capi/Release
-          dotnet build -c Release studio/CapsStudio/CapsStudio.csproj -p:CapsNativeDir="$PWD/$native"
+        run: dotnet build -c Release studio/CapsStudio/CapsStudio.csproj -p:CapsNativeDir="$PWD/build/capi"
       - name: Studio self-test
         shell: bash
         run: |
@@ -59,7 +78,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - run: sudo apt-get update && sudo apt-get install -y zlib1g-dev libfontconfig1 libice6 libsm6 file
+      - run: sudo apt-get update && sudo apt-get install -y zlib1g-dev gfortran libfontconfig1 libice6 libsm6 file
       - run: packaging/linux/build.sh x86_64
       - uses: actions/upload-artifact@v4
         with:
@@ -74,9 +93,18 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-fortran mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+      - name: Native core (MinGW-w64)
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build-pkg/native -G Ninja -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF
+          cmake --build build-pkg/native --parallel
       - name: Inno Setup
         run: choco install innosetup -y --no-progress
-      - run: pwsh packaging/windows/build.ps1
+      - run: pwsh packaging/windows/build.ps1 -Native build-pkg/native
       - uses: actions/upload-artifact@v4
         with:
           name: caps-windows-x64
@@ -97,6 +125,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Fortran
+        run: |
+          brew list gcc >/dev/null 2>&1 || brew install gcc
+          echo "FC=$(ls $(brew --prefix)/bin/gfortran-* | sort -V | tail -1)" >> "$GITHUB_ENV"
       - run: packaging/macos/build_dmg.sh ${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
         with:
