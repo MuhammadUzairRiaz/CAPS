@@ -30,9 +30,13 @@ add_library(caps_core STATIC
   src/embed.cpp
   src/bench.cpp
   src/polymer.cpp
+  src/kspace.cpp
+  src/fortran_runtime.cpp
+  fortran/caps_kspace.f90
 )
 target_include_directories(caps_core PUBLIC include)
 target_link_libraries(caps_core PUBLIC ZLIB::ZLIB Threads::Threads)
 if(NOT MSVC)
-  target_compile_options(caps_core PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(caps_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
 endif()
+set_target_properties(caps_core PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_modules)

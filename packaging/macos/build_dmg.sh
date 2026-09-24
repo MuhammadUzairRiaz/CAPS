@@ -31,7 +31,7 @@ cp -R "$WORK/publish/." "$APP/Contents/MacOS/"
 cp "$WORK/native/cli/caps" "$APP/Contents/MacOS/caps"
 cp "$ROOT/packaging/icon/caps.icns" "$APP/Contents/Resources/"
 mkdir -p "$APP/Contents/Resources/data"
-cp -R "$ROOT/data/forcefields" "$ROOT/data/typing" "$ROOT/data/reference" "$APP/Contents/Resources/data/"
+cp -R "$ROOT/data/forcefields" "$ROOT/data/typing" "$ROOT/data/reference" "$ROOT/data/polymers" "$APP/Contents/Resources/data/"
 cp -R "$ROOT/samples" "$APP/Contents/Resources/"
 sed "s/@VERSION@/$VERSION/g" "$ROOT/packaging/macos/Info.plist.in" > "$APP/Contents/Info.plist"
 # debug symbols are not shipped

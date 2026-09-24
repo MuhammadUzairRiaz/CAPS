@@ -193,12 +193,16 @@ Layout build(const System& s, const ForceField& ff) {
   return L;
 }
 
+// PME is used (and written) only for periodic cells, as the evaluator does.
+bool pme(const EnergyOptions& e, const Layout& L) { return e.electrostatics == EnergyOptions::Electrostatics::PME && L.periodic; }
+
 // The LAMMPS commands (after units / atom_style) that reproduce CAPS's energy with the data file.
 std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, const EnergyOptions& e) {
   std::vector<std::string> r;
   char b[400];
   if (!L.pair_hybrid) {
-    if (e.coulomb) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
+    if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/long %.6g", e.cutoff);
+    else if (e.coulomb) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
     else std::snprintf(b, sizeof b, "pair_style lj/cut %.6g", e.cutoff);
     r.push_back(b);
   } else {
@@ -207,7 +211,10 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       std::snprintf(b, sizeof b, " %s %.6g", st.c_str(), e.cutoff);
       p += b;
     }
-    if (e.coulomb) {
+    if (e.coulomb && pme(e, L)) {
+      std::snprintf(b, sizeof b, " coul/long %.6g", e.cutoff);
+      p += b;
+    } else if (e.coulomb) {
       std::snprintf(b, sizeof b, " coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
       p += b;
     }
@@ -225,13 +232,18 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   }
   std::snprintf(b, sizeof b, "special_bonds lj 0 0 %.10g coul 0 0 %.10g", ff.lj14, ff.coul14);
   r.push_back(b);
+  if (e.coulomb && pme(e, L)) {
+    // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
+    std::snprintf(b, sizeof b, "kspace_style ewald %.3g", std::max(1e-12, e.ewald_rtol * 0.01));
+    r.push_back(b);
+  }
   return r;
 }
 
 // Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
 std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e) {
   std::vector<std::string> r;
-  if (L.pair_hybrid && e.coulomb) r.push_back("pair_coeff * * coul/dsf");
+  if (L.pair_hybrid && e.coulomb) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
   return r;
 }
 
@@ -277,7 +289,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
     out << buf;
   }
   // every i-j pair, mixed by the force field's rule (and its explicit pairs): nothing is left to LAMMPS's mixing
-  out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : e.coulomb ? std::string("lj/cut/coul/dsf") : L.pair_base) << "\n\n";
+  out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
   for (size_t a2 = 0; a2 < ff.type_names.size(); ++a2)
     for (size_t b2 = a2; b2 < ff.type_names.size(); ++b2) {
       auto it = ff.pair_func.find({int(a2), int(b2)});

@@ -4,6 +4,8 @@
 // for the c3 / ca / hc / ha subset. AMBER forms and 1-4 scaling (LJ 1/2, Coulomb 1/1.2). Electrostatics use the damped
 // shifted force sum (Fennell and Gezelter, J. Chem. Phys. 124, 234104 (2006)), a real-space method with no Ewald part.
 #include "caps/field.hpp"
+#include "caps/kspace.hpp"
+#include "kspace_pool.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -698,6 +700,11 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   const double dsf_e0 = erfc_rc / rc;
   const double dsf_f0 = erfc_rc / (rc * rc) + 2 * a / std::sqrt(kPi) * std::exp(-a * a * rc2) / rc;
   const bool coul = opt_.coulomb;
+  // PME: the pair term is erfc(βr)/r with no shift; the reciprocal part, self energy and background come after
+  const bool pme = coul && opt_.electrostatics == EnergyOptions::Electrostatics::PME && cell.valid() && cell.periodic[0] && cell.periodic[1] &&
+                   cell.periodic[2];
+  const double beta = pme ? ewald_beta(rc, opt_.ewald_rtol) : 0.0;
+  const double b2pi = 2 * beta / std::sqrt(kPi);
   const double a2pi = 2 * a / std::sqrt(kPi);
   const bool capped = opt_.force_cap > 0;
 
@@ -771,9 +778,15 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       if (coul && q[i] != 0 && q[j] != 0) {
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2;
-        const double er = erfc_exp(a * r, ex2);
-        ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
-        fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
+        if (pme) {
+          const double er = erfc_exp(beta * r, ex2);
+          ecoul += w * qq * er / r;
+          fr += qq * (er / r2 + b2pi * ex2 / r) / r;
+        } else {
+          const double er = erfc_exp(a * r, ex2);
+          ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
+          fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
+        }
       }
       fr *= w;
       const double fx = fr * dx, fy = fr * dy, fz = fr * dz;
@@ -986,10 +999,17 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
         const double r2 = dot(d, d);
         if (r2 >= rc2) continue;
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
-        double ex2;
-        const double er = erfc_exp(a * r, ex2);
-        A[5] += qq * (er / r - dsf_e0 + dsf_f0 * (r - rc)) - (1 - ex.factor) * qq / r;
-        const double fr = qq * ((er / r2 + a2pi * ex2 / r - dsf_f0) - (1 - ex.factor) / r2) / r;
+        double ex2, fr;
+        if (pme) {
+          // Ewald: the reciprocal sum includes the pair; add its real-space part and remove (1 − factor) of 1/r
+          const double er = erfc_exp(beta * r, ex2);
+          A[5] += qq * er / r - (1 - ex.factor) * qq / r;
+          fr = qq * ((er / r2 + b2pi * ex2 / r) - (1 - ex.factor) / r2) / r;
+        } else {
+          const double er = erfc_exp(a * r, ex2);
+          A[5] += qq * (er / r - dsf_e0 + dsf_f0 * (r - rc)) - (1 - ex.factor) * qq / r;
+          fr = qq * ((er / r2 + a2pi * ex2 / r - dsf_f0) - (1 - ex.factor) / r2) / r;
+        }
         const Vec3 fj = d * fr;
         add(j, fj);
         add(i, fj * -1.0);
@@ -1015,7 +1035,25 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     e.virial += acc[t][6];
     for (int c = 0; c < 6; ++c) e.w[c] += acc[t][7 + c];
   }
-  if (coul) {
+  if (pme) {
+    // reciprocal part (Fortran), self energy −β/√π Σq², and the neutralising background −π Q²/(2Vβ²) for a net charge
+    const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);
+    std::vector<double> fk(x.size(), 0.0);
+    double vk[6];
+    e.coulomb += pme_reciprocal(x, ff_.charge, cell, grid, fk, vk, *pool_);
+    for (size_t k = 0; k < x.size(); ++k) f[k] += fk[k];
+    e.virial += vk[0] + vk[1] + vk[2];
+    for (int c = 0; c < 6; ++c) e.w[c] += vk[c];
+    double q2 = 0, qt = 0;
+    for (double c : ff_.charge) q2 += c * c, qt += c;
+    e.coulomb -= kCoulomb * beta / std::sqrt(kPi) * q2;
+    if (std::fabs(qt) > 1e-10) {
+      const double eb = -kCoulomb * kPi * qt * qt / (2 * cell.volume() * beta * beta);
+      e.coulomb += eb;
+      e.virial += 3 * eb;   // E_bg ∝ 1/V ∝ λ⁻³, so −dE/dλ = 3 E_bg
+      for (int c = 0; c < 3; ++c) e.w[c] += eb;
+    }
+  } else if (coul) {
     double q2 = 0;
     for (double c : ff_.charge) q2 += c * c;
     // Self energy: half the r → 0 limit of the damped shifted pair potential minus the bare 1/r, i.e. with the full
