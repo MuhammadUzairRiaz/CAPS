@@ -50,6 +50,13 @@ public struct CapsSummary
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct CapsBuildOpts
+{
+    public int Conformers;
+    public ulong Seed;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct CapsGrowOpts
 {
     public int Chains, Dp, Tacticity;
@@ -203,6 +210,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_protocol_text")] public static extern int ProtocolText([MarshalAs(UnmanagedType.LPUTF8Str)] string name, in CapsProtocolParams p, byte[] text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate")] public static extern int Equilibrate(IntPtr doc, byte[] protocol, in CapsEquilOpts o, CapsEquilProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_internal_distances")] public static extern int InternalDistances(IntPtr doc, [Out] int[] n, [Out] double[] ratio, int cap, out int chains, out double b2);
+    [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_build_smiles")] public static extern IntPtr BuildSmiles([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, [MarshalAs(UnmanagedType.LPUTF8Str)] string? ff, in CapsBuildOpts o, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pack")] public static extern IntPtr Pack(byte[] text, [MarshalAs(UnmanagedType.LPUTF8Str)] string baseDir, int threads, CapsPackProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_template")] public static extern int ReactionTemplate([MarshalAs(UnmanagedType.LPUTF8Str)] string name, byte[] text, int cap);
     [DllImport(Lib, EntryPoint = "caps_react")] public static extern int React(IntPtr doc, byte[] templates, in CapsReactOpts o, CapsReactProgress? progress, IntPtr user, byte[] report, int cap);
@@ -269,6 +278,25 @@ public sealed class CapsDocument : IDisposable
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         var text = System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
         return (new CapsDocument(h, label), text);
+    }
+
+    /// <summary>Parses a SMILES without building: JSON with formula, mass, counts, or ok = false and the error.</summary>
+    public static string SmilesInfo(string smiles)
+    {
+        var n = Native.SmilesInfo(smiles, null, 0);
+        var buf = new byte[Math.Max(1, n)];
+        Native.SmilesInfo(smiles, buf, buf.Length);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+
+    /// <summary>A 3D molecule from SMILES, one frame per conformer (lowest energy first); ff: a caps-forcefield JSON
+    /// with typing rules for the clean-up, or null. Returns the document and the JSON report.</summary>
+    public static (CapsDocument Doc, string Report) BuildSmiles(string smiles, string? ff, int conformers, ulong seed, string label)
+    {
+        var report = new byte[65536];
+        var h = Native.BuildSmiles(smiles, ff, new CapsBuildOpts { Conformers = conformers, Seed = seed }, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0'));
     }
 
     public void Save(string path) { lock (_lock) Check(Native.Save(_h, path)); }

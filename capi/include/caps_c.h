@@ -1,4 +1,4 @@
-/* CAPS C ABI v11 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v12 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 11  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks */
+#define CAPS_ABI_VERSION 12  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -316,6 +316,19 @@ int32_t caps_property_range(caps_doc* d, double* lo, double* hi);
 
 /* Nearest neighbours of an atom (minimum image): fills up to k indices and distances, returns count. */
 int32_t caps_neighbours(caps_doc* d, int32_t index, int32_t k, int32_t* idx, double* dist);
+
+/* Molecule builder (ABI 12). caps_smiles_info parses a SMILES and returns JSON without building: {ok, error, position,
+   formula, mass, atoms, heavy, bonds, rings, stereocentres, stereo_bonds, charge, problems[]}; the length needed
+   including the final NUL is returned (json = NULL to size). caps_build_smiles embeds `conformers` conformers in 3D and,
+   when ff_path names a caps-forcefield JSON with typing rules, minimises each with it; the document holds one frame
+   per conformer, lowest energy first. The report is JSON: the fields of caps_smiles_info plus method, conformers
+   [{energy, rel, minimised}] and notes[]. NULL on error (caps_last_error explains). */
+typedef struct {
+  int32_t conformers;              /* 1 */
+  uint64_t seed;                   /* 1 */
+} caps_build_opts;
+int32_t caps_smiles_info(const char* smiles, char* json, int32_t cap);
+caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_build_opts* o, char* report, int32_t cap);
 
 #ifdef __cplusplus
 }

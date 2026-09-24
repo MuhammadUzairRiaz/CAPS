@@ -15,6 +15,7 @@
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/mechanics.hpp"
+#include "caps/molecule.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
@@ -226,7 +227,7 @@ void field_run(caps_doc* d) {
   r["references"] = refs;
   const std::string rule_src = [&] {
     std::string p = def.typing_source.empty() ? F.ff_path : def.typing_source;
-    const auto k = p.find_last_of('/');
+    const auto k = p.find_last_of("/\\");
     return k == std::string::npos ? p : p.substr(k + 1);
   }();
   caps::Json atoms = caps::Json::array();
@@ -419,6 +420,7 @@ int32_t caps_save(caps_doc* d, const char* path) {
     auto ends = [&](const char* e) { const std::string x = e; return p.size() >= x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
     if (ends(".pdb")) caps::write_pdb(d->frame, p);
     else if (ends(".xyz")) caps::write_xyz(d->frame, p);
+    else if (ends(".mol2")) caps::write_mol2(d->frame, p);
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
       if (d->field->complete) caps::write_lammps_data_ff(d->frame, *d->field->ff, caps::EnergyOptions{}, p);
       else caps::write_lammps_data(d->frame, p);
@@ -963,7 +965,7 @@ int32_t caps_field_import(caps_doc* d, const char* path) {
       if (!d->field->base.type(t.name)) fresh.push_back(t);
     imp.types = fresh;
     imp.typing.clear();
-    const auto slash = p.find_last_of('/');
+    const auto slash = p.find_last_of("/\\");
     const std::string file = slash == std::string::npos ? p : p.substr(slash + 1);
     for (auto* v : {&imp.pairs, &imp.bonds, &imp.angles, &imp.dihedrals, &imp.impropers, &imp.bond_increments})
       for (auto& r : *v) {
@@ -1338,3 +1340,84 @@ int32_t caps_neighbours(caps_doc* d, int32_t i, int32_t k, int32_t* idx, double*
 }
 
 }  // extern "C"
+
+namespace {
+caps::Json mol_json(const caps::MolInfo& m) {
+  caps::Json j = caps::Json::object();
+  j["ok"] = m.problems.empty();
+  j["formula"] = m.formula;
+  j["mass"] = m.mass;
+  j["atoms"] = double(m.atoms);
+  j["heavy"] = double(m.heavy);
+  j["bonds"] = double(m.bonds);
+  j["rings"] = double(m.rings);
+  j["stereocentres"] = double(m.stereocentres);
+  j["stereo_bonds"] = double(m.stereo_bonds);
+  j["charge"] = double(m.charge);
+  caps::Json p = caps::Json::array();
+  for (const auto& x : m.problems) p.push_back(x);
+  j["problems"] = p;
+  return j;
+}
+bool m_problems_empty(const caps::Json& j) { return j["problems"].size() == 0; }
+}  // namespace
+
+extern "C" int32_t caps_smiles_info(const char* smiles, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    caps::MolGraph g = caps::parse_smiles(smiles ? smiles : "");
+    caps::add_hydrogens(g);
+    j = mol_json(caps::molecule_info(g));
+    if (!m_problems_empty(j)) j["error"] = j["problems"][size_t(0)].str();
+  } catch (const caps::SmilesError& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+    j["position"] = double(e.position);
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(), json, cap);
+}
+
+extern "C" caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_build_opts* o, char* report, int32_t cap) {
+  try {
+    caps::BuildOptions b;
+    if (o) {
+      b.conformers = o->conformers > 0 ? o->conformers : 1;
+      b.seed = o->seed ? o->seed : 1;
+    }
+    b.forcefield = ff_path ? ff_path : "";
+    const caps::BuildResult r = caps::build_molecule(smiles ? smiles : "", b);
+    auto* d = new caps_doc;
+    d->traj.topology = r.system;
+    for (const auto& c : r.conformers) {
+      d->traj.positions.push_back(c.pos);
+      d->traj.cells.push_back(r.system.cell);
+      d->traj.timesteps.push_back(int64_t(d->traj.timesteps.size()));
+    }
+    refresh(d);
+    caps::Json j = mol_json(r.info);
+    j["smiles"] = r.graph.smiles;
+    j["method"] = r.method;
+    caps::Json cs = caps::Json::array();
+    const double e0 = r.conformers.front().energy;
+    for (const auto& c : r.conformers) {
+      caps::Json x = caps::Json::object();
+      x["energy"] = c.energy;
+      x["rel"] = c.energy - e0;
+      x["minimised"] = c.minimised;
+      cs.push_back(x);
+    }
+    j["conformers"] = cs;
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : r.notes) notes.push_back(n);
+    j["notes"] = notes;
+    report_out(j.dump(), report, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
