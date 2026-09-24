@@ -370,8 +370,22 @@
           <Panel>
             <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
             <!-- Empty state -->
-            <Border IsVisible="{Binding NoDocument}" BorderBrush="{DynamicResource LineB}" BorderThickness="2" CornerRadius="14"
+            <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" Text="The structure appears here when the run starts">
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="NoDocument" />
+                  <Binding Path="!IsStudio" />
+                </MultiBinding>
+              </TextBlock.IsVisible>
+            </TextBlock>
+            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="2" CornerRadius="14"
                     Margin="40" Background="{DynamicResource Bg1B}">
+              <Border.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="NoDocument" />
+                  <Binding Path="IsStudio" />
+                </MultiBinding>
+              </Border.IsVisible>
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" MaxWidth="560">
                 <TextBlock Text="Open a structure or trajectory" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
                 <TextBlock TextWrapping="Wrap" TextAlignment="Center" Classes="muted"
@@ -706,80 +720,6 @@
         </TabControl>
         <ScrollViewer IsVisible="{Binding !IsStudio}">
           <StackPanel>
-          <!-- Relax -->
-          <StackPanel IsVisible="{Binding IsRelax}">
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="STRUCTURE" Classes="h3" />
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding NoDocument}"
-                           Text="Grow a cell or open a structure first. Relax works on the frame shown in the viewer." />
-                <TextBlock Text="{Binding Title}" IsVisible="{Binding HasDocument}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasDocument}" />
-                <Button Content="Check force field" Click="OnCheckField" IsEnabled="{Binding CanRelax}" />
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8" IsVisible="{Binding HasFieldInfo}">
-                  <TextBlock Text="{Binding FieldInfoText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="MINIMISE" Classes="h3" />
-                <TextBlock Text="Method" Classes="dim" />
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Minimisers}" SelectedIndex="{Binding RelaxMethod}" HorizontalAlignment="Stretch" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="|F|max tolerance (kcal/mol/Å)" Classes="dim" TextWrapping="Wrap" />
-                  <TextBlock Grid.Column="1" Text="Iterations" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxFtolD}" Minimum="0.001" Maximum="100" Increment="0.1" FormatString="0.###" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxIterationsD}" Minimum="10" Maximum="1000000" Increment="1000" FormatString="0" />
-                </Grid>
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="PUSH-OFF &amp; CELL" Classes="h3" />
-                <CheckBox Content="Soft push-off before minimising" IsChecked="{Binding RelaxPushoff}" />
-                <TextBlock Classes="dim" TextWrapping="Wrap" Text="LJ forces capped at 5, 20, 100, 500 kcal/mol/Å, stage by stage (Auhl et al., J. Chem. Phys. 2003)." />
-                <CheckBox Content="Compress to a density" IsChecked="{Binding RelaxCompress}" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RelaxCompress}">
-                  <TextBlock Text="Density (g/cm³)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Step per stage" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxDensityD}" Minimum="0.05" Maximum="3" Increment="0.05" FormatString="0.000" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxStepD}" Minimum="0.005" Maximum="0.5" Increment="0.01" FormatString="0.000" />
-                </Grid>
-                <CheckBox Content="Relax box volume (isotropic)" IsChecked="{Binding RelaxBox}" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Pressure (atm)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Cut-off (Å)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxPressureD}" Minimum="-100000" Maximum="100000" Increment="100" FormatString="0" IsEnabled="{Binding RelaxBox}" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxCutoffD}" Minimum="4" Maximum="30" Increment="1" FormatString="0.0" />
-                </Grid>
-                <CheckBox Content="Electrostatics (damped shifted force)" IsChecked="{Binding RelaxCoulomb}" />
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding !Field.Assigned}"
-                           Text="Without a Field assignment: GAFF 1.81 for C and H with Gasteiger charges; forces match LAMMPS lj/cut/coul/dsf with special_bonds amber. Box relaxation is 0 K mechanical equilibrium; the density at a temperature needs Dynamics." />
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding Field.Assigned}"
-                           Text="Uses the force field assigned in Field (its styles, charges and 1-4 scaling). Box relaxation is 0 K mechanical equilibrium; the density at a temperature needs Dynamics." />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Classes="primary" Content="Relax" Click="OnRelax" IsEnabled="{Binding CanRelax}" />
-                  <Button Content="Cancel" Click="OnRelaxCancel" IsEnabled="{Binding Relaxing}" />
-                </StackPanel>
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
-                  <TextBlock Text="{Binding RelaxLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section" IsVisible="{Binding HasDocument}">
-              <StackPanel Spacing="8">
-                <TextBlock Text="SAVE" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
-                  <Button Content="LAMMPS data…" Click="OnSaveData" ToolTip.Tip="LAMMPS full; carries the Field force field when one is assigned and complete, else GAFF when every atom is C or H" />
-                  <Button Content="PDB…" Click="OnSavePdb" />
-                  <Button Content="XYZ…" Click="OnSaveXyz" />
-                </StackPanel>
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding GrownUnsaved}" Text="This cell is not saved yet." />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
           <!-- Dynamics -->
           <StackPanel IsVisible="{Binding IsDynamics}">
             <Border Classes="section">
@@ -929,60 +869,6 @@
             </Border>
           </StackPanel>
 
-          <!-- Pack -->
-          <StackPanel IsVisible="{Binding IsPack}">
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="CELL" Classes="h3" />
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="x (Å)" Classes="dim" /><TextBlock Grid.Column="1" Text="y (Å)" Classes="dim" /><TextBlock Grid.Column="2" Text="z (Å)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding PackXD}" Minimum="5" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PackYD}" Minimum="5" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding PackZD}" Minimum="5" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
-                </Grid>
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Tolerance (Å)" Classes="dim" /><TextBlock Grid.Column="1" Text="Seed" Classes="dim" /><TextBlock Grid.Column="2" Text="Number" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding PackTolD}" Minimum="0.5" Maximum="10" Increment="0.1" FormatString="0.0#" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PackSeedD}" Minimum="0" Maximum="999999" Increment="1" FormatString="0" ShowButtonSpinner="False" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding PackCountD}" Minimum="1" Maximum="10000000" Increment="10" FormatString="0" ShowButtonSpinner="False" />
-                </Grid>
-                <CheckBox Content="Periodic cell (minimum image)" IsChecked="{Binding PackPeriodic}" />
-                <WrapPanel>
-                  <Button Content="New input" Click="OnPackNew" Margin="0,0,6,6" />
-                  <Button Content="Add structure…" Click="OnPackAdd" Margin="0,0,6,6" ToolTip.Tip="Adds a structure block with the number above, inside the whole cell" />
-                  <Button Content="Open packmol input…" Click="OnPackOpen" Margin="0,0,6,6" />
-                  <Button Content="Example: water" Click="OnPackExample" Margin="0,0,6,6" IsVisible="{Binding $parent[local:MainWindow].HasSamples}" />
-                </WrapPanel>
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="MOLECULES &amp; REGIONS" Classes="h3" />
-                <TextBox Text="{Binding PackText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo" FontSize="10.5" Height="220" />
-                <TextBlock Text="{Binding PackBaseNote}" Classes="dim" TextWrapping="Wrap" />
-                <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Regions: inside / outside box, cube, sphere, cylinder; over / below plane; fixed x y z a b g with center. Objective after Martínez et al., J. Comput. Chem. 30, 2157 (2009); rigid bodies, L-BFGS." />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Classes="primary" Content="Pack" Click="OnPackRun" IsEnabled="{Binding Idle}" />
-                  <Button Content="Cancel" Click="OnPackCancel" IsEnabled="{Binding Packing}" />
-                </StackPanel>
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
-                  <TextBlock Text="{Binding PackLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section" IsVisible="{Binding HasDocument}">
-              <StackPanel Spacing="8">
-                <TextBlock Text="SAVE" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
-                  <Button Content="LAMMPS data…" Click="OnSaveData" />
-                  <Button Content="PDB…" Click="OnSavePdb" />
-                  <Button Content="XYZ…" Click="OnSaveXyz" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
           <!-- React -->
           <StackPanel IsVisible="{Binding IsReact}">
             <Border Classes="section">
@@ -1055,6 +941,12 @@
       </Border>
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
+      <!-- Relax (design/boards/Relax.dc.html) -->
+      <pages:RelaxPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsRelax}" />
+
+      <!-- Pack (design/boards/Pack.dc.html) -->
+      <pages:PackPage x:Name="PackPageView" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsPack}" />
+
       <!-- Grow (design/boards/Grow.dc.html) -->
       <pages:GrowPage x:Name="GrowPageView" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsGrow}" />
 
