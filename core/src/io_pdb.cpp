@@ -1,4 +1,5 @@
 // PDB reader (ATOM/HETATM, CRYST1, CONECT, MODEL/ENDMDL) and writer. Fixed columns per the wwPDB v3.3 format.
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <fstream>

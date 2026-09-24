@@ -1,0 +1,195 @@
+<!-- CAPS Grow (design/boards/Grow.dc.html): components, cell and growth method on the left; the live cell on the right. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.GrowPage" x:DataType="vm:MainViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="22,16,22,16" RowSpacing="16">
+    <!-- header -->
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="3">
+        <TextBlock Text="Amorphous cell · CAPS Grow" Classes="title" />
+        <TextBlock Text="Grow chains into a periodic cell, then hand off to Pack, Relax and Equilibrate" Classes="muted" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button IsEnabled="False" ToolTip.Tip="Recipes arrive with the command layer" ToolTip.ShowOnDisabled="True">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save recipe" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnSave" IsVisible="{Binding GrownUnsaved}" ToolTip.Tip="Save the grown cell (LAMMPS data, PDB or XYZ)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save cell…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCopyCommand" ToolTip.Tip="{Binding GrowCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Classes="primary" Click="OnGrow" IsVisible="{Binding NotGrowing}" IsEnabled="{Binding Idle}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Grow cell" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnCancel" IsVisible="{Binding Growing}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="16" VerticalAlignment="Center" /><TextBlock Text="Cancel" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
+      <ScrollViewer>
+        <StackPanel Spacing="16" IsEnabled="{Binding NotGrowing}">
+          <!-- Components -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="Monodisperse" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="Components" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,12" Spacing="10">
+                <Grid ColumnDefinitions="*,86,86,110,80" ColumnSpacing="8">
+                  <TextBlock Text="COMPONENT" Classes="h3" /><TextBlock Grid.Column="1" Text="CHAINS" Classes="h3" HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="2" Text="DP" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="DISPERSITY" Classes="h3" />
+                  <TextBlock Grid.Column="4" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
+                </Grid>
+                <Grid ColumnDefinitions="*,86,86,110,80" ColumnSpacing="8">
+                  <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Fill="{DynamicResource AccB}" VerticalAlignment="Center" />
+                    <TextBlock VerticalAlignment="Center"><Run Text="PS " /><Run Text="{Binding GrowTacticityName}" /></TextBlock>
+                  </StackPanel>
+                  <NumericUpDown Grid.Column="1" Value="{Binding GrowChainsD}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" TextAlignment="Right" />
+                  <NumericUpDown Grid.Column="2" Value="{Binding GrowDpD}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" TextAlignment="Right" />
+                  <TextBlock Grid.Column="3" Text="Đ 1.00" Classes="mono" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Grid.Column="4" Text="{Binding GrowAtomsText}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                  <Button Classes="small" IsEnabled="False" ToolTip.Tip="Other monomers arrive with the polymer builder" ToolTip.ShowOnDisabled="True">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add polymer" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button Classes="small" IsEnabled="False" ToolTip.Tip="Solvents and gases: use Pack for now" ToolTip.ShowOnDisabled="True">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add solvent / gas" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Cell -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Cell" Classes="h2" VerticalAlignment="Center" /></Border>
+              <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Size from" Classes="label" />
+                <TextBlock Grid.Column="1" Text="{Binding GrowSizeLabel}" Classes="label" />
+                <TextBlock Grid.Column="2" Text="Shape" Classes="label" />
+                <Border Grid.Row="1" Classes="seg">
+                  <UniformGrid Columns="2">
+                    <RadioButton Classes="seg" GroupName="gsize" Content="Density" IsChecked="{Binding GrowUseDensity}" Click="OnDensityMode" />
+                    <RadioButton Classes="seg" GroupName="gsize" Content="Box" IsChecked="{Binding GrowUseBox}" />
+                  </UniformGrid>
+                </Border>
+                <Panel Grid.Row="1" Grid.Column="1">
+                  <NumericUpDown Value="{Binding GrowDensityD}" Minimum="0.01" Maximum="2" Increment="0.05" FormatString="0.000" IsVisible="{Binding GrowUseDensity}" />
+                  <NumericUpDown Value="{Binding GrowBoxD}" Minimum="5" Maximum="500" Increment="1" FormatString="0.00" IsVisible="{Binding GrowUseBox}" />
+                </Panel>
+                <ComboBox Grid.Row="1" Grid.Column="2" SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False" ToolTip.Tip="Slabs and cylinders: coming" ToolTip.ShowOnDisabled="True">
+                  <ComboBoxItem Content="Cubic, periodic" />
+                </ComboBox>
+                <TextBlock Grid.Row="2" Text="Tacticity" Classes="label" Margin="0,8,0,0" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="Seed" Classes="label" Margin="0,8,0,0" />
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="Contact scale" Classes="label" Margin="0,8,0,0" />
+                <ComboBox Grid.Row="3" ItemsSource="{x:Static vm:MainViewModel.Tacticities}" SelectedIndex="{Binding GrowTacticity}" HorizontalAlignment="Stretch" />
+                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding GrowSeedD}" Minimum="0" Increment="1" FormatString="0" />
+                <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding GrowScaleD}" Minimum="0.5" Maximum="1.2" Increment="0.05" FormatString="0.00"
+                               ToolTip.Tip="Contacts closer than this fraction of the van der Waals sum are rejected; below 1 needs a push-off in Relax" />
+                <TextBlock Grid.Row="4" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- Growth method -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Growth method" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="8">
+                <Border Classes="choice on">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Border Classes="radio on" VerticalAlignment="Center"><Ellipse /></Border>
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="Self-avoiding growth, exact geometry" FontWeight="SemiBold" />
+                      <TextBlock Text="All chains grown together, periodic contact checks against every placed atom, back-tracking and restarts" Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+                <Border Classes="choice" IsEnabled="False" ToolTip.Tip="Coming" ToolTip.ShowOnDisabled="True">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Border Classes="radio" VerticalAlignment="Center"><Ellipse /></Border>
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="Theodorou–Suter + RIS" FontWeight="SemiBold" />
+                      <TextBlock Text="Rosenbluth-weighted, soft-sphere excluded volume · Macromolecules 1985 · coming" Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+                <Border Classes="choice" IsEnabled="False" ToolTip.Tip="Coming" ToolTip.ShowOnDisabled="True">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Border Classes="radio" VerticalAlignment="Center"><Ellipse /></Border>
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="Configurational-bias, real force field" FontWeight="SemiBold" />
+                      <TextBlock Text="Siepmann &amp; Frenkel 1992 · trial energies from CAPS Field · coming" Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+                <CheckBox Classes="toggle" Content="Curved start (gauche-rich first bonds)" IsChecked="{Binding GrowCurve}" Margin="0,4,0,0" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Report" Classes="h2" VerticalAlignment="Center" /></Border>
+              <TextBlock Margin="16,12,16,16" Text="{Binding GrowLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Live cell -->
+      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto" RowSpacing="12">
+        <Border Classes="card" ClipToBounds="True">
+          <Grid RowDefinitions="38,*">
+            <Border Classes="phead">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                  <Border Classes="chip" IsVisible="{Binding Growing}">
+                    <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="growing" Foreground="{DynamicResource AccB}" /></StackPanel>
+                  </Border>
+                  <Border Classes="seg">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="seg" GroupName="gdisp" Content="All atoms" Tag="0" Click="OnDisplay" IsChecked="True" />
+                      <RadioButton Classes="seg" GroupName="gdisp" Content="No H" Tag="3" Click="OnDisplay" />
+                      <RadioButton Classes="seg" GroupName="gdisp" Content="Backbone" Tag="4" Click="OnDisplay" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+                <TextBlock Text="Live cell" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <Decorator Grid.Row="1" x:Name="ViewSlot" />
+          </Grid>
+        </Border>
+        <UniformGrid Grid.Row="1" Columns="3">
+          <Border Classes="card" Margin="0,0,6,6" Padding="14,10">
+            <StackPanel Spacing="3"><TextBlock Text="Chains grown" Classes="label" /><TextBlock Text="{Binding GrowDoneText}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="6,0,6,6" Padding="14,10">
+            <StackPanel Spacing="3"><TextBlock Text="Restarts" Classes="label" /><TextBlock Text="{Binding GrowRestarts}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="6,0,0,6" Padding="14,10">
+            <StackPanel Spacing="3"><TextBlock Text="Elapsed" Classes="label" /><TextBlock Text="{Binding GrowElapsedText}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+        </UniformGrid>
+        <StackPanel Grid.Row="2" Spacing="6">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="{Binding GrowDoneText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+            <TextBlock Text="Overall" Classes="label" />
+          </DockPanel>
+          <ProgressBar Value="{Binding GrowProgress}" Minimum="0" Maximum="1" Height="6" />
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Grid>
+</p:PageBase>

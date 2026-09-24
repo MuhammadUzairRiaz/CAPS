@@ -1,4 +1,5 @@
 // caps — command-line front end over the same core the Studio uses.
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>

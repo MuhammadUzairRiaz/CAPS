@@ -350,6 +350,23 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(CanReact));
     }
     public string GrowLog { get => _growLog; private set => Set(ref _growLog, value); }
+    // live statistics (Grow board: chains grown, restarts, elapsed, overall progress)
+    private int _growDone, _growRestarts;
+    private double _growElapsed;
+    public int GrowDone { get => _growDone; private set { if (Set(ref _growDone, value)) { Raise(nameof(GrowProgress)); Raise(nameof(GrowDoneText)); } } }
+    public int GrowRestarts { get => _growRestarts; private set => Set(ref _growRestarts, value); }
+    public double GrowElapsed { get => _growElapsed; private set { if (Set(ref _growElapsed, value)) Raise(nameof(GrowElapsedText)); } }
+    public double GrowProgress => _growChains > 0 ? (double)_growDone / _growChains : 0;
+    public string GrowDoneText => $"{_growDone} / {_growChains}";
+    public string GrowElapsedText => string.Format(CultureInfo.InvariantCulture, "{0:F1} s", _growElapsed);
+    public string GrowTacticityName => Tacticities[Math.Clamp(_growTact, 0, 2)].ToLowerInvariant();
+    public string GrowSizeLabel => _growUseBox ? "Box edge (Å)" : "Target density (g/cm³)";
+    public string GrowAtomsText => (_growChains * (16L * _growDp + 2)).ToString("N0", CultureInfo.InvariantCulture);
+    /// <summary>The same build from the command line.</summary>
+    public string GrowCommand => string.Format(CultureInfo.InvariantCulture,
+        "caps grow -o PS_{0}x{1}.data --chains {0} --dp {1} {2} --tacticity {3} --seed {4} --scale {5}{6}",
+        _growChains, _growDp, _growUseBox ? $"--box {_growBox}" : $"--density {_growDensity}", Tacticities[_growTact].ToLowerInvariant(), _growSeed, _growScale,
+        _growCurve ? "" : " --trans");
     public bool GrownUnsaved { get => _grownUnsaved; private set => Set(ref _grownUnsaved, value); }
 
     // decimal views for NumericUpDown
@@ -375,7 +392,16 @@ public sealed class MainViewModel : ObservableObject
 
     protected override void OnChanged(string? name)
     {
-        if (name != null && name.StartsWith("Grow") && name != nameof(GrowEstimate) && name != nameof(GrowLog)) Raise(nameof(GrowEstimate));
+        if (name != null && name.StartsWith("Grow") && name != nameof(GrowEstimate) && name != nameof(GrowLog) && name != nameof(GrowCommand) && name != nameof(GrowAtomsText)
+            && name != nameof(GrowDoneText) && name != nameof(GrowProgress))
+        {
+            Raise(nameof(GrowEstimate));
+            Raise(nameof(GrowCommand));
+            Raise(nameof(GrowAtomsText));
+            Raise(nameof(GrowDoneText));
+            Raise(nameof(GrowTacticityName));
+            Raise(nameof(GrowSizeLabel));
+        }
     }
 
     public async Task Grow()
@@ -391,6 +417,9 @@ public sealed class MainViewModel : ObservableObject
         };
         var label = $"PS_{_growChains}x{_growDp}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
         GrowLog = "Growing…";
+        GrowDone = 0;
+        GrowRestarts = 0;
+        GrowElapsed = 0;
         Status = $"Growing {_growChains} chains of polystyrene, DP {_growDp}…";
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
@@ -413,7 +442,12 @@ public sealed class MainViewModel : ObservableObject
                         {
                             lastUi = sw.ElapsedMilliseconds;
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                                GrowLog = $"Growing (seed {s0})… {d} of {t} chains finished · {r} restarts · {sw.Elapsed.TotalSeconds:F1} s");
+                            {
+                                GrowLog = $"Growing (seed {s0})… {d} of {t} chains finished · {r} restarts · {sw.Elapsed.TotalSeconds:F1} s";
+                                GrowDone = d;
+                                GrowRestarts = r;
+                                GrowElapsed = sw.Elapsed.TotalSeconds;
+                            });
                         }
                         return !token.IsCancellationRequested;
                     }, label.Replace($"seed{_growSeed}", $"seed{s0}")));
@@ -430,6 +464,8 @@ public sealed class MainViewModel : ObservableObject
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
             GrownUnsaved = true;
+            GrowDone = _growChains;
+            GrowElapsed = sw.Elapsed.TotalSeconds;
             GrowLog = (failures.Count > 0 ? string.Join("\n", failures) + $"\nused seed {used} instead\n" : "") + report + $"\nbuilt in {sw.Elapsed.TotalSeconds:F2} s";
             Status = $"Grown {name} · save it as LAMMPS data, PDB or XYZ";
         }

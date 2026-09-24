@@ -128,7 +128,7 @@ std::vector<std::pair<double, double>> rdf(const System& s, int ea, int eb, doub
           if (j == i || !inB[j]) continue;
           if (inter_only && mol[i] == mol[j]) continue;
           const double r = norm(g.sep(i, j));
-          if (r < rmax) h[static_cast<int>(r / dr)] += 1;
+          if (r < rmax) { const int k = static_cast<int>(r / dr); if (k < nb) h[k] += 1; }   // rmax / dr rounds down
         }
       });
     }
@@ -138,7 +138,7 @@ std::vector<std::pair<double, double>> rdf(const System& s, int ea, int eb, doub
         if (i == j) continue;
         if (inter_only && mol[i] == mol[j]) continue;
         const double r = norm(s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos));
-        if (r < rmax) h[static_cast<int>(r / dr)] += 1;
+        if (r < rmax) { const int k = static_cast<int>(r / dr); if (k < nb) h[k] += 1; }   // rmax / dr rounds down
       }
   }
   const double rho = s.cell.valid() ? B.size() / s.cell.volume() : 0;

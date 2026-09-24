@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:CapsStudio.ViewModels"
         xmlns:local="using:CapsStudio.Views"
+        xmlns:pages="using:CapsStudio.Views.Pages"
         x:Class="CapsStudio.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="CAPS Studio"
@@ -644,10 +645,10 @@
                         </UniformGrid>
                       </Border>
                     </StackPanel>
-                    <ToggleSwitch Content="Outlines" IsChecked="{Binding Outlines}" OnContent="" OffContent="" />
-                    <ToggleSwitch Content="Depth cue" IsChecked="{Binding DepthCue}" OnContent="" OffContent="" />
-                    <ToggleSwitch Content="Cell edges" IsChecked="{Binding ShowCell}" OnContent="" OffContent="" />
-                    <ToggleSwitch Content="Wrap atoms into the cell" IsChecked="{Binding Wrap}" OnContent="" OffContent="" />
+                    <CheckBox Classes="toggle" Content="Outlines" IsChecked="{Binding Outlines}" />
+                    <CheckBox Classes="toggle" Content="Depth cue" IsChecked="{Binding DepthCue}" />
+                    <CheckBox Classes="toggle" Content="Cell edges" IsChecked="{Binding ShowCell}" />
+                    <CheckBox Classes="toggle" Content="Wrap atoms into the cell" IsChecked="{Binding Wrap}" />
                   </StackPanel>
                 </Border>
                 <Border Classes="section">
@@ -679,6 +680,14 @@
                 <Border Classes="section">
                   <StackPanel Spacing="6">
                     <TextBlock Text="FILE" Classes="h3" />
+                    <WrapPanel IsEnabled="{Binding Idle}" Margin="0,2,0,6">
+                      <Button Classes="small" Margin="0,0,6,6" Click="OnSaveData" ToolTip.Tip="LAMMPS data with the force field when every atom is typed (⌘S)">
+                        <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="LAMMPS data…" VerticalAlignment="Center" /></StackPanel>
+                      </Button>
+                      <Button Classes="small" Margin="0,0,6,6" Content="PDB…" Click="OnSavePdb" />
+                      <Button Classes="small" Margin="0,0,6,6" Content="XYZ…" Click="OnSaveXyz" />
+                      <Button Classes="small" Margin="0,0,6,6" Content="Trajectory…" Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" />
+                    </WrapPanel>
                     <ItemsControl ItemsSource="{Binding SummaryRows}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:Row">
@@ -697,74 +706,6 @@
         </TabControl>
         <ScrollViewer IsVisible="{Binding !IsStudio}">
           <StackPanel>
-          <!-- Grow -->
-          <StackPanel IsVisible="{Binding IsGrow}">
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="POLYMER" Classes="h3" />
-                <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False">
-                  <ComboBoxItem Content="Polystyrene (C8H8)n, all-atom" />
-                </ComboBox>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Chains" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Units per chain (DP)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding GrowChainsD}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowDpD}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" />
-                </Grid>
-                <TextBlock Text="Tacticity" Classes="dim" />
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.Tacticities}" SelectedIndex="{Binding GrowTacticity}" HorizontalAlignment="Stretch" />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="CELL" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="14">
-                  <RadioButton Content="Target density" IsChecked="{Binding GrowUseDensity, Mode=OneWay}" GroupName="cell" Click="OnGrowDensityMode" />
-                  <RadioButton Content="Box edge" IsChecked="{Binding GrowUseBox}" GroupName="cell" />
-                </StackPanel>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Density (g/cm³)" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Box edge (Å)" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding GrowDensityD}" Minimum="0.01" Maximum="2" Increment="0.05" FormatString="0.000" IsEnabled="{Binding GrowUseDensity}" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowBoxD}" Minimum="0" Maximum="1000" Increment="1" FormatString="0.00" IsEnabled="{Binding GrowUseBox}" />
-                </Grid>
-                <TextBlock Text="{Binding GrowEstimate}" Classes="dim" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-            <Border Classes="section">
-              <StackPanel Spacing="8">
-                <TextBlock Text="GROWTH" Classes="h3" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Contact scale" Classes="dim" />
-                  <TextBlock Grid.Column="1" Text="Seed" Classes="dim" />
-                  <NumericUpDown Grid.Row="1" Value="{Binding GrowScaleD}" Minimum="0.5" Maximum="1.2" Increment="0.05" FormatString="0.00" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowSeedD}" Minimum="0" Maximum="999999" Increment="1" FormatString="0" />
-                </Grid>
-                <CheckBox Content="Allow gauche torsions (±60°)" IsChecked="{Binding GrowCurve}" />
-                <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Contact limits C–C 3.0, C–H 2.45, H–H 2.0 Å, periodic. Full limits reach about 0.4–0.5 g/cm³; a lower contact scale reaches more, and then needs minimisation before dynamics." />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Classes="primary" Content="Build cell" Click="OnGrowBuild" IsEnabled="{Binding Idle}" />
-                  <Button Content="Cancel" Click="OnGrowCancel" IsEnabled="{Binding Growing}" />
-                </StackPanel>
-                <Border Background="{DynamicResource Bg2B}" CornerRadius="6" Padding="10,8">
-                  <TextBlock Text="{Binding GrowLog}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-            <Border Classes="section" IsVisible="{Binding HasDocument}">
-              <StackPanel Spacing="8">
-                <TextBlock Text="SAVE" Classes="h3" />
-                <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Idle}">
-                  <Button Content="LAMMPS data…" Click="OnSaveData" ToolTip.Tip="LAMMPS full; carries the Field force field when one is assigned and complete, else GAFF when every atom is C or H" />
-                  <Button Content="PDB…" Click="OnSavePdb" />
-                  <Button Content="XYZ…" Click="OnSaveXyz" />
-                </StackPanel>
-                <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding GrownUnsaved}" Text="This cell is not saved yet." />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
           <!-- Relax -->
           <StackPanel IsVisible="{Binding IsRelax}">
             <Border Classes="section">
@@ -1114,6 +1055,9 @@
       </Border>
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
+      <!-- Grow (design/boards/Grow.dc.html) -->
+      <pages:GrowPage x:Name="GrowPageView" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsGrow}" />
+
       <!-- Analyze › Properties: calculations over the frames, results compared with experiment -->
       <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsAnalyze}">
         <Border.Styles>
