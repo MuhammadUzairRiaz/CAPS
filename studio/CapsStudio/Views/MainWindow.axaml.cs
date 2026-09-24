@@ -41,6 +41,7 @@ public partial class MainWindow : Window
     public MainViewModel ViewModel => _vm;
     public void SelectAnalysisTab(int k) => AnalysisTabs.SelectedIndex = k;
     public ICommand OpenCommand { get; }
+    public ICommand SaveCommand { get; }
     public bool HasSamples => _samples != null;
 
     public MainWindow()
@@ -52,6 +53,9 @@ public partial class MainWindow : Window
         _vm.LoadReactionSet();
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta), Command = OpenCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control), Command = OpenCommand });
+        SaveCommand = new RelayCommand(() => _vm.HasDocument && _vm.Idle ? SaveAs("data", "LAMMPS data") : Task.CompletedTask);
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
         _vm.PropertyChanged += (_, e) =>
         {
@@ -94,6 +98,9 @@ public partial class MainWindow : Window
             }
             if (e.PropertyName == nameof(MainViewModel.Busy) && !_vm.Busy) RequestRender();
         };
+        // one 3D view: it moves into the page that shows a live view (Grow's live cell), and back to the Studio
+        _viewHome = (Panel)ViewHost.Parent!;
+        _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Module)) PlaceViewport(); };
         _vm.Analyze.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AnalyzeViewModel.Curve)) ShowCurve(_vm.Analyze.Curve); };
         _vm.ThermoChanged += () =>
         {
@@ -212,6 +219,23 @@ public partial class MainWindow : Window
     private void OnModuleReact(object? s, RoutedEventArgs e) => _vm.SetModule(6);
     private void OnModuleField(object? s, RoutedEventArgs e) => _vm.SetModule(7);
     private void OnModuleStudio(object? s, RoutedEventArgs e) => _vm.SetModule(8);
+
+    private readonly Panel _viewHome;
+    private void PlaceViewport()
+    {
+        Decorator? slot = _vm.IsGrow ? GrowPageView.Slot : null;
+        if (slot != null && ViewHost.Parent != slot)
+        {
+            _viewHome.Children.Remove(ViewHost);
+            slot.Child = ViewHost;
+        }
+        else if (slot == null && ViewHost.Parent is Decorator d)
+        {
+            d.Child = null;
+            _viewHome.Children.Add(ViewHost);
+        }
+        RequestRender();
+    }
     // Studio toolbar
     private void OnToolSelect(object? s, RoutedEventArgs e) => _vm.MeasureTool = false;
     private void OnViewBgDark(object? s, RoutedEventArgs e) => _vm.ViewBackground = 0;
@@ -355,6 +379,9 @@ public partial class MainWindow : Window
     private async void OnSaveData(object? s, RoutedEventArgs e) => await SaveAs("data", "LAMMPS data");
     private async void OnSavePdb(object? s, RoutedEventArgs e) => await SaveAs("pdb", "PDB");
     private async void OnSaveXyz(object? s, RoutedEventArgs e) => await SaveAs("xyz", "Extended XYZ");
+
+    /// <summary>Save dialog for the open document (pages call this).</summary>
+    public Task SaveAsAsync(string ext, string label) => SaveAs(ext, label);
 
     private async Task SaveAs(string ext, string label)
     {

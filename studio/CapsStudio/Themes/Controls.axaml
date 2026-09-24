@@ -370,6 +370,54 @@
   </Style>
   <Style Selector="Rectangle.vsep"><Setter Property="Width" Value="1" /><Setter Property="Height" Value="24" /><Setter Property="Fill" Value="{DynamicResource LineB}" /><Setter Property="Margin" Value="6,0" /></Style>
 
+  <!-- toggle (lib.py toggle): label on the left, a 30 × 18 switch on the right, amber when on -->
+  <Style Selector="CheckBox.toggle">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Background="Transparent" MinHeight="24">
+          <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" Foreground="{DynamicResource TextB}" />
+          <Border Name="track" Grid.Column="1" Width="30" Height="18" CornerRadius="9" Background="{DynamicResource Bg3B}" VerticalAlignment="Center">
+            <Border Name="knob" Width="14" Height="14" CornerRadius="7" Background="{DynamicResource MutedB}" HorizontalAlignment="Left" Margin="2,0" />
+          </Border>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.toggle:checked /template/ Border#track"><Setter Property="Background" Value="{DynamicResource AccB}" /></Style>
+  <Style Selector="CheckBox.toggle:checked /template/ Border#knob">
+    <Setter Property="Background" Value="{DynamicResource AccInkB}" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+  </Style>
+  <Style Selector="CheckBox.toggle:disabled"><Setter Property="Opacity" Value="0.5" /></Style>
+  <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+
+  <!-- option cards (radio cards on the boards): raised when chosen, amber outline -->
+  <Style Selector="Border.choice">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+  <Style Selector="Border.choice.on">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+  </Style>
+  <Style Selector="Border.choice:disabled"><Setter Property="Opacity" Value="0.5" /></Style>
+  <Style Selector="Border.radio">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DimB}" />
+  </Style>
+  <Style Selector="Border.radio Ellipse"><Setter Property="Width" Value="8" /><Setter Property="Height" Value="8" /><Setter Property="Fill" Value="Transparent" /></Style>
+  <Style Selector="Border.radio.on"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+  <Style Selector="Border.radio.on Ellipse"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
+
   <!-- tabs: 38 px, underline in amber -->
   <Style Selector="TabItem">
     <Setter Property="FontSize" Value="12.5" />

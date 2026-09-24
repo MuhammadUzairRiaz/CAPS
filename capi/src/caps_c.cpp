@@ -1,5 +1,6 @@
 #include "caps_c.h"
 
+#include <cstdio>
 #include <algorithm>
 #include <cstring>
 #include <fstream>

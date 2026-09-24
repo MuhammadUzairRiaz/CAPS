@@ -1,4 +1,5 @@
 // Mechanics results as Analyze properties.
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <limits>
