@@ -1,0 +1,187 @@
+<!-- CAPS Polymer builder (design/boards/PolymerBuilder.dc.html): library, repeat units, sequence, stereo; one chain previewed. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.PolymerPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="ListBox#Library ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="MinHeight" Value="0" /><Setter Property="CornerRadius" Value="6" /></Style>
+    <Style Selector="ListBox#Library ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+    <Style Selector="ListBox#Library ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+    <Style Selector="Border.unit"><Setter Property="Background" Value="{DynamicResource Bg2B}" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="12,10" /></Style>
+  </p:PageBase.Styles>
+
+  <Grid ColumnDefinitions="300,*,420">
+    <!-- library -->
+    <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <StackPanel Spacing="10">
+            <DockPanel>
+              <ToggleButton DockPanel.Dock="Right" Classes="chip" Content="Rubbers" IsChecked="{Binding LibraryRubberOnly}" />
+              <TextBlock Text="Library" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBox Text="{Binding LibraryQuery}" Watermark="Search name or SMILES" />
+            <TextBlock Text="{Binding LibraryCount}" Classes="dim" />
+          </StackPanel>
+        </Border>
+        <ListBox x:Name="Library" ItemsSource="{Binding LibraryShown}" Background="Transparent" Padding="8" DoubleTapped="OnLibraryUse">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:LibraryEntry">
+              <StackPanel Margin="10,7" Spacing="2" ToolTip.Tip="Double-click: use it (a repeat unit goes into the chosen slot)">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip" Height="18" IsVisible="{Binding HasKind}"><TextBlock Text="{Binding Kind}" FontSize="10.5" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <TextBlock Text="{Binding Smiles}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- preview -->
+    <Grid Grid.Column="1" RowDefinitions="*,Auto">
+      <Panel>
+        <v:MolView x:Name="Preview" />
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Top">
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="Preview · one chain" FontSize="12" /></Border>
+          <Border Classes="hud" Padding="10,4" IsVisible="{Binding PolyBuilding}"><TextBlock Text="building…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
+        </StackPanel>
+        <Button Classes="small" Margin="14" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnPreview" IsEnabled="{Binding !PolyHasError}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="rotate" Size="13" VerticalAlignment="Center" /><TextBlock Text="Build preview" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </Panel>
+      <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,12" Background="{DynamicResource Bg1B}">
+        <StackPanel Spacing="8">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="{Binding PolyPreview}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+            <TextBlock Text="Sequence" Classes="h3" VerticalAlignment="Center" />
+          </DockPanel>
+          <v:SequenceStrip x:Name="Strip" Height="26" />
+          <TextBlock Text="{Binding PolyError}" Classes="err" FontSize="12" IsVisible="{Binding PolyHasError}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- inspector -->
+    <Border Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <TextBlock Text="Polymer builder" Classes="h2" VerticalAlignment="Center" />
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <Button Click="OnBuildOne" IsEnabled="{Binding !PolyHasError}" HorizontalAlignment="Stretch" ToolTip.Tip="One chain, opened as the Studio document">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build in document" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Grid.Column="1" Classes="primary" Click="OnSendGrow" IsEnabled="{Binding !PolyHasError}" HorizontalAlignment="Stretch" ToolTip.Tip="Grow a periodic cell of these chains">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="15" VerticalAlignment="Center" /><TextBlock Text="Send to CAPS Grow" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small" Click="OnAddUnit" IsEnabled="{Binding PolyCanAdd}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Unit" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <TextBlock Text="REPEAT UNITS" Classes="h3" VerticalAlignment="Center" />
+                </DockPanel>
+                <ItemsControl x:Name="Units" ItemsSource="{Binding PolyUnits}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PolyUnit">
+                      <Border Classes="unit" PointerPressed="OnUnitPressed" Tag="{Binding}">
+                        <StackPanel Spacing="6">
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <Border Width="22" Height="22" CornerRadius="5" Background="{DynamicResource AccB}">
+                              <TextBlock Text="{Binding Letter}" Foreground="{DynamicResource AccInkB}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBox Grid.Column="1" Text="{Binding Name}" Classes="bare" FontSize="13" FontWeight="Medium" Watermark="name" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnRemoveUnit" Tag="{Binding}" ToolTip.Tip="Remove this unit">
+                              <v:Icon Kind="close" Size="13" />
+                            </Button>
+                          </Grid>
+                          <TextBox Text="{Binding Smiles}" Classes="mono" FontSize="12" Watermark="*CC(*)c1ccccc1 — head first" />
+                          <TextBlock Text="{Binding Info}" Classes="dim" />
+                          <TextBlock Text="{Binding Error}" Classes="err" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding HasError}" />
+                          <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).PolyShowWeights}">
+                            <TextBlock Text="Share" Classes="label" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Column="1" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="0.05" FormatString="0.###" />
+                          </Grid>
+                          <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).PolyShowBlocks}">
+                            <TextBlock Text="Block length" Classes="label" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Column="1" Value="{Binding Block}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" />
+                          </Grid>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Attachment points: the first * is the head, the second the tail; chains end in hydrogen." />
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="ARCHITECTURE" Classes="h3" />
+                <WrapPanel>
+                  <ToggleButton Classes="chip" Content="Linear" IsChecked="True" IsEnabled="False" Margin="0,0,6,6" />
+                  <ToggleButton Classes="chip" Content="Branched" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Not in this version" ToolTip.ShowOnDisabled="True" />
+                  <ToggleButton Classes="chip" Content="Star" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Not in this version" ToolTip.ShowOnDisabled="True" />
+                  <ToggleButton Classes="chip" Content="Comb" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Not in this version" ToolTip.ShowOnDisabled="True" />
+                  <ToggleButton Classes="chip" Content="Network" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Crosslink a grown cell in React" ToolTip.ShowOnDisabled="True" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="SEQUENCE" Classes="h3" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.SequenceKinds}" SelectedIndex="{Binding PolySequence}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding PolyShowPattern}">
+                  <TextBlock Text="Pattern" Classes="label" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1" Text="{Binding PolyPattern}" Classes="mono" Watermark="AAB" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Degree of polymerisation" Classes="label" />
+                    <NumericUpDown Value="{Binding GrowDpD}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Name" Classes="label" />
+                    <TextBox Text="{Binding PolyName}" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="STEREO &amp; LINKAGE" Classes="h3" />
+                <Border Classes="seg" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal">
+                    <RadioButton Classes="seg" Content="Atactic" GroupName="tac" IsChecked="{Binding GrowTacticity, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                    <RadioButton Classes="seg" Content="Isotactic" GroupName="tac" IsChecked="{Binding GrowTacticity, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                    <RadioButton Classes="seg" Content="Syndiotactic" GroupName="tac" IsChecked="{Binding GrowTacticity, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                  </StackPanel>
+                </Border>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Linkage" Classes="label" />
+                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Head-to-tail" /></ComboBox>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Caps" Classes="label" />
+                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="H / H" /></ComboBox>
+                  </StackPanel>
+                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Tacticity mirrors whole units: a meso dyad repeats the previous unit's configuration, a racemo dyad mirrors it. cis/trans double bonds come from the unit's SMILES (C/C=C\C is cis)." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</p:PageBase>

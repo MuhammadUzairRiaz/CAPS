@@ -289,6 +289,22 @@ internal static class SelfTest
         vm.ResetSettings();
         Check(AppSettings.Load().Palette == 0 && vm.SetThreads == 0, "settings: reset to the defaults");
 
+        // Polymer builder: the library, a rubber preset, a grown cell of it
+        vm.LoadPolymerLibrary();
+        var enr = vm.PolymerLibrary.FirstOrDefault(e => e.Id == "C103");
+        Check(vm.PolymerLibrary.Count(e => !e.Copolymer) > 100 && enr != null, $"polymer library: {vm.LibraryCount}");
+        if (enr != null)
+        {
+            vm.UseLibrary(enr, null);
+            Check(!vm.PolyHasError && vm.PolyUnits.Count == 2 && vm.PolyStripUnits.Length == vm.GrowDpD, $"ENR-50 chain: {vm.PolyPreview} {vm.PolyError}");
+            vm.GrowChainsD = 4;
+            vm.GrowDensityD = 0.3m;
+            vm.SendPolymerToGrow();
+            vm.Grow().GetAwaiter().GetResult();
+            Check(vm.Document != null && vm.Document.Summary().Molecules == 4 && vm.GrowComponentName.StartsWith("ENR"), $"grown ENR-50 cell: {vm.Status}");
+            vm.UsePolystyreneInGrow();
+        }
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");

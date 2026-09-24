@@ -23,7 +23,7 @@ public sealed partial class MainViewModel
     public StartBuilder[] Builders { get; } =
     [
         new("Molecule", "From SMILES or a 2D sketch", "hex", 9, "Draw or type a molecule; 3D with conformers, cleaned with a force field"),
-        new("Polymer", "Repeat units, sequence, tacticity", "grow", 0, "Polystyrene chains with a chosen tacticity, in Grow"),
+        new("Polymer", "Repeat units, sequence, tacticity", "grow", 13, "Homopolymers and copolymers from a SMILES library of repeat units"),
         new("Crystal", "Space group, lattice, CIF import", "cube", -1, "The crystal builder comes with the Crystal board"),
         new("Amorphous cell", "Grow and pack a periodic cell", "pack", 0, "Grow chains into a periodic cell at a target density"),
         new("Surface or interface", "Cleave, stack, add vacuum", "layers", -1, "The surface builder comes with the Surface board"),

@@ -228,6 +228,9 @@ internal static class Native
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
     }
 
+    [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_chain_preview")] public static extern int ChainPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, ulong seed, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_grow_chains")] public static extern IntPtr GrowChains([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
     [DllImport(Lib, EntryPoint = "caps_set_threads")] public static extern void SetThreads(int threads);
     [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
@@ -309,6 +312,27 @@ public sealed class CapsDocument : IDisposable
         var buf = new byte[Math.Max(1, n)];
         Native.SmilesInfo(smiles, buf, buf.Length);
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+
+    private static string JsonCall(Func<byte[]?, int, int> f)
+    {
+        var n = f(null, 0);
+        var buf = new byte[Math.Max(1, n)];
+        f(buf, buf.Length);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+    public static string UnitInfo(string smiles) => JsonCall((b, c) => Native.UnitInfo(smiles, b, c));
+    public static string ChainPreview(string spec, ulong seed) => JsonCall((b, c) => Native.ChainPreview(spec, seed, b, c));
+
+    /// <summary>Grows chains of a polymer spec (caps_grow_chains).</summary>
+    public static (CapsDocument Doc, string Report) GrowChains(string spec, CapsGrowOpts o, Func<int, int, int, bool>? progress, string label)
+    {
+        var report = new byte[8192];
+        CapsProgress? cb = progress == null ? null : (d, t, r, _) => progress(d, t, r) ? 0 : 1;
+        var h = Native.GrowChains(spec, o, cb, IntPtr.Zero, report, report.Length);
+        GC.KeepAlive(cb);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }
 
     /// <summary>The 2D drawing of a SMILES (JSON graph with coordinates, bond length 1).</summary>

@@ -721,6 +721,8 @@
 
       <!-- Field: typing report (design/boards/ForceField). Covers the viewport and the inspector; its own view shows the types. -->
       <!-- React (design/boards/React.dc.html) -->
+      <!-- Polymer builder (design/boards/PolymerBuilder) -->
+      <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Bench (design/boards/Bench) -->
       <pages:BenchPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBench}" />
       <!-- Jobs (design/boards/Jobs, FailedJob) -->
