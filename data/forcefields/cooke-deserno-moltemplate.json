@@ -1,0 +1,79 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Cooke–Deserno lipid model",
+ "source": "moltemplate: cooke_deserno_lipid.lt",
+ "references": [
+  "I. R. Cooke, M. Deserno, J. Chem. Phys. 123, 224710 (2005)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "table",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  1,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.8333333333
+ ],
+ "cutoff": 600,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "H",
+   "element": "H",
+   "mass": 1,
+   "description": "# Head Bead"
+  },
+  {
+   "name": "T",
+   "element": "H",
+   "mass": 1,
+   "description": "# Tail Bead"
+  }
+ ],
+ "pairs": [
+  {
+   "match": [
+    "H"
+   ],
+   "style": "table",
+   "params": []
+  },
+  {
+   "match": [
+    "H",
+    "T"
+   ],
+   "style": "table",
+   "params": []
+  },
+  {
+   "match": [
+    "T"
+   ],
+   "style": "table",
+   "params": []
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+ ],
+ "version": "2005",
+ "status": "converted",
+ "validation": "cosine-squared attraction not evaluated yet."
+}

@@ -1,0 +1,395 @@
+<!-- CAPS component styles: the design system's components (design/generator/lib.py: btn, tbtn, seg, field, select,
+     check, toggle, chip, tabs, section, panel_head, rail, statusbar) as Avalonia styles. Colours come from
+     Themes/Tokens.axaml (DynamicResource, so Graphite and Paper both work). -->
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:v="using:CapsStudio.Views">
+  <Styles.Resources>
+    <!-- Fluent resources retuned to the tokens (controls not styled below) -->
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{DynamicResource AccHoverC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="{DynamicResource AccHoverC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="{DynamicResource DimC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" Color="{DynamicResource MutedC}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUnchecked" Color="Transparent" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" Color="Transparent" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{DynamicResource AccHoverC}" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="{DynamicResource Bg3}" />
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{DynamicResource Bg3}" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{DynamicResource MutedC}" />
+    <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="{DynamicResource TextC}" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselected" Color="{DynamicResource MutedC}" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselectedPointerOver" Color="{DynamicResource TextC}" />
+    <SolidColorBrush x:Key="SliderTrackValueFill" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="SliderThumbBackground" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="ProgressBarForeground" Color="{DynamicResource AccC}" />
+    <SolidColorBrush x:Key="ProgressBarBackground" Color="{DynamicResource Bg3}" />
+    <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="{DynamicResource SelC}" />
+    <Thickness x:Key="TextControlThemePadding">8,5,8,5</Thickness>
+    <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+  </Styles.Resources>
+
+  <!-- ground and type -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+    <Setter Property="FontFamily" Value="{DynamicResource Sans}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="TextBlock.display"><Setter Property="FontSize" Value="28" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="TextBlock.title"><Setter Property="FontSize" Value="19" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="TextBlock.heading"><Setter Property="FontSize" Value="15" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="TextBlock.h2"><Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="TextBlock.h3">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    <Setter Property="LetterSpacing" Value="0.88" />
+  </Style>
+  <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+  <Style Selector="TextBlock.dim"><Setter Property="Foreground" Value="{DynamicResource DimB}" /><Setter Property="FontSize" Value="11.5" /></Style>
+  <Style Selector="TextBlock.label"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="11.5" /></Style>
+  <Style Selector="TextBlock.mono"><Setter Property="FontFamily" Value="{DynamicResource Mono}" /><Setter Property="FontSize" Value="12" /></Style>
+  <Style Selector="TextBlock.ok"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+  <Style Selector="TextBlock.warn"><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
+  <Style Selector="TextBlock.err"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+  <Style Selector="TextBlock.acc"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+  <Style Selector="TextBlock.sel"><Setter Property="Foreground" Value="{DynamicResource SelB}" /></Style>
+
+  <!-- buttons: btn (36, raised), .small (30), .primary (amber), .ghost (outline), .tool (tbtn 36 × 36), .link -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource DimB}" />
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+  <Style Selector="Button.small">
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource AccB}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccInkB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccHoverB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccHoverB}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccInkB}" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccB}" />
+  </Style>
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccInkB}" />
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccB}" />
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
+  <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccHoverB}" />
+  </Style>
+  <Style Selector="Button.tool, ToggleButton.tool">
+    <Setter Property="MinWidth" Value="36" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.tool:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.tool:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="Button.tool.on, ToggleButton.tool:checked">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccB}" />
+  </Style>
+  <Style Selector="ToggleButton.tool:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccB}" />
+  </Style>
+  <Style Selector="Button.tool:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <!-- module rail: 60 × 52, icon 19 + label 10.5; active: raised, amber icon and a 3 px bar on the left -->
+  <Style Selector="Button.rail">
+    <Setter Property="Width" Value="60" />
+    <Setter Property="Height" Value="52" />
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource DimB}" />
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Button.rail v|Icon"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+  <Style Selector="Button.rail:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="Button.rail.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="Button.rail.on v|Icon"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+  <Style Selector="Button.rail:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.rail Border.bar"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.rail.on Border.bar"><Setter Property="IsVisible" Value="True" /></Style>
+
+  <!-- document tabs in the top bar -->
+  <Style Selector="Button.doctab">
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="CornerRadius" Value="7,7,0,0" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+  </Style>
+  <Style Selector="Button.doctab.on">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1,1,1,0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="Button.doctab.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+  </Style>
+
+  <!-- inputs: field / select (Bg0, 1 px line, radius 5, 30–32 px), focus in amber -->
+  <Style Selector="TextBox, NumericUpDown">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="TextBox /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="CornerRadius" Value="5" />
+  </Style>
+  <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DimB}" />
+  </Style>
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox:focus"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="TextBox.mono, NumericUpDown">
+    <Setter Property="FontFamily" Value="{DynamicResource Mono}" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="ComboBox:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DimB}" />
+  </Style>
+  <Style Selector="ComboBox:focus-visible /template/ Border#Background">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+  </Style>
+  <Style Selector="ComboBoxItem"><Setter Property="FontSize" Value="12.5" /></Style>
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+  <Style Selector="CheckBox"><Setter Property="FontSize" Value="12.5" /><Setter Property="MinHeight" Value="24" /></Style>
+  <Style Selector="RadioButton"><Setter Property="FontSize" Value="12.5" /></Style>
+
+  <!-- segmented control (seg): a Border.seg holding RadioButton.seg; selected: raised with an amber outline -->
+  <Style Selector="Border.seg">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="Padding" Value="2" />
+  </Style>
+  <Style Selector="RadioButton.seg">
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bd" Height="28" Padding="10,0" CornerRadius="5" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
+          <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.seg:pointerover"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="RadioButton.seg:checked"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="RadioButton.seg:checked /template/ Border#bd">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+  </Style>
+
+  <!-- chips: 22 px pills; ToggleButton.chip is a calculation you switch on (amber when on) -->
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Padding" Value="8,0" />
+  </Style>
+  <Style Selector="Border.chip TextBlock"><Setter Property="FontSize" Value="11.5" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  <Style Selector="Border.chip.warn"><Setter Property="Background" Value="{DynamicResource WarnBgB}" /></Style>
+  <Style Selector="Border.chip.warn TextBlock"><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
+  <Style Selector="Border.chip.acc"><Setter Property="Background" Value="{DynamicResource AccB}" /></Style>
+  <Style Selector="Border.chip.acc TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /></Style>
+  <Style Selector="ToggleButton.chip">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="13" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Margin" Value="0,0,6,6" />
+  </Style>
+  <Style Selector="ToggleButton.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccInkB}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource DimB}" />
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <!-- panels, sections, cards, headers -->
+  <Style Selector="Border.panel"><Setter Property="Background" Value="{DynamicResource Bg1B}" /></Style>
+  <Style Selector="Border.section">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="14" />
+  </Style>
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Bg1B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Border.inset">
+    <Setter Property="Background" Value="{DynamicResource Bg0B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,9" />
+  </Style>
+  <Style Selector="Border.phead">
+    <Setter Property="Height" Value="38" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.hud">
+    <Setter Property="Background" Value="{DynamicResource HudB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Rectangle.vsep"><Setter Property="Width" Value="1" /><Setter Property="Height" Value="24" /><Setter Property="Fill" Value="{DynamicResource LineB}" /><Setter Property="Margin" Value="6,0" /></Style>
+
+  <!-- tabs: 38 px, underline in amber -->
+  <Style Selector="TabItem">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+
+  <!-- scroll bars, tooltips, progress -->
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="ProgressBar">
+    <Setter Property="Foreground" Value="{DynamicResource AccB}" />
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="MinHeight" Value="4" />
+    <Setter Property="CornerRadius" Value="2" />
+  </Style>
+</Styles>

@@ -1,0 +1,121 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "TraPPE-UA alkanes",
+ "source": "moltemplate: trappe1998.lt",
+ "references": [
+  "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "none"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.8333333333
+ ],
+ "cutoff": 11,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "CH2",
+   "element": "",
+   "mass": 14.1707
+  },
+  {
+   "name": "CH3",
+   "element": "",
+   "mass": 15.2507
+  },
+  {
+   "name": "CH4",
+   "element": "",
+   "mass": 16.3307
+  }
+ ],
+ "pairs": [
+  {
+   "match": [
+    "CH2"
+   ],
+   "style": "lj/cut",
+   "params": [
+    0.091411522,
+    3.95
+   ]
+  },
+  {
+   "match": [
+    "CH3"
+   ],
+   "style": "lj/cut",
+   "params": [
+    0.194746286,
+    3.75
+   ]
+  },
+  {
+   "match": [
+    "CH4"
+   ],
+   "style": "lj/cut",
+   "params": [
+    0.294106636,
+    3.73
+   ]
+  }
+ ],
+ "bonds": [],
+ "angles": [
+  {
+   "name": "backbone",
+   "match": [
+    "CH?",
+    "CH?",
+    "CH?"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.0022,
+    114
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "backbone",
+   "match": [
+    "CH?",
+    "CH?",
+    "CH?",
+    "CH?"
+   ],
+   "style": "opls",
+   "params": [
+    1.411036,
+    -0.271016,
+    3.145034,
+    0
+   ]
+  }
+ ],
+ "impropers": [],
+ "notes": [
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+ ],
+ "version": "1998",
+ "status": "converted",
+ "validation": "united atoms: element guesses from mass are not meaningful."
+}

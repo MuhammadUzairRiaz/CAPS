@@ -1,0 +1,88 @@
+{
+  "format": "caps-reference 1",
+  "description": "Experimental and literature values that Analyze result cards are compared with. Keyed by property id (as caps analyze); lo/hi in the property's unit. Handbook ranges: check the edition you cite before publishing. Add materials freely.",
+  "materials": [
+    {
+      "id": "ps-atactic",
+      "name": "Polystyrene, atactic",
+      "values": {
+        "density": {
+          "lo": 1.04,
+          "hi": 1.065,
+          "unit": "g/cm³",
+          "condition": "298 K",
+          "source": "Mark, Physical Properties of Polymers Handbook"
+        },
+        "cn": {
+          "lo": 9.5,
+          "hi": 10.0,
+          "unit": "",
+          "condition": "C∞, theta solvent / melt",
+          "source": "Flory 1969; Mattice & Suter 1994"
+        },
+        "delta": {
+          "lo": 17.4,
+          "hi": 19.0,
+          "unit": "MPa^½",
+          "condition": "298 K",
+          "source": "Brandrup et al., Polymer Handbook"
+        },
+        "tg": {
+          "lo": 368,
+          "hi": 378,
+          "unit": "K",
+          "condition": "≈ 373 K, DSC",
+          "source": "Brandrup et al., Polymer Handbook"
+        },
+        "youngs": {
+          "lo": 3.0,
+          "hi": 3.5,
+          "unit": "GPa",
+          "condition": "298 K, tensile",
+          "source": "Mark, Physical Properties of Polymers Handbook"
+        },
+        "tensile_modulus": {
+          "lo": 3.0,
+          "hi": 3.5,
+          "unit": "GPa",
+          "condition": "298 K, tensile",
+          "source": "Mark, Physical Properties of Polymers Handbook"
+        },
+        "poisson": {
+          "lo": 0.33,
+          "hi": 0.35,
+          "unit": "",
+          "condition": "298 K",
+          "source": "Mark, Physical Properties of Polymers Handbook"
+        }
+      }
+    },
+    {
+      "id": "pe-amorphous",
+      "name": "Polyethylene, amorphous",
+      "values": {
+        "density": {
+          "lo": 0.853,
+          "hi": 0.855,
+          "unit": "g/cm³",
+          "condition": "298 K, extrapolated amorphous",
+          "source": "Brandrup et al., Polymer Handbook"
+        },
+        "cn": {
+          "lo": 6.7,
+          "hi": 7.4,
+          "unit": "",
+          "condition": "C∞, 413 K",
+          "source": "Flory 1969; Fetters et al. 1994"
+        },
+        "delta": {
+          "lo": 15.8,
+          "hi": 17.1,
+          "unit": "MPa^½",
+          "condition": "298 K",
+          "source": "Brandrup et al., Polymer Handbook"
+        }
+      }
+    }
+  ]
+}

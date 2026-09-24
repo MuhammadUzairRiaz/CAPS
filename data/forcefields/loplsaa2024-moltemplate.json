@@ -1,0 +1,888 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "L-OPLS overlay (on OPLS-AA 2024)",
+ "source": "moltemplate: loplsaa2024.lt",
+ "references": [
+  "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)",
+  "K. Pluhackova et al., J. Phys. Chem. B 119, 15287 (2015)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0.5
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.8333333333
+ ],
+ "cutoff": 10,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "1154L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.25,
+   "description": "moltemplate @atom:1154L · C - CM | allene C1 CH2 (LOPLS,2012)"
+  },
+  {
+   "name": "1155L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1,
+   "description": "moltemplate @atom:1155L · C - CM | allene C1 CHR (LOPLS,2012)"
+  },
+  {
+   "name": "1156L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.05,
+   "description": "moltemplate @atom:1156L · C - CM | allene C1 CR2 (LOPLS,2012)"
+  },
+  {
+   "name": "141L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0,
+   "description": "moltemplate @atom:141L · C - CM | alkene C (R2-C=) (LOPLS,2012)"
+  },
+  {
+   "name": "142L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.16,
+   "description": "moltemplate @atom:142L · C - CM | alkene C (RH-C=) (LOPLS,2012)"
+  },
+  {
+   "name": "143L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.23,
+   "description": "moltemplate @atom:143L · C - CM | alkene C (H2-C=) (LOPLS,2012)"
+  },
+  {
+   "name": "144L_bHC_aHC_dHC_iHC",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.16,
+   "description": "moltemplate @atom:144L · H - HC | alkene H (H-C=) (LOPLS,2012)"
+  },
+  {
+   "name": "154L_bOH_aOH_dOHL_iOH",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.683,
+   "description": "moltemplate @atom:154L · O - OH | O: mono alcohols (LOPLS,2015)"
+  },
+  {
+   "name": "155L_bHO_aHO_dHOL_iHO",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.418,
+   "description": "moltemplate @atom:155L · H - HO | H(O): mono alcohols (LOPLS,2015)"
+  },
+  {
+   "name": "169L_bOH_aOH_dOHL_iOH",
+   "element": "O",
+   "mass": 15.999,
+   "description": "moltemplate @atom:169L"
+  },
+  {
+   "name": "170L_bHO_aHO_dHOL_iHO",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.435,
+   "description": "moltemplate @atom:170L · H - HO | H(O): diols (LOPLS,2015)"
+  },
+  {
+   "name": "171L_bOH_aOH_dOHL_iOH",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.73,
+   "description": "moltemplate @atom:171L · O - OH | O: triols (LOPLS,2015)"
+  },
+  {
+   "name": "172L_bHO_aHO_dHOL_iHO",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.465,
+   "description": "moltemplate @atom:172L · H - HO | H(O): triols (LOPLS,2015)"
+  },
+  {
+   "name": "227L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.7,
+   "description": "moltemplate @atom:227L · O - OH | O: diols \"Diol -OH (LOPLS,2015)"
+  },
+  {
+   "name": "323L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.07,
+   "description": "moltemplate @atom:323L · C - CM | Uracil C5 (LOPLS,2012)"
+  },
+  {
+   "name": "324L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "description": "moltemplate @atom:324L"
+  },
+  {
+   "name": "337L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.06,
+   "description": "moltemplate @atom:337L · C - CM | Cytosine C5 (LOPLS,2012)"
+  },
+  {
+   "name": "338L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.1,
+   "description": "moltemplate @atom:338L · C - CM | Cytosine C6 (LOPLS,2012)"
+  },
+  {
+   "name": "381L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.06,
+   "description": "moltemplate @atom:381L · C - CM | CytH+ C5 (LOPLS,2012)"
+  },
+  {
+   "name": "382L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.1,
+   "description": "moltemplate @atom:382L · C - CM | CytH+ C6 (LOPLS,2012)"
+  },
+  {
+   "name": "397L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.18,
+   "description": "moltemplate @atom:397L · C - CM | F3C-C5 thymine; trifluorothymine (LOPLS,2012)"
+  },
+  {
+   "name": "399L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.12,
+   "description": "moltemplate @atom:399L · C - CM | chloroalkene C (Cl2-C=) - tentaive (LOPLS,2012)"
+  },
+  {
+   "name": "465L_bC~_aC~_dC~L_iC~",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.75,
+   "description": "moltemplate @atom:465L · C - C  | AA C: esters - for R on C=O, use - (LOPLS,2015)"
+  },
+  {
+   "name": "466L_bO~_aO~_dO~L_iO~",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.55,
+   "description": "moltemplate @atom:466L · O - O  | AA =O: esters ketone params (see 280-282 from oplsaa2024.lt) - (LOPLS,2015)"
+  },
+  {
+   "name": "467L_bOS_aOS_dOSL_iOS",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.45,
+   "description": "moltemplate @atom:467L · O - OS | AA -OR: ester - (LOPLS,2015)\""
+  },
+  {
+   "name": "517L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.03,
+   "description": "moltemplate @atom:517L · C - CM | vinyl ether HCOR (LOPLS,2012)"
+  },
+  {
+   "name": "518L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.085,
+   "description": "moltemplate @atom:518L · C - CM | vinyl ether RCOR (LOPLS,2012)"
+  },
+  {
+   "name": "54L_bCT_aCT_dCTL_iCT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.222,
+   "description": "moltemplate @atom:54L · C - CT | n-CH3 C: alkanes (LOPLS,2012)"
+  },
+  {
+   "name": "57L_bCT_aCT_dCTL_iCT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.148,
+   "description": "moltemplate @atom:57L · C - CT | CH2 C: alkanes (LOPLS,2012)"
+  },
+  {
+   "name": "60LCH2_bHC_aHC_dHC_iHC",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.074,
+   "description": "moltemplate @atom:60LCH2 · H - HC | CH2 H: alkanes (LOPLS,2012)"
+  },
+  {
+   "name": "60LCH3_bHC_aHC_dHC_iHC",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.074,
+   "description": "moltemplate @atom:60LCH3 · H - HC | CH3 H: alkanes (LOPLS,2012)"
+  },
+  {
+   "name": "708L_bCM_aCM_dCML_iCM",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.344,
+   "description": "moltemplate @atom:708L · C - CM | C in Cl..CH3..Cl- TS (LOPLS,2012)"
+  },
+  {
+   "name": "777L_bHC_aHC_dHC_iHC",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.06,
+   "description": "moltemplate @atom:777L · H - HC | propylene carbonate H in CH2"
+  }
+ ],
+ "pairs": [
+  {
+   "match": [
+    "54L_bCT_aCT_dCTL_iCT"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "57L_bCT_aCT_dCTL_iCT"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "60LCH3_bHC_aHC_dHC_iHC"
+   ],
+   "params": [
+    0.03,
+    2.5
+   ]
+  },
+  {
+   "match": [
+    "60LCH2_bHC_aHC_dHC_iHC"
+   ],
+   "params": [
+    0.02629063097,
+    2.5
+   ]
+  },
+  {
+   "match": [
+    "142L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "144L_bHC_aHC_dHC_iHC"
+   ],
+   "params": [
+    0.03,
+    2.42
+   ]
+  },
+  {
+   "match": [
+    "141L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "143L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "154L_bOH_aOH_dOHL_iOH"
+   ],
+   "params": [
+    0.17,
+    3.12
+   ]
+  },
+  {
+   "match": [
+    "155L_bHO_aHO_dHOL_iHO"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "match": [
+    "169L_bOH_aOH_dOHL_iOH"
+   ],
+   "params": [
+    0.17,
+    3.07
+   ]
+  },
+  {
+   "match": [
+    "170L_bHO_aHO_dHOL_iHO"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "match": [
+    "171L_bOH_aOH_dOHL_iOH"
+   ],
+   "params": [
+    0.17,
+    3.07
+   ]
+  },
+  {
+   "match": [
+    "172L_bHO_aHO_dHOL_iHO"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "match": [
+    "227L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "323L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "324L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "337L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "338L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "381L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "382L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "397L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.08,
+    3.5
+   ]
+  },
+  {
+   "match": [
+    "399L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "465L_bC~_aC~_dC~L_iC~"
+   ],
+   "params": [
+    0.105,
+    3.1875
+   ]
+  },
+  {
+   "match": [
+    "466L_bO~_aO~_dO~L_iO~"
+   ],
+   "params": [
+    0.168,
+    3.108
+   ]
+  },
+  {
+   "match": [
+    "467L_bOS_aOS_dOSL_iOS"
+   ],
+   "params": [
+    0.17,
+    2.55
+   ]
+  },
+  {
+   "match": [
+    "517L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "518L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "708L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "777L_bHC_aHC_dHC_iHC"
+   ],
+   "params": [
+    0.015,
+    2.42
+   ]
+  },
+  {
+   "match": [
+    "1154L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.086,
+    3.3
+   ]
+  },
+  {
+   "match": [
+    "1155L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.086,
+    3.3
+   ]
+  },
+  {
+   "match": [
+    "1156L_bCM_aCM_dCML_iCM"
+   ],
+   "params": [
+    0.086,
+    3.3
+   ]
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [
+  {
+   "name": "CTL_CTL_CTL_CTL",
+   "match": [
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCTL*_i*"
+   ],
+   "params": [
+    0.6446926386,
+    -0.2143420172,
+    0.1782194073,
+    0
+   ]
+  },
+  {
+   "name": "€€_CML_CML_€€",
+   "match": [
+    "*",
+    "*_b*_a*_dCML*_i*",
+    "*_b*_a*_dCML*_i*",
+    "*"
+   ],
+   "params": [
+    0,
+    12.25026291,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CML_CML_CTL_CTL",
+   "match": [
+    "*_b*_a*_dCML*_i*",
+    "*_b*_a*_dCML*_i*",
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCTL*_i*"
+   ],
+   "params": [
+    -0.8050121893,
+    0.3218905354,
+    -0.1032768881,
+    0
+   ]
+  },
+  {
+   "name": "CTL_CTL_CTL_CML",
+   "match": [
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCTL*_i*",
+    "*_b*_a*_dCML*_i*"
+   ],
+   "params": [
+    0.4821902486,
+    0.1343683078,
+    0.1777461759,
+    0
+   ]
+  },
+  {
+   "name": "HC_CT_OHL_HOL",
+   "match": [
+    "*_b*_a*_dHC*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOHL*_i*",
+    "*_b*_a*_dHOL*_i*"
+   ],
+   "params": [
+    0.00962596,
+    -0.0145554,
+    0.381091,
+    0
+   ]
+  },
+  {
+   "name": "HC_CT_CT_OHL",
+   "match": [
+    "*_b*_a*_dHC*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOHL*_i*"
+   ],
+   "params": [
+    0.0143774,
+    0.033021,
+    0.26687,
+    0
+   ]
+  },
+  {
+   "name": "CT_CT_OHL_HOL",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOHL*_i*",
+    "*_b*_a*_dHOL*_i*"
+   ],
+   "params": [
+    -0.675785,
+    -0.0160421,
+    0.373199,
+    0
+   ]
+  },
+  {
+   "name": "CT_CT_CT_OHL",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOHL*_i*"
+   ],
+   "params": [
+    1.31261,
+    -0.266307,
+    0.637867,
+    0
+   ]
+  },
+  {
+   "name": "OHL_CT_CT_OHL",
+   "match": [
+    "*_b*_a*_dOHL*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOHL*_i*"
+   ],
+   "params": [
+    2.69106,
+    -0.849706,
+    0.725731,
+    0
+   ]
+  },
+  {
+   "name": "CT_C~L_OSL_CT",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dOSL*_i*",
+    "*_b*_a*_dCT*_i*"
+   ],
+   "params": [
+    3.11923,
+    5.73771,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CT_OSL_C~L_O~L",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOSL*_i*",
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dO~L*_i*"
+   ],
+   "params": [
+    0,
+    5.73772,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HC_CT_C~L_OSL",
+   "match": [
+    "*_b*_a*_dHC*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dOSL*_i*"
+   ],
+   "params": [
+    -0.00742471,
+    0.00217734,
+    0.111803,
+    0
+   ]
+  },
+  {
+   "name": "C~L_OSL_CT_CT",
+   "match": [
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dOSL*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*"
+   ],
+   "params": [
+    -1.7354,
+    -1.24844,
+    0.623897,
+    0
+   ]
+  },
+  {
+   "name": "HC_CT_CT_OSL",
+   "match": [
+    "*_b*_a*_dHC*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOSL*_i*"
+   ],
+   "params": [
+    0.0113337,
+    0.0236209,
+    0.429747,
+    0
+   ]
+  },
+  {
+   "name": "CT_CT_C~L_OSL",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dOSL*_i*"
+   ],
+   "params": [
+    0.884988,
+    -0.626905,
+    -0.493344,
+    0
+   ]
+  },
+  {
+   "name": "CT_CT_C~L_O~L",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dO~L*_i*"
+   ],
+   "params": [
+    -0.276019,
+    1.23685,
+    -0.670745,
+    0
+   ]
+  },
+  {
+   "name": "C~L_CT_CT_HC",
+   "match": [
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dHC*_i*"
+   ],
+   "params": [
+    -0.0021152,
+    0.0173542,
+    -0.295208,
+    0
+   ]
+  },
+  {
+   "name": "C~L_CT_CT_CT",
+   "match": [
+    "*_b*_a*_dC~L*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*"
+   ],
+   "params": [
+    -2.30738,
+    -0.627326,
+    0.621951,
+    0
+   ]
+  },
+  {
+   "name": "CT_CT_CT_OSL",
+   "match": [
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOSL*_i*"
+   ],
+   "params": [
+    2.25871,
+    -1.02408,
+    1.0071,
+    0
+   ]
+  },
+  {
+   "name": "OSL_CT_CT_OSL",
+   "match": [
+    "*_b*_a*_dOSL*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOSL*_i*"
+   ],
+   "params": [
+    4.66787,
+    -2.62698,
+    1.3248,
+    0
+   ]
+  },
+  {
+   "name": "OHL_CT_CT_OSL",
+   "match": [
+    "*_b*_a*_dOHL*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dCT*_i*",
+    "*_b*_a*_dOSL*_i*"
+   ],
+   "params": [
+    5.03208,
+    -2.37742,
+    1.23809,
+    0
+   ]
+  }
+ ],
+ "impropers": [],
+ "notes": [
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+ ],
+ "version": "2012 / 2015",
+ "status": "converted",
+ "validation": "overlay: merge on top of oplsaa2024 (caps ff apply --overlay)."
+}

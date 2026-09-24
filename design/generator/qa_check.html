@@ -1,0 +1,13 @@
+<!doctype html><html><body style="margin:0"><pre id="out">running</pre><script>
+const boards=(new URLSearchParams(location.search).get('b')||'').split(',');
+const res={};let i=0;
+function next(){ if(i>=boards.length){document.getElementById('out').textContent=JSON.stringify(res,null,1);window.DONE=res;return;}
+ const b=boards[i++];const f=document.createElement('iframe');f.style.cssText='width:1440px;height:900px;border:0';f.src=b+'.dc.html';
+ f.onload=()=>setTimeout(()=>{const d=f.contentDocument;const issues=[];
+  for(const el of d.querySelectorAll('body *')){const cs=getComputedStyle(el);
+   if(el.tagName==='svg'&&(el.getBoundingClientRect().height<2)) issues.push('collapsed svg');
+   if(['hidden','clip'].includes(cs.overflow)||cs.overflowX==='hidden'){ if(el.scrollWidth>el.clientWidth+2||el.scrollHeight>el.clientHeight+2) issues.push(el.tagName+' '+el.scrollWidth+'x'+el.scrollHeight+' in '+el.clientWidth+'x'+el.clientHeight+' :: '+(el.textContent||'').slice(0,60));}}
+  res[b]={doc:d.documentElement.scrollWidth+'x'+d.documentElement.scrollHeight,issues:issues.slice(0,12)};f.remove();next();},400);
+ document.body.appendChild(f);}
+next();
+</script></body></html>

@@ -1,0 +1,60 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Graphene (LJ carbon)",
+ "source": "moltemplate: graphene.lt",
+ "references": [
+  "moltemplate example"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0.5
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.8333333333
+ ],
+ "cutoff": 10,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "C",
+   "element": "C",
+   "mass": 12
+  }
+ ],
+ "pairs": [
+  {
+   "match": [
+    "C"
+   ],
+   "style": "lj/cut/coul/long",
+   "params": [
+    0.068443,
+    3.407
+   ]
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+ ],
+ "version": "",
+ "status": "converted",
+ "validation": ""
+}

@@ -1,0 +1,58 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "mW water",
+ "source": "moltemplate: watmw.lt",
+ "references": [
+  "V. Molinero, E. B. Moore, J. Phys. Chem. B 113, 4008 (2009)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "sw",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0.5
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.8333333333
+ ],
+ "cutoff": 10,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "MW",
+   "element": "",
+   "mass": 18.02
+  }
+ ],
+ "pairs": [
+  {
+   "match": [
+    "*"
+   ],
+   "style": "sw",
+   "params": [],
+   "comment": "SEE COMMENT ABOVE"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+ ],
+ "version": "2009",
+ "status": "converted",
+ "validation": "Stillinger–Weber three-body form not evaluated by CAPS."
+}
