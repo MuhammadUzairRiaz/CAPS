@@ -1,4 +1,4 @@
-/* CAPS C ABI v15 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v16 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 15  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder */
+#define CAPS_ABI_VERSION 16  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -341,6 +341,9 @@ caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_
    monochrome) and the worker threads of the parallel loops (0 = one per hardware thread, at most 16). */
 void caps_set_palette(int32_t palette);
 void caps_set_threads(int32_t threads);
+/* Electrostatics for every later calculation (ABI 16): mode 0 damped shifted force, 1 particle-mesh Ewald (periodic
+   cells; others keep DSF); ewald_rtol sets β by erfc(β rc) = rtol, pme_spacing the grid (Å), pme_order the B-splines. */
+void caps_set_electrostatics(int32_t mode, double ewald_rtol, double pme_spacing, int32_t pme_order);
 
 /* Bench (ABI 14): the built-in validation suite. caps_bench_list gives the tables as JSON [{id, title, scope, columns[],
    status: "not run", note}]. caps_bench_run runs one table (samples: the directory with ps_melt.data and water.pdb;
