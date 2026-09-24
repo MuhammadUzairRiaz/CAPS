@@ -1,0 +1,120 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Inorganic: binary misc (DL_FIELD)",
+ "source": "DL_FIELD 4.13: INORGANIC_binary_misc.par",
+ "references": [
+  "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "Ga1",
+   "element": "Ga",
+   "mass": 69.723,
+   "description": "Ref. 1",
+   "aliases": [
+    "Ga3+#4_binary_misc1"
+   ]
+  },
+  {
+   "name": "N1",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "Ref. 1",
+   "aliases": [
+    "N3-#4_binary_misc1"
+   ]
+  },
+  {
+   "name": "Ga3+1",
+   "element": "Ga",
+   "mass": 69.723,
+   "description": "Ref. 1",
+   "aliases": [
+    "Ga3+#l_binary_misc1"
+   ]
+  },
+  {
+   "name": "N3-1",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "Ref. 1",
+   "aliases": [
+    "N3-#l_binary_misc1"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Ga1-N1",
+   "match": [
+    "Ga1",
+    "N1"
+   ],
+   "style": "buck",
+   "params": [
+    14033.26588,
+    0.435,
+    0
+   ],
+   "comment": "| Ref. 1, GaN wurtzite"
+  },
+  {
+   "name": "Ga1-X",
+   "match": [
+    "Ga1"
+   ],
+   "params": [
+    14.82793236,
+    2.39
+   ],
+   "comment": "| Ref. 1, GaN wurtzite"
+  },
+  {
+   "name": "N1-X",
+   "match": [
+    "N1"
+   ],
+   "params": [
+    33.99124775,
+    1.981
+   ],
+   "comment": "| Ref. 1, GaN wurtzite"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted from DL_FIELD by CAPS (inorganic_binary_misc, unit eV); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "validated",
+ "validation": "GaN: Buckingham pairs identical to DL_FIELD's FIELD file."
+}

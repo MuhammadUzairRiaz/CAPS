@@ -1,0 +1,42 @@
+# Maintainer: Muhammad Uzair Riaz <274318895+MuhammadUzairRiaz@users.noreply.github.com>
+# Arch Linux package: builds CAPS from a release tag. makepkg -si
+pkgname=caps-studio
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="CAPS Studio: build, simulate and analyse amorphous polymer cells"
+arch=('x86_64' 'aarch64')
+url="https://github.com/MuhammadUzairRiaz/CAPS"
+license=('LicenseRef-proprietary')
+depends=('zlib' 'fontconfig' 'libice' 'libsm' 'libx11' 'icu' 'gcc-libs')
+makedepends=('cmake' 'dotnet-sdk>=10' 'git')
+options=('!strip' '!debug')
+source=("$pkgname-$pkgver::git+$url.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname-$pkgver"
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF
+  cmake --build build
+  local rid=linux-x64; [ "$CARCH" = aarch64 ] && rid=linux-arm64
+  DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet publish studio/CapsStudio/CapsStudio.csproj -c Release -r "$rid" --self-contained true \
+    -p:CapsNativeDir="$PWD/build/capi" -p:Version="$pkgver" -o app
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -d "$pkgdir/opt/caps" "$pkgdir/usr/bin"
+  cp -R app/. "$pkgdir/opt/caps/"
+  find "$pkgdir/opt/caps" -maxdepth 1 -name "*.pdb" -delete
+  install -Dm755 build/cli/caps "$pkgdir/opt/caps/caps"
+  install -d "$pkgdir/opt/caps/data"
+  cp -R data/forcefields data/typing data/reference "$pkgdir/opt/caps/data/"
+  cp -R samples "$pkgdir/opt/caps/"
+  ln -s /opt/caps/CapsStudio "$pkgdir/usr/bin/caps-studio"
+  ln -s /opt/caps/caps "$pkgdir/usr/bin/caps"
+  local id=io.github.muhammaduzairriaz.CAPS
+  install -Dm644 "packaging/linux/$id.desktop" "$pkgdir/usr/share/applications/$id.desktop"
+  install -Dm644 "packaging/linux/$id.metainfo.xml" "$pkgdir/usr/share/metainfo/$id.metainfo.xml"
+  for s in 16 32 48 64 128 256 512; do
+    install -Dm644 "packaging/icon/caps_$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/$id.png"
+  done
+}

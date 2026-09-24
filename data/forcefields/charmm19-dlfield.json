@@ -1,0 +1,4887 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CHARMM19 united atom (DL_FIELD)",
+ "source": "DL_FIELD 4.13: CHARMM19.par",
+ "references": [
+  "E. Neria, S. Fischer, M. Karplus, J. Chem. Phys. 105, 1902 (1996)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/charmm/coul/long",
+  "bond": "harmonic",
+  "angle": "charmm",
+  "dihedral": "fourier",
+  "improper": "harmonic"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_reversible": true,
+ "improper_all_explicit": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "H",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "H that can H-bond to neutral atom",
+   "aliases": [
+    "H_polar"
+   ]
+  },
+  {
+   "name": "HC",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "H that can H-bond to charged atom",
+   "aliases": [
+    "H_polar2"
+   ]
+  },
+  {
+   "name": "HA",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "aliphatic hydrogen",
+   "aliases": [
+    "H_aliphatic"
+   ]
+  },
+  {
+   "name": "C",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "carbonyl carbon",
+   "aliases": [
+    "C_carbonyl"
+   ]
+  },
+  {
+   "name": "N",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "peptide nitrogen with no hydrogen",
+   "aliases": [
+    "NH0_peptide"
+   ]
+  },
+  {
+   "name": "NH1",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "peptide nitrogen bound to one hydrogen",
+   "aliases": [
+    "NH1_peptide"
+   ]
+  },
+  {
+   "name": "NH2",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "peptide nitrogen bound to two hydrogen",
+   "aliases": [
+    "NH2_peptide"
+   ]
+  },
+  {
+   "name": "NH3",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "peptide nitrogen bound to three hydrogen",
+   "aliases": [
+    "NH3_peptide"
+   ]
+  },
+  {
+   "name": "NC2",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "charged guanidinuim nitrogen bound to two hydrogens",
+   "aliases": [
+    "NH2_guanidinium"
+   ]
+  },
+  {
+   "name": "NR",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "nitrogen in aromatic ring with no hydrogens",
+   "aliases": [
+    "N_aromatic"
+   ]
+  },
+  {
+   "name": "NP",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "pyrole nitrogen",
+   "aliases": [
+    "N_pyrole"
+   ]
+  },
+  {
+   "name": "O",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Carbonyl oxygen",
+   "aliases": [
+    "O_carbonyl"
+   ]
+  },
+  {
+   "name": "OC",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Carboxylate oxygen",
+   "aliases": [
+    "O_carboxylate"
+   ]
+  },
+  {
+   "name": "OH1",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Hydroxy oxygen",
+   "aliases": [
+    "O_hydroxyl"
+   ]
+  },
+  {
+   "name": "OH2",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "ST2 water oxygen",
+   "aliases": [
+    "ST2_water_O"
+   ]
+  },
+  {
+   "name": "OS",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ester oxygen",
+   "aliases": [
+    "O_ester"
+   ]
+  },
+  {
+   "name": "OT",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "TIP3P Oxygen",
+   "aliases": [
+    "O_tip3p"
+   ]
+  },
+  {
+   "name": "CT",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "Aliphatic C atom with no H.",
+   "aliases": [
+    "United_CH0"
+   ]
+  },
+  {
+   "name": "CH1E",
+   "element": "",
+   "mass": 13.019,
+   "description": "Extended (united) atom CH",
+   "aliases": [
+    "United_CH1"
+   ]
+  },
+  {
+   "name": "CH2E",
+   "element": "",
+   "mass": 14.027,
+   "description": "Extended (united) atom CH2 14.027",
+   "aliases": [
+    "United_CH2"
+   ]
+  },
+  {
+   "name": "CH3E",
+   "element": "",
+   "mass": 15.035,
+   "description": "Extended (united) atom CH3 15.035",
+   "aliases": [
+    "United_CH3"
+   ]
+  },
+  {
+   "name": "CR1E",
+   "element": "",
+   "mass": 13.019,
+   "description": "Extended (united) aromatic CH",
+   "aliases": [
+    "United_CR"
+   ]
+  },
+  {
+   "name": "SH1E",
+   "element": "",
+   "mass": 33.068,
+   "description": "Extended atom sulphur with one hydrogen",
+   "aliases": [
+    "United_SH"
+   ]
+  },
+  {
+   "name": "S",
+   "element": "S",
+   "mass": 32.06,
+   "description": "Sulphur atom",
+   "aliases": [
+    "Sulphur"
+   ]
+  },
+  {
+   "name": "LP",
+   "element": "",
+   "mass": 0,
+   "description": "ST2 lone pair.",
+   "aliases": [
+    "ST2_lone_pair"
+   ]
+  },
+  {
+   "name": "QZ",
+   "element": "",
+   "mass": 0.5,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom1"
+   ]
+  },
+  {
+   "name": "QY",
+   "element": "",
+   "mass": 0.2,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom2"
+   ]
+  },
+  {
+   "name": "QX",
+   "element": "",
+   "mass": 0.6,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom3"
+   ]
+  },
+  {
+   "name": "QW",
+   "element": "",
+   "mass": 0.7,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom4"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "CH1E",
+   "match": [
+    "CH1E"
+   ],
+   "params": [
+    0.0486,
+    4.213950937
+   ],
+   "lj14": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CH2E",
+   "match": [
+    "CH2E"
+   ],
+   "params": [
+    0.1142,
+    3.98231727
+   ],
+   "lj14": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CH3E",
+   "match": [
+    "CH3E"
+   ],
+   "params": [
+    0.1811,
+    3.85759145
+   ],
+   "lj14": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CR1E",
+   "match": [
+    "CR1E"
+   ],
+   "params": [
+    0.12,
+    3.741774616
+   ],
+   "lj14": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "C",
+   "match": [
+    "C"
+   ],
+   "params": [
+    0.12,
+    3.741774616
+   ],
+   "lj14": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CT",
+   "match": [
+    "CT"
+   ],
+   "params": [
+    0.0262,
+    4.436675616
+   ],
+   "lj14": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "N",
+   "match": [
+    "N"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "NC2",
+   "match": [
+    "NC2"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "NH1",
+   "match": [
+    "NH1"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "NH2",
+   "match": [
+    "NH2"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "NH3",
+   "match": [
+    "NH3"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "NP",
+   "match": [
+    "NP"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "NR",
+   "match": [
+    "NR"
+   ],
+   "params": [
+    0.2384,
+    2.850875898
+   ]
+  },
+  {
+   "name": "H",
+   "match": [
+    "H"
+   ],
+   "params": [
+    0.0498,
+    1.425437949
+   ]
+  },
+  {
+   "name": "HC",
+   "match": [
+    "HC"
+   ],
+   "params": [
+    0.0498,
+    1.069078462
+   ]
+  },
+  {
+   "name": "HA",
+   "match": [
+    "HA"
+   ],
+   "params": [
+    0.045,
+    2.615678636
+   ]
+  },
+  {
+   "name": "O",
+   "match": [
+    "O"
+   ],
+   "params": [
+    0.1591,
+    2.850875898
+   ]
+  },
+  {
+   "name": "OH1",
+   "match": [
+    "OH1"
+   ],
+   "params": [
+    0.1591,
+    2.850875898
+   ]
+  },
+  {
+   "name": "OS",
+   "match": [
+    "OS"
+   ],
+   "params": [
+    0.1591,
+    2.850875898
+   ]
+  },
+  {
+   "name": "OC",
+   "match": [
+    "OC"
+   ],
+   "params": [
+    0.6469,
+    2.850875898
+   ]
+  },
+  {
+   "name": "OH2",
+   "match": [
+    "OH2"
+   ],
+   "params": [
+    0.0758,
+    3.09997118
+   ]
+  },
+  {
+   "name": "LP",
+   "match": [
+    "LP"
+   ],
+   "params": [
+    0.04598,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "S",
+   "match": [
+    "S"
+   ],
+   "params": [
+    0.043,
+    3.367597155
+   ]
+  },
+  {
+   "name": "SH1E",
+   "match": [
+    "SH1E"
+   ],
+   "params": [
+    0.043,
+    3.367597155
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "S-S",
+   "match": [
+    "S",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    500,
+    2.02
+   ]
+  },
+  {
+   "name": "OC-S",
+   "match": [
+    "OC",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.43
+   ]
+  },
+  {
+   "name": "HC-NH3",
+   "match": [
+    "HC",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    1.04
+   ]
+  },
+  {
+   "name": "HC-NH1",
+   "match": [
+    "HC",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    0.98
+   ]
+  },
+  {
+   "name": "HC-NC2",
+   "match": [
+    "HC",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    1
+   ]
+  },
+  {
+   "name": "HA-CT",
+   "match": [
+    "HA",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    300,
+    1.08
+   ]
+  },
+  {
+   "name": "HA-C",
+   "match": [
+    "HA",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.08
+   ]
+  },
+  {
+   "name": "H-NH2",
+   "match": [
+    "H",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    0.98
+   ]
+  },
+  {
+   "name": "H-NH1",
+   "match": [
+    "H",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    0.98
+   ]
+  },
+  {
+   "name": "C-OS",
+   "match": [
+    "C",
+    "OS"
+   ],
+   "style": "harmonic",
+   "params": [
+    292,
+    1.43
+   ]
+  },
+  {
+   "name": "C-OH1",
+   "match": [
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.38
+   ]
+  },
+  {
+   "name": "C-OC",
+   "match": [
+    "C",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    580,
+    1.23
+   ]
+  },
+  {
+   "name": "C-O",
+   "match": [
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    580,
+    1.23
+   ]
+  },
+  {
+   "name": "C-NR",
+   "match": [
+    "C",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    471,
+    1.33
+   ]
+  },
+  {
+   "name": "C-NP",
+   "match": [
+    "C",
+    "NP"
+   ],
+   "style": "harmonic",
+   "params": [
+    471,
+    1.33
+   ]
+  },
+  {
+   "name": "C-NH2",
+   "match": [
+    "C",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    471,
+    1.33
+   ]
+  },
+  {
+   "name": "C-NH1",
+   "match": [
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    471,
+    1.33
+   ]
+  },
+  {
+   "name": "C-NC2",
+   "match": [
+    "C",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.33
+   ]
+  },
+  {
+   "name": "C-N",
+   "match": [
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    471,
+    1.33
+   ]
+  },
+  {
+   "name": "C-CT",
+   "match": [
+    "C",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    1.53
+   ]
+  },
+  {
+   "name": "C-CR1E",
+   "match": [
+    "C",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.38
+   ]
+  },
+  {
+   "name": "C-CH3E",
+   "match": [
+    "C",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    1.52
+   ]
+  },
+  {
+   "name": "C-CH2E",
+   "match": [
+    "C",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    1.52
+   ]
+  },
+  {
+   "name": "C-CH1E",
+   "match": [
+    "C",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    405,
+    1.52
+   ]
+  },
+  {
+   "name": "C-C",
+   "match": [
+    "C",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.38
+   ]
+  },
+  {
+   "name": "CT-S",
+   "match": [
+    "CT",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.81
+   ]
+  },
+  {
+   "name": "CT-OH1",
+   "match": [
+    "CT",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.42
+   ]
+  },
+  {
+   "name": "CT-NH3",
+   "match": [
+    "CT",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CT-NH2",
+   "match": [
+    "CT",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CT-NH1",
+   "match": [
+    "CT",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CT-NC2",
+   "match": [
+    "CT",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CT-N",
+   "match": [
+    "CT",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CT-CT",
+   "match": [
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.53
+   ]
+  },
+  {
+   "name": "CR1E-NR",
+   "match": [
+    "CR1E",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.305
+   ]
+  },
+  {
+   "name": "CR1E-NH1",
+   "match": [
+    "CR1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.305
+   ]
+  },
+  {
+   "name": "CR1E-CR1E",
+   "match": [
+    "CR1E",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.38
+   ]
+  },
+  {
+   "name": "CH2E-CR1E",
+   "match": [
+    "CH2E",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    250,
+    1.45
+   ]
+  },
+  {
+   "name": "CH3E-OS",
+   "match": [
+    "CH3E",
+    "OS"
+   ],
+   "style": "harmonic",
+   "params": [
+    292,
+    1.38
+   ]
+  },
+  {
+   "name": "CH3E-S",
+   "match": [
+    "CH3E",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.77
+   ]
+  },
+  {
+   "name": "CH3E-NR",
+   "match": [
+    "CH3E",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.49
+   ]
+  },
+  {
+   "name": "CH3E-NH1",
+   "match": [
+    "CH3E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.49
+   ]
+  },
+  {
+   "name": "CH3E-CH3E",
+   "match": [
+    "CH3E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    225,
+    1.54
+   ]
+  },
+  {
+   "name": "CH2E-SH1E",
+   "match": [
+    "CH2E",
+    "SH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.81
+   ]
+  },
+  {
+   "name": "CH2E-S",
+   "match": [
+    "CH2E",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.81
+   ]
+  },
+  {
+   "name": "CH2E-OH1",
+   "match": [
+    "CH2E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.42
+   ]
+  },
+  {
+   "name": "CH2E-NH3",
+   "match": [
+    "CH2E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH2E-NH2",
+   "match": [
+    "CH2E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH2E-NH1",
+   "match": [
+    "CH2E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH2E-N",
+   "match": [
+    "CH2E",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH2E-CH3E",
+   "match": [
+    "CH2E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    225,
+    1.54
+   ]
+  },
+  {
+   "name": "CH2E-CH2E",
+   "match": [
+    "CH2E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    225,
+    1.52
+   ]
+  },
+  {
+   "name": "CH1E-OH1",
+   "match": [
+    "CH1E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.42
+   ]
+  },
+  {
+   "name": "CH1E-NH3",
+   "match": [
+    "CH1E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH1E-NH2",
+   "match": [
+    "CH1E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH1E-NH1",
+   "match": [
+    "CH1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH1E-N",
+   "match": [
+    "CH1E",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    422,
+    1.45
+   ]
+  },
+  {
+   "name": "CH1E-CH3E",
+   "match": [
+    "CH1E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    225,
+    1.52
+   ]
+  },
+  {
+   "name": "CH1E-CH2E",
+   "match": [
+    "CH1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    225,
+    1.52
+   ]
+  },
+  {
+   "name": "CH1E-CH1E",
+   "match": [
+    "CH1E",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    225,
+    1.53
+   ]
+  },
+  {
+   "name": "LP-OH2",
+   "match": [
+    "LP",
+    "OH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    0.8
+   ]
+  },
+  {
+   "name": "H-OH2",
+   "match": [
+    "H",
+    "OH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1
+   ]
+  },
+  {
+   "name": "H-OH1",
+   "match": [
+    "H",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    0.96
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "OS-C-O",
+   "match": [
+    "OS",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    120
+   ]
+  },
+  {
+   "name": "OS-C-CH2E",
+   "match": [
+    "OS",
+    "C",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    125.3
+   ]
+  },
+  {
+   "name": "OS-C-CH1E",
+   "match": [
+    "OS",
+    "C",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    125.3
+   ]
+  },
+  {
+   "name": "OC-C-OC",
+   "match": [
+    "OC",
+    "C",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    122.5
+   ]
+  },
+  {
+   "name": "O-C-OH1",
+   "match": [
+    "O",
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    120
+   ]
+  },
+  {
+   "name": "NH2-C-O",
+   "match": [
+    "NH2",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    121
+   ]
+  },
+  {
+   "name": "NH1-CR1E-NR",
+   "match": [
+    "NH1",
+    "CR1E",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109
+   ]
+  },
+  {
+   "name": "NH1-CR1E-NH1",
+   "match": [
+    "NH1",
+    "CR1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109
+   ]
+  },
+  {
+   "name": "NH1-C-O",
+   "match": [
+    "NH1",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    121
+   ]
+  },
+  {
+   "name": "NH1-C-NR",
+   "match": [
+    "NH1",
+    "C",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    120
+   ]
+  },
+  {
+   "name": "NC2-C-NH1",
+   "match": [
+    "NC2",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    120
+   ]
+  },
+  {
+   "name": "NC2-C-NC2",
+   "match": [
+    "NC2",
+    "C",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    120
+   ]
+  },
+  {
+   "name": "N-C-O",
+   "match": [
+    "N",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    121
+   ]
+  },
+  {
+   "name": "OC-S-OC",
+   "match": [
+    "OC",
+    "S",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-S-S",
+   "match": [
+    "CT",
+    "S",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    104.2
+   ]
+  },
+  {
+   "name": "CT-S-CT",
+   "match": [
+    "CT",
+    "S",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    99.5
+   ]
+  },
+  {
+   "name": "CH2E-S-S",
+   "match": [
+    "CH2E",
+    "S",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    104.2
+   ]
+  },
+  {
+   "name": "CH2E-S-CH3E",
+   "match": [
+    "CH2E",
+    "S",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    99.5
+   ]
+  },
+  {
+   "name": "C-OS-CH3E",
+   "match": [
+    "C",
+    "OS",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    46.5,
+    120.5
+   ]
+  },
+  {
+   "name": "CT-OH1-H",
+   "match": [
+    "CT",
+    "OH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CH2E-OH1-H",
+   "match": [
+    "CH2E",
+    "OH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CH1E-OH1-H",
+   "match": [
+    "CH1E",
+    "OH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "C-OH1-H",
+   "match": [
+    "C",
+    "OH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HC-NH3-HC",
+   "match": [
+    "HC",
+    "NH3",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-NH3-HC",
+   "match": [
+    "CT",
+    "NH3",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CH2E-NH3-HC",
+   "match": [
+    "CH2E",
+    "NH3",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CH1E-NH3-CH2E",
+   "match": [
+    "CH1E",
+    "NH3",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CH1E-NH3-HC",
+   "match": [
+    "CH1E",
+    "NH3",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CR1E-NR-CR1E",
+   "match": [
+    "CR1E",
+    "NR",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CH3E-NR-C",
+   "match": [
+    "CH3E",
+    "NR",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109.5
+   ]
+  },
+  {
+   "name": "CH3E-NR-CR1E",
+   "match": [
+    "CH3E",
+    "NR",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109.5
+   ]
+  },
+  {
+   "name": "C-NR-CR1E",
+   "match": [
+    "C",
+    "NR",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109.5
+   ]
+  },
+  {
+   "name": "C-NR-C",
+   "match": [
+    "C",
+    "NR",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    102.5
+   ]
+  },
+  {
+   "name": "C-NP-C",
+   "match": [
+    "C",
+    "NP",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    102.5
+   ]
+  },
+  {
+   "name": "H-NH2-H",
+   "match": [
+    "H",
+    "NH2",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    125
+   ]
+  },
+  {
+   "name": "CT-NH2-H",
+   "match": [
+    "CT",
+    "NH2",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CH2E-NH2-H",
+   "match": [
+    "CH2E",
+    "NH2",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CH1E-NH2-H",
+   "match": [
+    "CH1E",
+    "NH2",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CH1E-NH2-CH2E",
+   "match": [
+    "CH1E",
+    "NH2",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    120
+   ]
+  },
+  {
+   "name": "C-NH2-H",
+   "match": [
+    "C",
+    "NH2",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    120
+   ]
+  },
+  {
+   "name": "CT-NH1-H",
+   "match": [
+    "CT",
+    "NH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CR1E-NH1-H",
+   "match": [
+    "CR1E",
+    "NH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CR1E-NH1-CR1E",
+   "match": [
+    "CR1E",
+    "NH1",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CH3E-NH1-H",
+   "match": [
+    "CH3E",
+    "NH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CH2E-NH1-H",
+   "match": [
+    "CH2E",
+    "NH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CH2E-NH1-CH3E",
+   "match": [
+    "CH2E",
+    "NH1",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    120
+   ]
+  },
+  {
+   "name": "CH1E-NH1-H",
+   "match": [
+    "CH1E",
+    "NH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CH1E-NH1-CH3E",
+   "match": [
+    "CH1E",
+    "NH1",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    120
+   ]
+  },
+  {
+   "name": "C-NH1-H",
+   "match": [
+    "C",
+    "NH1",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    120
+   ]
+  },
+  {
+   "name": "C-NH1-CT",
+   "match": [
+    "C",
+    "NH1",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120
+   ]
+  },
+  {
+   "name": "C-NH1-CR1E",
+   "match": [
+    "C",
+    "NH1",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    108
+   ]
+  },
+  {
+   "name": "C-NH1-CH3E",
+   "match": [
+    "C",
+    "NH1",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    77.5,
+    120
+   ]
+  },
+  {
+   "name": "C-NH1-CH2E",
+   "match": [
+    "C",
+    "NH1",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    77.5,
+    120
+   ]
+  },
+  {
+   "name": "C-NH1-CH1E",
+   "match": [
+    "C",
+    "NH1",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    77.5,
+    120
+   ]
+  },
+  {
+   "name": "C-NH1-C",
+   "match": [
+    "C",
+    "NH1",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    102.5
+   ]
+  },
+  {
+   "name": "HC-NC2-HC",
+   "match": [
+    "HC",
+    "NC2",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    120
+   ]
+  },
+  {
+   "name": "CT-NC2-HC",
+   "match": [
+    "CT",
+    "NC2",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "C-NC2-HC",
+   "match": [
+    "C",
+    "NC2",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "C-NC2-CT",
+   "match": [
+    "C",
+    "NC2",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120
+   ]
+  },
+  {
+   "name": "CT-N-CT",
+   "match": [
+    "CT",
+    "N",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    110
+   ]
+  },
+  {
+   "name": "CH2E-N-CH3E",
+   "match": [
+    "CH2E",
+    "N",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "CH1E-N-CH3E",
+   "match": [
+    "CH1E",
+    "N",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    110
+   ]
+  },
+  {
+   "name": "CH1E-N-CH2E",
+   "match": [
+    "CH1E",
+    "N",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    110
+   ]
+  },
+  {
+   "name": "C-N-CT",
+   "match": [
+    "C",
+    "N",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120
+   ]
+  },
+  {
+   "name": "C-N-CH2E",
+   "match": [
+    "C",
+    "N",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120
+   ]
+  },
+  {
+   "name": "C-N-CH1E",
+   "match": [
+    "C",
+    "N",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120
+   ]
+  },
+  {
+   "name": "HA-CT-S",
+   "match": [
+    "HA",
+    "CT",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-CT-OH1",
+   "match": [
+    "HA",
+    "CT",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-CT-NH3",
+   "match": [
+    "HA",
+    "CT",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-CT-NH1",
+   "match": [
+    "HA",
+    "CT",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-CT-NC2",
+   "match": [
+    "HA",
+    "CT",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-CT-N",
+   "match": [
+    "HA",
+    "CT",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-CT-HA",
+   "match": [
+    "HA",
+    "CT",
+    "HA"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    109.5
+   ]
+  },
+  {
+   "name": "HA-C-O",
+   "match": [
+    "HA",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    121.5
+   ]
+  },
+  {
+   "name": "HA-C-NR",
+   "match": [
+    "HA",
+    "C",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    120
+   ]
+  },
+  {
+   "name": "HA-C-NH2",
+   "match": [
+    "HA",
+    "C",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    120
+   ]
+  },
+  {
+   "name": "HA-C-NH1",
+   "match": [
+    "HA",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    120
+   ]
+  },
+  {
+   "name": "CT-C-OH1",
+   "match": [
+    "CT",
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    120
+   ]
+  },
+  {
+   "name": "CT-C-OC",
+   "match": [
+    "CT",
+    "C",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    118.5
+   ]
+  },
+  {
+   "name": "CT-C-O",
+   "match": [
+    "CT",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    121.5
+   ]
+  },
+  {
+   "name": "CT-C-NH2",
+   "match": [
+    "CT",
+    "C",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CT-C-NH1",
+   "match": [
+    "CT",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CT-C-N",
+   "match": [
+    "CT",
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CT-CT-S",
+   "match": [
+    "CT",
+    "CT",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    112.5
+   ]
+  },
+  {
+   "name": "CT-CT-OH1",
+   "match": [
+    "CT",
+    "CT",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-CT-NH3",
+   "match": [
+    "CT",
+    "CT",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CT-CT-NH2",
+   "match": [
+    "CT",
+    "CT",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CT-CT-NH1",
+   "match": [
+    "CT",
+    "CT",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CT-CT-NC2",
+   "match": [
+    "CT",
+    "CT",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CT-CT-N",
+   "match": [
+    "CT",
+    "CT",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    105
+   ]
+  },
+  {
+   "name": "CT-CT-HA",
+   "match": [
+    "CT",
+    "CT",
+    "HA"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-CT-CT",
+   "match": [
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111
+   ]
+  },
+  {
+   "name": "CR1E-C-OH1",
+   "match": [
+    "CR1E",
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    119
+   ]
+  },
+  {
+   "name": "CR1E-C-NR",
+   "match": [
+    "CR1E",
+    "C",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    122.5
+   ]
+  },
+  {
+   "name": "CR1E-C-NP",
+   "match": [
+    "CR1E",
+    "C",
+    "NP"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    122.5
+   ]
+  },
+  {
+   "name": "CR1E-C-NH1",
+   "match": [
+    "CR1E",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110.5
+   ]
+  },
+  {
+   "name": "CR1E-C-CR1E",
+   "match": [
+    "CR1E",
+    "C",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    120.5
+   ]
+  },
+  {
+   "name": "CH3E-C-O",
+   "match": [
+    "CH3E",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    121.5
+   ]
+  },
+  {
+   "name": "CH3E-C-NH1",
+   "match": [
+    "CH3E",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH3E-C-N",
+   "match": [
+    "CH3E",
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH2E-C-OH1",
+   "match": [
+    "CH2E",
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    120
+   ]
+  },
+  {
+   "name": "CH2E-C-OC",
+   "match": [
+    "CH2E",
+    "C",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    118.5
+   ]
+  },
+  {
+   "name": "CH2E-C-O",
+   "match": [
+    "CH2E",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    121.6
+   ]
+  },
+  {
+   "name": "CH2E-C-NR",
+   "match": [
+    "CH2E",
+    "C",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    116
+   ]
+  },
+  {
+   "name": "CH2E-C-NC2",
+   "match": [
+    "CH2E",
+    "C",
+    "NC2"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH2E-C-NH2",
+   "match": [
+    "CH2E",
+    "C",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH2E-C-NH1",
+   "match": [
+    "CH2E",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH2E-C-N",
+   "match": [
+    "CH2E",
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH2E-C-CR1E",
+   "match": [
+    "CH2E",
+    "C",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    121.5
+   ]
+  },
+  {
+   "name": "CH1E-C-OH1",
+   "match": [
+    "CH1E",
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    120
+   ]
+  },
+  {
+   "name": "CH1E-C-OC",
+   "match": [
+    "CH1E",
+    "C",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    117.5
+   ]
+  },
+  {
+   "name": "CH1E-C-O",
+   "match": [
+    "CH1E",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    121.5
+   ]
+  },
+  {
+   "name": "CH1E-C-NH1",
+   "match": [
+    "CH1E",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "CH1E-C-N",
+   "match": [
+    "CH1E",
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    20,
+    117.5
+   ]
+  },
+  {
+   "name": "C-CT-NH3",
+   "match": [
+    "C",
+    "CT",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CT-NH2",
+   "match": [
+    "C",
+    "CT",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CT-NH1",
+   "match": [
+    "C",
+    "CT",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CT-N",
+   "match": [
+    "C",
+    "CT",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CT-HA",
+   "match": [
+    "C",
+    "CT",
+    "HA"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109.5
+   ]
+  },
+  {
+   "name": "C-CT-CT",
+   "match": [
+    "C",
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109.5
+   ]
+  },
+  {
+   "name": "C-C-O",
+   "match": [
+    "C",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    119
+   ]
+  },
+  {
+   "name": "C-C-OH1",
+   "match": [
+    "C",
+    "C",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    119
+   ]
+  },
+  {
+   "name": "C-C-NR",
+   "match": [
+    "C",
+    "C",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    112.5
+   ]
+  },
+  {
+   "name": "C-C-NP",
+   "match": [
+    "C",
+    "C",
+    "NP"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    112.5
+   ]
+  },
+  {
+   "name": "C-C-NH1",
+   "match": [
+    "C",
+    "C",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    109
+   ]
+  },
+  {
+   "name": "C-C-HA",
+   "match": [
+    "C",
+    "C",
+    "HA"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    120
+   ]
+  },
+  {
+   "name": "C-C-CT",
+   "match": [
+    "C",
+    "C",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    126.5
+   ]
+  },
+  {
+   "name": "C-C-CR1E",
+   "match": [
+    "C",
+    "C",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    122.5
+   ]
+  },
+  {
+   "name": "C-C-CH3E",
+   "match": [
+    "C",
+    "C",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    126.5
+   ]
+  },
+  {
+   "name": "C-C-CH2E",
+   "match": [
+    "C",
+    "C",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    126.5
+   ]
+  },
+  {
+   "name": "C-C-C",
+   "match": [
+    "C",
+    "C",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    106.5
+   ]
+  },
+  {
+   "name": "C-CH1E-NH3",
+   "match": [
+    "C",
+    "CH1E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH1E-NH2",
+   "match": [
+    "C",
+    "CH1E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH1E-NH1",
+   "match": [
+    "C",
+    "CH1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH1E-N",
+   "match": [
+    "C",
+    "CH1E",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH1E-CH3E",
+   "match": [
+    "C",
+    "CH1E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    106.5
+   ]
+  },
+  {
+   "name": "C-CH1E-CH2E",
+   "match": [
+    "C",
+    "CH1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    109.5
+   ]
+  },
+  {
+   "name": "C-CH1E-CH1E",
+   "match": [
+    "C",
+    "CH1E",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    110
+   ]
+  },
+  {
+   "name": "C-CH2E-NH3",
+   "match": [
+    "C",
+    "CH2E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH2E-NH2",
+   "match": [
+    "C",
+    "CH2E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH2E-NH1",
+   "match": [
+    "C",
+    "CH2E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    111.6
+   ]
+  },
+  {
+   "name": "C-CH2E-CH2E",
+   "match": [
+    "C",
+    "CH2E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    113
+   ]
+  },
+  {
+   "name": "C-CH2E-CH1E",
+   "match": [
+    "C",
+    "CH2E",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    112.5
+   ]
+  },
+  {
+   "name": "C-CR1E-NR",
+   "match": [
+    "C",
+    "CR1E",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    106.5
+   ]
+  },
+  {
+   "name": "C-CR1E-NH1",
+   "match": [
+    "C",
+    "CR1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    109.5
+   ]
+  },
+  {
+   "name": "C-CR1E-CR1E",
+   "match": [
+    "C",
+    "CR1E",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    119
+   ]
+  },
+  {
+   "name": "C-CR1E-CH2E",
+   "match": [
+    "C",
+    "CR1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    122
+   ]
+  },
+  {
+   "name": "C-CR1E-C",
+   "match": [
+    "C",
+    "CR1E",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    126.5
+   ]
+  },
+  {
+   "name": "CR1E-CR1E-CR1E",
+   "match": [
+    "CR1E",
+    "CR1E",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    120.5
+   ]
+  },
+  {
+   "name": "CH1E-CH2E-SH1E",
+   "match": [
+    "CH1E",
+    "CH2E",
+    "SH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    112.5
+   ]
+  },
+  {
+   "name": "CH1E-CH2E-S",
+   "match": [
+    "CH1E",
+    "CH2E",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    112.5
+   ]
+  },
+  {
+   "name": "CH3E-CH2E-OH1",
+   "match": [
+    "CH3E",
+    "CH2E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111
+   ]
+  },
+  {
+   "name": "CH1E-CH2E-OH1",
+   "match": [
+    "CH1E",
+    "CH2E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111
+   ]
+  },
+  {
+   "name": "CH1E-CH2E-CH3E",
+   "match": [
+    "CH1E",
+    "CH2E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    113
+   ]
+  },
+  {
+   "name": "CH1E-CH2E-CH2E",
+   "match": [
+    "CH1E",
+    "CH2E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    112.5
+   ]
+  },
+  {
+   "name": "CH1E-CH2E-CH1E",
+   "match": [
+    "CH1E",
+    "CH2E",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    117
+   ]
+  },
+  {
+   "name": "CH3E-CH1E-OH1",
+   "match": [
+    "CH3E",
+    "CH1E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    110.5
+   ]
+  },
+  {
+   "name": "CH3E-CH1E-NH3",
+   "match": [
+    "CH3E",
+    "CH1E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    109.5
+   ]
+  },
+  {
+   "name": "CH3E-CH1E-NH2",
+   "match": [
+    "CH3E",
+    "CH1E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    109.5
+   ]
+  },
+  {
+   "name": "CH3E-CH1E-NH1",
+   "match": [
+    "CH3E",
+    "CH1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    108.5
+   ]
+  },
+  {
+   "name": "CH3E-CH1E-CH3E",
+   "match": [
+    "CH3E",
+    "CH1E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    111
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-S",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "S"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    112.5
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-NH3",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110.5
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-NH2",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    109.5
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-NH1",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    111
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-N",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    105
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-CH3E",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111
+   ]
+  },
+  {
+   "name": "CH2E-CH2E-CH2E",
+   "match": [
+    "CH2E",
+    "CH2E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    110
+   ]
+  },
+  {
+   "name": "CH2E-CH1E-NH3",
+   "match": [
+    "CH2E",
+    "CH1E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CH2E-CH1E-NH2",
+   "match": [
+    "CH2E",
+    "CH1E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CH2E-CH1E-NH1",
+   "match": [
+    "CH2E",
+    "CH1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    110
+   ]
+  },
+  {
+   "name": "CH2E-CH1E-N",
+   "match": [
+    "CH2E",
+    "CH1E",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    65,
+    104
+   ]
+  },
+  {
+   "name": "CH2E-CH1E-CH3E",
+   "match": [
+    "CH2E",
+    "CH1E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    111.5
+   ]
+  },
+  {
+   "name": "CH1E-CH1E-OH1",
+   "match": [
+    "CH1E",
+    "CH1E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    104.5
+   ]
+  },
+  {
+   "name": "CH1E-CH1E-NH3",
+   "match": [
+    "CH1E",
+    "CH1E",
+    "NH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    107.5
+   ]
+  },
+  {
+   "name": "CH1E-CH1E-NH2",
+   "match": [
+    "CH1E",
+    "CH1E",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "CH1E-CH1E-NH1",
+   "match": [
+    "CH1E",
+    "CH1E",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    110
+   ]
+  },
+  {
+   "name": "CH1E-CH1E-CH3E",
+   "match": [
+    "CH1E",
+    "CH1E",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111
+   ]
+  },
+  {
+   "name": "CH1E-CH1E-CH2E",
+   "match": [
+    "CH1E",
+    "CH1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    112.5
+   ]
+  },
+  {
+   "name": "LP-OH2-LP",
+   "match": [
+    "LP",
+    "OH2",
+    "LP"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    109.47122
+   ]
+  },
+  {
+   "name": "H-OH2-LP",
+   "match": [
+    "H",
+    "OH2",
+    "LP"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    109.47122
+   ]
+  },
+  {
+   "name": "H-OH2-H",
+   "match": [
+    "H",
+    "OH2",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    109.47122
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "X-C-OS-X",
+   "match": [
+    "*",
+    "C",
+    "OS",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-OH1-X",
+   "match": [
+    "*",
+    "C",
+    "OH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-NH2-X",
+   "match": [
+    "*",
+    "C",
+    "NH2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    8.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-NH1-X",
+   "match": [
+    "*",
+    "C",
+    "NH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    8.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-NC2-X",
+   "match": [
+    "*",
+    "C",
+    "NC2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    8.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-N-X",
+   "match": [
+    "*",
+    "C",
+    "N",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    8.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-CT-X",
+   "match": [
+    "*",
+    "C",
+    "CT",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-C-CR1E-X",
+   "match": [
+    "*",
+    "C",
+    "CR1E",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C-CH2E-X",
+   "match": [
+    "*",
+    "C",
+    "CH2E",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-C-CH1E-X",
+   "match": [
+    "*",
+    "C",
+    "CH1E",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-S-S-X",
+   "match": [
+    "*",
+    "S",
+    "S",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4,
+    2,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-S-X",
+   "match": [
+    "*",
+    "CT",
+    "S",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-OH1-X",
+   "match": [
+    "*",
+    "CT",
+    "OH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-NH3-X",
+   "match": [
+    "*",
+    "CT",
+    "NH3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-NH2-X",
+   "match": [
+    "*",
+    "CT",
+    "NH2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-NH1-X",
+   "match": [
+    "*",
+    "CT",
+    "NH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-NC2-X",
+   "match": [
+    "*",
+    "CT",
+    "NC2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-N-X",
+   "match": [
+    "*",
+    "CT",
+    "N",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CT-CT-X",
+   "match": [
+    "*",
+    "CT",
+    "CT",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-S-X",
+   "match": [
+    "*",
+    "CH2E",
+    "S",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-OH1-X",
+   "match": [
+    "*",
+    "CH2E",
+    "OH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-NH3-X",
+   "match": [
+    "*",
+    "CH2E",
+    "NH3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-NH2-X",
+   "match": [
+    "*",
+    "CH2E",
+    "NH2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-NH1-X",
+   "match": [
+    "*",
+    "CH2E",
+    "NH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-N-X",
+   "match": [
+    "*",
+    "CH2E",
+    "N",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-OH1-X",
+   "match": [
+    "*",
+    "CH1E",
+    "OH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-NH3-X",
+   "match": [
+    "*",
+    "CH1E",
+    "NH3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-NH2-X",
+   "match": [
+    "*",
+    "CH1E",
+    "NH2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-NH1-X",
+   "match": [
+    "*",
+    "CH1E",
+    "NH1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-N-X",
+   "match": [
+    "*",
+    "CH1E",
+    "N",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH2E-CH2E-X",
+   "match": [
+    "*",
+    "CH2E",
+    "CH2E",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-CH2E-X",
+   "match": [
+    "*",
+    "CH1E",
+    "CH2E",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CH1E-CH1E-X",
+   "match": [
+    "*",
+    "CH1E",
+    "CH1E",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CR1E-C-C-NH1",
+   "match": [
+    "CR1E",
+    "C",
+    "C",
+    "NH1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CR1E-C-C-C",
+   "match": [
+    "CR1E",
+    "C",
+    "C",
+    "C"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CR1E-C-C-CR1E",
+   "match": [
+    "CR1E",
+    "C",
+    "C",
+    "CR1E"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CH2E-C-N-CH1E",
+   "match": [
+    "CH2E",
+    "C",
+    "N",
+    "CH1E"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CH1E-C-N-CH1E",
+   "match": [
+    "CH1E",
+    "C",
+    "N",
+    "CH1E"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ],
+   "comment": "PRO ISOM. BARRIER 20 KCAL/MOL."
+  }
+ ],
+ "impropers": [
+  {
+   "name": "NR-X-X-CH3E",
+   "match": [
+    "NR",
+    "*",
+    "*",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "NR-X-X-CT",
+   "match": [
+    "NR",
+    "*",
+    "*",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "NR-X-X-CR1E",
+   "match": [
+    "NR",
+    "*",
+    "*",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "NR-X-X-C",
+   "match": [
+    "NR",
+    "*",
+    "*",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "NH2-X-X-H",
+   "match": [
+    "NH2",
+    "*",
+    "*",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-NR",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "NR"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-NH1",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-H",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-CT",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-CH3E",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-CH2E",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NH1-X-X-CH1E",
+   "match": [
+    "NH1",
+    "*",
+    "*",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NC2-X-X-HC",
+   "match": [
+    "NC2",
+    "*",
+    "*",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "NC2-X-X-CT",
+   "match": [
+    "NC2",
+    "*",
+    "*",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "N-X-X-CT",
+   "match": [
+    "N",
+    "*",
+    "*",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "N-X-X-CH2E",
+   "match": [
+    "N",
+    "*",
+    "*",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "H-X-X-O",
+   "match": [
+    "H",
+    "*",
+    "*",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "CR1E-X-X-NH1",
+   "match": [
+    "CR1E",
+    "*",
+    "*",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "CR1E-X-X-CR1E",
+   "match": [
+    "CR1E",
+    "*",
+    "*",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "CH1E-X-X-CH3E",
+   "match": [
+    "CH1E",
+    "*",
+    "*",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    35.26439
+   ]
+  },
+  {
+   "name": "CH1E-X-X-CH2E",
+   "match": [
+    "CH1E",
+    "*",
+    "*",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    35.26439
+   ]
+  },
+  {
+   "name": "CH1E-X-X-CH1E",
+   "match": [
+    "CH1E",
+    "*",
+    "*",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    35.26439
+   ]
+  },
+  {
+   "name": "C-X-X-OH1",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    150,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-OC",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "OC"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-O",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-NH1",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "NH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-HA",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "HA"
+   ],
+   "style": "harmonic",
+   "params": [
+    75,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-H",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    75,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-CR1E",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "CR1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-CH3E",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "CH3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-CH2E",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "C-X-X-C",
+   "match": [
+    "C",
+    "*",
+    "*",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    25,
+    0
+   ]
+  },
+  {
+   "name": "N-CH1E-CH2E-C",
+   "match": [
+    "N",
+    "CH1E",
+    "CH2E",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "C-OC-OC-CH2E",
+   "match": [
+    "C",
+    "OC",
+    "OC",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    0
+   ]
+  },
+  {
+   "name": "C-OC-OC-CH1E",
+   "match": [
+    "C",
+    "OC",
+    "OC",
+    "CH1E"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    0
+   ]
+  },
+  {
+   "name": "C-H-H-NH2",
+   "match": [
+    "C",
+    "H",
+    "H",
+    "NH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    0
+   ]
+  },
+  {
+   "name": "C-CR1E-CR1E-OH1",
+   "match": [
+    "C",
+    "CR1E",
+    "CR1E",
+    "OH1"
+   ],
+   "style": "harmonic",
+   "params": [
+    150,
+    0
+   ]
+  },
+  {
+   "name": "C-NH1-CR1E-CH2E",
+   "match": [
+    "C",
+    "NH1",
+    "CR1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "C-CR1E-NH1-CH2E",
+   "match": [
+    "C",
+    "CR1E",
+    "NH1",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "C-CR1E-CR1E-CH2E",
+   "match": [
+    "C",
+    "CR1E",
+    "CR1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "C-CR1E-C-CH2E",
+   "match": [
+    "C",
+    "CR1E",
+    "C",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "C-C-CR1E-CH2E",
+   "match": [
+    "C",
+    "C",
+    "CR1E",
+    "CH2E"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  }
+ ],
+ "notes": [
+  "CHARMM19 is a polar-hydrogen (united-atom) force field",
+  "converted from DL_FIELD by CAPS (CHARMM19, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "validated",
+ "validation": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): butane, octane, ethanol and DL_FIELD's C18 alkane example identical."
+}

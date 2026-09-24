@@ -1,0 +1,5745 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CHARMM36 lipids (DL_FIELD)",
+ "source": "DL_FIELD 4.13: CHARMM36_lipid.par",
+ "references": [
+  "J. B. Klauda et al., J. Phys. Chem. B 114, 7830 (2010)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/charmm/coul/long",
+  "bond": "harmonic",
+  "angle": "charmm",
+  "dihedral": "fourier",
+  "improper": "harmonic"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_reversible": true,
+ "improper_all_explicit": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "NH3L",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "Np_ammonium"
+   ]
+  },
+  {
+   "name": "NTL",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "Nq_ammonium"
+   ]
+  },
+  {
+   "name": "HCL",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HN_ammonium"
+   ]
+  },
+  {
+   "name": "CTL3",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "Cp_alkane"
+   ]
+  },
+  {
+   "name": "CTL2",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "Cs_alkane",
+    "CsN+_alkane"
+   ]
+  },
+  {
+   "name": "CTL1",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "Ct_alkane",
+    "CA_amino_acid"
+   ]
+  },
+  {
+   "name": "CTL5",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "CpN+_alkane"
+   ]
+  },
+  {
+   "name": "HL",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCpN+_alkane",
+    "HCsN+_alkane"
+   ]
+  },
+  {
+   "name": "HAL3",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCp_alkane",
+    "HC_alkane"
+   ]
+  },
+  {
+   "name": "HAL2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCs_alkane"
+   ]
+  },
+  {
+   "name": "HAL1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCt_alkane"
+   ]
+  },
+  {
+   "name": "HBL",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCA_amino_acid"
+   ]
+  },
+  {
+   "name": "CEL1",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "CE_alkene"
+   ]
+  },
+  {
+   "name": "HEL1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkene"
+   ]
+  },
+  {
+   "name": "PL",
+   "element": "P",
+   "mass": 30.974,
+   "aliases": [
+    "PO2_phosphate"
+   ]
+  },
+  {
+   "name": "O2L",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OE_phosphate",
+    "OE_sulphate"
+   ]
+  },
+  {
+   "name": "OSLP",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OL_phosphate"
+   ]
+  },
+  {
+   "name": "OHL",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OH_phosphate",
+    "O_alcohol"
+   ]
+  },
+  {
+   "name": "HOL",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_phosphate",
+    "HO_alcohol"
+   ]
+  },
+  {
+   "name": "CL",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "C_ester"
+   ]
+  },
+  {
+   "name": "OBL",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OE_ester"
+   ]
+  },
+  {
+   "name": "OSL",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OL_ester",
+    "OL_sulphate"
+   ]
+  },
+  {
+   "name": "CCL",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "C_carboxylate"
+   ]
+  },
+  {
+   "name": "OCL",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_carboxylate"
+   ]
+  },
+  {
+   "name": "SL",
+   "element": "S",
+   "mass": 32.06,
+   "aliases": [
+    "S_sulphate"
+   ]
+  },
+  {
+   "name": "AG",
+   "element": "Ag",
+   "mass": 107.8682,
+   "aliases": [
+    "Ag_metal"
+   ]
+  },
+  {
+   "name": "AU",
+   "element": "Au",
+   "mass": 196.967,
+   "aliases": [
+    "Au_metal"
+   ]
+  },
+  {
+   "name": "PD",
+   "element": "Pd",
+   "mass": 106.42,
+   "aliases": [
+    "Pd_metal"
+   ]
+  },
+  {
+   "name": "SOD",
+   "element": "",
+   "mass": 22.9898,
+   "aliases": [
+    "Na+_cation"
+   ]
+  },
+  {
+   "name": "POT",
+   "element": "",
+   "mass": 39.0983,
+   "aliases": [
+    "K+_cation"
+   ]
+  },
+  {
+   "name": "CLA",
+   "element": "",
+   "mass": 35.453,
+   "aliases": [
+    "Cl-_anion"
+   ]
+  },
+  {
+   "name": "HT",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip3p_c"
+   ]
+  },
+  {
+   "name": "OT",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip3p_c",
+    "O_tip3p"
+   ]
+  },
+  {
+   "name": "H3P",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip3p"
+   ]
+  },
+  {
+   "name": "OTP",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip3p_pme"
+   ]
+  },
+  {
+   "name": "HTP",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip3p_pme"
+   ]
+  },
+  {
+   "name": "OT4",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip4p"
+   ]
+  },
+  {
+   "name": "HT4",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip4p"
+   ]
+  },
+  {
+   "name": "Q4",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "Q4_pseudo"
+   ]
+  },
+  {
+   "name": "OT5",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip5p"
+   ]
+  },
+  {
+   "name": "HT5",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip5p",
+    "HO_tip5p_pme"
+   ]
+  },
+  {
+   "name": "Q1",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "Q1_lone_pair"
+   ]
+  },
+  {
+   "name": "Q2",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "Q2_lone_pair"
+   ]
+  },
+  {
+   "name": "OT5E",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip5p_pme"
+   ]
+  },
+  {
+   "name": "OSPC",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_spc",
+    "O_spce"
+   ]
+  },
+  {
+   "name": "HSPC",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_spc",
+    "HO_spce"
+   ]
+  },
+  {
+   "name": "QZ",
+   "element": "",
+   "mass": 0.5,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom1"
+   ]
+  },
+  {
+   "name": "QY",
+   "element": "",
+   "mass": 0.2,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom2"
+   ]
+  },
+  {
+   "name": "QX",
+   "element": "",
+   "mass": 0.6,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom3"
+   ]
+  },
+  {
+   "name": "QW",
+   "element": "",
+   "mass": 0.7,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom4"
+   ]
+  },
+  {
+   "name": "HEL2",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "CEL2",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "CRL1",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "CRL2",
+   "element": "",
+   "mass": 0
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OT",
+   "match": [
+    "OT"
+   ],
+   "params": [
+    0.1521,
+    3.150574227
+   ]
+  },
+  {
+   "name": "OTP",
+   "match": [
+    "OTP"
+   ],
+   "params": [
+    0.102,
+    3.187991973
+   ]
+  },
+  {
+   "name": "OT4",
+   "match": [
+    "OT4"
+   ],
+   "params": [
+    0.155,
+    3.153603282
+   ]
+  },
+  {
+   "name": "OT5",
+   "match": [
+    "OT5"
+   ],
+   "params": [
+    0.16,
+    3.120105491
+   ]
+  },
+  {
+   "name": "OT5E",
+   "match": [
+    "OT5E"
+   ],
+   "params": [
+    0.178,
+    3.096942124
+   ]
+  },
+  {
+   "name": "OSPC",
+   "match": [
+    "OSPC"
+   ],
+   "params": [
+    0.1553,
+    3.165719505
+   ]
+  },
+  {
+   "name": "HT",
+   "match": [
+    "HT"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "H3P",
+   "match": [
+    "H3P"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HTP",
+   "match": [
+    "HTP"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HT4",
+   "match": [
+    "HT4"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HT5",
+   "match": [
+    "HT5"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HSPC",
+   "match": [
+    "HSPC"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HOL",
+   "match": [
+    "HOL"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "HAL1",
+   "match": [
+    "HAL1"
+   ],
+   "params": [
+    0.022,
+    2.351972616
+   ]
+  },
+  {
+   "name": "HAL2",
+   "match": [
+    "HAL2"
+   ],
+   "params": [
+    0.028,
+    2.387608565
+   ]
+  },
+  {
+   "name": "HAL3",
+   "match": [
+    "HAL3"
+   ],
+   "params": [
+    0.024,
+    2.387608565
+   ]
+  },
+  {
+   "name": "HBL",
+   "match": [
+    "HBL"
+   ],
+   "params": [
+    0.022,
+    2.351972616
+   ]
+  },
+  {
+   "name": "HCL",
+   "match": [
+    "HCL"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "HL",
+   "match": [
+    "HL"
+   ],
+   "params": [
+    0.046,
+    1.247258205
+   ]
+  },
+  {
+   "name": "HEL1",
+   "match": [
+    "HEL1"
+   ],
+   "params": [
+    0.031,
+    2.227246795
+   ]
+  },
+  {
+   "name": "HEL2",
+   "match": [
+    "HEL2"
+   ],
+   "params": [
+    0.026,
+    2.24506477
+   ]
+  },
+  {
+   "name": "CL",
+   "match": [
+    "CL"
+   ],
+   "params": [
+    0.07,
+    3.563594873
+   ]
+  },
+  {
+   "name": "CCL",
+   "match": [
+    "CCL"
+   ],
+   "params": [
+    0.07,
+    3.563594873
+   ]
+  },
+  {
+   "name": "CTL1",
+   "match": [
+    "CTL1"
+   ],
+   "params": [
+    0.02,
+    4.053589168
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CTL2",
+   "match": [
+    "CTL2"
+   ],
+   "params": [
+    0.056,
+    3.581412847
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CTL3",
+   "match": [
+    "CTL3"
+   ],
+   "params": [
+    0.078,
+    3.63486677
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CTL5",
+   "match": [
+    "CTL5"
+   ],
+   "params": [
+    0.08,
+    3.670502719
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CEL1",
+   "match": [
+    "CEL1"
+   ],
+   "params": [
+    0.068,
+    3.723956642
+   ]
+  },
+  {
+   "name": "CEL2",
+   "match": [
+    "CEL2"
+   ],
+   "params": [
+    0.064,
+    3.706138667
+   ]
+  },
+  {
+   "name": "CRL1",
+   "match": [
+    "CRL1"
+   ],
+   "params": [
+    0.036,
+    3.581412847
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CRL2",
+   "match": [
+    "CRL2"
+   ],
+   "params": [
+    0.06,
+    3.599230821
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "OBL",
+   "match": [
+    "OBL"
+   ],
+   "params": [
+    0.12,
+    3.029055642
+   ],
+   "lj14": [
+    0.12,
+    2.494516411
+   ]
+  },
+  {
+   "name": "OCL",
+   "match": [
+    "OCL"
+   ],
+   "params": [
+    0.12,
+    3.029055642
+   ]
+  },
+  {
+   "name": "O2L",
+   "match": [
+    "O2L"
+   ],
+   "params": [
+    0.12,
+    3.029055642
+   ]
+  },
+  {
+   "name": "OHL",
+   "match": [
+    "OHL"
+   ],
+   "params": [
+    0.1521,
+    3.153781462
+   ]
+  },
+  {
+   "name": "OSL",
+   "match": [
+    "OSL"
+   ],
+   "params": [
+    0.1,
+    2.93996577
+   ]
+  },
+  {
+   "name": "OSLP",
+   "match": [
+    "OSLP"
+   ],
+   "params": [
+    0.1,
+    2.93996577
+   ]
+  },
+  {
+   "name": "NH3L",
+   "match": [
+    "NH3L"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NTL",
+   "match": [
+    "NTL"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "SL",
+   "match": [
+    "SL"
+   ],
+   "params": [
+    0.47,
+    3.741774616
+   ]
+  },
+  {
+   "name": "PL",
+   "match": [
+    "PL"
+   ],
+   "params": [
+    0.585,
+    3.830864488
+   ]
+  },
+  {
+   "name": "AG",
+   "match": [
+    "AG"
+   ],
+   "params": [
+    4.56,
+    2.632605712
+   ]
+  },
+  {
+   "name": "AU",
+   "match": [
+    "AU"
+   ],
+   "params": [
+    5.29,
+    2.629042117
+   ]
+  },
+  {
+   "name": "PD",
+   "match": [
+    "PD"
+   ],
+   "params": [
+    6.15,
+    2.511443486
+   ]
+  },
+  {
+   "name": "POT",
+   "match": [
+    "POT"
+   ],
+   "params": [
+    0.087,
+    3.142645228
+   ]
+  },
+  {
+   "name": "SOD",
+   "match": [
+    "SOD"
+   ],
+   "params": [
+    0.0469,
+    2.513670733
+   ]
+  },
+  {
+   "name": "CLA",
+   "match": [
+    "CLA"
+   ],
+   "params": [
+    0.15,
+    4.04468018
+   ]
+  },
+  {
+   "name": "SOD-CLA",
+   "match": [
+    "SOD",
+    "CLA"
+   ],
+   "params": [
+    0.083875,
+    3.323943117
+   ]
+  },
+  {
+   "name": "POT-CLA",
+   "match": [
+    "POT",
+    "CLA"
+   ],
+   "params": [
+    0.114236,
+    3.635757669
+   ]
+  },
+  {
+   "name": "SOD-OC",
+   "match": [
+    "SOD",
+    "OC"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OS",
+   "match": [
+    "SOD",
+    "OS"
+   ],
+   "params": [
+    0.07502,
+    2.788512988
+   ]
+  },
+  {
+   "name": "SOD-OCL",
+   "match": [
+    "SOD",
+    "OCL"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OBL",
+   "match": [
+    "SOD",
+    "OBL"
+   ],
+   "params": [
+    0.07502,
+    2.788512988
+   ]
+  },
+  {
+   "name": "SOD-O2L",
+   "match": [
+    "SOD",
+    "O2L"
+   ],
+   "params": [
+    0.07502,
+    2.815239949
+   ]
+  },
+  {
+   "name": "SOD-OC2D2",
+   "match": [
+    "SOD",
+    "OC2D2"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OC2DP",
+   "match": [
+    "SOD",
+    "OC2DP"
+   ],
+   "params": [
+    0.07502,
+    2.815239949
+   ]
+  },
+  {
+   "name": "SOD-OG2D2",
+   "match": [
+    "SOD",
+    "OG2D2"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OG2P1",
+   "match": [
+    "SOD",
+    "OG2P1"
+   ],
+   "params": [
+    0.07502,
+    2.815239949
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "CEL1-CEL1",
+   "match": [
+    "CEL1",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    440,
+    1.34
+   ]
+  },
+  {
+   "name": "CEL1-CTL2",
+   "match": [
+    "CEL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    365,
+    1.502
+   ]
+  },
+  {
+   "name": "HEL1-CEL1",
+   "match": [
+    "HEL1",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    360.5,
+    1.1
+   ]
+  },
+  {
+   "name": "CEL1-CEL2",
+   "match": [
+    "CEL1",
+    "CEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    500,
+    1.342
+   ]
+  },
+  {
+   "name": "CEL1-CTL3",
+   "match": [
+    "CEL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    383,
+    1.504
+   ]
+  },
+  {
+   "name": "HEL2-CEL2",
+   "match": [
+    "HEL2",
+    "CEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    365,
+    1.1
+   ]
+  },
+  {
+   "name": "CEL2-CEL2",
+   "match": [
+    "CEL2",
+    "CEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    510,
+    1.33
+   ]
+  },
+  {
+   "name": "SL-OSL",
+   "match": [
+    "SL",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    250,
+    1.575
+   ]
+  },
+  {
+   "name": "SL-O2L",
+   "match": [
+    "SL",
+    "O2L"
+   ],
+   "style": "harmonic",
+   "params": [
+    540,
+    1.448
+   ]
+  },
+  {
+   "name": "OHL-CTL3",
+   "match": [
+    "OHL",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.42
+   ]
+  },
+  {
+   "name": "OHL-CTL2",
+   "match": [
+    "OHL",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.42
+   ]
+  },
+  {
+   "name": "OHL-CTL1",
+   "match": [
+    "OHL",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.42
+   ]
+  },
+  {
+   "name": "CTL3-CTL3",
+   "match": [
+    "CTL3",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.53
+   ]
+  },
+  {
+   "name": "CTL2-CTL3",
+   "match": [
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.528
+   ]
+  },
+  {
+   "name": "CTL2-CTL2",
+   "match": [
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.53
+   ]
+  },
+  {
+   "name": "CTL1-CTL3",
+   "match": [
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.538
+   ]
+  },
+  {
+   "name": "CTL1-CTL2",
+   "match": [
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.538
+   ]
+  },
+  {
+   "name": "CTL1-CTL1",
+   "match": [
+    "CTL1",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.5
+   ]
+  },
+  {
+   "name": "CTL2-HL",
+   "match": [
+    "CTL2",
+    "HL"
+   ],
+   "style": "harmonic",
+   "params": [
+    300,
+    1.08
+   ]
+  },
+  {
+   "name": "CTL5-HL",
+   "match": [
+    "CTL5",
+    "HL"
+   ],
+   "style": "harmonic",
+   "params": [
+    300,
+    1.08
+   ]
+  },
+  {
+   "name": "NTL-CTL5",
+   "match": [
+    "NTL",
+    "CTL5"
+   ],
+   "style": "harmonic",
+   "params": [
+    215,
+    1.51
+   ]
+  },
+  {
+   "name": "NTL-CTL2",
+   "match": [
+    "NTL",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    215,
+    1.51
+   ]
+  },
+  {
+   "name": "NH3L-CTL2",
+   "match": [
+    "NH3L",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    261,
+    1.51
+   ]
+  },
+  {
+   "name": "NH3L-CTL1",
+   "match": [
+    "NH3L",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.48
+   ]
+  },
+  {
+   "name": "NH3L-HCL",
+   "match": [
+    "NH3L",
+    "HCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    410,
+    1.04
+   ]
+  },
+  {
+   "name": "OHL-PL",
+   "match": [
+    "OHL",
+    "PL"
+   ],
+   "style": "harmonic",
+   "params": [
+    237,
+    1.59
+   ]
+  },
+  {
+   "name": "O2L-PL",
+   "match": [
+    "O2L",
+    "PL"
+   ],
+   "style": "harmonic",
+   "params": [
+    580,
+    1.48
+   ]
+  },
+  {
+   "name": "OSLP-PL",
+   "match": [
+    "OSLP",
+    "PL"
+   ],
+   "style": "harmonic",
+   "params": [
+    270,
+    1.6
+   ]
+  },
+  {
+   "name": "OSL-PL",
+   "match": [
+    "OSL",
+    "PL"
+   ],
+   "style": "harmonic",
+   "params": [
+    270,
+    1.6
+   ]
+  },
+  {
+   "name": "CTL1-OSLP",
+   "match": [
+    "CTL1",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CTL2-OSLP",
+   "match": [
+    "CTL2",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CTL3-OSLP",
+   "match": [
+    "CTL3",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CTL1-OSL",
+   "match": [
+    "CTL1",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CTL2-OSL",
+   "match": [
+    "CTL2",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CTL3-OSL",
+   "match": [
+    "CTL3",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CTL3-HAL3",
+   "match": [
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    322,
+    1.111
+   ]
+  },
+  {
+   "name": "CTL2-HAL2",
+   "match": [
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    309,
+    1.111
+   ]
+  },
+  {
+   "name": "CTL1-HBL",
+   "match": [
+    "CTL1",
+    "HBL"
+   ],
+   "style": "harmonic",
+   "params": [
+    330,
+    1.08
+   ]
+  },
+  {
+   "name": "CTL1-HAL1",
+   "match": [
+    "CTL1",
+    "HAL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    309,
+    1.111
+   ]
+  },
+  {
+   "name": "HOL-OHL",
+   "match": [
+    "HOL",
+    "OHL"
+   ],
+   "style": "harmonic",
+   "params": [
+    545,
+    0.96
+   ]
+  },
+  {
+   "name": "OHL-CL",
+   "match": [
+    "OHL",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    230,
+    1.4
+   ]
+  },
+  {
+   "name": "OSLP-CL",
+   "match": [
+    "OSLP",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    150,
+    1.334
+   ]
+  },
+  {
+   "name": "OSL-CL",
+   "match": [
+    "OSL",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    150,
+    1.334
+   ]
+  },
+  {
+   "name": "OCL-CCL",
+   "match": [
+    "OCL",
+    "CCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.26
+   ]
+  },
+  {
+   "name": "OCL-CL",
+   "match": [
+    "OCL",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.26
+   ]
+  },
+  {
+   "name": "OBL-CL",
+   "match": [
+    "OBL",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    750,
+    1.22
+   ]
+  },
+  {
+   "name": "CTL1-CCL",
+   "match": [
+    "CTL1",
+    "CCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.522
+   ]
+  },
+  {
+   "name": "CTL1-CL",
+   "match": [
+    "CTL1",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.522
+   ]
+  },
+  {
+   "name": "CTL2-CL",
+   "match": [
+    "CTL2",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.522
+   ]
+  },
+  {
+   "name": "CTL3-CL",
+   "match": [
+    "CTL3",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.522
+   ]
+  },
+  {
+   "name": "HT5-HT5",
+   "match": [
+    "HT5",
+    "HT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ]
+  },
+  {
+   "name": "OT5-HT5",
+   "match": [
+    "OT5",
+    "HT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ]
+  },
+  {
+   "name": "OT5-Q1",
+   "match": [
+    "OT5",
+    "Q1"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.7
+   ]
+  },
+  {
+   "name": "OT4-Q4",
+   "match": [
+    "OT4",
+    "Q4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.15
+   ]
+  },
+  {
+   "name": "HT4-HT4",
+   "match": [
+    "HT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ]
+  },
+  {
+   "name": "OT4-HT4",
+   "match": [
+    "OT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ]
+  },
+  {
+   "name": "HSPC-HSPC",
+   "match": [
+    "HSPC",
+    "HSPC"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.633
+   ]
+  },
+  {
+   "name": "OSPC-HSPC",
+   "match": [
+    "OSPC",
+    "HSPC"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1
+   ]
+  },
+  {
+   "name": "HTP-HTP",
+   "match": [
+    "HTP",
+    "HTP"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ]
+  },
+  {
+   "name": "H3P-H3P",
+   "match": [
+    "H3P",
+    "H3P"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ]
+  },
+  {
+   "name": "HT-HT",
+   "match": [
+    "HT",
+    "HT"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ]
+  },
+  {
+   "name": "OTP-HTP",
+   "match": [
+    "OTP",
+    "HTP"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ]
+  },
+  {
+   "name": "OT-HT",
+   "match": [
+    "OT",
+    "HT"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    0.9572
+   ]
+  },
+  {
+   "name": "OT-H3P",
+   "match": [
+    "OT",
+    "H3P"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "CEL1-CTL2-CEL1",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    114
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-CEL1",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    42,
+    111.5
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-CEL1",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    111.5
+   ]
+  },
+  {
+   "name": "CEL1-CTL2-CTL3",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    32,
+    112.2
+   ]
+  },
+  {
+   "name": "CEL1-CTL2-CTL2",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    32,
+    112.2
+   ]
+  },
+  {
+   "name": "HEL2-CEL2-HEL2",
+   "match": [
+    "HEL2",
+    "CEL2",
+    "HEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    19,
+    119
+   ]
+  },
+  {
+   "name": "HEL2-CEL2-CEL2",
+   "match": [
+    "HEL2",
+    "CEL2",
+    "CEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.5,
+    120.5
+   ]
+  },
+  {
+   "name": "HEL2-CEL2-CEL1",
+   "match": [
+    "HEL2",
+    "CEL2",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    120.5
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CTL3",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    22,
+    117
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CTL2",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    116
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CEL2",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    42,
+    118
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CEL1",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CEL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    52,
+    119.5
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL3",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    47,
+    125.2
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL2",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    48,
+    126
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL3",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    48,
+    123.5
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL2",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    48,
+    123.5
+   ]
+  },
+  {
+   "name": "CTL3-OSL-SL",
+   "match": [
+    "CTL3",
+    "OSL",
+    "SL"
+   ],
+   "style": "charmm",
+   "params": [
+    15,
+    109,
+    27,
+    1.9
+   ]
+  },
+  {
+   "name": "CTL2-OSL-SL",
+   "match": [
+    "CTL2",
+    "OSL",
+    "SL"
+   ],
+   "style": "charmm",
+   "params": [
+    15,
+    109,
+    27,
+    1.9
+   ]
+  },
+  {
+   "name": "O2L-SL-OSL",
+   "match": [
+    "O2L",
+    "SL",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    98
+   ]
+  },
+  {
+   "name": "O2L-SL-O2L",
+   "match": [
+    "O2L",
+    "SL",
+    "O2L"
+   ],
+   "style": "charmm",
+   "params": [
+    130,
+    109.47,
+    35,
+    2.45
+   ]
+  },
+  {
+   "name": "OHL-CTL3-HAL3",
+   "match": [
+    "OHL",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.9,
+    108.89
+   ]
+  },
+  {
+   "name": "OHL-CTL2-HAL2",
+   "match": [
+    "OHL",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.9,
+    108.89
+   ]
+  },
+  {
+   "name": "OHL-CTL1-HAL1",
+   "match": [
+    "OHL",
+    "CTL1",
+    "HAL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.9,
+    108.89
+   ]
+  },
+  {
+   "name": "OHL-CTL2-CTL3",
+   "match": [
+    "OHL",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OHL-CTL2-CTL2",
+   "match": [
+    "OHL",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OHL-CTL2-CTL1",
+   "match": [
+    "OHL",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OHL-CTL1-CTL2",
+   "match": [
+    "OHL",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OHL-CTL1-CTL1",
+   "match": [
+    "OHL",
+    "CTL1",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "HOL-OHL-CTL3",
+   "match": [
+    "HOL",
+    "OHL",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    106
+   ]
+  },
+  {
+   "name": "HOL-OHL-CTL2",
+   "match": [
+    "HOL",
+    "OHL",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    106
+   ]
+  },
+  {
+   "name": "HOL-OHL-CTL1",
+   "match": [
+    "HOL",
+    "OHL",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    106
+   ]
+  },
+  {
+   "name": "CTL3-CTL1-CTL3",
+   "match": [
+    "CTL3",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CTL3",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    58,
+    115,
+    8,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CTL2",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.6,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL2-CTL1-CTL3",
+   "match": [
+    "CTL2",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL2-CTL1-CTL2",
+   "match": [
+    "CTL2",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL1-CTL2-CTL3",
+   "match": [
+    "CTL1",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL1-CTL2-CTL2",
+   "match": [
+    "CTL1",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL1-CTL2-CTL1",
+   "match": [
+    "CTL1",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL1-CTL1-CTL3",
+   "match": [
+    "CTL1",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    53.35,
+    108.5,
+    8,
+    2.561
+   ]
+  },
+  {
+   "name": "CTL1-CTL1-CTL2",
+   "match": [
+    "CTL1",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.5,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "NH3L-CTL1-HBL",
+   "match": [
+    "NH3L",
+    "CTL1",
+    "HBL"
+   ],
+   "style": "harmonic",
+   "params": [
+    51.5,
+    107.5
+   ]
+  },
+  {
+   "name": "NH3L-CTL1-CTL2",
+   "match": [
+    "NH3L",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.7,
+    110
+   ]
+  },
+  {
+   "name": "NH3L-CTL1-CCL",
+   "match": [
+    "NH3L",
+    "CTL1",
+    "CCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    43.7,
+    110
+   ]
+  },
+  {
+   "name": "CTL1-CTL1-CTL1",
+   "match": [
+    "CTL1",
+    "CTL1",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    53.35,
+    111,
+    8,
+    2.561
+   ]
+  },
+  {
+   "name": "NH3L-CTL2-HAL2",
+   "match": [
+    "NH3L",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "charmm",
+   "params": [
+    45,
+    107.5,
+    35,
+    2.0836
+   ]
+  },
+  {
+   "name": "NH3L-CTL2-CTL2",
+   "match": [
+    "NH3L",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.7,
+    110
+   ]
+  },
+  {
+   "name": "HCL-NH3L-HCL",
+   "match": [
+    "HCL",
+    "NH3L",
+    "HCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    41,
+    109.5
+   ]
+  },
+  {
+   "name": "HCL-NH3L-CTL1",
+   "match": [
+    "HCL",
+    "NH3L",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    30,
+    109.5,
+    20,
+    2.074
+   ]
+  },
+  {
+   "name": "HCL-NH3L-CTL2",
+   "match": [
+    "HCL",
+    "NH3L",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    33,
+    109.5,
+    4,
+    2.056
+   ]
+  },
+  {
+   "name": "NTL-CTL2-CTL3",
+   "match": [
+    "NTL",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.7,
+    115
+   ]
+  },
+  {
+   "name": "NTL-CTL2-CTL2",
+   "match": [
+    "NTL",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.7,
+    115
+   ]
+  },
+  {
+   "name": "HBL-CTL1-CTL2",
+   "match": [
+    "HBL",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    111
+   ]
+  },
+  {
+   "name": "HBL-CTL1-CCL",
+   "match": [
+    "HBL",
+    "CTL1",
+    "CCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-CTL3",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    37.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-CTL2",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    34.6,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-CTL1",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    33.43,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-CTL3",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    34.6,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-CTL2",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    26.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-CTL1",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    26.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL1-CTL1-CTL3",
+   "match": [
+    "HAL1",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    34.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL1-CTL1-CTL2",
+   "match": [
+    "HAL1",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    34.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HAL1-CTL1-CTL1",
+   "match": [
+    "HAL1",
+    "CTL1",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    34.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HL-CTL2-CTL3",
+   "match": [
+    "HL",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    33.43,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HL-CTL2-CTL2",
+   "match": [
+    "HL",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    33.43,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CTL5-NTL-CTL5",
+   "match": [
+    "CTL5",
+    "NTL",
+    "CTL5"
+   ],
+   "style": "charmm",
+   "params": [
+    60,
+    109.5,
+    26,
+    2.466
+   ]
+  },
+  {
+   "name": "CTL5-NTL-CTL2",
+   "match": [
+    "CTL5",
+    "NTL",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    60,
+    109.5,
+    26,
+    2.466
+   ]
+  },
+  {
+   "name": "CTL2-NTL-CTL2",
+   "match": [
+    "CTL2",
+    "NTL",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    60,
+    109.5,
+    26,
+    2.466
+   ]
+  },
+  {
+   "name": "HL-CTL5-HL",
+   "match": [
+    "HL",
+    "CTL5",
+    "HL"
+   ],
+   "style": "charmm",
+   "params": [
+    24,
+    109.5,
+    28,
+    1.767
+   ]
+  },
+  {
+   "name": "HL-CTL2-HL",
+   "match": [
+    "HL",
+    "CTL2",
+    "HL"
+   ],
+   "style": "charmm",
+   "params": [
+    24,
+    109.5,
+    28,
+    1.767
+   ]
+  },
+  {
+   "name": "NTL-CTL5-HL",
+   "match": [
+    "NTL",
+    "CTL5",
+    "HL"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    109.5,
+    27,
+    2.13
+   ]
+  },
+  {
+   "name": "NTL-CTL2-HL",
+   "match": [
+    "NTL",
+    "CTL2",
+    "HL"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    109.5,
+    27,
+    2.13
+   ]
+  },
+  {
+   "name": "NTL-CTL2-HAL2",
+   "match": [
+    "NTL",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    109.5,
+    27,
+    2.13
+   ]
+  },
+  {
+   "name": "O2L-PL-OHL",
+   "match": [
+    "O2L",
+    "PL",
+    "OHL"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    108.23
+   ]
+  },
+  {
+   "name": "O2L-PL-O2L",
+   "match": [
+    "O2L",
+    "PL",
+    "O2L"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    120
+   ]
+  },
+  {
+   "name": "OSLP-PL-OHL",
+   "match": [
+    "OSLP",
+    "PL",
+    "OHL"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.1,
+    108
+   ]
+  },
+  {
+   "name": "OSLP-PL-O2L",
+   "match": [
+    "OSLP",
+    "PL",
+    "O2L"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    111.6
+   ]
+  },
+  {
+   "name": "OSLP-PL-OSLP",
+   "match": [
+    "OSLP",
+    "PL",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    104.3
+   ]
+  },
+  {
+   "name": "OSL-PL-OHL",
+   "match": [
+    "OSL",
+    "PL",
+    "OHL"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.1,
+    108
+   ]
+  },
+  {
+   "name": "OSL-PL-O2L",
+   "match": [
+    "OSL",
+    "PL",
+    "O2L"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    111.6
+   ]
+  },
+  {
+   "name": "OSL-PL-OSL",
+   "match": [
+    "OSL",
+    "PL",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    104.3
+   ]
+  },
+  {
+   "name": "HOL-OHL-PL",
+   "match": [
+    "HOL",
+    "OHL",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    30,
+    115,
+    40,
+    2.3
+   ]
+  },
+  {
+   "name": "CTL3-OSLP-PL",
+   "match": [
+    "CTL3",
+    "OSLP",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CTL2-OSLP-PL",
+   "match": [
+    "CTL2",
+    "OSLP",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CTL1-OSLP-PL",
+   "match": [
+    "CTL1",
+    "OSLP",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CTL3-OSL-PL",
+   "match": [
+    "CTL3",
+    "OSL",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CTL2-OSL-PL",
+   "match": [
+    "CTL2",
+    "OSL",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CTL1-OSL-PL",
+   "match": [
+    "CTL1",
+    "OSL",
+    "PL"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-OSLP",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-OSLP",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL1-CTL1-OSLP",
+   "match": [
+    "HAL1",
+    "CTL1",
+    "OSLP"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-OSL",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-OSL",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL1-CTL1-OSL",
+   "match": [
+    "HAL1",
+    "CTL1",
+    "OSL"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-HAL3",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    108.4,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-HAL2",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    109,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "OSLP-CTL2-CTL3",
+   "match": [
+    "OSLP",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSLP-CTL2-CTL2",
+   "match": [
+    "OSLP",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSLP-CTL2-CTL1",
+   "match": [
+    "OSLP",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSLP-CTL1-CTL3",
+   "match": [
+    "OSLP",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSLP-CTL1-CTL2",
+   "match": [
+    "OSLP",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSLP-CTL1-CTL1",
+   "match": [
+    "OSLP",
+    "CTL1",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSL-CTL2-CTL3",
+   "match": [
+    "OSL",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSL-CTL2-CTL2",
+   "match": [
+    "OSL",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSL-CTL2-CTL1",
+   "match": [
+    "OSL",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSL-CTL1-CTL3",
+   "match": [
+    "OSL",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSL-CTL1-CTL2",
+   "match": [
+    "OSL",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "OSL-CTL1-CTL1",
+   "match": [
+    "OSL",
+    "CTL1",
+    "CTL1"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "HOL-OHL-CL",
+   "match": [
+    "HOL",
+    "OHL",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    115
+   ]
+  },
+  {
+   "name": "OHL-CL-CTL2",
+   "match": [
+    "OHL",
+    "CL",
+    "CTL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    110.5
+   ]
+  },
+  {
+   "name": "OHL-CL-CTL3",
+   "match": [
+    "OHL",
+    "CL",
+    "CTL3"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    110.5
+   ]
+  },
+  {
+   "name": "OCL-CCL-CTL1",
+   "match": [
+    "OCL",
+    "CCL",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    118,
+    50,
+    2.388
+   ]
+  },
+  {
+   "name": "OCL-CCL-OCL",
+   "match": [
+    "OCL",
+    "CCL",
+    "OCL"
+   ],
+   "style": "charmm",
+   "params": [
+    100,
+    124,
+    70,
+    2.225
+   ]
+  },
+  {
+   "name": "OCL-CL-OCL",
+   "match": [
+    "OCL",
+    "CL",
+    "OCL"
+   ],
+   "style": "charmm",
+   "params": [
+    100,
+    124,
+    70,
+    2.225
+   ]
+  },
+  {
+   "name": "OCL-CL-CTL3",
+   "match": [
+    "OCL",
+    "CL",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    118,
+    50,
+    2.388
+   ]
+  },
+  {
+   "name": "OCL-CL-CTL2",
+   "match": [
+    "OCL",
+    "CL",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    118,
+    50,
+    2.388
+   ]
+  },
+  {
+   "name": "OHL-CL-OBL",
+   "match": [
+    "OHL",
+    "CL",
+    "OBL"
+   ],
+   "style": "charmm",
+   "params": [
+    50,
+    123,
+    210,
+    2.262
+   ]
+  },
+  {
+   "name": "OSL-CL-CTL1",
+   "match": [
+    "OSL",
+    "CL",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    55,
+    109,
+    20,
+    2.326
+   ]
+  },
+  {
+   "name": "OSL-CL-CTL2",
+   "match": [
+    "OSL",
+    "CL",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    55,
+    109,
+    20,
+    2.326
+   ]
+  },
+  {
+   "name": "OSL-CL-CTL3",
+   "match": [
+    "OSL",
+    "CL",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    55,
+    109,
+    20,
+    2.326
+   ]
+  },
+  {
+   "name": "CTL3-CTL2-CL",
+   "match": [
+    "CTL3",
+    "CTL2",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    52,
+    108
+   ]
+  },
+  {
+   "name": "CTL2-CTL1-CCL",
+   "match": [
+    "CTL2",
+    "CTL1",
+    "CCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    52,
+    108
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CL",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CL"
+   ],
+   "style": "harmonic",
+   "params": [
+    52,
+    108
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-CL",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "CL"
+   ],
+   "style": "charmm",
+   "params": [
+    33,
+    109.5,
+    30,
+    2.163
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-CL",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "CL"
+   ],
+   "style": "charmm",
+   "params": [
+    33,
+    109.5,
+    30,
+    2.163
+   ]
+  },
+  {
+   "name": "CL-OSL-CTL3",
+   "match": [
+    "CL",
+    "OSL",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    109.6,
+    30,
+    2.2651
+   ]
+  },
+  {
+   "name": "CL-OSL-CTL2",
+   "match": [
+    "CL",
+    "OSL",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    109.6,
+    30,
+    2.2651
+   ]
+  },
+  {
+   "name": "CL-OSL-CTL1",
+   "match": [
+    "CL",
+    "OSL",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    40,
+    109.6,
+    30,
+    2.2651
+   ]
+  },
+  {
+   "name": "OSL-CL-OBL",
+   "match": [
+    "OSL",
+    "CL",
+    "OBL"
+   ],
+   "style": "charmm",
+   "params": [
+    90,
+    125.9,
+    160,
+    2.2576
+   ]
+  },
+  {
+   "name": "OBL-CL-CTL1",
+   "match": [
+    "OBL",
+    "CL",
+    "CTL1"
+   ],
+   "style": "charmm",
+   "params": [
+    70,
+    125,
+    20,
+    2.442
+   ]
+  },
+  {
+   "name": "OBL-CL-CTL2",
+   "match": [
+    "OBL",
+    "CL",
+    "CTL2"
+   ],
+   "style": "charmm",
+   "params": [
+    70,
+    125,
+    20,
+    2.442
+   ]
+  },
+  {
+   "name": "OBL-CL-CTL3",
+   "match": [
+    "OBL",
+    "CL",
+    "CTL3"
+   ],
+   "style": "charmm",
+   "params": [
+    70,
+    125,
+    20,
+    2.442
+   ]
+  },
+  {
+   "name": "HSPC-OSPC-HSPC",
+   "match": [
+    "HSPC",
+    "OSPC",
+    "HSPC"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    109.47
+   ]
+  },
+  {
+   "name": "HT5-OT5-HT5",
+   "match": [
+    "HT5",
+    "OT5",
+    "HT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ]
+  },
+  {
+   "name": "HT4-OT4-HT4",
+   "match": [
+    "HT4",
+    "OT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ]
+  },
+  {
+   "name": "HTP-OTP-HTP",
+   "match": [
+    "HTP",
+    "OTP",
+    "HTP"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ]
+  },
+  {
+   "name": "H3P-OT-H3P",
+   "match": [
+    "H3P",
+    "OT",
+    "H3P"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ]
+  },
+  {
+   "name": "HT-OT-HT",
+   "match": [
+    "HT",
+    "OT",
+    "HT"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    104.52
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "X-CEL2-CEL2-X",
+   "match": [
+    "*",
+    "CEL2",
+    "CEL2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.9,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CEL1-CEL1-X",
+   "match": [
+    "*",
+    "CEL1",
+    "CEL1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.45,
+    1,
+    180,
+    8.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CTL3-CTL3-X",
+   "match": [
+    "*",
+    "CTL3",
+    "CTL3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1525,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-CTL3-X",
+   "match": [
+    "*",
+    "CTL2",
+    "CTL3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.16,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-CTL2-X",
+   "match": [
+    "*",
+    "CTL2",
+    "CTL2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-CTL3-X",
+   "match": [
+    "*",
+    "CTL1",
+    "CTL3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-CTL2-X",
+   "match": [
+    "*",
+    "CTL1",
+    "CTL2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-CTL1-X",
+   "match": [
+    "*",
+    "CTL1",
+    "CTL1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-NH3L-X",
+   "match": [
+    "*",
+    "CTL2",
+    "NH3L",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-NH3L-X",
+   "match": [
+    "*",
+    "CTL1",
+    "NH3L",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL5-NTL-X",
+   "match": [
+    "*",
+    "CTL5",
+    "NTL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.23,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-NTL-X",
+   "match": [
+    "*",
+    "CTL2",
+    "NTL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.26,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL3-OSLP-X",
+   "match": [
+    "*",
+    "CTL3",
+    "OSLP",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-OSLP-X",
+   "match": [
+    "*",
+    "CTL2",
+    "OSLP",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-OSLP-X",
+   "match": [
+    "*",
+    "CTL1",
+    "OSLP",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL3-OSL-X",
+   "match": [
+    "*",
+    "CTL3",
+    "OSL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-OSL-X",
+   "match": [
+    "*",
+    "CTL2",
+    "OSL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-OSL-X",
+   "match": [
+    "*",
+    "CTL1",
+    "OSL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-OHL-PL-X",
+   "match": [
+    "*",
+    "OHL",
+    "PL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-CCL-X",
+   "match": [
+    "*",
+    "CTL1",
+    "CCL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.05,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "X-CL-OHL-X",
+   "match": [
+    "*",
+    "CL",
+    "OHL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.05,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CTL3-CL-X",
+   "match": [
+    "*",
+    "CTL3",
+    "CL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.05,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "X-CTL2-CL-X",
+   "match": [
+    "*",
+    "CTL2",
+    "CL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.05,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "X-CL-OSL-X",
+   "match": [
+    "*",
+    "CL",
+    "OSL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.05,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CTL3-OHL-X",
+   "match": [
+    "*",
+    "CTL3",
+    "OHL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.14,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL2-OHL-X",
+   "match": [
+    "*",
+    "CTL2",
+    "OHL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.14,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CTL1-OHL-X",
+   "match": [
+    "*",
+    "CTL1",
+    "OHL",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.14,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL2-CEL1",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL2",
+    "CEL1"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.85,
+    1,
+    180,
+    0.3,
+    2,
+    180,
+    0.26,
+    3,
+    0,
+    0.096,
+    4,
+    0
+   ]
+  },
+  {
+   "name": "CEL1-CTL2-CEL1-HEL1",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CEL1",
+    "HEL1"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0,
+    2,
+    0,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL2-CEL1",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL2",
+    "CEL1"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.2,
+    1,
+    180,
+    0.4,
+    2,
+    180,
+    1.3,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CTL3-HAL3",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CTL2-HAL2",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CTL2-CTL3",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.12,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CTL2-CTL2",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.12,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL3-HAL3",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.05,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL2-HAL2",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.12,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL2-CTL3",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.5,
+    1,
+    180,
+    1.3,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL2-CEL1-CTL2-CTL2",
+   "match": [
+    "CEL2",
+    "CEL1",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.5,
+    1,
+    180,
+    1.3,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CTL2-CTL2-CTL3",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.14,
+    1,
+    180,
+    0.17,
+    2,
+    0,
+    0.05,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CTL2-CTL2-CTL2",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.14,
+    1,
+    180,
+    0.17,
+    2,
+    0,
+    0.05,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CTL2-CTL2-CL",
+   "match": [
+    "CEL1",
+    "CTL2",
+    "CTL2",
+    "CL"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.14,
+    1,
+    180,
+    0.17,
+    2,
+    0,
+    0.05,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL2-CTL2",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.91,
+    1,
+    180,
+    0.18,
+    2,
+    180,
+    0.17,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL2-CTL3",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.91,
+    1,
+    180,
+    0.18,
+    2,
+    180,
+    0.17,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL3-HAL3",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CEL1-CEL1-CTL2-HAL2",
+   "match": [
+    "CEL1",
+    "CEL1",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CEL2-HEL2",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CEL2",
+    "HEL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CTL3-CEL1-CEL2-HEL2",
+   "match": [
+    "CTL3",
+    "CEL1",
+    "CEL2",
+    "HEL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CTL2-CEL1-CEL2-HEL2",
+   "match": [
+    "CTL2",
+    "CEL1",
+    "CEL2",
+    "HEL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CTL3-CEL1-CEL1-HEL1",
+   "match": [
+    "CTL3",
+    "CEL1",
+    "CEL1",
+    "HEL1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HEL1-CEL1-CEL1-HEL1",
+   "match": [
+    "HEL1",
+    "CEL1",
+    "CEL1",
+    "HEL1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CTL3-OSL-SL-O2L",
+   "match": [
+    "CTL3",
+    "OSL",
+    "SL",
+    "O2L"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CTL2-OSL-SL-O2L",
+   "match": [
+    "CTL2",
+    "OSL",
+    "SL",
+    "O2L"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-OSL-SL",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "OSL",
+    "SL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CTL2-CTL2",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.101,
+    2,
+    0,
+    0.142,
+    3,
+    180,
+    0.074,
+    4,
+    0,
+    0.097,
+    5,
+    0
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CTL2-CTL3",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.162,
+    2,
+    0,
+    0.047,
+    3,
+    180,
+    0.105,
+    4,
+    0,
+    0.177,
+    5,
+    0
+   ]
+  },
+  {
+   "name": "CTL3-CTL2-CTL2-CTL3",
+   "match": [
+    "CTL3",
+    "CTL2",
+    "CTL2",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.06,
+    2,
+    0,
+    0.035,
+    5,
+    0
+   ]
+  },
+  {
+   "name": "NTL-CTL2-CTL2-OSLP",
+   "match": [
+    "NTL",
+    "CTL2",
+    "CTL2",
+    "OSLP"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    3.3,
+    1,
+    180,
+    -0.4,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "NTL-CTL2-CTL2-OHL",
+   "match": [
+    "NTL",
+    "CTL2",
+    "CTL2",
+    "OHL"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    4.3,
+    1,
+    180,
+    -0.4,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "NH3L-CTL2-CTL2-OSLP",
+   "match": [
+    "NH3L",
+    "CTL2",
+    "CTL2",
+    "OSLP"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.7,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "NH3L-CTL2-CTL2-OHL",
+   "match": [
+    "NH3L",
+    "CTL2",
+    "CTL2",
+    "OHL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.7,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CL-OSL-CTL2-CTL1",
+   "match": [
+    "CL",
+    "OSL",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.267,
+    3,
+    180,
+    0.173,
+    2,
+    0,
+    0.781,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CL-OSL-CTL1-CTL3",
+   "match": [
+    "CL",
+    "OSL",
+    "CTL1",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    4,
+    0,
+    0.15,
+    3,
+    180,
+    1.453,
+    2,
+    180,
+    0.837,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CL-OSL-CTL1-CTL2",
+   "match": [
+    "CL",
+    "OSL",
+    "CTL1",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    4,
+    0,
+    0.15,
+    3,
+    180,
+    1.453,
+    2,
+    180,
+    0.837,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CTL2-OSL",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CTL2",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CTL3-CTL2-CTL2-OSL",
+   "match": [
+    "CTL3",
+    "CTL2",
+    "CTL2",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CTL2-CTL1-CTL2-OSL",
+   "match": [
+    "CTL2",
+    "CTL1",
+    "CTL2",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CTL3-CTL1-CTL2-OSL",
+   "match": [
+    "CTL3",
+    "CTL1",
+    "CTL2",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OSLP-CTL2-CTL2-OSL",
+   "match": [
+    "OSLP",
+    "CTL2",
+    "CTL2",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    4,
+    0,
+    0.607,
+    3,
+    180,
+    0.254,
+    2,
+    60,
+    2.016,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "OSLP-CTL2-CTL1-OSL",
+   "match": [
+    "OSLP",
+    "CTL2",
+    "CTL1",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    4,
+    0,
+    0.607,
+    3,
+    180,
+    0.254,
+    2,
+    60,
+    2.016,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "OSL-CTL2-CTL1-OSL",
+   "match": [
+    "OSL",
+    "CTL2",
+    "CTL1",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.429,
+    4,
+    60,
+    0.614,
+    3,
+    0,
+    -0.115,
+    2,
+    60,
+    0.703,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CTL2-CL",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CTL2",
+    "CL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    5,
+    180,
+    0.317,
+    3,
+    180,
+    0.557,
+    2,
+    0,
+    0.753,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CTL3-CTL2-CTL2-CL",
+   "match": [
+    "CTL3",
+    "CTL2",
+    "CTL2",
+    "CL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    5,
+    180,
+    0.317,
+    3,
+    180,
+    0.557,
+    2,
+    0,
+    0.753,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CTL3-CTL2-CL-OSL",
+   "match": [
+    "CTL3",
+    "CTL2",
+    "CL",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    6,
+    0,
+    0.03,
+    3,
+    180,
+    0.432,
+    2,
+    180,
+    0.332,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CTL2-CTL2-CL-OSL",
+   "match": [
+    "CTL2",
+    "CTL2",
+    "CL",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    6,
+    0,
+    0.03,
+    3,
+    180,
+    0.432,
+    2,
+    180,
+    0.332,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CTL1-CTL2-CL-OSL",
+   "match": [
+    "CTL1",
+    "CTL2",
+    "CL",
+    "OSL"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    -0.15,
+    1,
+    180,
+    0.53,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "OHL-PL-OSLP-CTL3",
+   "match": [
+    "OHL",
+    "PL",
+    "OSLP",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OHL-PL-OSLP-CTL2",
+   "match": [
+    "OHL",
+    "PL",
+    "OSLP",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OHL-PL-OSL-CTL3",
+   "match": [
+    "OHL",
+    "PL",
+    "OSL",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OHL-PL-OSL-CTL2",
+   "match": [
+    "OHL",
+    "PL",
+    "OSL",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OHL-PL-OSL-CTL1",
+   "match": [
+    "OHL",
+    "PL",
+    "OSL",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O2L-PL-OSL-CTL3",
+   "match": [
+    "O2L",
+    "PL",
+    "OSL",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O2L-PL-OSLP-CTL3",
+   "match": [
+    "O2L",
+    "PL",
+    "OSLP",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O2L-PL-OSL-CTL1",
+   "match": [
+    "O2L",
+    "PL",
+    "OSL",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O2L-PL-OSLP-CTL1",
+   "match": [
+    "O2L",
+    "PL",
+    "OSLP",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OSLP-PL-OSLP-CTL3",
+   "match": [
+    "OSLP",
+    "PL",
+    "OSLP",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "O2L-PL-OSL-CTL2",
+   "match": [
+    "O2L",
+    "PL",
+    "OSL",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O2L-PL-OSLP-CTL2",
+   "match": [
+    "O2L",
+    "PL",
+    "OSLP",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "OSLP-PL-OSLP-CTL2",
+   "match": [
+    "OSLP",
+    "PL",
+    "OSLP",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "OSLP-PL-OSLP-CTL1",
+   "match": [
+    "OSLP",
+    "PL",
+    "OSLP",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "OSL-PL-OSL-CTL1",
+   "match": [
+    "OSL",
+    "PL",
+    "OSL",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "PL-OSLP-CTL2-CTL2",
+   "match": [
+    "PL",
+    "OSLP",
+    "CTL2",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.407,
+    2,
+    0,
+    0.241,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "PL-OSLP-CTL2-CTL1",
+   "match": [
+    "PL",
+    "OSLP",
+    "CTL2",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.407,
+    2,
+    0,
+    0.241,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "HAL3-CTL3-CL-OHL",
+   "match": [
+    "HAL3",
+    "CTL3",
+    "CL",
+    "OHL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "HAL2-CTL2-CL-OHL",
+   "match": [
+    "HAL2",
+    "CTL2",
+    "CL",
+    "OHL"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OBL-CL-OSL-CTL3",
+   "match": [
+    "OBL",
+    "CL",
+    "OSL",
+    "CTL3"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.965,
+    1,
+    180,
+    3.85,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "OBL-CL-OSL-CTL2",
+   "match": [
+    "OBL",
+    "CL",
+    "OSL",
+    "CTL2"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.965,
+    1,
+    180,
+    3.85,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "OBL-CL-OSL-CTL1",
+   "match": [
+    "OBL",
+    "CL",
+    "OSL",
+    "CTL1"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.965,
+    1,
+    180,
+    3.85,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "OSLP-CL-CTL3-HAL3",
+   "match": [
+    "OSLP",
+    "CL",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OSLP-CL-CTL2-HAL2",
+   "match": [
+    "OSLP",
+    "CL",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OSL-CL-CTL3-HAL3",
+   "match": [
+    "OSL",
+    "CL",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OSL-CL-CTL2-HAL2",
+   "match": [
+    "OSL",
+    "CL",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OBL-CL-CTL3-HAL3",
+   "match": [
+    "OBL",
+    "CL",
+    "CTL3",
+    "HAL3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OBL-CL-CTL2-HAL2",
+   "match": [
+    "OBL",
+    "CL",
+    "CTL2",
+    "HAL2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "OCL-CCL-CTL1-NH3L",
+   "match": [
+    "OCL",
+    "CCL",
+    "CTL1",
+    "NH3L"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.2,
+    2,
+    180
+   ]
+  }
+ ],
+ "impropers": [
+  {
+   "name": "CCL-X-X-OCL",
+   "match": [
+    "CCL",
+    "*",
+    "*",
+    "OCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    96,
+    0
+   ]
+  },
+  {
+   "name": "CL-X-X-OCL",
+   "match": [
+    "CL",
+    "*",
+    "*",
+    "OCL"
+   ],
+   "style": "harmonic",
+   "params": [
+    96,
+    0
+   ]
+  },
+  {
+   "name": "CL-X-X-OBL",
+   "match": [
+    "CL",
+    "*",
+    "*",
+    "OBL"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    0
+   ]
+  },
+  {
+   "name": "CEL2-CEL2-HEL2-HEL2",
+   "match": [
+    "CEL2",
+    "CEL2",
+    "HEL2",
+    "HEL2"
+   ],
+   "style": "harmonic",
+   "params": [
+    3,
+    0
+   ]
+  }
+ ],
+ "notes": [
+  "converted from DL_FIELD by CAPS (CHARMM36_lipid, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "2010",
+ "status": "converted",
+ "validation": "same forms as CHARMM36 (validated); the library holds no buildable lipid templates."
+}

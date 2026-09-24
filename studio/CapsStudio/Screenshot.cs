@@ -1,0 +1,151 @@
+using Avalonia;
+using Avalonia.Headless;
+using Avalonia.Threading;
+using CapsStudio.Views;
+
+namespace CapsStudio;
+
+/// <summary>Renders the real main window off-screen (Skia, headless platform) to a PNG, for design review and CI.</summary>
+internal static class Screenshot
+{
+    public static int Run(string[] args)
+    {
+        var output = args.Length > 0 ? args[0] : "studio.png";
+        var file = args.Length > 1 ? args[1] : null;
+        var topo = args.Length > 2 ? args[2] : null;
+        AppBuilder.Configure<App>()
+            .UseSkia()
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
+            .WithCapsFonts()
+            .SetupWithoutStarting();
+
+        var w = new MainWindow { Width = 1440, Height = 900 };
+        w.Show();
+        if (!string.IsNullOrEmpty(file)) w.OpenOnStart(file, string.IsNullOrEmpty(topo) ? null : topo);
+        // Let layout, the async render and the bitmap swap complete.
+        for (var i = 0; i < 60; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Thread.Sleep(30);
+        }
+        // Extra args (Field: ff=ID charges=N field=1 fieldpick=N fieldset=TYPE): pick=0,1,2  colour=3  style=4  module=0|1|2|3  grow=1  relax=1  mdsteps=N ensemble=0|1|2  md=1  eqprotocol=0|1|2 eqscale=X eq=1  tab=0..4  view=0|1  wrap=1
+        foreach (var kv in args.Skip(3).Select(a => a.Split('=', 2)).Where(p => p.Length == 2))
+        {
+            if (kv[0] == "pick") w.PickForTest(kv[1].Split(',').Select(int.Parse).ToArray());
+            if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
+            if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
+            if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
+            if (kv[0] == "grow")
+            {
+                w.ViewModel.SetModule(0);
+                var t = w.ViewModel.Grow();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "relax")
+            {
+                w.ViewModel.SetModule(2);
+                var t = w.ViewModel.Relax();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "mdsteps") w.ViewModel.MdStepsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "ensemble") w.ViewModel.MdEnsemble = int.Parse(kv[1]);
+            if (kv[0] == "md")
+            {
+                w.ViewModel.SetModule(3);
+                var t = w.ViewModel.RunMd();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "eqprotocol") w.ViewModel.EqProtocol = int.Parse(kv[1]);
+            if (kv[0] == "eqscale") w.ViewModel.EqScaleD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "eq")
+            {
+                w.ViewModel.SetModule(4);
+                var t = w.ViewModel.RunEquilibrate();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "packexample") { w.ViewModel.SetModule(5); w.ViewModel.PackCountD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture); w.RunPackExampleForTest(); }
+            if (kv[0] == "pack")
+            {
+                w.ViewModel.SetModule(5);
+                var t = w.ViewModel.RunPack();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "rxcycles") w.ViewModel.RxCyclesD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "rxmd") w.ViewModel.RxMdPsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "react")
+            {
+                w.ViewModel.SetModule(6);
+                var t = w.ViewModel.RunReact();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            // Field: ff=<catalogue id>  charges=0|1|2  field=1 (assign)  fieldpick=<atom index>  fieldset=<type> (override the picked atom)
+            if (kv[0] == "ff")
+            {
+                var k = w.ViewModel.Field.Library.ToList().FindIndex(x => x.Id == kv[1]);
+                if (k >= 0) w.ViewModel.Field.FfIndex = k;
+            }
+            if (kv[0] == "charges") w.ViewModel.Field.ChargeMode = int.Parse(kv[1]);
+            if (kv[0] == "compress") w.ViewModel.RelaxCompress = kv[1] == "1";
+            if (kv[0] == "field")
+            {
+                w.ViewModel.SetModule(7);
+                var t = w.ViewModel.Field.Assign();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "fieldpick") w.ViewModel.Field.SelectAtom(int.Parse(kv[1]));
+            if (kv[0] == "fieldmissing") w.ViewModel.Field.SelectedMissing = w.ViewModel.Field.Missing.ElementAtOrDefault(int.Parse(kv[1]));
+            if (kv[0] == "fieldset")
+            {
+                w.ViewModel.Field.OverrideType = kv[1];
+                var t = w.ViewModel.Field.ApplyOverride();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            // Analyze › Properties: props=density,rdf,...  frameps=X  ref=<material id>  analyze=1 (run)  curve=N
+            if (kv[0] == "props")
+            {
+                w.ViewModel.SetModule(1);
+                w.ViewModel.AnalyzeProperties = true;
+                var ids = kv[1].Split(',');
+                foreach (var c in w.ViewModel.Analyze.Groups.SelectMany(g => g.Chips)) c.IsOn = ids.Contains(c.Id);
+            }
+            if (kv[0] == "frameps") w.ViewModel.Analyze.FramePsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "ref") w.ViewModel.Analyze.RefIndex = w.ViewModel.Analyze.References.ToList().FindIndex(r => r.Id == kv[1]);
+            if (kv[0] == "analyze")
+            {
+                var t = w.ViewModel.Analyze.Run();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "curve") w.ViewModel.Analyze.CurveIndex = int.Parse(kv[1]);
+            // protocol settings: tgset=from:to:step:ps   tensset=rate:max:T
+            if (kv[0] == "tgset")
+            {
+                var v = kv[1].Split(':').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                (w.ViewModel.Analyze.TgFromD, w.ViewModel.Analyze.TgToD, w.ViewModel.Analyze.TgStepD, w.ViewModel.Analyze.TgPsD) = (v[0], v[1], v[2], v[3]);
+            }
+            if (kv[0] == "tensset")
+            {
+                var v = kv[1].Split(':').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                (w.ViewModel.Analyze.TensRateD, w.ViewModel.Analyze.TensMaxD, w.ViewModel.Analyze.TensTD) = (v[0], v[1], v[2]);
+            }
+            if (kv[0] == "wrap") w.ViewModel.Wrap = kv[1] == "1";
+            if (kv[0] == "tab") w.SelectAnalysisTab(int.Parse(kv[1]));
+            if (kv[0] == "view") w.ViewModel.ViewBackground = int.Parse(kv[1]);
+        }
+        Pump();
+        var frame = w.CaptureRenderedFrame();
+        frame?.Save(output);
+        Console.WriteLine(frame == null ? "no frame captured" : $"wrote {output}");
+        return frame == null ? 1 : 0;
+    }
+
+    private static void Pump()
+    {
+        for (var i = 0; i < 40; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Thread.Sleep(30);
+        }
+    }
+}

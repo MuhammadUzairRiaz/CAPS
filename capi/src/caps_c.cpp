@@ -1,0 +1,1286 @@
+#include "caps_c.h"
+
+#include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <string>
+
+#include "caps/analysis.hpp"
+#include "caps/dynamics.hpp"
+#include "caps/elements.hpp"
+#include "caps/equilibrate.hpp"
+#include "caps/ffdef.hpp"
+#include "caps/grow.hpp"
+#include "caps/io.hpp"
+#include "caps/mechanics.hpp"
+#include "caps/pack.hpp"
+#include "caps/properties.hpp"
+#include "caps/react.hpp"
+#include "caps/relax.hpp"
+#include "caps/render.hpp"
+#include "caps/typing.hpp"
+#include "caps/json.hpp"
+
+#include <map>
+#include <memory>
+#include <set>
+#include <sstream>
+
+using caps::operator+;
+using caps::operator-;
+using caps::operator*;
+
+// CAPS Field state of a document: the force field chosen from the library, parameters imported or entered by hand on
+// top of it, per-atom type overrides, and the result (types, charges, parameters, what is missing).
+struct FieldState {
+  std::string ff_path;
+  caps::FFDef base;                          // the library force field, with its typing rules
+  caps::FFDef extra;                         // imported and hand-entered parameter rules (win over the base)
+  std::vector<std::string> imported;         // files the imported rules came from
+  std::map<int32_t, std::string> overrides;  // atom → type set by hand
+  std::string charges = "types";             // types (force field), gasteiger, keep (from the file)
+  caps::TypingResult typing;
+  std::vector<std::string> types;
+  caps::ParamReport rep;
+  std::shared_ptr<const caps::ForceField> ff;   // null while atoms are untyped
+  bool complete = false;
+  std::string report;                        // JSON, see caps_field_report
+  // the file's own types, restored by caps_field_clear
+  std::vector<std::pair<int, std::string>> file_types;
+  std::vector<caps::TypeInfo> file_type_table;
+  std::vector<double> file_charges;
+  bool file_has_charges = false;
+};
+
+struct caps_doc {
+  caps::Trajectory traj;
+  caps::System frame;
+  caps::Renderer renderer;
+  std::vector<double> dcom;   // distance of each atom to its own molecule's centre of mass
+  size_t current = 0;
+  bool wrap = false;
+  std::unique_ptr<FieldState> field;
+  std::string analysis;   // last caps_analyze result (JSON)
+};
+
+namespace {
+
+thread_local std::string g_error;
+
+template <class F>
+int32_t guard(F&& f) {
+  try {
+    return f();
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return -1;
+}
+
+void refresh(caps_doc* d) {
+  d->frame = d->traj.frame(d->current);
+  if (d->current + 1 != d->traj.frames()) d->frame.velocities.clear();   // velocities belong to the last frame
+  if (!d->frame.unwrapped) caps::make_molecules_whole(d->frame);
+  const auto shapes = caps::molecule_shapes(d->frame);   // always from whole molecules
+  const auto mol = d->frame.molecules();
+  d->dcom.resize(d->frame.atoms.size());
+  for (size_t i = 0; i < d->frame.atoms.size(); ++i) d->dcom[i] = caps::norm(d->frame.atoms[i].pos - shapes[mol[i]].com);
+  if (d->wrap && d->frame.cell.valid()) {
+    for (auto& a : d->frame.atoms) a.pos = d->frame.cell.wrap(a.pos);
+    d->frame.unwrapped = false;
+  }
+}
+
+caps::Camera cam_of(const caps_camera* c) {
+  caps::Camera k;
+  if (!c) return k;
+  k.yaw = c->yaw; k.pitch = c->pitch; k.zoom = c->zoom > 0 ? c->zoom : 1; k.pan_x = c->pan_x; k.pan_y = c->pan_y; k.perspective = c->perspective != 0;
+  return k;
+}
+
+caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
+  caps::RenderOptions r;
+  if (!o) return r;
+  r.width = std::clamp(o->width, 16, 16384);
+  r.height = std::clamp(o->height, 16, 16384);
+  r.supersample = o->supersample > 0 ? o->supersample : 2;
+  r.background = static_cast<caps::Background>(std::clamp(o->background, 0, 3));
+  r.custom_rgb = o->custom_rgb;
+  r.colour_by = static_cast<caps::ColourBy>(std::clamp(o->colour_by, 0, 3));
+  r.style = static_cast<caps::Style>(std::clamp(o->style, 0, 4));
+  r.outlines = o->outlines != 0;
+  r.depth_cue = o->depth_cue != 0;
+  r.show_cell = o->show_cell != 0;
+  for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0) r.highlight.push_back(o->highlight[k]);
+  if (r.colour_by == caps::ColourBy::Property) r.property = d->dcom;
+  return r;
+}
+
+caps::ProtocolParams protocol_params(const caps_protocol_params* p) {
+  caps::ProtocolParams q;
+  if (!p) return q;
+  if (p->t_final > 0) q.t_final = p->t_final;
+  if (p->t_max > 0) q.t_max = p->t_max;
+  q.p_final = p->p_final;
+  if (p->p_max > 0) q.p_max = p->p_max;
+  if (p->time_scale > 0) q.time_scale = p->time_scale;
+  if (p->cycles > 0) q.cycles = p->cycles;
+  if (p->t_low > 0) q.t_low = p->t_low;
+  if (p->t_high > 0) q.t_high = p->t_high;
+  if (p->ramp_ps > 0) q.ramp_ps = p->ramp_ps;
+  if (p->hold_ps > 0) q.hold_ps = p->hold_ps;
+  return q;
+}
+
+// The force field for Relax / Dynamics: the Field assignment when there is one (it must be complete: CAPS never guesses
+// parameters), otherwise null (the built-in GAFF typing of C and H).
+std::shared_ptr<const caps::ForceField> field_for_run(const caps_doc* d) {
+  if (!d->field) return nullptr;
+  const FieldState& F = *d->field;
+  if (!F.complete) {
+    int untyped = 0;
+    for (const auto& t : F.types) untyped += t.empty();
+    throw caps::FieldError("CAPS Field: " + F.base.name + " is incomplete for this structure (" + std::to_string(untyped) + " atoms untyped, " +
+                           std::to_string(F.rep.missing.size()) + " parameters missing); complete it in the Field panel or clear the assignment");
+  }
+  return F.ff;
+}
+
+std::string hex_colour(unsigned c) {
+  char b[8];
+  std::snprintf(b, sizeof b, "#%06X", c & 0xFFFFFF);
+  return b;
+}
+
+// Types and parameterises the current structure with the field state, writes the types (and charges) into the
+// document so the viewer colours by force-field type, and builds the JSON report.
+void field_run(caps_doc* d) {
+  FieldState& F = *d->field;
+  caps::FFDef def = F.base;
+  caps::merge_forcefield(def, F.extra);
+  const caps::System& s = d->frame;
+  const size_t n = s.atoms.size();
+  bool rules = !def.typing.empty();
+  if (rules) {
+    F.typing = caps::assign_types(s, def);
+  } else {   // no typing rules: the file's atom names are the types
+    F.typing = caps::TypingResult{};
+    F.typing.types.resize(n);
+    F.typing.why.assign(n, "type name from the file");
+    F.typing.rule.assign(n, -1);
+    F.typing.candidates.assign(n, {});
+    for (size_t i = 0; i < n; ++i) F.typing.types[i] = s.atoms[i].name;
+  }
+  F.types = F.typing.types;
+  for (const auto& [i, t] : F.overrides)
+    if (i >= 0 && size_t(i) < n) F.types[i] = t;
+  std::set<std::string> known;
+  for (const auto& t : def.types) known.insert(t.name);
+  int untyped = 0;
+  for (auto& t : F.types)
+    if (t.empty() || !known.count(t)) { t.clear(); ++untyped; }
+  F.rep = caps::ParamReport{};
+  F.ff.reset();
+  if (!untyped) F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
+  F.complete = F.ff && F.rep.missing.empty();
+
+  // types into the document: colour by type shows the force-field types
+  std::vector<std::string> names;
+  std::map<std::string, int> tix;
+  for (size_t i = 0; i < n; ++i) {
+    const std::string t = F.types[i].empty() ? "?" : F.types[i];
+    auto [it, fresh] = tix.emplace(t, int(names.size()) + 1);
+    if (fresh) names.push_back(t);
+    d->traj.topology.atoms[i].type = it->second;
+    d->traj.topology.atoms[i].name = t;
+    if (F.ff) d->traj.topology.atoms[i].charge = F.ff->charge[i];
+  }
+  d->traj.topology.types.clear();
+  for (size_t k = 0; k < names.size(); ++k) {
+    caps::TypeInfo ti;
+    ti.type = int(k) + 1;
+    ti.label = names[k];
+    const caps::FFType* ft = def.type(names[k]);
+    ti.mass = ft && ft->mass > 0 ? ft->mass : 0;
+    d->traj.topology.types.push_back(ti);
+  }
+  if (F.ff) d->traj.topology.has_charges = true;
+  refresh(d);
+
+  // report
+  caps::Json r = caps::Json::object();
+  r["forcefield"] = def.name;
+  r["version"] = def.version;
+  r["source"] = def.source;
+  r["file"] = F.ff_path;
+  r["typing"] = rules ? (def.typing_source.empty() ? F.ff_path : def.typing_source) : std::string("atom names in the file");
+  r["rules"] = double(def.typing.size());
+  r["charges"] = F.charges;
+  caps::Json refs = caps::Json::array();
+  for (const auto& x : def.references) refs.push_back(x);
+  r["references"] = refs;
+  const std::string rule_src = [&] {
+    std::string p = def.typing_source.empty() ? F.ff_path : def.typing_source;
+    const auto k = p.find_last_of('/');
+    return k == std::string::npos ? p : p.substr(k + 1);
+  }();
+  caps::Json atoms = caps::Json::array();
+  double qsum = 0;
+  int overridden = 0;
+  for (size_t i = 0; i < n; ++i) {
+    caps::Json a = caps::Json::object();
+    a["i"] = double(i + 1);
+    a["el"] = std::string(caps::element(s.atoms[i].element).symbol);
+    a["type"] = F.types[i];
+    const bool ov = F.overrides.count(int32_t(i)) > 0;
+    overridden += ov;
+    a["ov"] = ov;
+    const int ri = i < F.typing.rule.size() ? F.typing.rule[i] : -1;
+    if (ov) {
+      a["rule"] = "set by hand";
+      a["src"] = "override";
+    } else if (ri >= 0) {
+      const auto& tr = def.typing[size_t(ri)];
+      a["rule"] = tr.smarts;
+      a["desc"] = tr.description;
+      a["prio"] = double(tr.priority);
+      a["src"] = rule_src;
+    } else {
+      a["rule"] = rules ? "no rule matched" : "file";
+      a["src"] = rules ? "" : "file";
+    }
+    a["why"] = i < F.typing.why.size() ? F.typing.why[i] : "";
+    caps::Json c = caps::Json::array();
+    if (i < F.typing.candidates.size())
+      for (const auto& x : F.typing.candidates[i]) c.push_back(x);
+    a["cands"] = c;
+    if (F.ff) {
+      a["q"] = F.ff->charge[i];
+      qsum += F.ff->charge[i];
+    }
+    atoms.push_back(a);
+  }
+  r["atoms"] = atoms;
+  r["typed"] = double(n - size_t(untyped));
+  r["untyped"] = double(untyped);
+  r["overridden"] = double(overridden);
+  r["ambiguous"] = double(F.typing.ambiguous);
+  r["net_charge"] = qsum;
+  r["has_charges"] = F.ff != nullptr;
+  caps::Json miss = caps::Json::array();
+  for (const auto& m : F.rep.missing) miss.push_back(m);
+  r["missing"] = miss;
+  int estimated = 0, imported = 0;
+  for (const auto& [k, v] : F.rep.used) {
+    const auto sp = k.find(' ');
+    const std::string name = sp == std::string::npos ? k : k.substr(sp + 1);
+    if (name.rfind("user:", 0) == 0) estimated += v;
+    if (name.rfind("imported:", 0) == 0) imported += v;
+  }
+  r["estimated"] = double(estimated);
+  r["imported"] = double(imported);
+  caps::Json hand = caps::Json::array();
+  for (const auto* v : {&F.extra.pairs, &F.extra.bonds, &F.extra.angles, &F.extra.dihedrals, &F.extra.impropers})
+    for (const auto& x : *v)
+      if (x.name.rfind("user:", 0) == 0) {
+        std::string t = x.name.substr(6) + " · " + (x.style.empty() ? "default" : x.style) + " ·";
+        for (double p : x.params) { char b[32]; std::snprintf(b, sizeof b, " %g", p); t += b; }
+        hand.push_back(t);
+      }
+  r["entered"] = hand;
+  caps::Json imp = caps::Json::array();
+  for (const auto& x : F.imported) imp.push_back(x);
+  r["imported_files"] = imp;
+  // types present, with the viewer's colour for each
+  caps::Json used = caps::Json::array();
+  std::map<std::string, int> count;
+  for (const auto& t : F.types) ++count[t.empty() ? "?" : t];
+  for (size_t k = 0; k < names.size(); ++k) {
+    caps::Json u = caps::Json::object();
+    u["name"] = names[k];
+    u["count"] = double(count[names[k]]);
+    u["colour"] = hex_colour(caps::molecule_colour(int(k)));
+    const caps::FFType* ft = def.type(names[k]);
+    if (ft) u["desc"] = ft->description;
+    used.push_back(u);
+  }
+  r["used"] = used;
+  caps::Json all = caps::Json::array();   // every type of the force field, for overrides
+  for (const auto& t : def.types) {
+    caps::Json u = caps::Json::object();
+    u["name"] = t.name;
+    u["el"] = std::string(caps::element(t.element).symbol);
+    u["desc"] = t.description;
+    all.push_back(u);
+  }
+  r["fftypes"] = all;
+  caps::Json style = caps::Json::object();   // default styles, for entering parameters by hand
+  style["pair"] = def.pair_style;
+  style["bond"] = def.bond_style;
+  style["angle"] = def.angle_style;
+  style["dihedral"] = def.dihedral_style;
+  style["improper"] = def.improper_style;
+  r["styles"] = style;
+  caps::Json notes = caps::Json::array();
+  for (const auto& x : F.typing.notes) notes.push_back(x);
+  for (const auto& x : F.rep.notes) notes.push_back(x);
+  r["notes"] = notes;
+  r["complete"] = F.complete;
+  if (F.ff) {
+    caps::Evaluator ev(*F.ff, caps::EnergyOptions{});
+    std::vector<double> x, f;
+    for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, s.cell, f);
+    caps::Json en = caps::Json::object();
+    en["bond"] = e.bond; en["angle"] = e.angle; en["dihedral"] = e.dihedral; en["improper"] = e.improper;
+    en["vdw"] = e.vdw; en["coulomb"] = e.coulomb; en["total"] = e.total();
+    r["energy"] = en;
+  }
+  F.report = r.dump(0);
+}
+
+int32_t report_out(const std::string& t, char* buf, int32_t cap) {
+  if (buf && cap > 0) {
+    const size_t k = std::min(t.size(), size_t(cap) - 1);
+    std::memcpy(buf, t.data(), k);
+    buf[k] = 0;
+  }
+  return int32_t(t.size() + 1);
+}
+
+}  // namespace
+
+extern "C" {
+
+int32_t caps_abi_version(void) { return CAPS_ABI_VERSION; }
+const char* caps_last_error(void) { return g_error.c_str(); }
+
+caps_doc* caps_open(const char* path, const char* topology_path) {
+  try {
+    auto* d = new caps_doc;
+    d->traj = caps::open_file(path, topology_path ? topology_path : "");
+    refresh(d);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
+
+void caps_close(caps_doc* d) { delete d; }
+
+caps_doc* caps_grow(const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    caps::GrowOptions g;
+    g.chains = o->chains;
+    g.dp = o->dp;
+    g.tacticity = o->tacticity == 1 ? caps::Tacticity::Isotactic : o->tacticity == 2 ? caps::Tacticity::Syndiotactic : caps::Tacticity::Atactic;
+    g.seed = o->seed;
+    g.box = o->box;
+    g.density = o->density;
+    g.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+    g.curve = o->curve != 0;
+    if (progress) g.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::GrowReport rep;
+    caps::System s = caps::grow(g, &rep);
+    auto* d = new caps_doc;
+    d->traj.topology = s;
+    std::vector<caps::Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    d->traj.positions.push_back(std::move(p));
+    d->traj.cells.push_back(s.cell);
+    d->traj.timesteps.push_back(0);
+    refresh(d);
+    if (report && cap > 0) {
+      std::string t;
+      for (const auto& n : rep.notes) t += n + "\n";
+      std::strncpy(report, t.c_str(), size_t(cap) - 1);
+      report[cap - 1] = 0;
+    }
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
+
+int32_t caps_save(caps_doc* d, const char* path) {
+  return guard([&] {
+    const std::string p = path;
+    auto ends = [&](const char* e) { const std::string x = e; return p.size() >= x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
+    if (ends(".pdb")) caps::write_pdb(d->frame, p);
+    else if (ends(".xyz")) caps::write_xyz(d->frame, p);
+    else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
+      if (d->field->complete) caps::write_lammps_data_ff(d->frame, *d->field->ff, caps::EnergyOptions{}, p);
+      else caps::write_lammps_data(d->frame, p);
+    } else {
+      caps::ForceField ff;
+      bool typed = true;
+      try { ff = caps::assign_gaff(d->frame); } catch (const caps::FieldError&) { typed = false; }
+      if (typed) caps::write_lammps_data_ff(d->frame, ff, caps::EnergyOptions{}, p);
+      else caps::write_lammps_data(d->frame, p);
+    }
+    return 0;
+  });
+}
+
+int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn progress, void* user, char* report, int32_t cap) {
+  return guard([&] {
+    caps::RelaxOptions r;
+    r.field = field_for_run(d);
+    r.method = static_cast<caps::Minimiser>(std::clamp(o->method, 0, 3));
+    if (o->ftol > 0) r.ftol = o->ftol;
+    if (o->max_iterations > 0) r.max_iterations = o->max_iterations;
+    r.target_density = o->target_density;
+    if (o->compress_step > 0) r.compress_step = o->compress_step;
+    r.pushoff = o->pushoff != 0;
+    r.relax_box = o->relax_box != 0;
+    r.pressure = o->pressure;
+    if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
+    r.energy.coulomb = o->coulomb != 0;
+    r.energy.threads = o->threads;
+    if (progress)
+      r.progress = [&](const caps::RelaxProgress& p) {
+        return progress(p.stage_index, p.stages, p.iteration, p.energy, p.fmax, p.density, user) == 0;
+      };
+    caps::System s = d->traj.frame(d->current);
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    caps::Trajectory out;
+    out.topology = s;
+    auto push = [&](const std::vector<caps::Vec3>& p, const caps::Cell& c) {
+      out.positions.push_back(p);
+      out.cells.push_back(c);
+      out.timesteps.push_back(int64_t(out.timesteps.size()));
+    };
+    {
+      std::vector<caps::Vec3> p;
+      for (const auto& a : s.atoms) p.push_back(a.pos);
+      push(p, s.cell);
+    }
+    r.snapshot = [&](const std::vector<double>& x, const caps::Cell& c, const std::string&) {
+      std::vector<caps::Vec3> p(x.size() / 3);
+      for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+      push(p, c);
+    };
+    caps::RelaxReport rep;
+    caps::relax(s, r, &rep);
+    // the final structure is the last snapshot; keep charges and the final cell on the topology
+    out.topology.atoms = s.atoms;
+    out.topology.cell = s.cell;
+    out.topology.velocities.clear();   // minimised positions: old velocities no longer belong to them
+    out.topology.has_charges = true;
+    out.topology.unwrapped = true;
+    out.topology.notes = rep.notes;
+    d->traj = std::move(out);
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    if (report && cap > 0) {
+      std::string t = rep.field + "\n";
+      for (const auto& n : rep.notes) t += n + "\n";
+      for (const auto& st : rep.stages) {
+        char b[200];
+        std::snprintf(b, sizeof b, "%s: %d it, E %.1f, |F|max %.3f (%s)\n", st.name.c_str(), st.iterations, st.energy, st.fmax, st.stopped_by.c_str());
+        t += b;
+      }
+      std::strncpy(report, t.c_str(), size_t(cap) - 1);
+      report[cap - 1] = 0;
+    }
+    return rep.converged ? 0 : 1;
+  });
+}
+
+int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress, void* user, char* report, int32_t cap) {
+  return guard([&] {
+    caps::DynamicsOptions m;
+    m.field = field_for_run(d);
+    if (o->dt > 0) m.dt = o->dt;
+    m.steps = std::max<int64_t>(0, o->steps);
+    m.temperature = o->temperature;
+    m.thermostat = static_cast<caps::Thermostat>(std::clamp(o->thermostat, 0, 2));
+    if (o->tau_t > 0) m.tau_t = o->tau_t;
+    m.barostat = static_cast<caps::Barostat>(std::clamp(o->barostat, 0, 2));
+    m.pressure = o->pressure;
+    if (o->tau_p > 0) m.tau_p = o->tau_p;
+    m.new_velocities = o->new_velocities != 0;
+    m.seed = o->seed;
+    if (o->thermo_every > 0) m.thermo_every = o->thermo_every;
+    m.frame_every = std::max(0, o->frame_every);
+    if (o->cutoff > 0) m.energy.cutoff = o->cutoff;
+    m.energy.coulomb = o->coulomb != 0;
+    m.energy.tail = o->tail != 0;
+    m.energy.threads = o->threads;
+    if (progress)
+      m.progress = [&](const caps::ThermoRow& r) {
+        caps_thermo t{r.step, r.time_ps, r.temperature, r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density};
+        return progress(&t, m.steps, user) == 0;
+      };
+    caps::System s = d->traj.frame(d->current);
+    if (d->current + 1 != d->traj.frames()) s.velocities.clear();   // velocities belong to the last frame only
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    caps::Trajectory out;
+    out.topology = s;
+    m.frame = [&](const std::vector<double>& x, const caps::Cell& c, int64_t step) {
+      std::vector<caps::Vec3> p(x.size() / 3);
+      for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+      out.positions.push_back(std::move(p));
+      out.cells.push_back(c);
+      out.timesteps.push_back(step);
+    };
+    if (m.frame_every <= 0) m.frame_every = int(std::max<int64_t>(1, m.steps));   // at least the start and the end
+    caps::DynamicsReport rep;
+    caps::run_dynamics(s, m, &rep);
+    out.topology.atoms = s.atoms;
+    out.topology.cell = s.cell;
+    out.topology.velocities = s.velocities;
+    out.topology.has_charges = true;
+    out.topology.unwrapped = true;
+    out.topology.notes = rep.notes;
+    d->traj = std::move(out);
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    if (report && cap > 0) {
+      std::string t;
+      for (const auto& n : rep.notes) t += n + "\n";
+      if (!rep.thermo.empty()) {
+        const auto& r = rep.thermo.back();
+        char b[256];
+        std::snprintf(b, sizeof b, "end: T %.1f K, P %.0f atm, density %.4f g/cm³, E %.1f kcal/mol\n", r.temperature, r.pressure, r.density, r.total);
+        t += b;
+      }
+      std::strncpy(report, t.c_str(), size_t(cap) - 1);
+      report[cap - 1] = 0;
+    }
+    return 0;
+  });
+}
+
+int32_t caps_save_trajectory(caps_doc* d, const char* path) {
+  return guard([&] {
+    caps::write_lammps_dump(d->traj, path);
+    return 0;
+  });
+}
+
+
+int32_t caps_protocol_text(const char* name, const caps_protocol_params* p, char* out, int32_t cap) {
+  return guard([&] {
+    const std::string t = caps::protocol_text(caps::protocol_by_name(name, protocol_params(p)));
+    if (out && cap > 0) {
+      std::strncpy(out, t.c_str(), size_t(cap) - 1);
+      out[cap - 1] = 0;
+    }
+    return int32_t(t.size());
+  });
+}
+
+int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opts* o, caps_equil_progress_fn progress, void* user,
+                         char* report, int32_t cap) {
+  return guard([&] {
+    caps::EquilibrateOptions e;
+    e.md.field = field_for_run(d);
+    e.stages = caps::parse_protocol(protocol ? protocol : "");
+    if (o->dt > 0) e.md.dt = o->dt;
+    e.md.thermostat = o->thermostat == 2 ? caps::Thermostat::Langevin : caps::Thermostat::Bussi;
+    e.md.barostat = o->barostat == 2 ? caps::Barostat::Berendsen : caps::Barostat::CRescale;
+    if (o->tau_t > 0) e.md.tau_t = o->tau_t;
+    if (o->tau_p > 0) e.md.tau_p = o->tau_p;
+    e.md.seed = o->seed;
+    if (o->cutoff > 0) e.md.energy.cutoff = o->cutoff;
+    e.md.energy.coulomb = o->coulomb != 0;
+    e.md.energy.tail = o->tail != 0;
+    e.md.energy.threads = o->threads;
+    if (o->frame_ps > 0) e.frame_ps = o->frame_ps;
+    if (o->thermo_ps > 0) e.thermo_ps = o->thermo_ps;
+    e.until_converged = o->until_converged != 0;
+    if (o->block_ps > 0) e.block_ps = o->block_ps;
+    if (o->max_blocks > 0) e.max_blocks = o->max_blocks;
+    if (o->tol_density > 0) e.tol_density = o->tol_density;
+    if (o->tol_energy > 0) e.tol_energy = o->tol_energy;
+    if (o->tol_rg > 0) e.tol_rg = o->tol_rg;
+    if (progress)
+      e.progress = [&](int st, int n, const std::string& label, const caps::ThermoRow& r) {
+        caps_thermo t{r.step, r.time_ps, r.temperature, r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density};
+        return progress(st, n, label.c_str(), &t, user) == 0;
+      };
+    caps::System s = d->traj.frame(d->current);
+    if (d->current + 1 != d->traj.frames()) s.velocities.clear();
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    caps::Trajectory out;
+    out.topology = s;
+    e.frame = [&](const std::vector<double>& x, const caps::Cell& c, int64_t step) {
+      std::vector<caps::Vec3> p(x.size() / 3);
+      for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+      out.positions.push_back(std::move(p));
+      out.cells.push_back(c);
+      out.timesteps.push_back(step);
+    };
+    caps::EquilibrateReport rep;
+    caps::equilibrate(s, e, &rep);
+    out.topology.atoms = s.atoms;
+    out.topology.cell = s.cell;
+    out.topology.velocities = s.velocities;
+    out.topology.has_charges = true;
+    out.topology.unwrapped = true;
+    out.topology.notes = rep.notes;
+    d->traj = std::move(out);
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    if (report && cap > 0) {
+      std::string t;
+      for (const auto& n : rep.notes) t += n + "\n";
+      char b[256];
+      t += "stage                          ps     T/K     P/atm   ρ/g·cm⁻³\n";
+      for (const auto& st : rep.stages) {
+        std::snprintf(b, sizeof b, "%-28s %6.1f %7.1f %9.0f %9.4f\n", st.label.c_str(), st.ps, st.temperature, st.pressure, st.density);
+        t += b;
+      }
+      for (const auto& c : rep.checks) {
+        std::snprintf(b, sizeof b, "check %s: %s (change %.3g, tolerance %.3g)\n", c.quantity.c_str(), c.ok ? "ok" : "not yet", c.change, c.tolerance);
+        t += b;
+      }
+      std::strncpy(report, t.c_str(), size_t(cap) - 1);
+      report[cap - 1] = 0;
+    }
+    return e.until_converged && !rep.converged ? 1 : 0;
+  });
+}
+
+int32_t caps_internal_distances(caps_doc* d, int32_t* n, double* ratio, int32_t cap, int32_t* chains, double* b2) {
+  return guard([&] {
+    const caps::InternalDistances r = caps::internal_distances(d->frame);
+    if (chains) *chains = r.chains;
+    if (b2) *b2 = r.b2;
+    const int32_t m = std::min<int32_t>(cap, int32_t(r.n.size()));
+    for (int32_t k = 0; k < m; ++k) {
+      if (n) n[k] = r.n[k];
+      if (ratio) ratio[k] = r.ratio[k];
+    }
+    return m;
+  });
+}
+
+caps_doc* caps_pack(const char* text, const char* base_dir, int32_t threads, caps_pack_progress_fn progress, void* user, char* report, int32_t cap) {
+  caps::PackReport rep;
+  auto write_report = [&]() {
+    if (!report || cap <= 0) return;
+    std::string t;
+    for (const auto& n : rep.notes) t += n + "\n";
+    std::strncpy(report, t.c_str(), size_t(cap) - 1);
+    report[cap - 1] = 0;
+  };
+  try {
+    caps::PackOptions o;
+    std::string output;
+    auto items = caps::parse_packmol_input(text ? text : "", base_dir ? base_dir : ".", o, &output);
+    o.threads = threads;
+    if (progress)
+      o.progress = [&](const caps::PackProgress& p) { return progress(p.loop, p.loops, p.penalty, p.bad, user) == 0; };
+    caps::System s = caps::pack(items, o, &rep);
+    auto* d = new caps_doc;
+    d->traj.topology = s;
+    std::vector<caps::Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    d->traj.positions.push_back(std::move(p));
+    d->traj.cells.push_back(s.cell);
+    d->traj.timesteps.push_back(0);
+    d->traj.topology.notes = rep.notes;
+    refresh(d);
+    write_report();
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  write_report();
+  return nullptr;
+}
+
+int32_t caps_reaction_template(const char* name, char* out, int32_t cap) {
+  return guard([&] {
+    std::string t;
+    if (!name || !*name)
+      for (const auto& n : caps::builtin_template_names()) t += n + "\n";
+    else
+      t = caps::builtin_template(name);
+    if (out && cap > 0) {
+      std::strncpy(out, t.c_str(), size_t(cap) - 1);
+      out[cap - 1] = 0;
+    }
+    return int32_t(t.size());
+  });
+}
+
+int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o, caps_react_progress_fn progress, void* user, char* report,
+                   int32_t cap) {
+  return guard([&] {
+    caps::ReactOptions r;
+    r.templates = caps::parse_templates(templates ? templates : "");
+    if (o->capture > 0)
+      for (auto& t : r.templates) t.capture = o->capture;
+    r.seed = o->seed;
+    if (o->max_cycles > 0) r.max_cycles = o->max_cycles;
+    if (o->max_per_cycle > 0) r.max_per_cycle = o->max_per_cycle;
+    if (o->target_conversion > 0) r.target_conversion = o->target_conversion;
+    r.relax = o->relax != 0;
+    if (o->relax_iterations > 0) r.relax_iterations = o->relax_iterations;
+    r.md_ps = o->md_ps;
+    if (o->temperature > 0) r.temperature = o->temperature;
+    if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
+    r.energy.coulomb = o->coulomb != 0;
+    if (progress)
+      r.progress = [&](const caps::CycleRow& c) {
+        caps_react_cycle row{c.cycle, c.reactions, c.total, c.clusters.clusters, c.atoms, c.conversion, c.clusters.largest_fraction,
+                             c.clusters.reduced_mw, c.energy};
+        return progress(&row, user) == 0;
+      };
+    caps::System s = d->traj.frame(d->current);
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    // the atom count changes when atoms leave, so the record is one document per state: keep the start and the end
+    std::vector<caps::System> frames{s};
+    r.frame = [&](const caps::System& x, int) { frames.push_back(x); };
+    caps::ReactReport rep;
+    caps::react(s, r, &rep);
+    caps::Trajectory out;
+    const bool same = frames.front().atoms.size() == s.atoms.size();
+    out.topology = s;
+    out.topology.notes = rep.notes;
+    // frames with the final topology: all cycles when no atoms left, else the final structure only
+    for (const auto& f : frames) {
+      if (f.atoms.size() != s.atoms.size()) continue;
+      if (!same && &f != &frames.back()) continue;
+      std::vector<caps::Vec3> p;
+      for (const auto& a : f.atoms) p.push_back(a.pos);
+      out.positions.push_back(std::move(p));
+      out.cells.push_back(f.cell);
+      out.timesteps.push_back(int64_t(out.timesteps.size()));
+    }
+    if (out.positions.empty()) {
+      std::vector<caps::Vec3> p;
+      for (const auto& a : s.atoms) p.push_back(a.pos);
+      out.positions.push_back(std::move(p));
+      out.cells.push_back(s.cell);
+      out.timesteps.push_back(0);
+    }
+    d->field.reset();   // new topology: the Field assignment no longer applies
+    d->traj = std::move(out);
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    if (report && cap > 0) {
+      std::string t;
+      for (const auto& n : rep.notes) t += n + "\n";
+      std::strncpy(report, t.c_str(), size_t(cap) - 1);
+      report[cap - 1] = 0;
+    }
+    return 0;
+  });
+}
+
+int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_path, int32_t charges) {
+  return guard([&] {
+    auto F = std::make_unique<FieldState>();
+    F->ff_path = ff_path ? ff_path : "";
+    F->base = caps::load_forcefield(F->ff_path);
+    if (rules_path && *rules_path) {
+      F->base.typing.clear();
+      caps::load_typing(F->base, rules_path);
+    }
+    F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : "types";
+    // keep the file's types to restore them on clear (and the previous assignment's, if any)
+    if (d->field) {
+      F->file_types = d->field->file_types;
+      F->file_type_table = d->field->file_type_table;
+      F->file_charges = d->field->file_charges;
+      F->file_has_charges = d->field->file_has_charges;
+      F->extra = d->field->extra.name.empty() && d->field->base.name == F->base.name ? d->field->extra : caps::FFDef{};
+    } else {
+      for (const auto& a : d->traj.topology.atoms) {
+        F->file_types.push_back({a.type, a.name});
+        F->file_charges.push_back(a.charge);
+      }
+      F->file_type_table = d->traj.topology.types;
+      F->file_has_charges = d->traj.topology.has_charges;
+    }
+    if (F->charges == "keep" && !d->traj.topology.has_charges && !F->file_has_charges)
+      throw caps::FFError("the structure has no charges to keep; use the force field's or Gasteiger charges");
+    // "keep" means the file's charges, not the previous assignment's
+    for (size_t i = 0; i < d->traj.topology.atoms.size() && i < F->file_charges.size(); ++i) d->traj.topology.atoms[i].charge = F->file_charges[i];
+    d->field = std::move(F);
+    refresh(d);
+    field_run(d);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_report(caps_doc* d, char* json, int32_t cap) {
+  if (!d->field) return report_out("", json, cap);
+  return report_out(d->field->report, json, cap);
+}
+
+int32_t caps_field_override(caps_doc* d, int32_t index, const char* type) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    if (index < 0 || size_t(index) >= d->frame.atoms.size()) throw caps::FFError("atom " + std::to_string(index + 1) + " out of range");
+    const std::string t = type ? type : "";
+    if (t.empty()) d->field->overrides.erase(index);
+    else {
+      bool known = d->field->base.type(t) != nullptr || d->field->extra.type(t) != nullptr;
+      if (!known) throw caps::FFError("type " + t + " is not in " + d->field->base.name);
+      d->field->overrides[index] = t;
+    }
+    field_run(d);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, const char* style, const char* params) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    const std::string k = kind ? kind : "";
+    std::vector<caps::FFRule>* dst = k == "pair" ? &d->field->extra.pairs : k == "bond" ? &d->field->extra.bonds
+                                   : k == "angle" ? &d->field->extra.angles : k == "dihedral" ? &d->field->extra.dihedrals
+                                   : k == "improper" ? &d->field->extra.impropers : nullptr;
+    if (!dst) throw caps::FFError("kind must be pair, bond, angle, dihedral or improper");
+    const size_t need = k == "pair" ? 1 : k == "bond" ? 2 : k == "angle" ? 3 : 4;
+    caps::FFRule r;
+    // names the rules can match: the types and their equivalence names
+    std::set<std::string> known;
+    for (const caps::FFDef* def : {&d->field->base, &d->field->extra})
+      for (const auto& t : def->types) {
+        known.insert(t.name);
+        for (const auto& [kind, e] : t.equiv) known.insert(e);
+      }
+    std::istringstream ts(types ? types : "");
+    std::string names;
+    for (std::string w; ts >> w;) {
+      if (w != "*" && !known.count(w)) throw caps::FFError(w + " is neither a type of " + d->field->base.name + " nor an equivalence name");
+      r.match.push_back(w == "*" ? w : caps::glob_escape(w));
+      names += " " + w;
+    }
+    if (r.match.size() != need) throw caps::FFError(k + " parameters need " + std::to_string(need) + " atom types");
+    std::istringstream ps(params ? params : "");
+    for (std::string w; ps >> w;) {
+      char* end = nullptr;
+      const double v = std::strtod(w.c_str(), &end);
+      if (!end || *end) throw caps::FFError("not a number: " + w);
+      r.params.push_back(v);
+    }
+    if (r.params.empty()) throw caps::FFError("give the parameters");
+    r.style = style ? style : "";
+    r.name = "user: " + k + names;
+    r.comment = "entered by hand in CAPS Studio: estimated, not from the published force field";
+    dst->push_back(r);
+    try {
+      field_run(d);
+    } catch (...) {   // a rule the force field cannot use (wrong style or parameter count) is taken back
+      dst->pop_back();
+      field_run(d);
+      throw;
+    }
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_remove_rules(caps_doc* d) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    d->field->extra = caps::FFDef{};
+    d->field->imported.clear();
+    field_run(d);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_import(caps_doc* d, const char* path) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    const std::string p = path ? path : "";
+    const bool lt = p.size() > 3 && p.compare(p.size() - 3, 3, ".lt") == 0;
+    caps::FFDef imp = lt ? caps::import_moltemplate(p) : caps::load_forcefield(p);
+    // parameters only: types the force field already has keep their definitions, typing rules stay the library's
+    std::vector<caps::FFType> fresh;
+    for (auto& t : imp.types)
+      if (!d->field->base.type(t.name)) fresh.push_back(t);
+    imp.types = fresh;
+    imp.typing.clear();
+    const auto slash = p.find_last_of('/');
+    const std::string file = slash == std::string::npos ? p : p.substr(slash + 1);
+    for (auto* v : {&imp.pairs, &imp.bonds, &imp.angles, &imp.dihedrals, &imp.impropers, &imp.bond_increments})
+      for (auto& r : *v) {
+        r.name = "imported: " + r.name;
+        r.comment = "imported from " + file + (r.comment.empty() ? "" : "; " + r.comment);
+      }
+    caps::merge_forcefield(d->field->extra, imp);
+    d->field->imported.push_back(p);
+    field_run(d);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_clear(caps_doc* d) {
+  return guard([&] {
+    if (!d->field) return 0;
+    auto& atoms = d->traj.topology.atoms;
+    for (size_t i = 0; i < atoms.size() && i < d->field->file_types.size(); ++i) {
+      atoms[i].type = d->field->file_types[i].first;
+      atoms[i].name = d->field->file_types[i].second;
+      atoms[i].charge = d->field->file_charges[i];
+    }
+    d->traj.topology.types = d->field->file_type_table;
+    d->traj.topology.has_charges = d->field->file_has_charges;
+    d->field.reset();
+    refresh(d);
+    return 0;
+  });
+}
+
+int32_t caps_field_types_file(caps_doc* d, const char* path) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    std::ofstream f(path);
+    if (!f) throw caps::FFError(std::string("cannot write ") + path);
+    f << "# " << d->field->base.name << " types from CAPS Field (" << d->field->overrides.size() << " set by hand); caps ff apply --types\n";
+    for (const auto& t : d->field->types) f << (t.empty() ? "?" : t) << "\n";
+    return 0;
+  });
+}
+
+int32_t caps_field_info(caps_doc* d, char* text, int32_t cap) {
+  return guard([&] {
+    const auto assigned = field_for_run(d);
+    const caps::ForceField ff = assigned ? *assigned : caps::assign_gaff(d->frame);
+    caps::Evaluator ev(ff, caps::EnergyOptions{});
+    std::vector<double> x, f;
+    for (const auto& a : d->frame.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, d->frame.cell, f);
+    std::string t = ff.name + "\n";
+    for (const auto& n : ff.notes) t += n + "\n";
+    char b[400];
+    std::snprintf(b, sizeof b,
+                  "energy (kcal/mol): bond %.1f, angle %.1f, dihedral %.1f, improper %.1f, vdW %.1f, Coulomb %.1f, total %.1f\n"
+                  "largest force %.3f kcal/mol/Å",
+                  e.bond, e.angle, e.dihedral, e.improper, e.vdw, e.coulomb, e.total(), caps::max_force(f));
+    t += b;
+    if (d->frame.cell.valid()) {
+      std::snprintf(b, sizeof b, ", pressure %.0f atm (0 K virial)", caps::pressure_atm(e.virial, d->frame.cell.volume()));
+      t += b;
+    }
+    t += "\n";
+    if (text && cap > 0) {
+      std::strncpy(text, t.c_str(), size_t(cap) - 1);
+      text[cap - 1] = 0;
+    }
+    return 0;
+  });
+}
+
+int32_t caps_summary_get(caps_doc* d, caps_summary* o) {
+  return guard([&] {
+    const auto& s = d->frame;
+    std::memset(o, 0, sizeof *o);
+    int nm = 0;
+    s.molecules(&nm);
+    o->atoms = int64_t(s.atoms.size());
+    o->bonds = int64_t(s.bonds.size());
+    o->molecules = nm;
+    o->frames = int64_t(d->traj.frames());
+    o->bonds_from_file = s.bonds_from_file;
+    o->has_charges = s.has_charges;
+    o->cell_valid = s.cell.valid();
+    o->unwrapped = s.unwrapped;
+    o->cell_a = caps::norm(s.cell.a); o->cell_b = caps::norm(s.cell.b); o->cell_c = caps::norm(s.cell.c);
+    o->volume = s.cell.volume();
+    o->density = s.density();
+    o->total_mass = s.total_mass();
+    for (const auto& a : s.atoms) o->total_charge += a.charge;
+    std::strncpy(o->format, s.source_format.c_str(), sizeof o->format - 1);
+    return 0;
+  });
+}
+
+int32_t caps_set_frame(caps_doc* d, int64_t f) {
+  return guard([&] {
+    if (f < 0 || size_t(f) >= d->traj.frames()) throw std::out_of_range("frame out of range");
+    d->current = size_t(f);
+    refresh(d);
+    return 0;
+  });
+}
+
+int32_t caps_set_wrap(caps_doc* d, int32_t w) {
+  return guard([&] {
+    d->wrap = w != 0;
+    refresh(d);
+    return 0;
+  });
+}
+
+int32_t caps_atom(caps_doc* d, int32_t i, caps_atom_info* o) {
+  return guard([&] {
+    if (i < 0 || size_t(i) >= d->frame.atoms.size()) throw std::out_of_range("atom index out of range");
+    const auto& a = d->frame.atoms[size_t(i)];
+    std::memset(o, 0, sizeof *o);
+    o->id = a.id; o->mol = a.mol; o->type = a.type; o->element = a.element; o->index = i;
+    o->charge = a.charge; o->x = a.pos[0]; o->y = a.pos[1]; o->z = a.pos[2];
+    std::strncpy(o->element_symbol, caps::element(a.element).symbol, 3);
+    std::strncpy(o->name, a.name.c_str(), 15);
+    return 0;
+  });
+}
+
+int32_t caps_note_count(caps_doc* d) { return int32_t(d->frame.notes.size()); }
+const char* caps_note(caps_doc* d, int32_t k) { return (k >= 0 && size_t(k) < d->frame.notes.size()) ? d->frame.notes[size_t(k)].c_str() : ""; }
+
+int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba) {
+  return guard([&] {
+    const auto img = d->renderer.render(d->frame, cam_of(cam), opts_of(d, opt));
+    std::memcpy(rgba, img.rgba.data(), img.rgba.size());
+    return 0;
+  });
+}
+
+int32_t caps_pick(caps_doc* d, int32_t x, int32_t y) { return d->renderer.pick(x, y); }
+
+int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path) {
+  return guard([&] {
+    caps::Renderer r;   // separate renderer so the view's pick buffer is not replaced
+    caps::write_png(r.render(d->frame, cam_of(cam), opts_of(d, opt)), path);
+    return 0;
+  });
+}
+
+int32_t caps_export_svg(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path) {
+  return guard([&] {
+    std::ofstream f(path);
+    if (!f) throw std::runtime_error(std::string("cannot write ") + path);
+    f << caps::render_svg(d->frame, cam_of(cam), opts_of(d, opt));
+    return 0;
+  });
+}
+
+int32_t caps_measure(caps_doc* d, const int32_t* idx, int32_t n, double* value) {
+  return guard([&] {
+    std::vector<uint32_t> v;
+    for (int32_t k = 0; k < n; ++k) {
+      if (idx[k] < 0) throw std::out_of_range("atom index out of range");
+      v.push_back(uint32_t(idx[k]));
+    }
+    *value = caps::measure(d->frame, v);
+    return 0;
+  });
+}
+
+int32_t caps_analyze(caps_doc* d, const char* props, const caps_analyze_opts* p, caps_analyze_progress_fn progress, void* user) {
+  return caps_analyze_ex(d, props, p, nullptr, progress, user);
+}
+
+int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts* p, const caps_mech_opts* m, caps_analyze_progress_fn progress,
+                        void* user) {
+  return guard([&] {
+    std::vector<std::string> ids, protocols;
+    {
+      std::string cur;
+      for (const char* c = props ? props : ""; ; ++c) {
+        if (*c == ',' || *c == 0) {
+          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "tensile" || cur == "tg" ? protocols : ids).push_back(cur);
+          cur.clear();
+          if (*c == 0) break;
+        } else if (*c != ' ') cur += *c;
+      }
+    }
+    if (ids.empty() && protocols.empty()) throw std::invalid_argument("no properties requested");
+    caps::AnalyzeOptions o;
+    if (p) {
+      o.first = std::max<int64_t>(0, p->first);
+      o.last = p->last > 0 ? p->last : -1;
+      if (p->stride > 0) o.stride = p->stride;
+      if (p->frame_ps > 0) o.frame_ps = p->frame_ps;
+      if (p->timestep_fs > 0) o.timestep_fs = p->timestep_fs;
+      if (p->blocks > 0) o.blocks = p->blocks;
+      o.elem_a = std::max(0, p->elem_a);
+      o.elem_b = std::max(0, p->elem_b);
+      o.inter_only = p->inter_only != 0;
+      if (p->rdf_rmax > 0) o.rdf_rmax = p->rdf_rmax;
+      if (p->rdf_dr > 0) o.rdf_dr = p->rdf_dr;
+      if (p->qmax > 0) o.qmax = p->qmax;
+      if (p->dq > 0) o.dq = p->dq;
+      if (p->q_direct > 0) o.q_direct = p->q_direct;
+      if (p->fit_from > 0) o.fit_from = p->fit_from;
+      if (p->fit_to > 0) o.fit_to = p->fit_to;
+      if (p->probe > 0) o.probe = p->probe;
+      if (p->grid > 0) o.grid = p->grid;
+      if (p->cutoff > 0) o.energy.cutoff = p->cutoff;
+      if (p->threads > 0) o.threads = p->threads;
+    }
+    caps_mech_opts mo{};
+    if (m) mo = *m;
+    if (mo.temperature > 0) o.temperature = mo.temperature;
+    if (progress) o.progress = [&](const std::string& what, double f) { return progress(what.c_str(), f, user) != 0; };
+    auto has = [&](const char* k) { return std::find(ids.begin(), ids.end(), k) != ids.end(); };
+    // force field: the Field assignment (must be complete), else GAFF of C and H
+    std::shared_ptr<const caps::ForceField> ff = field_for_run(d);
+    std::vector<std::string> extra_notes;
+    if (!ff && (has("ced") || has("delta") || has("cij_fluct") || !protocols.empty())) {
+      caps::System s0 = d->traj.frame(0);
+      if (!s0.unwrapped) caps::make_molecules_whole(s0);
+      ff = std::make_shared<caps::ForceField>(caps::assign_gaff(s0));
+      extra_notes.push_back("force field: the built-in GAFF (C and H); assign another in Field");
+    }
+    if (ff) o.ff = ff.get();
+    std::vector<caps::Property> res = ids.empty() ? std::vector<caps::Property>{} : caps::analyze(d->traj, ids, o);
+    // protocols run on a copy of the current frame; the document is not changed
+    auto frame_copy = [&] {
+      caps::System s = d->traj.frame(d->current);
+      if (!s.unwrapped) caps::make_molecules_whole(s);
+      return s;
+    };
+    auto cancelled = [&](const std::string& w, double f) { return progress && progress(w.c_str(), f, user) == 0; };
+    for (const auto& id : protocols) {
+      if (id == "cij_strain") {
+        const auto fr = caps::analysis_frames(d->traj, o);
+        const size_t nc = std::max<size_t>(1, std::min<size_t>(fr.size(), mo.configurations > 0 ? size_t(mo.configurations) : 1));
+        std::vector<caps::System> cs;
+        if (fr.size() <= 1 || nc == 1) cs.push_back(frame_copy());
+        else
+          for (size_t k = 0; k < nc; ++k) {
+            caps::System s = d->traj.frame(fr[k * (fr.size() - 1) / (nc - 1)]);
+            if (!s.unwrapped) caps::make_molecules_whole(s);
+            cs.push_back(std::move(s));
+          }
+        caps::StaticElasticOptions so;
+        so.field = ff;
+        so.energy = o.energy;
+        if (mo.strain > 0) so.strain = mo.strain;
+        so.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        for (auto& q : caps::elastic_properties(caps::static_elastic(cs, so), "")) res.push_back(std::move(q));
+      } else if (id == "cij_run") {
+        caps::System s = frame_copy();
+        caps::FluctuationRunOptions fo;
+        fo.field = ff;
+        fo.energy = o.energy;
+        if (mo.temperature > 0) fo.temperature = mo.temperature;
+        if (mo.run_ps > 0) fo.ps = mo.run_ps;
+        if (mo.dt > 0) fo.dt = mo.dt;
+        if (mo.seed) fo.seed = mo.seed;
+        fo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        for (auto& q : caps::elastic_properties(caps::fluctuation_run(s, fo), "_fluct")) res.push_back(std::move(q));
+      } else if (id == "tensile") {
+        caps::System s = frame_copy();
+        caps::TensileOptions to;
+        to.field = ff;
+        to.energy = o.energy;
+        to.axis = std::clamp(mo.axis, 0, 2);
+        if (mo.rate > 0) to.rate = mo.rate;
+        if (mo.max_strain > 0) to.max_strain = mo.max_strain;
+        if (mo.temperature > 0) to.temperature = mo.temperature;
+        if (mo.dt > 0) to.dt = mo.dt;
+        if (mo.pressure > 0) to.pressure = mo.pressure;
+        if (mo.fit_strain > 0) to.fit_strain = mo.fit_strain;
+        if (mo.seed) to.seed = mo.seed;
+        to.lateral_pressure = mo.lateral_fixed == 0;
+        if (mo.equilibrate_ps != 0) to.equilibrate_ps = std::max(0.0, mo.equilibrate_ps);
+        to.new_velocities = s.velocities.size() != s.atoms.size();
+        to.progress = [&](const caps::TensilePoint& q) {
+          char b[96];
+          std::snprintf(b, sizeof b, "tensile: strain %.3f, stress %.1f MPa", q.strain, q.stress);
+          return !cancelled(b, q.strain / to.max_strain);
+        };
+        for (auto& q : caps::tensile_properties(caps::run_tensile(s, to))) res.push_back(std::move(q));
+      } else if (id == "tg") {
+        caps::System s = frame_copy();
+        caps::CoolingOptions co;
+        co.field = ff;
+        co.energy = o.energy;
+        if (mo.t_start > 0) co.t_start = mo.t_start;
+        if (mo.t_end > 0) co.t_end = mo.t_end;
+        if (mo.t_step > 0) co.t_step = mo.t_step;
+        if (mo.ps_per_step > 0) co.ps_per_step = mo.ps_per_step;
+        if (mo.dt > 0) co.dt = mo.dt;
+        if (mo.pressure > 0) co.pressure = mo.pressure;
+        if (mo.seed) co.seed = mo.seed;
+        co.new_velocities = s.velocities.size() != s.atoms.size();
+        if (mo.equilibrate_ps != 0) co.equilibrate_ps = std::max(0.0, mo.equilibrate_ps);
+        co.progress = [&](const caps::ThermoRow& r, int k, int n) {
+          char b[128];
+          std::snprintf(b, sizeof b, "cooling: %.0f K (%d of %d), density %.4f g/cm³", r.target_temperature, k + 1, n, r.density);
+          if (k < 0) std::snprintf(b, sizeof b, "cooling: equilibrating at %.0f K, density %.4f g/cm³", r.target_temperature, r.density);
+          return !cancelled(b, std::max(0, k) / double(n));
+        };
+        for (auto& q : caps::cooling_properties(caps::run_cooling(s, co))) res.push_back(std::move(q));
+      }
+    }
+    for (auto& r : res)
+      if (r.id == "ced" || r.id == "delta" || r.id.rfind("cij", 0) == 0 || r.id == "tensile_modulus" || r.id == "tg")
+        for (const auto& n : extra_notes) r.notes.push_back(n);
+    const auto fr = caps::analysis_frames(d->traj, o);
+    d->analysis = "{\"frames\":" + std::to_string(fr.size()) + ",\"of\":" + std::to_string(d->traj.frames()) + ",\"atoms\":" +
+                  std::to_string(d->traj.topology.atoms.size()) + ",\"properties\":" + caps::properties_json(res) + "}";
+    return 0;
+  });
+}
+
+int32_t caps_analyze_report(caps_doc* d, char* json, int32_t cap) {
+  return guard([&] {
+    const int32_t need = int32_t(d->analysis.size() + 1);
+    if (json && cap > 0) {
+      const size_t m = std::min<size_t>(size_t(cap - 1), d->analysis.size());
+      std::memcpy(json, d->analysis.data(), m);
+      json[m] = 0;
+    }
+    return need;
+  });
+}
+
+int32_t caps_rdf(caps_doc* d, int32_t ea, int32_t eb, double rmax, double dr, int32_t inter, double* r, double* g, int32_t cap) {
+  return guard([&] {
+    if (!d->frame.cell.valid()) throw std::runtime_error("g(r) needs a periodic cell");
+    const auto out = caps::rdf(d->frame, ea, eb, rmax, dr, inter != 0);
+    const int32_t m = std::min<int32_t>(cap, int32_t(out.size()));
+    for (int32_t k = 0; k < m; ++k) { r[k] = out[size_t(k)].first; g[k] = out[size_t(k)].second; }
+    return m;
+  });
+}
+
+int32_t caps_molecules(caps_doc* d, caps_molecule* out, int32_t cap) {
+  return guard([&] {
+    const auto m = caps::molecule_shapes(d->frame);
+    const int32_t n = std::min<int32_t>(cap, int32_t(m.size()));
+    for (int32_t k = 0; k < n; ++k) {
+      const auto& x = m[size_t(k)];
+      out[k] = {x.molecule + 1, x.atoms, x.mass, x.rg, x.kappa2, x.com[0], x.com[1], x.com[2]};
+    }
+    return int32_t(m.size());
+  });
+}
+
+int32_t caps_property_range(caps_doc* d, double* lo, double* hi) {
+  return guard([&] {
+    if (d->dcom.empty()) { *lo = *hi = 0; return 0; }
+    *lo = *std::min_element(d->dcom.begin(), d->dcom.end());
+    *hi = *std::max_element(d->dcom.begin(), d->dcom.end());
+    return 0;
+  });
+}
+
+int32_t caps_neighbours(caps_doc* d, int32_t i, int32_t k, int32_t* idx, double* dist) {
+  return guard([&] {
+    const auto& s = d->frame;
+    if (i < 0 || size_t(i) >= s.atoms.size()) throw std::out_of_range("atom index out of range");
+    std::vector<std::pair<double, int32_t>> v;
+    v.reserve(s.atoms.size());
+    for (size_t j = 0; j < s.atoms.size(); ++j)
+      if (j != size_t(i)) v.emplace_back(caps::norm(s.cell.minimum_image(s.atoms[j].pos - s.atoms[size_t(i)].pos)), int32_t(j));
+    const size_t m = std::min<size_t>(size_t(std::max(0, k)), v.size());
+    std::partial_sort(v.begin(), v.begin() + long(m), v.end());
+    for (size_t q = 0; q < m; ++q) { idx[q] = v[q].second; dist[q] = v[q].first; }
+    return int32_t(m);
+  });
+}
+
+}  // extern "C"

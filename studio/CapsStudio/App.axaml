@@ -1,0 +1,33 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CapsStudio.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://CapsStudio/Themes/Tokens.axaml" />
+        <ResourceInclude Source="avares://CapsStudio/Themes/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Dark" Accent="#F0A83C" AltHigh="#0F1113" AltLow="#16191C" AltMedium="#16191C" AltMediumHigh="#1E2226" AltMediumLow="#16191C"
+                               BaseHigh="#E8E6E1" BaseLow="#2C3137" BaseMedium="#A5ABB1" BaseMediumHigh="#C9CDD1" BaseMediumLow="#868D94"
+                               ChromeAltLow="#C9CDD1" ChromeBlackHigh="#000000" ChromeBlackLow="#C9CDD1" ChromeBlackMedium="#000000" ChromeBlackMediumLow="#000000"
+                               ChromeDisabledHigh="#2C3137" ChromeDisabledLow="#868D94" ChromeGray="#A5ABB1" ChromeHigh="#A5ABB1" ChromeLow="#16191C"
+                               ChromeMedium="#1E2226" ChromeMediumLow="#262B30" ChromeWhite="#FFFFFF" ListLow="#1E2226" ListMedium="#2C3137"
+                               RegionColor="#16191C" />
+        <ColorPaletteResources x:Key="Light" Accent="#A35C00" AltHigh="#F4F2EE" AltLow="#FFFFFF" AltMedium="#FFFFFF" AltMediumHigh="#F1EFEB" AltMediumLow="#FFFFFF"
+                               BaseHigh="#1E2226" BaseLow="#D9D5CF" BaseMedium="#555B62" BaseMediumHigh="#3A3F45" BaseMediumLow="#6B7178"
+                               ChromeAltLow="#3A3F45" ChromeBlackHigh="#000000" ChromeBlackLow="#D9D5CF" ChromeBlackMedium="#3A3F45" ChromeBlackMediumLow="#555B62"
+                               ChromeDisabledHigh="#D9D5CF" ChromeDisabledLow="#6B7178" ChromeGray="#555B62" ChromeHigh="#D9D5CF" ChromeLow="#F4F2EE"
+                               ChromeMedium="#F1EFEB" ChromeMediumLow="#FFFFFF" ChromeWhite="#FFFFFF" ListLow="#F1EFEB" ListMedium="#E7E4DF"
+                               RegionColor="#FFFFFF" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <StyleInclude Source="avares://CapsStudio/Themes/Controls.axaml" />
+  </Application.Styles>
+</Application>

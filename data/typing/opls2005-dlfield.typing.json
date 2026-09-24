@@ -1,0 +1,934 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "OPLS-AA 2005 (DL_FIELD)",
+ "description": "OPLS-AA atom types under DL_FIELD's OPLS2005 key names, from the chemistry each key's DL_FIELD atom types describe. Residue-specific keys (amino-acid side-chain CB atoms, sugars, nucleic bases) are not assigned automatically; water is TIP3P (OT3 / HT3).",
+ "rules": [
+  {
+   "type": "HC",
+   "smarts": "[H][CX4]",
+   "description": "H on sp3 C"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H]c",
+   "priority": 1,
+   "description": "H on aromatic C"
+  },
+  {
+   "type": "HE",
+   "smarts": "[H][CX3]",
+   "priority": 1,
+   "description": "H on alkene / imine C"
+  },
+  {
+   "type": "HAE",
+   "smarts": "[H][CX3]=O",
+   "priority": 2,
+   "description": "aldehyde H"
+  },
+  {
+   "type": "HALK",
+   "smarts": "[H][CX4][OX1-]",
+   "priority": 3,
+   "description": "H on alkoxide C"
+  },
+  {
+   "type": "HMET",
+   "smarts": "[H][CX4H3][OX1-]",
+   "priority": 4,
+   "description": "methoxide H"
+  },
+  {
+   "type": "HY",
+   "smarts": "[H]C#C",
+   "priority": 2,
+   "description": "alkyne H"
+  },
+  {
+   "type": "H",
+   "smarts": "[H][#7]",
+   "description": "H on N"
+  },
+  {
+   "type": "HAM",
+   "smarts": "[H]N(C=O)C=O",
+   "priority": 2,
+   "description": "imide H"
+  },
+  {
+   "type": "HNA",
+   "smarts": "[H][NX3H3]",
+   "priority": 3,
+   "description": "ammonia H"
+  },
+  {
+   "type": "HNP",
+   "smarts": "[H][n+]",
+   "priority": 3,
+   "description": "pyridinium H"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][#8]",
+   "description": "H on O"
+  },
+  {
+   "type": "HHY",
+   "smarts": "[H][OX3+]",
+   "priority": 3,
+   "description": "hydronium H"
+  },
+  {
+   "type": "H_OH",
+   "smarts": "[H][OX1-]",
+   "priority": 3,
+   "description": "hydroxide H"
+  },
+  {
+   "type": "HT3",
+   "smarts": "[H][OX2H2]",
+   "priority": 5,
+   "description": "water H (TIP3P)"
+  },
+  {
+   "type": "HS",
+   "smarts": "[H][#16]"
+  },
+  {
+   "type": "HP",
+   "smarts": "[H][#15]"
+  },
+  {
+   "type": "HSi",
+   "smarts": "[H][Si]"
+  },
+  {
+   "type": "CT",
+   "smarts": "[CX4]",
+   "description": "sp3 C"
+  },
+  {
+   "type": "CYA",
+   "smarts": "[CX4;R;!$(*~[#7;R]);!$(*~[#8;R;!r5])]",
+   "priority": 1,
+   "description": "sp3 C in a carbocycle or tetrahydrofuran"
+  },
+  {
+   "type": "CTNC",
+   "smarts": "[CX4;$(*1~[#7]~*~*~*~*1),$(*1~*~[#7]~*~*~*1),$(*1~*~*~[#7]~*~*1),$(*1~[#7]~*~*~*1),$(*1~*~[#7]~*~*1)]",
+   "priority": 2,
+   "description": "sp3 C in a saturated N-heterocycle (piperidine, pyrrolidine, morpholine)"
+  },
+  {
+   "type": "C3T",
+   "smarts": "[CX4;r3]",
+   "priority": 3,
+   "description": "sp3 C in a 3-ring"
+  },
+  {
+   "type": "C4T",
+   "smarts": "[CX4;r4]",
+   "priority": 3,
+   "description": "sp3 C in a 4-ring"
+  },
+  {
+   "type": "CO",
+   "smarts": "[CX4](O)O",
+   "priority": 2,
+   "description": "acetal / ketal C"
+  },
+  {
+   "type": "CT1",
+   "smarts": "[CX4H1]([#7])C=O",
+   "priority": 3,
+   "description": "amino-acid alpha C"
+  },
+  {
+   "type": "CT1G",
+   "smarts": "[CX4H2]([NX4+])C(=O)[OX1-]",
+   "priority": 3,
+   "description": "glycine alpha C (zwitterion)"
+  },
+  {
+   "type": "CALK",
+   "smarts": "[CX4][OX1-]",
+   "priority": 3,
+   "description": "alkoxide C"
+  },
+  {
+   "type": "CTHO",
+   "smarts": "[CX4;$(*[F,Cl,Br,I]);$(*Oc)]",
+   "priority": 3,
+   "description": "halogenated C of an aryl ether"
+  },
+  {
+   "type": "CA",
+   "smarts": "[c]",
+   "description": "aromatic C"
+  },
+  {
+   "type": "CBP",
+   "smarts": "[c;R1;!$(c:n)](-!@[c;!$(c:n)])",
+   "priority": 1,
+   "description": "biphenyl bridge C (carbocyclic rings)"
+  },
+  {
+   "type": "CQ",
+   "smarts": "[c;r6](:n):n",
+   "priority": 2,
+   "description": "aromatic C between two ring N (pyrimidine C2, triazine)"
+  },
+  {
+   "type": "C5B",
+   "smarts": "[c;$(c1aaaa1)]",
+   "priority": 1,
+   "description": "C in a 5-ring aromatic (C4 of imidazole, C3 of thiophene)"
+  },
+  {
+   "type": "C5A",
+   "smarts": "[c;$(c1aaaa1)]~[#8,#16,$([nX3])]",
+   "priority": 2,
+   "description": "C next to O, S or pyrrole-type N in a 5-ring aromatic"
+  },
+  {
+   "type": "C5BC",
+   "smarts": "[c;$(c1cocc1),$(c1ccoc1)]",
+   "priority": 3,
+   "description": "furan C3 / C4"
+  },
+  {
+   "type": "C5BE",
+   "smarts": "[c;$(c1c[nX3]cc1),$(c1cc[nX3]c1)]",
+   "priority": 3,
+   "description": "pyrrole C3 / C4"
+  },
+  {
+   "type": "C5BD",
+   "smarts": "[c;$(c1cnnc1),$(c1cnoc1),$(c1conc1)]",
+   "priority": 3,
+   "description": "pyrazole / isoxazole C4"
+  },
+  {
+   "type": "C5BB",
+   "smarts": "[c;$(c1n[nX3,o]cc1)]",
+   "priority": 3,
+   "description": "pyrazole / isoxazole C3"
+  },
+  {
+   "type": "CRA",
+   "smarts": "[c;$(c1aaaa1)](~[#7,#8,#16])~[#7,#8,#16]",
+   "priority": 4,
+   "description": "C between two heteroatoms in a 5-ring aromatic"
+  },
+  {
+   "type": "C56B",
+   "smarts": "[c;R2;$(c1aaaa1);$(c1aaaaa1)]",
+   "priority": 4,
+   "description": "fused 5/6 aromatic ring C (C3a)"
+  },
+  {
+   "type": "C56A",
+   "smarts": "[c;R2;$(c1aaaa1);$(c1aaaaa1);$(c~[#7,#8,#16;r5])]",
+   "priority": 5,
+   "description": "fused 5/6 aromatic ring C next to the heteroatom (C7a)"
+  },
+  {
+   "type": "CM",
+   "smarts": "[CX3]",
+   "description": "sp2 C"
+  },
+  {
+   "type": "CME",
+   "smarts": "[CX3]=[CX3]",
+   "priority": 1,
+   "description": "alkene C"
+  },
+  {
+   "type": "CML",
+   "smarts": "[CX3](=[CX3])-[CX3]=[CX3]",
+   "priority": 2,
+   "description": "conjugated diene C (next to the end)"
+  },
+  {
+   "type": "CM",
+   "smarts": "[CX3](=[CX3])[NX3]",
+   "priority": 2,
+   "description": "enamine C"
+  },
+  {
+   "type": "CMEE",
+   "smarts": "[CX3;!$(*[OX2H1])]=C[OX2H1]",
+   "priority": 2,
+   "description": "enol C (end)"
+  },
+  {
+   "type": "CMLE",
+   "smarts": "[CX3]([OX2H1])=C",
+   "priority": 2,
+   "description": "enol C bearing OH"
+  },
+  {
+   "type": "CD",
+   "smarts": "[CX3]=N",
+   "priority": 1,
+   "description": "imine / oxime C"
+  },
+  {
+   "type": "CHZ",
+   "smarts": "[CX3]=N[NX3]",
+   "priority": 2,
+   "description": "hydrazone C"
+  },
+  {
+   "type": "CDX",
+   "smarts": "[CX3](=N)[NX3]",
+   "priority": 2,
+   "description": "amidine C"
+  },
+  {
+   "type": "CDXR",
+   "smarts": "[CX3](=N)([NX3])[NX3]",
+   "priority": 3,
+   "description": "guanidine C"
+  },
+  {
+   "type": "CG",
+   "smarts": "[CX3]=[N+]",
+   "priority": 3,
+   "description": "iminium C"
+  },
+  {
+   "type": "CG1",
+   "smarts": "[CX3](~[NX3])(~[NX3])~[NX3]",
+   "priority": 4,
+   "description": "guanidinium C"
+  },
+  {
+   "type": "C",
+   "smarts": "[CX3]=O",
+   "priority": 1,
+   "description": "carbonyl C (amide, acid, acyl halide, urea)"
+  },
+  {
+   "type": "CO4",
+   "smarts": "[CX3](=O)[OX2;!H1]",
+   "priority": 2,
+   "description": "ester / ketone / aldehyde / thioester C"
+  },
+  {
+   "type": "CO4",
+   "smarts": "[CX3](=O)([#6,#1])[#6,#1]",
+   "priority": 2,
+   "description": "ester / ketone / aldehyde / thioester C"
+  },
+  {
+   "type": "CO4",
+   "smarts": "[CX3](=O)[SX2]",
+   "priority": 2,
+   "description": "ester / ketone / aldehyde / thioester C"
+  },
+  {
+   "type": "CO3",
+   "smarts": "[CX3](=O)[OX1-]",
+   "priority": 3,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "CDS",
+   "smarts": "[CX3]=S",
+   "priority": 2,
+   "description": "thiocarbonyl C"
+  },
+  {
+   "type": "CZ",
+   "smarts": "[CX2]#N",
+   "priority": 1,
+   "description": "nitrile C"
+  },
+  {
+   "type": "CZN",
+   "smarts": "[CX2]#C",
+   "priority": 1,
+   "description": "alkyne C"
+  },
+  {
+   "type": "CZA",
+   "smarts": "[CX2](=*)=*",
+   "priority": 1,
+   "description": "cumulated C (allene, isocyanate, carbodiimide)"
+  },
+  {
+   "type": "NT",
+   "smarts": "[NX3]",
+   "description": "amine N"
+  },
+  {
+   "type": "N3",
+   "smarts": "[NX3H3]",
+   "priority": 2,
+   "description": "ammonia"
+  },
+  {
+   "type": "N3T",
+   "smarts": "[NX3;r3]",
+   "priority": 2,
+   "description": "aziridine N"
+  },
+  {
+   "type": "N4T",
+   "smarts": "[NX3;r4]",
+   "priority": 2,
+   "description": "azetidine N"
+  },
+  {
+   "type": "NE",
+   "smarts": "[NX3]c",
+   "priority": 1,
+   "description": "aniline N"
+  },
+  {
+   "type": "NEA",
+   "smarts": "[NX3][CX3]=[C,N]",
+   "priority": 2,
+   "description": "enamine / amidine / guanidine N"
+  },
+  {
+   "type": "N",
+   "smarts": "[NX3][CX3]=[O,S]",
+   "priority": 3,
+   "description": "amide / urea / carbamate N"
+  },
+  {
+   "type": "NS",
+   "smarts": "[NX3][SX4](=O)=O",
+   "priority": 3,
+   "description": "sulfonamide N"
+  },
+  {
+   "type": "NE",
+   "smarts": "[NX3](c)[SX4](=O)=O",
+   "priority": 4,
+   "description": "aryl sulfonamide N"
+  },
+  {
+   "type": "NH",
+   "smarts": "[NX3][NX3]",
+   "priority": 2,
+   "description": "hydrazine N"
+  },
+  {
+   "type": "NHZ",
+   "smarts": "[NX3]N=C",
+   "priority": 3,
+   "description": "hydrazone / nitrosamine amine N"
+  },
+  {
+   "type": "NHZ",
+   "smarts": "[NX3]N=O",
+   "priority": 3,
+   "description": "hydrazone / nitrosamine amine N"
+  },
+  {
+   "type": "NX",
+   "smarts": "[NX3]P",
+   "priority": 3,
+   "description": "phosphoramide N"
+  },
+  {
+   "type": "NP",
+   "smarts": "[NX4+]",
+   "priority": 2,
+   "description": "ammonium N"
+  },
+  {
+   "type": "NB",
+   "smarts": "[nX2;r6]",
+   "priority": 1,
+   "description": "pyridine-type N"
+  },
+  {
+   "type": "NBQ",
+   "smarts": "[nX2;r6;$(n:[c;R2])]",
+   "priority": 2,
+   "description": "quinoline-type N"
+  },
+  {
+   "type": "NAP",
+   "smarts": "[n+;r6]",
+   "priority": 2,
+   "description": "pyridinium N"
+  },
+  {
+   "type": "NA",
+   "smarts": "[nX3;r5]",
+   "priority": 1,
+   "description": "pyrrole-type N"
+  },
+  {
+   "type": "N5B",
+   "smarts": "[nX2;r5]",
+   "priority": 1,
+   "description": "pyridine-type N in a 5-ring"
+  },
+  {
+   "type": "N5A",
+   "smarts": "[nX2;r5;$(n~[nX3,o])]",
+   "priority": 2,
+   "description": "pyrazole / isoxazole N2"
+  },
+  {
+   "type": "NI",
+   "smarts": "[NX2]=*",
+   "description": "imine / isocyanate / oxime N"
+  },
+  {
+   "type": "NN",
+   "smarts": "[NX2]=[NX2]",
+   "priority": 1,
+   "description": "azo N"
+  },
+  {
+   "type": "NO",
+   "smarts": "[NX2]=O",
+   "priority": 2,
+   "description": "nitroso N"
+  },
+  {
+   "type": "NI",
+   "smarts": "[NX2](=O)O",
+   "priority": 3,
+   "description": "nitrite N"
+  },
+  {
+   "type": "NZ",
+   "smarts": "[NX1]#C",
+   "priority": 1,
+   "description": "nitrile N"
+  },
+  {
+   "type": "NZA",
+   "smarts": "[NX2;!+]~[NX2+]~[NX1]",
+   "priority": 3,
+   "description": "azide N (on C)"
+  },
+  {
+   "type": "NZC",
+   "smarts": "[NX2+](~[NX2])~[NX1]",
+   "priority": 3,
+   "description": "azide central N"
+  },
+  {
+   "type": "NZT",
+   "smarts": "[NX1]~[NX2+]~[NX2]",
+   "priority": 3,
+   "description": "azide terminal N"
+  },
+  {
+   "type": "NO2",
+   "smarts": "[NX3+](=O)[O-]",
+   "priority": 2,
+   "description": "nitro N"
+  },
+  {
+   "type": "NO3",
+   "smarts": "[NX3+](=O)([O-])O",
+   "priority": 3,
+   "description": "nitrate ester N"
+  },
+  {
+   "type": "NOM",
+   "smarts": "[NX3+](~[OX1])(~[OX1])~[OX1]",
+   "priority": 4,
+   "description": "nitrate ion N"
+  },
+  {
+   "type": "NG",
+   "smarts": "[NX3][CX3](~[NX3])~[NX3]",
+   "priority": 4,
+   "description": "guanidinium N"
+  },
+  {
+   "type": "OS",
+   "smarts": "[OX2]",
+   "description": "ether O"
+  },
+  {
+   "type": "OAL",
+   "smarts": "[OX2H1][CX4]",
+   "priority": 1,
+   "description": "alcohol O"
+  },
+  {
+   "type": "OHP",
+   "smarts": "[OX2H1]c",
+   "priority": 1,
+   "description": "phenol O"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1]C=O",
+   "priority": 2,
+   "description": "carboxylic acid / hydroperoxide OH"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1]O",
+   "priority": 2,
+   "description": "carboxylic acid / hydroperoxide OH"
+  },
+  {
+   "type": "OHE",
+   "smarts": "[OX2H1][CX3]=C",
+   "priority": 2,
+   "description": "enol O"
+  },
+  {
+   "type": "OHX",
+   "smarts": "[OX2H1]N=C",
+   "priority": 2,
+   "description": "oxime O"
+  },
+  {
+   "type": "OHA",
+   "smarts": "[OX2H1]NC=O",
+   "priority": 3,
+   "description": "hydroxamic acid O"
+  },
+  {
+   "type": "OES",
+   "smarts": "[OX2;!H1]C=O",
+   "priority": 2,
+   "description": "ester single-bonded O"
+  },
+  {
+   "type": "OA",
+   "smarts": "[o]",
+   "priority": 2,
+   "description": "aromatic O"
+  },
+  {
+   "type": "O3T",
+   "smarts": "[OX2;r3]",
+   "priority": 3,
+   "description": "O in a 3-ring"
+  },
+  {
+   "type": "O4T",
+   "smarts": "[OX2;r4]",
+   "priority": 3,
+   "description": "O in a 4-ring"
+  },
+  {
+   "type": "OSP",
+   "smarts": "[OX2]P",
+   "priority": 3,
+   "description": "phosphate O (single)"
+  },
+  {
+   "type": "ONA",
+   "smarts": "[OX2][N+](=O)[O-]",
+   "priority": 3,
+   "description": "nitrate ester O"
+  },
+  {
+   "type": "O",
+   "smarts": "[OX1]=C",
+   "priority": 1,
+   "description": "carbonyl O"
+  },
+  {
+   "type": "O2Z",
+   "smarts": "[OX1-][CX3]=O",
+   "priority": 2,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "O2Z",
+   "smarts": "[OX1]=[CX3][OX1-]",
+   "priority": 2,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "ONI",
+   "smarts": "[OX1]~[#7]",
+   "priority": 2,
+   "description": "nitro / nitroso O"
+  },
+  {
+   "type": "ON",
+   "smarts": "[OX1]~[NX3+](~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "nitrate ion O"
+  },
+  {
+   "type": "O2ZP",
+   "smarts": "[OX1]~P",
+   "priority": 2,
+   "description": "phosphate / phosphine oxide terminal O"
+  },
+  {
+   "type": "OY",
+   "smarts": "[OX1]~[SX4]",
+   "priority": 2,
+   "description": "sulfone / sulfate O"
+  },
+  {
+   "type": "OZ",
+   "smarts": "[OX1]~[SX3]",
+   "priority": 2,
+   "description": "sulfoxide O"
+  },
+  {
+   "type": "OM",
+   "smarts": "[OX1-;$(*[CX4]),$(*[#1])]",
+   "priority": 1,
+   "description": "alkoxide / hydroxide O"
+  },
+  {
+   "type": "OHY",
+   "smarts": "[OX3+]",
+   "priority": 3,
+   "description": "hydronium O"
+  },
+  {
+   "type": "OT3",
+   "smarts": "[OX2H2]",
+   "priority": 5,
+   "description": "water O (TIP3P)"
+  },
+  {
+   "type": "S",
+   "smarts": "[#16X2]",
+   "description": "sulfide / disulfide / thioester S"
+  },
+  {
+   "type": "SH",
+   "smarts": "[SX2H1]",
+   "priority": 1,
+   "description": "thiol S"
+  },
+  {
+   "type": "SA",
+   "smarts": "[s]",
+   "priority": 2,
+   "description": "aromatic S"
+  },
+  {
+   "type": "SD",
+   "smarts": "[SX1]=*",
+   "priority": 1,
+   "description": "thiocarbonyl S"
+  },
+  {
+   "type": "SZ",
+   "smarts": "[SX3]",
+   "priority": 1,
+   "description": "sulfoxide S"
+  },
+  {
+   "type": "SY",
+   "smarts": "[SX4]",
+   "priority": 1,
+   "description": "sulfone / sulfate S"
+  },
+  {
+   "type": "SX6",
+   "smarts": "[SX6]",
+   "priority": 1,
+   "description": "SF6"
+  },
+  {
+   "type": "PR",
+   "smarts": "[PX3]",
+   "priority": 1,
+   "description": "phosphine P"
+  },
+  {
+   "type": "P1",
+   "smarts": "[PX4]",
+   "description": "neutral phosphate / phosphonate P"
+  },
+  {
+   "type": "P2",
+   "smarts": "[PX4;$(*(~[OX1])~[OX1]);!$(*(~[OX1])(~[OX1])~[OX1])]",
+   "priority": 1,
+   "description": "phosphate diester anion P"
+  },
+  {
+   "type": "P3",
+   "smarts": "[PX4;$(*(~[OX1])(~[OX1])~[OX1]);!$(*(~[OX1])(~[OX1])(~[OX1])~[OX1])]",
+   "priority": 2,
+   "description": "PO3 P"
+  },
+  {
+   "type": "P4",
+   "smarts": "[PX4](~[OX1])(~[OX1])(~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "phosphate ion P"
+  },
+  {
+   "type": "F",
+   "smarts": "[F]",
+   "description": "F on aromatic C and others"
+  },
+  {
+   "type": "FX1",
+   "smarts": "[F][CX4,CX3;$(*[F,Cl,Br,I]);!$(*([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 1,
+   "description": "F on aliphatic C with 1 halogen(s)"
+  },
+  {
+   "type": "FX2",
+   "smarts": "[F][CX4,CX3;$(*([F,Cl,Br,I])[F,Cl,Br,I]);!$(*([F,Cl,Br,I])([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 1,
+   "description": "F on aliphatic C with 2 halogen(s)"
+  },
+  {
+   "type": "FX3",
+   "smarts": "[F][CX4,CX3;$(*([F,Cl,Br,I])([F,Cl,Br,I])[F,Cl,Br,I]);!$(*([F,Cl,Br,I])([F,Cl,Br,I])([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 1,
+   "description": "F on aliphatic C with 3 halogen(s)"
+  },
+  {
+   "type": "FX4",
+   "smarts": "[F][CX4,CX3;$(*([F,Cl,Br,I])([F,Cl,Br,I])([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 1,
+   "description": "F on aliphatic C with 4 halogen(s)"
+  },
+  {
+   "type": "FG",
+   "smarts": "[F][S]",
+   "priority": 2,
+   "description": "F on S (SF6)"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl]"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br]"
+  },
+  {
+   "type": "I",
+   "smarts": "[I]"
+  },
+  {
+   "type": "F-",
+   "smarts": "[F;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Cl-",
+   "smarts": "[Cl;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Br-",
+   "smarts": "[Br;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "I-",
+   "smarts": "[I;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Li+",
+   "smarts": "[Li;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Na+",
+   "smarts": "[Na;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "K+",
+   "smarts": "[K;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Rb+",
+   "smarts": "[Rb;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Cs+",
+   "smarts": "[Cs;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Mg2+",
+   "smarts": "[Mg;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Ca2+",
+   "smarts": "[Ca;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Sr2+",
+   "smarts": "[Sr;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Ba2+",
+   "smarts": "[Ba;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "Ga3+",
+   "smarts": "[Ga;X0]",
+   "priority": 2,
+   "description": "ion"
+  },
+  {
+   "type": "He",
+   "smarts": "[He]"
+  },
+  {
+   "type": "Ne",
+   "smarts": "[Ne]"
+  },
+  {
+   "type": "Ar",
+   "smarts": "[Ar]"
+  },
+  {
+   "type": "Kr",
+   "smarts": "[Kr]"
+  },
+  {
+   "type": "Xe",
+   "smarts": "[Xe]"
+  },
+  {
+   "type": "Rn",
+   "smarts": "[Rn]"
+  },
+  {
+   "type": "Si",
+   "smarts": "[Si]"
+  },
+  {
+   "type": "B",
+   "smarts": "[B]"
+  }
+ ]
+}

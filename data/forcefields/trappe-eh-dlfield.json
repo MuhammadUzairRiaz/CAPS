@@ -1,0 +1,3662 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "TraPPE-EH (DL_FIELD)",
+ "source": "DL_FIELD 4.13: TRAPPE_EH.par",
+ "references": [
+  "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_reversible": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "C_1",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_benzene",
+    "C1_benzene",
+    "C2_benzene",
+    "C3_benzene",
+    "C4_benzene",
+    "C5_benzene",
+    "C6_benzene"
+   ]
+  },
+  {
+   "name": "H_1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_benzene"
+   ]
+  },
+  {
+   "name": "N1_2",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_pyridine"
+   ]
+  },
+  {
+   "name": "C2_2",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C2_pyridine"
+   ]
+  },
+  {
+   "name": "C3_2",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C3_pyridine"
+   ]
+  },
+  {
+   "name": "C4_2",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C4_pyridine"
+   ]
+  },
+  {
+   "name": "C5_2",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_pyridine"
+   ]
+  },
+  {
+   "name": "C6_2",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C6_pyridine"
+   ]
+  },
+  {
+   "name": "H_2",
+   "element": "H",
+   "mass": 1.00797,
+   "equivalence": {
+    "angle": "H_1",
+    "bond": "H_1",
+    "dihedral": "H_1",
+    "improper": "H_1",
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_pyridine"
+   ]
+  },
+  {
+   "name": "N_3",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_pyrimidine",
+    "N3_pyrimidine"
+   ]
+  },
+  {
+   "name": "C2_3",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C2_pyrimidine"
+   ]
+  },
+  {
+   "name": "C4_3",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C4_pyrimidine"
+   ]
+  },
+  {
+   "name": "C5_3",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_pyrimidine"
+   ]
+  },
+  {
+   "name": "C6_3",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C6_pyrimidine"
+   ]
+  },
+  {
+   "name": "H_3",
+   "element": "H",
+   "mass": 1.008,
+   "equivalence": {
+    "angle": "H_1",
+    "bond": "H_1",
+    "dihedral": "H_1",
+    "improper": "H_1",
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_pyrimidine"
+   ]
+  },
+  {
+   "name": "N_4",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_pyrazine",
+    "N4_pyrazine"
+   ]
+  },
+  {
+   "name": "C2_4",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C2_pyrazine"
+   ]
+  },
+  {
+   "name": "C3_4",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C3_pyrazine"
+   ]
+  },
+  {
+   "name": "C5_4",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_pyrazine"
+   ]
+  },
+  {
+   "name": "C6_4",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C6_pyrazine"
+   ]
+  },
+  {
+   "name": "H_4",
+   "element": "H",
+   "mass": 1.00797,
+   "equivalence": {
+    "angle": "H_1",
+    "bond": "H_1",
+    "dihedral": "H_1",
+    "improper": "H_1",
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_prazine"
+   ]
+  },
+  {
+   "name": "N1_5",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_pyridazine"
+   ]
+  },
+  {
+   "name": "N2_5",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N2_pyridazine"
+   ]
+  },
+  {
+   "name": "C3_5",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C3_pyridazine"
+   ]
+  },
+  {
+   "name": "C4_5",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C4_pyridazine"
+   ]
+  },
+  {
+   "name": "C5_5",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_pyridazine"
+   ]
+  },
+  {
+   "name": "C6_5",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C6_pyridazine"
+   ]
+  },
+  {
+   "name": "H_5",
+   "element": "H",
+   "mass": 1.00797,
+   "equivalence": {
+    "angle": "H_1",
+    "bond": "H_1",
+    "dihedral": "H_1",
+    "improper": "H_1",
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_pyridazine"
+   ]
+  },
+  {
+   "name": "C_6",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_thiophene"
+   ]
+  },
+  {
+   "name": "C2_6",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_6",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C2_thiophene"
+   ]
+  },
+  {
+   "name": "C3_6",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_6",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C3_thiophene"
+   ]
+  },
+  {
+   "name": "C4_6",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_6",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C4_thiophene"
+   ]
+  },
+  {
+   "name": "C5_6",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_6",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_thiophene"
+   ]
+  },
+  {
+   "name": "S1_6",
+   "element": "S",
+   "mass": 32.065,
+   "aliases": [
+    "S1_thiophene"
+   ]
+  },
+  {
+   "name": "H_6",
+   "element": "H",
+   "mass": 1.00797,
+   "equivalence": {
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_thiophene"
+   ]
+  },
+  {
+   "name": "O1_7",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O1_furan"
+   ]
+  },
+  {
+   "name": "C2_7",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_7",
+    "improper": "C_7",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C2_furan"
+   ]
+  },
+  {
+   "name": "C3_7",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_7",
+    "improper": "C_7",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C3_furan"
+   ]
+  },
+  {
+   "name": "C4_7",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_7",
+    "improper": "C_7",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C4_furan"
+   ]
+  },
+  {
+   "name": "C5_7",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_7",
+    "improper": "C_7",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_furan"
+   ]
+  },
+  {
+   "name": "C_7",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_furan"
+   ]
+  },
+  {
+   "name": "H_7",
+   "element": "H",
+   "mass": 1.00797,
+   "equivalence": {
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_furan"
+   ]
+  },
+  {
+   "name": "C_8",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_phenol"
+   ]
+  },
+  {
+   "name": "H_8",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_phenol"
+   ]
+  },
+  {
+   "name": "C1_8",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_8",
+    "dihedral2": "C_8",
+    "improper": "C_8",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C1_phenol"
+   ]
+  },
+  {
+   "name": "C2_8",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_8",
+    "dihedral2": "C_8",
+    "improper": "C_8",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C2_phenol"
+   ]
+  },
+  {
+   "name": "C3_8",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_8",
+    "dihedral2": "C_8",
+    "improper": "C_8",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C3_phenol"
+   ]
+  },
+  {
+   "name": "C4_8",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_8",
+    "dihedral2": "C_8",
+    "improper": "C_8",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C4_phenol"
+   ]
+  },
+  {
+   "name": "C5_8",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_8",
+    "dihedral2": "C_8",
+    "improper": "C_8",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C5_phenol"
+   ]
+  },
+  {
+   "name": "C6_8",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "bond": "C_8",
+    "dihedral2": "C_8",
+    "improper": "C_8",
+    "vdw": "C_1"
+   },
+   "aliases": [
+    "C6_phenol"
+   ]
+  },
+  {
+   "name": "O_8",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_phenol"
+   ]
+  },
+  {
+   "name": "HO_8",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_phenol"
+   ]
+  },
+  {
+   "name": "N1_9",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_pyrrole"
+   ]
+  },
+  {
+   "name": "C2_9",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_9",
+    "improper": "C_9",
+    "vdw": "C_9"
+   },
+   "aliases": [
+    "C2_pyrrole"
+   ]
+  },
+  {
+   "name": "C3_9",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_9",
+    "improper": "C_9",
+    "vdw": "C_9"
+   },
+   "aliases": [
+    "C3_pyrrole"
+   ]
+  },
+  {
+   "name": "C4_9",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_9",
+    "improper": "C_9",
+    "vdw": "C_9"
+   },
+   "aliases": [
+    "C4_pyrrole"
+   ]
+  },
+  {
+   "name": "C5_9",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "dihedral": "C_9",
+    "improper": "C_9",
+    "vdw": "C_9"
+   },
+   "aliases": [
+    "C5_pyrrole"
+   ]
+  },
+  {
+   "name": "C_9",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_pyrrole"
+   ]
+  },
+  {
+   "name": "H_9",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_pyrrole"
+   ]
+  },
+  {
+   "name": "H6_9",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HN_pyrrole"
+   ]
+  },
+  {
+   "name": "HA",
+   "element": "H",
+   "mass": 1.00797,
+   "equivalence": {
+    "angle": "H_1",
+    "bond": "H_1",
+    "dihedral": "H_1",
+    "improper": "H_1",
+    "vdw": "H_1"
+   },
+   "aliases": [
+    "HC_aromatic"
+   ]
+  },
+  {
+   "name": "QZ",
+   "element": "",
+   "mass": 0.5,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom1"
+   ]
+  },
+  {
+   "name": "QY",
+   "element": "",
+   "mass": 0.2,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom2"
+   ]
+  },
+  {
+   "name": "QX",
+   "element": "",
+   "mass": 0.6,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom3"
+   ]
+  },
+  {
+   "name": "QW",
+   "element": "",
+   "mass": 0.7,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom4"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C_1",
+   "match": [
+    "C_1"
+   ],
+   "params": [
+    0.06100715052,
+    3.6
+   ]
+  },
+  {
+   "name": "H_1",
+   "match": [
+    "H_1"
+   ],
+   "params": [
+    0.05057433162,
+    2.36
+   ]
+  },
+  {
+   "name": "H_2",
+   "match": [
+    "H_2"
+   ],
+   "params": [
+    0.05057433162,
+    2.36
+   ]
+  },
+  {
+   "name": "H_8",
+   "match": [
+    "H_8"
+   ],
+   "params": [
+    0.05057433162,
+    2.36
+   ]
+  },
+  {
+   "name": "HO_8",
+   "match": [
+    "HO_8"
+   ],
+   "params": [
+    0.0238464432,
+    0.5
+   ]
+  },
+  {
+   "name": "N1_2",
+   "match": [
+    "N1_2"
+   ],
+   "params": [
+    0.1132706052,
+    3.2
+   ]
+  },
+  {
+   "name": "N_3",
+   "match": [
+    "N_3"
+   ],
+   "params": [
+    0.1132706052,
+    3.2
+   ]
+  },
+  {
+   "name": "N_4",
+   "match": [
+    "N_4"
+   ],
+   "params": [
+    0.1132706052,
+    3.2
+   ]
+  },
+  {
+   "name": "N1_5",
+   "match": [
+    "N1_5"
+   ],
+   "params": [
+    0.1132706052,
+    3.2
+   ]
+  },
+  {
+   "name": "N2_5",
+   "match": [
+    "N2_5"
+   ],
+   "params": [
+    0.1132706052,
+    3.2
+   ]
+  },
+  {
+   "name": "S1_6",
+   "match": [
+    "S1_6"
+   ],
+   "params": [
+    0.3139781688,
+    3.55
+   ]
+  },
+  {
+   "name": "O1_7",
+   "match": [
+    "O1_7"
+   ],
+   "params": [
+    0.139104252,
+    2.6
+   ]
+  },
+  {
+   "name": "O_8",
+   "match": [
+    "O_8"
+   ],
+   "params": [
+    0.2344900248,
+    3.04
+   ]
+  },
+  {
+   "name": "C_9",
+   "match": [
+    "C_9"
+   ],
+   "params": [
+    0.06100715052,
+    3.6
+   ]
+  },
+  {
+   "name": "N1_9",
+   "match": [
+    "N1_9"
+   ],
+   "params": [
+    0.2801957076,
+    3.4
+   ]
+  },
+  {
+   "name": "H6_9",
+   "match": [
+    "H6_9"
+   ],
+   "params": [
+    0.0238464432,
+    0.5
+   ]
+  },
+  {
+   "name": "H_9",
+   "match": [
+    "H_9"
+   ],
+   "params": [
+    0.05057433162,
+    2.36
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "C5_9-H_9",
+   "match": [
+    "C5_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    403.8798976,
+    1.08
+   ]
+  },
+  {
+   "name": "C4_9-H_9",
+   "match": [
+    "C4_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    400.0599001,
+    1.08
+   ]
+  },
+  {
+   "name": "C3_9-H_9",
+   "match": [
+    "C3_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    400.0599001,
+    1.08
+   ]
+  },
+  {
+   "name": "C2_9-H_9",
+   "match": [
+    "C2_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    403.8798976,
+    1.08
+   ]
+  },
+  {
+   "name": "H6_9-N1_9",
+   "match": [
+    "H6_9",
+    "N1_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    535.139866,
+    1
+   ]
+  },
+  {
+   "name": "C5_9-N1_9",
+   "match": [
+    "C5_9",
+    "N1_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    354.4899115,
+    1.37
+   ]
+  },
+  {
+   "name": "C4_9-C5_9",
+   "match": [
+    "C4_9",
+    "C5_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    416.1298949,
+    1.38
+   ]
+  },
+  {
+   "name": "C3_9-C4_9",
+   "match": [
+    "C3_9",
+    "C4_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.1799153,
+    1.42
+   ]
+  },
+  {
+   "name": "C2_9-C3_9",
+   "match": [
+    "C2_9",
+    "C3_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    416.1298949,
+    1.38
+   ]
+  },
+  {
+   "name": "N1_9-C2_9",
+   "match": [
+    "N1_9",
+    "C2_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    354.4899115,
+    1.37
+   ]
+  },
+  {
+   "name": "O_8-HO_8",
+   "match": [
+    "O_8",
+    "HO_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    563.5098583,
+    0.95
+   ]
+  },
+  {
+   "name": "O_8-C_8",
+   "match": [
+    "O_8",
+    "C_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    365.5499077,
+    1.36
+   ]
+  },
+  {
+   "name": "C_8-H_8",
+   "match": [
+    "C_8",
+    "H_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    395.719901,
+    1.08
+   ]
+  },
+  {
+   "name": "C_8-C_8",
+   "match": [
+    "C_8",
+    "C_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    378.5699047,
+    1.392
+   ]
+  },
+  {
+   "name": "C5_7-H_7",
+   "match": [
+    "C5_7",
+    "H_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    403.8798976,
+    1.08
+   ]
+  },
+  {
+   "name": "C4_7-H_7",
+   "match": [
+    "C4_7",
+    "H_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    400.0599001,
+    1.08
+   ]
+  },
+  {
+   "name": "C3_7-H_7",
+   "match": [
+    "C3_7",
+    "H_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    400.0599001,
+    1.08
+   ]
+  },
+  {
+   "name": "C2_7-H_7",
+   "match": [
+    "C2_7",
+    "H_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    403.8798976,
+    1.08
+   ]
+  },
+  {
+   "name": "C5_7-O1_7",
+   "match": [
+    "C5_7",
+    "O1_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    367.8999071,
+    1.36
+   ]
+  },
+  {
+   "name": "C4_7-C5_7",
+   "match": [
+    "C4_7",
+    "C5_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    416.1298949,
+    1.36
+   ]
+  },
+  {
+   "name": "C3_7-C4_7",
+   "match": [
+    "C3_7",
+    "C4_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.1799153,
+    1.43
+   ]
+  },
+  {
+   "name": "C2_7-C3_7",
+   "match": [
+    "C2_7",
+    "C3_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    416.1298949,
+    1.36
+   ]
+  },
+  {
+   "name": "C2_7-O1_7",
+   "match": [
+    "C2_7",
+    "O1_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    367.8999071,
+    1.36
+   ]
+  },
+  {
+   "name": "C5_6-H_6",
+   "match": [
+    "C5_6",
+    "H_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    395.719901,
+    1.08
+   ]
+  },
+  {
+   "name": "C4_6-H_6",
+   "match": [
+    "C4_6",
+    "H_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    395.719901,
+    1.08
+   ]
+  },
+  {
+   "name": "C3_6-H_6",
+   "match": [
+    "C3_6",
+    "H_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    395.719901,
+    1.08
+   ]
+  },
+  {
+   "name": "C2_6-H_6",
+   "match": [
+    "C2_6",
+    "H_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    395.719901,
+    1.08
+   ]
+  },
+  {
+   "name": "C5_6-S1_6",
+   "match": [
+    "C5_6",
+    "S1_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    231.9799422,
+    1.71
+   ]
+  },
+  {
+   "name": "C4_6-C5_6",
+   "match": [
+    "C4_6",
+    "C5_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    416.1298949,
+    1.37
+   ]
+  },
+  {
+   "name": "C3_6-C4_6",
+   "match": [
+    "C3_6",
+    "C4_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.1799153,
+    1.42
+   ]
+  },
+  {
+   "name": "C2_6-C3_6",
+   "match": [
+    "C2_6",
+    "C3_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    416.1298949,
+    1.37
+   ]
+  },
+  {
+   "name": "C2_6-S1_6",
+   "match": [
+    "C2_6",
+    "S1_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    231.9799422,
+    1.71
+   ]
+  },
+  {
+   "name": "C_1-N2_5",
+   "match": [
+    "C_1",
+    "N2_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    414.2398954,
+    1.34
+   ]
+  },
+  {
+   "name": "C_1-N1_5",
+   "match": [
+    "C_1",
+    "N1_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    414.2398954,
+    1.34
+   ]
+  },
+  {
+   "name": "N1_5-N2_5",
+   "match": [
+    "N1_5",
+    "N2_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    327.2299175,
+    1.35
+   ]
+  },
+  {
+   "name": "C_1-N_4",
+   "match": [
+    "C_1",
+    "N_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    414.2398954,
+    1.34
+   ]
+  },
+  {
+   "name": "C_1-N_3",
+   "match": [
+    "C_1",
+    "N_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    414.2398954,
+    1.36
+   ]
+  },
+  {
+   "name": "C_1-N1_2",
+   "match": [
+    "C_1",
+    "N1_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    414.2398954,
+    1.33
+   ]
+  },
+  {
+   "name": "H_1-C_1",
+   "match": [
+    "H_1",
+    "C_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    395.719901,
+    1.08
+   ]
+  },
+  {
+   "name": "C_1-C_1",
+   "match": [
+    "C_1",
+    "C_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    378.5699047,
+    1.392
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "C5_9-N1_9-H6_9",
+   "match": [
+    "C5_9",
+    "N1_9",
+    "H6_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.10098787,
+    125
+   ]
+  },
+  {
+   "name": "C4_9-C5_9-H_9",
+   "match": [
+    "C4_9",
+    "C5_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.75898874,
+    131.2
+   ]
+  },
+  {
+   "name": "C3_9-C4_9-H_9",
+   "match": [
+    "C3_9",
+    "C4_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.63398767,
+    126.7
+   ]
+  },
+  {
+   "name": "H_9-C3_9-C4_9",
+   "match": [
+    "H_9",
+    "C3_9",
+    "C4_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.63398767,
+    126.9
+   ]
+  },
+  {
+   "name": "H_9-C2_9-C3_9",
+   "match": [
+    "H_9",
+    "C2_9",
+    "C3_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.75898874,
+    131.2
+   ]
+  },
+  {
+   "name": "H_9-C5_9-N1_9",
+   "match": [
+    "H_9",
+    "C5_9",
+    "N1_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    61.48698468,
+    121.2
+   ]
+  },
+  {
+   "name": "H_9-C4_9-C5_9",
+   "match": [
+    "H_9",
+    "C4_9",
+    "C5_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    125.7
+   ]
+  },
+  {
+   "name": "C2_9-C3_9-H_9",
+   "match": [
+    "C2_9",
+    "C3_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    125.7
+   ]
+  },
+  {
+   "name": "N1_9-C2_9-H_9",
+   "match": [
+    "N1_9",
+    "C2_9",
+    "H_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    61.48698468,
+    121.2
+   ]
+  },
+  {
+   "name": "H6_9-N1_9-C2_9",
+   "match": [
+    "H6_9",
+    "N1_9",
+    "C2_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.10098787,
+    125
+   ]
+  },
+  {
+   "name": "C5_9-N1_9-C2_9",
+   "match": [
+    "C5_9",
+    "N1_9",
+    "C2_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.49198189,
+    110
+   ]
+  },
+  {
+   "name": "C4_9-C5_9-N1_9",
+   "match": [
+    "C4_9",
+    "C5_9",
+    "N1_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    92.65297637,
+    107.6
+   ]
+  },
+  {
+   "name": "C3_9-C4_9-C5_9",
+   "match": [
+    "C3_9",
+    "C4_9",
+    "C5_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.34798316,
+    107.4
+   ]
+  },
+  {
+   "name": "C2_9-C3_9-C4_9",
+   "match": [
+    "C2_9",
+    "C3_9",
+    "C4_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.34798316,
+    107.4
+   ]
+  },
+  {
+   "name": "N1_9-C2_9-C3_9",
+   "match": [
+    "N1_9",
+    "C2_9",
+    "C3_9"
+   ],
+   "style": "harmonic",
+   "params": [
+    92.65297637,
+    107.6
+   ]
+  },
+  {
+   "name": "HO_8-O_8-C1_8",
+   "match": [
+    "HO_8",
+    "O_8",
+    "C1_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    69.96943876,
+    113
+   ]
+  },
+  {
+   "name": "H_8-C6_8-C5_8",
+   "match": [
+    "H_8",
+    "C6_8",
+    "C5_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.3
+   ]
+  },
+  {
+   "name": "H_8-C5_8-C4_8",
+   "match": [
+    "H_8",
+    "C5_8",
+    "C4_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    119.9
+   ]
+  },
+  {
+   "name": "H_8-C4_8-C3_8",
+   "match": [
+    "H_8",
+    "C4_8",
+    "C3_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.4
+   ]
+  },
+  {
+   "name": "H_8-C3_8-C2_8",
+   "match": [
+    "H_8",
+    "C3_8",
+    "C2_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    119.3
+   ]
+  },
+  {
+   "name": "H_8-C2_8-C1_8",
+   "match": [
+    "H_8",
+    "C2_8",
+    "C1_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    119.9
+   ]
+  },
+  {
+   "name": "H_8-C6_8-C1_8",
+   "match": [
+    "H_8",
+    "C6_8",
+    "C1_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    119.1
+   ]
+  },
+  {
+   "name": "H_8-C5_8-C6_8",
+   "match": [
+    "H_8",
+    "C5_8",
+    "C6_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    119.3
+   ]
+  },
+  {
+   "name": "H_8-C4_8-C5_8",
+   "match": [
+    "H_8",
+    "C4_8",
+    "C5_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.4
+   ]
+  },
+  {
+   "name": "H_8-C3_8-C4_8",
+   "match": [
+    "H_8",
+    "C3_8",
+    "C4_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.1
+   ]
+  },
+  {
+   "name": "H_8-C2_8-C3_8",
+   "match": [
+    "H_8",
+    "C2_8",
+    "C3_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    122.3
+   ]
+  },
+  {
+   "name": "O_8-C1_8-C6_8",
+   "match": [
+    "O_8",
+    "C1_8",
+    "C6_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    87.21097758,
+    117.4
+   ]
+  },
+  {
+   "name": "O_8-C1_8-C2_8",
+   "match": [
+    "O_8",
+    "C1_8",
+    "C2_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    87.21097758,
+    122.5
+   ]
+  },
+  {
+   "name": "C6_8-C1_8-C2_8",
+   "match": [
+    "C6_8",
+    "C1_8",
+    "C2_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    120.1
+   ]
+  },
+  {
+   "name": "C5_8-C6_8-C1_8",
+   "match": [
+    "C5_8",
+    "C6_8",
+    "C1_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    119.6
+   ]
+  },
+  {
+   "name": "C4_8-C5_8-C6_8",
+   "match": [
+    "C4_8",
+    "C5_8",
+    "C6_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    120.8
+   ]
+  },
+  {
+   "name": "C3_8-C4_8-C5_8",
+   "match": [
+    "C3_8",
+    "C4_8",
+    "C5_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    119.2
+   ]
+  },
+  {
+   "name": "C2_8-C3_8-C4_8",
+   "match": [
+    "C2_8",
+    "C3_8",
+    "C4_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    120.6
+   ]
+  },
+  {
+   "name": "C1_8-C2_8-C3_8",
+   "match": [
+    "C1_8",
+    "C2_8",
+    "C3_8"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    119.8
+   ]
+  },
+  {
+   "name": "H_7-C5_7-C4_7",
+   "match": [
+    "H_7",
+    "C5_7",
+    "C4_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.75898874,
+    133.6
+   ]
+  },
+  {
+   "name": "H_7-C4_7-C3_7",
+   "match": [
+    "H_7",
+    "C4_7",
+    "C3_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.63398767,
+    127.1
+   ]
+  },
+  {
+   "name": "H_7-C3_7-C4_7",
+   "match": [
+    "H_7",
+    "C3_7",
+    "C4_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.63398767,
+    127.1
+   ]
+  },
+  {
+   "name": "H_7-C2_7-C3_7",
+   "match": [
+    "H_7",
+    "C2_7",
+    "C3_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.75898874,
+    133.6
+   ]
+  },
+  {
+   "name": "H_7-C5_7-O1_7",
+   "match": [
+    "H_7",
+    "C5_7",
+    "O1_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.63998465,
+    115.9
+   ]
+  },
+  {
+   "name": "H_7-C4_7-C5_7",
+   "match": [
+    "H_7",
+    "C4_7",
+    "C5_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    126.9
+   ]
+  },
+  {
+   "name": "H_7-C3_7-C2_7",
+   "match": [
+    "H_7",
+    "C3_7",
+    "C2_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    126.9
+   ]
+  },
+  {
+   "name": "H_7-C2_7-O1_7",
+   "match": [
+    "H_7",
+    "C2_7",
+    "O1_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.63998465,
+    115.9
+   ]
+  },
+  {
+   "name": "C5_7-O1_7-C2_7",
+   "match": [
+    "C5_7",
+    "O1_7",
+    "C2_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    71.53698271,
+    106.9
+   ]
+  },
+  {
+   "name": "C4_7-C5_7-O1_7",
+   "match": [
+    "C4_7",
+    "C5_7",
+    "O1_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    87.95697779,
+    110.5
+   ]
+  },
+  {
+   "name": "C3_7-C4_7-C5_7",
+   "match": [
+    "C3_7",
+    "C4_7",
+    "C5_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.34798316,
+    106
+   ]
+  },
+  {
+   "name": "C2_7-C3_7-C4_7",
+   "match": [
+    "C2_7",
+    "C3_7",
+    "C4_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.34798316,
+    106
+   ]
+  },
+  {
+   "name": "O1_7-C2_7-C3_7",
+   "match": [
+    "O1_7",
+    "C2_7",
+    "C3_7"
+   ],
+   "style": "harmonic",
+   "params": [
+    87.95697779,
+    110.5
+   ]
+  },
+  {
+   "name": "H_6-C5_6-C4_6",
+   "match": [
+    "H_6",
+    "C5_6",
+    "C4_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    128.4
+   ]
+  },
+  {
+   "name": "H_6-C4_6-C3_6",
+   "match": [
+    "H_6",
+    "C4_6",
+    "C3_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.63398767,
+    124.3
+   ]
+  },
+  {
+   "name": "H_6-C3_6-C4_6",
+   "match": [
+    "H_6",
+    "C3_6",
+    "C4_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    47.63398767,
+    124.3
+   ]
+  },
+  {
+   "name": "H_6-C2_6-C3_6",
+   "match": [
+    "H_6",
+    "C2_6",
+    "C3_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    128.4
+   ]
+  },
+  {
+   "name": "H_6-C5_6-S1_6",
+   "match": [
+    "H_6",
+    "C5_6",
+    "S1_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    42.16798942,
+    120.1
+   ]
+  },
+  {
+   "name": "H_6-C4_6-C5_6",
+   "match": [
+    "H_6",
+    "C4_6",
+    "C5_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    123.3
+   ]
+  },
+  {
+   "name": "H_6-C3_6-C2_6",
+   "match": [
+    "H_6",
+    "C3_6",
+    "C2_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.03998787,
+    123.3
+   ]
+  },
+  {
+   "name": "H_6-C2_6-S1_6",
+   "match": [
+    "H_6",
+    "C2_6",
+    "S1_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    42.16798942,
+    120.1
+   ]
+  },
+  {
+   "name": "C5_6-S1_6-C2_6",
+   "match": [
+    "C5_6",
+    "S1_6",
+    "C2_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    78.03098125,
+    92.2
+   ]
+  },
+  {
+   "name": "C4_6-C5_6-S1_6",
+   "match": [
+    "C4_6",
+    "C5_6",
+    "S1_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    66.88698392,
+    111.5
+   ]
+  },
+  {
+   "name": "C3_6-C4_6-C5_6",
+   "match": [
+    "C3_6",
+    "C4_6",
+    "C5_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.34798316,
+    112.4
+   ]
+  },
+  {
+   "name": "C2_6-C3_6-C4_6",
+   "match": [
+    "C2_6",
+    "C3_6",
+    "C4_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.34798316,
+    112.4
+   ]
+  },
+  {
+   "name": "S1_6-C2_6-C3_6",
+   "match": [
+    "S1_6",
+    "C2_6",
+    "C3_6"
+   ],
+   "style": "harmonic",
+   "params": [
+    66.88698392,
+    111.5
+   ]
+  },
+  {
+   "name": "C5_5-C6_5-H_1",
+   "match": [
+    "C5_5",
+    "C6_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.4
+   ]
+  },
+  {
+   "name": "C5_5-C4_5-H_1",
+   "match": [
+    "C5_5",
+    "C4_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    122.2
+   ]
+  },
+  {
+   "name": "C4_5-C5_5-H_1",
+   "match": [
+    "C4_5",
+    "C5_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    122.2
+   ]
+  },
+  {
+   "name": "C4_5-C3_5-H_1",
+   "match": [
+    "C4_5",
+    "C3_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.4
+   ]
+  },
+  {
+   "name": "C6_5-C5_5-H_1",
+   "match": [
+    "C6_5",
+    "C5_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.9
+   ]
+  },
+  {
+   "name": "N1_5-C6_5-H_1",
+   "match": [
+    "N1_5",
+    "C6_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    114.5
+   ]
+  },
+  {
+   "name": "C3_5-C4_5-H_1",
+   "match": [
+    "C3_5",
+    "C4_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.9
+   ]
+  },
+  {
+   "name": "N2_5-C3_5-H_1",
+   "match": [
+    "N2_5",
+    "C3_5",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    114.5
+   ]
+  },
+  {
+   "name": "C6_5-N1_5-N2_5",
+   "match": [
+    "C6_5",
+    "N1_5",
+    "N2_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    87.23697815,
+    119
+   ]
+  },
+  {
+   "name": "N1_5-C6_5-C5_5",
+   "match": [
+    "N1_5",
+    "C6_5",
+    "C5_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    124.1
+   ]
+  },
+  {
+   "name": "C4_5-C5_5-C6_5",
+   "match": [
+    "C4_5",
+    "C5_5",
+    "C6_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    116.9
+   ]
+  },
+  {
+   "name": "C3_5-C4_5-C5_5",
+   "match": [
+    "C3_5",
+    "C4_5",
+    "C5_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    116.9
+   ]
+  },
+  {
+   "name": "N2_5-C3_5-C4_5",
+   "match": [
+    "N2_5",
+    "C3_5",
+    "C4_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    124.1
+   ]
+  },
+  {
+   "name": "N1_5-N2_5-C3_5",
+   "match": [
+    "N1_5",
+    "N2_5",
+    "C3_5"
+   ],
+   "style": "harmonic",
+   "params": [
+    87.23697815,
+    119
+   ]
+  },
+  {
+   "name": "C5_4-C6_4-H_1",
+   "match": [
+    "C5_4",
+    "C6_4",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121
+   ]
+  },
+  {
+   "name": "N_4-C5_4-H_1",
+   "match": [
+    "N_4",
+    "C5_4",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.7
+   ]
+  },
+  {
+   "name": "C2_4-C3_4-H_1",
+   "match": [
+    "C2_4",
+    "C3_4",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121
+   ]
+  },
+  {
+   "name": "N_4-C2_4-H_1",
+   "match": [
+    "N_4",
+    "C2_4",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.7
+   ]
+  },
+  {
+   "name": "H_1-C6_4-N_4",
+   "match": [
+    "H_1",
+    "C6_4",
+    "N_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.7
+   ]
+  },
+  {
+   "name": "H_1-C5_4-C6_4",
+   "match": [
+    "H_1",
+    "C5_4",
+    "C6_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.56098834,
+    121
+   ]
+  },
+  {
+   "name": "H_1-C3_4-N_4",
+   "match": [
+    "H_1",
+    "C3_4",
+    "N_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.7
+   ]
+  },
+  {
+   "name": "H_1-C2_4-C3_4",
+   "match": [
+    "H_1",
+    "C2_4",
+    "C3_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.56098834,
+    121
+   ]
+  },
+  {
+   "name": "C6_4-N_4-C2_4",
+   "match": [
+    "C6_4",
+    "N_4",
+    "C2_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.35598165,
+    115.3
+   ]
+  },
+  {
+   "name": "C5_4-C6_4-N_4",
+   "match": [
+    "C5_4",
+    "C6_4",
+    "N_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    122.3
+   ]
+  },
+  {
+   "name": "N_4-C5_4-C6_4",
+   "match": [
+    "N_4",
+    "C5_4",
+    "C6_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    122.3
+   ]
+  },
+  {
+   "name": "C3_4-N_4-C5_4",
+   "match": [
+    "C3_4",
+    "N_4",
+    "C5_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.35598165,
+    115.3
+   ]
+  },
+  {
+   "name": "N_4-C3_4-C2_4",
+   "match": [
+    "N_4",
+    "C3_4",
+    "C2_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    122.3
+   ]
+  },
+  {
+   "name": "N_4-C2_4-C3_4",
+   "match": [
+    "N_4",
+    "C2_4",
+    "C3_4"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    122.3
+   ]
+  },
+  {
+   "name": "H_1-C4_3-C5_3",
+   "match": [
+    "H_1",
+    "C4_3",
+    "C5_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.4
+   ]
+  },
+  {
+   "name": "H_1-C5_3-C6_3",
+   "match": [
+    "H_1",
+    "C5_3",
+    "C6_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.6
+   ]
+  },
+  {
+   "name": "H_1-C6_3-C5_3",
+   "match": [
+    "H_1",
+    "C6_3",
+    "C5_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.4
+   ]
+  },
+  {
+   "name": "H_1-C6_3-N_3",
+   "match": [
+    "H_1",
+    "C6_3",
+    "N_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.3
+   ]
+  },
+  {
+   "name": "H_1-C5_3-C4_3",
+   "match": [
+    "H_1",
+    "C5_3",
+    "C4_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.6
+   ]
+  },
+  {
+   "name": "H_1-C4_3-N_3",
+   "match": [
+    "H_1",
+    "C4_3",
+    "N_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.3
+   ]
+  },
+  {
+   "name": "H_1-C2_3-N_3",
+   "match": [
+    "H_1",
+    "C2_3",
+    "N_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.14098451,
+    116.6
+   ]
+  },
+  {
+   "name": "C4_3-C5_3-C6_3",
+   "match": [
+    "C4_3",
+    "C5_3",
+    "C6_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    116.8
+   ]
+  },
+  {
+   "name": "N_3-C6_3-C5_3",
+   "match": [
+    "N_3",
+    "C6_3",
+    "C5_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    122.3
+   ]
+  },
+  {
+   "name": "N_3-C4_3-C5_3",
+   "match": [
+    "N_3",
+    "C4_3",
+    "C5_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    122.3
+   ]
+  },
+  {
+   "name": "C6_3-N_3-C2_3",
+   "match": [
+    "C6_3",
+    "N_3",
+    "C2_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.35598165,
+    115.8
+   ]
+  },
+  {
+   "name": "C2_3-N_3-C4_3",
+   "match": [
+    "C2_3",
+    "N_3",
+    "C4_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.35598165,
+    115.8
+   ]
+  },
+  {
+   "name": "N_3-C2_3-N_3",
+   "match": [
+    "N_3",
+    "C2_3",
+    "N_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    109.3689734,
+    126.9
+   ]
+  },
+  {
+   "name": "C3_2-C2_2-H_1",
+   "match": [
+    "C3_2",
+    "C2_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.3
+   ]
+  },
+  {
+   "name": "C2_2-C3_2-H_1",
+   "match": [
+    "C2_2",
+    "C3_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.2
+   ]
+  },
+  {
+   "name": "C5_2-C6_2-H_1",
+   "match": [
+    "C5_2",
+    "C6_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.3
+   ]
+  },
+  {
+   "name": "C6_2-C5_2-H_1",
+   "match": [
+    "C6_2",
+    "C5_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.2
+   ]
+  },
+  {
+   "name": "C5_2-C4_2-H_1",
+   "match": [
+    "C5_2",
+    "C4_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.7
+   ]
+  },
+  {
+   "name": "N1_2-C6_2-H_1",
+   "match": [
+    "N1_2",
+    "C6_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.1
+   ]
+  },
+  {
+   "name": "C3_2-C4_2-H_1",
+   "match": [
+    "C3_2",
+    "C4_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120.7
+   ]
+  },
+  {
+   "name": "H_1-C5_2-C4_2",
+   "match": [
+    "H_1",
+    "C5_2",
+    "C4_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.3
+   ]
+  },
+  {
+   "name": "H_1-C3_2-C4_2",
+   "match": [
+    "H_1",
+    "C3_2",
+    "C4_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    121.3
+   ]
+  },
+  {
+   "name": "C4_2-C5_2-C6_2",
+   "match": [
+    "C4_2",
+    "C5_2",
+    "C6_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    118.5
+   ]
+  },
+  {
+   "name": "C3_2-C4_2-C5_2",
+   "match": [
+    "C3_2",
+    "C4_2",
+    "C5_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    118.5
+   ]
+  },
+  {
+   "name": "C2_2-C3_2-C4_2",
+   "match": [
+    "C2_2",
+    "C3_2",
+    "C4_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    118.5
+   ]
+  },
+  {
+   "name": "N1_2-C2_2-H_1",
+   "match": [
+    "N1_2",
+    "C2_2",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.06598347,
+    116.1
+   ]
+  },
+  {
+   "name": "C6_2-N1_2-C2_2",
+   "match": [
+    "C6_2",
+    "N1_2",
+    "C2_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.35598165,
+    117.3
+   ]
+  },
+  {
+   "name": "N1_2-C6_2-C5_2",
+   "match": [
+    "N1_2",
+    "C6_2",
+    "C5_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    123.6
+   ]
+  },
+  {
+   "name": "N1_2-C2_2-C3_2",
+   "match": [
+    "N1_2",
+    "C2_2",
+    "C3_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    86.84897864,
+    123.6
+   ]
+  },
+  {
+   "name": "C_1-C_1-H_1",
+   "match": [
+    "C_1",
+    "C_1",
+    "H_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.67998806,
+    120
+   ]
+  },
+  {
+   "name": "C_1-C_1-C_1",
+   "match": [
+    "C_1",
+    "C_1",
+    "C_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    68.76698186,
+    120
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "X-N1_9-C_9-X",
+   "match": [
+    "*",
+    "N1_9",
+    "C_9",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.699999025,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_9-C_9-X",
+   "match": [
+    "*",
+    "C_9",
+    "C_9",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.999998408,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_8-C_8-X",
+   "match": [
+    "*",
+    "C_8",
+    "C_8",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_7-C_7-X",
+   "match": [
+    "*",
+    "C_7",
+    "C_7",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.999998905,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_6-C_6-X",
+   "match": [
+    "*",
+    "C_6",
+    "C_6",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.999998905,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_1-N_4-X",
+   "match": [
+    "*",
+    "C_1",
+    "N_4",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_1-N_3-X",
+   "match": [
+    "*",
+    "C_1",
+    "N_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_1-N1_2-X",
+   "match": [
+    "*",
+    "C_1",
+    "N1_2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-C_1-C_1-X",
+   "match": [
+    "*",
+    "C_1",
+    "C_1",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C2_8-C1_8-O_8-HO_8",
+   "match": [
+    "C2_8",
+    "C1_8",
+    "O_8",
+    "HO_8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.724892725,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C6_8-C1_8-O_8-HO_8",
+   "match": [
+    "C6_8",
+    "C1_8",
+    "O_8",
+    "HO_8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.724892725,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "H_7-C_7-C_7-H_7",
+   "match": [
+    "H_7",
+    "C_7",
+    "C_7",
+    "H_7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.999998408,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "H_7-C_7-C_7-C_7",
+   "match": [
+    "H_7",
+    "C_7",
+    "C_7",
+    "C_7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.999998408,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C_7-O1_7-C_7-C_7",
+   "match": [
+    "C_7",
+    "O1_7",
+    "C_7",
+    "C_7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.050000625,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "H_7-C_7-O1_7-C_7",
+   "match": [
+    "H_7",
+    "C_7",
+    "O1_7",
+    "C_7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.050000625,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C_6-C_6-S1_6-C_6",
+   "match": [
+    "C_6",
+    "C_6",
+    "S1_6",
+    "C_6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.100000655,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "H_6-C_6-S1_6-C_6",
+   "match": [
+    "H_6",
+    "C_6",
+    "S1_6",
+    "C_6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.100000655,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C_1-N1_5-N2_5-C_1",
+   "match": [
+    "C_1",
+    "N1_5",
+    "N2_5",
+    "C_1"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    2.9999998,
+    2,
+    180,
+    2.79999968,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "N1_5-N2_5-C_1-H_1",
+   "match": [
+    "N1_5",
+    "N2_5",
+    "C_1",
+    "H_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.799998884,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "N1_5-N2_5-C_1-C_1",
+   "match": [
+    "N1_5",
+    "N2_5",
+    "C_1",
+    "C_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.799998884,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "N2_5-N1_5-C_1-H_1",
+   "match": [
+    "N2_5",
+    "N1_5",
+    "C_1",
+    "H_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.799998884,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "N2_5-N1_5-C_1-C_1",
+   "match": [
+    "N2_5",
+    "N1_5",
+    "C_1",
+    "C_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.799998884,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "H_1-C_1-C_1-H_1",
+   "match": [
+    "H_1",
+    "C_1",
+    "C_1",
+    "H_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C_1-C_1-C_1-H_1",
+   "match": [
+    "C_1",
+    "C_1",
+    "C_1",
+    "H_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "C_1-C_1-C_1-C_1",
+   "match": [
+    "C_1",
+    "C_1",
+    "C_1",
+    "C_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.624999178,
+    2,
+    180
+   ]
+  }
+ ],
+ "impropers": [
+  {
+   "name": "X-X-N1_9-H6_9",
+   "match": [
+    "*",
+    "*",
+    "N1_9",
+    "H6_9"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C_9-H_9",
+   "match": [
+    "*",
+    "*",
+    "C_9",
+    "H_9"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C_8-O_8",
+   "match": [
+    "*",
+    "*",
+    "C_8",
+    "O_8"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C_8-H_8",
+   "match": [
+    "*",
+    "*",
+    "C_8",
+    "H_8"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C_7-H_7",
+   "match": [
+    "*",
+    "*",
+    "C_7",
+    "H_7"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C5_6-H_6",
+   "match": [
+    "*",
+    "*",
+    "C5_6",
+    "H_6"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C4_6-H_6",
+   "match": [
+    "*",
+    "*",
+    "C4_6",
+    "H_6"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C3_6-H_6",
+   "match": [
+    "*",
+    "*",
+    "C3_6",
+    "H_6"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C2_6-H_6",
+   "match": [
+    "*",
+    "*",
+    "C2_6",
+    "H_6"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "C_1-N1_5-C_1-H_1",
+   "match": [
+    "C_1",
+    "N1_5",
+    "C_1",
+    "H_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "C_1-N2_5-C_1-H_1",
+   "match": [
+    "C_1",
+    "N2_5",
+    "C_1",
+    "H_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "N_4-C_1-C_1-H_1",
+   "match": [
+    "N_4",
+    "C_1",
+    "C_1",
+    "H_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "N_3-C_1-C_1-H_1",
+   "match": [
+    "N_3",
+    "C_1",
+    "C_1",
+    "H_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "N_3-N_3-C_1-H_1",
+   "match": [
+    "N_3",
+    "N_3",
+    "C_1",
+    "H_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "N1_2-H_1-C_1-C_1",
+   "match": [
+    "N1_2",
+    "H_1",
+    "C_1",
+    "C_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "C_1-C_1-C_1-H_1",
+   "match": [
+    "C_1",
+    "C_1",
+    "C_1",
+    "H_1"
+   ],
+   "style": "cvff",
+   "params": [
+    1.100000655,
+    -1,
+    2
+   ]
+  }
+ ],
+ "notes": [
+  "type H_3: DL_FIELD gives mass 12.011500 for H; the element's mass 1.008000 is used",
+  "type H_3: DL_FIELD entries give different masses; 1.008000 is used",
+  "converted from DL_FIELD by CAPS (TraPPE_EH, unit K); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "2007",
+ "status": "validated",
+ "validation": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical."
+}

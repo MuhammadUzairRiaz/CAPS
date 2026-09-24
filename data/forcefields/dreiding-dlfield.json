@@ -1,0 +1,3448 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "DREIDING (DL_FIELD)",
+ "source": "DL_FIELD 4.13: DREIDING.par",
+ "references": [
+  "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "planar"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "C_3",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp3 (C-tetrahedral), C single bond",
+   "aliases": [
+    "Cp_alkane",
+    "Cs_alkane",
+    "Ct_alkane",
+    "Cq_alkane",
+    "C_alkane"
+   ]
+  },
+  {
+   "name": "H_",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "Non-polar H",
+   "aliases": [
+    "HC_alkane",
+    "H_nonpolar"
+   ]
+  },
+  {
+   "name": "C_2",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp2 (C-trigonal)",
+   "aliases": [
+    "C_alkene"
+   ]
+  },
+  {
+   "name": "C_2S",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp2, butadiene type: =C-C=",
+   "equivalence": {
+    "angle": "C_2",
+    "improper": "C_2"
+   },
+   "aliases": [
+    "C_alkene_sin"
+   ]
+  },
+  {
+   "name": "C_1",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp (C-linear), C triple bond",
+   "aliases": [
+    "C_alkyne"
+   ]
+  },
+  {
+   "name": "C_R",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp2 resonance, C-benzene",
+   "aliases": [
+    "C_aromatic",
+    "C_resonance"
+   ]
+  },
+  {
+   "name": "C_RS",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-benzene, biphenyl type: =C-C=",
+   "equivalence": {
+    "angle": "C_R",
+    "improper": "C_R"
+   },
+   "aliases": [
+    "C_aromatic_sin"
+   ]
+  },
+  {
+   "name": "COO",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp2 resonance as in C carboxylate",
+   "equivalence": {
+    "angle": "C_R",
+    "bond": "C_R",
+    "dihedral": "C_R",
+    "improper": "C_R"
+   },
+   "aliases": [
+    "C_carboxylate"
+   ]
+  },
+  {
+   "name": "CC",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C as in carbonyl C=O",
+   "equivalence": {
+    "angle": "C_2",
+    "bond": "C_2",
+    "dihedral": "C_2",
+    "improper": "C_2"
+   },
+   "aliases": [
+    "C_carbonyl"
+   ]
+  },
+  {
+   "name": "CN",
+   "element": "C",
+   "mass": 12.0115,
+   "description": "C-sp (C-linear), C triple bond",
+   "equivalence": {
+    "angle": "C_1",
+    "bond": "C_1",
+    "dihedral": "C_1",
+    "improper": "C_1"
+   },
+   "aliases": [
+    "C_nitrile"
+   ]
+  },
+  {
+   "name": "O_3",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O-sp3 generic",
+   "aliases": [
+    "O_sp3",
+    "O_phenol"
+   ]
+  },
+  {
+   "name": "O_2",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O-sp2 generic",
+   "aliases": [
+    "O_sp2"
+   ]
+  },
+  {
+   "name": "OE",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O ether.",
+   "equivalence": {
+    "angle": "O_3",
+    "bond": "O_3",
+    "dihedral": "O_3",
+    "improper": "O_3"
+   },
+   "aliases": [
+    "O_ether"
+   ]
+  },
+  {
+   "name": "OS",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O ester.",
+   "equivalence": {
+    "angle": "O_3",
+    "bond": "O_3",
+    "dihedral": "O_3",
+    "improper": "O_3"
+   },
+   "aliases": [
+    "O_ester"
+   ]
+  },
+  {
+   "name": "OA",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O alcohol.",
+   "equivalence": {
+    "angle": "O_3",
+    "bond": "O_3",
+    "dihedral": "O_3",
+    "improper": "O_3"
+   },
+   "aliases": [
+    "O_alcohol"
+   ]
+  },
+  {
+   "name": "OCX",
+   "element": "O",
+   "mass": 15.9995,
+   "description": "O as in O-H carboxylic",
+   "equivalence": {
+    "angle": "O_3",
+    "bond": "O_3",
+    "dihedral": "O_3",
+    "improper": "O_3"
+   },
+   "aliases": [
+    "O_carboxylic"
+   ]
+  },
+  {
+   "name": "OOC",
+   "element": "O",
+   "mass": 15.9995,
+   "description": "O as in COO-",
+   "equivalence": {
+    "angle": "O_R",
+    "bond": "O_R",
+    "dihedral": "O_R",
+    "improper": "O_R"
+   },
+   "aliases": [
+    "O_carboxylate"
+   ]
+  },
+  {
+   "name": "OC",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O carbonyl.",
+   "equivalence": {
+    "angle": "O_2",
+    "bond": "O_2",
+    "dihedral": "O_2",
+    "improper": "O_2"
+   },
+   "aliases": [
+    "O_carbonyl"
+   ]
+  },
+  {
+   "name": "O_R",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O aromatic.",
+   "aliases": [
+    "O_aromatic",
+    "O_resonance"
+   ]
+  },
+  {
+   "name": "OW",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "O tip3p water",
+   "aliases": [
+    "O_tip3p"
+   ]
+  },
+  {
+   "name": "OT3E",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Tip3p water oxygen (with PME)",
+   "aliases": [
+    "O_tip3p_pme"
+   ]
+  },
+  {
+   "name": "OT4",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Tip4p water oxygen",
+   "aliases": [
+    "O_tip4p"
+   ]
+  },
+  {
+   "name": "OT5",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Tip5p water oxygen",
+   "aliases": [
+    "O_tip5p"
+   ]
+  },
+  {
+   "name": "OT5E",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "TIP5P water oxygen (with PME)",
+   "aliases": [
+    "O_tip5p_pme"
+   ]
+  },
+  {
+   "name": "N_3",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N-sp3 generic",
+   "aliases": [
+    "N_sp3"
+   ]
+  },
+  {
+   "name": "N_2",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N-sp2 generic",
+   "aliases": [
+    "N_sp2"
+   ]
+  },
+  {
+   "name": "N_1",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N-sp generic",
+   "aliases": [
+    "N_sp"
+   ]
+  },
+  {
+   "name": "NH4",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N ammonium",
+   "equivalence": {
+    "angle": "N_3",
+    "bond": "N_3",
+    "improper": "N_3"
+   },
+   "aliases": [
+    "N_ammonium"
+   ]
+  },
+  {
+   "name": "NAM",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "as in amine -NH2",
+   "equivalence": {
+    "angle": "N_3",
+    "bond": "N_3",
+    "dihedral": "N_3",
+    "improper": "N_3"
+   },
+   "aliases": [
+    "N_amine"
+   ]
+  },
+  {
+   "name": "NAMD",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "as in amide.",
+   "equivalence": {
+    "angle": "N_3",
+    "bond": "N_3",
+    "dihedral": "N_3",
+    "improper": "N_3"
+   },
+   "aliases": [
+    "N_amide"
+   ]
+  },
+  {
+   "name": "NIM",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N as in C=N- , double bond",
+   "equivalence": {
+    "angle": "N_2",
+    "bond": "N_2",
+    "dihedral": "N_2",
+    "improper": "N_2"
+   },
+   "aliases": [
+    "N_imine"
+   ]
+  },
+  {
+   "name": "NNI",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N as in CN, linear triple bond",
+   "equivalence": {
+    "angle": "N_1",
+    "bond": "N_1",
+    "dihedral": "N_1",
+    "improper": "N_1"
+   },
+   "aliases": [
+    "N_nitrile"
+   ]
+  },
+  {
+   "name": "N_R",
+   "element": "N",
+   "mass": 14.0067,
+   "description": "N in aromatic ring.",
+   "aliases": [
+    "N_aromatic"
+   ]
+  },
+  {
+   "name": "S_3",
+   "element": "S",
+   "mass": 32.064,
+   "description": "S-sp3 generic",
+   "aliases": [
+    "S_sp3"
+   ]
+  },
+  {
+   "name": "S_2",
+   "element": "S",
+   "mass": 32.064,
+   "description": "S-sp2 generic",
+   "aliases": [
+    "S_sp2"
+   ]
+  },
+  {
+   "name": "SO",
+   "element": "S",
+   "mass": 32.064,
+   "description": "S=O",
+   "equivalence": {
+    "angle": "S_3",
+    "bond": "S_3",
+    "improper": "S_3"
+   },
+   "aliases": [
+    "S_sulfoxide"
+   ]
+  },
+  {
+   "name": "SS",
+   "element": "S",
+   "mass": 32.064,
+   "description": "-S-S- disulphide",
+   "equivalence": {
+    "angle": "S_3",
+    "bond": "S_3",
+    "dihedral": "S_3",
+    "improper": "S_3"
+   },
+   "aliases": [
+    "S_disulphide"
+   ]
+  },
+  {
+   "name": "ST",
+   "element": "S",
+   "mass": 32.056,
+   "description": "S-H",
+   "equivalence": {
+    "angle": "S_3",
+    "bond": "S_3",
+    "dihedral": "S_3",
+    "improper": "S_3"
+   },
+   "aliases": [
+    "S_thiol"
+   ]
+  },
+  {
+   "name": "H__HB",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "H that forms H-bond.",
+   "equivalence": {
+    "dihedral": "H_",
+    "improper": "H_"
+   },
+   "aliases": [
+    "H_polar"
+   ]
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "H tip3p water",
+   "aliases": [
+    "H_tip3p"
+   ]
+  },
+  {
+   "name": "H3E",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "Tip3p water hydrogen for TIP3P-PME",
+   "aliases": [
+    "H_tip3p_pme"
+   ]
+  },
+  {
+   "name": "HT4",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "Tip4p",
+   "aliases": [
+    "H_tip4p"
+   ]
+  },
+  {
+   "name": "HT5",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "Tip5p H",
+   "aliases": [
+    "H_tip5p"
+   ]
+  },
+  {
+   "name": "Cl",
+   "element": "Cl",
+   "mass": 35.453,
+   "description": "-Cl chloride",
+   "aliases": [
+    "Chloride"
+   ]
+  },
+  {
+   "name": "Q4",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "pseudo_tip4p"
+   ]
+  },
+  {
+   "name": "Q1",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "lone_pair_1"
+   ]
+  },
+  {
+   "name": "Q2",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "lone_pair_2"
+   ]
+  },
+  {
+   "name": "QZ",
+   "element": "",
+   "mass": 0.5,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom1"
+   ]
+  },
+  {
+   "name": "QY",
+   "element": "",
+   "mass": 0.2,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom2"
+   ]
+  },
+  {
+   "name": "QX",
+   "element": "",
+   "mass": 0.6,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom3"
+   ]
+  },
+  {
+   "name": "QW",
+   "element": "",
+   "mass": 0.7,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom4"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C_3",
+   "match": [
+    "C_3"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "C_2",
+   "match": [
+    "C_2"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "C_2S",
+   "match": [
+    "C_2S"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "C_1",
+   "match": [
+    "C_1"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "C_R",
+   "match": [
+    "C_R"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "C_RS",
+   "match": [
+    "C_RS"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "COO",
+   "match": [
+    "COO"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "CC",
+   "match": [
+    "CC"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "CN",
+   "match": [
+    "CN"
+   ],
+   "params": [
+    0.0951,
+    3.472990473
+   ]
+  },
+  {
+   "name": "O_3",
+   "match": [
+    "O_3"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "O_2",
+   "match": [
+    "O_2"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "O_R",
+   "match": [
+    "O_R"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OE",
+   "match": [
+    "OE"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OS",
+   "match": [
+    "OS"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OA",
+   "match": [
+    "OA"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OCX",
+   "match": [
+    "OCX"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OC",
+   "match": [
+    "OC"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OOC",
+   "match": [
+    "OOC"
+   ],
+   "params": [
+    0.0957,
+    3.033153776
+   ]
+  },
+  {
+   "name": "OW",
+   "match": [
+    "OW"
+   ],
+   "params": [
+    0.152,
+    3.150752407
+   ]
+  },
+  {
+   "name": "OT3E",
+   "match": [
+    "OT3E"
+   ],
+   "params": [
+    0.102,
+    3.187991973
+   ]
+  },
+  {
+   "name": "OT4",
+   "match": [
+    "OT4"
+   ],
+   "params": [
+    0.155,
+    3.153603282
+   ]
+  },
+  {
+   "name": "OT5",
+   "match": [
+    "OT5"
+   ],
+   "params": [
+    0.16,
+    3.120105491
+   ]
+  },
+  {
+   "name": "OT5E",
+   "match": [
+    "OT5E"
+   ],
+   "params": [
+    0.178,
+    3.096942124
+   ]
+  },
+  {
+   "name": "N_3",
+   "match": [
+    "N_3"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "N_2",
+   "match": [
+    "N_2"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "N_1",
+   "match": [
+    "N_1"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "N_R",
+   "match": [
+    "N_R"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "NAM",
+   "match": [
+    "NAM"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "NH4",
+   "match": [
+    "NH4"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "NAMD",
+   "match": [
+    "NAMD"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "NIM",
+   "match": [
+    "NIM"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "NNI",
+   "match": [
+    "NNI"
+   ],
+   "params": [
+    0.0774,
+    3.262560196
+   ]
+  },
+  {
+   "name": "S_3",
+   "match": [
+    "S_3"
+   ],
+   "params": [
+    0.344,
+    3.590321834
+   ]
+  },
+  {
+   "name": "SS",
+   "match": [
+    "SS"
+   ],
+   "params": [
+    0.344,
+    3.590321834
+   ]
+  },
+  {
+   "name": "ST",
+   "match": [
+    "ST"
+   ],
+   "params": [
+    0.344,
+    3.590321834
+   ]
+  },
+  {
+   "name": "SO",
+   "match": [
+    "SO"
+   ],
+   "params": [
+    0.344,
+    3.590321834
+   ]
+  },
+  {
+   "name": "H_",
+   "match": [
+    "H_"
+   ],
+   "params": [
+    0.0152,
+    2.846421404
+   ]
+  },
+  {
+   "name": "H__HB",
+   "match": [
+    "H__HB"
+   ],
+   "params": [
+    0.0001,
+    2.846421404
+   ]
+  },
+  {
+   "name": "Cl",
+   "match": [
+    "Cl"
+   ],
+   "params": [
+    0.2833,
+    3.519317206
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "S_3-H__HB",
+   "match": [
+    "S_3",
+    "H__HB"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.36
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.36
+   ],
+   "comment": "-S-H bond"
+  },
+  {
+   "name": "S_3-H_",
+   "match": [
+    "S_3",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.36
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.36
+   ],
+   "comment": "-S-H bond"
+  },
+  {
+   "name": "S_3-O_2",
+   "match": [
+    "S_3",
+    "O_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    700,
+    1.59
+   ],
+   "morse": [
+    140,
+    2.236068,
+    1.59
+   ],
+   "comment": "-S=O bond"
+  },
+  {
+   "name": "S_3-C_3",
+   "match": [
+    "S_3",
+    "C_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.8
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.8
+   ],
+   "comment": "-S-C- bond"
+  },
+  {
+   "name": "S_3-S_3",
+   "match": [
+    "S_3",
+    "S_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    2.07
+   ],
+   "morse": [
+    70,
+    2.236068,
+    2.07
+   ],
+   "comment": "-S-S- bond"
+  },
+  {
+   "name": "N_3-H__HB",
+   "match": [
+    "N_3",
+    "H__HB"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.022
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.022
+   ],
+   "comment": "-N-H single bond"
+  },
+  {
+   "name": "N_3-C_2",
+   "match": [
+    "N_3",
+    "C_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.362
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.362
+   ],
+   "comment": "C-N amide"
+  },
+  {
+   "name": "N_3-C_3",
+   "match": [
+    "N_3",
+    "C_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.462
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.462
+   ],
+   "comment": "-C-NH2 single bond"
+  },
+  {
+   "name": "N_R-C_R",
+   "match": [
+    "N_R",
+    "C_R"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.34
+   ],
+   "morse": [
+    105,
+    2.236068,
+    1.34
+   ],
+   "comment": "C=R resonance (BO=1.5)"
+  },
+  {
+   "name": "O_3-C_2",
+   "match": [
+    "O_3",
+    "C_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.32
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.32
+   ],
+   "comment": "O-C= ester"
+  },
+  {
+   "name": "O_3-H__HB",
+   "match": [
+    "O_3",
+    "H__HB"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    0.98
+   ],
+   "morse": [
+    70,
+    2.236068,
+    0.98
+   ],
+   "comment": "O-H hydroxyl"
+  },
+  {
+   "name": "O_2-C_2",
+   "match": [
+    "O_2",
+    "C_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    700,
+    1.22
+   ],
+   "morse": [
+    140,
+    2.236068,
+    1.22
+   ],
+   "comment": "C=O double bond"
+  },
+  {
+   "name": "C_1-N_1",
+   "match": [
+    "C_1",
+    "N_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    1050,
+    1.148
+   ],
+   "morse": [
+    210,
+    2.236068,
+    1.148
+   ],
+   "comment": "C-N triple bond nitirile"
+  },
+  {
+   "name": "C_1-C_3",
+   "match": [
+    "C_1",
+    "C_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.362
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.362
+   ],
+   "comment": "C-C single bond"
+  },
+  {
+   "name": "C_1-C_1",
+   "match": [
+    "C_1",
+    "C_1"
+   ],
+   "style": "harmonic",
+   "params": [
+    1050,
+    1.194
+   ],
+   "morse": [
+    210,
+    2.236068,
+    1.194
+   ],
+   "comment": "C-C triple bond"
+  },
+  {
+   "name": "C_R-Cl",
+   "match": [
+    "C_R",
+    "Cl"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.687
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.687
+   ],
+   "comment": "C-Cl resonance (BO=1.0)"
+  },
+  {
+   "name": "C_R-O_R",
+   "match": [
+    "C_R",
+    "O_R"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.35
+   ],
+   "morse": [
+    105,
+    2.236068,
+    1.35
+   ],
+   "comment": "C=O resonance (BO=1.5)"
+  },
+  {
+   "name": "C_R-N_3",
+   "match": [
+    "C_R",
+    "N_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.392
+   ],
+   "morse": [
+    105,
+    2.236068,
+    1.392
+   ],
+   "comment": "C-N resonance (BO=1.5)"
+  },
+  {
+   "name": "C_R-O_3",
+   "match": [
+    "C_R",
+    "O_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.35
+   ],
+   "morse": [
+    105,
+    2.236068,
+    1.35
+   ],
+   "comment": "C-O sp2-sp3 resonance"
+  },
+  {
+   "name": "C_R-H_",
+   "match": [
+    "C_R",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.02
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.02
+   ],
+   "comment": "=C-H single bond"
+  },
+  {
+   "name": "C_2S-H_",
+   "match": [
+    "C_2S",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    0.99
+   ],
+   "morse": [
+    70,
+    2.236068,
+    0.99
+   ],
+   "comment": "=(C-H)-C= Single bond"
+  },
+  {
+   "name": "C_2-H_",
+   "match": [
+    "C_2",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    0.99
+   ],
+   "morse": [
+    70,
+    2.236068,
+    0.99
+   ],
+   "comment": "=C-H Single bond"
+  },
+  {
+   "name": "C_3-H_",
+   "match": [
+    "C_3",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.09
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.09
+   ],
+   "comment": "-C-H Single bond"
+  },
+  {
+   "name": "C_R-C_R",
+   "match": [
+    "C_R",
+    "C_R"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.39
+   ],
+   "morse": [
+    105,
+    2.236068,
+    1.39
+   ],
+   "comment": "C=C sp2 resonance (BO=1.5)"
+  },
+  {
+   "name": "C_2-Cl",
+   "match": [
+    "C_2",
+    "Cl"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.657
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.657
+   ],
+   "comment": "=C-Cl single bond"
+  },
+  {
+   "name": "C_2S-C_2S",
+   "match": [
+    "C_2S",
+    "C_2S"
+   ],
+   "style": "harmonic",
+   "params": [
+    525,
+    1.33
+   ],
+   "morse": [
+    140,
+    2.236068,
+    1.33
+   ],
+   "comment": "=C-C= single bond (BO=1.5)"
+  },
+  {
+   "name": "C_2-C_2S",
+   "match": [
+    "C_2",
+    "C_2S"
+   ],
+   "style": "harmonic",
+   "params": [
+    700,
+    1.33
+   ],
+   "morse": [
+    140,
+    2.236068,
+    1.33
+   ],
+   "comment": "-C=C- Double bond"
+  },
+  {
+   "name": "C_2-C_2",
+   "match": [
+    "C_2",
+    "C_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    700,
+    1.33
+   ],
+   "morse": [
+    140,
+    2.236068,
+    1.33
+   ],
+   "comment": "-C=C- Double bond"
+  },
+  {
+   "name": "C_3-Cl",
+   "match": [
+    "C_3",
+    "Cl"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.757
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.757
+   ],
+   "comment": "-C-Cl single bond"
+  },
+  {
+   "name": "C_3-C_R",
+   "match": [
+    "C_3",
+    "C_R"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.46
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.46
+   ],
+   "comment": "-C-COO single bond"
+  },
+  {
+   "name": "C_3-O_3",
+   "match": [
+    "C_3",
+    "O_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.42
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.42
+   ],
+   "comment": "-C-O(sp3)-"
+  },
+  {
+   "name": "C_3-C_2",
+   "match": [
+    "C_3",
+    "C_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.43
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.43
+   ],
+   "comment": "-C-C= single bond"
+  },
+  {
+   "name": "C_3-C_3",
+   "match": [
+    "C_3",
+    "C_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.53
+   ],
+   "morse": [
+    70,
+    2.236068,
+    1.53
+   ],
+   "comment": "-C-C- Single bond"
+  },
+  {
+   "name": "OT5-HT5",
+   "match": [
+    "OT5",
+    "HT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ],
+   "comment": "For TIP5P (ref only, use RIGID) - use harmonic"
+  },
+  {
+   "name": "OT5-Q1",
+   "match": [
+    "OT5",
+    "Q1"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.7
+   ],
+   "comment": "For TIP5P (ref only, use RIGID) - use harmonic"
+  },
+  {
+   "name": "OT4-Q4",
+   "match": [
+    "OT4",
+    "Q4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.15
+   ],
+   "comment": "For TIP4P (ref only, use RIGID) - use harmonic"
+  },
+  {
+   "name": "HT4-HT4",
+   "match": [
+    "HT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ],
+   "comment": "For TIP4P (ref only, use RIGID) - use harmonic"
+  },
+  {
+   "name": "OT4-HT4",
+   "match": [
+    "OT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ],
+   "comment": "For TIP4P (ref only, use RIGID) - use harmonic"
+  },
+  {
+   "name": "H3E-H3E",
+   "match": [
+    "H3E",
+    "H3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ],
+   "comment": "For TIP3P with PME (for SHAKE) - use harmonic"
+  },
+  {
+   "name": "OT3E-H3E",
+   "match": [
+    "OT3E",
+    "H3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ],
+   "comment": "For TIP3P with PME (for SHAKE) - use harmonic"
+  },
+  {
+   "name": "OW-HW",
+   "match": [
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ],
+   "comment": "For TIP3P - use harmonic"
+  }
+ ],
+ "angles": [
+  {
+   "name": "X-S_3-X",
+   "match": [
+    "*",
+    "S_3",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    92.1
+   ],
+   "cosine/squared": [
+    50.0672285,
+    92.1
+   ],
+   "comment": "X-S_3-X"
+  },
+  {
+   "name": "X-N_1-X",
+   "match": [
+    "*",
+    "N_1",
+    "*"
+   ],
+   "style": "cosine",
+   "params": [
+    100
+   ],
+   "comment": "X-N_1-X linear (use cos)"
+  },
+  {
+   "name": "X-N_2-X",
+   "match": [
+    "*",
+    "N_2",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-N_2-X"
+  },
+  {
+   "name": "X-N_3-X",
+   "match": [
+    "*",
+    "N_3",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    106.7
+   ],
+   "cosine/squared": [
+    54.5004315,
+    106.7
+   ],
+   "comment": "X-N_3-X"
+  },
+  {
+   "name": "X-N_R-X",
+   "match": [
+    "*",
+    "N_R",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_R-X"
+  },
+  {
+   "name": "X-O_R-X",
+   "match": [
+    "*",
+    "O_R",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-O_R-X"
+  },
+  {
+   "name": "X-O_3-X",
+   "match": [
+    "*",
+    "O_3",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    104.51
+   ],
+   "cosine/squared": [
+    53.3489705,
+    104.51
+   ],
+   "comment": "X-O_3-X"
+  },
+  {
+   "name": "X-C_R-X",
+   "match": [
+    "*",
+    "C_R",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_R-X"
+  },
+  {
+   "name": "X-C_1-X",
+   "match": [
+    "*",
+    "C_1",
+    "*"
+   ],
+   "style": "cosine",
+   "params": [
+    100
+   ],
+   "comment": "X-C_1-X linear (use cos)"
+  },
+  {
+   "name": "X-C_2-X",
+   "match": [
+    "*",
+    "C_2",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_2-X"
+  },
+  {
+   "name": "X-C_3-X",
+   "match": [
+    "*",
+    "C_3",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.471
+   ],
+   "cosine/squared": [
+    56.2498465,
+    109.471
+   ],
+   "comment": "X-C_3-X"
+  },
+  {
+   "name": "C_3-C_1-N_1",
+   "match": [
+    "C_3",
+    "C_1",
+    "N_1"
+   ],
+   "style": "cosine",
+   "params": [
+    100
+   ],
+   "comment": "X-C_1-X linear (use cos)"
+  },
+  {
+   "name": "H_-C_R-H_",
+   "match": [
+    "H_",
+    "C_R",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_R-X"
+  },
+  {
+   "name": "H_-C_2-H_",
+   "match": [
+    "H_",
+    "C_2",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_2-X"
+  },
+  {
+   "name": "C_R-C_R-H_",
+   "match": [
+    "C_R",
+    "C_R",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_R-X"
+  },
+  {
+   "name": "C_2-C_2-H_",
+   "match": [
+    "C_2",
+    "C_2",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_2-X"
+  },
+  {
+   "name": "C_3-C_2-H_",
+   "match": [
+    "C_3",
+    "C_2",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_2-X"
+  },
+  {
+   "name": "C_2-C_2-C_2",
+   "match": [
+    "C_2",
+    "C_2",
+    "C_2"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_2-X"
+  },
+  {
+   "name": "C_2-C_2-C_3",
+   "match": [
+    "C_2",
+    "C_2",
+    "C_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_2-X"
+  },
+  {
+   "name": "C_R-C_R-C_R",
+   "match": [
+    "C_R",
+    "C_R",
+    "C_R"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    120
+   ],
+   "cosine/squared": [
+    66.6666665,
+    120
+   ],
+   "comment": "X-C_R-X"
+  },
+  {
+   "name": "H__HB-N_3-H__HB",
+   "match": [
+    "H__HB",
+    "N_3",
+    "H__HB"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    106.7
+   ],
+   "cosine/squared": [
+    54.5004315,
+    106.7
+   ],
+   "comment": "X-N_3-X"
+  },
+  {
+   "name": "C_3-N_3-H__HB",
+   "match": [
+    "C_3",
+    "N_3",
+    "H__HB"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    106.7
+   ],
+   "cosine/squared": [
+    54.5004315,
+    106.7
+   ],
+   "comment": "X-N_3-X"
+  },
+  {
+   "name": "H_-C_3-H_",
+   "match": [
+    "H_",
+    "C_3",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.471
+   ],
+   "cosine/squared": [
+    56.2498465,
+    109.471
+   ],
+   "comment": "X-C_3-X"
+  },
+  {
+   "name": "C_1-C_3-H_",
+   "match": [
+    "C_1",
+    "C_3",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.471
+   ],
+   "cosine/squared": [
+    56.2498465,
+    109.471
+   ],
+   "comment": "X-C_3-X"
+  },
+  {
+   "name": "C_2-C_3-H_",
+   "match": [
+    "C_2",
+    "C_3",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.471
+   ],
+   "cosine/squared": [
+    56.2498465,
+    109.471
+   ],
+   "comment": "X-C_3-X"
+  },
+  {
+   "name": "C_3-C_3-H_",
+   "match": [
+    "C_3",
+    "C_3",
+    "H_"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.471
+   ],
+   "cosine/squared": [
+    56.2498465,
+    109.471
+   ],
+   "comment": "X-C_3-X"
+  },
+  {
+   "name": "C_3-C_3-C_3",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.471
+   ],
+   "cosine/squared": [
+    56.2498465,
+    109.471
+   ],
+   "comment": "X-C_3-X"
+  },
+  {
+   "name": "HT5-OT5E-HT5",
+   "match": [
+    "HT5",
+    "OT5E",
+    "HT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ],
+   "comment": "TIP5P with PME"
+  },
+  {
+   "name": "HT5-OT5-HT5",
+   "match": [
+    "HT5",
+    "OT5",
+    "HT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ],
+   "comment": "TIP5P (ref only, use RIGID)"
+  },
+  {
+   "name": "HT4-OT4-HT4",
+   "match": [
+    "HT4",
+    "OT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ],
+   "comment": "TIP4P (ref only, use RIGID)"
+  },
+  {
+   "name": "H3E-OT3E-H3E",
+   "match": [
+    "H3E",
+    "OT3E",
+    "H3E"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ],
+   "comment": "TIP3P with PME (for SHAKE or RIGID)"
+  },
+  {
+   "name": "HW-OW-HW",
+   "match": [
+    "HW",
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ],
+   "comment": "TIP3P water"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "X-C_R-N_3-X",
+   "match": [
+    "*",
+    "C_R",
+    "N_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.25,
+    2,
+    180
+   ],
+   "comment": "case (i) V(i-j)/2=0.0, pi overlap"
+  },
+  {
+   "name": "X-C_R-O_3-X",
+   "match": [
+    "*",
+    "C_R",
+    "O_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    2,
+    180
+   ],
+   "comment": "case (i) pi orbital overlap (phenol)"
+  },
+  {
+   "name": "X-C_2S-C_2S-X",
+   "match": [
+    "*",
+    "C_2S",
+    "C_2S",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.25,
+    2,
+    180
+   ],
+   "comment": "Case (e)"
+  },
+  {
+   "name": "X-C_R-N_R-X",
+   "match": [
+    "*",
+    "C_R",
+    "N_R",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6.25,
+    2,
+    180
+   ],
+   "comment": "Case (d) k=V(i-j)/2=12.5, C=R ring."
+  },
+  {
+   "name": "X-C_R-O_R-X",
+   "match": [
+    "*",
+    "C_R",
+    "O_R",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6.25,
+    2,
+    180
+   ],
+   "comment": "Case (d) k=V(i-j)/2=12.5, C=O ring."
+  },
+  {
+   "name": "X-C_R-C_R-X",
+   "match": [
+    "*",
+    "C_R",
+    "C_R",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.125,
+    2,
+    180
+   ],
+   "comment": "Case (d) k=V(i-j)/4=6.25"
+  },
+  {
+   "name": "X-C_3-SO-X",
+   "match": [
+    "*",
+    "C_3",
+    "SO",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "Case (a) -C-S(O)-"
+  },
+  {
+   "name": "X-C_3-N_3-X",
+   "match": [
+    "*",
+    "C_3",
+    "N_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "Case (a) k=V(i-j)/6=0.33333"
+  },
+  {
+   "name": "X-C_3-O_3-X",
+   "match": [
+    "*",
+    "C_3",
+    "O_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.333335,
+    3,
+    0
+   ],
+   "comment": "Case (a) k=V(i-j)/3=0.66667"
+  },
+  {
+   "name": "X-NH4-C_3-X",
+   "match": [
+    "*",
+    "NH4",
+    "C_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.11111,
+    3,
+    0
+   ],
+   "comment": "Case (a) k=V(i-j)/9=0.22222 ammonium"
+  },
+  {
+   "name": "X-C_3-C_3-X",
+   "match": [
+    "*",
+    "C_3",
+    "C_3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.11111,
+    3,
+    0
+   ],
+   "comment": "Case (a) k=V(i-j)/9=0.22222"
+  },
+  {
+   "name": "X-O_3-C_2-C_3",
+   "match": [
+    "*",
+    "O_3",
+    "C_2",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    2,
+    180
+   ],
+   "comment": "Case (j), 2-fold barrier due to O"
+  },
+  {
+   "name": "X-C_3-C_2-O_2",
+   "match": [
+    "*",
+    "C_3",
+    "C_2",
+    "O_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "Case (b) k=V(i-j)/6 = 0.16667"
+  },
+  {
+   "name": "X-N_3-C_2-O_2",
+   "match": [
+    "*",
+    "N_3",
+    "C_2",
+    "O_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.125,
+    6,
+    180
+   ],
+   "comment": "Case (b) k=V(i-j)/4 = 0.25"
+  },
+  {
+   "name": "H_-N_3-C_2-C_3",
+   "match": [
+    "H_",
+    "N_3",
+    "C_2",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.25,
+    3,
+    0
+   ],
+   "comment": "-N-C= (i-j, k is NOT X_2,X_R)"
+  },
+  {
+   "name": "C_3-N_3-C_2-C_3",
+   "match": [
+    "C_3",
+    "N_3",
+    "C_2",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.25,
+    3,
+    0
+   ],
+   "comment": "-N-C= k=V(i-j)/4=0.5"
+  },
+  {
+   "name": "C_3-C_3-C_2-O_3",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_2",
+    "O_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "-C-C= (i-j, k is NOT X_2,X_R)"
+  },
+  {
+   "name": "H_-C_3-C_2-O_3",
+   "match": [
+    "H_",
+    "C_3",
+    "C_2",
+    "O_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "-C-C= (i-j, k is NOT X_2,X_R)"
+  },
+  {
+   "name": "H_-C_3-C_2-N_3",
+   "match": [
+    "H_",
+    "C_3",
+    "C_2",
+    "N_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "-C-C= (i-j, k is NOT X_2,X_R)"
+  },
+  {
+   "name": "H_-C_3-C_2-H_",
+   "match": [
+    "H_",
+    "C_3",
+    "C_2",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "-C-C= (i-j, k is NOT X_2,X_R)"
+  },
+  {
+   "name": "H_-C_3-C_2-C_3",
+   "match": [
+    "H_",
+    "C_3",
+    "C_2",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "-C-C= (i-j, k is NOT X_2,X_R)"
+  },
+  {
+   "name": "C_3-C_3-C_2-H_",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_2",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "(j) V(i-j)=2.0, k=V(i-j)/6=0.333"
+  },
+  {
+   "name": "C_3-S_3-S_3-C_3",
+   "match": [
+    "C_3",
+    "S_3",
+    "S_3",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    0
+   ],
+   "comment": "(h) V(i-j)=2.0, k=V(i-j)/1 = 2.000"
+  },
+  {
+   "name": "H_-C_3-C_1-N_1",
+   "match": [
+    "H_",
+    "C_3",
+    "C_1",
+    "N_1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    1,
+    180
+   ],
+   "comment": "(g) V(i-j)=0.0, X-X-C(sp)-X"
+  },
+  {
+   "name": "C_R-C_RS-C_RS-C_R",
+   "match": [
+    "C_R",
+    "C_RS",
+    "C_RS",
+    "C_R"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.25,
+    2,
+    180
+   ],
+   "comment": "(f) C_R-C_R (i-j single)"
+  },
+  {
+   "name": "H_-C_2S-C_2S-H_",
+   "match": [
+    "H_",
+    "C_2S",
+    "C_2S",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.25,
+    2,
+    180
+   ],
+   "comment": "C=C-C=C (i-j single)"
+  },
+  {
+   "name": "C_2-C_2S-C_2S-H_",
+   "match": [
+    "C_2",
+    "C_2S",
+    "C_2S",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.25,
+    2,
+    180
+   ],
+   "comment": "C=C-C=C (i-j single)"
+  },
+  {
+   "name": "C_2-C_2S-C_2S-C_2",
+   "match": [
+    "C_2",
+    "C_2S",
+    "C_2S",
+    "C_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.25,
+    2,
+    180
+   ],
+   "comment": "(e) V(i-j)=5, k=V(i-j)/2=2.5"
+  },
+  {
+   "name": "C_R-N_R-C_R-H_",
+   "match": [
+    "C_R",
+    "N_R",
+    "C_R",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6.25,
+    2,
+    180
+   ],
+   "comment": "C=N (i-j) resonance, V/2=12.5"
+  },
+  {
+   "name": "C_R-N_R-C_R-C_R",
+   "match": [
+    "C_R",
+    "N_R",
+    "C_R",
+    "C_R"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6.25,
+    2,
+    180
+   ],
+   "comment": "C=N (i-j) resonance, V/2=12.5"
+  },
+  {
+   "name": "H_-C_R-C_R-H_",
+   "match": [
+    "H_",
+    "C_R",
+    "C_R",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.125,
+    2,
+    180
+   ],
+   "comment": "C=C (i-j) resonance C"
+  },
+  {
+   "name": "C_R-C_R-C_R-H_",
+   "match": [
+    "C_R",
+    "C_R",
+    "C_R",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.125,
+    2,
+    180
+   ],
+   "comment": "C=C (i-j) resonance C"
+  },
+  {
+   "name": "C_R-C_R-C_R-C_R",
+   "match": [
+    "C_R",
+    "C_R",
+    "C_R",
+    "C_R"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.125,
+    2,
+    180
+   ],
+   "comment": "(d) V(i-j)=25, k=V(i-j)/4 = 6.25"
+  },
+  {
+   "name": "C_3-C_2-C_2-C_3",
+   "match": [
+    "C_3",
+    "C_2",
+    "C_2",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.625,
+    2,
+    180
+   ],
+   "comment": "C=C (i-j)"
+  },
+  {
+   "name": "H_-C_2-C_2S-C_2S",
+   "match": [
+    "H_",
+    "C_2",
+    "C_2S",
+    "C_2S"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.625,
+    2,
+    180
+   ],
+   "comment": "C=C (i-j)"
+  },
+  {
+   "name": "H_-C_2-C_2-C_3",
+   "match": [
+    "H_",
+    "C_2",
+    "C_2",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.625,
+    2,
+    180
+   ],
+   "comment": "C=C (i-j)"
+  },
+  {
+   "name": "H_-C_2-C_2S-H_",
+   "match": [
+    "H_",
+    "C_2",
+    "C_2S",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.625,
+    2,
+    180
+   ],
+   "comment": "C=C (i-j)"
+  },
+  {
+   "name": "H_-C_2-C_2-H_",
+   "match": [
+    "H_",
+    "C_2",
+    "C_2",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.625,
+    2,
+    180
+   ],
+   "comment": "(c) V(i-j)=45, k=V(i-j)/4 = 11.25"
+  },
+  {
+   "name": "H_-O_3-C_2-O_2",
+   "match": [
+    "H_",
+    "O_3",
+    "C_2",
+    "O_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.25,
+    6,
+    180
+   ],
+   "comment": "-O-C= as in carboxylic"
+  },
+  {
+   "name": "C_3-O_3-C_2-O_2",
+   "match": [
+    "C_3",
+    "O_3",
+    "C_2",
+    "O_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.25,
+    6,
+    180
+   ],
+   "comment": "-O-C= (i-j),k is X_2, X_R)"
+  },
+  {
+   "name": "C_3-C_3-C_R-O_R",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_R",
+    "O_R"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "C_3-C_R in analine"
+  },
+  {
+   "name": "H_-C_3-C_R-O_R",
+   "match": [
+    "H_",
+    "C_3",
+    "C_R",
+    "O_R"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "C_3-C_R in analine"
+  },
+  {
+   "name": "NH4-C_3-C_R-O_R",
+   "match": [
+    "NH4",
+    "C_3",
+    "C_R",
+    "O_R"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "C_3-C_R in analine"
+  },
+  {
+   "name": "H_-C_3-C_2-C_2",
+   "match": [
+    "H_",
+    "C_3",
+    "C_2",
+    "C_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "-C-C= (i-j, k is X_2, X_R)"
+  },
+  {
+   "name": "C_2-C_3-C_2-C_2",
+   "match": [
+    "C_2",
+    "C_3",
+    "C_2",
+    "C_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "-C-C= (i-j, k is X_2, X_R)"
+  },
+  {
+   "name": "C_3-C_3-C_2-C_2",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_2",
+    "C_2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.083335,
+    6,
+    180
+   ],
+   "comment": "(b) V(i-j)=1.0, k=V(i-j)/6=0.16667"
+  },
+  {
+   "name": "C_3-C_3-S_3-H_",
+   "match": [
+    "C_3",
+    "C_3",
+    "S_3",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.333335,
+    3,
+    0
+   ],
+   "comment": "C-S (i-j)"
+  },
+  {
+   "name": "H_-C_3-S_3-H_",
+   "match": [
+    "H_",
+    "C_3",
+    "S_3",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.333335,
+    3,
+    0
+   ],
+   "comment": "C-S (i-j)"
+  },
+  {
+   "name": "H_-C_3-S_3-S_3",
+   "match": [
+    "H_",
+    "C_3",
+    "S_3",
+    "S_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.333335,
+    3,
+    0
+   ],
+   "comment": "(a) V(i-j)=2.0, k=V(i-j)/3 = 0.667"
+  },
+  {
+   "name": "C_3-C_3-N_3-H__HB",
+   "match": [
+    "C_3",
+    "C_3",
+    "N_3",
+    "H__HB"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "-C-N-"
+  },
+  {
+   "name": "H_-C_3-N_3-H__HB",
+   "match": [
+    "H_",
+    "C_3",
+    "N_3",
+    "H__HB"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.166665,
+    3,
+    0
+   ],
+   "comment": "(a) V(i-j)=2.0, k=V(i-j)/6 = 0.333"
+  },
+  {
+   "name": "H_-C_3-C_3-H_",
+   "match": [
+    "H_",
+    "C_3",
+    "C_3",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.11111,
+    3,
+    0
+   ],
+   "comment": "C-C (i-j)"
+  },
+  {
+   "name": "C_3-C_3-C_3-H_",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_3",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.11111,
+    3,
+    0
+   ],
+   "comment": "C-C (i-j)"
+  },
+  {
+   "name": "C_3-C_3-C_3-H_",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_3",
+    "H_"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.11111,
+    3,
+    0
+   ],
+   "comment": "C-C (i-j)"
+  },
+  {
+   "name": "C_3-C_3-C_3-C_3",
+   "match": [
+    "C_3",
+    "C_3",
+    "C_3",
+    "C_3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.11111,
+    3,
+    0
+   ],
+   "comment": "(a) V(i-j)=2.0, k=V(i-j)/9 = 0.222"
+  }
+ ],
+ "impropers": [
+  {
+   "name": "*_R planar centre (DREIDING rule)",
+   "match": [
+    "*_R",
+    "*",
+    "*",
+    "*"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ],
+   "comment": "DREIDING generic planar inversion"
+  },
+  {
+   "name": "*_2 planar centre (DREIDING rule)",
+   "match": [
+    "*_2",
+    "*",
+    "*",
+    "*"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ],
+   "comment": "DREIDING generic planar inversion"
+  },
+  {
+   "name": "C_R-C_3-O_R-O_R",
+   "match": [
+    "C_R",
+    "C_3",
+    "O_R",
+    "O_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_2-O_2-C_3-O_3",
+   "match": [
+    "C_2",
+    "O_2",
+    "C_3",
+    "O_3"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-N_3-C_R-C_R",
+   "match": [
+    "C_R",
+    "N_3",
+    "C_R",
+    "C_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-Cl-C_R-C_R",
+   "match": [
+    "C_R",
+    "Cl",
+    "C_R",
+    "C_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-O_3-C_R-C_R",
+   "match": [
+    "C_R",
+    "O_3",
+    "C_R",
+    "C_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-H_-O_R-N_R",
+   "match": [
+    "C_R",
+    "H_",
+    "O_R",
+    "N_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-H_-O_R-C_R",
+   "match": [
+    "C_R",
+    "H_",
+    "O_R",
+    "C_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_2-C_3-N_3-O_2",
+   "match": [
+    "C_2",
+    "C_3",
+    "N_3",
+    "O_2"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "N_3-C_2-C_3-H_",
+   "match": [
+    "N_3",
+    "C_2",
+    "C_3",
+    "H_"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_2-O_2-C_3-C_3",
+   "match": [
+    "C_2",
+    "O_2",
+    "C_3",
+    "C_3"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-H_-C_R-N_R",
+   "match": [
+    "C_R",
+    "H_",
+    "C_R",
+    "N_R"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-C_R-C_R-H_",
+   "match": [
+    "C_R",
+    "C_R",
+    "C_R",
+    "H_"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_2-C_2-C_2-H_",
+   "match": [
+    "C_2",
+    "C_2",
+    "C_2",
+    "H_"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_2-C_2-C_3-H_",
+   "match": [
+    "C_2",
+    "C_2",
+    "C_3",
+    "H_"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_R-C_R-H_-H_",
+   "match": [
+    "C_R",
+    "C_R",
+    "H_",
+    "H_"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "C_2-C_2-H_-H_",
+   "match": [
+    "C_2",
+    "C_2",
+    "H_",
+    "H_"
+   ],
+   "style": "planar",
+   "params": [
+    40,
+    0
+   ]
+  }
+ ],
+ "notes": [
+  "DL_FIELD also places inversions where its molecule templates ask (e.g. amide N typed N_3); CAPS applies DREIDING's rule: planar (_2, _R) centres only",
+  "DREIDING hydrogen-bond terms are not converted; Morse bonds and cosine angles are kept as alternatives in each rule",
+  "converted from DL_FIELD by CAPS (DREIDING, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "1990",
+ "status": "validated",
+ "validation": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 29 of 29 buildable templates identical (planar inversions, linear angles, conjugated and ammonium torsions)."
+}

@@ -1,0 +1,3540 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-DES deep eutectic solvents (DL_FIELD)",
+ "source": "DL_FIELD 4.13: OPLS_DES.par",
+ "references": [
+  "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  0.5
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.5
+ ],
+ "cutoff": 10,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_reversible": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "NA1",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "Nq_ammonium#1"
+   ]
+  },
+  {
+   "name": "CA1",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "CpN+_alkane#1"
+   ]
+  },
+  {
+   "name": "HA1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCpN+_alkane#1"
+   ]
+  },
+  {
+   "name": "CS1",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "CsN+_alkane#1"
+   ]
+  },
+  {
+   "name": "HS1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HCsN+_alkane#1"
+   ]
+  },
+  {
+   "name": "CW1",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cs_alkane#1"
+   ]
+  },
+  {
+   "name": "HW1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#1"
+   ]
+  },
+  {
+   "name": "OY1",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_alcohol#1"
+   ]
+  },
+  {
+   "name": "HY1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_alcohol#1"
+   ]
+  },
+  {
+   "name": "CG2",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cs_alkane#2"
+   ]
+  },
+  {
+   "name": "HG2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#2"
+   ]
+  },
+  {
+   "name": "OH2",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_alcohol#2"
+   ]
+  },
+  {
+   "name": "HO2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_alcohol#2"
+   ]
+  },
+  {
+   "name": "CB3",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cs_alkane#3"
+   ]
+  },
+  {
+   "name": "CM3",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Ct_alkane#3"
+   ]
+  },
+  {
+   "name": "HC3",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#3"
+   ]
+  },
+  {
+   "name": "OH3",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_alcohol#3"
+   ]
+  },
+  {
+   "name": "HO3",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_alcohol#3"
+   ]
+  },
+  {
+   "name": "CB4",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_carboxylic#4"
+   ]
+  },
+  {
+   "name": "OB4",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OE_carboxylic#4"
+   ]
+  },
+  {
+   "name": "OH4",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OL_carboxylic#4"
+   ]
+  },
+  {
+   "name": "HO4",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_carboxylic#4"
+   ]
+  },
+  {
+   "name": "CT4",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cp_alkane#4",
+    "Cs_alkane#4"
+   ]
+  },
+  {
+   "name": "CZ4",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cs_alkane#41"
+   ]
+  },
+  {
+   "name": "HZ4",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#41"
+   ]
+  },
+  {
+   "name": "CF4",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cs_alkane#42"
+   ]
+  },
+  {
+   "name": "HF4",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#42"
+   ]
+  },
+  {
+   "name": "HT4",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#4"
+   ]
+  },
+  {
+   "name": "CD4",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_ketone#4"
+   ]
+  },
+  {
+   "name": "OC4",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_ketone#4"
+   ]
+  },
+  {
+   "name": "CD5",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_carboxylic#5"
+   ]
+  },
+  {
+   "name": "OD5",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OE_carboxylic#5"
+   ]
+  },
+  {
+   "name": "OH5",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OL_carboxylic#5"
+   ]
+  },
+  {
+   "name": "HO5",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_carboxylic#5"
+   ]
+  },
+  {
+   "name": "CT5",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cs_alkane#5"
+   ]
+  },
+  {
+   "name": "HC5",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#5"
+   ]
+  },
+  {
+   "name": "CD6",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_carboxylic#6"
+   ]
+  },
+  {
+   "name": "OD6",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OE_carboxylic#6"
+   ]
+  },
+  {
+   "name": "OH6",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OL_carboxylic#6"
+   ]
+  },
+  {
+   "name": "HO6",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_carboxylic#6"
+   ]
+  },
+  {
+   "name": "CB7",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C1_benzene#7",
+    "C2_benzene#7",
+    "C3_benzene#7",
+    "C4_benzene#7",
+    "C5_benzene#7",
+    "C6_benzene#7"
+   ]
+  },
+  {
+   "name": "HB7",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_benzene#7"
+   ]
+  },
+  {
+   "name": "OH7",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_phenol#7"
+   ]
+  },
+  {
+   "name": "HO7",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_phenol#7"
+   ]
+  },
+  {
+   "name": "C8",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_urea#8"
+   ]
+  },
+  {
+   "name": "O8",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_urea#8"
+   ]
+  },
+  {
+   "name": "N8",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "Np_urea#8"
+   ]
+  },
+  {
+   "name": "H8",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HN_urea#8"
+   ]
+  },
+  {
+   "name": "Cl",
+   "element": "Cl",
+   "mass": 35.453,
+   "aliases": [
+    "Cl_anion"
+   ]
+  },
+  {
+   "name": "QZ",
+   "element": "",
+   "mass": 0.5,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom1"
+   ]
+  },
+  {
+   "name": "QY",
+   "element": "",
+   "mass": 0.2,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom2"
+   ]
+  },
+  {
+   "name": "QX",
+   "element": "",
+   "mass": 0.6,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom3"
+   ]
+  },
+  {
+   "name": "QW",
+   "element": "",
+   "mass": 0.7,
+   "description": "Dummy atom, for DL_FIELD internal use only",
+   "aliases": [
+    "dummy_atom4"
+   ]
+  },
+  {
+   "name": "OM3",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "HM3",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "HZ3",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "CL",
+   "element": "",
+   "mass": 0
+  }
+ ],
+ "pairs": [
+  {
+   "name": "CS1",
+   "match": [
+    "CS1"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "HS1",
+   "match": [
+    "HS1"
+   ],
+   "params": [
+    0.03,
+    2.6
+   ]
+  },
+  {
+   "name": "NA1",
+   "match": [
+    "NA1"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ]
+  },
+  {
+   "name": "CA1",
+   "match": [
+    "CA1"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "CW1",
+   "match": [
+    "CW1"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "OY1",
+   "match": [
+    "OY1"
+   ],
+   "params": [
+    0.17,
+    3.07
+   ]
+  },
+  {
+   "name": "HA1",
+   "match": [
+    "HA1"
+   ],
+   "params": [
+    0.03,
+    2.5
+   ]
+  },
+  {
+   "name": "HW1",
+   "match": [
+    "HW1"
+   ],
+   "params": [
+    0.03,
+    2.2
+   ]
+  },
+  {
+   "name": "HY1",
+   "match": [
+    "HY1"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HO2",
+   "match": [
+    "HO2"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OH2",
+   "match": [
+    "OH2"
+   ],
+   "params": [
+    0.2975,
+    3
+   ]
+  },
+  {
+   "name": "CG2",
+   "match": [
+    "CG2"
+   ],
+   "params": [
+    0.1155,
+    3.5
+   ]
+  },
+  {
+   "name": "HG2",
+   "match": [
+    "HG2"
+   ],
+   "params": [
+    0.0525,
+    2.5
+   ]
+  },
+  {
+   "name": "CM3",
+   "match": [
+    "CM3"
+   ],
+   "params": [
+    0.1452,
+    3.5
+   ]
+  },
+  {
+   "name": "OM3",
+   "match": [
+    "OM3"
+   ],
+   "params": [
+    0.374,
+    3.07
+   ]
+  },
+  {
+   "name": "OH3",
+   "match": [
+    "OH3"
+   ],
+   "params": [
+    0.374,
+    3.07
+   ]
+  },
+  {
+   "name": "CB3",
+   "match": [
+    "CB3"
+   ],
+   "params": [
+    0.1452,
+    3.5
+   ]
+  },
+  {
+   "name": "HM3",
+   "match": [
+    "HM3"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HO3",
+   "match": [
+    "HO3"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HZ3",
+   "match": [
+    "HZ3"
+   ],
+   "params": [
+    0.066,
+    2.5
+   ]
+  },
+  {
+   "name": "HC3",
+   "match": [
+    "HC3"
+   ],
+   "params": [
+    0.066,
+    2.5
+   ]
+  },
+  {
+   "name": "CB4",
+   "match": [
+    "CB4"
+   ],
+   "params": [
+    0.126,
+    3.75
+   ]
+  },
+  {
+   "name": "OH4",
+   "match": [
+    "OH4"
+   ],
+   "params": [
+    0.204,
+    3
+   ]
+  },
+  {
+   "name": "HO4",
+   "match": [
+    "HO4"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OB4",
+   "match": [
+    "OB4"
+   ],
+   "params": [
+    0.252,
+    2.96
+   ]
+  },
+  {
+   "name": "CZ4",
+   "match": [
+    "CZ4"
+   ],
+   "params": [
+    0.0792,
+    3.5
+   ]
+  },
+  {
+   "name": "CF4",
+   "match": [
+    "CF4"
+   ],
+   "params": [
+    0.0792,
+    3.5
+   ]
+  },
+  {
+   "name": "CT4",
+   "match": [
+    "CT4"
+   ],
+   "params": [
+    0.0792,
+    3.5
+   ]
+  },
+  {
+   "name": "HZ4",
+   "match": [
+    "HZ4"
+   ],
+   "params": [
+    0.036,
+    2.5
+   ]
+  },
+  {
+   "name": "HF4",
+   "match": [
+    "HF4"
+   ],
+   "params": [
+    0.036,
+    2.5
+   ]
+  },
+  {
+   "name": "HT4",
+   "match": [
+    "HT4"
+   ],
+   "params": [
+    0.036,
+    2.5
+   ]
+  },
+  {
+   "name": "CD4",
+   "match": [
+    "CD4"
+   ],
+   "params": [
+    0.126,
+    3.75
+   ]
+  },
+  {
+   "name": "OC4",
+   "match": [
+    "OC4"
+   ],
+   "params": [
+    0.252,
+    2.96
+   ]
+  },
+  {
+   "name": "CD5",
+   "match": [
+    "CD5"
+   ],
+   "params": [
+    0.2625,
+    3.75
+   ]
+  },
+  {
+   "name": "CT5",
+   "match": [
+    "CT5"
+   ],
+   "params": [
+    0.165,
+    3.5
+   ]
+  },
+  {
+   "name": "HC5",
+   "match": [
+    "HC5"
+   ],
+   "params": [
+    0.075,
+    2.5
+   ]
+  },
+  {
+   "name": "OD5",
+   "match": [
+    "OD5"
+   ],
+   "params": [
+    0.525,
+    2.96
+   ]
+  },
+  {
+   "name": "OH5",
+   "match": [
+    "OH5"
+   ],
+   "params": [
+    0.425,
+    3
+   ]
+  },
+  {
+   "name": "HO5",
+   "match": [
+    "HO5"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CD6",
+   "match": [
+    "CD6"
+   ],
+   "params": [
+    0.1575,
+    3.75
+   ]
+  },
+  {
+   "name": "OH6",
+   "match": [
+    "OH6"
+   ],
+   "params": [
+    0.255,
+    2.92
+   ]
+  },
+  {
+   "name": "HO6",
+   "match": [
+    "HO6"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OD6",
+   "match": [
+    "OD6"
+   ],
+   "params": [
+    0.315,
+    2.96
+   ]
+  },
+  {
+   "name": "CB7",
+   "match": [
+    "CB7"
+   ],
+   "params": [
+    0.077,
+    3.55
+   ]
+  },
+  {
+   "name": "HB7",
+   "match": [
+    "HB7"
+   ],
+   "params": [
+    0.033,
+    2.42
+   ]
+  },
+  {
+   "name": "OH7",
+   "match": [
+    "OH7"
+   ],
+   "params": [
+    0.187,
+    3.07
+   ]
+  },
+  {
+   "name": "HO7",
+   "match": [
+    "HO7"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "C8",
+   "match": [
+    "C8"
+   ],
+   "params": [
+    0.1575,
+    3.75
+   ],
+   "comment": "| C_urea"
+  },
+  {
+   "name": "O8",
+   "match": [
+    "O8"
+   ],
+   "params": [
+    0.315,
+    2.96
+   ]
+  },
+  {
+   "name": "N8",
+   "match": [
+    "N8"
+   ],
+   "params": [
+    0.255,
+    3.55
+   ]
+  },
+  {
+   "name": "H8",
+   "match": [
+    "H8"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CL",
+   "match": [
+    "CL"
+   ],
+   "params": [
+    0.148,
+    3.77
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "H8-N8",
+   "match": [
+    "H8",
+    "N8"
+   ],
+   "style": "harmonic",
+   "params": [
+    434,
+    1.01
+   ]
+  },
+  {
+   "name": "N8-C8",
+   "match": [
+    "N8",
+    "C8"
+   ],
+   "style": "harmonic",
+   "params": [
+    490,
+    1.335
+   ]
+  },
+  {
+   "name": "O8-C8",
+   "match": [
+    "O8",
+    "C8"
+   ],
+   "style": "harmonic",
+   "params": [
+    570,
+    1.229
+   ],
+   "comment": "UREA"
+  },
+  {
+   "name": "HO7-OH7",
+   "match": [
+    "HO7",
+    "OH7"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ]
+  },
+  {
+   "name": "OH7-CB7",
+   "match": [
+    "OH7",
+    "CB7"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.365
+   ]
+  },
+  {
+   "name": "HB7-CB7",
+   "match": [
+    "HB7",
+    "CB7"
+   ],
+   "style": "harmonic",
+   "params": [
+    367,
+    1.08
+   ]
+  },
+  {
+   "name": "CB7-CB7",
+   "match": [
+    "CB7",
+    "CB7"
+   ],
+   "style": "harmonic",
+   "params": [
+    469,
+    1.4
+   ],
+   "comment": "PHENOL"
+  },
+  {
+   "name": "HO6-OH6",
+   "match": [
+    "HO6",
+    "OH6"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ]
+  },
+  {
+   "name": "OH6-CD6",
+   "match": [
+    "OH6",
+    "CD6"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.364
+   ]
+  },
+  {
+   "name": "OD6-CD6",
+   "match": [
+    "OD6",
+    "CD6"
+   ],
+   "style": "harmonic",
+   "params": [
+    570,
+    1.229
+   ]
+  },
+  {
+   "name": "CD6-CD6",
+   "match": [
+    "CD6",
+    "CD6"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.51
+   ],
+   "comment": "OXALIC ACID"
+  },
+  {
+   "name": "HC5-CT5",
+   "match": [
+    "HC5",
+    "CT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "HO5-OH5",
+   "match": [
+    "HO5",
+    "OH5"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ]
+  },
+  {
+   "name": "CT5-CD5",
+   "match": [
+    "CT5",
+    "CD5"
+   ],
+   "style": "harmonic",
+   "params": [
+    317,
+    1.522
+   ]
+  },
+  {
+   "name": "OH5-CD5",
+   "match": [
+    "OH5",
+    "CD5"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.364
+   ]
+  },
+  {
+   "name": "OD5-CD5",
+   "match": [
+    "OD5",
+    "CD5"
+   ],
+   "style": "harmonic",
+   "params": [
+    570,
+    1.229
+   ],
+   "comment": "MALONIC ACID"
+  },
+  {
+   "name": "OC4-CD4",
+   "match": [
+    "OC4",
+    "CD4"
+   ],
+   "style": "harmonic",
+   "params": [
+    570,
+    1.229
+   ]
+  },
+  {
+   "name": "HT4-CT4",
+   "match": [
+    "HT4",
+    "CT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "CT4-CD4",
+   "match": [
+    "CT4",
+    "CD4"
+   ],
+   "style": "harmonic",
+   "params": [
+    317,
+    1.522
+   ]
+  },
+  {
+   "name": "CD4-CF4",
+   "match": [
+    "CD4",
+    "CF4"
+   ],
+   "style": "harmonic",
+   "params": [
+    317,
+    1.522
+   ]
+  },
+  {
+   "name": "HF4-CF4",
+   "match": [
+    "HF4",
+    "CF4"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "CF4-CZ4",
+   "match": [
+    "CF4",
+    "CZ4"
+   ],
+   "style": "harmonic",
+   "params": [
+    268,
+    1.529
+   ]
+  },
+  {
+   "name": "HZ4-CZ4",
+   "match": [
+    "HZ4",
+    "CZ4"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "CZ4-CB4",
+   "match": [
+    "CZ4",
+    "CB4"
+   ],
+   "style": "harmonic",
+   "params": [
+    317,
+    1.522
+   ]
+  },
+  {
+   "name": "OB4-CB4",
+   "match": [
+    "OB4",
+    "CB4"
+   ],
+   "style": "harmonic",
+   "params": [
+    570,
+    1.229
+   ]
+  },
+  {
+   "name": "OH4-HO4",
+   "match": [
+    "OH4",
+    "HO4"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ]
+  },
+  {
+   "name": "OH4-CB4",
+   "match": [
+    "OH4",
+    "CB4"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.364
+   ],
+   "comment": "LEVULINIC ACID"
+  },
+  {
+   "name": "HO3-OH3",
+   "match": [
+    "HO3",
+    "OH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ]
+  },
+  {
+   "name": "OH3-CB3",
+   "match": [
+    "OH3",
+    "CB3"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.41
+   ]
+  },
+  {
+   "name": "HC3-CB3",
+   "match": [
+    "HC3",
+    "CB3"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "HC3-CM3",
+   "match": [
+    "HC3",
+    "CM3"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "HM3-OM3",
+   "match": [
+    "HM3",
+    "OM3"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ]
+  },
+  {
+   "name": "CB3-CM3",
+   "match": [
+    "CB3",
+    "CM3"
+   ],
+   "style": "harmonic",
+   "params": [
+    268,
+    1.529
+   ]
+  },
+  {
+   "name": "OH3-CM3",
+   "match": [
+    "OH3",
+    "CM3"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.41
+   ],
+   "comment": "GLYCEROL"
+  },
+  {
+   "name": "HG2-CG2",
+   "match": [
+    "HG2",
+    "CG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.09
+   ]
+  },
+  {
+   "name": "CG2-CG2",
+   "match": [
+    "CG2",
+    "CG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    268,
+    1.529
+   ]
+  },
+  {
+   "name": "CG2-OH2",
+   "match": [
+    "CG2",
+    "OH2"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.41
+   ]
+  },
+  {
+   "name": "OH2-HO2",
+   "match": [
+    "OH2",
+    "HO2"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.945
+   ],
+   "comment": "ETHYLENE GLYCOL"
+  },
+  {
+   "name": "OY1-HY1",
+   "match": [
+    "OY1",
+    "HY1"
+   ],
+   "style": "harmonic",
+   "params": [
+    553,
+    0.949
+   ]
+  },
+  {
+   "name": "CW1-OY1",
+   "match": [
+    "CW1",
+    "OY1"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.395
+   ]
+  },
+  {
+   "name": "CW1-HW1",
+   "match": [
+    "CW1",
+    "HW1"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.085
+   ]
+  },
+  {
+   "name": "CS1-CW1",
+   "match": [
+    "CS1",
+    "CW1"
+   ],
+   "style": "harmonic",
+   "params": [
+    317,
+    1.521
+   ]
+  },
+  {
+   "name": "CS1-HS1",
+   "match": [
+    "CS1",
+    "HS1"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.0805
+   ]
+  },
+  {
+   "name": "NA1-CS1",
+   "match": [
+    "NA1",
+    "CS1"
+   ],
+   "style": "harmonic",
+   "params": [
+    490,
+    1.516
+   ]
+  },
+  {
+   "name": "CA1-NA1",
+   "match": [
+    "CA1",
+    "NA1"
+   ],
+   "style": "harmonic",
+   "params": [
+    490,
+    1.498
+   ]
+  },
+  {
+   "name": "HA1-CA1",
+   "match": [
+    "HA1",
+    "CA1"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.099
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "H8-N8-H8",
+   "match": [
+    "H8",
+    "N8",
+    "H8"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "N8-C8-N8",
+   "match": [
+    "N8",
+    "C8",
+    "N8"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    114.2
+   ]
+  },
+  {
+   "name": "C8-N8-H8",
+   "match": [
+    "C8",
+    "N8",
+    "H8"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    119.8
+   ]
+  },
+  {
+   "name": "O8-C8-N8",
+   "match": [
+    "O8",
+    "C8",
+    "N8"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    122.9
+   ],
+   "comment": "UREA"
+  },
+  {
+   "name": "CB7-OH7-HO7",
+   "match": [
+    "CB7",
+    "OH7",
+    "HO7"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    113
+   ]
+  },
+  {
+   "name": "CB7-CB7-HB7",
+   "match": [
+    "CB7",
+    "CB7",
+    "HB7"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    120
+   ]
+  },
+  {
+   "name": "CB7-CB7-OH7",
+   "match": [
+    "CB7",
+    "CB7",
+    "OH7"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    120
+   ]
+  },
+  {
+   "name": "CB7-CB7-CB7",
+   "match": [
+    "CB7",
+    "CB7",
+    "CB7"
+   ],
+   "style": "harmonic",
+   "params": [
+    63,
+    120
+   ],
+   "comment": "PHENOL"
+  },
+  {
+   "name": "OH6-CD6-OD6",
+   "match": [
+    "OH6",
+    "CD6",
+    "OD6"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    121
+   ]
+  },
+  {
+   "name": "CD6-OH6-HO6",
+   "match": [
+    "CD6",
+    "OH6",
+    "HO6"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    113
+   ]
+  },
+  {
+   "name": "CD6-CD6-OH6",
+   "match": [
+    "CD6",
+    "CD6",
+    "OH6"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.96,
+    118.03
+   ]
+  },
+  {
+   "name": "CD6-CD6-OD6",
+   "match": [
+    "CD6",
+    "CD6",
+    "OD6"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    121.4
+   ],
+   "comment": "OXALIC ACID"
+  },
+  {
+   "name": "HC5-CT5-HC5",
+   "match": [
+    "HC5",
+    "CT5",
+    "HC5"
+   ],
+   "style": "harmonic",
+   "params": [
+    33,
+    107.8
+   ]
+  },
+  {
+   "name": "CT5-CD5-OH5",
+   "match": [
+    "CT5",
+    "CD5",
+    "OH5"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    108
+   ]
+  },
+  {
+   "name": "CD5-CT5-HC5",
+   "match": [
+    "CD5",
+    "CT5",
+    "HC5"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CD5-CT5-CD5",
+   "match": [
+    "CD5",
+    "CT5",
+    "CD5"
+   ],
+   "style": "harmonic",
+   "params": [
+    63,
+    111.1
+   ]
+  },
+  {
+   "name": "CD5-OH5-HO5",
+   "match": [
+    "CD5",
+    "OH5",
+    "HO5"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    113
+   ]
+  },
+  {
+   "name": "OD5-CD5-CT5",
+   "match": [
+    "OD5",
+    "CD5",
+    "CT5"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120.4
+   ]
+  },
+  {
+   "name": "OD5-CD5-OH5",
+   "match": [
+    "OD5",
+    "CD5",
+    "OH5"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    121
+   ],
+   "comment": "MALONIC ACID"
+  },
+  {
+   "name": "HT4-CT4-HT4",
+   "match": [
+    "HT4",
+    "CT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    33,
+    107.8
+   ]
+  },
+  {
+   "name": "CT4-CD4-OC4",
+   "match": [
+    "CT4",
+    "CD4",
+    "OC4"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120.4
+   ]
+  },
+  {
+   "name": "HF4-CF4-CD4",
+   "match": [
+    "HF4",
+    "CF4",
+    "CD4"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "HF4-CF4-HF4",
+   "match": [
+    "HF4",
+    "CF4",
+    "HF4"
+   ],
+   "style": "harmonic",
+   "params": [
+    33,
+    107.8
+   ]
+  },
+  {
+   "name": "HZ4-CZ4-CF4",
+   "match": [
+    "HZ4",
+    "CZ4",
+    "CF4"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ]
+  },
+  {
+   "name": "HZ4-CZ4-HZ4",
+   "match": [
+    "HZ4",
+    "CZ4",
+    "HZ4"
+   ],
+   "style": "harmonic",
+   "params": [
+    33,
+    107.8
+   ]
+  },
+  {
+   "name": "OB4-CB4-CZ4",
+   "match": [
+    "OB4",
+    "CB4",
+    "CZ4"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120.4
+   ]
+  },
+  {
+   "name": "CF4-CD4-OC4",
+   "match": [
+    "CF4",
+    "CD4",
+    "OC4"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    120.4
+   ]
+  },
+  {
+   "name": "CD4-CT4-HT4",
+   "match": [
+    "CD4",
+    "CT4",
+    "HT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CF4-CD4-CT4",
+   "match": [
+    "CF4",
+    "CD4",
+    "CT4"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    116
+   ]
+  },
+  {
+   "name": "CZ4-CF4-CD4",
+   "match": [
+    "CZ4",
+    "CF4",
+    "CD4"
+   ],
+   "style": "harmonic",
+   "params": [
+    63,
+    111.1
+   ]
+  },
+  {
+   "name": "CZ4-CF4-HF4",
+   "match": [
+    "CZ4",
+    "CF4",
+    "HF4"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ]
+  },
+  {
+   "name": "CB4-CZ4-CF4",
+   "match": [
+    "CB4",
+    "CZ4",
+    "CF4"
+   ],
+   "style": "harmonic",
+   "params": [
+    63,
+    111.1
+   ]
+  },
+  {
+   "name": "CB4-CZ4-HZ4",
+   "match": [
+    "CB4",
+    "CZ4",
+    "HZ4"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "OH4-CB4-CZ4",
+   "match": [
+    "OH4",
+    "CB4",
+    "CZ4"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    108
+   ]
+  },
+  {
+   "name": "OH4-CB4-OB4",
+   "match": [
+    "OH4",
+    "CB4",
+    "OB4"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    121
+   ]
+  },
+  {
+   "name": "CB4-OH4-HO4",
+   "match": [
+    "CB4",
+    "OH4",
+    "HO4"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    113
+   ],
+   "comment": "LEVULINIC ACID"
+  },
+  {
+   "name": "HC3-CM3-OH3",
+   "match": [
+    "HC3",
+    "CM3",
+    "OH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "HC3-CB3-OH3",
+   "match": [
+    "HC3",
+    "CB3",
+    "OH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "HC3-CB3-HC3",
+   "match": [
+    "HC3",
+    "CB3",
+    "HC3"
+   ],
+   "style": "harmonic",
+   "params": [
+    33,
+    107.8
+   ]
+  },
+  {
+   "name": "CB3-CM3-HC3",
+   "match": [
+    "CB3",
+    "CM3",
+    "HC3"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ]
+  },
+  {
+   "name": "CB3-CM3-CB3",
+   "match": [
+    "CB3",
+    "CM3",
+    "CB3"
+   ],
+   "style": "harmonic",
+   "params": [
+    58.35,
+    112.7
+   ]
+  },
+  {
+   "name": "CB3-CM3-OH3",
+   "match": [
+    "CB3",
+    "CM3",
+    "OH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "CM3-OH3-HO3",
+   "match": [
+    "CM3",
+    "OH3",
+    "HO3"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    108.5
+   ]
+  },
+  {
+   "name": "CB3-OH3-HO3",
+   "match": [
+    "CB3",
+    "OH3",
+    "HO3"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    108.5
+   ]
+  },
+  {
+   "name": "CM3-CB3-OH3",
+   "match": [
+    "CM3",
+    "CB3",
+    "OH3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ]
+  },
+  {
+   "name": "CM3-CB3-HC3",
+   "match": [
+    "CM3",
+    "CB3",
+    "HC3"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ]
+  },
+  {
+   "name": "OM3-CM3-HZ3",
+   "match": [
+    "OM3",
+    "CM3",
+    "HZ3"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "CM3-OM3-HM3",
+   "match": [
+    "CM3",
+    "OM3",
+    "HM3"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    108.5
+   ]
+  },
+  {
+   "name": "OM3-CM3-CB3",
+   "match": [
+    "OM3",
+    "CM3",
+    "CB3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    109.5
+   ],
+   "comment": "GLYCEROL"
+  },
+  {
+   "name": "HG2-CG2-HG2",
+   "match": [
+    "HG2",
+    "CG2",
+    "HG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    33,
+    107.8
+   ]
+  },
+  {
+   "name": "CG2-CG2-HG2",
+   "match": [
+    "CG2",
+    "CG2",
+    "HG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ]
+  },
+  {
+   "name": "OH2-CG2-HG2",
+   "match": [
+    "OH2",
+    "CG2",
+    "HG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.5
+   ]
+  },
+  {
+   "name": "OH2-CG2-CG2",
+   "match": [
+    "OH2",
+    "CG2",
+    "CG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    108
+   ]
+  },
+  {
+   "name": "HO2-OH2-CG2",
+   "match": [
+    "HO2",
+    "OH2",
+    "CG2"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    108.5
+   ],
+   "comment": "ETHYLENE GLYCOL"
+  },
+  {
+   "name": "HW1-CW1-HW1",
+   "match": [
+    "HW1",
+    "CW1",
+    "HW1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    107.4
+   ]
+  },
+  {
+   "name": "HS1-CS1-HS1",
+   "match": [
+    "HS1",
+    "CS1",
+    "HS1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    108.6
+   ]
+  },
+  {
+   "name": "CA1-NA1-CA1",
+   "match": [
+    "CA1",
+    "NA1",
+    "CA1"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    108.73
+   ]
+  },
+  {
+   "name": "CW1-OY1-HY1",
+   "match": [
+    "CW1",
+    "OY1",
+    "HY1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    110.9
+   ]
+  },
+  {
+   "name": "HW1-CW1-OY1",
+   "match": [
+    "HW1",
+    "CW1",
+    "OY1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    111.6
+   ]
+  },
+  {
+   "name": "HS1-CS1-CW1",
+   "match": [
+    "HS1",
+    "CS1",
+    "CW1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    109.3
+   ]
+  },
+  {
+   "name": "CS1-CW1-OY1",
+   "match": [
+    "CS1",
+    "CW1",
+    "OY1"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    109.6
+   ]
+  },
+  {
+   "name": "CS1-CW1-HW1",
+   "match": [
+    "CS1",
+    "CW1",
+    "HW1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    108.3
+   ]
+  },
+  {
+   "name": "NA1-CS1-CW1",
+   "match": [
+    "NA1",
+    "CS1",
+    "CW1"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    116.6
+   ]
+  },
+  {
+   "name": "NA1-CS1-HS1",
+   "match": [
+    "NA1",
+    "CS1",
+    "HS1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    106.4
+   ]
+  },
+  {
+   "name": "CA1-NA1-CS1",
+   "match": [
+    "CA1",
+    "NA1",
+    "CS1"
+   ],
+   "style": "harmonic",
+   "params": [
+    51.8,
+    110.2
+   ]
+  },
+  {
+   "name": "HA1-CA1-NA1",
+   "match": [
+    "HA1",
+    "CA1",
+    "NA1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    108.9
+   ]
+  },
+  {
+   "name": "HA1-CA1-HA1",
+   "match": [
+    "HA1",
+    "CA1",
+    "HA1"
+   ],
+   "style": "harmonic",
+   "params": [
+    35,
+    110.01
+   ],
+   "comment": "CHOLINE"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "X-X-NA1-X",
+   "match": [
+    "*",
+    "*",
+    "NA1",
+    "*"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    2,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "H8-N8-C8-N8",
+   "match": [
+    "H8",
+    "N8",
+    "C8",
+    "N8"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    4.9,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "H8-N8-C8-O8",
+   "match": [
+    "H8",
+    "N8",
+    "C8",
+    "O8"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    4.9,
+    0,
+    0
+   ],
+   "comment": "UREA"
+  },
+  {
+   "name": "HB7-CB7-CB7-HB7",
+   "match": [
+    "HB7",
+    "CB7",
+    "CB7",
+    "HB7"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    7.25,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OH7-CB7-CB7-HB7",
+   "match": [
+    "OH7",
+    "CB7",
+    "CB7",
+    "HB7"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    7.25,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OH7-CB7-CB7-CB7",
+   "match": [
+    "OH7",
+    "CB7",
+    "CB7",
+    "CB7"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    7.25,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CB7-CB7-CB7-HB7",
+   "match": [
+    "CB7",
+    "CB7",
+    "CB7",
+    "HB7"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    7.25,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CB7-CB7-CB7-CB7",
+   "match": [
+    "CB7",
+    "CB7",
+    "CB7",
+    "CB7"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    7.25,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CB7-CB7-OH7-HO7",
+   "match": [
+    "CB7",
+    "CB7",
+    "OH7",
+    "HO7"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    1.682,
+    0,
+    0
+   ],
+   "comment": "Phenol"
+  },
+  {
+   "name": "HO6-OH6-CD6-CD6",
+   "match": [
+    "HO6",
+    "OH6",
+    "CD6",
+    "CD6"
+   ],
+   "style": "opls",
+   "params": [
+    3,
+    5.5,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OD6-CD6-CD6-OH6",
+   "match": [
+    "OD6",
+    "CD6",
+    "CD6",
+    "OH6"
+   ],
+   "style": "opls",
+   "params": [
+    1.6,
+    3.2,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OH6-CD6-CD6-OH6",
+   "match": [
+    "OH6",
+    "CD6",
+    "CD6",
+    "OH6"
+   ],
+   "style": "opls",
+   "params": [
+    1.6,
+    3.2,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OD6-CD6-CD6-OD6",
+   "match": [
+    "OD6",
+    "CD6",
+    "CD6",
+    "OD6"
+   ],
+   "style": "opls",
+   "params": [
+    1.6,
+    3.2,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HO6-OH6-CD6-OD6",
+   "match": [
+    "HO6",
+    "OH6",
+    "CD6",
+    "OD6"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    5.5,
+    0,
+    0
+   ],
+   "comment": "OXALIC ACID"
+  },
+  {
+   "name": "OD5-CD5-CT5-CD5",
+   "match": [
+    "OD5",
+    "CD5",
+    "CT5",
+    "CD5"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OD5-CD5-OH5-HO5",
+   "match": [
+    "OD5",
+    "CD5",
+    "OH5",
+    "HO5"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    5.5,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HC5-CT5-CD5-OH5",
+   "match": [
+    "HC5",
+    "CT5",
+    "CD5",
+    "OH5"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CD5-CT5-CD5-OH5",
+   "match": [
+    "CD5",
+    "CT5",
+    "CD5",
+    "OH5"
+   ],
+   "style": "opls",
+   "params": [
+    1,
+    0.546,
+    0.45,
+    0
+   ]
+  },
+  {
+   "name": "HO5-OH5-CD5-CT5",
+   "match": [
+    "HO5",
+    "OH5",
+    "CD5",
+    "CT5"
+   ],
+   "style": "opls",
+   "params": [
+    1.5,
+    5.5,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HC5-CT5-CD5-OD5",
+   "match": [
+    "HC5",
+    "CT5",
+    "CD5",
+    "OD5"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "comment": "MALONIC ACID"
+  },
+  {
+   "name": "OC4-CD4-CT4-HT4",
+   "match": [
+    "OC4",
+    "CD4",
+    "CT4",
+    "HT4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OC4-CD4-CF4-HF4",
+   "match": [
+    "OC4",
+    "CD4",
+    "CF4",
+    "HF4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CT4-CD4-CF4-HF4",
+   "match": [
+    "CT4",
+    "CD4",
+    "CF4",
+    "HF4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.275,
+    0
+   ]
+  },
+  {
+   "name": "CD4-CF4-CZ4-HZ4",
+   "match": [
+    "CD4",
+    "CF4",
+    "CZ4",
+    "HZ4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    -0.1,
+    0
+   ]
+  },
+  {
+   "name": "HF4-CF4-CZ4-HZ4",
+   "match": [
+    "HF4",
+    "CF4",
+    "CZ4",
+    "HZ4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.3,
+    0
+   ]
+  },
+  {
+   "name": "CF4-CZ4-CB4-OH4",
+   "match": [
+    "CF4",
+    "CZ4",
+    "CB4",
+    "OH4"
+   ],
+   "style": "opls",
+   "params": [
+    1,
+    0.546,
+    0.45,
+    0
+   ]
+  },
+  {
+   "name": "HZ4-CZ4-CB4-OH4",
+   "match": [
+    "HZ4",
+    "CZ4",
+    "CB4",
+    "OH4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OC4-CD4-CF4-CZ4",
+   "match": [
+    "OC4",
+    "CD4",
+    "CF4",
+    "CZ4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HT4-CT4-CD4-CF4",
+   "match": [
+    "HT4",
+    "CT4",
+    "CD4",
+    "CF4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.275,
+    0
+   ]
+  },
+  {
+   "name": "CT4-CD4-CF4-CZ4",
+   "match": [
+    "CT4",
+    "CD4",
+    "CF4",
+    "CZ4"
+   ],
+   "style": "opls",
+   "params": [
+    1.454,
+    -0.144,
+    -0.775,
+    0
+   ]
+  },
+  {
+   "name": "CD4-CF4-CZ4-CB4",
+   "match": [
+    "CD4",
+    "CF4",
+    "CZ4",
+    "CB4"
+   ],
+   "style": "opls",
+   "params": [
+    -0.55,
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HF4-CF4-CZ4-CB4",
+   "match": [
+    "HF4",
+    "CF4",
+    "CZ4",
+    "CB4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    -0.1,
+    0
+   ]
+  },
+  {
+   "name": "CF4-CZ4-CB4-OB4",
+   "match": [
+    "CF4",
+    "CZ4",
+    "CB4",
+    "OB4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HZ4-CZ4-CB4-OB4",
+   "match": [
+    "HZ4",
+    "CZ4",
+    "CB4",
+    "OB4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CZ4-CB4-OH4-HO4",
+   "match": [
+    "CZ4",
+    "CB4",
+    "OH4",
+    "HO4"
+   ],
+   "style": "opls",
+   "params": [
+    1.5,
+    5.5,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "OB4-CB4-OH4-HO4",
+   "match": [
+    "OB4",
+    "CB4",
+    "OH4",
+    "HO4"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    5.5,
+    0,
+    0
+   ],
+   "comment": "LEVULINIC ACID"
+  },
+  {
+   "name": "HO3-OH3-CB3-HC3",
+   "match": [
+    "HO3",
+    "OH3",
+    "CB3",
+    "HC3"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.352,
+    0
+   ]
+  },
+  {
+   "name": "OH3-CB3-CM3-HC3",
+   "match": [
+    "OH3",
+    "CB3",
+    "CM3",
+    "HC3"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.468,
+    0
+   ]
+  },
+  {
+   "name": "HC3-CB3-CM3-HC3",
+   "match": [
+    "HC3",
+    "CB3",
+    "CM3",
+    "HC3"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.3,
+    0
+   ]
+  },
+  {
+   "name": "OH3-CB3-CM3-CB3",
+   "match": [
+    "OH3",
+    "CB3",
+    "CM3",
+    "CB3"
+   ],
+   "style": "opls",
+   "params": [
+    -1.552,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HC3-CB3-CM3-CB3",
+   "match": [
+    "HC3",
+    "CB3",
+    "CM3",
+    "CB3"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.3,
+    0
+   ]
+  },
+  {
+   "name": "HO3-OH3-CB3-CM3",
+   "match": [
+    "HO3",
+    "OH3",
+    "CB3",
+    "CM3"
+   ],
+   "style": "opls",
+   "params": [
+    -0.356,
+    -0.174,
+    0.492,
+    0
+   ]
+  },
+  {
+   "name": "OH3-CB3-CM3-OH3",
+   "match": [
+    "OH3",
+    "CB3",
+    "CM3",
+    "OH3"
+   ],
+   "style": "opls",
+   "params": [
+    12.234,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HC3-CB3-CM3-OH3",
+   "match": [
+    "HC3",
+    "CB3",
+    "CM3",
+    "OH3"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.468,
+    0
+   ]
+  },
+  {
+   "name": "HC3-CM3-OH3-HO3",
+   "match": [
+    "HC3",
+    "CM3",
+    "OH3",
+    "HO3"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.352,
+    0
+   ]
+  },
+  {
+   "name": "HO3-OH3-CM3-CB3",
+   "match": [
+    "HO3",
+    "OH3",
+    "CM3",
+    "CB3"
+   ],
+   "style": "opls",
+   "params": [
+    -0.356,
+    -0.174,
+    0.492,
+    0
+   ],
+   "comment": "GLYCEROL"
+  },
+  {
+   "name": "HG2-CG2-OH2-HO2",
+   "match": [
+    "HG2",
+    "CG2",
+    "OH2",
+    "HO2"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HG2-CG2-CG2-OH2",
+   "match": [
+    "HG2",
+    "CG2",
+    "CG2",
+    "OH2"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HG2-CG2-CG2-HG2",
+   "match": [
+    "HG2",
+    "CG2",
+    "CG2",
+    "HG2"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "CG2-CG2-OH2-HO2",
+   "match": [
+    "CG2",
+    "CG2",
+    "OH2",
+    "HO2"
+   ],
+   "style": "opls",
+   "params": [
+    0.413,
+    -0.754,
+    1.028,
+    0
+   ]
+  },
+  {
+   "name": "OH2-CG2-CG2-OH2",
+   "match": [
+    "OH2",
+    "CG2",
+    "CG2",
+    "OH2"
+   ],
+   "style": "opls",
+   "params": [
+    3.887,
+    -1.192,
+    3.206,
+    0
+   ],
+   "comment": "ETHYLENE GLYCOL"
+  },
+  {
+   "name": "HY1-OY1-CW1-HW1",
+   "match": [
+    "HY1",
+    "OY1",
+    "CW1",
+    "HW1"
+   ],
+   "style": "opls",
+   "params": [
+    -3,
+    1,
+    -2,
+    0
+   ]
+  },
+  {
+   "name": "HY1-OY1-CW1-CS1",
+   "match": [
+    "HY1",
+    "OY1",
+    "CW1",
+    "CS1"
+   ],
+   "style": "opls",
+   "params": [
+    -0.356,
+    -0.174,
+    0.35,
+    0
+   ]
+  },
+  {
+   "name": "HW1-CW1-CS1-HS1",
+   "match": [
+    "HW1",
+    "CW1",
+    "CS1",
+    "HS1"
+   ],
+   "style": "opls",
+   "params": [
+    6,
+    -3,
+    2,
+    0
+   ]
+  },
+  {
+   "name": "HW1-CW1-CS1-NA1",
+   "match": [
+    "HW1",
+    "CW1",
+    "CS1",
+    "NA1"
+   ],
+   "style": "opls",
+   "params": [
+    -6,
+    -7,
+    0.75,
+    0
+   ]
+  },
+  {
+   "name": "OY1-CW1-CS1-HS1",
+   "match": [
+    "OY1",
+    "CW1",
+    "CS1",
+    "HS1"
+   ],
+   "style": "opls",
+   "params": [
+    -0.5,
+    -2.5,
+    0.25,
+    0
+   ]
+  },
+  {
+   "name": "OY1-CW1-CS1-NA1",
+   "match": [
+    "OY1",
+    "CW1",
+    "CS1",
+    "NA1"
+   ],
+   "style": "opls",
+   "params": [
+    -6,
+    -5,
+    3.2,
+    0
+   ]
+  },
+  {
+   "name": "HS1-CS1-NA1-CA1",
+   "match": [
+    "HS1",
+    "CS1",
+    "NA1",
+    "CA1"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    1,
+    0.7,
+    0
+   ]
+  },
+  {
+   "name": "CS1-NA1-CA1-HA1",
+   "match": [
+    "CS1",
+    "NA1",
+    "CA1",
+    "HA1"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.94,
+    0
+   ]
+  },
+  {
+   "name": "CA1-NA1-CA1-HA1",
+   "match": [
+    "CA1",
+    "NA1",
+    "CA1",
+    "HA1"
+   ],
+   "style": "opls",
+   "params": [
+    0,
+    0,
+    0.825,
+    0
+   ]
+  },
+  {
+   "name": "CW1-CS1-NA1-CA1",
+   "match": [
+    "CW1",
+    "CS1",
+    "NA1",
+    "CA1"
+   ],
+   "style": "opls",
+   "params": [
+    0.1,
+    0.55,
+    0.65,
+    0
+   ],
+   "comment": "CHOLINE"
+  }
+ ],
+ "impropers": [
+  {
+   "name": "X-X-N8-X",
+   "match": [
+    "*",
+    "*",
+    "N8",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    2.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-C8-X",
+   "match": [
+    "*",
+    "*",
+    "C8",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-CD6-X",
+   "match": [
+    "*",
+    "*",
+    "CD6",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-CD5-X",
+   "match": [
+    "*",
+    "*",
+    "CD5",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-CD4-X",
+   "match": [
+    "*",
+    "*",
+    "CD4",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "X-X-CB4-X",
+   "match": [
+    "*",
+    "*",
+    "CB4",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  }
+ ],
+ "notes": [
+  "converted from DL_FIELD by CAPS (OPLS_DES, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "2018",
+ "status": "converted",
+ "validation": "same forms as OPLS 2005; not yet compared with DL_FIELD."
+}

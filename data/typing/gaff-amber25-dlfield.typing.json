@@ -1,0 +1,567 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "GAFF2 (AmberTools 25, DL_FIELD)",
+ "description": "GAFF2 atom types following antechamber's ATOMTYPE_GFF2.DEF in order (first matching rule wins); {AR1}..{AR5} are antechamber's ring classes, pairs its conjugation pattern.",
+ "ordered": true,
+ "pairs": [
+  [
+   "cc",
+   "cd"
+  ],
+  [
+   "ce",
+   "cf"
+  ],
+  [
+   "cp",
+   "cq"
+  ],
+  [
+   "nc",
+   "nd"
+  ],
+  [
+   "ne",
+   "nf"
+  ],
+  [
+   "pc",
+   "pd"
+  ],
+  [
+   "pe",
+   "pf"
+  ]
+ ],
+ "rules": [
+  {
+   "type": "ow",
+   "smarts": "[OX2H2]",
+   "description": "water O (GAFF / TIP3P)"
+  },
+  {
+   "type": "hw",
+   "smarts": "[H][OX2H2]",
+   "description": "water H"
+  },
+  {
+   "type": "cx",
+   "smarts": "[#6X4;r3]",
+   "description": "sp3 C in a 3-ring"
+  },
+  {
+   "type": "cy",
+   "smarts": "[#6X4;r4]",
+   "description": "sp3 C in a 4-ring"
+  },
+  {
+   "type": "c5",
+   "smarts": "[#6X4;r5]",
+   "description": "sp3 C in a 5-ring"
+  },
+  {
+   "type": "c6",
+   "smarts": "[#6X4;r6]",
+   "description": "sp3 C in a 6-ring"
+  },
+  {
+   "type": "c3",
+   "smarts": "[#6X4]",
+   "description": "sp3 C"
+  },
+  {
+   "type": "cs",
+   "smarts": "[#6X3]~[#16X1]",
+   "description": "C=S"
+  },
+  {
+   "type": "c",
+   "smarts": "[#6X3]~[#8X1]",
+   "description": "C=O"
+  },
+  {
+   "type": "cz",
+   "smarts": "[#6X3](~[#7X3])(~[#7X3])~[#7X3]",
+   "description": "guanidinium C"
+  },
+  {
+   "type": "cp",
+   "smarts": "[#6X3;{AR1};R1](-!@[*;{AR1}])",
+   "description": "aromatic C at a single bond between aromatic rings (biphenyl)"
+  },
+  {
+   "type": "ca",
+   "smarts": "[#6X3;{AR1}]",
+   "description": "pure aromatic C"
+  },
+  {
+   "type": "cc",
+   "smarts": "[#6X3;{AR2},{AR3}]",
+   "description": "sp2 C in a conjugated ring (with cd)"
+  },
+  {
+   "type": "ce",
+   "smarts": "[#6X3;$(*=*);$(*-[#6X3,#6X2,#7X2,#15X2]),$(*-[#16X3,#16X4,#15X3,#15X4;$(*=*)])]",
+   "description": "sp2 C in a conjugated chain (with cf)"
+  },
+  {
+   "type": "cu",
+   "smarts": "[#6X3;r3]",
+   "description": "sp2 C in a 3-ring"
+  },
+  {
+   "type": "cv",
+   "smarts": "[#6X3;r4]",
+   "description": "sp2 C in a 4-ring"
+  },
+  {
+   "type": "c2",
+   "smarts": "[#6X3]",
+   "description": "sp2 C"
+  },
+  {
+   "type": "cg",
+   "smarts": "[#6X2;$(*#*);$(*-[#6X2,#6X3,#7X1,#7X2,#15X2])]",
+   "description": "sp C conjugated (with ch)"
+  },
+  {
+   "type": "c1",
+   "smarts": "[#6X2]",
+   "description": "sp C"
+  },
+  {
+   "type": "c1",
+   "smarts": "[#6X1]",
+   "description": "sp C"
+  },
+  {
+   "type": "hn",
+   "smarts": "[H][#7]"
+  },
+  {
+   "type": "ho",
+   "smarts": "[H][#8]"
+  },
+  {
+   "type": "hs",
+   "smarts": "[H][#16]"
+  },
+  {
+   "type": "hp",
+   "smarts": "[H][#15]"
+  },
+  {
+   "type": "hx",
+   "smarts": "[H][#6][#7X4]",
+   "description": "H on a C next to N+"
+  },
+  {
+   "type": "h3",
+   "smarts": "[H][#6X4;$(*([#7,#8,#9,#16,#17,#35,#53])([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53]);!$(*([#7,#8,#9,#16,#17,#35,#53])([#7,#8,#9,#16,#17,#35,#53])([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]",
+   "description": "H on sp3 C with 3 electron-withdrawing neighbours"
+  },
+  {
+   "type": "h2",
+   "smarts": "[H][#6X4;$(*([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53]);!$(*([#7,#8,#9,#16,#17,#35,#53])([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]"
+  },
+  {
+   "type": "h1",
+   "smarts": "[H][#6X4;$(*[#7,#8,#9,#16,#17,#35,#53]);!$(*([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]"
+  },
+  {
+   "type": "hc",
+   "smarts": "[H][#6X4]",
+   "description": "H on sp3 C"
+  },
+  {
+   "type": "h5",
+   "smarts": "[H][#6X3;$(*([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53]);!$(*([#7,#8,#9,#16,#17,#35,#53])([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]",
+   "description": "H on sp2 C with 2 electron-withdrawing neighbours"
+  },
+  {
+   "type": "h4",
+   "smarts": "[H][#6X3;$(*[#7,#8,#9,#16,#17,#35,#53]);!$(*([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]"
+  },
+  {
+   "type": "ha",
+   "smarts": "[H]",
+   "description": "H on sp2 / aromatic C"
+  },
+  {
+   "type": "f",
+   "smarts": "[F]"
+  },
+  {
+   "type": "cl",
+   "smarts": "[Cl]"
+  },
+  {
+   "type": "br",
+   "smarts": "[Br]"
+  },
+  {
+   "type": "i",
+   "smarts": "[I]"
+  },
+  {
+   "type": "pb",
+   "smarts": "[#15X2;{AR1}]"
+  },
+  {
+   "type": "pc",
+   "smarts": "[#15X2;{AR2},{AR3}]"
+  },
+  {
+   "type": "pe",
+   "smarts": "[#15X2;$(*=*);$(*-[#6X3,#6X2,#8X1,#16X1,#7X2,#15X2]),$(*-[#16X3,#16X4,#15X3,#15X4;$(*=*)])]"
+  },
+  {
+   "type": "p2",
+   "smarts": "[#15X2]"
+  },
+  {
+   "type": "p2",
+   "smarts": "[#15X1]"
+  },
+  {
+   "type": "px",
+   "smarts": "[#15X3;$(*=*);$(*-,:[#7X2,#15X2,#6X3]),$(*-,:[#16X3,#16X4,#15X3,#15X4;$(*=*)])]"
+  },
+  {
+   "type": "p4",
+   "smarts": "[#15X3;$(*=*);$(*~[#8X1,#16X1])]"
+  },
+  {
+   "type": "p3",
+   "smarts": "[#15X3]"
+  },
+  {
+   "type": "py",
+   "smarts": "[#15X4;$(*=*);$(*-,:[#7X2,#15X2,#6X3]),$(*-,:[#16X3,#16X4,#15X3,#15X4;$(*=*)])]"
+  },
+  {
+   "type": "p5",
+   "smarts": "[#15X4]"
+  },
+  {
+   "type": "p5",
+   "smarts": "[#15X5]"
+  },
+  {
+   "type": "p5",
+   "smarts": "[#15X6]"
+  },
+  {
+   "type": "ns",
+   "smarts": "[#7X3H1;$(*[#6X3]~[#8X1,#16X1])]",
+   "description": "amide N with 1 H"
+  },
+  {
+   "type": "nt",
+   "smarts": "[#7X3H2;$(*[#6X3]~[#8X1,#16X1])]",
+   "description": "amide N with 2 H"
+  },
+  {
+   "type": "ni",
+   "smarts": "[#7X3;r3;$(*[#6X3]~[#8X1,#16X1])]"
+  },
+  {
+   "type": "nj",
+   "smarts": "[#7X3;r4;$(*[#6X3]~[#8X1,#16X1])]"
+  },
+  {
+   "type": "n",
+   "smarts": "[#7X3;$(*[#6X3]~[#8X1,#16X1])]",
+   "description": "amide N"
+  },
+  {
+   "type": "nk",
+   "smarts": "[#7X4;r3]"
+  },
+  {
+   "type": "nl",
+   "smarts": "[#7X4;r4]"
+  },
+  {
+   "type": "nx",
+   "smarts": "[#7X4H1]"
+  },
+  {
+   "type": "ny",
+   "smarts": "[#7X4H2]"
+  },
+  {
+   "type": "nz",
+   "smarts": "[#7X4H3]"
+  },
+  {
+   "type": "n+",
+   "smarts": "[#7X4H4]"
+  },
+  {
+   "type": "n4",
+   "smarts": "[#7X4]",
+   "description": "sp3 N with 4 connections"
+  },
+  {
+   "type": "no",
+   "smarts": "[#7X3](~[#8X1])~[#8X1]",
+   "description": "nitro N"
+  },
+  {
+   "type": "na",
+   "smarts": "[#7X3;{AR1},{AR2},{AR3}]",
+   "description": "N with 3 connections in a planar ring"
+  },
+  {
+   "type": "nu",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}]);H1]",
+   "description": "amine N on an aromatic / conjugated atom, 1 H"
+  },
+  {
+   "type": "nu",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)]);H1]",
+   "description": "amine N on an aromatic / conjugated atom, 1 H"
+  },
+  {
+   "type": "nu",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)]);H1]",
+   "description": "amine N on an aromatic / conjugated atom, 1 H"
+  },
+  {
+   "type": "nu",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)]);H1]",
+   "description": "amine N on an aromatic / conjugated atom, 1 H"
+  },
+  {
+   "type": "nv",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}]);H2]",
+   "description": "same, 2 H"
+  },
+  {
+   "type": "nv",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)]);H2]",
+   "description": "same, 2 H"
+  },
+  {
+   "type": "nv",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)]);H2]",
+   "description": "same, 2 H"
+  },
+  {
+   "type": "nv",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)]);H2]",
+   "description": "same, 2 H"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)]);r3]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)]);r4]"
+  },
+  {
+   "type": "nh",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}])]",
+   "description": "amine N on an aromatic / conjugated atom"
+  },
+  {
+   "type": "nh",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)])]",
+   "description": "amine N on an aromatic / conjugated atom"
+  },
+  {
+   "type": "nh",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)])]",
+   "description": "amine N on an aromatic / conjugated atom"
+  },
+  {
+   "type": "nh",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)])]",
+   "description": "amine N on an aromatic / conjugated atom"
+  },
+  {
+   "type": "np",
+   "smarts": "[#7X3H0;r3]"
+  },
+  {
+   "type": "nq",
+   "smarts": "[#7X3H0;r4]"
+  },
+  {
+   "type": "n5",
+   "smarts": "[#7X3H1;r3]"
+  },
+  {
+   "type": "n6",
+   "smarts": "[#7X3H1;r4]"
+  },
+  {
+   "type": "n7",
+   "smarts": "[#7X3H1]",
+   "description": "sp3 amine N with 1 H"
+  },
+  {
+   "type": "n8",
+   "smarts": "[#7X3H2]",
+   "description": "with 2 H"
+  },
+  {
+   "type": "n9",
+   "smarts": "[#7X3H3]",
+   "description": "ammonia"
+  },
+  {
+   "type": "n3",
+   "smarts": "[#7X3]",
+   "description": "sp3 N"
+  },
+  {
+   "type": "nb",
+   "smarts": "[#7X2;{AR1}]",
+   "description": "pure aromatic N"
+  },
+  {
+   "type": "nc",
+   "smarts": "[#7X2;{AR2},{AR3}]",
+   "description": "sp2 N in a conjugated ring (with nd)"
+  },
+  {
+   "type": "ne",
+   "smarts": "[#7X2;$(*=*);$(*-[#6X3,#6X2,#8X1,#16X1,#7X2,#15X2]),$(*-[#16X3,#16X4,#15X3,#15X4;$(*=*)])]",
+   "description": "sp2 N in a conjugated chain (with nf)"
+  },
+  {
+   "type": "n1",
+   "smarts": "[#7X2;$(*(=*)=*)]",
+   "description": "sp N"
+  },
+  {
+   "type": "n1",
+   "smarts": "[#7X2;$(*#*)]",
+   "description": "sp N"
+  },
+  {
+   "type": "n1",
+   "smarts": "[#7X1]",
+   "description": "sp N"
+  },
+  {
+   "type": "n2",
+   "smarts": "[#7X2]",
+   "description": "sp2 N"
+  },
+  {
+   "type": "o",
+   "smarts": "[#8X1]",
+   "description": "O with one connection"
+  },
+  {
+   "type": "oh",
+   "smarts": "[#8X2;H1,H2]",
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "oh",
+   "smarts": "[#8X3;H1,H2,H3]",
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "op",
+   "smarts": "[#8X2;r3]"
+  },
+  {
+   "type": "oq",
+   "smarts": "[#8X2;r4]"
+  },
+  {
+   "type": "os",
+   "smarts": "[#8X2]",
+   "description": "ether / ester O"
+  },
+  {
+   "type": "os",
+   "smarts": "[#8X3]",
+   "description": "ether / ester O"
+  },
+  {
+   "type": "os",
+   "smarts": "[#8]",
+   "description": "ether / ester O"
+  },
+  {
+   "type": "s",
+   "smarts": "[#16X1]"
+  },
+  {
+   "type": "s2",
+   "smarts": "[#16X2;$(*=*),$(*#*)]"
+  },
+  {
+   "type": "sh",
+   "smarts": "[#16X2;H1,H2]"
+  },
+  {
+   "type": "sp",
+   "smarts": "[#16X2;r3]"
+  },
+  {
+   "type": "sq",
+   "smarts": "[#16X2;r4]"
+  },
+  {
+   "type": "ss",
+   "smarts": "[#16X2]"
+  },
+  {
+   "type": "sx",
+   "smarts": "[#16X3;$(*=*);$(*-,:[#7X2,#15X2,#6X3]),$(*-,:[#16X3,#16X4,#15X3,#15X4;$(*=*)])]"
+  },
+  {
+   "type": "s4",
+   "smarts": "[#16X3]"
+  },
+  {
+   "type": "sy",
+   "smarts": "[#16X4;$(*=*);$(*-,:[#7X2,#15X2,#6X3]),$(*-,:[#16X3,#16X4,#15X3,#15X4;$(*=*)])]"
+  },
+  {
+   "type": "s6",
+   "smarts": "[#16X4]"
+  },
+  {
+   "type": "s6",
+   "smarts": "[#16X5]"
+  },
+  {
+   "type": "s6",
+   "smarts": "[#16X6]"
+  }
+ ]
+}

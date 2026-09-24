@@ -1,0 +1,757 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Miscellaneous (DL_FIELD)",
+ "source": "DL_FIELD 4.13: MISC_FF.par",
+ "references": [
+  "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)",
+  "C. W. Yong, DL_FIELD - a force field and model development tool for DL_POLY, STFC Daresbury Laboratory"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "C1",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_alkane#1"
+   ]
+  },
+  {
+   "name": "Cp1",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "angle": "C1",
+    "bond": "C1",
+    "vdw": "C1"
+   },
+   "aliases": [
+    "Cp_alkane#1"
+   ]
+  },
+  {
+   "name": "Cs1",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "angle": "C1",
+    "bond": "C1",
+    "vdw": "C1"
+   },
+   "aliases": [
+    "Cs_alkane#1"
+   ]
+  },
+  {
+   "name": "Ct1",
+   "element": "C",
+   "mass": 12.0115,
+   "equivalence": {
+    "angle": "C1",
+    "bond": "C1",
+    "vdw": "C1"
+   },
+   "aliases": [
+    "Ct_alkane#1"
+   ]
+  },
+  {
+   "name": "H1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#1"
+   ]
+  },
+  {
+   "name": "C2",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cp_alkane#2"
+   ]
+  },
+  {
+   "name": "H2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane#2"
+   ]
+  },
+  {
+   "name": "O2",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_alcohol#2"
+   ]
+  },
+  {
+   "name": "HO2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_alcohol#2"
+   ]
+  },
+  {
+   "name": "C3",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C_trihaloalkane#3"
+   ]
+  },
+  {
+   "name": "H3",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_trihaloalkane#3"
+   ]
+  },
+  {
+   "name": "Cl3",
+   "element": "Cl",
+   "mass": 35.453,
+   "aliases": [
+    "ClC_trihaloalkane#3"
+   ]
+  },
+  {
+   "name": "CT",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "CF_trihaloalkane",
+    "CF_monohaloalkane"
+   ]
+  },
+  {
+   "name": "F",
+   "element": "F",
+   "mass": 18.998,
+   "aliases": [
+    "FC_monohaloalkane",
+    "FC_trihaloalkane"
+   ]
+  },
+  {
+   "name": "HC",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_monohaloalkane"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C1-H1",
+   "match": [
+    "C1",
+    "H1"
+   ],
+   "params": [
+    0.0702586946,
+    2.797515117
+   ]
+  },
+  {
+   "name": "C1-C1",
+   "match": [
+    "C1"
+   ],
+   "params": [
+    0.09590575605,
+    3.20704151
+   ]
+  },
+  {
+   "name": "H1-H1",
+   "match": [
+    "H1"
+   ],
+   "params": [
+    0.05912971782,
+    2.405416749
+   ]
+  },
+  {
+   "name": "H2-H2",
+   "match": [
+    "H2"
+   ],
+   "params": [
+    0.03805066922,
+    2.45
+   ]
+  },
+  {
+   "name": "C2-H2",
+   "match": [
+    "C2",
+    "H2"
+   ],
+   "params": [
+    0.0779459847,
+    2.92
+   ]
+  },
+  {
+   "name": "O2-H2",
+   "match": [
+    "O2",
+    "H2"
+   ],
+   "params": [
+    0.09316610899,
+    2.65
+   ]
+  },
+  {
+   "name": "C2-C2",
+   "match": [
+    "C2"
+   ],
+   "params": [
+    0.160043021,
+    3.475
+   ]
+  },
+  {
+   "name": "O2-C2",
+   "match": [
+    "O2",
+    "C2"
+   ],
+   "params": [
+    0.1909445507,
+    3.15
+   ]
+  },
+  {
+   "name": "O2-O2",
+   "match": [
+    "O2"
+   ],
+   "params": [
+    0.2278422562,
+    2.86
+   ]
+  },
+  {
+   "name": "HO2-HO2",
+   "match": [
+    "HO2"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HO2-C2",
+   "match": [
+    "HO2",
+    "C2"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HO2-O2",
+   "match": [
+    "HO2",
+    "O2"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HO2-H2",
+   "match": [
+    "HO2",
+    "H2"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "C3-C3",
+   "match": [
+    "C3"
+   ],
+   "params": [
+    0.05138814532,
+    3.75
+   ]
+  },
+  {
+   "name": "C3-H3",
+   "match": [
+    "C3",
+    "H3"
+   ],
+   "params": [
+    0.05311615679,
+    3.36
+   ]
+  },
+  {
+   "name": "C3-Cl3",
+   "match": [
+    "C3",
+    "Cl3"
+   ],
+   "params": [
+    0.11058413,
+    3.79
+   ]
+  },
+  {
+   "name": "H3-Cl3",
+   "match": [
+    "H3",
+    "Cl3"
+   ],
+   "params": [
+    0.1143197897,
+    3.39
+   ]
+  },
+  {
+   "name": "Cl3-Cl3",
+   "match": [
+    "Cl3"
+   ],
+   "params": [
+    0.2380580784,
+    3.82
+   ]
+  },
+  {
+   "name": "F-X",
+   "match": [
+    "F"
+   ],
+   "params": [
+    0.04868642447,
+    2.92
+   ]
+  },
+  {
+   "name": "CT-X",
+   "match": [
+    "CT"
+   ],
+   "params": [
+    0.09339866157,
+    3.6
+   ]
+  },
+  {
+   "name": "HC-X",
+   "match": [
+    "HC"
+   ],
+   "params": [
+    0.01987213193,
+    2.5
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "CT-HC",
+   "match": [
+    "CT",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    1195.028681,
+    1.09
+   ]
+  },
+  {
+   "name": "CT-CT",
+   "match": [
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    1195.028681,
+    1.529
+   ]
+  },
+  {
+   "name": "CT-F",
+   "match": [
+    "CT",
+    "F"
+   ],
+   "style": "harmonic",
+   "params": [
+    1195.028681,
+    1.36
+   ]
+  },
+  {
+   "name": "C3-Cl3",
+   "match": [
+    "C3",
+    "Cl3"
+   ],
+   "style": "harmonic",
+   "params": [
+    314.2184512,
+    1.761
+   ]
+  },
+  {
+   "name": "C3-H3",
+   "match": [
+    "C3",
+    "H3"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.8544455,
+    1.105
+   ]
+  },
+  {
+   "name": "O2-HO2",
+   "match": [
+    "O2",
+    "HO2"
+   ],
+   "style": "harmonic",
+   "params": [
+    541.5858031,
+    0.945
+   ]
+  },
+  {
+   "name": "C2-O2",
+   "match": [
+    "C2",
+    "O2"
+   ],
+   "style": "harmonic",
+   "params": [
+    384.3104685,
+    1.42
+   ]
+  },
+  {
+   "name": "C2-H2",
+   "match": [
+    "C2",
+    "H2"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.8413002,
+    1.105
+   ]
+  },
+  {
+   "name": "C1-H1",
+   "match": [
+    "C1",
+    "H1"
+   ],
+   "style": "harmonic",
+   "params": [
+    357.3135755,
+    1.045
+   ]
+  },
+  {
+   "name": "C1-C1",
+   "match": [
+    "C1",
+    "C1"
+   ],
+   "style": "harmonic",
+   "params": [
+    691.9216061,
+    1.405
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "F-CT-F",
+   "match": [
+    "F",
+    "CT",
+    "F"
+   ],
+   "style": "harmonic",
+   "params": [
+    77.07612333,
+    109.1
+   ]
+  },
+  {
+   "name": "HC-CT-F",
+   "match": [
+    "HC",
+    "CT",
+    "F"
+   ],
+   "style": "harmonic",
+   "params": [
+    40.03955545,
+    107
+   ]
+  },
+  {
+   "name": "HC-CT-HC",
+   "match": [
+    "HC",
+    "CT",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.03250478,
+    107.8
+   ]
+  },
+  {
+   "name": "CT-CT-F",
+   "match": [
+    "CT",
+    "CT",
+    "F"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.04935468,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-CT-HC",
+   "match": [
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.53704589,
+    110.7
+   ]
+  },
+  {
+   "name": "H3-C3-Cl3",
+   "match": [
+    "H3",
+    "C3",
+    "Cl3"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.00298757,
+    107.1
+   ]
+  },
+  {
+   "name": "Cl3-C3-Cl3",
+   "match": [
+    "Cl3",
+    "C3",
+    "Cl3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.00215105,
+    109.5
+   ]
+  },
+  {
+   "name": "H2-C2-H2",
+   "match": [
+    "H2",
+    "C2",
+    "H2"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.73374761,
+    108.38
+   ]
+  },
+  {
+   "name": "H2-C2-O2",
+   "match": [
+    "H2",
+    "C2",
+    "O2"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.41778203,
+    106.9
+   ]
+  },
+  {
+   "name": "C2-O2-HO2",
+   "match": [
+    "C2",
+    "O2",
+    "HO2"
+   ],
+   "style": "harmonic",
+   "params": [
+    64.5709847,
+    108.32
+   ]
+  },
+  {
+   "name": "H1-C1-H1",
+   "match": [
+    "H1",
+    "C1",
+    "H1"
+   ],
+   "style": "harmonic",
+   "params": [
+    39.07743786,
+    109.47
+   ]
+  },
+  {
+   "name": "H1-C1-C1",
+   "match": [
+    "H1",
+    "C1",
+    "C1"
+   ],
+   "style": "harmonic",
+   "params": [
+    39.07743786,
+    109.47
+   ]
+  },
+  {
+   "name": "C1-C1-C1",
+   "match": [
+    "C1",
+    "C1",
+    "C1"
+   ],
+   "style": "harmonic",
+   "params": [
+    39.07743786,
+    109.47
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "HC-CT-CT-F",
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "F"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -0.04632050669,
+    1,
+    0,
+    0.009894837476,
+    2,
+    180,
+    1.057838193,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "F-CT-CT-F",
+   "match": [
+    "F",
+    "CT",
+    "CT",
+    "F"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.02210325048,
+    1,
+    0,
+    -0.02434273423,
+    2,
+    180,
+    1.063320985,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "H2-C2-O2-HO2",
+   "match": [
+    "H2",
+    "C2",
+    "O2",
+    "HO2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1757170172,
+    3,
+    0
+   ]
+  }
+ ],
+ "impropers": [],
+ "notes": [
+  "converted from DL_FIELD by CAPS (misc_ff, unit kJ/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "converted",
+ "validation": "converted; DL_FIELD cannot write this scheme for LAMMPS and has no buildable examples."
+}

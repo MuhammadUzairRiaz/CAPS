@@ -1,0 +1,334 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CVFF (DL_FIELD)",
+ "description": "SMARTS rules giving the CVFF atom types as DL_FIELD's CVFF library assigns them. Among matching rules the highest priority wins; generic element rules have priority 0.",
+ "rules": [
+  {
+   "type": "h",
+   "smarts": "[H][#6,#14,#1]",
+   "description": "H on C / Si"
+  },
+  {
+   "type": "hn",
+   "smarts": "[H][#7]",
+   "description": "H on N"
+  },
+  {
+   "type": "ho",
+   "smarts": "[H][#8]",
+   "description": "H on O"
+  },
+  {
+   "type": "hs",
+   "smarts": "[H][#16]",
+   "description": "H on S"
+  },
+  {
+   "type": "h*",
+   "smarts": "[H][OX2H2]",
+   "priority": 5,
+   "description": "water H (CVFF's own flexible-free water; TIP3P / SPC: overlay rules for htip / hspc)"
+  },
+  {
+   "type": "c",
+   "smarts": "[CX4]",
+   "description": "sp3 C with no (or four) H"
+  },
+  {
+   "type": "c3",
+   "smarts": "[CX4H3][!#1]",
+   "priority": 1,
+   "description": "CH3"
+  },
+  {
+   "type": "c2",
+   "smarts": "[CX4H2]([!#1])[!#1]",
+   "priority": 1,
+   "description": "CH2"
+  },
+  {
+   "type": "c1",
+   "smarts": "[CX4H1]([!#1])([!#1])[!#1]",
+   "priority": 1,
+   "description": "CH"
+  },
+  {
+   "type": "cg",
+   "smarts": "[CX4H2;!R](N)C=O",
+   "priority": 3,
+   "description": "glycine alpha C"
+  },
+  {
+   "type": "ca",
+   "smarts": "[CX4H1](N)C=O",
+   "priority": 3,
+   "description": "amino-acid alpha C (CVFF ca)"
+  },
+  {
+   "type": "ca",
+   "smarts": "[CX4;R](N)C=O",
+   "priority": 4,
+   "description": "alpha C in a ring (hydantoin, as DL_FIELD)"
+  },
+  {
+   "type": "c",
+   "smarts": "[CX4;$(C([F,Cl,Br,I])([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 2,
+   "description": "C with three or four halogens"
+  },
+  {
+   "type": "c2",
+   "smarts": "[CX4;$(C([F,Cl,Br,I])[F,Cl,Br,I]);!$(C([F,Cl,Br,I])([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 2,
+   "description": "C with two halogens"
+  },
+  {
+   "type": "c3",
+   "smarts": "[CX4;$(C[F,Cl,Br,I]);!$(C([F,Cl,Br,I])[F,Cl,Br,I])]",
+   "priority": 2,
+   "description": "C with one halogen"
+  },
+  {
+   "type": "cp",
+   "smarts": "[c]",
+   "description": "aromatic C"
+  },
+  {
+   "type": "c5",
+   "smarts": "[c;$(c1aaaa1)]",
+   "priority": 1,
+   "description": "aromatic C in a 5-ring"
+  },
+  {
+   "type": "c=",
+   "smarts": "[CX3]=[C,N]",
+   "description": "non-aromatic C=C / C=N carbon"
+  },
+  {
+   "type": "c=",
+   "smarts": "[CX2](=*)=*",
+   "priority": 1,
+   "description": "cumulated C"
+  },
+  {
+   "type": "c'",
+   "smarts": "[CX3]=[O,S]",
+   "priority": 2,
+   "description": "carbonyl / thiocarbonyl C"
+  },
+  {
+   "type": "c-",
+   "smarts": "[CX3](=O)[O-]",
+   "priority": 3,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "cr",
+   "smarts": "[CX3](~[NX3])(~[NX3])=[NX2]",
+   "priority": 3,
+   "description": "neutral guanidine C"
+  },
+  {
+   "type": "c+",
+   "smarts": "[CX3](~[NX3])(~[NX3])~[NX3]",
+   "priority": 4,
+   "description": "guanidinium C"
+  },
+  {
+   "type": "ct",
+   "smarts": "[C]#*",
+   "priority": 2,
+   "description": "sp C"
+  },
+  {
+   "type": "n3",
+   "smarts": "[NX3]",
+   "description": "sp3 amine N"
+  },
+  {
+   "type": "n",
+   "smarts": "[NX3;H1,H0][c,$(C=*),$(S=O),$(N=*),$(N#*)]",
+   "priority": 1,
+   "description": "sp2 N (amide, aniline, sulfonamide, hydrazone)"
+  },
+  {
+   "type": "n2",
+   "smarts": "[NX3H2][c,$(C=*),$(S=O),$(N=*)]",
+   "priority": 2,
+   "description": "NH2 on an sp2 atom"
+  },
+  {
+   "type": "n4",
+   "smarts": "[NX4+]",
+   "priority": 2,
+   "description": "sp3 N with four substituents: ammonium, protonated amines (as Materials Studio's CVFF typing)"
+  },
+  {
+   "type": "n",
+   "smarts": "[NX2]=C(N)N",
+   "priority": 3,
+   "description": "guanidine =N (as Materials Studio)"
+  },
+  {
+   "type": "n2",
+   "smarts": "[NX3H2]~[CX3](~[NX3])~[#7]",
+   "priority": 4,
+   "description": "NH2 of guanidine / guanidinium"
+  },
+  {
+   "type": "n1",
+   "smarts": "[NX3;!H2]~[CX3](~[NX3])~[NX3]",
+   "priority": 4,
+   "description": "NH of charged arginine"
+  },
+  {
+   "type": "n=",
+   "smarts": "[NX2]=*",
+   "description": "non-aromatic double-bonded N"
+  },
+  {
+   "type": "nt",
+   "smarts": "[N]#*",
+   "priority": 1,
+   "description": "sp N"
+  },
+  {
+   "type": "np",
+   "smarts": "[n]",
+   "description": "aromatic N"
+  },
+  {
+   "type": "no",
+   "smarts": "[NX3+](=O)[O-]",
+   "priority": 3,
+   "description": "nitro N"
+  },
+  {
+   "type": "o",
+   "smarts": "[OX2]",
+   "description": "sp3 O"
+  },
+  {
+   "type": "oh",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "op",
+   "smarts": "[o]",
+   "priority": 2,
+   "description": "aromatic O"
+  },
+  {
+   "type": "o*",
+   "smarts": "[OX2H2]",
+   "priority": 5,
+   "description": "water O (TIP3P / SPC: overlay rules for otip / ospc)"
+  },
+  {
+   "type": "o'",
+   "smarts": "[OX1]=*",
+   "description": "double-bonded O"
+  },
+  {
+   "type": "o-",
+   "smarts": "[OX1-]",
+   "description": "charged terminal O"
+  },
+  {
+   "type": "o-",
+   "smarts": "[OX1]~[SX4](~O)(~O)~O",
+   "priority": 2,
+   "description": "sulfate O"
+  },
+  {
+   "type": "o-",
+   "smarts": "[OX1]~[N+]~[OX1]",
+   "priority": 2,
+   "description": "nitro O"
+  },
+  {
+   "type": "o",
+   "smarts": "[OX1]~P",
+   "priority": 2,
+   "description": "terminal O on P (as DL_FIELD's CVFF)"
+  },
+  {
+   "type": "o-",
+   "smarts": "[OX1]=C[O-]",
+   "priority": 1,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "s",
+   "smarts": "[#16]",
+   "description": "S"
+  },
+  {
+   "type": "sh",
+   "smarts": "[SX2H1]",
+   "priority": 1,
+   "description": "thiol S"
+  },
+  {
+   "type": "s1",
+   "smarts": "[SX2]S",
+   "priority": 2,
+   "description": "disulfide S"
+  },
+  {
+   "type": "s'",
+   "smarts": "[SX1]=C",
+   "priority": 1,
+   "description": "thiocarbonyl S"
+  },
+  {
+   "type": "p",
+   "smarts": "[P]"
+  },
+  {
+   "type": "si",
+   "smarts": "[Si]"
+  },
+  {
+   "type": "f",
+   "smarts": "[F]"
+  },
+  {
+   "type": "cl",
+   "smarts": "[Cl]"
+  },
+  {
+   "type": "br",
+   "smarts": "[Br]"
+  },
+  {
+   "type": "i",
+   "smarts": "[I]"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl-;X0]",
+   "priority": 1,
+   "description": "chloride"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br-;X0]",
+   "priority": 1,
+   "description": "bromide"
+  },
+  {
+   "type": "Na",
+   "smarts": "[Na]",
+   "description": "sodium"
+  },
+  {
+   "type": "ca+",
+   "smarts": "[Ca]",
+   "description": "calcium"
+  }
+ ]
+}

@@ -1,0 +1,1334 @@
+{
+ "format": "caps-forcefield-catalogue",
+ "format_version": 1,
+ "forcefields": [
+  {
+   "id": "pcff-dlfield",
+   "name": "PCFF (DL_FIELD, diagonal terms)",
+   "version": "cff91 family, 1994; DL_FIELD library v4.5 (2019)",
+   "references": [
+    "H. Sun, S. J. Mumby, J. R. Maple, A. T. Hagler, J. Am. Chem. Soc. 116, 2978 (1994)"
+   ],
+   "origin": "dlfield",
+   "source_file": "PCFF.par",
+   "status": "validated",
+   "notes": "matches DL_FIELD's LAMMPS output term by term and in energies / forces (≤6e-5 kcal/mol/Å) for an ester-ether, propylbenzene and a siloxane, including distorted geometries and auto (cff91_auto) parameters. No class II cross terms: DL_FIELD keeps the diagonal part only.",
+   "file": "pcff-dlfield.json",
+   "typing": {
+    "rules": "typing/pcff-dlfield.typing.json",
+    "evidence": "92 DL_FIELD PCFF molecule templates typed from connectivity alone: 1387 / 1400 atoms (99.1 %) as DL_FIELD's templates (the rest: DL_FIELD's templates give furan, oxazole and indole ring carbons cp but pyrrole's c5, and neutral histidine carbons ci)."
+   },
+   "counts": {
+    "atom_types": 117,
+    "pairs": 59,
+    "bonds": 111,
+    "angles": 289,
+    "dihedrals": 436,
+    "impropers": 93
+   }
+  },
+  {
+   "id": "compass-dlfield",
+   "name": "COMPASS (DL_FIELD, diagonal terms)",
+   "version": "1998",
+   "references": [
+    "H. Sun, J. Phys. Chem. B 102, 7338 (1998)"
+   ],
+   "origin": "dlfield",
+   "source_file": "COMPASS.par",
+   "status": "validated",
+   "notes": "matches DL_FIELD for propylbenzene and a siloxane; DL_FIELD and CAPS both find no c4-c4-c3' angle for the ester. No cross terms.",
+   "file": "compass-dlfield.json",
+   "counts": {
+    "atom_types": 74,
+    "pairs": 48,
+    "bonds": 58,
+    "angles": 95,
+    "dihedrals": 97,
+    "impropers": 19
+   }
+  },
+  {
+   "id": "cvff-dlfield",
+   "name": "CVFF (DL_FIELD)",
+   "version": "1988",
+   "references": [
+    "P. Dauber-Osguthorpe et al., Proteins 4, 31 (1988)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CVFF.par",
+   "status": "validated",
+   "notes": "matches DL_FIELD for ester, propylbenzene and siloxane, including wildcard-torsion scaling and cvff_auto parameters.",
+   "file": "cvff-dlfield.json",
+   "typing": {
+    "rules": "typing/cvff-dlfield.typing.json",
+    "evidence": "23 DL_FIELD CVFF templates: 272 / 278 atoms (97.8 %; the rest are TIP3P / SPC water, chosen with the cvff-dlfield-tip3p / -spc overlays); Materials Studio's own typing of the msi2lmp examples (crambin, nylon, aromatics): 811 / 823 atoms (98.5 %)."
+   },
+   "counts": {
+    "atom_types": 131,
+    "pairs": 52,
+    "bonds": 87,
+    "angles": 134,
+    "dihedrals": 59,
+    "impropers": 44
+   }
+  },
+  {
+   "id": "opls2005-dlfield",
+   "name": "OPLS-AA / OPLS 2005 (DL_FIELD)",
+   "version": "2005",
+   "references": [
+    "J. L. Banks et al., J. Comput. Chem. 26, 1752 (2005)",
+    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"
+   ],
+   "origin": "dlfield",
+   "source_file": "OPLS2005.par",
+   "status": "validated",
+   "notes": "matches DL_FIELD for ester, propylbenzene and siloxane including impropers on distorted geometries.",
+   "file": "opls2005-dlfield.json",
+   "typing": {
+    "rules": "typing/opls2005-dlfield.typing.json",
+    "evidence": "99 DL_FIELD OPLS2005 templates (water models aside): 1368 / 1398 atoms (97.9 %). Residue-specific keys (amino-acid side-chain CB, sugars, nucleic bases) are not assigned automatically."
+   },
+   "counts": {
+    "atom_types": 238,
+    "pairs": 217,
+    "bonds": 1039,
+    "angles": 3565,
+    "dihedrals": 2847,
+    "impropers": 330
+   }
+  },
+  {
+   "id": "opls2020-dlfield",
+   "name": "OPLS 2020 bond / angle supplement (DL_FIELD)",
+   "version": "as distributed with DL_FIELD 4.13",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "OPLS2020.par",
+   "status": "converted",
+   "notes": "bonds and angles only; used together with OPLS 2005.",
+   "file": "opls2020-dlfield.json",
+   "counts": {
+    "atom_types": 0,
+    "pairs": 0,
+    "bonds": 450,
+    "angles": 2931,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "opls-aam-dlfield",
+   "name": "OPLS-AA/M (DL_FIELD)",
+   "version": "2015",
+   "references": [
+    "M. J. Robertson, J. Tirado-Rives, W. L. Jorgensen, J. Chem. Theory Comput. 11, 3499 (2015)"
+   ],
+   "origin": "dlfield",
+   "source_file": "OPLS_AAM.par",
+   "status": "converted",
+   "notes": "same functional forms as OPLS 2005 (validated); DL_FIELD cannot type the test molecules with this set, so not yet compared.",
+   "file": "opls-aam-dlfield.json",
+   "counts": {
+    "atom_types": 87,
+    "pairs": 83,
+    "bonds": 160,
+    "angles": 438,
+    "dihedrals": 794,
+    "impropers": 105
+   }
+  },
+  {
+   "id": "opls-clp-dlfield",
+   "name": "CL&P ionic liquids (OPLS-AA based, DL_FIELD)",
+   "version": "2004 onwards",
+   "references": [
+    "J. N. Canongia Lopes, A. A. H. Pádua, J. Phys. Chem. B 108, 2038 (2004)"
+   ],
+   "origin": "dlfield",
+   "source_file": "OPLS_CL_P.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 24 of 24 identical (kJ/mol constants confirmed as DL_POLY's k).",
+   "file": "opls-clp-dlfield.json",
+   "counts": {
+    "atom_types": 62,
+    "pairs": 58,
+    "bonds": 48,
+    "angles": 81,
+    "dihedrals": 98,
+    "impropers": 16
+   }
+  },
+  {
+   "id": "opls-des-dlfield",
+   "name": "OPLS-DES deep eutectic solvents (DL_FIELD)",
+   "version": "2018",
+   "references": [
+    "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)"
+   ],
+   "origin": "dlfield",
+   "source_file": "OPLS_DES.par",
+   "status": "converted",
+   "notes": "same forms as OPLS 2005; not yet compared with DL_FIELD.",
+   "file": "opls-des-dlfield.json",
+   "counts": {
+    "atom_types": 57,
+    "pairs": 52,
+    "bonds": 46,
+    "angles": 67,
+    "dihedrals": 61,
+    "impropers": 6
+   }
+  },
+  {
+   "id": "amber-dlfield",
+   "name": "AMBER (DL_FIELD)",
+   "version": "Cornell et al. 1995 family",
+   "references": [
+    "W. D. Cornell et al., J. Am. Chem. Soc. 117, 5179 (1995)"
+   ],
+   "origin": "dlfield",
+   "source_file": "AMBER.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) and a methyl glucoside identical.",
+   "file": "amber-dlfield.json",
+   "counts": {
+    "atom_types": 72,
+    "pairs": 68,
+    "bonds": 120,
+    "angles": 309,
+    "dihedrals": 355,
+    "impropers": 39
+   }
+  },
+  {
+   "id": "gaff-amber16-dlfield",
+   "name": "GAFF (AmberTools 16, DL_FIELD)",
+   "version": "GAFF 1.8x, 2016",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
+   ],
+   "origin": "dlfield",
+   "source_file": "AMBER16_gaff.par",
+   "status": "validated",
+   "notes": "matches DL_FIELD for the ester and propylbenzene from mol2 input.",
+   "file": "gaff-amber16-dlfield.json",
+   "typing": {
+    "rules": "typing/gaff-amber16-dlfield.typing.json",
+    "evidence": "Rules follow antechamber's ATOMTYPE_GFF.DEF in order, with its ring classes and cc/cd-type conjugation pairs. 32 DL_FIELD GAFF templates (water models aside): 365 / 373 atoms (97.9 %); the rest are template deviations from antechamber (DMSO methyl H hc, azobenzene N n2)."
+   },
+   "counts": {
+    "atom_types": 105,
+    "pairs": 100,
+    "bonds": 859,
+    "angles": 4642,
+    "dihedrals": 1075,
+    "impropers": 185
+   }
+  },
+  {
+   "id": "gaff-amber25-dlfield",
+   "name": "GAFF (AmberTools 25, DL_FIELD)",
+   "version": "2025",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
+   ],
+   "origin": "dlfield",
+   "source_file": "AMBER25_gaff.par",
+   "status": "validated",
+   "notes": "matches DL_FIELD for the ester and propylbenzene; one carbonyl improper (X-X-c-o) is listed by DL_FIELD in an order that moves the key's end atom — CAPS follows the key.",
+   "file": "gaff-amber25-dlfield.json",
+   "typing": {
+    "rules": "typing/gaff-amber25-dlfield.typing.json",
+    "evidence": "GAFF2 rules after antechamber's ATOMTYPE_GFF2.DEF (c5 / c6, n7-n9, ns / nt, nu / nv ...). 27 DL_FIELD templates: 304 / 316 atoms (96.2 %; the rest: templates type H on C-O / C-S as hc where antechamber gives h1). A 6440-atom polystyrene melt: every atom as CAPS's GAFF builder typed it."
+   },
+   "counts": {
+    "atom_types": 114,
+    "pairs": 113,
+    "bonds": 1351,
+    "angles": 9731,
+    "dihedrals": 2322,
+    "impropers": 252
+   }
+  },
+  {
+   "id": "charmm-dlfield",
+   "name": "CHARMM (DL_FIELD)",
+   "version": "",
+   "references": [
+    "B. R. Brooks et al., J. Comput. Chem. 30, 1545 (2009)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres DL_FIELD's templates leave out.",
+   "file": "charmm-dlfield.json",
+   "counts": {
+    "atom_types": 129,
+    "pairs": 125,
+    "bonds": 258,
+    "angles": 651,
+    "dihedrals": 796,
+    "impropers": 42
+   }
+  },
+  {
+   "id": "charmm19-dlfield",
+   "name": "CHARMM19 united atom (DL_FIELD)",
+   "version": "",
+   "references": [
+    "E. Neria, S. Fischer, M. Karplus, J. Chem. Phys. 105, 1902 (1996)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM19.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): butane, octane, ethanol and DL_FIELD's C18 alkane example identical.",
+   "file": "charmm19-dlfield.json",
+   "counts": {
+    "atom_types": 29,
+    "pairs": 24,
+    "bonds": 62,
+    "angles": 182,
+    "dihedrals": 38,
+    "impropers": 42
+   }
+  },
+  {
+   "id": "charmm22-prot-dlfield",
+   "name": "CHARMM22 proteins (DL_FIELD)",
+   "version": "1998",
+   "references": [
+    "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM22_prot.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 35 of 35 buildable templates and the whole SOD1 protein (4412 bonds, 7986 angles, 8968 torsion terms, 3556 Urey-Bradley, 11472 1-4 pairs) identical.",
+   "file": "charmm22-prot-dlfield.json",
+   "counts": {
+    "atom_types": 69,
+    "pairs": 76,
+    "bonds": 137,
+    "angles": 335,
+    "dihedrals": 393,
+    "impropers": 35
+   }
+  },
+  {
+   "id": "charmm36-carb-dlfield",
+   "name": "CHARMM36 carbohydrates (DL_FIELD)",
+   "version": "",
+   "references": [
+    "O. Guvench et al., J. Chem. Theory Comput. 7, 3162 (2011)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM36_carb.par",
+   "status": "converted",
+   "notes": "same forms as CHARMM36 (validated); DL_FIELD could not build its own carbohydrate examples.",
+   "file": "charmm36-carb-dlfield.json",
+   "counts": {
+    "atom_types": 60,
+    "pairs": 71,
+    "bonds": 153,
+    "angles": 438,
+    "dihedrals": 840,
+    "impropers": 14
+   }
+  },
+  {
+   "id": "cgenff-dlfield",
+   "name": "CGenFF (CHARMM36, DL_FIELD)",
+   "version": "",
+   "references": [
+    "K. Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM36_cgenff.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 60 of 60 buildable templates identical, including Urey-Bradley, separate 1-4 LJ and NBFIX.",
+   "file": "cgenff-dlfield.json",
+   "typing": {
+    "rules": "typing/cgenff-dlfield.typing.json",
+    "evidence": "Rules from CGenFF's own type definitions. The 494 model compounds of top_all36_cgenff.rtf (CGenFF 3.0.1), typed from their bonds alone: 9024 / 9174 atoms (98.4 %) as CGenFF's developers typed them, 417 residues fully right."
+   },
+   "counts": {
+    "atom_types": 183,
+    "pairs": 189,
+    "bonds": 549,
+    "angles": 1587,
+    "dihedrals": 3272,
+    "impropers": 127
+   }
+  },
+  {
+   "id": "charmm36-lipid-dlfield",
+   "name": "CHARMM36 lipids (DL_FIELD)",
+   "version": "2010",
+   "references": [
+    "J. B. Klauda et al., J. Phys. Chem. B 114, 7830 (2010)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM36_lipid.par",
+   "status": "converted",
+   "notes": "same forms as CHARMM36 (validated); the library holds no buildable lipid templates.",
+   "file": "charmm36-lipid-dlfield.json",
+   "counts": {
+    "atom_types": 54,
+    "pairs": 58,
+    "bonds": 64,
+    "angles": 138,
+    "dihedrals": 104,
+    "impropers": 4
+   }
+  },
+  {
+   "id": "charmm36-nucl-dlfield",
+   "name": "CHARMM36 nucleic acids (DL_FIELD)",
+   "version": "",
+   "references": [
+    "K. Hart et al., J. Chem. Theory Comput. 8, 348 (2012)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM36_nucl.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): DL_FIELD's nucleic-acid example identical (DL_FIELD's nucleic templates carry no impropers; CAPS adds them from the rules).",
+   "file": "charmm36-nucl-dlfield.json",
+   "counts": {
+    "atom_types": 54,
+    "pairs": 61,
+    "bonds": 95,
+    "angles": 229,
+    "dihedrals": 394,
+    "impropers": 15
+   }
+  },
+  {
+   "id": "charmm36-prot-dlfield",
+   "name": "CHARMM36 proteins (DL_FIELD)",
+   "version": "2012",
+   "references": [
+    "R. B. Best et al., J. Chem. Theory Comput. 8, 3257 (2012)"
+   ],
+   "origin": "dlfield",
+   "source_file": "CHARMM36_prot.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) identical: 896 bonds, 1608 angles, 1843 torsion terms, 700 Urey-Bradley, 2322 1-4 pairs.",
+   "file": "charmm36-prot-dlfield.json",
+   "counts": {
+    "atom_types": 93,
+    "pairs": 100,
+    "bonds": 178,
+    "angles": 434,
+    "dihedrals": 599,
+    "impropers": 53
+   }
+  },
+  {
+   "id": "dreiding-dlfield",
+   "name": "DREIDING (DL_FIELD)",
+   "version": "1990",
+   "references": [
+    "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)"
+   ],
+   "origin": "dlfield",
+   "source_file": "DREIDING.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 29 of 29 buildable templates identical (planar inversions, linear angles, conjugated and ammonium torsions).",
+   "file": "dreiding-dlfield.json",
+   "counts": {
+    "atom_types": 51,
+    "pairs": 39,
+    "bonds": 41,
+    "angles": 32,
+    "dihedrals": 55,
+    "impropers": 18
+   }
+  },
+  {
+   "id": "gromos-54a7-dlfield",
+   "name": "GROMOS 54A7 (DL_FIELD)",
+   "version": "2011",
+   "references": [
+    "N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)"
+   ],
+   "origin": "dlfield",
+   "source_file": "GROMOS_G54A7.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): octane identical; bonds kept as the GROMOS quartic form (DL_FIELD writes a harmonic approximation).",
+   "file": "gromos-54a7-dlfield.json",
+   "counts": {
+    "atom_types": 28,
+    "pairs": 22,
+    "bonds": 28,
+    "angles": 38,
+    "dihedrals": 22,
+    "impropers": 6
+   }
+  },
+  {
+   "id": "trappe-ua-dlfield",
+   "name": "TraPPE-UA (DL_FIELD)",
+   "version": "1998",
+   "references": [
+    "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
+   ],
+   "origin": "dlfield",
+   "source_file": "TRAPPE_UA.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are DL_FIELD's C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion.",
+   "file": "trappe-ua-dlfield.json",
+   "counts": {
+    "atom_types": 39,
+    "pairs": 27,
+    "bonds": 55,
+    "angles": 67,
+    "dihedrals": 58,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "trappe-eh-dlfield",
+   "name": "TraPPE-EH (DL_FIELD)",
+   "version": "2007",
+   "references": [
+    "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)"
+   ],
+   "origin": "dlfield",
+   "source_file": "TRAPPE_EH.par",
+   "status": "validated",
+   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical.",
+   "file": "trappe-eh-dlfield.json",
+   "counts": {
+    "atom_types": 65,
+    "pairs": 17,
+    "bonds": 40,
+    "angles": 119,
+    "dihedrals": 25,
+    "impropers": 16
+   }
+  },
+  {
+   "id": "misc-dlfield",
+   "name": "Miscellaneous (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "MISC_FF.par",
+   "status": "converted",
+   "notes": "converted; DL_FIELD cannot write this scheme for LAMMPS and has no buildable examples.",
+   "file": "misc-dlfield.json",
+   "counts": {
+    "atom_types": 15,
+    "pairs": 21,
+    "bonds": 10,
+    "angles": 13,
+    "dihedrals": 3,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-binary-halides-dlfield",
+   "name": "Inorganic: binary halides (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_binary_halides.par",
+   "status": "validated",
+   "notes": "14 of 14 ionic templates: every Buckingham pair identical to DL_FIELD's FIELD file.",
+   "file": "inorganic-binary-halides-dlfield.json",
+   "counts": {
+    "atom_types": 32,
+    "pairs": 48,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-binary-misc-dlfield",
+   "name": "Inorganic: binary misc (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_binary_misc.par",
+   "status": "validated",
+   "notes": "GaN: Buckingham pairs identical to DL_FIELD's FIELD file.",
+   "file": "inorganic-binary-misc-dlfield.json",
+   "counts": {
+    "atom_types": 4,
+    "pairs": 3,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-binary-oxides-dlfield",
+   "name": "Inorganic: binary oxides (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_binary_oxides.par",
+   "status": "validated",
+   "notes": "17 of 17 buildable templates plus the alpha-Al2O3 and MgO shell-model examples: Buckingham pairs and core-shell springs identical.",
+   "file": "inorganic-binary-oxides-dlfield.json",
+   "counts": {
+    "atom_types": 81,
+    "pairs": 50,
+    "bonds": 27,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-clay-dlfield",
+   "name": "Inorganic: clay (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_clay.par",
+   "status": "converted",
+   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable DL_FIELD example.",
+   "file": "inorganic-clay-dlfield.json",
+   "counts": {
+    "atom_types": 28,
+    "pairs": 25,
+    "bonds": 3,
+    "angles": 19,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-glass-dlfield",
+   "name": "Inorganic: glass (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_glass.par",
+   "status": "converted",
+   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable DL_FIELD example.",
+   "file": "inorganic-glass-dlfield.json",
+   "counts": {
+    "atom_types": 19,
+    "pairs": 21,
+    "bonds": 1,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-ternary-oxides-dlfield",
+   "name": "Inorganic: ternary oxides (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_ternary_oxides.par",
+   "status": "validated",
+   "notes": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (DL_FIELD's FIELD file runs large spring constants together).",
+   "file": "inorganic-ternary-oxides-dlfield.json",
+   "counts": {
+    "atom_types": 44,
+    "pairs": 40,
+    "bonds": 18,
+    "angles": 2,
+    "dihedrals": 0,
+    "impropers": 1
+   }
+  },
+  {
+   "id": "inorganic-zeolite-dlfield",
+   "name": "Inorganic: zeolite (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_zeolite.par",
+   "status": "validated",
+   "notes": "4 of 4 silicalite / faujasite templates identical.",
+   "file": "inorganic-zeolite-dlfield.json",
+   "counts": {
+    "atom_types": 17,
+    "pairs": 27,
+    "bonds": 3,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "inorganic-zeolite-hill-sauer-dlfield",
+   "name": "Inorganic: zeolite Hill Sauer (DL_FIELD)",
+   "version": "",
+   "references": [
+    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
+   ],
+   "origin": "dlfield",
+   "source_file": "INORGANIC_zeolite_Hill_Sauer.par",
+   "status": "converted",
+   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable DL_FIELD example.",
+   "file": "inorganic-zeolite-hill-sauer-dlfield.json",
+   "counts": {
+    "atom_types": 10,
+    "pairs": 55,
+    "bonds": 10,
+    "angles": 21,
+    "dihedrals": 29,
+    "impropers": 1
+   }
+  },
+  {
+   "id": "compass-published-moltemplate",
+   "name": "COMPASS (published subset, full class II)",
+   "version": "1998",
+   "references": [
+    "H. Sun, J. Phys. Chem. B 102, 7338 (1998)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "compass_published.lt",
+   "status": "validated",
+   "notes": "all cross terms; energies / forces equal LAMMPS CLASS2 (≤7e-8 kcal/mol/Å) for an ester-ether, propylbenzene and a siloxane. Every cross-term reference length / angle lies on its own bond / angle in CAPS (moltemplate's canonical sort misplaces up to 55 %, and it doubles bond increments with 'Data Bond List').",
+   "file": "compass-published-moltemplate.json",
+   "counts": {
+    "atom_types": 45,
+    "pairs": 45,
+    "bonds": 54,
+    "angles": 113,
+    "dihedrals": 382,
+    "impropers": 40
+   }
+  },
+  {
+   "id": "gaff-moltemplate",
+   "name": "GAFF (moltemplate)",
+   "version": "GAFF 1.x",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "gaff.lt",
+   "status": "converted",
+   "notes": "same forms as GAFF2 (validated). moltemplate uses lj/charmm/coul/long; CAPS evaluates plain LJ.",
+   "file": "gaff-moltemplate.json",
+   "counts": {
+    "atom_types": 83,
+    "pairs": 83,
+    "bonds": 928,
+    "angles": 5315,
+    "dihedrals": 653,
+    "impropers": 38
+   }
+  },
+  {
+   "id": "gaff2-moltemplate",
+   "name": "GAFF2 (moltemplate)",
+   "version": "GAFF 2",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004) (GAFF2: AmberTools)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "gaff2.lt",
+   "status": "validated",
+   "notes": "methyl acetate: every coefficient identical, forces to 8.8e-8 kcal/mol/Å against LAMMPS.",
+   "file": "gaff2-moltemplate.json",
+   "counts": {
+    "atom_types": 98,
+    "pairs": 98,
+    "bonds": 935,
+    "angles": 5312,
+    "dihedrals": 986,
+    "impropers": 38
+   }
+  },
+  {
+   "id": "oplsaa2024-moltemplate",
+   "name": "OPLS-AA (2024 parameter file)",
+   "version": "2024",
+   "references": [
+    "W. L. Jorgensen et al., J. Phys. Chem. B (2024), doi:10.1021/acs.jpcb.3c06602"
+   ],
+   "origin": "moltemplate",
+   "source_file": "oplsaa2024.lt",
+   "status": "validated",
+   "notes": "methyl benzoate: forces to 4.7e-8 kcal/mol/Å against LAMMPS.",
+   "file": "oplsaa2024-moltemplate.json",
+   "counts": {
+    "atom_types": 990,
+    "pairs": 990,
+    "bonds": 467,
+    "angles": 1430,
+    "dihedrals": 1195,
+    "impropers": 4
+   }
+  },
+  {
+   "id": "oplsaa2008-moltemplate",
+   "name": "OPLS-AA (BOSS 4.8, 2008)",
+   "version": "2008",
+   "references": [
+    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "oplsaa2008.lt",
+   "status": "converted",
+   "notes": "same forms as the 2024 file.",
+   "file": "oplsaa2008-moltemplate.json",
+   "counts": {
+    "atom_types": 906,
+    "pairs": 906,
+    "bonds": 379,
+    "angles": 1017,
+    "dihedrals": 800,
+    "impropers": 6
+   }
+  },
+  {
+   "id": "loplsaa2024-moltemplate",
+   "name": "L-OPLS overlay (on OPLS-AA 2024)",
+   "version": "2012 / 2015",
+   "references": [
+    "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)",
+    "K. Pluhackova et al., J. Phys. Chem. B 119, 15287 (2015)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "loplsaa2024.lt",
+   "status": "converted",
+   "notes": "overlay: merge on top of oplsaa2024 (caps ff apply --overlay).",
+   "file": "loplsaa2024-moltemplate.json",
+   "counts": {
+    "atom_types": 33,
+    "pairs": 33,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 21,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "loplsaa2008-moltemplate",
+   "name": "L-OPLS overlay (on OPLS-AA 2008)",
+   "version": "2012 / 2015",
+   "references": [
+    "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "loplsaa2008.lt",
+   "status": "converted",
+   "notes": "overlay on oplsaa2008.",
+   "file": "loplsaa2008-moltemplate.json",
+   "counts": {
+    "atom_types": 33,
+    "pairs": 33,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 21,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "dreiding-moltemplate",
+   "name": "DREIDING (moltemplate)",
+   "version": "1990",
+   "references": [
+    "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "dreiding.lt",
+   "status": "converted",
+   "notes": "not yet compared; its hydrogen-bond term is not evaluated by CAPS.",
+   "file": "dreiding-moltemplate.json",
+   "counts": {
+    "atom_types": 107,
+    "pairs": 531,
+    "bonds": 1176,
+    "angles": 30,
+    "dihedrals": 17576,
+    "impropers": 3
+   }
+  },
+  {
+   "id": "trappe1998-moltemplate",
+   "name": "TraPPE-UA alkanes",
+   "version": "1998",
+   "references": [
+    "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "trappe1998.lt",
+   "status": "converted",
+   "notes": "united atoms: element guesses from mass are not meaningful.",
+   "file": "trappe1998-moltemplate.json",
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 0,
+    "angles": 1,
+    "dihedrals": 1,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "sdk-moltemplate",
+   "name": "SDK coarse-grained",
+   "version": "2007 / 2010",
+   "references": [
+    "W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "sdk.lt",
+   "status": "converted",
+   "notes": "lj/sdk 9-6 / 12-4 forms are not evaluated by CAPS yet.",
+   "file": "sdk-moltemplate.json",
+   "counts": {
+    "atom_types": 23,
+    "pairs": 166,
+    "bonds": 32,
+    "angles": 52,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "martini-moltemplate",
+   "name": "MARTINI 2.0",
+   "version": "2007",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "martini.lt",
+   "status": "converted",
+   "notes": "lj/gromacs shifted forms are not evaluated by CAPS yet.",
+   "file": "martini-moltemplate.json",
+   "counts": {
+    "atom_types": 60,
+    "pairs": 1830,
+    "bonds": 72,
+    "angles": 37,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "drymartini-moltemplate",
+   "name": "Dry MARTINI",
+   "version": "2015",
+   "references": [
+    "C. Arnarez et al., J. Chem. Theory Comput. 11, 260 (2015)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "drymartini.lt",
+   "status": "converted",
+   "notes": "as MARTINI.",
+   "file": "drymartini-moltemplate.json",
+   "counts": {
+    "atom_types": 37,
+    "pairs": 703,
+    "bonds": 19,
+    "angles": 19,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "cooke-deserno-moltemplate",
+   "name": "Cooke–Deserno lipid model",
+   "version": "2005",
+   "references": [
+    "I. R. Cooke, M. Deserno, J. Chem. Phys. 123, 224710 (2005)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "cooke_deserno_lipid.lt",
+   "status": "converted",
+   "notes": "cosine-squared attraction not evaluated yet.",
+   "file": "cooke-deserno-moltemplate.json",
+   "counts": {
+    "atom_types": 2,
+    "pairs": 3,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "graphene-moltemplate",
+   "name": "Graphene (LJ carbon)",
+   "version": "",
+   "references": [
+    "moltemplate example"
+   ],
+   "origin": "moltemplate",
+   "source_file": "graphene.lt",
+   "status": "converted",
+   "notes": "",
+   "file": "graphene-moltemplate.json",
+   "counts": {
+    "atom_types": 1,
+    "pairs": 1,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "spce-moltemplate",
+   "name": "SPC/E water",
+   "version": "1987",
+   "references": [
+    "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "spce.lt",
+   "status": "converted",
+   "notes": "rigid model: needs SHAKE / RATTLE.",
+   "file": "spce-moltemplate.json",
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "tip3p-1983-moltemplate",
+   "name": "TIP3P water (1983)",
+   "version": "1983",
+   "references": [
+    "W. L. Jorgensen et al., J. Chem. Phys. 79, 926 (1983)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983.lt",
+   "status": "converted",
+   "notes": "rigid model: needs SHAKE / RATTLE.",
+   "file": "tip3p-1983-moltemplate.json",
+   "counts": {
+    "atom_types": 2,
+    "pairs": 3,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "tip3p-2004-moltemplate",
+   "name": "TIP3P water (Ewald, 2004)",
+   "version": "2004",
+   "references": [
+    "D. J. Price, C. L. Brooks III, J. Chem. Phys. 121, 10096 (2004)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "tip3p_2004.lt",
+   "status": "converted",
+   "notes": "rigid model: needs SHAKE / RATTLE.",
+   "file": "tip3p-2004-moltemplate.json",
+   "counts": {
+    "atom_types": 2,
+    "pairs": 3,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "mw-moltemplate",
+   "name": "mW water",
+   "version": "2009",
+   "references": [
+    "V. Molinero, E. B. Moore, J. Phys. Chem. B 113, 4008 (2009)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "watmw.lt",
+   "status": "converted",
+   "notes": "Stillinger–Weber three-body form not evaluated by CAPS.",
+   "file": "mw-moltemplate.json",
+   "counts": {
+    "atom_types": 1,
+    "pairs": 1,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
+  },
+  {
+   "id": "graphite-moltemplate",
+   "name": "graphite",
+   "origin": "moltemplate",
+   "source_file": "graphite.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spc_oplsaa-moltemplate",
+   "name": "spc_oplsaa",
+   "origin": "moltemplate",
+   "source_file": "spc_oplsaa.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spc_oplsaa2008-moltemplate",
+   "name": "spc_oplsaa2008",
+   "origin": "moltemplate",
+   "source_file": "spc_oplsaa2008.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spc_oplsaa2024-moltemplate",
+   "name": "spc_oplsaa2024",
+   "origin": "moltemplate",
+   "source_file": "spc_oplsaa2024.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spce_oplsaa-moltemplate",
+   "name": "spce_oplsaa",
+   "origin": "moltemplate",
+   "source_file": "spce_oplsaa.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spce_oplsaa2024-moltemplate",
+   "name": "spce_oplsaa2024",
+   "origin": "moltemplate",
+   "source_file": "spce_oplsaa2024.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spce_ice_rect8-moltemplate",
+   "name": "spce_ice_rect8",
+   "origin": "moltemplate",
+   "source_file": "spce_ice_rect8.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spce_ice_rect16-moltemplate",
+   "name": "spce_ice_rect16",
+   "origin": "moltemplate",
+   "source_file": "spce_ice_rect16.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "spce_ice_rect32-moltemplate",
+   "name": "spce_ice_rect32",
+   "origin": "moltemplate",
+   "source_file": "spce_ice_rect32.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip3p_1983_oplsaa-moltemplate",
+   "name": "tip3p_1983_oplsaa",
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983_oplsaa.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip3p_1983_oplsaa2008-moltemplate",
+   "name": "tip3p_1983_oplsaa2008",
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983_oplsaa2008.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip3p_1983_oplsaa2024-moltemplate",
+   "name": "tip3p_1983_oplsaa2024",
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983_oplsaa2024.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip3p_2004_oplsaa-moltemplate",
+   "name": "tip3p_2004_oplsaa",
+   "origin": "moltemplate",
+   "source_file": "tip3p_2004_oplsaa.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip3p_2004_oplsaa2024-moltemplate",
+   "name": "tip3p_2004_oplsaa2024",
+   "origin": "moltemplate",
+   "source_file": "tip3p_2004_oplsaa2024.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip5p_oplsaa-moltemplate",
+   "name": "tip5p_oplsaa",
+   "origin": "moltemplate",
+   "source_file": "tip5p_oplsaa.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip5p_oplsaa2008-moltemplate",
+   "name": "tip5p_oplsaa2008",
+   "origin": "moltemplate",
+   "source_file": "tip5p_oplsaa2008.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "tip5p_oplsaa2024-moltemplate",
+   "name": "tip5p_oplsaa2024",
+   "origin": "moltemplate",
+   "source_file": "tip5p_oplsaa2024.lt",
+   "status": "template",
+   "notes": "a molecule written with another force field's atom types; build it with that force field",
+   "file": null
+  },
+  {
+   "id": "oplsaa-moltemplate",
+   "name": "oplsaa",
+   "origin": "moltemplate",
+   "source_file": "oplsaa.lt",
+   "status": "alias",
+   "notes": "the same parameters as oplsaa2024 (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "loplsaa-moltemplate",
+   "name": "loplsaa",
+   "origin": "moltemplate",
+   "source_file": "loplsaa.lt",
+   "status": "alias",
+   "notes": "the same parameters as loplsaa2024 (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "graphene_rectangular-moltemplate",
+   "name": "graphene_rectangular",
+   "origin": "moltemplate",
+   "source_file": "graphene_rectangular.lt",
+   "status": "alias",
+   "notes": "the same parameters as graphene (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "spce_amber-moltemplate",
+   "name": "spce_amber",
+   "origin": "moltemplate",
+   "source_file": "spce_amber.lt",
+   "status": "alias",
+   "notes": "the same parameters as spce (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "spce_dreiding-moltemplate",
+   "name": "spce_dreiding",
+   "origin": "moltemplate",
+   "source_file": "spce_dreiding.lt",
+   "status": "alias",
+   "notes": "the same parameters as spce (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "spce_hybrid-moltemplate",
+   "name": "spce_hybrid",
+   "origin": "moltemplate",
+   "source_file": "spce_hybrid.lt",
+   "status": "alias",
+   "notes": "the same parameters as spce (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "spce_more_comments-moltemplate",
+   "name": "spce_more_comments",
+   "origin": "moltemplate",
+   "source_file": "spce_more_comments.lt",
+   "status": "alias",
+   "notes": "the same parameters as spce (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "tip3p_1983_charmm-moltemplate",
+   "name": "tip3p_1983_charmm",
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983_charmm.lt",
+   "status": "alias",
+   "notes": "the same parameters as tip3p_1983 (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "tip3p_1983_charmm_hybrid-moltemplate",
+   "name": "tip3p_1983_charmm_hybrid",
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983_charmm_hybrid.lt",
+   "status": "alias",
+   "notes": "the same parameters as tip3p_1983 (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "tip3p_1983_hybrid-moltemplate",
+   "name": "tip3p_1983_hybrid",
+   "origin": "moltemplate",
+   "source_file": "tip3p_1983_hybrid.lt",
+   "status": "alias",
+   "notes": "the same parameters as tip3p_1983 (style or comment variant)",
+   "file": null
+  },
+  {
+   "id": "tip3p_2004_hybrid-moltemplate",
+   "name": "tip3p_2004_hybrid",
+   "origin": "moltemplate",
+   "source_file": "tip3p_2004_hybrid.lt",
+   "status": "alias",
+   "notes": "the same parameters as tip3p_2004 (style or comment variant)",
+   "file": null
+  }
+ ]
+}

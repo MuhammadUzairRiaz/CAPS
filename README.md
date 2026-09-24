@@ -1,0 +1,395 @@
+# CAPS — Chain Assembly and Packing Suite
+
+CAPS is a standalone polymer and soft-matter modelling suite: builders, packing, force fields, dynamics and
+analysis, with a desktop Studio. It is independent software and lives in its own repository.
+
+The product and engineering specification is `REDESIGN_PROMPT.md`. The screen designs are in `design/`
+(open `design/index.html`); they are the reference for every Studio screen.
+
+## What works today (v0.1: the visualizer, Grow, Pack, Relax, Dynamics, Equilibrate, React, Field and Analyze)
+
+| Part | Where | Status |
+|---|---|---|
+| Core data model, periodic (triclinic) cells, minimum image | `core/` (C++20) | working, tested |
+| Readers: LAMMPS data (full / molecular / charge / atomic, image flags), LAMMPS text dump (x / xu / xs, ix iy iz, triclinic), GROMACS `.gro`, PDB (CRYST1, CONECT, models), XYZ / extended XYZ | `core/src/io_*.cpp` | working, tested |
+| Writers: LAMMPS data (full), PDB, extended XYZ | `core/src/io_*.cpp` | working, tested |
+| Bond perception (covalent radii, periodic cell list), whole molecules | `core/src/bonds.cpp` | working, tested |
+| Analysis: molecule shape (Rg, gyration tensor, κ²), g(r) with cell list, distance / angle / dihedral | `core/src/analysis.cpp` | working, tested |
+| Renderer: ball-and-stick, space filling, sticks, no-H, backbone; colour by element / molecule / type / distance; outlines, depth cue, picking | `core/src/render.cpp` | working |
+| Figure export: PNG (dark, white or transparent with a real alpha channel) and SVG (no background shape when transparent) | `core/src/image.cpp`, `svg.cpp` | working, tested |
+| Grow: all-atom polystyrene (atactic / isotactic / syndiotactic) grown inside a periodic cubic cell; exact internal geometry, periodic contact checks against every placed atom, all chains grown together, back-tracking and restarts; GAFF-style names and types, Gasteiger–Marsili charges | `core/src/grow.cpp` | working, tested |
+| Field (first slice): GAFF 1.81 typing for hydrocarbons (c3, ca, hc, ha) with the reason for each type; bonds, angles, Fourier torsions, impropers, LJ with arithmetic mixing, damped shifted force electrostatics, AMBER 1-4 scaling; periodic neighbour list that includes images in cells narrower than twice the cut-off; multithreaded pair terms | `core/src/field.cpp` | working, tested against LAMMPS |
+| Relax: steepest descent, Polak–Ribière CG, L-BFGS (m = 10) and FIRE; capped-force push-off; affine compression to a target density; isotropic box relaxation to a pressure; one frame recorded per stage | `core/src/relax.cpp` | working, tested |
+| LAMMPS data export with the force field (coefficients, angles, dihedrals, impropers, velocities and the matching styles); LAMMPS dump export of whole trajectories | `core/src/relax.cpp`, `io_lammps.cpp` | working, tested |
+| Dynamics: velocity Verlet; NVE, NVT (Bussi velocity rescaling, Langevin BAOAB) and isotropic NPT (stochastic cell rescaling, Berendsen); LJ tail corrections; velocities carried between runs; thermo log; multithreaded | `core/src/dynamics.cpp` | working, tested against LAMMPS |
+| Equilibrate: the Larsen et al. 21-step compression / decompression protocol, simulated annealing cycles, MD push-off with capped LJ forces, custom plain-text protocols (NVT / NPT / NVE stages, temperature ramps, force caps); production blocks until density, energy and Rg converge | `core/src/equilibrate.cpp` | working, tested |
+| Chain statistics: backbone detection (non-ring heavy-atom path), mean-square internal distances ⟨R²(n)⟩/(n⟨b²⟩), end-to-end distance | `core/src/analysis.cpp` | working, tested |
+| Pack: rigid molecules packed into boxes, cubes, spheres, cylinders and half-spaces (inside / outside), fixed molecules, periodic or not; overlap penalty after Martínez et al. over centre + rotation, L-BFGS, multithreaded cell list, worst molecules moved between rounds; reads packmol input files; never returns a cell below tolerance | `core/src/pack.cpp` | working, tested, benchmarked against packmol |
+| React: atom-mapped templates (form, break, move, delete); distance capture and probability (REACTER style); cycles of react → retype → minimise → optional dynamics (Polymatic cycle); conversion counted per reactive group; cluster analysis, gel point from the reduced weight-average mass, Flory–Stockmayer α_c | `core/src/react.cpp` | working, tested |
+| Analyze: density, g(r), S(q) (direct reciprocal-lattice sum + g(r) transform), X-ray and neutron scattering, Rg, end-to-end distance, C_n and C∞, persistence length, MSD, D (Einstein), end-to-end and segmental relaxation (KWW), cohesive energy density and δ, free volume by probe insertion, pore size distribution; block-average errors; JSON / CSV output | `core/src/properties.cpp` | working, tested against MDAnalysis and analytic cases |
+| C ABI v9 for the GUI and other languages (v2 `caps_relax`, `caps_field_info`; v3 `caps_md`, `caps_save_trajectory`; v4 `caps_protocol_text`, `caps_equilibrate`, `caps_internal_distances`; v5 `caps_pack`; v6 `caps_reaction_template`, `caps_react`; v7 `caps_field_*`; v8 `caps_analyze`, `caps_analyze_report`; v9 `caps_analyze_ex` with mechanics and Tg) | `capi/` | working |
+| `caps` command line: info, render, shape, rdf, convert, grow, pack, contacts, field, relax, md, equilibrate, chains, react, ff, analyze, elastic, tensile, tg | `cli/` | working |
+| CAPS Studio (Avalonia, .NET 10): Grow panel (build, cancel, save); Relax panel (method, tolerances, push-off, compression, box, live energy and force plots, cancel); Dynamics panel (NVE / NVT / NPT, thermostat and barostat, live temperature, pressure and density plots, cancel, save trajectory); Equilibrate panel (protocol, parameters, editable stage text, convergence blocks); Pack panel (packmol-syntax input with add-structure and open-input helpers); React panel (templates, cycles, dynamics between cycles, gel-point check) with a Network tab; Field page (choose a library force field and charges, type every atom, atom table with the rule and source of each type, why-card and per-atom type overrides, types coloured in 3D, missing parameters that block Relax / Dynamics, import or hand entry flagged estimated, export types or LAMMPS data); Analyze › Properties page (calculation chips, frames and groups, result cards with errors, methods and the comparison with experiment from `data/reference/polymers.json`, curves, export CSV / LaTeX); Chains tab (internal distances); open / drop files, orbit / pan / zoom, pick and measure up to four atoms, frames, g(r) and molecule tables, figure export | `studio/CapsStudio` | working |
+
+Not built yet (see the roadmap in `REDESIGN_PROMPT.md`): other monomers in Grow, force-field parameters beyond C/H (so epoxy–amine
+networks react topology-only for now), learning templates from reactant / product pairs, per-atom
+constraints and ellipsoids in Pack, GPU kernels,
+double-bridging / end-bridging Monte Carlo, Nosé–Hoover chains and MTK, anisotropic cells, constraints (SHAKE / RATTLE / LINCS), r-RESPA, restraints and fixed atoms in Relax,
+Ewald / PME, the Fortran
+numeric kernels (PME, Ewald, RIS — planned for the Field and Dynamics phases), the Vulkan viewport, Python bindings.
+
+## Build
+
+Requirements: CMake ≥ 3.24, a C++20 compiler, zlib, and the .NET 10 SDK (`brew install dotnet`).
+
+```bash
+scripts/build.sh      # C++ core + tests, then the Studio + its self-test
+scripts/studio.sh     # launch the Studio
+scripts/studio.sh samples/ps_melt.lammpstrj samples/ps_melt.data
+```
+
+Command line:
+
+```bash
+build/cli/caps info samples/ps_melt.data
+build/cli/caps render samples/ps_melt.data -o figure.png --bg transparent --size 1920x1080
+build/cli/caps render samples/ps_melt.data -o figure.svg --bg white --colour molecule
+build/cli/caps rdf samples/ps_melt.data --pair C-C --inter
+```
+
+Grow a cell:
+
+```bash
+build/cli/caps grow -o cell.data --chains 10 --dp 8 --density 0.4 --tacticity atactic --seed 1
+build/cli/caps grow -o cell.data --chains 10 --dp 8 --density 0.7 --scale 0.75   # denser, needs minimisation later
+```
+
+What to expect from Grow today. Growth enforces contact limits (C–C 3.0, C–H 2.45, H–H 2.0 Å) with no
+force field, so it cannot reach melt density on its own; Relax (below) compresses the grown cell.
+Measured on this machine, five seeds each:
+
+| Cell | Contact scale | Success | Time |
+|---|---|---|---|
+| 10 × DP 8, 0.4 g/cm³ | 1.0 | 5 / 5 | 0.7 s |
+| 10 × DP 8, 0.5 g/cm³ | 1.0 | 4 / 5 | 1.9 s |
+| 10 × DP 8, 0.7 g/cm³ | 0.75 | 1 / 1 tried | 4 s |
+| 20 × DP 20, 0.4 g/cm³ | 1.0 | 3 / 5 | 10 s |
+| 20 × DP 20, 0.5 g/cm³ | 0.85 | 2 / 5 | 18 s |
+
+The Studio retries up to three consecutive seeds and says which one it used.
+
+## Relax
+
+Relax types the structure with GAFF, pushes overlaps apart with capped LJ forces, compresses stage by stage to a
+target density (minimising after each stage) and minimises to a force tolerance. Grow a loose cell, then compress it:
+
+```bash
+build/cli/caps grow  -o grown.data --chains 20 --dp 20 --density 0.3 --seed 1
+build/cli/caps relax grown.data -o melt.data --density 1.05             # L-BFGS, |F|max < 0.5 kcal/mol/Å
+build/cli/caps relax grown.data -o cell.data --box-relax --pressure 1    # 0 K volume at 1 atm
+build/cli/caps field melt.data                                           # types, terms, energy, pressure
+```
+
+The `.data` output carries the force field; it runs in LAMMPS with the styles written in its header
+(`pair_style lj/cut/coul/dsf 0.2 10`, `bond_style harmonic`, `angle_style harmonic`, `dihedral_style fourier`,
+`improper_style cvff`, `special_bonds amber`).
+
+Measured on this machine (10-core Apple silicon), Grow followed by Relax to 1.05 g/cm³:
+
+| Cell | Atoms | Relax | Final largest force |
+|---|---|---|---|
+| 10 × DP 8, grown at 0.4 g/cm³ | 1 300 | 1.8 s, 1 352 iterations | 0.47 kcal/mol/Å |
+| 20 × DP 20, grown at 0.3 g/cm³ | 6 440 | 15 s, 2 648 iterations | 0.48 kcal/mol/Å |
+
+Checked against LAMMPS (`scripts/check_lammps.sh`, needs `lmp`): bond, angle, dihedral, improper and vdW energies and
+the pressure agree to printed precision, and per-atom forces to 2 × 10⁻⁵ kcal/mol/Å. The Coulomb energy differs by a
+constant per pair because CAPS uses the Fennell–Gezelter form, which is zero at the cut-off; the forces are the same.
+
+Limits of this version: a minimised cell at 1.05 g/cm³ is not an equilibrated melt. The 0 K pressure stays in the
+thousands of atm, and chain conformations are those of the growth; run Dynamics (NPT) to equilibrate. Only C and H are
+typed; other elements stop with a message naming the atom.
+
+## Dynamics
+
+```bash
+build/cli/caps md melt.data -o hot.data  --steps 40000 --temp 500 --barostat crescale --pressure 1 --log hot.csv
+build/cli/caps md hot.data  -o cold.data --steps 40000 --temp 300 --barostat crescale --dump cold.lammpstrj --every 1000
+build/cli/caps md cold.data -o nve.data  --steps 10000 --thermostat none        # continues with the saved velocities
+```
+
+Units are LAMMPS `real` (fs, Å, kcal/mol, K, atm). The time step defaults to 1 fs with no constraints. Temperatures use
+3N − 3 degrees of freedom. Pressure includes the kinetic term and the LJ tail correction. The `.data` output carries
+velocities, so a run can continue in CAPS or in LAMMPS.
+
+Checked against LAMMPS (`scripts/check_lammps.sh`): a 200-step NVE trajectory from the same positions and velocities
+agrees to 10⁻⁵ Å (the precision of the files); with `pair_modify tail yes` the energies and pressure agree. An NPT run
+at 500 K and 1 atm from the same start (CAPS stochastic cell rescaling, LAMMPS `fix npt` Nosé–Hoover, 40 ps each)
+gives 0.87 and 0.86 g/cm³ over the second half, the same within the fluctuations of a 1 300-atom cell.
+
+Speed on this machine (10-core Apple silicon, cut-off 10 Å, skin 2 Å, 1 fs):
+
+| Cell | Atoms | 1 thread | 4 threads | 10 threads |
+|---|---|---|---|---|
+| 10 × DP 8 | 1 300 | 20 ns/day | 59 ns/day | 78 ns/day |
+| 20 × DP 20 | 6 440 | | | 16 ns/day |
+
+For comparison, this machine's serial LAMMPS build ran the 1 300-atom NPT cell at 16 ns/day.
+
+Equilibration example (10 × DP 8, from Relax at 1.05 g/cm³): 40 ps NPT at 500 K gives 0.87 g/cm³; then 40 ps at 300 K
+gives 0.976 g/cm³ at +99 atm mean pressure. These are short oligomers quenched quickly, not a converged glass.
+Long-chain melts need ns-scale runs at high temperature; see Equilibrate below.
+
+Studio self-checks (no window needed):
+
+```bash
+studio/CapsStudio/bin/Release/net10.0/CapsStudio --selftest samples out
+studio/CapsStudio/bin/Release/net10.0/CapsStudio --screenshot out/studio.png samples/ps_melt.lammpstrj samples/ps_melt.data
+```
+
+## Equilibrate
+
+```bash
+build/cli/caps equilibrate melt.data --protocol larsen21 --print-protocol          # the 21 stages as text
+build/cli/caps equilibrate melt.data -o eq.data --protocol larsen21 --tmax 600 --until-converged --log eq.csv
+build/cli/caps equilibrate melt.data -o eq.data --protocol annealing --cycles 3 --tlow 300 --thigh 600
+build/cli/caps equilibrate melt.data -o eq.data --protocol my_protocol.txt       # custom stages
+build/cli/caps chains eq.data                                                   # internal distances
+```
+
+Protocols are lists of Dynamics stages. The same text format is used for printing, editing in the Studio and custom
+files:
+
+```
+nvt 50 ps T 600                # 1 · heat
+npt 50 ps T 300 P 986.92 atm   # 3 · compress 0.02 Pmax
+npt 20 ps T 300 to 600 P 1 atm # a temperature ramp
+nvt 5 ps T 300 cap 20          # LJ forces capped at 20 kcal/mol/Å
+```
+
+- **larsen21:** Larsen, Lin, Hart and Colina, Macromolecules 44, 6944 (2011). Seven heat / cool / compress cycles up
+  to Pmax = 5 × 10⁴ bar, then decompression, then 800 ps of NPT at the final conditions: 1.56 ns in total. The high
+  temperature is a parameter; choose it about 200–300 K above Tg. `--scale` shortens every stage, and the result is
+  labelled as shortened, not as the published schedule.
+- **annealing:** NPT ramps between two temperatures with holds.
+- **pushoff:** NVT with LJ forces capped at 5 → 500 kcal/mol/Å, then uncapped NVT and NPT.
+
+`--until-converged` continues with NPT blocks at the final conditions. It stops when two successive block-to-block
+changes stay within 0.5 % in density, 0.005 kcal/mol per atom in potential energy, and 2 % in mean Rg. These checks
+catch drift; they cannot prove that long chains have relaxed, which takes far longer than any MD run.
+
+## React
+
+```bash
+build/cli/caps react x --list-templates                                     # built-in templates as text
+build/cli/caps react melt.data -o network.data --template cc_crosslink --per-cycle 3 --cycles 20 --md-ps 5 --temp 500
+build/cli/caps react mix.data -o epoxy.xyz --template epoxy_amine_primary --template epoxy_amine_secondary --no-relax --fa 2 --fb 4
+build/cli/caps react mix.data -o out.data --template my_reaction.txt
+```
+
+A template is a small atom-mapped pattern with its edits:
+
+```
+reaction epoxy_amine_primary
+atom 1 C ring3 H=2          # epoxide CH2
+atom 2 O ring3 bonded 1
+atom 3 C ring3 bonded 1 2
+atom 4 N H=2                # primary amine
+atom 5 H bonded 4
+initiators 4 1              # the pair whose distance is tested
+capture 4.5
+form 4 1
+break 1 2
+move 5 2                    # proton from N to O
+sites 1 2 3                 # conversion is counted per epoxide ring
+```
+
+Each cycle finds every match with its initiators inside the capture distance. It reacts the closest non-overlapping
+matches, retypes and minimises the structure, and can run a short NVT stage. Conversion, clusters, the largest
+cluster's mass fraction and the reduced weight-average mass (without the largest cluster) are recorded per cycle. The
+gel point is reported where that reduced mass peaks; compare it with the Flory–Stockmayer α_c from `--fa --fb --ratio`.
+
+Measured on the 1 300-atom polystyrene cell (`cc_crosslink`, 3 per cycle, 8 cycles, 24 crosslinks). After a full
+minimisation of each result, the network is at +1 168 kcal/mol without dynamics between cycles and +498 kcal/mol with
+5 ps at 500 K after each cycle. For reference, the uncrosslinked cell is at −69 kcal/mol, with 48 more hydrogens. In a
+glass the chains cannot move to accommodate new bonds by minimisation alone; run dynamics between cycles, as the
+Polymatic cycle does.
+
+The C–C template uses the two leaving hydrogens as initiators, so only C–H bonds that point at each other react.
+
+## Force fields
+
+CAPS keeps force fields in its own JSON format (`caps-forcefield`, see `core/include/caps/ffdef.hpp`): atom types with
+equivalences, parameter rules matched on type names (the last matching rule wins), bond increments, automatic
+(auto-equivalence) parameters and every class II cross term. `data/forcefields/` holds the curated library built by
+`bench/ff/build_library.py` from moltemplate and DL_FIELD 4.13; `catalogue.json` lists every source file with its
+version / year, primary reference and status (validated, converted, pending, template, alias).
+
+```bash
+caps ff import-lt  ~/moltemplate/moltemplate/force_fields/gaff2.lt -o gaff2.json     # moltemplate
+caps ff import-dlf ~/dl_f_4.13/lib/PCFF.par -o pcff.json                              # DL_FIELD (.par + .sf + .bci)
+caps ff apply molecule.mol2 --ff data/forcefields/gaff-amber25-dlfield.json --list -o molecule.data
+```
+
+mol2 is the preferred input: its bonds, bond orders, atom types and charges are used as given (xyz needs bonds guessed
+from distances). The evaluator has the class II forms (quartic bonds and angles, bond-bond, bond-angle, middle / end
+bond-torsion, angle-torsion, angle-angle-torsion, bond-bond 1-3, Wilson out-of-plane with angle-angle), 9-6 LJ with
+sixth-power mixing, and inversion/harmonic. Validation (scripts in `bench/ff/`):
+
+| Check | Result |
+|---|---|
+| class II terms, random coefficients, vs LAMMPS CLASS2 | energies to 1e-5 kcal/mol, forces 6e-5 kcal/mol/Å |
+| COMPASS (moltemplate) ester-ether, propylbenzene, siloxane vs LAMMPS | forces ≤ 7e-8 kcal/mol/Å; all cross-term references on their own bond / angle |
+| GAFF2, OPLS-AA 2024 (moltemplate) vs moltemplate + LAMMPS | identical coefficients, forces ≤ 9e-8 kcal/mol/Å |
+| PCFF, CVFF, COMPASS, OPLS 2005, GAFF (AmberTools 16 and 25) from DL_FIELD vs DL_FIELD's own LAMMPS output | every interaction identical; forces ≤ 6e-5 kcal/mol/Å, distorted geometries included |
+| Morse / GROMOS bonds, cosine angles, Urey–Bradley, planar inversion, Buckingham, Morse pairs, 1-4 LJ vs LAMMPS (`bench/ff/check_forms.cpp`) | forces ≤ 5e-6 kcal/mol/Å |
+| DL_FIELD libraries on their own molecule templates vs DL_FIELD's DL_POLY FIELD file (`bench/ff/validate_family.py`) | CGenFF 60/60, DREIDING 29/29, TraPPE-EH 9/9, CHARMM, CHARMM22, TraPPE-UA, GROMOS, CL&P, inorganic shell-model oxides — see `bench/ff/README.md` |
+
+Findings recorded while validating: moltemplate's COMPASS doubles bond-increment charges when a molecule is written with
+`Data Bond List`, and its canonical atom sort places up to 55 % of class II cross-term reference values on the wrong bond or
+angle; DL_FIELD's PCFF / COMPASS / CVFF contain no class II cross terms (DL_POLY cannot evaluate them); a few DL_FIELD
+library entries carry wrong masses (HC_benzyl 12.0115 in PCFF, C_benzene 1.00797 in CVFF, O_thioester 15.0994), which CAPS
+reports and does not use. DL_FIELD's LAMMPS export leaves out CHARMM 1-4 van der Waals and DREIDING inversions and cannot write GROMOS, so those
+families are checked against its DL_POLY FIELD file; its GROMOS bonds are a harmonic approximation (CAPS keeps the
+quartic form); its TraPPE-UA C-C-O-H torsion takes terms from the O-C-C-O entry (CAPS uses the published alcohol
+torsion). Pending: full PCFF / CVFF with class II cross terms from Accelrys `.frc` files.
+
+### Automatic atom typing
+
+Atoms get their force-field types from SMARTS rules (`core/include/caps/typing.hpp`, rule files in `data/typing/`).
+CAPS first perceives the chemistry from the connectivity alone, so mol2, PDB and xyz all work: bond orders from
+valences (a Kekulé structure found by search), formal charges (carboxylates, nitro groups, ammonium, iminium /
+guanidinium / imidazolium cations), rings (SSSR) and Hückel aromaticity. Bond orders given in a mol2 file are kept.
+Among the rules that match an atom, types another match `overrides` drop out, then the highest `priority` wins; rules
+may refer to other types (`[%oh]`, as in foyer), and typing repeats until nothing changes.
+
+```bash
+caps ff type molecule.pdb --ff data/forcefields/pcff-dlfield.json --explain       # each atom's type and the rule behind it
+caps ff apply molecule.xyz --ff data/forcefields/pcff-dlfield.json                  # types automatically, then parameterises
+caps ff apply water.mol2 --ff data/forcefields/cvff-dlfield.json \
+    --typing data/typing/cvff-dlfield.typing.json,data/typing/cvff-dlfield-tip3p.typing.json   # rules on top: TIP3P water
+```
+
+`--types FILE` still sets types by hand (all atoms, or `index type` lines for a few). A force field names its rules
+file with `"typing"`: PCFF, CVFF, GAFF (AmberTools 16), GAFF2 (AmberTools 25), OPLS-AA 2005 and CGenFF from DL_FIELD
+have rules (`data/typing/`; the GAFF, OPLS and CGenFF files are generated by `bench/typing/make_*_rules.py`, one
+commented line per rule). Two additions beyond SMARTS serve GAFF and CGenFF: `{AR1}`..`{AR5}`, antechamber's ring
+classes, and conjugated type pairs (`"pairs"`: GAFF's cc/cd, ce/cf, nc/nd ... alternate across double bonds; CGenFF's
+CG2DC1/CG2DC2 with `"pair_mode": "double_same"`). A rules file marked `"ordered"` takes the first matching rule, as
+antechamber does.
+
+| Check | Result |
+|---|---|
+| PCFF: 92 DL_FIELD molecule templates, typed from connectivity alone (`bench/ff/validate_typing.py`) | 1387 / 1400 atoms (99.1 %) as DL_FIELD's templates; the rest are inconsistencies between DL_FIELD's own templates (furan, oxazole and indole ring carbons `cp`, pyrrole's `c5`) |
+| CVFF: 23 DL_FIELD templates | 272 / 278 atoms (97.8 %); the rest are water, whose model (TIP3P / SPC) is a choice |
+| CVFF: Materials Studio's typing of the msi2lmp examples — crambin, nylon, aromatics (`bench/ff/compare_msi_types.py`) | 811 / 823 atoms (98.5 %); crambin 642 / 642 |
+| end to end: automatically typed templates through `ff apply` | every parameter found except where DL_FIELD's own library has none (nitroso N=O bonds, charged-imidazole N–H), the molecules DL_FIELD also refuses |
+| CGenFF: the 494 model compounds of CGenFF 3.0.1's `top_all36_cgenff.rtf`, typed by its developers (`bench/ff/validate_rtf_types.py`) | 9024 / 9174 atoms (98.4 %) from bonds alone, 417 residues fully right; 97.7 % with the RTF's partial bond orders; 420 residues fully parameterised by DL_FIELD's CGenFF library |
+| GAFF / GAFF2: rules after antechamber's ATOMTYPE_GFF(2).DEF, on DL_FIELD's templates | 97.9 % / 96.2 % of atoms; the rest are templates departing from antechamber (H on C–O / C–S as hc, azobenzene N) |
+| OPLS-AA 2005 (DL_FIELD names), 99 templates | 1368 / 1398 atoms (97.9 %), 91 molecules fully right |
+| 6440-atom polystyrene melt, GAFF2 | typed in 0.07 s, every atom as CAPS's GAFF builder typed it |
+
+In the Studio, the Field page does the same interactively (`caps_field_*` in the C API, ABI 7): the chosen force field
+is written into the structure, Relax, Dynamics, Equilibrate and LAMMPS data then use it, and while atoms are untyped or
+parameters missing those runs are refused. Parameters can be imported (CAPS JSON, moltemplate `.lt`) or entered by hand;
+hand-entered terms are counted as estimated in the report.
+
+### LAMMPS data
+
+`caps ff apply FILE --ff FF.json -o out.data --lammps-input out.in` (and Save in the Studio) writes every term CAPS
+evaluates in the LAMMPS style with the same energy: harmonic, class II, Morse and GROMOS bonds; harmonic, class II,
+CHARMM (Urey–Bradley), cosine and cosine/squared angles; Fourier and class II torsions; cvff, harmonic, class II,
+inversion/harmonic and umbrella impropers; LJ 12-6 or 9-6, Buckingham and Morse pairs. A kind that mixes forms becomes a
+hybrid style (DL_FIELD's PCFF: class II bonds and angles with Fourier torsions), and the class II cross-term sections get
+`skip` lines for the other sub-styles' types. Pair coefficients are written for every i-j pair, so LAMMPS does no mixing.
+The data file's header and the input script hold the matching LAMMPS commands. Separate 1-4 Lennard-Jones parameters
+(CHARMM, GROMOS) have no exact LAMMPS form without switching; the writer refuses them rather than approximate.
+
+| Check (`bench/ff/check_data_lammps.py`, LAMMPS `run 0` on the written files) | Result |
+|---|---|
+| PCFF and COMPASS from DL_FIELD (class II + Fourier, hybrid), CVFF, OPLS-AA, GAFF, GAFF2, DREIDING (umbrella), ionic crystals (Buckingham, periodic), a periodic polystyrene melt with GAFF2 and with PCFF, COMPASS with a class I overlay (hybrid in every kind, skip lines in every class II section) | 16 of 16: every energy term to ≤ 6 × 10⁻⁷ (relative), every force to ≤ 1.4 × 10⁻⁶ kcal/mol/Å |
+| CGenFF (separate 1-4 LJ) | refused with the reason |
+
+Found on the way: CAPS's damped-shifted-force self energy left out the force-shift part of the shift constant that
+LAMMPS `coul/dsf` includes (the r → 0 limit of the same pair potential). A constant, so forces were already equal;
+Coulomb energies now equal LAMMPS's too (2.2 kcal/mol for favipiravir with PCFF's bond-increment charges).
+
+GAFF and DL_FIELD's OPLS carry no charges on their types: use `--charges gasteiger` (or charges from the file). Water
+defaults to each force field's TIP3P (or CVFF's own); other water models are one-line overlay rules files.
+
+## Analyze
+
+`caps analyze TRAJ --topology DATA --props density,rdf,sq,rg,msd,diffusion,ced,ffv,... --frame-ps 0.5 [--json out.json] [--csv DIR]`
+(and Analyze › Properties in the Studio) computes properties over the frames, each with its method, a block-average
+standard error where it applies, notes when the input cannot support the number (short chains, sub-diffusive MSD, an
+end-to-end vector that has not decorrelated) and the curves behind it.
+
+| Group | Properties | Method |
+|---|---|---|
+| Structure | density, rdf, sq, xray, neutron | g(r) with a cell list; S(q) (Faber–Ziman, number, Cromer–Mann or neutron weights) as the exact sum over the cell's reciprocal lattice up to 4 Å⁻¹ (shells merged to ≥ 24 k-vectors), the g(r) transform with a Lorch window above |
+| Chains | rg, ree, cn, persistence | mass-weighted Rg; backbone end-to-end; C_n = ⟨R²(n)⟩/(n⟨b²⟩) and C∞ extrapolated in 1/n; Flory projection and bond-correlation decay |
+| Dynamics | msd, diffusion, relaxation | all time origins, system drift removed; D from the molecule-centre MSD over a chosen window, with the log-log slope; P2 bond and end-to-end autocorrelations with KWW fits |
+| Thermo | ced, delta | (E isolated − E bulk)/V with the assigned force field (Field; GAFF of C and H otherwise), δ = √CED |
+| Free volume | ffv, psd | probe insertion on a grid with Bondi radii (accessible fraction for several probes, Bondi FFV); Gelb–Gubbins pore sizes, largest cavity refined off the grid |
+
+| Check (`bench/analyze/check_analyze.py` on a 100 ps polystyrene run, 201 frames) | Result |
+|---|---|
+| g(r) C–C against MDAnalysis `InterRDF` | largest difference 2.7 × 10⁻⁴ |
+| √⟨Rg²⟩ against MDAnalysis `radius_of_gyration` | equal to 10⁻⁴ Å |
+| atom and molecule-centre MSD, D against numpy (drift removed) and MDAnalysis `EinsteinMSD` | equal to 10⁻⁴ (relative) |
+| S(q) against a numpy sum over all 5125 k-vectors of the cell | 6 × 10⁻⁷ |
+| free fraction against Monte Carlo insertion (400 000 points) | 0.3976 vs 0.3964 ± 0.0023 |
+| largest pore of a simple cubic lattice against 2(a√3/2 − r) | equal to 10⁻⁴ Å |
+
+Unit tests add a Bragg peak of a simple cubic crystal, an ideal gas (S = 1), a single sphere's volume and D of a
+random walk with drift. Not built yet: entanglements (primitive-path analysis).
+
+### Mechanics and the glass transition
+
+| Command (and Analyze chip) | Method |
+|---|---|
+| `caps elastic FILE --method strain` (Cij strain) | Theodorou–Suter static constants: minimise at fixed cell, ±ε in each Voigt direction (pure strain), re-minimise, C_IJ = Δσ_I/Δε_J; averaged over `--configs` frames. The pair set is frozen at the minimum, so the truncated-LJ surface is smooth and the minimiser converges (L-BFGS, 10⁻⁴ kcal/mol/Å) |
+| `caps elastic TRAJ --method fluct --temp T` (Cij fluct.) | stress fluctuations of an NVT trajectory (Lutsko 1989): ⟨Born⟩ − (V/kT) cov(σ) + NkT/V, block errors; the Born term by central differences of the second Piola–Kirchhoff virial stress under Lagrangian strain |
+| `caps tensile DATA --axis x --rate 1e-3 --strain 0.2` (Stress–strain) | uniaxial deformation at constant engineering rate (as LAMMPS `fix deform erate`, remap x), lateral faces at 1 atm by per-axis Berendsen coupling or fixed; modulus and Poisson ratio from 0–2 %, 0.2 % offset yield, peak |
+| `caps tg DATA --from 500 --to 200 --step 20 --ps 100` (Tg), `caps tg --fit TABLE.csv` | stepwise NPT cooling, density averaged over the second half of each hold, Tg = hinge of a continuous two-line fit of specific volume (bootstrap error), expansion coefficients above and below |
+
+Every result reports Voigt, Reuss and Hill averages (E, K, G, ν, λ), the pre-stress of the cell, and notes (asymmetry,
+unconverged minimisations, strain rates far above experiment, cooling rate). The evaluator now carries the full virial
+tensor, and Dynamics reports the pressure tensor and supports per-axis pressure coupling and constant-rate deformation.
+
+| Check | Result |
+|---|---|
+| virial tensor, every term type (bonds, angles, torsions, impropers, class II, Morse, Buckingham, UB, inversions, 1-4 LJ) against −∂E/∂ε | unit tests, all six components |
+| virial tensor against LAMMPS `compute pressure NULL virial` (`bench/ff/check_data_lammps.py`, 16 force-field cases) | ≤ 1.6 × 10⁻⁷ relative |
+| Born term, bonded (`bench/mechanics/check_born_lammps.py`) against LAMMPS `compute born/matrix numdiff` | 2 × 10⁻¹⁰ |
+| Born term, bonded + LJ, against LAMMPS numdiff (step 10⁻⁷) | 2 × 10⁻⁹ |
+| Born term of an fcc argon crystal against the lattice sum Σ(φ″ − φ′/r)X⁴/r² | 10⁻⁴ (unit test); LAMMPS numdiff also equals it |
+| static constants of a Bravais lattice against Born + the Cauchy-stress terms | unit test |
+| fluctuation constants of a crystal at 5 K against its static constants | within 6–10 % (unit test) |
+| tensile modulus and Poisson ratio of a cold crystal against (C11 − C12)(C11 + 2C12)/(C11 + C12) and C12/(C11 + C12) | within 12 % / 0.1 |
+| two-line fit of noisy synthetic data | Tg within 8 K |
+
+Found on the way: LAMMPS's analytic `compute born/matrix` pair term (this build) disagrees with its own `numdiff`
+mode and with the lattice sum: it sums the prefactor ½φ″ − φ′/r over a full neighbour list, which counts φ′/r twice
+(argon: C11 3260 against 3400 kcal/mol). And DL_FIELD's library files carry element and mass typos in single atom-type
+entries (AMBER25 `HC_alkyne → ha` as C 12.0115, CVFF `O_alcohol → oh` at 12.0115, CGenFF `NG2O1` at 12.007, TraPPE-EH
+`H_3` at 12.0115, …); the importer now takes the element by majority over all entries of a type and replaces a mass
+equal to another element's standard mass, and the library was rebuilt (masses only; energies and forces unchanged).
+
+## Samples
+
+`samples/ps_melt.*` is one built cell: 10 atactic polystyrene chains of 8 units with hydrogens in a 33 Å box
+(1300 atoms, 1370 bonds, density 0.386 g/cm³ — loosely packed, not equilibrated). The `.lammpstrj` has three
+frames in which frame *k* is frame 0 shifted by 0.5·*k* Å in x: a reader test pattern, not dynamics.
+
+## Layout
+
+```
+core/       C++20 library: model, readers/writers, bonds, analysis, Grow, Pack, Field, Relax, Dynamics, Equilibrate, React, renderer
+capi/       C ABI (libcaps) used by the Studio through P/Invoke
+cli/        caps command-line tool
+tests/      GoogleTest suite
+studio/     Avalonia desktop app (C#, MVVM)
+samples/    small input files used by tests and the Studio
+design/     exported screen designs (boards, canvas, generator scripts)
+scripts/    build, launch and LAMMPS cross-check helpers
+```
