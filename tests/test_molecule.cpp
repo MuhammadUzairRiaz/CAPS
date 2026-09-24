@@ -206,3 +206,22 @@ TEST(Depict, RingsAreRegularAndChainsZigZag) {
     for (size_t j = i + 1; j < p.size(); ++j) EXPECT_GT(norm(p[i] - p[j]), 0.8) << i << " " << j;
   for (const auto& v : p) EXPECT_EQ(v[2], 0.0);
 }
+
+#include "caps/bench.hpp"
+
+TEST(Bench, QuickTablesPassAndExport) {
+  BenchOptions o;
+  o.samples = std::string(CAPS_SOURCE_DIR) + "/samples";
+  o.forcefields = std::string(CAPS_SOURCE_DIR) + "/data/forcefields";
+  o.quick = true;
+  o.repeats = 1;
+  std::vector<BenchTable> ts;
+  for (const char* id : {"T1", "T9", "T12"}) {
+    ts.push_back(run_bench(id, o));
+    EXPECT_EQ(ts.back().status, "pass") << id << ": " << ts.back().note;
+  }
+  EXPECT_EQ(run_bench("T3", o).status, "not run");
+  EXPECT_NE(bench_markdown(ts).find("| T12 Molecule builder |"), std::string::npos);
+  EXPECT_NE(bench_latex(ts).find("\\begin{tabular}"), std::string::npos);
+  EXPECT_NE(bench_csv(ts[0]).find("Check,Atoms"), std::string::npos);
+}

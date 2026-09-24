@@ -186,6 +186,8 @@ public sealed partial class MainViewModel
             case nameof(EqRunning): Track("Equilibrate", EqRunning, 4, "Equilibrate · " + Protocols[Math.Clamp(EqProtocol, 0, Protocols.Length - 1)]); break;
             case nameof(Packing): Track("Pack", Packing, 5, "Pack · molecules into a box"); break;
             case nameof(Reacting): Track("React", Reacting, 6, "React · crosslinking"); break;
+            case nameof(BenchRunning): Track("Bench", BenchRunning, 12, "Bench · validation suite"); break;
+            case nameof(BenchProgress): Line("Bench", BenchProgress); break;
             case nameof(GrowLog): Line("Grow", GrowLog); if (_live.TryGetValue("Grow", out var g)) g.Progress = GrowProgress; break;
             case nameof(RelaxLog): Line("Relax", RelaxLog); break;
             case nameof(MdLog): Line("Dynamics", MdLog); break;
@@ -356,6 +358,7 @@ public sealed partial class MainViewModel
             case "React": CancelReact(); break;
             case "Grow": CancelGrow(); break;
             case "Analyze": Analyze.Cancel(); break;
+            case "Bench": CancelBench(); break;
         }
     }
 

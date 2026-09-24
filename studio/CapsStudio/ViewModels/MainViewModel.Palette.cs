@@ -50,6 +50,7 @@ public sealed partial class MainViewModel
             ("Equilibrate", 4, "equil", "protocol 21-step annealing convergence"), ("React", 6, "react", "crosslink cure gel"),
             ("Analyze", 1, "chart", "properties density rdf tg modulus"), ("Field", 7, "tag", "force field typing gaff opls"),
             ("Jobs", 11, "jobs", "runs progress log provenance history"), ("Settings", 10, "gear", "preferences theme palette threads"),
+            ("Bench", 12, "bench", "validation benchmark tables paper"),
         };
         foreach (var (name, m, icon, words) in modules)
             AddCommand(new PaletteCommand
@@ -90,6 +91,8 @@ public sealed partial class MainViewModel
             Enabled = () => CanEquilibrate, Run = () => { SetModule(4); _ = RunEquilibrate(); } });
         AddCommand(new PaletteCommand { Title = "Crosslink (React)", Id = "react.run", Icon = "react", Section = "Run",
             Enabled = () => CanReact, Run = () => { SetModule(6); _ = RunReact(); } });
+        AddCommand(new PaletteCommand { Title = "Run the validation suite", Id = "bench.run --all", Icon = "bench", Section = "Run", Keywords = "benchmark tables",
+            Enabled = () => BenchIdle, Run = () => { SetModule(12); LoadBench(); _ = RunBench(true); } });
         AddCommand(new PaletteCommand { Title = "Compute the selected properties", Id = "analyze.run", Icon = "chart", Section = "Run", Keywords = "analyze analyse",
             Enabled = () => _doc != null && Idle, Run = () => { SetModule(1); _ = Analyze.Run(); } });
     }

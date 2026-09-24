@@ -1,0 +1,51 @@
+// CAPS Bench: the validation suite that runs with CAPS alone (design board Bench). Each table measures one claim on
+// the shipped samples and says pass, fail or info; tables that need other programs or long equilibrated runs are
+// listed as not run with the reason, so the suite never reports what it did not measure.
+//
+//   T1  forces and virial against finite differences of the energy
+//   T2  Pack on water boxes: wall time, closest contact, success
+//   T4  molecular-dynamics throughput (ns/day)
+//   T5  NVE energy conservation (drift, kT/ns/atom)
+//   T8  thread scaling of the force evaluation
+//   T9  reproducibility: the same run twice is bit-identical
+//   T11 rendering time
+//   T12 molecule builder: stereochemistry and round trips
+#pragma once
+#include <functional>
+#include <string>
+#include <vector>
+
+namespace caps {
+
+struct BenchRow {
+  std::vector<std::string> cells;
+  std::string status;           // pass | fail | info
+};
+
+struct BenchTable {
+  std::string id, title, scope;
+  std::vector<std::string> columns;
+  std::vector<BenchRow> rows;
+  std::string status = "not run";   // pass | fail | info | not run
+  std::string note;             // how it was measured, or why it was not run
+  double seconds = 0;
+};
+
+struct BenchOptions {
+  std::string samples;          // the samples directory (ps_melt.data, water.pdb)
+  std::string forcefields;      // data/forcefields (T12 cleans molecules up with GAFF2 when given)
+  int repeats = 3;
+  bool quick = false;           // shorter runs (tests, a first look)
+  // (table id, what, fraction of the table done) → false cancels
+  std::function<bool(const std::string&, const std::string&, double)> progress;
+};
+
+std::vector<std::string> bench_ids();                  // T1 … T12
+BenchTable bench_describe(const std::string& id);      // title, scope and columns, not run
+BenchTable run_bench(const std::string& id, const BenchOptions& o);
+
+std::string bench_markdown(const std::vector<BenchTable>& tables);
+std::string bench_csv(const BenchTable& t);
+std::string bench_latex(const std::vector<BenchTable>& tables);
+
+}  // namespace caps

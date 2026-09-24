@@ -253,6 +253,7 @@ public partial class MainWindow : Window
     public void ShowSettings() => _vm.SetModule(10);
     private void OnSettingsRail(object? s, RoutedEventArgs e) => _vm.SetModule(10);
     private void OnModuleJobs(object? s, RoutedEventArgs e) => _vm.SetModule(11);
+    private void OnModuleBench(object? s, RoutedEventArgs e) => _vm.SetModule(12);
     private void OnCloseDocument(object? s, RoutedEventArgs e) { e.Handled = true; _vm.CloseDocument(); }
     private void OnThemeDark(object? s, RoutedEventArgs e) { Tokens.Use(false); RequestRender(); }
     private void OnThemeLight(object? s, RoutedEventArgs e) { Tokens.Use(true); RequestRender(); }
