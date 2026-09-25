@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <fstream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <unordered_map>
 
@@ -39,6 +40,19 @@ void assign_elements(System& s) {
     if (at.element) ++guessed;
   }
   if (guessed) s.notes.push_back("elements guessed from type masses for " + std::to_string(guessed) + " atoms");
+  // Bead-spring models (Kremer–Grest, reduced units) give beads mass 1, which reads as hydrogen. A type whose atoms
+  // bond to two or more others is beads, not hydrogens: they are drawn as carbon, as CAPS's own bead-spring melts are.
+  std::vector<int> nbond(s.atoms.size(), 0);
+  for (const auto& b : s.bonds) ++nbond[b.i], ++nbond[b.j];
+  std::set<int> bead_types;
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 1 && nbond[i] >= 2) bead_types.insert(s.atoms[i].type);
+  if (!bead_types.empty()) {
+    size_t nb = 0;
+    for (auto& at : s.atoms)
+      if (at.element == 1 && bead_types.count(at.type)) at.element = 6, ++nb;
+    s.notes.push_back("bead-spring model: " + std::to_string(nb) + " mass-1 beads bonded to two or more others are beads, not hydrogens (drawn as carbon)");
+  }
 }
 
 }  // namespace

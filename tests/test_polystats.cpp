@@ -4,6 +4,9 @@
 #include <cmath>
 #include <numeric>
 
+#include "caps/analysis.hpp"
+#include "caps/entangle.hpp"
+#include "caps/io.hpp"
 #include "caps/kspace.hpp"
 #include "caps/polymer.hpp"
 #include "caps/polystats.hpp"
@@ -125,4 +128,72 @@ TEST(Resolution, HeavyAtomsGetTheirHydrogensFromTheGeometry) {
     orders_from_geometry(s);
     EXPECT_EQ(add_hydrogens(s), h) << smiles;
   }
+}
+
+// Chain A runs from (0, 1, 0) to (20, 1, 0) but loops behind chain B, which stands along z at x = 10, y = 0. The
+// primitive path of A must stay hooked behind B; without B it pulls straight to 20 Å.
+static System hooked_pair(bool with_b) {
+  System s;
+  auto add = [&](Vec3 p, int64_t mol) { Atom a; a.element = 6; a.mol = mol; a.id = int64_t(s.atoms.size()) + 1; a.pos = p; s.atoms.push_back(a); };
+  for (int k = 0; k <= 40; ++k) {
+    const double t = k / 40.0, x = 20 * t;
+    add({x, 1 - 4 * std::sin(M_PI * t), 0}, 1);
+    if (k) s.bonds.push_back({uint32_t(k - 1), uint32_t(k), 1});
+  }
+  if (with_b)
+    for (int k = 0; k <= 20; ++k) {
+      add({10, 0, -10.0 + k}, 2);
+      if (k) s.bonds.push_back({uint32_t(s.atoms.size() - 2), uint32_t(s.atoms.size() - 1), 1});
+    }
+  s.has_mol = true;
+  return s;
+}
+
+TEST(Entanglement, APathStaysHookedBehindAnotherChain) {
+  for (bool with_b : {false, true}) {
+    const System s = hooked_pair(with_b);
+    std::vector<std::vector<uint32_t>> bb(1);
+    for (uint32_t i = 0; i <= 40; ++i) bb[0].push_back(i);
+    if (with_b) { bb.emplace_back(); for (uint32_t i = 41; i <= 61; ++i) bb[1].push_back(i); }
+    PrimitivePathOptions o;
+    o.sigma = 1.0;
+    const PrimitivePaths p = primitive_paths(s, bb, o);
+    ASSERT_EQ(p.lpp.size(), bb.size());
+    if (!with_b) {
+      EXPECT_NEAR(p.lpp[0], 20.0, 0.05);
+    } else {
+      // both paths bend where they meet (equal tension): A cannot pull straight, and B is pushed out of line
+      EXPECT_GT(p.lpp[0], 20.1);
+      EXPECT_GT(p.lpp[1], 20.02);
+      double closest = 1e9;
+      for (const auto& a : p.paths[0])
+        for (const auto& b : p.paths[1]) closest = std::min(closest, norm(a - b));
+      EXPECT_GT(closest, 0.9);   // the beads keep about σ apart
+      // A's bead nearest x = 10 is still on the far side (y < 0) of B
+      double ymid = 1e9, best = 1e9;
+      for (const auto& q : p.paths[0]) if (std::abs(q[0] - 10) < best) best = std::abs(q[0] - 10), ymid = q[1];
+      EXPECT_LT(ymid, 0.0);
+      const EntanglementEstimate e = entanglement_estimate(p);
+      EXPECT_EQ(e.chains, 2);
+      EXPECT_GT(e.ne_mscoil, 0.0);
+    }
+  }
+}
+
+// samples/kg_melt.data: 20 Kremer–Grest chains of 100 beads (pushed off and run 200 τ in LAMMPS). The same primitive-path
+// protocol run in LAMMPS (FENE K = 30, R₀ = 1.5 without the LJ part, WCA between chains only, neigh_modify exclude
+// molecule/intra, ends fixed, Langevin T = 0.001, 200 000 steps of 0.006 τ) gives ⟨L_pp⟩ = 21.225 σ, N_e (modified
+// S-coil) = 68.1 and N_e (classical) = 42.2.
+TEST(Entanglement, KremerGrestMeltMatchesTheLammpsPrimitivePaths) {
+  System s = read_lammps_data(std::string(CAPS_SAMPLES) + "/kg_melt.data");
+  for (const auto& a : s.atoms) ASSERT_EQ(a.element, 6);   // mass-1 beads are read as beads, not hydrogens
+  if (!s.unwrapped) make_molecules_whole(s);
+  const auto bb = backbones(s);
+  ASSERT_EQ(bb.size(), 20u);
+  const PrimitivePaths p = primitive_paths(s, bb);
+  EXPECT_TRUE(p.converged);
+  const EntanglementEstimate e = entanglement_estimate(p);
+  EXPECT_NEAR(e.lpp, 21.225, 0.01 * 21.225);
+  EXPECT_NEAR(e.ne_mscoil, 68.1, 0.05 * 68.1);
+  EXPECT_NEAR(e.ne_coil, 42.2, 0.03 * 42.2);
 }

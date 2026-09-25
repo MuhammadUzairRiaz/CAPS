@@ -847,6 +847,14 @@ internal static class SelfTest
             Check(exprOk && bondsOk && vecOk && realOk, $"row 21 steps: [{exprOk} {bondsOk} {vecOk} {realOk}] {pr["steps"]?[0]?["summary"]} · {pr["steps"]?[1]?["summary"]}");
         }
 
+        // Entanglements: primitive paths of the Kremer–Grest sample (LAMMPS gives N_e 68.1 by the modified S-coil)
+        {
+            using var kg = CapsDocument.Open(Path.Combine(dir, "kg_melt.data"));
+            var ej = System.Text.Json.Nodes.JsonNode.Parse(kg.Analyze("entanglements", new CapsAnalyzeOpts { Last = -1, Stride = 1, Blocks = 5, Grid = 0.4, Qmax = 25, Dq = 0.02, FitFrom = 0.2, FitTo = 0.5, TimestepFs = 1 }, null))!;
+            var ne = (double?)ej["properties"]?[0]?["value"] ?? double.NaN;
+            Check(Math.Abs(ne - 68.1) < 0.05 * 68.1, $"entanglements: N_e {ne:F1} bonds on the Kremer–Grest sample (LAMMPS 68.1)");
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

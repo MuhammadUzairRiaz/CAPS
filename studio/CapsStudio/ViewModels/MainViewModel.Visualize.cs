@@ -116,6 +116,7 @@ public sealed partial class MainViewModel
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
         new("python", "Python step", "your script with an @step function (caps.pipeline API)", "Automate", "terminal"),
+        new("primitive_paths", "Primitive paths", "chains pulled tight without crossing · N_e", "Structure", "bond"),
         new("voids", "Voids & pores", "accessible volume for a probe, voids by size", "Structure", "atom"),
         new("voronoi", "Voronoi volumes", "volume per atom (grid or radical)", "Structure", "hex"),
         new("density_field", "Density field", "smoothed mass density, profile, slice", "Structure", "layers"),
@@ -172,7 +173,7 @@ public sealed partial class MainViewModel
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
             "molecule_shape" => "molecules", "wrap" => "outside", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
-            "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", _ => null,
+            "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", "primitive_paths" => "primitive_paths", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
         for (int k = 0; k < ts.Count; ++k)
@@ -422,6 +423,7 @@ public sealed partial class MainViewModel
         "voronoi" => new JsonObject { ["method"] = "grid", ["grid"] = 0.5 },
         "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5 },
         "trajectory_lines" => new JsonObject { ["particles"] = "centres", ["from"] = 0, ["radius"] = 0.12 },
+        "primitive_paths" => new JsonObject { ["radius"] = 0.3, ["show_chains"] = false },
         _ => new JsonObject(),
     };
 
@@ -495,6 +497,7 @@ public sealed partial class MainViewModel
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
             case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); break;
+            case "primitive_paths": Bool("show_chains", "Show the chains too"); Text("radius", "Line radius (Å)", "number"); Text("max_steps", "Minimisation steps at most", "number", "blank: 200 000"); break;
             case "molecule_shape": Bool("glyphs", "Principal-axis glyphs (±√(3λ))"); break;
             case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Choice("stack_by", "Stack by", ["none", "Type", "Element", "Molecule"]); Bool("only_selected", "Only selected"); break;
             case "binning": Choice("property", "Property", props); Choice("axis", "Along", ["0", "1", "2"]); Text("bins", "Bins", "number"); Choice("reduction", "Reduction", ["density", "mean", "sum"]); break;
