@@ -12,7 +12,17 @@ namespace caps {
 
 enum class Background { Dark, White, Transparent, Custom };
 enum class ColourBy { Element, Molecule, Type, Property };
-enum class Style { BallAndStick, SpaceFilling, Sticks, NoHydrogens, Backbone };
+enum class Style { BallAndStick, SpaceFilling, Sticks, NoHydrogens, Backbone, Wireframe, Polyhedra, Ribbon, Hidden };
+// Per-atom colour ramps for ColourBy::Property: viridis; blue–orange and red–white–blue diverging about zero.
+enum class Ramp { Viridis, BlueOrange, RedWhiteBlue };
+
+struct Mesh;   // caps/appearance.hpp
+// A triangle mesh drawn with the atoms: one colour or per-vertex colours, translucent.
+struct MeshDraw {
+  const Mesh* mesh = nullptr;
+  unsigned rgb = 0x8FB8D8;
+  float opacity = 0.6f;
+};
 
 struct Camera {
   double yaw = 0.55, pitch = 0.40;     // radians
@@ -49,6 +59,11 @@ struct RenderOptions {
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
   std::vector<unsigned> colours;       // per atom 0xRRGGBB overriding colour_by (a pipeline's colours); 0xFFFFFFFF keeps it
   std::vector<Segment> segments;       // tubes and arrows drawn with the atoms
+  std::vector<uint8_t> atom_style;     // per atom (Style values) overriding `style`: mixed styles; Ribbon and Hidden hide the atom
+  Ramp ramp = Ramp::Viridis;           // ColourBy::Property
+  bool symmetric = false;              // ColourBy::Property: the range ±max|value| (charges)
+  double range_min = 0, range_max = 0; // ColourBy::Property: a fixed range when range_max > range_min
+  std::vector<MeshDraw> meshes;        // surfaces and coordination polyhedra
 };
 
 struct Image {
@@ -60,6 +75,8 @@ struct Renderer {
   // Picks the atom under a pixel of the last render (-1 if none).
   int pick(int x, int y) const;
   Image render(const System& s, const Camera& cam, const RenderOptions& opt);
+  // For every atom: output-pixel x, y and 1 when the last render (same camera and options) shows it at its centre, else 0.
+  std::vector<float> project(const System& s, const Camera& cam, const RenderOptions& opt) const;
 
  private:
   std::vector<int32_t> id_buffer_;
@@ -74,6 +91,7 @@ std::vector<float> ambient_accessibility(const System& s, const std::vector<doub
 
 unsigned molecule_colour(int k);     // design palette, 10 entries cycled
 unsigned viridis(double t);          // t in [0, 1]
+unsigned ramp_colour(Ramp r, double t);   // t in [0, 1]
 unsigned background_rgb(Background b, unsigned custom);
 
 void write_png(const Image& img, const std::string& path);

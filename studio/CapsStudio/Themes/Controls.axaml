@@ -301,6 +301,24 @@
     <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
   </Style>
 
+  <!-- tiles: a choice drawn as an icon over a word (styles, builder kinds); the chosen one outlined in amber -->
+  <Style Selector="RadioButton.tile">
+    <Setter Property="Height" Value="58" /><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="B" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg0B}">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+  </Style>
+  <Style Selector="RadioButton.tile:pointerover"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="RadioButton.tile:checked /template/ Border#B"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+  <Style Selector="RadioButton.tile:checked"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="RadioButton.tile:disabled"><Setter Property="Opacity" Value="0.45" /></Style>
+
   <!-- chips: 22 px pills; ToggleButton.chip is a calculation you switch on (amber when on) -->
   <Style Selector="Border.chip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />

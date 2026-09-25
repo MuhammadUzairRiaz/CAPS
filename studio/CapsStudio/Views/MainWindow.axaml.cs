@@ -623,6 +623,12 @@ public partial class MainWindow : Window
                 old?.Dispose();
                 _pixW = pw; _pixH = ph;
                 RenderStat.Text = $"{pw}×{ph} px · {sw.ElapsedMilliseconds} ms";
+                // atom labels (Appearance): the visible atoms' screen positions from this render
+                if (!field)
+                {
+                    try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>()); }
+                    catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
+                }
                 _rendered = ticket;
             }
         }
@@ -636,6 +642,17 @@ public partial class MainWindow : Window
             _busy = false;
         }
     }
+
+    // ---------------------------------------------------------------- appearance (design/boards/Appearance)
+
+    private void OnAppStyle(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is string t && int.TryParse(t, out var k)) _vm.AppStyle = k;
+    }
+    private void OnRemoveLayer(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.StyleLayer l) _vm.RemoveStyleLayer(l); }
+    private void OnAppearanceReset(object? s, RoutedEventArgs e) => _vm.ResetAppearance();
+    private void OnAppearanceExport(object? s, RoutedEventArgs e) => _vm.OpenFigure();
+    private void OnAppearanceApply(object? s, RoutedEventArgs e) => _vm.AppearanceOpen = false;
 
     // ---------------------------------------------------------------- mouse
 

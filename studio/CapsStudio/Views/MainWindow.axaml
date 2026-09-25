@@ -187,6 +187,10 @@
       <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+            <ToggleButton Classes="tool" IsChecked="{Binding AppearanceOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="Appearance (design/boards/Appearance): styles per selection, colour by charge, labels, surfaces">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="18" VerticalAlignment="Center" /><TextBlock Text="Appearance" VerticalAlignment="Center" /></StackPanel>
+            </ToggleButton>
             <Button Classes="tool" ToolTip.Tip="Display style" IsEnabled="{Binding HasDocument}">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="18" VerticalAlignment="Center" /><TextBlock Text="{Binding StyleText}" VerticalAlignment="Center" /></StackPanel>
               <Button.Flyout>
@@ -449,6 +453,22 @@
                 AutomationProperties.Name="3D view · arrow keys walk the atoms, [ and ] the molecules, B the bonds">
           <Panel>
             <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <local:LabelOverlay x:Name="Labels" />
+            <!-- Appearance legend (design/boards/Appearance): partial charge or surface potential -->
+            <Border Classes="hud" Width="260" Padding="12,10" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Bottom" IsVisible="{Binding ShowAppLegend}">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding AppLegendTitle}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <Rectangle Height="12" RadiusX="3" RadiusY="3" Fill="{Binding AppLegendBrush}" />
+                <Grid ColumnDefinitions="*,Auto,*">
+                  <TextBlock Text="{Binding AppLegendLo}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" />
+                  <TextBlock Grid.Column="1" Text="0" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" />
+                  <TextBlock Grid.Column="2" Text="{Binding AppLegendHi}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Right" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="hud" Padding="10,4" Margin="14,48,14,14" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding LabelNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <TextBlock Text="{Binding LabelNote}" FontSize="12" Foreground="{DynamicResource WarnB}" />
+            </Border>
             <!-- Empty state -->
             <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" Text="The structure appears here when the run starts">
               <TextBlock.IsVisible>
@@ -791,8 +811,125 @@
       <!-- Inspector -->
       <Border Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
         <Panel>
+        <!-- Appearance (design/boards/Appearance): styles per selection, colour, labels, surfaces, rendering -->
+        <DockPanel IsVisible="{Binding ShowAppearance}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding AppChip}" Foreground="{DynamicResource MutedB}" /></Border>
+              <TextBlock Text="Appearance" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <DockPanel>
+              <Button DockPanel.Dock="Left" Classes="ghost" Content="Reset" Click="OnAppearanceReset" ToolTip.Tip="Back to the view's style: no layers, surfaces or labels" />
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Click="OnAppearanceExport">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="Export image" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <Button Classes="primary" Click="OnAppearanceApply">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="check" Size="15" VerticalAlignment="Center" /><TextBlock Text="Apply" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="STYLE" Classes="h3" />
+                  <Border Classes="seg" HorizontalAlignment="Stretch">
+                    <UniformGrid Columns="2">
+                      <RadioButton Classes="seg" Content="All atoms" GroupName="apptarget" IsChecked="{Binding AppTarget, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="Expression" GroupName="apptarget" IsChecked="{Binding AppTarget, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" HorizontalAlignment="Stretch" />
+                    </UniformGrid>
+                  </Border>
+                  <TextBox Text="{Binding AppExpression}" Classes="mono" FontSize="12" IsVisible="{Binding AppTargetIsExpression}" Watermark="Molecule &lt;= 3 · Element == &quot;O&quot; · Position.Z &gt; 20" />
+                  <UniformGrid Columns="3">
+                    <RadioButton Classes="tile" GroupName="appstyle" IsChecked="{Binding AppBallStick, Mode=OneWay}" Click="OnAppStyle" Tag="0" Margin="0,0,6,6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center"><local:Icon Kind="atom" Size="18" HorizontalAlignment="Center" /><TextBlock Text="Ball &amp; stick" FontSize="11.5" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="appstyle" IsChecked="{Binding AppStick, Mode=OneWay}" Click="OnAppStyle" Tag="1" Margin="0,0,6,6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center"><local:Icon Kind="bond" Size="18" HorizontalAlignment="Center" /><TextBlock Text="Stick" FontSize="11.5" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="appstyle" IsChecked="{Binding AppWire, Mode=OneWay}" Click="OnAppStyle" Tag="2" Margin="0,0,0,6">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center"><local:Icon Kind="relax" Size="18" HorizontalAlignment="Center" /><TextBlock Text="Wireframe" FontSize="11.5" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="appstyle" IsChecked="{Binding AppSpace, Mode=OneWay}" Click="OnAppStyle" Tag="3" Margin="0,0,6,0">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center"><local:Icon Kind="pack" Size="18" HorizontalAlignment="Center" /><TextBlock Text="Space filling" FontSize="11.5" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="appstyle" IsChecked="{Binding AppPoly, Mode=OneWay}" Click="OnAppStyle" Tag="4" Margin="0,0,6,0">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center"><local:Icon Kind="cube" Size="18" HorizontalAlignment="Center" /><TextBlock Text="Polyhedra" FontSize="11.5" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="appstyle" IsChecked="{Binding AppRibbon, Mode=OneWay}" Click="OnAppStyle" Tag="5">
+                      <StackPanel Spacing="5" HorizontalAlignment="Center"><local:Icon Kind="grow" Size="18" HorizontalAlignment="Center" /><TextBlock Text="Ribbon" FontSize="11.5" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                  </UniformGrid>
+                  <ItemsControl ItemsSource="{Binding AppLayers}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:StyleLayer">
+                        <DockPanel Margin="0,0,0,4">
+                          <Button DockPanel.Dock="Right" Classes="ghost" Padding="4,0" MinHeight="22" Height="22" Click="OnRemoveLayer" Tag="{Binding}" ToolTip.Tip="Remove the layer"><local:Icon Kind="close" Size="12" /></Button>
+                          <TextBlock Text="{Binding Title}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="COLOUR" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Colour by" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppColourNames}" SelectedIndex="{Binding AppColour}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsEnabled="{Binding AppRampEnabled}"><TextBlock Text="Palette" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppRampNames}" SelectedIndex="{Binding AppRamp}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="LABELS" Classes="h3" />
+                  <WrapPanel>
+                    <CheckBox Content="Element" IsChecked="{Binding LabelElement}" Margin="0,0,14,0" />
+                    <CheckBox Content="R/S" IsChecked="{Binding LabelRs}" Margin="0,0,14,0" ToolTip.Tip="Cahn–Ingold–Prelog configuration of tetrahedral centres" />
+                    <CheckBox Content="Atom type" IsChecked="{Binding LabelType}" Margin="0,0,14,0" />
+                    <CheckBox Content="Charge" IsChecked="{Binding LabelCharge}" />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SURFACES" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Surface" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppSurfaceNames}" SelectedIndex="{Binding AppSurface}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsEnabled="{Binding AppHasSurface}"><TextBlock Text="Probe · Å" Classes="label" /><NumericUpDown Value="{Binding AppProbe}" Minimum="0.5" Maximum="5" Increment="0.1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsEnabled="{Binding AppHasSurface}">
+                    <StackPanel Spacing="6"><TextBlock Text="Map onto surface" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppMapNames}" SelectedIndex="{Binding AppSurfaceMap}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Opacity" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppOpacities}" SelectedIndex="{Binding AppOpacity}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <TextBox Text="{Binding AppSurfaceAtoms}" Classes="mono" FontSize="12" IsEnabled="{Binding AppHasSurface}" Watermark="Atoms it wraps (empty: all) · Molecule == 1" />
+                  <TextBlock Classes="dim" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" Text="Lee &amp; Richards 1971 · Connolly 1983 · marching tetrahedra on a 0.6 Å grid; potential from the partial charges (ε = 1)" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="9">
+                  <TextBlock Text="RENDERING" Classes="h3" />
+                  <CheckBox Classes="toggle" Content="Ambient occlusion" IsChecked="{Binding ViewAo}" />
+                  <CheckBox Classes="toggle" Content="Edge outlines" IsChecked="{Binding Outlines}" />
+                  <CheckBox Classes="toggle" Content="Depth cueing" IsChecked="{Binding DepthCue}" />
+                </StackPanel>
+              </Border>
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding AppError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding AppHasError}" />
+                  <TextBlock Text="{Binding AppInfo}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Studio inspector (Main board): Atom · Molecule · View · File -->
-        <TabControl IsVisible="{Binding IsStudio}" Padding="0" Margin="0">
+        <TabControl IsVisible="{Binding ShowStudioTabs}" Padding="0" Margin="0">
           <TabControl.Styles>
             <Style Selector="TabItem"><Setter Property="Margin" Value="6,0,0,0" /></Style>
           </TabControl.Styles>

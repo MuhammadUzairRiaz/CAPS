@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -487,6 +487,24 @@ typedef int32_t (*caps_stage_progress_fn)(int32_t stage, int32_t loop, int32_t l
 int32_t caps_solvent_library(char* json, int32_t cap);
 int32_t caps_solvate_plan(caps_doc* solute, const char* options_json, char* json, int32_t cap);
 caps_doc* caps_solvate(caps_doc* solute, const char* options_json, caps_stage_progress_fn progress, void* user, char* report, int32_t cap);
+
+/* Appearance of the Studio view (v20, design/boards/Appearance), kept by the document and prepared for each frame (not
+   drawn while a Visualize pipeline runs). caps_set_appearance JSON {active, layers: [{expression ("" all atoms, else a
+   pipeline expression such as "Molecule <= 3"), style: "ball_and_stick" | "sticks" | "wireframe" | "space_filling" |
+   "polyhedra" | "ribbon" | "hidden" | "no_hydrogens"}] applied in order (atoms no layer names keep the view's style),
+   colour: "" (the view's) | "element" | "molecule" | "type" | "distance" | "charge", ramp: "blue_orange" | "viridis" |
+   "red_white_blue", surface: {kind: "none" | "accessible" | "vdw" | "excluded", probe, spacing (Å), opacity,
+   expression (the atoms it wraps), colour: "potential" | "atom" | "uniform"}}; 0 or −1 (caps_last_error).
+   caps_appearance_info: {active, error, styles: {style: count}, charge: [min, max], surface: {area, vertices,
+   triangles, potential: [min, max] kcal/mol/e}, polyhedra: triangles}.
+   caps_atom_labels: a JSON array with one label per atom of the frame; kind "element" | "rs" (CIP) | "type" | "charge" |
+   "name".
+   caps_project_atoms: after caps_render with the same camera and options, x, y (output pixels) and visibility (1 when
+   the atom shows at its centre) of each frame atom into xyv (3 floats per atom); returns the atoms written. */
+int32_t caps_set_appearance(caps_doc* d, const char* json);
+int32_t caps_appearance_info(caps_doc* d, char* json, int32_t cap);
+int32_t caps_atom_labels(caps_doc* d, const char* kind, char* json, int32_t cap);
+int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, float* xyv, int32_t count);
 
 #ifdef __cplusplus
 }

@@ -35,6 +35,7 @@
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
+#include "caps/appearance.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -69,6 +70,25 @@ struct FieldState {
   bool file_has_charges = false;
 };
 
+// Styles, colours, surfaces and polyhedra of the Studio view (caps_set_appearance), prepared for the current frame.
+struct AppearanceState {
+  bool active = false;
+  std::vector<std::pair<std::string, int>> layers;   // expression ("" all) → caps::Style, applied in order
+  int colour = -1;                 // −1 the view's; 0 element, 1 molecule, 2 type, 3 distance to own centre, 4 partial charge
+  caps::Ramp ramp = caps::Ramp::BlueOrange;
+  int surface = 0;                 // 0 none, 1 accessible, 2 van der Waals, 3 excluded
+  double probe = 1.4, spacing = 0.6;
+  float opacity = 0.6f;
+  std::string surface_expr;        // atoms the surface wraps ("" all)
+  int surface_colour = 1;          // 0 one colour, 1 electrostatic potential, 2 nearest atom
+  // for the current frame
+  std::vector<uint8_t> style;      // 255: the view's style
+  std::unique_ptr<caps::Mesh> mesh, poly;
+  std::vector<caps::Segment> ribbon;
+  double phi_lo = 0, phi_hi = 0;
+  std::string error;
+};
+
 struct caps_doc {
   caps::Trajectory traj;
   caps::System frame;
@@ -85,6 +105,7 @@ struct caps_doc {
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
   std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
+  AppearanceState look;                            // caps_set_appearance
 };
 
 namespace {
@@ -134,6 +155,85 @@ void run_doc_pipeline(caps_doc* d) {
 // What the view draws: the pipeline's particles when there is a pipeline, else the frame.
 const caps::System& shown(const caps_doc* d) { return d->pstate ? d->pstate->system : d->frame; }
 
+void prepare_appearance(caps_doc* d) {
+  AppearanceState& L = d->look;
+  L.style.clear(), L.mesh.reset(), L.poly.reset(), L.ribbon.clear(), L.error.clear();
+  L.phi_lo = L.phi_hi = 0;
+  if (!L.active) return;
+  const caps::System& f = d->frame;
+  const size_t n = f.atoms.size();
+  std::unique_ptr<caps::PipelineState> st;
+  auto mask = [&](const std::string& expr) {
+    std::vector<char> m(n, 1);
+    if (expr.empty()) return m;
+    if (!st) st = std::make_unique<caps::PipelineState>(caps::run_pipeline(f, caps::Pipeline{}));
+    const auto v = caps::evaluate_expression(*st, expr);
+    for (size_t i = 0; i < n && i < v.size(); ++i) m[i] = v[i] != 0;
+    return m;
+  };
+  try {
+    if (!L.layers.empty()) {
+      L.style.assign(n, 255);
+      for (const auto& [expr, style] : L.layers) {
+        const auto m = mask(expr);
+        for (size_t i = 0; i < n; ++i) if (m[i]) L.style[i] = uint8_t(style);
+      }
+      std::vector<char> centres(n, 0), ribbon(n, 0);
+      bool any_poly = false, any_ribbon = false;
+      for (size_t i = 0; i < n; ++i) {
+        if (L.style[i] == uint8_t(caps::Style::Polyhedra)) centres[i] = 1, any_poly = true;
+        if (L.style[i] == uint8_t(caps::Style::Ribbon)) ribbon[i] = 1, any_ribbon = true;
+      }
+      if (any_poly) L.poly = std::make_unique<caps::Mesh>(caps::polyhedra(f, centres));
+      if (any_ribbon) {
+        const auto mol = f.molecules();
+        for (const auto& path : caps::ribbon_paths(f, ribbon)) {
+          size_t nearest = 0;
+          double best = 1e300;
+          for (size_t i = 0; i < n; ++i) if (ribbon[i]) { const double dd = caps::norm(f.atoms[i].pos - path.front()); if (dd < best) best = dd, nearest = i; }
+          const unsigned rgb = caps::molecule_colour(mol[nearest]);
+          for (size_t k = 0; k + 1 < path.size(); ++k) {
+            caps::Segment sg;
+            sg.a = path[k], sg.b = path[k + 1], sg.rgb = rgb, sg.radius = 0.55;
+            L.ribbon.push_back(sg);
+          }
+        }
+      }
+    }
+    if (L.surface > 0) {
+      caps::SurfaceOptions so;
+      so.kind = L.surface == 2 ? caps::SurfaceKind::VanDerWaals : L.surface == 3 ? caps::SurfaceKind::Excluded : caps::SurfaceKind::Accessible;
+      so.probe = L.probe;
+      so.spacing = L.spacing;
+      so.atoms = mask(L.surface_expr);
+      L.mesh = std::make_unique<caps::Mesh>(caps::surface_mesh(f, so));
+      auto& M = *L.mesh;
+      if (L.surface_colour == 1) {
+        const auto phi = caps::surface_potential(f, M);
+        // the colour range: the 95th percentile of |φ|, so a few vertices beside formal charges do not wash out the map
+        std::vector<double> a;
+        a.reserve(phi.size());
+        for (double x : phi) a.push_back(std::fabs(x));
+        double m = 0;
+        if (!a.empty()) {
+          const size_t k = std::min(a.size() - 1, size_t(0.95 * double(a.size())));
+          std::nth_element(a.begin(), a.begin() + long(k), a.end());
+          m = a[k];
+        }
+        if (m < 1e-6) m = 1;
+        L.phi_lo = -m, L.phi_hi = m;
+        M.colours.resize(phi.size());
+        for (size_t v = 0; v < phi.size(); ++v) M.colours[v] = caps::ramp_colour(L.ramp, 0.5 + 0.5 * phi[v] / m);
+      } else if (L.surface_colour == 2) {
+        M.colours.resize(M.vertices.size());
+        for (size_t v = 0; v < M.vertices.size(); ++v) M.colours[v] = M.nearest[v] >= 0 ? caps::element_colour(f.atoms[size_t(M.nearest[v])].element) : 0x8FB8D8;
+      }
+    }
+  } catch (const std::exception& e) {
+    L.error = e.what();
+  }
+}
+
 void refresh(caps_doc* d) {
   d->frame = d->traj.frame(d->current);
   if (d->current + 1 != d->traj.frames()) d->frame.velocities.clear();   // velocities belong to the last frame
@@ -147,6 +247,7 @@ void refresh(caps_doc* d) {
     d->frame.unwrapped = false;
   }
   run_doc_pipeline(d);
+  prepare_appearance(d);
 }
 
 caps::Camera cam_of(const caps_camera* c) {
@@ -176,13 +277,32 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.focus = to_shown(o->focus - 1);
   r.ambient_occlusion = o->ambient_occlusion != 0;
   if (!d->pstate) r.segments = d->overlay;
+  if (!d->pstate && d->look.active) {
+    const AppearanceState& L = d->look;
+    if (L.style.size() == d->frame.atoms.size()) {
+      r.atom_style = L.style;
+      for (auto& x : r.atom_style) if (x == 255) x = uint8_t(r.style);
+    }
+    if (L.colour == 4) {
+      r.colour_by = caps::ColourBy::Property;
+      r.property.clear();
+      for (const auto& a : d->frame.atoms) r.property.push_back(a.charge);
+      r.ramp = L.ramp;
+      r.symmetric = true;
+    } else if (L.colour >= 0) {
+      r.colour_by = static_cast<caps::ColourBy>(std::clamp(L.colour, 0, 3));
+    }
+    if (L.mesh) r.meshes.push_back({L.mesh.get(), 0x8FB8D8, L.opacity});
+    if (L.poly) r.meshes.push_back({L.poly.get(), 0x8FB8D8, 0.45f});
+    r.segments.insert(r.segments.end(), L.ribbon.begin(), L.ribbon.end());
+  }
   if (d->pstate) {
     const auto& st = *d->pstate;
     r.colours = st.colour;
     for (size_t i = 0; i < r.colours.size(); ++i) if (st.selected[i]) r.colours[i] = 0xE5484D;   // selected particles in red
     r.segments = st.segments;
     if (r.colour_by == caps::ColourBy::Property) caps::property_values(st, "DistanceToCOM", r.property);
-  } else if (r.colour_by == caps::ColourBy::Property) {
+  } else if (r.colour_by == caps::ColourBy::Property && r.property.size() != d->frame.atoms.size()) {
     r.property = d->dcom;
   }
   return r;
@@ -2890,4 +3010,107 @@ extern "C" caps_doc* caps_solvate(caps_doc* solute, const char* options_json, ca
     g_error = e.what();
     return nullptr;
   }
+}
+
+// ---------------------------------------------------------------- appearance (v20)
+
+extern "C" int32_t caps_set_appearance(caps_doc* d, const char* json) {
+  return guard([&] {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    AppearanceState& L = d->look;
+    L.active = !j.has("active") || (j["active"].kind() == caps::Json::Bool ? j["active"].boolean() : j["active"].number() != 0);
+    L.layers.clear();
+    static const std::map<std::string, caps::Style> styles = {
+        {"ball_and_stick", caps::Style::BallAndStick}, {"space_filling", caps::Style::SpaceFilling}, {"sticks", caps::Style::Sticks},
+        {"no_hydrogens", caps::Style::NoHydrogens}, {"wireframe", caps::Style::Wireframe}, {"polyhedra", caps::Style::Polyhedra},
+        {"ribbon", caps::Style::Ribbon}, {"hidden", caps::Style::Hidden}};
+    if (j.has("layers") && j["layers"].is_array())
+      for (const auto& l : j["layers"].items()) {
+        const auto it = styles.find(l.text("style", "ball_and_stick"));
+        if (it == styles.end()) throw std::invalid_argument("unknown style '" + l.text("style") + "'");
+        L.layers.emplace_back(l.text("expression"), int(it->second));
+      }
+    const std::string colour = j.text("colour", "");
+    L.colour = colour == "element" ? 0 : colour == "molecule" ? 1 : colour == "type" ? 2 : colour == "distance" ? 3 : colour == "charge" ? 4 : -1;
+    const std::string ramp = j.text("ramp", "blue_orange");
+    L.ramp = ramp == "viridis" ? caps::Ramp::Viridis : ramp == "red_white_blue" ? caps::Ramp::RedWhiteBlue : caps::Ramp::BlueOrange;
+    const caps::Json sf = j.has("surface") ? j["surface"] : caps::Json::object();
+    const std::string kind = sf.text("kind", "none");
+    L.surface = kind == "accessible" ? 1 : kind == "vdw" ? 2 : kind == "excluded" ? 3 : 0;
+    L.probe = sf.num("probe", 1.4);
+    L.spacing = sf.num("spacing", 0.6);
+    L.opacity = float(std::clamp(sf.num("opacity", 0.6), 0.05, 1.0));
+    L.surface_expr = sf.text("expression");
+    const std::string sc = sf.text("colour", "potential");
+    L.surface_colour = sc == "uniform" ? 0 : sc == "atom" ? 2 : 1;
+    prepare_appearance(d);
+    if (!L.error.empty()) throw std::invalid_argument(L.error);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_appearance_info(caps_doc* d, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  const AppearanceState& L = d->look;
+  j["active"] = L.active;
+  j["error"] = L.error;
+  caps::Json counts = caps::Json::object();
+  static const char* names[] = {"ball_and_stick", "space_filling", "sticks", "no_hydrogens", "backbone", "wireframe", "polyhedra", "ribbon", "hidden"};
+  std::map<std::string, double> c;
+  for (uint8_t x : L.style) if (x < 9) c[names[x]] += 1; else c["view"] += 1;
+  for (const auto& [k, v] : c) counts[k] = v;
+  j["styles"] = counts;
+  double qlo = 0, qhi = 0;
+  for (const auto& a : d->frame.atoms) qlo = std::min(qlo, a.charge), qhi = std::max(qhi, a.charge);
+  caps::Json q = caps::Json::array();
+  q.push_back(qlo), q.push_back(qhi);
+  j["charge"] = q;
+  if (L.mesh) {
+    caps::Json sf = caps::Json::object();
+    sf["area"] = L.mesh->area();
+    sf["vertices"] = double(L.mesh->vertices.size());
+    sf["triangles"] = double(L.mesh->triangles.size());
+    caps::Json phi = caps::Json::array();
+    phi.push_back(L.phi_lo), phi.push_back(L.phi_hi);
+    sf["potential"] = phi;
+    j["surface"] = sf;
+  }
+  if (L.poly) j["polyhedra"] = double(L.poly->triangles.size());
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_atom_labels(caps_doc* d, const char* kind, char* json, int32_t cap) {
+  caps::Json arr = caps::Json::array();
+  const std::string k = kind ? kind : "element";
+  const caps::System& f = d->frame;
+  if (k == "rs") {
+    for (const auto& x : caps::stereo_labels(f)) arr.push_back(x);
+  } else {
+    for (const auto& a : f.atoms) {
+      if (k == "charge") {
+        char b[24];
+        std::snprintf(b, sizeof b, "%+.2f", a.charge);
+        arr.push_back(std::string(b));
+      } else if (k == "type") {
+        std::string t;
+        for (const auto& ti : f.types) if (ti.type == a.type) t = ti.label;
+        arr.push_back(t.empty() ? std::to_string(a.type) : t);
+      } else if (k == "name") {
+        arr.push_back(a.name);
+      } else {
+        arr.push_back(std::string(caps::element(a.element).symbol));
+      }
+    }
+  }
+  return report_out(arr.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, float* xyv, int32_t count) {
+  return guard([&] {
+    if (d->pstate) throw std::runtime_error("labels are drawn without a Visualize pipeline");
+    const auto p = d->renderer.project(d->frame, cam_of(cam), opts_of(d, opt));
+    const size_t n = std::min(p.size() / 3, size_t(std::max(0, count)));
+    std::memcpy(xyv, p.data(), n * 3 * sizeof(float));
+    return int32_t(n);
+  });
 }
