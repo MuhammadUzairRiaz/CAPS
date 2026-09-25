@@ -5,7 +5,7 @@ For each case: CAPS assigns the force field (caps ff apply), writes the data fil
 (-o, --lammps-input) and its own forces; LAMMPS runs that input (run 0); every energy term and every atomic force are
 compared, and the six components of the virial tensor (LAMMPS compute pressure NULL virial). The cases cover class I (CVFF, OPLS-AA, GAFF), class II with class I torsions in one file (DL_FIELD's PCFF
 and COMPASS: hybrid styles with skip lines in the class II sections), DREIDING (umbrella inversions), ionic crystals
-(Buckingham pairs, periodic; Gasteiger charges, as DL_FIELD keeps ionic charges in its templates), a periodic polymer melt (tail corrections), and CHARMM-type force fields, whose separate
+(Buckingham pairs, periodic; QEq charges, as DL_FIELD keeps ionic charges in its templates and Gasteiger–Marsili has no parameters for the metals), a periodic polymer melt (tail corrections), and CHARMM-type force fields, whose separate
 1-4 Lennard-Jones parameters LAMMPS cannot reproduce without switching (the writer refuses them; reported as such).
 
 With --pme, CAPS uses particle-mesh Ewald on a fine grid (β from ewald-rtol 1e-7, spacing 0.5 Å, order 6) and LAMMPS
@@ -44,8 +44,8 @@ CASES = [
     ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16-dlfield", "gasteiger", "rules"),
     ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff-amber25-dlfield", "gasteiger", "rules"),
     ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding-dlfield", "gasteiger", "keys"),
-    ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides-dlfield", "gasteiger", "keys"),
-    ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides-dlfield", "gasteiger", "keys"),
+    ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides-dlfield", "qeq", "keys"),
+    ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides-dlfield", "qeq", "keys"),
     ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25-dlfield", "gasteiger", "rules"),
     ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff-dlfield", "types", "rules"),
     # every bonded kind hybrid: COMPASS (class II with all cross terms) plus an overlay turning one angle, one torsion

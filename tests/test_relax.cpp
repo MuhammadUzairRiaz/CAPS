@@ -234,7 +234,8 @@ TEST(Relax, LammpsExportHasTermsAndReadsBack) {
   std::string all((std::istreambuf_iterator<char>(in)), {});
   EXPECT_NE(all.find(std::to_string(ff.angles.size()) + " angles"), std::string::npos);
   EXPECT_NE(all.find("Dihedral Coeffs"), std::string::npos);
-  EXPECT_NE(all.find("pair_style lj/cut/coul/dsf"), std::string::npos);
+  EXPECT_NE(all.find("PairIJ Coeffs  # lj/cut/coul/dsf"), std::string::npos);   // a data file on its own keeps its pair coefficients
+  EXPECT_EQ(all.find("pair_style"), std::string::npos);                           // commands live in the input script, not the data
   const System t = read_lammps_data(path);
   EXPECT_EQ(t.atoms.size(), s.atoms.size());
   EXPECT_EQ(t.bonds.size(), s.bonds.size());
@@ -286,19 +287,31 @@ TEST(LammpsData, MixedClassesBecomeHybridStylesWithSkipLines) {
   ff.angles.resize(1);
   const auto path = (std::filesystem::temp_directory_path() / "caps_mixed.data").string();
   const auto in = (std::filesystem::temp_directory_path() / "caps_mixed.in").string();
-  write_lammps_data_ff(s, ff, EnergyOptions{}, path);
-  write_lammps_input(s, ff, EnergyOptions{}, path, in);
+  write_lammps_data_ff(s, ff, EnergyOptions{}, path, false);   // written with its script: pair coefficients go there
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_mixed.data", in, 0, true);
   std::ifstream f(path);
   const std::string all((std::istreambuf_iterator<char>(f)), {});
-  EXPECT_NE(all.find("angle_style hybrid harmonic class2"), std::string::npos);
-  EXPECT_NE(all.find("bond_style class2"), std::string::npos);
+  EXPECT_EQ(all.find("PairIJ Coeffs"), std::string::npos);
   EXPECT_NE(all.find("\nBondBond Coeffs\n\n1 skip"), std::string::npos);   // the harmonic angle type
   EXPECT_NE(all.find("2 class2 1 1.5 1.5"), std::string::npos);
   EXPECT_EQ(all.find("BondBond13"), std::string::npos);                    // no class II dihedrals
   std::ifstream g(in);
   const std::string script((std::istreambuf_iterator<char>(g)), {});
-  EXPECT_NE(script.find("read_data " + path), std::string::npos);
-  EXPECT_NE(script.find("special_bonds lj 0 0 0.5"), std::string::npos);
+  EXPECT_NE(script.find("angle_style     hybrid harmonic class2"), std::string::npos);
+  EXPECT_NE(script.find("bond_style      class2"), std::string::npos);
+  EXPECT_NE(script.find("read_data       caps_mixed.data"), std::string::npos);
+  EXPECT_NE(script.find("special_bonds   lj 0 0 0.5"), std::string::npos);
+  EXPECT_NE(script.find("pair_coeff      1 1 "), std::string::npos);
+  EXPECT_NE(script.find("run 0"), std::string::npos);   // the default run section: a single-point check
+  // a protocol instead: minimisation then NPT, the final structure written
+  LammpsRun run;
+  run.kind = LammpsRun::Kind::NPT;
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_mixed.data", in, 0, true, run);
+  std::ifstream g2(in);
+  const std::string npt((std::istreambuf_iterator<char>(g2)), {});
+  EXPECT_NE(npt.find("minimize"), std::string::npos);
+  EXPECT_NE(npt.find(" npt temp 300 300 100 iso 1 1 1000"), std::string::npos);
+  EXPECT_NE(npt.find("write_data      final.data"), std::string::npos);
   // terms LAMMPS cannot reproduce exactly are refused
   ForceField charmm = ff;
   charmm.lj14_types.assign(charmm.type_names.size(), {0.05, 3.0});
