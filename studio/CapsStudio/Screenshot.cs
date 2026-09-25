@@ -218,6 +218,9 @@ internal static class Screenshot
                 else if (kv[1].StartsWith("tool")) w.ViewModel.EditTool = int.Parse(kv[1][4..]);
                 for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "selection") { w.ViewModel.SelectionOpen = kv[1] == "1"; Dispatcher.UIThread.RunJobs(); }
+            if (kv[0] == "selsmarts") { w.ViewModel.SelectMode = 0; w.ViewModel.SelectPattern = kv[1]; w.ViewModel.RunSelect("replace"); w.ViewModel.SaveSelectionAsSet(); }
+            if (kv[0] == "seliso") { var t = w.ViewModel.MakeTactic(kv[1] == "1"); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {

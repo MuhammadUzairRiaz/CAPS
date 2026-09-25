@@ -187,6 +187,10 @@
       <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+            <ToggleButton Classes="tool" IsChecked="{Binding SelectionOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="Selection &amp; stereo (design/boards/SelectionStereo): select by SMARTS, element, type, charge, distance; named sets; tacticity">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="search" Size="18" VerticalAlignment="Center" /><TextBlock Text="Select" VerticalAlignment="Center" /></StackPanel>
+            </ToggleButton>
             <ToggleButton Classes="tool" IsChecked="{Binding AppearanceOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Appearance (design/boards/Appearance): styles per selection, colour by charge, labels, surfaces">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="18" VerticalAlignment="Center" /><TextBlock Text="Appearance" VerticalAlignment="Center" /></StackPanel>
@@ -251,7 +255,7 @@
           <Button Classes="tool" ToolTip.Tip="Pin monitor — coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="pin" Size="18" /></Button>
           <Button Classes="tool" Click="OnInvert" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Invert the picked stereocentre (swap its two smallest branches)"><local:Icon Kind="mirror" Size="18" /></Button>
             <Rectangle Classes="vsep" />
-          <Button Classes="tool" Click="OnAutoClean" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Auto-clean: minimise the picked atoms (or all) with UFF"><StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="wand" Size="18" VerticalAlignment="Center" /><TextBlock Text="Auto-clean" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="tool" Click="OnAutoClean" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Auto-clean: minimise the picked atoms (or all) with UFF"><local:Icon Kind="wand" Size="18" /></Button>
           <Button Classes="tool" Click="OnUndo" IsEnabled="{Binding CanUndo}" ToolTip.Tip="Undo (⌘Z)"><local:Icon Kind="undo" Size="18" /></Button>
           <Button Classes="tool" Click="OnRedo" IsEnabled="{Binding CanRedo}" ToolTip.Tip="Redo (⇧⌘Z)"><local:Icon Kind="redo" Size="18" /></Button>
           </StackPanel>
@@ -471,6 +475,44 @@
             </Border>
             <Border Classes="hud" Padding="10,4" Margin="14,48,14,14" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding LabelNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
               <TextBlock Text="{Binding LabelNote}" FontSize="12" Foreground="{DynamicResource WarnB}" />
+            </Border>
+            <!-- Tacticity strip (design/boards/SelectionStereo): dyads between the stereocentres of the first chain -->
+            <Border Height="150" VerticalAlignment="Bottom" Padding="18,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+              <Border.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="ShowSelectionPanel" />
+                  <Binding Path="HasDyads" />
+                </MultiBinding>
+              </Border.IsVisible>
+              <StackPanel Spacing="10">
+                <DockPanel>
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                    <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="m (meso)" Foreground="{DynamicResource MutedB}" /></StackPanel></Border>
+                    <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="r (racemo)" Foreground="{DynamicResource MutedB}" /></StackPanel></Border>
+                  </StackPanel>
+                  <TextBlock FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"><Run Text="Tacticity along " /><Run Text="{Binding StereoChainText}" /><Run Text=" · dyads between stereocentres" /></TextBlock>
+                </DockPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding Dyads}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:DyadCell">
+                        <StackPanel Spacing="4">
+                          <Border Width="44" Height="30" CornerRadius="5" Background="{DynamicResource SelB}" Classes.meso="{Binding IsMeso}" Classes="dyad">
+                            <TextBlock Text="{Binding Kind}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource AccInkB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Border>
+                          <TextBlock Text="{Binding Label}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Classes="chip" Background="{DynamicResource Bg3B}"><TextBlock Text="{Binding DyadCounts}" Classes="mono" /></Border>
+                  <Border Classes="chip" Background="{DynamicResource Bg3B}"><TextBlock Text="{Binding TriadCounts}" Classes="mono" /></Border>
+                  <Border Classes="chip"><TextBlock Text="computed from the structure" Foreground="{DynamicResource MutedB}" /></Border>
+                </StackPanel>
+              </StackPanel>
             </Border>
             <!-- Empty state -->
             <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" Text="The structure appears here when the run starts">
@@ -817,6 +859,92 @@
       <!-- Inspector -->
       <Border Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
         <Panel>
+        <!-- Selection & stereo (design/boards/SelectionStereo) -->
+        <DockPanel IsVisible="{Binding ShowSelectionPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center" Background="#12303A"><TextBlock Text="{Binding SelectedChip}" Foreground="{DynamicResource SelB}" /></Border>
+              <TextBlock Text="Selection" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <DockPanel>
+              <Button DockPanel.Dock="Left" Classes="ghost" Content="Clear" Click="OnSelClear" />
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Click="OnInvert" ToolTip.Tip="Invert the picked stereocentre"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="mirror" Size="15" VerticalAlignment="Center" /><TextBlock Text="Invert centre" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Classes="primary" Click="OnSelApply" ToolTip.Tip="Replace the selection with the pattern's atoms"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="check" Size="15" VerticalAlignment="Center" /><TextBlock Text="Apply" VerticalAlignment="Center" /></StackPanel></Button>
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SELECT BY" Classes="h3" />
+                  <UniformGrid Columns="3">
+                    <RadioButton Classes="seg" Content="SMARTS" FontSize="11.5" Padding="2,0" GroupName="selmode" IsChecked="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" HorizontalAlignment="Stretch" Margin="0,0,4,4" />
+                    <RadioButton Classes="seg" Content="Element" FontSize="11.5" Padding="2,0" GroupName="selmode" IsChecked="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" HorizontalAlignment="Stretch" Margin="0,0,4,4" />
+                    <RadioButton Classes="seg" Content="Atom type" FontSize="11.5" Padding="2,0" GroupName="selmode" IsChecked="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=2}" HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+                    <RadioButton Classes="seg" Content="Charge range" FontSize="11.5" Padding="2,0" GroupName="selmode" IsChecked="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=3}" HorizontalAlignment="Stretch" Margin="0,0,4,0" />
+                    <RadioButton Classes="seg" Content="Within distance" FontSize="11.5" Padding="2,0" GroupName="selmode" IsChecked="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=4}" HorizontalAlignment="Stretch" Margin="0,0,4,0" />
+                    <RadioButton Classes="seg" Content="Grow along bonds" FontSize="11.5" Padding="2,0" GroupName="selmode" IsChecked="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=5}" HorizontalAlignment="Stretch" />
+                  </UniformGrid>
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding SelectPatternLabel}" Classes="label" />
+                    <TextBox Text="{Binding SelectPattern}" Classes="mono" FontSize="12.5" IsVisible="{Binding SelectMode, Converter={x:Static local:IntLessConverter.Instance}, ConverterParameter=3}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding SelectModeIsCharge}">
+                      <NumericUpDown Value="{Binding SelectChargeLo}" Increment="0.05" FormatString="0.00" ShowButtonSpinner="False" />
+                      <NumericUpDown Grid.Column="1" Value="{Binding SelectChargeHi}" Increment="0.05" FormatString="0.00" ShowButtonSpinner="False" />
+                    </Grid>
+                    <NumericUpDown Value="{Binding SelectDistance}" Increment="0.5" FormatString="0.0" ShowButtonSpinner="False" IsVisible="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=4}" />
+                    <NumericUpDown Value="{Binding SelectSteps}" Increment="1" FormatString="0" ShowButtonSpinner="False" IsVisible="{Binding SelectMode, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=5}" />
+                    <TextBlock Text="{Binding SelectPatternHint}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Classes="small" Content="Replace" Click="OnSelOp" Tag="replace" />
+                    <Button Classes="small" Content="Add" Click="OnSelOp" Tag="add" />
+                    <Button Classes="small" Content="Subtract" Click="OnSelOp" Tag="subtract" />
+                    <Button Classes="small" Content="Invert" Click="OnSelOp" Tag="invert" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="NAMED SETS" Classes="h3" />
+                  <ItemsControl ItemsSource="{Binding NamedSets}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:NamedSet">
+                        <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="32" MinHeight="32" Padding="10,0" Margin="0,0,0,6" Click="OnUseSet" Tag="{Binding}">
+                          <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                            <Ellipse Width="8" Height="8" Fill="{Binding Colour}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                          </DockPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="small" HorizontalAlignment="Left" Click="OnSaveSet"><StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="save" Size="13" VerticalAlignment="Center" /><TextBlock Text="Save selection as set" VerticalAlignment="Center" /></StackPanel></Button>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="STEREO" Classes="h3" />
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding StereoCentres}" Classes="mono" /><TextBlock Text="Stereocentres (CH)" Foreground="{DynamicResource MutedB}" FontSize="12.5" /></DockPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding TacticityLabel}" Classes="mono" /><TextBlock Text="Tacticity" Foreground="{DynamicResource MutedB}" FontSize="12.5" /></DockPanel>
+                  <TextBlock FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" LineHeight="18" Text="Along a long chain these centres are pseudo-asymmetric, so tacticity is reported as m/r dyads rather than R/S labels." />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Classes="small" Content="Make isotactic" Click="OnMakeIso" />
+                    <Button Classes="small" Content="Make syndiotactic" Click="OnMakeSyndio" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Padding="16,12">
+                <TextBlock Text="{Binding SelectError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding SelectHasError}" />
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Appearance (design/boards/Appearance): styles per selection, colour, labels, surfaces, rendering -->
         <DockPanel IsVisible="{Binding ShowAppearance}">
           <Border DockPanel.Dock="Top" Classes="phead">

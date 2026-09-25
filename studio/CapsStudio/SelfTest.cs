@@ -521,6 +521,17 @@ internal static class SelfTest
             var tac = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Tacticity())!;
             Check(sel["count"]?.GetValue<double>() > 100 && tac["centres"]?.GetValue<double>() > 10, $"select: {sel["count"]} ring atoms · tacticity {tac["label"]} m {tac["m"]} r {tac["r"]}");
             vm.Document!.Select("{\"mode\":\"none\"}");
+            // Selection & stereo: the panel, a SMARTS selection saved as a set, the melt made isotactic
+            vm.SelectionOpen = true;
+            vm.SelectMode = 0;
+            vm.SelectPattern = "c1ccccc1";
+            vm.RunSelect("replace");
+            vm.SaveSelectionAsSet();
+            vm.MakeTactic(true).GetAwaiter().GetResult();
+            Check(vm.ShowSelectionPanel && vm.SelectedCount == 480 && vm.NamedSets.Count == 1 && vm.TacticityLabel == "isotactic" && vm.Dyads.All(d => d.IsMeso),
+                  $"selection & stereo: {vm.SelectedChip} · {vm.NamedSets.Count} set · {vm.TacticityLabel} · {vm.DyadCounts} {vm.SelectError}");
+            vm.UndoEdit(false);
+            vm.SelectionOpen = false;
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 

@@ -695,6 +695,16 @@ public partial class MainWindow : Window
             b.Classes.Set("chosen", b.Tag as string == _vm.BuildElement);
     }
 
+    // ---------------------------------------------------------------- selection & stereo (design/boards/SelectionStereo)
+
+    private void OnSelOp(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string op) _vm.RunSelect(op); }
+    private void OnSelApply(object? s, RoutedEventArgs e) => _vm.RunSelect("replace");
+    private void OnSelClear(object? s, RoutedEventArgs e) => _vm.ClearDocSelection();
+    private void OnSaveSet(object? s, RoutedEventArgs e) => _vm.SaveSelectionAsSet();
+    private void OnUseSet(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.NamedSet n) _vm.UseNamedSet(n); }
+    private async void OnMakeIso(object? s, RoutedEventArgs e) => await _vm.MakeTactic(true);
+    private async void OnMakeSyndio(object? s, RoutedEventArgs e) => await _vm.MakeTactic(false);
+
     // ---------------------------------------------------------------- appearance (design/boards/Appearance)
 
     private void OnAppStyle(object? s, RoutedEventArgs e)
