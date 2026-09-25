@@ -24,6 +24,7 @@
 #include "caps/bench.hpp"
 #include "caps/polymer.hpp"
 #include "caps/polystats.hpp"
+#include "caps/resolution.hpp"
 #include "caps/kspace.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
@@ -144,6 +145,21 @@ struct caps_doc {
   int save_wrap = 0;                               // caps_set_save_wrap: 0 as shown, 1 atoms into the cell, 2 molecule centres
   std::vector<double> atom_values;                 // caps_set_atom_values: a per-atom quantity coloured on a ramp (SASA …)
   int atom_values_ramp = 0;
+  // Backbone style (design/boards/DisplayStyles): per atom 1 main chain, 2 heavy atom of a molecule without one, 0 hidden;
+  // recomputed when the atom or bond count changes
+  std::vector<uint8_t> bb_mask;
+  size_t bb_atoms = SIZE_MAX, bb_bonds = SIZE_MAX;
+  int bb_chains = 0, bb_atoms_on = 0;
+  // Display options (design/boards/DisplayStyles, LensView): view only, the structure is untouched
+  struct Display {
+    bool polar_h_only = false;     // hide hydrogens on carbon
+    bool selection_full = false;   // selected atoms keep all their atoms (H) whatever the style
+    bool lens = false;             // all-atom lens: inside one style, outside another
+    int lens_centre = -1;          // atom index
+    double lens_radius = 10;
+    int lens_inside = 0, lens_outside = 4;
+    bool lens_dim = false;
+  } display;
   int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
   double vision_severity = 1.0;
 };
@@ -301,6 +317,27 @@ caps::Camera cam_of(const caps_camera* c) {
   return k;
 }
 
+// The backbone mask for the frame (cached on the document; mutable cache behind a const document).
+const std::vector<uint8_t>& backbone_mask(const caps_doc* dc) {
+  auto* d = const_cast<caps_doc*>(dc);
+  const auto& s = d->frame;
+  if (d->bb_atoms == s.atoms.size() && d->bb_bonds == s.bonds.size()) return d->bb_mask;
+  d->bb_atoms = s.atoms.size(), d->bb_bonds = s.bonds.size();
+  d->bb_mask.assign(s.atoms.size(), 0);
+  const auto bb = caps::backbones(s, 4);
+  int nm = 0;
+  const auto mol = s.molecules(&nm);
+  std::vector<char> has(size_t(std::max(nm, 1)), 0);
+  for (const auto& path : bb)
+    for (uint32_t a : path) d->bb_mask[a] = 1, has[size_t(mol[a])] = 1;
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (!has[size_t(mol[i])] && s.atoms[i].element != 1) d->bb_mask[i] = 2;
+  d->bb_chains = int(bb.size());
+  d->bb_atoms_on = 0;
+  for (const auto& path : bb) d->bb_atoms_on += int(path.size());
+  return d->bb_mask;
+}
+
 caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   caps::RenderOptions r;
   if (!o) return r;
@@ -327,6 +364,52 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   }
   if (!d->pstate) { r.segments = d->overlay; r.segments.insert(r.segments.end(), d->checks.begin(), d->checks.end()); }
   if (d->void_mesh) r.meshes.push_back({d->void_mesh.get(), 0x4FB3D9, 0.32f});
+  const auto& D = d->display;
+  const bool appearance_styles = d->look.active && d->look.style.size() == d->frame.atoms.size();
+  if (!d->pstate && !appearance_styles && (r.style == caps::Style::Backbone || D.polar_h_only || D.lens || (D.selection_full && !d->selection.empty()))) {
+    const auto& A = d->frame.atoms;
+    const size_t n = A.size();
+    std::vector<std::vector<uint32_t>> host;   // hydrogens' heavy atom (polar H, selections)
+    auto heavy_of = [&](size_t i) -> int {
+      if (host.empty()) {
+        host.assign(n, {});
+        for (const auto& b : d->frame.bonds) host[b.i].push_back(b.j), host[b.j].push_back(b.i);
+      }
+      return host[i].empty() ? -1 : int(host[i][0]);
+    };
+    // one style for an atom under a global style: Backbone uses the main-chain mask, the others hide H themselves
+    auto style_of = [&](caps::Style g, size_t i) -> uint8_t {
+      if (g == caps::Style::Backbone) {
+        const auto& m = backbone_mask(d);
+        return uint8_t(m[i] == 1 ? caps::Style::Backbone : m[i] == 2 ? caps::Style::NoHydrogens : caps::Style::Hidden);
+      }
+      if (D.polar_h_only && A[i].element == 1 && g != caps::Style::NoHydrogens) {
+        const int h = heavy_of(i);
+        if (h >= 0 && A[size_t(h)].element == 6) return uint8_t(caps::Style::Hidden);
+      }
+      return uint8_t(g);
+    };
+    r.atom_style.resize(n);
+    for (size_t i = 0; i < n; ++i) r.atom_style[i] = style_of(r.style, i);
+    if (D.lens && D.lens_centre >= 0 && size_t(D.lens_centre) < n) {
+      const caps::Vec3 c = A[size_t(D.lens_centre)].pos;
+      const bool periodic = d->frame.cell.valid();
+      const double r2 = D.lens_radius * D.lens_radius;
+      if (D.lens_dim) r.faded.assign(n, 0), r.fade = 0.55f;
+      for (size_t i = 0; i < n; ++i) {
+        caps::Vec3 dv = A[i].pos - c;
+        if (periodic) dv = d->frame.cell.minimum_image(dv);
+        const bool in = caps::dot(dv, dv) <= r2;
+        r.atom_style[i] = style_of(static_cast<caps::Style>(std::clamp(in ? D.lens_inside : D.lens_outside, 0, 4)), i);
+        if (D.lens_dim && !in) r.faded[i] = 1;
+      }
+    }
+    if (D.selection_full && d->selection.size() == n)   // selected atoms and their hydrogens drawn in full
+      for (size_t i = 0; i < n; ++i) {
+        const bool sel = d->selection[i] || (A[i].element == 1 && heavy_of(i) >= 0 && d->selection[size_t(heavy_of(i))]);
+        if (sel) r.atom_style[i] = uint8_t(caps::Style::BallAndStick);
+      }
+  }
   if (!d->pstate && d->look.active) {
     const AppearanceState& L = d->look;
     if (L.style.size() == d->frame.atoms.size()) {
@@ -2277,7 +2360,21 @@ extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char
   return report_out(j.dump(), json, cap);
 }
 
+namespace {
+caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, caps_grow_live_fn live, void* user, char* report, int32_t cap);
+}
+
 extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  return grow_chains_impl(spec_json, o, progress, nullptr, user, report, cap);
+}
+
+extern "C" caps_doc* caps_grow_chains_live(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, caps_grow_live_fn live, void* user, char* report,
+                                           int32_t cap) {
+  return grow_chains_impl(spec_json, o, progress, live, user, report, cap);
+}
+
+namespace {
+caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, caps_grow_live_fn live, void* user, char* report, int32_t cap) {
   try {
     caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
     caps::GrowOptions g;
@@ -2291,6 +2388,25 @@ extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opt
     g.auto_scale = o->contact_scale < 0;   // negative: start there and step down when crowded
     g.curve = o->curve != 0;
     if (progress) g.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    try {   // optional growth settings carried in the spec: trial directions per step
+      const caps::Json sj = caps::Json::parse(spec_json ? spec_json : "{}");
+      if (sj.has("trials")) g.trials = std::clamp(int(sj["trials"].number()), 4, 5000);
+    } catch (...) {}
+    if (live)   // the chains so far as a new document each time (the callee closes it), with where the growth stands
+      g.snapshot = [&](const caps::System& part, const caps::GrowOptions::Live& L) {
+        auto* sd = new caps_doc;
+        sd->traj.topology = part;
+        std::vector<caps::Vec3> pp;
+        for (const auto& a : part.atoms) pp.push_back(a.pos);
+        sd->traj.positions.push_back(std::move(pp));
+        sd->traj.cells.push_back(part.cell);
+        sd->traj.timesteps.push_back(0);
+        refresh(sd);
+        caps::Json j = caps::Json::object();
+        j["chains_done"] = double(L.chains_done), j["chains"] = double(L.chains), j["units"] = double(L.units), j["units_total"] = double(L.units_total);
+        j["restarts"] = double(L.restarts), j["worst_margin"] = L.worst_margin, j["density"] = L.density, j["atoms"] = double(part.atoms.size());
+        live(sd, j.dump(0).c_str(), user);
+      };
     caps::GrowReport rep;
     caps::System s = caps::grow_chains(c, g, &rep);
     auto* d = new caps_doc;
@@ -2318,6 +2434,7 @@ extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opt
     return nullptr;
   }
 }
+}  // namespace
 
 namespace {
 caps::SlabOptions slab_from(const caps::Json& j) {
@@ -3646,6 +3763,17 @@ void store(caps_doc* d, const caps::System& s) {
 
 }  // namespace
 
+namespace {
+// No hydrogen and not one multiple bond: the orders were never assigned (a PDB opened directly), so read them from the
+// geometry before counting what is missing.
+bool needs_geometry_orders(const caps::System& s) {
+  if (s.atoms.size() < 3 || s.bonds.empty()) return false;
+  for (const auto& a : s.atoms) if (a.element == 1) return false;
+  for (const auto& b : s.bonds) if (b.order >= 2) return false;
+  return true;
+}
+}  // namespace
+
 extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {
@@ -3706,6 +3834,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       std::vector<char> m;
       if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
       const size_t before = s.atoms.size();
+      if (needs_geometry_orders(s)) caps::orders_from_geometry(s);   // heavy atoms only, orders never assigned
       const int k = caps::add_hydrogens(s, m);
       if (k == 0) throw std::invalid_argument("no atom lacks hydrogens");
       for (size_t i = before; i < s.atoms.size(); ++i) added.push_back(double(i));
@@ -5532,4 +5661,177 @@ extern "C" int32_t caps_atom_residues(caps_doc* d, int32_t* out, int32_t cap) {
   const auto& atoms = d->frame.atoms;
   for (size_t i = 0; i < atoms.size() && out && int32_t(i) < cap; ++i) out[i] = int32_t(atoms[i].resid);
   return int32_t(atoms.size());
+}
+
+// ---------------------------------------------------------------- v20 display, lens, resolution, hydrogens (row 19)
+
+namespace {
+caps_doc* doc_of_system(caps::System sys, const caps_doc* from, const std::string& engine, const std::string& summary, caps::KeyValues params) {
+  auto* d = new caps_doc;
+  d->traj.topology = sys;
+  std::vector<caps::Vec3> p;
+  for (const auto& a : sys.atoms) p.push_back(a.pos);
+  d->traj.positions.push_back(std::move(p));
+  d->traj.cells.push_back(sys.cell);
+  d->traj.timesteps.push_back(0);
+  if (from) d->prov = from->prov;   // the new structure's history starts from the one it came from
+  refresh(d);
+  prov_step(d, engine, summary, std::move(params));
+  return d;
+}
+}  // namespace
+
+extern "C" caps_doc* caps_doc_copy(caps_doc* src) {
+  try {
+    return doc_of_system(src->frame, src, "doc.copy", "a copy of the structure", {{"atoms", std::to_string(src->frame.atoms.size())}});
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_set_display(caps_doc* d, const char* json) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    auto flag = [&](const caps::Json& o, const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
+    auto& D = d->display;
+    D.polar_h_only = flag(j, "polar_h_only", D.polar_h_only);
+    D.selection_full = flag(j, "selection_full", D.selection_full);
+    if (j.has("lens")) {
+      const caps::Json& L = j["lens"];
+      D.lens = flag(L, "on", D.lens);
+      if (L.has("centre")) D.lens_centre = int(L["centre"].number());
+      D.lens_radius = std::clamp(L.num("radius", D.lens_radius), 1.0, 500.0);
+      D.lens_inside = std::clamp(int(L.num("inside", D.lens_inside)), 0, 4);
+      D.lens_outside = std::clamp(int(L.num("outside", D.lens_outside)), 0, 4);
+      D.lens_dim = flag(L, "dim", D.lens_dim);
+      const auto& A = d->frame.atoms;
+      if (D.lens && (D.lens_centre < 0 || size_t(D.lens_centre) >= A.size()) && !A.empty()) {   // no centre yet: the atom nearest the middle
+        caps::Vec3 c{0, 0, 0};
+        if (d->frame.cell.valid()) c = d->frame.cell.origin + (d->frame.cell.a + d->frame.cell.b + d->frame.cell.c) * 0.5;
+        else for (const auto& a : A) c = c + a.pos * (1.0 / double(A.size()));
+        double best = 1e300;
+        for (size_t i = 0; i < A.size(); ++i) {
+          const caps::Vec3 dv = A[i].pos - c;
+          if (const double r = caps::dot(dv, dv); r < best && A[i].element != 1) best = r, D.lens_centre = int(i);
+        }
+      }
+    }
+    return 0;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_lens_inside(caps_doc* d, int32_t atom) {
+  const auto& D = d->display;
+  const auto& A = d->frame.atoms;
+  if (!D.lens || D.lens_centre < 0 || size_t(D.lens_centre) >= A.size() || atom < 0 || size_t(atom) >= A.size()) return 1;
+  caps::Vec3 dv = A[size_t(atom)].pos - A[size_t(D.lens_centre)].pos;
+  if (d->frame.cell.valid()) dv = d->frame.cell.minimum_image(dv);
+  return caps::dot(dv, dv) <= D.lens_radius * D.lens_radius ? 1 : 0;
+}
+
+extern "C" int32_t caps_display_counts(caps_doc* d, char* out, int32_t cap) {
+  const auto& A = d->frame.atoms;
+  caps::Json r = caps::Json::object();
+  long h = 0, polar = 0;
+  std::vector<std::vector<uint32_t>> nb(A.size());
+  for (const auto& b : d->frame.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  for (size_t i = 0; i < A.size(); ++i)
+    if (A[i].element == 1) {
+      ++h;
+      if (nb[i].empty() || A[nb[i][0]].element != 6) ++polar;
+    }
+  backbone_mask(d);
+  r["atoms"] = double(A.size()), r["h"] = double(h), r["heavy"] = double(long(A.size()) - h), r["polar_h"] = double(polar);
+  r["chains"] = double(d->bb_chains), r["backbone_atoms"] = double(d->bb_atoms_on);
+  const auto& D = d->display;
+  if (D.lens && D.lens_centre >= 0 && size_t(D.lens_centre) < A.size()) {
+    long in = 0, in_h = 0;
+    for (size_t i = 0; i < A.size(); ++i)
+      if (caps_lens_inside(d, int32_t(i))) ++in, in_h += A[i].element == 1 ? 1 : 0;
+    r["lens_atoms"] = double(in), r["lens_h"] = double(in_h), r["lens_centre"] = double(D.lens_centre);
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+
+extern "C" int32_t caps_hydrogen_plan(caps_doc* d, char* out, int32_t cap) {
+  try {
+    caps::System perceived;
+    const bool geo = needs_geometry_orders(d->frame);
+    if (geo) perceived = d->frame, caps::orders_from_geometry(perceived);
+    const auto& s = geo ? perceived : d->frame;
+    std::vector<char> sel;
+    if (d->selection.size() == s.atoms.size() && std::any_of(d->selection.begin(), d->selection.end(), [](char c) { return c != 0; })) sel = d->selection;
+    const auto rows = caps::hydrogen_plan(s, sel);
+    caps::Json r = caps::Json::object(), list = caps::Json::array();
+    int heavy = 0, h = 0, add = 0;
+    for (const auto& a : s.atoms) (a.element == 1 ? h : heavy)++;
+    for (const auto& row : rows) {
+      caps::Json o = caps::Json::object();
+      o["label"] = row.label, o["atoms"] = double(row.atoms), o["hydrogens"] = double(row.hydrogens);
+      add += row.hydrogens;
+      list.push_back(std::move(o));
+    }
+    double q = 0;
+    for (const auto& a : s.atoms) q += a.charge;
+    r["ok"] = true;
+    r["rows"] = std::move(list);
+    r["heavy"] = double(heavy), r["h"] = double(h), r["add"] = double(add), r["net_charge"] = q;
+    int aromatic = 0;
+    for (const auto& b : s.bonds) aromatic += b.order == 4 ? 1 : 0;
+    r["aromatic_bonds"] = double(aromatic);
+    r["orders_from_geometry"] = geo;
+    r["selection"] = !sel.empty();
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_resolution_summary(caps_doc* d, const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const int per = std::clamp(int(j.num("per_bead", 5)), 1, 100);
+    const auto aa = caps::all_atom_summary(d->frame);
+    caps::ResolutionReport ua, cg;
+    caps::united_atom(d->frame, &ua);
+    caps::coarse_grain(d->frame, per, &cg);
+    auto part = [](const caps::ResolutionReport& x) {
+      caps::Json o = caps::Json::object();
+      o["sites"] = double(x.sites), o["hydrogens"] = double(x.hydrogens), o["mass"] = x.mass;
+      return o;
+    };
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    r["all_atom"] = part(aa), r["united_atom"] = part(ua), r["coarse_grained"] = part(cg);
+    r["per_bead"] = double(per);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" caps_doc* caps_resolution_convert(caps_doc* d, const char* json, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string to = j.text("to", "united-atom");
+    caps::ResolutionReport rep;
+    caps::System s;
+    if (to == "united-atom") s = caps::united_atom(d->frame, &rep);
+    else if (to == "coarse-grained") s = caps::coarse_grain(d->frame, std::clamp(int(j.num("per_bead", 5)), 1, 100), &rep);
+    else throw std::runtime_error("resolution: united-atom or coarse-grained");
+    auto* nd = doc_of_system(std::move(s), d, "model.resolution", "converted to " + to + " (mass conserved: " + g6(rep.mass) + " g/mol)",
+                             {{"to", to}, {"sites", std::to_string(rep.sites)}});
+    std::string t;
+    for (const auto& n : rep.notes) t += n + "\n";
+    report_out(t, report, cap);
+    return nd;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
 }

@@ -167,6 +167,7 @@ public partial class MainWindow : Window
         _vm.TimelineChanged += () => Timeline.InvalidateVisual();
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Frame)) Timeline.InvalidateVisual(); };
         AddHandler(KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, (_, e) => { if (e.Key == Key.L) _vm.LensHold = false; }, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(ViewHost, true);
         ViewHost.AddHandler(DragDrop.DropEvent, OnDrop);
     }
@@ -626,6 +627,7 @@ public partial class MainWindow : Window
             case Key.Space: TogglePlay(); e.Handled = true; break;
             case Key.R when e.KeyModifiers == KeyModifiers.None: _vm.ResetView(); e.Handled = true; break;
             case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
+            case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.LensOn: _vm.LensHold = true; e.Handled = true; break;
             case Key.Escape: _vm.ClearSelection(); e.Handled = true; break;
         }
     }
@@ -725,6 +727,7 @@ public partial class MainWindow : Window
                 {
                     try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>()); }
                     catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
+                    Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
                 }
                 _rendered = ticket;
             }
@@ -830,6 +833,13 @@ public partial class MainWindow : Window
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
+        if (!_dragging && _vm.LensHold && _vm.Document != null && !_vm.Busy)   // L held: the lens follows the atom under the cursor
+        {
+            var at = e.GetPosition(_host);
+            var hit = _vm.Document.Pick((int)(at.X * _scaling), (int)(at.Y * _scaling));
+            if (hit >= 0) { _vm.MoveLens(hit); RequestRender(); }
+            return;
+        }
         if (!_dragging || _vm.Document == null || _vm.Busy) return;
         var pos = e.GetPosition(_host);
         var d = pos - _last;
@@ -862,6 +872,7 @@ public partial class MainWindow : Window
         {
             var pos = e.GetPosition(_host);
             var hit = _vm.Document.Pick((int)(pos.X * _scaling), (int)(pos.Y * _scaling));
+            if (!_vm.PickAllowed(hit)) hit = -1;   // "Measurements only inside" the lens
             if (_host == FieldViewHost) { if (hit >= 0) _vm.Field.SelectAtom(hit); }
             else if (_vm.EditTool != 0 && _vm.IsStudio) _vm.ToolClick(hit);
             else _vm.Pick(hit, _addPick);

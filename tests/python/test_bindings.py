@@ -106,4 +106,12 @@ sbr = caps.polymer(["*CC=CC*", "*CC(*)c1ccccc1"], sequence="terminal", r1=1.35, 
                    lengths={"distribution": "schulz-zimm", "nn": 12, "pdi": 1.2, "seed": 4})
 grow = [st for st in sbr.provenance()["steps"] if st["engine"] == "grow.trials"][0]
 check("sample Nn" in grow["params"]["DP"] and "terminal model" in grow["params"]["sequence"], f"polymer: SBR, terminal model, drawn lengths in provenance · {sbr.atoms} atoms")
+# display and resolution (row 19): the heavy-atom PS 4-mer gets its 34 H; C20H42 keeps its mass at every resolution
+frag = caps.open(os.path.join(samples, "ps_frag.pdb"))
+check(frag.hydrogen_plan()["add"] == 34 and frag.add_hydrogens() == 34 and frag.atoms == 66, "hydrogen_plan / add_hydrogens")
+eic = caps.build.smiles("CCCCCCCCCCCCCCCCCCCC")
+r = eic.resolution()
+check(r["all_atom"]["sites"] == 62 and r["united_atom"]["sites"] == 20 and r["coarse_grained"]["sites"] == 4
+      and abs(r["coarse_grained"]["mass"] - 282.556) < 1e-3, "resolution: 62 / 20 / 4 sites, mass conserved")
+check(eic.convert("coarse-grained").atoms == 4 and eic.atoms == 62, "convert: a new document, the original kept")
 print("all python checks passed")

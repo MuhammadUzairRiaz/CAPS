@@ -15,6 +15,10 @@ public sealed class AppSettings
     public bool Outlines { get; set; } = true;
     public bool DepthCue { get; set; } = true;
     public int Style { get; set; }                        // ball & stick …
+    public bool AutoStyle { get; set; } = true;           // display style by model size (design/boards/DisplayStyles)
+    public long AutoNoH { get; set; } = 20_000;           // above this many atoms: No H
+    public long AutoBackbone { get; set; } = 200_000;     // above: Backbone (with a 30 Å all-atom lens)
+    public long AutoLodAtoms { get; set; } = 2_000_000;   // above: Backbone + level of detail
     public string ForceField { get; set; } = "gaff-amber25-dlfield";
     public int Electrostatics { get; set; }               // 0 damped shifted force, 1 particle-mesh Ewald
     public double EwaldRtol { get; set; } = 1e-5;

@@ -539,6 +539,11 @@ int32_t caps_bench_write(const char* tables_json, const char* dir);
 int32_t caps_unit_info(const char* smiles, char* json, int32_t cap);
 int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char* json, int32_t cap);
 caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap);
+/* v20 the same with a live view (design/boards/GrowAllAtom): about four times a second `live` gets the chains so far as a
+   new document (atoms and bonds, molecule = chain, no end caps; the callee closes it with caps_close) and
+   {chains_done, chains, units, units_total, restarts, worst_margin, density, atoms}. Called on the growing thread. */
+typedef void (*caps_grow_live_fn)(caps_doc* snapshot, const char* stats_json, void* user);
+caps_doc* caps_grow_chains_live(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, caps_grow_live_fn live, void* user, char* report, int32_t cap);
 
 /* Surfaces and interfaces (v17). caps_surface_terminations: {ok, error, d, formula, atoms, density, cell: [a, b, c,
    alpha, beta, gamma], notes, terminations: [{label, top, bottom, gap, bonds_per_nm2}]} for (hkl) of a CIF file, fewest
@@ -718,6 +723,23 @@ int32_t caps_ewald_params(caps_doc* d, const char* json, char* out, int32_t cap)
 /* v20 each atom's residue number (0 = none; Grow numbers the repeat units along each chain from 1); returns the atom
    count, filling at most cap entries. */
 int32_t caps_atom_residues(caps_doc* d, int32_t* out, int32_t cap);
+/* v20 display (design/boards DisplayStyles, LensView, AddHydrogens, ModelResolution). The Backbone style draws tubes
+   through each chain's main-chain atoms (side groups hidden, small molecules without H).
+   caps_set_display {polar_h_only, selection_full, lens: {on, centre (atom), radius Å, inside, outside (styles 0–4), dim}}:
+     view only, the structure is untouched. caps_lens_inside: 1 when the atom is inside the lens (or no lens).
+   caps_display_counts → {atoms, h, heavy, polar_h, chains, backbone_atoms, lens_atoms, lens_h}.
+   caps_hydrogen_plan → {rows: [{label, atoms, hydrogens}], heavy, h, add, net_charge, aromatic_bonds, selection}: what
+     the "add_h" edit would add (the selection when there is one).
+   caps_doc_copy: a new document holding the current frame (its provenance carried over).
+   caps_resolution_summary {per_bead} → {all_atom, united_atom, coarse_grained: {sites, hydrogens, mass}}.
+   caps_resolution_convert {to: united-atom | coarse-grained, per_bead} → a new document (NULL on error). */
+int32_t caps_set_display(caps_doc* d, const char* json);
+int32_t caps_lens_inside(caps_doc* d, int32_t atom);
+int32_t caps_display_counts(caps_doc* d, char* out, int32_t cap);
+int32_t caps_hydrogen_plan(caps_doc* d, char* out, int32_t cap);
+caps_doc* caps_doc_copy(caps_doc* d);
+int32_t caps_resolution_summary(caps_doc* d, const char* json, char* out, int32_t cap);
+caps_doc* caps_resolution_convert(caps_doc* d, const char* json, char* report, int32_t cap);
 
 #ifdef __cplusplus
 }

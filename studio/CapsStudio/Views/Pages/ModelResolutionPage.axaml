@@ -1,0 +1,104 @@
+<!-- CAPS Studio › Model resolution (design/boards/ModelResolution): the same structure all-atom, united-atom and coarse-grained, mass conserved. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ModelResolutionPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding MrKind}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding MrStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Right" Width="340" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="18,13" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="per document" Foreground="{DynamicResource MutedB}" /></Border>
+            <TextBlock Text="Model resolution" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="THIS DOCUMENT" Classes="h3" />
+                <Border Classes="seg">
+                  <UniformGrid Columns="3">
+                    <RadioButton Classes="seg" GroupName="mres" Content="All-atom" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                    <RadioButton Classes="seg" GroupName="mres" Content="United-atom" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                    <RadioButton Classes="seg" GroupName="mres" Content="Coarse-grained" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                  </UniformGrid>
+                </Border>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="All-atom is the default. Changing resolution is a conversion that creates a new document; the original stays." />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="CONVERTING DOWN" Classes="h3" />
+                <StackPanel Spacing="2"><TextBlock Text="All-atom → united-atom" FontSize="12" /><TextBlock Text="merge H into carbons" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" /></StackPanel>
+                <StackPanel Spacing="4"><TextBlock Text="→ coarse-grained" FontSize="12" />
+                  <StackPanel Orientation="Horizontal" Spacing="6"><NumericUpDown Value="{Binding MrPerBead}" Minimum="1" Maximum="50" Increment="1" FormatString="0" Width="56" /><TextBlock Text="backbone atoms per bead · COM" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="CONVERTING BACK UP" Classes="h3" />
+                <StackPanel Spacing="2"><TextBlock Text="Coarse-grained → all-atom" FontSize="12" /><TextBlock Text="backmap, then relax (not built here)" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="United-atom → all-atom" FontSize="12" /><TextBlock Text="add H at 1.09 Å, then relax them" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" /></StackPanel>
+                <Button Classes="small ghost" Content="Open the coarse-grained builder →" Click="OnBackmap" HorizontalAlignment="Left" Foreground="{DynamicResource AccB}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section" BorderThickness="0">
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Masses from IUPAC standard atomic weights; united-atom and bead masses include their hydrogens, so the chain mass is identical in all three." />
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+    <Grid Margin="18" RowDefinitions="*,Auto" RowSpacing="14">
+      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="All-atom" FontWeight="SemiBold" /><TextBlock Text="{Binding MrAaCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
+          <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Aa" /></Panel></Border>
+        </DockPanel>
+        <DockPanel Grid.Column="1">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="United-atom" FontWeight="SemiBold" /><TextBlock Text="{Binding MrUaCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
+          <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Ua" /></Panel></Border>
+        </DockPanel>
+        <DockPanel Grid.Column="2">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="Coarse-grained" FontWeight="SemiBold" /><TextBlock Text="{Binding MrCgCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
+          <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Cg" /></Panel></Border>
+        </DockPanel>
+      </Grid>
+      <Border Grid.Row="1" Classes="pcard" Padding="16,10">
+        <StackPanel>
+          <DockPanel Margin="0,0,0,6">
+            <Border DockPanel.Dock="Right" Classes="chip ok"><TextBlock Text="mass conserved" /></Border>
+            <TextBlock Text="{Binding MrTitle}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </DockPanel>
+          <Grid ColumnDefinitions="170,*,*,*" Height="28">
+            <TextBlock Grid.Column="1" Text="ALL-ATOM" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="UNITED-ATOM" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="3" Text="COARSE-GRAINED" Classes="h3" VerticalAlignment="Center" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding MrRows}">
+            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResolutionRow">
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+                <Grid ColumnDefinitions="170,*,*,*" Height="28">
+                  <TextBlock Text="{Binding Quantity}" FontSize="12.5" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding AllAtom}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding UnitedAtom}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="3" Text="{Binding Coarse}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </Border>
+            </DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

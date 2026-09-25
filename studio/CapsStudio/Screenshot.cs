@@ -282,6 +282,15 @@ internal static class Screenshot
                     case "density": vm.OpenDensityCalc(); break;
                     case "sasa": vm.OpenSurfaceArea(); if (parts.Length > 1) t = vm.RunSurfaceArea(); break;
                     case "cell": vm.OpenCellEditor(); break;
+                    case "styles": vm.OpenDisplayStyles(); break;
+                    case "addh": t = vm.OpenAddHydrogens(); break;
+                    case "resolution": vm.OpenModelResolution(); break;
+                    case "lens":   // lens[:R]: the Studio view with the all-atom lens
+                        vm.SetModule(8);
+                        vm.StyleIndex = 4;
+                        if (parts.Length > 1) vm.LensRadius = decimal.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+                        vm.LensOpen = true;
+                        break;
                     case "pd":   // pd:grow — use the lengths, grow the cell, come back
                         vm.OpenPolydispersity();
                         if (parts.Length > 1)
@@ -538,6 +547,18 @@ internal static class Screenshot
             if (kv[0] == "wait")
                 for (var i = 0; i < int.Parse(kv[1]) / 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             if (kv[0] == "conformers") w.ViewModel.MolConfCount = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "growlive")   // growlive=CHAINSxDP: start growing and shoot the live cell part-way
+            {
+                var p = kv[1].Split('x');
+                w.ViewModel.SetModule(0);
+                w.ViewModel.GrowChainsD = int.Parse(p[0]);
+                w.ViewModel.GrowDpD = int.Parse(p[1]);
+                w.ViewModel.GrowDensityD = 0.5m;
+                _ = w.ViewModel.Grow();
+                var until = DateTime.Now.AddSeconds(60);
+                while (DateTime.Now < until && !(w.ViewModel.GrowLiveShown && w.ViewModel.GrowUnitFraction > 0.45)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 25; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
+            }
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);

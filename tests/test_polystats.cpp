@@ -88,3 +88,41 @@ TEST(Polystats, EwaldAndSolventEstimates) {
   EXPECT_EQ(pme_mesh_size(16.0, 1.2), 14);   // 2·7
   EXPECT_NEAR(hildebrand_chi(106.3, 18.2, 18.6, 298.15), 0.347, 1e-3);
 }
+
+// ---------------------------------------------------------------- model resolution, hydrogens from geometry
+
+#include "caps/edit.hpp"
+#include "caps/import.hpp"
+#include "caps/molecule.hpp"
+#include "caps/resolution.hpp"
+
+TEST(Resolution, EicosaneKeepsItsMassAtEveryResolution) {
+  BuildOptions b;
+  b.forcefield = "uff";
+  const System s = build_molecule("CCCCCCCCCCCCCCCCCCCC", b).system;
+  ResolutionReport aa = all_atom_summary(s), ua, cg;
+  const System u = united_atom(s, &ua);
+  const System c = coarse_grain(s, 5, &cg);
+  EXPECT_EQ(aa.sites, 62);
+  EXPECT_EQ(int(u.atoms.size()), 20);
+  EXPECT_EQ(int(c.atoms.size()), 4);
+  EXPECT_NEAR(aa.mass, 282.556, 1e-3);
+  EXPECT_NEAR(ua.mass, aa.mass, 1e-9);
+  EXPECT_NEAR(cg.mass, aa.mass, 1e-9);
+  EXPECT_EQ(int(u.bonds.size()), 19);
+  EXPECT_EQ(int(c.bonds.size()), 3);
+}
+
+TEST(Resolution, HeavyAtomsGetTheirHydrogensFromTheGeometry) {
+  BuildOptions b;
+  b.forcefield = "uff";
+  for (const auto& [smiles, h] : std::vector<std::pair<std::string, int>>{{"Cc1ccccc1", 8}, {"CC(=O)Nc1ccc(O)cc1", 9}, {"CN1C=NC2=C1C(=O)N(C)C(=O)N2C", 10}}) {
+    System s = build_molecule(smiles, b).system;
+    std::vector<char> heavy(s.atoms.size(), 0);
+    for (size_t i = 0; i < s.atoms.size(); ++i) heavy[i] = s.atoms[i].element == 1;
+    delete_atoms(s, heavy);
+    for (auto& bd : s.bonds) bd.order = 1;   // as a PDB of heavy atoms reads
+    orders_from_geometry(s);
+    EXPECT_EQ(add_hydrogens(s), h) << smiles;
+  }
+}

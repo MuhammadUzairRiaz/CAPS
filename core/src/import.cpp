@@ -6,6 +6,7 @@
 #include <deque>
 
 #include "caps/analysis.hpp"
+#include "caps/elements.hpp"
 #include "caps/typing.hpp"
 
 namespace caps {
@@ -22,9 +23,129 @@ std::string cell_text(const Cell& c) {
   return buf;
 }
 
-// Bond orders from valences (all hydrogens explicit): 4 for aromatic bonds, else the Kekulé order.
+}  // namespace
+
+// Bond orders of a structure without hydrogens (a PDB of heavy atoms), from its geometry: hybridisation from bond
+// angles (or the bond length for terminal atoms), planar six-membered rings of sp² atoms aromatic, then double and
+// triple bonds paired between the remaining sp² and sp atoms, shortest bonds first.
+void orders_from_geometry(System& s) {
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<std::pair<uint32_t, size_t>>> nb(n);   // (neighbour, bond index)
+  for (size_t k = 0; k < s.bonds.size(); ++k) nb[s.bonds[k].i].push_back({s.bonds[k].j, k}), nb[s.bonds[k].j].push_back({s.bonds[k].i, k});
+  auto vec = [&](uint32_t a, uint32_t b) { Vec3 d = s.atoms[b].pos - s.atoms[a].pos; return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+  auto len = [&](uint32_t a, uint32_t b) { return norm(vec(a, b)); };
+  std::vector<int> hyb(n, 3);   // 1 sp, 2 sp², 3 sp³
+  for (uint32_t i = 0; i < n; ++i) {
+    const auto& N = nb[i];
+    const int z = s.atoms[i].element;
+    if (N.size() >= 4 || z == 1) continue;
+    if (N.size() >= 2) {
+      double sum = 0;
+      int k = 0;
+      for (size_t a = 0; a < N.size(); ++a)
+        for (size_t b = a + 1; b < N.size(); ++b) {
+          const Vec3 u = vec(i, N[a].first), v = vec(i, N[b].first);
+          sum += std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / 3.14159265358979323846;
+          ++k;
+        }
+      const double mean = sum / k;
+      hyb[i] = mean > 155 ? 1 : mean > 115 ? 2 : 3;
+      if (N.size() == 3 && (z == 7)) hyb[i] = mean > 117 ? 2 : 3;   // planar N (amides, aromatic N)
+    } else if (N.size() == 1) {   // terminal: the bond length against the single-bond sum of covalent radii
+      const uint32_t j = N[0].first;
+      const double ratio = len(i, j) / (element(z).covalent + element(s.atoms[j].element).covalent);
+      hyb[i] = ratio < 0.83 ? 1 : ratio < 0.93 ? 2 : 3;
+    }
+  }
+  for (auto& b : s.bonds) b.order = 1;
+  // flat rings of five or six atoms through atoms with at most three bonds (shortest path back to the bond's start)
+  auto flat_rings = [&](size_t size, auto&& member_ok) {
+    std::vector<std::vector<uint32_t>> rings;
+    for (size_t k = 0; k < s.bonds.size(); ++k) {
+      const uint32_t u = s.bonds[k].i, v = s.bonds[k].j;
+      if (!member_ok(u) || !member_ok(v)) continue;
+      std::vector<int> prev(n, -1), dist(n, -1);
+      std::deque<uint32_t> q{v};
+      dist[v] = 0;
+      while (!q.empty()) {
+        const uint32_t a = q.front();
+        q.pop_front();
+        if (a == u || dist[a] >= int(size) - 1) continue;
+        for (auto [w, bk] : nb[a]) {
+          if (bk == k || !member_ok(w) || dist[w] >= 0) continue;
+          dist[w] = dist[a] + 1, prev[w] = int(a);
+          q.push_back(w);
+        }
+      }
+      if (dist[u] != int(size) - 1) continue;
+      std::vector<uint32_t> ring{u};
+      for (int a = prev[u]; a >= 0; a = prev[size_t(a)]) ring.push_back(uint32_t(a));
+      std::vector<Vec3> p;
+      for (uint32_t a : ring) p.push_back(s.atoms[ring[0]].pos + vec(ring[0], a));
+      Vec3 c{0, 0, 0};
+      for (const auto& x : p) c = c + x * (1.0 / double(p.size()));
+      Vec3 nrm = cross(p[1] - p[0], p[size - 2] - p[0]);
+      if (norm(nrm) < 1e-9) continue;
+      nrm = nrm * (1.0 / norm(nrm));
+      bool flat = true;
+      for (const auto& x : p) flat = flat && std::fabs(dot(x - c, nrm)) < 0.15;
+      if (flat) rings.push_back(ring);
+    }
+    return rings;
+  };
+  // five-rings read ~108° angles as sp³: a flat one is conjugated (imidazole, pyrrole, furan, thiophene)
+  for (const auto& ring : flat_rings(5, [&](uint32_t a) { return nb[a].size() <= 3 && s.atoms[a].element != 1; }))
+    for (uint32_t a : ring) hyb[a] = 2;
+  // aromatic six-rings: every atom sp², flat, and none carrying an exocyclic double bond to a terminal atom (C=O)
+  auto exo_double = [&](uint32_t a) {
+    for (auto [w, bk] : nb[a])
+      if (nb[w].size() == 1 && hyb[w] == 2) return true;
+    return false;
+  };
+  std::vector<char> in_arom(n, 0);
+  for (const auto& ring : flat_rings(6, [&](uint32_t a) { return hyb[a] == 2; })) {
+    if (std::any_of(ring.begin(), ring.end(), exo_double)) continue;
+    for (size_t a = 0; a < ring.size(); ++a) {
+      const uint32_t x = ring[a], y = ring[(a + 1) % ring.size()];
+      for (auto [w, bk] : nb[x]) if (w == y) s.bonds[bk].order = 4;
+      in_arom[x] = 1;
+    }
+  }
+  // double and triple bonds: shortest candidate bonds first, each atom taking one
+  std::vector<size_t> cand;
+  for (size_t k = 0; k < s.bonds.size(); ++k) {
+    const auto& b = s.bonds[k];
+    if (b.order == 4 || in_arom[b.i] || in_arom[b.j]) continue;
+    if ((hyb[b.i] <= 2 && hyb[b.j] <= 2)) cand.push_back(k);
+  }
+  std::sort(cand.begin(), cand.end(), [&](size_t a, size_t b) {
+    return len(s.bonds[a].i, s.bonds[a].j) / (element(s.atoms[s.bonds[a].i].element).covalent + element(s.atoms[s.bonds[a].j].element).covalent) <
+           len(s.bonds[b].i, s.bonds[b].j) / (element(s.atoms[s.bonds[b].i].element).covalent + element(s.atoms[s.bonds[b].j].element).covalent);
+  });
+  std::vector<int> used(n, 0);   // π bonds each atom still wants: sp 2, sp² 1
+  for (uint32_t i = 0; i < n; ++i) used[i] = hyb[i] == 1 ? 2 : hyb[i] == 2 ? 1 : 0;
+  for (uint32_t i = 0; i < n; ++i)   // a planar N with three bonds keeps its lone pair (amides, pyrrole-type N)
+    if (s.atoms[i].element == 7 && nb[i].size() == 3) used[i] = 0;
+  for (size_t k : cand) {
+    auto& b = s.bonds[k];
+    if (used[b.i] <= 0 || used[b.j] <= 0) continue;
+    const int pi = hyb[b.i] == 1 && hyb[b.j] == 1 ? 2 : 1;
+    b.order = 1 + pi;
+    used[b.i] -= pi, used[b.j] -= pi;
+  }
+}
+
+namespace {
+
+// Bond orders from valences (all hydrogens explicit): 4 for aromatic bonds, else the Kekulé order. Without any hydrogen
+// (heavy atoms only) the orders come from the geometry instead.
 void write_orders(System& s) {
   if (s.bonds.empty()) return;
+  if (std::none_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 1; }) && s.atoms.size() > 2) {
+    orders_from_geometry(s);
+    s.notes.push_back("bond orders from the geometry (no hydrogens in the file): angles, flat sp² rings aromatic");
+    return;
+  }
   const Perception p = perceive(s);
   for (auto& b : s.bonds) {
     const auto& nb = p.nb[b.i];

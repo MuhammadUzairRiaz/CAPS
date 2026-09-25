@@ -1,0 +1,99 @@
+<!-- CAPS Studio › Add hydrogens (design/boards/AddHydrogens): the hydrogens a structure lacks, from valence rules, before and after. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.AddHydrogensPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="computed from valence rules" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding AhStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Right" Width="340" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="18,13" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="{Binding Title}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="Add hydrogens" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="18,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="Undo" Click="OnUndo" IsEnabled="{Binding AhCanUndo}" />
+            <Button Classes="primary" Click="OnApply" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add hydrogens" VerticalAlignment="Center" /></StackPanel></Button>
+          </StackPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="SOURCE" Classes="h3" />
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding AhSource}" FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="200" /><TextBlock Text="File" Classes="muted" /></DockPanel>
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding AhOrders}" FontSize="12" /><TextBlock Text="Bond orders" Classes="muted" /></DockPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="9">
+                <TextBlock Text="OPTIONS" Classes="h3" />
+                <CheckBox Classes="toggle" Content="Keep hydrogens already present" IsChecked="{Binding AhKeep}" />
+                <CheckBox Classes="toggle" Content="Relax new H only" IsChecked="{Binding AhRelax}" ToolTip.Tip="UFF, the heavy atoms held" />
+                <CheckBox Classes="toggle" Content="Protonation by pH (biomolecules)" IsEnabled="False" ToolTip.ShowOnDisabled="True"
+                          ToolTip.Tip="Not here: the Biomolecule builder protonates residues by pH; these rules give neutral valences" />
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="built-in rules" FontSize="12" /><TextBlock Text="Tool" Classes="muted" /></DockPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" BorderThickness="0">
+              <StackPanel Spacing="8">
+                <TextBlock Text="RESULT" Classes="h3" />
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding AhHeavy}" Classes="mono" /><TextBlock Text="Heavy atoms" Classes="muted" /></DockPanel>
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding AhAdded}" Classes="mono" /><TextBlock Text="Hydrogens added" Classes="muted" /></DockPanel>
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding AhCharge}" Classes="mono" /><TextBlock Text="Net charge" Classes="muted" /></DockPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+    <Grid Margin="18" ColumnDefinitions="*,*" RowDefinitions="*,Auto" ColumnSpacing="14" RowSpacing="14">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+          <TextBlock Text="As it is" FontWeight="SemiBold" /><TextBlock Text="{Binding AhBeforeCaption}" Classes="dim" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Before" /></Panel></Border>
+      </DockPanel>
+      <DockPanel Grid.Column="1">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+          <TextBlock Text="After Add hydrogens" FontWeight="SemiBold" /><TextBlock Text="{Binding AhAfterCaption}" Classes="dim" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="After" /></Panel></Border>
+      </DockPanel>
+      <Border Grid.Row="1" Grid.ColumnSpan="2" Classes="pcard" Padding="16,10">
+        <StackPanel>
+          <Grid ColumnDefinitions="*,90,90" Height="28">
+            <TextBlock Text="ATOM" Classes="h3" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="COUNT" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="H ADDED" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding AhRows}">
+            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:HydrogenRow">
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+                <Grid ColumnDefinitions="*,90,90" Height="28">
+                  <TextBlock Text="{Binding Atom}" FontSize="12.5" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Count}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Added}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Margin="0,10,0,0" Classes="dim" TextWrapping="Wrap" Text="H per atom = usual valence − bond orders (sp³ C: 4, aromatic C: 3; formal charges counted). Without any H in the file, bond orders come from the geometry: angles, flat sp² rings aromatic." />
+          <TextBlock Classes="dim" TextWrapping="Wrap" Text="{Binding AhTotal}" />
+          <TextBlock Classes="dim" TextWrapping="Wrap" Text="New H sit at element-specific lengths (C–H 1.09 Å) with ideal angles; with Relax new H only, only they move." />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -70,6 +70,8 @@ public struct CapsGrowOpts
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsProgress(int done, int total, int restarts, IntPtr user);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void CapsGrowLive(IntPtr snapshot, [MarshalAs(UnmanagedType.LPUTF8Str)] string stats, IntPtr user);
 
 [StructLayout(LayoutKind.Sequential)]
 public struct CapsRelaxOpts
@@ -265,6 +267,14 @@ internal static class Native
 
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_chain_preview")] public static extern int ChainPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, ulong seed, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_grow_chains_live")] public static extern IntPtr GrowChainsLive([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, CapsGrowLive? live, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_display")] public static extern int SetDisplay(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_lens_inside")] public static extern int LensInside(IntPtr doc, int atom);
+    [DllImport(Lib, EntryPoint = "caps_display_counts")] public static extern int DisplayCounts(IntPtr doc, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_hydrogen_plan")] public static extern int HydrogenPlan(IntPtr doc, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_doc_copy")] public static extern IntPtr DocCopy(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_resolution_summary")] public static extern int ResolutionSummary(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_resolution_convert")] public static extern IntPtr ResolutionConvert(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_chains")] public static extern IntPtr GrowChains([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_surface_terminations")] public static extern int SurfaceTerminations([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, int h, int k, int l, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -492,12 +502,16 @@ public sealed class CapsDocument : IDisposable
     public static string ChainPreview(string spec, ulong seed) => JsonCall((b, c) => Native.ChainPreview(spec, seed, b, c));
 
     /// <summary>Grows chains of a polymer spec (caps_grow_chains).</summary>
-    public static (CapsDocument Doc, string Report) GrowChains(string spec, CapsGrowOpts o, Func<int, int, int, bool>? progress, string label)
+    public static (CapsDocument Doc, string Report) GrowChains(string spec, CapsGrowOpts o, Func<int, int, int, bool>? progress, string label,
+                                                               Action<CapsDocument, string>? live = null)
     {
         var report = new byte[8192];
         CapsProgress? cb = progress == null ? null : (d, t, r, _) => progress(d, t, r) ? 0 : 1;
-        var h = Native.GrowChains(spec, o, cb, IntPtr.Zero, report, report.Length);
+        // live: the chains so far (a new document each time; the receiver disposes it) and the growth's numbers
+        CapsGrowLive? lv = live == null ? null : (h0, stats, _) => live(new CapsDocument(h0, label + " (growing)"), stats);
+        var h = live == null ? Native.GrowChains(spec, o, cb, IntPtr.Zero, report, report.Length) : Native.GrowChainsLive(spec, o, cb, lv, IntPtr.Zero, report, report.Length);
         GC.KeepAlive(cb);
+        GC.KeepAlive(lv);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }
@@ -1029,6 +1043,33 @@ public sealed class CapsDocument : IDisposable
     public string History() { lock (_lock) return JsonCall((b, c) => Native.History(_h, b, c)); }
     /// <summary>Each atom's residue number (Grow: the repeat unit's position along its chain, from 1; 0 = none).</summary>
     public int[] AtomResidues() { lock (_lock) { Alive(); var n = Native.AtomResidues(_h, null, 0); var r = new int[n]; Native.AtomResidues(_h, r, n); return r; } }
+    // display (design/boards DisplayStyles, LensView), hydrogens (AddHydrogens), resolution (ModelResolution)
+    public void SetDisplay(string json) { lock (_lock) { Alive(); Check(Native.SetDisplay(_h, json)); } }
+    public bool LensInside(int atom) { lock (_lock) { Alive(); return Native.LensInside(_h, atom) != 0; } }
+    public string DisplayCounts() { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.DisplayCounts(_h, b, c)); } }
+    public string HydrogenPlan() { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.HydrogenPlan(_h, b, c)); } }
+    public CapsDocument Copy(string label)
+    {
+        lock (_lock)
+        {
+            Alive();
+            var h = Native.DocCopy(_h);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return new CapsDocument(h, label);
+        }
+    }
+    public string ResolutionSummary(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.ResolutionSummary(_h, json, b, c)); } }
+    public (CapsDocument Doc, string Report) ResolutionConvert(string json, string label)
+    {
+        lock (_lock)
+        {
+            Alive();
+            var report = new byte[2048];
+            var h = Native.ResolutionConvert(_h, json, report, report.Length);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+        }
+    }
     public string MoleculeInfo(int atom) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.MoleculeInfo(_h, atom, b, c)); } }
     /// <summary>SASA: the buffer sized for the per-atom areas so the calculation runs once.</summary>
     public string Sasa(string json)
