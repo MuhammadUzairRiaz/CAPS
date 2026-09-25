@@ -330,3 +330,84 @@ TEST(ReactTemplate, ViewOfTheEpoxyAmineTemplate) {
   for (const auto& c : w["checks"].items()) flagged |= !c["ok"].boolean();
   EXPECT_TRUE(flagged);
 }
+
+#include "caps/yaml.hpp"
+
+TEST(Yaml, TheRecipeSubset) {
+  const Json j = yaml_parse(R"(recipe: 1   # a CAPS recipe
+name: ps_cell
+build:
+  polymer:
+    smiles: "*CC(*)c1ccccc1"
+    dp: 40
+    chains: 20
+    tacticity: atactic
+type: { forcefield: gaff2, charges: types }
+grow: { density: 0.50 }
+relax: { method: lbfgs, fmax: 0.02 }
+export: [lammps, gromacs]
+steps:
+  - md: { ps: 10, temperature: 300 }
+  - analyze:
+      properties: [density, rg]
+units: '[*:1]CC[*:2]'
+)");
+  EXPECT_EQ(j["recipe"].number(), 1);
+  EXPECT_EQ(j["build"]["polymer"]["smiles"].str(), "*CC(*)c1ccccc1");
+  EXPECT_EQ(j["build"]["polymer"]["dp"].number(), 40);
+  EXPECT_EQ(j["type"]["forcefield"].str(), "gaff2");
+  EXPECT_DOUBLE_EQ(j["grow"]["density"].number(), 0.5);
+  EXPECT_EQ(j["export"].size(), 2u);
+  EXPECT_EQ(j["export"][1].str(), "gromacs");
+  EXPECT_EQ(j["steps"].size(), 2u);
+  EXPECT_EQ(j["steps"][0]["md"]["ps"].number(), 10);
+  EXPECT_EQ(j["steps"][1]["analyze"]["properties"][1].str(), "rg");
+  EXPECT_EQ(j["units"].str(), "[*:1]CC[*:2]");
+  EXPECT_THROW(yaml_parse("a: 1\n  b: 2\n"), std::invalid_argument);
+  EXPECT_THROW(yaml_parse("a: 1\na: 2\n"), std::invalid_argument);
+  EXPECT_THROW(yaml_parse("a: {b: 1\n"), std::invalid_argument);
+}
+
+#include "caps/recipe.hpp"
+#include "caps/yaml.hpp"
+
+TEST(Recipe, BuildsGrowsRelaxesAndExportsWithProvenance) {
+  const auto dir = std::filesystem::temp_directory_path() / "caps_recipe_test";
+  std::filesystem::remove_all(dir);
+  const caps::Json r = caps::yaml_parse(
+      "recipe: 1\nname: pe\nbuild:\n  polymer: { smiles: \"*CC*\", dp: 5, chains: 3 }\ntype: { forcefield: default }\n"
+      "grow: { density: 0.5, seed: 2 }\nrelax: { fmax: 5 }\nanalyze: { properties: [density] }\nexport: [lammps, pdb]\n");
+  EXPECT_EQ(caps::recipe_stages(r), (std::vector<std::string>{"build", "type", "grow", "relax", "analyze", "export"}));
+  caps::RecipeOptions o;
+  o.out_dir = dir.string();
+  std::vector<std::string> seen;
+  o.progress = [&](const caps::RecipeEvent& e) { if (e.status == "done") seen.push_back(e.name); };
+  const auto res = caps::run_recipe(r, o);
+  EXPECT_EQ(seen.size(), 6u);
+  EXPECT_EQ(res.system.atoms.size(), 3u * (5 * 6 + 2));
+  ASSERT_FALSE(res.properties.empty());
+  EXPECT_NEAR(res.properties[0].value, 0.5, 0.05);
+  EXPECT_TRUE(std::filesystem::exists(dir / "pe.data"));
+  EXPECT_TRUE(std::filesystem::exists(dir / "pe.in"));
+  EXPECT_TRUE(std::filesystem::exists(dir / "pe.pdb"));
+  const auto m = caps::read_manifest((dir / "pe.data").string());
+  ASSERT_TRUE(m.has_value());
+  EXPECT_NE(caps::methods_text(*m).find("L-BFGS"), std::string::npos);
+  // the same seed gives the same cell
+  const auto again = caps::run_recipe(r, o);
+  EXPECT_DOUBLE_EQ(again.system.atoms.back().pos[0], res.system.atoms.back().pos[0]);
+  std::filesystem::remove_all(dir);
+}
+
+TEST(Recipe, ExitCodes) {
+  caps::RecipeOptions o;
+  auto code = [&](const std::string& y) {
+    try { caps::run_recipe(caps::yaml_parse(y), o); } catch (const caps::RecipeError& e) { return e.code; }
+    return 0;
+  };
+  EXPECT_EQ(code("build: {molecule: CCO}\nbogus: 1\n"), 2);
+  EXPECT_EQ(code("type: {forcefield: uff}\n"), 2);
+  EXPECT_EQ(code("build: {molecule: CCO}\ngrow: {density: 0.5}\n"), 2);
+  EXPECT_EQ(code("build: {polymer: {smiles: \"*CC*\", dp: 2, chains: 1}}\ntype: {forcefield: nothing-here.json}\n"), 2);
+  EXPECT_EQ(code("build: {molecule: CCO}\ntype: {forcefield: uff}\nrelax: {fmax: 2}\n"), 0);
+}
