@@ -37,6 +37,7 @@
 #include "caps/solvate.hpp"
 #include "caps/appearance.hpp"
 #include "caps/trajectory.hpp"
+#include "caps/torsion.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -108,6 +109,8 @@ struct caps_doc {
   std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
   AppearanceState look;                            // caps_set_appearance
   int smooth_window = 1;                           // caps_set_smoothing: frames averaged for display
+  std::vector<std::vector<caps::Vec3>> scan_frames; // caps_torsion_scan: the geometry of each point
+  std::vector<caps::Vec3> scan_original;           // the frame before a scan point was shown
 };
 
 namespace {
@@ -3179,4 +3182,79 @@ extern "C" int32_t caps_trajectory_series(caps_doc* d, const char* options_json,
 extern "C" void caps_set_smoothing(caps_doc* d, int32_t window) {
   d->smooth_window = std::clamp(int(window), 1, 101);
   refresh(d);
+}
+
+// ---------------------------------------------------------------- torsion scan (v20)
+
+extern "C" int32_t caps_torsion_scan(caps_doc* d, const char* options_json, caps_series_progress_fn progress, void* user, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::TorsionScanOptions so;
+    if (!o.has("atoms") || !o["atoms"].is_array() || o["atoms"].size() != 4) throw std::invalid_argument("choose four atoms (a, b, c, d) for the torsion");
+    for (size_t k = 0; k < 4; ++k) so.atoms[k] = int(o["atoms"][k].number());
+    so.from = o.num("from", -180), so.to = o.num("to", 180), so.step = o.num("step", 15);
+    so.relax = o.has("relax") && (o["relax"].kind() == caps::Json::Bool ? o["relax"].boolean() : o["relax"].number() != 0);
+    so.ftol = o.num("ftol", 0.1);
+    if (progress) so.progress = [&](int done, int total) { return progress(done, total, user) == 0; };
+    // the document's force field when Field assigned one, else UFF
+    caps::System s = d->frame;
+    std::shared_ptr<const caps::ForceField> ff;
+    std::string ffname;
+    if (o.text("forcefield", "auto") != "uff" && d->field && d->field->ff && d->field->complete) ff = d->field->ff, ffname = d->field->ff->name;
+    if (!ff) {
+      ff = std::make_shared<caps::ForceField>(caps::assign_uff(s));
+      ffname = "UFF";
+    }
+    const caps::TorsionScanResult R = caps::torsion_scan(s, *ff, so);
+    d->scan_frames.clear();
+    for (const auto& p : R.points) d->scan_frames.push_back(p.positions);
+    d->scan_original.clear();
+    for (const auto& a : d->frame.atoms) d->scan_original.push_back(a.pos);
+    j["ok"] = true;
+    j["forcefield"] = ffname;
+    caps::Json pts = caps::Json::array();
+    for (const auto& p : R.points) {
+      caps::Json x = caps::Json::object();
+      x["phi"] = p.phi, x["energy"] = p.energy - R.minimum, x["dihedral"] = p.terms.dihedral, x["vdw"] = p.terms.vdw, x["coulomb"] = p.terms.coulomb;
+      x["angle"] = p.terms.angle, x["bond"] = p.terms.bond, x["total"] = p.energy;
+      pts.push_back(x);
+    }
+    j["points"] = pts;
+    caps::Json cf = caps::Json::array();
+    for (const auto& c : R.conformers) {
+      caps::Json x = caps::Json::object();
+      x["phi"] = c.phi, x["energy"] = c.energy, x["state"] = c.state;
+      cf.push_back(x);
+    }
+    j["conformers"] = cf;
+    j["barrier"] = R.barrier, j["phi_start"] = R.phi_start, j["moving"] = double(R.moving.size());
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : R.notes) notes.push_back(n);
+    j["notes"] = notes;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_torsion_show(caps_doc* d, int32_t index) {
+  return guard([&] {
+    const std::vector<caps::Vec3>* p = nullptr;
+    if (index < 0) p = &d->scan_original;
+    else if (size_t(index) < d->scan_frames.size()) p = &d->scan_frames[size_t(index)];
+    else throw std::out_of_range("no such scan point");
+    if (p->size() != d->traj.positions.at(d->current).size()) throw std::runtime_error("the scan belongs to another structure");
+    d->traj.positions[d->current] = *p;
+    refresh(d);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_default_torsion(caps_doc* d, int32_t* atoms) {
+  const auto t = caps::default_torsion(d->frame);
+  for (int k = 0; k < 4; ++k) atoms[k] = t[size_t(k)];
+  return t[0] >= 0 ? 0 : -1;
 }

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -515,6 +515,18 @@ int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_rende
 typedef int32_t (*caps_series_progress_fn)(int32_t done, int32_t total, void* user);
 int32_t caps_trajectory_series(caps_doc* d, const char* options_json, caps_series_progress_fn progress, void* user, char* json, int32_t cap);
 void caps_set_smoothing(caps_doc* d, int32_t window);
+
+/* Torsion scan (v20, design/boards/TorsionScan) of the current frame. Options JSON {atoms: [a, b, c, d] (0-based),
+   from, to, step (degrees), relax (bool: the four atoms held and the rest minimised at each step), ftol, forcefield:
+   "auto" (the Field assignment when complete, else UFF) | "uff"} → {ok, error, forcefield, points: [{phi, energy
+   (kcal/mol above the lowest), dihedral, vdw, coulomb, angle, bond, total}], conformers: [{phi, energy, state}],
+   barrier, phi_start, moving (atoms rotated), notes}. The geometry of each point is kept: caps_torsion_show(d, k) puts
+   point k into the current frame, −1 restores the frame as it was before the scan. */
+int32_t caps_torsion_scan(caps_doc* d, const char* options_json, caps_series_progress_fn progress, void* user, char* json, int32_t cap);
+int32_t caps_torsion_show(caps_doc* d, int32_t index);
+/* A torsion to scan when none is picked: four heavy atoms around the middle bond of the longest backbone (not in a
+   ring); −1 when there is none. */
+int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
 
 #ifdef __cplusplus
 }
