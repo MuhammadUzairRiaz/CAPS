@@ -497,6 +497,27 @@ internal static class SelfTest
             vm.InspectorFilter = "";
         }
 
+        // Export › Data (ExportData): every format previews and writes; the .gro reads back
+        {
+            var okFormats = new List<string>();
+            foreach (var f in MainViewModel.ExportFormats)
+            {
+                var j = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.ExportPreview(f.Id, "{\"coeffs\":true}", 20))!;
+                var lines = ((System.Text.Json.Nodes.JsonArray)j["lines"]!).Count;
+                if (lines > 2 && (double?)j["bytes"] > 100) okFormats.Add(f.Id);
+            }
+            vm.OpenExport();
+            vm.ExportFormatIndex = 2;
+            var gro = Path.Combine(outDir, "caps-selftest-export.gro");
+            vm.ExportNow(gro).GetAwaiter().GetResult();
+            var back = CapsDocument.Open(gro);
+            var sameAtoms = back.Summary().Atoms == vm.Document!.Summary().Atoms;
+            back.Dispose();
+            Check(okFormats.Count == MainViewModel.ExportFormats.Length && sameAtoms, $"export: {string.Join(", ", okFormats)} · .gro reads back {sameAtoms}");
+            vm.ExportFormatIndex = 0;
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

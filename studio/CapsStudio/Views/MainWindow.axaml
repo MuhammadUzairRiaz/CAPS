@@ -1226,6 +1226,8 @@
       </Border>
       <!-- Nothing open (design/boards/VisEmpty): Analyze before a trajectory is open -->
       <pages:EmptyPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding ShowEmpty}" ZIndex="1" />
+      <!-- Export › Data (design/boards/ExportData) -->
+      <pages:ExportPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsExport}" />
       <!-- Export › Figure (design/boards/FigureBackground) -->
       <pages:FigurePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFigure}" />
       <!-- File checks (design/boards/VisProblems) -->

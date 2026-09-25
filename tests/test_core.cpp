@@ -608,6 +608,19 @@ TEST(Pipeline, TopologyShapeAndFrames) {
   EXPECT_LT(inter, 0.02);
 }
 
+TEST(Io, GroWriterRoundTrip) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const System s = t.frame(0);
+  const std::string path = (std::filesystem::temp_directory_path() / "caps_test_roundtrip.gro").string();
+  write_gro(s, path);
+  const Trajectory g = read_gro(path);
+  ASSERT_EQ(g.topology.atoms.size(), s.atoms.size());
+  for (size_t i = 0; i < s.atoms.size(); i += 97)
+    for (int k = 0; k < 3; ++k) EXPECT_NEAR(g.positions[0][i][k], s.atoms[i].pos[k], 0.006);   // 0.001 nm precision
+  EXPECT_NEAR(g.topology.cell.a[0], s.cell.a[0], 1e-3);
+  std::filesystem::remove(path);
+}
+
 TEST(Io, StagedOpen) {
   const std::string dump = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", data = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
   const Trajectory full = open_file(dump, data);

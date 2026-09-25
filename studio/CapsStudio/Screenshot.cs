@@ -70,6 +70,13 @@ internal static class Screenshot
             if (kv[0] == "inspector") { w.ViewModel.InspectorTab = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
             if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
+            if (kv[0] == "export")   // export=FORMATINDEX: Export › Data with that format, after the preview is written
+            {
+                w.ViewModel.OpenExport();
+                w.ViewModel.ExportFormatIndex = int.Parse(kv[1]);
+                for (int k = 0; k < 80 && !w.ViewModel.ExportIdle || k < 10; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+            }
             if (kv[0] == "series")
             {
                 var t = w.ViewModel.ComputeSeries();
