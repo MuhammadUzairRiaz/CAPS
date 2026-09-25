@@ -5,6 +5,7 @@
 #include <map>
 
 #include "caps/pack.hpp"
+#include "caps/properties.hpp"
 #include "caps/react.hpp"
 #include "caps/polymer.hpp"
 #include "caps/molecule.hpp"
@@ -208,4 +209,16 @@ TEST(React, SulfurCureOfNaturalRubber) {
       }
   }
   EXPECT_GT(bridges, 0);
+  // the crosslink analysis counts the same bridges
+  Trajectory t;
+  t.topology = s;
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  t.positions.push_back(p);
+  t.cells.push_back(s.cell);
+  t.timesteps.push_back(0);
+  const auto props = analyze(t, {"crosslinks"}, AnalyzeOptions{});
+  ASSERT_EQ(props.size(), 1u);
+  EXPECT_EQ(int(props[0].extra.at("sulfur bridges")), bridges);
+  EXPECT_GT(props[0].value, 0.0);
 }

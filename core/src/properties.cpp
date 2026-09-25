@@ -1026,6 +1026,55 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
   return p;
 }
 
+// ---------------------------------------------------------------- vulcanised networks
+
+Property crosslinks_prop(const Trajectory& t, const AnalyzeOptions& o) {
+  (void)o;
+  Property p{"crosslinks", "Crosslink density (sulfur bridges)", "mol/m³", "", NaN, NaN, {}, {}, {}};
+  const System& s = t.topology;
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  // sulfur clusters (S atoms bonded to each other), each with the carbons it touches
+  std::vector<int> seen(n, 0);
+  int bridges = 0, pendant = 0, free_s = 0;
+  std::map<int, int> rank;   // sulfur atoms per bridge → count
+  for (uint32_t i = 0; i < n; ++i) {
+    if (s.atoms[i].element != 16 || seen[i]) continue;
+    std::vector<uint32_t> st{i};
+    seen[i] = 1;
+    int ns = 0, nc = 0;
+    while (!st.empty()) {
+      const uint32_t a = st.back();
+      st.pop_back();
+      ++ns;
+      for (uint32_t b : nb[a]) {
+        if (s.atoms[b].element == 16 && !seen[b]) seen[b] = 1, st.push_back(b);
+        else if (s.atoms[b].element == 6) ++nc;
+      }
+    }
+    if (nc >= 2) ++bridges, ++rank[ns];
+    else if (nc == 1) ++pendant;
+    else ++free_s;
+  }
+  if (!s.cell.valid()) { p.notes.push_back("needs a periodic cell for the density"); return p; }
+  double mass = 0;
+  for (const auto& a : s.atoms) mass += s.mass_of(a);
+  const double vol = s.cell.volume();                 // Å³
+  const double nu = bridges / (vol * 1e-30 * kNA);    // mol/m³
+  const double rho = mass / kNA / (vol * 1e-24);      // g/cm³
+  p.value = nu;
+  p.extra["sulfur bridges"] = bridges;
+  for (const auto& [k, c] : rank) p.extra[k == 1 ? "monosulfidic" : k == 2 ? "disulfidic" : ("polysulfidic S" + std::to_string(k))] = c;
+  p.extra["pendant sulfur groups"] = pendant;
+  if (free_s) p.extra["unreacted sulfur clusters"] = free_s;
+  if (nu > 0) p.extra["Mc, g/mol (strand mass ρ / 2ν)"] = rho * 1e6 / (2 * nu);
+  p.method = "sulfur clusters bonded to two or more carbons are crosslinks (rank = sulfur atoms in the bridge); ν = bridges / (V N_A); "
+             "Mc = ρ / (2ν) for tetrafunctional junctions";
+  if (!bridges) p.notes.push_back("no sulfur bridges: cure the rubber in React (sulfur cure) first");
+  return p;
+}
+
 // ---------------------------------------------------------------- free volume
 
 struct FreeGrid {
@@ -1357,7 +1406,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
-                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "orientation"};
+                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "orientation", "crosslinks"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -1432,6 +1481,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
       }
     }
     if (want("zprofile")) out.push_back(zprofile_prop(t, fr, o));
+    if (want("crosslinks")) out.push_back(crosslinks_prop(t, o));
     if (want("adhesion")) out.push_back(adhesion_prop(t, fr, o));
     if (want("ffv")) out.push_back(ffv_prop(t, fr, o));
     if (want("psd")) out.push_back(psd_prop(t, fr, o));
