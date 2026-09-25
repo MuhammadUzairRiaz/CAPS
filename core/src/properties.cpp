@@ -15,6 +15,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
+#include "caps/entangle.hpp"
 #include "caps/json.hpp"
 #include "caps/mechanics.hpp"
 
@@ -1069,6 +1070,119 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
 
 // ---------------------------------------------------------------- vulcanised networks
 
+// Entanglements: primitive-path analysis (Everaers et al. 2004) on up to ppa_frames frames spread over the chosen ones.
+Property entanglements_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"entanglements", "Entanglement length N_e", "bonds", "", NaN, NaN, {}, {}, {}};
+  if (fr.empty()) { p.notes.push_back("no frames"); return p; }
+  std::vector<size_t> use;
+  const size_t want = size_t(std::max(1, o.ppa_frames));
+  if (fr.size() <= want) use = fr;
+  else
+    for (size_t k = 0; k < want; ++k) use.push_back(fr[(fr.size() - 1) * k / std::max<size_t>(1, want - 1)]);
+  std::vector<double> ne_frames, lpp_all, r2_all;
+  double lpp_s = 0, lpp2_s = 0, r2_s = 0, nb_s = 0, chains = 0, sigma = 0, bond_mass = 0, rho = NaN;
+  bool reduced = !t.topology.atoms.empty();
+  for (const auto& a : t.topology.atoms)
+    if (std::abs(t.topology.mass_of(a) - 1.0) > 1e-9) { reduced = false; break; }
+  int steps = 0, unconverged = 0;
+  Series trace{"mean L_pp while minimising", "step", "⟨L_pp⟩ (Å)", {}, {}};
+  for (size_t k = 0; k < use.size(); ++k) {
+    System s = t.frame(use[k]);
+    if (!s.unwrapped) make_molecules_whole(s);
+    std::vector<std::vector<uint32_t>> bb;
+    for (auto& b : backbones(s))
+      if (b.size() >= 3 && (o.exclude_mol == 0 || s.atoms[b[0]].mol != o.exclude_mol)) bb.push_back(std::move(b));
+    if (bb.empty()) { p.notes.push_back("no chains (backbones of at least 3 heavy atoms)"); return p; }
+    if (k == 0) {
+      // mass per backbone bond, from the molecules the backbones belong to
+      const auto mol = s.molecules();
+      std::vector<double> mm;
+      for (size_t i = 0; i < s.atoms.size(); ++i) {
+        if (size_t(mol[i]) >= mm.size()) mm.resize(size_t(mol[i]) + 1, 0.0);
+        mm[size_t(mol[i])] += s.mass_of(s.atoms[i]);
+      }
+      double m = 0, nbond = 0;
+      for (const auto& b : bb) { m += mm[size_t(mol[b[0]])]; nbond += double(b.size() - 1); }
+      bond_mass = m / nbond;
+      if (s.cell.valid()) rho = t.topology.total_mass() / kNA / (s.cell.volume() * 1e-24);
+    }
+    PrimitivePathOptions po;
+    if (o.progress)
+      po.progress = [&](double f) { return o.progress("entanglements", (double(k) + f) / double(use.size())); };
+    const PrimitivePaths pp = primitive_paths(s, bb, po);
+    if (pp.stopped) throw Cancel();
+    const EntanglementEstimate e = entanglement_estimate(pp);
+    ne_frames.push_back(e.ne_mscoil);
+    lpp_s += e.lpp * e.chains;
+    lpp2_s += e.lpp2 * e.chains;
+    r2_s += e.r2 * e.chains;
+    nb_s += e.nb * e.chains;
+    chains += e.chains;
+    sigma = pp.sigma;
+    steps += pp.steps;
+    unconverged += !pp.converged;
+    for (size_t c = 0; c < pp.lpp.size(); ++c) { lpp_all.push_back(pp.lpp[c]); r2_all.push_back(pp.r2[c]); }
+    if (k == 0) { trace.x = pp.trace_step; trace.y = pp.trace_lpp; }
+  }
+  const double nb = nb_s / chains, lpp = lpp_s / chains, lpp2 = lpp2_s / chains, r2 = r2_s / chains;
+  const double ne_coil = lpp * lpp > 1.0001 * r2 ? nb * r2 / (lpp * lpp) : NaN;
+  const double ne = lpp2 > 1.0001 * r2 ? nb / (lpp2 / r2 - 1) : NaN;
+  p.method = "primitive-path analysis (Everaers et al., Science 303, 823, 2004): backbone atoms as beads, chain ends fixed, FENE bonds "
+             "without rest length, WCA repulsion between chains (σ = " + fmt(sigma, 3) + " Å, the mean backbone bond / 0.97), none within a chain; "
+             "minimised to T = 0 with FIRE. N_e by the modified S-coil estimator N_b / (⟨L_pp²⟩/⟨R²⟩ − 1) (Hoy, Foteinopoulou & Kröger, "
+             "PRE 80, 031803, 2009). Not Z1: no kinks are counted";
+  p.extra["frames"] = double(use.size());
+  p.extra["chains"] = chains;
+  p.extra["backbone bonds per chain N_b"] = nb;
+  p.extra["⟨R²⟩^½ (Å)"] = std::sqrt(r2);
+  p.extra["⟨L_pp⟩ primitive path (Å)"] = lpp;
+  {
+    double q = 0;
+    for (size_t c = 0; c < lpp_all.size(); ++c) q += r2_all[c] > 0 ? lpp_all[c] / std::sqrt(r2_all[c]) : 1.0;
+    p.extra["⟨L_pp / R⟩ per chain"] = q / double(lpp_all.size());
+  }
+  if (lpp > 0) p.extra["tube step a_pp = ⟨R²⟩/⟨L_pp⟩ (Å)"] = r2 / lpp;
+  if (!std::isnan(ne_coil)) p.extra["N_e, classical coil N_b⟨R²⟩/⟨L_pp⟩²"] = ne_coil;
+  if (std::isnan(ne)) {
+    p.notes.push_back("the primitive paths are straight (L_pp ≈ R): these chains are not entangled with each other");
+  } else {
+    p.value = ne;
+    std::vector<double> fin;
+    for (double v : ne_frames)
+      if (v > 0) fin.push_back(v);
+    if (fin.size() >= 2) p.error = block_mean(fin, std::min<int>(o.blocks, int(fin.size()))).second;
+    p.extra["entanglements per chain Z = N_b/N_e"] = nb / ne;
+    const double me = ne * bond_mass;
+    if (reduced) p.notes.push_back("every mass is 1: a bead-spring model in reduced units, so M_e and G_N⁰ are left out (lengths are in σ)");
+    else p.extra["M_e (g/mol)"] = me;
+    if (!std::isnan(rho) && !reduced) {
+      const double T = o.temperature > 0 ? o.temperature : 298.15;
+      p.extra["plateau modulus G_N⁰ = ⁴⁄₅ ρRT/M_e (MPa)"] = 0.8 * rho * 1e3 * 8.314462618 * T / (me * 1e-3) * 1e-6;
+      p.extra["T for G_N⁰ (K)"] = T;
+    }
+    if (nb < 2 * ne) p.notes.push_back("chains of " + std::to_string(int(std::lround(nb))) + " backbone bonds are shorter than 2 N_e: few entanglements per chain, N_e is rough");
+  }
+  if (unconverged) p.notes.push_back(std::to_string(unconverged) + " of " + std::to_string(use.size()) + " minimisations stopped at the step limit before the forces vanished; L_pp is an upper bound");
+  p.notes.push_back("chains pass through themselves and their own periodic images: self-entanglements are not counted");
+  p.notes.push_back("N_e needs equilibrated chain conformations: a freshly grown cell gives a number, not the melt's");
+  p.series.push_back(std::move(trace));
+  // L_pp / R per chain
+  if (!lpp_all.empty()) {
+    Series h{"L_pp / R per chain", "L_pp / R", "chains", {}, {}};
+    std::vector<double> ratio;
+    for (size_t c = 0; c < lpp_all.size(); ++c)
+      if (r2_all[c] > 0) ratio.push_back(lpp_all[c] / std::sqrt(r2_all[c]));
+    const double hi = std::max(1.5, *std::max_element(ratio.begin(), ratio.end()) * 1.05);
+    const int bins = 20;
+    std::vector<double> cnt(bins, 0.0);
+    for (double r : ratio) cnt[std::clamp(int((r - 1) / (hi - 1) * bins), 0, bins - 1)] += 1;
+    for (int b = 0; b < bins; ++b) { h.x.push_back(1 + (b + 0.5) * (hi - 1) / bins); h.y.push_back(cnt[b]); }
+    p.series.push_back(std::move(h));
+  }
+  (void)steps;
+  return p;
+}
+
 Property crosslinks_prop(const Trajectory& t, const AnalyzeOptions& o) {
   (void)o;
   Property p{"crosslinks", "Crosslink density (sulfur bridges)", "mol/m³", "", NaN, NaN, {}, {}, {}};
@@ -1470,7 +1584,8 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
-                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "orientation", "crosslinks"};
+                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "orientation", "crosslinks",
+                                              "entanglements"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -1564,6 +1679,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     }
     if (want("zprofile")) out.push_back(zprofile_prop(t, fr, o));
     if (want("crosslinks")) out.push_back(crosslinks_prop(t, o));
+    if (want("entanglements")) out.push_back(entanglements_prop(t, fr, o));
     if (want("adhesion")) out.push_back(adhesion_prop(t, fr, o));
     if (want("ffv")) out.push_back(ffv_prop(t, fr, o));
     if (want("psd")) out.push_back(psd_prop(t, fr, o));

@@ -15,6 +15,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
+#include "caps/entangle.hpp"
 #include "cell_list.hpp"
 
 namespace caps {
@@ -1170,6 +1171,57 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
                 (stride > 1 ? " every " + std::to_string(stride) : "") + " · " + std::to_string(segs) + " segments";
 }
 
+// Primitive paths (Everaers et al. 2004, see entangle.hpp): each chain pulled tight between its fixed ends without
+// crossing another, drawn as a line through the chain; N_e and the tube step as attributes, one row per chain.
+void step_primitive_paths(PipelineState& st, const Json& p, StepStatus& out) {
+  const double radius = std::max(0.02, p.num("radius", 0.3));
+  System whole = st.system;
+  if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
+  std::vector<std::vector<uint32_t>> bb;
+  for (auto& b : backbones(whole))
+    if (b.size() >= 3) bb.push_back(std::move(b));
+  if (bb.empty()) { out.level = "warning"; out.summary = "no chains (backbones of at least 3 heavy atoms)"; return; }
+  PrimitivePathOptions po;
+  po.max_steps = std::max(1000, int(p.num("max_steps", 200000)));
+  const PrimitivePaths pp = primitive_paths(whole, bb, po);
+  const EntanglementEstimate e = entanglement_estimate(pp);
+  const auto mol = st.system.molecules();
+  DataTable t;
+  t.name = "primitive_paths";
+  t.title = "Primitive paths";
+  t.columns = {"Molecule", "backbone bonds", "R (Å)", "L_pp (Å)", "L_pp / R"};
+  for (size_t c = 0; c < pp.paths.size(); ++c) {
+    // drawn where the chain is drawn: the path moved with the chain's first backbone atom
+    const uint32_t a0 = bb[c].front();
+    const Vec3 shift = st.system.atoms[a0].pos - whole.atoms[a0].pos;
+    const unsigned rgb = kCat[size_t(mol[a0]) % 10];
+    const auto& q = pp.paths[c];
+    for (size_t k = 1; k < q.size(); ++k)
+      if (norm(q[k] - q[k - 1]) > 1e-6) st.segments.push_back({q[k - 1] + shift, q[k] + shift, rgb, radius, false});
+    const double R = std::sqrt(pp.r2[c]);
+    t.rows.push_back({double(mol[a0] + 1), pp.bonds[c], R, pp.lpp[c], R > 0 ? pp.lpp[c] / R : 1.0});
+  }
+  st.tables.push_back(std::move(t));
+  st.set_attribute("PrimitivePath.chains", e.chains);
+  st.set_attribute("PrimitivePath.Lpp", e.lpp);
+  st.set_attribute("PrimitivePath.a_pp", e.a_pp);
+  if (e.ne_mscoil > 0) {
+    st.set_attribute("PrimitivePath.Ne", e.ne_mscoil);
+    st.set_attribute("PrimitivePath.Ne_coil", e.ne_coil);
+    st.set_attribute("PrimitivePath.Z", e.z);
+  }
+  char b[200];
+  if (e.ne_mscoil > 0)
+    std::snprintf(b, sizeof b, "%d chains · ⟨L_pp⟩ %.1f Å · N_e %.0f bonds (Z %.1f per chain) · a_pp %.1f Å%s", e.chains, e.lpp, e.ne_mscoil, e.z, e.a_pp,
+                  pp.converged ? "" : " · not converged");
+  else
+    std::snprintf(b, sizeof b, "%d chains · paths straight: not entangled with each other", e.chains);
+  out.summary = b;
+  if (!pp.converged) out.level = "warning";
+  // the paths run inside the chains: unless asked, the particles are left out so the paths show
+  if (!flag(p, "show_chains", false)) compact(st, std::vector<char>(st.system.atoms.size(), 0));
+}
+
 // A periodic grid over the cell: n[k] points along each edge, spacing about h.
 struct CellGrid {
   Cell cell;
@@ -1694,6 +1746,7 @@ const StepDef kSteps[] = {
     {"smooth", "Smooth trajectory", "positions averaged over a window of frames", step_smooth},
     {"vectors", "Vectors", "end-to-end, dipoles, displacements, velocities as arrows", step_vectors},
     {"trajectory_lines", "Trajectory lines", "paths of molecule centres or particles", step_trajectory_lines},
+    {"primitive_paths", "Primitive paths", "chains pulled tight without crossing: entanglements, N_e", step_primitive_paths},
     {"voids", "Voids & pores", "accessible volume for a probe, voids by size", step_voids},
     {"voronoi", "Voronoi volumes", "volume per atom on a grid", step_voronoi},
     {"density_field", "Density field", "Gaussian-smoothed mass density, profile, slice", step_density_field},

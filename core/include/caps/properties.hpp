@@ -17,6 +17,7 @@
 //   relaxation   end-to-end vector and backbone bond (P2) autocorrelations, KWW fits; τ   ps
 //   ced          cohesive energy density (E_isolated − E_bulk)/V with the force field, and δ = √CED   J/cm³, MPa^½
 //   ffv          free volume by probe insertion: accessible fraction and Bondi FFV
+//   entanglements  primitive-path analysis (Everaers 2004): N_e (modified S-coil), M_e, tube step, plateau modulus   bonds
 //   psd          pore size distribution (largest sphere containing each free point, Gelb & Gubbins)   Å
 //   cij_fluct    elastic constants from stress fluctuations of an NVT trajectory (needs ff and temperature); adds
 //                youngs_fluct, bulk_fluct, shear_fluct, poisson_fluct (see mechanics.hpp)   GPa
@@ -72,6 +73,7 @@ struct AnalyzeOptions {
   // interfaces: bin width of the density profile along z (Å); a molecule left out of the chain analyses (the substrate)
   double zbin = 0.5;
   int64_t exclude_mol = 0;
+  int ppa_frames = 3;           // entanglements: primitive paths of this many frames, spread over the chosen ones
   // free volume
   double probe = 0.0;           // probe radius, Å (0: points outside every van der Waals sphere)
   double grid = 0.4;            // Å
