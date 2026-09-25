@@ -830,4 +830,98 @@ CoolingResult run_cooling(System& s, const CoolingOptions& o) {
   return res;
 }
 
+PullResult run_pull(System& s, const PullOptions& o) {
+  if (!s.cell.valid()) throw FieldError("a pull test needs a periodic cell");
+  if (o.rate <= 0 || o.distance <= 0) throw std::invalid_argument("give a positive pulling rate and distance");
+  const size_t n = s.atoms.size();
+  std::vector<char> held(n, 0), group(n, 0);
+  size_t nh = 0, ng = 0;
+  for (size_t i = 0; i < n; ++i) {
+    if (s.atoms[i].mol == o.surface_mol) held[i] = 1, ++nh;
+    else group[i] = 1, ++ng;
+  }
+  if (!nh || !ng) throw std::invalid_argument("needs a surface (molecule " + std::to_string(o.surface_mol) + ") and a film of other molecules");
+  PullResult R;
+  R.area = norm(cross(s.cell.a, s.cell.b));
+  // a film between the surface and the surface's periodic image slides on (or leaves) two interfaces
+  int faces = 1;
+  {
+    const double Lz = std::fabs(dot(s.cell.c, cross(s.cell.a, s.cell.b))) / R.area;
+    auto h = [&](const Vec3& r) { double f = s.cell.to_fractional(r)[2]; return (f - std::floor(f)) * Lz; };
+    double stop = -1e300, sbot = 1e300, ftop = -1e300;
+    for (size_t i = 0; i < n; ++i) {
+      const double z = h(s.atoms[i].pos);
+      if (held[i]) stop = std::max(stop, z), sbot = std::min(sbot, z);
+      else ftop = std::max(ftop, z);
+    }
+    if (ftop > stop && Lz + sbot - ftop < 8.0) faces = 2;
+  }
+  DynamicsOptions d;
+  d.field = o.field ? o.field : std::make_shared<ForceField>(default_forcefield(s));
+  d.energy = o.energy;
+  d.dt = o.dt;
+  d.temperature = o.temperature;
+  d.tau_t = o.tau_t;
+  d.thermostat = Thermostat::Bussi;
+  d.fixed = held;
+  d.seed = o.seed;
+  d.frame_every = 0;
+  if (o.relax_first) {   // a freshly grown film has close contacts: push-off and minimise, the surface held
+    RelaxOptions ro;
+    ro.field = d.field;
+    ro.energy = o.energy;
+    ro.fixed = held;
+    ro.pushoff = true;
+    ro.ftol = 2.0;
+    ro.max_iterations = 3000;
+    relax(s, ro);
+  }
+  if (o.equilibrate_ps > 0) {   // settle at the temperature first, nothing pulled
+    d.steps = std::max<int64_t>(1, std::llround(o.equilibrate_ps * 1000 / o.dt));
+    d.new_velocities = true;
+    d.thermo_every = int(d.steps);
+    run_dynamics(s, d);
+    d.new_velocities = false;
+  }
+  d.pull_group = group;
+  d.pull_dir = o.normal ? Vec3{0, 0, 1} : Vec3{1, 0, 0};
+  d.pull_k = o.spring;
+  d.pull_rate = o.rate;
+  d.steps = std::max<int64_t>(1, std::llround(o.distance / o.rate * 1000 / o.dt));
+  d.thermo_every = std::max(1, o.sample_every);
+  d.progress = [&](const ThermoRow& r) {
+    PullPoint p{r.time_ps, r.pull_disp, r.pull_force, r.temperature};
+    R.curve.push_back(p);
+    return !o.progress || o.progress(p);
+  };
+  DynamicsReport dr;
+  run_dynamics(s, d, &dr);
+  // smoothed force against displacement, the peak, and the work
+  const size_t m = R.curve.size();
+  R.smooth.resize(m);
+  for (size_t i = 0; i < m; ++i) {
+    double sum = 0;
+    int c = 0;
+    for (size_t j = 0; j < m; ++j)
+      if (std::fabs(R.curve[j].displacement - R.curve[i].displacement) <= 0.5) sum += R.curve[j].force, ++c;
+    R.smooth[i] = c ? sum / c : R.curve[i].force;
+  }
+  for (size_t i = 0; i < m; ++i)
+    if (R.smooth[i] > R.peak_force) R.peak_force = R.smooth[i], R.peak_displacement = R.curve[i].displacement;
+  double w = 0;
+  for (size_t i = 1; i < m; ++i) w += 0.5 * (R.curve[i].force + R.curve[i - 1].force) * (R.curve[i].displacement - R.curve[i - 1].displacement);
+  R.strength = R.peak_force / (faces * R.area) * 6947.7;   // kcal/mol/Å per Å² → MPa
+  R.work = w / (faces * R.area) * 694.77;                    // kcal/mol per Å² → mJ/m²
+  R.interfaces = faces;
+  char b[300];
+  std::snprintf(b, sizeof b, "%s pull of %zu atoms from a held surface of %zu atoms · spring %.1f kcal/mol/Å² at %.2f Å/ps over %.1f Å · %.0f K · area %.1f Å²",
+                o.normal ? "normal (+z)" : "shear (x)", ng, nh, o.spring, o.rate, o.distance, o.temperature, R.area);
+  R.method = b;
+  R.notes.push_back("steered MD: the force depends on the pulling rate (far faster than experiment); compare systems at the same rate");
+  if (faces == 2) R.notes.push_back("the film touches the surface and its periodic image: strength and work are per interface (two share the force)");
+  if (o.normal) R.notes.push_back("normal pulls need vacuum above the film (a film between the surface and its periodic image is pushed into the image)");
+  for (const auto& note : dr.notes) R.notes.push_back(note);
+  return R;
+}
+
 }  // namespace caps

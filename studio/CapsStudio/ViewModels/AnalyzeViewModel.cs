@@ -120,15 +120,19 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Mechanics", [StrainChip, FluctChip, TensileChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation")]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
-            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion")]),
+            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), PullShearChip, PullNormalChip]),
         ];
         LoadReferences();
+        PullShearChip.PropertyChanged += (_, _) => Raise(nameof(PullOn));
+        PullNormalChip.PropertyChanged += (_, _) => Raise(nameof(PullOn));
     }
 
     // protocols (their settings show when switched on)
     public CalcChip TgChip { get; } = Chip("tg", "Tg", tip: "Glass transition from a stepwise NPT cooling run of the current frame (a copy: the document is not changed)");
     public CalcChip StrainChip { get; } = Chip("cij_strain", "Cij strain", tip: "Static elastic constants: minimise, strain ±ε in each direction, re-minimise (Theodorou & Suter)");
     public CalcChip FluctChip { get; } = Chip("cij_run", "Cij fluct.", tip: "Elastic constants from stress fluctuations: an NVT run of the current frame, the stress sampled at every step (Lutsko; Clavier et al.)");
+    public CalcChip PullShearChip { get; } = Chip("pull_shear", "Pull · shear", tip: "Steered MD: the film dragged along x over the held surface (molecule 1); interfacial shear strength and work");
+    public CalcChip PullNormalChip { get; } = Chip("pull_normal", "Pull · normal", tip: "Steered MD: the film pulled off the held surface along +z (needs vacuum above the film); peak normal stress and work of separation");
     public CalcChip TensileChip { get; } = Chip("tensile", "Stress–strain", tip: "Uniaxial deformation MD of the current frame: modulus, Poisson ratio, yield");
 
     private static CalcChip Chip(string id, string label, bool on = false, string tip = "") => new() { Id = id, Label = label, IsOn = on, Tip = tip.Length > 0 ? tip : Tips.GetValueOrDefault(id, "") };
@@ -201,12 +205,26 @@ public sealed class AnalyzeViewModel : ObservableObject
     public string TensRateText => string.Format(Inv, "{0:0.##e0} s⁻¹", _tensRate * 1e12);
     protected override void OnChanged(string? name) { if (name == nameof(TensRateD)) Raise(nameof(TensRateText)); }
 
-    public CapsMechOpts MechOptions() => new()
+    // pull test (interfaces): distance and rate travel in the tensile fields when the tensile run is off
+    private double _pullDist = 10, _pullRate = 2, _pullT = 300, _pullEq = 5;
+    public decimal PullDistD { get => (decimal)_pullDist; set => Set(ref _pullDist, (double)Math.Clamp(value, 0.5m, 200m), nameof(PullDistD)); }
+    public decimal PullRateD { get => (decimal)_pullRate; set => Set(ref _pullRate, (double)Math.Clamp(value, 0.01m, 100m), nameof(PullRateD)); }
+    public decimal PullTD { get => (decimal)_pullT; set => Set(ref _pullT, (double)Math.Max(1, value), nameof(PullTD)); }
+    public decimal PullEqD { get => (decimal)_pullEq; set => Set(ref _pullEq, (double)Math.Max(0, value), nameof(PullEqD)); }
+    public bool PullOn => PullShearChip.IsOn || PullNormalChip.IsOn;
+
+    public CapsMechOpts MechOptions()
     {
-        Configurations = _cijConfigs, Strain = _cijStrain, Temperature = FluctChip.IsOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : _fluctT,
-        Axis = _tensAxis, Rate = _tensRate, MaxStrain = _tensMax, LateralFixed = _tensFixed ? 1 : 0,
-        TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs, EquilibratePs = _eqPs > 0 ? _eqPs : -1,
-    };
+        var pull = PullOn && !TensileChip.IsOn;
+        return new CapsMechOpts
+        {
+            Configurations = _cijConfigs, Strain = _cijStrain,
+            Temperature = pull ? _pullT : FluctChip.IsOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : _fluctT,
+            Axis = _tensAxis, Rate = pull ? _pullRate : _tensRate, MaxStrain = pull ? _pullDist : _tensMax, LateralFixed = _tensFixed ? 1 : 0,
+            TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs,
+            EquilibratePs = pull ? (_pullEq > 0 ? _pullEq : -1) : _eqPs > 0 ? _eqPs : -1,
+        };
+    }
 
     public static readonly string[] Pairs = ["all – all", "C – C", "C – H", "H – H", "C – O", "C – N", "O – H"];
     private static readonly (int A, int B)[] PairElements = [(0, 0), (6, 6), (6, 1), (1, 1), (6, 8), (6, 7), (8, 1)];
