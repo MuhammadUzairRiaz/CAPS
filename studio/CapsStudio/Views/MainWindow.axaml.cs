@@ -705,6 +705,20 @@ public partial class MainWindow : Window
     private async void OnMakeIso(object? s, RoutedEventArgs e) => await _vm.MakeTactic(true);
     private async void OnMakeSyndio(object? s, RoutedEventArgs e) => await _vm.MakeTactic(false);
 
+    // ---------------------------------------------------------------- interactions & checks (design/boards/Interactions)
+
+    private async void OnIxFix(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.CheckIssue i) await _vm.FixIssue(i); }
+    private async void OnIxFixAll(object? s, RoutedEventArgs e) => await _vm.FixAllSafe();
+    private async void OnIxExport(object? s, RoutedEventArgs e)
+    {
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save the H-bonds and clashes", SuggestedFileName = "interactions.csv",
+            FileTypeChoices = [new FilePickerFileType("CSV") { Patterns = ["*.csv"] }],
+        });
+        if (file?.TryGetLocalPath() is { } path) { File.WriteAllText(path, _vm.InteractionsCsv()); _vm.Status = "Saved " + path; }
+    }
+
     // ---------------------------------------------------------------- appearance (design/boards/Appearance)
 
     private void OnAppStyle(object? s, RoutedEventArgs e)

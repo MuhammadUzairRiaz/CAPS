@@ -78,6 +78,7 @@ public sealed partial class MainViewModel
         RefreshSelection();
         RefreshHistory();
         if (_selOpen) RefreshStereo();
+        if (_ixOpen && _ixLive) RunInteractions();
         // the core keeps the selection when the atoms stay the same (tacticity, clean-up), clears it otherwise
         try { SelectedCount = (int)(JsonNode.Parse(_doc!.SelectionJson())!["count"]?.GetValue<double>() ?? 0); } catch { SelectedCount = 0; }
         Status = what;
