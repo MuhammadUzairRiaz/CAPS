@@ -1,0 +1,115 @@
+<!-- CAPS Studio › Charges (design/boards/Charges): partial charges computed without touching the structure, their
+     distribution and groups, the view coloured by charge; applied to the topology or exported as mol2. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ChargesPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="RadioButton.method"><Setter Property="Margin" Value="0,0,0,6" /><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnExport" IsEnabled="{Binding !ChargeHasError}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export .mol2" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="primary" Click="OnApply" IsEnabled="{Binding !ChargeHasError}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="check" Size="14" VerticalAlignment="Center" /><TextBlock Text="Apply to topology" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Partial charges" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Computed, described by group and shown in the view before anything changes" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding ChargeStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+    </Border>
+    <Grid ColumnDefinitions="*,460" ColumnSpacing="14" Margin="22,18">
+      <Border Classes="pcard" Padding="0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" ToolTip.Tip="The view shows the charges the structure carries; Apply to see the computed ones"><TextBlock Text="colour = the structure's partial charges" /></Border>
+              <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="16,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+            <StackPanel Spacing="4">
+              <Border Height="10" CornerRadius="3">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                    <GradientStop Color="#3B7DD8" Offset="0" /><GradientStop Color="#D9DCDF" Offset="0.5" /><GradientStop Color="#E8893A" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
+              <TextBlock Text="{Binding ChargeRange}" Classes="mono dim" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="View" /></Panel>
+        </DockPanel>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Distribution" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Hist" Height="130" XLabel="q (e)" YLabel="atoms" AutoRange="True" Bars="True" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="2"><TextBlock Text="Net charge" Classes="label" /><TextBlock Text="{Binding ChargeNet}" Classes="mono" FontSize="13" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Target" Classes="label" /><TextBlock Text="{Binding ChargeTarget}" Classes="mono" FontSize="13" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2"><TextBlock Text="Largest |q|" Classes="label" /><TextBlock Text="{Binding ChargeMax}" Classes="mono" FontSize="13" /></StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Method" FontSize="13.5" FontWeight="SemiBold" Margin="0,0,0,6" />
+              <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}">
+                <StackPanel><TextBlock Text="Gasteiger–Marsili" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="instant · H C N O halogens, sp³ S" Classes="dim" /></StackPanel>
+              </RadioButton>
+              <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}">
+                <StackPanel><TextBlock Text="QEq" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="charge equilibration · every element (Rappé &amp; Goddard 1991)" Classes="dim" /></StackPanel>
+              </RadioButton>
+              <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}">
+                <StackPanel><TextBlock Text="From the force field" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="the Field assignment's charges (OPLS-AA, CGenFF … library charges)" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+              </RadioButton>
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Import .chg…" Click="OnImport" VerticalAlignment="Center" />
+                <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" IsEnabled="False">
+                  <StackPanel><TextBlock Text="RESP or AM1-BCC · imported" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="{Binding ChargeFile, StringFormat='external QM or AmberTools · {0}'}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+                </RadioButton>
+              </DockPanel>
+              <TextBlock Text="AM1-BCC needs AmberTools and RESP a quantum-chemistry program; CAPS does not run them — import their per-atom charges (.chg: one per line, or index charge)." Classes="dim" TextWrapping="Wrap" Margin="0,4,0,0" />
+              <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource ErrBgB}" IsVisible="{Binding ChargeHasError}" Margin="0,6,0,0">
+                <TextBlock Text="{Binding ChargeError}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource ErrB}" />
+              </Border>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="By group" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,50,90,140">
+                <TextBlock Text="GROUP" Classes="h3" /><TextBlock Grid.Column="1" Text="N" Classes="h3" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="2" Text="MEAN Q (E)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="RANGE" Classes="h3" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding ChargeGroups}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ChargeGroupRow">
+                    <Grid ColumnDefinitions="*,50,90,140" Height="24">
+                      <TextBlock Text="{Binding Group}" FontSize="12.5" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding N}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="2" Text="{Binding Mean}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="3" Text="{Binding Range}" Classes="mono dim" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding ChargeNote}" Classes="dim" TextWrapping="Wrap" />
+              <TextBlock Text="Gasteiger &amp; Marsili, Tetrahedron 36, 3219 (1980)." FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

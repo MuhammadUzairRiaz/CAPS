@@ -490,3 +490,36 @@ TEST(Query, GrammarOnAPolystyreneChain) {
   EXPECT_THROW(caps::select_query(s, "element C and"), std::invalid_argument);
   EXPECT_THROW(caps::select_query(s, "colour red"), std::invalid_argument);
 }
+
+#include "caps/charges.hpp"
+
+TEST(Charges, GasteigerReportByGroupAndChgFiles) {
+  caps::ChainSpec spec;
+  spec.units = {{"A", "*CC(*)c1ccccc1"}};
+  spec.dp = 8;
+  caps::GrowOptions g;
+  g.chains = 1;
+  g.density = 0.05;
+  const caps::System s = caps::grow_chains(spec, g, nullptr);
+  const auto r = caps::compute_charges(s, "gasteiger");
+  EXPECT_NEAR(r.net, 0.0, 1e-9);
+  EXPECT_GT(r.max_abs, 0.03);
+  std::map<std::string, int> n;
+  for (const auto& gr : r.groups) n[gr.name] = gr.n;
+  EXPECT_EQ(n["C aromatic"], 48);
+  EXPECT_EQ(n["H on aromatic C"], 40);
+  EXPECT_EQ(n["C sp³"], 16);
+  EXPECT_EQ(n["H on sp³ C"], 26);
+  double counted = 0;
+  for (double c : r.counts) counted += c;
+  EXPECT_EQ(counted, double(s.atoms.size()));
+  // a .chg file: one per line, or "index charge"
+  const auto path = (std::filesystem::temp_directory_path() / "caps_test.chg").string();
+  { std::ofstream f(path); f << "# test\n"; for (size_t i = 0; i < s.atoms.size(); ++i) f << (i + 1) << " " << (i % 2 ? 0.1 : -0.1) << "\n"; }
+  const auto q = caps::read_charge_file(path, s.atoms.size());
+  EXPECT_DOUBLE_EQ(q[0], -0.1);
+  EXPECT_DOUBLE_EQ(q[1], 0.1);
+  { std::ofstream f(path); f << "0.5\n"; }
+  EXPECT_THROW(caps::read_charge_file(path, s.atoms.size()), std::runtime_error);
+  std::filesystem::remove(path);
+}

@@ -638,6 +638,26 @@ internal static class SelfTest
             vm.ClearDocSelection();
         }
 
+        // Charges: Gasteiger on the melt, by group, applied (undoable), the Field's charges refused without an assignment
+        {
+            vm.OpenCharges();
+            var groups = vm.ChargeGroups.Select(g => g.Group).ToList();
+            var ok = vm.IsCharges && !vm.ChargeHasError && vm.ChargeNet.Contains("0.000000") && groups.Contains("C aromatic") && groups.Contains("H on sp³ C") && vm.ChargeHistogram.Length == 21;
+            var q0 = vm.Document!.Atom(0).Charge;
+            vm.ChargeMethod = 1;   // QEq differs from the Gasteiger charges the melt carries
+            vm.ApplyCharges();
+            var q1 = vm.Document!.Atom(0).Charge;
+            vm.UndoEdit(false);
+            var q2 = vm.Document!.Atom(0).Charge;
+            vm.ChargeMethod = 2;
+            var refused = vm.ChargeHasError && vm.ChargeError.Contains("Field");
+            vm.ChargeMethod = 0;
+            Check(ok && Math.Abs(q1 - q0) > 1e-6 && Math.Abs(q2 - q0) < 1e-12 && refused,
+                  $"charges: {vm.ChargeNet} · largest {vm.ChargeMax} · {string.Join(", ", groups)} · applied {q0:0.000}→{q1:0.000}, undone {q2:0.000} · no field: {refused}");
+            vm.AppColour = 0;
+            vm.SetModule(8);
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

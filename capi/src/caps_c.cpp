@@ -47,6 +47,7 @@
 #include "caps/recipe.hpp"
 #include "caps/colourvision.hpp"
 #include "caps/query.hpp"
+#include "caps/charges.hpp"
 #include "caps/yaml.hpp"
 #include "caps/voids.hpp"
 #include "caps/kremer_grest.hpp"
@@ -4540,6 +4541,54 @@ extern "C" int32_t caps_vision_check(const char* palettes_json, double threshold
     out["pairs"] = std::move(pairs);
     return report_out(out.dump(0), json, cap);
   });
+}
+
+extern "C" int32_t caps_charges(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string method = j.text("method", "gasteiger");
+    const caps::System& s = d->frame;
+    caps::ChargeReport rep;
+    if (method == "forcefield") {
+      if (!d->field || !d->field->ff) throw std::runtime_error("no force field assigned: assign one in Field first (its library charges, or the charges it computed)");
+      rep = caps::describe_charges(s, d->field->ff->charge, "forcefield");
+      rep.notes.push_back("from the Field assignment (" + d->field->base.name + ")");
+    } else {
+      rep = caps::compute_charges(s, method, j.text("path"));
+    }
+    if (j.has("apply") && j["apply"].kind() == caps::Json::Bool && j["apply"].boolean()) {
+      push_undo(d, "Charges · " + method);
+      for (size_t i = 0; i < d->traj.topology.atoms.size() && i < rep.q.size(); ++i) d->traj.topology.atoms[i].charge = rep.q[i];
+      d->traj.topology.has_charges = true;
+      d->field.reset();
+      refresh(d);
+    }
+    auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(caps::Json(x)); return a; };
+    r["ok"] = true;
+    r["method"] = rep.method;
+    r["q"] = arr(rep.q);
+    r["net"] = rep.net;
+    r["max_abs"] = rep.max_abs;
+    r["formal"] = double(rep.formal);
+    caps::Json g = caps::Json::array();
+    for (const auto& x : rep.groups) {
+      caps::Json e = caps::Json::object();
+      e["name"] = x.name, e["n"] = double(x.n), e["mean"] = x.mean, e["lo"] = x.lo, e["hi"] = x.hi;
+      g.push_back(std::move(e));
+    }
+    r["groups"] = std::move(g);
+    r["edges"] = arr(rep.edges);
+    r["counts"] = arr(rep.counts);
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : rep.notes) notes.push_back(caps::Json(n));
+    r["notes"] = std::move(notes);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 extern "C" uint32_t caps_category_colour(int32_t k) { return caps::category_colour(k); }
