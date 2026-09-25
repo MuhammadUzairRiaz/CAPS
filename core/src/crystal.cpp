@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <fstream>
 #include <map>
 #include <numeric>
@@ -329,14 +330,6 @@ std::vector<ImageBond> image_bonds(const System& s) {
   return out;
 }
 
-// The structure's bonds (one per atom pair) from its image bonds.
-std::vector<Bond> crystal_bonds(const System& s) {
-  std::set<std::pair<uint32_t, uint32_t>> seen;
-  std::vector<Bond> out;
-  for (const auto& b : image_bonds(s))
-    if (b.i != b.j && seen.insert({b.i, b.j}).second) out.push_back({b.i, b.j, 0});
-  return out;
-}
 
 struct Plane { double z; std::vector<size_t> atoms; };
 
@@ -358,7 +351,135 @@ std::vector<Plane> atomic_planes(const PlaneSetup& P) {
   return planes;
 }
 
+// Adds an atom with the element's type (created when new); returns its index.
+uint32_t add_atom(System& s, int z, const Vec3& p, const std::string& name, int64_t mol) {
+  int type = 0;
+  for (const auto& t : s.types)
+    if (t.label == element(z).symbol) type = t.type;
+  if (!type) {
+    TypeInfo ti;
+    ti.type = int(s.types.size()) + 1;
+    ti.mass = element(z).mass;
+    ti.label = element(z).symbol;
+    s.types.push_back(ti);
+    type = ti.type;
+  }
+  Atom a;
+  a.id = int64_t(s.atoms.size() + 1);
+  a.mol = mol;
+  a.element = z;
+  a.type = type;
+  a.name = name;
+  a.pos = p;
+  s.atoms.push_back(a);
+  return uint32_t(s.atoms.size() - 1);
+}
+
 }  // namespace
+
+// The structure's bonds (one per atom pair) from its image bonds.
+std::vector<Bond> crystal_bonds(const System& s) {
+  std::set<std::pair<uint32_t, uint32_t>> seen;
+  std::vector<Bond> out;
+  for (const auto& b : image_bonds(s))
+    if (b.i != b.j && seen.insert({b.i, b.j}).second) out.push_back({b.i, b.j, 0});
+  return out;
+}
+
+// Adds O–H to under-coordinated oxygens (S, Se), M–OH to cations bonded to oxygen in the bulk and H to under-coordinated
+// covalent network atoms of `s`, up to each element's coordination in `bulk`, pointing along outward_of(position).
+// Metals keep their bare surfaces. Returns the H and OH added.
+std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::function<Vec3(const Vec3&)>& outward_of) {
+  int added_h = 0, added_oh = 0;
+  // bulk coordination and partners per element
+  std::vector<int> bcn(bulk.atoms.size(), 0);
+  std::map<int, std::map<int, int>> partners;
+  std::map<std::pair<int, int>, std::pair<double, int>> blen;
+  for (const auto& b : image_bonds(bulk)) {
+    ++bcn[b.i], ++bcn[b.j];
+    const int zi = bulk.atoms[b.i].element, zj = bulk.atoms[b.j].element;
+    partners[zi][zj]++, partners[zj][zi]++;
+    const double r = norm(b.d);
+    auto& bl = blen[{std::min(zi, zj), std::max(zi, zj)}];
+    bl.first += r, bl.second++;
+  }
+  std::map<int, std::map<int, int>> cn_hist;
+  for (size_t i = 0; i < bulk.atoms.size(); ++i) cn_hist[bulk.atoms[i].element][bcn[i]]++;
+  std::map<int, int> want;
+  for (const auto& [z, hgram] : cn_hist)
+    want[z] = std::max_element(hgram.begin(), hgram.end(), [](const auto& x, const auto& y) { return x.second < y.second; })->first;
+  auto main_partner = [&](int z) {
+    const auto it = partners.find(z);
+    if (it == partners.end() || it->second.empty()) return 0;
+    return std::max_element(it->second.begin(), it->second.end(), [](const auto& x, const auto& y) { return x.second < y.second; })->first;
+  };
+  auto bond_length = [&](int a, int b) {
+    const auto it = blen.find({std::min(a, b), std::max(a, b)});
+    return it != blen.end() ? it->second.first / it->second.second : element(a).covalent + element(b).covalent;
+  };
+  // directions on a sphere
+  std::vector<Vec3> dirs;
+  const int nd = 800;
+  for (int i = 0; i < nd; ++i) {
+    const double y = 1 - 2 * (i + 0.5) / nd, r = std::sqrt(1 - y * y), phi = i * kPi * (3 - std::sqrt(5.0));
+    dirs.push_back({r * std::cos(phi), r * std::sin(phi), y});
+  }
+  std::vector<std::vector<Vec3>> bonded(s.atoms.size());
+  for (const auto& b : image_bonds(s)) {
+    bonded[b.i].push_back(b.d * (1 / norm(b.d)));
+    bonded[b.j].push_back(b.d * (-1 / norm(b.d)));
+  }
+  // metals keep their bare surfaces: only oxygen (and S, Se), cations of oxides and covalent network atoms
+  auto passivable = [&](int z) {
+    if (z == 8 || z == 16 || z == 34) return true;
+    if (main_partner(z) == 8) return true;
+    return z == 5 || z == 6 || z == 7 || z == 14 || z == 15 || z == 32;
+  };
+  auto pick = [&](const std::vector<Vec3>& taken, const Vec3& outward, double target) {
+    Vec3 best = outward;
+    double bs = -1e300;
+    for (const auto& u : dirs) {
+      double mina = 180;
+      for (const auto& t : taken) mina = std::min(mina, std::acos(std::clamp(dot(u, t), -1.0, 1.0)) / kDeg);
+      double sc = target > 0 ? -std::fabs(mina - target) * 2 : mina;
+      if (mina < 95) sc -= 1000;
+      sc += 40 * dot(outward, u);
+      if (sc > bs) { bs = sc; best = u; }
+    }
+    return best;
+  };
+  const size_t n0 = s.atoms.size();
+  for (size_t i = 0; i < n0; ++i) {
+    const int z = s.atoms[i].element;
+    const int missing = (want.count(z) ? want[z] : 0) - int(bonded[i].size());
+    if (missing <= 0 || !passivable(z)) continue;
+    const Vec3 outward = outward_of(s.atoms[i].pos);
+    auto taken = bonded[i];
+    for (int m = 0; m < missing; ++m) {
+      const Vec3 u = pick(taken, outward, 0);
+      taken.push_back(u);
+      const int partner = main_partner(z);
+      if (z == 8 || z == 16 || z == 34) {
+        const uint32_t hdx = add_atom(s, 1, s.atoms[i].pos + u * (z == 8 ? 0.97 : 1.34), "H", 1);
+        s.bonds.push_back({uint32_t(i), hdx, 1});
+        ++added_h;
+      } else if (partner == 8) {
+        const Vec3 po = s.atoms[i].pos + u * bond_length(z, 8);
+        const uint32_t odx = add_atom(s, 8, po, "O", 1);
+        s.bonds.push_back({uint32_t(i), odx, 1});
+        const Vec3 v = pick({u * -1.0}, outward, 115);
+        const uint32_t hdx = add_atom(s, 1, po + v * 0.97, "H", 1);
+        s.bonds.push_back({odx, hdx, 1});
+        ++added_oh;
+      } else {
+        const uint32_t hdx = add_atom(s, 1, s.atoms[i].pos + u * (element(z).covalent + 0.31), "H", 1);
+        s.bonds.push_back({uint32_t(i), hdx, 1});
+        ++added_h;
+      }
+    }
+  }
+  return {added_h, added_oh};
+}
 
 // ---------------------------------------------------------------- CIF
 
@@ -643,94 +764,9 @@ System cleave(const System& bulk, const SlabOptions& o, SlabReport* rep) {
   R.a = Ax, R.b = std::hypot(Bx, By), R.gamma = std::atan2(By, Bx) / kDeg;
 
   if (o.passivate) {
-    // bulk coordination and partners per element
-    std::vector<int> bcn(bulk.atoms.size(), 0);
-    std::map<int, std::map<int, int>> partners;
-    std::map<std::pair<int, int>, std::pair<double, int>> blen;
-    for (const auto& b : image_bonds(bulk)) {
-      ++bcn[b.i], ++bcn[b.j];
-      const int zi = bulk.atoms[b.i].element, zj = bulk.atoms[b.j].element;
-      partners[zi][zj]++, partners[zj][zi]++;
-      const double r = norm(b.d);
-      auto& bl = blen[{std::min(zi, zj), std::max(zi, zj)}];
-      bl.first += r, bl.second++;
-    }
-    std::map<int, std::map<int, int>> cn_hist;
-    for (size_t i = 0; i < bulk.atoms.size(); ++i) cn_hist[bulk.atoms[i].element][bcn[i]]++;
-    std::map<int, int> want;
-    for (const auto& [z, hgram] : cn_hist)
-      want[z] = std::max_element(hgram.begin(), hgram.end(), [](const auto& x, const auto& y) { return x.second < y.second; })->first;
-    auto main_partner = [&](int z) {
-      const auto it = partners.find(z);
-      if (it == partners.end() || it->second.empty()) return 0;
-      return std::max_element(it->second.begin(), it->second.end(), [](const auto& x, const auto& y) { return x.second < y.second; })->first;
-    };
-    auto bond_length = [&](int a, int b) {
-      const auto it = blen.find({std::min(a, b), std::max(a, b)});
-      return it != blen.end() ? it->second.first / it->second.second : element(a).covalent + element(b).covalent;
-    };
-    // directions on a sphere
-    std::vector<Vec3> dirs;
-    const int nd = 800;
-    for (int i = 0; i < nd; ++i) {
-      const double y = 1 - 2 * (i + 0.5) / nd, r = std::sqrt(1 - y * y), phi = i * kPi * (3 - std::sqrt(5.0));
-      dirs.push_back({r * std::cos(phi), r * std::sin(phi), y});
-    }
-    std::vector<std::vector<Vec3>> bonded(s.atoms.size());
-    for (const auto& b : image_bonds(s)) {
-      bonded[b.i].push_back(b.d * (1 / norm(b.d)));
-      bonded[b.j].push_back(b.d * (-1 / norm(b.d)));
-    }
-    // metals keep their bare surfaces: only oxygen (and S, Se), cations of oxides and covalent network atoms
-    auto passivable = [&](int z) {
-      if (z == 8 || z == 16 || z == 34) return true;
-      if (main_partner(z) == 8) return true;
-      return z == 5 || z == 6 || z == 7 || z == 14 || z == 15 || z == 32;
-    };
     const double zmid = (zmin + zmax) / 2 + off;
-    auto pick = [&](const std::vector<Vec3>& taken, double outward, double target) {
-      Vec3 best{0, 0, outward};
-      double bs = -1e300;
-      for (const auto& u : dirs) {
-        double mina = 180;
-        for (const auto& t : taken) mina = std::min(mina, std::acos(std::clamp(dot(u, t), -1.0, 1.0)) / kDeg);
-        double sc = target > 0 ? -std::fabs(mina - target) * 2 : mina;
-        if (mina < 95) sc -= 1000;
-        sc += 40 * outward * u[2];
-        if (sc > bs) { bs = sc; best = u; }
-      }
-      return best;
-    };
-    const size_t n0 = s.atoms.size();
-    for (size_t i = 0; i < n0; ++i) {
-      const int z = s.atoms[i].element;
-      const int missing = (want.count(z) ? want[z] : 0) - int(bonded[i].size());
-      if (missing <= 0 || !passivable(z)) continue;
-      const double outward = s.atoms[i].pos[2] > zmid ? 1 : -1;
-      auto taken = bonded[i];
-      for (int m = 0; m < missing; ++m) {
-        const Vec3 u = pick(taken, outward, 0);
-        taken.push_back(u);
-        const int partner = main_partner(z);
-        if (z == 8 || z == 16 || z == 34) {
-          const uint32_t hdx = add_atom(1, s.atoms[i].pos + u * (z == 8 ? 0.97 : 1.34), "H", 1);
-          s.bonds.push_back({uint32_t(i), hdx, 1});
-          ++R.added_h;
-        } else if (partner == 8) {
-          const Vec3 po = s.atoms[i].pos + u * bond_length(z, 8);
-          const uint32_t odx = add_atom(8, po, "O", 1);
-          s.bonds.push_back({uint32_t(i), odx, 1});
-          const Vec3 v = pick({u * -1.0}, outward, 115);
-          const uint32_t hdx = add_atom(1, po + v * 0.97, "H", 1);
-          s.bonds.push_back({odx, hdx, 1});
-          ++R.added_oh;
-        } else {
-          const uint32_t hdx = add_atom(1, s.atoms[i].pos + u * (element(z).covalent + 0.31), "H", 1);
-          s.bonds.push_back({uint32_t(i), hdx, 1});
-          ++R.added_h;
-        }
-      }
-    }
+    const auto [nh, noh] = passivate_surface(s, bulk, [&](const Vec3& p) { return Vec3{0, 0, p[2] > zmid ? 1.0 : -1.0}; });
+    R.added_h = nh, R.added_oh = noh;
     if (R.added_h || R.added_oh)
       R.notes.push_back("passivated: " + std::to_string(R.added_oh) + " OH on cations, " + std::to_string(R.added_h) + " H on dangling bonds");
     // new atoms may stick out of the vacuum gap: keep the cell tall enough

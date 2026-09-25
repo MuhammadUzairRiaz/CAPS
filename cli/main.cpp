@@ -19,6 +19,7 @@
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 #include "caps/crystal.hpp"
+#include "caps/nano.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/grow.hpp"
@@ -58,6 +59,9 @@ int usage() {
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
                "               [--chains N] [--dp 10] [--gap 1] [--vacuum 0] [--sequence …] [--ff FF]   a polymer film on a surface\n"
+               "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
+               "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron --radius 12 --passivate]\n"
+               "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
@@ -97,7 +101,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -265,6 +269,71 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "nano") {
+    // caps nano tube|sheet|particle [CIF] … [--embed --units SMILES --chains N --dp N --density ρ] -o OUT
+    try {
+      if (pos.empty() || !o.count("-o")) return usage();
+      const std::string kind = pos[0];
+      NanoReport nr;
+      System f;
+      std::array<bool, 3> keep{false, false, false};
+      if (kind == "tube") {
+        NanotubeOptions t;
+        if (o.count("--n")) t.n = std::stoi(o["--n"]);
+        if (o.count("--m")) t.m = std::stoi(o["--m"]);
+        if (o.count("--length")) t.length = std::stod(o["--length"]);
+        t.periodic = !o.count("--finite");
+        f = nanotube(t, &nr);
+        keep = {false, false, t.periodic};
+      } else if (kind == "sheet") {
+        SheetOptions sh;
+        if (o.count("--lx")) sh.lx = std::stod(o["--lx"]);
+        if (o.count("--ly")) sh.ly = std::stod(o["--ly"]);
+        if (o.count("--layers")) sh.layers = std::stoi(o["--layers"]);
+        sh.periodic = !o.count("--flake");
+        f = graphene_sheet(sh, &nr);
+        keep = {sh.periodic, sh.periodic, false};
+      } else if (kind == "particle") {
+        if (pos.size() < 2) throw std::invalid_argument("caps nano particle CRYSTAL.cif …");
+        ParticleOptions po;
+        if (o.count("--shape")) po.shape = particle_shape_from_string(o["--shape"]);
+        if (o.count("--radius")) po.radius = std::stod(o["--radius"]);
+        po.on_atom = !(o.count("--centre") && o["--centre"] == "cell");
+        po.passivate = o.count("--passivate");
+        f = nanoparticle(read_cif(pos[1]), po, &nr);
+      } else {
+        throw std::invalid_argument("kind must be tube, sheet or particle");
+      }
+      for (const auto& n : nr.notes) std::printf("%s\n", n.c_str());
+      System s = f;
+      if (o.count("--units")) {   // embed in a polymer matrix
+        ChainSpec spec;
+        std::stringstream ss(o["--units"]);
+        for (std::string u; std::getline(ss, u, ',');) spec.units.push_back({u, u});
+        spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 20;
+        if (o.count("--ff")) spec.forcefield = o["--ff"];
+        FillerMatrixOptions fo;
+        fo.chains = o.count("--chains") ? std::stoi(o["--chains"]) : 10;
+        if (o.count("--density")) fo.density = std::stod(o["--density"]);
+        if (o.count("--seed")) fo.grow.seed = std::stoull(o["--seed"]);
+        fo.keep_axis = keep;
+        FillerReport fr;
+        s = embed_filler(f, spec, fo, &fr);
+        for (const auto& n : fr.notes) std::printf("%s\n", n.c_str());
+      }
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data(s, out);
+      std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps nano: %s\n", e.what());
       return 1;
     }
   }
