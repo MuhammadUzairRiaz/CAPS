@@ -265,6 +265,32 @@ public sealed class RenderGuideView : Control
     }
 }
 
+/// <summary>The x, y, z axes as the camera sees them (the renderer's yaw then pitch).</summary>
+public sealed class TripodView : Control
+{
+    private double _yaw, _pitch;
+    public void Set(double yaw, double pitch) { _yaw = yaw; _pitch = pitch; InvalidateVisual(); }
+
+    public override void Render(DrawingContext ctx)
+    {
+        double cy = Math.Cos(_yaw), sy = Math.Sin(_yaw), cp = Math.Cos(_pitch), sp = Math.Sin(_pitch);
+        var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
+        var len = Math.Min(Bounds.Width, Bounds.Height) * 0.36;
+        var axes = new (string N, double X, double Y, double Z, string Col)[]
+        {
+            ("x", cy, sy * sp, -sy * cp, "#E07A5F"), ("y", 0, cp, sp, "#7DC884"), ("z", sy, -cy * sp, cy * cp, "#5B8DEF"),
+        };
+        foreach (var a in axes.OrderBy(a => a.Z))
+        {
+            var brush = new SolidColorBrush(Color.Parse(a.Col));
+            var end = new Point(c.X + a.X * len, c.Y - a.Y * len);
+            ctx.DrawLine(new Pen(brush, 2, lineCap: PenLineCap.Round), c, end);
+            var t = new FormattedText(a.N, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(Tokens.Mono), 10, brush);
+            ctx.DrawText(t, new Point(end.X + (a.X >= 0 ? 2 : -2 - t.Width), end.Y - t.Height / 2));
+        }
+    }
+}
+
 /// <summary>A checkerboard marking transparent pixels.</summary>
 public sealed class CheckerView : Control
 {

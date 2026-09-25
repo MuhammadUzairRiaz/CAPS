@@ -944,6 +944,9 @@
                       </Button>
                       <Button Content="Export SVG…" Click="OnExportSvg" />
                     </StackPanel>
+                    <Button Classes="small" Click="OnViewportsPage" HorizontalAlignment="Left" ToolTip.Tip="Top, front, left and perspective views together">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="cube" Size="13" VerticalAlignment="Center" /><TextBlock Text="Four views…" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <Button Classes="small" Click="OnRenderPage" HorizontalAlignment="Left" ToolTip.Tip="Output frame, ambient occlusion, overlays, image sequences">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="13" VerticalAlignment="Center" /><TextBlock Text="Render…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
@@ -1226,6 +1229,8 @@
       </Border>
       <!-- Nothing open (design/boards/VisEmpty): Analyze before a trajectory is open -->
       <pages:EmptyPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding ShowEmpty}" ZIndex="1" />
+      <!-- Studio › Viewports (design/boards/FourViewports) -->
+      <pages:ViewportsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsViewports}" />
       <!-- Analyze › Visualize › Colour by (design/boards/ColourBy) -->
       <pages:ColourByPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsColourBy}" />
       <!-- Analyze › Compare (design/boards/CompareCells) -->
