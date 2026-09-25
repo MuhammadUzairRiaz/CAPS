@@ -1,0 +1,110 @@
+<!-- CAPS Analyze › Compare (design/boards/CompareCells): two inputs, one pipeline, A · B · B − A. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ComparePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <Grid ColumnDefinitions="*,330">
+    <Grid RowDefinitions="*,Auto">
+      <!-- A and B, cameras linked -->
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="6" Margin="6">
+        <Border x:Name="TileA" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" ClipToBounds="True" Cursor="SizeAll">
+          <Panel>
+            <Image Source="{Binding CompareImageA}" Stretch="Uniform" />
+            <Border Classes="chip" Background="{DynamicResource HudB}" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top">
+              <StackPanel Orientation="Horizontal" Spacing="6"><Rectangle Width="14" Height="2" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="{Binding CompareLabelA}" /></StackPanel>
+            </Border>
+          </Panel>
+        </Border>
+        <Border Grid.Column="1" x:Name="TileB" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" ClipToBounds="True" Cursor="SizeAll">
+          <Panel>
+            <Image Source="{Binding CompareImageB}" Stretch="Uniform" />
+            <Border Classes="chip" Background="{DynamicResource HudB}" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top">
+              <StackPanel Orientation="Horizontal" Spacing="6"><Rectangle Width="14" Height="2" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="{Binding CompareLabelB}" /></StackPanel>
+            </Border>
+            <Button Content="Choose B…" Click="OnChooseB" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !CompareHasB}" />
+          </Panel>
+        </Border>
+      </Grid>
+      <!-- plot and table -->
+      <Border Grid.Row="1" Height="300" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,10">
+        <Grid ColumnDefinitions="480,*" ColumnSpacing="18">
+          <DockPanel>
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="5"><Rectangle Width="16" Height="2" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="A" FontSize="11.5" /></StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5"><Rectangle Width="16" Height="2" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="B" FontSize="11.5" /></StackPanel>
+              </StackPanel>
+              <ComboBox ItemsSource="{Binding CompareTables}" SelectedItem="{Binding CompareTableName}" Width="280" />
+            </DockPanel>
+            <TextBlock DockPanel.Dock="Bottom" Text="Add a measuring step in Visualize (Coordination &amp; RDF, histogram …) to overlay its table." Classes="dim" FontSize="11" TextWrapping="Wrap"
+                       IsVisible="{Binding !CompareTables.Count}" />
+            <v:LinePlot x:Name="ComparePlotView" AutoRange="True" />
+          </DockPanel>
+          <DockPanel Grid.Column="1">
+            <TextBlock DockPanel.Dock="Top" Text="SAME PIPELINE, TWO INPUTS" Classes="h3" Margin="0,4,0,6" />
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="40*,20*,20*,20*" Margin="0,0,16,2">
+              <TextBlock Text="Metric" Classes="label" /><TextBlock Grid.Column="1" Text="A" Classes="label" TextAlignment="Right" />
+              <TextBlock Grid.Column="2" Text="B" Classes="label" TextAlignment="Right" /><TextBlock Grid.Column="3" Text="B − A" Classes="label" TextAlignment="Right" />
+            </Grid>
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding CompareRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CompareRow">
+                    <Border Classes="trow" Height="24" Padding="0,0,16,0">
+                      <Grid ColumnDefinitions="40*,20*,20*,20*">
+                        <TextBlock Text="{Binding Metric}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding A}" Classes="mono" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding B}" Classes="mono" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding Diff}" Classes="mono" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" Foreground="{Binding DiffBrush}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- inspector -->
+    <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <TextBlock Text="Compare" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="INPUTS" Classes="h3" />
+                <StackPanel Spacing="4">
+                  <TextBlock Text="A" Classes="label" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                    <TextBox Text="{Binding ComparePathA, Mode=OneWay}" IsReadOnly="True" Classes="mono" FontSize="11.5" />
+                    <Button Grid.Column="1" Classes="small" Content="Choose…" Click="OnChooseA" />
+                  </Grid>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="B" Classes="label" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                    <TextBox Text="{Binding ComparePathB, Mode=OneWay}" IsReadOnly="True" Classes="mono" FontSize="11.5" Watermark="another build, seed or run" />
+                    <Button Grid.Column="1" Classes="small" Content="Choose…" Click="OnChooseB" />
+                  </Grid>
+                </StackPanel>
+                <CheckBox Classes="toggle" Content="Link cameras" IsChecked="{Binding CompareLink}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="PIPELINE" Classes="h3" />
+                <TextBlock Text="{Binding ComparePipelineText}" FontSize="12.5" TextWrapping="Wrap" />
+                <Button Classes="small" Content="Edit in Visualize" Click="OnEditPipeline" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding CompareNote}" Classes="dim" TextWrapping="Wrap" LineHeight="18" Margin="18,6" />
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</p:PageBase>

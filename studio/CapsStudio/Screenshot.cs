@@ -70,6 +70,17 @@ internal static class Screenshot
             if (kv[0] == "inspector") { w.ViewModel.InspectorTab = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
             if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
+            if (kv[0] == "compare")   // compare=A|B: Analyze › Compare with those two files
+            {
+                var ab = kv[1].Split('|');
+                w.ViewModel.OpenCompare();
+                foreach (var (path, isA) in new[] { (ab[0], true), (ab[1], false) })
+                {
+                    var t = w.ViewModel.SetCompareInput(isA, path);
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "batch")   // batch=PATTERN: run the current pipeline over the matching files
             {
                 w.ViewModel.OpenBatch();
