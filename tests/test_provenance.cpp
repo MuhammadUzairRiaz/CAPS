@@ -440,3 +440,53 @@ TEST(ColourVision, MachadoSimulationAndDeltaE) {
   EXPECT_EQ(img.rgba[3], 77);
   EXPECT_EQ((unsigned(img.rgba[0]) << 16) | (unsigned(img.rgba[1]) << 8) | img.rgba[2], caps::simulate_vision(red, Vision::Protan));
 }
+
+#include "caps/molecule.hpp"
+#include "caps/query.hpp"
+#include "caps/polymer.hpp"
+
+TEST(Query, CipLabelsOfAlanine) {
+  caps::BuildOptions b;
+  b.forcefield = "uff";
+  const auto l = caps::build_molecule("N[C@@H](C)C(=O)O", b);   // L-alanine: S
+  const auto d = caps::build_molecule("N[C@H](C)C(=O)O", b);    // D-alanine: R
+  const auto cl = caps::cip_labels(l.system), cd = caps::cip_labels(d.system);
+  EXPECT_EQ(std::count(cl.begin(), cl.end(), 'S'), 1);
+  EXPECT_EQ(std::count(cl.begin(), cl.end(), 'R'), 0);
+  EXPECT_EQ(std::count(cd.begin(), cd.end(), 'R'), 1);
+  // the methyl carbon (three H) and the carboxyl carbon are not stereocentres
+  EXPECT_EQ(std::count_if(cl.begin(), cl.end(), [](char c) { return c != 0; }), 1);
+  EXPECT_EQ(caps::select_query(l.system, "stereo S").atoms[1], 1);
+}
+
+TEST(Query, GrammarOnAPolystyreneChain) {
+  caps::ChainSpec spec;
+  spec.units = {{"A", "*CC(*)c1ccccc1"}};
+  spec.dp = 10;
+  caps::GrowOptions g;
+  g.chains = 1;
+  g.density = 0.05;
+  const caps::System s = caps::grow_chains(spec, g, nullptr);
+  auto count = [&](const std::string& q) { const auto r = caps::select_query(s, q); return std::count(r.atoms.begin(), r.atoms.end(), 1); };
+  const auto rings = caps::select_query(s, "smarts \"c1ccccc1\"");
+  EXPECT_EQ(std::count(rings.atoms.begin(), rings.atoms.end(), 1), 60);
+  EXPECT_EQ(rings.rings, 10);
+  EXPECT_EQ(count("element H"), 8 * 10 + 2);
+  // the backbone CH of every unit but the last, whose H cap leaves two hydrogens on it
+  EXPECT_EQ(count("stereo *"), 9);
+  EXPECT_EQ(count("ring 1"), 6);
+  EXPECT_EQ(count("smarts \"c1ccccc1\" and chain 1"), 60);
+  EXPECT_EQ(count("not element H"), long(s.atoms.size()) - 82);
+  EXPECT_EQ(count("(element C or element H) and not smarts \"c\""), long(s.atoms.size()) - 60);
+  const long near = count("within 5 of ring 1 and not element H");
+  EXPECT_GT(near, 6);
+  EXPECT_LT(near, count("within 5 of ring 1"));
+  EXPECT_EQ(count("index 1-5"), 5);
+  std::vector<char> sel(s.atoms.size(), 0);
+  sel[3] = 1;
+  const auto only = caps::select_query(s, "sel", sel);
+  EXPECT_EQ(std::count(only.atoms.begin(), only.atoms.end(), 1), 1);
+  EXPECT_THROW(caps::select_query(s, "within 5 sel"), std::invalid_argument);
+  EXPECT_THROW(caps::select_query(s, "element C and"), std::invalid_argument);
+  EXPECT_THROW(caps::select_query(s, "colour red"), std::invalid_argument);
+}

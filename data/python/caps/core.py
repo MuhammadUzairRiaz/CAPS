@@ -320,6 +320,12 @@ class Document:
             raise CapsError(r.get("error", "selection failed"))
         return int(r["count"])
 
+    def query(self, query: str, op: str = "replace") -> int:
+        """Selects by the query grammar (design/boards/SmartSelect): smarts "c1ccccc1", element C N O, type c3,
+        chain 1-4, index 1-20, ring 5, stereo R|S|*, within 5.0 of <query>, sel, combined with and / or / not / ( ).
+        op "preview" counts without selecting. Returns the number of atoms."""
+        return self.select("query", query, op=op)
+
     def selection(self) -> list:
         return [int(i) for i in _json_call(library().caps_selection, self._h)["indices"]]
 
