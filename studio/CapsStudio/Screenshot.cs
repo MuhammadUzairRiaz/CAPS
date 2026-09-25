@@ -279,6 +279,45 @@ internal static class Screenshot
                 if (kv[1] != "-") w.ViewModel.CompareProvenanceWith(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "mechanics")   // mechanics=run|show: the Mechanics page (run: a short strain + tensile run)
+            {
+                var vm = w.ViewModel;
+                vm.OpenMechanics();
+                if (kv[1] == "run")
+                {
+                    vm.MechRate = 2;
+                    vm.Analyze.EqPsD = 2;
+                    vm.Analyze.TensMaxD = 0.1m;
+                    var t = vm.RunMechanics();
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
+                }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "scattering")   // scattering=run|show[,EXPERIMENT]: the Scattering page
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split(',');
+                vm.OpenScattering();
+                if (f.Length > 1) vm.LoadExperiment(f[1]);
+                if (f[0] == "run")
+                {
+                    var t = vm.RunScattering();
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
+                }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "isotope") w.ViewModel.IsotopePattern = int.Parse(kv[1]);
+            if (kv[0] == "freevolume")   // freevolume=run|show: the Free volume page
+            {
+                var vm = w.ViewModel;
+                vm.OpenFreeVolume();
+                if (kv[1] == "run")
+                {
+                    var t = vm.RunFreeVolume();
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
+                }
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

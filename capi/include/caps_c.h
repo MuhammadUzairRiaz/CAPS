@@ -260,8 +260,11 @@ typedef struct {
   double probe, grid;                /* free volume probe radius (0 = point) and grid (0.4 Å) */
   double cutoff;                     /* cohesive energy cutoff (0: default) */
   int32_t threads;
+  int32_t deuterate;                 /* v20 neutron contrast: 0 none, 1 every H, 2 H on aliphatic C (d-backbone), 3 H on aromatic C (d-ring), 4 H on O/N */
 } caps_analyze_opts;
 typedef int32_t (*caps_analyze_progress_fn)(const char* what, double fraction, void* user);
+/* v20: coherent neutron scattering length (fm) of element z (1001 = ²H); NaN when unknown. */
+double caps_neutron_b(int32_t z);
 int32_t caps_analyze(caps_doc* d, const char* props, const caps_analyze_opts* o, caps_analyze_progress_fn progress, void* user);
 /* Mechanics and thermal transitions (ABI 9). caps_analyze_ex takes the ids of caps_analyze plus:
      cij_fluct   elastic constants from stress fluctuations of the saved frames (an NVT run at `temperature`); for
@@ -329,6 +332,12 @@ int32_t caps_provenance(caps_doc* d, char* json, int32_t cap);
 int32_t caps_provenance_file(const char* path, char* json, int32_t cap);
 int32_t caps_provenance_compare(const char* a_json, const char* b_json, char* json, int32_t cap);
 int32_t caps_provenance_bibtex(const char* manifest_json, char* text, int32_t cap);
+/* v20 voids (design/boards/FreeVolume) of the current frame: options {"grid":0.5, "probe":1.4, "count":40, "min_radius":1.0,
+   "show":true (drawn as translucent spheres), "clear":true (remove them)} → {ok, accessible_point, accessible_probe,
+   largest, grid[3], spheres [{x, y, z, r}]} — the largest non-overlapping empty spheres (radius to the nearest Bondi
+   surface), biggest first. caps_voids_pdb writes them as HETATM VOI records with the radius as the B-factor. */
+int32_t caps_voids(caps_doc* d, const char* options_json, char* json, int32_t cap);
+int32_t caps_voids_pdb(caps_doc* d, const char* path);
 /* v20 export dialog (design/boards/ExportDialog). options: {"bits":8|16, "dpi":600, "colour_profile":"srgb"|"none",
    "provenance":true, "source":"<the structure's path, hashed into the manifest>"}. 16-bit keeps the supersampled
    average at full precision. The manifest (caps-image/1.0: generator, created, source + sha256, frame, atoms, camera,

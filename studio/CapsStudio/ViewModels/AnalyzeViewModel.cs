@@ -16,6 +16,9 @@ public sealed class CalcChip : ObservableObject
     public bool Available { get; init; } = true;
     private bool _on;
     public bool IsOn { get => _on; set => Set(ref _on, value && Available); }
+    private bool _active;
+    /// <summary>Shown on the focused page it belongs to (Mechanics, Scattering, Free volume).</summary>
+    public bool Active { get => _active; set => Set(ref _active, value); }
 }
 
 public sealed record CalcGroup(string Name, CalcChip[] Chips);
@@ -179,6 +182,13 @@ public sealed class AnalyzeViewModel : ObservableObject
     public decimal TimestepFsD { get => (decimal)_timestepFs; set => Set(ref _timestepFs, (double)Math.Max(0.01m, value), nameof(TimestepFsD)); }
     public int PairIndex { get => _pair; set => Set(ref _pair, value); }
     public bool InterOnly { get => _inter; set => Set(ref _inter, value); }
+    private double _qmax = 25, _dq = 0.02, _qDirect = 4;
+    private int _deuterate;
+    public decimal QmaxD { get => (decimal)_qmax; set => Set(ref _qmax, (double)Math.Clamp(value, 1m, 40m), nameof(QmaxD)); }
+    public decimal DqD { get => (decimal)_dq; set => Set(ref _dq, (double)Math.Clamp(value, 0.002m, 0.2m), nameof(DqD)); }
+    public decimal QDirectD { get => (decimal)_qDirect; set => Set(ref _qDirect, (double)Math.Clamp(value, 0m, 10m), nameof(QDirectD)); }
+    /// <summary>Neutron contrast: 0 none, 1 every H → D, 2 aliphatic H (d-backbone), 3 aromatic H (d-ring), 4 H on O/N.</summary>
+    public int Deuterate { get => _deuterate; set => Set(ref _deuterate, Math.Clamp(value, 0, 4)); }
     public decimal ProbeD { get => (decimal)_probe; set => Set(ref _probe, (double)Math.Max(0, value), nameof(ProbeD)); }
     public decimal GridD { get => (decimal)_grid; set => Set(ref _grid, (double)Math.Clamp(value, 0.1m, 2m), nameof(GridD)); }
     public decimal FitFromD { get => (decimal)_fitFrom; set => Set(ref _fitFrom, (double)Math.Clamp(value, 0m, 0.95m), nameof(FitFromD)); }
@@ -319,6 +329,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         {
             First = _first, Last = _last < 0 ? -1 : _last, Stride = _stride, FramePs = _framePs, TimestepFs = _timestepFs, Blocks = 5,
             ElemA = a, ElemB = b, InterOnly = _inter ? 1 : 0, FitFrom = _fitFrom, FitTo = _fitTo, Probe = _probe, Grid = _grid,
+            Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate,
         };
     }
 
