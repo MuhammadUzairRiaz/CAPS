@@ -96,6 +96,7 @@ public sealed partial class MainViewModel
         if (_doc == null) return;
         if (Busy) { Status = "Wait for the run to finish (or cancel it) before closing"; return; }
         var d = _doc;
+        ClearFocus();
         Document = null;
         d.Dispose();
         Field.Reset();

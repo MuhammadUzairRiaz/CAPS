@@ -41,6 +41,13 @@ internal static class Screenshot
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
+            if (kv[0] == "focus") w.ViewModel.FocusOn(int.Parse(kv[1]));   // focus=N: keyboard-walk focus on atom N
+            if (kv[0] == "walk")   // walk=keys: d(own) u(p) b(ond) ](next molecule) s(elect) m(easure)
+                foreach (var c in kv[1])
+                {
+                    if (c == 'd') w.ViewModel.FocusStep(1); else if (c == 'u') w.ViewModel.FocusStep(-1); else if (c == 'b') w.ViewModel.FocusBond();
+                    else if (c == ']') w.ViewModel.FocusMolecule(1); else if (c == 's') w.ViewModel.FocusSelect(); else if (c == 'm') w.ViewModel.FocusMeasure();
+                }
             if (kv[0] == "waitload")   // waitload=F: until the progressive open has read F of the file (CAPS_PROGRESSIVE_BYTES, CAPS_LOAD_DELAY_MS)
             {
                 var f = double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);

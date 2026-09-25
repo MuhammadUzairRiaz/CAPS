@@ -15,4 +15,5 @@ public sealed partial class MainViewModel
     public string KeyOpen => Mod + "O";
     public string KeyOpenRecent => OperatingSystem.IsMacOS() ? "⌘⇧O" : "Ctrl+Shift+O";
     public string KeyPalette => Mod + "K";
+    public string KeyAnnounce => OperatingSystem.IsMacOS() ? "⌘⇧A" : "Ctrl+Shift+A";
 }

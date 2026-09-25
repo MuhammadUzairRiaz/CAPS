@@ -1,4 +1,4 @@
-/* CAPS C ABI v16 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v18 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 17  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives */
+#define CAPS_ABI_VERSION 18  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -25,6 +25,7 @@ typedef struct {
   int32_t style;          /* 0 ball & stick, 1 space filling, 2 sticks, 3 no hydrogens, 4 backbone */
   int32_t outlines, depth_cue, show_cell;
   int32_t highlight[4];   /* up to four selected atom indices, -1 for unused */
+  int32_t focus;          /* v18: atom index + 1 drawn with the keyboard-focus ring, 0 for none */
 } caps_render_opts;
 
 typedef struct {
@@ -323,6 +324,10 @@ int32_t caps_property_range(caps_doc* d, double* lo, double* hi);
 
 /* Nearest neighbours of an atom (minimum image): fills up to k indices and distances, returns count. */
 int32_t caps_neighbours(caps_doc* d, int32_t index, int32_t k, int32_t* idx, double* dist);
+/* Atoms bonded to atom index (up to cap written); returns the count. */
+int32_t caps_bonded(caps_doc* d, int32_t index, int32_t* idx, int32_t cap);
+/* The molecule (connected by bonds, 0-based) of every atom, up to cap written; returns the number of molecules. */
+int32_t caps_molecule_index(caps_doc* d, int32_t* mol, int32_t cap);
 
 /* Molecule builder (ABI 12). caps_smiles_info parses a SMILES and returns JSON without building: {ok, error, position,
    formula, mass, atoms, heavy, bonds, rings, stereocentres, stereo_bonds, charge, problems[]}; the length needed
