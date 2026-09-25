@@ -260,6 +260,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_surface_terminations")] public static extern int SurfaceTerminations([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, int h, int k, int l, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_interface_build")] public static extern IntPtr InterfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pore_build")] public static extern IntPtr PoreBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_embed")] public static extern IntPtr NanoEmbed([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_blend")] public static extern IntPtr GrowBlend([MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
@@ -547,6 +548,15 @@ public sealed class CapsDocument : IDisposable
     {
         var report = new byte[4096];
         var h = Native.NanoBuild(options, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>A slit, cylindrical or framework pore with a fluid packed inside (caps_pore_build); the report is JSON.</summary>
+    public static (CapsDocument Doc, string Report) PoreBuild(string options, string label)
+    {
+        var report = new byte[8192];
+        var h = Native.PoreBuild(options, report, report.Length);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }

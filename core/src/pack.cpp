@@ -868,7 +868,7 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
   return items;
 }
 
-System insert_molecules(const System& host, const System& guest, int count, const PackOptions& o0, PackReport* report) {
+System insert_molecules(const System& host, const System& guest, int count, const PackOptions& o0, PackReport* report, const std::vector<Region>& regions) {
   if (!host.cell.valid()) throw PackError("inserting molecules needs a periodic cell");
   if (guest.atoms.empty() || count <= 0) return host;
   PackItem h;
@@ -879,6 +879,7 @@ System insert_molecules(const System& host, const System& guest, int count, cons
   g.name = guest.title.empty() ? "guest" : guest.title;
   g.molecule = guest;
   g.count = count;
+  g.regions = regions;
   PackOptions o = o0;
   o.cell = host.cell;
   o.periodic = true;

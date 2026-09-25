@@ -8,6 +8,7 @@
 #include <stdexcept>
 
 #include "caps/crystal.hpp"
+#include "caps/pack.hpp"
 #include "caps/elements.hpp"
 
 namespace caps {
@@ -468,6 +469,192 @@ System embed_filler(const System& filler, const ChainSpec& spec, const FillerMat
   s.notes = R.notes;
   if (rep) *rep = R;
   return s;
+}
+
+}  // namespace caps
+
+// ---------------------------------------------------------------- pores
+namespace caps {
+
+System build_pore(const PoreOptions& o, PoreReport* rep) {
+  PoreReport r;
+  System walls;
+  std::vector<Region> regions;
+  if (o.kind == PoreKind::Slit) {
+    if (o.width < 3.4) throw std::invalid_argument("the slit must be at least 3.4 Å wide (carbon centre to centre)");
+    const int layers = std::clamp(o.layers, 1, 3);
+    SheetOptions so;
+    so.lx = o.lx;
+    so.ly = o.ly;
+    so.layers = 1;
+    so.periodic = true;
+    const System sheet = graphene_sheet(so);
+    const double gap = 3.35, cc = 1.42;
+    const double zlast = (layers - 1) * gap;       // the lower wall's inner sheet
+    const double ztop = zlast + o.width;           // the upper wall's inner sheet
+    const double zmax = ztop + (layers - 1) * gap;
+    walls.cell = sheet.cell;
+    walls.cell.c = {0, 0, o.vacuum ? zmax + std::max(5.0, o.vacuum_gap) : zmax + gap};
+    if (o.vacuum) walls.cell.periodic = {true, true, false};
+    const double z0 = sheet.atoms.empty() ? 0 : sheet.atoms[0].pos[2];
+    auto put = [&](double z, int mol, int layer) {
+      const double sy = (layer % 2) ? cc : 0.0;   // AB stacking within a wall
+      for (const auto& a : sheet.atoms) {
+        Atom b = a;
+        b.pos = {a.pos[0], a.pos[1] + sy, z + (a.pos[2] - z0)};
+        b.pos[1] -= walls.cell.b[1] * std::floor(b.pos[1] / walls.cell.b[1]);
+        b.mol = mol;
+        walls.atoms.push_back(b);
+      }
+    };
+    for (int l = 0; l < layers; ++l) put(zlast - l * gap, 1, l);   // lower wall: inner sheet at zlast
+    for (int l = 0; l < layers; ++l) put(ztop + l * gap, 1, l);     // upper wall
+    // positions from 0 upward: shift so the lowest sheet sits at z = 0
+    walls.bonds = crystal_bonds(walls);
+    walls.has_mol = true;
+    walls.title = "graphite slit";
+    r.width = o.width;
+    Region box;
+    box.kind = Region::InsideBox;
+    box.a = {0, 0, zlast + 0.5};
+    box.b = {walls.cell.a[0], walls.cell.b[1], ztop - 0.5};
+    regions.push_back(box);
+    r.pore_volume = walls.cell.a[0] * walls.cell.b[1] * std::max(0.0, o.width - 3.4);   // minus a carbon radius on each side
+    char b[200];
+    std::snprintf(b, sizeof b, "slit pore · H = %.2f Å (carbon centre to centre) · %d sheet%s per wall · %.2f × %.2f Å in the plane%s", o.width, layers,
+                  layers > 1 ? "s" : "", walls.cell.a[0], walls.cell.b[1], o.vacuum ? " · vacuum above" : " · periodic in z");
+    r.notes.push_back(b);
+  } else {
+    if (!o.crystal || !o.crystal->cell.valid() || o.crystal->atoms.empty()) throw std::invalid_argument("a cylindrical or framework pore needs a crystal (CIF)");
+    const System& bulk = *o.crystal;
+    const Cell& c = bulk.cell;
+    int n[3];
+    if (o.kind == PoreKind::Cylinder) {
+      if (o.width <= 2) throw std::invalid_argument("the channel diameter must be larger than 2 Å");
+      const Vec3 nz = cross(c.a, c.b) * (1 / norm(cross(c.a, c.b)));
+      if (std::fabs(std::fabs(dot(c.c, nz)) - norm(c.c)) > 1e-6 * norm(c.c) || std::fabs(nz[2]) < 1 - 1e-9)
+        throw std::invalid_argument("a channel runs along the crystal's c axis, which must be normal to a and b (and along z)");
+      const double V = std::fabs(dot(c.a, cross(c.b, c.c)));
+      const double side = o.width + 2 * std::max(2.0, o.wall);
+      n[0] = std::max(1, int(std::ceil(side / (V / norm(cross(c.b, c.c))))));
+      n[1] = std::max(1, int(std::ceil(side / (V / norm(cross(c.c, c.a))))));
+      n[2] = std::max(1, int(std::lround(o.length / norm(c.c))));
+    } else {
+      for (int k = 0; k < 3; ++k) n[k] = std::clamp(o.repeat[k], 1, 20);
+    }
+    // Packing needs an orthorhombic cell: a hexagonal a–b lattice (γ 120° or 60°) has the rectangular cell a × (a + 2b)
+    // (or a × (2b − a)); c must already be normal to a and b.
+    Vec3 A = c.a, B = c.b;
+    const double cosg = dot(c.a, c.b) / (norm(c.a) * norm(c.b));
+    const bool normal_c = std::fabs(dot(c.c, c.a)) < 1e-6 * norm(c.c) * norm(c.a) && std::fabs(dot(c.c, c.b)) < 1e-6 * norm(c.c) * norm(c.b);
+    if (!normal_c) throw std::invalid_argument("the crystal's c axis must be normal to a and b for a pore block");
+    if (std::fabs(cosg) > 1e-6) {
+      if (std::fabs(norm(c.a) - norm(c.b)) > 1e-3 * norm(c.a) || std::fabs(std::fabs(cosg) - 0.5) > 1e-4)
+        throw std::invalid_argument("pore blocks need an orthogonal or hexagonal a–b lattice (γ 90°, 120° or 60°)");
+      B = cosg < 0 ? c.a + c.b * 2.0 : c.b * 2.0 - c.a;
+      if (o.kind == PoreKind::Cylinder) n[1] = std::max(1, int(std::ceil((o.width + 2 * std::max(2.0, o.wall)) / norm(B))));
+      else n[1] = std::max(1, int(std::lround(n[1] / std::sqrt(3.0))));
+      r.notes.push_back(std::string("hexagonal a–b lattice: the block uses the rectangular cell a × (") + (cosg < 0 ? "a + 2b" : "2b − a") + ")");
+    }
+    walls.cell.a = A * double(n[0]);
+    walls.cell.b = B * double(n[1]);
+    walls.cell.c = c.c * double(n[2]);
+    // components below 1e-9 of a length are rounding (a + 2b of a hexagonal cell): exact zeros keep the cell orthorhombic
+    for (Vec3* v : {&walls.cell.a, &walls.cell.b, &walls.cell.c}) {
+      const double l = norm(*v);
+      for (int k = 0; k < 3; ++k) if (std::fabs((*v)[k]) < 1e-9 * l) (*v)[k] = 0;
+    }
+    walls.cell.origin = c.origin;
+    const Vec3 axis = c.origin + (walls.cell.a + walls.cell.b) * 0.5;
+    const double R = o.width / 2;
+    // tile the crystal over the block (enough a, b translations to cover a rotated cell), wrap, drop duplicates
+    std::vector<Vec3> seen;
+    const int ra = n[0] + 2 * n[1] + 2, rb = 2 * n[1] + 2;
+    for (int i = -ra; i <= ra; ++i)
+      for (int j = -rb; j <= rb; ++j)
+        for (int k = 0; k < n[2]; ++k)
+          for (const auto& at : bulk.atoms) {
+            Atom b = at;
+            const Vec3 p = at.pos + c.a * double(i) + c.b * double(j) + c.c * double(k);
+            const Vec3 f = walls.cell.to_fractional(p);
+            if (f[0] < -1e-6 || f[0] >= 1 - 1e-6 || f[1] < -1e-6 || f[1] >= 1 - 1e-6) continue;
+            b.pos = walls.cell.wrap(p);
+            bool dup = false;
+            for (const auto& q : seen) if (norm(walls.cell.minimum_image(q - b.pos)) < 0.05) { dup = true; break; }
+            if (dup) continue;
+            seen.push_back(b.pos);
+            if (o.kind == PoreKind::Cylinder) {
+              Vec3 d = walls.cell.minimum_image(b.pos - axis);
+              d[2] = 0;
+              if (norm(d) < R) continue;
+            }
+            b.mol = 1;
+            walls.atoms.push_back(b);
+          }
+    walls.bonds = crystal_bonds(walls);
+    if (o.kind == PoreKind::Cylinder) {
+      // atoms the carving left without a neighbour go
+      std::vector<int> deg(walls.atoms.size(), 0);
+      for (const auto& b : walls.bonds) ++deg[b.i], ++deg[b.j];
+      if (std::any_of(deg.begin(), deg.end(), [](int x) { return x > 0; })) {
+        System t;
+        t.cell = walls.cell;
+        for (size_t i = 0; i < walls.atoms.size(); ++i) if (deg[i] > 0) t.atoms.push_back(walls.atoms[i]);
+        walls.atoms = std::move(t.atoms);
+        walls.bonds = crystal_bonds(walls);
+      }
+      if (o.passivate) {
+        const auto [nh, noh] = passivate_surface(walls, bulk, [&](const Vec3& p) {
+          Vec3 d = walls.cell.minimum_image(axis - p);   // into the pore
+          d[2] = 0;
+          const double l = norm(d);
+          return l > 1e-9 ? d * (1 / l) : Vec3{1, 0, 0};
+        });
+        for (auto& a : walls.atoms) a.mol = 1;
+        r.notes.push_back("passivated: " + std::to_string(noh) + " OH, " + std::to_string(nh) + " H");
+      }
+      Region cyl;
+      cyl.kind = Region::InsideCylinder;
+      cyl.a = {axis[0], axis[1], c.origin[2] - 1};
+      cyl.b = {0, 0, 1};
+      cyl.r = std::max(0.5, R - 1.0);
+      cyl.length = norm(walls.cell.c) + 2;
+      regions.push_back(cyl);
+      r.pore_volume = 3.14159265358979 * std::pow(std::max(0.0, R - 1.7), 2) * norm(walls.cell.c);
+      r.width = o.width;
+    }
+    walls.has_mol = true;
+    walls.title = (bulk.title.empty() ? std::string("crystal") : bulk.title) + (o.kind == PoreKind::Cylinder ? " channel" : " framework");
+    char b[220];
+    if (o.kind == PoreKind::Cylinder)
+      std::snprintf(b, sizeof b, "cylindrical channel · D = %.1f Å along c · block %d × %d × %d cells · %zu wall atoms", o.width, n[0], n[1], n[2], walls.atoms.size());
+    else
+      std::snprintf(b, sizeof b, "framework · %d × %d × %d cells · %zu atoms", n[0], n[1], n[2], walls.atoms.size());
+    r.notes.push_back(b);
+  }
+  r.wall_atoms = int(walls.atoms.size());
+  System out = walls;
+  if (o.fluid && o.count > 0) {
+    PackOptions po;
+    po.tolerance = o.tolerance;
+    po.seed = o.seed;
+    PackReport pr;
+    out = insert_molecules(walls, *o.fluid, o.count, po, &pr, regions);
+    r.fluid_molecules = o.count;
+    r.dmin = pr.dmin;
+    double mass = 0;
+    for (const auto& a : o.fluid->atoms) mass += element(a.element).mass;
+    if (r.pore_volume > 0) r.fluid_density = mass * o.count / r.pore_volume * 1.66053906660;   // g/mol per Å³ → g/cm³
+    char b[200];
+    std::snprintf(b, sizeof b, "%d × %s packed inside the pore · closest contact %.2f Å%s", o.count, o.fluid->title.empty() ? "molecule" : o.fluid->title.c_str(),
+                  pr.dmin, pr.success ? "" : " · not every contact met the tolerance");
+    r.notes.push_back(b);
+    if (!pr.success) r.notes.push_back("the pore may be too full for the tolerance: fewer molecules or a wider pore");
+  }
+  out.notes = r.notes;
+  out.title = walls.title;
+  if (rep) *rep = r;
+  return out;
 }
 
 }  // namespace caps

@@ -4230,3 +4230,64 @@ extern "C" int32_t caps_voids_pdb(caps_doc* d, const char* path) {
     return 0;
   });
 }
+
+// ---------------------------------------------------------------- pores (design/boards/SlitPore)
+extern "C" caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    auto flag = [&](const char* k, bool def) { return !j.has(k) ? def : j[k].kind() == caps::Json::Bool ? j[k].boolean() : j[k].number() != 0; };
+    caps::PoreOptions o;
+    const std::string kind = j.text("kind", "slit");
+    o.kind = kind == "cylinder" ? caps::PoreKind::Cylinder : kind == "framework" ? caps::PoreKind::Framework : caps::PoreKind::Slit;
+    o.width = j.num("width", 10.0);
+    o.layers = int(j.num("layers", 1));
+    o.lx = j.num("lx", 26.0);
+    o.ly = j.num("ly", 22.0);
+    o.vacuum = flag("vacuum", false);
+    o.vacuum_gap = j.num("vacuum_gap", 20.0);
+    o.wall = j.num("wall", 6.0);
+    o.length = j.num("length", 20.0);
+    o.passivate = flag("passivate", false);
+    if (j.has("repeat") && j["repeat"].is_array() && j["repeat"].size() == 3)
+      for (int k = 0; k < 3; ++k) o.repeat[k] = int(j["repeat"][size_t(k)].number());
+    o.tolerance = j.num("tolerance", 2.0);
+    o.seed = uint64_t(j.num("seed", 1));
+    caps::System crystal, fluid;
+    const std::string cif = j.text("cif");
+    if (o.kind != caps::PoreKind::Slit) {
+      if (cif.empty()) throw std::invalid_argument("choose a crystal (CIF) for a cylindrical or framework pore");
+      crystal = caps::read_cif(cif);
+      o.crystal = &crystal;
+    }
+    const std::string smiles = j.text("fluid");
+    o.count = int(j.num("count", 0));
+    if (!smiles.empty() && o.count > 0) {
+      caps::BuildOptions bo;
+      bo.forcefield = "uff";
+      fluid = caps::build_molecule(smiles, bo).system;
+      fluid.title = j.text("fluid_name", smiles);
+      o.fluid = &fluid;
+    }
+    caps::PoreReport r;
+    const caps::System s = caps::build_pore(o, &r);
+    caps::Json rj = caps::Json::object();
+    rj["wall_atoms"] = r.wall_atoms;
+    rj["fluid_molecules"] = r.fluid_molecules;
+    rj["width"] = r.width;
+    rj["pore_volume"] = r.pore_volume;
+    rj["fluid_density"] = r.fluid_density;
+    rj["dmin"] = r.dmin;
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : r.notes) notes.push_back(n);
+    rj["notes"] = std::move(notes);
+    report_out(rj.dump(0), report, cap);
+    caps_doc* d = doc_of(s);
+    if (!cif.empty()) prov_input(d, cif);
+    prov_step(d, "nano.pore", kind + " pore" + (o.fluid ? " with " + std::to_string(o.count) + " × " + smiles : std::string()), json_params(options_json),
+              o.fluid ? seeded(o.seed) : "", o.fluid ? std::vector<std::string>{"martinez2009", "rappe1992"} : std::vector<std::string>{});
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
