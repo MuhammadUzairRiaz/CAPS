@@ -1,0 +1,187 @@
+<!-- CAPS Nanostructure builder (design/boards/NanoBuilder.dc.html, Nanoparticle.dc.html): graphene sheets, carbon nanotubes
+     and nanoparticles cut from crystals, alone or embedded in a grown polymer matrix (rubber fillers). -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.NanoPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.builder"><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="12,0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="12.5" /></Style>
+    <Style Selector="Button.builder.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="RadioButton.tile">
+      <Setter Property="Height" Value="64" /><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="B" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg0B}">
+            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    </Style>
+    <Style Selector="RadioButton.tile:checked /template/ Border#B"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+    <Style Selector="RadioButton.tile:checked"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="RadioButton.tile:disabled"><Setter Property="Opacity" Value="0.45" /></Style>
+  </p:PageBase.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="builder" Content="Polymer" Click="OnPolymer" />
+        <Button Classes="builder" Content="Crystal" IsEnabled="False" ToolTip.Tip="Crystals come from CIF files; the crystal builder comes with its board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Surface" Click="OnSurface" />
+        <Button Classes="builder on" Content="Nanostructure" />
+        <Button Classes="builder" Content="Biomolecule" IsEnabled="False" ToolTip.Tip="Comes with the Biomolecule board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Solvation" Click="OnSolvation" ToolTip.Tip="Pack molecules into regions (CAPS Pack)" />
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,420">
+      <Panel>
+        <v:MolView x:Name="Preview" />
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding NanoTitle}" FontSize="12" /></Border>
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding NanoSummary}" FontSize="12" Foreground="{DynamicResource MutedB}" /></Border>
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding NanoAxisText}" FontSize="12" Foreground="{DynamicResource SelB}" /></Border>
+          <Border Classes="hud" Padding="10,4" IsVisible="{Binding NanoBuilding}"><TextBlock Text="growing the matrix…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
+        </StackPanel>
+      </Panel>
+
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="Nanostructure builder" Classes="h2" VerticalAlignment="Center" />
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel" Click="OnCancel" />
+              <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding NanoIdle}">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="{Binding NanoBuildIcon}" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding NanoBuildText}" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="TYPE" Classes="h3" />
+                  <UniformGrid Columns="4" ColumnSpacing="6">
+                    <RadioButton Classes="tile" GroupName="nk" IsChecked="{Binding NanoKind, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}">
+                      <StackPanel Spacing="6" HorizontalAlignment="Center"><v:Icon Kind="hex" Size="20" HorizontalAlignment="Center" /><TextBlock Text="Sheet" FontSize="12" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="nk" IsChecked="{Binding NanoKind, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}">
+                      <StackPanel Spacing="6" HorizontalAlignment="Center"><v:Icon Kind="layers" Size="20" HorizontalAlignment="Center" /><TextBlock Text="Nanotube" FontSize="12" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="nk" IsChecked="{Binding NanoKind, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}">
+                      <StackPanel Spacing="6" HorizontalAlignment="Center"><v:Icon Kind="atom" Size="20" HorizontalAlignment="Center" /><TextBlock Text="Particle" FontSize="12" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="tile" GroupName="nk" IsEnabled="False" ToolTip.Tip="Slit pores come with the Slit pore board" ToolTip.ShowOnDisabled="True">
+                      <StackPanel Spacing="6" HorizontalAlignment="Center"><v:Icon Kind="ring" Size="20" HorizontalAlignment="Center" /><TextBlock Text="Pore" FontSize="12" HorizontalAlignment="Center" /></StackPanel>
+                    </RadioButton>
+                  </UniformGrid>
+                </StackPanel>
+              </Border>
+
+              <!-- nanotube -->
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsTube}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="CHIRALITY" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*,2*" ColumnSpacing="8">
+                    <StackPanel Spacing="6"><TextBlock Text="n" Classes="label" /><NumericUpDown Value="{Binding TubeN}" Minimum="1" Maximum="60" Increment="1" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="m" Classes="label" /><NumericUpDown Value="{Binding TubeM}" Minimum="0" Maximum="60" Increment="1" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Material" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Carbon (graphene)" /></ComboBox></StackPanel>
+                  </Grid>
+                  <Border Classes="seg" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="seg" Content="Armchair" GroupName="tk" IsChecked="{Binding TubeArmchair}" />
+                      <RadioButton Classes="seg" Content="Zigzag" GroupName="tk" IsChecked="{Binding TubeZigzag}" />
+                      <RadioButton Classes="seg" Content="Chiral" GroupName="tk" IsChecked="{Binding TubeChiral}" />
+                    </StackPanel>
+                  </Border>
+                  <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                    <TextBlock Text="Chiral angle" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Column="1" Text="{Binding TubeAngleText}" Classes="mono" />
+                    <TextBlock Grid.Row="1" Text="Diameter" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TubeDiameterText}" Classes="mono" />
+                    <TextBlock Grid.Row="2" Text="Translation |T|" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TubeTText}" Classes="mono" />
+                  </Grid>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="d = a·√(n² + nm + m²)/π, a = 2.46 Å — Saito, Dresselhaus &amp; Dresselhaus (1998)" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsTube}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="GEOMETRY" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Length · Å" Classes="label" /><NumericUpDown Value="{Binding TubeLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="C–C · Å" Classes="label" /><NumericUpDown Value="1.42" IsEnabled="False" FormatString="0.00" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Periodic along the tube axis" IsChecked="{Binding NanoPeriodic}" />
+                  <CheckBox Classes="toggle" Content="Cap the ends with hydrogen" IsChecked="{Binding NanoCap}" />
+                  <CheckBox Classes="toggle" Content="Multi-walled" IsEnabled="False" ToolTip.Tip="Single-walled tubes in this version" ToolTip.ShowOnDisabled="True" />
+                </StackPanel>
+              </Border>
+
+              <!-- sheet -->
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsSheet}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="GRAPHENE" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Width x · Å" Classes="label" /><NumericUpDown Value="{Binding SheetLx}" Minimum="5" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Width y · Å" Classes="label" /><NumericUpDown Value="{Binding SheetLy}" Minimum="5" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Layers" Classes="label" /><NumericUpDown Value="{Binding SheetLayers}" Minimum="1" Maximum="20" Increment="1" FormatString="0" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Periodic in the plane (off: a flake with H on the edges)" IsChecked="{Binding NanoPeriodic}" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Zigzag edges along x; layers AB-stacked 3.35 Å apart (graphite)" />
+                </StackPanel>
+              </Border>
+
+              <!-- particle -->
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsParticle}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="LATTICE" Classes="h3" />
+                  <StackPanel Spacing="6"><TextBlock Text="Material" Classes="label" /><ComboBox ItemsSource="{Binding Crystals}" SelectedIndex="{Binding ParticleCrystal}" HorizontalAlignment="Stretch" /></StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsParticle}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SHAPE" Classes="h3" />
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.ParticleShapes}" SelectedIndex="{Binding ParticleShape}" HorizontalAlignment="Stretch" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Radius · Å (circumscribed)" Classes="label" /><NumericUpDown Value="{Binding ParticleRadius}" Minimum="3" Maximum="60" Increment="0.5" FormatString="0.0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Centre" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ParticleCentres}" SelectedIndex="{Binding ParticleCentre}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Passivate the surface (Si–OH, O–H)" IsChecked="{Binding ParticlePassivate}" />
+                </StackPanel>
+              </Border>
+
+              <!-- matrix -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <DockPanel>
+                    <ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding NanoMatrix}" OnContent="" OffContent="" />
+                    <TextBlock Text="POLYMER MATRIX" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <StackPanel Spacing="10" IsVisible="{Binding NanoMatrix}">
+                    <StackPanel Spacing="6"><TextBlock Text="Polymer" Classes="label" /><ComboBox ItemsSource="{Binding FilmPolymers}" SelectedItem="{Binding MatrixPolymer}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                      <StackPanel Spacing="6"><TextBlock Text="Chains" Classes="label" /><NumericUpDown Value="{Binding MatrixChains}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Units per chain" Classes="label" /><NumericUpDown Value="{Binding MatrixDp}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" /></StackPanel>
+                      <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding MatrixDensity}" Minimum="0.1" Maximum="2" Increment="0.05" FormatString="0.00" /></StackPanel>
+                    </Grid>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="The filler is held at the centre of a periodic cell (a tube keeps its axis, a sheet its plane) while the chains grow around it; it stays held in Relax and Dynamics." />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding NanoError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding NanoHasError}" />
+                  <TextBlock Text="{Binding NanoLog}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

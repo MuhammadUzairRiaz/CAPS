@@ -20,7 +20,7 @@
         <Button Classes="builder" Content="Polymer" Click="OnPolymer" />
         <Button Classes="builder" Content="Crystal" IsEnabled="False" ToolTip.Tip="Crystals come from CIF files here; the crystal builder comes with its board" ToolTip.ShowOnDisabled="True" />
         <Button Classes="builder on" Content="Surface" />
-        <Button Classes="builder" Content="Nanostructure" IsEnabled="False" ToolTip.Tip="Comes with the Nanostructure board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
         <Button Classes="builder" Content="Biomolecule" IsEnabled="False" ToolTip.Tip="Comes with the Biomolecule board" ToolTip.ShowOnDisabled="True" />
         <Button Classes="builder" Content="Solvation" Click="OnSolvation" ToolTip.Tip="Pack molecules into regions (CAPS Pack)" />
       </StackPanel>

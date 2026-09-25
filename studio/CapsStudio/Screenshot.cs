@@ -62,6 +62,18 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine($"surface: termination {w.ViewModel.SurfTermination} of {w.ViewModel.SurfTerminations.Count}");
             }
+            if (kv[0] == "nano")   // nano=0|1|2 (sheet, tube, particle): the Nanostructure builder with its preview
+            {
+                w.ViewModel.OpenNano();
+                w.ViewModel.NanoKind = int.Parse(kv[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
+            if (kv[0] == "nanobuild")
+            {
+                var t = w.ViewModel.BuildNano();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             if (kv[0] == "surfbuild")   // grows the film (or builds the slab) and opens it in the Studio
             {
                 var t = w.ViewModel.BuildSurface();
