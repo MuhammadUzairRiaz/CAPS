@@ -16,6 +16,7 @@
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
+#include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
 #include "caps/polymer.hpp"
 #include "caps/relax.hpp"
@@ -382,8 +383,38 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         std::vector<std::string> ids;
         if (J.has("properties") && J["properties"].is_array()) for (const auto& p : J["properties"].items()) ids.push_back(p.str());
         if (ids.empty()) ids = {"density"};
+        const bool tg = std::find(ids.begin(), ids.end(), "tg") != ids.end();
+        ids.erase(std::remove(ids.begin(), ids.end(), "tg"), ids.end());
         AnalyzeOptions ao;
-        try { res.properties = analyze(as_trajectory(s), ids, ao); } catch (const std::exception& e) { throw RecipeError(2, std::string("analyze: ") + e.what()); }
+        try { if (!ids.empty()) res.properties = analyze(as_trajectory(s), ids, ao); } catch (const std::exception& e) { throw RecipeError(2, std::string("analyze: ") + e.what()); }
+        if (tg) {   // analyze: {properties: [tg], tg: {t_start, t_end, t_step, ps_per_step, equilibrate_ps, seed}} — a stepwise NPT cooling scan
+          if (!ff) type_now(s);
+          const Json T = J.has("tg") ? J["tg"] : Json::object();
+          CoolingOptions co;
+          co.field = ff;
+          co.energy = energy;
+          co.t_start = num(T, "t_start", co.t_start);
+          co.t_end = num(T, "t_end", co.t_end);
+          co.t_step = num(T, "t_step", co.t_step);
+          co.ps_per_step = num(T, "ps_per_step", co.ps_per_step);
+          co.equilibrate_ps = num(T, "equilibrate_ps", co.equilibrate_ps);
+          co.seed = seed_of(T);
+          co.new_velocities = true;
+          const int steps = int(std::floor(std::fabs(co.t_start - co.t_end) / std::max(1e-9, co.t_step))) + 1;
+          co.progress = [&](const ThermoRow& row, int si, int sn) {
+            report(k, st, "Tg · " + std::to_string(si + 1) + "/" + std::to_string(sn > 0 ? sn : steps) + " · " + g6(std::round(row.temperature)) + " K", "running",
+                   sn > 0 ? double(si) / sn : 0);
+            return true;
+          };
+          System copy = s;
+          CoolingResult cr;
+          try { cr = run_cooling(copy, co); } catch (const std::exception& e) { throw RecipeError(4, std::string("tg: ") + e.what()); }
+          for (auto& p : cooling_properties(cr)) res.properties.push_back(std::move(p));
+          res.manifest.steps.push_back(step("analysis.tg", "stepwise NPT cooling scan, two-line fit of specific volume",
+                                            {{"from", g6(co.t_start) + " K"}, {"to", g6(co.t_end) + " K"}, {"step", g6(co.t_step) + " K"},
+                                             {"hold", g6(co.ps_per_step) + " ps"}, {"force field", ffname}}, seeded(co.seed), {"soldera2006", "bussi2007", "bernetti2020"},
+                                            approx(energy, o.threads)));
+        }
         std::string d;
         for (const auto& p : res.properties) if (std::isfinite(p.value)) d += (d.empty() ? "" : " · ") + p.id + " " + g6(p.value) + (p.unit.empty() ? "" : " " + p.unit);
         report(k, st, d, "done", 1);

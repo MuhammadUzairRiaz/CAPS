@@ -1,0 +1,91 @@
+<!-- CAPS Analyze › Diffusion (design/boards/Diffusion): Einstein MSD on log–log axes, the local slope that checks the
+     fit window, and the Yeh–Hummer finite-size correction. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.DiffusionPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnExport" IsEnabled="{Binding Analyze.HasResults}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export CSV" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="primary" Click="OnRun" IsVisible="{Binding Analyze.NotWorking}" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding Analyze.Working}" />
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Diffusion" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Einstein MSD, fit-window check and box-size correction" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding DfStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </Border>
+    <Grid ColumnDefinitions="*,400" ColumnSpacing="14" Margin="22,18">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Mean-squared displacement" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Msd" Height="240" XLabel="log₁₀ t (ps)" YLabel="log₁₀ MSD (Å²)" AutoRange="True" />
+              <TextBlock Text="local slope d ln MSD / d ln t" Classes="label" />
+              <v:LinePlot x:Name="Slope" Height="120" XLabel="log₁₀ t (ps)" YLabel="slope" AutoRange="True" />
+              <TextBlock Classes="dim" TextWrapping="Wrap"
+                         Text="Molecule centres, all time origins, the system's drift removed. Fit only where the slope is 1: the shaded window. CAPS warns when it includes the caged or ballistic part." />
+              <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource WarnBgB}" IsVisible="{Binding DfHasWarning}">
+                <TextBlock Text="{Binding DfWarning}" TextWrapping="Wrap" FontSize="12" />
+              </Border>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Setup" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Fit from · % of the run" Classes="label" /><NumericUpDown Value="{Binding DfFitFrom}" Minimum="0" Maximum="95" Increment="5" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Fit to · % of the run" Classes="label" /><NumericUpDown Value="{Binding DfFitTo}" Minimum="5" Maximum="100" Increment="5" FormatString="0" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                <TextBlock Text="Position" Classes="muted" FontSize="12" /><TextBlock Grid.Column="1" Text="molecule centre of mass" FontSize="12" />
+                <TextBlock Grid.Row="1" Text="Time origins" Classes="muted" FontSize="12" /><TextBlock Grid.Row="1" Grid.Column="1" Text="every frame" FontSize="12" />
+                <TextBlock Grid.Row="2" Text="Unwrap" Classes="muted" FontSize="12" /><TextBlock Grid.Row="2" Grid.Column="1" Text="minimum image between frames" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Finite-size correction" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Box edge L · nm" Classes="label" /><NumericUpDown Value="{Binding DfL}" Minimum="0" Maximum="1000" Increment="0.1" FormatString="0.###" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Viscosity η · mPa·s" Classes="label" /><NumericUpDown Value="{Binding DfEta}" Minimum="0.001" Maximum="1000000" Increment="0.1" FormatString="0.###" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="T · K" Classes="label" /><NumericUpDown Value="{Binding DfT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" /></StackPanel>
+              </Grid>
+              <TextBlock Text="D∞ = D_PBC + k_B T ξ / (6π η L) · ξ = 2.837297" Classes="mono" FontSize="12" />
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding DfCorrectionText}" Classes="mono" FontSize="13" />
+                <TextBlock Text="Correction k_B T ξ / 6πηL" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="L defaults to the edge of a cube with the cell's volume. η is the solvent's or melt's shear viscosity at T; CAPS does not compute it here, so enter a measured or Green–Kubo value." />
+              <TextBlock Text="Yeh &amp; Hummer, J. Phys. Chem. B 108, 15873 (2004)." FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Result" FontSize="13.5" FontWeight="SemiBold" />
+              <StackPanel Spacing="3"><TextBlock Text="{Binding DfPbc.Label}" Classes="label" /><TextBlock Text="{Binding DfPbc.Value}" Classes="mono" FontSize="18" /><TextBlock Text="{Binding DfPbc.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="3"><TextBlock Text="{Binding DfInf.Label}" Classes="label" /><TextBlock Text="{Binding DfInf.Value}" Classes="mono" FontSize="18" /><TextBlock Text="{Binding DfInf.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="3"><TextBlock Text="{Binding DfSlope.Label}" Classes="label" /><TextBlock Text="{Binding DfSlope.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding DfSlope.Caption}" Classes="dim" /></StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -229,6 +229,9 @@ public sealed class AnalyzeViewModel : ObservableObject
     public int PullAxis { get => _pullAxis; set => Set(ref _pullAxis, value); }
     public static readonly string[] PullAxes = ["x (slab)", "y (slab)", "z (fibre pull-out)"];
 
+    /// <summary>Seed of the runs (cooling scans, pulls): replicas differ only in it.</summary>
+    public ulong MechSeed { get; set; } = 1;
+
     public CapsMechOpts MechOptions()
     {
         var pull = PullOn && !TensileChip.IsOn;
@@ -239,6 +242,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             Axis = pull ? _pullAxis : _tensAxis, Rate = pull ? _pullRate : _tensRate, MaxStrain = pull ? _pullDist : _tensMax, LateralFixed = _tensFixed ? 1 : 0,
             TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs,
             EquilibratePs = pull ? (_pullEq > 0 ? _pullEq : -1) : _eqPs > 0 ? _eqPs : -1,
+            Seed = MechSeed,
         };
     }
 

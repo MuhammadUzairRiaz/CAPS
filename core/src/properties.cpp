@@ -623,6 +623,13 @@ Property msd_prop(const Dyn& d, const AnalyzeOptions& o, Property* diffusion) {
   }
   p.value = mc.back();
   p.extra["atom MSD at the longest lag (Å²)"] = ma.back();
+  // the local log–log slope d ln MSD / d ln t of the molecule centres: 2 ballistic, < 1 caged, 1 diffusive
+  Series sl{"log-log slope", "t (ps)", "d ln MSD / d ln t", {}, {}};
+  for (size_t l = 2; l + 1 <= maxlag; ++l)
+    if (mc[l - 1] > 0 && mc[l + 1] > 0 && d.t[l - 1] > 0) {
+      sl.x.push_back(d.t[l]);
+      sl.y.push_back(std::log(mc[l + 1] / mc[l - 1]) / std::log(d.t[l + 1] / d.t[l - 1]));
+    }
   p.method = "all time origins, " + std::to_string(nf) + " frames over " + std::to_string(d.t.back()).substr(0, 7) +
              " ps; the system's centre-of-mass drift removed; value: molecule-centre MSD at the longest lag";
   // Einstein fit on the molecule centres over [fit_from, fit_to] of the run (averages still good there)
@@ -644,6 +651,9 @@ Property msd_prop(const Dyn& d, const AnalyzeOptions& o, Property* diffusion) {
     } else {
       D.value = b / 6.0 * 1e-4 * 1e5;   // Å²/ps → cm²/s (1e-4), in units of 1e-5 cm²/s
       D.extra["log-log slope β"] = beta;
+      D.extra["D (m²/s)"] = b / 6.0 * 1e-8;   // Å²/ps → m²/s
+      D.extra["fit from (ps)"] = xi.empty() ? NaN : xi.front();
+      D.extra["fit to (ps)"] = xi.empty() ? NaN : xi.back();
       // error: slopes of the two halves of the window
       std::vector<double> x1(xi.begin(), xi.begin() + xi.size() / 2), y1(yi.begin(), yi.begin() + yi.size() / 2);
       std::vector<double> x2(xi.begin() + xi.size() / 2, xi.end()), y2(yi.begin() + yi.size() / 2, yi.end());
@@ -658,6 +668,7 @@ Property msd_prop(const Dyn& d, const AnalyzeOptions& o, Property* diffusion) {
   }
   p.series.push_back(std::move(sa));
   p.series.push_back(std::move(sc));
+  if (sl.x.size() > 1) p.series.push_back(std::move(sl));
   return p;
 }
 
@@ -801,6 +812,7 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   bool two = false;
   for (const auto& a : atoms) two = two || a.mol != atoms.front().mol;
   std::vector<double> all(size_t(nb), 0), sub(size_t(nb), 0), film(size_t(nb), 0);
+  std::map<int, std::vector<double>> by_element;   // the surface (molecule 1) element by element: Si, O, …
   for (size_t q = 0; q < fr.size(); ++q) {
     if (cancelled(o, "density profile", double(q) / fr.size())) throw Cancel();
     const System f = t.frame(fr[q]);
@@ -809,6 +821,11 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
       const double m = f.mass_of(a);
       all[size_t(b)] += m;
       (two && a.mol == 1 ? sub : film)[size_t(b)] += m;
+      if (two && a.mol == 1) {
+        auto& v = by_element[a.element];
+        if (v.empty()) v.assign(size_t(nb), 0);
+        v[size_t(b)] += m;
+      }
     }
   }
   const double conv = 1.0 / (kNA * 1e-24) / (area * (Lz / nb) * double(fr.size()));   // g/mol per bin → g/cm³
@@ -838,6 +855,29 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
     if (std::isfinite(zpk)) {
       p.extra["first-layer peak (g/cm³)"] = fmax;
       p.extra["first-layer peak above the surface (Å)"] = zpk - top;
+    }
+    if (top >= 0 && std::isfinite(p.value) && p.value > 0) {
+      // where the film first reaches half its plateau above the surface (the gap), and the adsorbed layer: from the
+      // surface to where the profile last leaves plateau ± 10 % before the bulk (layering above the surface)
+      double half = NaN, layer = NaN;
+      for (int b = 0; b < nb; ++b)
+        if (sf.x[size_t(b)] > top && sf.y[size_t(b)] >= 0.5 * p.value) { half = sf.x[size_t(b)]; break; }
+      if (std::isfinite(half)) {
+        const double mid_z = flo + 0.5 * (fhi - flo);
+        for (int b = 0; b < nb; ++b) {
+          const double z = sf.x[size_t(b)];
+          if (z <= half || z >= mid_z) continue;
+          if (std::fabs(sf.y[size_t(b)] - p.value) > 0.1 * p.value) layer = z - top;
+        }
+        p.extra["film reaches half its plateau at z (Å)"] = half;
+        p.extra["gap to the surface (Å)"] = half - top;
+        p.extra["adsorbed layer thickness (Å)"] = std::isfinite(layer) ? layer : half - top;
+      }
+    }
+    for (const auto& [z, v] : by_element) {
+      Series se{"surface " + std::string(element(z).symbol), "z (Å)", "density (g/cm³)", {}, {}};
+      for (int b = 0; b < nb; ++b) { se.x.push_back(sf.x[size_t(b)]); se.y.push_back(v[size_t(b)] * conv); }
+      p.series.push_back(std::move(se));
     }
     p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell, averaged over " + std::to_string(fr.size()) +
                " frames; value: the film's density over the middle half of its thickness";

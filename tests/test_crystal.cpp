@@ -201,8 +201,14 @@ TEST(Crystal, InterfaceProfileAndAdhesion) {
   o.ff = &ff;
   const auto props = analyze(t, {"zprofile", "adhesion"}, o);
   ASSERT_EQ(props.size(), 2u);
-  EXPECT_EQ(props[0].series.size(), 3u);
+  EXPECT_EQ(props[0].series.size(), 3u + 3u);   // film, surface, all atoms + the surface's Si, O and H
   EXPECT_NEAR(props[0].value, 0.7, 0.25);   // the film's own density
+  // the interface: the film reaches half its plateau a few Å above the surface; the adsorbed layer is at least that thick
+  const double gap = props[0].extra.at("gap to the surface (Å)");
+  EXPECT_GT(gap, 0.5);
+  EXPECT_LT(gap, 8.0);
+  EXPECT_GE(props[0].extra.at("adsorbed layer thickness (Å)"), gap);
+  EXPECT_NEAR(props[0].extra.at("film reaches half its plateau at z (Å)") - props[0].extra.at("surface top (Å)"), gap, 1e-9);
   EXPECT_GT(props[1].value, 5.0);           // the film sticks: positive work of adhesion, mJ/m²
   EXPECT_LT(props[1].value, 500.0);
   EXPECT_EQ(props[1].extra.at("interfaces"), 1.0);
