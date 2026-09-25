@@ -28,7 +28,8 @@
             <StackPanel>
               <Border Classes="phead">
                 <DockPanel>
-                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="atom-mapped" Foreground="{DynamicResource MutedB}" /></Border>
+                  <Button DockPanel.Dock="Right" Classes="small" Content="Editor…" Click="OnTemplateEditor" ToolTip.Tip="Draw, check and test the templates" />
+                  <Border DockPanel.Dock="Right" Classes="chip" Margin="0,0,6,0"><TextBlock Text="atom-mapped" Foreground="{DynamicResource MutedB}" /></Border>
                   <TextBlock Text="Reaction templates" Classes="h2" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>

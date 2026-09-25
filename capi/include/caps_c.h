@@ -354,6 +354,12 @@ caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
    20 000 and 100 000). */
 caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap);
 int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps);
+/* v20 reaction template editor (design/boards/ReactionTemplate): caps_template_view parses template text and returns
+   {ok, error, templates: [view]} (see template_view in react.hpp); caps_template_test counts, on the document's current
+   frame, each template's reactive sites and the matches within its capture distance: {ok, templates: [{name, sites,
+   matches, closest}]}. */
+int32_t caps_template_view(const char* text, char* json, int32_t cap);
+int32_t caps_template_test(caps_doc* d, const char* text, char* json, int32_t cap);
 /* v20 export dialog (design/boards/ExportDialog). options: {"bits":8|16, "dpi":600, "colour_profile":"srgb"|"none",
    "provenance":true, "source":"<the structure's path, hashed into the manifest>"}. 16-bit keeps the supersampled
    average at full precision. The manifest (caps-image/1.0: generator, created, source + sha256, frame, atoms, camera,

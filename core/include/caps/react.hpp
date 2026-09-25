@@ -120,4 +120,10 @@ struct ReactReport {
 // more reactions. `s` is changed in place.
 void react(System& s, const ReactOptions& o, ReactReport* report = nullptr);
 
+// The template editor (design/boards/ReactionTemplate): the pattern before and after the reaction as 2D drawings with
+// map numbers, what changes, and checks. JSON {name, pre: {atoms: [{map, symbol, x, y, reacting}], bonds: [[m1, m2]]},
+// post: {…}, changes: [{kind: formed|broken|deleted|moved, text}], checks: [{ok, text}], initiators: [a, b], capture,
+// probability, min_path}.
+std::string template_view(const ReactionTemplate& t);
+
 }  // namespace caps

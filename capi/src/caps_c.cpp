@@ -4363,3 +4363,46 @@ extern "C" int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const c
     return 0;
   });
 }
+
+// ---------------------------------------------------------------- reaction template editor (design/boards/ReactionTemplate)
+extern "C" int32_t caps_template_view(const char* text, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const auto ts = caps::parse_templates(text ? text : "");
+    caps::Json list = caps::Json::array();
+    for (const auto& t : ts) list.push_back(caps::Json::parse(caps::template_view(t)));
+    j["ok"] = true;
+    j["templates"] = std::move(list);
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_template_test(caps_doc* d, const char* text, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const auto ts = caps::parse_templates(text ? text : "");
+    caps::System s = d->traj.frame(d->current);
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    caps::Json list = caps::Json::array();
+    for (size_t k = 0; k < ts.size(); ++k) {
+      caps::Json o = caps::Json::object();
+      o["name"] = ts[k].name;
+      o["sites"] = caps::count_sites(s, ts[k]);
+      const auto m = caps::find_matches(s, ts[k], int(k));
+      o["matches"] = double(m.size());
+      o["closest"] = m.empty() ? -1.0 : m.front().distance;
+      list.push_back(std::move(o));
+    }
+    j["ok"] = true;
+    j["templates"] = std::move(list);
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
