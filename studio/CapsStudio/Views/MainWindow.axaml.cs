@@ -266,6 +266,7 @@ public partial class MainWindow : Window
     private void OnPlay(object? s, RoutedEventArgs e) => TogglePlay();
     private void OnTrajectoryPlayer(object? s, RoutedEventArgs e) => _vm.OpenTrajectory();
     private void OnTorsionScan(object? s, RoutedEventArgs e) => _vm.OpenTorsion();
+    private void OnSplit(object? s, RoutedEventArgs e) => _vm.OpenSplit();
     private void OnLoadCancel(object? s, RoutedEventArgs e) => _vm.CancelLoad();
     private void OnLoadBackground(object? s, RoutedEventArgs e) => _vm.LoadToBackground();
 

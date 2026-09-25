@@ -222,6 +222,14 @@ internal static class Screenshot
             if (kv[0] == "selsmarts") { w.ViewModel.SelectMode = 0; w.ViewModel.SelectPattern = kv[1]; w.ViewModel.RunSelect("replace"); w.ViewModel.SaveSelectionAsSet(); }
             if (kv[0] == "seliso") { var t = w.ViewModel.MakeTactic(kv[1] == "1"); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "checks") { w.ViewModel.InteractionsOpen = kv[1] == "1"; for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
+            if (kv[0] == "split")   // split=PATH: the split view with PATH on the right
+            {
+                w.ViewModel.OpenSplit();
+                var t = w.ViewModel.SetSplitB(kv[1]);
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "theme") { w.ViewModel.SetTheme = kv[1]; for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {
