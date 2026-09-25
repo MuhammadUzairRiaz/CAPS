@@ -126,7 +126,7 @@ RecipeCheck check_recipe(const Json& r) {
         info.summary = std::string(to_string(m)) + " · |F|max " + g6(num(J, "fmax", 0.5));
       } else if (st == "md") {
         const std::string ens = text(J, "ensemble", "nvt");
-        if (ens != "nve" && ens != "nvt" && ens != "npt") throw RecipeError(2, "md.ensemble: nve, nvt or npt");
+        if (ens != "nve" && ens != "nvt" && ens != "npt" && ens != "nph") throw RecipeError(2, "md.ensemble: nve, nvt, npt or nph");
         info.summary = ens + " · " + g6(num(J, "temperature", 300)) + " K · " + g6(num(J, "ps", 10)) + " ps";
       } else if (st == "equilibrate") {
         ProtocolParams pp;
@@ -440,8 +440,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           m.steps = int64_t(ps * 1000 / m.dt);
           m.temperature = num(J, "temperature", 300);
           const std::string ens = text(J, "ensemble", "nvt");
-          m.thermostat = ens == "nve" ? Thermostat::None : Thermostat::Bussi;
-          m.barostat = ens == "npt" ? Barostat::CRescale : Barostat::None;
+          m.thermostat = ens == "nve" || ens == "nph" ? Thermostat::None : Thermostat::Bussi;
+          m.barostat = ens == "npt" ? Barostat::CRescale : ens == "nph" ? Barostat::Berendsen : Barostat::None;   // NPH: no thermostat, so Berendsen
           m.pressure = num(J, "pressure", 1.0);
           m.seed = seed_of(J);
           m.new_velocities = true;
@@ -455,12 +455,14 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           std::vector<std::string> c = {"swope1982"};
           if (m.thermostat == Thermostat::Bussi) c.push_back("bussi2007");
           if (m.barostat == Barostat::CRescale) c.push_back("bernetti2020");
+          if (m.barostat == Barostat::Berendsen) c.push_back("berendsen1984");
           elec_cite(c, energy);
           KeyValues pr = {{"length", g6(ps) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs"}, {"temperature", g6(m.temperature) + " K"},
                           {"thermostat", m.thermostat == Thermostat::Bussi ? "Bussi velocity rescaling · τ 100 fs" : "none"}};
-          if (m.barostat != Barostat::None) pr.push_back({"barostat", "stochastic cell rescaling · " + g6(m.pressure) + " atm · τ 1000 fs"});
+          if (m.barostat == Barostat::CRescale) pr.push_back({"barostat", "stochastic cell rescaling · " + g6(m.pressure) + " atm · τ 1000 fs"});
+          if (m.barostat == Barostat::Berendsen) pr.push_back({"barostat", "Berendsen · " + g6(m.pressure) + " atm · τ 1000 fs (no thermostat: NPH)"});
           pr.push_back({"force field", ffname});
-          res.manifest.steps.push_back(step("dynamics." + ens, ens == "npt" ? "NPT molecular dynamics" : ens == "nvt" ? "NVT molecular dynamics" : "NVE molecular dynamics", pr,
+          res.manifest.steps.push_back(step("dynamics." + ens, ens == "npt" ? "NPT molecular dynamics" : ens == "nvt" ? "NVT molecular dynamics" : ens == "nph" ? "NPH molecular dynamics" : "NVE molecular dynamics", pr,
                                             seeded(m.seed), c, approx(energy, o.threads)));
           report(k, st, ens + " · " + g6(ps) + " ps · " + g6(m.temperature) + " K", "done", 1);
         } else {
