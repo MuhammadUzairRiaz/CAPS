@@ -241,6 +241,38 @@ TEST(Relax, LammpsExportHasTermsAndReadsBack) {
   EXPECT_NEAR(t.density(), s.density(), 1e-3);
 }
 
+TEST(Gromacs, TopologyUnitsExclusionsAndRefusals) {
+  System s = small_cell(2, 3, 0.3);
+  ForceField ff = assign_gaff(s);
+  const auto stem = (std::filesystem::temp_directory_path() / "caps_gmx_unit").string();
+  EnergyOptions e;
+  e.electrostatics = EnergyOptions::Electrostatics::PME;
+  const auto notes = write_gromacs(s, ff, e, stem);
+  std::ifstream f(stem + ".top");
+  const std::string top((std::istreambuf_iterator<char>(f)), {});
+  std::ifstream m(stem + ".mdp");
+  const std::string mdp((std::istreambuf_iterator<char>(m)), {});
+  // CAPS k (r − r0)² in kcal/mol/Å² is GROMACS ½ kb (r − b0)² in kJ/mol/nm²: kb = 2 k · 4.184 · 100
+  const auto& b = ff.bonds[0];
+  char line[160];
+  std::snprintf(line, sizeof line, "%7u %7u 1 %.10g %.10g\n", b.i + 1, b.j + 1, b.r0 / 10, 2 * b.k * 4.184 * 100);
+  EXPECT_NE(top.find(line), std::string::npos) << line;
+  EXPECT_NE(top.find("SYSTEM  0"), std::string::npos);   // nrexcl 0: CAPS's exclusions are listed
+  EXPECT_NE(top.find("[ exclusions ]"), std::string::npos);
+  EXPECT_NE(top.find("[ nonbond_params ]"), std::string::npos);
+  EXPECT_NE(mdp.find("coulombtype              = PME"), std::string::npos);
+  EXPECT_NE(mdp.find("DispCorr                 = AllEnerPres"), std::string::npos);
+  // the same notes without writing
+  EXPECT_EQ(gromacs_notes(s, ff, e), notes);
+  // forms GROMACS lacks are refused
+  ForceField inv = ff;
+  inv.inversions.push_back({0, 1, 2, 3, 1.0, 0.0, 1});
+  EXPECT_THROW(write_gromacs(s, inv, e, stem), FieldError);
+  ForceField c2 = ff;
+  c2.pair_form = "lj9-6";
+  EXPECT_THROW(gromacs_notes(s, c2, e), FieldError);
+}
+
 TEST(LammpsData, MixedClassesBecomeHybridStylesWithSkipLines) {
   // class II bonds and angles, one class I angle, Fourier torsions: hybrid angles, BondBond / BondAngle skip lines
   System s = small_cell(2, 3, 0.3);

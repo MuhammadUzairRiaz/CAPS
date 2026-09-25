@@ -38,22 +38,26 @@ public partial class DynamicsPage : PageBase
     {
         var clip = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clip != null) await clip.SetTextAsync(Vm.MdDeck);
-        Vm.Status = "Copied the LAMMPS input";
+        Vm.Status = Vm.MdGromacs ? "Copied the GROMACS run parameters" : "Copied the LAMMPS input";
     }
 
-    /// <summary>Writes system.data (with the force field) and system.in into a folder.</summary>
+    /// <summary>Writes the deck into a folder: system.data and system.in (LAMMPS), or system.top, system.gro and system.mdp (GROMACS).</summary>
     private async void OnSaveDeck(object? s, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
         if (top == null) return;
-        var dirs = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder for system.data and system.in" });
+        var dirs = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder for " + Vm.MdDeckFiles.Split(" (")[0] });
         var dir = dirs.Count > 0 ? dirs[0].TryGetLocalPath() : null;
         if (dir == null) return;
         try
         {
-            Vm.Document!.Save(System.IO.Path.Combine(dir, "system.data"));
-            await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(dir, "system.in"), Vm.MdDeck);
-            Vm.Status = $"Wrote system.data and system.in to {dir} (lmp -in system.in)";
+            if (Vm.MdGromacs) Vm.SaveGromacs(dir);
+            else
+            {
+                Vm.Document!.Save(System.IO.Path.Combine(dir, "system.data"));
+                await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(dir, "system.in"), Vm.MdDeck);
+            }
+            Vm.Status = $"Wrote {Vm.MdDeckFiles} to {dir}";
         }
         catch (Exception ex) { Vm.Status = "Could not write the deck: " + ex.Message; }
     }

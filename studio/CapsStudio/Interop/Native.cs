@@ -372,6 +372,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_analyze")] public static extern int Analyze(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, CapsAnalyzeProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_analyze_ex")] public static extern int AnalyzeEx(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, in CapsMechOpts m, CapsAnalyzeProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_lammps_input")] public static extern int LammpsInput(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dataName, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_gromacs")] public static extern int Gromacs(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? stem, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
@@ -1012,6 +1013,22 @@ public sealed class CapsDocument : IDisposable
             var buf = new byte[n];
             Native.LammpsInput(_h, dataName, buf, n);
             return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
+        }
+    }
+
+    /// <summary>GROMACS: with a stem, writes stem.top, stem.gro and stem.mdp; returns the .mdp non-bonded settings with
+    /// "; note:" lines where GROMACS differs from CAPS.</summary>
+    public string Gromacs(string? stem)
+    {
+        lock (_lock)
+        {
+            // size without a stem (the same text, nothing written), then write once
+            var n = Native.Gromacs(_h, null, null, 0);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            var buf = new byte[n];
+            n = Native.Gromacs(_h, stem, buf, n);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
         }
     }
 

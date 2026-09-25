@@ -9,7 +9,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="Dynamics · CAPS Dynamics" Classes="title" />
-        <TextBlock Classes="muted"><Run Text="Molecular dynamics in CAPS, or a matching input deck for LAMMPS · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
+        <TextBlock Classes="muted"><Run Text="Molecular dynamics in CAPS, or a matching input deck for LAMMPS or GROMACS · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}" ToolTip.Tip="Save every frame as a LAMMPS dump">
@@ -157,7 +157,7 @@
             <StackPanel>
               <Border Classes="phead">
                 <DockPanel>
-                  <Border DockPanel.Dock="Right" Classes="chip" ToolTip.Tip="Energies and forces of the data file match CAPS in LAMMPS (bench/ff/check_data_lammps.py)">
+                  <Border DockPanel.Dock="Right" Classes="chip" ToolTip.Tip="{Binding MdParityTip}">
                     <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" VerticalAlignment="Center" /><TextBlock Text="step-0 parity validated" Foreground="{DynamicResource MutedB}" /></StackPanel>
                   </Border>
                   <TextBlock Text="Export to other engines" Classes="h2" VerticalAlignment="Center" />
@@ -166,8 +166,8 @@
               <StackPanel Margin="16,12,16,16" Spacing="10">
                 <Border Classes="seg" HorizontalAlignment="Left">
                   <StackPanel Orientation="Horizontal">
-                    <RadioButton Classes="seg" GroupName="eng" Content="LAMMPS" IsChecked="True" />
-                    <RadioButton Classes="seg" GroupName="eng" Content="GROMACS" IsEnabled="False" ToolTip.Tip="coming" ToolTip.ShowOnDisabled="True" />
+                    <RadioButton Classes="seg" GroupName="eng" Content="LAMMPS" IsChecked="{Binding MdLammps}" ToolTip.Tip="system.data and system.in" />
+                    <RadioButton Classes="seg" GroupName="eng" Content="GROMACS" IsChecked="{Binding MdGromacs}" ToolTip.Tip="system.top, system.gro and system.mdp; not for class II, DREIDING or UFF (no GROMACS functions for their terms)" />
                   </StackPanel>
                 </Border>
                 <Border Classes="inset" Padding="12,10">
