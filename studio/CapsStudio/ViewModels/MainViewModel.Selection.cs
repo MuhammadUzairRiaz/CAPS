@@ -157,6 +157,7 @@ public sealed partial class MainViewModel
         var text = await Task.Run(() => doc.Edit(iso ? "{\"op\":\"tacticity\",\"to\":\"isotactic\"}" : "{\"op\":\"tacticity\",\"to\":\"syndiotactic\"}"));
         var r = JsonNode.Parse(text)!;
         if (r["ok"]?.GetValue<bool>() != true) { SelectError = r["error"]?.GetValue<string>() ?? "cannot change the tacticity"; Status = SelectError; return; }
+        Record($"doc.edit(op=\"tacticity\", to=\"{(iso ? "isotactic" : "syndiotactic")}\")");
         AfterEdit(r["what"]!.GetValue<string>());
         RefreshStereo();
     }

@@ -1,0 +1,118 @@
+<!-- CAPS Macro recorder (design/boards/MacroRecorder.dc.html): Studio actions recorded as Python using the caps package,
+     edited, parameterised and run with python3, the output streamed. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.MacroPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="TextBox.code"><Setter Property="FontFamily" Value="{DynamicResource Mono}" /><Setter Property="FontSize" Value="13" /><Setter Property="AcceptsReturn" Value="True" />
+      <Setter Property="AcceptsTab" Value="True" /><Setter Property="TextWrapping" Value="NoWrap" /><Setter Property="Background" Value="{DynamicResource Bg0B}" /><Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="Ellipse.rec"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.rec.on"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="Every Studio action records as one line while recording" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+        <TextBlock Text="python3 · the caps package (data/python) · this Studio's libcaps" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,380">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="44" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel VerticalAlignment="Center">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+              <Button Classes="small" Content="New" Click="OnNew" />
+              <Button Classes="small" Content="Save" Click="OnSave" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="small" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
+              <ComboBox ItemsSource="{Binding MacroFiles}" SelectedIndex="{Binding MacroFileIndex}" MinWidth="200" FontFamily="{DynamicResource Mono}" FontSize="12" />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Height="170" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Height="32" Padding="14,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Output" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <ScrollViewer x:Name="OutScroll">
+              <SelectableTextBlock Text="{Binding MacroOutput}" FontFamily="{DynamicResource Mono}" FontSize="12" Margin="14,10" TextWrapping="Wrap" />
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+        <TextBox x:Name="Code" Classes="code" Text="{Binding MacroText}" />
+      </DockPanel>
+
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding Recording}" Classes="tool" ToolTip.Tip="Record Studio actions">
+                <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="10" Height="10" Classes="rec" Classes.on="{Binding Recording}" VerticalAlignment="Center" /><TextBlock Text="{Binding RecordingText}" VerticalAlignment="Center" /></StackPanel>
+              </ToggleButton>
+              <TextBlock Text="Recorder" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Click="OnSave"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="15" VerticalAlignment="Center" /><TextBlock Text="Save as tool" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Content="Stop" Click="OnStop" IsVisible="{Binding MacroRunning}" />
+              <Button Classes="primary" Click="OnRun" IsEnabled="{Binding MacroIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="RECORDED COMMANDS" Classes="h3" Margin="0,0,0,6" />
+                  <TextBlock Text="Turn recording on, then build, edit, assign a force field, relax or save in the Studio." Classes="dim" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding !RecordedCommands.Count}" />
+                  <ItemsControl ItemsSource="{Binding RecordedCommands}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:RecordedCommand">
+                        <DockPanel Height="26">
+                          <TextBlock DockPanel.Dock="Left" Width="22" Text="{Binding Number}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Text}" Classes="mono" FontSize="11.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Text}" />
+                        </DockPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="PARAMETERS" Classes="h3" />
+                  <ItemsControl ItemsSource="{Binding MacroParameters}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:MacroParameter">
+                        <Border Height="32" Padding="10,0" Margin="0,0,0,6" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg0B}">
+                          <DockPanel VerticalAlignment="Center">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding Default}" Classes="mono" FontSize="12" />
+                            <TextBlock Text="{Binding Name}" Classes="mono" FontSize="12" Foreground="{DynamicResource AccB}" Margin="0,0,10,0" />
+                            <TextBlock Text="{Binding Type}" Classes="mono" FontSize="12" Foreground="{DynamicResource DimB}" />
+                          </DockPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="small" HorizontalAlignment="Left" Content="Promote to parameter" Click="OnPromote" ToolTip.Tip="Select a literal (a number or a quoted string) in the script first" />
+                  <TextBlock x:Name="PromoteNote" Classes="dim" FontSize="12" TextWrapping="Wrap" Text="Select a literal in the editor and choose Promote to parameter." />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="RUN" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Target" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="New documents" /></ComboBox></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Where" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" ToolTip.Tip="Remote hosts run macros through their own caps (Settings › Compute &amp; remote)"><ComboBoxItem Content="This machine" /></ComboBox></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Stop on first error" IsChecked="{Binding MacroStopOnError}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

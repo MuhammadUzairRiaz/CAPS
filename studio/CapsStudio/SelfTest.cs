@@ -585,6 +585,29 @@ internal static class SelfTest
         vm.CloseSplitB();
         vm.SetModule(8);
 
+        // Macro recorder: opening the melt and placing a water record as Python; a literal becomes a parameter; the script
+        // replays with python3 through the caps package and this Studio's library
+        {
+            MainViewModel.MacroFolderOverride = Path.Combine(outDir, "caps-selftest-macros");
+            if (Directory.Exists(MainViewModel.MacroFolderOverride)) Directory.Delete(MainViewModel.MacroFolderOverride, true);
+            vm.OpenMacro();
+            vm.NewMacro();
+            vm.Recording = true;
+            var data = Path.GetFullPath(Path.Combine(dir, "ps_melt.data"));
+            vm.Open(data);
+            var nm0 = vm.Document!.Summary().Atoms;
+            vm.UseFragment(vm.QuickFragments.First(f => f.Name == "Water"), false).GetAwaiter().GetResult();
+            vm.Record("print(\"atoms\", doc.atoms)");
+            vm.Recording = false;
+            var promo = vm.PromoteToParameter("\"Water\"");
+            vm.RunMacro().GetAwaiter().GetResult();
+            for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            Check(vm.IsMacro && vm.RecordedCommands.Count == 3 && promo == null && vm.MacroParameters.Count == 1 && vm.MacroOutput.Contains($"atoms {nm0 + 3}") && vm.MacroOutput.Contains("done"),
+                  $"macro: {vm.RecordedCommands.Count} recorded · params {string.Join(",", vm.MacroParameters.Select(p => p.Name + "=" + p.Default))} · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
+            vm.SetModule(8);
+        }
+        vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);
