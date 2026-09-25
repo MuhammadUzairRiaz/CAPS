@@ -28,6 +28,7 @@
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 #include "caps/crystal.hpp"
+#include "caps/nano.hpp"
 #include "caps/json.hpp"
 
 #include <map>
@@ -1865,6 +1866,88 @@ extern "C" caps_doc* caps_interface_build(const char* options_json, const char* 
     for (const auto& n : sr.notes) t += n + "\n";
     for (const auto& n : rep.notes) t += n + "\n";
     report_out(t, report, cap);
+    caps_doc* d = doc_of(s);
+    d->held_mol = 1;
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+namespace {
+caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::string& notes) {
+  const std::string kind = j.text("kind", "tube");
+  caps::NanoReport r;
+  caps::System f;
+  keep = {false, false, false};
+  if (kind == "tube") {
+    caps::NanotubeOptions t;
+    t.n = int(j.num("n", 10)), t.m = int(j.num("m", 10));
+    t.length = j.num("length", 25);
+    t.periodic = j.num("periodic", 1) != 0;
+    f = caps::nanotube(t, &r);
+    keep = {false, false, t.periodic};
+  } else if (kind == "sheet") {
+    caps::SheetOptions sh;
+    sh.lx = j.num("lx", 20), sh.ly = j.num("ly", 20);
+    sh.layers = int(j.num("layers", 1));
+    sh.periodic = j.num("periodic", 1) != 0;
+    f = caps::graphene_sheet(sh, &r);
+    keep = {sh.periodic, sh.periodic, false};
+  } else if (kind == "particle") {
+    caps::ParticleOptions po;
+    po.shape = caps::particle_shape_from_string(j.text("shape", "sphere"));
+    po.radius = j.num("radius", 12);
+    po.on_atom = j.num("on_atom", 1) != 0;
+    po.passivate = j.num("passivate", 0) != 0;
+    f = caps::nanoparticle(caps::read_cif(j.text("crystal")), po, &r);
+  } else {
+    throw std::invalid_argument("kind must be tube, sheet or particle");
+  }
+  for (const auto& n : r.notes) notes += n + "\n";
+  return f;
+}
+}  // namespace
+
+extern "C" caps_doc* caps_nano_build(const char* options_json, char* report, int32_t cap) {
+  try {
+    std::array<bool, 3> keep;
+    std::string notes;
+    const caps::System f = nano_from(caps::Json::parse(options_json && *options_json ? options_json : "{}"), keep, notes);
+    report_out(notes, report, cap);
+    return doc_of(f);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" caps_doc* caps_nano_embed(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
+                                     int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    std::array<bool, 3> keep;
+    std::string notes;
+    const caps::System f = nano_from(j, keep, notes);
+    caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    caps::FillerMatrixOptions fo;
+    const caps::Json m = j.has("matrix") ? j["matrix"] : caps::Json::object();
+    fo.chains = int(m.num("chains", 10));
+    fo.density = m.num("density", 0.9);
+    fo.keep_axis = keep;
+    if (o) {
+      if (o->dp > 0) c.dp = o->dp;
+      c.tacticity = o->tacticity == 1 ? caps::Tacticity::Isotactic : o->tacticity == 2 ? caps::Tacticity::Syndiotactic : caps::Tacticity::Atactic;
+      fo.grow.seed = o->seed;
+      fo.grow.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+      fo.grow.curve = o->curve != 0;
+    }
+    if (progress) fo.grow.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::FillerReport fr;
+    const caps::System s = caps::embed_filler(f, c, fo, &fr);
+    for (const auto& n : fr.notes) notes += n + "\n";
+    report_out(notes, report, cap);
     caps_doc* d = doc_of(s);
     d->held_mol = 1;
     return d;

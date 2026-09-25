@@ -52,12 +52,13 @@ public sealed partial class MainViewModel
             ("Jobs", 11, "jobs", "runs progress log provenance history"), ("Settings", 10, "gear", "preferences theme palette threads"),
             ("Bench", 12, "bench", "validation benchmark tables paper"),
             ("Polymer builder", 13, "grow", "repeat unit copolymer smiles library rubber"), ("Surface builder", 14, "layers", "slab cleave cif crystal interface film fibre silica graphite"),
+            ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
         };
         foreach (var (name, m, icon, words) in modules)
             AddCommand(new PaletteCommand
             {
                 Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
-                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else SetModule(m); },
+                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else SetModule(m); },
             });
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });
