@@ -1278,6 +1278,30 @@ internal static class SelfTest
                 vm.GtReplicas = 1;
                 vm.SetModule(8);
             }
+            // Jobs › Recipes: templates checked, a broken edit flagged, saved and duplicated with their hash, run with the hash in provenance
+            {
+                var rfolder = Path.Combine(outDir, "caps-selftest-recipes");
+                if (Directory.Exists(rfolder)) Directory.Delete(rfolder, true);
+                Environment.SetEnvironmentVariable("CAPS_RECIPES", rfolder);
+                vm.OpenRecipes();
+                var first = vm.SelectedRecipe;
+                var templates = vm.Recipes.Count;
+                var valid = vm.RecipeOk && vm.RecipeStages.Count == 8 && vm.RecipeSchedule.Count == 21 && vm.RecipeT.Length == 42;
+                var good = vm.RecipeText;
+                vm.RecipeText = good.Replace("export: [lammps, gromacs]", "export: [lammps, tiff]");
+                var flagged = !vm.RecipeOk && vm.RecipeStages.Any(st => !st.Ok) && vm.RecipeValid.Contains("tiff");
+                vm.RecipeText = good;
+                vm.SaveRecipe();
+                vm.DuplicateRecipe();
+                var files = Directory.GetFiles(rfolder, "*.yaml").Length;
+                vm.SelectedRecipe = vm.Recipes.First(r => r.Name == "Quick molecule");
+                vm.RunSelectedRecipe().GetAwaiter().GetResult();
+                var prov = vm.Document?.Provenance() ?? "";
+                Check(templates == 4 && first != null && valid && flagged && files == 2 && vm.Document?.Summary().Atoms == 9 && prov.Contains("recipe.run") && prov.Contains(vm.RecipeSha),
+                      $"recipes: {templates} · valid {valid} · flagged {flagged} · {files} files · {vm.Status}");
+                Environment.SetEnvironmentVariable("CAPS_RECIPES", null);
+                vm.SetModule(8);
+            }
             // a broken recipe says why, with its exit code
             File.WriteAllText(recipe, "build: {molecule: CCO}\nbogus: 1\n");
             vm.RunRecipeFile(recipe).GetAwaiter().GetResult();

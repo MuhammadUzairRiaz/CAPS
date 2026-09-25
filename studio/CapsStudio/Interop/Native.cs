@@ -276,6 +276,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_images")] public static extern int SetImages(IntPtr doc, int na, int nb, int nc, double fade);
     [DllImport(Lib, EntryPoint = "caps_set_save_wrap")] public static extern int SetSaveWrap(IntPtr doc, int mode);
     [DllImport(Lib, EntryPoint = "caps_centre_on")] public static extern int CentreOn(IntPtr doc, int[] idx, int n);
+    [DllImport(Lib, EntryPoint = "caps_recipe_check")] public static extern int RecipeCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_yaml_to_json")] public static extern int YamlToJson([MarshalAs(UnmanagedType.LPUTF8Str)] string yaml, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_charges")] public static extern int Charges(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_snapshot")] public static extern int Snapshot(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
@@ -570,6 +572,18 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A graphene sheet, nanotube or nanoparticle (caps_nano_build).</summary>
+    /// <summary>A recipe checked without running it (caps_recipe_check).</summary>
+    public static string RecipeCheck(string recipe) => StaticJson((b, c) => Native.RecipeCheck(recipe, b, c));
+    /// <summary>YAML (the recipe subset) as JSON.</summary>
+    public static string YamlToJson(string yaml) => StaticJson((b, c) => Native.YamlToJson(yaml, b, c));
+    private static string StaticJson(Func<byte[]?, int, int> call)
+    {
+        var n = call(null, 0);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        var buf = new byte[n];
+        call(buf, n);
+        return System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0');
+    }
     /// <summary>Palettes as seen with protanopia, deuteranopia and tritanopia and the pairs closer than threshold ΔE*ab.</summary>
     public static string VisionCheck(string palettes, double threshold)
     {
