@@ -539,6 +539,20 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Analyze › Compare (CompareCells): the same pipeline on two inputs, B − A per attribute
+        {
+            vm.ClearPipeline();
+            vm.AddStep("molecule_shape");
+            vm.OpenCompare();
+            vm.SetCompareInput(true, Path.Combine(dir, "ps_melt.data")).GetAwaiter().GetResult();
+            vm.SetCompareInput(false, Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();
+            var cmpRows = vm.CompareRows.ToDictionary(r => r.Metric);
+            Check(vm.CompareHasB && cmpRows.TryGetValue("Particles", out var pr) && pr.Diff == "+0" && cmpRows.ContainsKey("MoleculeShape.mean_rg") && vm.CompareTables.Contains("Molecule shape"),
+                  $"compare: {vm.CompareRows.Count} metrics · tables {string.Join(", ", vm.CompareTables)}");
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

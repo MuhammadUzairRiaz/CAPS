@@ -19,8 +19,22 @@ public sealed class LinePlot : Control
     {
         _data = data;
         _overlay = [];
+        _second = [];
         InvalidateVisual();
     }
+
+    /// <summary>Two curves to compare: A solid (selection blue), B dashed (accent).</summary>
+    public void SetCompare((double X, double Y)[] a, (double X, double Y)[] b)
+    {
+        _data = a.Length >= 2 ? a : b;
+        _second = a.Length >= 2 ? b : [];
+        _overlay = [];
+        Markers = false;
+        InvalidateVisual();
+    }
+    private (double X, double Y)[] _second = [];
+    private static IPen CurveA => new Pen(Tokens.Brush("SelB"), 2, lineJoin: PenLineJoin.Round);
+    private static IPen CurveB => new Pen(Tokens.Brush("AccB"), 2, new DashStyle([5, 3], 0), lineJoin: PenLineJoin.Round);
 
     /// <summary>Data as points with a line through them (a fit or a smoothed curve).</summary>
     public void SetData((double X, double Y)[] points, (double X, double Y)[] line)
@@ -63,7 +77,7 @@ public sealed class LinePlot : Control
         double xmin = 0, xmax, ymin = 0, ymax;
         if (AutoRange)
         {
-            var all = _data.Concat(_overlay).ToArray();
+            var all = _data.Concat(_overlay).Concat(_second).ToArray();
             xmin = all.Min(p => p.X);
             xmax = all.Max(p => p.X);
             if (xmax - xmin < 1e-9) xmax = xmin + 1;
@@ -77,7 +91,7 @@ public sealed class LinePlot : Control
         else
         {
             xmax = _data[^1].X + (_data[1].X - _data[0].X) / 2;
-            ymax = Math.Max(1.2, Math.Ceiling(_data.Max(p => p.Y) * 2) / 2);
+            ymax = Math.Max(1.2, Math.Ceiling(_data.Concat(_second).Max(p => p.Y) * 2) / 2);
         }
         double X(double v) => L + (v - xmin) / (xmax - xmin) * w;
         double Y(double v) => T + h - (v - ymin) / (ymax - ymin) * h;
@@ -116,6 +130,11 @@ public sealed class LinePlot : Control
         {
             foreach (var p in _data) ctx.DrawEllipse(Dot, null, new Point(X(p.X), Y(p.Y)), 2.2, 2.2);
             if (_overlay.Length > 1) ctx.DrawGeometry(null, Curve, Line(_overlay));
+        }
+        else if (_second.Length > 1)
+        {
+            ctx.DrawGeometry(null, CurveA, Line(_data));
+            ctx.DrawGeometry(null, CurveB, Line(_second));
         }
         else
         {
