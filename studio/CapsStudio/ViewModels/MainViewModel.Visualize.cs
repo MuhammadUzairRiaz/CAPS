@@ -91,6 +91,8 @@ public sealed partial class MainViewModel
         new("molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", "Structure", "atom"),
         new("topology", "Topology distributions", "bond lengths, angles, dihedrals", "Structure", "bond"),
         new("displacements", "Displacements", "vs a reference frame · MSD", "Trajectory", "move"),
+        new("msd", "Mean-square displacement", "MSD(τ) of atoms and chain centres, D", "Trajectory", "chart"),
+        new("scatter", "Scatter plot", "one property against another · Pearson r", "Measure", "chart"),
         new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
@@ -108,6 +110,7 @@ public sealed partial class MainViewModel
     private string _inspectorFilter = "", _inspectorNote = "", _pipeError = "", _stepSearch = "";
     private JsonNode? _pipeResult;
     private int _pipeGen;
+    private bool _showTableAfterApply;
     private const int InspectorPage = 200;
 
     public void OpenVisualize()
@@ -136,7 +139,22 @@ public sealed partial class MainViewModel
             Raise(nameof(PipeStepTitle));
             Raise(nameof(PipeStepNumber));
             BuildStepFields();
+            ShowTableOf(_pipeSel?.Type);
         }
+    }
+
+    /// <summary>Selecting a measuring step shows its table in the data inspector.</summary>
+    private void ShowTableOf(string? type)
+    {
+        var name = type switch
+        {
+            "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
+            "molecule_shape" => "molecules", "topology" => "bonds", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "msd" => "msd", "vectors" => "vectors", _ => null,
+        };
+        if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
+        for (int k = 0; k < ts.Count; ++k)
+            if ((string?)ts[k]?["name"] == name) { PipeTable = k; InspectorTab = 3; return; }
     }
     public bool HasPipeSelected => _pipeSel != null;
     public string PipeStepTitle => _pipeSel?.Title ?? "Data source";
@@ -222,6 +240,7 @@ public sealed partial class MainViewModel
     public double[] PipeTableX { get; private set; } = [];
     public double[] PipeTableY { get; private set; } = [];
     public string PipeTableXLabel { get; private set; } = "";
+    public bool PipeTableScatter { get; private set; }
     public string PipeTableYLabel { get; private set; } = "";
     public event Action? PipeTableChanged;
 
@@ -238,6 +257,7 @@ public sealed partial class MainViewModel
         PipelineRows.Insert(Math.Max(0, at), row);
         StepLibraryOpen = false;
         if (select) PipeSelected = row;
+        _showTableAfterApply = select;
         ApplyPipeline();
     }
 
@@ -298,6 +318,7 @@ public sealed partial class MainViewModel
                 PipelineRows.Add(row);
             }
             PipeSelected = PipelineRows.FirstOrDefault();
+            _showTableAfterApply = true;
             ApplyPipeline();
             Status = $"Loaded {PipelineRows.Count} steps from {path}";
         }
@@ -321,6 +342,8 @@ public sealed partial class MainViewModel
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
+        "msd" => new JsonObject { ["heavy_only"] = true, ["every"] = 1, ["timestep_fs"] = 1.0 },
+        "scatter" => new JsonObject { ["x"] = "DistanceToCOM", ["y"] = "Charge", ["only_selected"] = false },
         "voids" => new JsonObject { ["probe"] = 1.4, ["grid"] = 0.5, ["show"] = true },
         "voronoi" => new JsonObject { ["method"] = "grid", ["grid"] = 0.5 },
         "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5 },
@@ -373,6 +396,10 @@ public sealed partial class MainViewModel
             case "topology": Text("bins", "Bins", "number"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
+            case "msd":
+                Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");
+                Text("timestep_fs", "Timestep (fs) for D in cm²/s", "number"); break;
+            case "scatter": Choice("x", "x", props); Choice("y", "y", props); Bool("only_selected", "Only selected"); break;
             case "voids": Text("probe", "Probe radius (Å)", "number"); Text("grid", "Grid (Å)", "number"); Bool("show", "Show void points, coloured by void"); break;
             case "voronoi": Choice("method", "Method", ["grid", "radical"]); Text("grid", "Grid (Å)", "number"); break;
             case "density_field":
@@ -522,6 +549,7 @@ public sealed partial class MainViewModel
         }
         Raise(nameof(HasPipeTables));
         LoadPipeTable();
+        if (_showTableAfterApply) { _showTableAfterApply = false; ShowTableOf(_pipeSel?.Type); }
         var particles = (double?)_pipeResult?["particles"] ?? _doc.Summary().Atoms;
         PipeStatus = string.Format(inv, "{0:N0} particles · {1} step{2}", particles, PipelineRows.Count, PipelineRows.Count == 1 ? "" : "s");
         Raise(nameof(PipeStatus));
@@ -548,6 +576,7 @@ public sealed partial class MainViewModel
             PipeTableY = rows.Select(r => (double?)r?[yc] ?? double.NaN).ToArray();
             PipeTableXLabel = (string?)cols[0] ?? "";
             PipeTableYLabel = (string?)cols[yc] ?? "";
+            PipeTableScatter = (bool?)t["points"] ?? false;
             if (_inspectorTab == 3)
             {
                 InspectorColumns.Clear();
