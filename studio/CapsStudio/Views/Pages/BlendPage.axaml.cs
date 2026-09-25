@@ -13,6 +13,7 @@ public partial class BlendPage : PageBase
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.SetModule(5);
+    private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private void OnAdd(object? s, RoutedEventArgs e) => Vm.AddBlendRow();
     private void OnRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BlendRow r) Vm.RemoveBlendRow(r); }

@@ -24,7 +24,7 @@ public sealed partial class MainViewModel
     [
         new("Molecule", "From SMILES or a 2D sketch", "hex", 9, "Draw or type a molecule; 3D with conformers, cleaned with a force field"),
         new("Polymer", "Repeat units, sequence, tacticity", "grow", 13, "Homopolymers and copolymers from a SMILES library of repeat units"),
-        new("Crystal", "Space group, lattice, CIF import", "cube", -1, "The crystal builder comes with the Crystal board"),
+        new("Crystal", "Space group, lattice, CIF import", "cube", 29, "A space group, a lattice and an asymmetric unit expanded into a cell; symmetry found from a CIF"),
         new("Amorphous cell", "Grow and pack a periodic cell", "pack", 0, "Grow chains into a periodic cell at a target density"),
         new("Surface or interface", "Cleave, stack, add vacuum", "layers", 14, "Cleave a crystal (CIF) along (hkl) and grow a polymer film on it: fibre–rubber interfaces"),
         new("Solvated system", "Box, solvent model, ions", "flask", 5, "Pack molecules into regions of a box (Packmol input)"),

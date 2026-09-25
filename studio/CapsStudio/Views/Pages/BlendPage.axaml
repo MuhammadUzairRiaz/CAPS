@@ -26,7 +26,7 @@
       <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
         <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
         <Button Classes="builder on" Content="Polymer" Click="OnPolymer" ToolTip.Tip="Repeat units and copolymers" />
-        <Button Classes="builder" Content="Crystal" IsEnabled="False" ToolTip.Tip="Crystals come from CIF files; the crystal builder comes with its board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Crystal" Click="OnCrystal" />
         <Button Classes="builder" Content="Surface" Click="OnSurface" />
         <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
         <Button Classes="builder" Content="Biomolecule" IsEnabled="False" ToolTip.Tip="Comes with the Biomolecule board" ToolTip.ShowOnDisabled="True" />

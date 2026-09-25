@@ -3,6 +3,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <array>
 #include <vector>
 
 #include "caps/system.hpp"
@@ -42,6 +43,7 @@ struct RenderOptions {
   bool outlines = true;
   bool depth_cue = true;
   bool show_cell = true;
+  std::array<int, 3> cell_repeats{1, 1, 1};   // the cell is a supercell of these unit cells: its box dashed, one unit cell in the accent
   std::vector<int> highlight;          // atom indices drawn with a selection ring
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)

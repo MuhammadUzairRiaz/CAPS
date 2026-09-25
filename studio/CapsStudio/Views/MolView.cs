@@ -32,6 +32,9 @@ public sealed class MolView : Control
         set { _doc = value; Refresh(); }
     }
 
+    /// <summary>Draws the cell box (a crystal's supercell dashed with one unit cell in the accent).</summary>
+    public bool ShowCell { get; set; }
+
     public void Reset()
     {
         _cam = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0 };
@@ -67,7 +70,7 @@ public sealed class MolView : Control
                 var opt = new CapsRenderOpts
                 {
                     Width = w, Height = h, Supersample = scale >= 1.5 ? 1 : 2, Background = light ? 1 : 0, Style = 0, ColourBy = 0,
-                    Outlines = 1, DepthCue = 1, ShowCell = 0, Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1,
+                    Outlines = 1, DepthCue = 1, ShowCell = ShowCell ? 1 : 0, Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1,
                 };
                 var cam = _cam;
                 var buf = new byte[w * h * 4];

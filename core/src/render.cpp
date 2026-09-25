@@ -438,9 +438,29 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     const RGB ec = dark_bg ? rgb(0xA5ABB1) : rgb(0x6B7178);
     const int E[12][2] = {{0, 1}, {0, 2}, {0, 4}, {1, 3}, {1, 5}, {2, 3}, {2, 6}, {3, 7}, {4, 5}, {4, 6}, {5, 7}, {6, 7}};
     double cx[8], cyy[8], cz[8], ck[8];
+    const auto& rep = opt.cell_repeats;
+    const bool super = rep[0] * rep[1] * rep[2] > 1 && rep[0] > 0 && rep[1] > 0 && rep[2] > 0;
     for (int k = 0; k < 8; ++k)
       v.project(s.cell.origin + s.cell.a * (k >> 2) + s.cell.b * ((k >> 1) & 1) + s.cell.c * (k & 1), cx[k], cyy[k], cz[k], ck[k]);
-    for (auto& e : E) line(B, cx[e[0]], cyy[e[0]], cz[e[0]], cx[e[1]], cyy[e[1]], cz[e[1]], std::max(1.0, 1.1 * ss), ec);
+    for (auto& e : E) {
+      if (!super) { line(B, cx[e[0]], cyy[e[0]], cz[e[0]], cx[e[1]], cyy[e[1]], cz[e[1]], std::max(1.0, 1.1 * ss), ec); continue; }
+      // a supercell: its box dashed
+      const double len = std::hypot(cx[e[1]] - cx[e[0]], cyy[e[1]] - cyy[e[0]]), dash = 4.0 * ss;
+      const int nd = std::max(1, int(len / dash));
+      for (int q = 0; q < nd; q += 2) {
+        const double t0 = double(q) / nd, t1 = double(std::min(q + 1, nd)) / nd;
+        line(B, cx[e[0]] + t0 * (cx[e[1]] - cx[e[0]]), cyy[e[0]] + t0 * (cyy[e[1]] - cyy[e[0]]), cz[e[0]] + t0 * (cz[e[1]] - cz[e[0]]),
+             cx[e[0]] + t1 * (cx[e[1]] - cx[e[0]]), cyy[e[0]] + t1 * (cyy[e[1]] - cyy[e[0]]), cz[e[0]] + t1 * (cz[e[1]] - cz[e[0]]), std::max(1.0, 1.0 * ss), ec);
+      }
+    }
+    if (super) {   // and one unit cell, solid in the accent
+      const RGB acc = rgb(0xF5A524);
+      double ux[8], uy[8], uz[8], uk[8];
+      for (int k = 0; k < 8; ++k)
+        v.project(s.cell.origin + s.cell.a * ((k >> 2) / double(rep[0])) + s.cell.b * (((k >> 1) & 1) / double(rep[1])) + s.cell.c * ((k & 1) / double(rep[2])), ux[k], uy[k],
+                  uz[k], uk[k]);
+      for (auto& e : E) line(B, ux[e[0]], uy[e[0]], uz[e[0]], ux[e[1]], uy[e[1]], uz[e[1]], std::max(1.0, 2.0 * ss), acc);
+    }
   }
 
   // Depth cue: fade far atoms toward the background; with no background, darken them instead.

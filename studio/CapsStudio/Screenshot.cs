@@ -149,6 +149,18 @@ internal static class Screenshot
                 w.ViewModel.NanoKind = int.Parse(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "crystal")   // crystal=1: the Crystal builder (polyethylene); crystal=ID: a library crystal imported through Find symmetry
+            {
+                w.ViewModel.OpenCrystal();
+                if (kv[1] != "1" && w.ViewModel.Crystals.FirstOrDefault(c => c.Id == kv[1]) is { } cx)
+                {
+                    var t = w.ViewModel.ImportCrystalCif(cx.File);
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "crystalsuper") { w.ViewModel.CrystalSupercell = kv[1].Replace('x', '×'); for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
+            if (kv[0] == "crystalquery") { w.ViewModel.CrystalQuery = kv[1]; Dispatcher.UIThread.RunJobs(); }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {
