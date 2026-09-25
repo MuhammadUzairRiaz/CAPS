@@ -230,6 +230,72 @@ unsigned background_rgb(Background b, unsigned custom) {
   return 0x0F1113;
 }
 
+std::vector<float> ambient_accessibility(const System& s, const std::vector<double>& radius, const std::vector<char>& show) {
+  const size_t n = s.atoms.size();
+  std::vector<float> acc(n, 1.f);
+  if (!n) return acc;
+  constexpr int kDirs = 32;
+  constexpr double kShell = 5.0;
+  static const std::vector<Vec3> dirs = [] {
+    std::vector<Vec3> d;
+    const double ga = M_PI * (3 - std::sqrt(5.0));
+    for (int k = 0; k < kDirs; ++k) {
+      const double z = 1 - (k + 0.5) * 2.0 / kDirs, r = std::sqrt(1 - z * z);
+      d.push_back({r * std::cos(ga * k), r * std::sin(ga * k), z});
+    }
+    return d;
+  }();
+  double rmax = 0.7;
+  Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
+  for (size_t i = 0; i < n; ++i) {
+    if (!show[i]) continue;
+    rmax = std::max(rmax, radius[i]);
+    for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], s.atoms[i].pos[k]); hi[k] = std::max(hi[k], s.atoms[i].pos[k]); }
+  }
+  if (lo[0] > hi[0]) return acc;
+  // a plain bin grid over the drawn atoms (the view shows no periodic images, so neither does the occlusion)
+  const double bin = kShell + 2 * rmax;
+  int nb[3];
+  for (int k = 0; k < 3; ++k) nb[k] = std::clamp(int((hi[k] - lo[k]) / bin) + 1, 1, 256);
+  std::vector<std::vector<uint32_t>> bins(size_t(nb[0]) * nb[1] * nb[2]);
+  auto bidx = [&](const Vec3& p, int k) { return std::clamp(int((p[k] - lo[k]) / bin), 0, nb[k] - 1); };
+  for (size_t i = 0; i < n; ++i)
+    if (show[i]) bins[(size_t(bidx(s.atoms[i].pos, 0)) * nb[1] + bidx(s.atoms[i].pos, 1)) * nb[2] + bidx(s.atoms[i].pos, 2)].push_back(uint32_t(i));
+  std::vector<uint32_t> near;
+  for (size_t i = 0; i < n; ++i) {
+    if (!show[i]) continue;
+    const Vec3 pi = s.atoms[i].pos;
+    const double ri = std::max(radius[i], 0.7);
+    near.clear();
+    const int b0 = bidx(pi, 0), b1 = bidx(pi, 1), b2 = bidx(pi, 2);
+    for (int x = std::max(0, b0 - 1); x <= std::min(nb[0] - 1, b0 + 1); ++x)
+      for (int y = std::max(0, b1 - 1); y <= std::min(nb[1] - 1, b1 + 1); ++y)
+        for (int z = std::max(0, b2 - 1); z <= std::min(nb[2] - 1, b2 + 1); ++z)
+          for (uint32_t j : bins[(size_t(x) * nb[1] + y) * nb[2] + z]) {
+            if (j == i) continue;
+            const Vec3 d = s.atoms[j].pos - pi;
+            const double lim = ri + kShell + std::max(radius[j], 0.7);
+            if (dot(d, d) < lim * lim) near.push_back(j);
+          }
+    int open = 0;
+    for (const Vec3& u : dirs) {
+      bool hit = false;
+      for (uint32_t j : near) {
+        const Vec3 d = s.atoms[j].pos - pi;
+        const double t = dot(d, u);
+        if (t <= 0) continue;
+        const double rj = std::max(radius[j], 0.7);
+        if (t > ri + kShell + rj) continue;
+        const double perp2 = dot(d, d) - t * t;
+        if (perp2 < rj * rj) { hit = true; break; }
+      }
+      if (!hit) ++open;
+    }
+    acc[i] = float(open) / kDirs;
+  }
+  return acc;
+}
+
 double view_scale(const System& s, const Camera& cam, const RenderOptions& opt) {
   std::vector<char> show(s.atoms.size(), 1);
   if (opt.style == Style::NoHydrogens || opt.style == Style::Backbone)
@@ -325,6 +391,23 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     if (!show[i]) continue;
     const double r = radius(i);
     sphere(B, px[i], py[i], pz[i], r * v.scale * pk[i], r, colour[i], int32_t(i));
+  }
+  // Ambient occlusion: each atom's pixels (and its half-bonds) darkened by how little open sky the atom sees.
+  if (opt.ambient_occlusion && n) {
+    double key = double(n) * 1e-3 + double(opt.style) * 7;
+    for (size_t i = 0; i < n; i += std::max<size_t>(1, n / 512)) key += s.atoms[i].pos[0] * 1.3 + s.atoms[i].pos[1] * 1.7 + s.atoms[i].pos[2] * 2.9;
+    if (ao_.size() != n || ao_key_ != key) {
+      std::vector<double> rad(n);
+      for (size_t i = 0; i < n; ++i) rad[i] = radius(i);
+      ao_ = ambient_accessibility(s, rad, show);
+      ao_key_ = key;
+    }
+    for (size_t k = 0; k < B.col.size(); ++k) {
+      const int32_t id = B.id[k];
+      if (id < 0 || size_t(id) >= n) continue;
+      const float f = 0.3f + 0.7f * ao_[size_t(id)];
+      B.col[k] = {B.col[k].r * f, B.col[k].g * f, B.col[k].b * f};
+    }
   }
   // Cell edges.
   if (opt.show_cell && s.cell.valid()) {

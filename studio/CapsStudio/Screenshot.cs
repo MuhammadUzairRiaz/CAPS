@@ -54,6 +54,13 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
                 Console.WriteLine(t.IsFaulted ? "figure export failed: " + t.Exception?.InnerException?.Message : "figure: " + t.Result);
             }
+            if (kv[0] == "render") { w.ViewModel.OpenRender(); for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
+            if (kv[0] == "renderout")   // renderout=PATH: render the image with its overlays
+            {
+                var t = w.ViewModel.RenderOut(_ => kv[1], false, CapsStudio.Views.FigureDrawing.SaveRenderPng);
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                Console.WriteLine(t.IsFaulted ? "render failed: " + t.Exception?.InnerException?.Message : $"render: {t.Result} image(s)");
+            }
             if (kv[0] == "focus") w.ViewModel.FocusOn(int.Parse(kv[1]));   // focus=N: keyboard-walk focus on atom N
             if (kv[0] == "walk")   // walk=keys: d(own) u(p) b(ond) ](next molecule) s(elect) m(easure)
                 foreach (var c in kv[1])

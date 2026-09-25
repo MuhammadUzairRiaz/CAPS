@@ -65,6 +65,8 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
+        RenderGuide.Vm = _vm;
+        _vm.RenderOverlayChanged += () => RenderGuide.InvalidateVisual();
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(MainViewModel.HasFocusAtom) && _vm.HasFocusAtom && !_focusTabShown)
@@ -547,6 +549,7 @@ public partial class MainWindow : Window
 
     private void RequestRender()
     {
+        if (_vm.IsRender) RenderGuide.InvalidateVisual();
         _requested++;
         if (!_busy) _ = RenderLoop();
     }
@@ -572,7 +575,7 @@ public partial class MainWindow : Window
                 if (_vm.Busy) { _rendered = ticket; break; }   // the core is busy with this document; keep the last image
                 var pw = (int)(w * _scaling);
                 var ph = (int)(h * _scaling);
-                var cam = _vm.Camera;
+                var cam = _vm.ViewCamera(w, h);
                 // Retina already gives 2 samples per point; supersample only on 1× screens.
                 var opt = field ? _vm.FieldViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2) : _vm.ViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2);
                 var buf = new byte[pw * ph * 4];
@@ -700,6 +703,34 @@ public partial class MainWindow : Window
     private void OnChecks(object? s, RoutedEventArgs e) => ViewModel.OpenChecks();
     private async void OnExportPng(object? s, RoutedEventArgs e) => await Export("png");
     private async void OnExportSvg(object? s, RoutedEventArgs e) => await Export("svg");
+    private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
+    private void OnRenderBack(object? s, RoutedEventArgs e) => _vm.SetModule(8);
+    private void OnRenderStop(object? s, RoutedEventArgs e) => _vm.StopRender();
+
+    private async void OnRenderImage(object? s, RoutedEventArgs e)
+    {
+        if (_vm.Document == null) return;
+        var f = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Render image", DefaultExtension = "png",
+            SuggestedFileName = $"{Path.GetFileNameWithoutExtension(_vm.Document.Path)}_frame{_vm.Frame}.png",
+            FileTypeChoices = [new FilePickerFileType("PNG") { Patterns = ["*.png"] }],
+        });
+        if (f?.TryGetLocalPath() is not { } path) return;
+        try { await _vm.RenderOut(_ => path, false, FigureDrawing.SaveRenderPng); }
+        catch (Exception ex) { _vm.Status = "Render failed: " + ex.Message; }
+    }
+
+    private async void OnRenderMovie(object? s, RoutedEventArgs e)
+    {
+        if (_vm.Document == null) return;
+        var dirs = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder for the frames", AllowMultiple = false });
+        if (dirs.Count == 0 || dirs[0].TryGetLocalPath() is not { } dir) return;
+        var stem = Path.GetFileNameWithoutExtension(_vm.Document.Path);
+        try { await _vm.RenderOut(fr => Path.Combine(dir, $"{stem}_{fr:D5}.png"), true, FigureDrawing.SaveRenderPng); }
+        catch (Exception ex) { _vm.Status = "Render failed: " + ex.Message; }
+    }
+
     private void OnFigurePage(object? s, RoutedEventArgs e)
     {
         _vm.SetViewAspect(ViewHost.Bounds.Width, ViewHost.Bounds.Height);

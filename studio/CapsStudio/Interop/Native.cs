@@ -22,6 +22,7 @@ public struct CapsRenderOpts
     public int Outlines, DepthCue, ShowCell;
     public int Highlight0, Highlight1, Highlight2, Highlight3;   // selected atoms, -1 unused
     public int Focus;           // atom index + 1 with the keyboard-focus ring, 0 none (ABI 18)
+    public int AmbientOcclusion;   // darken atoms by the open sky they see (ABI 19)
 }
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]

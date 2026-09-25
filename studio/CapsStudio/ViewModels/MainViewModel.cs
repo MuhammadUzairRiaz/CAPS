@@ -134,11 +134,11 @@ public sealed partial class MainViewModel : ObservableObject
     public int ColourIndex
     {
         get => _colour;
-        set { if (Set(ref _colour, value)) { Raise(nameof(ColourText)); RefreshLegend(); RenderRequested?.Invoke(); } }
+        set { if (Set(ref _colour, value)) { Raise(nameof(ColourText)); Raise(nameof(OvLegendNote)); Raise(nameof(FigLegendAvailable)); RefreshLegend(); RenderRequested?.Invoke(); } }
     }
 
     private string _legendLo = "", _legendHi = "";
-    public bool ShowLegend => _doc != null && _colour == 3;
+    public bool ShowLegend => _doc != null && _colour == 3 && _module != 19;
     public string LegendLo { get => _legendLo; private set => Set(ref _legendLo, value); }
     public string LegendHi { get => _legendHi; private set => Set(ref _legendHi, value); }
 
@@ -312,7 +312,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -344,6 +344,9 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(ShowEmpty));
         Raise(nameof(IsChecks));
         Raise(nameof(IsFigure));
+        Raise(nameof(IsRender));
+        Raise(nameof(ShowAnalysisPanel));
+        Raise(nameof(ShowLegend));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));
         RenderRequested?.Invoke();   // the Field page has its own view
@@ -1588,12 +1591,14 @@ public sealed partial class MainViewModel : ObservableObject
         Width = w, Height = h, Supersample = supersample,
         Background = _viewBackground,
         ColourBy = _colour, Style = _style,
-        Outlines = _outlines ? 1 : 0, DepthCue = _depthCue ? 1 : 0, ShowCell = _showCell ? 1 : 0,
+        Outlines = _outlines ? 1 : 0, ShowCell = _showCell ? 1 : 0,
         Highlight0 = _selection.Count > 0 ? _selection[0] : -1,
         Highlight1 = _selection.Count > 1 ? _selection[1] : -1,
         Highlight2 = _selection.Count > 2 ? _selection[2] : -1,
         Highlight3 = _selection.Count > 3 ? _selection[3] : -1,
         Focus = _focusAtom >= 0 ? _focusAtom + 1 : 0,
+        AmbientOcclusion = _module == 19 && _renderAo ? 1 : 0,
+        DepthCue = _module == 19 ? (_renderDepth ? 1 : 0) : (_depthCue ? 1 : 0),
     };
 
     /// <summary>The Field page's view: coloured by force-field type, ball and stick, the selected row's atom highlighted.</summary>
