@@ -1,0 +1,72 @@
+<!-- CAPS file checks (design/boards/VisProblems.dc.html): what each opened file holds, what was done, what to change. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ChecksPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Resources>
+    <DataTemplate x:Key="CheckItem" x:DataType="vm:FileCheckRow">
+      <Border Background="{DynamicResource Bg1B}" BorderBrush="{Binding Border}" BorderThickness="1" CornerRadius="8" Padding="12,11">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <v:Icon Kind="{Binding Icon}" Size="16" Foreground="{Binding Colour}" VerticalAlignment="Top" Margin="0,1,0,0" />
+          <StackPanel Grid.Column="1" Spacing="4">
+            <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Detail}" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" LineHeight="18" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="small" Content="{Binding ActionText}" IsVisible="{Binding HasAction}" VerticalAlignment="Top" Click="OnAction" Tag="{Binding}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </p:PageBase.Resources>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnExport">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export report" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Classes="primary" Content="Continue" Click="OnContinue" />
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="File checks" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Every opened file is checked; problems say what was done and what you can change" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding ChecksSummary}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+    </Border>
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="18" Margin="22,16">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+          <TextBlock Text="{Binding Title}" Classes="h3" VerticalAlignment="Center" />
+          <Border Classes="chip" Height="20" Padding="8,0"><TextBlock Text="checked on this file" FontSize="11" Foreground="{DynamicResource OkB}" VerticalAlignment="Center" /></Border>
+        </StackPanel>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding ChecksFine}" ItemTemplate="{StaticResource CheckItem}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+      <DockPanel Grid.Column="1">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+          <TextBlock Text="NEEDS A LOOK" Classes="h3" VerticalAlignment="Center" />
+          <Border Classes="chip" Height="20" Padding="8,0" IsVisible="{Binding HasChecksLook}"><TextBlock Text="warnings and errors" FontSize="11" Foreground="{DynamicResource WarnB}" VerticalAlignment="Center" /></Border>
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Bottom" Classes="dim" TextWrapping="Wrap" Margin="0,12,0,0" LineHeight="18"
+                   Text="Rules: data is never dropped silently; skipped lines are named; reading goes on where it can; one action per problem." />
+        <Panel>
+          <Border IsVisible="{Binding NoChecksLook}" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="8" Padding="14" VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <v:Icon Kind="check" Size="16" Foreground="{DynamicResource OkB}" />
+              <TextBlock Text="Nothing needs a look: the file reads cleanly." FontSize="12.5" />
+            </StackPanel>
+          </Border>
+          <ScrollViewer IsVisible="{Binding HasChecksLook}">
+            <ItemsControl ItemsSource="{Binding ChecksLook}" ItemTemplate="{StaticResource CheckItem}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </ScrollViewer>
+        </Panel>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -594,13 +594,16 @@
                 </Border>
                 <Border Classes="section" IsVisible="{Binding HasDocument}">
                   <StackPanel Spacing="9">
-                    <TextBlock Text="VALIDATION" Classes="h3" />
-                    <ItemsControl ItemsSource="{Binding Notes}">
+                    <DockPanel>
+                      <Button DockPanel.Dock="Right" Classes="link" Content="All checks…" Padding="0" FontSize="11.5" Click="OnChecks" />
+                      <TextBlock Text="VALIDATION" Classes="h3" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding FileChecks}">
                       <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="x:String">
-                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,2">
-                            <local:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" VerticalAlignment="Top" />
-                            <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" FontSize="12" />
+                        <DataTemplate x:DataType="vm:FileCheckRow">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,2" ToolTip.Tip="{Binding Detail}">
+                            <local:Icon Kind="{Binding Icon}" Size="15" Foreground="{Binding Colour}" VerticalAlignment="Top" />
+                            <TextBlock Grid.Column="1" Text="{Binding Title}" TextWrapping="Wrap" FontSize="12" />
                           </Grid>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
@@ -729,6 +732,8 @@
       <pages:NanoPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsNano}" />
       <!-- Blend builder (design/boards/BlendBuilder) -->
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
+      <!-- File checks (design/boards/VisProblems) -->
+      <pages:ChecksPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsChecks}" />
       <!-- Bench (design/boards/Bench) -->
       <pages:BenchPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBench}" />
       <!-- Jobs (design/boards/Jobs, FailedJob) -->

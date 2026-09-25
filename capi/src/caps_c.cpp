@@ -27,6 +27,7 @@
 #include "caps/render.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
+#include "caps/checks.hpp"
 #include "caps/crystal.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -2044,6 +2045,15 @@ extern "C" int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_
     report_out(t, report, cap);
     return 0;
   });
+}
+
+extern "C" int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap) {
+  try {
+    return report_out(caps::file_checks_json(caps::file_checks(d->traj)), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
 }
 
 extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {

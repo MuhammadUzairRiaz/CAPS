@@ -237,6 +237,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_embed")] public static extern IntPtr NanoEmbed([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_blend")] public static extern IntPtr GrowBlend([MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_file_checks")] public static extern int FileChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_insert_molecules")] public static extern int InsertMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, int count, double tolerance, ulong seed, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
@@ -402,6 +403,19 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Holds molecule `mol` in place in Relax (0: none).</summary>
     public void SetHeldMolecule(long mol) { lock (_lock) Native.SetHeldMolecule(_h, mol); }
     public long HeldMolecule() { lock (_lock) return Native.HeldMolecule(_h); }
+
+    /// <summary>The file checks of this document as JSON (caps_file_checks).</summary>
+    public string FileChecks()
+    {
+        lock (_lock)
+        {
+            var n = Native.FileChecks(_h, null, 0);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            var buf = new byte[Math.Max(1, n)];
+            Native.FileChecks(_h, buf, buf.Length);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+        }
+    }
 
     /// <summary>Inserts copies of a molecule (SMILES) into the free space of the current frame (caps_insert_molecules).</summary>
     public string InsertMolecules(string smiles, int count, double tolerance, ulong seed)
