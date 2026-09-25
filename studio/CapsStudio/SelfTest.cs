@@ -620,6 +620,24 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Select by query (SmartSelect): counted while typing, applied on Enter, errors in words, saved queries counted
+        {
+            vm.QueryOpen = true;
+            vm.QueryText = "smarts \"c1ccccc1\"";
+            var preview = vm.QueryInfo;
+            vm.ApplyQuery();
+            var selected = vm.SelectedCount;
+            vm.QueryText = "within 5 sel";
+            var bad = vm.QueryBad && vm.QueryInfo.Contains("of");
+            vm.QueryText = "stereo * and chain 1";
+            var stereo = vm.QueryInfo;
+            var savedCount = vm.SavedQueries.FirstOrDefault(q => q.Name == "Aromatic rings")?.Count;
+            Check(preview == "480 atoms · 80 rings" && selected == 480 && bad && savedCount == "480" && stereo.EndsWith("atoms"),
+                  $"query: {preview} → {selected} selected · bad {bad} · stereo in chain 1: {stereo} · saved {savedCount}");
+            vm.QueryOpen = false;
+            vm.ClearDocSelection();
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

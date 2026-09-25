@@ -629,7 +629,8 @@ int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
    added: [new atom indices]}. A Field assignment is cleared by any edit. caps_undo(d, 0) undoes, (d, 1) redoes;
    caps_history: {undo: [what…], redo: […]}.
    caps_select JSON {mode: "smarts" | "element" | "type" | "charge" {lo, hi} | "within" {distance} | "grow" {steps} |
-   "molecule" {atoms} | "indices" {atoms} | "expression" | "all" | "none", pattern, op: "replace" | "add" | "subtract" |
+   "molecule" {atoms} | "indices" {atoms} | "expression" | "query" (v20, query.hpp: smarts "…" and chain 1-4 …; the reply
+   adds rings) | "all" | "none", pattern, op: "replace" | "add" | "subtract" |
    "intersect" | "invert"} → {ok, error, count, matched}; the selection is ringed in the view. caps_selection:
    {count, indices}. caps_tacticity: {label, m, r, mm, mr, rr, centres, chains: [{centres, dyads}]}. */
 int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t cap);

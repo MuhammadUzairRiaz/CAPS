@@ -590,8 +590,10 @@ public partial class MainWindow : Window
             if (e.Key == Key.Z && e.KeyModifiers == cmd) { _vm.UndoEdit(false); e.Handled = true; return; }
             if (e.Key == Key.Z && e.KeyModifiers == (cmd | KeyModifiers.Shift)) { _vm.UndoEdit(true); e.Handled = true; return; }
             if (e.Key == Key.E && e.KeyModifiers == KeyModifiers.Shift) { OpenElementPicker(); e.Handled = true; return; }
+            if (e.Key == Key.F && e.KeyModifiers == cmd && _vm.HasDocument) { OpenQuery(); e.Handled = true; return; }
             if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasPicked) { _vm.DeletePicked(); e.Handled = true; return; }
         }
+        if (_vm.QueryOpen && e.Key == Key.Escape) { _vm.QueryOpen = false; ViewHost.Focus(); e.Handled = true; return; }
         if (_vm.UpdateOpen && e.Key == Key.Escape) { _vm.CloseUpdate(); e.Handled = true; return; }
         if (_vm.ImportOpen && e.Key == Key.Escape) { _vm.CloseImport(); e.Handled = true; return; }
         if (_vm.ExportDialogOpen && e.Key == Key.Escape) { _vm.CancelExport(); _vm.ExportDialogOpen = false; e.Handled = true; return; }
@@ -638,6 +640,24 @@ public partial class MainWindow : Window
     private void OnSnapshotDelete(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.DeleteSnapshot(r); }
     private void OnBranchRestore(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BranchRow r) _vm.RestoreBranch(r); }
     private void OnBranchDelete(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BranchRow r) _vm.DeleteBranch(r); }
+    /// <summary>⌘F: the query bar over the view, focused.</summary>
+    public void OpenQuery()
+    {
+        _vm.QueryOpen = true;
+        Dispatcher.UIThread.Post(() => { QueryBox.Focus(); QueryBox.SelectAll(); }, DispatcherPriority.Input);
+    }
+    private void OnQueryKey(object? s, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        _vm.ApplyQuery(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? "add" : "replace");
+        e.Handled = true;
+    }
+    private void OnQuerySelect(object? s, RoutedEventArgs e) => _vm.ApplyQuery();
+    private void OnQueryGroup(object? s, RoutedEventArgs e) => _vm.QueryAsGroup();
+    private void OnQuerySave(object? s, RoutedEventArgs e) => _vm.SaveQuery(QueryName.Text);
+    private void OnQueryClose(object? s, RoutedEventArgs e) => _vm.QueryOpen = false;
+    private void OnSavedQuery(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SavedQueryRow r) _vm.UseSavedQuery(r); }
+    private void OnSavedQueryDelete(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SavedQueryRow r) _vm.DeleteSavedQuery(r); }
     private void OnNoticeClose(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.DismissNotice(n); }
     private void OnNoticePrimary(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.NoticePrimary(n); }
     private void OnNoticeSecondary(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.NoticeSecondary(n); }

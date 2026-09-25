@@ -88,4 +88,6 @@ with tempfile.TemporaryDirectory() as tmp:
     check(n == 2 and abs(m - 0.5) < 0.05, "sweep: result pooled over seeds")
     t = caps.table([res], ["density", "tg", "c_inf"])
     check("—" in repr(t) and "<table" in t._repr_html_() and t.to_csv().startswith("condition,density"), "table")
+melt2 = caps.open(os.path.join(samples, "ps_melt.data"))
+check(melt2.query('smarts "c1ccccc1" and chain 1', op="preview") == 48 and melt2.query("element H") == 660, "query grammar")
 print("all python checks passed")

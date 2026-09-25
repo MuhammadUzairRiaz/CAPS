@@ -100,6 +100,8 @@ public sealed partial class MainViewModel
             Enabled = () => _doc != null, Run = ResetView });
         AddCommand(new PaletteCommand { Title = "Check for updates", Id = "app.update", Icon = "download", Section = "Settings",
             Keywords = "update new version release download changelog upgrade", Run = () => _ = CheckForUpdates() });
+        AddCommand(new PaletteCommand { Title = "Select by query", Id = "select.query", Icon = "search", Shortcut = "⌘F", Section = "Selection",
+            Keywords = "select query smarts element chain within ring stereo and or not find", Enabled = () => _doc != null, Run = () => { SetModule(8); QueryOpen = true; } });
         AddCommand(new PaletteCommand { Title = "Frame selection", Id = "view.frame", Icon = "cube", Shortcut = "F", Section = "View",
             Keywords = "focus fit zoom to selection centre camera fly", Enabled = () => _doc != null, Run = FrameSelection });
         AddCommand(new PaletteCommand { Title = "Reduce motion", Id = "settings.motion", Icon = "gear", Section = "Settings",

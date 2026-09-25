@@ -40,6 +40,7 @@ add_library(caps_core STATIC
   src/yaml.cpp
   src/recipe.cpp
   src/colourvision.cpp
+  src/query.cpp
   src/appearance.cpp
   src/trajectory.cpp
   src/torsion.cpp
