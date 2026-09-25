@@ -39,6 +39,7 @@
 #include "caps/trajectory.hpp"
 #include "caps/torsion.hpp"
 #include "caps/edit.hpp"
+#include "caps/interactions.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -115,6 +116,7 @@ struct caps_doc {
   std::vector<char> selection;                     // caps_select: the Studio's selection over the frame's atoms
   struct Snapshot { caps::System topology; std::vector<caps::Vec3> positions; std::string what; };
   std::vector<Snapshot> undo, redo;                // caps_edit history
+  std::vector<caps::Segment> checks;               // caps_interactions: H-bonds, contacts, clashes drawn in the view
 };
 
 namespace {
@@ -292,7 +294,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   if (!d->pstate && d->selection.size() == d->frame.atoms.size()) {   // the selection ringed (up to 50 000 atoms)
     for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
   }
-  if (!d->pstate) r.segments = d->overlay;
+  if (!d->pstate) { r.segments = d->overlay; r.segments.insert(r.segments.end(), d->checks.begin(), d->checks.end()); }
   if (!d->pstate && d->look.active) {
     const AppearanceState& L = d->look;
     if (L.style.size() == d->frame.atoms.size()) {
@@ -3528,3 +3530,73 @@ extern "C" int32_t caps_element_info(int32_t z, double* mass, double* covalent, 
   if (rgb) *rgb = caps::element_colour(z);
   return 0;
 }
+
+// ---------------------------------------------------------------- interactions and checks (v20)
+
+extern "C" int32_t caps_interactions(caps_doc* d, const char* options_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::InteractionOptions io;
+    io.hb_distance = o.num("hb_distance", 3.5);
+    io.hb_angle = o.num("hb_angle", 30);
+    io.contact_margin = o.num("contact_margin", 0.4);
+    io.clash_factor = o.num("clash_factor", 0.75);
+    auto flag = [&](const char* k, bool def) { return !o.has(k) ? def : o[k].kind() == caps::Json::Bool ? o[k].boolean() : o[k].number() != 0; };
+    const caps::System& f = d->frame;
+    const auto R = caps::find_interactions(f, io);
+    // the lines in the view
+    d->checks.clear();
+    auto seg = [&](uint32_t a, uint32_t b, unsigned rgb, double radius, int dashes) {
+      caps::Vec3 A = f.atoms[a].pos, B = f.atoms[b].pos;
+      if (f.cell.valid()) B = A + f.cell.minimum_image(B - A);
+      if (dashes <= 1) { caps::Segment sg; sg.a = A, sg.b = B, sg.rgb = rgb, sg.radius = radius; d->checks.push_back(sg); return; }
+      for (int k = 0; k < dashes; ++k) {
+        caps::Segment sg;
+        sg.a = A + (B - A) * (double(2 * k) / (2 * dashes - 1));
+        sg.b = A + (B - A) * (double(2 * k + 1) / (2 * dashes - 1));
+        sg.rgb = rgb, sg.radius = radius;
+        d->checks.push_back(sg);
+      }
+    };
+    const size_t cap_lines = 20000;
+    if (flag("show_hbonds", true)) for (const auto& h : R.hbonds) if (d->checks.size() < cap_lines) seg(h.hydrogen, h.acceptor, 0x6CC4D8, 0.07, 4);
+    if (flag("show_contacts", false)) for (const auto& c : R.contacts) if (d->checks.size() < cap_lines) seg(c.i, c.j, 0xF5A524, 0.05, 1);
+    if (flag("show_clashes", true)) for (const auto& c : R.clashes) if (d->checks.size() < cap_lines) seg(c.i, c.j, 0xFF7B72, 0.13, 1);
+    j["ok"] = true;
+    j["hbonds"] = double(R.n_hbonds), j["contacts"] = double(R.n_contacts), j["clashes"] = double(R.n_clashes);
+    j["molecules"] = double(R.molecules), j["net_charge"] = R.net_charge;
+    caps::Json hb = caps::Json::array();
+    for (size_t k = 0; k < R.hbonds.size() && k < 2000; ++k) {
+      caps::Json x = caps::Json::object();
+      x["donor"] = double(R.hbonds[k].donor), x["hydrogen"] = double(R.hbonds[k].hydrogen), x["acceptor"] = double(R.hbonds[k].acceptor);
+      x["distance"] = R.hbonds[k].distance, x["angle"] = R.hbonds[k].angle;
+      hb.push_back(x);
+    }
+    j["hbond_list"] = hb;
+    caps::Json cl = caps::Json::array();
+    for (size_t k = 0; k < R.clashes.size() && k < 2000; ++k) {
+      caps::Json x = caps::Json::object();
+      x["i"] = double(R.clashes[k].i), x["j"] = double(R.clashes[k].j), x["distance"] = R.clashes[k].distance;
+      cl.push_back(x);
+    }
+    j["clash_list"] = cl;
+    caps::Json issues = caps::Json::array();
+    for (const auto& is : R.issues) {
+      caps::Json x = caps::Json::object();
+      x["level"] = is.level, x["title"] = is.title, x["detail"] = is.detail, x["fix"] = is.fix;
+      caps::Json at = caps::Json::array();
+      for (uint32_t a : is.atoms) at.push_back(double(a));
+      x["atoms"] = at;
+      issues.push_back(x);
+    }
+    j["issues"] = issues;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" void caps_clear_checks(caps_doc* d) { d->checks.clear(); }

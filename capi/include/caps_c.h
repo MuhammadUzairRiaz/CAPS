@@ -551,6 +551,14 @@ int32_t caps_tacticity(caps_doc* d, char* json, int32_t cap);
 int32_t caps_element_number(const char* symbol);
 int32_t caps_element_info(int32_t z, double* mass, double* covalent, double* vdw, uint32_t* rgb);
 
+/* Interactions and checks (v20, design/boards/Interactions) of the current frame: options JSON {hb_distance (3.5 Å),
+   hb_angle (30°), contact_margin (0.4 Å), clash_factor (0.75), show_hbonds, show_contacts, show_clashes} →
+   {ok, error, hbonds, contacts, clashes, molecules, net_charge, hbond_list: [{donor, hydrogen, acceptor, distance,
+   angle}], clash_list: [{i, j, distance}], issues: [{level, title, detail, fix: "push_apart" | "wrap" | "add_h" | "",
+   atoms}]}; the H-bonds (dashed), contacts and clashes are drawn in the view until caps_clear_checks. */
+int32_t caps_interactions(caps_doc* d, const char* options_json, char* json, int32_t cap);
+void caps_clear_checks(caps_doc* d);
+
 #ifdef __cplusplus
 }
 #endif

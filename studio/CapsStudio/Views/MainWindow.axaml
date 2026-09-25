@@ -187,6 +187,10 @@
       <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+            <ToggleButton Classes="tool" IsChecked="{Binding InteractionsOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="Interactions &amp; checks (design/boards/Interactions): H-bonds, contacts, clashes and fixes">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="link" Size="18" VerticalAlignment="Center" /><TextBlock Text="Checks" VerticalAlignment="Center" /></StackPanel>
+            </ToggleButton>
             <ToggleButton Classes="tool" IsChecked="{Binding SelectionOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Selection &amp; stereo (design/boards/SelectionStereo): select by SMARTS, element, type, charge, distance; named sets; tacticity">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="search" Size="18" VerticalAlignment="Center" /><TextBlock Text="Select" VerticalAlignment="Center" /></StackPanel>
@@ -476,6 +480,11 @@
             <Border Classes="hud" Padding="10,4" Margin="14,48,14,14" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding LabelNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
               <TextBlock Text="{Binding LabelNote}" FontSize="12" Foreground="{DynamicResource WarnB}" />
             </Border>
+            <!-- Interactions legend (design/boards/Interactions) -->
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding ShowInteractionsPanel}">
+              <Border Classes="hud" Padding="10,4"><StackPanel Orientation="Horizontal" Spacing="6"><Line StartPoint="0,0" EndPoint="16,0" Stroke="{DynamicResource SelB}" StrokeThickness="2" StrokeDashArray="3,2" VerticalAlignment="Center" /><TextBlock Text="H-bond" FontSize="12" /></StackPanel></Border>
+              <Border Classes="hud" Padding="10,4"><StackPanel Orientation="Horizontal" Spacing="6"><Line StartPoint="0,0" EndPoint="16,0" Stroke="{DynamicResource ErrB}" StrokeThickness="2" VerticalAlignment="Center" /><TextBlock Text="clash" FontSize="12" /></StackPanel></Border>
+            </StackPanel>
             <!-- Tacticity strip (design/boards/SelectionStereo): dyads between the stereocentres of the first chain -->
             <Border Height="150" VerticalAlignment="Bottom" Padding="18,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
               <Border.IsVisible>
@@ -859,6 +868,70 @@
       <!-- Inspector -->
       <Border Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
         <Panel>
+        <!-- Interactions & checks (design/boards/Interactions) -->
+        <DockPanel IsVisible="{Binding ShowInteractionsPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead"><TextBlock Text="Interactions &amp; checks" Classes="h2" VerticalAlignment="Center" /></Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Click="OnIxExport"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="Export list" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Classes="primary" Click="OnIxFixAll"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="wand" Size="15" VerticalAlignment="Center" /><TextBlock Text="Fix all safe issues" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="HYDROGEN BONDS" Classes="h3" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Classes="chip" Background="#12303A"><TextBlock Text="{Binding HbChip}" Classes="mono" Foreground="{DynamicResource SelB}" /></Border>
+                    <Border Classes="chip"><TextBlock Text="{Binding IxMoleculesChip}" Foreground="{DynamicResource MutedB}" /></Border>
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="D···A max · Å" Classes="label" /><NumericUpDown Value="{Binding HbDistance}" Minimum="2" Maximum="5" Increment="0.1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="H–D···A max · °" Classes="label" /><NumericUpDown Value="{Binding HbAngle}" Minimum="5" Maximum="90" Increment="5" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <TextBlock Classes="dim" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" Text="Geometric criterion: Luzar &amp; Chandler, Nature 379, 55 (1996)" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="9">
+                  <TextBlock Text="CONTACTS" Classes="h3" />
+                  <CheckBox Classes="toggle" Content="Show close contacts &lt; sum of vdW − 0.4 Å" IsChecked="{Binding ShowContacts}" />
+                  <CheckBox Classes="toggle" Content="Show clashes &lt; 0.75 × sum of vdW" IsChecked="{Binding ShowClashes}" />
+                  <CheckBox Classes="toggle" Content="Update while editing and during playback" IsChecked="{Binding InteractionsLive}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="8">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Right" Classes="chip" Classes.err="{Binding IxHasErrors}"><TextBlock Text="{Binding IxErrorsChip}" Foreground="{DynamicResource MutedB}" /></Border>
+                    <TextBlock Text="VALIDATION" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <ItemsControl ItemsSource="{Binding CheckIssues}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CheckIssue">
+                        <Grid ColumnDefinitions="22,*,Auto" Margin="0,0,0,8">
+                          <local:Icon Kind="{Binding Icon}" Size="15" VerticalAlignment="Top" Margin="0,2,0,0" Classes.err="{Binding IsError}" Classes.warn="{Binding IsWarn}" Classes.ok="{Binding IsOk}" Classes="lvl" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="12.5" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Detail}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <Button Grid.Column="2" Classes="small link" Content="{Binding FixText}" IsVisible="{Binding HasFix}" Click="OnIxFix" Tag="{Binding}" VerticalAlignment="Top" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding IxError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding IxHasError}" />
+                  <TextBlock Text="{Binding IxStatus}" Classes="dim" FontSize="11.5" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Selection & stereo (design/boards/SelectionStereo) -->
         <DockPanel IsVisible="{Binding ShowSelectionPanel}">
           <Border DockPanel.Dock="Top" Classes="phead">
