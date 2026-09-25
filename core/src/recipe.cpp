@@ -425,6 +425,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     }
   }
   res.system = s;
+  res.field = ff;
+  res.forcefield = ff ? ffname : "";
   res.manifest.generator = by;
   return res;
 }

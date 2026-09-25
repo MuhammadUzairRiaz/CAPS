@@ -298,7 +298,7 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
     } else if (e == "grow.trials" || e == "grow.blend" || e == "interface.build" || e == "nano.embed") {
       const std::string chains = param(s, "chains"), dp = param(s, "DP").empty() ? param(s, "dp") : param(s, "DP");
       const std::string where = !param(s, "density").empty() ? " at an initial density of " + param(s, "density") : !param(s, "box").empty() ? " in a " + param(s, "box") + " cubic cell" : std::string();
-      t = (chains.empty() ? std::string("Polymer chains were") : chains + " chains" + (dp.empty() ? "" : " of " + dp + " repeat units") + " were") + " grown" +
+      t = (chains.empty() ? std::string("Polymer chains were") : chains + (chains == "1" ? " chain" : " chains") + (dp.empty() ? "" : " of " + dp + " repeat units") + (chains == "1" ? " was" : " were")) + " grown" +
           (e == "interface.build" ? " against the surface" : e == "nano.embed" ? " around the filler" : e == "grow.blend" ? " as a blend" : " in a periodic cell") + where +
           " with " + version + ", each unit placed from internal coordinates" + cite({"parsons2005"}) + " by choosing among trial torsions the one with the largest clearance from atoms already placed.";
       built = true;

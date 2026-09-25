@@ -18,10 +18,12 @@
 // Exit codes (the CLI's): 0 done · 2 the recipe or an input is wrong · 3 the force field lacks parameters · 4 a run failed.
 #pragma once
 #include <functional>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "caps/field.hpp"
 #include "caps/json.hpp"
 #include "caps/properties.hpp"
 #include "caps/provenance.hpp"
@@ -57,6 +59,8 @@ struct RecipeResult {
   std::vector<Property> properties;
   std::vector<std::string> files;
   Manifest manifest;
+  std::shared_ptr<const ForceField> field;   // the typed force field (null when nothing typed it)
+  std::string forcefield;                    // its name
 };
 
 // The stages the recipe will run, in order (checks the keys; throws RecipeError 2).
