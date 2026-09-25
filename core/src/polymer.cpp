@@ -557,7 +557,16 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   if (o.substrate)
     for (size_t i = 0; i < o.substrate->atoms.size(); ++i) cell.add(o.substrate->atoms[i].pos, o.substrate->atoms[i].element, -1, int(i));
   // a film: heights outside [z_lo, z_hi] count as contacts
-  auto region = [&](const Vec3& p) { return film ? std::min(p[2] - o.z_lo, o.z_hi - p[2]) : 1e9; };
+  const bool sphere = o.sphere_radius > 0;
+  const Vec3 sc{o.sphere_centre[0], o.sphere_centre[1], o.sphere_centre[2]};
+  auto region = [&](const Vec3& p) {
+    double m = film ? std::min(p[2] - o.z_lo, o.z_hi - p[2]) : 1e9;
+    if (sphere) {
+      const double d = norm(cell.mi(p - sc));
+      m = std::min(m, o.sphere_outside ? d - o.sphere_radius : o.sphere_radius - d);
+    }
+    return m;
+  };
   const bool gauche = o.curve;
   const int trials = std::max(4, o.trials);
   rep.worst_margin = 1e9;
@@ -568,7 +577,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       if (ch.gid[i] >= 0) cell.kill(ch.gid[i]);
     ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
-    const Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
+    Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
+    for (int tries = 0; sphere && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
+      s = {U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
     Vec3 u{Nd(rng), Nd(rng), Nd(rng)};
     u = unitv(u);
     Vec3 w{Nd(rng), Nd(rng), Nd(rng)};

@@ -112,7 +112,7 @@
                     <RadioButton Classes="morph" GroupName="bm" IsChecked="{Binding BlendSlabs}">
                       <StackPanel Spacing="3"><TextBlock Text="Two slabs" FontSize="12.5" /><TextBlock Text="pre-separated, for interfaces" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" /></StackPanel>
                     </RadioButton>
-                    <RadioButton Classes="morph" GroupName="bm" IsEnabled="False" ToolTip.Tip="A spherical growth region comes later" ToolTip.ShowOnDisabled="True">
+                    <RadioButton Classes="morph" GroupName="bm" IsChecked="{Binding BlendDroplet}" ToolTip.Tip="The component with the smallest share grows inside a sphere at the cell centre, the others around it">
                       <StackPanel Spacing="3"><TextBlock Text="Droplet" FontSize="12.5" /><TextBlock Text="minor phase as a sphere" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" /></StackPanel>
                     </RadioButton>
                   </UniformGrid>

@@ -64,7 +64,7 @@ int usage() {
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
-               "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs] -o OUT\n"
+               "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
@@ -104,7 +104,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
     }
   }
   if (cmd == "blend") {
-    // caps blend --components SMILES1,SMILES2[,…] [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs] -o OUT
+    // caps blend --components SMILES1,SMILES2[,…] [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT
     try {
       if (!o.count("-o") || !o.count("--components")) return usage();
       auto list = [](const std::string& t) {
@@ -369,6 +369,7 @@ int main(int argc, char** argv) {
       if (o.count("--density")) bo.density = std::stod(o["--density"]);
       if (o.count("--seed")) bo.grow.seed = std::stoull(o["--seed"]);
       if (o.count("--slabs")) bo.morphology = BlendMorphology::Slabs;
+      if (o.count("--droplet")) bo.morphology = BlendMorphology::Droplet;
       BlendReport br;
       const System s = grow_blend(comps, bo, &br);
       for (const auto& n : br.notes) std::printf("%s\n", n.c_str());

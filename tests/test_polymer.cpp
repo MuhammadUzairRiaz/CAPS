@@ -158,3 +158,28 @@ TEST(Polymer, BlendsOfTwoRubbers) {
     else EXPECT_GT(a.pos[2], half);
   }
 }
+
+TEST(Polymer, BlendDroplet) {
+  BlendComponent nr, ps;
+  nr.spec.units = {{"NR", "[*]C/C=C(C)\\C[*]"}};
+  nr.spec.dp = 8;
+  nr.weight = 0.8;
+  ps.spec.units = {{"PS", "*CC(*)c1ccccc1"}};
+  ps.spec.dp = 8;
+  ps.weight = 0.2;
+  BlendOptions o;
+  o.chains = 6;
+  o.morphology = BlendMorphology::Droplet;
+  BlendReport r;
+  const System s = grow_blend({nr, ps}, o, &r);
+  // the minor component (PS) sits inside the droplet at the centre, the rubber outside it
+  const Vec3 c = (s.cell.a + s.cell.b + s.cell.c) * 0.5;
+  double rin = 0, rout = 1e9;
+  for (const auto& a : s.atoms) {
+    if (a.element == 1) continue;
+    const double d = norm(s.cell.minimum_image(a.pos - c));
+    if (a.mol >= r.molecules[1].first && a.mol <= r.molecules[1].second) rin = std::max(rin, d);
+    else rout = std::min(rout, d);
+  }
+  EXPECT_LT(rin, rout + 0.5);
+}

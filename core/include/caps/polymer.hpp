@@ -89,7 +89,7 @@ System build_interface(const System& slab, const ChainSpec& spec, const Interfac
 // Polymer blends (tyre compounds: NR/BR, SBR/BR …): components grown one after another, each around the chains already
 // placed, in one periodic cell. Chain counts come from the weight fractions and each component's chain mass, scaled
 // so the first component has `chains` chains (or give a component's chains directly).
-enum class BlendMorphology { Mixed, Slabs };
+enum class BlendMorphology { Mixed, Slabs, Droplet };
 struct BlendComponent {
   ChainSpec spec;
   double weight = 1.0;       // weight fraction (any scale; normalised)
@@ -98,7 +98,9 @@ struct BlendComponent {
 struct BlendOptions {
   int chains = 8;            // chains of the first component when its count is not given
   double density = 0.5;      // growth density, g/cm³ (compress in Relax afterwards)
-  BlendMorphology morphology = BlendMorphology::Mixed;   // Slabs: component 1 in the lower half along z, 2 in the upper
+  // Slabs: component 1 in the lower half along z, 2 in the upper. Droplet: the component with the smallest weight
+  // share grown first inside a sphere of its volume at the cell centre, the others outside it
+  BlendMorphology morphology = BlendMorphology::Mixed;
   GrowOptions grow;          // seed, contact scale, progress …; auto_scale is on
 };
 struct BlendReport {

@@ -88,10 +88,21 @@ System grow_blend(const std::vector<BlendComponent>& comps, const BlendOptions& 
     const double a = std::cbrt(vol);
     L = {a, a, a};
   }
+  // droplet: the minor component first, inside a sphere holding its share of the volume
+  std::vector<size_t> order(comps.size());
+  for (size_t k = 0; k < order.size(); ++k) order[k] = k;
+  size_t minor = 0;
+  if (o.morphology == BlendMorphology::Droplet) {
+    for (size_t k = 1; k < comps.size(); ++k)
+      if (n[k] * mass[k] < n[minor] * mass[minor]) minor = k;
+    std::stable_partition(order.begin(), order.end(), [&](size_t k) { return k == minor; });
+  }
+  const double rdrop = std::cbrt(3 * n[minor] * mass[minor] / (o.density * 0.602214076) / (4 * 3.14159265358979));
   System s;
   bool first = true;
   int64_t mol_before = 0;
-  for (size_t k = 0; k < comps.size(); ++k) {
+  std::vector<std::pair<int64_t, int64_t>> mols(comps.size());
+  for (size_t k : order) {
     GrowOptions g = o.grow;
     g.cell = L;
     g.chains = n[k];
@@ -101,15 +112,26 @@ System grow_blend(const std::vector<BlendComponent>& comps, const BlendOptions& 
       g.z_lo = k == 0 ? 0.5 : L[2] / 2 + 0.5;
       g.z_hi = k == 0 ? L[2] / 2 - 0.5 : L[2] - 0.5;
     }
+    if (o.morphology == BlendMorphology::Droplet) {
+      g.sphere_radius = rdrop;
+      g.sphere_centre = {L[0] / 2, L[1] / 2, L[2] / 2};
+      g.sphere_outside = k != minor;
+    }
     GrowReport gr;
     s = grow_chains(comps[k].spec, g, &gr);
     int64_t top = 0;
     for (const auto& a : s.atoms) top = std::max(top, a.mol);
-    R.molecules.push_back({mol_before + 1, top});
+    mols[k] = {mol_before + 1, top};
     mol_before = top;
     for (const auto& note : gr.notes)
       if (note.find("contact scale") != std::string::npos) R.notes.push_back(comps[k].spec.units.empty() ? note : comps[k].spec.units[0].name + ": " + note);
     first = false;
+  }
+  R.molecules = mols;
+  if (o.morphology == BlendMorphology::Droplet) {
+    char d[160];
+    std::snprintf(d, sizeof d, "droplet of %s: radius %.1f Å at the cell centre", comps[minor].spec.units.empty() ? "the minor component" : comps[minor].spec.units[0].name.c_str(), rdrop);
+    R.notes.push_back(d);
   }
   R.chains = n;
   for (size_t k = 0; k < comps.size(); ++k) R.weight_fraction.push_back(n[k] * mass[k] / mtot);
@@ -123,7 +145,7 @@ System grow_blend(const std::vector<BlendComponent>& comps, const BlendOptions& 
   }
   char b[200];
   std::snprintf(b, sizeof b, "blend of %zu components, %s start · cell %.2f × %.2f × %.2f Å · %.3f g/cm³", comps.size(),
-                o.morphology == BlendMorphology::Slabs ? "two-slab" : "mixed", L[0], L[1], L[2], o.density);
+                o.morphology == BlendMorphology::Slabs ? "two-slab" : o.morphology == BlendMorphology::Droplet ? "droplet" : "mixed", L[0], L[1], L[2], o.density);
   R.notes.insert(R.notes.begin(), comp);
   R.notes.insert(R.notes.begin(), b);
   s.title = "CAPS blend: " + comp;
