@@ -235,6 +235,10 @@ ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& 
 int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std::string>& o) {
   RecipeOptions ro;
   ro.base_dir = std::filesystem::absolute(file).parent_path().string();
+  {
+    std::ifstream rf(file);
+    ro.sha256 = sha256_hex(std::string((std::istreambuf_iterator<char>(rf)), std::istreambuf_iterator<char>()));
+  }
   ro.out_dir = o.count("--out") ? o["--out"] : ".";
   if (o.count("--seed")) ro.seed = std::stoll(o["--seed"]);
   if (o.count("--threads")) ro.threads = std::stoi(o["--threads"]);

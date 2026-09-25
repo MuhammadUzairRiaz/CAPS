@@ -4817,6 +4817,56 @@ extern "C" int32_t caps_set_vision(caps_doc* d, int32_t vision, double severity)
 }
 
 // ---------------------------------------------------------------- recipes (design/boards/CommandLine, JupyterNotebook)
+extern "C" int32_t caps_yaml_to_json(const char* yaml, char* out, int32_t cap) {
+  try {
+    return report_out(caps::yaml_parse(yaml ? yaml : "").dump(0), out, cap);
+  } catch (const std::exception& e) {
+    caps::Json r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+    return report_out(r.dump(0), out, cap);
+  }
+}
+
+extern "C" int32_t caps_recipe_check(const char* recipe, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const std::string text = recipe ? recipe : "";
+  r["sha256"] = caps::sha256_hex(text);
+  try {
+    const auto t0 = text.find_first_not_of(" \t\r\n");
+    const caps::Json j = t0 != std::string::npos && text[t0] == '{' ? caps::Json::parse(text) : caps::yaml_parse(text);
+    const auto c = caps::check_recipe(j);
+    r["ok"] = c.code == 0;
+    r["code"] = double(c.code);
+    r["error"] = c.error;
+    r["name"] = j.is_object() ? j.text("name", "recipe") : std::string("recipe");
+    caps::Json st = caps::Json::array();
+    for (const auto& x : c.stages) {
+      caps::Json e = caps::Json::object();
+      e["name"] = x.name, e["summary"] = x.summary, e["ok"] = x.ok;
+      st.push_back(std::move(e));
+    }
+    r["stages"] = std::move(st);
+    r["protocol"] = c.protocol;
+    caps::Json sch = caps::Json::array();
+    for (const auto& g : c.schedule) {
+      caps::Json e = caps::Json::object();
+      e["label"] = g.label;
+      e["ensemble"] = std::string(g.ensemble == caps::Ensemble::NPT ? "NPT" : g.ensemble == caps::Ensemble::NVE ? "NVE" : "NVT");
+      e["ps"] = g.ps, e["t_start"] = g.t_start, e["t_end"] = g.t_end >= 0 ? g.t_end : g.t_start;
+      e["pressure_bar"] = g.ensemble == caps::Ensemble::NPT ? g.pressure * 1.01325 : 0.0;
+      sch.push_back(std::move(e));
+    }
+    r["schedule"] = std::move(sch);
+  } catch (const std::exception& e) {
+    r["ok"] = false;
+    r["code"] = 2.0;
+    r["error"] = std::string(e.what());
+    r["stages"] = caps::Json::array();
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
 extern "C" caps_doc* caps_recipe_run(const char* recipe, const char* options_json, caps_recipe_progress_fn progress, void* user, char* report, int32_t cap) {
   caps::Json rep = caps::Json::object();
   try {
@@ -4835,6 +4885,7 @@ extern "C" caps_doc* caps_recipe_run(const char* recipe, const char* options_jso
     ro.forcefield_dir = o.text("forcefield_dir", "");
     ro.seed = (long long)o.num("seed", -1);
     ro.threads = int(o.num("threads", 0));
+    ro.sha256 = caps::sha256_hex(text);
     if (progress)
       ro.progress = [&](const caps::RecipeEvent& e) {
         if (!progress(e.stage, e.stages, e.name.c_str(), e.status.c_str(), e.detail.c_str(), e.fraction, user)) throw caps::RecipeError(4, "cancelled");
