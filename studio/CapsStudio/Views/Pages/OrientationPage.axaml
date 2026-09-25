@@ -1,0 +1,93 @@
+<!-- CAPS Analyze › Orientation (design/boards/Orientation): nematic order from backbone chords, Herman's f, local
+     crystallinity, S per frame and along z, beside an estimator check on crystalline polyethylene. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.OrientationPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnExport" IsEnabled="{Binding Analyze.HasResults}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export CSV" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="primary" Click="OnRun" IsVisible="{Binding Analyze.NotWorking}" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run on trajectory" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding Analyze.Working}" />
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Orientation &amp; crystallinity" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Nematic order parameter from chord vectors, per frame or per region" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding OrStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </Border>
+    <ScrollViewer Margin="22,18">
+      <StackPanel Spacing="14">
+        <UniformGrid Columns="2">
+          <Border Classes="pcard" Margin="0,0,7,0">
+            <StackPanel Spacing="5">
+              <TextBlock Text="{Binding OrS.Label}" Classes="label" />
+              <TextBlock Text="{Binding OrS.Value}" Classes="mono" FontSize="30" />
+              <TextBlock Text="{Binding OrS.Caption}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" Margin="7,0,0,0">
+            <StackPanel Spacing="5">
+              <TextBlock Text="{Binding OrCheck.Label}" Classes="label" />
+              <TextBlock Text="{Binding OrCheck.Value}" Classes="mono" FontSize="30" />
+              <TextBlock Text="{Binding OrCheck.Caption}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </UniformGrid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="S per frame" FontSize="13.5" FontWeight="SemiBold" />
+              <Panel Height="200">
+                <v:LinePlot x:Name="PerFrame" XLabel="time (ps)" YLabel="S (chord vectors)" AutoRange="True" />
+                <TextBlock IsVisible="{Binding !OrHasFrames}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" TextAlignment="Center"
+                           Text="One frame: open a trajectory (a tensile run, a draw) to follow S frame by frame." />
+              </Panel>
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="P₂ along z" FontSize="13.5" FontWeight="SemiBold" />
+              <Panel Height="200">
+                <v:LinePlot x:Name="AlongZ" XLabel="z (Å)" YLabel="⟨P₂(cos θ_z)⟩" AutoRange="True" />
+                <TextBlock IsVisible="{Binding !OrHasZ}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Text="Needs a periodic cell" />
+              </Panel>
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Result" FontSize="13.5" FontWeight="SemiBold" />
+              <UniformGrid Columns="3">
+                <StackPanel Spacing="3" Margin="0,0,10,0"><TextBlock Text="{Binding OrHerman.Label}" Classes="label" /><TextBlock Text="{Binding OrHerman.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding OrHerman.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,10,0"><TextBlock Text="{Binding OrCryst.Label}" Classes="label" /><TextBlock Text="{Binding OrCryst.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding OrCryst.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="{Binding OrDirector.Label}" Classes="label" /><TextBlock Text="{Binding OrDirector.Value}" Classes="mono" FontSize="13" /><TextBlock Text="{Binding OrDirector.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+              </UniformGrid>
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Definitions" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+                <TextBlock Text="S" Classes="muted" FontSize="12" /><TextBlock Grid.Column="1" Text="λ max of Q" Classes="mono" FontSize="12" />
+                <TextBlock Grid.Row="1" Text="Q" Classes="muted" FontSize="12" /><TextBlock Grid.Row="1" Grid.Column="1" Text="⟨3/2 u u − 1/2 I⟩ over chord vectors u" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="2" Text="Chords" Classes="muted" FontSize="12" /><TextBlock Grid.Row="2" Grid.Column="1" Text="backbone atoms i → i+2, unit vectors" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="3" Text="Herman's f" Classes="muted" FontSize="12" /><TextBlock Grid.Row="3" Grid.Column="1" Text="⟨P₂(cos θ)⟩ against z, the draw direction of a tensile run along z" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="4" Text="Local crystallinity" Classes="muted" FontSize="12" /><TextBlock Grid.Row="4" Grid.Column="1" Text="fraction of chords with ≥ 8 neighbours (midpoints within 5 Å) aligned within 10°" FontSize="12" TextWrapping="Wrap" />
+              </Grid>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>

@@ -523,3 +523,28 @@ TEST(Charges, GasteigerReportByGroupAndChgFiles) {
   EXPECT_THROW(caps::read_charge_file(path, s.atoms.size()), std::runtime_error);
   std::filesystem::remove(path);
 }
+
+#include "caps/spacegroup.hpp"
+
+TEST(Orientation, PolyethyleneCrystalIsPerfectlyOrdered) {
+  // Bunn's orthorhombic PE, 3 × 4 × 8 cells: 24 chains bonded through the cell; the estimator must give S = 1 exactly
+  caps::CrystalSpec spec;
+  spec.space_group = "Pnam";
+  spec.a = 7.40, spec.b = 4.93, spec.c = 2.534;
+  spec.sites = {{"C1", 6, {0.0380, 0.0650, 0.25}}, {"H1", 1, {0.1848, 0.0466, 0.25}}, {"H2", 1, {0.0068, 0.2811, 0.25}}};
+  spec.supercell = {3, 4, 8};
+  const caps::System s = caps::build_crystal(spec);
+  caps::Trajectory t;
+  t.topology = s;
+  std::vector<caps::Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  t.positions.push_back(p);
+  t.cells.push_back(s.cell);
+  t.timesteps.push_back(0);
+  const auto props = caps::analyze(t, {"orientation"}, caps::AnalyzeOptions{});
+  ASSERT_EQ(props.size(), 1u);
+  EXPECT_NEAR(props[0].value, 1.0, 1e-9);
+  EXPECT_EQ(props[0].extra.at("chord vectors per frame"), 336.0);
+  EXPECT_NEAR(std::fabs(props[0].extra.at("director z")), 1.0, 1e-9);
+  EXPECT_NEAR(props[0].extra.at("local crystallinity (fraction)"), 1.0, 1e-9);
+}

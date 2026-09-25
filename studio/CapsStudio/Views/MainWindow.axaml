@@ -1846,6 +1846,7 @@
       <pages:DiffusionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDiffusion}" />
       <pages:ChargesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCharges}" />
       <pages:PeriodicPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPeriodic}" />
+      <pages:OrientationPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsOrientation}" />
       <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
       <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->

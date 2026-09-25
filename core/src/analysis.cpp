@@ -236,7 +236,38 @@ std::vector<std::vector<uint32_t>> backbones(const System& s, int min_atoms) {
   for (size_t i = 0; i < n; ++i)
     if (heavy[i]) members[mol[i]].push_back(uint32_t(i));
   std::vector<std::vector<uint32_t>> out;
-  for (const auto& m : members) {
+  // chains bonded through the cell (a crystal's infinite chains): a component of heavy atoms that is one long cycle
+  // (every atom with two heavy neighbours, at least 12 of them) is walked in order and cut once
+  std::vector<char> in_cycle(n, 0);
+  {
+    std::vector<char> seen(n, 0);
+    for (uint32_t i = 0; i < n; ++i) {
+      if (!heavy[i] || seen[i]) continue;
+      std::vector<uint32_t> comp{i};
+      seen[i] = 1;
+      for (size_t h = 0; h < comp.size(); ++h)
+        for (uint32_t w : nb[comp[h]])
+          if (heavy[w] && !seen[w]) { seen[w] = 1; comp.push_back(w); }
+      auto heavy_deg = [&](uint32_t a) { int k = 0; for (uint32_t w : nb[a]) k += heavy[w] ? 1 : 0; return k; };
+      if (comp.size() < 12 || !std::all_of(comp.begin(), comp.end(), [&](uint32_t a) { return heavy_deg(a) == 2; })) continue;
+      std::vector<uint32_t> path{comp[0]};
+      uint32_t prev = comp[0], cur = comp[0];
+      for (uint32_t w : nb[cur]) if (heavy[w]) { cur = w; break; }
+      while (cur != comp[0] && path.size() <= comp.size()) {
+        path.push_back(cur);
+        uint32_t next = cur;
+        for (uint32_t w : nb[cur]) if (heavy[w] && w != prev) { next = w; break; }
+        prev = cur;
+        cur = next;
+      }
+      if (path.size() != comp.size()) continue;
+      for (uint32_t a : path) in_cycle[a] = 1;
+      if (int(path.size()) >= min_atoms) out.push_back(std::move(path));
+    }
+  }
+  for (const auto& m0 : members) {
+    std::vector<uint32_t> m;
+    for (uint32_t a : m0) if (!in_cycle[a]) m.push_back(a);
     if (int(m.size()) < min_atoms) continue;
     // longest non-ring path over the molecule's non-ring components
     std::vector<uint32_t> best;
