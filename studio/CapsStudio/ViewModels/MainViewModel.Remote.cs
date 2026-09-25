@@ -147,6 +147,15 @@ public sealed partial class MainViewModel
         {
             HostIdle = true;
             Raise(nameof(HostsStatus));
+            if (row.State == "unreachable")
+                Notify(new Notice
+                {
+                    Key = "host." + h.Name, Severity = "warning", Icon = "server", Title = $"{(h.Name.Length > 0 ? h.Name : h.Hostname)} unreachable",
+                    Body = $"{HostTestText}. Local runs are unaffected; jobs already on the host keep running there.",
+                    Primary = "Retry now", OnPrimary = () => _ = TestHost(),
+                    Secondary = "Details", OnSecondary = () => { SettingsTab = 3; SetModule(10); },
+                });
+            else Dismiss("host." + h.Name);
         }
     }
 

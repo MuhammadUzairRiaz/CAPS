@@ -211,5 +211,14 @@ public sealed partial class MainViewModel
         }
         if (_impChecks) OpenChecks();
         Status = $"Imported {Path.GetFileName(path)} · {ImportSummary}";
+        var sum = doc.Summary();
+        if (_impBonds == 0 && sum.BondsFromFile == 0 && sum.Bonds > 0)
+            Notify(new Notice
+            {
+                Key = "import.bonds", Severity = "check", Icon = "link", Title = "Bonds were inferred",
+                Body = $"{Path.GetFileName(path)} had no bond records. {sum.Bonds:N0} bonds were perceived from covalent radii (tolerance {_impTol.ToString(CultureInfo.InvariantCulture)} Å); review them before typing.",
+                Primary = "Review bonds", OnPrimary = OpenChecks,
+                Secondary = "Undo import", OnSecondary = CloseDocument,
+            });
     }
 }

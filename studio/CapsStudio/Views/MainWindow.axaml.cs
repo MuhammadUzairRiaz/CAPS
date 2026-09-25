@@ -629,6 +629,9 @@ public partial class MainWindow : Window
 
     private void OnResetView(object? s, RoutedEventArgs e) => _vm.ResetView();
     private void OnFrameSelection(object? s, RoutedEventArgs e) => _vm.FrameSelection();
+    private void OnNoticeClose(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.DismissNotice(n); }
+    private void OnNoticePrimary(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.NoticePrimary(n); }
+    private void OnNoticeSecondary(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.NoticeSecondary(n); }
     private void OnViewTop(object? s, RoutedEventArgs e) => _vm.SetView(0, Math.PI / 2);
     private void OnViewFront(object? s, RoutedEventArgs e) => _vm.SetView(0, 0);
     private void OnViewSide(object? s, RoutedEventArgs e) => _vm.SetView(Math.PI / 2, 0);

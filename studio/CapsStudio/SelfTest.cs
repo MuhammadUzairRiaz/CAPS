@@ -624,6 +624,10 @@ internal static class SelfTest
             vm.ImportChecks = false;
             vm.ConfirmImport().GetAwaiter().GetResult();
             var si = vm.Document!.Summary();
+            var bondNotice = vm.Notices.FirstOrDefault(n => n.Key == "import.bonds");
+            Check(bondNotice != null && bondNotice.Severity == "check" && bondNotice.Body.Contains("1,370 bonds") && bondNotice.Primary == "Review bonds",
+                  $"system state: {bondNotice?.Title} · {bondNotice?.Body}");
+            vm.Dismiss("import.bonds");
             Check(perceived == "1,370 bonds · 10 molecules · 480 aromatic" && none.StartsWith("0 bonds") && fragOk && !vm.ImportOpen && si.Bonds == 1370 && si.Molecules == 10 && si.CellValid != 0,
                   $"import: {perceived} · none: {none} · document {si.Atoms} atoms {si.Bonds} bonds {si.Molecules} molecules {vm.ImportError}");
         }
