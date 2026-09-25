@@ -336,6 +336,10 @@ internal static class SelfTest
         vm.BuildSurface().GetAwaiter().GetResult();
         var iface = vm.Document?.Summary();
         Check(iface is { } isum && isum.Molecules > 1 && vm.Title.Contains("film"), $"interface: {vm.Title} · {iface?.Atoms} atoms · {vm.SurfError} {vm.Status}");
+        Check(vm.HoldOn && !vm.RelaxCompress, $"interface: the surface is held ({vm.HoldText}), no compression");
+        vm.RelaxFtolD = 5;
+        vm.Relax().GetAwaiter().GetResult();
+        Check(vm.RelaxLog.Contains("UFF"), "interface relaxed with UFF, the surface held: " + vm.RelaxLog.Split('\n')[0]);
 
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),

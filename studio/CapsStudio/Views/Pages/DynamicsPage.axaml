@@ -129,6 +129,11 @@
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdFrameEveryD}" Minimum="1" Increment="100" FormatString="0" />
                   <ComboBox Grid.Row="1" Grid.Column="2" SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="{Binding ComputeText}" /></ComboBox>
                 </Grid>
+                <Grid ColumnDefinitions="*,Auto,70" ColumnSpacing="10" IsEnabled="{Binding !MdRunning}">
+                  <CheckBox Classes="toggle" Content="Hold a molecule in place" IsChecked="{Binding HoldOn}" ToolTip.Tip="No force, no velocity, not in the temperature (an interface's surface is molecule 1)" />
+                  <TextBlock Grid.Column="1" Text="molecule" Classes="dim" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="2" Value="{Binding HoldPick}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+                </Grid>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsEnabled="{Binding !MdRunning}">
                   <CheckBox Classes="toggle" Content="Draw new velocities" IsChecked="{Binding MdNewVelocities}" />
                   <NumericUpDown Grid.Column="1" Width="110" Value="{Binding MdSeedD}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="Seed" />

@@ -4,6 +4,7 @@
 #include <map>
 
 #include "caps/crystal.hpp"
+#include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "caps/polymer.hpp"
@@ -132,4 +133,41 @@ TEST(Crystal, RubberFilmOnSilicaAndRelaxWithTheSurfaceHeld) {
   for (size_t i = 0; i < s.atoms.size(); ++i)
     if (ro.fixed[i]) moved = std::max(moved, norm(r.atoms[i].pos - s.atoms[i].pos));
   EXPECT_LT(moved, 1e-12);
+}
+
+TEST(Crystal, DynamicsHoldsTheSurface) {
+  SlabOptions so;
+  so.layers = 1;
+  so.na = 2;
+  so.passivate = true;
+  const System slab = cleave(read_cif(kCrystals + "alpha-quartz.cif"), so);
+  ChainSpec spec;
+  spec.units = {{"butadiene", "*C/C=C\\C*"}};
+  spec.dp = 5;
+  InterfaceOptions io;
+  io.film = 12;
+  io.density = 0.5;
+  System s = build_interface(slab, spec, io);
+  DynamicsOptions d;
+  d.field = std::make_shared<ForceField>(assign_uff(s));
+  d.fixed.assign(s.atoms.size(), 0);
+  size_t nh = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) nh += (d.fixed[i] = s.atoms[i].mol == 1);
+  d.steps = 50;
+  d.dt = 0.5;
+  d.thermostat = Thermostat::Langevin;
+  d.frame_every = 0;
+  const System s0 = s;
+  DynamicsReport rep;
+  run_dynamics(s, d, &rep);
+  double moved_held = 0, moved_free = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    const double dd = norm(s.atoms[i].pos - s0.atoms[i].pos);
+    if (d.fixed[i]) moved_held = std::max(moved_held, dd);
+    else moved_free = std::max(moved_free, dd);
+  }
+  EXPECT_EQ(moved_held, 0.0);
+  EXPECT_GT(moved_free, 0.01);
+  EXPECT_GT(nh, 0u);
+  EXPECT_NEAR(rep.thermo.front().temperature, 300.0, 1.0);   // drawn over the free atoms only
 }
