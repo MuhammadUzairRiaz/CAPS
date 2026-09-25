@@ -592,6 +592,7 @@ public partial class MainWindow : Window
             if (e.Key == Key.E && e.KeyModifiers == KeyModifiers.Shift) { OpenElementPicker(); e.Handled = true; return; }
             if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasPicked) { _vm.DeletePicked(); e.Handled = true; return; }
         }
+        if (_vm.UpdateOpen && e.Key == Key.Escape) { _vm.CloseUpdate(); e.Handled = true; return; }
         if (_vm.ImportOpen && e.Key == Key.Escape) { _vm.CloseImport(); e.Handled = true; return; }
         if (_vm.ExportDialogOpen && e.Key == Key.Escape) { _vm.CancelExport(); _vm.ExportDialogOpen = false; e.Handled = true; return; }
         if (e.Key == Key.E && e.KeyModifiers == (OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) && _vm.HasDocument) { _vm.OpenExportDialog(); e.Handled = true; return; }

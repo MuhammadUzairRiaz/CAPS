@@ -326,6 +326,15 @@
               <TextBlock Grid.Row="3" Text="Samples" />
               <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SamplesPath}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
             </Grid>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Updates" Classes="h2" />
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Classes="small" Content="Check for updates" Click="OnCheckUpdates" IsEnabled="{Binding !UpdateChecking}" />
+                <TextBlock Text="{Binding UpdateText}" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
+                         Text="CAPS looks for a new release only when you ask (the project's GitHub releases); it never installs anything by itself." />
+            </StackPanel>
           </StackPanel>
         </Panel>
       </ScrollViewer>

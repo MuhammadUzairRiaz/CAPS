@@ -1,0 +1,71 @@
+<!-- Update available (design/boards/UpdateDialog): the release notes of a newer CAPS, changes that can alter results
+     first; Later, the full changelog, or the release page to download it. Nothing installs itself. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.UpdateDialog" x:DataType="vm:MainViewModel">
+  <p:PageBase.Styles>
+    <Style Selector="Border.alters"><Setter Property="Background" Value="{DynamicResource WarnBgB}" /><Setter Property="BorderBrush" Value="{DynamicResource WarnB}" /></Style>
+  </p:PageBase.Styles>
+  <Panel>
+    <Border Background="#B307080A" PointerPressed="OnBackdrop" />
+    <Border Width="560" MaxHeight="640" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}"
+            HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True" BoxShadow="0 20 60 0 #60000000">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="22,18,22,12">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="tool" Click="OnLater" ToolTip.Tip="Close (Esc)" VerticalAlignment="Top"><v:Icon Kind="close" Size="16" /></Button>
+            <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Bg3B}" Margin="0,0,14,0" VerticalAlignment="Top">
+              <v:Icon Kind="download" Size="18" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Spacing="3">
+              <TextBlock Text="{Binding UpdateTitle}" FontSize="17" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding UpdateSubtitle}" Classes="muted" FontSize="12.5" />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="22,14" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+              <Button Content="Later" Click="OnLater" />
+              <Button Content="Full changelog" Click="OnChangelog" />
+              <Button Classes="primary" Click="OnDownload">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Download" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+            <TextBlock />
+          </DockPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel Margin="22,4,22,16" Spacing="14">
+            <ItemsControl ItemsSource="{Binding UpdateSections}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:UpdateSection">
+                  <Border Classes.alters="{Binding AltersResults}" BorderThickness="1" CornerRadius="8" Padding="14,10" BorderBrush="{DynamicResource LineB}">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="{Binding Title}" Classes="h2" />
+                      <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="x:String">
+                            <Grid ColumnDefinitions="14,*" Margin="0,2">
+                              <TextBlock Text="·" Foreground="{DynamicResource MutedB}" />
+                              <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Padding="14,10" CornerRadius="8" Background="{DynamicResource Bg2B}">
+              <TextBlock TextWrapping="Wrap" FontSize="12" LineHeight="18" Foreground="{DynamicResource MutedB}"
+                         Text="Every saved structure carries its provenance, including the CAPS version and engine settings. After updating, re-run a project and compare the two manifests side by side in Jobs › Provenance before quoting new numbers." />
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Panel>
+</p:PageBase>
