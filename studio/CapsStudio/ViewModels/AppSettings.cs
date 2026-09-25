@@ -28,6 +28,7 @@ public sealed class AppSettings
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
     public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;
     public List<MyFragment> MyFragments { get; set; } = new();   // the fragment library's "My fragments"
+    public List<SavedQueryData> SavedQueries { get; set; } = SavedQueryData.Defaults();   // Select by query (SmartSelect)
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
@@ -98,4 +99,20 @@ public sealed class MyFragment
 {
     public string Name { get; set; } = "";
     public string Smiles { get; set; } = "";
+}
+
+/// <summary>A named selection query (design/boards/SmartSelect).</summary>
+public sealed class SavedQueryData
+{
+    public string Name { get; set; } = "";
+    public string Query { get; set; } = "";
+    public static List<SavedQueryData> Defaults() =>
+    [
+        new() { Name = "Aromatic rings", Query = "smarts \"c1ccccc1\"" },
+        new() { Name = "Backbone CH₂", Query = "smarts \"[CH2;!R]\"" },
+        new() { Name = "Stereo centres", Query = "stereo *" },
+        new() { Name = "Hydrogens", Query = "element H" },
+        new() { Name = "Near ring 1", Query = "within 5 of ring 1" },
+        new() { Name = "… heavy only", Query = "within 5 of ring 1 and not element H" },
+    ];
 }

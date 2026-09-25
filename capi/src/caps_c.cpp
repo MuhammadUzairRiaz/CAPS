@@ -46,6 +46,7 @@
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/colourvision.hpp"
+#include "caps/query.hpp"
 #include "caps/yaml.hpp"
 #include "caps/voids.hpp"
 #include "caps/kremer_grest.hpp"
@@ -3876,6 +3877,10 @@ extern "C" int32_t caps_select(caps_doc* d, const char* json, char* out, int32_t
       for (size_t i = 0; i < n; ++i) m[i] = want.count(mol[i]) ? 1 : 0;
     } else if (mode == "indices") {
       for (uint32_t a : atoms_of(d, j)) m[a] = 1;
+    } else if (mode == "query") {
+      const auto q = caps::select_query(s, j.text("pattern"), d->selection);
+      m = q.atoms;
+      r["rings"] = double(q.rings);
     } else if (mode == "expression") {
       const caps::PipelineState st = caps::run_pipeline(s, caps::Pipeline{});
       const auto v = caps::evaluate_expression(st, j.text("pattern"));
@@ -3885,6 +3890,12 @@ extern "C" int32_t caps_select(caps_doc* d, const char* json, char* out, int32_t
     }
     const std::string op = j.text("op", "replace");
     auto& sel = d->selection;
+    if (op == "preview") {   // count only; the selection stays as it is
+      r["ok"] = true;
+      r["count"] = double(std::count(m.begin(), m.end(), 1));
+      r["matched"] = r["count"];
+      return report_out(r.dump(0), out, cap);
+    }
     for (size_t i = 0; i < n; ++i) {
       if (op == "replace" || mode == "within" || mode == "grow") sel[i] = m[i];
       else if (op == "add") sel[i] = sel[i] || m[i];

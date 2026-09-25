@@ -280,6 +280,13 @@ internal static class Screenshot
                 while (t is { IsCompleted: false }) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "query")   // query=TEXT: the ⌘F query bar with that query, applied
+            {
+                w.ViewModel.QueryOpen = true;
+                w.ViewModel.QueryText = kv[1];
+                w.ViewModel.ApplyQuery();
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "vision") w.ViewModel.OpenColourVision();                    // vision=1: Settings › Colour vision
             if (kv[0] == "cvd") w.ViewModel.VisionPreview = int.Parse(kv[1]);          // cvd=0..3: the view as seen with a deficiency
             if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested
