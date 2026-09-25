@@ -18,12 +18,12 @@ public sealed partial class MainViewModel
         NanoPreview();
     }
 
-    // 0 sheet, 1 nanotube, 2 particle
+    // 0 sheet, 1 nanotube, 2 particle, 3 pore
     private int _nanoKind = 1;
     public int NanoKind
     {
         get => _nanoKind;
-        set { if (Set(ref _nanoKind, value)) { RaiseNano(); NanoPreview(); } }
+        set { if (Set(ref _nanoKind, value)) { if (value == 3) NanoMatrix = false; RaisePore(); NanoPreview(); } }
     }
     public bool NanoIsSheet => _nanoKind == 0;
     public bool NanoIsTube => _nanoKind == 1;
@@ -95,14 +95,15 @@ public sealed partial class MainViewModel
 
     public string NanoTitle => _nanoKind switch
     {
+        3 => PoreTitle,
         0 => $"Graphene · {_sheetLayers} layer{(_sheetLayers > 1 ? "s" : "")}",
         1 => $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")} · d = {TubeGeometry()[0]:F2} Å",
         _ => $"{(_particleCrystal < Crystals.Count ? Crystals[_particleCrystal].Name : "crystal")} {ParticleShapes[_particleShape].ToLowerInvariant()} · r = {_particleRadius:0.#} Å",
     };
-    public string NanoAxisText => _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake")
+    public string NanoAxisText => _nanoKind == 3 ? (_poreType == 0 ? (_poreVacuum ? "vacuum above the walls" : "periodic in x, y, z") : "periodic in x, y, z") : _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake")
         : _particleShape == 4 ? "fibre · periodic along z" : "cut from the crystal";
-    public string NanoBuildText => _nanoMatrix ? "Build composite" : _nanoKind switch { 0 => "Build sheet", 1 => "Build nanotube", _ => "Build particle" };
-    public string NanoBuildIcon => _nanoKind == 2 ? "atom" : _nanoKind == 0 ? "hex" : "layers";
+    public string NanoBuildText => _nanoMatrix ? "Build composite" : _nanoKind switch { 0 => "Build sheet", 1 => "Build nanotube", 3 => "Build pore", _ => "Build particle" };
+    public string NanoBuildIcon => _nanoKind switch { 2 => "atom", 0 => "hex", 3 => "ring", _ => "layers" };
 
     private void RaiseNano()
     {
@@ -113,6 +114,7 @@ public sealed partial class MainViewModel
 
     private string NanoOptions()
     {
+        if (_nanoKind == 3) return PoreOptions();
         var o = new JsonObject { ["kind"] = _nanoKind switch { 0 => "sheet", 1 => "tube", _ => "particle" }, ["periodic"] = _nanoPeriodic ? 1 : 0 };
         switch (_nanoKind)
         {
@@ -151,11 +153,12 @@ public sealed partial class MainViewModel
         var ticket = ++_nanoTicket;
         var opts = NanoOptions();
         var title = NanoTitle;
+        var pore = _nanoKind == 3;
         Task.Run(() =>
         {
             try
             {
-                var (d, r) = CapsDocument.NanoBuild(opts, title);
+                var (d, r) = pore ? CapsDocument.PoreBuild(opts, title) : CapsDocument.NanoBuild(opts, title);
                 return (Doc: (CapsDocument?)d, Report: r, Error: (string?)null);
             }
             catch (Exception e) { return (Doc: (CapsDocument?)null, Report: "", Error: (string?)e.Message); }
@@ -168,7 +171,7 @@ public sealed partial class MainViewModel
             var old = _nanoDoc;
             NanoDoc = doc;
             old?.Dispose();
-            NanoLog = rep;
+            NanoLog = pore ? PoreReportText(rep) : rep;
             var s = doc.Summary();
             NanoSummary = string.Format(CultureInfo.InvariantCulture, "{0:N0} atoms · {1:N0} bonds", s.Atoms, s.Bonds);
         }));
@@ -183,7 +186,17 @@ public sealed partial class MainViewModel
         var title = NanoTitle;
         try
         {
-            if (!_nanoMatrix)
+            if (_nanoKind == 3)
+            {
+                var (doc, rep) = await Task.Run(() => CapsDocument.PoreBuild(opts, title));
+                Show(doc, title);
+                NanoLog = PoreReportText(rep);
+                HoldPick = 1;
+                HoldOn = true;   // the walls stay where they are
+                RelaxCompress = false;
+                Status = "Pore built · the walls (molecule 1) are held in Relax and Dynamics";
+            }
+            else if (!_nanoMatrix)
             {
                 var (doc, rep) = await Task.Run(() => CapsDocument.NanoBuild(opts, title));
                 Show(doc, title);

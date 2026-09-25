@@ -318,6 +318,15 @@ internal static class Screenshot
                 }
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "pore")   // pore=slit|cylinder|framework: the nanostructure builder on a pore
+            {
+                var vm = w.ViewModel;
+                vm.OpenNano();
+                vm.NanoKind = 3;
+                vm.PoreType = kv[1] switch { "cylinder" => 1, "framework" => 2, _ => 0 };
+                if (kv[1] == "cylinder") { vm.PoreCrystal = Math.Max(0, vm.Crystals.ToList().FindIndex(c => c.Name.Contains("quartz", StringComparison.OrdinalIgnoreCase))); vm.PoreWidth = 14; vm.PoreFluidIndex = 2; vm.PoreCount = 20; }
+                for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

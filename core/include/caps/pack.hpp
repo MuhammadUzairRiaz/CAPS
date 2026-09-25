@@ -87,7 +87,8 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
 // Inserts `count` copies of `guest` (one molecule) into the free space of a periodic structure, which stays where it is
 // (curatives, sulfur donors, solvent into a polymer cell). The host keeps its molecules, bonds and bond orders; the
 // guests are numbered after them. Uses o.tolerance, o.seed and the optimisation settings; the cell is the host's.
-System insert_molecules(const System& host, const System& guest, int count, const PackOptions& o, PackReport* report = nullptr);
+System insert_molecules(const System& host, const System& guest, int count, const PackOptions& o, PackReport* report = nullptr,
+                        const std::vector<Region>& regions = {});   // every guest atom must satisfy these (a pore)
 
 // Smallest distance between atoms of different molecules (minimum image when the cell is periodic) and the number of
 // such pairs closer than `tolerance`. Uses a cell list.

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using CapsStudio.Interop;
 using CapsStudio.ViewModels;
 
 namespace CapsStudio.Views.Pages;
@@ -14,7 +15,13 @@ public partial class NanoPage : PageBase
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not MainViewModel vm) return;
-            vm.NanoViewChanged += () => { preview.Document = vm.NanoDoc; preview.Reset(); };
+            vm.NanoViewChanged += () =>
+            {
+                preview.Document = vm.NanoDoc;
+                preview.Reset();
+                // a pore from the side: the walls horizontal, z up (screen up is y, so pitch towards −90°)
+                if (vm.NanoIsPore && vm.PoreIsSlit) preview.Camera = new CapsCamera { Yaw = 0.35, Pitch = -1.22, Zoom = 1.0 };
+            };
         };
     }
 
