@@ -845,7 +845,17 @@ PullResult run_pull(System& s, const PullOptions& o) {
   R.area = norm(cross(s.cell.a, s.cell.b));
   // a film between the surface and the surface's periodic image slides on (or leaves) two interfaces
   int faces = 1;
-  {
+  const bool fibre = !o.normal && o.axis == 2;
+  if (fibre) {   // pull-out along a fibre: the interface is its side, 2π R L (R: the outermost held atoms from the axis)
+    double cx = 0, cy = 0;
+    for (size_t i = 0; i < n; ++i)
+      if (held[i]) cx += s.atoms[i].pos[0], cy += s.atoms[i].pos[1];
+    cx /= double(nh), cy /= double(nh);
+    double rmax = 0;
+    for (size_t i = 0; i < n; ++i)
+      if (held[i]) rmax = std::max(rmax, std::hypot(s.atoms[i].pos[0] - cx, s.atoms[i].pos[1] - cy));
+    R.area = 2 * 3.14159265358979 * rmax * norm(s.cell.c);
+  } else {
     const double Lz = std::fabs(dot(s.cell.c, cross(s.cell.a, s.cell.b))) / R.area;
     auto h = [&](const Vec3& r) { double f = s.cell.to_fractional(r)[2]; return (f - std::floor(f)) * Lz; };
     double stop = -1e300, sbot = 1e300, ftop = -1e300;
@@ -884,7 +894,7 @@ PullResult run_pull(System& s, const PullOptions& o) {
     d.new_velocities = false;
   }
   d.pull_group = group;
-  d.pull_dir = o.normal ? Vec3{0, 0, 1} : Vec3{1, 0, 0};
+  d.pull_dir = o.normal ? Vec3{0, 0, 1} : o.axis == 1 ? Vec3{0, 1, 0} : o.axis == 2 ? Vec3{0, 0, 1} : Vec3{1, 0, 0};
   d.pull_k = o.spring;
   d.pull_rate = o.rate;
   d.steps = std::max<int64_t>(1, std::llround(o.distance / o.rate * 1000 / o.dt));
@@ -915,7 +925,7 @@ PullResult run_pull(System& s, const PullOptions& o) {
   R.interfaces = faces;
   char b[300];
   std::snprintf(b, sizeof b, "%s pull of %zu atoms from a held surface of %zu atoms · spring %.1f kcal/mol/Å² at %.2f Å/ps over %.1f Å · %.0f K · area %.1f Å²",
-                o.normal ? "normal (+z)" : "shear (x)", ng, nh, o.spring, o.rate, o.distance, o.temperature, R.area);
+                o.normal ? "normal (+z)" : fibre ? "fibre pull-out (z)" : o.axis == 1 ? "shear (y)" : "shear (x)", ng, nh, o.spring, o.rate, o.distance, o.temperature, R.area);
   R.method = b;
   R.notes.push_back("steered MD: the force depends on the pulling rate (far faster than experiment); compare systems at the same rate");
   if (faces == 2) R.notes.push_back("the film touches the surface and its periodic image: strength and work are per interface (two share the force)");

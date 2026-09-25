@@ -92,6 +92,7 @@ bool inside(ParticleShape sh, const Vec3& r, double R) {
       const double a = R / std::sqrt(2.0);   // vertices at (±a, ±a, 0) and permutations
       return std::max({ax, ay, az}) <= a && ax + ay + az <= 2 * a;
     }
+    case ParticleShape::Fibre: return std::hypot(r[0], r[1]) <= R;
   }
   return false;
 }
@@ -104,6 +105,7 @@ const char* to_string(ParticleShape s) {
     case ParticleShape::Cube: return "cube";
     case ParticleShape::Octahedron: return "octahedron";
     case ParticleShape::Cuboctahedron: return "cuboctahedron";
+    case ParticleShape::Fibre: return "fibre";
   }
   return "sphere";
 }
@@ -113,7 +115,8 @@ ParticleShape particle_shape_from_string(const std::string& s) {
   if (s == "octahedron") return ParticleShape::Octahedron;
   if (s == "cuboctahedron") return ParticleShape::Cuboctahedron;
   if (s == "sphere") return ParticleShape::Sphere;
-  throw std::invalid_argument("shape must be sphere, cube, octahedron or cuboctahedron");
+  if (s == "fibre" || s == "fiber" || s == "cylinder") return ParticleShape::Fibre;
+  throw std::invalid_argument("shape must be sphere, cube, octahedron, cuboctahedron or fibre");
 }
 
 // ---------------------------------------------------------------- graphene
@@ -225,6 +228,73 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
   const Cell& c = bulk.cell;
   const double V = std::fabs(dot(c.a, cross(c.b, c.c)));
   const double w[3] = {V / norm(cross(c.b, c.c)), V / norm(cross(c.c, c.a)), V / norm(cross(c.a, c.b))};
+  if (o.shape == ParticleShape::Fibre) {
+    // a cylinder along c, periodic along it: c must be normal to the a-b plane (hexagonal, tetragonal, cubic cells)
+    const Vec3 nz = cross(c.a, c.b) * (1 / norm(cross(c.a, c.b)));
+    if (std::fabs(std::fabs(dot(c.c, nz)) - norm(c.c)) > 1e-6 * norm(c.c) || std::fabs(nz[2]) < 1 - 1e-9)
+      throw std::invalid_argument("a fibre runs along the crystal's c axis, which must be normal to a and b (and along z)");
+    const double lc = norm(c.c);
+    const int ncz = std::max(1, int(std::lround(o.length / lc)));
+    const int na = int(std::ceil((o.radius + 3) / w[0])) + 1, nb = int(std::ceil((o.radius + 3) / w[1])) + 1;
+    const double vac = std::max(0.0, o.vacuum), box = 2 * o.radius + 2 * vac + 4;
+    Vec3 centre = c.origin + (c.a + c.b) * 0.5;
+    if (o.on_atom) {
+      double best = 1e300;
+      for (const auto& at : bulk.atoms) {
+        Vec3 d = c.minimum_image(at.pos - centre);
+        d[2] = 0;
+        if (norm(d) < best) best = norm(d), centre = centre + Vec3{d[0], d[1], 0};
+      }
+    }
+    System s;
+    s.cell.a = {box, 0, 0};
+    s.cell.b = {0, box, 0};
+    s.cell.c = {0, 0, ncz * lc};
+    for (int i = -na; i <= na; ++i)
+      for (int j = -nb; j <= nb; ++j)
+        for (int k = 0; k < ncz; ++k)
+          for (const auto& at : bulk.atoms) {
+            Vec3 r = at.pos + c.a * i + c.b * j + c.c * k - centre;
+            if (!inside(ParticleShape::Fibre, r, o.radius)) continue;
+            double z = at.pos[2] - c.origin[2] + lc * k;
+            z -= s.cell.c[2] * std::floor(z / s.cell.c[2]);
+            add(s, at.element, {box / 2 + r[0], box / 2 + r[1], z});
+          }
+    if (s.atoms.empty()) throw std::invalid_argument("no atom inside the fibre: make it thicker");
+    s.bonds = crystal_bonds(s);
+    std::vector<int> deg(s.atoms.size(), 0);
+    for (const auto& b : s.bonds) ++deg[b.i], ++deg[b.j];
+    if (std::any_of(deg.begin(), deg.end(), [](int d) { return d > 0; })) {
+      System t;
+      t.cell = s.cell;
+      for (size_t i = 0; i < s.atoms.size(); ++i)
+        if (deg[i] > 0) add(t, s.atoms[i].element, s.atoms[i].pos);
+      s = std::move(t);
+      s.bonds = crystal_bonds(s);
+    }
+    NanoReport r;
+    if (o.passivate) {
+      const auto [nh, noh] = passivate_surface(s, bulk, [&](const Vec3& p) {
+        Vec3 d{p[0] - box / 2, p[1] - box / 2, 0};
+        const double l = norm(d);
+        return l > 1e-9 ? d * (1 / l) : Vec3{1, 0, 0};
+      });
+      r.added_h = nh, r.added_oh = noh;
+    }
+    r.diameter = 2 * o.radius;
+    const std::string name = bulk.title.empty() ? std::string("crystal") : bulk.title;
+    finish(s, name + " fibre");
+    std::vector<size_t> all(s.atoms.size());
+    std::iota(all.begin(), all.end(), size_t(0));
+    char b[220];
+    std::snprintf(b, sizeof b, "%s fibre · radius %.1f Å · %d × %.3f Å along z (periodic) · %zu atoms (%s)", name.c_str(), o.radius, ncz, lc, s.atoms.size(),
+                  formula_of(s, all).c_str());
+    r.notes.push_back(b);
+    if (r.added_h || r.added_oh) r.notes.push_back("passivated: " + std::to_string(r.added_oh) + " OH, " + std::to_string(r.added_h) + " H");
+    s.notes = r.notes;
+    if (rep) *rep = r;
+    return s;
+  }
   int nrep[3];
   for (int k = 0; k < 3; ++k) nrep[k] = int(std::ceil((o.radius + 3) / w[k])) + 1;
   // the centre: the cell centre, or the atom nearest it

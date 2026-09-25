@@ -124,8 +124,9 @@ struct TensileResult {
 TensileResult run_tensile(System& s, const TensileOptions& o);
 
 // Pull-out / debonding of a film from a surface (fibre–rubber interfaces): the surface (molecule `surface_mol`) held,
-// the rest pulled by a spring on its centre of mass whose anchor moves at `rate` along x (shear: interfacial sliding)
-// or +z (normal: separation), after a short NVT equilibration. The curve is spring force against the film's
+// the rest pulled by a spring on its centre of mass whose anchor moves at `rate` along x or y (shear: interfacial
+// sliding), along z for a fibre that runs along z (pull-out; the area is the fibre's side 2πRL), or +z (normal:
+// separation), after a short NVT equilibration. The curve is spring force against the film's
 // displacement; interfacial shear strength (shear) or peak normal stress = peak force / (interfaces × area), work = ∫F dx / (interfaces × area).
 struct PullPoint {
   double time_ps = 0, displacement = 0, force = 0;   // Å, kcal/mol/Å
@@ -135,7 +136,8 @@ struct PullOptions {
   std::shared_ptr<const ForceField> field;
   EnergyOptions energy;
   int64_t surface_mol = 1;
-  bool normal = false;           // false: shear along x; true: separation along +z
+  bool normal = false;           // false: shear along `axis`; true: separation along +z
+  int axis = 0;                  // shear axis: 0 x, 1 y (a slab); 2 z (pull-out along a fibre that runs along z)
   double distance = 10.0;        // Å the anchor travels
   double rate = 5.0;             // Å/ps (steered MD pulls fast; the force is rate dependent)
   double spring = 10.0;          // kcal/mol/Å²

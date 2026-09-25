@@ -5,7 +5,8 @@
 //                  plane, or a flake with its edge carbons capped by hydrogen.
 //  nanotube        (n, m) single-walled tube rolled from graphene (Saito, Dresselhaus & Dresselhaus, 1998): diameter
 //                  a √(n² + nm + m²) / π, a = √3 × C–C; periodic along z, or a finite tube with hydrogen-capped ends.
-//  nanoparticle    A sphere, cube, octahedron or cuboctahedron (the size is the circumscribed radius) cut from a bulk
+//  nanoparticle    A sphere, cube, octahedron or cuboctahedron (the size is the circumscribed radius), or a fibre
+//                  (a cylinder periodic along the crystal's c axis) cut from a bulk
 //                  crystal, centred on an atom or on the cell centre; isolated atoms dropped; optionally passivated
 //                  (silanols on silica) as the surface builder does, the new groups pointing away from the centre.
 //  embed_filler    The filler held fixed at the centre of a periodic cell (its periodic axes kept) while polymer chains
@@ -50,13 +51,16 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep = nullptr);
 // Diameter (Å), chiral angle (degrees) and period |T| (Å) of an (n, m) tube.
 std::array<double, 3> nanotube_geometry(int n, int m, double cc = 1.42);
 
-enum class ParticleShape { Sphere, Cube, Octahedron, Cuboctahedron };
+// Fibre: a cylinder along the crystal's c axis (which must be normal to a and b), periodic along it — a glass, carbon or
+// steel fibre to embed in a rubber matrix.
+enum class ParticleShape { Sphere, Cube, Octahedron, Cuboctahedron, Fibre };
 const char* to_string(ParticleShape s);
 ParticleShape particle_shape_from_string(const std::string& s);
 
 struct ParticleOptions {
   ParticleShape shape = ParticleShape::Sphere;
-  double radius = 12.0;           // circumscribed radius, Å
+  double radius = 12.0;           // circumscribed radius (fibre: its radius), Å
+  double length = 20.0;           // fibre: length along the axis, Å (whole cells; the fibre is periodic along it)
   bool on_atom = true;            // centre on the atom nearest the cell centre; false: on the cell centre
   bool passivate = false;
   double vacuum = 10.0;

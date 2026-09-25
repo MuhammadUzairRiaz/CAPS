@@ -1325,6 +1325,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         po.field = ff;
         po.energy = o.energy;
         po.normal = id == "pull_normal";
+        po.axis = std::clamp(mo.axis, 0, 2);
         po.surface_mol = d->held_mol > 0 ? d->held_mol : 1;
         if (mo.temperature > 0) po.temperature = mo.temperature;
         if (mo.dt > 0) po.dt = mo.dt;
@@ -1922,7 +1923,9 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     po.radius = j.num("radius", 12);
     po.on_atom = j.num("on_atom", 1) != 0;
     po.passivate = j.num("passivate", 0) != 0;
+    po.length = j.num("length", 20);
     f = caps::nanoparticle(caps::read_cif(j.text("crystal")), po, &r);
+    keep = {false, false, po.shape == caps::ParticleShape::Fibre};
   } else {
     throw std::invalid_argument("kind must be tube, sheet or particle");
   }
