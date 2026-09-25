@@ -1613,6 +1613,19 @@ internal static class SelfTest
                   $"backmap: {nBeads} beads → {vm.Document!.Summary().Atoms} atoms · {vm.Status}");
         }
 
+        // Equilibrate › chain statistics: an alkane cell gets the RIS polyethylene reference (dashed), polystyrene does not
+        {
+            var (pe, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"E\",\"smiles\":\"*CC*\"}],\"dp\":20}",
+                new CapsGrowOpts { Chains = 3, Dp = 0, Seed = 2, Density = 0.3, ContactScale = -1.0, Curve = 1 }, null, "pe");
+            var peFile = Path.Combine(outDir, "pe_ris.data");
+            pe.Save(peFile);
+            pe.Dispose();
+            vm.Open(peFile);
+            var risOk = vm.RisCurve.Length > 5 && vm.ChainNote.Contains("RIS polyethylene");
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            Check(risOk && vm.RisCurve.Length == 0, $"RIS reference: {vm.RisCurve.Length} on PS · alkane note ok {risOk}");
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

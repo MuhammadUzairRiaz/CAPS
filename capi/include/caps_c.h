@@ -591,6 +591,9 @@ void caps_set_ph(caps_doc* d, double ph);
    CPU: progress gets (stage, fraction) and returns non-zero to cancel. */
 typedef int32_t (*caps_stage_fn)(const char* stage, double fraction, void* user);
 int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
+/* RIS reference (v21): C_n of polyethylene (Flory's three-state model) at temperature T for n = 1 … nmax into out;
+   returns nmax. */
+int32_t caps_ris_cn(double temperature, int32_t nmax, double* out);
 /* Backmap (v21): the current structure's coarse-grained beads (per_bead backbone atoms each, as caps_resolution_convert
    makes them) moved to those of the file (the last frame; same count and order, e.g. a LAMMPS dump of the beads); each
    bead's atoms carried along and turned with it, then relaxed when relax is set. A new document, or NULL. */

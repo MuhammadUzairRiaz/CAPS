@@ -116,7 +116,7 @@
                     <v:Icon Kind="chart" Size="15" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
                     <StackPanel Grid.Column="1" Spacing="2">
                       <TextBlock Text="Internal distances" FontWeight="SemiBold" />
-                      <TextBlock Text="shown below; a check against RIS chain statistics is coming" Classes="dim" TextWrapping="Wrap" />
+                      <TextBlock Text="shown below; for alkane chains (polyethylene) against the rotational isomeric state model at the Dynamics temperature, dashed" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
                 </Border>

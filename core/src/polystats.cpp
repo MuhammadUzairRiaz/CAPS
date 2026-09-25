@@ -236,4 +236,69 @@ int pme_mesh_size(double edge, double spacing, int order) {
   return fft_good_size(std::max(order + 1, int(std::ceil(edge / std::max(1e-6, spacing)))));
 }
 
+std::vector<double> ris_cn(const RisModel& m, double T, int nmax) {
+  constexpr double kPiR = 3.14159265358979323846, kRk = 0.0019872043;
+  const double l = m.bond, th = kPiR - m.angle_deg * kPiR / 180;   // θ: the supplement of the bond angle
+  const double sg = std::exp(-m.e_sigma / (kRk * T)), om = std::exp(-m.e_omega / (kRk * T));
+  const double U[3][3] = {{1, sg, sg}, {1, sg, sg * om}, {1, sg * om, sg}};   // rows: bond i−1 in t g+ g−, columns: bond i
+  const double phis[3] = {0, m.gauche_deg * kPiR / 180, -m.gauche_deg * kPiR / 180};   // trans at 0 (Flory's convention)
+  // T(φ): the frame of bond i+1 in the frame of bond i
+  auto Tm = [&](double ph) {
+    const double c = std::cos(th), s = std::sin(th), cp = std::cos(ph), sp = std::sin(ph);
+    return std::array<std::array<double, 3>, 3>{{{c, s, 0}, {s * cp, -c * cp, sp}, {s * sp, -c * sp, -cp}}};
+  };
+  // generator matrix for one state: rows / columns (1, 3 vector, 1) = 5
+  using M5 = std::array<std::array<double, 5>, 5>;
+  auto G = [&](double ph) {
+    const auto t = Tm(ph);
+    M5 g{};
+    g[0][0] = 1;
+    for (int k = 0; k < 3; ++k) g[0][1 + k] = 2 * l * t[0][k];   // 2 lᵀ T with l = (l, 0, 0)
+    g[0][4] = l * l;
+    for (int a = 0; a < 3; ++a)
+      for (int b = 0; b < 3; ++b) g[1 + a][1 + b] = t[a][b];
+    g[1][4] = l;
+    g[4][4] = 1;
+    return g;
+  };
+  std::array<M5, 3> Gs{G(phis[0]), G(phis[1]), G(phis[2])};
+  // the first bond's generator row [1, 2 l₁ᵀ T₁, l²] (its torsion is undefined: taken trans), carried in state t; J* = (1, 0, 0)
+  std::vector<double> v(15, 0.0);
+  {
+    const auto t1 = Tm(0);
+    v[0] = 1, v[4] = l * l;
+    for (int k = 0; k < 3; ++k) v[size_t(1 + k)] = 2 * l * t1[0][size_t(k)];
+  }
+  std::array<double, 3> zrow{1, 0, 0};
+  std::vector<double> out{1.0};   // C_1 = 1
+  double z = 1;
+  for (int n = 2; n <= nmax; ++n) {
+    // close with the last bond's column [l², l_n, 1] (l_n = (l, 0, 0)), summed over the states (J)
+    double r2 = 0;
+    for (int st = 0; st < 3; ++st) r2 += v[size_t(5 * st)] * l * l + v[size_t(5 * st + 1)] * l + v[size_t(5 * st + 4)];
+    z = zrow[0] + zrow[1] + zrow[2];
+    out.push_back(r2 / z / (double(n) * l * l));
+    // one more rotatable bond: v ← v · (U ⊗ E5) · diag(G_t, G_g+, G_g−); zrow ← zrow · U
+    std::vector<double> w(15, 0.0);
+    std::array<double, 3> zn{0, 0, 0};
+    for (int a = 0; a < 3; ++a)
+      for (int b = 0; b < 3; ++b) {
+        zn[size_t(b)] += zrow[size_t(a)] * U[a][b];
+        for (int p = 0; p < 5; ++p) {
+          const double x = v[size_t(5 * a + p)] * U[a][b];
+          if (x == 0) continue;
+          for (int q = 0; q < 5; ++q) w[size_t(5 * b + q)] += x * Gs[size_t(b)][size_t(p)][size_t(q)];
+        }
+      }
+    // the partition sums grow geometrically: rescale both by the same factor (the ratio is what counts)
+    const double sc = zn[0] + zn[1] + zn[2];
+    for (auto& x : w) x /= sc;
+    for (auto& x : zn) x /= sc;
+    v = w;
+    zrow = zn;
+  }
+  (void)z;
+  return out;
+}
+
 }  // namespace caps
