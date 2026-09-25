@@ -16,6 +16,9 @@
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" Color="{DynamicResource MutedC}" />
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUnchecked" Color="Transparent" />
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" Color="Transparent" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{DynamicResource AccInkC}" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{DynamicResource AccInkC}" />
     <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{DynamicResource AccC}" />
     <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{DynamicResource AccHoverC}" />
     <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource AccInkC}" />

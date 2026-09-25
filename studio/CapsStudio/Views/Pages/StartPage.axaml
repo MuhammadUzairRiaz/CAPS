@@ -1,5 +1,5 @@
 <!-- CAPS Start (design/boards/Start.dc.html): the Studio with nothing open. Quick start, builders, recent work,
-     guided starts, a Packmol input, this machine. -->
+     guided starts, a recipe or Packmol input, this machine. -->
 <p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.StartPage" x:DataType="vm:MainViewModel"
@@ -161,11 +161,11 @@
           </Border>
           <StackPanel Margin="16" Spacing="12">
             <TextBlock TextWrapping="Wrap" FontSize="12.5" LineHeight="19"
-                       Text="Open a Packmol input. Its structures, counts, regions and tolerance carry over into Pack, which checks every contact before it returns a cell." />
+                       Text="Open a YAML or JSON recipe (as caps run reads it) or a Packmol input. Monomers, sequences and force-field choices carry over; Packmol's structures and regions become a Pack run." />
             <Button Click="OnRecipe" HorizontalAlignment="Stretch" FontSize="12">
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <v:Icon Kind="download" Size="15" VerticalAlignment="Center" />
-                <TextBlock Text="Import Packmol input" VerticalAlignment="Center" />
+                <TextBlock Text="Import recipe" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
           </StackPanel>

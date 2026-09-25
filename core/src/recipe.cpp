@@ -230,7 +230,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           const std::string tac = text(P, "tacticity", "atactic");
           spec.tacticity = tac == "isotactic" ? Tacticity::Isotactic : tac == "syndiotactic" ? Tacticity::Syndiotactic : Tacticity::Atactic;
           const std::string seq = text(P, "sequence", "homopolymer");
-          spec.sequence = seq == "alternating" ? Sequence::Alternating : seq == "random" ? Sequence::Random : seq == "block" ? Sequence::Block : Sequence::Homopolymer;
+          try { spec.sequence = sequence_from_string(seq); } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.sequence: ") + e.what()); }
+          if (P.has("blocks") && P["blocks"].is_array()) for (const auto& b : P["blocks"].items()) spec.blocks.push_back(int(b.number()));
+          if (P.has("weights") && P["weights"].is_array()) for (const auto& w : P["weights"].items()) spec.weights.push_back(w.number());
+          spec.pattern = text(P, "pattern", "");
+          if (P.has("pm")) spec.pm = P["pm"].number();
           report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + " chains · unit " + info.formula + " · " + tac, "done", 1);
         } else if (J.has("molecule")) {
           BuildOptions bo;
@@ -270,9 +274,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         g.chains = chains;
         g.seed = seed_of(J);
         g.density = num(J, "density", 0.5);
-        const std::string cs = J.has("contact_scale") && J["contact_scale"].is_number() ? "" : text(J, "contact_scale", "auto");
-        g.contact_scale = cs == "auto" || cs.empty() ? (J.has("contact_scale") && J["contact_scale"].is_number() ? J["contact_scale"].number() : 1.0) : 1.0;
-        g.auto_scale = cs == "auto";
+        // contact_scale: a number (1.0 = full contact limits), or auto (step down only where a chain cannot be placed)
+        const bool numeric = J.has("contact_scale") && J["contact_scale"].is_number();
+        g.contact_scale = numeric ? J["contact_scale"].number() : 1.0;
+        g.auto_scale = !numeric && text(J, "contact_scale", "auto") == "auto";
+        if (J.has("box")) g.box = J["box"].number();
         g.curve = flag(J, "curve", true);
         const std::string method = text(J, "method", "trials");
         if (method != "trials" && method != "cbmc") throw RecipeError(2, "grow.method: trials (best-of-k torsion trials)");

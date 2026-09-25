@@ -351,6 +351,8 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsStudioRail));
         Raise(nameof(IsSettings));
         Raise(nameof(IsJobs));
+        // Jobs opens on a job (a running one first), never on an empty detail beside a full list
+        if (m == 11 && SelectedJob == null && Jobs.Count > 0) SelectedJob = Jobs.FirstOrDefault(j => j.IsRunning) ?? Jobs[0];
         Raise(nameof(IsBench));
         Raise(nameof(IsPolymer));
         Raise(nameof(IsSurface));
@@ -425,7 +427,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>No build or minimisation is running (the document can be replaced or edited).</summary>
     public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing;
     /// <summary>The core is working on the open document (Relax or Dynamics): no rendering or edits until it is done.</summary>
-    public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing;
+    public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing || _recipeRunning;
     private bool _analyzing;
     private void RaiseBusy()
     {
@@ -456,6 +458,42 @@ public sealed partial class MainViewModel : ObservableObject
         "caps grow -o {7}_{0}x{1}.data --chains {0} --dp {1} {2} --tacticity {3} --seed {4} --scale {5}{6}{8}",
         _growChains, _growDp, _growUseBox ? $"--box {_growBox}" : $"--density {_growDensity}", Tacticities[_growTact].ToLowerInvariant(), _growSeed, _growScale,
         _growCurve ? "" : " --trans", _growSpec == null ? "PS" : "polymer", GrowUnitsArg());
+    /// <summary>The same build as a CAPS recipe (caps run, Start › From a recipe): build, type, grow, export.</summary>
+    public string GrowRecipe()
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var name = (_growSpec == null ? "PS" : "polymer") + $"_{_growChains}x{_growDp}";
+        var sb = new System.Text.StringBuilder();
+        sb.Append("# CAPS recipe from Grow · run: caps run ").Append(name).Append(".yaml\nrecipe: 1\nname: ").Append(name).Append("\nbuild:\n  polymer:\n");
+        var j = _growSpec == null ? null : System.Text.Json.Nodes.JsonNode.Parse(_growSpec);
+        var units = j?["units"] is System.Text.Json.Nodes.JsonArray ua ? ua.Select(u => (string?)u!["smiles"] ?? "").ToList() : ["*CC(*)c1ccccc1"];
+        sb.Append("    units: [").Append(string.Join(", ", units.Select(u => "\"" + u + "\""))).Append("]\n");
+        var seq = (string?)j?["sequence"] ?? "homopolymer";
+        sb.Append("    sequence: ").Append(seq).Append('\n');
+        if (seq == "block" && j?["blocks"] is System.Text.Json.Nodes.JsonArray ba) sb.Append("    blocks: [").Append(string.Join(", ", ba.Select(b => (int?)b ?? 1))).Append("]\n");
+        if (seq == "random" && j?["weights"] is System.Text.Json.Nodes.JsonArray wa) sb.Append("    weights: [").Append(string.Join(", ", wa.Select(w => ((double?)w ?? 1).ToString(inv)))).Append("]\n");
+        if (seq == "pattern") sb.Append("    pattern: ").Append((string?)j?["pattern"] ?? "A").Append('\n');
+        sb.Append(inv, $"    dp: {_growDp}\n    chains: {_growChains}\n    tacticity: {Tacticities[_growTact].ToLowerInvariant()}\n");
+        sb.Append("type: { forcefield: default }\n");
+        sb.Append("grow:\n").Append(_growUseBox ? $"  box: {_growBox.ToString(inv)}\n" : $"  density: {_growDensity.ToString(inv)}\n");
+        sb.Append(inv, $"  seed: {_growSeed}\n  contact_scale: {(_growAutoScale ? "auto" : _growScale.ToString(inv))}\n  curve: {(_growCurve ? "true" : "false")}\n");
+        sb.Append("relax: { method: lbfgs, fmax: 1.0 }\nexport: [lammps, pdb]\n");
+        return sb.ToString();
+    }
+
+    /// <summary>The same build in Python (the caps package; notebooks).</summary>
+    public string GrowPython()
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var j = _growSpec == null ? null : System.Text.Json.Nodes.JsonNode.Parse(_growSpec);
+        var units = j?["units"] is System.Text.Json.Nodes.JsonArray ua ? ua.Select(u => (string?)u!["smiles"] ?? "").ToList() : ["*CC(*)c1ccccc1"];
+        var smiles = units.Count == 1 ? $"\"{units[0]}\"" : "[" + string.Join(", ", units.Select(u => $"\"{u}\"")) + "]";
+        var seq = (string?)j?["sequence"] ?? "homopolymer";
+        return "import caps\n\n" + string.Format(inv, "cell = caps.polymer({0}, dp={1}, chains={2}, tacticity=\"{3}\", seed={4}, density={5}{6})\n",
+                   smiles, _growDp, _growChains, Tacticities[_growTact].ToLowerInvariant(), _growSeed, _growDensity.ToString(inv), seq == "homopolymer" ? "" : $", sequence=\"{seq}\"") +
+               "cell.relax(ftol=1.0)\ncell.save(\"cell.data\")\ncell.view()\n";
+    }
+
     private string GrowUnitsArg()
     {
         if (_growSpec == null) return "";
