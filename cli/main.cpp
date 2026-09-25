@@ -24,6 +24,7 @@
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
 #include "caps/spacegroup.hpp"
+#include "caps/peptide.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
@@ -72,6 +73,9 @@ int usage() {
                "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
                "  caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit\n"
                "  caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)\n"
+               "  caps peptide SEQUENCE|FILE.fasta -o OUT.pdb|mol2|xyz|data [--helix | --strand | --ppii | --structure HHHHCCC]\n"
+               "               [--n-term NH3+|NH2|ACE] [--c-term COO-|COOH|NME] [--ph 7] [--neutral] [--no-cleanup] [--seed 1]\n"
+               "                                   an all-atom peptide: backbone from φ/ψ/ω, side chains at the pH, UFF clean-up\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -155,7 +159,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -324,6 +328,49 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "peptide") {
+    try {
+      if (pos.empty() || !o.count("-o")) return usage();
+      PeptideOptions po;
+      const auto ext = std::filesystem::path(pos[0]).extension().string();
+      if (std::filesystem::exists(pos[0]) || ext == ".fasta" || ext == ".fa") {
+        std::ifstream in(pos[0]);
+        if (!in) throw std::runtime_error("cannot read " + pos[0]);
+        po.sequence = parse_fasta(std::string(std::istreambuf_iterator<char>(in), {}));
+      } else {
+        po.sequence = pos[0];
+      }
+      std::string clean;
+      for (char c : po.sequence) if (std::isalpha(static_cast<unsigned char>(c))) clean += c;
+      if (o.count("--structure")) po.structure = o["--structure"];
+      else if (o.count("--helix")) po.structure = std::string(clean.size(), 'H');
+      else if (o.count("--strand")) po.structure = std::string(clean.size(), 'E');
+      else if (o.count("--ppii")) po.structure = std::string(clean.size(), 'P');
+      if (o.count("--n-term")) po.n_term = o["--n-term"];
+      if (o.count("--c-term")) po.c_term = o["--c-term"];
+      if (po.n_term != "NH3+" && po.n_term != "NH2" && po.n_term != "ACE") throw std::invalid_argument("--n-term NH3+, NH2 or ACE");
+      if (po.c_term != "COO-" && po.c_term != "COOH" && po.c_term != "NME") throw std::invalid_argument("--c-term COO-, COOH or NME");
+      if (o.count("--ph")) po.ph = std::stod(o["--ph"]);
+      po.neutral = o.count("--neutral") > 0;
+      po.cleanup = !o.count("--no-cleanup");
+      if (o.count("--seed")) po.seed = std::stoull(o["--seed"]);
+      PeptideReport rep;
+      const System s = build_peptide(po, &rep);
+      for (const auto& n : s.notes) std::printf("%s\n", n.c_str());
+      std::printf("structure %s\n", rep.structure.c_str());
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data(s, out);
+      std::printf("wrote %s\n", out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps peptide: %s\n", e.what());
       return 1;
     }
   }

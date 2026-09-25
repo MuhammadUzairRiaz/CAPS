@@ -249,6 +249,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_insert_molecules")] public static extern int InsertMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, int count, double tolerance, ulong seed, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
     [DllImport(Lib, EntryPoint = "caps_space_groups")] public static extern int SpaceGroups(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_crystal_info")] public static extern int CrystalInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_crystal_build")] public static extern IntPtr CrystalBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, byte[] report, int cap);
@@ -419,6 +422,18 @@ public sealed class CapsDocument : IDisposable
         var n = f(buf, buf.Length);
         if (n > buf.Length) { buf = new byte[n]; f(buf, buf.Length); }
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+    }
+    /// <summary>What a peptide spec builds, without the clean-up (caps_peptide_info).</summary>
+    public static string PeptideInfo(string options) => JsonCallOnce((b, c) => Native.PeptideInfo(options, b, c));
+    /// <summary>The sequence of the first record of a FASTA text (caps_fasta_sequence).</summary>
+    public static string FastaSequence(string text) => JsonCall((b, c) => Native.FastaSequence(text, b, c));
+    /// <summary>An all-atom peptide (caps_peptide_build).</summary>
+    public static (CapsDocument Doc, string Report) PeptideBuild(string options, string label)
+    {
+        var report = new byte[4096];
+        var h = Native.PeptideBuild(options, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }
     /// <summary>The 530 space-group settings (caps_space_groups).</summary>
     public static string SpaceGroups() => JsonCall(Native.SpaceGroups);

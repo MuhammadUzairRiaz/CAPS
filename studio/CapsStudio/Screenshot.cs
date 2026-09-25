@@ -161,6 +161,21 @@ internal static class Screenshot
             }
             if (kv[0] == "crystalsuper") { w.ViewModel.CrystalSupercell = kv[1].Replace('x', '×'); for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "crystalquery") { w.ViewModel.CrystalQuery = kv[1]; Dispatcher.UIThread.RunJobs(); }
+            if (kv[0] == "bio")   // bio=1: the Biomolecule builder (the board's peptide); bio=SEQUENCE sets the sequence
+            {
+                w.ViewModel.OpenBio();
+                if (kv[1] != "1") w.ViewModel.BioSequence = kv[1];
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "bioss")   // bioss=FROM-TO:K selects residues FROM..TO (1-based) and applies structure K (0 helix 1 strand 2 PPII 3 coil)
+            {
+                var parts = kv[1].Split(':');
+                var range = parts[0].Split('-').Select(int.Parse).ToArray();
+                w.ViewModel.SelectResidue(w.ViewModel.BioCells[range[0] - 1], false);
+                w.ViewModel.SelectResidue(w.ViewModel.BioCells[range[^1] - 1], true);
+                w.ViewModel.BioType = int.Parse(parts[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {

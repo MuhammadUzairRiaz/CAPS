@@ -37,6 +37,7 @@ Trajectory read_gro(const std::string& path) {
       Atom& a = s.atoms[i];
       const int64_t resnr = std::stoll(trim(line.substr(0, 5)));
       a.resname = trim(line.substr(5, 5));
+      a.resid = resnr;
       a.name = trim(line.substr(10, 5));
       a.id = static_cast<int64_t>(i + 1);   // column 15-20 wraps at 99999; use order
       // Coordinates: fixed width 8 in the standard, but precision may vary: parse the rest by spacing.
@@ -143,7 +144,7 @@ void write_gro(const System& s, const std::string& path) {
   char b[96];
   for (size_t i = 0; i < s.atoms.size(); ++i) {
     const Atom& a = s.atoms[i];
-    const long res = (s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1)) % 100000;
+    const long res = (a.resid > 0 ? long(a.resid) : s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1)) % 100000;
     std::string rn = a.resname.empty() ? "MOL" : a.resname.substr(0, 5);
     std::string an = a.name.empty() ? element(a.element).symbol : a.name.substr(0, 5);
     std::snprintf(b, sizeof b, "%5ld%-5s%5s%5ld%8.3f%8.3f%8.3f\n", res, rn.c_str(), an.c_str(), long((i + 1) % 100000), a.pos[0] / 10, a.pos[1] / 10, a.pos[2] / 10);

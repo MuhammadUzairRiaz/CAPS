@@ -29,7 +29,7 @@
         <Button Classes="builder" Content="Crystal" Click="OnCrystal" />
         <Button Classes="builder" Content="Surface" Click="OnSurface" />
         <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
-        <Button Classes="builder" Content="Biomolecule" IsEnabled="False" ToolTip.Tip="Comes with the Biomolecule board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Biomolecule" Click="OnBio" />
         <Button Classes="builder" Content="Solvation" Click="OnSolvation" />
       </StackPanel>
     </Border>
