@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <functional>
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
@@ -1030,9 +1031,15 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
   std::map<std::string, const FFType*> byname;
   for (const auto& t : ff.types) byname[t.name] = &t;
   std::vector<Rule> rules;
+  std::deque<FFType> absent;   // types the rules name but this file lacks (typing_unknown_untyped): names only
   for (size_t k = 0; k < ff.typing.size(); ++k) {
     const auto& tr = ff.typing[k];
     auto it = byname.find(tr.type);
+    if (it == byname.end() && ff.typing_unknown_untyped) {
+      absent.push_back(FFType{});
+      absent.back().name = tr.type;
+      it = byname.emplace(tr.type, &absent.back()).first;
+    }
     if (it == byname.end()) throw FFError("typing rule for " + tr.type + ": no such type in " + ff.name);
     try {
       rules.push_back({&tr, it->second, k, Smarts(tr.smarts)});

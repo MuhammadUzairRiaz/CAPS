@@ -1273,7 +1273,14 @@ int main(int argc, char** argv) {
               if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
               rep = ParamReport{};
               charges = "gasteiger";
-              std::printf("charges: %s has no charges on its types; Gasteiger–Marsili charges used\n", ff.name.c_str());
+              try {
+                ParamReport probe;
+                (void)parameterize(s, ff, types, "gasteiger", &probe, true);
+                std::printf("charges: %s has no charges on its types; Gasteiger–Marsili charges used\n", ff.name.c_str());
+              } catch (const std::exception&) {   // Gasteiger–Marsili has no parameters for this structure (S=O, metals): QEq
+                charges = "qeq";
+                std::printf("charges: %s has no charges on its types and Gasteiger–Marsili none for this structure; QEq charges used\n", ff.name.c_str());
+              }
             }
           }
           if (charges != "types" || !f.charge.size()) f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));

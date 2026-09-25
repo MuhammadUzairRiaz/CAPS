@@ -15,6 +15,7 @@ arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 MOLDIR = sys.argv[1]
 REF = arg("--ref", "")
 FF = arg("--ff", "oplsaa2024-moltemplate")
+CHARGES = arg("--charges", "types")   # types: the force field's own (neutrality is then checked); auto for force fields without
 ffj = os.path.join(ROOT, "data", "forcefields", FF + ".json")
 rules = os.path.join(ROOT, "data", "typing", FF + ".typing.json")
 names = {p["id"]: p["name"] for p in json.load(open(os.path.join(ROOT, "data", "polymers", "library.json")))["polymers"]}
@@ -42,7 +43,7 @@ for xyz in sorted(glob.glob(os.path.join(MOLDIR, "*.xyz"))):
         continue
     pid = os.path.basename(xyz)[:-4]
     out = os.path.join(tmp, pid + ".data")
-    r = subprocess.run([CAPS, "ff", "apply", xyz, "--ff", ffj, "--typing", rules, "--charges", "types", "-o", out], capture_output=True, text=True)
+    r = subprocess.run([CAPS, "ff", "apply", xyz, "--ff", ffj, "--typing", rules, "--charges", CHARGES, "-o", out], capture_output=True, text=True)
     txt = r.stdout + r.stderr
     if r.returncode or not os.path.exists(out):
         m = re.search(r"(\d+) atoms? (?:match no|are untyped|untyped)[^\n]*", txt)
@@ -65,7 +66,7 @@ for xyz in sorted(glob.glob(os.path.join(MOLDIR, "*.xyz"))):
         rq = charges(rp)
         if len(rq) == len(q):
             ref = f" · largest difference from the reference charges {max(abs(a - b) for a, b in zip(q, rq)):.3f} e"
-    if abs(net) > 1e-3:
+    if abs(net) > 1e-3 and CHARGES == "types":
         charged += 1
         rows.append((pid, "charged", f"net charge {net:+.3f} e{ref}"))
     else:

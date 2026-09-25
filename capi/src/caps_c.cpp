@@ -577,10 +577,18 @@ void field_run(caps_doc* d) {
       } catch (const caps::FFError& e) {
         if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
         F.rep = caps::ParamReport{};
-        F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "gasteiger", &F.rep, true));
-        F.charges = "gasteiger";
-        F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + std::string(e.what()).substr(std::string(e.what()).find("type")) +
-                              "): Gasteiger–Marsili charges were used instead (charges: automatic)");
+        const std::string why = std::string(e.what()).substr(std::string(e.what()).find("type"));
+        try {
+          F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "gasteiger", &F.rep, true));
+          F.charges = "gasteiger";
+          F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + why + "): Gasteiger–Marsili charges were used instead (charges: automatic)");
+        } catch (const std::exception& g) {   // Gasteiger–Marsili has no parameters for some groups (S=O, most metals): QEq
+          F.rep = caps::ParamReport{};
+          F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "qeq", &F.rep, true));
+          F.charges = "qeq";
+          F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + why + ") and Gasteiger–Marsili has none for this structure (" + g.what() +
+                                "): QEq charges were used instead (charges: automatic)");
+        }
       }
     } else {
       F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
@@ -1645,7 +1653,14 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
             def = it->second;
           }
           if (def->typing.empty()) { x["status"] = "no typing rules"; list.push_back(std::move(x)); continue; }
-          const caps::TypingResult tr = caps::assign_types(s, *def);
+          caps::TypingResult tr = caps::assign_types(s, *def);
+          {   // a rule may give a type this file lacks (rules shared with a larger version): untyped, as in field_run
+            std::set<std::string> known;
+            for (const auto& ty : def->types) known.insert(ty.name);
+            for (const auto& ty : def->types) for (const auto& a : ty.aliases) known.insert(a);
+            for (auto& ty : tr.types)
+              if (!ty.empty() && !known.count(ty)) { ty.clear(); ++tr.untyped; }
+          }
           x["untyped"] = double(tr.untyped);
           if (tr.untyped) {
             std::map<std::string, std::pair<int, std::vector<double>>> groups;
@@ -1673,8 +1688,14 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
           } catch (const caps::FFError& e) {
             if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
             rep = caps::ParamReport{};
-            ff = caps::parameterize(s, *def, tr.types, "gasteiger", &rep, true);
-            charges = "gasteiger";
+            try {
+              ff = caps::parameterize(s, *def, tr.types, "gasteiger", &rep, true);
+              charges = "gasteiger";
+            } catch (const std::exception&) {
+              rep = caps::ParamReport{};
+              ff = caps::parameterize(s, *def, tr.types, "qeq", &rep, true);
+              charges = "qeq";
+            }
           }
         }
         caps::Json miss = caps::Json::array();

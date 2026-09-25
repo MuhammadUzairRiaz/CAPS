@@ -105529,5 +105529,6 @@
  ],
  "version": "GAFF 2",
  "status": "validated",
- "validation": "methyl acetate: every coefficient identical, forces to 8.8e-8 kcal/mol/Å against LAMMPS."
+ "validation": "methyl acetate: every coefficient identical, forces to 8.8e-8 kcal/mol/Å against LAMMPS.",
+ "typing": "../typing/gaff2-moltemplate.typing.json"
 }

@@ -719,6 +719,10 @@
     "angles": 5315,
     "dihedrals": 653,
     "impropers": 38
+   },
+   "typing": {
+    "rules": "typing/gaff-moltemplate.typing.json",
+    "evidence": "CAPS's gaff-amber16 rules (antechamber order); types not in this file: none"
    }
   },
   {
@@ -740,6 +744,10 @@
     "angles": 5312,
     "dihedrals": 986,
     "impropers": 38
+   },
+   "typing": {
+    "rules": "typing/gaff2-moltemplate.typing.json",
+    "evidence": "CAPS's gaff-amber25 rules (antechamber order); types not in this file: none"
    }
   },
   {
