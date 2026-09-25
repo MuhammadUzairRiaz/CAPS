@@ -5835,3 +5835,39 @@ extern "C" caps_doc* caps_resolution_convert(caps_doc* d, const char* json, char
     return nullptr;
   }
 }
+
+extern "C" caps_doc* caps_pipeline_materialize(caps_doc* d) {
+  try {
+    if (!d->pstate) throw std::runtime_error("no pipeline result to make real");
+    caps::System sys = d->pstate->system;
+    int64_t id = 0;
+    for (auto& a : sys.atoms) a.id = ++id;   // unique identifiers in order
+    return doc_of_system(std::move(sys), d, "pipeline.materialize", "the pipeline's particles made into a structure (" + std::to_string(d->pstate->system.atoms.size()) + " atoms)",
+                         {{"steps", std::to_string(d->pipeline ? d->pipeline->steps.size() : 0)}});
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_expression_count(caps_doc* d, const char* expr, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    caps::Pipeline p;
+    caps::PipelineStep st;
+    st.type = "select_expression";
+    st.params["expression"] = std::string(expr ? expr : "");
+    p.steps.push_back(st);
+    const auto res = caps::run_pipeline(d->frame, p, int(d->current), 0, &d->traj);
+    r["ok"] = true;
+    r["count"] = double(res.selected_count());
+    r["total"] = double(d->frame.atoms.size());
+  } catch (const std::exception& e) {
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  caps::Json types = caps::Json::object();   // type labels, to say what "Type == 2" means
+  for (const auto& t : d->frame.types) if (!t.label.empty()) types[std::to_string(t.type)] = t.label;
+  r["types"] = std::move(types);
+  return report_out(r.dump(0), out, cap);
+}

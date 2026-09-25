@@ -275,6 +275,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_doc_copy")] public static extern IntPtr DocCopy(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_resolution_summary")] public static extern int ResolutionSummary(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_resolution_convert")] public static extern IntPtr ResolutionConvert(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_expression_count")] public static extern int ExpressionCount(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string expr, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_materialize")] public static extern IntPtr PipelineMaterialize(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_grow_chains")] public static extern IntPtr GrowChains([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_surface_terminations")] public static extern int SurfaceTerminations([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, int h, int k, int l, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -1054,6 +1056,17 @@ public sealed class CapsDocument : IDisposable
         {
             Alive();
             var h = Native.DocCopy(_h);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return new CapsDocument(h, label);
+        }
+    }
+    public string ExpressionCount(string expr) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.ExpressionCount(_h, expr, b, c)); } }
+    public CapsDocument MaterializePipeline(string label)
+    {
+        lock (_lock)
+        {
+            Alive();
+            var h = Native.PipelineMaterialize(_h);
             if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
             return new CapsDocument(h, label);
         }
