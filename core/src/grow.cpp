@@ -15,6 +15,7 @@
 #include <random>
 
 #include "caps/elements.hpp"
+#include "caps/typing.hpp"
 
 namespace caps {
 namespace {
@@ -391,15 +392,47 @@ double box_for_density(const GrowOptions& o) {
 }
 
 std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aromatic, int iterations) {
-  // Gasteiger & Marsili, Tetrahedron 36, 3219 (1980): χ = a + b q + c q², damping 1/2 per iteration.
+  // Gasteiger & Marsili, Tetrahedron 36, 3219 (1980): χ = a + b q + c q² per atom type (element and hybridisation),
+  // charge moved along each bond by (χ_j − χ_i) / χ⁺ of the less electronegative atom, damped by ½ per iteration.
+  // Parameters of the paper's Table 1 (H, C, N, O, F, Cl, Br, I) and the S sp³ extension; other elements are refused.
   struct P { double a, b, c; };
-  const P H{7.17, 6.24, -0.56}, C3{7.98, 9.18, 1.88}, C2{8.79, 9.32, 1.51};
+  static const P H{7.17, 6.24, -0.56}, C3{7.98, 9.18, 1.88}, C2{8.79, 9.32, 1.51}, C1{10.39, 9.45, 0.73},
+      N3{11.54, 10.82, 1.36}, N2{12.87, 11.15, 0.85}, N1{15.68, 11.70, -0.27}, O3{14.18, 12.92, 1.39}, O2{17.07, 13.79, 0.47},
+      F{14.66, 13.85, 2.31}, Cl{11.00, 9.69, 1.35}, Br{10.08, 8.47, 1.16}, I{9.90, 7.96, 0.96}, S3{10.14, 9.13, 1.38};
   const size_t n = s.atoms.size();
+  const Perception pc = perceive(s);
   std::vector<const P*> t(n);
-  for (size_t i = 0; i < n; ++i) t[i] = s.atoms[i].element == 1 ? &H : aromatic[i] ? &C2 : &C3;
-  const auto nb = s.neighbours();
+  for (size_t i = 0; i < n; ++i) {
+    // hybridisation from the perceived bonds: a triple bond or two double bonds → sp, a double or aromatic bond → sp²
+    int doubles = 0, triples = 0;
+    bool arom = (i < aromatic.size() && aromatic[i]) || pc.aromatic[i];
+    for (size_t k = 0; k < pc.nb[i].size(); ++k) {
+      if (pc.arom_bond[i][k]) arom = true;
+      else if (pc.order[i][k] == 2) ++doubles;
+      else if (pc.order[i][k] == 3) ++triples;
+    }
+    const int hyb = triples > 0 || doubles > 1 ? 1 : doubles > 0 || arom ? 2 : 3;
+    switch (s.atoms[i].element) {
+      case 1: t[i] = &H; break;
+      case 6: t[i] = hyb == 1 ? &C1 : hyb == 2 ? &C2 : &C3; break;
+      case 7: t[i] = hyb == 1 ? &N1 : hyb == 2 ? &N2 : &N3; break;
+      case 8: t[i] = hyb == 3 ? &O3 : &O2; break;
+      case 9: t[i] = &F; break;
+      case 17: t[i] = &Cl; break;
+      case 35: t[i] = &Br; break;
+      case 53: t[i] = &I; break;
+      case 16:
+        if (hyb != 3) throw std::invalid_argument("Gasteiger–Marsili parameters cover sp³ sulfur only; use QEq charges for S=O or thiophene");
+        t[i] = &S3;
+        break;
+      default:
+        throw std::invalid_argument(std::string("no Gasteiger–Marsili parameters for ") + element(s.atoms[i].element).symbol +
+                                    " (H, C, N, O, F, Cl, Br, I and sp³ S); use QEq charges");
+    }
+  }
+  const auto& nb = pc.nb;
   std::vector<double> q(n, 0.0), chi(n), dq(n);
-  auto plus = [&](const P* p) { return p == &H ? 20.02 : p->a + p->b + p->c; };
+  auto plus = [&](const P* p) { return p == &H ? 20.02 : p->a + p->b + p->c; };   // χ⁺ of the cation; H takes 20.02
   for (int k = 0; k < iterations; ++k) {
     for (size_t i = 0; i < n; ++i) chi[i] = t[i]->a + t[i]->b * q[i] + t[i]->c * q[i] * q[i];
     std::fill(dq.begin(), dq.end(), 0.0);
