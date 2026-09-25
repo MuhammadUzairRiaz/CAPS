@@ -42998,5 +42998,6 @@
  ],
  "version": "2008",
  "status": "converted",
- "validation": "same forms as the 2024 file."
+ "validation": "same forms as the 2024 file.",
+ "typing": "../typing/oplsaa2008-moltemplate.typing.json"
 }
