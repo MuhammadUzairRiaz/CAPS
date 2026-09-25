@@ -7,7 +7,7 @@
 //                 mass (molecules without a backbone become one bead each)
 //
 // Both return new structures (the original is untouched). Going back up: united-atom → all-atom is add_hydrogens then
-// a relax; coarse-grained → all-atom needs a backmap (not built here).
+// a relax; coarse-grained → all-atom is backmap onto the all-atom structure the beads came from.
 #pragma once
 #include <string>
 #include <vector>
@@ -28,5 +28,19 @@ struct ResolutionReport {
 ResolutionReport all_atom_summary(const System& s);
 System united_atom(const System& s, ResolutionReport* rep = nullptr);
 System coarse_grain(const System& s, int per_bead = 5, ResolutionReport* rep = nullptr);
+
+// Backmapping (multiscale equilibration: coarse-grain here, run the beads elsewhere, come back): the beads of
+// coarse_grain(all_atom, per_bead) have moved to `beads` (same count and order, e.g. read from a LAMMPS dump). Each
+// bead's atoms are carried along rigidly: translated with the bead and turned by the rotation that best maps the bead
+// and its bonded beads from their old places to their new ones (Horn's quaternion fit; a chain end turns with its one
+// neighbour, a lone bead only moves). Bonds between beads come out stretched or squeezed: relax afterwards (push-off).
+// The cell is the beads'. Throws when the bead counts differ.
+struct BackmapReport {
+  int beads = 0, atoms = 0;
+  double rms_turn = 0;       // degrees, the beads' rotations
+  double worst_bond = 0;     // Å, the longest bond between two beads' atoms before a relax
+  std::vector<std::string> notes;
+};
+System backmap(const System& all_atom, const System& beads, int per_bead = 5, BackmapReport* rep = nullptr);
 
 }  // namespace caps

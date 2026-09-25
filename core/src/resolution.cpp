@@ -174,4 +174,123 @@ System coarse_grain(const System& s, int per_bead, ResolutionReport* rep) {
   return out;
 }
 
+namespace {
+
+// Rotation (3×3, row major) that best maps points p onto q (both relative to their own centres): Horn's quaternion.
+std::array<double, 9> best_rotation(const std::vector<Vec3>& p, const std::vector<Vec3>& q) {
+  double S[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  for (size_t k = 0; k < p.size(); ++k)
+    for (int a = 0; a < 3; ++a)
+      for (int b = 0; b < 3; ++b) S[a][b] += p[k][a] * q[k][b];
+  double N[4][4] = {
+      {S[0][0] + S[1][1] + S[2][2], S[1][2] - S[2][1], S[2][0] - S[0][2], S[0][1] - S[1][0]},
+      {S[1][2] - S[2][1], S[0][0] - S[1][1] - S[2][2], S[0][1] + S[1][0], S[2][0] + S[0][2]},
+      {S[2][0] - S[0][2], S[0][1] + S[1][0], -S[0][0] + S[1][1] - S[2][2], S[1][2] + S[2][1]},
+      {S[0][1] - S[1][0], S[2][0] + S[0][2], S[1][2] + S[2][1], -S[0][0] - S[1][1] + S[2][2]}};
+  // Jacobi: the eigenvector of the largest eigenvalue is the quaternion
+  double V[4][4] = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
+  for (int sweep = 0; sweep < 50; ++sweep) {
+    double off = 0;
+    for (int i = 0; i < 4; ++i) for (int j = i + 1; j < 4; ++j) off += N[i][j] * N[i][j];
+    if (off < 1e-20) break;
+    for (int i = 0; i < 4; ++i)
+      for (int j = i + 1; j < 4; ++j) {
+        if (std::fabs(N[i][j]) < 1e-15) continue;
+        const double th = 0.5 * std::atan2(2 * N[i][j], N[j][j] - N[i][i]);
+        const double c = std::cos(th), sn = std::sin(th);
+        for (int k = 0; k < 4; ++k) {   // columns i, j
+          const double a = N[k][i], b = N[k][j];
+          N[k][i] = c * a - sn * b, N[k][j] = sn * a + c * b;
+        }
+        for (int k = 0; k < 4; ++k) {   // rows i, j
+          const double a = N[i][k], b = N[j][k];
+          N[i][k] = c * a - sn * b, N[j][k] = sn * a + c * b;
+        }
+        for (int k = 0; k < 4; ++k) {
+          const double a = V[k][i], b = V[k][j];
+          V[k][i] = c * a - sn * b, V[k][j] = sn * a + c * b;
+        }
+      }
+  }
+  int m = 0;
+  for (int i = 1; i < 4; ++i) if (N[i][i] > N[m][m]) m = i;
+  const double w = V[0][m], x = V[1][m], y = V[2][m], z = V[3][m];
+  return {w * w + x * x - y * y - z * z, 2 * (x * y - w * z), 2 * (x * z + w * y),
+          2 * (x * y + w * z), w * w - x * x + y * y - z * z, 2 * (y * z - w * x),
+          2 * (x * z - w * y), 2 * (y * z + w * x), w * w - x * x - y * y + z * z};
+}
+
+Vec3 turn(const std::array<double, 9>& R, const Vec3& v) {
+  return {R[0] * v[0] + R[1] * v[1] + R[2] * v[2], R[3] * v[0] + R[4] * v[1] + R[5] * v[2], R[6] * v[0] + R[7] * v[1] + R[8] * v[2]};
+}
+
+// the smallest rotation taking unit vector a onto unit vector b
+std::array<double, 9> align(Vec3 a, Vec3 b) {
+  a = a * (1 / norm(a)), b = b * (1 / norm(b));
+  const Vec3 v = cross(a, b);
+  const double c = dot(a, b), s = norm(v);
+  if (s < 1e-12) return c > 0 ? std::array<double, 9>{1, 0, 0, 0, 1, 0, 0, 0, 1} : std::array<double, 9>{-1, 0, 0, 0, -1, 0, 0, 0, 1};
+  const double k = (1 - c) / (s * s);
+  return {c + k * v[0] * v[0], k * v[0] * v[1] - v[2], k * v[0] * v[2] + v[1],
+          k * v[0] * v[1] + v[2], c + k * v[1] * v[1], k * v[1] * v[2] - v[0],
+          k * v[0] * v[2] - v[1], k * v[1] * v[2] + v[0], c + k * v[2] * v[2]};
+}
+
+}  // namespace
+
+System backmap(const System& all_atom, const System& beads_in, int per_bead, BackmapReport* rep) {
+  System aa = all_atom;
+  if (aa.cell.valid() && !aa.unwrapped) make_molecules_whole(aa);
+  ResolutionReport rr;
+  const System ref = coarse_grain(aa, per_bead, &rr);
+  if (beads_in.atoms.size() != ref.atoms.size())
+    throw std::invalid_argument("the bead file has " + std::to_string(beads_in.atoms.size()) + " beads; this structure coarse-grains to " +
+                                std::to_string(ref.atoms.size()) + " at " + std::to_string(per_bead) + " backbone atoms per bead");
+  // the moved beads as chains: the reference's bonds and molecules, made whole across the cell
+  System beads = beads_in;
+  beads.bonds = ref.bonds;
+  for (size_t k = 0; k < beads.atoms.size(); ++k) beads.atoms[k].mol = ref.atoms[k].mol;
+  beads.has_mol = true;
+  if (beads.cell.valid() && !beads.unwrapped) make_molecules_whole(beads);
+  const auto nb = ref.neighbours();
+  const size_t nbead = ref.atoms.size();
+  std::vector<std::array<double, 9>> R(nbead);
+  double turn2 = 0;
+  for (size_t k = 0; k < nbead; ++k) {
+    const Vec3 o = ref.atoms[k].pos, n = beads.atoms[k].pos;
+    if (nb[k].empty()) { R[k] = {1, 0, 0, 0, 1, 0, 0, 0, 1}; continue; }
+    if (nb[k].size() == 1) {
+      R[k] = align(ref.atoms[nb[k][0]].pos - o, beads.atoms[nb[k][0]].pos - n);
+    } else {
+      std::vector<Vec3> p, q;
+      for (uint32_t w : nb[k]) p.push_back(ref.atoms[w].pos - o), q.push_back(beads.atoms[w].pos - n);
+      R[k] = best_rotation(p, q);
+    }
+    const double tr = std::clamp((R[k][0] + R[k][4] + R[k][8] - 1) / 2, -1.0, 1.0);
+    turn2 += std::pow(std::acos(tr) * 180 / 3.14159265358979323846, 2);
+  }
+  System out = aa;
+  for (size_t i = 0; i < out.atoms.size(); ++i) {
+    const int k = rr.site_of[i];
+    out.atoms[i].pos = turn(R[size_t(k)], aa.atoms[i].pos - ref.atoms[size_t(k)].pos) + beads.atoms[size_t(k)].pos;
+  }
+  out.cell = beads.cell.valid() ? beads.cell : aa.cell;
+  out.unwrapped = true;
+  out.velocities.clear();
+  double worst = 0;
+  for (const auto& b : out.bonds)
+    if (rr.site_of[b.i] != rr.site_of[b.j]) worst = std::max(worst, norm(out.atoms[b.j].pos - out.atoms[b.i].pos));
+  if (rep) {
+    rep->beads = int(nbead);
+    rep->atoms = int(out.atoms.size());
+    rep->rms_turn = std::sqrt(turn2 / double(std::max<size_t>(1, nbead)));
+    rep->worst_bond = worst;
+    char b[240];
+    std::snprintf(b, sizeof b, "%d atoms carried by %d beads (%d backbone atoms each) · rotations %.1f° rms · longest bond between beads %.2f Å before relaxing",
+                  rep->atoms, rep->beads, per_bead, rep->rms_turn, worst);
+    rep->notes.push_back(b);
+  }
+  return out;
+}
+
 }  // namespace caps

@@ -422,4 +422,28 @@ public partial class MainViewModel
     }
 }
 
+public partial class MainViewModel
+{
+    /// <summary>Coarse-grained → all-atom: the open all-atom structure's beads (MrPerBead each) moved to the file's
+    /// beads, the atoms carried with them, then relaxed (a new document).</summary>
+    public async Task BackmapFrom(string beadsPath)
+    {
+        if (_doc == null || !Idle) return;
+        var doc = _doc;
+        var per = (int)_mrPerBead;
+        var name = Title.Replace(" (unsaved)", "") + " (backmapped, unsaved)";
+        Status = "Backmapping onto " + System.IO.Path.GetFileName(beadsPath) + " and relaxing…";
+        try
+        {
+            var (d, report) = await Task.Run(() => doc.Backmap(beadsPath, per, true, name));
+            Show(d, name);
+            GrownUnsaved = true;
+            SetModule(67);
+            RefreshResolution();
+            Status = "Backmapped: " + report.Split('\n').FirstOrDefault();
+        }
+        catch (Exception e) { Status = "Backmap: " + e.Message; }
+    }
+}
+
 public sealed record HydrogenRow(string Atom, string Count, string Added);
