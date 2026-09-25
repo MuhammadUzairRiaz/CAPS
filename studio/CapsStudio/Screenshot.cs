@@ -278,6 +278,10 @@ internal static class Screenshot
                     case "diffusion": vm.OpenDiffusion(); if (parts.Length > 1) t = vm.RunDiffusion(); break;
                     case "charges": vm.OpenCharges(); break;
                     case "recipes": vm.OpenRecipes(); break;
+                    case "composer":
+                        if (parts.Length > 1) { var tc = vm.Analyze.Groups.SelectMany(g => g.Chips).ToList(); foreach (var c in tc) c.IsOn = c.Id is "rdf" or "density" or "rg"; t = vm.Analyze.Run(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } t = null; }
+                        vm.OpenComposer();
+                        break;
                     case "orientation": vm.OpenOrientation(); if (parts.Length > 1) t = vm.RunOrientation(); break;
                     case "periodic": vm.OpenPeriodic(); if (parts.Length > 1) vm.PbShow = int.Parse(parts[1]); break;
                 }
@@ -291,6 +295,8 @@ internal static class Screenshot
                 w.ViewModel.ApplyQuery();
                 for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "composerexport")   // composerexport=STEM: the composed figure as STEM.png, .tiff and .pdf
+                foreach (var ext in new[] { ".png", ".tiff", ".pdf" }) Console.WriteLine(w.ViewModel.ExportComposerRaster(kv[1] + ext));
             if (kv[0] == "vision") w.ViewModel.OpenColourVision();                    // vision=1: Settings › Colour vision
             if (kv[0] == "cvd") w.ViewModel.VisionPreview = int.Parse(kv[1]);          // cvd=0..3: the view as seen with a deficiency
             if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested
