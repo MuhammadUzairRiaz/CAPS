@@ -29,8 +29,52 @@ public sealed class LabelOverlay : Control
         InvalidateVisual();
     }
 
+    private List<Point> _lasso = new();
+    private (Point A, Point B)? _arrow;
+    private List<MonitorMark> _monitors = new();
+    /// <summary>The lasso being drawn (view points), or an empty list.</summary>
+    public void SetLasso(List<Point> pts) { _lasso = pts; InvalidateVisual(); }
+    /// <summary>The move tool's drag, from where it started to the cursor, or none.</summary>
+    public void SetArrow((Point A, Point B)? a) { _arrow = a; InvalidateVisual(); }
+    /// <summary>Pinned measurements: a dashed line and label for each distance, a label for angles and dihedrals.</summary>
+    public void SetMonitors(List<MonitorMark> m) { _monitors = m; InvalidateVisual(); }
+
     public override void Render(DrawingContext ctx)
     {
+        var acc = Tokens.Brush("AccB");
+        if (_lasso.Count > 1)
+        {
+            var geo = new StreamGeometry();
+            using (var g = geo.Open())
+            {
+                g.BeginFigure(_lasso[0], true);
+                foreach (var q in _lasso.Skip(1)) g.LineTo(q);
+                g.EndFigure(true);
+            }
+            ctx.DrawGeometry(new SolidColorBrush(Color.FromArgb(0x24, 0xF0, 0xA8, 0x3C)), new Pen(acc, 1.4, new DashStyle([4, 3], 0)), geo);
+        }
+        if (_arrow is { } ar)
+        {
+            var pen = new Pen(acc, 2);
+            ctx.DrawLine(pen, ar.A, ar.B);
+            ctx.DrawEllipse(acc, null, ar.B, 4, 4);
+            ctx.DrawEllipse(null, pen, ar.A, 5, 5);
+        }
+        foreach (var m in _monitors)
+        {
+            var at = m.Line ? new Point((m.X0 + m.X1) / 2, (m.Y0 + m.Y1) / 2) : new Point(m.X0, m.Y0);
+            if (m.Line)
+            {
+                ctx.DrawLine(new Pen(acc, 1.4, new DashStyle([5, 4], 0)), new Point(m.X0, m.Y0), new Point(m.X1, m.Y1));
+                ctx.DrawEllipse(acc, null, new Point(m.X0, m.Y0), 3, 3);
+                ctx.DrawEllipse(acc, null, new Point(m.X1, m.Y1), 3, 3);
+            }
+            var ft = new FormattedText(m.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, 11, acc);
+            var r = new Rect(at.X + 8, at.Y - ft.Height / 2 - 3, ft.Width + 12, ft.Height + 6);
+            ctx.FillRectangle(Tokens.Brush("Bg1B"), r, 4);
+            ctx.DrawRectangle(null, new Pen(acc, 1), r, 4, 4);
+            ctx.DrawText(ft, new Point(r.X + 6, r.Y + 3));
+        }
         if (_lens is { } lz)
         {
             var sel = Tokens.Brush("SelB");

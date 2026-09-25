@@ -3954,6 +3954,15 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
         caps::clean_up(s, m, 0.5);
       }
       what = "Attach " + j.text("name", "fragment") + " to atom " + std::to_string(t + 1);
+    } else if (op == "translate") {   // {atoms | "selection", by: [dx, dy, dz]} Å: the atoms moved rigidly
+      const auto at = atoms_of(d, j);
+      if (at.empty()) throw std::invalid_argument("pick or select the atoms to move");
+      if (!j.has("by") || !j["by"].is_array() || j["by"].size() != 3) throw std::invalid_argument("translate needs by: [dx, dy, dz]");
+      const caps::Vec3 by{j["by"][0].number(), j["by"][1].number(), j["by"][2].number()};
+      for (uint32_t a : at) s.atoms[a].pos = s.atoms[a].pos + by;
+      char b[96];
+      std::snprintf(b, sizeof b, "Move %zu atom(s) by %.2f Å", at.size(), caps::norm(by));
+      what = b;
     } else if (op == "fuse_ring") {   // {i, j}: a benzene ring fused onto the bond i–j, cleaned with UFF
       const uint32_t a = uint32_t(j.num("i", -1)), b = uint32_t(j.num("j", -1));
       const auto at = caps::fuse_benzene(s, a, b);

@@ -570,6 +570,14 @@ internal static class Screenshot
             if (kv[0] == "growshape") w.ViewModel.GrowShape = int.Parse(kv[1]);   // before grow=: 1 slab, 2 cylinder, 3 around a cylinder
             if (kv[0] == "growchains") w.ViewModel.GrowChainsD = int.Parse(kv[1]);
             if (kv[0] == "growmethod") w.ViewModel.GrowMethod = int.Parse(kv[1]);
+            if (kv[0] == "pin")   // pin=I,J[,K[,L]]: pick the atoms and pin their measurement
+            {
+                var ij = kv[1].Split(',').Select(int.Parse).ToArray();
+                w.ViewModel.Pick(ij[0]);
+                foreach (var a in ij.Skip(1)) w.ViewModel.Pick(a, true);
+                w.ViewModel.PinMeasurement();
+            }
+            if (kv[0] == "tool") w.ViewModel.EditTool = int.Parse(kv[1]);
             if (kv[0] == "restraint")   // restraint=I,J: pick two atoms (indices from 0) and add their distance as a restraint
             {
                 var ij = kv[1].Split(',');

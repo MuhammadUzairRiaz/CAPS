@@ -18,9 +18,18 @@ public sealed record PeriodicCell(int Z, string Symbol, int Row, int Column, boo
 /// delete, change elements, fill hydrogens, invert a centre, clean up with UFF, undo and redo.</summary>
 public sealed partial class MainViewModel
 {
-    // 0 select, 1 place atom, 2 draw bond, 3 delete
+    // 0 select, 1 place atom, 2 draw bond, 3 delete, 4 lasso select, 5 translate
     private int _editTool;
-    public int EditTool { get => _editTool; set { if (Set(ref _editTool, value)) { _bondFirst = -1; Raise(nameof(IsPlaceTool)); Raise(nameof(IsBondTool)); Raise(nameof(IsDeleteTool)); Raise(nameof(EditHint)); } } }
+    public int EditTool
+    {
+        get => _editTool;
+        set
+        {
+            if (!Set(ref _editTool, value)) return;
+            _bondFirst = -1;
+            foreach (var n in new[] { nameof(IsPlaceTool), nameof(IsBondTool), nameof(IsDeleteTool), nameof(IsLassoTool), nameof(IsMoveTool), nameof(EditHint) }) Raise(n);
+        }
+    }
     public bool IsPlaceTool => _editTool == 1;
     public bool IsBondTool => _editTool == 2;
     public bool IsDeleteTool => _editTool == 3;
@@ -30,6 +39,8 @@ public sealed partial class MainViewModel
         1 => $"Place {_buildElement}: click an atom to bond one to it",
         2 => _bondFirst < 0 ? "Draw bond: click the first atom" : $"Draw bond: click the atom to bond to {_bondFirst + 1}",
         3 => "Delete: click an atom",
+        4 => "Lasso: drag around atoms to select them (⇧ adds to the selection)",
+        5 => "Move: drag the selection (or the molecule under the cursor) in the view plane; release to place it",
         _ => "",
     };
 
@@ -117,6 +128,10 @@ public sealed partial class MainViewModel
                 break;
             case 3:
                 if (atom >= 0) RunEdit(new { op = "delete", atoms = new[] { atom } });
+                break;
+            case 4:   // a click, not a lasso: that atom alone
+            case 5:
+                if (atom >= 0) Pick(atom);
                 break;
         }
     }
