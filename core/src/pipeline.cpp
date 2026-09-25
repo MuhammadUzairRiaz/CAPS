@@ -480,14 +480,40 @@ void step_compute_property(PipelineState& st, const Json& p, StepStatus& out) {
 
 void step_wrap(PipelineState& st, const Json&, StepStatus& out) {
   if (!st.system.cell.valid()) { out.level = "warning"; out.summary = "no cell: nothing to wrap"; return; }
+  System& s = st.system;
+  const auto mol = s.molecules();
+  std::set<int> crossing;
+  DataTable t;   // the first atoms outside the cell: where they are, their image, where they fold to
+  t.name = "outside";
+  t.title = "Image flags · atoms outside the cell";
+  t.columns = {"Identifier", "Molecule", "x (Å)", "y (Å)", "z (Å)", "ix", "iy", "iz", "wrapped x", "wrapped y", "wrapped z"};
   size_t k = 0;
-  for (auto& a : st.system.atoms) {
-    const Vec3 w = st.system.cell.wrap(a.pos);
-    if (norm(w - a.pos) > 1e-9) ++k;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    auto& a = s.atoms[i];
+    const Vec3 w = s.cell.wrap(a.pos);
+    if (norm(w - a.pos) > 1e-9) {
+      ++k;
+      crossing.insert(mol[i]);
+      if (t.rows.size() < 200) {
+        const Vec3 f = s.cell.to_fractional(a.pos);
+        t.rows.push_back({double(a.id), double(a.mol ? a.mol : mol[i] + 1), a.pos[0], a.pos[1], a.pos[2], std::floor(f[0]), std::floor(f[1]), std::floor(f[2]), w[0], w[1], w[2]});
+      }
+    }
     a.pos = w;
   }
-  st.system.unwrapped = false;
-  out.summary = std::to_string(k) + " moved into the cell";
+  // bonds that now reach across a face (drawn hidden rather than as long sticks)
+  const double half = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
+  size_t across = 0;
+  for (const auto& b : s.bonds) across += norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half ? 1 : 0;
+  s.unwrapped = false;
+  st.tables.push_back(std::move(t));
+  st.set_attribute("Wrap.atoms_outside", double(k));
+  st.set_attribute("Wrap.molecules_crossing", double(crossing.size()));
+  st.set_attribute("Wrap.bonds_across_faces", double(across));
+  int nm = 0;
+  s.molecules(&nm);
+  out.summary = std::to_string(k) + " atoms outside folded in · " + std::to_string(crossing.size()) + " of " + std::to_string(nm) + " molecules cross faces · " +
+                std::to_string(across) + " bonds across faces";
 }
 
 void step_replicate(PipelineState& st, const Json& p, StepStatus& out) {
@@ -556,9 +582,32 @@ void step_histogram(PipelineState& st, const Json& p, StepStatus& out) {
   t.name = "histogram";
   t.title = "Histogram · " + prop;
   t.columns = {prop, "Count"};
-  for (int k = 0; k < bins; ++k) t.rows.push_back({lo + (k + 0.5) * w, h[size_t(k)]});
+  // stacked by a category (Type, Molecule, Element …): one count column per value, labelled by the type's name
+  const std::string by = p.text("stack_by", "");
+  std::vector<double> cat;
+  std::map<double, std::vector<double>> per;
+  if (!by.empty() && by != "none" && property_values(st, by, cat)) {
+    for (size_t i = 0; i < v.size(); ++i) {
+      if ((only_sel && !st.selected[i]) || !std::isfinite(v[i]) || v[i] < lo || v[i] > hi) continue;
+      auto& col = per[cat[i]];
+      col.resize(size_t(bins), 0);
+      col[size_t(std::min(bins - 1, int((v[i] - lo) / w)))] += 1;
+    }
+    for (const auto& [c, col] : per) {
+      std::string name = by + " " + fmt("%g", c);
+      if (by == "Type")
+        for (const auto& ti : st.system.types) if (ti.type == int(c) && !ti.label.empty()) name = ti.label;
+      if (by == "Element") name = element(int(c)).symbol;
+      t.columns.push_back(name);
+    }
+  }
+  for (int k = 0; k < bins; ++k) {
+    std::vector<double> row = {lo + (k + 0.5) * w, h[size_t(k)]};
+    for (const auto& [c, col] : per) row.push_back(col[size_t(k)]);
+    t.rows.push_back(std::move(row));
+  }
   st.tables.push_back(std::move(t));
-  out.summary = std::to_string(used) + " values in " + std::to_string(bins) + " bins";
+  out.summary = std::to_string(used) + " values in " + std::to_string(bins) + " bins" + (per.empty() ? "" : " · stacked by " + by + " (" + std::to_string(per.size()) + ")");
 }
 
 void step_binning(PipelineState& st, const Json& p, StepStatus& out) {
@@ -705,7 +754,7 @@ void step_unwrap(PipelineState& st, const Json&, StepStatus& out) {
   out.summary = std::to_string(k) + " moved · molecules whole";
 }
 
-void step_molecule_shape(PipelineState& st, const Json&, StepStatus& out) {
+void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {
   System whole = st.system;
   if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
   const auto shapes = molecule_shapes(whole);
@@ -715,17 +764,29 @@ void step_molecule_shape(PipelineState& st, const Json&, StepStatus& out) {
   auto& k2 = st.props["MoleculeKappa2"];
   auto& as = st.props["MoleculeAsphericity"];
   rg.assign(n, 0); k2.assign(n, 0); as.assign(n, 0);
+  // end-to-end distance of each molecule's backbone (0 for molecules without one)
+  std::vector<double> ree(shapes.size(), 0.0);
+  for (const auto& path : backbones(whole, 4)) ree[size_t(mol[path.front()])] = norm(whole.atoms[path.back()].pos - whole.atoms[path.front()].pos);
   DataTable t;
   t.name = "molecules";
   t.title = "Molecule shape";
-  t.columns = {"Molecule", "Atoms", "Mass (g/mol)", "Rg (Å)", "κ²", "Asphericity (Å²)", "COM.X", "COM.Y", "COM.Z"};
+  t.columns = {"Molecule", "Atoms", "Mass (g/mol)", "Rg (Å)", "Ree (Å)", "Ree²/Rg²", "b (Å²)", "c (Å²)", "κ²", "λ₁", "λ₂", "λ₃", "COM.X", "COM.Y", "COM.Z"};
   double mrg = 0, mk2 = 0;
+  const bool glyphs = flag(p, "glyphs", true);
   for (size_t m = 0; m < shapes.size(); ++m) {
     const auto& sh = shapes[m];
-    const double b = sh.lambda[2] - 0.5 * (sh.lambda[0] + sh.lambda[1]);
-    t.rows.push_back({double(m + 1), double(sh.atoms), sh.mass, sh.rg, sh.kappa2, b, sh.com[0], sh.com[1], sh.com[2]});
+    const double b = sh.lambda[2] - 0.5 * (sh.lambda[0] + sh.lambda[1]);   // asphericity
+    const double c = sh.lambda[1] - sh.lambda[0];                            // acylindricity
+    t.rows.push_back({double(m + 1), double(sh.atoms), sh.mass, sh.rg, ree[m], sh.rg > 0 ? ree[m] * ree[m] / (sh.rg * sh.rg) : 0.0, b, c, sh.kappa2,
+                      sh.lambda[0], sh.lambda[1], sh.lambda[2], sh.com[0], sh.com[1], sh.com[2]});
     mrg += sh.rg;
     mk2 += sh.kappa2;
+    if (glyphs && sh.atoms > 2)   // principal axes ±√(3λ); the longest drawn thick
+      for (int k = 0; k < 3; ++k) {
+        const double half = std::sqrt(3 * std::max(0.0, sh.lambda[k]));
+        if (half < 0.05) continue;
+        st.segments.push_back({sh.com - sh.axis[k] * half, sh.com + sh.axis[k] * half, k == 2 ? 0xF0A83Cu : 0x6CC4D8u, k == 2 ? 0.28 : 0.14, false});
+      }
   }
   for (size_t i = 0; i < n; ++i) {
     const auto& sh = shapes[size_t(mol[i])];

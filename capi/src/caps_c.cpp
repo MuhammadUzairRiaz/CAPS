@@ -147,7 +147,8 @@ struct caps_doc {
   int atom_values_ramp = 0;
   // Backbone style (design/boards/DisplayStyles): per atom 1 main chain, 2 heavy atom of a molecule without one, 0 hidden;
   // recomputed when the atom or bond count changes
-  std::vector<uint8_t> bb_mask;
+  std::vector<uint8_t> bb_mask, bb_mask_p;   // the frame's, and the pipeline result's (keyed by the result object)
+  const void* bb_p = nullptr;
   size_t bb_atoms = SIZE_MAX, bb_bonds = SIZE_MAX;
   int bb_chains = 0, bb_atoms_on = 0;
   // Display options (design/boards/DisplayStyles, LensView): view only, the structure is untouched
@@ -338,6 +339,24 @@ const std::vector<uint8_t>& backbone_mask(const caps_doc* dc) {
   return d->bb_mask;
 }
 
+// The same for the pipeline's particles (replicas and deletions change which atoms there are).
+const std::vector<uint8_t>& backbone_mask_pipeline(const caps_doc* dc) {
+  auto* d = const_cast<caps_doc*>(dc);
+  const auto* key = d->pstate.get();
+  if (d->bb_p == key && d->bb_mask_p.size() == d->pstate->system.atoms.size()) return d->bb_mask_p;
+  const auto& s = d->pstate->system;
+  d->bb_p = key;
+  d->bb_mask_p.assign(s.atoms.size(), 0);
+  int nm = 0;
+  const auto mol = s.molecules(&nm);
+  std::vector<char> has(size_t(std::max(nm, 1)), 0);
+  for (const auto& path : caps::backbones(s, 4))
+    for (uint32_t a : path) d->bb_mask_p[a] = 1, has[size_t(mol[a])] = 1;
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (!has[size_t(mol[i])] && s.atoms[i].element != 1) d->bb_mask_p[i] = 2;
+  return d->bb_mask_p;
+}
+
 caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   caps::RenderOptions r;
   if (!o) return r;
@@ -364,6 +383,12 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   }
   if (!d->pstate) { r.segments = d->overlay; r.segments.insert(r.segments.end(), d->checks.begin(), d->checks.end()); }
   if (d->void_mesh) r.meshes.push_back({d->void_mesh.get(), 0x4FB3D9, 0.32f});
+  if (d->pstate && r.style == caps::Style::Backbone) {   // tubes through the pipeline's chains too
+    const auto& m = backbone_mask_pipeline(d);
+    r.atom_style.resize(m.size());
+    for (size_t i = 0; i < m.size(); ++i)
+      r.atom_style[i] = uint8_t(m[i] == 1 ? caps::Style::Backbone : m[i] == 2 ? caps::Style::NoHydrogens : caps::Style::Hidden);
+  }
   const auto& D = d->display;
   const bool appearance_styles = d->look.active && d->look.style.size() == d->frame.atoms.size();
   if (!d->pstate && !appearance_styles && (r.style == caps::Style::Backbone || D.polar_h_only || D.lens || (D.selection_full && !d->selection.empty()))) {

@@ -97,7 +97,7 @@ std::vector<MoleculeShape> molecule_shapes(const System& s) {
     o.molecule = k;
     o.mass = m[k];
     o.com = com[k];
-    for (int j = 0; j < 3; ++j) o.lambda[j] = w[j];
+    for (int j = 0; j < 3; ++j) o.lambda[j] = w[j], o.axis[j] = {V[0][j], V[1][j], V[2][j]};
     const double t = w[0] + w[1] + w[2];
     o.rg = std::sqrt(std::max(0.0, t));
     o.kappa2 = t > 0 ? 1 - 3 * (w[0] * w[1] + w[1] * w[2] + w[2] * w[0]) / (t * t) : 0;

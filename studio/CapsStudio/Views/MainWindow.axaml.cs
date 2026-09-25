@@ -74,6 +74,8 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
         RenderGuide.Vm = _vm;
+        PipeTablePlot.Brushable = true;
+        PipeTablePlot.Brushed += (x0, x1, y0, y1) => _vm.ApplyBrush(x0, x1, y0, y1);
         _vm.PipeTableChanged += () =>
         {
             PipeTablePlot.XLabel = _vm.PipeTableXLabel;
