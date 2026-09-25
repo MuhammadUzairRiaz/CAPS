@@ -24,7 +24,9 @@ internal static class Screenshot
             : Path.Combine(Path.GetTempPath(), "caps-screenshot-settings.json");
         ViewModels.RecentFiles.Override = Environment.GetEnvironmentVariable("CAPS_RECENT_DIR") is { Length: > 0 } rd ? rd
             : Path.Combine(Path.GetTempPath(), "caps-screenshot-recent");
-        var w = new MainWindow { Width = 1440, Height = 900 };
+        // CAPS_SHOT_SIZE=WxH (default 1440x900): the compact layout starts below 1440 px
+        var size = (Environment.GetEnvironmentVariable("CAPS_SHOT_SIZE") ?? "1440x900").Split('x');
+        var w = new MainWindow { Width = double.Parse(size[0]), Height = double.Parse(size[1]) };
         w.Show();
         if (!string.IsNullOrEmpty(file)) w.OpenOnStart(file, string.IsNullOrEmpty(topo) ? null : topo);
         // Let layout, the async render and the bitmap swap complete.

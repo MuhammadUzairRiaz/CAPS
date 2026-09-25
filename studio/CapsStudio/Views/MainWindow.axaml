@@ -8,6 +8,19 @@
         Title="CAPS Studio"
         Icon="/Assets/caps_256.png"
         Width="1440" Height="900" MinWidth="1024" MinHeight="640">
+  <Window.Styles>
+    <!-- Compact layout (design/boards/CompactLayout): below 1440 px the rail and the toolbar's view options show icons
+         only, the inspector and the project become drawers over the view, and the curves dock folds to its tabs. -->
+    <Style Selector="Border#Rail.compact Button.rail TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Border#Rail.compact Button.rail Panel"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
+    <Style Selector="StackPanel#ToolbarRight.compact Button TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="StackPanel#ToolbarRight.compact ToggleButton TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Button.sidetab"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="96" /><Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="2,0,0,0" /><Setter Property="BorderBrush" Value="Transparent" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <Style Selector="Button.sidetab.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Button.sidetab TextBlock"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+    <Style Selector="Button.sidetab.on TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  </Window.Styles>
 
   <LayoutTransformControl x:Name="ScaleRoot">
   <Grid RowDefinitions="44,*,26">
@@ -69,7 +82,7 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Row="1" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
+    <Grid x:Name="Body" Grid.Row="1" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
 
       <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
       <Border x:Name="Rail" Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
@@ -186,7 +199,7 @@
       <!-- Toolbar (Main board): tools, builder tools, view options on the right -->
       <Border x:Name="Toolbar" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
-          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+          <StackPanel x:Name="ToolbarRight" DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
             <Button Classes="tool" Click="OnExportDialog" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Export image or movie (⌘E)"><local:Icon Kind="download" Size="18" /></Button>
             <Button Classes="tool" Click="OnSplit" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Split view: this document beside another, cameras synced (design/boards/LightSplit)"><local:Icon Kind="layers" Size="18" /></Button>
             <ToggleButton Classes="tool" IsChecked="{Binding InteractionsOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
@@ -271,7 +284,7 @@
       <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="0,*,Auto,Auto">
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
         <!-- Project (Main board): documents and what is in them; fragments for the builder -->
-        <Border x:Name="ProjectPanel" Grid.Column="0" Width="260" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsStudio}">
+        <Border x:Name="ProjectPanel" Grid.Column="0" Width="260" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding ProjectPanelShown}">
           <DockPanel>
             <Border DockPanel.Dock="Top" Classes="phead">
               <DockPanel>
@@ -684,6 +697,7 @@
               <Binding Path="ShowAnalysisPanel" />
             </MultiBinding>
           </Border.IsVisible>
+          <Panel>
           <TabControl x:Name="AnalysisTabs" Padding="0" Margin="0,-6,0,0">
             <TabItem Header="g(r)" FontSize="13">
               <Grid ColumnDefinitions="*,220" ColumnSpacing="18">
@@ -782,6 +796,13 @@
               </Grid>
             </TabItem>
           </TabControl>
+          <Button x:Name="DockToggle" Classes="tool" IsVisible="{Binding Compact}" Click="OnDockToggle" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,0,0"
+                  ToolTip.Tip="Show or fold the curves">
+            <local:Icon Kind="chev" Size="14" RenderTransformOrigin="50%,50%">
+              <local:Icon.RenderTransform><RotateTransform Angle="{Binding DockChevronAngle}" /></local:Icon.RenderTransform>
+            </local:Icon>
+          </Button>
+          </Panel>
         </Border>
 
         <!-- Reading the other frames (design/boards/VisLoading): how far the file has been read -->
@@ -820,6 +841,19 @@
         </Border>
       </Grid>
 
+      <!-- Compact layout: the drawers' side tabs -->
+      <Border x:Name="SideTabs" Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0" IsVisible="False">
+        <StackPanel>
+          <Button Classes="sidetab" Classes.on="{Binding InspectorDrawer}" Click="OnInspectorDrawer" ToolTip.Tip="Inspector">
+            <LayoutTransformControl><LayoutTransformControl.LayoutTransform><RotateTransform Angle="90" /></LayoutTransformControl.LayoutTransform>
+              <TextBlock Text="Inspector" FontSize="11.5" /></LayoutTransformControl>
+          </Button>
+          <Button Classes="sidetab" Classes.on="{Binding ProjectDrawer}" Click="OnProjectDrawer" ToolTip.Tip="Project and fragments">
+            <LayoutTransformControl><LayoutTransformControl.LayoutTransform><RotateTransform Angle="90" /></LayoutTransformControl.LayoutTransform>
+              <TextBlock Text="Project" FontSize="11.5" /></LayoutTransformControl>
+          </Button>
+        </StackPanel>
+      </Border>
       <!-- Inspector -->
       <Border x:Name="InspectorPanel" Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
         <Panel>

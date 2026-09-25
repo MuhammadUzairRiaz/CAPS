@@ -380,6 +380,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsMacro));
         Raise(nameof(IsProvenance));
         Raise(nameof(IsMechanics));
+        Raise(nameof(ProjectPanelShown));
         Raise(nameof(IsScattering));
         Raise(nameof(IsFreeVolume));
         SyncFocusChips();
