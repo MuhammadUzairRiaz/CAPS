@@ -57,6 +57,8 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <numeric>
+#include <functional>
 #include <sstream>
 
 using caps::operator+;
@@ -134,6 +136,9 @@ struct caps_doc {
   caps::Manifest prov;                             // provenance: the steps that produced this structure
   std::vector<caps::VoidSphere> voids;             // caps_voids: the largest empty spheres of the frame
   std::unique_ptr<caps::Mesh> void_mesh;           // … drawn translucent when shown
+  std::array<int, 3> images{1, 1, 1};              // caps_set_images: periodic images drawn around the cell (faded)
+  float image_fade = 0.7f;
+  int save_wrap = 0;                               // caps_set_save_wrap: 0 as shown, 1 atoms into the cell, 2 molecule centres
   int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
   double vision_severity = 1.0;
 };
@@ -804,9 +809,44 @@ caps_doc* caps_grow(const caps_grow_opts* o, caps_progress_fn progress, void* us
   return nullptr;
 }
 
+int32_t save_frame(caps_doc* d, const std::string& p);
+
 int32_t caps_save(caps_doc* d, const char* path) {
   return guard([&] {
     const std::string p = path;
+    if (d->save_wrap && d->frame.cell.valid()) {   // wrap on save: a copy, the document keeps its display
+      caps::System w = d->frame;
+      const auto mol = w.molecules();
+      std::vector<caps::Vec3> shift(w.atoms.size(), caps::Vec3{0, 0, 0});
+      if (d->save_wrap == 2) {   // molecule centres into the cell, molecules kept whole
+        std::map<int, std::pair<caps::Vec3, int>> cen;
+        for (size_t i = 0; i < w.atoms.size(); ++i) { auto& c = cen[mol[i]]; c.first = c.first + w.atoms[i].pos; c.second++; }
+        std::map<int, caps::Vec3> sh;
+        for (auto& [m, c] : cen) {
+          const caps::Vec3 centre = c.first * (1.0 / c.second);
+          caps::Vec3 f = w.cell.to_fractional(centre);
+          for (int k = 0; k < 3; ++k) f[k] = std::floor(f[k]);
+          sh[m] = w.cell.to_cartesian(f) - w.cell.to_cartesian(caps::Vec3{0, 0, 0});
+        }
+        for (size_t i = 0; i < w.atoms.size(); ++i) w.atoms[i].pos = w.atoms[i].pos - sh[mol[i]];
+      } else {
+        for (auto& a : w.atoms) {
+          caps::Vec3 f = w.cell.to_fractional(a.pos);
+          for (int k = 0; k < 3; ++k) f[k] -= std::floor(f[k]);
+          a.pos = w.cell.to_cartesian(f);
+        }
+      }
+      const caps::System keep = d->frame;
+      d->frame = w;
+      struct Restore { caps_doc* d; caps::System s; ~Restore() { d->frame = std::move(s); } } restore{d, keep};
+      return save_frame(d, p);
+    }
+    return save_frame(d, p);
+  });
+}
+
+int32_t save_frame(caps_doc* d, const std::string& p) {
+  return guard([&] {
     auto ends = [&](const char* e) { const std::string x = e; return p.size() >= x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
     if (ends(".pdb")) caps::write_pdb(d->frame, p);
     else if (ends(".xyz")) caps::write_xyz(d->frame, p);
@@ -1580,7 +1620,28 @@ const char* caps_note(caps_doc* d, int32_t k) { return (k >= 0 && size_t(k) < d-
 
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba) {
   return guard([&] {
-    auto img = d->renderer.render(shown(d), cam_of(cam), opts_of(d, opt));
+    auto ro = opts_of(d, opt);
+    const caps::System& base = shown(d);
+    caps::System imaged;
+    const bool images = (d->images[0] * d->images[1] * d->images[2] > 1) && base.cell.valid() && !d->pstate;
+    if (images) {   // copies of the frame around the cell, faded; picks map back to the original atoms
+      imaged = base;
+      const size_t n = base.atoms.size();
+      ro.faded.assign(n, 0);
+      for (int a = 0; a < d->images[0]; ++a)
+        for (int b = 0; b < d->images[1]; ++b)
+          for (int c = 0; c < d->images[2]; ++c) {
+            const int ia = a - (d->images[0] - 1) / 2, ib = b - (d->images[1] - 1) / 2, ic = c - (d->images[2] - 1) / 2;
+            if (!ia && !ib && !ic) continue;
+            const caps::Vec3 t = base.cell.a * double(ia) + base.cell.b * double(ib) + base.cell.c * double(ic);
+            const uint32_t off = uint32_t(imaged.atoms.size());
+            for (const auto& at : base.atoms) { imaged.atoms.push_back(at); imaged.atoms.back().pos = at.pos + t; }
+            for (const auto& bd : base.bonds) imaged.bonds.push_back({bd.i + off, bd.j + off, bd.order});
+            ro.faded.insert(ro.faded.end(), n, 1);
+          }
+      ro.fade = d->image_fade;
+    }
+    auto img = d->renderer.render(images ? imaged : base, cam_of(cam), ro);
     if (d->vision) caps::simulate_vision(img, caps::Vision(d->vision), d->vision_severity);
     std::memcpy(rgba, img.rgba.data(), img.rgba.size());
     return 0;
@@ -1588,7 +1649,8 @@ int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts*
 }
 
 int32_t caps_pick(caps_doc* d, int32_t x, int32_t y) {
-  const int k = d->renderer.pick(x, y);
+  int k = d->renderer.pick(x, y);
+  if (k >= 0 && !d->pstate && !d->frame.atoms.empty()) k = int(size_t(k) % d->frame.atoms.size());   // an image atom picks its original
   if (k < 0 || !d->pstate) return k;
   return size_t(k) < d->pstate->origin.size() ? d->pstate->origin[size_t(k)] : -1;   // the frame's atom under the pixel
 }
@@ -4540,6 +4602,114 @@ extern "C" int32_t caps_vision_check(const char* palettes_json, double threshold
     }
     out["pairs"] = std::move(pairs);
     return report_out(out.dump(0), json, cap);
+  });
+}
+
+extern "C" int32_t caps_periodic(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System& f = d->frame;
+    if (!f.cell.valid()) throw std::runtime_error("the structure has no periodic cell");
+    caps::System whole = f;
+    caps::make_molecules_whole(whole);
+    const auto mol = whole.molecules();
+    const size_t n = whole.atoms.size();
+    auto wrapped = [&](const caps::Vec3& p) {
+      caps::Vec3 fr = whole.cell.to_fractional(p);
+      for (int k = 0; k < 3; ++k) fr[k] -= std::floor(fr[k]);
+      return whole.cell.to_cartesian(fr);
+    };
+    std::vector<caps::Vec3> w(n);
+    for (size_t i = 0; i < n; ++i) w[i] = wrapped(whole.atoms[i].pos);
+    // crossing: any atom of the whole molecule outside the cell; pieces: components of the wrapped frame whose bonds
+    // are shorter than half the smallest cell width
+    std::map<int, bool> crosses;
+    for (size_t i = 0; i < n; ++i) {
+      const caps::Vec3 fr = whole.cell.to_fractional(whole.atoms[i].pos);
+      bool out = false;
+      for (int k = 0; k < 3; ++k) out = out || fr[k] < -1e-9 || fr[k] >= 1.0 - 1e-12;
+      crosses[mol[i]] = crosses[mol[i]] || out;
+    }
+    const double half = 0.5 * std::min({caps::norm(whole.cell.a), caps::norm(whole.cell.b), caps::norm(whole.cell.c)});
+    std::vector<int> parent(n);
+    std::iota(parent.begin(), parent.end(), 0);
+    std::function<int(int)> find = [&](int x) { return parent[size_t(x)] == x ? x : parent[size_t(x)] = find(parent[size_t(x)]); };
+    for (const auto& b : whole.bonds)
+      if (caps::norm(w[b.i] - w[b.j]) < half) parent[size_t(find(int(b.i)))] = find(int(b.j));
+    std::set<int> roots;
+    for (size_t i = 0; i < n; ++i) roots.insert(find(int(i)));
+    int crossing = 0;
+    for (const auto& [m, c] : crosses) crossing += c ? 1 : 0;
+    r["ok"] = true;
+    r["molecules"] = double(crosses.size());
+    r["crossing"] = double(crossing);
+    r["pieces"] = double(roots.size());
+    caps::Json box = caps::Json::array();
+    for (const auto& v : {whole.cell.a, whole.cell.b, whole.cell.c}) box.push_back(caps::Json(caps::norm(v)));
+    r["box"] = std::move(box);
+    const double la = caps::norm(whole.cell.a), lb = caps::norm(whole.cell.b), lc = caps::norm(whole.cell.c);
+    r["cubic"] = std::fabs(la - lb) < 1e-3 && std::fabs(la - lc) < 1e-3 && std::fabs(caps::dot(whole.cell.a, whole.cell.b)) < 1e-6 && std::fabs(caps::dot(whole.cell.a, whole.cell.c)) < 1e-6;
+    // one molecule, measured three ways
+    long want = long(j.num("molecule", 0));
+    std::vector<int> ids;
+    for (const auto& [m, c] : crosses) ids.push_back(m);
+    int m = ids.empty() ? -1 : ids.front();
+    if (want > 0 && size_t(want) <= ids.size()) m = ids[size_t(want - 1)];
+    else for (const auto& [mm, c] : crosses) if (c) { m = mm; break; }
+    r["molecule"] = double(std::find(ids.begin(), ids.end(), m) - ids.begin() + 1);
+    auto three = [&](uint32_t a, uint32_t b) {
+      caps::Json e = caps::Json::object();
+      e["i"] = double(a + 1), e["j"] = double(b + 1);
+      e["wrapped"] = caps::norm(w[a] - w[b]);
+      e["min_image"] = caps::norm(whole.cell.minimum_image(whole.atoms[a].pos - whole.atoms[b].pos));
+      e["whole"] = caps::norm(whole.atoms[a].pos - whole.atoms[b].pos);
+      return e;
+    };
+    for (const auto& b : whole.bonds)
+      if (mol[b.i] == m && caps::norm(w[b.i] - w[b.j]) >= half) { r["bond"] = three(b.i, b.j); break; }
+    uint32_t first = uint32_t(n), last = 0;
+    for (uint32_t i = 0; i < n; ++i) if (mol[i] == m) { first = std::min(first, i); last = std::max(last, i); }
+    // chain ends: the heavy atoms at the two ends of the molecule's index range
+    while (first < last && whole.atoms[first].element == 1) ++first;
+    while (last > first && whole.atoms[last].element == 1) --last;
+    if (first < last) r["ends"] = three(first, last);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_set_images(caps_doc* d, int32_t na, int32_t nb, int32_t nc, double fade) {
+  if (!d) return -1;
+  d->images = {std::clamp(na, 1, 5), std::clamp(nb, 1, 5), std::clamp(nc, 1, 5)};
+  d->image_fade = float(std::clamp(fade, 0.0, 1.0));
+  return 0;
+}
+
+extern "C" int32_t caps_set_save_wrap(caps_doc* d, int32_t mode) {
+  if (!d || mode < 0 || mode > 2) return -1;
+  d->save_wrap = mode;
+  return 0;
+}
+
+extern "C" int32_t caps_centre_on(caps_doc* d, const int32_t* idx, int32_t n) {
+  return guard([&] {
+    const caps::System& f = d->frame;
+    if (!f.cell.valid()) throw std::runtime_error("the structure has no periodic cell");
+    caps::Vec3 c{0, 0, 0};
+    int used = 0;
+    for (int32_t k = 0; k < n; ++k)
+      if (idx[k] >= 0 && size_t(idx[k]) < f.atoms.size()) { c = c + f.atoms[size_t(idx[k])].pos; ++used; }
+    if (!used) throw std::invalid_argument("centre on: no atoms given");
+    c = c * (1.0 / used);
+    const caps::Vec3 mid = f.cell.origin + (f.cell.a + f.cell.b + f.cell.c) * 0.5;
+    push_undo(d, "Centre on " + std::to_string(used) + " atoms");
+    for (auto& p : d->traj.positions.at(d->current)) p = p + (mid - c);
+    refresh(d);
+    return 0;
   });
 }
 
