@@ -212,6 +212,10 @@ public sealed class AnalyzeViewModel : ObservableObject
     public decimal PullTD { get => (decimal)_pullT; set => Set(ref _pullT, (double)Math.Max(1, value), nameof(PullTD)); }
     public decimal PullEqD { get => (decimal)_pullEq; set => Set(ref _pullEq, (double)Math.Max(0, value), nameof(PullEqD)); }
     public bool PullOn => PullShearChip.IsOn || PullNormalChip.IsOn;
+    private int _pullAxis;
+    /// <summary>Shear axis: x, y, or z for pull-out along a fibre.</summary>
+    public int PullAxis { get => _pullAxis; set => Set(ref _pullAxis, value); }
+    public static readonly string[] PullAxes = ["x (slab)", "y (slab)", "z (fibre pull-out)"];
 
     public CapsMechOpts MechOptions()
     {
@@ -220,7 +224,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         {
             Configurations = _cijConfigs, Strain = _cijStrain,
             Temperature = pull ? _pullT : FluctChip.IsOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : _fluctT,
-            Axis = _tensAxis, Rate = pull ? _pullRate : _tensRate, MaxStrain = pull ? _pullDist : _tensMax, LateralFixed = _tensFixed ? 1 : 0,
+            Axis = pull ? _pullAxis : _tensAxis, Rate = pull ? _pullRate : _tensRate, MaxStrain = pull ? _pullDist : _tensMax, LateralFixed = _tensFixed ? 1 : 0,
             TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs,
             EquilibratePs = pull ? (_pullEq > 0 ? _pullEq : -1) : _eqPs > 0 ? _eqPs : -1,
         };

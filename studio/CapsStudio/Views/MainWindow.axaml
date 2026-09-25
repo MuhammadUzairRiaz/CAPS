@@ -900,6 +900,8 @@
                       <NumericUpDown Grid.Row="3" Value="{Binding Analyze.PullTD}" Minimum="1" Increment="10" FormatString="0" />
                       <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.PullEqD}" Minimum="0" Increment="1" FormatString="0.#" />
                     </Grid>
+                    <TextBlock Text="Shear axis" Classes="dim" />
+                    <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.PullAxes}" SelectedIndex="{Binding Analyze.PullAxis}" HorizontalAlignment="Stretch" />
                     <TextBlock Classes="dim" TextWrapping="Wrap" Text="The surface (molecule 1) is held; a spring (10 kcal/mol/Å²) drags the film's centre. Steered-MD forces grow with the rate: compare systems at one rate." />
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.StrainChip.IsOn}">

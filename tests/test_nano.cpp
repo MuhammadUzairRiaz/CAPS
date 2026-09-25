@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "caps/crystal.hpp"
+#include "caps/mechanics.hpp"
 #include "caps/nano.hpp"
 
 using namespace caps;
@@ -99,4 +100,40 @@ TEST(Nano, FillerInARubberMatrix) {
   spec.dp = 6;
   const System c = embed_filler(tube, spec, fo, &fr);
   EXPECT_NEAR(norm(c.cell.c), norm(tube.cell.c), 1e-9);
+}
+
+TEST(Nano, SilicaFibreInRubberAndPullOut) {
+  ParticleOptions po;
+  po.shape = ParticleShape::Fibre;
+  po.radius = 6;
+  po.length = 16;
+  po.passivate = true;
+  const System f = nanoparticle(read_cif(kCrystals + "alpha-quartz.cif"), po);
+  EXPECT_NEAR(norm(f.cell.c), 3 * 5.4052, 1e-3);   // whole cells along z, periodic
+  const auto d = degrees(f);
+  for (size_t i = 0; i < f.atoms.size(); ++i) {
+    if (f.atoms[i].element == 14) EXPECT_EQ(d[i], 4);
+    if (f.atoms[i].element == 8) EXPECT_EQ(d[i], 2);
+  }
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "*C/C=C(/C)C*"}};
+  spec.dp = 6;
+  FillerMatrixOptions fo;
+  fo.chains = 5;
+  fo.density = 0.6;
+  fo.keep_axis = {false, false, true};
+  System s = embed_filler(f, spec, fo);
+  EXPECT_NEAR(norm(s.cell.c), norm(f.cell.c), 1e-9);
+  PullOptions pp;
+  pp.axis = 2;
+  pp.distance = 1.5;
+  pp.rate = 10;
+  pp.equilibrate_ps = 0.1;
+  pp.dt = 0.5;
+  const PullResult r = run_pull(s, pp);
+  const double side = 2 * 3.14159265358979 * norm(f.cell.c);   // 2πRL per Å of radius; R reaches the surface hydroxyls
+  EXPECT_GT(r.area, 5 * side);
+  EXPECT_LT(r.area, 9.5 * side);
+  EXPECT_EQ(r.interfaces, 1);
+  EXPECT_GT(r.curve.size(), 3u);
 }
