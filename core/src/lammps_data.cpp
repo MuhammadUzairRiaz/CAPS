@@ -255,56 +255,22 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   return r;
 }
 
-// Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
-std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e) {
-  std::vector<std::string> r;
-  if (L.pair_hybrid && e.coulomb) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
-  return r;
+// A title read back from a CAPS file carries the old header line: keep the description only.
+std::string clean_title(std::string t, const std::string& ffname) {
+  auto erase_all = [&](const std::string& x) {
+    if (x.empty()) return;
+    for (size_t k; (k = t.find(x)) != std::string::npos;) t.erase(k, x.size());
+  };
+  for (const char* junk : {"CAPS 0.1 · ", "CAPS · ", " · atom_style full", " · units real"}) erase_all(junk);
+  erase_all(" · " + ffname);
+  while (!t.empty() && (t.back() == ' ' || t.back() == '\n' || t.back() == '\r')) t.pop_back();
+  while (!t.empty() && t.front() == ' ') t.erase(t.begin());
+  return t.empty() ? "structure" : t;
 }
 
-}  // namespace
-
-void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path) {
-  const Layout L = build(s, ff);
-  std::ofstream out(path);
-  if (!out) throw std::runtime_error("cannot write " + path);
-  char buf[512];
-  const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
-
-  out << "CAPS 0.1 · " << (s.title.empty() ? "structure" : s.title) << " · " << ff.name << " · units real · atom_style full\n\n";
-  out << s.atoms.size() << " atoms\n";
-  const char* plural[] = {"bonds", "angles", "dihedrals", "impropers"};
-  for (int k = 0; k < 4; ++k) out << kinds[size_t(k)]->term_type.size() << " " << plural[k] << "\n";
-  out << "\n" << ff.type_names.size() << " atom types\n";
-  const char* tnames[] = {"bond", "angle", "dihedral", "improper"};
-  for (int k = 0; k < 4; ++k) out << kinds[size_t(k)]->types.size() << " " << tnames[k] << " types\n";
-  out << "\n";
-  const Cell& c = s.cell;
-  Vec3 lo = c.origin, a = c.a, b = c.b, cc = c.c;
-  if (!c.valid()) { lo = {-50, -50, -50}; a = {100, 0, 0}; b = {0, 100, 0}; cc = {0, 0, 100}; }
-  std::snprintf(buf, sizeof buf, "%.8f %.8f xlo xhi\n%.8f %.8f ylo yhi\n%.8f %.8f zlo zhi\n", lo[0], lo[0] + a[0], lo[1], lo[1] + b[1], lo[2],
-                lo[2] + cc[2]);
-  out << buf;
-  if (std::fabs(b[0]) + std::fabs(cc[0]) + std::fabs(cc[1]) > 0) {
-    std::snprintf(buf, sizeof buf, "%.8f %.8f %.8f xy xz yz\n", b[0], cc[0], cc[1]);
-    out << buf;
-  }
-  out << "\n# LAMMPS commands for these coefficients (units real, atom_style full; CAPS evaluates Coulomb as damped shifted force):\n";
-  for (const auto& l : style_lines(L, ff, e)) out << "#   " << l << "\n";
-  out << "#   read_data <this file>\n";
-  for (const auto& l : after_read(L, e)) out << "#   " << l << "\n";
-  out << "# Pair coefficients: every i-j pair, " << ff.mixing << " mixing applied (nothing is left to LAMMPS's mixing).\n";
-
-  out << "\nMasses\n\n";
-  for (size_t t = 0; t < ff.type_names.size(); ++t) {
-    double m = 0;
-    for (size_t i = 0; i < s.atoms.size(); ++i)
-      if (ff.type_index[i] == int(t)) { m = ff.mass[i]; break; }
-    std::snprintf(buf, sizeof buf, "%zu %.6f  # %s\n", t + 1, m, ff.type_names[t].c_str());
-    out << buf;
-  }
-  // every i-j pair, mixed by the force field's rule (and its explicit pairs): nothing is left to LAMMPS's mixing
-  out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
+// Every i-j pair, mixed by the force field's rule (and its explicit pairs): "i j [style] coefficients  # A B".
+std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
+  std::vector<std::string> r;
   for (size_t a2 = 0; a2 < ff.type_names.size(); ++a2)
     for (size_t b2 = a2; b2 < ff.type_names.size(); ++b2) {
       auto it = ff.pair_func.find({int(a2), int(b2)});
@@ -316,8 +282,62 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
         const PairType pt = mixed_pair(ff, int(a2), int(b2));
         coef = num({pt.eps, pt.sigma});
       }
-      out << a2 + 1 << " " << b2 + 1 << (L.pair_hybrid ? " " + style : "") << coef << "  # " << ff.type_names[a2] << " " << ff.type_names[b2] << "\n";
+      r.push_back(std::to_string(a2 + 1) + " " + std::to_string(b2 + 1) + (L.pair_hybrid ? " " + style : "") + coef + "  # " + ff.type_names[a2] + " " +
+                  ff.type_names[b2]);
     }
+  return r;
+}
+
+// Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
+std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e) {
+  std::vector<std::string> r;
+  if (L.pair_hybrid && e.coulomb) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
+  return r;
+}
+
+}  // namespace
+
+void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs) {
+  const Layout L = build(s, ff);
+  std::ofstream out(path);
+  if (!out) throw std::runtime_error("cannot write " + path);
+  char buf[512];
+  const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
+
+  // the LAMMPS data format: one title line, the counts, the box, then the sections (atom_style full, units real)
+  out << "CAPS · " << clean_title(s.title, ff.name) << " · " << ff.name << "\n\n";
+  out << s.atoms.size() << " atoms\n";
+  const char* plural[] = {"bonds", "angles", "dihedrals", "impropers"};
+  for (int k = 0; k < 4; ++k)
+    if (!kinds[size_t(k)]->term_type.empty()) out << kinds[size_t(k)]->term_type.size() << " " << plural[k] << "\n";
+  out << "\n" << ff.type_names.size() << " atom types\n";
+  const char* tnames[] = {"bond", "angle", "dihedral", "improper"};
+  for (int k = 0; k < 4; ++k)
+    if (!kinds[size_t(k)]->types.empty()) out << kinds[size_t(k)]->types.size() << " " << tnames[k] << " types\n";
+  out << "\n";
+  const Cell& c = s.cell;
+  Vec3 lo = c.origin, a = c.a, b = c.b, cc = c.c;
+  if (!c.valid()) { lo = {-50, -50, -50}; a = {100, 0, 0}; b = {0, 100, 0}; cc = {0, 0, 100}; }
+  std::snprintf(buf, sizeof buf, "%.8f %.8f xlo xhi\n%.8f %.8f ylo yhi\n%.8f %.8f zlo zhi\n", lo[0], lo[0] + a[0], lo[1], lo[1] + b[1], lo[2],
+                lo[2] + cc[2]);
+  out << buf;
+  if (std::fabs(b[0]) + std::fabs(cc[0]) + std::fabs(cc[1]) > 0) {
+    std::snprintf(buf, sizeof buf, "%.8f %.8f %.8f xy xz yz\n", b[0], cc[0], cc[1]);
+    out << buf;
+  }
+  out << "\nMasses\n\n";
+  for (size_t t = 0; t < ff.type_names.size(); ++t) {
+    double m = 0;
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      if (ff.type_index[i] == int(t)) { m = ff.mass[i]; break; }
+    std::snprintf(buf, sizeof buf, "%zu %.6f  # %s\n", t + 1, m, ff.type_names[t].c_str());
+    out << buf;
+  }
+  // every i-j pair, mixed by the force field's rule (and its explicit pairs): nothing is left to LAMMPS's mixing
+  if (pair_coeffs) {
+    out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
+    for (const auto& l : pair_lines(L, ff)) out << l << "\n";
+  }
   for (const Kind* k : kinds) {
     if (k->types.empty()) continue;
     out << "\n" << k->name << " Coeffs  # " << (k->hybrid() ? std::string("hybrid") : k->style_line()) << "\n\n";
@@ -365,27 +385,71 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
 }
 
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
-                        int64_t held_mol) {
+                        int64_t held_mol, bool pair_coeffs, const LammpsRun& run) {
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
-  out << "# LAMMPS input for " << data_path << " (" << ff.name << "), written by CAPS: reproduces CAPS's energy and forces\n";
+  char b[400];
+  out << "# LAMMPS input written by CAPS: " << clean_title(s.title, ff.name) << " · " << ff.name << "\n";
+  out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n\n";
   // a structure without a cell sits in a 100 Å box (as in the data file): periodic, but too large for images to interact
-  out << "units real\natom_style full\nboundary p p p\n";
-  for (const auto& l : style_lines(L, ff, e)) out << l << "\n";
-  out << "read_data " << data_path << "\n";
-  for (const auto& l : after_read(L, e)) out << l << "\n";
-  char b[160];
-  std::snprintf(b, sizeof b, "neighbor %.3g bin\ncomm_modify cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
+  out << "units           real\natom_style      full\nboundary        p p p\n\n";
+  auto aligned = [](const std::string& l) {   // "keyword       arguments", as the rest of the script
+    const size_t sp = l.find(' ');
+    if (sp == std::string::npos || sp >= 16) return l;
+    return l.substr(0, sp) + std::string(16 - sp, ' ') + l.substr(sp + 1);
+  };
+  for (const auto& l : style_lines(L, ff, e)) out << aligned(l) << "\n";
+  out << "\nread_data       " << data_path << "\n";
+  if (pair_coeffs) {
+    out << "\n# pair coefficients: every type pair, " << ff.mixing << " mixing applied by CAPS (nothing left to LAMMPS's mixing)\n";
+    for (const auto& l : pair_lines(L, ff)) out << "pair_coeff      " << l << "\n";
+  }
+  for (const auto& l : after_read(L, e)) out << aligned(l) << "\n";
+  std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (held_mol > 0)
-    out << "# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
-        << "group held molecule " << held_mol << "\n"
-        << "velocity held set 0.0 0.0 0.0\n"
-        << "fix held_in_place held setforce 0.0 0.0 0.0\n";
-  out << "thermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press\n"
-         "thermo_modify format float %.10f\n"
-         "run 0\n";
+    out << "\n# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
+        << "group           held molecule " << held_mol << "\n"
+        << "velocity        held set 0.0 0.0 0.0\n"
+        << "fix             held_in_place held setforce 0.0 0.0 0.0\n";
+  using K = LammpsRun::Kind;
+  switch (run.kind) {
+    case K::Check:
+      out << "\nthermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press\n"
+             "thermo_modify format float %.10f\n"
+             "run 0\n";
+      return;
+    case K::None:
+      return;
+    default:
+      break;
+  }
+  const std::string mobile = held_mol > 0 ? "mobile" : "all";
+  if (held_mol > 0) out << "group           mobile subtract all held\n";
+  std::snprintf(b, sizeof b, "\nthermo          %d\nthermo_style    custom step temp press pe ke etotal density vol\n", std::max(1, run.thermo_every));
+  out << b;
+  if (run.minimize_first || run.kind == K::Minimize)
+    out << "\n# 1. energy minimisation\nmin_style       cg\nminimize        1.0e-4 1.0e-6 5000 50000\nreset_timestep  0\n";
+  if (run.kind == K::Minimize) {
+    out << "\nwrite_data      minimized.data\n";
+    return;
+  }
+  const bool npt = run.kind == K::NPT;
+  out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
+  std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\ntimestep        %.6g\n", mobile.c_str(), run.temperature,
+                static_cast<unsigned long long>(run.seed), run.dt);
+  out << b;
+  if (npt)
+    std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature,
+                  run.tdamp, run.pressure, run.pressure, run.pdamp);
+  else
+    std::snprintf(b, sizeof b, "fix             integrate %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature, run.tdamp);
+  out << b;
+  std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\nrun             %lld\n",
+                std::max(1, run.dump_every), static_cast<long long>(run.steps));
+  out << b;
+  out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
 }
 
 }  // namespace caps
