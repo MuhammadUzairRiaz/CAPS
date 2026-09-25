@@ -3954,6 +3954,17 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
         caps::clean_up(s, m, 0.5);
       }
       what = "Attach " + j.text("name", "fragment") + " to atom " + std::to_string(t + 1);
+    } else if (op == "fuse_ring") {   // {i, j}: a benzene ring fused onto the bond i–j, cleaned with UFF
+      const uint32_t a = uint32_t(j.num("i", -1)), b = uint32_t(j.num("j", -1));
+      const auto at = caps::fuse_benzene(s, a, b);
+      for (uint32_t x : at) added.push_back(double(x));
+      if (j.num("clean", 1) != 0) {
+        std::vector<char> m(s.atoms.size(), 0);
+        for (uint32_t x : at) m[x] = 1;
+        caps::clean_up(s, m, 0.5);
+      }
+      d->selection.assign(s.atoms.size(), 0);
+      what = "Fuse a benzene ring onto " + std::to_string(a + 1) + "–" + std::to_string(b + 1);
     } else if (op == "place") {
       caps::BuildOptions bo;
       bo.forcefield = "uff";

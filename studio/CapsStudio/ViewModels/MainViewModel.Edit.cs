@@ -130,6 +130,13 @@ public sealed partial class MainViewModel
 
     public void AddHydrogensAll() => RunEdit(_selection.Count > 0 ? new { op = "add_h", atoms = (object)_selection.ToArray() } : new { op = "add_h", atoms = (object)"" });
     public void DeletePicked() { if (_selection.Count > 0) RunEdit(new { op = "delete", atoms = _selection.ToArray() }); }
+    /// <summary>A benzene ring fused onto the bond between the two picked atoms (each needs a hydrogen on that side).</summary>
+    public void FuseRingPicked()
+    {
+        if (_selection.Count != 2) { Status = "Pick the two atoms of a bond (⇧ click), then Fuse ring"; return; }
+        RunEdit(new { op = "fuse_ring", i = _selection[0], j = _selection[1] });
+    }
+
     public void InvertPicked()
     {
         if (_selection.Count != 1) { Status = "Pick one tetrahedral centre to invert"; return; }
