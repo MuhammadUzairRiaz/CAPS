@@ -1077,6 +1077,7 @@ int main(int argc, char** argv) {
       ForceField ff;
       auto has = [&](const char* k) { return std::find(ids.begin(), ids.end(), k) != ids.end(); };
       if (o.count("--zbin")) ao.zbin = std::stod(o["--zbin"]);
+      if (o.count("--exclude-mol")) ao.exclude_mol = std::stoll(o["--exclude-mol"]);
       if (has("ced") || has("delta") || has("cij_fluct") || has("adhesion")) {
         System s0 = t.frame(0);
         if (!s0.unwrapped) make_molecules_whole(s0);
