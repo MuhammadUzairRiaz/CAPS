@@ -30,6 +30,9 @@ struct RelaxOptions {
   EnergyOptions energy;
   // The force field to use (from CAPS Field); null: CAPS's built-in GAFF typing of C and H.
   std::shared_ptr<const ForceField> field;
+  // Per atom: 1 = held in place during minimisation (a substrate under a film). Compression and box relaxation still
+  // scale every atom.
+  std::vector<char> fixed;
 
   // Soft push-off before minimising (Auhl et al., J. Chem. Phys. 119, 12718 (2003)): LJ forces capped, the cap raised
   // stage by stage. Needed after Grow with a contact scale below 1, or for any structure with overlaps.

@@ -1,0 +1,17 @@
+# beta-brass CuZn, CsCl type (a = 2.95 Å): the brass coating of tyre steel cord
+data_beta_brass
+_chemical_name_common 'beta-brass'
+_cell_length_a 2.95
+_cell_length_b 2.95
+_cell_length_c 2.95
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Cu1 Cu 0.0 0.0 0.0
+Zn1 Zn 0.5 0.5 0.5

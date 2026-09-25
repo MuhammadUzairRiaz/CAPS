@@ -18,6 +18,8 @@ The product and engineering specification is `REDESIGN_PROMPT.md`. The screen de
 | Renderer: ball-and-stick, space filling, sticks, no-H, backbone; colour by element / molecule / type / distance; outlines, depth cue, picking | `core/src/render.cpp` | working |
 | Figure export: PNG (dark, white or transparent with a real alpha channel) and SVG (no background shape when transparent) | `core/src/image.cpp`, `svg.cpp` | working, tested |
 | Grow: all-atom polymer chains grown inside a periodic cubic cell. Any repeat unit written as SMILES with two attachment points (`*CC(*)c1ccccc1`); homopolymers and copolymers of up to eight units (alternating, block, random with a share per unit, gradient, pattern); tacticity by mirrored units; unit templates embedded and cleaned with GAFF2 (UFF for units GAFF2 cannot type, such as silicones); periodic contact checks against every placed atom, look-ahead, back-tracking and restarts. A curated polystyrene grower with GAFF names and Gasteiger charges | `core/src/polymer.cpp`, `grow.cpp` | working, tested |
+| Crystals and surfaces: CIF reader (symmetry operations expanded, occupancies, bonds across the periodic cell), slabs cleaved along any (hkl) with every termination listed by the bonds it breaks per nm², rectangular surface cells (sheared ≤ 2 % when needed), supercells, vacuum, and passivation of dangling bonds (Si–OH, O–H, H). Library of fibre, cord and filler crystals: α-quartz, graphite, α-iron, β-brass, copper, zinc, zinc oxide, rutile, diamond, rock salt | `core/src/crystal.cpp`, `data/crystals` | working, tested |
+| Interfaces: a polymer film grown onto a slab (any repeat units and sequences; film thickness, density, gap, vacuum or a periodic sandwich), the slab held in place while chains grow and in Relax — fibre–rubber and filler–rubber interfaces | `core/src/interface.cpp` | working, tested |
 | Polymer library: 111 repeat units as SMILES and 16 copolymer presets (natural rubber, ENR-25/50, high-cis BR, NBR, butyl, chloroprene, E-SBR, SBR, SAN, EVA …) | `data/polymers/library.json` | data |
 | Molecule builder: SMILES parser and writer (chirality, E/Z, rings, brackets), 2D depiction, distance-bounds embedding (4D → 3D) with chirality, planarity and square-planar / trigonal-bipyramidal / octahedral centres, GAFF2 or UFF clean-up (UFF whenever the chosen force field cannot type every atom), conformers ranked by energy | `core/src/smiles.cpp`, `embed.cpp` | working, tested |
 | Field (first slice): GAFF 1.81 typing for hydrocarbons (c3, ca, hc, ha) with the reason for each type; bonds, angles, Fourier torsions, impropers, LJ with arithmetic mixing, damped shifted force electrostatics or particle-mesh Ewald, AMBER 1-4 scaling; periodic neighbour list that includes images in cells narrower than twice the cut-off; multithreaded pair terms | `core/src/field.cpp` | working, tested against LAMMPS |
@@ -67,6 +69,11 @@ build/cli/caps build "N[C@@H](C)C(=O)O" -o alanine.mol2 --conformers 5 --ff data
 build/cli/caps grow --units '[*]C/C=C(C)\C[*]' --chains 10 --dp 30 --density 0.5 -o natural_rubber.data
 build/cli/caps grow --units '[*]C/C=C\C[*],*CC(*)c1ccccc1' --sequence random --weights 0.86,0.14 --chains 10 --dp 30 --density 0.5 -o sbr.data
 build/cli/caps grow --units '*CC(*)(C)C(=O)OC' --chains 10 --dp 20 --density 0.5 --scale 0.7 -o pmma.data   # crowded backbones: reduced contacts, then relax
+build/cli/caps surface data/crystals/alpha-quartz.cif --hkl 0,0,1 --list                                     # terminations of quartz (001)
+build/cli/caps surface data/crystals/alpha-quartz.cif --layers 3 --supercell 5,3 --passivate -o quartz_001.data
+build/cli/caps interface data/crystals/alpha-quartz.cif --supercell 5,3 --layers 2 --passivate \
+    --units '[*]C/C=C(C)\C[*]' --dp 12 --film 25 --film-density 0.9 -o nr_on_silica.data              # rubber film on a glass-fibre surface
+build/cli/caps relax nr_on_silica.data --ff uff --fix-mol 1 -o nr_on_silica_relaxed.data                   # UFF, the surface held in place
 ```
 
 Particle-mesh Ewald instead of the damped shifted force (periodic cells):

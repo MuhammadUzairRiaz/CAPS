@@ -1,0 +1,193 @@
+<!-- CAPS Surface & interface builder (design/boards/SurfaceBuilder.dc.html): cleave a crystal, choose the termination,
+     passivate, and grow a polymer film on the surface. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SurfacePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.builder"><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="12,0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="12.5" /></Style>
+    <Style Selector="Button.builder.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Border.layer"><Setter Property="Height" Value="40" /><Setter Property="Padding" Value="10,0" /><Setter Property="Background" Value="{DynamicResource Bg0B}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="6" /></Style>
+  </p:PageBase.Styles>
+
+  <DockPanel>
+    <!-- builders strip -->
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="builder" Content="Polymer" Click="OnPolymer" />
+        <Button Classes="builder" Content="Crystal" IsEnabled="False" ToolTip.Tip="Crystals come from CIF files here; the crystal builder comes with its board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder on" Content="Surface" />
+        <Button Classes="builder" Content="Nanostructure" IsEnabled="False" ToolTip.Tip="Comes with the Nanostructure board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Biomolecule" IsEnabled="False" ToolTip.Tip="Comes with the Biomolecule board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Solvation" Click="OnSolvation" ToolTip.Tip="Pack molecules into regions (CAPS Pack)" />
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,420">
+      <!-- preview: the slab -->
+      <Panel>
+        <v:MolView x:Name="Preview" />
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding SurfStackChip}" FontSize="12" /></Border>
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding SurfStackKind}" FontSize="12" Foreground="{DynamicResource MutedB}" /></Border>
+          <Border Classes="hud" Padding="10,4" IsVisible="{Binding SurfBuilding}"><TextBlock Text="growing the film…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
+        </StackPanel>
+        <Border Classes="hud" Padding="10,4" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+          <TextBlock Text="{Binding SurfSummary}" FontSize="12" Classes="mono" Foreground="{DynamicResource MutedB}" />
+        </Border>
+      </Panel>
+
+      <!-- inspector -->
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="Surface &amp; interface builder" Classes="h2" VerticalAlignment="Center" />
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel" Click="OnCancel" />
+              <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding SurfIdle}">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="layers" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding SurfBuildText}" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <!-- cleave -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="CLEAVE" Classes="h3" />
+                  <Grid ColumnDefinitions="60,60,60,*" ColumnSpacing="8">
+                    <StackPanel Spacing="6"><TextBlock Text="h" Classes="label" /><NumericUpDown Value="{Binding SurfH}" Minimum="-9" Maximum="9" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="k" Classes="label" /><NumericUpDown Value="{Binding SurfK}" Minimum="-9" Maximum="9" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="l" Classes="label" /><NumericUpDown Value="{Binding SurfL}" Minimum="-9" Maximum="9" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="3" Spacing="6">
+                      <DockPanel>
+                        <Button DockPanel.Dock="Right" Classes="link" Content="Open CIF…" Click="OnOpenCif" Padding="0" FontSize="11.5" />
+                        <TextBlock Text="Source" Classes="label" />
+                      </DockPanel>
+                      <ComboBox ItemsSource="{Binding Crystals}" SelectedIndex="{Binding SurfCrystal}" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding SurfCrystalUse}" Classes="dim" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="Slab thickness · layers" Classes="label" />
+                      <NumericUpDown Value="{Binding SurfLayers}" Minimum="1" Maximum="30" Increment="1" FormatString="0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <TextBlock Text="Vacuum · Å" Classes="label" />
+                      <NumericUpDown Value="{Binding SurfVacuum}" Minimum="0" Maximum="200" Increment="1" FormatString="0.0" IsEnabled="{Binding !SurfFilm}" />
+                    </StackPanel>
+                  </Grid>
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Termination" Classes="label" />
+                    <ComboBox x:Name="Terms" ItemsSource="{Binding SurfTerminations}" SelectedIndex="{Binding SurfTermination}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="Surface supercell · a" Classes="label" />
+                      <NumericUpDown Value="{Binding SurfNa}" Minimum="1" Maximum="20" Increment="1" FormatString="0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <TextBlock Text="Surface supercell · b" Classes="label" />
+                      <NumericUpDown Value="{Binding SurfNb}" Minimum="1" Maximum="20" Increment="1" FormatString="0" />
+                    </StackPanel>
+                  </Grid>
+                  <CheckBox Content="{Binding SurfPassivateText}" IsChecked="{Binding SurfPassivate}" />
+                  <CheckBox Content="Rectangular surface cell (needed for a film)" IsChecked="{Binding SurfOrthogonal}" IsEnabled="{Binding !SurfFilm}" />
+                  <TextBlock Text="{Binding SurfBulkText}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <!-- film -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <DockPanel>
+                    <ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SurfFilm}" OnContent="" OffContent="" />
+                    <TextBlock Text="POLYMER FILM" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <StackPanel Spacing="10" IsVisible="{Binding SurfFilm}">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="Polymer" Classes="label" />
+                      <ComboBox ItemsSource="{Binding FilmPolymers}" SelectedItem="{Binding SurfFilmItem}" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                      <StackPanel Spacing="6"><TextBlock Text="Thickness · Å" Classes="label" /><NumericUpDown Value="{Binding FilmThickness}" Minimum="5" Maximum="200" Increment="1" FormatString="0.0" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding FilmDensity}" Minimum="0.1" Maximum="2" Increment="0.05" FormatString="0.00" /></StackPanel>
+                      <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Units per chain" Classes="label" /><NumericUpDown Value="{Binding FilmDp}" Minimum="2" Maximum="500" Increment="1" FormatString="0" /></StackPanel>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                      <StackPanel Spacing="6"><TextBlock Text="Gap to the surface · Å" Classes="label" /><NumericUpDown Value="{Binding FilmGap}" Minimum="0" Maximum="10" Increment="0.5" FormatString="0.0" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Vacuum above · Å (0 = periodic)" Classes="label" /><NumericUpDown Value="{Binding FilmVacuum}" Minimum="0" Maximum="200" Increment="1" FormatString="0.0" /></StackPanel>
+                    </Grid>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Chains grow into the film region avoiding the surface atoms; a dense film steps the contact scale down and needs Relax with push-off. The surface is molecule 1 and stays fixed in Relax." />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
+              <!-- stack -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0"><TextBlock Text="top → bottom" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+                    <TextBlock Text="LAYER STACK" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <ItemsControl ItemsSource="{Binding SurfStack}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:StackLayer">
+                        <Border Classes="layer">
+                          <Grid ColumnDefinitions="14,10,*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Number}" Classes="mono" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                            <Border Grid.Column="1" Width="10" Height="22" CornerRadius="2" Background="{Binding Colour}" />
+                            <TextBlock Grid.Column="2" Text="{Binding Title}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="3" Text="{Binding Height}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+
+              <!-- lattice matching -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0"><TextBlock Text="max strain 2.0 %" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+                    <TextBlock Text="LATTICE MATCHING" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <Grid ColumnDefinitions="*,80,70,70" RowDefinitions="Auto,Auto,Auto" Margin="0,2,0,0">
+                    <TextBlock Text="Layer" Classes="label" />
+                    <TextBlock Grid.Column="1" Text="Supercell" Classes="label" />
+                    <TextBlock Grid.Column="2" Text="Shear" Classes="label" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="Strain b" Classes="label" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Row="1" Text="{Binding SurfTitle}" FontSize="12.5" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SurfMatchCell}" Classes="mono" FontSize="12" Margin="0,6,0,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SurfShear}" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Row="1" Grid.Column="3" Text="0.00 %" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Row="2" Text="{Binding FilmName}" FontSize="12.5" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" IsVisible="{Binding SurfFilm}" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FilmMatchText}" Classes="mono" FontSize="12" Margin="0,6,0,0" IsVisible="{Binding SurfFilm}" />
+                    <TextBlock Grid.Row="2" Grid.Column="2" Text="—" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" IsVisible="{Binding SurfFilm}" />
+                    <TextBlock Grid.Row="2" Grid.Column="3" Text="—" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" IsVisible="{Binding SurfFilm}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding SurfError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding SurfHasError}" />
+                  <TextBlock Text="{Binding SurfLog}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

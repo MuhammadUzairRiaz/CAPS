@@ -1,0 +1,23 @@
+# diamond, cubic (a = 3.567 Å), conventional cell in P1
+data_diamond
+_chemical_name_common 'diamond'
+_cell_length_a 3.567
+_cell_length_b 3.567
+_cell_length_c 3.567
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.00 0.00 0.00
+C2 C 0.00 0.50 0.50
+C3 C 0.50 0.00 0.50
+C4 C 0.50 0.50 0.00
+C5 C 0.25 0.25 0.25
+C6 C 0.25 0.75 0.75
+C7 C 0.75 0.25 0.75
+C8 C 0.75 0.75 0.25

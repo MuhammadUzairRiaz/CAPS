@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 16, "native ABI version 16");
+        Check(Native.AbiVersion() == 17, "native ABI version 17");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -324,6 +324,18 @@ internal static class SelfTest
             Check(vm.Document != null && vm.Document.Summary().Molecules == 4 && vm.GrowComponentName.StartsWith("ENR"), $"grown ENR-50 cell: {vm.Status}");
             vm.UsePolystyreneInGrow();
         }
+
+        // Surface builder: quartz (001) terminations, a hydroxylated slab, and a thin rubber film grown on it
+        vm.OpenSurface();
+        Check(vm.Crystals.Count >= 10 && vm.SurfTerminations.Count == 3 && vm.SurfTerminations[0].StartsWith("O-terminated"),
+              $"surface: {vm.Crystals.Count} crystals · {string.Join(" | ", vm.SurfTerminations)} · {vm.SurfError}");
+        vm.SurfLayers = 1;
+        vm.FilmThickness = 12;
+        vm.FilmDensity = 0.6m;
+        vm.FilmDp = 6;
+        vm.BuildSurface().GetAwaiter().GetResult();
+        var iface = vm.Document?.Summary();
+        Check(iface is { } isum && isum.Molecules > 1 && vm.Title.Contains("film"), $"interface: {vm.Title} · {iface?.Atoms} atoms · {vm.SurfError} {vm.Status}");
 
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),

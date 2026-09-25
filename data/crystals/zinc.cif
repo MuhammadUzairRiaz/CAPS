@@ -1,0 +1,17 @@
+# zinc, hexagonal close packed (a = 2.6649 Å, c = 4.9468 Å)
+data_zinc
+_chemical_name_common 'zinc'
+_cell_length_a 2.6649
+_cell_length_b 2.6649
+_cell_length_c 4.9468
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Zn1 Zn 0.333333 0.666667 0.25
+Zn2 Zn 0.666667 0.333333 0.75

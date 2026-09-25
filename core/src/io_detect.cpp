@@ -2,6 +2,7 @@
 #include <fstream>
 
 #include "caps/analysis.hpp"
+#include "caps/crystal.hpp"
 #include "caps/io.hpp"
 #include "io_util.hpp"
 
@@ -15,6 +16,10 @@ std::string detect_format(const std::string& path) {
   std::getline(in, l2);
   std::getline(in, l3);
   if (l1.rfind("ITEM:", 0) == 0) return "lammps-dump";
+  {
+    const std::string e = lower(std::filesystem::path(path).extension().string());
+    if (e == ".cif") return "cif";
+  }
   for (const auto* l : {&l1, &l2, &l3})
     if (l->find("@<TRIPOS>") != std::string::npos) return "mol2";
   for (const auto* l : {&l1, &l2, &l3})
@@ -42,7 +47,7 @@ std::string detect_format(const std::string& path) {
     auto t = split(line);
     if (t.size() >= 2 && t[1] == "atoms") return "lammps-data";
   }
-  throw ReadError(path + ": format not recognised (supported: LAMMPS data and dump, GROMACS .gro, PDB, mol2, XYZ)");
+  throw ReadError(path + ": format not recognised (supported: LAMMPS data and dump, GROMACS .gro, PDB, mol2, XYZ, CIF)");
 }
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) {
@@ -64,6 +69,13 @@ Trajectory open_file(const std::string& path, const std::string& topology_path) 
     }
   } else if (fmt == "mol2") {
     tr.topology = read_mol2(path);
+    std::vector<Vec3> p;
+    for (const auto& a : tr.topology.atoms) p.push_back(a.pos);
+    tr.positions.push_back(std::move(p));
+    tr.cells.push_back(tr.topology.cell);
+    tr.timesteps.push_back(0);
+  } else if (fmt == "cif") {
+    tr.topology = read_cif(path);
     std::vector<Vec3> p;
     for (const auto& a : tr.topology.atoms) p.push_back(a.pos);
     tr.positions.push_back(std::move(p));

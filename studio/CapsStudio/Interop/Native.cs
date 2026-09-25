@@ -231,6 +231,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_chain_preview")] public static extern int ChainPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, ulong seed, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_chains")] public static extern IntPtr GrowChains([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_surface_terminations")] public static extern int SurfaceTerminations([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, int h, int k, int l, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_interface_build")] public static extern IntPtr InterfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
     [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
     [DllImport(Lib, EntryPoint = "caps_set_threads")] public static extern void SetThreads(int threads);
     [DllImport(Lib, EntryPoint = "caps_set_electrostatics")] public static extern void SetElectrostatics(int mode, double ewaldRtol, double pmeSpacing, int pmeOrder);
@@ -335,6 +339,32 @@ public sealed class CapsDocument : IDisposable
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }
+
+    /// <summary>The terminations of a (hkl) plane of a CIF crystal (caps_surface_terminations, JSON).</summary>
+    public static string SurfaceTerminations(string cif, int h, int k, int l) => JsonCall((b, c) => Native.SurfaceTerminations(cif, h, k, l, b, c));
+
+    /// <summary>A slab cleaved from a CIF crystal (caps_surface_build).</summary>
+    public static (CapsDocument Doc, string Report) SurfaceBuild(string cif, string options, string label)
+    {
+        var report = new byte[4096];
+        var h = Native.SurfaceBuild(cif, options, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>A polymer film grown onto a slab (caps_interface_build); the slab is molecule 1 and held in Relax.</summary>
+    public static (CapsDocument Doc, string Report) InterfaceBuild(string options, string spec, CapsGrowOpts o, Func<int, int, int, bool>? progress, string label)
+    {
+        var report = new byte[8192];
+        CapsProgress? cb = progress == null ? null : (d, t, r, _) => progress(d, t, r) ? 0 : 1;
+        var h = Native.InterfaceBuild(options, spec, o, cb, IntPtr.Zero, report, report.Length);
+        GC.KeepAlive(cb);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>Holds molecule `mol` in place in Relax (0: none).</summary>
+    public void SetHeldMolecule(long mol) { lock (_lock) Native.SetHeldMolecule(_h, mol); }
 
     /// <summary>The 2D drawing of a SMILES (JSON graph with coordinates, bond length 1).</summary>
     public static string SmilesDepict(string smiles)

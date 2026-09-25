@@ -18,6 +18,7 @@
 #include "caps/ffdef.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
+#include "caps/crystal.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/grow.hpp"
@@ -53,6 +54,10 @@ int usage() {
                "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
+               "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
+               "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
+               "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
+               "               [--chains N] [--dp 10] [--gap 1] [--vacuum 0] [--sequence …] [--ff FF]   a polymer film on a surface\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
@@ -92,7 +97,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -254,6 +259,121 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "interface") {
+    // a polymer film grown onto a slab: a slab file, or a crystal (CIF) cleaved with the surface options
+    try {
+      if (pos.empty() || !o.count("-o") || !o.count("--units")) return usage();
+      auto list = [](const std::string& t) {
+        std::vector<std::string> v;
+        std::stringstream ss(t);
+        for (std::string x; std::getline(ss, x, ',');) v.push_back(x);
+        return v;
+      };
+      System slab;
+      const std::string src = pos[0];
+      if (src.size() > 4 && (src.substr(src.size() - 4) == ".cif" || src.substr(src.size() - 4) == ".CIF")) {
+        SlabOptions so;
+        if (o.count("--hkl")) {
+          const auto v = list(o["--hkl"]);
+          so.h = std::stoi(v.at(0)), so.k = std::stoi(v.at(1)), so.l = std::stoi(v.at(2));
+        }
+        if (o.count("--layers")) so.layers = std::stoi(o["--layers"]);
+        if (o.count("--termination")) so.termination = std::stoi(o["--termination"]) - 1;
+        if (o.count("--supercell")) {
+          const auto v = list(o["--supercell"]);
+          so.na = std::stoi(v.at(0)), so.nb = v.size() > 1 ? std::stoi(v[1]) : so.na;
+        }
+        so.passivate = o.count("--passivate");
+        so.vacuum = 10;   // free surfaces (the interface builder sets the final cell)
+        SlabReport sr;
+        slab = cleave(read_cif(src), so, &sr);
+        for (const auto& n : sr.notes) std::printf("%s\n", n.c_str());
+      } else {
+        slab = open_file(src).frame(0);
+      }
+      ChainSpec spec;
+      for (const auto& u : list(o["--units"])) spec.units.push_back({u, u});
+      spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 10;
+      if (o.count("--tacticity")) spec.tacticity = tacticity_from_string(o["--tacticity"]);
+      if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
+      if (o.count("--weights")) for (const auto& w : list(o["--weights"])) spec.weights.push_back(std::stod(w));
+      if (o.count("--blocks")) for (const auto& b : list(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
+      if (o.count("--pattern")) spec.pattern = o["--pattern"];
+      if (o.count("--ff")) spec.forcefield = o["--ff"];
+      InterfaceOptions io;
+      if (o.count("--film")) io.film = std::stod(o["--film"]);
+      if (o.count("--film-density")) io.density = std::stod(o["--film-density"]);
+      if (o.count("--chains")) io.chains = std::stoi(o["--chains"]);
+      if (o.count("--gap")) io.gap = std::stod(o["--gap"]);
+      if (o.count("--vacuum")) io.vacuum = std::stod(o["--vacuum"]);
+      if (o.count("--seed")) io.grow.seed = std::stoull(o["--seed"]);
+      if (o.count("--scale")) io.grow.contact_scale = std::stod(o["--scale"]);
+      GrowReport rep;
+      const System s = build_interface(slab, spec, io, &rep);
+      for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data(s, out);
+      std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps interface: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "surface") {
+    // a slab cleaved from a crystal (CIF), with its terminations
+    try {
+      if (pos.empty()) return usage();
+      const System bulk = read_cif(pos[0]);
+      for (const auto& n : bulk.notes) std::printf("%s\n", n.c_str());
+      SlabOptions so;
+      auto ints = [](const std::string& t) {
+        std::vector<int> v;
+        std::stringstream ss(t);
+        for (std::string x; std::getline(ss, x, ',');) v.push_back(std::stoi(x));
+        return v;
+      };
+      if (o.count("--hkl")) {
+        const auto v = ints(o["--hkl"]);
+        if (v.size() != 3) throw std::invalid_argument("--hkl takes h,k,l");
+        so.h = v[0], so.k = v[1], so.l = v[2];
+      }
+      if (o.count("--layers")) so.layers = std::stoi(o["--layers"]);
+      if (o.count("--termination")) so.termination = std::stoi(o["--termination"]) - 1;
+      if (o.count("--vacuum")) so.vacuum = std::stod(o["--vacuum"]);
+      if (o.count("--supercell")) {
+        const auto v = ints(o["--supercell"]);
+        so.na = v.at(0), so.nb = v.size() > 1 ? v[1] : v[0];
+      }
+      if (o.count("--max-strain")) so.max_strain = std::stod(o["--max-strain"]) / 100;
+      so.orthogonal = !o.count("--no-orthogonal");
+      so.passivate = o.count("--passivate");
+      double d = 0;
+      const auto terms = slab_terminations(bulk, so.h, so.k, so.l, &d);
+      std::printf("(%d%d%d): plane spacing %.4f Å · %zu terminations\n", so.h, so.k, so.l, d, terms.size());
+      for (size_t i = 0; i < terms.size(); ++i) std::printf("  %zu  %s\n", i + 1, terms[i].label.c_str());
+      if (o.count("--list")) return 0;
+      if (!o.count("-o")) return usage();
+      SlabReport rep;
+      const System slab = cleave(bulk, so, &rep);
+      for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(slab, out);
+      else if (ends(".xyz")) write_xyz(slab, out);
+      else if (ends("mol2")) write_mol2(slab, out);
+      else write_lammps_data(slab, out);
+      std::printf("wrote %s\n", out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps surface: %s\n", e.what());
       return 1;
     }
   }
@@ -1070,6 +1190,15 @@ int main(int argc, char** argv) {
       if (o.count("--cutoff")) r.energy.cutoff = std::stod(o["--cutoff"]);
       r.energy.coulomb = !o.count("--no-coulomb");
       electrostatics(r.energy, o);
+      if (o.count("--ff")) r.field = std::make_shared<ForceField>(cli_forcefield(s, o));
+      if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
+        const int64_t m = std::stoll(o["--fix-mol"]);
+        r.fixed.assign(s.atoms.size(), 0);
+        size_t nf = 0;
+        for (size_t i = 0; i < s.atoms.size(); ++i)
+          if (s.atoms[i].mol == m) r.fixed[i] = 1, ++nf;
+        std::printf("holding %zu atoms of molecule %lld in place\n", nf, static_cast<long long>(m));
+      }
       const bool quiet = o.count("--quiet");
       std::string last;
       r.progress = [&](const RelaxProgress& p) {
@@ -1089,7 +1218,8 @@ int main(int argc, char** argv) {
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
-      else write_lammps_data_ff(s, assign_gaff(s), r.energy, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data_ff(s, r.field ? *r.field : assign_gaff(s), r.energy, out);
       std::printf("%s\n", rep.field.c_str());
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       for (const auto& st : rep.stages)
