@@ -24,6 +24,7 @@ public sealed class AppSettings
         ["Type == 2", "Type == 2 && Position.Z > 13", "Charge < -0.05", "MoleculeIdentifier == 3", "Element == \"H\" && Position.X < 10", "Monomer <= 2 || Monomer >= 7"];
     public string ForceField { get; set; } = "gaff-amber25-dlfield";
     public int Electrostatics { get; set; }               // 0 damped shifted force, 1 particle-mesh Ewald
+    public bool LjTail { get; set; } = true;              // LJ long-range tail correction in Dynamics and Equilibrate
     public double EwaldRtol { get; set; } = 1e-5;
     public double PmeSpacing { get; set; } = 1.0;
     public int PmeOrder { get; set; } = 5;

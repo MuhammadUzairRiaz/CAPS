@@ -75,7 +75,8 @@
               </RadioButton>
               <DockPanel>
                 <Button DockPanel.Dock="Right" Classes="small" Content="Import .chg…" Click="OnImport" VerticalAlignment="Center" />
-                <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" IsEnabled="False">
+                <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" IsEnabled="{Binding HasChargeFile}"
+                             ToolTip.Tip="Import a .chg file first" ToolTip.ShowOnDisabled="True">
                   <StackPanel><TextBlock Text="RESP or AM1-BCC · imported" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="{Binding ChargeFile, StringFormat='external QM or AmberTools · {0}'}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
                 </RadioButton>
               </DockPanel>

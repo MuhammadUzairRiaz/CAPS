@@ -81,7 +81,7 @@
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxCutoffD}" Minimum="4" Maximum="30" Increment="0.5" FormatString="0.0" />
                 <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding ElecParamText, Mode=OneWay}" IsReadOnly="True" Classes="mono" />
                 <TextBlock Grid.Row="2" Text="van der Waals" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Mixing" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Precision" Classes="label" Margin="0,8,0,0" />
-                <TextBox Grid.Row="3" Text="Cut-off + tail correction" IsReadOnly="True" />
+                <TextBox Grid.Row="3" Text="{Binding LjTailText, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="Change it in Dynamics › Electrostatics (LJ)" />
                 <TextBox Grid.Row="3" Grid.Column="1" Text="Force-field default" IsReadOnly="True" />
                 <TextBox Grid.Row="3" Grid.Column="2" Text="Double" IsReadOnly="True" />
               </Grid>

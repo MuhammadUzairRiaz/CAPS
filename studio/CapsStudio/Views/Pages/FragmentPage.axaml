@@ -95,7 +95,7 @@
                 <StackPanel Spacing="9">
                   <TextBlock Text="ATTACH BEHAVIOUR" Classes="h3" />
                   <CheckBox Classes="toggle" Content="Replace a hydrogen at the target" IsChecked="{Binding FragmentReplaceH}" />
-                  <CheckBox Classes="toggle" Content="Align to the open valence" IsChecked="True" IsEnabled="False" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="The fragment always sits along the target's open valence, then rolls about the new bond to keep clear of the structure." />
                   <CheckBox Classes="toggle" Content="Clean geometry after attaching (UFF)" IsChecked="{Binding FragmentClean}" />
                 </StackPanel>
               </Border>
