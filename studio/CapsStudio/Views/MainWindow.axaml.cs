@@ -45,11 +45,17 @@ public partial class MainWindow : Window
     public ICommand SaveCommand { get; }
     public bool HasSamples => _samples != null;
 
+    private static bool _namesInstalled;
+
     public MainWindow()
     {
+        if (!_namesInstalled) { AccessibleNames.Install(); _namesInstalled = true; }
         OpenCommand = new RelayCommand(OpenDialog);
         InitializeComponent();
         DataContext = _vm;
+        // Tab order follows the accessibility map: rail, tools, project, 3D view, inspector, dock
+        var order = new Control?[] { Rail, Toolbar, ProjectPanel, ViewHost, InspectorPanel, AnalysisDock };
+        for (var k = 0; k < order.Length; ++k) if (order[k] is { } c) KeyboardNavigation.SetTabIndex(c, k + 1);
         _vm.ScaleChanged += k => ScaleRoot.LayoutTransform = Math.Abs(k - 1) < 1e-9 ? null : new Avalonia.Media.ScaleTransform(k, k);
         _vm.LoadSettings();
         _vm.HookJobs();

@@ -1101,6 +1101,14 @@ internal static class SelfTest
                   $"motion: easing {ease} · reduced cut {cut} · mid-flight {mid} · landed {landed} · focus zoom {one.Zoom:0.00}");
         }
 
+        // Accessibility map: icon buttons are named from their tooltips' first clause
+        {
+            var n1 = Views.AccessibleNames.From("Export image or movie (⌘E)");
+            var n2 = Views.AccessibleNames.From("Interactions & checks (design/boards/Interactions): H-bonds, contacts, clashes and fixes");
+            var n3 = Views.AccessibleNames.From("Reset the view (R); drag in the view rotates");
+            Check(n1 == "Export image or movie" && n2 == "Interactions & checks" && n3 == "Reset the view", $"accessible names: {n1} | {n2} | {n3}");
+        }
+
         // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document
         {
             var rdir = Path.Combine(outDir, "caps-selftest-recipe");

@@ -233,6 +233,16 @@ internal static class Screenshot
             }
             if (kv[0] == "theme") { w.ViewModel.SetTheme = kv[1]; for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "settingstab") w.ViewModel.SettingsTab = int.Parse(kv[1]);
+            if (kv[0] == "a11y")   // a11y=1: list the visible buttons a screen reader would reach without a name
+            {
+                for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                var un = Views.AccessibleNames.Unnamed(w);
+                var all = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(w).OfType<Avalonia.Controls.Button>().Where(b => b.IsEffectivelyVisible).ToList();
+                var named = all.Where(b => !string.IsNullOrEmpty(Avalonia.Automation.AutomationProperties.GetName(b))).ToList();
+                Console.WriteLine($"visible buttons: {all.Count} · named from tooltips: {named.Count} · e.g. {string.Join(" | ", named.Take(6).Select(b => Avalonia.Automation.AutomationProperties.GetName(b)))}");
+                Console.WriteLine($"unnamed buttons: {un.Count}");
+                foreach (var b in un.Take(40)) Console.WriteLine($"  {b.GetType().Name} {b.Name} {(b.Content as Avalonia.Controls.Control)?.GetType().Name} classes={string.Join(".", b.Classes)}");
+            }
             if (kv[0] == "vision") w.ViewModel.OpenColourVision();                    // vision=1: Settings › Colour vision
             if (kv[0] == "cvd") w.ViewModel.VisionPreview = int.Parse(kv[1]);          // cvd=0..3: the view as seen with a deficiency
             if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested
