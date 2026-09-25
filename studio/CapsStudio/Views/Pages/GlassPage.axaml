@@ -1,0 +1,96 @@
+<!-- CAPS Analyze › Glass transition (design/boards/GlassTransition): stepwise NPT cooling of the open structure,
+     replicas by seed, specific volume against temperature with the replica spread and the two-line fit. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.GlassPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnRecipe" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The cooling scan as a YAML recipe (caps run)"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save as recipe" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="primary" Click="OnRun" IsVisible="{Binding Analyze.NotWorking}" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run cooling" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding Analyze.Working}" />
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Glass transition" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Stepwise NPT cooling, volume–temperature fit" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding GtStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </Border>
+    <Grid ColumnDefinitions="400,*" ColumnSpacing="14" Margin="22,18">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Cooling protocol" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Start · K" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgFromD}" Minimum="50" Maximum="2000" Increment="10" FormatString="0" ValueChanged="OnPlan" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="End · K" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgToD}" Minimum="10" Maximum="2000" Increment="10" FormatString="0" ValueChanged="OnPlan" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Step · K" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgStepD}" Minimum="1" Maximum="200" Increment="5" FormatString="0" ValueChanged="OnPlan" /></StackPanel>
+                <StackPanel Grid.Row="1" Spacing="6"><TextBlock Text="Hold · ps" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgPsD}" Minimum="1" Maximum="100000" Increment="50" FormatString="0" ValueChanged="OnPlan" /></StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6"><TextBlock Text="Anneal first · ps" Classes="label" /><NumericUpDown Value="{Binding Analyze.EqPsD}" Minimum="0" Maximum="100000" Increment="50" FormatString="0" ValueChanged="OnPlan" /></StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6"><TextBlock Text="Replicas" Classes="label" /><NumericUpDown Value="{Binding GtReplicas}" Minimum="1" Maximum="10" Increment="1" FormatString="0" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" Margin="0,4,0,0">
+                <TextBlock Text="Ensemble" Classes="muted" FontSize="12" /><TextBlock Grid.Column="1" Text="NPT · 1 atm" FontSize="12" />
+                <TextBlock Grid.Row="1" Text="Barostat" Classes="muted" FontSize="12" /><TextBlock Grid.Row="1" Grid.Column="1" Text="stochastic cell rescaling · Bussi thermostat" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="2" Text="Property" Classes="muted" FontSize="12" /><TextBlock Grid.Row="2" Grid.Column="1" Text="specific volume, last 50 % of each hold" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="3" Text="Fit" Classes="muted" FontSize="12" /><TextBlock Grid.Row="3" Grid.Column="1" Text="two lines, free break" FontSize="12" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Schedule computed from the settings" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Schedule" Height="150" XLabel="time (ns) · one replica" YLabel="T (K)" AutoRange="True" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="2"><TextBlock Text="Temperatures" Classes="label" /><TextBlock Text="{Binding GtTemperaturesText}" Classes="mono" FontSize="15" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Cooling rate" Classes="label" /><TextBlock Text="{Binding GtRateText}" Classes="mono" FontSize="13" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2"><TextBlock Text="Total simulated" Classes="label" /><TextBlock Text="{Binding GtTotalText}" Classes="mono" FontSize="13" /></StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Volume against temperature" FontSize="13.5" FontWeight="SemiBold" />
+              <Panel Height="280">
+                <v:LinePlot x:Name="Vt" XLabel="temperature (K)" YLabel="specific volume (cm³/g)" AutoRange="True" />
+                <TextBlock IsVisible="{Binding !GtHasPoints}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                           Text="Run the cooling scan: the replica means are plotted with their spread and fitted with two lines; the crossing is Tg." />
+              </Panel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Result" FontSize="13.5" FontWeight="SemiBold" />
+              <UniformGrid Columns="2">
+                <StackPanel Spacing="3" Margin="0,0,10,10"><TextBlock Text="{Binding GtTg.Label}" Classes="label" /><TextBlock Text="{Binding GtTg.Value}" Classes="mono" FontSize="20" /><TextBlock Text="{Binding GtTg.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,0,10"><TextBlock Text="{Binding GtResidual.Label}" Classes="label" /><TextBlock Text="{Binding GtResidual.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding GtResidual.Caption}" Classes="dim" /></StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,10,0"><TextBlock Text="{Binding GtAlphaGlass.Label}" Classes="label" /><TextBlock Text="{Binding GtAlphaGlass.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding GtAlphaGlass.Caption}" Classes="dim" /></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="{Binding GtAlphaMelt.Label}" Classes="label" /><TextBlock Text="{Binding GtAlphaMelt.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding GtAlphaMelt.Caption}" Classes="dim" /></StackPanel>
+              </UniformGrid>
+              <TextBlock Text="{Binding GtReplicaText}" Classes="mono dim" TextWrapping="Wrap" />
+              <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource WarnBgB}">
+                <TextBlock TextWrapping="Wrap" FontSize="12" LineHeight="17" Foreground="{DynamicResource TextB}"
+                           Text="Simulated cooling rates are many orders of magnitude faster than DSC, so Tg comes out higher than experiment. CAPS reports the rate beside every Tg." />
+              </Border>
+              <TextBlock Text="Method: Soldera &amp; Metatla, Phys. Rev. E 74, 061803 (2006)." FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

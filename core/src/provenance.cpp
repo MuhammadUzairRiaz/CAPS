@@ -36,6 +36,8 @@ const Cite kCites[] = {
     {"auhl2003", "@article{auhl2003,\n  author = {Auhl, R. and Everaers, R. and Grest, G. S. and Kremer, K. and Plimpton, S. J.},\n  title = {Equilibration of long chain polymer melts in computer simulations},\n  journal = {J. Chem. Phys.}, volume = {119}, pages = {12718--12728}, year = {2003}, doi = {10.1063/1.1628670}\n}"},
     {"larsen2011", "@article{larsen2011,\n  author = {Larsen, G. S. and Lin, P. and Hart, K. E. and Colina, C. M.},\n  title = {Molecular simulations of {PIM-1}-like polymers of intrinsic microporosity},\n  journal = {Macromolecules}, volume = {44}, pages = {6944--6951}, year = {2011}, doi = {10.1021/ma200345v}\n}"},
     {"bussi2007", "@article{bussi2007,\n  author = {Bussi, G. and Donadio, D. and Parrinello, M.},\n  title = {Canonical sampling through velocity rescaling},\n  journal = {J. Chem. Phys.}, volume = {126}, pages = {014101}, year = {2007}, doi = {10.1063/1.2408420}\n}"},
+    {"soldera2006", "@article{soldera2006,\n  author = {Soldera, A. and Metatla, N.},\n  title = {Glass transition of polymers: atomistic simulation versus experiments},\n  journal = {Phys. Rev. E}, volume = {74}, pages = {061803}, year = {2006}, doi = {10.1103/PhysRevE.74.061803}\n}"},
+    {"yeh2004", "@article{yeh2004,\n  author = {Yeh, I.-C. and Hummer, G.},\n  title = {System-size dependence of diffusion coefficients and viscosities from molecular dynamics simulations with periodic boundary conditions},\n  journal = {J. Phys. Chem. B}, volume = {108}, pages = {15873--15879}, year = {2004}, doi = {10.1021/jp0477147}\n}"},
     {"bernetti2020", "@article{bernetti2020,\n  author = {Bernetti, M. and Bussi, G.},\n  title = {Pressure control using stochastic cell rescaling},\n  journal = {J. Chem. Phys.}, volume = {153}, pages = {114107}, year = {2020}, doi = {10.1063/5.0020514}\n}"},
     {"berendsen1984", "@article{berendsen1984,\n  author = {Berendsen, H. J. C. and Postma, J. P. M. and van Gunsteren, W. F. and DiNola, A. and Haak, J. R.},\n  title = {Molecular dynamics with coupling to an external bath},\n  journal = {J. Chem. Phys.}, volume = {81}, pages = {3684--3690}, year = {1984}, doi = {10.1063/1.448118}\n}"},
     {"swope1982", "@article{swope1982,\n  author = {Swope, W. C. and Andersen, H. C. and Berens, P. H. and Wilson, K. R.},\n  title = {A computer simulation method for the calculation of equilibrium constants for the formation of physical clusters of molecules: application to small water clusters},\n  journal = {J. Chem. Phys.}, volume = {76}, pages = {637--649}, year = {1982}, doi = {10.1063/1.442716}\n}"},
@@ -320,6 +322,10 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
           " at " + param(s, "temperature") +
           (nvt || npt ? " with the " + th + " thermostat" + cite(only(s, {"bussi2007"})) : std::string()) +
           (npt ? " and " + param(s, "barostat").substr(0, param(s, "barostat").find(" · ")) + " pressure control" + cite(only(s, {"bernetti2020", "berendsen1984"})) : std::string()) + ".";
+    } else if (e == "analysis.tg") {
+      t = "The glass transition temperature was estimated from a stepwise NPT cooling scan from " + param(s, "from") + " to " + param(s, "to") + " in steps of " +
+          param(s, "step") + ", holding " + param(s, "hold") + " at each temperature, by a two-line fit of the specific volume against temperature" +
+          cite(only(s, {"soldera2006"})) + "; simulated cooling rates are many orders of magnitude faster than calorimetry, so Tg is expected above experiment.";
     } else if (e == "equilibrate.larsen21") {
       t = "The cell was equilibrated with the 21-step compression–decompression protocol (P_max = " + param(s, "Pmax") + ")" + cite({"larsen2011"}) + ", " + param(s, "length") + " of dynamics in all.";
     } else if (e == "equilibrate.protocol") {

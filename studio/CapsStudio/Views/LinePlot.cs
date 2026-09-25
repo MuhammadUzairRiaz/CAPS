@@ -53,6 +53,8 @@ public sealed class LinePlot : Control
     }
     private (double X, double Y)[] _overlay = [];
     public bool Markers { get; set; }
+    /// <summary>Error bars (± value) for the points drawn with Markers, one per point; they widen the y range.</summary>
+    public double[]? Errors { get; set; }
 
     /// <summary>Draw the data as bars (a histogram: each point is a bin centre); the y axis starts at zero.</summary>
     public bool Bars { get; set; }
@@ -105,6 +107,8 @@ public sealed class LinePlot : Control
         if (AutoRange)
         {
             var all = _data.Concat(_overlay).Concat(_second).Concat(_third).ToArray();   // a fit line may run past the data: it does not set the range
+            if (Markers && Errors is { } er && er.Length == _data.Length)
+                all = all.Concat(_data.Select((p, i) => (p.X, p.Y + (double.IsFinite(er[i]) ? er[i] : 0)))).Concat(_data.Select((p, i) => (p.X, p.Y - (double.IsFinite(er[i]) ? er[i] : 0)))).ToArray();
             xmin = all.Min(p => p.X);
             xmax = all.Max(p => p.X);
             if (xmax - xmin < 1e-9) xmax = xmin + 1;
@@ -176,6 +180,18 @@ public sealed class LinePlot : Control
         }
         else if (Markers)
         {
+            if (Errors is { } err && err.Length == _data.Length)   // ± one standard deviation, with caps
+            {
+                var ep = new Pen(Dot, 1);
+                for (var i = 0; i < _data.Length; ++i)
+                {
+                    if (!(err[i] > 0)) continue;
+                    var (px, py0, py1) = (X(_data[i].X), Y(_data[i].Y - err[i]), Y(_data[i].Y + err[i]));
+                    ctx.DrawLine(ep, new Point(px, py0), new Point(px, py1));
+                    ctx.DrawLine(ep, new Point(px - 3, py0), new Point(px + 3, py0));
+                    ctx.DrawLine(ep, new Point(px - 3, py1), new Point(px + 3, py1));
+                }
+            }
             foreach (var p in _data) ctx.DrawEllipse(Dot, null, new Point(X(p.X), Y(p.Y)), 2.2, 2.2);
             if (_overlay.Length > 1) ctx.DrawGeometry(null, Curve, Line(_overlay));
         }
