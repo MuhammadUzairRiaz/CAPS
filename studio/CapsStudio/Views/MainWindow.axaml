@@ -1580,6 +1580,8 @@
       <pages:MechanicsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMechanics}" />
       <pages:ScatteringPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsScattering}" />
       <pages:FreeVolumePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFreeVolume}" />
+      <!-- Theory manual (design/boards/TheoryManual) -->
+      <pages:ManualPageView Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsManual}" />
       <!-- Provenance (design/boards/Provenance) -->
       <pages:ProvenancePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsProvenance}" />
       <!-- Macro recorder (design/boards/MacroRecorder) -->

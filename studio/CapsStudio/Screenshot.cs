@@ -335,6 +335,11 @@ internal static class Screenshot
                 for (int k = 1; k < int.Parse(kv[1]); ++k) w.ViewModel.TourNext();
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "manual")   // manual=PAGE-ID: the theory manual on that page
+            {
+                w.ViewModel.OpenManual(kv[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

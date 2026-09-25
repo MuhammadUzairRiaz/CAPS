@@ -59,5 +59,7 @@ ManifestDiff compare(const Manifest& a, const Manifest& b);
 std::string bibtex(const std::vector<std::string>& keys);
 std::vector<std::string> all_cites(const Manifest& m);
 bool known_citation(const std::string& key);
+// A reference for reading: "Authors, "Title", Journal Volume, Pages (Year). doi:…" from the built-in entry ("" if unknown).
+std::string citation_text(const std::string& key);
 
 }  // namespace caps

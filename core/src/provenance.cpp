@@ -48,6 +48,18 @@ const Cite kCites[] = {
     {"berendsen1987", "@article{berendsen1987,\n  author = {Berendsen, H. J. C. and Grigera, J. R. and Straatsma, T. P.},\n  title = {The missing term in effective pair potentials},\n  journal = {J. Phys. Chem.}, volume = {91}, pages = {6269--6271}, year = {1987}, doi = {10.1021/j100308a038}\n}"},
     {"hall1981", "@article{hall1981,\n  author = {Hall, S. R.},\n  title = {Space-group notation with an explicit origin},\n  journal = {Acta Cryst. A}, volume = {37}, pages = {517--525}, year = {1981}, doi = {10.1107/S0567739481001228}\n}"},
     {"engh1991", "@article{engh1991,\n  author = {Engh, R. A. and Huber, R.},\n  title = {Accurate bond and angle parameters for {X}-ray protein structure refinement},\n  journal = {Acta Cryst. A}, volume = {47}, pages = {392--400}, year = {1991}, doi = {10.1107/S0108767391001071}\n}"},
+    {"leimkuhler2013", "@article{leimkuhler2013,\n  author = {Leimkuhler, B. and Matthews, C.},\n  title = {Rational construction of stochastic numerical methods for molecular sampling},\n  journal = {Appl. Math. Res. Express}, volume = {2013}, pages = {34--56}, year = {2013}, doi = {10.1093/amrx/abs010}\n}"},
+    {"ewald1921", "@article{ewald1921,\n  author = {Ewald, P. P.},\n  title = {Die Berechnung optischer und elektrostatischer Gitterpotentiale},\n  journal = {Ann. Phys.}, volume = {369}, pages = {253--287}, year = {1921}, doi = {10.1002/andp.19213690304}\n}"},
+    {"faber1965", "@article{faber1965,\n  author = {Faber, T. E. and Ziman, J. M.},\n  title = {A theory of the electrical properties of liquid metals {III}. {T}he resistivity of binary alloys},\n  journal = {Phil. Mag.}, volume = {11}, pages = {153--173}, year = {1965}, doi = {10.1080/14786436508211931}\n}"},
+    {"lorch1969", "@article{lorch1969,\n  author = {Lorch, E.},\n  title = {Neutron diffraction by germania, silica and radiation-damaged silica glasses},\n  journal = {J. Phys. C}, volume = {2}, pages = {229--237}, year = {1969}, doi = {10.1088/0022-3719/2/2/305}\n}"},
+    {"sears1992", "@article{sears1992,\n  author = {Sears, V. F.},\n  title = {Neutron scattering lengths and cross sections},\n  journal = {Neutron News}, volume = {3}, number = {3}, pages = {26--37}, year = {1992}, doi = {10.1080/10448639208218770}\n}"},
+    {"bondi1964", "@article{bondi1964,\n  author = {Bondi, A.},\n  title = {van der {W}aals volumes and radii},\n  journal = {J. Phys. Chem.}, volume = {68}, pages = {441--451}, year = {1964}, doi = {10.1021/j100785a001}\n}"},
+    {"gelb1999", "@article{gelb1999,\n  author = {Gelb, L. D. and Gubbins, K. E.},\n  title = {Pore size distributions in porous glasses: a computer simulation study},\n  journal = {Langmuir}, volume = {15}, pages = {305--308}, year = {1999}, doi = {10.1021/la9808418}\n}"},
+    {"einstein1905", "@article{einstein1905,\n  author = {Einstein, A.},\n  title = {{\\\"U}ber die von der molekularkinetischen {T}heorie der {W}{\\\"a}rme geforderte {B}ewegung von in ruhenden {F}l{\\\"u}ssigkeiten suspendierten {T}eilchen},\n  journal = {Ann. Phys.}, volume = {322}, pages = {549--560}, year = {1905}, doi = {10.1002/andp.19053220806}\n}"},
+    {"theodorou1986", "@article{theodorou1986,\n  author = {Theodorou, D. N. and Suter, U. W.},\n  title = {Atomistic modeling of mechanical properties of polymeric glasses},\n  journal = {Macromolecules}, volume = {19}, pages = {139--154}, year = {1986}, doi = {10.1021/ma00155a022}\n}"},
+    {"lutsko1989", "@article{lutsko1989,\n  author = {Lutsko, J. F.},\n  title = {Generalized expressions for the calculation of elastic constants by computer simulation},\n  journal = {J. Appl. Phys.}, volume = {65}, pages = {2991--2997}, year = {1989}, doi = {10.1063/1.342716}\n}"},
+    {"clavier2017", "@article{clavier2017,\n  author = {Clavier, G. and Desbiens, N. and Bourasseau, E. and Lachet, V. and Brusselle-Dupend, N. and Rousseau, B.},\n  title = {Computation of elastic constants of solids using molecular simulation: comparison of constant volume and constant pressure ensemble methods},\n  journal = {Mol. Simul.}, volume = {43}, pages = {1413--1422}, year = {2017}, doi = {10.1080/08927022.2017.1313418}\n}"},
+    {"prince2004", "@book{prince2004,\n  editor = {Prince, E.},\n  title = {International Tables for Crystallography, Volume C: Mathematical, Physical and Chemical Tables},\n  edition = {3rd}, publisher = {Kluwer}, year = {2004}, note = {Table 6.1.1.4, Cromer--Mann coefficients}\n}"},
     {"parsons2005", "@article{parsons2005,\n  author = {Parsons, J. and Holmes, J. B. and Rojas, J. M. and Tsai, J. and Strauss, C. E. M.},\n  title = {Practical conversion from torsion space to {C}artesian space for in silico protein synthesis},\n  journal = {J. Comput. Chem.}, volume = {26}, pages = {1063--1068}, year = {2005}, doi = {10.1002/jcc.20237}\n}"},
 };
 
@@ -196,6 +208,52 @@ std::string bibtex(const std::vector<std::string>& keys) {
     for (const auto& c : kCites)
       if (k == c.key) { out += c.entry; out += "\n\n"; }
   return out;
+}
+
+std::string citation_text(const std::string& key) {
+  for (const auto& c : kCites) {
+    if (key != c.key) continue;
+    const std::string e = c.entry;
+    auto field = [&](const std::string& name) -> std::string {
+      const size_t at = e.find(name + " = {");
+      if (at == std::string::npos) return "";
+      size_t i = at + name.size() + 4;
+      int depth = 1;
+      std::string out;
+      for (; i < e.size() && depth > 0; ++i) {
+        if (e[i] == '{') { ++depth; continue; }
+        if (e[i] == '}') { if (--depth == 0) break; continue; }
+        if (e[i] == '\\') {   // LaTeX accents: \'e → é and the like, kept simple
+          if (i + 2 < e.size()) {
+            const char a = e[i + 1], b = e[i + 2] == '{' && i + 3 < e.size() ? e[i + 3] : e[i + 2];
+            static const std::map<std::string, std::string> acc = {{"'e", "é"}, {"'a", "á"}, {"'o", "ó"}, {"'i", "í"}, {"`e", "è"}, {"\"a", "ä"}, {"\"o", "ö"}, {"\"u", "ü"}, {"\"U", "Ü"}};
+            if (auto it = acc.find(std::string{a, b}); it != acc.end()) {
+              out += it->second;
+              i += e[i + 2] == '{' ? 4 : 2;
+              if (i + 1 < e.size() && e[i + 1] == '}') ++i;
+              continue;
+            }
+          }
+          continue;
+        }
+        out += e[i];
+      }
+      return out;
+    };
+    std::string authors = field("author");
+    if (authors.empty()) authors = field("editor") + " (ed.)";
+    // "A. and B. and C." → "A., B., C."
+    for (size_t p = authors.find(" and "); p != std::string::npos; p = authors.find(" and ")) authors.replace(p, 5, ", ");
+    std::string t = authors + ", \"" + field("title") + "\"";
+    const std::string journal = field("journal");
+    if (!journal.empty()) t += ", " + journal + " " + field("volume") + ", " + field("pages");
+    else t += ", " + field("publisher");
+    t += " (" + field("year") + ")";
+    const std::string doi = field("doi");
+    if (!doi.empty()) t += ". doi:" + doi;
+    return t;
+  }
+  return "";
 }
 
 std::vector<std::string> all_cites(const Manifest& m) {

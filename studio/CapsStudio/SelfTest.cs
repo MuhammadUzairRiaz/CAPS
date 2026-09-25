@@ -748,6 +748,22 @@ internal static class SelfTest
             vm.InspectorDrawer = true;
         }
 
+        // Theory manual: every page's references resolve in CAPS's BibTeX table
+        {
+            vm.OpenManual("csvr");
+            var unresolved = new List<string>();
+            foreach (var item in vm.ManualNav.Where(n => n.Page != null))
+            {
+                vm.ShowManualPage(item.Page);
+                unresolved.AddRange(vm.ManualRefs.Where(r => !r.Contains(" (")));
+            }
+            vm.OpenManual("csvr");
+            var bib = vm.ManualBibtex();
+            Check(vm.IsManual && vm.ManualCount >= 24 && unresolved.Count == 0 && bib.Contains("@article{bussi2007,") && vm.ManualSymbols.Count >= 4,
+                  $"manual: {vm.ManualCount} pages · unresolved {string.Join(",", unresolved)} · {vm.ManualRefs.FirstOrDefault()?[..40]}");
+            vm.SetModule(8);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

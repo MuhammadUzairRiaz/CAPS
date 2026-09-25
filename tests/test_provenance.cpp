@@ -241,3 +241,11 @@ TEST(Gasteiger, HeteroatomsGetTheirOwnParameters) {
   const System silane = build_molecule("[SiH4]", bo).system;
   EXPECT_THROW(gasteiger_ch(silane, {}), std::invalid_argument);
 }
+
+TEST(Provenance, CitationTextReadsTheEntries) {
+  EXPECT_EQ(citation_text("bussi2007"), "Bussi, G., Donadio, D., Parrinello, M., \"Canonical sampling through velocity rescaling\", J. Chem. Phys. 126, 014101 (2007). doi:10.1063/1.2408420");
+  EXPECT_NE(citation_text("cordero2008").find("Gómez"), std::string::npos);
+  EXPECT_NE(citation_text("einstein1905").find("Über"), std::string::npos);
+  EXPECT_NE(citation_text("prince2004").find("(ed.)"), std::string::npos);
+  EXPECT_EQ(citation_text("nobody2099"), "");
+}

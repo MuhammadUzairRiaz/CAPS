@@ -4291,3 +4291,8 @@ extern "C" caps_doc* caps_pore_build(const char* options_json, char* report, int
     return nullptr;
   }
 }
+
+// A readable reference for a built-in citation key (the theory manual).
+extern "C" int32_t caps_citation_text(const char* key, char* text, int32_t cap) {
+  return report_out(caps::citation_text(key ? key : ""), text, cap);
+}
