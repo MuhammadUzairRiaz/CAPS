@@ -51,4 +51,7 @@ public partial class GrowPage : PageBase
 
     private void OnChoosePolymer(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.SetModule(13);
     private void OnUsePs(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.UsePolystyreneInGrow();
+    private void OnDispersity(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenPolydispersity();
+    private void OnClearLengths(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ClearPdLengths();
+    private void OnClearStereo(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ClearGrowStereo();
 }

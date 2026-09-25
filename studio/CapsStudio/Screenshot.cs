@@ -282,6 +282,25 @@ internal static class Screenshot
                     case "density": vm.OpenDensityCalc(); break;
                     case "sasa": vm.OpenSurfaceArea(); if (parts.Length > 1) t = vm.RunSurfaceArea(); break;
                     case "cell": vm.OpenCellEditor(); break;
+                    case "pd":   // pd:grow — use the lengths, grow the cell, come back
+                        vm.OpenPolydispersity();
+                        if (parts.Length > 1)
+                        {
+                            vm.GrowDensityD = 0.3m;
+                            vm.UsePdLengths();
+                            var tg = vm.Grow();
+                            while (!tg.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                            vm.OpenPolydispersity();
+                        }
+                        break;
+                    case "copolymer": vm.OpenCopolymer(); t = vm.BuildCoChain(); break;
+                    case "solvents": vm.OpenSolventScreen(); break;
+                    case "tacticity": vm.OpenTacticityStats(); t = vm.TsBuild(); break;
+                    case "blendphase": vm.OpenBlendPhase(); break;
+                    case "electrostatics":
+                        vm.OpenElectrostatics();
+                        if (parts.Length > 1) { vm.EsMethod = 0; vm.EsOrder = 4; vm.EsSpacing = 1.2m; vm.EsCutoff = 12; vm.EsTolerance = 2; }
+                        break;
                     case "composer":
                         if (parts.Length > 1) { var tc = vm.Analyze.Groups.SelectMany(g => g.Chips).ToList(); foreach (var c in tc) c.IsOn = c.Id is "rdf" or "density" or "rg"; t = vm.Analyze.Run(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } t = null; }
                         vm.OpenComposer();

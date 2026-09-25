@@ -19,7 +19,7 @@ module caps_fft
 
 contains
 
-  ! the smallest n' ≥ n whose prime factors are 2, 3 and 5
+  ! the smallest n' ≥ n whose prime factors are 2, 3, 5 and 7 (radix 7 runs through the generic butterfly)
   pure integer function good_size(n) result(m)
     integer, intent(in) :: n
     integer :: k
@@ -29,6 +29,7 @@ contains
       do while (mod(k, 2) == 0); k = k / 2; end do
       do while (mod(k, 3) == 0); k = k / 3; end do
       do while (mod(k, 5) == 0); k = k / 5; end do
+      do while (mod(k, 7) == 0); k = k / 7; end do
       if (k == 1) return
       m = m + 1
     end do

@@ -90,4 +90,20 @@ with tempfile.TemporaryDirectory() as tmp:
     check("—" in repr(t) and "<table" in t._repr_html_() and t.to_csv().startswith("condition,density"), "table")
 melt2 = caps.open(os.path.join(samples, "ps_melt.data"))
 check(melt2.query('smarts "c1ccccc1" and chain 1', op="preview") == 48 and melt2.query("element H") == 660, "query grammar")
+# polymer statistics (row 18): the models, and a polydisperse terminal-model copolymer grown from them
+cl = caps.chain_lengths(nn=40, pdi=1.1, count=20, seed=2026)
+check(len(cl["lengths"]) == 20 and abs(cl["target"]["mn"] - 4166) < 1 and cl["sample"]["pdi"] > 1, "chain_lengths")
+co = caps.copolymer_model(0.52, 0.46, 0.5)
+check(abs(co["F1"] - 0.510) < 5e-4 and abs(co["azeotrope"] - 0.529) < 5e-4, "copolymer_model: Mayo–Lewis")
+st = caps.stereo(pm=0.7)
+fit = caps.stereo(measured=st["model"]["pentads"])["fit"]
+check(abs(fit["bernoulli"]["pm"] - 0.7) < 1e-6 and abs(caps.stereo(dyads="mmrr")["chain"]["mm"] - 1 / 3) < 1e-9, "stereo: model, counts, fit")
+bp = caps.blend_phase(100, 200, -0.02, 15, t=300)
+check(abs(bp["tc"] - 433.9) < 0.1 and abs(bp["coexist"][0] - 0.0385) < 1e-4, "blend_phase")
+check(caps.solvent_chi(18.6, [{"name": "toluene", "v": 106.3, "delta": 18.2}])[0]["predicted"] == "solvent", "solvent_chi")
+check(caps.ewald_params(12, 1e-5, 1.2, edges=[45.3] * 3)["mesh"] == [40, 40, 40], "ewald_params")
+sbr = caps.polymer(["*CC=CC*", "*CC(*)c1ccccc1"], sequence="terminal", r1=1.35, r2=0.58, weights=[0.75, 0.25], chains=3, density=0.3,
+                   lengths={"distribution": "schulz-zimm", "nn": 12, "pdi": 1.2, "seed": 4})
+grow = [st for st in sbr.provenance()["steps"] if st["engine"] == "grow.trials"][0]
+check("sample Nn" in grow["params"]["DP"] and "terminal model" in grow["params"]["sequence"], f"polymer: SBR, terminal model, drawn lengths in provenance · {sbr.atoms} atoms")
 print("all python checks passed")

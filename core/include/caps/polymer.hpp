@@ -29,8 +29,10 @@ struct RepeatUnit {
 // Random: each position drawn with `weights` (Bernoulli / multinomial). Gradient: the share of A falls linearly
 // from 1 at the head to 0 at the tail (two units; with more, the last unit rises). Pattern: `pattern` repeated
 // ("AAB", letters A, B, C … for the units).
-enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern };
-Sequence sequence_from_string(const std::string& s);   // homopolymer | alternating | block | random | gradient | pattern
+enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern, Terminal };
+// homopolymer | alternating | block | random | gradient | pattern | terminal (the Mayo–Lewis terminal model: two units,
+// reactivity ratios r1, r2 and the feed fraction weights[0] of unit A; a first-order Markov chain along each chain)
+Sequence sequence_from_string(const std::string& s);
 const char* to_string(Sequence s);
 
 struct ChainSpec {
@@ -41,9 +43,19 @@ struct ChainSpec {
   std::vector<double> weights;     // Random: relative share of each unit (equal when empty)
   std::string pattern;             // Pattern: e.g. "AAB"
   Tacticity tacticity = Tacticity::Atactic;
-  double pm = 0.5;                 // Atactic: probability of a meso dyad
+  double pm = 0.5;                 // Atactic: probability of a meso dyad (Bernoulli)
+  double p_mr = -1, p_rm = -1;     // Atactic, both ≥ 0: first-order Markov instead, P(r after m) and P(m after r)
   std::string forcefield;          // caps-forcefield JSON with typing rules for the unit templates (optional)
+  double r1 = 1, r2 = 1;           // Terminal: reactivity ratios of A and B
+  std::vector<int> chain_dp;       // per chain (polydispersity): overrides dp for chain k when given
 };
+
+// Chain lengths drawn from a distribution (design/boards/Polydispersity): "monodisperse", "schulz-zimm" (Gamma with
+// k = 1/(Đ − 1)), "flory" (most probable, geometric), "poisson" (Đ ≈ 1 + 1/Nn). Deterministic for a seed on every
+// platform (own samplers on mt19937_64). Lengths are at least 2.
+std::vector<int> draw_chain_lengths(const std::string& distribution, double nn, double pdi, int count, uint64_t seed);
+// The distribution's number fraction at N (for plots); the weight fraction is N·n(N)/Nn.
+double chain_length_pdf(const std::string& distribution, double nn, double pdi, double n);
 
 struct UnitInfo {
   std::string formula;             // of the repeat unit (without the attachment points)

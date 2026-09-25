@@ -1874,6 +1874,12 @@
       <pages:DensityCalcPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDensityCalc}" />
       <pages:SurfaceAreaPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurfaceArea}" />
       <pages:CellEditorPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCellEditor}" />
+      <pages:PolydispersityPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolydispersity}" />
+      <pages:CopolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCopolymer}" />
+      <pages:SolventScreenPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSolventScreen}" />
+      <pages:TacticityPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTacticityStats}" />
+      <pages:BlendPhasePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlendPhase}" />
+      <pages:ElectrostaticsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsElectrostatics}" />
       <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
       <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->

@@ -23,6 +23,8 @@
 #include "caps/config.hpp"
 #include "caps/bench.hpp"
 #include "caps/polymer.hpp"
+#include "caps/polystats.hpp"
+#include "caps/kspace.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
@@ -2224,6 +2226,9 @@ caps::ChainSpec spec_from(const std::string& text) {
   if (j.has("weights")) for (const auto& w : j["weights"].items()) c.weights.push_back(w.number());
   c.pattern = j.text("pattern");
   c.pm = j.num("pm", 0.5);
+  c.r1 = j.num("r1", 1), c.r2 = j.num("r2", 1);
+  c.p_mr = j.num("p_mr", -1), c.p_rm = j.num("p_rm", -1);
+  if (j.has("chain_dp")) for (const auto& x : j["chain_dp"].items()) c.chain_dp.push_back(int(x.number()));
   c.forcefield = j.text("forcefield");
   const std::string tac = j.text("tacticity", "atactic");
   c.tacticity = caps::tacticity_from_string(tac);
@@ -5223,4 +5228,308 @@ extern "C" int32_t caps_memory(caps_doc* d, char* json, int32_t cap) {
   j["per_atom_bytes"] = t.topology.atoms.empty() ? 0.0 : double(topo + shown + frames) / double(t.topology.atoms.size());
   j["atom_struct_bytes"] = double(sizeof(caps::Atom));
   return report_out(j.dump(0), json, cap);
+}
+
+// ---------------------------------------------------------------- v20 polymer statistics (design/boards row 18)
+
+namespace {
+caps::Json num_array(const std::vector<double>& v) {
+  caps::Json a = caps::Json::array();
+  for (double x : v) a.push_back(caps::Json(x));
+  return a;
+}
+int32_t json_error(const std::exception& e, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  r["ok"] = false;
+  r["error"] = std::string(e.what());
+  return report_out(r.dump(0), out, cap);
+}
+}  // namespace
+
+extern "C" int32_t caps_chain_lengths(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string dist = j.text("distribution", "schulz-zimm");
+    const double nn = std::max(2.0, j.num("nn", 40)), pdi = std::max(1.0, j.num("pdi", 1.1)), m0 = j.num("m0", 104.15);
+    const int count = std::clamp(int(j.num("count", 20)), 1, 100000), best_of = std::clamp(int(j.num("best_of", 1)), 1, 1000);
+    const uint64_t seed = uint64_t(std::max(0.0, j.num("seed", 2026)));
+    auto stats = [&](const std::vector<int>& L, double& snn, double& swn) {
+      double s1 = 0, s2 = 0;
+      for (int n : L) s1 += n, s2 += double(n) * n;
+      snn = s1 / double(L.size()), swn = s1 > 0 ? s2 / s1 : 0;
+    };
+    // best_of > 1: that many independent draws, the one whose Đ is closest to the target kept (said so in the report)
+    std::vector<int> L;
+    double best = 1e300;
+    int kept = 0;
+    for (int t = 0; t < best_of; ++t) {
+      auto c = caps::draw_chain_lengths(dist, nn, pdi, count, seed + uint64_t(t) * 7919);
+      double a, b;
+      stats(c, a, b);
+      const double target = dist == "flory" ? 2 - 1 / nn : dist == "poisson" ? 1 + (nn - 1) / (nn * nn) : dist == "monodisperse" ? 1.0 : pdi;
+      const double miss = std::fabs(b / a - target) + 0.1 * std::fabs(a - nn) / nn;
+      if (miss < best) best = miss, L = std::move(c), kept = t;
+    }
+    double snn, swn;
+    stats(L, snn, swn);
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    caps::Json lengths = caps::Json::array();
+    for (int n : L) lengths.push_back(caps::Json(double(n)));
+    r["lengths"] = std::move(lengths);
+    auto sorted = L;
+    std::sort(sorted.begin(), sorted.end());
+    caps::Json s = caps::Json::object();
+    s["nn"] = snn, s["mn"] = snn * m0, s["mw"] = swn * m0, s["pdi"] = snn > 0 ? swn / snn : 1.0;
+    s["min"] = double(sorted.front()), s["max"] = double(sorted.back());
+    double sum = 0;
+    for (int n : L) sum += n;
+    s["sum"] = sum;
+    r["sample"] = std::move(s);
+    // the distribution's own averages (discrete ones computed, the Gamma's are the inputs)
+    const double tpdi = dist == "schulz-zimm" ? pdi : dist == "flory" ? 2 - 1 / nn : dist == "poisson" ? 1 + (nn - 1) / (nn * nn) : 1.0;
+    caps::Json t = caps::Json::object();
+    t["nn"] = nn, t["mn"] = nn * m0, t["mw"] = nn * m0 * tpdi, t["pdi"] = tpdi;
+    r["target"] = std::move(t);
+    r["k"] = dist == "schulz-zimm" ? (pdi > 1.0001 ? 1 / (pdi - 1) : 1e4) : 0.0;
+    r["kept_draw"] = double(kept);
+    r["draws"] = double(best_of);
+    std::vector<double> xs, nf, wf;
+    const double hi = std::max(double(sorted.back()) * 1.15, nn * (1 + 4 * std::sqrt(std::max(0.0, tpdi - 1)) + 0.3));
+    for (int i = 0; i <= 160; ++i) {
+      const double x = std::max(1.0, hi * i / 160);
+      const double p = caps::chain_length_pdf(dist, nn, pdi, x);
+      xs.push_back(x), nf.push_back(p), wf.push_back(x * p / nn);
+    }
+    caps::Json curve = caps::Json::object();
+    curve["n"] = num_array(xs), curve["number"] = num_array(nf), curve["weight"] = num_array(wf);
+    r["curve"] = std::move(curve);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_copolymer(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const auto m = caps::copolymer_terminal(j.num("r1", 1), j.num("r2", 1), j.num("f1", 0.5));
+    const int dp = std::clamp(int(j.num("dp", 80)), 2, 100000);
+    const uint64_t seed = uint64_t(std::max(0.0, j.num("seed", 1)));
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    r["F1"] = m.F1, r["paa"] = m.paa, r["pbb"] = m.pbb, r["run_a"] = m.run_a, r["run_b"] = m.run_b;
+    r["azeotrope"] = m.azeotrope >= 0 ? caps::Json(m.azeotrope) : caps::Json();
+    std::vector<double> f, F;
+    for (int i = 0; i <= 100; ++i) f.push_back(i / 100.0), F.push_back(caps::mayo_lewis(m.r1, m.r2, i / 100.0));
+    caps::Json curve = caps::Json::object();
+    curve["f1"] = num_array(f), curve["F1"] = num_array(F);
+    r["curve"] = std::move(curve);
+    // the sequence Grow draws for chain 0 at this seed (caps_grow_chains uses seed + 101·chain)
+    caps::ChainSpec spec;
+    spec.units.resize(2);
+    spec.sequence = caps::Sequence::Terminal;
+    spec.dp = dp, spec.r1 = m.r1, spec.r2 = m.r2, spec.weights = {m.f1, 1 - m.f1};
+    const auto seq = caps::chain_sequence(spec, seed);
+    caps::Json sa = caps::Json::array();
+    int na = 0, runs_a = 0, runs_b = 0, longest = 0, run = 0;
+    for (size_t i = 0; i < seq.size(); ++i) {
+      sa.push_back(caps::Json(double(seq[i])));
+      na += seq[i] == 0;
+      if (i == 0 || seq[i] != seq[i - 1]) (seq[i] == 0 ? runs_a : runs_b)++, run = 1;
+      else ++run;
+      longest = std::max(longest, run);
+    }
+    r["sequence"] = std::move(sa);
+    caps::Json c = caps::Json::object();
+    c["F1"] = double(na) / double(seq.size());
+    c["run_a"] = runs_a ? double(na) / runs_a : 0.0, c["run_b"] = runs_b ? double(seq.size() - size_t(na)) / runs_b : 0.0;
+    c["longest"] = double(longest), c["a"] = double(na), c["b"] = double(seq.size() - size_t(na));
+    r["chain"] = std::move(c);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_stereo(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    auto model_json = [](const caps::StereoModel& m) {
+      caps::Json o = caps::Json::object();
+      o["kind"] = m.kind, o["pm"] = m.pm, o["p_mr"] = m.p_mr, o["p_rm"] = m.p_rm, o["mm"] = m.mm, o["mr"] = m.mr, o["rr"] = m.rr;
+      o["pentads"] = num_array(std::vector<double>(m.pentads.begin(), m.pentads.end()));
+      return o;
+    };
+    const caps::StereoModel m = j.text("model", "bernoulli") == "markov" ? caps::stereo_markov(j.num("p_mr", 0.5), j.num("p_rm", 0.5))
+                                                                          : caps::stereo_bernoulli(j.num("pm", 0.5));
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    r["model"] = model_json(m);
+    caps::Json names = caps::Json::array();
+    for (const char* n : caps::pentad_names()) names.push_back(caps::Json(std::string(n)));
+    r["names"] = std::move(names);
+    std::string dyads = j.text("dyads");
+    if (dyads.empty() && j.has("dp")) dyads = caps::draw_dyads(m, int(j.num("dp", 200)), uint64_t(std::max(0.0, j.num("seed", 1))));
+    if (!dyads.empty()) {
+      const auto c = caps::count_stereo(dyads);
+      caps::Json o = caps::Json::object();
+      o["dyads"] = dyads, o["m"] = double(c.m), o["r"] = double(c.r);
+      const double nt = std::max(1, c.mm + c.mr + c.rr), np = std::max(1, c.pentad_total);
+      o["mm"] = c.mm / nt, o["mr"] = c.mr / nt, o["rr"] = c.rr / nt, o["triads"] = double(c.mm + c.mr + c.rr);
+      std::vector<double> p;
+      for (int k : c.pentads) p.push_back(k / np);
+      o["pentads"] = num_array(p);
+      o["pentad_count"] = double(c.pentad_total);
+      r["chain"] = std::move(o);
+    }
+    if (j.has("measured")) {
+      std::array<double, caps::kPentadCount> y{};
+      size_t k = 0;
+      for (const auto& x : j["measured"].items())
+        if (k < y.size()) y[k++] = x.number();
+      double rb = 0, rm = 0;
+      auto fb = caps::fit_bernoulli(y, &rb), fm = caps::fit_markov(y, &rm);
+      caps::Json o = caps::Json::object();
+      o["bernoulli"] = model_json(fb), o["bernoulli_rms"] = rb;
+      o["markov"] = model_json(fm), o["markov_rms"] = rm;
+      // Bernoulli predicts mm·rr = (mr/2)²; the triads from the measured pentads (mm = mmmm + mmmr + rmmr, …)
+      const double s = std::accumulate(y.begin(), y.end(), 0.0);
+      const double mm = (y[0] + y[1] + y[2]) / s, rr = (y[7] + y[8] + y[9]) / s, mr = (y[3] + y[4] + y[5] + y[6]) / s;
+      o["mm_rr"] = mm * rr, o["mr2_4"] = mr * mr / 4;
+      r["fit"] = std::move(o);
+    }
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_blend_phase(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const double na = std::max(1.0, j.num("na", 100)), nb = std::max(1.0, j.num("nb", 200)), A = j.num("a", -0.02), B = j.num("b", 15),
+                 T = j.num("t", 300);
+    const auto crit = caps::blend_critical(na, nb);
+    auto chi_at = [&](double t) { return A + B / t; };
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    r["chi_c"] = crit.chi_c, r["phi_c"] = crit.phi_c;
+    const bool has_tc = B != 0 && (crit.chi_c - A) * B > 0;
+    const double tc = has_tc ? B / (crit.chi_c - A) : 0;
+    r["tc"] = has_tc ? caps::Json(tc) : caps::Json();
+    r["kind"] = B > 0 ? "ucst" : B < 0 ? "lcst" : "none";
+    r["chi_t"] = chi_at(T);
+    double lo, hi;
+    if (caps::blend_binodal(na, nb, chi_at(T), lo, hi)) r["coexist"] = num_array({lo, hi});
+    if (caps::blend_spinodal(na, nb, chi_at(T), lo, hi)) r["spinodal"] = num_array({lo, hi});
+    // curves in T (two phases below Tc for UCST, above for LCST): χ from just above χc to χ at the far temperature
+    if (has_tc) {
+      const double tfar = B > 0 ? std::max(1.0, j.num("t_min", std::max(1.0, tc * 0.55))) : j.num("t_max", tc * 1.6);
+      const double chi_far = chi_at(tfar);
+      std::vector<double> bp, bt, sp, st;
+      std::vector<std::array<double, 3>> left, right, sleft, sright;
+      double glo = 0, ghi = 0;
+      for (int i = 1; i <= 240; ++i) {
+        const double u = double(i) / 240, chi = crit.chi_c + (chi_far - crit.chi_c) * u * u;   // dense near the critical point
+        const double t = B / (chi - A);
+        double b1, b2, s1, s2;
+        if (caps::blend_binodal(na, nb, chi, b1, b2, glo, ghi)) glo = b1, ghi = b2, left.push_back({b1, t, 0}), right.push_back({b2, t, 0});
+        if (caps::blend_spinodal(na, nb, chi, s1, s2)) sleft.push_back({s1, t, 0}), sright.push_back({s2, t, 0});
+      }
+      auto join = [](const std::vector<std::array<double, 3>>& L, const std::vector<std::array<double, 3>>& R, double pc, double tc, std::vector<double>& x, std::vector<double>& y) {
+        for (auto it = L.rbegin(); it != L.rend(); ++it) x.push_back((*it)[0]), y.push_back((*it)[1]);
+        x.push_back(pc), y.push_back(tc);
+        for (const auto& p : R) x.push_back(p[0]), y.push_back(p[1]);
+      };
+      join(left, right, crit.phi_c, tc, bp, bt);
+      join(sleft, sright, crit.phi_c, tc, sp, st);
+      caps::Json b = caps::Json::object();
+      b["phi"] = num_array(bp), b["t"] = num_array(bt);
+      r["binodal"] = std::move(b);
+      caps::Json s = caps::Json::object();
+      s["phi"] = num_array(sp), s["t"] = num_array(st);
+      r["spinodal_curve"] = std::move(s);
+    }
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_solvent_chi(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const double dp = j.num("delta_polymer", 18.6), t = j.num("t", 298.15);
+    caps::Json r = caps::Json::object(), list = caps::Json::array();
+    r["ok"] = true;
+    r["rt"] = 8.314462618 * t;
+    if (j.has("solvents"))
+      for (const auto& s : j["solvents"].items()) {
+        const double chi = caps::hildebrand_chi(s.num("v", 100), s.num("delta", 18), dp, t);
+        caps::Json o = caps::Json::object();
+        o["name"] = s.text("name"), o["chi"] = chi;
+        o["predicted"] = chi < 0.45 ? "solvent" : chi <= 0.55 ? "borderline" : "non-solvent";
+        list.push_back(std::move(o));
+      }
+    r["solvents"] = std::move(list);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_ewald_params(caps_doc* d, const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const double rc = std::max(1.0, j.num("cutoff", 12)), tol = std::clamp(j.num("tolerance", 1e-5), 1e-12, 0.1),
+                 spacing = std::max(0.3, j.num("spacing", 1.2));
+    const int order = std::clamp(int(j.num("order", 4)), 3, 12);
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    const double beta = caps::ewald_beta(rc, tol);
+    r["beta"] = beta, r["beta_rc"] = beta * rc;
+    caps::Json table = caps::Json::array();
+    for (double t : {1e-4, 1e-5, 1e-6}) {
+      caps::Json o = caps::Json::object();
+      const double b = caps::ewald_beta(rc, t);
+      o["tolerance"] = t, o["beta"] = b, o["beta_rc"] = b * rc;
+      table.push_back(std::move(o));
+    }
+    r["table"] = std::move(table);
+    std::array<double, 3> L = {0, 0, 0};
+    if (j.has("edges")) {
+      size_t k = 0;
+      for (const auto& x : j["edges"].items())
+        if (k < 3) L[k++] = x.number();
+    } else if (d && d->frame.cell.valid()) {
+      L = {caps::norm(d->frame.cell.a), caps::norm(d->frame.cell.b), caps::norm(d->frame.cell.c)};
+    }
+    if (L[0] > 0 && L[1] > 0 && L[2] > 0) {
+      caps::Json mesh = caps::Json::array(), sp = caps::Json::array(), edges = caps::Json::array();
+      for (double e : L) {
+        const int n = caps::pme_mesh_size(e, spacing, order);
+        mesh.push_back(caps::Json(double(n))), sp.push_back(caps::Json(e / n)), edges.push_back(caps::Json(e));
+      }
+      r["edges"] = std::move(edges), r["mesh"] = std::move(mesh), r["spacing"] = std::move(sp);
+      r["fits"] = 2 * rc <= std::min({L[0], L[1], L[2]});
+    }
+    std::vector<double> x, y;
+    for (int i = 0; i <= 200; ++i) {
+      const double rr = 1 + (rc * 1.35 - 1) * i / 200.0;
+      x.push_back(rr), y.push_back(std::erfc(beta * rr));
+    }
+    caps::Json curve = caps::Json::object();
+    curve["r"] = num_array(x), curve["erfc"] = num_array(y);
+    r["curve"] = std::move(curve);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_atom_residues(caps_doc* d, int32_t* out, int32_t cap) {
+  const auto& atoms = d->frame.atoms;
+  for (size_t i = 0; i < atoms.size() && out && int32_t(i) < cap; ++i) out[i] = int32_t(atoms[i].resid);
+  return int32_t(atoms.size());
 }
