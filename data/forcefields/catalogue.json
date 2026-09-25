@@ -761,6 +761,10 @@
     "angles": 1430,
     "dihedrals": 1195,
     "impropers": 4
+   },
+   "typing": {
+    "rules": "typing/oplsaa2024-moltemplate.typing.json",
+    "evidence": "CAPS OPLS-AA number rules (bench/typing/make_oplsaa_rules.py); on the polymer library every fully typed oligomer is neutral and its charges agree with an independent OPLS bond-increment assignment (bench/typing/check_oplsaa_numbers.py)"
    }
   },
   {
@@ -782,6 +786,10 @@
     "angles": 1017,
     "dihedrals": 800,
     "impropers": 6
+   },
+   "typing": {
+    "rules": "typing/oplsaa2008-moltemplate.typing.json",
+    "evidence": "CAPS OPLS-AA number rules (bench/typing/make_oplsaa_rules.py); on the polymer library every fully typed oligomer is neutral and its charges agree with an independent OPLS bond-increment assignment (bench/typing/check_oplsaa_numbers.py)"
    }
   },
   {

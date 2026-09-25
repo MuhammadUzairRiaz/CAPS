@@ -8,6 +8,7 @@
 #include <cmath>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <set>
 #include <sstream>
 
@@ -66,6 +67,32 @@ void load_typing(FFDef& ff, const std::string& path) {
   auto rules = typing_from(j["rules"], path);
   std::set<std::string> known;
   for (const auto& t : ff.types) known.insert(t.name);
+  // A rule may name a type by its short label: an alias, or the leading label of moltemplate's encoded names
+  // ("135" for 135_bCT_aCT_dCT_iCT in OPLS-AA, "c4" for c4~pc4~bc4~… in COMPASS). Used only when unambiguous.
+  {
+    std::map<std::string, std::string> shortname;
+    std::set<std::string> ambiguous;
+    auto add = [&](const std::string& k, const std::string& full) {
+      if (k.empty() || k == full || known.count(k)) return;
+      auto [it, fresh] = shortname.emplace(k, full);
+      if (!fresh && it->second != full) ambiguous.insert(k);
+    };
+    for (const auto& t : ff.types) {
+      for (const auto& a : t.aliases) add(a, t.name);
+      const size_t b = t.name.find("_b"), w = t.name.find('~');
+      if (b != std::string::npos && b > 0) add(t.name.substr(0, b), t.name);
+      if (w != std::string::npos && w > 0) add(t.name.substr(0, w), t.name);
+    }
+    auto resolve = [&](std::string& n) {
+      if (known.count(n)) return;
+      auto it = shortname.find(n);
+      if (it != shortname.end() && !ambiguous.count(n)) n = it->second;
+    };
+    for (auto& r : rules) {
+      resolve(r.type);
+      for (auto& o : r.overrides) resolve(o);
+    }
+  }
   std::string unknown;
   for (const auto& r : rules)
     if (!known.count(r.type) && unknown.find(" " + r.type + ",") == std::string::npos) unknown += " " + r.type + ",";
