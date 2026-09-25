@@ -125,7 +125,7 @@ _RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_c
 def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
-        "caps_abi_version": ([], I), "caps_last_error": ([], S),
+        "caps_abi_version": ([], I), "caps_last_error": ([], S), "caps_set_restraints": ([P, C.c_char_p], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I),
@@ -282,8 +282,15 @@ class Document:
 
     # engines
     def relax(self, ftol: float = 0.5, method: str = "lbfgs", max_iterations: int = 5000, density: float = 0.0, pushoff: bool = True,
-              box: bool = False, pressure: float = 1.0, cutoff: float = 10.0, coulomb: bool = True, threads: int = 0) -> int:
-        """Minimises the current frame with the Field assignment (else the built-in GAFF): 0 converged, 1 not quite."""
+              box: bool = False, pressure: float = 1.0, cutoff: float = 10.0, coulomb: bool = True, threads: int = 0,
+              restraints: Optional[list] = None) -> int:
+        """Minimises the current frame with the Field assignment (else the built-in GAFF): 0 converged, 1 not quite.
+        restraints: [(i, j, r0), …] or [(i, j, r0, k), …] — k (r − r0)² between atoms i and j (indices from 0, Å,
+        k kcal/mol/Å², default 10); they stay set for later relaxations until relax(restraints=[]) clears them."""
+        if restraints is not None:
+            rs = [{"i": int(r[0]), "j": int(r[1]), "r0": float(r[2]), "k": float(r[3]) if len(r) > 3 else 10.0} for r in restraints]
+            if library().caps_set_restraints(self._h, _enc(json.dumps(rs))) < 0:
+                raise _error()
         o = _RelaxOpts({"sd": 0, "cg": 1, "lbfgs": 2, "fire": 3}[method], ftol, max_iterations, density, 0.06, int(pushoff), int(box),
                        pressure, cutoff, int(coulomb), threads)
         rep = _report()

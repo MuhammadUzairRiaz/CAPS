@@ -577,6 +577,9 @@ int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap);
 /* Holds every atom of molecule `mol` in place in caps_relax, caps_md and caps_equilibrate (0: none), e.g. the substrate of
    an interface. A document from caps_interface_build holds molecule 1. */
 void caps_set_held_molecule(caps_doc* d, int64_t mol);
+/* Distance restraints for caps_relax, as JSON: [{"i": 0, "j": 5, "r0": 3.0, "k": 10}, …] (atom indices from 0, Å,
+   kcal/mol/Å²); "[]" or NULL clears them. Returns the number set, or -1 on a malformed list. */
+int32_t caps_set_restraints(caps_doc* d, const char* json);
 int64_t caps_held_molecule(const caps_doc* d);
 
 /* Crystals from space groups (v20, design/boards/CrystalBuilder). A spec is JSON {space_group (key "227:2", number or

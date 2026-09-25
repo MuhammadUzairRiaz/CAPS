@@ -121,6 +121,7 @@ struct caps_doc {
   std::string analysis;   // last caps_analyze result (JSON)
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
+  std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
@@ -1039,6 +1040,8 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
       r.fixed.assign(s.atoms.size(), 0);
       for (size_t i = 0; i < s.atoms.size(); ++i) r.fixed[i] = s.atoms[i].mol == d->held_mol;
     }
+    for (const auto& rs : d->restraints)
+      if (rs.i < s.atoms.size() && rs.j < s.atoms.size() && rs.i != rs.j) r.restraints.push_back(rs);
     caps::Trajectory out;
     out.topology = s;
     auto push = [&](const std::vector<caps::Vec3>& p, const caps::Cell& c) {
@@ -1073,6 +1076,13 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
       if (r.target_density > 0) pr.push_back({"target density", g6(r.target_density) + " g/cm³"});
       if (r.relax_box) pr.push_back({"box relaxation", g6(r.pressure) + " atm"});
       if (d->held_mol > 0) pr.push_back({"held molecule", std::to_string(d->held_mol)});
+      if (!r.restraints.empty()) {
+        std::string t;
+        for (size_t k = 0; k < r.restraints.size() && k < 4; ++k)
+          t += (k ? "; " : "") + std::to_string(r.restraints[k].i + 1) + "–" + std::to_string(r.restraints[k].j + 1) + " to " +
+               std::to_string(r.restraints[k].r0).substr(0, 5) + " Å (k " + std::to_string(r.restraints[k].k).substr(0, 5) + ")";
+        pr.push_back({"distance restraints", t + (r.restraints.size() > 4 ? " …" : "")});
+      }
       prov_step(d, std::string("relax.") + names[mth], std::string(titles[mth]) + (rep.converged ? ", converged" : ", stopped before the tolerance"), std::move(pr), "",
                 std::move(c), energy_approx(r.energy.cutoff, r.energy.coulomb, false, r.energy.threads));
     }
@@ -3118,6 +3128,27 @@ extern "C" int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap) {
     g_error = e.what();
     return -1;
   }
+}
+
+extern "C" int32_t caps_set_restraints(caps_doc* d, const char* json) {
+  if (!d) return -1;
+  int32_t n = 0;
+  const int32_t rc = guard([&] {
+    std::vector<caps::RelaxOptions::Restraint> v;
+    if (json && *json) {
+      const caps::Json j = caps::Json::parse(json);
+      for (const auto& e : j.items()) {
+        caps::RelaxOptions::Restraint r;
+        r.i = uint32_t(e.num("i", 0)), r.j = uint32_t(e.num("j", 0)), r.r0 = e.num("r0", 0), r.k = e.num("k", 10);
+        if (r.r0 < 0 || r.k < 0) throw std::invalid_argument("a restraint needs r0 ≥ 0 and k ≥ 0");
+        v.push_back(r);
+      }
+    }
+    d->restraints = std::move(v);
+    n = int32_t(d->restraints.size());
+    return 0;
+  });
+  return rc < 0 ? -1 : n;
 }
 
 extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {
