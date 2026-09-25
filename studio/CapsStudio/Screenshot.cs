@@ -369,6 +369,11 @@ internal static class Screenshot
                 w.ViewModel.TestTemplate();
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "lod")   // lod=1: level of detail on, the Performance panel and HUD
+            {
+                w.ViewModel.LodOn = true; w.ViewModel.PerfHud = true; w.ViewModel.LodOpen = true;
+                for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

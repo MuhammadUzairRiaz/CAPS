@@ -385,6 +385,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsSweep));
         Raise(nameof(IsCg));
         Raise(nameof(IsTemplate));
+        Raise(nameof(ShowLodPanel));
         Raise(nameof(ProjectPanelShown));
         Raise(nameof(IsScattering));
         Raise(nameof(IsFreeVolume));
@@ -1500,6 +1501,7 @@ public sealed partial class MainViewModel : ObservableObject
         Notes.Clear();
         foreach (var n in doc.Notes()) Notes.Add(n);
         if (IsProvenance) LoadProvenance();
+        AutoLod(doc);
         LoadFileChecks();
         var look = FileChecks.Count(c => c.NeedsLook);
         Status = $"Opened {Title} · {s.Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · {s.Format}" + (look > 0 ? $" · {look} file check{(look == 1 ? "" : "s")} need a look" : "");
@@ -1632,13 +1634,21 @@ public sealed partial class MainViewModel : ObservableObject
         var half = Math.Min(s.CellA, Math.Min(s.CellB, s.CellC)) / 2;
         var rmax = Math.Min(12.0, Math.Floor(half));
         var (ea, eb) = RdfElements[_rdfPair];
-        RdfCurve = _doc.Rdf(ea, eb, rmax, 0.2, _rdfInter);
-        RdfNote = string.Format(CultureInfo.InvariantCulture, "{0} · {1} · r ≤ {2:F0} Å · 0.2 Å bins · frame {3}",
-            RdfPairs[_rdfPair], _rdfInter ? "between molecules" : "all pairs", rmax, _frame);
+        var sampled = s.Atoms > 20000 ? " · 20 000 sampled centres" : "";
+        RdfNote = string.Format(CultureInfo.InvariantCulture, "{0} · {1} · r ≤ {2:F0} Å · 0.2 Å bins · frame {3}{4}",
+            RdfPairs[_rdfPair], _rdfInter ? "between molecules" : "all pairs", rmax, _frame, sampled);
+        if (s.Atoms < 200_000) { RdfCurve = _doc.Rdf(ea, eb, rmax, 0.2, _rdfInter); return; }
+        // large cells: off the UI thread
+        var doc = _doc;
+        var inter = _rdfInter;
+        Task.Run(() => { try { return doc.Rdf(ea, eb, rmax, 0.2, inter); } catch { return []; } })
+            .ContinueWith(t => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_doc == doc) RdfCurve = t.Result; }));
     }
 
-    public CapsRenderOpts ViewOptions(int w, int h, int supersample) => new()
+    public CapsRenderOpts ViewOptions(int w, int h, int supersample)
     {
+        var o = new CapsRenderOpts
+        {
         Width = w, Height = h, Supersample = supersample,
         Background = _viewBackground,
         ColourBy = _colour, Style = _style,
@@ -1650,7 +1660,10 @@ public sealed partial class MainViewModel : ObservableObject
         Focus = _focusAtom >= 0 ? _focusAtom + 1 : 0,
         AmbientOcclusion = _module == 19 ? (_renderAo ? 1 : 0) : (_viewAo ? 1 : 0),
         DepthCue = _module == 19 ? (_renderDepth ? 1 : 0) : (_depthCue ? 1 : 0),
-    };
+        };
+        ApplyLod(ref o);
+        return o;
+    }
 
     /// <summary>The Field page's view: coloured by force-field type, ball and stick, the selected row's atom highlighted.</summary>
     public CapsRenderOpts FieldViewOptions(int w, int h, int supersample) => new()
@@ -1673,6 +1686,7 @@ public sealed partial class MainViewModel : ObservableObject
     public CapsRenderOpts ExportOptions(int w, int h)
     {
         var o = ViewOptions(w, h, 2);
+        o.LodNear = o.LodFar = 0;   // exports in full detail
         o.Background = _exportBackground;
         o.Highlight0 = o.Highlight1 = o.Highlight2 = o.Highlight3 = -1;
         o.Focus = 0;

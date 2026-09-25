@@ -28,7 +28,7 @@ public sealed partial class MainViewModel
         set
         {
             if (!Set(ref _ixOpen, value)) return;
-            if (value) { AppearanceOpen = false; SelectionOpen = false; RunInteractions(); }
+            if (value) { AppearanceOpen = false; SelectionOpen = false; LodOpen = false; RunInteractions(); }
             else { _doc?.ClearChecks(); RenderRequested?.Invoke(); }
             RaiseIxPanel();
         }

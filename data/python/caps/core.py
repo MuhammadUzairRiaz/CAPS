@@ -83,7 +83,7 @@ class _RenderOpts(C.Structure):
     _fields_ = [("width", C.c_int32), ("height", C.c_int32), ("supersample", C.c_int32), ("background", C.c_int32),
                 ("custom_rgb", C.c_uint32), ("colour_by", C.c_int32), ("style", C.c_int32), ("outlines", C.c_int32),
                 ("depth_cue", C.c_int32), ("show_cell", C.c_int32), ("highlight", C.c_int32 * 4), ("focus", C.c_int32),
-                ("ambient_occlusion", C.c_int32)]
+                ("ambient_occlusion", C.c_int32), ("lod_near", C.c_double), ("lod_far", C.c_double)]
 
 
 class _RelaxOpts(C.Structure):

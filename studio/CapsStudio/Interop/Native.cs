@@ -23,6 +23,7 @@ public struct CapsRenderOpts
     public int Highlight0, Highlight1, Highlight2, Highlight3;   // selected atoms, -1 unused
     public int Focus;           // atom index + 1 with the keyboard-focus ring, 0 none (ABI 18)
     public int AmbientOcclusion;   // darken atoms by the open sky they see (ABI 19)
+    public double LodNear, LodFar; // level of detail (ABI 20): full within LodNear Å of the focus, spheres to LodFar, points beyond
 }
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -232,6 +233,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_methods_text")] public static extern int MethodsText([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, [MarshalAs(UnmanagedType.LPUTF8Str)] string? replicas, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_template_view")] public static extern int TemplateView([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_template_test")] public static extern int TemplateTest(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_render_stats")] public static extern int RenderStats(IntPtr doc, out long near, out long mid, out long far, out long bonds);
+    [DllImport(Lib, EntryPoint = "caps_memory")] public static extern int Memory(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -978,6 +981,10 @@ public sealed class CapsDocument : IDisposable
     public void VoidsPdb(string path) { lock (_lock) { Alive(); Check(Native.VoidsPdb(_h, path)); } }
     /// <summary>Each template's reactive sites and matches within capture on the current frame (caps_template_test).</summary>
     public string TemplateTest(string text) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.TemplateTest(_h, text, b, c)); } }
+    /// <summary>Atoms in each level of detail and bond halves drawn by the last view render.</summary>
+    public (long Near, long Mid, long Far, long Bonds) RenderStats() { lock (_lock) { Alive(); Native.RenderStats(_h, out var n, out var m, out var f, out var b); return (n, m, f, b); } }
+    /// <summary>Memory the document holds (JSON).</summary>
+    public string Memory() { lock (_lock) { Alive(); return Sized((b, c) => Native.Memory(_h, b, c)); } }
     /// <summary>The steps that produced this structure (caps-manifest/1.0).</summary>
     public string Provenance() { lock (_lock) { Alive(); return Sized((b, c) => Native.Provenance(_h, b, c)); } }
     public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }
