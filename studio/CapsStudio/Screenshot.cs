@@ -183,6 +183,20 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "solvpad") { w.ViewModel.SolvPadding = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture); for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
+            if (kv[0] == "appearance") { w.ViewModel.AppearanceOpen = kv[1] == "1"; Dispatcher.UIThread.RunJobs(); }
+            if (kv[0] == "appexpr") { w.ViewModel.AppTarget = 1; w.ViewModel.AppExpression = kv[1]; }   // the target of the next appstyle
+            if (kv[0] == "appstyle") w.ViewModel.AppStyle = int.Parse(kv[1]);
+            if (kv[0] == "appcolour") w.ViewModel.AppColour = int.Parse(kv[1]);
+            if (kv[0] == "appsurface") w.ViewModel.AppSurface = int.Parse(kv[1]);
+            if (kv[0] == "appmap") w.ViewModel.AppSurfaceMap = int.Parse(kv[1]);
+            if (kv[0] == "appsurfatoms") w.ViewModel.AppSurfaceAtoms = kv[1];
+            if (kv[0] == "labels")   // labels=element,rs,type,charge
+            {
+                var ks = kv[1].Split(',');
+                w.ViewModel.LabelElement = ks.Contains("element"); w.ViewModel.LabelRs = ks.Contains("rs");
+                w.ViewModel.LabelType = ks.Contains("type"); w.ViewModel.LabelCharge = ks.Contains("charge");
+            }
+            if (kv[0] == "appwait") for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {

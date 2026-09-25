@@ -415,6 +415,27 @@ internal static class SelfTest
         var wsum = vm.Document?.Summary();
         Check(wsum is { } solvSum && solvSum.Atoms > 2000 && vm.Title.Contains("water") && vm.SolvStages.All(st => st.IsDone), $"solvation: {vm.Title} · {wsum?.Atoms} atoms · {vm.SolvError} {vm.Status}");
 
+        // Appearance: a style layer, colour by charge, a surface and R/S labels on the solvated peptide
+        vm.SetModule(8);
+        vm.AppearanceOpen = true;
+        vm.AppTarget = 1;
+        vm.AppExpression = "Molecule == 1";
+        vm.AppStyle = 3;
+        vm.AppTarget = 0;
+        Check(vm.ShowAppearance && !vm.ShowStudioTabs && vm.AppLayers.Count == 1 && vm.AppChip.Contains("Molecule == 1"), $"appearance: {vm.AppChip}");
+        if (vm.Document is { } adoc)
+        {
+            adoc.SetAppearance("{\"layers\":[{\"expression\":\"Molecule == 1\",\"style\":\"space_filling\"}],\"colour\":\"charge\",\"surface\":{\"kind\":\"excluded\",\"expression\":\"Molecule == 1\"}}");
+            var look = System.Text.Json.Nodes.JsonNode.Parse(adoc.AppearanceInfo())!;
+            var area = look["surface"]?["area"]?.GetValue<double>() ?? 0;
+            Check(area > 500 && (look["styles"]?["space_filling"]?.GetValue<double>() ?? 0) > 100, $"appearance: excluded surface {area:0} Å² · {look["styles"]?.ToJsonString()}");
+            var rs = System.Text.Json.Nodes.JsonNode.Parse(adoc.AtomLabels("rs"))!.AsArray().Count(x => x?.GetValue<string>() == "S");
+            Check(rs >= 20, $"appearance: {rs} S centres labelled (L residues)");
+            adoc.SetAppearance("{\"active\":false}");
+        }
+        vm.ResetAppearance();
+        vm.AppearanceOpen = false;
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");

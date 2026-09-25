@@ -254,6 +254,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_appearance")] public static extern int SetAppearance(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_appearance_info")] public static extern int AppearanceInfo(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_atom_labels")] public static extern int AtomLabels(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_project_atoms")] public static extern int ProjectAtoms(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, float[] xyv, int count);
     [DllImport(Lib, EntryPoint = "caps_solvent_library")] public static extern int SolventLibrary(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvate_plan")] public static extern int SolvatePlan(IntPtr solute, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvate")] public static extern IntPtr Solvate(IntPtr solute, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsStageProgress? progress, IntPtr user, byte[] report, int cap);
@@ -839,6 +843,18 @@ public sealed class CapsDocument : IDisposable
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
+    /// <summary>Styles, colours, surfaces and polyhedra of the view (caps_set_appearance).</summary>
+    public void SetAppearance(string json) { lock (_lock) { Alive(); if (Native.SetAppearance(_h, json) != 0) throw new InvalidOperationException(Native.LastError()); } }
+    public string AppearanceInfo() { lock (_lock) return JsonCall((b, c) => Native.AppearanceInfo(_h, b, c)); }
+    /// <summary>One label per atom of the current frame: element, rs, type, charge or name (caps_atom_labels).</summary>
+    public string AtomLabels(string kind) { lock (_lock) return JsonCallOnce((b, c) => Native.AtomLabels(_h, kind, b, c)); }
+    /// <summary>x, y (pixels) and visibility of every atom after the last render with the same camera and options.</summary>
+    public float[] ProjectAtoms(in CapsCamera cam, in CapsRenderOpts opt, int atoms)
+    {
+        var buf = new float[Math.Max(1, atoms) * 3];
+        lock (_lock) { Alive(); var n = Native.ProjectAtoms(_h, cam, opt, buf, atoms); if (n < 0) throw new InvalidOperationException(Native.LastError()); }
+        return buf;
+    }
     public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }
     /// <summary>Throws once the document is closed (a view may still hold it while a newer one replaces it).</summary>
     private void Alive() { if (_h == IntPtr.Zero) throw new ObjectDisposedException(nameof(CapsDocument)); }
