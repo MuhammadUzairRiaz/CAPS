@@ -163,10 +163,7 @@ caps::ProtocolParams protocol_params(const caps_protocol_params* p) {
 // The force field for Relax / Dynamics: the Field assignment when there is one (it must be complete: CAPS never guesses
 // parameters), otherwise null (the built-in GAFF typing of C and H).
 // The force field used when none is assigned in Field: the built-in GAFF for C/H structures, UFF for any other.
-caps::ForceField default_ff(const caps::System& s) {
-  const bool ch = std::all_of(s.atoms.begin(), s.atoms.end(), [](const caps::Atom& a) { return a.element == 1 || a.element == 6; });
-  return ch ? caps::assign_gaff(s) : caps::assign_uff(s);
-}
+caps::ForceField default_ff(const caps::System& s) { return caps::default_forcefield(s); }
 
 std::shared_ptr<const caps::ForceField> field_for_run(const caps_doc* d) {
   if (!d->field) {
@@ -1080,7 +1077,7 @@ int32_t caps_field_types_file(caps_doc* d, const char* path) {
 int32_t caps_field_info(caps_doc* d, char* text, int32_t cap) {
   return guard([&] {
     const auto assigned = field_for_run(d);
-    const caps::ForceField ff = assigned ? *assigned : caps::assign_gaff(d->frame);
+    const caps::ForceField ff = assigned ? *assigned : caps::default_forcefield(d->frame);
     caps::Evaluator ev(ff, elec());
     std::vector<double> x, f;
     for (const auto& a : d->frame.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
@@ -1253,7 +1250,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
     // force field: the Field assignment (must be complete), else GAFF of C and H
     std::shared_ptr<const caps::ForceField> ff = field_for_run(d);
     std::vector<std::string> extra_notes;
-    if (!ff && (has("ced") || has("delta") || has("cij_fluct") || !protocols.empty())) {
+    if (!ff && (has("ced") || has("delta") || has("cij_fluct") || has("adhesion") || !protocols.empty())) {
       caps::System s0 = d->traj.frame(0);
       if (!s0.unwrapped) caps::make_molecules_whole(s0);
       ff = std::make_shared<caps::ForceField>(default_ff(s0));
@@ -1874,6 +1871,36 @@ extern "C" caps_doc* caps_interface_build(const char* options_json, const char* 
     g_error = e.what();
     return nullptr;
   }
+}
+
+extern "C" int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_t count, double tolerance, uint64_t seed, char* report, int32_t cap) {
+  return guard([&] {
+    caps::BuildOptions bo;
+    bo.forcefield = "uff";
+    const caps::BuildResult br = caps::build_molecule(smiles ? smiles : "", bo);
+    caps::System guest = br.system;
+    guest.title = smiles ? smiles : "molecule";
+    caps::PackOptions po;
+    if (tolerance > 0) po.tolerance = tolerance;
+    po.seed = seed ? seed : 1;
+    caps::PackReport pr;
+    caps::System host = d->traj.frame(d->current);
+    caps::System s = caps::insert_molecules(host, guest, std::max(1, count), po, &pr);
+    d->field.reset();
+    d->traj = caps::Trajectory{};
+    d->traj.topology = s;
+    std::vector<caps::Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    d->traj.positions.push_back(std::move(p));
+    d->traj.cells.push_back(s.cell);
+    d->traj.timesteps.push_back(0);
+    d->current = 0;
+    refresh(d);
+    std::string t;
+    for (const auto& n : pr.notes) t += n + "\n";
+    report_out(t, report, cap);
+    return 0;
+  });
 }
 
 extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {

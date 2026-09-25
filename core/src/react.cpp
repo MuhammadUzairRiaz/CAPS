@@ -1,4 +1,5 @@
 // CAPS React: template matching, bond edits, Polymatic-style cycles and network analysis.
+#include "caps/uff.hpp"
 #include "caps/react.hpp"
 
 #include <algorithm>
@@ -40,6 +41,36 @@ const std::map<std::string, std::string>& builtins() {
        "min_path 6\n"
        "form 1 2\n"
        "delete 3 4\n"
+       "sites 1\n"},
+      {"sulfur_allylic",
+       "reaction sulfur_allylic   # accelerated sulfur cure (disulfide-donor model): an allylic C–H of a diene rubber and an\n"
+       "                          # S–H end of H–S–S–H (or a growing C–S–S–H) form C–S, H2 released; two in turn give C–S–S–C\n"
+       "atom 1 C degree=4 H>=1 not_aromatic   # the allylic carbon\n"
+       "atom 2 C degree=3 not_aromatic bonded 1   # its double-bond neighbour\n"
+       "atom 3 H bonded 1\n"
+       "atom 4 S degree=2 H=1   # an S–H end of the sulfur donor\n"
+       "atom 5 H bonded 4\n"
+       "initiators 1 4\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 0\n"
+       "form 1 4\n"
+       "delete 3 5\n"
+       "sites 4   # the donor's S–H ends\n"},
+      {"peroxide_allylic",
+       "reaction peroxide_allylic   # peroxide cure of a diene rubber: C–C crosslink between allylic carbons, H2 released\n"
+       "atom 1 C degree=4 H>=1 not_aromatic\n"
+       "atom 2 C degree=3 not_aromatic bonded 1\n"
+       "atom 3 H bonded 1\n"
+       "atom 4 C degree=4 H>=1 not_aromatic\n"
+       "atom 5 C degree=3 not_aromatic bonded 4\n"
+       "atom 6 H bonded 4\n"
+       "initiators 3 6   # the leaving hydrogens\n"
+       "capture 3.0\n"
+       "probability 1.0\n"
+       "min_path 6\n"
+       "form 1 4\n"
+       "delete 3 6\n"
        "sites 1\n"},
       {"epoxy_amine_primary",
        "reaction epoxy_amine_primary   # epoxide CH2 + primary amine → β-hydroxy secondary amine\n"
@@ -553,7 +584,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     }
     row.energy = rr.final.total();
     // names follow the new types
-    const ForceField ff = assign_gaff(s);
+    const ForceField ff = default_forcefield(s);
     for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].name = ff.atom_type[i];
   };
 

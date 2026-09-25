@@ -5,6 +5,7 @@
 // FIRE: Bitzek, Koskinen, Gähler, Moseler and Gumbsch, Phys. Rev. Lett. 97, 170201 (2006), standard parameters.
 // Push-off: Auhl, Everaers, Grest, Kremer and Plimpton, J. Chem. Phys. 119, 12718 (2003), here as capped-force
 // minimisation stages rather than capped-force dynamics.
+#include "caps/uff.hpp"
 #include "caps/relax.hpp"
 
 #include <algorithm>
@@ -237,7 +238,7 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   if (o.field && o.field->atom_type.size() != s.atoms.size())
     throw FieldError("the assigned force field is for " + std::to_string(o.field->atom_type.size()) + " atoms, the structure has " +
                      std::to_string(s.atoms.size()));
-  const ForceField ff = o.field ? *o.field : assign_gaff(s);
+  const ForceField ff = o.field ? *o.field : default_forcefield(s);
   rep.field = ff.name;
   for (const auto& n : ff.notes) rep.notes.push_back(n);
 

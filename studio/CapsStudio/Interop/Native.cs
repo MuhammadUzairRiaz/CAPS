@@ -234,6 +234,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_surface_terminations")] public static extern int SurfaceTerminations([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, int h, int k, int l, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_interface_build")] public static extern IntPtr InterfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_insert_molecules")] public static extern int InsertMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, int count, double tolerance, ulong seed, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
@@ -367,6 +368,14 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Holds molecule `mol` in place in Relax (0: none).</summary>
     public void SetHeldMolecule(long mol) { lock (_lock) Native.SetHeldMolecule(_h, mol); }
     public long HeldMolecule() { lock (_lock) return Native.HeldMolecule(_h); }
+
+    /// <summary>Inserts copies of a molecule (SMILES) into the free space of the current frame (caps_insert_molecules).</summary>
+    public string InsertMolecules(string smiles, int count, double tolerance, ulong seed)
+    {
+        var report = new byte[4096];
+        lock (_lock) Check(Native.InsertMolecules(_h, smiles, count, tolerance, seed, report, report.Length));
+        return System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
+    }
 
     /// <summary>The 2D drawing of a SMILES (JSON graph with coordinates, bond length 1).</summary>
     public static string SmilesDepict(string smiles)

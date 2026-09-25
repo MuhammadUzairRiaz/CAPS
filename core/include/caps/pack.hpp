@@ -84,6 +84,11 @@ std::vector<PackItem> read_packmol_input(const std::string& path, PackOptions& o
 std::vector<PackItem> parse_packmol_input(const std::string& text, const std::string& base_dir, PackOptions& o, std::string* output,
                                           const std::string& name = "input");
 
+// Inserts `count` copies of `guest` (one molecule) into the free space of a periodic structure, which stays where it is
+// (curatives, sulfur donors, solvent into a polymer cell). The host keeps its molecules, bonds and bond orders; the
+// guests are numbered after them. Uses o.tolerance, o.seed and the optimisation settings; the cell is the host's.
+System insert_molecules(const System& host, const System& guest, int count, const PackOptions& o, PackReport* report = nullptr);
+
 // Smallest distance between atoms of different molecules (minimum image when the cell is periodic) and the number of
 // such pairs closer than `tolerance`. Uses a cell list.
 std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic);

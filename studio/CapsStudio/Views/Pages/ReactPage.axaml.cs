@@ -29,4 +29,5 @@ public partial class ReactPage : PageBase
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunReact();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelReact();
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
+    private async void OnInsertCurative(object? s, RoutedEventArgs e) => await Vm.InsertCurative();
 }

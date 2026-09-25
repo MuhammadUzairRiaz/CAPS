@@ -34,6 +34,11 @@
               </Border>
               <StackPanel Margin="16,12,16,16" Spacing="10">
                 <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReactionSets}" SelectedIndex="{Binding RxSet}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,80,Auto" ColumnSpacing="8" IsVisible="{Binding RxShowInsert}">
+                  <TextBox Text="{Binding RxInsertSmiles}" Classes="mono" Watermark="SS" ToolTip.Tip="The sulfur donor as SMILES (SS = H–S–S–H)" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding RxInsertCount}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="How many" />
+                  <Button Grid.Column="2" Classes="small" Content="Insert into the cell" Click="OnInsertCurative" IsEnabled="{Binding CanReact}" />
+                </Grid>
                 <TextBox Text="{Binding RxText}" AcceptsReturn="True" Classes="mono" FontSize="11.5" MinHeight="180" MaxHeight="320" TextWrapping="NoWrap" />
                 <TextBlock Text="pre → post with mapped atoms; bonds form, break or move; types are reassigned after each bond" Classes="dim" TextWrapping="Wrap" />
               </StackPanel>
