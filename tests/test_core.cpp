@@ -504,7 +504,7 @@ TEST(Pipeline, StepsOnPolystyrene) {
 
   // select hydrogens (listed top to bottom, run bottom to top), then delete them
   auto st = run(R"([{"type":"delete_selected"},{"type":"select_expression","expression":"Element == \"H\""}])");
-  EXPECT_EQ(st.steps[1].summary, std::to_string(nh) + " selected");
+  EXPECT_EQ(st.steps[1].summary, std::to_string(nh) + " of " + std::to_string(f.atoms.size()) + " selected");
   EXPECT_EQ(st.system.atoms.size(), f.atoms.size() - nh);
   EXPECT_EQ(st.attribute("Particles"), double(f.atoms.size() - nh));
   for (const auto& b : st.system.bonds) EXPECT_TRUE(st.system.atoms[b.i].element != 1 && st.system.atoms[b.j].element != 1);
