@@ -1220,6 +1220,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
     }
     if (ids.empty() && protocols.empty()) throw std::invalid_argument("no properties requested");
     caps::AnalyzeOptions o;
+    o.exclude_mol = d->held_mol;   // a held surface is not a chain
     if (p) {
       o.first = std::max<int64_t>(0, p->first);
       o.last = p->last > 0 ? p->last : -1;
