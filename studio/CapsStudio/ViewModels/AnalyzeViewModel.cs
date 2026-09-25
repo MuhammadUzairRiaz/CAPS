@@ -121,7 +121,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         [
             new("Structure", [Chip("density", "Density", on: true), Chip("rdf", "RDF", on: true), Chip("sq", "S(q)"), Chip("xray", "X-ray"), Chip("neutron", "Neutron")]),
             new("Chains", [Chip("rg", "Rg", on: true), Chip("ree", "Ree"), Chip("cn", "Cn, C∞"), Chip("persistence", "Persistence"), Chip("orientation", "Orientation"),
-                Soon("Entanglements", "Primitive-path analysis (Z1-type) is not built yet")]),
+                Chip("entanglements", "Entanglements")]),
             new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), TgChip]),
             new("Mechanics", [StrainChip, FluctChip, TensileChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation")]),
@@ -165,6 +165,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["ffv"] = "Free volume by probe insertion on a grid: accessible fraction and Bondi FFV",
         ["psd"] = "Pore size distribution: largest atom-free sphere containing each free point",
         ["orientation"] = "Nematic order S of backbone chords, director, Herman's f along z, local crystallinity, and P₂ against height (orientation near a surface)",
+        ["entanglements"] = "Primitive-path analysis (Everaers 2004): chain ends fixed, chains pulled tight without crossing; entanglement length N_e (modified S-coil), M_e, tube step and plateau modulus G_N⁰ at the temperature set for Tg / Cij",
         ["crosslinks"] = "Sulfur bridges (mono-, di-, polysulfidic), pendant groups, crosslink density ν and strand mass Mc = ρ/2ν",
         ["zprofile"] = "Mass density along z for the surface (molecule 1) and the film: first-layer peak and the film's own density",
         ["adhesion"] = "Work of adhesion −(E all − E surface − E film)/area between the surface (molecule 1) and the film, with the force field",
