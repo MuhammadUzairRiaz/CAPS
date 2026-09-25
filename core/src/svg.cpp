@@ -147,6 +147,26 @@ std::string render_svg(const System& s, const Camera& cam, const RenderOptions& 
     o << "</g>\n";
   }
   for (const auto& it : items) o << it.svg << "\n";
+  if (!opt.segments.empty()) {   // tubes and arrows, over the atoms
+    o << "<g stroke-linecap=\"round\">";
+    char sb[256];
+    for (const auto& sg : opt.segments) {
+      double x0, y0, z0, x1, y1, z1;
+      P(sg.a, x0, y0, z0);
+      P(sg.b, x1, y1, z1);
+      const double wpx = std::max(0.8, 2 * sg.radius * scale);
+      std::snprintf(sb, sizeof sb, "<line x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\" stroke=\"%s\" stroke-width=\"%.2f\"/>", x0, y0, x1, y1, hex(sg.rgb).c_str(), wpx);
+      o << sb;
+      if (sg.arrow) {
+        const double dx = x1 - x0, dy = y1 - y0, l = std::max(1e-9, std::hypot(dx, dy)), hl = std::min(0.35 * l, 6 * wpx);
+        const double ux = dx / l, uy = dy / l;
+        std::snprintf(sb, sizeof sb, "<polygon points=\"%.2f,%.2f %.2f,%.2f %.2f,%.2f\" fill=\"%s\"/>", x1, y1, x1 - ux * hl - uy * hl * 0.5, y1 - uy * hl + ux * hl * 0.5,
+                      x1 - ux * hl + uy * hl * 0.5, y1 - uy * hl - ux * hl * 0.5, hex(sg.rgb).c_str());
+        o << sb;
+      }
+    }
+    o << "</g>\n";
+  }
   o << "</svg>\n";
   return o.str();
 }

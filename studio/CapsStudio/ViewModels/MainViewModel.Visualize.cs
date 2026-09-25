@@ -94,6 +94,8 @@ public sealed partial class MainViewModel
         new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
+        new("vectors", "Vectors", "end-to-end, dipoles, displacements, velocities", "Visual", "move"),
+        new("trajectory_lines", "Trajectory lines", "paths of chain centres or particles", "Visual", "history"),
     ];
     public static readonly string[] StepGroups = ["Colour & style", "Select", "Modify", "Structure", "Measure", "Trajectory", "Visual"];
 
@@ -169,11 +171,22 @@ public sealed partial class MainViewModel
     public bool IsParticlesTab => _inspectorTab == 0;
     public bool InspectorShowsAttributes => _inspectorTab == 2;
     public bool InspectorShowsTables => _inspectorTab == 3;
-    public int PipeTable { get => _pipeTable; set { if (value >= 0 && Set(ref _pipeTable, value)) { _pipeYCol = 1; Raise(nameof(PipeYColumn)); LoadPipeTable(); } } }
+    public int PipeTable { get => _pipeTable; set { if (value >= 0 && Set(ref _pipeTable, value)) { _pipeYCol = 1; Raise(nameof(PipeYColumn)); Raise(nameof(PipeTableName)); LoadPipeTable(); } } }
     public ObservableCollection<string> PipeYColumns { get; } = new();
+    /// <summary>The table and plotted column by name: the pickers bind to these, so they survive the lists being rebuilt.</summary>
+    public string? PipeTableName
+    {
+        get => _pipeTable >= 0 && _pipeTable < PipeTables.Count ? PipeTables[_pipeTable] : null;
+        set { var i = value == null ? -1 : PipeTables.IndexOf(value); if (i >= 0) PipeTable = i; }
+    }
+    public string? PipeYColumnName
+    {
+        get => _pipeYCol - 1 >= 0 && _pipeYCol - 1 < PipeYColumns.Count ? PipeYColumns[_pipeYCol - 1] : null;
+        set { var i = value == null ? -1 : PipeYColumns.IndexOf(value); if (i >= 0) PipeYColumn = i; }
+    }
     private int _pipeYCol = 1;
     /// <summary>Which column the plot shows against the first (index into PipeYColumns + 1).</summary>
-    public int PipeYColumn { get => _pipeYCol - 1; set { if (value >= 0 && value + 1 != _pipeYCol) { _pipeYCol = value + 1; Raise(); LoadPipeTable(); } } }
+    public int PipeYColumn { get => _pipeYCol - 1; set { if (value >= 0 && value + 1 != _pipeYCol) { _pipeYCol = value + 1; Raise(); Raise(nameof(PipeYColumnName)); LoadPipeTable(); } } }
     private JsonObject? _series;
     private bool _seriesRunning;
     public bool SeriesRunning { get => _seriesRunning; private set { if (Set(ref _seriesRunning, value)) Raise(nameof(SeriesIdle)); } }
@@ -304,6 +317,8 @@ public sealed partial class MainViewModel
         "topology" => new JsonObject { ["bins"] = 60 },
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
+        "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
+        "trajectory_lines" => new JsonObject { ["particles"] = "centres", ["from"] = 0, ["radius"] = 0.12 },
         "create_bonds" => new JsonObject { ["mode"] = "perceive", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["replace"] = false, ["only_selected"] = false },
         _ => new JsonObject(),
     };
@@ -352,6 +367,12 @@ public sealed partial class MainViewModel
             case "topology": Text("bins", "Bins", "number"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
+            case "vectors":
+                Choice("property", "Vector", ["end_to_end", "dipole", "displacement", "velocity"]); Text("scale", "Scale (dipole, displacement, velocity)", "number");
+                Text("radius", "Arrow radius (Å)", "number"); break;
+            case "trajectory_lines":
+                Choice("particles", "Trace", ["centres", "selected"]); Text("from", "From frame", "number"); Text("to", "To frame", "number", "blank: the last");
+                Text("stride", "Every n-th frame", "number", "blank: about 200 steps"); Text("radius", "Line radius (Å)", "number"); break;
             case "create_bonds":
                 Choice("mode", "Mode", ["perceive", "cutoff"]); Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "Cutoff (Å)", "number");
                 Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
@@ -486,7 +507,7 @@ public sealed partial class MainViewModel
             PipeTables.Clear();
             foreach (var t in titles) PipeTables.Add(t);
             _pipeTable = Math.Clamp(keep, 0, Math.Max(0, PipeTables.Count - 1));
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => Raise(nameof(PipeTable)));
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { Raise(nameof(PipeTable)); Raise(nameof(PipeTableName)); });
         }
         Raise(nameof(HasPipeTables));
         LoadPipeTable();
@@ -509,7 +530,7 @@ public sealed partial class MainViewModel
             {
                 PipeYColumns.Clear();
                 foreach (var y in ys) PipeYColumns.Add(y);
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => Raise(nameof(PipeYColumn)));
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { Raise(nameof(PipeYColumn)); Raise(nameof(PipeYColumnName)); });
             }
             var yc = Math.Clamp(_pipeYCol, 1, cols.Count - 1);
             PipeTableX = rows.Select(r => (double?)r?[0] ?? 0).ToArray();

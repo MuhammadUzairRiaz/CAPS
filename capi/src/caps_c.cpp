@@ -171,6 +171,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     const auto& st = *d->pstate;
     r.colours = st.colour;
     for (size_t i = 0; i < r.colours.size(); ++i) if (st.selected[i]) r.colours[i] = 0xE5484D;   // selected particles in red
+    r.segments = st.segments;
     if (r.colour_by == caps::ColourBy::Property) caps::property_values(st, "DistanceToCOM", r.property);
   } else if (r.colour_by == caps::ColourBy::Property) {
     r.property = d->dcom;

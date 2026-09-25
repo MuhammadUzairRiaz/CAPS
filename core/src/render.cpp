@@ -394,6 +394,28 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     const double r = radius(i);
     sphere(B, px[i], py[i], pz[i], r * v.scale * pk[i], r, colour[i], int32_t(i));
   }
+  // Segments: tubes, and arrows whose last part is a stepped cone (not pickable).
+  for (const auto& sg : opt.segments) {
+    double ax, ay, az, ak, bx, by, bz, bk;
+    v.project(sg.a, ax, ay, az, ak);
+    v.project(sg.b, bx, by, bz, bk);
+    const RGB c = rgb(sg.rgb);
+    const double R = std::max(0.6 * ss, sg.radius * v.scale * (ak + bk) / 2);
+    if (!sg.arrow) { capsule(B, ax, ay, az, bx, by, bz, R, sg.radius, c, -3); continue; }
+    const double len = norm(sg.b - sg.a);
+    const double head = std::min(0.35 * len, 6.0 * sg.radius);
+    const double f = len > 1e-9 ? 1 - head / len : 0;
+    const double hx = ax + (bx - ax) * f, hy = ay + (by - ay) * f, hz = az + (bz - az) * f;
+    capsule(B, ax, ay, az, hx, hy, hz, R, sg.radius, c, -3);
+    constexpr int steps = 6;
+    for (int k = 0; k < steps; ++k) {
+      const double t0 = double(k) / steps, t1 = double(k + 1) / steps;
+      const double r = 2.4 * R * (1 - t0) + 0.3 * R;
+      capsule(B, hx + (bx - hx) * t0, hy + (by - hy) * t0, hz + (bz - hz) * t0, hx + (bx - hx) * t1, hy + (by - hy) * t1, hz + (bz - hz) * t1, r,
+              sg.radius * 2.4 * (1 - t0), c, -3);
+    }
+  }
+
   // Ambient occlusion: each atom's pixels (and its half-bonds) darkened by how little open sky the atom sees.
   if (opt.ambient_occlusion && n) {
     double key = double(n) * 1e-3 + double(opt.style) * 7;

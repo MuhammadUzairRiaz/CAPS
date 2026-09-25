@@ -702,6 +702,119 @@ void step_smooth(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = "frames " + std::to_string(f0) + "–" + std::to_string(f1) + " averaged";
 }
 
+void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {
+  const std::string what = p.text("property", "end_to_end");
+  const double scale = p.num("scale", 1.0), radius = std::max(0.02, p.num("radius", 0.3));
+  System whole = st.system;
+  if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
+  const auto mol = whole.molecules();
+  DataTable t;
+  t.name = "vectors";
+  size_t count = 0;
+  double sum = 0, sum2 = 0;
+  auto add = [&](const Vec3& a, const Vec3& b, unsigned rgb) {
+    st.segments.push_back({a, b, rgb, radius, true});
+    const double l = norm(b - a);
+    sum += l;
+    sum2 += l * l;
+    ++count;
+  };
+  if (what == "end_to_end") {
+    t.title = "End-to-end vectors";
+    t.columns = {"Molecule", "|R| (Å)", "R.X", "R.Y", "R.Z"};
+    for (const auto& bb : backbones(whole)) {
+      if (bb.size() < 2) continue;
+      const Vec3 a = whole.atoms[bb.front()].pos, b = whole.atoms[bb.back()].pos, r = b - a;
+      const int m = mol[bb.front()];
+      add(a, b, kCat[m % 10]);
+      t.rows.push_back({double(m + 1), norm(r), r[0], r[1], r[2]});
+    }
+    st.set_attribute("Vectors.mean_ree", count ? sum / count : 0);
+    st.set_attribute("Vectors.mean_ree2", count ? sum2 / count : 0);
+    out.summary = std::to_string(count) + " chains · mean |R| " + fmt("%.2f Å", count ? sum / count : 0) + " · ⟨R²⟩ " + fmt("%.1f Å²", count ? sum2 / count : 0);
+  } else if (what == "dipole") {
+    t.title = "Molecular dipoles";
+    t.columns = {"Molecule", "|μ| (D)", "μ.X (e·Å)", "μ.Y", "μ.Z"};
+    const auto shapes = molecule_shapes(whole);
+    std::vector<Vec3> mu(shapes.size(), Vec3{0, 0, 0});
+    for (size_t i = 0; i < whole.atoms.size(); ++i) mu[size_t(mol[i])] = mu[size_t(mol[i])] + (whole.atoms[i].pos - shapes[size_t(mol[i])].com) * whole.atoms[i].charge;
+    for (size_t m = 0; m < shapes.size(); ++m) {
+      add(shapes[m].com, shapes[m].com + mu[m] * scale, kCat[m % 10]);
+      t.rows.push_back({double(m + 1), norm(mu[m]) * 4.80320, mu[m][0], mu[m][1], mu[m][2]});
+    }
+    out.summary = std::to_string(shapes.size()) + " molecules · arrows × " + fmt("%g", scale) + " Å per e·Å";
+    if (!whole.has_charges) { out.level = "warning"; out.summary += " · no charges in the file"; }
+  } else if (what == "displacement" || what == "velocity") {
+    const bool disp = what == "displacement";
+    std::vector<double> dx, dy, dz;
+    if (disp && (!property_values(st, "Displacement.X", dx) || !property_values(st, "Displacement.Y", dy) || !property_values(st, "Displacement.Z", dz)))
+      throw std::invalid_argument("add a Displacements step below this one");
+    if (!disp && st.system.velocities.size() != st.system.atoms.size()) throw std::invalid_argument("the file has no velocities");
+    const bool only_sel = st.selected_count() > 0;
+    for (size_t i = 0; i < st.system.atoms.size() && count < 50000; ++i) {
+      if (only_sel && !st.selected[i]) continue;
+      const Vec3 d = disp ? Vec3{dx[i], dy[i], dz[i]} : st.system.velocities[i] * 1000.0;   // velocities in Å/ps
+      if (norm(d) < 1e-9) continue;
+      const Vec3 r = st.system.atoms[i].pos;
+      add(disp ? r - d * scale : r, disp ? r : r + d * scale, st.colour[i] != kNoColour ? st.colour[i] : 0xF5A524);
+    }
+    out.summary = std::to_string(count) + " arrows" + (only_sel ? " (selected)" : "") + " · mean " + fmt("%.3g", count ? sum / count / std::max(1e-12, scale) : 0) + (disp ? " Å" : " Å/ps");
+  } else {
+    throw std::invalid_argument("unknown vector " + what + " (end_to_end, dipole, displacement, velocity)");
+  }
+  if (!t.rows.empty()) st.tables.push_back(std::move(t));
+}
+
+void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
+  if (!st.traj || st.traj->frames() < 2) { out.level = "warning"; out.summary = "one frame: no paths"; return; }
+  const int nf = int(st.traj->frames());
+  const int from = std::clamp(int(p.num("from", 0)), 0, nf - 1);
+  const int to = std::clamp(int(p.num("to", nf - 1)), from, nf - 1);
+  const int stride = std::max(1, int(p.num("stride", std::max(1, (to - from) / 200))));
+  const double radius = std::max(0.02, p.num("radius", 0.12));
+  const bool centres = p.text("particles", "centres") == "centres";
+  // what to trace: molecule centres of mass, or the selected particles (by their frame index)
+  const System& s0 = st.system;
+  const auto mol = s0.molecules();
+  std::vector<int> picks;
+  if (!centres)
+    for (size_t i = 0; i < s0.atoms.size() && picks.size() < 2000; ++i)
+      if (st.selected[i]) picks.push_back(st.origin[i]);
+  if (!centres && picks.empty()) throw std::invalid_argument("select the particles to trace (or trace molecule centres)");
+  int nm = 0;
+  st.traj->topology.molecules(&nm);
+  const size_t tracks = centres ? size_t(nm) : picks.size();
+  std::vector<Vec3> prev(tracks), path(tracks);
+  bool first = true;
+  size_t segs = 0;
+  for (int f = from; f <= to; f += stride) {
+    System fr = st.traj->frame(size_t(f));
+    if (!fr.unwrapped && fr.cell.valid()) make_molecules_whole(fr);
+    std::vector<Vec3> now(tracks);
+    if (centres) {
+      const auto shapes = molecule_shapes(fr);
+      for (size_t m = 0; m < tracks && m < shapes.size(); ++m) now[m] = shapes[m].com;
+    } else {
+      for (size_t k = 0; k < tracks; ++k) now[k] = fr.atoms[size_t(picks[k])].pos;
+    }
+    for (size_t k = 0; k < tracks; ++k) {
+      if (first) { path[k] = now[k]; }
+      else {
+        Vec3 d = now[k] - prev[k];
+        if (fr.cell.valid() && !fr.unwrapped) d = fr.cell.minimum_image(d);   // follow across the boundary
+        const Vec3 next = path[k] + d;
+        st.segments.push_back({path[k], next, kCat[(centres ? k : size_t(mol[size_t(std::max(0, picks[k]))])) % 10], radius, false});
+        path[k] = next;
+        ++segs;
+      }
+      prev[k] = now[k];
+    }
+    first = false;
+  }
+  out.summary = std::to_string(tracks) + (centres ? " molecule centres" : " particles") + " · frames " + std::to_string(from) + "–" + std::to_string(to) +
+                (stride > 1 ? " every " + std::to_string(stride) : "") + " · " + std::to_string(segs) + " segments";
+}
+
 struct StepDef {
   const char* type;
   const char* title;
@@ -737,6 +850,8 @@ const StepDef kSteps[] = {
     {"topology", "Topology distributions", "bond lengths, angles, dihedrals", step_topology},
     {"displacements", "Displacements", "vs a reference frame, MSD", step_displacements},
     {"smooth", "Smooth trajectory", "positions averaged over a window of frames", step_smooth},
+    {"vectors", "Vectors", "end-to-end, dipoles, displacements, velocities as arrows", step_vectors},
+    {"trajectory_lines", "Trajectory lines", "paths of molecule centres or particles", step_trajectory_lines},
 };
 
 }  // namespace
