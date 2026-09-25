@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -161,8 +162,22 @@ caps::ProtocolParams protocol_params(const caps_protocol_params* p) {
 
 // The force field for Relax / Dynamics: the Field assignment when there is one (it must be complete: CAPS never guesses
 // parameters), otherwise null (the built-in GAFF typing of C and H).
+// The force field used when none is assigned in Field: the built-in GAFF for C/H structures, UFF for any other.
+caps::ForceField default_ff(const caps::System& s) {
+  const bool ch = std::all_of(s.atoms.begin(), s.atoms.end(), [](const caps::Atom& a) { return a.element == 1 || a.element == 6; });
+  return ch ? caps::assign_gaff(s) : caps::assign_uff(s);
+}
+
 std::shared_ptr<const caps::ForceField> field_for_run(const caps_doc* d) {
-  if (!d->field) return nullptr;
+  if (!d->field) {
+    // no force field assigned: the built-in GAFF covers C and H; anything else runs with UFF (every element)
+    const auto& atoms = d->traj.topology.atoms;
+    if (std::any_of(atoms.begin(), atoms.end(), [](const caps::Atom& a) { return a.element != 1 && a.element != 6; })) {
+      caps::System s = d->traj.frame(d->current);
+      return std::make_shared<caps::ForceField>(caps::assign_uff(s));
+    }
+    return nullptr;
+  }
   const FieldState& F = *d->field;
   if (!F.complete) {
     int untyped = 0;
@@ -466,7 +481,7 @@ int32_t caps_save(caps_doc* d, const char* path) {
     } else {
       caps::ForceField ff;
       bool typed = true;
-      try { ff = caps::assign_gaff(d->frame); } catch (const caps::FieldError&) { typed = false; }
+      try { ff = default_ff(d->frame); } catch (const caps::FieldError&) { typed = false; }
       if (typed) caps::write_lammps_data_ff(d->frame, ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
     }
@@ -478,7 +493,7 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
   return guard([&] {
     caps::ForceField ff;
     if (d->field && d->field->complete) ff = *d->field->ff;
-    else ff = caps::assign_gaff(d->frame);
+    else ff = default_ff(d->frame);
     const auto tmp = std::filesystem::temp_directory_path() / ("caps_input_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + ".in");
     caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string());
     std::ifstream in(tmp);
@@ -598,6 +613,10 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       };
     caps::System s = d->traj.frame(d->current);
     if (d->current + 1 != d->traj.frames()) s.velocities.clear();   // velocities belong to the last frame only
+    if (d->held_mol > 0) {
+      m.fixed.assign(s.atoms.size(), 0);
+      for (size_t i = 0; i < s.atoms.size(); ++i) m.fixed[i] = s.atoms[i].mol == d->held_mol;
+    }
     if (!s.unwrapped) caps::make_molecules_whole(s);
     caps::Trajectory out;
     out.topology = s;
@@ -688,6 +707,10 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     caps::System s = d->traj.frame(d->current);
     if (d->current + 1 != d->traj.frames()) s.velocities.clear();
     if (!s.unwrapped) caps::make_molecules_whole(s);
+    if (d->held_mol > 0) {
+      e.md.fixed.assign(s.atoms.size(), 0);
+      for (size_t i = 0; i < s.atoms.size(); ++i) e.md.fixed[i] = s.atoms[i].mol == d->held_mol;
+    }
     caps::Trajectory out;
     out.topology = s;
     e.frame = [&](const std::vector<double>& x, const caps::Cell& c, int64_t step) {
@@ -1233,8 +1256,8 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
     if (!ff && (has("ced") || has("delta") || has("cij_fluct") || !protocols.empty())) {
       caps::System s0 = d->traj.frame(0);
       if (!s0.unwrapped) caps::make_molecules_whole(s0);
-      ff = std::make_shared<caps::ForceField>(caps::assign_gaff(s0));
-      extra_notes.push_back("force field: the built-in GAFF (C and H); assign another in Field");
+      ff = std::make_shared<caps::ForceField>(default_ff(s0));
+      extra_notes.push_back("force field: " + ff->name + " (none assigned in Field)");
     }
     if (ff) o.ff = ff.get();
     std::vector<caps::Property> res = ids.empty() ? std::vector<caps::Property>{} : caps::analyze(d->traj, ids, o);
@@ -1773,7 +1796,7 @@ extern "C" int32_t caps_surface_terminations(const char* cif_path, int32_t h, in
     j["density"] = bulk.density();
     const auto& c = bulk.cell;
     const double A = caps::norm(c.a), B = caps::norm(c.b), C = caps::norm(c.c);
-    auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 180 / M_PI; };
+    auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 57.29577951308232; };
     caps::Json cell = caps::Json::array();
     for (double x : {A, B, C, ang(c.b, c.c), ang(c.a, c.c), ang(c.a, c.b)}) cell.push_back(x);
     j["cell"] = cell;
@@ -1856,6 +1879,8 @@ extern "C" caps_doc* caps_interface_build(const char* options_json, const char* 
 extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {
   if (d) d->held_mol = std::max<int64_t>(0, mol);
 }
+
+extern "C" int64_t caps_held_molecule(const caps_doc* d) { return d ? d->held_mol : 0; }
 
 extern "C" void caps_set_electrostatics(int32_t mode, double ewald_rtol, double pme_spacing, int32_t pme_order) {
   g_elec.mode = mode == 1 ? 1 : 0;

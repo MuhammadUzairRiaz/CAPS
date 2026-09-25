@@ -342,6 +342,7 @@ public sealed partial class MainViewModel
                 }, title + " interface"));
                 Show(doc, $"{title} + {ShortName(name)} film");
                 GrownUnsaved = true;
+                RelaxCompress = false;   // compression would scale the crystal with the film
                 SurfLog = rep;
                 Status = "Interface built · the surface (molecule 1) is held in place in Relax";
             }
@@ -349,5 +350,37 @@ public sealed partial class MainViewModel
         }
         catch (Exception e) { SurfError = e.Message; Status = "Could not build: " + e.Message; }
         finally { SurfBuilding = false; }
+    }
+
+    // ---------------------------------------------------------------- held molecule (Relax, Dynamics, Equilibrate)
+    private long _holdMol;
+    private decimal _holdPick = 1;
+    /// <summary>Hold molecule HoldPick in place (an interface's surface is molecule 1 and starts held).</summary>
+    public bool HoldOn
+    {
+        get => _holdMol > 0;
+        set
+        {
+            _holdMol = value ? (long)_holdPick : 0;
+            try { Document?.SetHeldMolecule(_holdMol); } catch { }
+            Raise(); Raise(nameof(HoldText));
+            Status = value ? $"Molecule {_holdPick} is held in place in Relax, Dynamics and Equilibrate" : "No atoms held";
+        }
+    }
+    public decimal HoldPick
+    {
+        get => _holdPick;
+        set
+        {
+            if (!Set(ref _holdPick, Math.Max(1, Math.Round(value)))) return;
+            if (_holdMol > 0) HoldOn = true;
+        }
+    }
+    public string HoldText => _holdMol > 0 ? $"molecule {_holdMol} held" : "all atoms move";
+    private void SyncHeld()
+    {
+        _holdMol = Document?.HeldMolecule() ?? 0;
+        if (_holdMol > 0) { _holdPick = _holdMol; Raise(nameof(HoldPick)); }
+        Raise(nameof(HoldOn)); Raise(nameof(HoldText));
     }
 }

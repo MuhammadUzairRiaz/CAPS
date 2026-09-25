@@ -143,7 +143,7 @@ public sealed class FieldViewModel : ObservableObject
     public bool HasEstimated { get => _hasEstimated; private set => Set(ref _hasEstimated, value); }
 
     /// <summary>One line for the Relax / Dynamics / Equilibrate inspectors.</summary>
-    public string RunLine => !_assigned ? "Force field: built-in GAFF (C and H only) · assign another in Field"
+    public string RunLine => !_assigned ? "Force field: built-in GAFF for C and H, UFF for other elements · assign another in Field"
         : _complete ? $"Force field: {_ffName} (from Field) · complete"
         : $"Force field: {_ffName} (from Field) · incomplete: runs are blocked until Field is complete";
 

@@ -308,7 +308,7 @@ public sealed partial class MainViewModel
                 catch { }
             f.Add(new("frame", _frame.ToString(inv)));
         }
-        f.Add(new("ff", Field.Assigned ? Field.ForceFieldName : "built-in GAFF (C and H)"));
+        f.Add(new("ff", Field.Assigned ? Field.ForceFieldName : "built-in GAFF (C and H) or UFF (other elements)"));
         switch (kind)
         {
             case "Relax":
