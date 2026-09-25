@@ -232,14 +232,16 @@
           <Button Classes="tool" ToolTip.Tip="Translate — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="move" Size="18" /></Button>
             <Button Classes="tool" Click="OnResetView" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Reset the view (R); drag in the view rotates"><local:Icon Kind="rotate" Size="18" /></Button>
             <Rectangle Classes="vsep" />
-          <Button Classes="tool" ToolTip.Tip="Place atom — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="atom" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Draw bond — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="bond" Size="18" /></Button>
+          <Button Classes="tool" Classes.on="{Binding IsPlaceTool}" Click="OnToolPlace" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Place atom: click an atom to bond a new one to it (the element on the right)"><local:Icon Kind="atom" Size="18" /></Button>
+          <Button Classes="tool" Classes.on="{Binding IsBondTool}" Click="OnToolBond" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Draw bond: click two atoms"><local:Icon Kind="bond" Size="18" /></Button>
+          <Button Classes="tool" Classes.on="{Binding IsDeleteTool}" Click="OnToolDelete" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Delete: click atoms to remove them (Delete removes the picked ones)"><local:Icon Kind="scissors" Size="18" /></Button>
+          <Button Classes="tool" Click="OnAddHydrogens" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Add the hydrogens the picked atoms (or all) lack"><TextBlock Text="+H" FontWeight="SemiBold" FontSize="13" /></Button>
           <Button Classes="tool" ToolTip.Tip="Fragment — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="hex" Size="18" /></Button>
           <Button Classes="tool" ToolTip.Tip="Fuse ring — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="ring" Size="18" /></Button>
-            <Button Height="36" MinHeight="36" Padding="10,0" Margin="4,0,0,0" IsEnabled="False" ToolTip.Tip="Element for new atoms — builder coming" ToolTip.ShowOnDisabled="True">
+            <Button Height="36" MinHeight="36" Padding="10,0" Margin="4,0,0,0" Click="OnElementPicker" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Element for new atoms (⇧E)">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Border Width="22" Height="22" CornerRadius="4" Background="#8B969E"><TextBlock Text="C" FontWeight="Bold" FontSize="12" Foreground="#0F1113" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                <TextBlock Text="sp³" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <Border Width="22" Height="22" CornerRadius="4" Background="{Binding BuildElementColour}"><TextBlock Text="{Binding BuildElement}" FontWeight="Bold" FontSize="12" Foreground="#0F1113" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <TextBlock Text="{Binding BuildElementText}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
                 <local:Icon Kind="chev" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -247,11 +249,11 @@
             <Button Classes="tool" Classes.on="{Binding MeasureTool}" Click="OnToolMeasure" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Measure: click 2–4 atoms for a distance, angle or dihedral"><local:Icon Kind="ruler" Size="18" /></Button>
             <Button Classes="tool" Click="OnTorsionScan" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Torsion scan: the energy along the dihedral of four picked atoms (⇧ click them first)"><local:Icon Kind="chart" Size="18" /></Button>
           <Button Classes="tool" ToolTip.Tip="Pin monitor — coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="pin" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Mirror / invert — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="mirror" Size="18" /></Button>
+          <Button Classes="tool" Click="OnInvert" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Invert the picked stereocentre (swap its two smallest branches)"><local:Icon Kind="mirror" Size="18" /></Button>
             <Rectangle Classes="vsep" />
-          <Button Classes="tool" ToolTip.Tip="Auto-clean — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="wand" Size="18" VerticalAlignment="Center" /><TextBlock Text="Auto-clean" VerticalAlignment="Center" /></StackPanel></Button>
-          <Button Classes="tool" ToolTip.Tip="Undo — command layer coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="undo" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Redo — command layer coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="redo" Size="18" /></Button>
+          <Button Classes="tool" Click="OnAutoClean" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Auto-clean: minimise the picked atoms (or all) with UFF"><StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="wand" Size="18" VerticalAlignment="Center" /><TextBlock Text="Auto-clean" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="tool" Click="OnUndo" IsEnabled="{Binding CanUndo}" ToolTip.Tip="Undo (⌘Z)"><local:Icon Kind="undo" Size="18" /></Button>
+          <Button Classes="tool" Click="OnRedo" IsEnabled="{Binding CanRedo}" ToolTip.Tip="Redo (⇧⌘Z)"><local:Icon Kind="redo" Size="18" /></Button>
           </StackPanel>
         </DockPanel>
       </Border>
@@ -1392,6 +1394,94 @@
       <pages:NanoPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsNano}" />
       <!-- Blend builder (design/boards/BlendBuilder) -->
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
+      <!-- Element picker (design/boards/ElementPicker): the periodic table, the element for new atoms -->
+      <Panel Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" ZIndex="20" IsVisible="{Binding ElementPickerOpen}">
+        <Border Background="#B307080A" PointerPressed="OnPickerBackdrop" />
+        <Border Width="1120" Height="640" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Height="52" Padding="20,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="tool" Click="OnPickerClose" ToolTip.Tip="Close (Esc)"><local:Icon Kind="close" Size="16" /></Button>
+                <TextBlock DockPanel.Dock="Right" Text="type a symbol to jump · ⇧E opens this" FontSize="12" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                  <TextBlock Text="Element" Classes="h2" VerticalAlignment="Center" />
+                  <Border Classes="chip"><TextBlock Text="stripe = element colour · bright = common in polymers" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBox x:Name="PickerSearch" Width="80" Watermark="Symbol" FontSize="12" KeyUp="OnPickerType" />
+                </StackPanel>
+              </DockPanel>
+            </Border>
+            <Border DockPanel.Dock="Bottom" Padding="20,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Click="OnPickerReplace"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="rotate" Size="15" VerticalAlignment="Center" /><TextBlock Text="Replace selected atom" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Classes="primary" Click="OnPickerPlace"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="atom" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding PickerPlaceText}" VerticalAlignment="Center" /></StackPanel></Button>
+              </StackPanel>
+            </Border>
+            <Grid ColumnDefinitions="Auto,*" Margin="20">
+              <ItemsControl ItemsSource="{Binding PeriodicTable}" Width="738" Height="420" VerticalAlignment="Top">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.Styles>
+                  <Style Selector="ContentPresenter" x:DataType="vm:PeriodicCell">
+                    <Setter Property="Canvas.Left" Value="{Binding X}" /><Setter Property="Canvas.Top" Value="{Binding Y}" />
+                  </Style>
+                </ItemsControl.Styles>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PeriodicCell">
+                    <Button Width="38" Height="38" MinHeight="38" Padding="0" CornerRadius="5" Click="OnPickerCell" Tag="{Binding Symbol}" ToolTip.Tip="{Binding Tip}"
+                            Classes.common="{Binding Common}" Classes="pt" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                      <Panel>
+                        <Rectangle Width="3" HorizontalAlignment="Left" VerticalAlignment="Stretch" Fill="{Binding Colour}" />
+                        <TextBlock Text="{Binding ZText}" FontFamily="{DynamicResource Mono}" FontSize="8" Opacity="0.75" Margin="6,2,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        <TextBlock Text="{Binding Symbol}" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="2,0,0,4" />
+                      </Panel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border Grid.Column="1" Padding="20,0,0,0" Margin="24,0,0,0" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Border Width="64" Height="64" CornerRadius="10" Background="{DynamicResource AccB}">
+                      <TextBlock Text="{Binding PickerSymbol}" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource AccInkB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding PickerName}" FontSize="18" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding PickerLine}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                    </StackPanel>
+                  </StackPanel>
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="ISOTOPES" Classes="h3" />
+                    <TextBlock Text="{Binding PickerIsotopes}" FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="FORMAL CHARGE" Classes="h3" />
+                    <Border Classes="seg" HorizontalAlignment="Stretch">
+                      <UniformGrid Columns="4">
+                        <RadioButton Classes="seg" Content="−1" GroupName="pcharge" IsChecked="{Binding BuildCharge, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" HorizontalAlignment="Stretch" />
+                        <RadioButton Classes="seg" Content="0" GroupName="pcharge" IsChecked="{Binding BuildCharge, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" HorizontalAlignment="Stretch" />
+                        <RadioButton Classes="seg" Content="+1" GroupName="pcharge" IsChecked="{Binding BuildCharge, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=2}" HorizontalAlignment="Stretch" />
+                        <RadioButton Classes="seg" Content="+2" GroupName="pcharge" IsChecked="{Binding BuildCharge, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=3}" HorizontalAlignment="Stretch" />
+                      </UniformGrid>
+                    </Border>
+                  </StackPanel>
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="GEOMETRY ON PLACEMENT" Classes="h3" />
+                    <Border Classes="seg" HorizontalAlignment="Stretch">
+                      <UniformGrid Columns="4">
+                        <RadioButton Classes="seg" Content="auto" GroupName="pgeo" IsChecked="{Binding BuildGeometry, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" HorizontalAlignment="Stretch" ToolTip.Tip="From the parent's bonds" />
+                        <RadioButton Classes="seg" Content="sp³" GroupName="pgeo" IsChecked="{Binding BuildGeometry, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" HorizontalAlignment="Stretch" />
+                        <RadioButton Classes="seg" Content="sp²" GroupName="pgeo" IsChecked="{Binding BuildGeometry, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=2}" HorizontalAlignment="Stretch" />
+                        <RadioButton Classes="seg" Content="sp" GroupName="pgeo" IsChecked="{Binding BuildGeometry, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=3}" HorizontalAlignment="Stretch" />
+                      </UniformGrid>
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Text="{Binding PickerRadius}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Classes="dim" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" Text="Radii: Cordero et al., Dalton Trans. 2832 (2008); Bondi, J. Phys. Chem. 68, 441 (1964)" />
+                </StackPanel>
+              </Border>
+            </Grid>
+          </DockPanel>
+        </Border>
+      </Panel>
       <!-- Add pipeline step (design/boards/PipelineSteps) -->
       <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding StepLibraryOpen}" ZIndex="2">
         <DockPanel>

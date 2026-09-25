@@ -319,6 +319,11 @@
   <Style Selector="RadioButton.tile:checked"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
   <Style Selector="RadioButton.tile:disabled"><Setter Property="Opacity" Value="0.45" /></Style>
 
+  <!-- periodic-table cells (Element picker): common elements bright, the chosen one amber -->
+  <Style Selector="Button.pt"><Setter Property="Background" Value="{DynamicResource Bg0B}" /><Setter Property="BorderBrush" Value="{DynamicResource Bg2B}" /><Setter Property="Foreground" Value="{DynamicResource DimB}" /><Setter Property="ClipToBounds" Value="True" /></Style>
+  <Style Selector="Button.pt.common"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="Button.pt.chosen"><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /></Style>
+
   <!-- chips: 22 px pills; ToggleButton.chip is a calculation you switch on (amber when on) -->
   <Style Selector="Border.chip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />

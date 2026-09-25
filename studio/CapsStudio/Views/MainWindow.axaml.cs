@@ -8,6 +8,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using CapsStudio.ViewModels;
 
 namespace CapsStudio.Views;
@@ -544,6 +545,15 @@ public partial class MainWindow : Window
         }
         if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control && _vm.Document != null) { _vm.CloseDocument(); e.Handled = true; return; }
         if (_vm.Document == null || _vm.Busy || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
+        // editing keys in the Studio: ⌘Z / ⇧⌘Z undo and redo, ⇧E the element picker, Delete the picked atoms
+        if (_vm.IsStudio)
+        {
+            var cmd = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
+            if (e.Key == Key.Z && e.KeyModifiers == cmd) { _vm.UndoEdit(false); e.Handled = true; return; }
+            if (e.Key == Key.Z && e.KeyModifiers == (cmd | KeyModifiers.Shift)) { _vm.UndoEdit(true); e.Handled = true; return; }
+            if (e.Key == Key.E && e.KeyModifiers == KeyModifiers.Shift) { OpenElementPicker(); e.Handled = true; return; }
+            if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasPicked) { _vm.DeletePicked(); e.Handled = true; return; }
+        }
         // Keyboard walk (design/boards/VisAccess): in the 3D view, or anywhere once an atom has the focus ring
         var focused = FocusManager?.GetFocusedElement();
         var walk = _vm.IsStudio && (focused == ViewHost || (_vm.HasFocusAtom && focused is not (ListBox or Slider or TreeView or TabItem)));
@@ -648,6 +658,43 @@ public partial class MainWindow : Window
         }
     }
 
+    // ---------------------------------------------------------------- builder tools and the Element picker
+
+    private void OnToolPlace(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 1 ? 0 : 1;
+    private void OnToolBond(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 2 ? 0 : 2;
+    private void OnToolDelete(object? s, RoutedEventArgs e) { if (_vm.HasPicked && _vm.EditTool != 3) _vm.DeletePicked(); else _vm.EditTool = _vm.EditTool == 3 ? 0 : 3; }
+    private void OnAddHydrogens(object? s, RoutedEventArgs e) => _vm.AddHydrogensAll();
+    private void OnInvert(object? s, RoutedEventArgs e) => _vm.InvertPicked();
+    private async void OnAutoClean(object? s, RoutedEventArgs e) => await _vm.AutoClean();
+    private void OnUndo(object? s, RoutedEventArgs e) => _vm.UndoEdit(false);
+    private void OnRedo(object? s, RoutedEventArgs e) => _vm.UndoEdit(true);
+    private void OnElementPicker(object? s, RoutedEventArgs e) => OpenElementPicker();
+    private void OpenElementPicker()
+    {
+        _vm.ElementPickerOpen = true;
+        MarkChosenElement();
+        PickerSearch.Text = "";
+        PickerSearch.Focus();
+    }
+    private void OnPickerClose(object? s, RoutedEventArgs e) => _vm.ElementPickerOpen = false;
+    public void MarkChosenForTest() => MarkChosenElement();
+    private void OnPickerBackdrop(object? s, PointerPressedEventArgs e) => _vm.ElementPickerOpen = false;
+    private void OnPickerCell(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string sym) { _vm.BuildElement = sym; MarkChosenElement(); } }
+    private void OnPickerType(object? s, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape) { _vm.ElementPickerOpen = false; return; }
+        if (e.Key == Key.Enter) { _vm.EditTool = 1; _vm.ElementPickerOpen = false; return; }
+        if (_vm.PickerJump(PickerSearch.Text ?? "")) MarkChosenElement();
+    }
+    private void OnPickerReplace(object? s, RoutedEventArgs e) { _vm.ReplacePickedElement(); _vm.ElementPickerOpen = false; }
+    private void OnPickerPlace(object? s, RoutedEventArgs e) { _vm.EditTool = 1; _vm.ElementPickerOpen = false; }
+    /// <summary>The chosen element's cell amber (a class, so the common/rare colours stay for the rest).</summary>
+    private void MarkChosenElement()
+    {
+        foreach (var b in this.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("pt")))
+            b.Classes.Set("chosen", b.Tag as string == _vm.BuildElement);
+    }
+
     // ---------------------------------------------------------------- appearance (design/boards/Appearance)
 
     private void OnAppStyle(object? s, RoutedEventArgs e)
@@ -709,6 +756,7 @@ public partial class MainWindow : Window
             var pos = e.GetPosition(_host);
             var hit = _vm.Document.Pick((int)(pos.X * _scaling), (int)(pos.Y * _scaling));
             if (_host == FieldViewHost) { if (hit >= 0) _vm.Field.SelectAtom(hit); }
+            else if (_vm.EditTool != 0 && _vm.IsStudio) _vm.ToolClick(hit);
             else _vm.Pick(hit, _addPick);
             RequestRender();
         }
