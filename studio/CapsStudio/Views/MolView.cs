@@ -34,6 +34,8 @@ public sealed class MolView : Control
 
     /// <summary>Draws the cell box (a crystal's supercell dashed with one unit cell in the accent).</summary>
     public bool ShowCell { get; set; }
+    /// <summary>Drawing style (0 ball and stick, 1 space filling, 2 sticks, 3 no hydrogens, 4 backbone).</summary>
+    public int DrawStyle { get; set; }
 
     public void Reset()
     {
@@ -69,7 +71,7 @@ public sealed class MolView : Control
                 var light = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
                 var opt = new CapsRenderOpts
                 {
-                    Width = w, Height = h, Supersample = scale >= 1.5 ? 1 : 2, Background = light ? 1 : 0, Style = 0, ColourBy = 0,
+                    Width = w, Height = h, Supersample = scale >= 1.5 ? 1 : 2, Background = light ? 1 : 0, Style = DrawStyle, ColourBy = 0,
                     Outlines = 1, DepthCue = 1, ShowCell = ShowCell ? 1 : 0, Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1,
                 };
                 var cam = _cam;

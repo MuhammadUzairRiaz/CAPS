@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -461,6 +461,17 @@ int32_t caps_crystal_info(const char* spec_json, char* json, int32_t cap);
 caps_doc* caps_crystal_build(const char* spec_json, char* report, int32_t cap);
 int32_t caps_crystal_symmetrize(const char* spec_json, double snap, char* json, int32_t cap);
 int32_t caps_crystal_find_symmetry(const char* spec_json, const char* cif_path, double tolerance, char* json, int32_t cap);
+
+/* Peptides (v20, design/boards/BioBuilder). Options JSON {sequence (one-letter codes), structure (per residue H α-helix,
+   E β-strand, P PPII, C coil), helix / strand / ppii: [φ, ψ, ω] in degrees, n_term: "NH3+" | "NH2" | "ACE", c_term:
+   "COO-" | "COOH" | "NME", ph, neutral (bool), cleanup (bool: UFF), seed, ribbon (bool: the document draws a tube
+   through the CA atoms coloured by structure until a pipeline replaces it)}.
+   caps_peptide_info: {ok, error, residues, atoms, charge, formula, mass, smiles, structure} without building the clean-up.
+   caps_peptide_build: the peptide as a document (atoms named as in PDB files, residue names and numbers).
+   caps_fasta_sequence: the sequence of the first record of a FASTA text. */
+int32_t caps_peptide_info(const char* options_json, char* json, int32_t cap);
+caps_doc* caps_peptide_build(const char* options_json, char* report, int32_t cap);
+int32_t caps_fasta_sequence(const char* text, char* seq, int32_t cap);
 
 #ifdef __cplusplus
 }

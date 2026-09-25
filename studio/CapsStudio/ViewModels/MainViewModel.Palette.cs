@@ -53,6 +53,7 @@ public sealed partial class MainViewModel
             ("Bench", 12, "bench", "validation benchmark tables paper"),
             ("Polymer builder", 13, "grow", "repeat unit copolymer smiles library rubber"), ("Surface builder", 14, "layers", "slab cleave cif crystal interface film fibre silica graphite"),
             ("Crystal builder", 29, "cube", "space group lattice unit cell asymmetric unit cif symmetry primitive supercell polyethylene quartz"),
+            ("Biomolecule builder", 30, "hex", "peptide protein sequence fasta helix sheet amino acid residue biomolecule"),
             ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
             ("Blend builder", 16, "grow", "blend mixture nr br sbr tyre compound two polymers"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),
@@ -70,7 +71,7 @@ public sealed partial class MainViewModel
             AddCommand(new PaletteCommand
             {
                 Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
-                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else if (m == 26) OpenBundle(); else if (m == 29) OpenCrystal(); else SetModule(m); },
+                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else if (m == 26) OpenBundle(); else if (m == 29) OpenCrystal(); else if (m == 30) OpenBio(); else SetModule(m); },
             });
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });

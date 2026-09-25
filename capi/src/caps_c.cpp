@@ -33,6 +33,7 @@
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
 #include "caps/spacegroup.hpp"
+#include "caps/peptide.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -82,6 +83,7 @@ struct caps_doc {
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
+  std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
 };
 
 namespace {
@@ -172,6 +174,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0 && to_shown(o->highlight[k]) >= 0) r.highlight.push_back(to_shown(o->highlight[k]));
   r.focus = to_shown(o->focus - 1);
   r.ambient_occlusion = o->ambient_occlusion != 0;
+  if (!d->pstate) r.segments = d->overlay;
   if (d->pstate) {
     const auto& st = *d->pstate;
     r.colours = st.colour;
@@ -2679,4 +2682,103 @@ extern "C" int32_t caps_crystal_find_symmetry(const char* spec_json, const char*
     j["error"] = std::string(e.what());
   }
   return report_out(j.dump(0), json, cap);
+}
+
+// ---------------------------------------------------------------- peptides (v20)
+
+namespace {
+
+caps::PeptideOptions peptide_options(const caps::Json& j) {
+  caps::PeptideOptions o;
+  o.sequence = j.text("sequence");
+  o.structure = j.text("structure");
+  auto tri = [&](const char* k, std::array<double, 3>& t) {
+    if (j.has(k) && j[k].is_array() && j[k].size() >= 2)
+      for (size_t q = 0; q < 3 && q < j[k].size(); ++q) t[q] = j[k][q].number();
+  };
+  tri("helix", o.helix);
+  tri("strand", o.strand);
+  tri("ppii", o.ppii);
+  o.n_term = j.text("n_term", "NH3+");
+  o.c_term = j.text("c_term", "COO-");
+  o.ph = j.num("ph", 7.0);
+  auto flag = [&](const char* k, bool def) {
+    if (!j.has(k)) return def;
+    return j[k].kind() == caps::Json::Bool ? j[k].boolean() : j[k].number() != 0;
+  };
+  o.neutral = flag("neutral", false);
+  o.cleanup = flag("cleanup", true);
+  o.seed = uint64_t(j.num("seed", 1));
+  return o;
+}
+
+// A tube through the CA atoms (Catmull–Rom, six pieces per residue) coloured by secondary structure.
+std::vector<caps::Segment> peptide_ribbon(const caps::System& s, const std::string& ss) {
+  std::vector<caps::Vec3> ca;
+  for (const auto& a : s.atoms) if (a.name == "CA" && a.resname != "ACE" && a.resname != "NME") ca.push_back(a.pos);
+  std::vector<caps::Segment> out;
+  if (ca.size() < 2) return out;
+  auto colour = [&](size_t i) -> unsigned {
+    const char c = i < ss.size() ? ss[i] : 'C';
+    return c == 'H' ? 0xE07A5F : c == 'E' ? 0x6FA8DC : c == 'P' ? 0x9B7BD6 : 0x8A9097;
+  };
+  auto radius = [&](size_t i) { const char c = i < ss.size() ? ss[i] : 'C'; return c == 'H' ? 0.9 : c == 'E' ? 0.7 : 0.35; };
+  for (size_t i = 0; i + 1 < ca.size(); ++i) {
+    const caps::Vec3 &p0 = ca[i ? i - 1 : 0], &p1 = ca[i], &p2 = ca[i + 1], &p3 = ca[std::min(i + 2, ca.size() - 1)];
+    caps::Vec3 prev = p1;
+    for (int k = 1; k <= 6; ++k) {
+      const double t = k / 6.0, t2 = t * t, t3 = t2 * t;
+      caps::Vec3 q;
+      for (int d = 0; d < 3; ++d)
+        q[d] = 0.5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3);
+      caps::Segment seg;
+      seg.a = prev, seg.b = q;
+      const size_t owner = k <= 3 ? i : i + 1;
+      seg.rgb = colour(owner);
+      seg.radius = radius(owner);
+      out.push_back(seg);
+      prev = q;
+    }
+  }
+  return out;
+}
+
+}  // namespace
+
+extern "C" int32_t caps_peptide_info(const char* options_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    caps::PeptideOptions o = peptide_options(caps::Json::parse(options_json && *options_json ? options_json : "{}"));
+    o.cleanup = false;
+    caps::PeptideReport rep;
+    caps::build_peptide(o, &rep);
+    j["ok"] = true;
+    j["residues"] = double(rep.residues), j["atoms"] = double(rep.atoms), j["charge"] = double(rep.charge);
+    j["formula"] = rep.formula, j["mass"] = rep.mass, j["smiles"] = rep.smiles, j["structure"] = rep.structure;
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" caps_doc* caps_peptide_build(const char* options_json, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::PeptideReport rep;
+    const caps::System s = caps::build_peptide(peptide_options(j), &rep);
+    std::string notes;
+    for (const auto& n : s.notes) notes += n + "\n";
+    report_out(notes, report, cap);
+    caps_doc* d = doc_of(s);
+    if (j.has("ribbon") && (j["ribbon"].kind() == caps::Json::Bool ? j["ribbon"].boolean() : j["ribbon"].number() != 0)) d->overlay = peptide_ribbon(s, rep.structure);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_fasta_sequence(const char* text, char* seq, int32_t cap) {
+  return report_out(caps::parse_fasta(text ? text : ""), seq, cap);
 }

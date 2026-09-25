@@ -38,6 +38,7 @@ struct Atom {
   int type = 0;          // numeric type, 0 = none
   std::string name;      // type or atom name from the file
   std::string resname;   // residue name (GROMACS, PDB)
+  int64_t resid = 0;     // residue number (GROMACS, PDB, the peptide builder), 0 = none
   int element = 0;       // atomic number, 0 = unknown
   double charge = 0.0;
   Vec3 pos{0, 0, 0};     // Å, as read (may be unwrapped)

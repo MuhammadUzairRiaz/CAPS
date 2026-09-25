@@ -23,6 +23,7 @@ public partial class CrystalPage : PageBase
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.SetModule(5);
+    private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private async void OnBuild(object? s, RoutedEventArgs e) => await Vm.BuildCrystal();
     private void OnAddSite(object? s, RoutedEventArgs e) => Vm.AddCrystalSite();

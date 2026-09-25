@@ -30,6 +30,7 @@ add_library(caps_core STATIC
   src/uff.cpp
   src/crystal.cpp
   src/spacegroup.cpp
+  src/peptide.cpp
   src/interface.cpp
   src/nano.cpp
   src/qeq.cpp

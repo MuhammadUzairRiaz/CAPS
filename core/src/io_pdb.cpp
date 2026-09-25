@@ -77,6 +77,8 @@ Trajectory read_pdb(const std::string& path) {
         a.id = static_cast<int64_t>(cur.atoms.size() + 1);
         a.name = col(l, 13, 16);
         a.resname = col(l, 18, 20);
+        const std::string rs = col(l, 23, 26);
+        if (!rs.empty() && rs.find_first_not_of("-0123456789") == std::string::npos) a.resid = std::stoll(rs);
         const std::string chain = col(l, 22, 22);
         if (chain != prev_chain) { ++chain_mol; prev_chain = chain; }
         a.mol = chain_mol;
@@ -121,8 +123,10 @@ void write_pdb(const System& s, const std::string& path) {
     const auto& at = s.atoms[i];
     const std::string nm = at.name.empty() ? element(at.element).symbol : at.name.substr(0, 4);
     const std::string res = at.resname.empty() ? "MOL" : at.resname.substr(0, 3);
-    std::fprintf(f, "HETATM%5zu %-4s %3s A%4lld    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n", big ? (i + 1) % 100000 : i + 1, nm.c_str(), res.c_str(),
-                 static_cast<long long>(at.mol % 10000), at.pos[0], at.pos[1], at.pos[2], element(at.element).symbol);
+    // residues numbered by the builder or the file are ATOM records; otherwise the molecule is the residue
+    std::fprintf(f, "%s%5zu %-4s %3s A%4lld    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n", at.resid > 0 ? "ATOM  " : "HETATM", big ? (i + 1) % 100000 : i + 1,
+                 nm.c_str(), res.c_str(), static_cast<long long>((at.resid > 0 ? at.resid : at.mol) % 10000), at.pos[0], at.pos[1], at.pos[2],
+                 element(at.element).symbol);
   }
   if (!big && !s.bonds.empty()) {
     const auto nb = s.neighbours();
