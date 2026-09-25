@@ -755,6 +755,8 @@ public partial class MainWindow : Window
     private void OnToolDelete(object? s, RoutedEventArgs e) { if (_vm.HasPicked && _vm.EditTool != 3) _vm.DeletePicked(); else _vm.EditTool = _vm.EditTool == 3 ? 0 : 3; }
     private void OnAddHydrogens(object? s, RoutedEventArgs e) => _vm.AddHydrogensAll();
     private void OnInvert(object? s, RoutedEventArgs e) => _vm.InvertPicked();
+    private void OnFuseRing(object? s, RoutedEventArgs e) => _vm.FuseRingPicked();
+    private void OnFragmentTool(object? s, RoutedEventArgs e) => _vm.OpenFragments();
     private async void OnAutoClean(object? s, RoutedEventArgs e) => await _vm.AutoClean();
     private void OnUndo(object? s, RoutedEventArgs e) => _vm.UndoEdit(false);
     private void OnRedo(object? s, RoutedEventArgs e) => _vm.UndoEdit(true);

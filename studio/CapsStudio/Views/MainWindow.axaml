@@ -288,8 +288,8 @@
           <Button Classes="tool" Classes.on="{Binding IsBondTool}" Click="OnToolBond" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Draw bond: click two atoms"><local:Icon Kind="bond" Size="18" /></Button>
           <Button Classes="tool" Classes.on="{Binding IsDeleteTool}" Click="OnToolDelete" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Delete: click atoms to remove them (Delete removes the picked ones)"><local:Icon Kind="scissors" Size="18" /></Button>
           <Button Classes="tool" Click="OnAddHydrogens" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Add the hydrogens the picked atoms (or all) lack"><TextBlock Text="+H" FontWeight="SemiBold" FontSize="13" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Fragment — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="hex" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Fuse ring — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="ring" Size="18" /></Button>
+          <Button Classes="tool" Click="OnFragmentTool" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Fragments: attach a group to the picked atom, or place a molecule"><local:Icon Kind="hex" Size="18" /></Button>
+          <Button Classes="tool" Click="OnFuseRing" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Fuse ring: a benzene ring onto the bond between the two picked atoms (⇧ click them first)"><local:Icon Kind="ring" Size="18" /></Button>
             <Button Height="36" MinHeight="36" Padding="10,0" Margin="4,0,0,0" Click="OnElementPicker" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Element for new atoms (⇧E)">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Border Width="22" Height="22" CornerRadius="4" Background="{Binding BuildElementColour}"><TextBlock Text="{Binding BuildElement}" FontWeight="Bold" FontSize="12" Foreground="#0F1113" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>

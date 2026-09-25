@@ -175,3 +175,26 @@ TEST(Edit, EveryLibraryFragmentBuilds) {
   EXPECT_GE(n, 100);
   EXPECT_EQ(failed, 0);
 }
+
+// Fusing a benzene ring onto a C–C bond of benzene gives naphthalene: C10H8, eleven aromatic ring bonds, nothing missing
+TEST(Edit, FuseBenzeneMakesNaphthalene) {
+  BuildOptions b;
+  b.forcefield = "uff";
+  System s = build_molecule("c1ccccc1", b).system;
+  uint32_t i = 0, j = 0;
+  for (const auto& bd : s.bonds)
+    if (s.atoms[bd.i].element == 6 && s.atoms[bd.j].element == 6) { i = bd.i, j = bd.j; break; }
+  const auto added = fuse_benzene(s, i, j);
+  EXPECT_EQ(added.size(), 8u);
+  int c = 0, h = 0, arom = 0;
+  for (const auto& a : s.atoms) c += a.element == 6, h += a.element == 1;
+  for (const auto& bd : s.bonds) arom += bd.order == 4;
+  EXPECT_EQ(c, 10);
+  EXPECT_EQ(h, 8);
+  EXPECT_EQ(arom, 11);
+  EXPECT_EQ(add_hydrogens(s), 0);
+  // the new ring is a hexagon: every new C–C 1.39 ± 0.05 Å from its neighbours
+  for (const auto& bd : s.bonds)
+    if (s.atoms[bd.i].element == 6 && s.atoms[bd.j].element == 6) EXPECT_NEAR(norm(s.atoms[bd.j].pos - s.atoms[bd.i].pos), 1.40, 0.06);
+  EXPECT_THROW(fuse_benzene(s, 0, 17), EditError);
+}
