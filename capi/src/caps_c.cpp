@@ -1996,7 +1996,8 @@ extern "C" caps_doc* caps_grow_blend(const char* options_json, const caps_grow_o
     caps::BlendOptions bo;
     bo.chains = int(j.num("chains", 8));
     bo.density = j.num("density", 0.5);
-    bo.morphology = j.text("morphology", "mixed") == "slabs" ? caps::BlendMorphology::Slabs : caps::BlendMorphology::Mixed;
+    const std::string morph = j.text("morphology", "mixed");
+    bo.morphology = morph == "slabs" ? caps::BlendMorphology::Slabs : morph == "droplet" ? caps::BlendMorphology::Droplet : caps::BlendMorphology::Mixed;
     if (o) {
       bo.grow.seed = o->seed;
       bo.grow.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
