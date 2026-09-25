@@ -121,6 +121,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation")]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
             new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), PullShearChip, PullNormalChip]),
+            new("Rubber network", [Chip("crosslinks", "Crosslink density")]),
         ];
         LoadReferences();
         PullShearChip.PropertyChanged += (_, _) => Raise(nameof(PullOn));
@@ -158,6 +159,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["ffv"] = "Free volume by probe insertion on a grid: accessible fraction and Bondi FFV",
         ["psd"] = "Pore size distribution: largest atom-free sphere containing each free point",
         ["orientation"] = "Nematic order S of backbone chords, director, Herman's f along z, local crystallinity, and P₂ against height (orientation near a surface)",
+        ["crosslinks"] = "Sulfur bridges (mono-, di-, polysulfidic), pendant groups, crosslink density ν and strand mass Mc = ρ/2ν",
         ["zprofile"] = "Mass density along z for the surface (molecule 1) and the film: first-layer peak and the film's own density",
         ["adhesion"] = "Work of adhesion −(E all − E surface − E film)/area between the surface (molecule 1) and the film, with the force field",
     };
