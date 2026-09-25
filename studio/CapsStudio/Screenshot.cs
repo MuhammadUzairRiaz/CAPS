@@ -345,6 +345,19 @@ internal static class Screenshot
                 w.ViewModel.OpenProject(kv[1] == "-" ? null : kv[1]);
                 for (int k = 0; k < 120; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "sweep")   // sweep=plan|run: the parameter sweep (run: DP 3,5 · seeds 1,2 · 3 chains, into a temp folder)
+            {
+                var vm = w.ViewModel;
+                vm.SweepFolder = Path.Combine(Path.GetTempPath(), "caps-shot-sweep");
+                vm.OpenSweep();
+                if (kv[1] == "run")
+                {
+                    vm.SweepDps = "3, 5"; vm.SweepSeeds = "1, 2"; vm.SweepChains = 3; vm.SweepSyn = false;
+                    var t = vm.RunSweep();
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
+                }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

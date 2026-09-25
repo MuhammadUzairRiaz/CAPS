@@ -37,6 +37,7 @@
                   <MenuItem Header="Equilibrate" Click="OnNew" Tag="4" />
                   <MenuItem Header="React" Click="OnNew" Tag="6" />
                   <MenuItem Header="Analyze" Click="OnNew" Tag="1" />
+                  <MenuItem Header="Parameter sweep" Click="OnSweep" />
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
