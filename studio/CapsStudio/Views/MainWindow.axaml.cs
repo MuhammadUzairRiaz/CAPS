@@ -740,6 +740,7 @@ public partial class MainWindow : Window
     private void OnPickStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is StepKind k) _vm.AddStep(k.Type); }
     private void OnPipeStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is PipelineRow r) _vm.PipeSelected = r; }
     private void OnPipeSource(object? s, RoutedEventArgs e) => _vm.PipeSelected = null;
+    private void OnGroupFold(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is PipelineRow r) r.GroupFolded?.Invoke(r); }
     private void OnStepUp(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, -1); }
     private void OnStepDown(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, 1); }
     private void OnStepRemove(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.RemoveStep(r); }

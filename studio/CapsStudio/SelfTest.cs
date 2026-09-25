@@ -606,6 +606,27 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Pipeline groups (PipelineGroups): a group's switch turns all its steps off; folding hides them
+        {
+            vm.ClearPipeline();
+            vm.AddStep("coordination");
+            vm.PipeSelected!.Params["group"] = "Structure";
+            vm.AddStep("cluster");   // joins the selected step's group
+            vm.AddStep("colour_coding");
+            vm.PipeSelected!.Params["group"] = "Look";
+            vm.ApplyPipeline();
+            var header = vm.PipelineRows.First(r => r.GroupHeader && r.Group == "Structure");
+            header.GroupOn = false;
+            var off = vm.PipelineRows.Where(r => r.Group == "Structure").All(r => !r.Enabled);
+            header.GroupFolded?.Invoke(header);
+            var folded = vm.PipelineRows.Where(r => r.Group == "Structure").All(r => !r.RowVisible);
+            Check(header.GroupCount == 2 && off && folded && vm.PipelineJson().Contains("\"group\":\"Structure\""),
+                  $"groups: Structure {header.GroupCount} steps · off {off} · folded {folded}");
+            header.GroupFolded?.Invoke(header);
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
