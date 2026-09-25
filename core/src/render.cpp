@@ -372,6 +372,24 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       }
   }
 
+  // Keyboard-focus ring: accent, a little outside the selection ring, drawn in two arcs so it reads as focus.
+  if (opt.focus >= 0 && size_t(opt.focus) < n && show[size_t(opt.focus)]) {
+    const size_t i = size_t(opt.focus);
+    const double R = radius(i) * v.scale * pk[i] + 6.5 * ss;
+    const RGB acc = rgb(0xF5A524);
+    for (int y = int(py[i] - R - 3 * ss); y <= int(py[i] + R + 3 * ss); ++y)
+      for (int x = int(px[i] - R - 3 * ss); x <= int(px[i] + R + 3 * ss); ++x) {
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const double dx = x + 0.5 - px[i], dy = y + 0.5 - py[i];
+        const double d = std::hypot(dx, dy);
+        const double a = std::atan2(dy, dx);
+        if (std::fabs(d - R) <= 1.6 * ss && std::fabs(std::sin(a)) > 0.26) {   // gaps left and right
+          const size_t k = size_t(y) * W + x;
+          B.col[k] = acc; B.id[k] = int32_t(i); B.z[k] = 1e30f;
+        }
+      }
+  }
+
   // Downsample with coverage as alpha.
   Image img;
   img.width = opt.width;

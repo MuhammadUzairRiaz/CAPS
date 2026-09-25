@@ -20,6 +20,9 @@ public sealed class AppSettings
     public double EwaldRtol { get; set; } = 1e-5;
     public double PmeSpacing { get; set; } = 1.0;
     public int PmeOrder { get; set; } = 5;
+    public int ReaderVerbosity { get; set; } = 1;         // keyboard walk: 0 brief, 1 full
+    public bool AnnounceFrames { get; set; }
+    public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>

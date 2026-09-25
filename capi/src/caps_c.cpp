@@ -142,6 +142,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.depth_cue = o->depth_cue != 0;
   r.show_cell = o->show_cell != 0;
   for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0) r.highlight.push_back(o->highlight[k]);
+  r.focus = o->focus - 1;
   if (r.colour_by == caps::ColourBy::Property) r.property = d->dcom;
   return r;
 }
@@ -1460,6 +1461,30 @@ int32_t caps_neighbours(caps_doc* d, int32_t i, int32_t k, int32_t* idx, double*
     std::partial_sort(v.begin(), v.begin() + long(m), v.end());
     for (size_t q = 0; q < m; ++q) { idx[q] = v[q].second; dist[q] = v[q].first; }
     return int32_t(m);
+  });
+}
+
+int32_t caps_bonded(caps_doc* d, int32_t i, int32_t* idx, int32_t cap) {
+  return guard([&] {
+    const auto& s = d->frame;
+    if (i < 0 || size_t(i) >= s.atoms.size()) throw std::out_of_range("atom index out of range");
+    int32_t n = 0;
+    for (const auto& b : s.bonds) {
+      const int32_t o = b.i == uint32_t(i) ? int32_t(b.j) : b.j == uint32_t(i) ? int32_t(b.i) : -1;
+      if (o < 0) continue;
+      if (n < cap) idx[n] = o;
+      ++n;
+    }
+    return n;
+  });
+}
+
+int32_t caps_molecule_index(caps_doc* d, int32_t* out, int32_t cap) {
+  return guard([&] {
+    int count = 0;
+    const auto mol = d->frame.molecules(&count);
+    for (size_t j = 0; j < mol.size() && j < size_t(std::max(0, cap)); ++j) out[j] = mol[j];
+    return int32_t(count);
   });
 }
 

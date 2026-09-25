@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 17, "native ABI version 17");
+        Check(Native.AbiVersion() == 18, "native ABI version 18");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -410,6 +410,32 @@ internal static class SelfTest
         vm.SetModule(8);
         Check(!vm.ShowEmpty, "Studio shows Start, not the empty state");
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
+        // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
+        {
+            vm.FocusOn(40);
+            var said = vm.Announcement;
+            var start = vm.FocusAtom;
+            vm.FocusBond();
+            var bondedOk = vm.Document!.Bonded(start).Contains(vm.FocusAtom);
+            vm.FocusStep(1);
+            var m0 = vm.Document.Atom(start).Mol;
+            var sameMol = vm.Document.Atom(vm.FocusAtom).Mol == m0;
+            vm.FocusMolecule(1);
+            var nextMol = vm.Document.Atom(vm.FocusAtom).Mol;
+            vm.FocusSelect();
+            var selOk = vm.Picked == vm.FocusAtom;
+            vm.FocusStep(1);
+            vm.FocusMeasure();
+            Check(said.StartsWith("Atom 41,") && said.Contains("Nearest: atom") && bondedOk && sameMol && nextMol != m0 && selOk && vm.HasMeasure && vm.Announcement.StartsWith("Distance")
+                  && vm.FocusRows.Count == 4 && vm.ViewOptions(64, 64, 1).Focus == vm.FocusAtom + 1,
+                  $"keyboard walk: \"{said}\" · bond {bondedOk} · molecule {m0}→{nextMol} · \"{vm.Announcement}\"");
+            vm.ReaderVerbosity = 0;
+            Check(vm.Announcement.EndsWith($"molecule {vm.Document.Atom(vm.FocusAtom).Mol}."), "brief: " + vm.Announcement);
+            vm.ReaderVerbosity = 1;
+            vm.ClearFocus();
+            vm.ClearSelection();
+        }
 
         // Close goes back to Start
         vm.SetModule(1);

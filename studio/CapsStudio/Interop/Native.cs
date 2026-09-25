@@ -21,6 +21,7 @@ public struct CapsRenderOpts
     public int Style;           // 0 ball & stick, 1 space filling, 2 sticks, 3 no H, 4 backbone
     public int Outlines, DepthCue, ShowCell;
     public int Highlight0, Highlight1, Highlight2, Highlight3;   // selected atoms, -1 unused
+    public int Focus;           // atom index + 1 with the keyboard-focus ring, 0 none (ABI 18)
 }
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -289,6 +290,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_rdf")] public static extern int Rdf(IntPtr doc, int ea, int eb, double rmax, double dr, int inter, [Out] double[] r, [Out] double[] g, int cap);
     [DllImport(Lib, EntryPoint = "caps_molecules")] public static extern int Molecules(IntPtr doc, [Out] CapsMolecule[] out_, int cap);
     [DllImport(Lib, EntryPoint = "caps_property_range")] public static extern int PropertyRange(IntPtr doc, out double lo, out double hi);
+    [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
+    [DllImport(Lib, EntryPoint = "caps_molecule_index")] public static extern int MoleculeIndex(IntPtr doc, [Out] int[] mol, int cap);
     [DllImport(Lib, EntryPoint = "caps_neighbours")] public static extern int Neighbours(IntPtr doc, int index, int k, [Out] int[] idx, [Out] double[] dist);
 }
 
@@ -727,6 +730,31 @@ public sealed class CapsDocument : IDisposable
             var n = Native.Rdf(_h, elemA, elemB, rmax, dr, interOnly ? 1 : 0, r, g, cap);
             Check(n);
             return Enumerable.Range(0, n).Select(k => (r[k], g[k])).ToArray();
+        }
+    }
+
+    /// <summary>Atoms bonded to atom i.</summary>
+    public int[] Bonded(int i)
+    {
+        lock (_lock)
+        {
+            var buf = new int[16];
+            var n = Native.Bonded(_h, i, buf, buf.Length);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            if (n > buf.Length) { buf = new int[n]; Native.Bonded(_h, i, buf, n); }
+            return buf[..n];
+        }
+    }
+
+    /// <summary>The molecule (0-based, connected by bonds) of every atom, and the number of molecules.</summary>
+    public (int[] Mol, int Count) MoleculeIndex(int atoms)
+    {
+        lock (_lock)
+        {
+            var m = new int[atoms];
+            var n = Native.MoleculeIndex(_h, m, atoms);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            return (m, n);
         }
     }
 
