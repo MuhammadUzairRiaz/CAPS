@@ -14,7 +14,7 @@
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
           <StackPanel Spacing="3"><TextBlock Text="Polymer" Classes="label" /><ComboBox ItemsSource="{Binding SsPolymerNames}" SelectedIndex="{Binding SsPolymer}" MinWidth="170" /></StackPanel>
           <Button Classes="primary" IsEnabled="False" VerticalAlignment="Bottom" ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Not built yet: a direct χ needs mixing free energies from MD of polymer–solvent boxes; CAPS does not fake it with this estimate">
+                  ToolTip.Tip="Not offered here. CAPS computes χ from MD mixing energies (caps_chi_md, caps.chi_by_md in Python), but measured on natural rubber mixed with itself (χ must be 0) it gives −1.2 ± 0.5 after 300 ps per cell — too coarse for χ of 0.01–1 at the sizes and times the Studio runs. Use it from Python with nanosecond runs and the self-mixing control.">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Compute χ by MD" VerticalAlignment="Center" /></StackPanel>
           </Button>
         </StackPanel>
