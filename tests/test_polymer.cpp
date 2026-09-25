@@ -183,3 +183,83 @@ TEST(Polymer, BlendDroplet) {
   }
   EXPECT_LT(rin, rout + 0.5);
 }
+
+namespace {
+// every carbon with valence four (aromatic bonds 1.5), every hydrogen with one bond, one molecule per star or comb, and no two atoms more than
+// three bonds apart closer than the scaled H–H limit
+void expect_sound(const System& s, int molecules, double scale) {
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  std::vector<double> valence(s.atoms.size(), 0.0);
+  for (const auto& b : s.bonds) {
+    nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+    const double v = b.order == 4 ? 1.5 : b.order == 2 ? 2 : b.order == 3 ? 3 : 1;
+    valence[b.i] += v, valence[b.j] += v;
+  }
+  for (size_t i = 0; i < s.atoms.size(); ++i) EXPECT_NEAR(valence[i], s.atoms[i].element == 6 ? 4 : 1, 1e-9) << "atom " << i;
+  int nm = 0;
+  s.molecules(&nm);
+  EXPECT_EQ(nm, molecules);
+  const double L = s.cell.a[0];
+  double dmin = 1e9;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    std::map<uint32_t, int> d{{uint32_t(i), 0}};
+    std::vector<uint32_t> q{uint32_t(i)};
+    for (size_t k = 0; k < q.size(); ++k)
+      if (d[q[k]] < 3)
+        for (uint32_t w : nb[q[k]])
+          if (d.emplace(w, d[q[k]] + 1).second) q.push_back(w);
+    for (size_t j = i + 1; j < s.atoms.size(); ++j) {
+      if (d.count(uint32_t(j))) continue;
+      Vec3 v = s.atoms[i].pos - s.atoms[j].pos;
+      for (int k = 0; k < 3; ++k) v[k] -= L * std::round(v[k] / L);
+      dmin = std::min(dmin, norm(v));
+    }
+  }
+  EXPECT_GT(dmin, scale * 2.0 - 0.2);
+}
+}  // namespace
+
+TEST(Polymer, StarsOfFourArmsOnOneCarbon) {
+  GrowOptions o;
+  o.chains = 3;
+  o.density = 0.3;
+  o.seed = 2;
+  o.auto_scale = true;   // branch points are crowded: the contact scale steps down when needed, as in the Studio
+  ChainSpec c = spec({"*CC*"}, Sequence::Homopolymer, 10);
+  c.architecture = Architecture::Star;
+  c.arms = 4;
+  GrowReport rep;
+  const System s = grow_chains(c, o, &rep);
+  // 4 arms × 10 C₂H₄ units, a tail cap on each arm, and the core's head cap and two hydrogens given to arms
+  EXPECT_EQ(s.atoms.size(), size_t(3 * (4 * 10 * 6 + 4 - 2)));
+  expect_sound(s, 3, 0.6);
+  // each core carbon is bonded to four carbons
+  std::vector<int> carbons(s.atoms.size(), 0);
+  for (const auto& b : s.bonds)
+    if (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 6) ++carbons[b.i], ++carbons[b.j];
+  EXPECT_EQ(std::count(carbons.begin(), carbons.end(), 4), 3);
+  EXPECT_NE(rep.notes.front().find("3 stars of 4 arms"), std::string::npos) << rep.notes.front();
+}
+
+TEST(Polymer, CombsAndRandomBranches) {
+  GrowOptions o;
+  o.chains = 2;
+  o.density = 0.3;
+  o.seed = 5;
+  o.auto_scale = true;
+  ChainSpec c = spec({"*CC(*)c1ccccc1"}, Sequence::Homopolymer, 12);
+  c.architecture = Architecture::Comb;
+  c.spacing = 4;
+  c.arm_dp = 3;
+  const System s = grow_chains(c, o);
+  // side chains on units 4, 8, 12: 12 + 9 styrene units per comb, caps on both backbone ends and each side chain's
+  // tail, one backbone hydrogen per side chain given up
+  EXPECT_EQ(s.atoms.size(), size_t(2 * (21 * 16 + 2 + 3 - 3)));
+  expect_sound(s, 2, 0.6);
+  c.architecture = Architecture::Branched;
+  c.branch_probability = 0.3;
+  GrowReport rep;
+  const System b = grow_chains(c, o, &rep);
+  expect_sound(b, 2, 0.6);
+  EXPECT_NE(rep.notes.front().find("branched chains"), std::string::npos) << rep.notes.front();
+}

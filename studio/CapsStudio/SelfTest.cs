@@ -337,6 +337,22 @@ internal static class SelfTest
             vm.UsePolystyreneInGrow();
         }
 
+        // Architecture: a 4-arm natural-rubber star (one molecule; its atoms as the preview estimates), then linear again
+        if (vm.PolymerLibrary.FirstOrDefault(e => e.Id == "P056") is { } nr)
+        {
+            while (vm.PolyUnits.Count > 1) vm.RemovePolyUnit(vm.PolyUnits.Last());
+            vm.UseLibrary(nr, null);
+            vm.GrowDpD = 10;
+            vm.PolyArch = 2;
+            vm.PolyArms = 4;
+            var est = System.Text.RegularExpressions.Regex.Match(vm.PolyPreview, @"per molecule: 3 more arms · ([\d,]+) atoms");
+            vm.BuildPolyPreview().GetAwaiter().GetResult();
+            var sm = vm.PolyDoc?.Summary();
+            Check(est.Success && sm != null && sm.Value.Molecules == 1 && sm.Value.Atoms == int.Parse(est.Groups[1].Value.Replace(",", "")),
+                  $"star NR: {vm.PolyPreview.Replace('\n', ' ')} · built {sm?.Atoms} atoms in {sm?.Molecules} molecule {vm.PolyError}");
+            vm.PolyArch = 0;
+        }
+
         // Surface builder: quartz (001) terminations, a hydroxylated slab, and a thin rubber film grown on it
         vm.OpenSurface();
         Check(vm.Crystals.Count >= 10 && vm.SurfTerminations.Count == 3 && vm.SurfTerminations[0].StartsWith("O-terminated"),

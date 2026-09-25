@@ -129,6 +129,8 @@ internal static class Screenshot
             if (kv[0] == "colours") w.ViewModel.SetPalette = int.Parse(kv[1]);
             if (kv[0] == "theme") w.ViewModel.SetTheme = kv[1];
             if (kv[0] == "jobs") w.ViewModel.SetModule(11);
+            if (kv[0] == "arch") w.ViewModel.PolyArch = int.Parse(kv[1]);   // arch=0..3 (linear, branched, star, comb), before polymer=
+            if (kv[0] == "polydp") w.ViewModel.GrowDpD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "polymer")
             {
                 w.ViewModel.SetModule(13);

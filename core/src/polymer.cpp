@@ -335,6 +335,19 @@ struct ChainState {
   std::vector<int> unit_start;   // local index of each placed unit's head
   int backtracks = 0, fails = 0, starts = 0;
   bool done = false;
+  // branched molecules (star, comb, branched): a chain hung on an atom of another, grown once that chain (and the arm
+  // before it on the same molecule) is complete
+  int mol = 0;                         // molecule, 0-based
+  int parent = -1, anchor_unit = 0, after = -1;
+  bool core = false;                   // a star arm: on the parent's head atom, the head cap's valence first
+  int anchor = -1;                     // the parent's atom the head bonds to (local), resolved when the arm starts
+  Vec3 anchor_dir{0, 0, 0};
+  bool resolved = false, started = false, cap_taken = false;   // cap_taken: an arm took this chain's head cap valence
+  int drop_h = -1;                     // the parent's hydrogen this arm replaced (−1: the head cap's valence)
+  std::set<int> tried;                 // hydrogens given back after the arm found no room there
+  int reserve = -1;                    // cell id of a stand-in carbon keeping the head's place until the arm starts
+  std::set<int> dropped;               // local hydrogens replaced by arms
+  std::map<int, int> pdist;            // cell id → bond distance from the anchor, for the molecule's atoms near it
 };
 
 }  // namespace
@@ -347,6 +360,23 @@ Sequence sequence_from_string(const std::string& s) {
   if (s == "terminal") return Sequence::Terminal;
   if (s == "pattern") return Sequence::Pattern;
   return Sequence::Homopolymer;
+}
+
+Architecture architecture_from_string(const std::string& s) {
+  if (s.empty() || s == "linear") return Architecture::Linear;
+  if (s == "star") return Architecture::Star;
+  if (s == "comb") return Architecture::Comb;
+  if (s == "branched") return Architecture::Branched;
+  throw std::invalid_argument("unknown architecture '" + s + "' (linear, star, comb, branched)");
+}
+
+const char* to_string(Architecture a) {
+  switch (a) {
+    case Architecture::Star: return "star";
+    case Architecture::Comb: return "comb";
+    case Architecture::Branched: return "branched";
+    default: return "linear";
+  }
 }
 
 const char* to_string(Sequence s) {
@@ -539,11 +569,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   // sequences, tacticity, box
   std::vector<ChainState> C(static_cast<size_t>(nchains));
   double mass = 0;
-  for (int c = 0; c < nchains; ++c) {
-    auto& ch = C[size_t(c)];
-    if (size_t(c) < spec.chain_dp.size()) {   // polydisperse: this chain's own length
+  auto make_sequence = [&](ChainState& ch, int c, int dp) {
+    if (dp > 0) {   // polydisperse or an arm: this chain's own length
       ChainSpec one = spec;
-      one.dp = std::max(1, spec.chain_dp[size_t(c)]);
+      one.dp = std::max(1, dp);
       ch.seq = chain_sequence(one, o.seed + uint64_t(c) * 101);
     } else {
       ch.seq = chain_sequence(spec, o.seed + uint64_t(c) * 101);
@@ -561,6 +590,39 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       } else ch.mirror[k] = U(rng) < std::clamp(spec.pm, 0.0, 1.0) ? ch.mirror[k - 1] : !ch.mirror[k - 1];
     }
     mass += chain_mass(spec, ch.seq);
+  };
+  for (int c = 0; c < nchains; ++c) {
+    C[size_t(c)].mol = c;
+    make_sequence(C[size_t(c)], c, size_t(c) < spec.chain_dp.size() ? spec.chain_dp[size_t(c)] : 0);
+  }
+  // arms of branched molecules: each replaces a hydrogen (or the head cap) of its parent and loses its own head cap
+  const Architecture arch = spec.architecture;
+  int n_arms = 0;
+  if (arch != Architecture::Linear) {
+    std::mt19937_64 brng(o.seed * 0xD1B54A32D192ED03ull + 11);
+    auto add_arm = [&](int parent, int unit, bool core, int dp, int after) {
+      ChainState a;
+      a.mol = C[size_t(parent)].mol;
+      a.parent = parent, a.anchor_unit = unit, a.core = core, a.after = after;
+      const int idx = int(C.size());
+      make_sequence(a, idx, dp);
+      mass -= 2 * element(1).mass;
+      C.push_back(std::move(a));
+      ++n_arms;
+      return idx;
+    };
+    if (arch == Architecture::Star && (spec.arms < 3 || spec.arms > 4)) throw GrowError("a star has 3 or 4 arms on its core carbon");
+    for (int m = 0; m < nchains; ++m) {
+      const int len = int(C[size_t(m)].seq.size());
+      int prev = -1;
+      if (arch == Architecture::Star)
+        for (int j = 1; j < spec.arms; ++j) prev = add_arm(m, 0, true, int(C[size_t(m)].seq.size()), prev);
+      else if (arch == Architecture::Comb)
+        for (int u = std::max(1, spec.spacing) - 1; u < len; u += std::max(1, spec.spacing)) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
+      else
+        for (int u = 1; u + 1 < len; ++u)
+          if (std::uniform_real_distribution<double>(0, 1)(brng) < spec.branch_probability) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
+    }
   }
   const bool ortho = o.cell[0] > 0 && o.cell[1] > 0 && o.cell[2] > 0;
   const bool film = o.z_hi > o.z_lo;
@@ -580,7 +642,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   rep.density = mass / (0.602214076 * vol);
   const double scale = o.contact_scale > 0 ? o.contact_scale : 1.0;
   // contact limits as the polystyrene grower's (C–C 3.0, C–H 2.45, H–H 2.0 Å), from Bondi radii for other elements
-  auto limit = [&](int a, int b) { return scale * (0.88 * (element(a).vdw + element(b).vdw) - 0.08 * ((a == 1) + (b == 1))); };
+  // (a negative element is an arm's reserved head: a carbon with room for its hydrogens, 0.5 Å more)
+  auto limit = [&](int a, int b) {
+    const double extra = a < 0 || b < 0 ? 0.5 : 0.0;
+    a = std::abs(a), b = std::abs(b);
+    return scale * (0.88 * (element(a).vdw + element(b).vdw) - 0.08 * ((a == 1) + (b == 1)) + extra);
+  };
   Cell3 cell;
   cell.init(Lv, scale * 0.86 * 2 * 2.3);
   if (o.substrate)
@@ -600,11 +667,173 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   const int trials = std::max(4, o.trials);
   rep.worst_margin = 1e9;
 
+  // arms' anchors, all of a parent's at once when it is complete: the atom each arm's head bonds to and the valence it
+  // takes (a hydrogen, which is dropped, or the head cap's); a stand-in carbon keeps each head's place, so the arms
+  // grown first leave room for those after them
+  // room for an arm's head carbon at P + d·1.53 and for the chain beyond it at P + d·2.9 (distance − contact limit, the
+  // parent's atoms within two bonds of P left out)
+  auto anchor_room = [&](int parent, int P, const Vec3& d) {
+    const auto& par = C[size_t(parent)];
+    std::set<int> near_p{P};
+    for (int u : par.adj[size_t(P)]) {
+      near_p.insert(u);
+      for (int v : par.adj[size_t(u)]) near_p.insert(v);
+    }
+    double room = 1e9;
+    for (double r : {1.53, 2.9}) {
+      const Vec3 x = par.pos[size_t(P)] + d * r;
+      cell.near(x, [&](int id) {
+        if (cell.chain[size_t(id)] == parent && near_p.count(cell.local[size_t(id)])) return;
+        room = std::min(room, norm(cell.mi(x - cell.x[size_t(id)])) - limit(6, cell.z[size_t(id)]));
+      });
+    }
+    return room;
+  };
+  // one arm's anchor: a star arm on the parent's head atom (the head cap's valence first, then its hydrogens); a side
+  // chain on the hydrogen, of the head or tail atom of its unit or the units beside it, with the most room
+  auto resolve_one = [&](int e) {
+    auto& ch = C[size_t(e)];
+    auto& par = C[size_t(ch.parent)];
+    int P = -1, h = -1;
+    if (ch.core && par.parent < 0 && !par.cap_taken) {
+      P = par.unit_start[0];
+      par.cap_taken = true;
+      ch.anchor_dir = unitv(par.pos[2] - par.pos[size_t(P)]);
+    } else {
+      std::set<int> taken;   // units already carrying a side chain of this parent
+      for (size_t f = 0; f < C.size(); ++f)
+        if (int(f) != e && C[f].parent == ch.parent && C[f].resolved && !C[f].core) taken.insert(C[f].anchor_unit);
+      const int nu = int(par.unit_start.size());
+      std::vector<int> units{ch.anchor_unit};
+      if (!ch.core)
+        for (int du : {-1, 1})
+          if (ch.anchor_unit + du >= 0 && ch.anchor_unit + du < nu) units.push_back(ch.anchor_unit + du);
+      double best_room = -1e9;
+      int best_unit = ch.anchor_unit;
+      for (int u : units) {
+        if (!ch.core && taken.count(u)) continue;
+        const int base = par.unit_start[size_t(u)];
+        const Template& tp = T[size_t(par.seq[size_t(u)])];
+        for (int cand : ch.core ? std::vector<int>{base} : std::vector<int>{base, base + tp.tail})
+          for (int w : par.adj[size_t(cand)]) {
+            if (w < 3 || par.z[size_t(w)] != 1 || par.dropped.count(w) || ch.tried.count(w)) continue;
+            // the unit asked for first: a neighbour must have clearly more room to take its place
+            const double room = anchor_room(ch.parent, cand, unitv(par.pos[size_t(w)] - par.pos[size_t(cand)])) - (u == ch.anchor_unit ? 0.0 : 0.3);
+            if (room > best_room) best_room = room, P = cand, h = w, best_unit = u;
+          }
+      }
+      if (P < 0)
+        throw GrowError(ch.core ? "a star of " + std::to_string(spec.arms) + " arms needs " + std::to_string(spec.arms - 2) + " hydrogens on the head atom (" +
+                                      element(par.z[size_t(par.unit_start[0])]).symbol + ") of the unit; choose a unit whose head is CH₂ or CH₃, or 3 arms"
+                                : "no room for a side chain near unit " + std::to_string(ch.anchor_unit + 1) + " (no free hydrogen on its head or tail atom)");
+      ch.anchor_unit = best_unit;
+      ch.drop_h = h;
+      par.dropped.insert(h);
+      if (par.gid[size_t(h)] >= 0) cell.kill(par.gid[size_t(h)]), par.gid[size_t(h)] = -1;
+      ch.anchor_dir = unitv(par.pos[size_t(h)] - par.pos[size_t(P)]);
+    }
+    ch.anchor = P;
+    ch.reserve = cell.add(par.pos[size_t(P)] + ch.anchor_dir * 1.53, -6, -3, e);
+    ch.resolved = true;
+  };
+  // all of a parent's arms at once when it is complete, so stand-in carbons keep each head's place and the arms grown
+  // first leave room for those after them
+  auto resolve_anchors = [&](int parent) {
+    for (size_t e = 0; e < C.size(); ++e)
+      if (C[e].parent == parent && !C[e].resolved) resolve_one(int(e));
+  };
+  // the parent lost the atoms its arms hang on (it backed up or restarted): the arms' places are chosen again later
+  auto unresolve_arms = [&](int parent) {
+    auto& par = C[size_t(parent)];
+    bool any = false;
+    for (auto& e : C)
+      if (e.parent == parent && e.resolved) {
+        if (e.reserve >= 0) cell.kill(e.reserve), e.reserve = -1;
+        e.resolved = false, e.drop_h = -1, e.tried.clear();
+        any = true;
+      }
+    if (any) par.dropped.clear(), par.cap_taken = false;
+  };
+  // an arm that finds no room gives its hydrogen back and takes the next best site (at most three times)
+  auto reanchor = [&](int e) {
+    auto& ch = C[size_t(e)];
+    auto& par = C[size_t(ch.parent)];
+    if (ch.core || ch.drop_h < 0 || ch.tried.size() >= 3) return false;
+    ch.tried.insert(ch.drop_h);
+    par.dropped.erase(ch.drop_h);
+    par.gid[size_t(ch.drop_h)] = cell.add(par.pos[size_t(ch.drop_h)], 1, ch.parent, ch.drop_h);
+    for (size_t i = 3; i < ch.gid.size(); ++i)
+      if (ch.gid[i] >= 0) cell.kill(ch.gid[i]), ch.gid[i] = -1;
+    ch.resolved = false;
+    ch.started = false;
+    resolve_one(e);
+    ++rep.restarts;
+    ch.starts = 0;
+    return true;
+  };
+  // an arm starting: its stand-in goes, and the bond distances from its anchor to the molecule's atoms within four
+  // bonds (other arms' stand-ins count as bonded to their anchors) exempt or soften those contacts
+  auto begin_arm = [&](int ci) {
+    auto& ch = C[size_t(ci)];
+    if (!ch.resolved) resolve_anchors(ch.parent);
+    if (ch.reserve >= 0) cell.kill(ch.reserve), ch.reserve = -1;
+    std::map<std::pair<int, int>, int> seen{{{ch.parent, ch.anchor}, 0}};
+    std::vector<std::pair<int, int>> q{{ch.parent, ch.anchor}};
+    for (size_t qi = 0; qi < q.size(); ++qi) {
+      const auto [c, i] = q[qi];
+      const int d = seen[{c, i}];
+      if (d == 4) continue;
+      std::vector<std::pair<int, int>> nb;
+      for (int w : C[size_t(c)].adj[size_t(i)])
+        if (w >= 3 && !C[size_t(c)].dropped.count(w)) nb.push_back({c, w});
+      if (C[size_t(c)].parent >= 0 && i == 3) nb.push_back({C[size_t(c)].parent, C[size_t(c)].anchor});
+      for (size_t e = 0; e < C.size(); ++e)
+        if (C[e].parent == c && C[e].anchor == i && int(e) != ci && C[e].done) nb.push_back({int(e), 3});
+      for (const auto& w : nb)
+        if (seen.emplace(w, d + 1).second) q.push_back(w);
+    }
+    ch.pdist.clear();
+    for (const auto& [node, d] : seen)
+      if (const int g = C[size_t(node.first)].gid[size_t(node.second)]; g >= 0) ch.pdist[g] = d;
+    for (const auto& e : C)
+      if (e.reserve >= 0 && e.mol == ch.mol)
+        if (auto it = seen.find({e.parent, e.anchor}); it != seen.end() && it->second < 4) ch.pdist[e.reserve] = it->second + 1;
+    ch.started = true;
+  };
+
   auto start_chain = [&](int ci) {
     auto& ch = C[size_t(ci)];
+    if (n_arms) unresolve_arms(ci);
     for (size_t i = 3; i < ch.gid.size(); ++i)
       if (ch.gid[i] >= 0) cell.kill(ch.gid[i]);
     ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
+    if (ch.parent >= 0) {   // an arm: the ghosts are its anchor atom and the two atoms before it in the parent
+      if (!ch.started) begin_arm(ci);
+      const auto& par = C[size_t(ch.parent)];
+      // references for the first unit's torsions: a heavy atom bonded to the anchor (never the start ghost, which sits
+      // where a head-cap arm's head goes) and one bonded to that
+      int a1 = -1, a0 = -1;
+      for (int w : par.adj[size_t(ch.anchor)])
+        if (w >= 3 && par.z[size_t(w)] != 1 && (a1 < 0 || par.backbone[size_t(w)])) a1 = w;
+      if (a1 >= 0)
+        for (int w : par.adj[size_t(a1)])
+          if (w >= 3 && w != ch.anchor && !par.dropped.count(w) && (a0 < 0 || par.z[size_t(w)] != 1)) a0 = w;
+      const Vec3 P = par.pos[size_t(ch.anchor)], g1 = a1 >= 0 ? par.pos[size_t(a1)] : P - ch.anchor_dir * 1.53;
+      Vec3 g0 = a0 >= 0 ? par.pos[size_t(a0)] : g1;
+      if (norm(cross(g0 - g1, P - g1)) < 1e-6) {   // a straight or missing reference: any perpendicular
+        Vec3 w{Nd(rng), Nd(rng), Nd(rng)};
+        const Vec3 u = unitv(P - g1);
+        g0 = g1 + unitv(w - u * dot(w, u)) * 1.53;
+      }
+      for (const Vec3& p : {g0, g1, P}) {
+        ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
+      }
+      ch.tparent = {-1, 0, 1};
+      ++ch.starts;
+      ch.fails = 0;
+      ch.backtracks = 0;
+      return;
+    }
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
     Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
     for (int tries = 0; sphere && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
@@ -625,6 +854,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
 
   auto remove_units = [&](int ci, int count) {
     auto& ch = C[size_t(ci)];
+    if (n_arms && count >= int(ch.unit_start.size())) unresolve_arms(ci);   // a star's core unit goes too
     for (int r = 0; r < count && !ch.unit_start.empty(); ++r) {
       const int from = ch.unit_start.back();
       ch.unit_start.pop_back();
@@ -686,6 +916,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     const int pt = prev_tail, ptp = ch.tparent[size_t(pt)];
     std::optional<Vec3> next_dir;
     if (k > 0) next_dir = free_valence(ci, k - 1);
+    else if (ch.parent >= 0) next_dir = ch.anchor_dir;   // an arm's head takes the parent's freed valence
     const int root_kind = torsion_kind(ch.sp2[size_t(pt)], ch.donor[size_t(pt)], ch.sp2[size_t(ptp)], ch.donor[size_t(ptp)]);
     const int link_kind = torsion_kind(t.sp2[0], t.donor[0], ch.sp2[size_t(pt)], ch.donor[size_t(pt)]);
     // atoms within three bonds of each new atom: the unit's own bonds plus the link, walked from the new atom
@@ -721,6 +952,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         for (const auto& [w, d] : dist)
           if (d <= 3) near_tail[w] = d + 1;
       excl[size_t(a)] = std::move(dist);
+    }
+    // an arm: bond distance from each new atom to the arm's head (then + 1 to the anchor), for the parent's atoms nearby
+    std::vector<int> dhead(size_t(t.n), 99);
+    int dhead_next = 99;
+    if (ch.parent >= 0) {
+      for (int a = 0; a < t.n; ++a)
+        if (auto it = excl[size_t(a)].find(3); it != excl[size_t(a)].end()) dhead[size_t(a)] = it->second;
+      if (auto it = near_tail.find(3); it != near_tail.end()) dhead_next = it->second;
     }
     std::vector<Vec3> best, trial(size_t(t.n));
     double best_m = -1e9;
@@ -760,6 +999,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
               if (it->second <= 3) return;
               f = 0.85;
             }
+          } else if (dhead[size_t(a)] <= 3) {   // across an arm's junction
+            const auto it = ch.pdist.find(id);
+            if (it != ch.pdist.end()) {
+              const int tot = dhead[size_t(a)] + 1 + it->second;   // branch points are crowded, as quaternary carbons are
+              if (tot <= 3) return;
+              f = tot == 4 ? 0.85 : 0.9;
+            }
           }
           const double d = norm(cell.mi(x - cell.x[size_t(id)]));
           const double m = d - f * limit(t.z[size_t(a)], cell.z[size_t(id)]);
@@ -788,6 +1034,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             if (it != ex.end()) {
               if (it->second <= 3) return;
               f = 0.85;
+            }
+          } else if (dhead_next <= 3) {
+            const auto it = ch.pdist.find(id);
+            if (it != ch.pdist.end()) {
+              const int tot = dhead_next + 1 + it->second;
+              if (tot <= 3) return;
+              f = tot == 4 ? 0.85 : 0.9;
             }
           }
           const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limit(6, cell.z[size_t(id)]);
@@ -842,8 +1095,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ++rep.backtracks;
       const int limit_bt = o.max_backtracks > 0 ? o.max_backtracks : 40 * std::max(1, spec.dp);
       if (++ch.backtracks > limit_bt || k == 0) {
-        if (ch.starts > o.max_restarts) throw GrowError("chain " + std::to_string(ci + 1) + " could not be placed after " + std::to_string(o.max_restarts) +
-                                                        " restarts; lower the density or the contact scale");
+        if (ch.parent >= 0 && ch.starts > std::min(o.max_restarts, 60) && reanchor(ci)) {
+          start_chain(ci);
+          return;
+        }
+        if (ch.starts > o.max_restarts)
+          throw GrowError((ch.parent >= 0 ? "an arm of molecule " + std::to_string(ch.mol + 1) : "chain " + std::to_string(ci + 1)) + " could not be placed after " +
+                          std::to_string(o.max_restarts) + " restarts; lower the density or the contact scale");
         ++rep.restarts;
         start_chain(ci);
         return;
@@ -868,10 +1126,15 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     for (const auto& b : t.bonds) ch.adj[size_t(base + b[0])].push_back(base + b[1]), ch.adj[size_t(base + b[1])].push_back(base + b[0]);
     if (k > 0) ch.adj[size_t(base)].push_back(pt), ch.adj[size_t(pt)].push_back(base);
-    if (int(ch.unit_start.size()) == int(ch.seq.size())) ch.done = true;
+    if (k == 0 && arch == Architecture::Star && ch.parent < 0) resolve_anchors(ci);   // the core's places, before the chain folds back
+    if (int(ch.unit_start.size()) == int(ch.seq.size())) {
+      ch.done = true;
+      if (n_arms) resolve_anchors(ci);   // its arms' places are kept from now on
+    }
   };
 
   for (int c = 0; c < nchains; ++c) start_chain(c);
+  const int nstates = int(C.size());
   int finished = 0;
   long units_total = 0;
   for (const auto& ch : C) units_total += long(ch.seq.size());
@@ -883,31 +1146,43 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     GrowOptions::Live live;
     live.chains = nchains, live.units_total = units_total, live.restarts = rep.restarts, live.worst_margin = rep.worst_margin;
     double placed = 0;
-    for (int c = 0; c < nchains; ++c) {
+    std::vector<std::vector<uint32_t>> at(C.size());
+    for (int c = 0; c < nstates; ++c) {
       const auto& ch = C[size_t(c)];
-      live.chains_done += ch.done ? 1 : 0;
+      live.chains_done += ch.done && ch.parent < 0 ? 1 : 0;
       live.units += long(ch.unit_start.size());
-      const uint32_t off = uint32_t(p.atoms.size());
+      auto& m = at[size_t(c)];
+      m.assign(ch.pos.size(), UINT32_MAX);
       for (size_t i = 3; i < ch.pos.size(); ++i) {
+        if (ch.dropped.count(int(i))) continue;
         Atom a;
-        a.element = ch.z[i], a.pos = ch.pos[i], a.mol = c + 1, a.id = int64_t(p.atoms.size() + 1);
+        a.element = ch.z[i], a.pos = ch.pos[i], a.mol = ch.mol + 1, a.id = int64_t(p.atoms.size() + 1);
+        m[i] = uint32_t(p.atoms.size());
         p.atoms.push_back(a);
         placed += element(ch.z[i]).mass;
       }
       for (size_t i = 3; i < ch.adj.size(); ++i)
         for (int j : ch.adj[i])
-          if (j > int(i) && j >= 3) p.bonds.push_back({off + uint32_t(i - 3), off + uint32_t(j - 3), 1});
+          if (j > int(i) && j >= 3 && m[i] != UINT32_MAX && m[size_t(j)] != UINT32_MAX) p.bonds.push_back({m[i], m[size_t(j)], 1});
+      if (ch.parent >= 0 && ch.pos.size() > 3 && at[size_t(ch.parent)].size() > size_t(ch.anchor)) p.bonds.push_back({at[size_t(ch.parent)][size_t(ch.anchor)], m[3], 1});
     }
     p.bonds_from_file = true;
     live.density = placed / (6.02214076e23 * vol * 1e-24);
     o.snapshot(p, live);
   };
-  while (finished < nchains) {
-    for (int c = 0; c < nchains; ++c)
-      if (!C[size_t(c)].done) advance(c);
+  while (finished < nstates) {
+    for (int c = 0; c < nstates; ++c) {
+      auto& ch = C[size_t(c)];
+      if (ch.done) continue;
+      if (ch.parent >= 0) {   // an arm waits for its parent and the arm before it
+        if (!C[size_t(ch.parent)].done || (ch.after >= 0 && !C[size_t(ch.after)].done)) continue;
+        if (!ch.started) start_chain(c);
+      }
+      advance(c);
+    }
     finished = int(std::count_if(C.begin(), C.end(), [](const ChainState& s) { return s.done; }));
-    if (o.progress && !o.progress(finished, nchains, rep.restarts)) throw GrowError("cancelled");
-    if (o.snapshot && (finished == nchains || std::chrono::steady_clock::now() - last_snap > std::chrono::duration<double>(o.snapshot_seconds))) {
+    if (o.progress && !o.progress(finished, nstates, rep.restarts)) throw GrowError("cancelled");
+    if (o.snapshot && (finished == nstates || std::chrono::steady_clock::now() - last_snap > std::chrono::duration<double>(o.snapshot_seconds))) {
       snapshot();
       last_snap = std::chrono::steady_clock::now();
     }
@@ -964,37 +1239,56 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     for (const auto& b : o.substrate->bonds) s.bonds.push_back(b);
     mol0 = int(std::max<int64_t>(top, 1));
   }
-  for (int c = 0; c < nchains; ++c) {
+  // the atoms molecule by molecule: each main chain, then its arms (residues numbered on along the molecule)
+  std::vector<std::vector<uint32_t>> maps(C.size());
+  std::vector<int> resid_off(size_t(nchains), 0);
+  std::vector<int> order;
+  for (int m = 0; m < nchains; ++m) {
+    order.push_back(m);
+    for (int c = nchains; c < nstates; ++c)
+      if (C[size_t(c)].mol == m) order.push_back(c);
+  }
+  for (int c : order) {
     auto& ch = C[size_t(c)];
-    std::vector<uint32_t> map(ch.pos.size());
+    const int molid = ch.mol + 1 + mol0, roff = resid_off[size_t(ch.mol)];
+    auto& map = maps[size_t(c)];
+    map.assign(ch.pos.size(), UINT32_MAX);
     for (size_t i = 3; i < ch.pos.size(); ++i) {
-      map[i] = add(ch.z[i], ch.pos[i], c + 1 + mol0);
+      if (ch.dropped.count(int(i))) continue;   // a hydrogen an arm replaced
+      map[i] = add(ch.z[i], ch.pos[i], molid);
       if (const int k = ch.unit_of[i]; k >= 0) {   // residues: one per repeat unit, numbered along the chain
-        s.atoms[map[i]].resid = k + 1;
+        s.atoms[map[i]].resid = roff + k + 1;
         s.atoms[map[i]].resname = unit_code[size_t(ch.seq[size_t(k)])];
       }
     }
     for (size_t k = 0; k < ch.unit_start.size(); ++k) {
       const Template& t = T[size_t(ch.seq[k])];
       const int base = ch.unit_start[k];
-      for (const auto& b : t.bonds) s.bonds.push_back({map[size_t(base + b[0])], map[size_t(base + b[1])], b[2]});
+      for (const auto& b : t.bonds)
+        if (map[size_t(base + b[0])] != UINT32_MAX && map[size_t(base + b[1])] != UINT32_MAX) s.bonds.push_back({map[size_t(base + b[0])], map[size_t(base + b[1])], b[2]});
       if (k > 0) {
         const int pt = ch.unit_start[k - 1] + T[size_t(ch.seq[k - 1])].tail;
         s.bonds.push_back({map[size_t(pt)], map[size_t(base)], 1});
       }
     }
-    // caps: the head's toward the start ghost, the tail's where a next unit would go
+    // caps: the head's toward the start ghost (an arm's head bonds to its anchor instead), the tail's where a next
+    // unit would go
     const int head = ch.unit_start.front();
-    const Vec3 hp = ch.pos[size_t(head)] + unitv(ch.pos[2] - ch.pos[size_t(head)]) * 1.09;
-    s.bonds.push_back({map[size_t(head)], add(1, hp, c + 1 + mol0), 1});
-    s.atoms.back().resid = 1, s.atoms.back().resname = unit_code[size_t(ch.seq.front())];
+    if (ch.parent >= 0) {
+      s.bonds.push_back({maps[size_t(ch.parent)][size_t(ch.anchor)], map[size_t(head)], 1});
+    } else if (!ch.cap_taken) {
+      const Vec3 hp = ch.pos[size_t(head)] + unitv(ch.pos[2] - ch.pos[size_t(head)]) * 1.09;
+      s.bonds.push_back({map[size_t(head)], add(1, hp, molid), 1});
+      s.atoms.back().resid = roff + 1, s.atoms.back().resname = unit_code[size_t(ch.seq.front())];
+    }
     const Template& tl = T[size_t(ch.seq.back())];
     const int tail = ch.unit_start.back() + tl.tail;
     const int tp = ch.tparent[size_t(tail)], tgp = ch.tparent[size_t(tp)];
     const auto fv = free_valence(c, int(ch.unit_start.size()) - 1);
     const Vec3 tpos = fv ? ch.pos[size_t(tail)] + *fv * 1.09 : place(ch.pos[size_t(tgp)], ch.pos[size_t(tp)], ch.pos[size_t(tail)], 1.09, tl.tail_angle, kPi);
-    s.bonds.push_back({map[size_t(tail)], add(1, tpos, c + 1 + mol0), 1});
-    s.atoms.back().resid = int64_t(ch.seq.size()), s.atoms.back().resname = unit_code[size_t(ch.seq.back())];
+    s.bonds.push_back({map[size_t(tail)], add(1, tpos, molid), 1});
+    s.atoms.back().resid = roff + int64_t(ch.seq.size()), s.atoms.back().resname = unit_code[size_t(ch.seq.back())];
+    resid_off[size_t(ch.mol)] += int(ch.seq.size());
   }
   s.bonds_from_file = true;
   rep.chains_placed = nchains;
@@ -1002,6 +1296,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   if (ortho) std::snprintf(cb, sizeof cb, "cell %.2f × %.2f × %.2f Å", Lv[0], Lv[1], Lv[2]);
   else std::snprintf(cb, sizeof cb, "box %.3f Å", L);
   std::string units_text = std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units";
+  if (arch == Architecture::Star) units_text = std::to_string(nchains) + " stars of " + std::to_string(spec.arms) + " arms × " + std::to_string(spec.dp) + " units";
+  else if (arch != Architecture::Linear)
+    units_text = std::to_string(nchains) + (arch == Architecture::Comb ? " combs" : " branched chains") + ": backbones of " + std::to_string(spec.dp) + " units, " +
+                 std::to_string(n_arms) + " side chains of " + std::to_string(std::max(1, spec.arm_dp)) + " units";
   if (!spec.chain_dp.empty()) {
     int lo = 1 << 30, hi = 0;
     long total = 0;
