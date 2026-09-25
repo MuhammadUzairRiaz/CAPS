@@ -13,7 +13,7 @@
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.education</string>
   <key>NSHighResolutionCapable</key><true/>
-  <key>NSHumanReadableCopyright</key><string>CAPS — polymer modelling studio</string>
+  <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Muhammad Uzair Riaz · BSD-3-Clause</string>
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>

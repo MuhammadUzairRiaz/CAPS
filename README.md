@@ -515,3 +515,9 @@ samples/    small input files used by tests and the Studio
 design/     exported screen designs (boards, canvas, generator scripts)
 scripts/    build, launch and LAMMPS cross-check helpers
 ```
+
+## Licence
+
+CAPS is released under the BSD 3-Clause License (`LICENSE`). Third-party data it ships keeps its own terms, listed
+in `licenses/` (the UFF parameter table from RDKit, BSD 3-Clause). The packages install both: `LICENSE` next to the
+app and the `licenses/` folder beside it.

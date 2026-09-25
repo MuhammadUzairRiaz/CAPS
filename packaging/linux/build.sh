@@ -28,6 +28,7 @@ cp "$WORK/native/cli/caps" "$APP/"
 mkdir -p "$APP/data"
 cp -R "$ROOT/data/forcefields" "$ROOT/data/typing" "$ROOT/data/reference" "$ROOT/data/polymers" "$ROOT/data/crystals" "$ROOT/data/fragments" "$ROOT/data/manual" "$ROOT/data/python" "$APP/data/"
 cp -R "$ROOT/licenses" "$APP/licenses"
+cp "$ROOT/LICENSE" "$APP/LICENSE"
 cp -R "$ROOT/samples" "$APP/"
 find "$APP" -maxdepth 1 -name "*.pdb" -delete
 strip "$APP/caps" "$APP/libcaps.so" 2>/dev/null || true
