@@ -267,6 +267,12 @@ TEST(Analysis, MeasureDistanceAngleDihedral) {
   EXPECT_NEAR(measure(s, {0, 1}), 1.0, 1e-12);
   EXPECT_NEAR(measure(s, {0, 1, 2}), 90.0, 1e-9);
   EXPECT_NEAR(std::fabs(measure(s, {0, 1, 2, 3})), 90.0, 1e-9);
+  {   // IUPAC sign: A +x, B origin, C +z, D +y from C — the near bond turns clockwise onto the far one: +90°
+    System q;
+    for (Vec3 r : {Vec3{1, 0, 0}, Vec3{0, 0, 0}, Vec3{0, 0, 1}, Vec3{0, 1, 1}}) { Atom a; a.element = 6; a.pos = r; q.atoms.push_back(a); }
+    EXPECT_NEAR(measure(q, {0, 1, 2, 3}), 90.0, 1e-9);
+    EXPECT_NEAR(measure(q, {3, 2, 1, 0}), 90.0, 1e-9);   // the same dihedral read backwards keeps its sign
+  }
   // trans chain: dihedral 180
   s.atoms[3].pos = {1.5, 2, 1};
   EXPECT_NEAR(std::fabs(measure(s, {0, 1, 2, 3})), 180.0, 1e-9);

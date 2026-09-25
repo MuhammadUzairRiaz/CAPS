@@ -171,7 +171,7 @@ public sealed partial class MainViewModel
         var name = type switch
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
-            "molecule_shape" => "molecules", "wrap" => "outside", "topology" => "bonds", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "molecule_shape" => "molecules", "wrap" => "outside", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
@@ -411,7 +411,7 @@ public sealed partial class MainViewModel
         "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["stack_by"] = "none", ["only_selected"] = false },
         "molecule_shape" => new JsonObject { ["glyphs"] = true },
         "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density" },
-        "topology" => new JsonObject { ["bins"] = 60 },
+        "topology" => new JsonObject { ["bins"] = 60, ["colour_states"] = true },
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
@@ -467,7 +467,7 @@ public sealed partial class MainViewModel
                 Text("element_a", "A · element number (0: any)", "number"); Text("element_b", "B · element number (0: any)", "number"); Bool("inter_only", "Only different molecules");
                 Text("rmax", "g(r) out to r max (Å)", "number"); Text("bins", "Bins", "number"); Text("cutoff", "Coordination cutoff (Å)", "number");
                 Bool("average_frames", "Average g(r) over the frames"); Text("every", "Every n-th frame", "number"); Bool("only_selected", "Only selected"); break;
-            case "topology": Text("bins", "Bins", "number"); break;
+            case "topology": Text("bins", "Bins", "number"); Bool("colour_states", "Colour the backbone by dihedral state (t · g+ · g−)"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
             case "python":
@@ -484,7 +484,7 @@ public sealed partial class MainViewModel
                 Text("position", "Slice position (0–1 of the cell)", "number"); break;
             case "vectors":
                 Choice("property", "Vector", ["end_to_end", "dipole", "displacement", "velocity"]); Text("scale", "Scale (dipole, displacement, velocity)", "number");
-                Text("radius", "Arrow radius (Å)", "number"); break;
+                Text("radius", "Arrow radius (Å)", "number"); Bool("flip", "Flip direction (end-to-end)"); break;
             case "trajectory_lines":
                 Choice("particles", "Trace", ["centres", "selected"]); Text("from", "From frame", "number"); Text("to", "To frame", "number", "blank: the last");
                 Text("stride", "Every n-th frame", "number", "blank: about 200 steps"); Text("radius", "Line radius (Å)", "number"); break;
