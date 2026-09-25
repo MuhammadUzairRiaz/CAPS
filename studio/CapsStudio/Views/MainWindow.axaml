@@ -766,6 +766,9 @@
                       </Button>
                       <Button Content="Export SVG…" Click="OnExportSvg" />
                     </StackPanel>
+                    <Button Classes="small" Click="OnFigurePage" HorizontalAlignment="Left" ToolTip.Tip="Journal and slide sizes, backgrounds side by side, title, scale bar and legend">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="sliders" Size="13" VerticalAlignment="Center" /><TextBlock Text="Figure page…" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <TextBlock Classes="dim" TextWrapping="Wrap" Text="Transparent keeps an alpha channel in PNG and writes no background shape in SVG. Same camera as the view." />
                   </StackPanel>
                 </Border>
@@ -861,6 +864,8 @@
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
       <!-- Nothing open (design/boards/VisEmpty): Analyze before a trajectory is open -->
       <pages:EmptyPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding ShowEmpty}" ZIndex="1" />
+      <!-- Export › Figure (design/boards/FigureBackground) -->
+      <pages:FigurePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFigure}" />
       <!-- File checks (design/boards/VisProblems) -->
       <pages:ChecksPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsChecks}" />
       <!-- Bench (design/boards/Bench) -->

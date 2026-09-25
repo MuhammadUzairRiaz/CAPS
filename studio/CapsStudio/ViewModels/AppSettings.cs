@@ -20,6 +20,8 @@ public sealed class AppSettings
     public double EwaldRtol { get; set; } = 1e-5;
     public double PmeSpacing { get; set; } = 1.0;
     public int PmeOrder { get; set; } = 5;
+    public int FigureBackground { get; set; } = 1;        // export figure: 0 dark, 1 white, 2 transparent
+    public int FigurePreset { get; set; }                 // journal single column …
     public int ReaderVerbosity { get; set; } = 1;         // keyboard walk: 0 brief, 1 full
     public bool AnnounceFrames { get; set; }
     public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users

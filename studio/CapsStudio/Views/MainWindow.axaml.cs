@@ -700,4 +700,9 @@ public partial class MainWindow : Window
     private void OnChecks(object? s, RoutedEventArgs e) => ViewModel.OpenChecks();
     private async void OnExportPng(object? s, RoutedEventArgs e) => await Export("png");
     private async void OnExportSvg(object? s, RoutedEventArgs e) => await Export("svg");
+    private void OnFigurePage(object? s, RoutedEventArgs e)
+    {
+        _vm.SetViewAspect(ViewHost.Bounds.Width, ViewHost.Bounds.Height);
+        _vm.OpenFigure();
+    }
 }
