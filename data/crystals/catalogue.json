@@ -1,0 +1,16 @@
+{
+  "format": "caps-crystals",
+  "description": "Bulk crystals for surfaces and interfaces (fibre, cord and filler surfaces in rubber composites). Cells and positions from the references in each file.",
+  "crystals": [
+    {"id": "alpha-quartz", "name": "α-quartz SiO₂", "file": "alpha-quartz.cif", "use": "glass fibre, silica filler", "hkl": [0, 0, 1]},
+    {"id": "graphite", "name": "Graphite", "file": "graphite.cif", "use": "carbon fibre, carbon black", "hkl": [0, 0, 1]},
+    {"id": "alpha-iron", "name": "α-iron (bcc)", "file": "alpha-iron.cif", "use": "steel cord and fibre", "hkl": [1, 1, 0]},
+    {"id": "beta-brass", "name": "β-brass CuZn", "file": "beta-brass.cif", "use": "brass-coated tyre cord", "hkl": [1, 1, 0]},
+    {"id": "copper", "name": "Copper (fcc)", "file": "copper.cif", "use": "brass / cord adhesion models", "hkl": [1, 1, 1]},
+    {"id": "zinc", "name": "Zinc (hcp)", "file": "zinc.cif", "use": "brass / cord adhesion models", "hkl": [0, 0, 1]},
+    {"id": "zinc-oxide", "name": "Zinc oxide (wurtzite)", "file": "zinc-oxide.cif", "use": "vulcanisation activator", "hkl": [1, 0, 0]},
+    {"id": "rutile", "name": "Rutile TiO₂", "file": "rutile.cif", "use": "pigment and filler", "hkl": [1, 1, 0]},
+    {"id": "diamond", "name": "Diamond", "file": "diamond.cif", "use": "reference", "hkl": [1, 1, 1]},
+    {"id": "rock-salt", "name": "Rock salt NaCl", "file": "rock-salt.cif", "use": "reference (symmetry expansion)", "hkl": [1, 0, 0]}
+  ]
+}

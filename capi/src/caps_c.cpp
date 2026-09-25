@@ -26,6 +26,7 @@
 #include "caps/render.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
+#include "caps/crystal.hpp"
 #include "caps/json.hpp"
 
 #include <map>
@@ -69,6 +70,7 @@ struct caps_doc {
   std::unique_ptr<FieldState> field;
   std::string analysis;   // last caps_analyze result (JSON)
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
+  int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
 };
 
 namespace {
@@ -520,6 +522,10 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
       };
     caps::System s = d->traj.frame(d->current);
     if (!s.unwrapped) caps::make_molecules_whole(s);
+    if (d->held_mol > 0) {
+      r.fixed.assign(s.atoms.size(), 0);
+      for (size_t i = 0; i < s.atoms.size(); ++i) r.fixed[i] = s.atoms[i].mol == d->held_mol;
+    }
     caps::Trajectory out;
     out.topology = s;
     auto push = [&](const std::vector<caps::Vec3>& p, const caps::Cell& c) {
@@ -1723,6 +1729,132 @@ extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opt
     g_error = e.what();
     return nullptr;
   }
+}
+
+namespace {
+caps::SlabOptions slab_from(const caps::Json& j) {
+  caps::SlabOptions o;
+  o.h = int(j.num("h", 0)), o.k = int(j.num("k", 0)), o.l = int(j.num("l", 1));
+  o.layers = int(j.num("layers", 3));
+  o.termination = int(j.num("termination", 0));
+  o.vacuum = j.num("vacuum", 15);
+  o.orthogonal = j.num("orthogonal", 1) != 0;
+  o.max_strain = j.num("max_strain", 0.02);
+  o.na = int(j.num("na", 1)), o.nb = int(j.num("nb", 1));
+  o.passivate = j.num("passivate", 0) != 0;
+  return o;
+}
+
+caps_doc* doc_of(const caps::System& s) {
+  auto* d = new caps_doc;
+  d->traj.topology = s;
+  std::vector<caps::Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  d->traj.positions.push_back(std::move(p));
+  d->traj.cells.push_back(s.cell);
+  d->traj.timesteps.push_back(0);
+  refresh(d);
+  return d;
+}
+}  // namespace
+
+extern "C" int32_t caps_surface_terminations(const char* cif_path, int32_t h, int32_t k, int32_t l, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::System bulk = caps::read_cif(cif_path ? cif_path : "");
+    double d = 0;
+    const auto terms = caps::slab_terminations(bulk, h, k, l, &d);
+    j["ok"] = true;
+    j["d"] = d;
+    std::vector<size_t> all(bulk.atoms.size());
+    for (size_t i = 0; i < all.size(); ++i) all[i] = i;
+    j["formula"] = caps::formula_of(bulk, all);
+    j["atoms"] = double(bulk.atoms.size());
+    j["density"] = bulk.density();
+    const auto& c = bulk.cell;
+    const double A = caps::norm(c.a), B = caps::norm(c.b), C = caps::norm(c.c);
+    auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 180 / M_PI; };
+    caps::Json cell = caps::Json::array();
+    for (double x : {A, B, C, ang(c.b, c.c), ang(c.a, c.c), ang(c.a, c.b)}) cell.push_back(x);
+    j["cell"] = cell;
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : bulk.notes) notes.push_back(n);
+    j["notes"] = notes;
+    caps::Json arr = caps::Json::array();
+    for (const auto& t : terms) {
+      caps::Json x = caps::Json::object();
+      x["label"] = t.label;
+      x["top"] = t.top;
+      x["bottom"] = t.bottom;
+      x["gap"] = t.gap;
+      x["bonds_per_nm2"] = t.bonds_per_nm2;
+      arr.push_back(x);
+    }
+    j["terminations"] = arr;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(), json, cap);
+}
+
+extern "C" caps_doc* caps_surface_build(const char* cif_path, const char* options_json, char* report, int32_t cap) {
+  try {
+    const caps::System bulk = caps::read_cif(cif_path ? cif_path : "");
+    caps::SlabReport rep;
+    const caps::System s = caps::cleave(bulk, slab_from(caps::Json::parse(options_json && *options_json ? options_json : "{}")), &rep);
+    std::string t;
+    for (const auto& n : rep.notes) t += n + "\n";
+    report_out(t, report, cap);
+    return doc_of(s);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" caps_doc* caps_interface_build(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
+                                          int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::SlabOptions so = slab_from(j.has("slab") ? j["slab"] : caps::Json::object());
+    so.vacuum = std::max(so.vacuum, 10.0);   // free surfaces; the interface sets the final cell
+    caps::SlabReport sr;
+    const caps::System slab = caps::cleave(caps::read_cif(j.text("crystal")), so, &sr);
+    caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    caps::InterfaceOptions io;
+    const caps::Json f = j.has("film") ? j["film"] : caps::Json::object();
+    io.film = f.num("thickness", 30);
+    io.density = f.num("density", 0.9);
+    io.chains = int(f.num("chains", 0));
+    io.gap = f.num("gap", 1.0);
+    io.vacuum = f.num("vacuum", 0);
+    if (o) {
+      if (o->dp > 0) c.dp = o->dp;
+      c.tacticity = o->tacticity == 1 ? caps::Tacticity::Isotactic : o->tacticity == 2 ? caps::Tacticity::Syndiotactic : caps::Tacticity::Atactic;
+      io.grow.seed = o->seed;
+      io.grow.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+      io.grow.curve = o->curve != 0;
+    }
+    if (progress) io.grow.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::GrowReport rep;
+    const caps::System s = caps::build_interface(slab, c, io, &rep);
+    std::string t;
+    for (const auto& n : sr.notes) t += n + "\n";
+    for (const auto& n : rep.notes) t += n + "\n";
+    report_out(t, report, cap);
+    caps_doc* d = doc_of(s);
+    d->held_mol = 1;
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {
+  if (d) d->held_mol = std::max<int64_t>(0, mol);
 }
 
 extern "C" void caps_set_electrostatics(int32_t mode, double ewald_rtol, double pme_spacing, int32_t pme_order) {

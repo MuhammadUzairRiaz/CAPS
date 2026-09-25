@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 16  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics */
+#define CAPS_ABI_VERSION 17  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -365,6 +365,19 @@ int32_t caps_bench_write(const char* tables_json, const char* dir);
 int32_t caps_unit_info(const char* smiles, char* json, int32_t cap);
 int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char* json, int32_t cap);
 caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap);
+
+/* Surfaces and interfaces (v17). caps_surface_terminations: {ok, error, d, formula, atoms, density, cell: [a, b, c,
+   alpha, beta, gamma], notes, terminations: [{label, top, bottom, gap, bonds_per_nm2}]} for (hkl) of a CIF file, fewest
+   bonds cut first. caps_surface_build: a slab document; options JSON {h, k, l, layers, termination (0-based), vacuum,
+   orthogonal, max_strain, na, nb, passivate}. caps_interface_build: a slab with a polymer film grown on it; options JSON
+   {crystal: CIF path, slab: {as caps_surface_build}, film: {thickness, density, chains, gap, vacuum}}, the chain spec as
+   caps_grow_chains, grow options (seed, contact_scale; chains and density come from film). The slab is molecule 1. */
+int32_t caps_surface_terminations(const char* cif_path, int32_t h, int32_t k, int32_t l, char* json, int32_t cap);
+caps_doc* caps_surface_build(const char* cif_path, const char* options_json, char* report, int32_t cap);
+caps_doc* caps_interface_build(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
+                               int32_t cap);
+/* Holds every atom of molecule `mol` in place in caps_relax (0: none), e.g. the substrate of an interface. */
+void caps_set_held_molecule(caps_doc* d, int64_t mol);
 
 #ifdef __cplusplus
 }

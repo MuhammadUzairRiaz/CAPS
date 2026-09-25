@@ -63,7 +63,13 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
   const size_t n3 = x.size();
   std::vector<double> f, fn, xn(n3), d(n3);
   int nev = 0;
-  auto eval = [&](const std::vector<double>& p, std::vector<double>& out) { ++nev; return ev.compute(p, cell, out).total(); };
+  auto eval = [&](const std::vector<double>& p, std::vector<double>& out) {
+    ++nev;
+    const double en = ev.compute(p, cell, out).total();
+    for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < out.size(); ++i)
+      if (o.fixed[i]) out[3 * i] = out[3 * i + 1] = out[3 * i + 2] = 0;   // held atoms feel no force and do not move
+    return en;
+  };
 
   double e = eval(x, f);
   double fmax = max_force(f);

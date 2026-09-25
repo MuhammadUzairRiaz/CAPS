@@ -276,25 +276,22 @@ Template make_template(const std::string& name, const std::string& smiles, const
 
 // ---- the cell: every atom placed so far, all chains, with a periodic cell list
 struct Cell3 {
-  double L = 0, cs = 4.0;
-  int nc = 1;
+  double L[3] = {0, 0, 0}, cs[3] = {4, 4, 4};
+  int nc[3] = {1, 1, 1};
   std::vector<std::vector<int>> bins;
   std::vector<Vec3> x;        // by id
-  std::vector<int> z, chain, local;
+  std::vector<int> z, chain, local;   // chain −1: a fixed substrate atom
   std::vector<char> alive;
-  void init(double edge, double reach) {
-    L = edge;
-    nc = std::max(1, int(std::floor(L / std::max(reach, 1.0))));
-    cs = L / nc;
-    bins.assign(size_t(nc) * nc * nc, {});
+  void init(const std::array<double, 3>& edge, double reach) {
+    for (int k = 0; k < 3; ++k) {
+      L[k] = edge[size_t(k)];
+      nc[k] = std::max(1, int(std::floor(L[k] / std::max(reach, 1.0))));
+      cs[k] = L[k] / nc[k];
+    }
+    bins.assign(size_t(nc[0]) * size_t(nc[1]) * size_t(nc[2]), {});
   }
-  int bin_of(const Vec3& p) const {
-    auto w = [&](double v) {
-      int i = int(std::floor((v - L * std::floor(v / L)) / cs));
-      return std::clamp(i, 0, nc - 1);
-    };
-    return (w(p[0]) * nc + w(p[1])) * nc + w(p[2]);
-  }
+  int wi(int k, double v) const { return std::clamp(int(std::floor((v - L[k] * std::floor(v / L[k])) / cs[k])), 0, nc[k] - 1); }
+  int bin_of(const Vec3& p) const { return (wi(0, p[0]) * nc[1] + wi(1, p[1])) * nc[2] + wi(2, p[2]); }
   int add(const Vec3& p, int zz, int ch, int loc) {
     const int id = int(x.size());
     x.push_back(p), z.push_back(zz), chain.push_back(ch), local.push_back(loc), alive.push_back(1);
@@ -307,23 +304,21 @@ struct Cell3 {
     b.erase(std::remove(b.begin(), b.end(), id), b.end());
   }
   Vec3 mi(Vec3 d) const {
-    for (int k = 0; k < 3; ++k) d[k] -= L * std::round(d[k] / L);
+    for (int k = 0; k < 3; ++k) d[k] -= L[k] * std::round(d[k] / L[k]);
     return d;
   }
   template <class F>
   void near(const Vec3& p, F&& f) const {
-    if (nc < 3) {
-      for (size_t id = 0; id < x.size(); ++id)
-        if (alive[id]) f(int(id));
-      return;
+    int lo[3], hi[3];
+    for (int k = 0; k < 3; ++k) {
+      if (nc[k] < 3) lo[k] = 0, hi[k] = nc[k] - 1;   // every bin along a short axis
+      else lo[k] = wi(k, p[k]) - 1, hi[k] = wi(k, p[k]) + 1;
     }
-    auto w = [&](double v) { return std::clamp(int(std::floor((v - L * std::floor(v / L)) / cs)), 0, nc - 1); };
-    const int bx = w(p[0]), by = w(p[1]), bz = w(p[2]);
-    for (int i = -1; i <= 1; ++i)
-      for (int j = -1; j <= 1; ++j)
-        for (int k = -1; k <= 1; ++k) {
-          const int xi = (bx + i + nc) % nc, yj = (by + j + nc) % nc, zk = (bz + k + nc) % nc;
-          for (int id : bins[size_t((xi * nc + yj) * nc + zk)]) f(id);
+    for (int i = lo[0]; i <= hi[0]; ++i)
+      for (int j = lo[1]; j <= hi[1]; ++j)
+        for (int k = lo[2]; k <= hi[2]; ++k) {
+          const int xi = (i + nc[0]) % nc[0], yj = (j + nc[1]) % nc[1], zk = (k + nc[2]) % nc[2];
+          for (int id : bins[size_t((xi * nc[1] + yj) * nc[2] + zk)]) f(id);
         }
   }
 };
@@ -536,18 +531,31 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     }
     mass += chain_mass(spec, ch.seq);
   }
-  double L = o.box;
-  if (L <= 0) {
-    if (o.density <= 0) throw GrowError("give a box edge or a density");
-    L = std::cbrt(mass / (o.density * 0.602214076));
+  const bool ortho = o.cell[0] > 0 && o.cell[1] > 0 && o.cell[2] > 0;
+  const bool film = o.z_hi > o.z_lo;
+  std::array<double, 3> Lv = o.cell;
+  if (!ortho) {
+    double L = o.box;
+    if (L <= 0) {
+      if (o.density <= 0) throw GrowError("give a box edge or a density");
+      L = std::cbrt(mass / (o.density * 0.602214076));
+    }
+    Lv = {L, L, L};
   }
+  if (film && (o.z_lo < 0 || o.z_hi > Lv[2])) throw GrowError("the film heights lie outside the cell");
+  const double L = Lv[0];
+  const double vol = Lv[0] * Lv[1] * (film ? o.z_hi - o.z_lo : Lv[2]);
   rep.box = L;
-  rep.density = mass / (0.602214076 * L * L * L);
+  rep.density = mass / (0.602214076 * vol);
   const double scale = o.contact_scale > 0 ? o.contact_scale : 1.0;
   // contact limits as the polystyrene grower's (C–C 3.0, C–H 2.45, H–H 2.0 Å), from Bondi radii for other elements
   auto limit = [&](int a, int b) { return scale * (0.88 * (element(a).vdw + element(b).vdw) - 0.08 * ((a == 1) + (b == 1))); };
   Cell3 cell;
-  cell.init(L, scale * 0.86 * 2 * 2.3);
+  cell.init(Lv, scale * 0.86 * 2 * 2.3);
+  if (o.substrate)
+    for (size_t i = 0; i < o.substrate->atoms.size(); ++i) cell.add(o.substrate->atoms[i].pos, o.substrate->atoms[i].element, -1, int(i));
+  // a film: heights outside [z_lo, z_hi] count as contacts
+  auto region = [&](const Vec3& p) { return film ? std::min(p[2] - o.z_lo, o.z_hi - p[2]) : 1e9; };
   const bool gauche = o.curve;
   const int trials = std::max(4, o.trials);
   rep.worst_margin = 1e9;
@@ -558,7 +566,7 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
       if (ch.gid[i] >= 0) cell.kill(ch.gid[i]);
     ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
-    const Vec3 s{U(rng) * L, U(rng) * L, U(rng) * L};
+    const Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
     Vec3 u{Nd(rng), Nd(rng), Nd(rng)};
     u = unitv(u);
     Vec3 w{Nd(rng), Nd(rng), Nd(rng)};
@@ -702,6 +710,7 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
       double worst = 1e9;
       for (int a = 0; a < t.n && worst > best_m; ++a) {
         const Vec3& x = trial[size_t(a)];
+        worst = std::min(worst, region(x));
         cell.near(x, [&](int id) {
           double f = 1.0;
           if (cell.chain[size_t(id)] == ci) {
@@ -729,6 +738,7 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
         frame(trial[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
         const Vec3 dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
         const Vec3 nx = trial[size_t(t.tail)] + dir * 1.53;
+        worst = std::min(worst, region(nx));
         const auto& ex = near_tail;
         cell.near(nx, [&](int id) {
           double f = 1.0;
@@ -801,9 +811,9 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
   System s;
   s.title = "CAPS Grow: " + std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units";
   s.cell.origin = {0, 0, 0};
-  s.cell.a = {L, 0, 0};
-  s.cell.b = {0, L, 0};
-  s.cell.c = {0, 0, L};
+  s.cell.a = {Lv[0], 0, 0};
+  s.cell.b = {0, Lv[1], 0};
+  s.cell.c = {0, 0, Lv[2]};
   s.unwrapped = true;
   s.has_mol = true;
   std::map<int, int> type_of;
@@ -830,10 +840,16 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     s.atoms.push_back(a);
     return uint32_t(s.atoms.size() - 1);
   };
+  // the substrate first, as molecule 1
+  const int mol0 = o.substrate ? 1 : 0;
+  if (o.substrate) {
+    for (const auto& a : o.substrate->atoms) add(a.element, a.pos, 1);
+    for (const auto& b : o.substrate->bonds) s.bonds.push_back(b);
+  }
   for (int c = 0; c < nchains; ++c) {
     auto& ch = C[size_t(c)];
     std::vector<uint32_t> map(ch.pos.size());
-    for (size_t i = 3; i < ch.pos.size(); ++i) map[i] = add(ch.z[i], ch.pos[i], c + 1);
+    for (size_t i = 3; i < ch.pos.size(); ++i) map[i] = add(ch.z[i], ch.pos[i], c + 1 + mol0);
     for (size_t k = 0; k < ch.unit_start.size(); ++k) {
       const Template& t = T[size_t(ch.seq[k])];
       const int base = ch.unit_start[k];
@@ -846,18 +862,22 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     // caps: the head's toward the start ghost, the tail's where a next unit would go
     const int head = ch.unit_start.front();
     const Vec3 hp = ch.pos[size_t(head)] + unitv(ch.pos[2] - ch.pos[size_t(head)]) * 1.09;
-    s.bonds.push_back({map[size_t(head)], add(1, hp, c + 1), 1});
+    s.bonds.push_back({map[size_t(head)], add(1, hp, c + 1 + mol0), 1});
     const Template& tl = T[size_t(ch.seq.back())];
     const int tail = ch.unit_start.back() + tl.tail;
     const int tp = ch.tparent[size_t(tail)], tgp = ch.tparent[size_t(tp)];
     const auto fv = free_valence(c, int(ch.unit_start.size()) - 1);
     const Vec3 tpos = fv ? ch.pos[size_t(tail)] + *fv * 1.09 : place(ch.pos[size_t(tgp)], ch.pos[size_t(tp)], ch.pos[size_t(tail)], 1.09, tl.tail_angle, kPi);
-    s.bonds.push_back({map[size_t(tail)], add(1, tpos, c + 1), 1});
+    s.bonds.push_back({map[size_t(tail)], add(1, tpos, c + 1 + mol0), 1});
   }
   s.bonds_from_file = true;
   rep.chains_placed = nchains;
-  rep.notes.insert(rep.notes.begin(), std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units · " + std::to_string(s.atoms.size()) + " atoms · box " +
-                                          std::to_string(L).substr(0, 6) + " Å · " + std::to_string(rep.density).substr(0, 5) + " g/cm³");
+  char cb[96];
+  if (ortho) std::snprintf(cb, sizeof cb, "cell %.2f × %.2f × %.2f Å", Lv[0], Lv[1], Lv[2]);
+  else std::snprintf(cb, sizeof cb, "box %.3f Å", L);
+  rep.notes.insert(rep.notes.begin(), std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
+                                          " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
+  if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
   if (report) *report = rep;
   return s;
 }
