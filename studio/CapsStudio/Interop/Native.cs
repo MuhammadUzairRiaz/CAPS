@@ -262,6 +262,8 @@ internal static class Native
     public static double ElementCovalent(int z) => ElementInfo(z, out _, out var c, out _, out _) == 0 ? c : 0;
     public static double ElementVdw(int z) => ElementInfo(z, out _, out _, out var v, out _) == 0 ? v : 0;
     public static uint ElementColour(int z) => ElementInfo(z, out _, out _, out _, out var c) == 0 ? c : 0x9AA1A8;
+    [DllImport(Lib, EntryPoint = "caps_interactions")] public static extern int Interactions(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_clear_checks")] public static extern void ClearChecks(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_edit")] public static extern int Edit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_undo")] public static extern int Undo(IntPtr doc, int redo);
     [DllImport(Lib, EntryPoint = "caps_history")] public static extern int History(IntPtr doc, byte[]? json, int cap);
@@ -862,6 +864,9 @@ public sealed class CapsDocument : IDisposable
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
+    /// <summary>H-bonds, contacts, clashes and checks of the frame (caps_interactions); drawn until ClearChecks.</summary>
+    public string Interactions(string options) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Interactions(_h, options, b, c)); } }
+    public void ClearChecks() { lock (_lock) { Alive(); Native.ClearChecks(_h); } }
     /// <summary>One structure edit (caps_edit), JSON {ok, error, what, atoms, added}.</summary>
     public string Edit(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Edit(_h, json, b, c)); } }
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>

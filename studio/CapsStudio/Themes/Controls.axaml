@@ -327,6 +327,11 @@
 
   <Style Selector="Border.dyad.meso"><Setter Property="Background" Value="{DynamicResource AccB}" /></Style>
 
+  <Style Selector="v|Icon.lvl.err"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+  <Style Selector="v|Icon.lvl.warn"><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
+  <Style Selector="v|Icon.lvl.ok"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+  <Style Selector="Border.chip.err"><Setter Property="Background" Value="{DynamicResource ErrBgB}" /></Style>
+
   <!-- chips: 22 px pills; ToggleButton.chip is a calculation you switch on (amber when on) -->
   <Style Selector="Border.chip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />

@@ -219,6 +219,7 @@ public sealed partial class MainViewModel : ObservableObject
             _doc.SetFrame(_frame);
             Raise(nameof(FrameLabel));
             if (_module == 32) { TrajUpdateValues(); TrajectoryChanged?.Invoke(); }
+            if (_ixOpen && _ixLive) RunInteractions();
             RefreshSummary();
             RefreshSelection();
             RefreshRdf();

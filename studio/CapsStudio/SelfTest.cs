@@ -436,6 +436,20 @@ internal static class SelfTest
         vm.ResetAppearance();
         vm.AppearanceOpen = false;
 
+        // Interactions & checks: a packed water box has H-bonds and a few O···O clashes; pushing them apart clears them
+        {
+            var (wbox, _) = CapsDocument.Solvate(null, "{\"shape\":0,\"edge\":15,\"ion_mode\":0,\"water_model\":\"TIP3P\"}", null, "water");
+            using (wbox)
+            {
+                var ix = System.Text.Json.Nodes.JsonNode.Parse(wbox.Interactions("{}"))!;
+                var clashes = ix["clashes"]?.GetValue<double>() ?? -1;
+                var fixedJ = System.Text.Json.Nodes.JsonNode.Parse(wbox.Edit("{\"op\":\"clean\"}"))!;
+                var after = System.Text.Json.Nodes.JsonNode.Parse(wbox.Interactions("{}"))!;
+                Check(ix["hbonds"]?.GetValue<double>() > 10 && fixedJ["ok"]?.GetValue<bool>() == true && after["clashes"]?.GetValue<double>() < clashes,
+                      $"interactions: {ix["hbonds"]} H-bonds · {clashes} clashes → {after["clashes"]} after clean-up · {fixedJ["error"]}");
+            }
+        }
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");
