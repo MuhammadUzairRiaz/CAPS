@@ -36,6 +36,7 @@ struct RenderOptions {
   bool show_cell = true;
   std::vector<int> highlight;          // atom indices drawn with a selection ring
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
+  bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
 };
 
 struct Image {
@@ -51,7 +52,13 @@ struct Renderer {
  private:
   std::vector<int32_t> id_buffer_;
   int id_w_ = 0, id_h_ = 0;
+  std::vector<float> ao_;              // per-atom accessibility of the last frame (camera independent), and its key
+  double ao_key_ = 0;
 };
+
+// Per-atom ambient accessibility in [0, 1]: the share of 32 directions from each atom's surface that leave a 5 Å shell
+// without meeting another atom (radius = max(r, 0.7 Å)); atoms with show[i] == 0 neither occlude nor are shaded.
+std::vector<float> ambient_accessibility(const System& s, const std::vector<double>& radius, const std::vector<char>& show);
 
 unsigned molecule_colour(int k);     // design palette, 10 entries cycled
 unsigned viridis(double t);          // t in [0, 1]

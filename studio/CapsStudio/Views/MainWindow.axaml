@@ -438,6 +438,8 @@
               </StackPanel>
             </Border>
             <TextBlock x:Name="HintText" IsVisible="False" />
+            <!-- Render (design/boards/RenderOverlays): the output frame and its overlays -->
+            <local:RenderGuideView x:Name="RenderGuide" IsVisible="{Binding IsRender}" IsHitTestVisible="False" />
             <!-- Keyboard walk (design/boards/VisAccess): what a screen reader says, shown for sighted keyboard users -->
             <TextBlock Text="{Binding Announcement}" Opacity="0" IsHitTestVisible="False" Width="1" Height="1" HorizontalAlignment="Left" VerticalAlignment="Top"
                        AutomationProperties.LiveSetting="Polite" />
@@ -460,6 +462,7 @@
             <MultiBinding Converter="{x:Static BoolConverters.And}">
               <Binding Path="HasDocument" />
               <Binding Path="ShowRdf" />
+              <Binding Path="ShowAnalysisPanel" />
             </MultiBinding>
           </Border.IsVisible>
           <TabControl x:Name="AnalysisTabs" Padding="0" Margin="0,-6,0,0">
@@ -766,6 +769,9 @@
                       </Button>
                       <Button Content="Export SVG…" Click="OnExportSvg" />
                     </StackPanel>
+                    <Button Classes="small" Click="OnRenderPage" HorizontalAlignment="Left" ToolTip.Tip="Output frame, ambient occlusion, overlays, image sequences">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="13" VerticalAlignment="Center" /><TextBlock Text="Render…" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <Button Classes="small" Click="OnFigurePage" HorizontalAlignment="Left" ToolTip.Tip="Journal and slide sizes, backgrounds side by side, title, scale bar and legend">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="sliders" Size="13" VerticalAlignment="Center" /><TextBlock Text="Figure page…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
@@ -809,6 +815,98 @@
           <StackPanel>
           </StackPanel>
         </ScrollViewer>
+        <!-- Render (design/boards/RenderOverlays) -->
+        <DockPanel IsVisible="{Binding IsRender}" Background="{DynamicResource Bg1B}">
+          <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="small" Content="Back" Click="OnRenderBack" VerticalAlignment="Center" />
+              <TextBlock Text="Render" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="18,12,18,16" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding RenderProgress}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource AccB}" IsVisible="{Binding Rendering}" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="primary" Click="OnRenderImage" IsEnabled="{Binding RenderIdle}">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="eye" Size="14" VerticalAlignment="Center" /><TextBlock Text="Render image" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <Button Content="Movie…" Click="OnRenderMovie" IsEnabled="{Binding RenderIdle}" ToolTip.Tip="Every chosen frame as a numbered PNG in a folder" />
+                <Button Content="Stop" Click="OnRenderStop" IsVisible="{Binding Rendering}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="OUTPUT" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <StackPanel Spacing="4"><TextBlock Text="Width (px)" Classes="label" /><NumericUpDown Value="{Binding RenderW}" Minimum="64" Maximum="8192" Increment="16" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Height (px)" Classes="label" /><NumericUpDown Value="{Binding RenderH}" Minimum="64" Maximum="8192" Increment="16" FormatString="0" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Renderer" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="CAPS · CPU ray cast" Classes="mono" FontSize="12" /></Grid>
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="Background" Classes="label" />
+                    <Border Classes="seg">
+                      <UniformGrid Columns="3">
+                        <RadioButton Classes="seg" GroupName="rbg" Content="Dark" IsChecked="{Binding RenderBgDark}" />
+                        <RadioButton Classes="seg" GroupName="rbg" Content="White" IsChecked="{Binding RenderBgWhite}" />
+                        <RadioButton Classes="seg" GroupName="rbg" Content="Transparent" IsChecked="{Binding RenderBgTransparent}" />
+                      </UniformGrid>
+                    </Border>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="QUALITY" Classes="h3" />
+                  <CheckBox Classes="toggle" Content="Ambient occlusion" IsChecked="{Binding RenderAo}" />
+                  <CheckBox Classes="toggle" Content="Depth cue (fog)" IsChecked="{Binding RenderDepth}" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <StackPanel Spacing="4"><TextBlock Text="Antialias" Classes="label" />
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.RenderAntialias}" SelectedIndex="{Binding RenderAa}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Frames" Classes="label" />
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.RenderFrameChoices}" SelectedIndex="{Binding RenderFrames}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="OVERLAYS" Classes="h3" Margin="0,0,0,6" />
+                  <Border Padding="0,5" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="6">
+                      <DockPanel>
+                        <CheckBox DockPanel.Dock="Right" Classes="toggle" IsChecked="{Binding OvLabel}" />
+                        <StackPanel><TextBlock Text="Text label" FontSize="12" /><TextBlock Text="{Binding OvLabelNote}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" /></StackPanel>
+                      </DockPanel>
+                      <TextBox Text="{Binding OvText}" Classes="mono" FontSize="11.5" IsVisible="{Binding OvLabel}" />
+                      <TextBox Text="{Binding OvSub}" Classes="mono" FontSize="11.5" IsVisible="{Binding OvLabel}" />
+                      <TextBlock Text="{x:Static vm:MainViewModel.RenderTokens}" Classes="dim" FontSize="10.5" TextWrapping="Wrap" IsVisible="{Binding OvLabel}" />
+                    </StackPanel>
+                  </Border>
+                  <Border Padding="0,5" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <DockPanel>
+                      <CheckBox DockPanel.Dock="Right" Classes="toggle" IsChecked="{Binding OvLegend}" />
+                      <StackPanel><TextBlock Text="Colour legend" FontSize="12" /><TextBlock Text="{Binding OvLegendNote}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" /></StackPanel>
+                    </DockPanel>
+                  </Border>
+                  <Border Padding="0,5" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <DockPanel>
+                      <CheckBox DockPanel.Dock="Right" Classes="toggle" IsChecked="{Binding OvBar}" />
+                      <StackPanel><TextBlock Text="Scale bar" FontSize="12" /><TextBlock Text="{Binding OvBarNote}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" /></StackPanel>
+                    </DockPanel>
+                  </Border>
+                  <Border Padding="0,5" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <DockPanel>
+                      <CheckBox DockPanel.Dock="Right" Classes="toggle" IsChecked="{Binding OvTripod}" />
+                      <StackPanel><TextBlock Text="Axis tripod" FontSize="12" /><TextBlock Text="bottom right · follows the camera" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" /></StackPanel>
+                    </DockPanel>
+                  </Border>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Opening a large trajectory (design/boards/VisLoading): the stages, then the inspector again -->
         <DockPanel Background="{DynamicResource Bg1B}" IsVisible="{Binding ShowLoadPanel}">
           <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">

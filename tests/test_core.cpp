@@ -460,6 +460,37 @@ TEST(Render, ViewScaleForScaleBars) {
   EXPECT_NEAR(view_scale(s, cam, o), 1.5 * 800 * 0.45 / 11.0, 1e-9);
 }
 
+TEST(Render, AmbientAccessibility) {
+  // a 5 × 5 × 5 block of atoms 1.5 Å apart (as dense as bonded matter), plus one lone atom far away
+  System s;
+  for (int x = 0; x < 5; ++x)
+    for (int y = 0; y < 5; ++y)
+      for (int z = 0; z < 5; ++z) { Atom a; a.element = 6; a.pos = {1.5 * x, 1.5 * y, 1.5 * z}; s.atoms.push_back(a); }
+  Atom lone; lone.element = 6; lone.pos = {60, 60, 60};
+  s.atoms.push_back(lone);
+  const std::vector<double> r(s.atoms.size(), 0.8);
+  const std::vector<char> show(s.atoms.size(), 1);
+  const auto acc = ambient_accessibility(s, r, show);
+  const size_t centre = (2 * 5 + 2) * 5 + 2, corner = 0;
+  EXPECT_FLOAT_EQ(acc.back(), 1.f);
+  EXPECT_LT(acc[centre], 0.1f);
+  EXPECT_GT(acc[corner], acc[centre] + 0.3f);
+  // hidden atoms do not occlude
+  std::vector<char> only_centre(s.atoms.size(), 0);
+  only_centre[centre] = 1;
+  EXPECT_FLOAT_EQ(ambient_accessibility(s, r, only_centre)[centre], 1.f);
+  // and the image darkens
+  Renderer R;
+  RenderOptions o; o.width = 120; o.height = 120; o.depth_cue = false; o.outlines = false; o.show_cell = false;
+  Camera cam;
+  const Image plain = R.render(s, cam, o);
+  o.ambient_occlusion = true;
+  const Image ao = R.render(s, cam, o);
+  long sp = 0, sa = 0;
+  for (size_t k = 0; k < plain.rgba.size(); k += 4) { sp += plain.rgba[k]; sa += ao.rgba[k]; }
+  EXPECT_LT(sa, sp);
+}
+
 TEST(Io, StagedOpen) {
   const std::string dump = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", data = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
   const Trajectory full = open_file(dump, data);
