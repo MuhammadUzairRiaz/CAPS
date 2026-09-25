@@ -1,0 +1,91 @@
+<!-- CAPS Split view (design/boards/LightSplit.dc.html): the open document beside a second one, cameras synced,
+     selections and frames linked by index, their structure compared; the Paper (light) theme one click away. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SplitPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel VerticalAlignment="Center">
+        <Button DockPanel.Dock="Right" Classes="tool" Click="OnTheme" ToolTip.Tip="Switch between Paper (light) and Graphite (dark)">
+          <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="eye" Size="18" VerticalAlignment="Center" /><TextBlock Text="{Binding SplitThemeText}" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Classes="small" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
+          <Border Classes="chip" Height="26" Padding="10,0" VerticalAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="layers" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Split vertical" VerticalAlignment="Center" /></StackPanel></Border>
+          <ToggleButton Classes="tool" IsChecked="{Binding SyncCamera}" ToolTip.Tip="One camera for both panes">
+            <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="link" Size="18" VerticalAlignment="Center" /><TextBlock Text="Camera synced" VerticalAlignment="Center" /></StackPanel>
+          </ToggleButton>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding SplitThemeText}" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SplitStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <!-- compare -->
+    <Border DockPanel.Dock="Bottom" Height="222" Padding="20,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,360" ColumnSpacing="20">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Compare documents" FontSize="12" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="0.3*,0.35*,0.35*">
+            <TextBlock Text="Property" Classes="label" />
+            <TextBlock Grid.Column="1" Text="{Binding SplitTitleA}" Classes="label" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+            <TextBlock Grid.Column="2" Text="{Binding SplitTitleB}" Classes="label" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding SplitRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SplitRow">
+                <Grid ColumnDefinitions="0.3*,0.35*,0.35*" Height="21">
+                  <TextBlock Text="{Binding Property}" FontSize="12" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding A}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding B}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="10">
+          <TextBlock Text="Linked views" FontSize="12" FontWeight="SemiBold" />
+          <CheckBox Classes="toggle" Content="Sync camera between panes" IsChecked="{Binding SyncCamera}" />
+          <CheckBox Classes="toggle" Content="Sync selection by atom index" IsChecked="{Binding SyncSelection}" />
+          <CheckBox Classes="toggle" Content="Sync trajectory frame" IsChecked="{Binding SyncFrame}" />
+          <TextBlock Text="{Binding SplitError}" Classes="err" FontSize="12" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Grid ColumnDefinitions="*,2,*" Background="{DynamicResource LineB}">
+      <DockPanel Background="{DynamicResource Bg0B}">
+        <Border DockPanel.Dock="Top" Height="34" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource AccB}" BorderThickness="0,0,0,2">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <v:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SplitTitleA}" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center" />
+            <Border Classes="chip"><TextBlock Text="{Binding SplitTagA}" Foreground="{DynamicResource MutedB}" /></Border>
+          </StackPanel>
+        </Border>
+        <v:MolView x:Name="PaneA" />
+      </DockPanel>
+      <DockPanel Grid.Column="2" Background="{DynamicResource Bg0B}">
+        <Border DockPanel.Dock="Top" Height="34" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,2">
+          <DockPanel VerticalAlignment="Center">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+              <ComboBox ItemsSource="{Binding SplitRecent}" PlaceholderText="Recent" MinWidth="130" FontSize="11.5" SelectionChanged="OnRecentB" />
+              <Button Classes="small" Content="Open…" Click="OnOpenB" />
+              <Button Classes="tool" Click="OnCloseB" IsVisible="{Binding SplitHasB}" ToolTip.Tip="Close the right pane's document"><v:Icon Kind="close" Size="14" /></Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <v:Icon Kind="cube" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding SplitTitleB}" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center" />
+              <Border Classes="chip" IsVisible="{Binding SplitHasB}"><TextBlock Text="{Binding SplitTagB}" Foreground="{DynamicResource MutedB}" /></Border>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Panel>
+          <v:MolView x:Name="PaneB" />
+          <TextBlock Classes="dim" Text="Open a second structure to compare it here" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !SplitHasB}" />
+        </Panel>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -549,6 +549,13 @@ internal static class SelfTest
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
+        // Split view: the melt beside its GROMACS copy, compared row by row
+        vm.OpenSplit();
+        vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();
+        Check(vm.IsSplit && vm.SplitHasB && vm.SplitRows.Count == 7 && vm.SplitRows[0].A == vm.SplitRows[0].B, $"split: {string.Join(" · ", vm.SplitRows.Select(r => $"{r.Property} {r.A}/{r.B}"))} {vm.SplitError}");
+        vm.CloseSplitB();
+        vm.SetModule(8);
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);
