@@ -337,6 +337,8 @@ int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap);
 int32_t caps_pipeline_particles(caps_doc* d, const char* filter, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_catalogue(char* json, int32_t cap);
+/* v19: where the caps Python package for Python steps is (data/python), and the interpreter (NULL keeps python3). */
+void caps_set_python(const char* package_dir, const char* interpreter);
 /* v19 pipeline YAML (design/boards/SavePipeline): steps JSON to YAML text (name, source file and topology optional),
    and YAML back to steps JSON ({"steps":[…],"name":…,"file":…,"topology":…}). */
 int32_t caps_pipeline_to_yaml(const char* json, const char* name, const char* file, const char* topology, char* yaml, int32_t cap);
