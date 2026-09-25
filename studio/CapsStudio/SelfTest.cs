@@ -691,6 +691,34 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Figure composer: panels from the project, checked at print size, SVG with vector plots; TIFF and PDF writers
+        {
+            var chips = vm.Analyze.Groups.SelectMany(g => g.Chips).ToList();
+            foreach (var c in chips) c.IsOn = c.Id is "rdf" or "density";
+            vm.Analyze.Run().GetAwaiter().GetResult();
+            vm.OpenComposer();
+            var sources = vm.ComposerSources.Count;
+            var svgPath = Path.Combine(outDir, "caps-selftest-figure.svg");
+            vm.ComposerPanel = 1;
+            vm.ComposerLine = 0.3m;
+            var thin = vm.ComposerChecks.Any(c => !c.Ok && c.Text.Contains("0.5 pt"));
+            vm.ComposerLine = 1m;
+            var curve = vm.Composition.Panels.Count(p => p.Kind == "curve" && p.HasData);
+            vm.Status = vm.ExportComposerSvg(svgPath);
+            var svg = File.ReadAllText(svgPath);
+            var rgba = Enumerable.Repeat((byte)200, 40 * 20 * 4).ToArray();
+            var tif = Path.Combine(outDir, "caps-selftest-figure.tiff");
+            var pdf = Path.Combine(outDir, "caps-selftest-figure.pdf");
+            Views.FigureFiles.WriteTiff(tif, rgba, 40, 20, 600);
+            Views.FigureFiles.WritePdf(pdf, rgba, 40, 20, 72, 36);
+            var tb = File.ReadAllBytes(tif);
+            var pdfText = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(pdf));
+            Check(vm.IsComposer && sources >= 3 && thin && curve >= 1 && svg.StartsWith("<svg") && svg.Contains("<polyline") && svg.Contains("width=\"7in\"") &&
+                  tb[0] == 'I' && tb[2] == 42 && tb.Length == 8 + 2 + 12 * 12 + 4 + 6 + 16 + 40 * 20 * 3 && pdfText.StartsWith("%PDF-1.4") && pdfText.Contains("/MediaBox [0 0 72 36]") && pdfText.TrimEnd().EndsWith("%%EOF"),
+                  $"composer: {sources} sources · {curve} curve panels · thin flagged {thin} · svg {svg.Length} chars · tiff {tb.Length} bytes");
+            vm.SetModule(8);
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();
