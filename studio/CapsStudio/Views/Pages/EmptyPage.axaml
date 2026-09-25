@@ -1,0 +1,146 @@
+<!-- CAPS nothing open (design/boards/VisEmpty.dc.html): the pages that work on a structure, before one is open. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.EmptyPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}" DragDrop.AllowDrop="True">
+  <p:PageBase.Styles>
+    <Style Selector="Border.fmt">
+      <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="Margin" Value="3" />
+    </Style>
+    <Style Selector="Border.fmt > TextBlock">
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    </Style>
+    <Style Selector="Border.key">
+      <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="7,1" />
+    </Style>
+  </p:PageBase.Styles>
+  <Grid ColumnDefinitions="*,380" ColumnSpacing="18" Margin="22">
+    <!-- Drop zone -->
+    <Panel>
+      <Rectangle Stroke="{DynamicResource LineB}" StrokeThickness="2" StrokeDashArray="4,3" RadiusX="14" RadiusY="14" Fill="{DynamicResource Bg1B}" />
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Margin="24">
+        <Border Width="64" Height="64" CornerRadius="16" Background="{DynamicResource Bg2B}" HorizontalAlignment="Center">
+          <v:Icon Kind="folder" Size="30" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="{Binding EmptyHeading}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        <TextBlock MaxWidth="520" TextAlignment="Center" TextWrapping="Wrap" FontSize="13" LineHeight="21" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center"
+                   Text="Drop files here, or open them. A trajectory and its topology can be dropped together; CAPS pairs them by atom count." />
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+          <Button Classes="primary" Click="OnOpen">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open file…" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Click="OnGrow" ToolTip.Tip="Build an amorphous cell in Grow; it opens here when the run finishes">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open from Grow" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Click="OnPaste" ToolTip.Tip="Open the file whose path is on the clipboard (one path per line: a trajectory and its topology)">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="file" Size="14" VerticalAlignment="Center" /><TextBlock Text="Paste path" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <WrapPanel MaxWidth="560" HorizontalAlignment="Center" Orientation="Horizontal">
+          <Border Classes="fmt"><TextBlock Text="LAMMPS data · dump" /></Border>
+          <Border Classes="fmt"><TextBlock Text="GROMACS .gro" /></Border>
+          <Border Classes="fmt"><TextBlock Text="PDB · ent" /></Border>
+          <Border Classes="fmt"><TextBlock Text="XYZ · extxyz" /></Border>
+          <Border Classes="fmt"><TextBlock Text="CIF" /></Border>
+          <Border Classes="fmt"><TextBlock Text="mol2" /></Border>
+        </WrapPanel>
+        <TextBlock Text="{Binding EmptyError}" IsVisible="{Binding EmptyHasError}" Foreground="{DynamicResource WarnB}" FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="520" TextAlignment="Center" />
+      </StackPanel>
+    </Panel>
+
+    <!-- Right column -->
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Spacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding RecentCount}" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
+                <TextBlock Text="Recent" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <ItemsControl ItemsSource="{Binding RecentFew}" Margin="8,6" IsVisible="{Binding HasRecent}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:RecentItem">
+                  <Button Classes="row" Click="OnRecent" Tag="{Binding}" ToolTip.Tip="{Binding Path}" Padding="8,7">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                      <v:Icon Kind="file" Size="15" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" Spacing="2">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Files you open or save appear here." Classes="dim" FontSize="12" Margin="16,12" IsVisible="{Binding !HasRecent}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" CornerRadius="10" IsVisible="{Binding $parent[v:MainWindow].HasSamples}">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Samples made by CAPS" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,8" Spacing="0">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,6">
+                <v:Icon Kind="cube" Size="15" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Polystyrene cell · 10 × DP 8" FontSize="12.5" />
+                  <TextBlock Text="LAMMPS dump with its data file · 1,300 atoms" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="small" Content="Open" Click="OnSample" Tag="ps" VerticalAlignment="Center" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,6">
+                <v:Icon Kind="cube" Size="15" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Same cell, GROMACS .gro" FontSize="12.5" />
+                  <TextBlock Text="one frame · no bonds, CAPS finds them" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="small" Content="Open" Click="OnSample" Tag="gro" VerticalAlignment="Center" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,6">
+                <v:Icon Kind="cube" Size="15" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Water box · PDB" FontSize="12.5" />
+                  <TextBlock Text="a small solvent cell" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="small" Content="Open" Click="OnSample" Tag="water" VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Keyboard" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,12" Spacing="8">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="key"><TextBlock Text="{Binding KeyOpen}" Classes="mono" FontSize="11.5" /></Border>
+                <TextBlock Text="Open" FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+              </DockPanel>
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="key"><TextBlock Text="{Binding KeyOpenRecent}" Classes="mono" FontSize="11.5" /></Border>
+                <TextBlock Text="Open the most recent file" FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+              </DockPanel>
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="key"><TextBlock Text="{Binding KeyPalette}" Classes="mono" FontSize="11.5" /></Border>
+                <TextBlock Text="Command palette" FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+              </DockPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</p:PageBase>

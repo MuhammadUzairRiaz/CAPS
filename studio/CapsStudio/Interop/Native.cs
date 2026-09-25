@@ -180,6 +180,9 @@ public struct CapsMechOpts
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int CapsOpenProgress(int stage, double fraction, IntPtr detail, IntPtr user);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsAnalyzeProgress(IntPtr what, double fraction, IntPtr user);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -202,6 +205,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_last_error")] private static extern IntPtr LastErrorPtr();
     public static string LastError() => Marshal.PtrToStringUTF8(LastErrorPtr()) ?? "";
 
+    [DllImport(Lib, EntryPoint = "caps_open_staged")] public static extern IntPtr OpenStaged([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, int maxFrames, CapsOpenProgress? progress, IntPtr user);
+    [DllImport(Lib, EntryPoint = "caps_adopt_frames")] public static extern int AdoptFrames(IntPtr dst, IntPtr src);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -303,6 +308,20 @@ public sealed class CapsDocument : IDisposable
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return new CapsDocument(h, path);
     }
+
+    /// <summary>Staged open: progress(stage, fraction, detail) runs on the calling thread for each stage (0 format, 1 frame 0,
+    /// 2 topology, 3 frames read); return false to stop reading, keeping the frames so far. maxFrames 1 reads frame 0 only.</summary>
+    public static CapsDocument OpenStaged(string path, string? topology, int maxFrames, Func<int, double, string, bool>? progress)
+    {
+        CapsOpenProgress? cb = progress == null ? null : (st, f, d, _) => progress(st, f, Marshal.PtrToStringUTF8(d) ?? "") ? 0 : 1;
+        var h = Native.OpenStaged(path, topology, maxFrames, cb, IntPtr.Zero);
+        GC.KeepAlive(cb);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return new CapsDocument(h, path);
+    }
+
+    /// <summary>Moves the frames of other (the same file read in full) into this document; returns the frame count, or -1.</summary>
+    public int AdoptFrames(CapsDocument other) => Native.AdoptFrames(_h, other._h);
 
     /// <summary>Grow a cell. The progress callback runs on the calling (worker) thread; return false to cancel.</summary>
     public static (CapsDocument Doc, string Report) Grow(CapsGrowOpts o, Func<int, int, int, bool>? progress, string label)

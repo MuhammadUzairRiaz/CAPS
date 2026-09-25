@@ -446,6 +446,34 @@ TEST(Grow, RejectsImpossibleRequestsClearly) {
   EXPECT_NEAR(box_for_density([] { GrowOptions g; g.chains = 10; g.dp = 8; g.density = 0.386; return g; }()), 33.0, 0.01);
 }
 
+TEST(Io, StagedOpen) {
+  const std::string dump = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", data = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
+  const Trajectory full = open_file(dump, data);
+  ASSERT_GE(full.frames(), 3u);
+  std::vector<int> stages;
+  double last = 0;
+  OpenProgress p;
+  p.report = [&](int st, double f, const std::string&) { if (stages.empty() || stages.back() != st) stages.push_back(st); if (st == 3) last = f; return true; };
+  const Trajectory all = open_file(dump, data, p);
+  EXPECT_EQ(all.frames(), full.frames());
+  EXPECT_EQ(stages, (std::vector<int>{0, 1, 2, 3}));
+  EXPECT_DOUBLE_EQ(last, 1.0);
+  // frame 0 alone, with the same bonds
+  p.max_frames = 1;
+  const Trajectory first = open_file(dump, data, p);
+  EXPECT_EQ(first.frames(), 1u);
+  EXPECT_EQ(first.topology.bonds.size(), full.topology.bonds.size());
+  EXPECT_EQ(first.positions[0][7][2], full.positions[0][7][2]);
+  // stopped after the second frame: the frames read are kept, with a note
+  p.max_frames = 0;
+  int calls = 0;
+  p.report = [&](int st, double, const std::string&) { return st != 3 || ++calls < 2; };
+  const Trajectory part = open_file(dump, data, p);
+  EXPECT_EQ(part.frames(), 2u);
+  EXPECT_NE(std::find_if(part.topology.notes.begin(), part.topology.notes.end(), [](const std::string& n) { return n.find("stopped") != std::string::npos; }),
+            part.topology.notes.end());
+}
+
 TEST(FileChecks, SampleAndBrokenStructures) {
   const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
   const auto c = file_checks(t);

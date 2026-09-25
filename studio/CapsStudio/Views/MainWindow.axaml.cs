@@ -58,6 +58,9 @@ public partial class MainWindow : Window
         _vm.LoadReactionSet();
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta), Command = OpenCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control), Command = OpenCommand });
+        var recentCommand = new RelayCommand(() => { if (_vm.Idle) OpenMostRecent(); return Task.CompletedTask; });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta | KeyModifiers.Shift), Command = recentCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control | KeyModifiers.Shift), Command = recentCommand });
         SaveCommand = new RelayCommand(() => _vm.HasDocument && _vm.Idle ? SaveAs("data", "LAMMPS data") : Task.CompletedTask);
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
@@ -203,12 +206,28 @@ public partial class MainWindow : Window
         if (files != null) OpenMany(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
 
-    public void OnOpenSample(object? sender, RoutedEventArgs e)
+    public void OnOpenSample(object? sender, RoutedEventArgs e) => OpenSample("ps");
+
+    /// <summary>A sample made by CAPS: "ps" (dump with its data file), "gro" (the same cell as .gro) or "water" (PDB).</summary>
+    public void OpenSample(string which)
     {
-        if (_samples != null) TryOpen(Path.Combine(_samples, "ps_melt.lammpstrj"), Path.Combine(_samples, "ps_melt.data"));
+        if (_samples == null) return;
+        if (which == "gro") TryOpen(Path.Combine(_samples, "ps_melt.gro"));
+        else if (which == "water") TryOpen(Path.Combine(_samples, "water.pdb"));
+        else TryOpen(Path.Combine(_samples, "ps_melt.lammpstrj"), Path.Combine(_samples, "ps_melt.data"));
+    }
+
+    /// <summary>⌘⇧O: the most recent file, with its topology.</summary>
+    public void OpenMostRecent()
+    {
+        var r = RecentFiles.Load().FirstOrDefault(x => File.Exists(x.Path));
+        if (r == null) { _vm.Status = "No recent file to open"; return; }
+        OpenMany(r.Topology != null && File.Exists(r.Topology) ? [r.Path, r.Topology] : [r.Path]);
     }
 
     private void OnPlay(object? s, RoutedEventArgs e) => TogglePlay();
+    private void OnLoadCancel(object? s, RoutedEventArgs e) => _vm.CancelLoad();
+    private void OnLoadBackground(object? s, RoutedEventArgs e) => _vm.LoadToBackground();
 
     private void OnModuleGrow(object? s, RoutedEventArgs e) => _vm.SetModule(0);
     private void OnModuleAnalyze(object? s, RoutedEventArgs e) => _vm.SetModule(1);
