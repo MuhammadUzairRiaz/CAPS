@@ -20,6 +20,7 @@ public partial class CgPage : PageBase
     }
 
     private void OnPolymer(object? s, RoutedEventArgs e) => Vm.SetModule(13);
+    private void OnModelResolution(object? s, RoutedEventArgs e) => Vm.OpenModelResolution();
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();

@@ -39,6 +39,7 @@ public partial class PolymerPage : PageBase
     private async void OnPreview(object? s, RoutedEventArgs e) => await Vm.BuildPolyPreview();
     private void OnSendGrow(object? s, RoutedEventArgs e) => Vm.SendPolymerToGrow();
     private void OnArch(object? s, RoutedEventArgs e) { if (s is Control { Tag: string t }) Vm.PolyArch = int.Parse(t); }
+    private void OnNetwork(object? s, RoutedEventArgs e) { Vm.SetModule(6); Vm.Status = "Networks: grow the cell, then crosslink it here (C–C, sulfur or peroxide cures, epoxy–amine)"; }
     private void OnBlend(object? s, RoutedEventArgs e) => Vm.OpenBlend();
     private async void OnBuildOne(object? s, RoutedEventArgs e) => await Vm.BuildPolymerInStudio();
 }

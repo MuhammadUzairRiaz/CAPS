@@ -100,7 +100,7 @@
         </Grid>
       </Border>
 
-      <!-- constraints (coming) and the report -->
+      <!-- constraints and restraints, and the report -->
       <Border Grid.Row="1" Grid.Column="1" Classes="card">
         <Grid RowDefinitions="38,Auto,*">
           <Border Classes="phead"><TextBlock Text="Constraints &amp; restraints" Classes="h2" VerticalAlignment="Center" /></Border>
