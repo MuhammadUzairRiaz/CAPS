@@ -2441,6 +2441,14 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
     try {   // optional growth settings carried in the spec: trial directions per step
       const caps::Json sj = caps::Json::parse(spec_json ? spec_json : "{}");
       if (sj.has("trials")) g.trials = std::clamp(int(sj["trials"].number()), 4, 5000);
+      // region: {shape: slab, thickness, vacuum} | {shape: cylinder | around_cylinder, radius, length}
+      if (sj.has("region") && sj["region"].is_object()) {
+        const caps::Json& R = sj["region"];
+        const std::string shape = R.text("shape", "cubic");
+        if (shape == "slab") g.slab_thickness = R.num("thickness", 30), g.slab_vacuum = R.num("vacuum", 30);
+        else if (shape == "cylinder" || shape == "around_cylinder")
+          g.cylinder_radius = R.num("radius", 10), g.cylinder_length = R.num("length", 0), g.cylinder_outside = shape == "around_cylinder";
+      }
     } catch (...) {}
     if (live)   // the chains so far as a new document each time (the callee closes it), with where the growth stands
       g.snapshot = [&](const caps::System& part, const caps::GrowOptions::Live& L) {

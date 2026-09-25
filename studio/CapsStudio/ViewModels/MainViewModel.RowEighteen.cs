@@ -763,7 +763,7 @@ public partial class MainViewModel
     public string GrowMarginText { get => _growMarginText; private set => Set(ref _growMarginText, value); }
     public string GrowDensityNowText { get => _growDensityNowText; private set => Set(ref _growDensityNowText, value); }
     public string GrowLiveAtoms { get => _growLiveAtoms; private set => Set(ref _growLiveAtoms, value); }
-    private double _growUnitFraction;
+    private double _growUnitFraction, _growUnitsTotal = double.NaN;
     public double GrowUnitFraction { get => _growUnitFraction; private set => Set(ref _growUnitFraction, value); }
 
     private void GrowLiveStats(string stats)
@@ -773,6 +773,7 @@ public partial class MainViewModel
             var j = JsonNode.Parse(stats)!;
             double D(string k) => (double?)j[k] ?? double.NaN;
             GrowUnitsText = $"{D("units"):0} / {D("units_total"):0}";
+            if (double.IsFinite(D("units_total"))) _growUnitsTotal = D("units_total");
             GrowUnitFraction = D("units_total") > 0 ? D("units") / D("units_total") : 0;
             GrowMarginText = double.IsFinite(D("worst_margin")) ? D("worst_margin").ToString("+0.00;−0.00", Inv) + " Å" : "—";
             GrowDensityNowText = D("density").ToString("0.00", Inv) + " g/cm³";

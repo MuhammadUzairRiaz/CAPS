@@ -263,3 +263,37 @@ TEST(Polymer, CombsAndRandomBranches) {
   expect_sound(b, 2, 0.6);
   EXPECT_NE(rep.notes.front().find("branched chains"), std::string::npos) << rep.notes.front();
 }
+
+// Region shapes: a slab with vacuum (heavy atoms inside the film heights) and chains around a cylinder along z (none
+// inside its radius); the cell edges follow from the density of the space the chains may use
+TEST(Polymer, SlabAndCylinderRegions) {
+  ChainSpec c = spec({"*CC=CC*"}, Sequence::Homopolymer, 15);
+  for (int shape = 0; shape < 3; ++shape) {
+    GrowOptions o;
+    o.chains = 6;
+    o.density = 0.6;
+    o.seed = 3;
+    o.auto_scale = true;
+    if (shape == 0) o.slab_thickness = 20, o.slab_vacuum = 30;
+    if (shape == 1) o.cylinder_radius = 11;
+    if (shape == 2) o.cylinder_radius = 8, o.cylinder_outside = true;
+    const System s = grow_chains(c, o);
+    const double Lx = s.cell.a[0], Lz = s.cell.c[2];
+    for (const auto& a : s.atoms) {
+      if (a.element == 1) continue;   // end caps are placed after growth
+      const double z = a.pos[2] - Lz * std::floor(a.pos[2] / Lz);
+      double dx = a.pos[0] - Lx / 2, dy = a.pos[1] - Lx / 2;
+      dx -= Lx * std::round(dx / Lx), dy -= Lx * std::round(dy / Lx);
+      const double r = std::hypot(dx, dy);
+      if (shape == 0) { EXPECT_GE(z, 15.0 - 0.1); EXPECT_LE(z, 35.0 + 0.1); }
+      if (shape == 1) EXPECT_LE(r, 11.0 + 0.1);
+      if (shape == 2) EXPECT_GE(r, 8.0 - 0.1);
+    }
+    if (shape == 0) EXPECT_NEAR(Lz, 50.0, 1e-9);
+    // the density over the space the chains may use is the target
+    double mass = 0;
+    for (const auto& a : s.atoms) mass += s.mass_of(a);
+    const double room = shape == 0 ? Lx * s.cell.b[1] * 20 : shape == 1 ? M_PI * 121 * Lz : (Lx * Lx - M_PI * 64) * Lz;
+    EXPECT_NEAR(mass / (0.602214076 * room), 0.6, 0.02) << "shape " << shape;
+  }
+}

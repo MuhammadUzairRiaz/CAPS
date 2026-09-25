@@ -561,6 +561,8 @@ internal static class Screenshot
                 while (DateTime.Now < until && !(w.ViewModel.GrowLiveShown && w.ViewModel.GrowUnitFraction > 0.45)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 for (int k = 0; k < 25; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
             }
+            if (kv[0] == "growshape") w.ViewModel.GrowShape = int.Parse(kv[1]);   // before grow=: 1 slab, 2 cylinder, 3 around a cylinder
+            if (kv[0] == "growchains") w.ViewModel.GrowChainsD = int.Parse(kv[1]);
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);

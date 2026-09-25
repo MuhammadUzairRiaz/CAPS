@@ -44,6 +44,13 @@ struct GrowOptions {
   double sphere_radius = 0;
   std::array<double, 3> sphere_centre{0, 0, 0};
   bool sphere_outside = false;
+  // Region shapes (grow_chains, when no cell is given; the edges come from the density):
+  //   slab_thickness > 0: a film of that thickness between slab_vacuum / 2 of vacuum above and below (square in x, y)
+  //   cylinder_radius > 0: a cylinder along z through the cell centre — chains inside it (a pore), or outside it with
+  //   cylinder_outside (around a fibre); a cubic cell unless cylinder_length > 0
+  double slab_thickness = 0, slab_vacuum = 0;
+  double cylinder_radius = 0, cylinder_length = 0;
+  bool cylinder_outside = false;
   // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
   // (quaternary backbones such as polyisobutylene and methacrylates, dense films); Relax with push-off afterwards
   bool auto_scale = false;

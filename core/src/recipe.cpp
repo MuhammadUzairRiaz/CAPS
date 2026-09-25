@@ -377,6 +377,14 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         g.contact_scale = numeric ? J["contact_scale"].number() : 1.0;
         g.auto_scale = !numeric && text(J, "contact_scale", "auto") == "auto";
         if (J.has("box")) g.box = J["box"].number();
+        if (J.has("region") && J["region"].is_object()) {   // {shape: slab, thickness, vacuum} | {shape: cylinder | around_cylinder, radius, length}
+          const Json& R = J["region"];
+          const std::string shape = text(R, "shape", "cubic");
+          if (shape == "slab") g.slab_thickness = num(R, "thickness", 30), g.slab_vacuum = num(R, "vacuum", 30);
+          else if (shape == "cylinder" || shape == "around_cylinder")
+            g.cylinder_radius = num(R, "radius", 10), g.cylinder_length = num(R, "length", 0), g.cylinder_outside = shape == "around_cylinder";
+          else if (shape != "cubic") throw RecipeError(2, "grow.region.shape: cubic, slab, cylinder or around_cylinder");
+        }
         g.curve = flag(J, "curve", true);
         const std::string method = text(J, "method", "trials");
         if (method != "trials") throw RecipeError(2, "grow.method: trials (best-of-k torsion trials); configurational-bias Monte Carlo is not built");
