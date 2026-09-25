@@ -681,6 +681,16 @@ internal static class SelfTest
             Check(ok && !withImages.SequenceEqual(plain) && moved, $"periodic: {vm.PbChains} molecules · {vm.PbCross} cross · {vm.PbPieces} pieces · {bond?.What} {bond?.Wrapped}/{bond?.MinImage}/{bond?.Whole} · centred {moved}");
         }
 
+        // Orientation: the estimator check (Bunn PE, S = 1 from 336 chords) and the melt's order parameter
+        {
+            var (checkS, chords) = MainViewModel.OrientationCheck();
+            vm.OpenOrientation();
+            vm.RunOrientation().GetAwaiter().GetResult();
+            Check(Math.Abs(checkS - 1) < 1e-9 && chords == 336 && vm.IsOrientation && vm.OrS.HasValue && vm.OrCryst.HasValue && vm.OrHasZ,
+                  $"orientation: check S {checkS} from {chords} chords · melt S {vm.OrS.Value} · f {vm.OrHerman.Value} · crystallinity {vm.OrCryst.Value}");
+            vm.SetModule(8);
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

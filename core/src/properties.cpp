@@ -1056,7 +1056,7 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
   p.method = "S = largest eigenvalue of Q = ⟨3/2 u u − 1/2 I⟩ over backbone chords u (i → i+2), " + std::to_string(bb.size()) +
              " chains, " + std::to_string(c.pos.size()) + " frames; Herman f = ⟨P₂(u·z)⟩; crystallinity: chords with ≥ 8 neighbours within 5 Å aligned within 10°";
   if (o.exclude_mol) p.notes.push_back("molecule " + std::to_string(o.exclude_mol) + " (the held surface) left out");
-  if (Sf.size() == 1 && nall < 500) p.notes.push_back("few chords: S of an isotropic sample is not zero but about 1/√N");
+  if (Sf.size() == 1 && nall < 500 && p.value < 0.5) p.notes.push_back("few chords: S of an isotropic sample is not zero but about 1/√N");
   p.series.push_back(std::move(ss));
   if (cell) {
     Series sz{"P₂(cos θ_z) along z", "z (Å)", "⟨P₂⟩ against z", {}, {}};
