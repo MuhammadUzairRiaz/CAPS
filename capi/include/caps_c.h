@@ -359,6 +359,18 @@ caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
    20 000 and 100 000). */
 caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap);
 int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps);
+/* v20 recipes (design/boards/CommandLine, JupyterNotebook): runs a recipe (YAML or JSON text, see recipe.hpp) — build,
+   type, grow, relax, md, equilibrate, analyze, export — and returns the structure with its force field and provenance.
+   options: {"base_dir", "out_dir", "forcefield_dir", "seed": -1 (≥ 0 overrides), "threads": 0}. progress (may be NULL)
+   gets every stage event; return 0 to cancel. report: {exit, error, files[], properties[], forcefield}. NULL on error
+   (exit 2 input, 3 missing parameters, 4 failed run). */
+typedef int32_t (*caps_recipe_progress_fn)(int32_t stage, int32_t stages, const char* name, const char* status, const char* detail, double fraction, void* user);
+caps_doc* caps_recipe_run(const char* recipe, const char* options_json, caps_recipe_progress_fn progress, void* user, char* report, int32_t cap);
+/* v20 the current frame for a viewer outside the Studio (the notebook's caps.View): {"atoms", "shown", "z": [...],
+   "xyz": [x0, y0, z0, …] (Å, 3 decimals), "bonds": [i0, j0, …], "colours": {"6": "#909090", …}, "radii": {"6": 1.7, …}
+   (van der Waals), "cell": [ox, oy, oz, ax, ay, az, bx, …] or null}. options: {"max_atoms": 60000, "hydrogens": true}
+   (beyond max_atoms every k-th molecule is kept). */
+int32_t caps_scene_json(caps_doc* d, const char* options_json, char* json, int32_t cap);
 /* v20 reaction template editor (design/boards/ReactionTemplate): caps_template_view parses template text and returns
    {ok, error, templates: [view]} (see template_view in react.hpp); caps_template_test counts, on the document's current
    frame, each template's reactive sites and the matches within its capture distance: {ok, templates: [{name, sites,

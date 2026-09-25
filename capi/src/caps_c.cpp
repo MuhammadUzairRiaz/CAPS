@@ -44,6 +44,8 @@
 #include "caps/interactions.hpp"
 #include "caps/import.hpp"
 #include "caps/provenance.hpp"
+#include "caps/recipe.hpp"
+#include "caps/yaml.hpp"
 #include "caps/voids.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -4363,6 +4365,118 @@ extern "C" int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const c
   return guard([&] {
     caps::write_kg_lammps(d->frame, kg_options(options_json), stem, pushoff_steps > 0 ? pushoff_steps : 20000, run_steps > 0 ? run_steps : 100000);
     return 0;
+  });
+}
+
+// ---------------------------------------------------------------- recipes (design/boards/CommandLine, JupyterNotebook)
+extern "C" caps_doc* caps_recipe_run(const char* recipe, const char* options_json, caps_recipe_progress_fn progress, void* user, char* report, int32_t cap) {
+  caps::Json rep = caps::Json::object();
+  try {
+    const std::string text = recipe ? recipe : "";
+    const auto t0 = text.find_first_not_of(" \t\r\n");
+    caps::Json r;
+    try {
+      r = t0 != std::string::npos && text[t0] == '{' ? caps::Json::parse(text) : caps::yaml_parse(text);
+    } catch (const std::exception& e) {
+      throw caps::RecipeError(2, e.what());
+    }
+    const caps::Json o = options_json && *options_json ? caps::Json::parse(options_json) : caps::Json::object();
+    caps::RecipeOptions ro;
+    ro.base_dir = o.text("base_dir", ".");
+    ro.out_dir = o.text("out_dir", ".");
+    ro.forcefield_dir = o.text("forcefield_dir", "");
+    ro.seed = (long long)o.num("seed", -1);
+    ro.threads = int(o.num("threads", 0));
+    if (progress)
+      ro.progress = [&](const caps::RecipeEvent& e) {
+        if (!progress(e.stage, e.stages, e.name.c_str(), e.status.c_str(), e.detail.c_str(), e.fraction, user)) throw caps::RecipeError(4, "cancelled");
+      };
+    auto res = caps::run_recipe(r, ro);
+    caps_doc* d = doc_of(res.system);
+    d->prov = res.manifest;
+    if (res.field) {
+      d->field = std::make_unique<FieldState>();
+      d->field->ff_path = res.forcefield;
+      d->field->base.name = res.forcefield;
+      d->field->ff = res.field;
+      d->field->complete = true;
+    }
+    rep["exit"] = 0;
+    caps::Json files = caps::Json::array();
+    for (const auto& f : res.files) files.push_back(caps::Json(f));
+    rep["files"] = std::move(files);
+    rep["properties"] = caps::Json::parse(caps::properties_json(res.properties));
+    rep["forcefield"] = res.forcefield;
+    report_out(rep.dump(0), report, cap);
+    return d;
+  } catch (const caps::RecipeError& e) {
+    g_error = e.what();
+    rep["exit"] = e.code;
+    rep["error"] = std::string(e.what());
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    rep["exit"] = 4;
+    rep["error"] = std::string(e.what());
+  }
+  report_out(rep.dump(0), report, cap);
+  return nullptr;
+}
+
+extern "C" int32_t caps_scene_json(caps_doc* d, const char* options_json, char* json, int32_t cap) {
+  return guard([&] {
+    const caps::Json o = options_json && *options_json ? caps::Json::parse(options_json) : caps::Json::object();
+    const size_t max_atoms = size_t(std::max(1.0, o.num("max_atoms", 60000)));
+    const bool hyd = !o.has("hydrogens") || o["hydrogens"].kind() != caps::Json::Bool || o["hydrogens"].boolean();
+    const caps::System& s = d->frame;
+    const size_t n = s.atoms.size();
+    size_t heavy = 0;
+    for (const auto& a : s.atoms) heavy += hyd || a.element != 1;
+    int64_t maxmol = 0;
+    for (const auto& a : s.atoms) maxmol = std::max(maxmol, a.mol);
+    const int64_t every = heavy > max_atoms ? int64_t(std::ceil(double(heavy) / double(max_atoms))) : 1;
+    std::vector<int32_t> map(n, -1);
+    std::string z = "[", xyz = "[", bonds = "[";
+    char b[96];
+    int32_t k = 0;
+    std::set<int> elems;
+    for (size_t i = 0; i < n; ++i) {
+      const auto& a = s.atoms[i];
+      if (!hyd && a.element == 1) continue;
+      if (every > 1 && (maxmol > 0 ? (a.mol % every) != 0 : (int64_t(i) % every) != 0)) continue;
+      map[i] = k++;
+      elems.insert(a.element);
+      z += (k > 1 ? "," : "") + std::to_string(a.element);
+      std::snprintf(b, sizeof b, "%s%.3f,%.3f,%.3f", k > 1 ? "," : "", a.pos[0], a.pos[1], a.pos[2]);
+      xyz += b;
+    }
+    bool first = true;
+    for (const auto& bd : s.bonds) {
+      if (bd.i >= n || bd.j >= n || map[bd.i] < 0 || map[bd.j] < 0) continue;
+      std::snprintf(b, sizeof b, "%s%d,%d", first ? "" : ",", map[bd.i], map[bd.j]);
+      bonds += b;
+      first = false;
+    }
+    std::string colours = "{", radii = "{";
+    for (int e : elems) {
+      const auto& el = caps::element(e);
+      std::snprintf(b, sizeof b, "%s\"%d\":\"#%06x\"", colours.size() > 1 ? "," : "", e, el.rgb);
+      colours += b;
+      std::snprintf(b, sizeof b, "%s\"%d\":%.2f", radii.size() > 1 ? "," : "", e, el.vdw);
+      radii += b;
+    }
+    std::string cell = "null";
+    if (s.cell.valid()) {
+      cell = "[";
+      const caps::Vec3* v[4] = {&s.cell.origin, &s.cell.a, &s.cell.b, &s.cell.c};
+      for (int q = 0; q < 4; ++q) {
+        std::snprintf(b, sizeof b, "%s%.3f,%.3f,%.3f", q ? "," : "", (*v[q])[0], (*v[q])[1], (*v[q])[2]);
+        cell += b;
+      }
+      cell += "]";
+    }
+    const std::string out = "{\"atoms\":" + std::to_string(n) + ",\"shown\":" + std::to_string(k) + ",\"z\":" + z + "],\"xyz\":" + xyz + "],\"bonds\":" + bonds +
+                            "],\"colours\":" + colours + "},\"radii\":" + radii + "},\"cell\":" + cell + "}";
+    return report_out(out, json, cap);
   });
 }
 

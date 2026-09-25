@@ -15,11 +15,12 @@ from __future__ import annotations
 import ctypes as C
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-__all__ = ["Document", "open", "build", "library", "abi_version", "CapsError"]
+__all__ = ["Document", "Provenance", "open", "build", "run", "polymer", "library", "abi_version", "CapsError"]
 
 
 class CapsError(RuntimeError):
@@ -103,6 +104,24 @@ class _BuildOpts(C.Structure):
     _fields_ = [("conformers", C.c_int32), ("seed", C.c_uint64)]
 
 
+class _AnalyzeOpts(C.Structure):
+    _fields_ = [("first", C.c_int64), ("last", C.c_int64), ("stride", C.c_int64), ("frame_ps", C.c_double), ("timestep_fs", C.c_double),
+                ("blocks", C.c_int32), ("elem_a", C.c_int32), ("elem_b", C.c_int32), ("inter_only", C.c_int32),
+                ("rdf_rmax", C.c_double), ("rdf_dr", C.c_double), ("qmax", C.c_double), ("dq", C.c_double), ("q_direct", C.c_double),
+                ("fit_from", C.c_double), ("fit_to", C.c_double), ("probe", C.c_double), ("grid", C.c_double), ("cutoff", C.c_double),
+                ("threads", C.c_int32), ("deuterate", C.c_int32)]
+
+
+class _MechOpts(C.Structure):
+    _fields_ = [("configurations", C.c_int32), ("strain", C.c_double), ("temperature", C.c_double), ("axis", C.c_int32),
+                ("rate", C.c_double), ("max_strain", C.c_double), ("fit_strain", C.c_double), ("lateral_fixed", C.c_int32),
+                ("t_start", C.c_double), ("t_end", C.c_double), ("t_step", C.c_double), ("ps_per_step", C.c_double),
+                ("dt", C.c_double), ("pressure", C.c_double), ("seed", C.c_uint64), ("run_ps", C.c_double), ("equilibrate_ps", C.c_double)]
+
+
+_RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_char_p, C.c_char_p, C.c_double, C.c_void_p)
+
+
 def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
@@ -120,6 +139,9 @@ def _declare(L: C.CDLL) -> None:
         "caps_tacticity": ([P, B, I], I), "caps_interactions": ([P, S, B, I], I), "caps_torsion_scan": ([P, S, P, P, B, I], I),
         "caps_trajectory_series": ([P, S, P, P, B, I], I), "caps_file_checks": ([P, B, I], I),
         "caps_space_groups": ([B, I], I), "caps_crystal_find_symmetry": ([S, S, D, B, I], I),
+        "caps_recipe_run": ([S, S, _RecipeProgress, P, B, I], P), "caps_scene_json": ([P, S, B, I], I),
+        "caps_analyze": ([P, S, C.POINTER(_AnalyzeOpts), P, P], I), "caps_analyze_ex": ([P, S, C.POINTER(_AnalyzeOpts), C.POINTER(_MechOpts), P, P], I),
+        "caps_analyze_report": ([P, B, I], I),
     }
     for name, (args, res) in sig.items():
         f = getattr(L, name, None)
@@ -319,9 +341,42 @@ class Document:
                           None, None)
 
     # files
-    def provenance(self) -> dict:
-        """The steps that produced this structure (caps-manifest/1.0); saving writes it beside the file."""
-        return _json_call(library().caps_provenance, self._h)
+    @property
+    def provenance(self) -> "Provenance":
+        """The steps that produced this structure: doc.provenance() is the manifest (caps-manifest/1.0, written beside
+        the file on save); doc.provenance.methods(), .citations(fmt="bibtex"|"text"), .bibtex()."""
+        return Provenance(lambda: _json_call(library().caps_provenance, self._h))
+
+    # analysis and viewing
+    def analyze(self, properties="density", first: int = 0, last: int = -1, stride: int = 1, blocks: int = 5, threads: int = 0,
+                **options) -> list:
+        """Properties of the frames (the ids of caps analyze: density, rdf, rg, ree, cn, persistence, msd, diffusion, ced,
+        ffv …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
+        {id, name, value, error, unit, ...}."""
+        ids = ",".join(_PROPERTY_ALIASES.get(p, p) for p in ([properties] if isinstance(properties, str) else properties))
+        o = _AnalyzeOpts(first, last, stride, 0, 0, blocks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, threads, int(options.pop("deuterate", 0)))
+        if "tg" in ids.split(","):
+            m = _MechOpts()
+            for k, v in options.items():
+                setattr(m, k, v)
+            rc = library().caps_analyze_ex(self._h, _enc(ids), C.byref(o), C.byref(m), None, None)
+        else:
+            rc = library().caps_analyze(self._h, _enc(ids), C.byref(o), None, None)
+        if rc < 0:
+            raise _error()
+        return _json_call(library().caps_analyze_report, self._h)["properties"]
+
+    def view(self, style: str = "ball-and-stick", width: int = 640, height: int = 400, hydrogens: bool = True, max_atoms: int = 60000,
+             cell: Optional[bool] = None):
+        """An interactive view for notebooks (drag to rotate, wheel to zoom, double-click to reset); a PNG where HTML is not
+        shown. style: ball-and-stick, space-filling, sticks, no-hydrogens, lines; cell: draw the periodic cell (default:
+        when there is more than one molecule)."""
+        from .view import View
+        return View(self, style=style, width=width, height=height, hydrogens=hydrogens, max_atoms=max_atoms, cell=cell)
+
+    def scene(self, hydrogens: bool = True, max_atoms: int = 60000) -> dict:
+        """The current frame for a viewer: z, xyz (flat), bonds (flat pairs), colours, radii, cell."""
+        return _json_call(library().caps_scene_json, self._h, _enc(json.dumps({"hydrogens": hydrogens, "max_atoms": max_atoms})))
 
     def save(self, path: str) -> None:
         """Writes the current frame: .data (LAMMPS, with force-field sections when assigned), .pdb, .xyz, .mol2, .gro …"""
@@ -335,6 +390,7 @@ class Document:
     def render(self, path: str, width: int = 1280, height: int = 800, background: str = "white", style: str = "ball_and_stick",
                colour: str = "molecule", yaw: float = 0.55, pitch: float = 0.40, zoom: float = 1.0) -> None:
         """A PNG of the current frame."""
+        style = style.replace("-", "_")
         cam = _Camera(yaw, pitch, zoom, 0, 0, 0)
         hl = (C.c_int32 * 4)(-1, -1, -1, -1)
         opt = _RenderOpts(width, height, 2, {"dark": 0, "white": 1, "transparent": 2}[background], 0,
@@ -389,6 +445,118 @@ def bibtex(manifest: dict) -> str:
             return buf.value.decode()
         cap = n + 1
     raise CapsError("reply too large")
+
+
+_PROPERTY_ALIASES = {"c_inf": "cn", "cinf": "cn", "C_inf": "cn", "end_to_end": "ree", "free_volume": "ffv"}
+
+
+class Provenance:
+    """How a structure was made. Call it for the manifest; methods(), citations(), bibtex() for a paper."""
+
+    def __init__(self, source):
+        self._source = source
+
+    def __call__(self) -> dict:
+        return self._source()
+
+    @property
+    def manifest(self) -> dict:
+        return self._source()
+
+    @property
+    def steps(self) -> list:
+        return self._source().get("steps", [])
+
+    def methods(self, replicas: Optional[list] = None) -> str:
+        """The methods paragraph with numbered references."""
+        return methods(self._source(), replicas)["text"]
+
+    def bibtex(self) -> str:
+        return bibtex(self._source())
+
+    def citations(self, fmt: str = "text") -> list:
+        """Every method cited: fmt="bibtex" gives one BibTeX entry per item, "text" one formatted reference."""
+        if fmt == "bibtex":
+            text = self.bibtex().strip()
+            return [e.strip() for e in re.split(r"\n(?=@)", text) if e.strip()] if text else []
+        if fmt == "text":
+            return list(methods(self._source())["refs"])
+        raise ValueError('fmt: "bibtex" or "text"')
+
+    def __repr__(self) -> str:
+        m = self._source()
+        return f"<caps.Provenance · {len(m.get('steps', []))} steps>"
+
+    def _repr_html_(self) -> str:
+        import html as _h
+        rows = "".join(f"<tr><td style='padding:2px 10px 2px 0;color:#666'>{i + 1}</td><td style='padding:2px 10px 2px 0'><code>{_h.escape(s.get('engine', ''))}</code></td>"
+                       f"<td style='padding:2px 0'>{_h.escape(s.get('summary', ''))}</td></tr>" for i, s in enumerate(self.steps))
+        return f"<table style='font-size:12px;border-collapse:collapse'>{rows}</table>"
+
+
+# ---------------------------------------------------------------------------------------------------------------- recipes
+
+def _data_dir() -> Path:
+    return Path(__file__).resolve().parents[1].parent
+
+
+def run(recipe, out_dir: str = ".", seed: Optional[int] = None, threads: int = 0, progress=None, base_dir: Optional[str] = None) -> Document:
+    """Runs a recipe (a dict, YAML/JSON text, or a path to one) as caps run does: build → type → grow → relax → md →
+    equilibrate → analyze → export. Returns the structure; .properties and .files hold what the recipe analysed and
+    wrote. progress(event) gets {stage, stages, name, status, detail, fraction}; return False to stop."""
+    label = "recipe"
+    if isinstance(recipe, dict):
+        text = json.dumps(recipe)
+        label = recipe.get("name", label)
+    else:
+        text = str(recipe)
+        if "\n" not in text and os.path.exists(text):
+            base_dir = base_dir or str(Path(text).resolve().parent)
+            label = Path(text).stem
+            text = Path(text).read_text()
+    opts = {"base_dir": base_dir or os.getcwd(), "out_dir": str(out_dir), "forcefield_dir": str(_data_dir() / "forcefields"),
+            "seed": -1 if seed is None else int(seed), "threads": threads}
+
+    def _cb(stage, stages, name, status, detail, fraction, _user):
+        if progress is None:
+            return 1
+        try:
+            r = progress({"stage": stage, "stages": stages, "name": name.decode(), "status": status.decode(), "detail": detail.decode(), "fraction": fraction})
+        except Exception:
+            return 0
+        return 0 if r is False else 1
+
+    cb = _RecipeProgress(_cb)
+    buf = C.create_string_buffer(1 << 20)
+    h = library().caps_recipe_run(_enc(text), _enc(json.dumps(opts)), cb, None, buf, len(buf))
+    rep = json.loads(buf.value.decode() or "{}")
+    if not h:
+        err = CapsError(rep.get("error") or _error().args[0])
+        err.exit_code = rep.get("exit", 4)
+        raise err
+    d = Document(h, label)
+    d.properties = rep.get("properties", [])
+    d.files = rep.get("files", [])
+    d.forcefield = rep.get("forcefield", "")
+    return d
+
+
+def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", seed: int = 1, density: Optional[float] = None,
+            forcefield: Optional[str] = None, relax: bool = False, sequence: str = "homopolymer", trials: int = 120) -> Document:
+    """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers) grown in a periodic cell:
+    one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. forcefield types it (default: the
+    built-in GAFF for C and H, else UFF); relax=True minimises."""
+    units = [smiles] if isinstance(smiles, str) else list(smiles)
+    r = {"recipe": 1, "name": "polymer",
+         "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
+         "grow": {"density": density if density is not None else (0.1 if chains == 1 else 0.5), "seed": seed, "trials": trials}}
+    if forcefield or relax:
+        r["type"] = {"forcefield": forcefield or "default"}
+    if relax:
+        r["relax"] = {"method": "lbfgs", "fmax": 1.0}
+    d = run(r)
+    d.label = units[0] if len(units) == 1 else "copolymer"
+    return d
 
 
 # ---------------------------------------------------------------------------------------------------------------- builders

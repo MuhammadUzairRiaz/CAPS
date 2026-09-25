@@ -247,9 +247,36 @@ public sealed partial class MainViewModel
         }
         await Task.WhenAll(tasks);
         foreach (var r in _sweepRuns.Where(r => r.FinalStatus != null)) { r.Status = r.FinalStatus!; r.Detail = r.FinalDetail; r.FinalStatus = null; }
+        WriteSweepResults(poly);
         SweepRunning = false;
         RaiseSweep();
         Status = $"Sweep finished · {SweepSummary} · {RecentFiles.Tilde(_swFolder)}";
+    }
+
+    /// <summary>results.json beside the cells (caps-sweep/1, as caps.sweep in Python writes and reads it).</summary>
+    private void WriteSweepResults(FilmPolymer poly)
+    {
+        try
+        {
+            var units = new JsonArray();
+            foreach (var u in (JsonNode.Parse(poly.Spec)?["units"] as JsonArray) ?? new JsonArray())
+                if (u?["smiles"]?.GetValue<string>() is string smi) units.Add(smi);
+            var runs = new JsonArray();
+            foreach (var r in _sweepRuns)
+            {
+                var props = new JsonObject();
+                if (double.IsFinite(r.Density)) props["density"] = new JsonObject { ["value"] = r.Density, ["unit"] = "g/cm³", ["name"] = "Density" };
+                if (double.IsFinite(r.Rg)) props["rg"] = new JsonObject { ["value"] = r.Rg, ["unit"] = "Å", ["name"] = "Radius of gyration" };
+                runs.Add(new JsonObject
+                {
+                    ["tacticity"] = r.Tacticity, ["dp"] = r.Dp, ["seed"] = r.Seed, ["file"] = System.IO.Path.GetFileName(r.Path),
+                    ["status"] = r.Status, ["properties"] = props,
+                });
+            }
+            File.WriteAllText(System.IO.Path.Combine(_swFolder, "results.json"),
+                              new JsonObject { ["format"] = "caps-sweep/1", ["units"] = units, ["runs"] = runs }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception e) { SweepError = "results.json: " + e.Message; }
     }
 
     private static void Post(Action a) => Avalonia.Threading.Dispatcher.UIThread.Post(a);
