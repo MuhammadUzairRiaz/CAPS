@@ -441,6 +441,47 @@ public sealed partial class MainViewModel : ObservableObject
     public double GrowBox { get => _growBox; set => Set(ref _growBox, Math.Max(0, value)); }
     public double GrowScale { get => _growScale; set => Set(ref _growScale, Math.Clamp(value, 0.5, 1.2)); }
     public bool GrowUseBox { get => _growUseBox; set { if (Set(ref _growUseBox, value)) Raise(nameof(GrowUseDensity)); } }
+    // region shape: 0 cubic, 1 slab with vacuum, 2 inside a cylinder along z, 3 around a cylinder (a fibre's place)
+    public static readonly string[] GrowShapes = ["Cubic, periodic", "Slab with vacuum", "Cylinder (pore)", "Around a cylinder (fibre)"];
+    private int _growShape;
+    private double _growSlabH = 30, _growSlabVac = 30, _growCylR = 10, _growCylLen;
+    public int GrowShape
+    {
+        get => _growShape;
+        set
+        {
+            if (!Set(ref _growShape, Math.Clamp(value, 0, 3))) return;
+            if (_growShape > 0 && _growUseBox) GrowUseBox = false;   // the region's edges follow from the density
+            foreach (var n in new[] { nameof(GrowHasRegion), nameof(GrowRegionALabel), nameof(GrowRegionBLabel), nameof(GrowRegionAD), nameof(GrowRegionBD), nameof(GrowRegionNote), nameof(GrowEstimate) }) Raise(n);
+        }
+    }
+    public bool GrowHasRegion => _growShape > 0;
+    public string GrowRegionALabel => _growShape == 1 ? "Film thickness (Å)" : "Cylinder radius (Å)";
+    public string GrowRegionBLabel => _growShape == 1 ? "Vacuum, above + below (Å)" : "Length along z (Å, 0: from the density)";
+    public decimal GrowRegionAD
+    {
+        get => (decimal)(_growShape == 1 ? _growSlabH : _growCylR);
+        set { var v = Math.Clamp((double)value, 2, 500); if (_growShape == 1) _growSlabH = v; else _growCylR = v; Raise(); Raise(nameof(GrowEstimate)); }
+    }
+    public decimal GrowRegionBD
+    {
+        get => (decimal)(_growShape == 1 ? _growSlabVac : _growCylLen);
+        set { var v = Math.Clamp((double)value, 0, 1000); if (_growShape == 1) _growSlabVac = v; else _growCylLen = v; Raise(); Raise(nameof(GrowEstimate)); }
+    }
+    public string GrowRegionNote => _growShape switch
+    {
+        1 => "x and y from the density; the film sits in the middle of the cell",
+        2 => "the cell is 2 Å wider than the cylinder; along z periodic",
+        3 => "left empty for a fibre; a cube sized from the density",
+        _ => "",
+    };
+    private System.Text.Json.Nodes.JsonObject? GrowRegionJson() => _growShape switch
+    {
+        1 => new() { ["shape"] = "slab", ["thickness"] = _growSlabH, ["vacuum"] = _growSlabVac },
+        2 => new() { ["shape"] = "cylinder", ["radius"] = _growCylR, ["length"] = _growCylLen },
+        3 => new() { ["shape"] = "around_cylinder", ["radius"] = _growCylR, ["length"] = _growCylLen },
+        _ => null,
+    };
     public bool GrowUseDensity => !_growUseBox;
     public bool GrowCurve { get => _growCurve; set => Set(ref _growCurve, value); }
     public bool Growing { get => _growing; private set { if (Set(ref _growing, value)) { Raise(nameof(NotGrowing)); RaiseBusy(); } } }
@@ -501,8 +542,16 @@ public sealed partial class MainViewModel : ObservableObject
             sb.Append("    chain_dp: [").Append(string.Join(", ", _growChainDp)).Append("]   # ").Append(_growChainDpText).Append('\n');
         if (_growTact == 0 && _growStereo is { } gs)
             sb.Append(gs.Kind == 1 ? FormattableString.Invariant($"    p_mr: {gs.A}\n    p_rm: {gs.B}\n") : FormattableString.Invariant($"    pm: {gs.Pm}\n"));
+        if ((string?)j?["architecture"] is { } arch and not "linear")   // star, comb, branched
+        {
+            sb.Append("    architecture: ").Append(arch).Append('\n');
+            if (arch == "star") sb.Append(inv, $"    arms: {(int?)j!["arms"] ?? 4}\n");
+            else sb.Append(inv, $"    arm_dp: {(int?)j!["arm_dp"] ?? 5}\n").Append(arch == "comb" ? $"    spacing: {(int?)j["spacing"] ?? 4}\n"
+                                                                                               : $"    branch_probability: {((double?)j["branch_probability"] ?? 0.1).ToString(inv)}\n");
+        }
         sb.Append("type: { forcefield: default }\n");
-        sb.Append("grow:\n").Append(_growUseBox ? $"  box: {_growBox.ToString(inv)}\n" : $"  density: {_growDensity.ToString(inv)}\n");
+        sb.Append("grow:\n").Append(_growUseBox && _growShape == 0 ? $"  box: {_growBox.ToString(inv)}\n" : $"  density: {_growDensity.ToString(inv)}\n");
+        if (GrowRegionJson() is { } region) sb.Append("  region: ").Append(region.ToJsonString().Replace("\"", "").Replace(",", ", ").Replace(":", ": ")).Append('\n');
         sb.Append(inv, $"  seed: {_growSeed}\n  contact_scale: {(_growAutoScale ? "auto" : _growScale.ToString(inv))}\n  curve: {(_growCurve ? "true" : "false")}\n");
         sb.Append("relax: { method: lbfgs, fmax: 1.0 }\nexport: [lammps, pdb]\n");
         return sb.ToString();
@@ -516,8 +565,15 @@ public sealed partial class MainViewModel : ObservableObject
         var units = j?["units"] is System.Text.Json.Nodes.JsonArray ua ? ua.Select(u => (string?)u!["smiles"] ?? "").ToList() : ["*CC(*)c1ccccc1"];
         var smiles = units.Count == 1 ? $"\"{units[0]}\"" : "[" + string.Join(", ", units.Select(u => $"\"{u}\"")) + "]";
         var seq = (string?)j?["sequence"] ?? "homopolymer";
+        var extra = seq == "homopolymer" ? "" : $", sequence=\"{seq}\"";
+        if ((string?)j?["architecture"] is { } arch and not "linear")
+            extra += arch == "star" ? $", architecture=\"star\", arms={(int?)j!["arms"] ?? 4}"
+                   : string.Format(inv, ", architecture=\"{0}\", arm_dp={1}{2}", arch, (int?)j!["arm_dp"] ?? 5,
+                                   arch == "comb" ? $", spacing={(int?)j["spacing"] ?? 4}" : string.Format(inv, ", branch_probability={0}", (double?)j["branch_probability"] ?? 0.1));
+        if (GrowRegionJson() is { } region)
+            extra += ", region={" + string.Join(", ", region.Select(kv => $"\"{kv.Key}\": " + (kv.Value is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var sv) ? $"\"{sv}\"" : kv.Value!.ToJsonString()))) + "}";
         return "import caps\n\n" + string.Format(inv, "cell = caps.polymer({0}, dp={1}, chains={2}, tacticity=\"{3}\", seed={4}, density={5}{6})\n",
-                   smiles, _growDp, _growChains, Tacticities[_growTact].ToLowerInvariant(), _growSeed, _growDensity.ToString(inv), seq == "homopolymer" ? "" : $", sequence=\"{seq}\"") +
+                   smiles, _growDp, _growChains, Tacticities[_growTact].ToLowerInvariant(), _growSeed, _growDensity.ToString(inv), extra) +
                "cell.relax(ftol=1.0)\ncell.save(\"cell.data\")\ncell.view()\n";
     }
 
@@ -559,7 +615,16 @@ public sealed partial class MainViewModel : ObservableObject
             var mass = _growChains * perMass;
             var box = _growUseBox ? _growBox : Math.Cbrt(mass / 6.02214076e23 / _growDensity) * 1e8;
             var rho = _growUseBox && _growBox > 0 ? mass / 6.02214076e23 / Math.Pow(_growBox * 1e-8, 3) : _growDensity;
-            return string.Format(inv, "{0:N0} atoms · {1:N0} g/mol per chain · box {2:F2} Å · {3:F3} g/cm³", atoms, mass / _growChains, box, rho);
+            var room = mass / 6.02214076e23 / _growDensity * 1e24;   // Å³ the chains fill at the target density
+            var cell = _growShape switch   // as the grower sizes the region (polymer.cpp)
+            {
+                1 => string.Format(inv, "cell {0:F2} × {0:F2} × {1:F1} Å (film {2:F0} Å)", Math.Sqrt(room / _growSlabH), _growSlabH + _growSlabVac, _growSlabH),
+                2 => _growCylLen > 0 ? string.Format(inv, "cylinder r {0:F1} Å × {1:F1} Å", _growCylR, _growCylLen)
+                                     : string.Format(inv, "cylinder r {0:F1} Å, {1:F1} Å long", _growCylR, room / (Math.PI * _growCylR * _growCylR)),
+                3 => string.Format(inv, "around a cylinder of r {0:F1} Å", _growCylR),
+                _ => string.Format(inv, "box {0:F2} Å", box),
+            };
+            return string.Format(inv, "{0:N0} atoms · {1:N0} g/mol per chain · {2} · {3:F3} g/cm³", atoms, mass / _growChains, cell, rho);
         }
     }
 
@@ -598,6 +663,7 @@ public sealed partial class MainViewModel : ObservableObject
             var sj = System.Text.Json.Nodes.JsonNode.Parse(spec)!.AsObject();
             sj["dp"] = _growDp;
             sj["trials"] = _growTrials;
+            if (GrowRegionJson() is { } region) { sj["region"] = region; o.Box = 0; o.Density = _growDensity; }
             spec = sj.ToJsonString();
         }
         var stem = spec == null ? "PS" : string.Concat(_growSpecName.Where(char.IsLetterOrDigit).Take(16));
@@ -666,6 +732,9 @@ public sealed partial class MainViewModel : ObservableObject
             AfterGrowStatistics(doc);
             GrownUnsaved = true;
             GrowDone = _growChains;
+            // the last live snapshot can land after the run ends and is dropped: the finished cell gives the final numbers
+            if (double.IsFinite(_growUnitsTotal)) { GrowUnitsText = $"{_growUnitsTotal:0} / {_growUnitsTotal:0}"; GrowUnitFraction = 1; }
+            GrowDensityNowText = doc.Summary().Density.ToString("0.00", CultureInfo.InvariantCulture) + " g/cm³" + (_growShape > 0 ? " (cell)" : "");
             GrowElapsed = sw.Elapsed.TotalSeconds;
             GrowLog = (failures.Count > 0 ? string.Join("\n", failures) + $"\nused seed {used} instead\n" : "") + report + $"\nbuilt in {sw.Elapsed.TotalSeconds:F2} s";
             Status = $"Grown {name} · save it as LAMMPS data, PDB or XYZ";

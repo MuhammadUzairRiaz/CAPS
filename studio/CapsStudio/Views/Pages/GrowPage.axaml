@@ -103,9 +103,8 @@
                   <NumericUpDown Value="{Binding GrowDensityD}" Minimum="0.01" Maximum="2" Increment="0.05" FormatString="0.000" IsVisible="{Binding GrowUseDensity}" />
                   <NumericUpDown Value="{Binding GrowBoxD}" Minimum="5" Maximum="500" Increment="1" FormatString="0.00" IsVisible="{Binding GrowUseBox}" />
                 </Panel>
-                <ComboBox Grid.Row="1" Grid.Column="2" SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False" ToolTip.Tip="Slabs and cylinders: coming" ToolTip.ShowOnDisabled="True">
-                  <ComboBoxItem Content="Cubic, periodic" />
-                </ComboBox>
+                <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{x:Static vm:MainViewModel.GrowShapes}" SelectedIndex="{Binding GrowShape}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="A periodic cube, a film with vacuum, chains in a cylinder along z (a pore), or around one (a place for a fibre); the edges follow from the density" />
                 <TextBlock Grid.Row="2" Text="Tacticity" Classes="label" Margin="0,8,0,0" />
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="Seed" Classes="label" Margin="0,8,0,0" />
                 <TextBlock Grid.Row="2" Grid.Column="2" Text="Contact scale" Classes="label" Margin="0,8,0,0" />
@@ -116,6 +115,13 @@
                 <TextBlock Grid.Row="4" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />
                 <CheckBox Grid.Row="5" Grid.ColumnSpan="3" Content="Lower the contact scale when a chain cannot be placed (repeat-unit chains)" IsChecked="{Binding GrowAutoScale}" Margin="0,6,0,0"
                           ToolTip.Tip="Steps 0.85, 0.75, 0.7, 0.6 for crowded backbones (polyisobutylene, methacrylates); relax with push-off afterwards" />
+              </Grid>
+              <Grid Margin="16,0,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding GrowHasRegion}">
+                <TextBlock Text="{Binding GrowRegionALabel}" Classes="label" />
+                <TextBlock Grid.Column="1" Text="{Binding GrowRegionBLabel}" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding GrowRegionAD}" Minimum="2" Maximum="500" Increment="1" FormatString="0.0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowRegionBD}" Minimum="0" Maximum="1000" Increment="5" FormatString="0.0" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding GrowRegionNote}" Classes="dim" TextWrapping="Wrap" VerticalAlignment="Center" FontSize="11" />
               </Grid>
             </StackPanel>
           </Border>
