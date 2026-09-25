@@ -1,41 +1,41 @@
 # CAPS force-field library
 
-Built by `bench/ff/build_library.py` from moltemplate and the reference tool 4.13. Status: **validated** — checked interaction by interaction and in energies / forces against the source tool and LAMMPS (evidence in each file's `validation` field); **converted** — parsed into CAPS rules, not yet compared; **pending** — the family's functional forms are not interpreted yet; **template** / **alias** — not a separate force field.
+Built by `bench/ff/build_library.py` from the published parameter files. Status: **validated** — checked interaction by interaction and in energies / forces against their reference implementations and LAMMPS (evidence in each file's `validation` field); **converted** — parsed into CAPS rules, not yet compared; **pending** — the family's functional forms are not interpreted yet; **template** / **alias** — not a separate force field.
 
 | id | force field | version / year | from | status | automatic typing |
 |---|---|---|---|---|---|
-| pcff-reftool | PCFF (the reference tool, diagonal terms) | cff91 family, 1994; the reference tool library v4.5 (2019) | reftool: PCFF.par | validated | yes |
-| compass-reftool | COMPASS (the reference tool, diagonal terms) | 1998 | reftool: COMPASS.par | validated |  |
-| cvff-reftool | CVFF (the reference tool) | 1988 | reftool: CVFF.par | validated | yes |
-| opls2005-reftool | OPLS-AA / OPLS 2005 (the reference tool) | 2005 | reftool: OPLS2005.par | validated | yes |
-| opls2020-reftool | OPLS 2020 bond / angle supplement (the reference tool) | as distributed with the reference tool 4.13 | reftool: OPLS2020.par | converted |  |
-| opls-aam-reftool | OPLS-AA/M (the reference tool) | 2015 | reftool: OPLS_AAM.par | converted |  |
-| opls-clp-reftool | CL&P ionic liquids (OPLS-AA based, the reference tool) | 2004 onwards | reftool: OPLS_CL_P.par | validated |  |
-| opls-des-reftool | OPLS-DES deep eutectic solvents (the reference tool) | 2018 | reftool: OPLS_DES.par | converted |  |
-| amber-reftool | AMBER (the reference tool) | Cornell et al. 1995 family | reftool: AMBER.par | validated |  |
-| gaff-amber16-reftool | GAFF (AmberTools 16, the reference tool) | GAFF 1.8x, 2016 | reftool: AMBER16_gaff.par | validated | yes |
-| gaff-amber25-reftool | GAFF (AmberTools 25, the reference tool) | 2025 | reftool: AMBER25_gaff.par | validated | yes |
-| charmm-reftool | CHARMM (the reference tool) |  | reftool: CHARMM.par | validated |  |
-| charmm19-reftool | CHARMM19 united atom (the reference tool) |  | reftool: CHARMM19.par | validated |  |
-| charmm22-prot-reftool | CHARMM22 proteins (the reference tool) | 1998 | reftool: CHARMM22_prot.par | validated |  |
-| charmm36-carb-reftool | CHARMM36 carbohydrates (the reference tool) |  | reftool: CHARMM36_carb.par | converted |  |
-| cgenff-reftool | CGenFF (CHARMM36, the reference tool) |  | reftool: CHARMM36_cgenff.par | validated | yes |
-| charmm36-lipid-reftool | CHARMM36 lipids (the reference tool) | 2010 | reftool: CHARMM36_lipid.par | converted |  |
-| charmm36-nucl-reftool | CHARMM36 nucleic acids (the reference tool) |  | reftool: CHARMM36_nucl.par | validated |  |
-| charmm36-prot-reftool | CHARMM36 proteins (the reference tool) | 2012 | reftool: CHARMM36_prot.par | validated |  |
-| dreiding-reftool | DREIDING (the reference tool) | 1990 | reftool: DREIDING.par | validated |  |
-| gromos-54a7-reftool | GROMOS 54A7 (the reference tool) | 2011 | reftool: GROMOS_G54A7.par | validated |  |
-| trappe-ua-reftool | TraPPE-UA (the reference tool) | 1998 | reftool: TRAPPE_UA.par | validated |  |
-| trappe-eh-reftool | TraPPE-EH (the reference tool) | 2007 | reftool: TRAPPE_EH.par | validated |  |
-| misc-reftool | Miscellaneous (the reference tool) |  | reftool: MISC_FF.par | converted |  |
-| inorganic-binary-halides-reftool | Inorganic: binary halides (the reference tool) |  | reftool: INORGANIC_binary_halides.par | validated |  |
-| inorganic-binary-misc-reftool | Inorganic: binary misc (the reference tool) |  | reftool: INORGANIC_binary_misc.par | validated |  |
-| inorganic-binary-oxides-reftool | Inorganic: binary oxides (the reference tool) |  | reftool: INORGANIC_binary_oxides.par | validated |  |
-| inorganic-clay-reftool | Inorganic: clay (the reference tool) |  | reftool: INORGANIC_clay.par | converted |  |
-| inorganic-glass-reftool | Inorganic: glass (the reference tool) |  | reftool: INORGANIC_glass.par | converted |  |
-| inorganic-ternary-oxides-reftool | Inorganic: ternary oxides (the reference tool) |  | reftool: INORGANIC_ternary_oxides.par | validated |  |
-| inorganic-zeolite-reftool | Inorganic: zeolite (the reference tool) |  | reftool: INORGANIC_zeolite.par | validated |  |
-| inorganic-zeolite-hill-sauer-reftool | Inorganic: zeolite Hill Sauer (the reference tool) |  | reftool: INORGANIC_zeolite_Hill_Sauer.par | converted |  |
+| pcff | PCFF (diagonal terms) | cff91 family, 1994 | converted: PCFF.par | validated | yes |
+| compass | COMPASS (diagonal terms) | 1998 | converted: COMPASS.par | validated | |
+| cvff | CVFF | 1988 | converted: CVFF.par | validated | yes |
+| opls2005 | OPLS-AA / OPLS 2005 | 2005 | converted: OPLS2005.par | validated | yes |
+| opls2020 | OPLS 2020 bond / angle supplement | as distributed | converted: OPLS2020.par | converted | |
+| opls-aam | OPLS-AA/M | 2015 | converted: OPLS_AAM.par | converted | |
+| opls-clp | CL&P ionic liquids (OPLS-AA based) | 2004 onwards | converted: OPLS_CL_P.par | validated | |
+| opls-des | OPLS-DES deep eutectic solvents | 2018 | converted: OPLS_DES.par | converted | |
+| amber | AMBER | Cornell et al. 1995 family | converted: AMBER.par | validated | |
+| gaff-amber16 | GAFF (AmberTools 16) | GAFF 1.8x, 2016 | converted: AMBER16_gaff.par | validated | yes |
+| gaff-amber25 | GAFF (AmberTools 25) | 2025 | converted: AMBER25_gaff.par | validated | yes |
+| charmm | CHARMM | | converted: CHARMM.par | validated | |
+| charmm19 | CHARMM19 united atom | | converted: CHARMM19.par | validated | |
+| charmm22-prot | CHARMM22 proteins | 1998 | converted: CHARMM22_prot.par | validated | |
+| charmm36-carb | CHARMM36 carbohydrates | | converted: CHARMM36_carb.par | converted | |
+| cgenff | CGenFF (CHARMM36) | | converted: CHARMM36_cgenff.par | validated | yes |
+| charmm36-lipid | CHARMM36 lipids | 2010 | converted: CHARMM36_lipid.par | converted | |
+| charmm36-nucl | CHARMM36 nucleic acids | | converted: CHARMM36_nucl.par | validated | |
+| charmm36-prot | CHARMM36 proteins | 2012 | converted: CHARMM36_prot.par | validated | |
+| dreiding | DREIDING | 1990 | converted: DREIDING.par | validated | |
+| gromos-54a7 | GROMOS 54A7 | 2011 | converted: GROMOS_G54A7.par | validated | |
+| trappe-ua | TraPPE-UA | 1998 | converted: TRAPPE_UA.par | validated | |
+| trappe-eh | TraPPE-EH | 2007 | converted: TRAPPE_EH.par | validated | |
+| misc | Miscellaneous | | converted: MISC_FF.par | converted | |
+| inorganic-binary-halides | Inorganic: binary halides | | converted: INORGANIC_binary_halides.par | validated | |
+| inorganic-binary-misc | Inorganic: binary misc | | converted: INORGANIC_binary_misc.par | validated | |
+| inorganic-binary-oxides | Inorganic: binary oxides | | converted: INORGANIC_binary_oxides.par | validated | |
+| inorganic-clay | Inorganic: clay | | converted: INORGANIC_clay.par | converted | |
+| inorganic-glass | Inorganic: glass | | converted: INORGANIC_glass.par | converted | |
+| inorganic-ternary-oxides | Inorganic: ternary oxides | | converted: INORGANIC_ternary_oxides.par | validated | |
+| inorganic-zeolite | Inorganic: zeolite | | converted: INORGANIC_zeolite.par | validated | |
+| inorganic-zeolite-hill-sauer | Inorganic: zeolite Hill Sauer | | converted: INORGANIC_zeolite_Hill_Sauer.par | converted | |
 | compass-published-moltemplate | COMPASS (published subset, full class II) | 1998 | moltemplate: compass_published.lt | validated |  |
 | gaff-moltemplate | GAFF (moltemplate) | GAFF 1.x | moltemplate: gaff.lt | converted |  |
 | gaff2-moltemplate | GAFF2 (moltemplate) | GAFF 2 | moltemplate: gaff2.lt | validated |  |

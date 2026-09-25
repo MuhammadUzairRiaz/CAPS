@@ -72,13 +72,13 @@ order of symmetric outer atoms; the reference tool's harmonic approximation of G
 
 | Rules | Check | Result |
 |---|---|---|
-| `data/typing/pcff-reftool.typing.json` | 92 the reference tool PCFF templates (chain-residue fragments left out) | 1387 / 1400 atoms, 87 molecules fully right |
-| `data/typing/cvff-reftool.typing.json` | 23 the reference tool CVFF templates | 272 / 278 atoms (the rest: TIP3P / SPC water) |
-| `data/typing/cvff-reftool.typing.json` | Materials Studio typing in the msi2lmp examples | 811 / 823 atoms |
-| `data/typing/cgenff-reftool.typing.json` | the 494 model compounds of `top_all36_cgenff.rtf` (CGenFF 3.0.1) | 9024 / 9174 atoms, 417 residues fully right (97.7 % with the RTF's partial bond orders) |
-| `data/typing/gaff-amber16-reftool.typing.json` | 32 the reference tool GAFF templates (water models aside) | 365 / 373 atoms |
-| `data/typing/gaff-amber25-reftool.typing.json` | 27 the reference tool GAFF2 templates | 304 / 316 atoms |
-| `data/typing/opls2005-reftool.typing.json` | 99 the reference tool OPLS 2005 templates | 1368 / 1398 atoms, 91 molecules fully right |
+| `data/typing/pcff.typing.json` | 92 the reference tool PCFF templates (chain-residue fragments left out) | 1387 / 1400 atoms, 87 molecules fully right |
+| `data/typing/cvff.typing.json` | 23 the reference tool CVFF templates | 272 / 278 atoms (the rest: TIP3P / SPC water) |
+| `data/typing/cvff.typing.json` | Materials Studio typing in the msi2lmp examples | 811 / 823 atoms |
+| `data/typing/cgenff.typing.json` | the 494 model compounds of `top_all36_cgenff.rtf` (CGenFF 3.0.1) | 9024 / 9174 atoms, 417 residues fully right (97.7 % with the RTF's partial bond orders) |
+| `data/typing/gaff-amber16.typing.json` | 32 the reference tool GAFF templates (water models aside) | 365 / 373 atoms |
+| `data/typing/gaff-amber25.typing.json` | 27 the reference tool GAFF2 templates | 304 / 316 atoms |
+| `data/typing/opls2005.typing.json` | 99 the reference tool OPLS 2005 templates | 1368 / 1398 atoms, 91 molecules fully right |
 
 the reference tool's templates are not consistent with one another: its PCFF templates give the carbons of furan, oxazole and
 indole `cp` but those of pyrrole, isoxazole and benzoxazole `c5`; neutral histidine carbons `ci` (the charged-ring type).
