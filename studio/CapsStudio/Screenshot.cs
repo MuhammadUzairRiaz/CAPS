@@ -70,6 +70,7 @@ internal static class Screenshot
             if (kv[0] == "inspector") { w.ViewModel.InspectorTab = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
             if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
+            if (kv[0] == "viewports") { w.ViewModel.OpenViewports(); w.ViewModel.ViewportLayout = int.Parse(kv[1]); for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "colourby") { w.ViewModel.OpenColourBy(); for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "compare")   // compare=A|B: Analyze › Compare with those two files
             {

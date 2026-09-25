@@ -765,6 +765,7 @@ public partial class MainWindow : Window
     }
 
     private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
+    private void OnViewportsPage(object? s, RoutedEventArgs e) => _vm.OpenViewports();
     private void OnRenderBack(object? s, RoutedEventArgs e) => _vm.SetModule(8);
     private void OnRenderStop(object? s, RoutedEventArgs e) => _vm.StopRender();
 
