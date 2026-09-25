@@ -80,7 +80,9 @@ public sealed class FieldViewModel : ObservableObject
     public int FfIndex { get => _ffIndex; set { if (Set(ref _ffIndex, value)) Raise(nameof(FfNote)); } }
     public FfEntry? Selected => _ffIndex >= 0 && _ffIndex < Library.Count ? Library[_ffIndex] : null;
     public string FfNote => Selected is { } e ? $"{e.Version} · {e.Status}" + (e.AutoTyping ? " · automatic typing" : " · types must be the atom names in the file") : "";
-    public static readonly string[] ChargeModes = ["From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)"];
+    /// <summary>Index 0 is automatic (core mode 4); the others are core modes 0–3 in order.</summary>
+    public static readonly string[] ChargeModes = ["Automatic (force field, else Gasteiger)", "From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)"];
+    private static int CoreCharges(int ui) => ui == 0 ? 4 : ui - 1;
     private int _chargeMode;
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 
@@ -327,8 +329,8 @@ public sealed class FieldViewModel : ObservableObject
     {
         if (Selected is not { } e) { Log = "Choose a force field."; return Task.CompletedTask; }
         var mode = _chargeMode;
-        Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "gasteiger", 2 => "keep", 3 => "qeq", _ => "forcefield" })}\")");
-        return Do("Assigned", d => d.FieldAssign(e.File, null, mode));
+        Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "forcefield", 2 => "gasteiger", 3 => "keep", 4 => "qeq", _ => "auto" })}\")");
+        return Do("Assigned", d => d.FieldAssign(e.File, null, CoreCharges(mode)));
     }
 
     public Task ApplyOverride()
