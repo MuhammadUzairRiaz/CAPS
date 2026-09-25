@@ -13,3 +13,12 @@ public sealed class IntEqualsConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is true && int.TryParse(parameter?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p) ? p : BindingOperations.DoNothing;
 }
+
+/// <summary>True when an integer is below the parameter (one field for several choices).</summary>
+public sealed class IntLessConverter : IValueConverter
+{
+    public static readonly IntLessConverter Instance = new();
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is int v && int.TryParse(parameter?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p) && v < p;
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => BindingOperations.DoNothing;
+}

@@ -109,6 +109,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 // styles, surfaces and labels belong to a document: a new one starts plain
                 AppLayers.Clear(); _appColour = -1; _appSurface = 0; _labelTexts = null;
+                NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
                 RaiseAppearanceVisibility();
                 Raise(nameof(HasDocument));
