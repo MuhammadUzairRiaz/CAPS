@@ -437,6 +437,30 @@ internal static class SelfTest
             vm.ClearSelection();
         }
 
+        // Export › Figure (FigureBackground): journal size, true scale bar, overlay in the SVG, dpi in the PNG
+        {
+            vm.OpenFigure();
+            vm.FigPreset = 0;
+            vm.FigAspect = 0;
+            var px = vm.FigPixels;
+            var ov = vm.FigureOverlayFor(2, 2008, 1130, vm.Document!.ViewScale(vm.Camera, vm.FigureOptions(2, 2008, 1130, 1)));
+            var svgPath = Path.Combine(outDir, "caps-selftest-figure.svg");
+            vm.FigFormat = 1;
+            vm.FigBackground = 2;
+            var what = vm.ExportFigure(svgPath, (_, _, _, _, _, _) => { }, CapsStudio.Views.FigureDrawing.AddToSvg).GetAwaiter().GetResult();
+            var svgText = File.ReadAllText(svgPath);
+            var pngPath = Path.Combine(outDir, "caps-selftest-figure.png");
+            vm.Document.ExportPng(vm.Camera, vm.FigureOptions(2, 400, 225, 1), pngPath);
+            CapsStudio.Views.FigureDrawing.WriteDpi(pngPath, 600);
+            var png = File.ReadAllBytes(pngPath);
+            var phys = System.Text.Encoding.ASCII.GetString(png, 37, 4) == "pHYs" && ((png[41] << 24) | (png[42] << 16) | (png[43] << 8) | png[44]) == 23622;
+            Check(px == (2008, 1130) && ov.BarPx > 0 && Math.Abs(ov.BarPx / ov.BarAngstrom - vm.Document.ViewScale(vm.Camera, vm.FigureOptions(2, 2008, 1130, 1))) < 1e-9
+                  && svgText.Contains("caps-figure-overlay") && svgText.Contains(" Å</text>") && !svgText.Contains("<rect width=\"100%\"") && phys,
+                  $"figure: {what} · pHYs {phys}");
+            vm.FigFormat = 0;
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

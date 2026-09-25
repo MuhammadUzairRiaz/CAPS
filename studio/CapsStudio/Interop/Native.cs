@@ -290,6 +290,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_rdf")] public static extern int Rdf(IntPtr doc, int ea, int eb, double rmax, double dr, int inter, [Out] double[] r, [Out] double[] g, int cap);
     [DllImport(Lib, EntryPoint = "caps_molecules")] public static extern int Molecules(IntPtr doc, [Out] CapsMolecule[] out_, int cap);
     [DllImport(Lib, EntryPoint = "caps_property_range")] public static extern int PropertyRange(IntPtr doc, out double lo, out double hi);
+    [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
     [DllImport(Lib, EntryPoint = "caps_molecule_index")] public static extern int MoleculeIndex(IntPtr doc, [Out] int[] mol, int cap);
     [DllImport(Lib, EntryPoint = "caps_neighbours")] public static extern int Neighbours(IntPtr doc, int index, int k, [Out] int[] idx, [Out] double[] dist);
@@ -732,6 +733,9 @@ public sealed class CapsDocument : IDisposable
             return Enumerable.Range(0, n).Select(k => (r[k], g[k])).ToArray();
         }
     }
+
+    /// <summary>Pixels per Å at the focal plane for an image of opt's size (exact when orthographic): scale bars.</summary>
+    public double ViewScale(in CapsCamera cam, in CapsRenderOpts opt) { lock (_lock) return Native.ViewScale(_h, cam, opt); }
 
     /// <summary>Atoms bonded to atom i.</summary>
     public int[] Bonded(int i)

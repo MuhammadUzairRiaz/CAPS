@@ -312,7 +312,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -343,6 +343,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsBlend));
         Raise(nameof(ShowEmpty));
         Raise(nameof(IsChecks));
+        Raise(nameof(IsFigure));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));
         RenderRequested?.Invoke();   // the Field page has its own view
@@ -1618,6 +1619,7 @@ public sealed partial class MainViewModel : ObservableObject
         var o = ViewOptions(w, h, 2);
         o.Background = _exportBackground;
         o.Highlight0 = o.Highlight1 = o.Highlight2 = o.Highlight3 = -1;
+        o.Focus = 0;
         return o;
     }
 

@@ -301,6 +301,8 @@ const char* caps_note(caps_doc* d, int32_t k);
 /* Renders into caller memory of width*height*4 bytes, RGBA with straight alpha. */
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba);
 int32_t caps_pick(caps_doc* d, int32_t x, int32_t y);   /* atom index under pixel of last render, -1 none */
+/* v18: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */
+double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt);
 
 int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);
 int32_t caps_export_svg(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);

@@ -1,0 +1,160 @@
+<!-- CAPS Export › Figure (design/boards/FigureBackground): the same frame on three backgrounds, sizes, overlays. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.FigurePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.tile.picked"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Button.tile.picked:pointerover /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="TextBlock.sel"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+  </p:PageBase.Styles>
+  <Grid ColumnDefinitions="*,330">
+    <DockPanel>
+      <!-- Three backgrounds, same frame -->
+      <Border DockPanel.Dock="Top" Padding="14,14,14,14" Background="{DynamicResource Bg0B}">
+        <ItemsControl ItemsSource="{Binding FigureTiles}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:FigureTile">
+              <Button Classes="tile" Margin="6" Padding="0" Click="OnTile" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      BorderThickness="2" BorderBrush="{DynamicResource LineB}" Classes.picked="{Binding Selected}" CornerRadius="8" ClipToBounds="True"
+                      ToolTip.Tip="Use this background for the export">
+                <DockPanel>
+                  <Border DockPanel.Dock="Bottom" Height="34" Padding="12,0" Background="{DynamicResource Bg1B}">
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding Use}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Classes.sel="{Binding Selected}" />
+                    </DockPanel>
+                  </Border>
+                  <Viewbox Stretch="Uniform">
+                    <Panel Width="440" Height="{Binding Height}">
+                      <Border Background="{Binding Fill}" />
+                      <v:CheckerView IsVisible="{Binding Checker}" />
+                      <Image Source="{Binding Image}" Stretch="Fill" />
+                      <v:FigureOverlayView Overlay="{Binding Overlay}" />
+                    </Panel>
+                  </Viewbox>
+                </DockPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+
+      <!-- Sizes and rules -->
+      <Border Padding="16,12" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="470,*" ColumnSpacing="18">
+          <StackPanel Spacing="6">
+            <TextBlock Text="SIZE PRESETS" Classes="h3" />
+            <Grid ColumnDefinitions="40*,18*,14*,28*" Margin="10,2">
+              <TextBlock Text="Preset" Classes="label" /><TextBlock Grid.Column="1" Text="Width" Classes="label" HorizontalAlignment="Right" />
+              <TextBlock Grid.Column="2" Text="dpi" Classes="label" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="Pixels (16:9)" Classes="label" HorizontalAlignment="Right" />
+            </Grid>
+            <ListBox ItemsSource="{x:Static vm:MainViewModel.FigurePresets}" SelectedIndex="{Binding FigPreset}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:FigurePreset">
+                  <Grid ColumnDefinitions="40*,18*,14*,28*" Height="22">
+                    <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding WidthText}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding DpiText}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Text="{Binding PixelsText}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="4">
+            <TextBlock Text="WHAT CHANGES WITH THE BACKGROUND" Classes="h3" Margin="0,0,0,4" />
+            <Border Padding="0,6" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="150,*"><TextBlock Text="Transparent" FontSize="12" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MutedB}" Text="PNG keeps an alpha channel; SVG is written with no background shape" /></Grid>
+            </Border>
+            <Border Padding="0,6" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="150,*"><TextBlock Text="Depth cue" FontSize="12" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MutedB}" Text="fades toward the background colour; with no background far atoms are darkened instead" /></Grid>
+            </Border>
+            <Border Padding="0,6" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="150,*"><TextBlock Text="Title, scale bar, legend" FontSize="12" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MutedB}" Text="switch to dark ink on White and Transparent so they stay readable" /></Grid>
+            </Border>
+            <Border Padding="0,6" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="150,*"><TextBlock Text="Edges" FontSize="12" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MutedB}" Text="antialiased against alpha, so no dark fringe when placed on a coloured slide" /></Grid>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DockPanel>
+
+    <!-- Inspector -->
+    <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="small" Content="Back to the view" Click="OnBack" VerticalAlignment="Center" />
+            <TextBlock Text="Export figure" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="18,12,18,16" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding FigNote}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" LineHeight="17" />
+            <Button Classes="primary" Click="OnExport" HorizontalAlignment="Left">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export figure…" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="BACKGROUND" Classes="h3" />
+                <Border Classes="seg">
+                  <UniformGrid Columns="3">
+                    <RadioButton Classes="seg" GroupName="fbg" Content="Dark" IsChecked="{Binding FigBgDark}" />
+                    <RadioButton Classes="seg" GroupName="fbg" Content="White" IsChecked="{Binding FigBgWhite}" />
+                    <RadioButton Classes="seg" GroupName="fbg" Content="Transparent" IsChecked="{Binding FigBgTransparent}" />
+                  </UniformGrid>
+                </Border>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Custom colour (#RRGGBB)" Classes="label" />
+                  <TextBox Text="{Binding FigCustom}" Classes="mono" Watermark="none" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="FILE" Classes="h3" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="4"><TextBlock Text="Format" Classes="label" />
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.FigureFormats}" SelectedIndex="{Binding FigFormat}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Aspect" Classes="label" />
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.FigureAspects}" SelectedIndex="{Binding FigAspect}" HorizontalAlignment="Stretch" /></StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="4"><TextBlock Text="Width (mm)" Classes="label" />
+                    <NumericUpDown Value="{Binding FigWidthMm}" Minimum="10" Maximum="2000" Increment="5" FormatString="0.#" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="dpi" Classes="label" />
+                    <NumericUpDown Value="{Binding FigDpi}" Minimum="72" Maximum="2400" Increment="50" FormatString="0" /></StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="Pixels" Classes="muted" FontSize="12.5" />
+                  <TextBlock Grid.Column="1" Text="{Binding FigPixelsText}" Classes="mono" FontSize="12.5" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="CONTENT" Classes="h3" />
+                <CheckBox Classes="toggle" Content="Cell edges" IsChecked="{Binding FigCell}" />
+                <CheckBox Classes="toggle" Content="Scale bar" IsChecked="{Binding FigScaleBar}" />
+                <CheckBox Classes="toggle" Content="Title" IsChecked="{Binding FigTitle}" />
+                <TextBox Text="{Binding FigTitleText}" IsVisible="{Binding FigTitle}" />
+                <CheckBox Classes="toggle" Content="Colour legend" IsChecked="{Binding FigLegend}" IsEnabled="{Binding FigLegendAvailable}"
+                          ToolTip.Tip="For colouring by a property (View › Colour: distance to molecule centre)" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</p:PageBase>
