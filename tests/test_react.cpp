@@ -1,10 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 
 #include "caps/pack.hpp"
 #include "caps/react.hpp"
+#include "caps/polymer.hpp"
+#include "caps/molecule.hpp"
 #include "caps/grow.hpp"
 #include "caps/relax.hpp"
 
@@ -165,4 +168,44 @@ TEST(React, SameSeedSameNetwork) {
   react(b, o);
   ASSERT_EQ(a.bonds.size(), b.bonds.size());
   for (size_t k = 0; k < a.bonds.size(); ++k) EXPECT_EQ(a.bonds[k].i, b.bonds[k].i);
+}
+
+TEST(React, SulfurCureOfNaturalRubber) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "[*]C/C=C(C)\\C[*]"}};
+  spec.dp = 10;
+  GrowOptions g;
+  g.chains = 4;
+  g.density = 0.6;
+  System s = grow_chains(spec, g);
+  BuildResult donor = build_molecule("SS");   // H–S–S–H
+  PackReport pr;
+  s = insert_molecules(s, donor.system, 8, PackOptions{}, &pr);
+  ASSERT_EQ(s.atoms.size(), size_t(4 * (10 * 13 + 2) + 8 * 4));
+  int64_t top = 0;
+  for (const auto& a : s.atoms) top = std::max(top, a.mol);
+  EXPECT_EQ(top, 4 + 8);
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("sulfur_allylic"));
+  r.relax = false;
+  r.max_cycles = 20;
+  ReactReport rep;
+  react(s, r, &rep);
+  EXPECT_GT(rep.reactions, 4);
+  // every S keeps two neighbours; some donors bridge two chains (C–S–S–C)
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  int bridges = 0;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+    if (s.atoms[i].element != 16) continue;
+    EXPECT_EQ(nb[i].size(), 2u);
+    for (uint32_t j : nb[i])
+      if (s.atoms[j].element == 16 && i < j) {
+        bool ci = false, cj = false;
+        for (uint32_t k : nb[i]) ci = ci || s.atoms[k].element == 6;
+        for (uint32_t k : nb[j]) cj = cj || s.atoms[k].element == 6;
+        bridges += ci && cj;
+      }
+  }
+  EXPECT_GT(bridges, 0);
 }

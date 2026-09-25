@@ -223,6 +223,17 @@ double equation17(double bo, const UffParam& a, const UffParam& b) { return 5 * 
 
 }  // namespace
 
+ForceField default_forcefield(const System& s) {
+  const bool ch = std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
+  if (ch) {
+    try {
+      return assign_gaff(s);
+    } catch (const FieldError&) {   // the built-in GAFF knows sp3 and aromatic carbon only (not C=C of rubbers)
+    }
+  }
+  return assign_uff(s);
+}
+
 bool is_uff(const std::string& name) {
   std::string f = name.substr(name.find_last_of("/\\") == std::string::npos ? 0 : name.find_last_of("/\\") + 1);
   for (auto& ch : f) ch = char(std::tolower(static_cast<unsigned char>(ch)));

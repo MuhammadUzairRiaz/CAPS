@@ -2,6 +2,7 @@
 // rescaling (J. Chem. Phys. 126, 014101 (2007)); Langevin dynamics with the BAOAB splitting (Leimkuhler and Matthews,
 // Appl. Math. Res. Express 2013, 34); stochastic cell rescaling (Bernetti and Bussi, J. Chem. Phys. 153, 114107
 // (2020)) and Berendsen coupling (J. Chem. Phys. 81, 3684 (1984)) for isotropic pressure control.
+#include "caps/uff.hpp"
 #include "caps/dynamics.hpp"
 
 #include <algorithm>
@@ -76,7 +77,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.field && o.field->atom_type.size() != n)
     throw FieldError("the assigned force field is for " + std::to_string(o.field->atom_type.size()) + " atoms, the structure has " +
                      std::to_string(n));
-  const ForceField ff = o.field ? *o.field : assign_gaff(s);
+  const ForceField ff = o.field ? *o.field : default_forcefield(s);
   for (const auto& note : ff.notes) rep.notes.push_back(note);
   Evaluator ev(ff, o.energy);
   const std::vector<double>& m = ff.mass;

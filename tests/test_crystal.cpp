@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 
 #include "caps/crystal.hpp"
 #include "caps/dynamics.hpp"
+#include "caps/properties.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "caps/polymer.hpp"
@@ -170,4 +172,37 @@ TEST(Crystal, DynamicsHoldsTheSurface) {
   EXPECT_GT(moved_free, 0.01);
   EXPECT_GT(nh, 0u);
   EXPECT_NEAR(rep.thermo.front().temperature, 300.0, 1.0);   // drawn over the free atoms only
+}
+
+TEST(Crystal, InterfaceProfileAndAdhesion) {
+  SlabOptions so;
+  so.layers = 2;
+  so.na = 3, so.nb = 2;
+  so.passivate = true;
+  const System slab = cleave(read_cif(kCrystals + "alpha-quartz.cif"), so);
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "*C/C=C(/C)C*"}};
+  spec.dp = 8;
+  InterfaceOptions io;
+  io.film = 18;
+  io.density = 0.7;
+  io.vacuum = 15;   // one interface
+  const System s = build_interface(slab, spec, io);
+  Trajectory t;
+  t.topology = s;
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  t.positions.push_back(p);
+  t.cells.push_back(s.cell);
+  t.timesteps.push_back(0);
+  const ForceField ff = assign_uff(s);
+  AnalyzeOptions o;
+  o.ff = &ff;
+  const auto props = analyze(t, {"zprofile", "adhesion"}, o);
+  ASSERT_EQ(props.size(), 2u);
+  EXPECT_EQ(props[0].series.size(), 3u);
+  EXPECT_NEAR(props[0].value, 0.7, 0.25);   // the film's own density
+  EXPECT_GT(props[1].value, 5.0);           // the film sticks: positive work of adhesion, mJ/m²
+  EXPECT_LT(props[1].value, 500.0);
+  EXPECT_EQ(props[1].extra.at("interfaces"), 1.0);
 }
