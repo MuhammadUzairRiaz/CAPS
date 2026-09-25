@@ -125,6 +125,9 @@ struct caps_doc {
   std::vector<char> selection;                     // caps_select: the Studio's selection over the frame's atoms
   struct Snapshot { caps::System topology; std::vector<caps::Vec3> positions; std::string what; };
   std::vector<Snapshot> undo, redo;                // caps_edit history
+  std::vector<std::vector<Snapshot>> branches;     // redo steps set aside when an edit followed an undo (newest last)
+  struct Named { std::string name; Snapshot state; int step = 0; bool on_branch = false; };
+  std::vector<Named> snapshots;                    // caps_snapshot: named states to go back to or compare
   std::vector<caps::Segment> checks;               // caps_interactions: H-bonds, contacts, clashes drawn in the view
   caps::Manifest prov;                             // provenance: the steps that produced this structure
   std::vector<caps::VoidSphere> voids;             // caps_voids: the largest empty spheres of the frame
@@ -3533,12 +3536,21 @@ std::vector<uint32_t> atoms_of(caps_doc* d, const caps::Json& j) {
 }
 
 void push_undo(caps_doc* d, const std::string& what) {
+  // snapshots taken in the undone steps now belong to the branch those steps become
+  if (!d->redo.empty())
+    for (auto& n : d->snapshots)
+      if (size_t(n.step) > d->undo.size() + 1) n.on_branch = true;
   caps_doc::Snapshot sn;
   sn.topology = d->traj.topology;
   sn.positions = d->traj.positions.at(d->current);
   sn.what = what;
   d->undo.push_back(std::move(sn));
   if (d->undo.size() > 100) d->undo.erase(d->undo.begin());
+  // editing after an undo keeps the undone steps as a branch: nothing is lost until it is deleted
+  if (!d->redo.empty()) {
+    d->branches.push_back(std::move(d->redo));
+    if (d->branches.size() > 10) d->branches.erase(d->branches.begin());
+  }
   d->redo.clear();
 }
 
@@ -3738,7 +3750,106 @@ extern "C" int32_t caps_history(caps_doc* d, char* json, int32_t cap) {
   for (const auto& x : d->undo) u.push_back(x.what);
   for (const auto& x : d->redo) r.push_back(x.what);
   j["undo"] = u, j["redo"] = r;
+  // the steps in order with the atoms after each: done (the last is current), then undone (next redo first)
+  auto atoms = [](const caps_doc::Snapshot& sn) { return double(sn.topology.atoms.size()); };
+  const double now = double(d->traj.topology.atoms.size());
+  caps::Json steps = caps::Json::array();
+  for (size_t i = 0; i < d->undo.size(); ++i) {
+    caps::Json e = caps::Json::object();
+    e["what"] = d->undo[i].what;
+    e["atoms"] = i + 1 < d->undo.size() ? atoms(d->undo[i + 1]) : now;
+    e["state"] = std::string(i + 1 == d->undo.size() ? "current" : "done");
+    steps.push_back(std::move(e));
+  }
+  for (size_t i = d->redo.size(); i-- > 0;) {
+    caps::Json e = caps::Json::object();
+    e["what"] = d->redo[i].what;
+    e["atoms"] = atoms(d->redo[i]);
+    e["state"] = std::string("undone");
+    steps.push_back(std::move(e));
+  }
+  j["steps"] = std::move(steps);
+  j["start_atoms"] = d->undo.empty() ? now : atoms(d->undo.front());
+  caps::Json br = caps::Json::array();
+  for (const auto& b : d->branches) {
+    caps::Json e = caps::Json::object(), st = caps::Json::array();
+    for (size_t i = b.size(); i-- > 0;) st.push_back(b[i].what);
+    e["steps"] = std::move(st);
+    e["atoms"] = b.empty() ? 0.0 : atoms(b.front());
+    br.push_back(std::move(e));
+  }
+  j["branches"] = std::move(br);
+  caps::Json sn = caps::Json::array();
+  for (const auto& x : d->snapshots) {
+    caps::Json e = caps::Json::object();
+    e["name"] = x.name;
+    e["atoms"] = atoms(x.state);
+    e["step"] = x.step;
+    e["on_branch"] = x.on_branch;
+    sn.push_back(std::move(e));
+  }
+  j["snapshots"] = std::move(sn);
   return report_out(j.dump(0), json, cap);
+}
+
+// Named snapshots and history branches (design/boards/History): {"op": "take", "name"} · {"op": "restore", "index"} ·
+// {"op": "delete", "index"} · {"op": "save", "index", "path"} (a file to compare with) · {"op": "branch", "index"} (the
+// branch becomes the redo steps; the current redo steps become a branch) · {"op": "drop_branch", "index"}.
+extern "C" int32_t caps_snapshot(caps_doc* d, const char* json) {
+  return guard([&] {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string op = j.text("op");
+    const long k = long(j.num("index", -1));
+    auto current = [&] {
+      caps_doc::Snapshot sn;
+      sn.topology = d->traj.topology;
+      sn.positions = d->traj.positions.at(d->current);
+      return sn;
+    };
+    if (op == "take") {
+      caps_doc::Named n;
+      n.state = current();
+      n.name = j.text("name", "snapshot " + std::to_string(d->snapshots.size() + 1));
+      n.step = int(d->undo.size()) + 1;
+      d->snapshots.push_back(std::move(n));
+      return 0;
+    }
+    if (op == "branch" || op == "drop_branch") {
+      if (k < 0 || size_t(k) >= d->branches.size()) throw std::out_of_range("no such branch");
+      auto b = std::move(d->branches[size_t(k)]);
+      d->branches.erase(d->branches.begin() + k);
+      if (op == "branch") {
+        if (!d->redo.empty()) d->branches.push_back(std::move(d->redo));
+        d->redo = std::move(b);
+      }
+      return 0;
+    }
+    if (k < 0 || size_t(k) >= d->snapshots.size()) throw std::out_of_range("no such snapshot");
+    auto& n = d->snapshots[size_t(k)];
+    if (op == "delete") { d->snapshots.erase(d->snapshots.begin() + k); return 0; }
+    if (op == "restore") {
+      push_undo(d, "Restore snapshot · " + n.name);
+      d->traj.topology = n.state.topology;
+      d->traj.positions[d->current] = n.state.positions;
+      d->field.reset();
+      d->selection.assign(d->traj.topology.atoms.size(), 0);
+      refresh(d);
+      return 0;
+    }
+    if (op == "save") {
+      caps::System s = n.state.topology;
+      for (size_t i = 0; i < s.atoms.size() && i < n.state.positions.size(); ++i) s.atoms[i].pos = n.state.positions[i];
+      const std::string path = j.text("path");
+      if (path.empty()) throw std::invalid_argument("snapshot save: no path");
+      auto ends = [&](const char* e) { const std::string x = e; return path.size() >= x.size() && path.compare(path.size() - x.size(), x.size(), x) == 0; };
+      if (ends(".pdb")) caps::write_pdb(s, path);
+      else if (ends(".xyz")) caps::write_xyz(s, path);
+      else if (ends(".mol2")) caps::write_mol2(s, path);
+      else caps::write_lammps_data(s, path);
+      return 0;
+    }
+    throw std::invalid_argument("snapshot: unknown op '" + op + "'");
+  });
 }
 
 extern "C" int32_t caps_select(caps_doc* d, const char* json, char* out, int32_t cap) {

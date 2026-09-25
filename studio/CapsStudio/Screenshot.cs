@@ -249,6 +249,19 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "history")   // history=1: the History panel after a snapshot, three edits and an undo
+            {
+                var vm = w.ViewModel;
+                vm.HistoryOpen = true;
+                vm.TakeSnapshot("as opened");
+                vm.BuildElement = "O"; vm.EditTool = 1;
+                vm.ToolClick(-1); vm.ToolClick(-1);
+                vm.TakeSnapshot("two waters' oxygens");
+                vm.ToolClick(-1);
+                vm.EditTool = 0;
+                vm.UndoEdit(false);
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "vision") w.ViewModel.OpenColourVision();                    // vision=1: Settings › Colour vision
             if (kv[0] == "cvd") w.ViewModel.VisionPreview = int.Parse(kv[1]);          // cvd=0..3: the view as seen with a deficiency
             if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested

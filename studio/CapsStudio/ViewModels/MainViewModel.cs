@@ -390,6 +390,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsTemplate));
         Raise(nameof(IsColourVision));
         Raise(nameof(ShowLodPanel));
+        Raise(nameof(ShowHistoryPanel));
         Raise(nameof(ProjectPanelShown));
         Raise(nameof(IsScattering));
         Raise(nameof(IsFreeVolume));

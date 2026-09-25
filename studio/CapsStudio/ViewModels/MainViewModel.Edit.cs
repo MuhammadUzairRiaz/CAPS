@@ -94,6 +94,7 @@ public sealed partial class MainViewModel
         foreach (var x in h["undo"]!.AsArray()) EditHistory.Add(x!.GetValue<string>());
         CanRedo = h["redo"]!.AsArray().Count > 0;
         Raise(nameof(CanUndo));
+        if (_histOpen) RefreshHistoryPanel();
     }
 
     private int ChargeValue => _buildCharge - 1;

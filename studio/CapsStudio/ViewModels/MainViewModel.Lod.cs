@@ -16,7 +16,7 @@ public sealed partial class MainViewModel
     private double _lodNearNow = 40, _frameMs;
     private string _lodTiers = "", _lodMemory = "", _lodBench = "";
 
-    public bool LodOpen { get => _lodOpen; set { if (Set(ref _lodOpen, value)) { if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; RefreshLod(); } Raise(nameof(ShowLodPanel)); Raise(nameof(ShowStudioTabs)); } } }
+    public bool LodOpen { get => _lodOpen; set { if (Set(ref _lodOpen, value)) { if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; HistoryOpen = false; RefreshLod(); } Raise(nameof(ShowLodPanel)); Raise(nameof(ShowStudioTabs)); } } }
     public bool ShowLodPanel => IsStudio && _lodOpen && _doc != null;
     public bool LodOn { get => _lodOn; set { if (Set(ref _lodOn, value)) { _lodNearNow = (double)_lodNear; RenderRequested?.Invoke(); } } }
     public decimal LodNear { get => _lodNear; set { if (Set(ref _lodNear, Math.Clamp(value, 5, 10000))) { if (_lodFar < _lodNear) LodFar = _lodNear; _lodNearNow = (double)_lodNear; RenderRequested?.Invoke(); } } }
