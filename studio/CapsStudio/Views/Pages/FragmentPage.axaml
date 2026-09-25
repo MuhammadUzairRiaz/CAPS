@@ -1,0 +1,111 @@
+<!-- CAPS Fragment library (design/boards/FragmentLibrary.dc.html): categories, search, tiles with a 3D preview, a
+     fragment's attach points; attach to the picked atom or place beside the structure. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.FragmentPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="ListBox.cats ListBoxItem"><Setter Property="Height" Value="32" /><Setter Property="MinHeight" Value="32" /><Setter Property="Padding" Value="12,0" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Margin" Value="0,0,0,2" /></Style>
+    <Style Selector="ListBox.cats ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+    <Style Selector="ListBox.tiles ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,12,12" /><Setter Property="CornerRadius" Value="10" />
+      <Setter Property="BorderThickness" Value="1.5" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="ClipToBounds" Value="True" /></Style>
+    <Style Selector="ListBox.tiles ListBoxItem:selected /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg1B}" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="Pick an atom in the Studio, then attach a fragment to it" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding FragmentStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="230,*,360">
+      <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" Padding="10,14">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+            <Button Classes="small" HorizontalAlignment="Left" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
+            <TextBox Text="{Binding FragmentQuery}" Watermark="Search name, SMILES or use" FontSize="12" />
+          </StackPanel>
+          <ListBox Classes="cats" ItemsSource="{Binding FragmentCategories}" Background="Transparent" SelectionChanged="OnCategory" x:Name="Cats">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:FragmentCategory">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" />
+                </DockPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+      <DockPanel Grid.Column="1" Margin="24,20,12,0">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,14">
+          <TextBlock Text="{Binding FragmentTitle}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <Border Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding FragmentCountText}" Foreground="{DynamicResource MutedB}" /></Border>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,12">
+          <TextBox x:Name="NewName" Width="160" Watermark="Name" FontSize="12" />
+          <TextBox x:Name="NewSmiles" Width="260" Watermark="SMILES with * points, e.g. *C(=O)O*" FontSize="12" FontFamily="{DynamicResource Mono}" />
+          <Button Classes="small" Content="Add to My fragments" Click="OnAddMine" />
+        </StackPanel>
+        <ListBox Classes="tiles" ItemsSource="{Binding FragmentTiles}" SelectedItem="{Binding SelectedFragment}" Background="Transparent" DoubleTapped="OnTileDouble">
+          <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate></ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:FragmentItem">
+              <StackPanel>
+                <Border Height="110" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                  <v:MolView Smiles="{Binding SmilesH}" DrawStyle="0" IsHitTestVisible="False" />
+                </Border>
+                <StackPanel Margin="12,10" Spacing="3">
+                  <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Smiles}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Meta}" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <Border Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" Background="#3A2C14" VerticalAlignment="Center"><TextBlock Text="{Binding FragmentPointsChip}" Foreground="{DynamicResource AccB}" /></Border>
+              <TextBlock Text="{Binding SelectedFragment.Name, FallbackValue=''}" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Click="OnSaveCopy"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="15" VerticalAlignment="Center" /><TextBlock Text="Save a copy" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Classes="primary" Click="OnUse"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="link" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding FragmentAttachText}" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Height="220" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <v:MolView x:Name="Detail" />
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="7">
+                  <TextBlock Text="DEFINITION" Classes="h3" />
+                  <TextBlock Text="{Binding SelectedFragment.Smiles, FallbackValue=''}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding SelectedFragment.Meta, FallbackValue=''}" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                  <TextBlock Text="Ringed atoms mark where the fragment attaches (the * points)." Classes="dim" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding FragmentHasPoints}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="9">
+                  <TextBlock Text="ATTACH BEHAVIOUR" Classes="h3" />
+                  <CheckBox Classes="toggle" Content="Replace a hydrogen at the target" IsChecked="{Binding FragmentReplaceH}" />
+                  <CheckBox Classes="toggle" Content="Align to the open valence" IsChecked="True" IsEnabled="False" />
+                  <CheckBox Classes="toggle" Content="Clean geometry after attaching (UFF)" IsChecked="{Binding FragmentClean}" />
+                </StackPanel>
+              </Border>
+              <Border Padding="16,12">
+                <TextBlock Text="{Binding FragmentError}" Classes="err" FontSize="12" TextWrapping="Wrap" />
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -53,6 +53,7 @@ public sealed partial class MainViewModel
             ("Bench", 12, "bench", "validation benchmark tables paper"),
             ("Polymer builder", 13, "grow", "repeat unit copolymer smiles library rubber"), ("Surface builder", 14, "layers", "slab cleave cif crystal interface film fibre silica graphite"),
             ("Crystal builder", 29, "cube", "space group lattice unit cell asymmetric unit cif symmetry primitive supercell polyethylene quartz"),
+            ("Fragment library", 35, "hex", "fragment library ring functional group monomer amino acid solvent ion additive accelerator sulfur tmtd cbs silane attach"),
             ("Split view", 34, "layers", "split side by side two documents compare sync camera light paper theme"),
             ("Torsion scan", 33, "chart", "torsion dihedral scan rotation barrier conformer gauche trans energy profile rotamer"),
             ("Trajectory player", 32, "play", "trajectory frames play movie timeline log lammps thermo temperature density rg end-to-end ree smooth"),
@@ -75,7 +76,7 @@ public sealed partial class MainViewModel
             AddCommand(new PaletteCommand
             {
                 Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
-                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else if (m == 26) OpenBundle(); else if (m == 29) OpenCrystal(); else if (m == 30) OpenBio(); else if (m == 31) OpenSolvation(); else if (m == 32) OpenTrajectory(); else if (m == 33) OpenTorsion(); else if (m == 34) OpenSplit(); else SetModule(m); },
+                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else if (m == 26) OpenBundle(); else if (m == 29) OpenCrystal(); else if (m == 30) OpenBio(); else if (m == 31) OpenSolvation(); else if (m == 32) OpenTrajectory(); else if (m == 33) OpenTorsion(); else if (m == 34) OpenSplit(); else if (m == 35) OpenFragments(); else SetModule(m); },
             });
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });

@@ -20,6 +20,27 @@ public sealed class MolView : Control
     private Point _last;
     private bool _drag;
 
+    /// <summary>A structure from SMILES (built once with UFF, cached): the fragment library's thumbnails.</summary>
+    public static readonly StyledProperty<string?> SmilesProperty = AvaloniaProperty.Register<MolView, string?>(nameof(Smiles));
+    public string? Smiles { get => GetValue(SmilesProperty); set => SetValue(SmilesProperty, value); }
+    private static readonly Dictionary<string, CapsDocument> SmilesDocs = new();
+    static MolView() { SmilesProperty.Changed.AddClassHandler<MolView>((v, _) => v.LoadSmiles()); }
+
+    private async void LoadSmiles()
+    {
+        var smi = Smiles;
+        if (string.IsNullOrEmpty(smi)) { Document = null; return; }
+        CapsDocument? doc;
+        lock (SmilesDocs) SmilesDocs.TryGetValue(smi, out doc);
+        if (doc == null)
+        {
+            try { doc = await Task.Run(() => CapsDocument.BuildSmiles(smi, "uff", 1, 1, smi).Doc); }
+            catch { return; }
+            lock (SmilesDocs) { if (SmilesDocs.TryGetValue(smi, out var other)) { doc.Dispose(); doc = other; } else SmilesDocs[smi] = doc; }
+        }
+        if (Smiles == smi) { Document = doc; Reset(); }
+    }
+
     public MolView()
     {
         ClipToBounds = true;

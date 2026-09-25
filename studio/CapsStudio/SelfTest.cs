@@ -559,6 +559,22 @@ internal static class SelfTest
                   $"selection & stereo: {vm.SelectedChip} · {vm.NamedSets.Count} set · {vm.TacticityLabel} · {vm.DyadCounts} {vm.SelectError}");
             vm.UndoEdit(false);
             vm.SelectionOpen = false;
+            // Fragment library: a methyl attached to a carbon (replacing one of its H), a water placed beside the melt
+            vm.OpenFragments();
+            var nf0 = vm.Document!.Summary().Atoms;
+            var methyl = vm.FragmentTiles.Concat(vm.QuickFragments).First(f => f.Name == "Methyl");
+            var carbon = Enumerable.Range(0, (int)nf0).First(i => vm.Document!.Atom(i).ElementSymbol == "C");
+            vm.Pick(carbon);
+            vm.UseFragment(methyl, false).GetAwaiter().GetResult();
+            var nf1 = vm.Document!.Summary().Atoms;
+            var water = vm.QuickFragments.First(f => f.Name == "Water");
+            vm.UseFragment(water, false).GetAwaiter().GetResult();
+            var nf2 = vm.Document!.Summary().Atoms;
+            Check(vm.QuickFragments.Count == 9 && nf1 == nf0 + 3 && nf2 == nf1 + 3 && vm.FragmentCategories.Count >= 10,
+                  $"fragments: {vm.FragmentCategories.Count} categories · methyl {nf0}→{nf1} · water →{nf2} · {vm.FragmentError}");
+            vm.UndoEdit(false);
+            vm.UndoEdit(false);
+            vm.SetModule(8);
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 

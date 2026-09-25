@@ -1,0 +1,790 @@
+{
+ "caps_fragments": 1,
+ "categories": [
+  "Rings",
+  "Functional groups",
+  "Monomers",
+  "Amino acids",
+  "Nucleotides",
+  "Sugars",
+  "Solvents",
+  "Ions",
+  "Rubber additives"
+ ],
+ "fragments": [
+  {
+   "category": "Rings",
+   "name": "Benzene",
+   "smiles": "*c1ccccc1",
+   "meta": "1 attach · aromatic"
+  },
+  {
+   "category": "Rings",
+   "name": "Cyclohexane",
+   "smiles": "*C1CCCCC1",
+   "meta": "1 attach · chair"
+  },
+  {
+   "category": "Rings",
+   "name": "Cyclopentane",
+   "smiles": "*C1CCCC1",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Rings",
+   "name": "Cyclopropane",
+   "smiles": "*C1CC1",
+   "meta": "1 attach · strained"
+  },
+  {
+   "category": "Rings",
+   "name": "Naphthalene",
+   "smiles": "*c1cccc2ccccc12",
+   "meta": "1 attach · fused"
+  },
+  {
+   "category": "Rings",
+   "name": "Pyridine",
+   "smiles": "*c1ccncc1",
+   "meta": "1 attach · N aromatic"
+  },
+  {
+   "category": "Rings",
+   "name": "Thiophene",
+   "smiles": "*c1cccs1",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Rings",
+   "name": "Furan",
+   "smiles": "*c1ccco1",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Rings",
+   "name": "Pyrrole",
+   "smiles": "*c1ccc[nH]1",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Rings",
+   "name": "Imidazole",
+   "smiles": "*c1ncc[nH]1",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Rings",
+   "name": "Tetrahydrofuran",
+   "smiles": "*C1CCCO1",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Rings",
+   "name": "Benzothiazole",
+   "smiles": "*c1nc2ccccc2s1",
+   "meta": "1 attach · accelerator core"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Methyl",
+   "smiles": "[CH3]*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Ethyl",
+   "smiles": "CC*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Isopropyl",
+   "smiles": "CC(C)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "tert-Butyl",
+   "smiles": "CC(C)(C)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Vinyl",
+   "smiles": "C=C*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Allyl",
+   "smiles": "C=CC*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Hydroxyl",
+   "smiles": "O*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Methoxy",
+   "smiles": "CO*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Amino",
+   "smiles": "N*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Dimethylamino",
+   "smiles": "CN(C)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Carboxylic acid",
+   "smiles": "OC(=O)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Ester",
+   "smiles": "*C(=O)O*",
+   "meta": "2 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Amide",
+   "smiles": "*C(=O)N*",
+   "meta": "2 attach · trans"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Ketone",
+   "smiles": "*C(=O)*",
+   "meta": "2 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Aldehyde",
+   "smiles": "O=C*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Acetyl",
+   "smiles": "CC(=O)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Nitrile",
+   "smiles": "N#C*",
+   "meta": "1 attach · linear"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Nitro",
+   "smiles": "[O-][N+](=O)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Thiol",
+   "smiles": "S*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Sulfide",
+   "smiles": "*S*",
+   "meta": "2 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Disulfide",
+   "smiles": "*SS*",
+   "meta": "2 attach · crosslink"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Polysulfide (S4)",
+   "smiles": "*SSSS*",
+   "meta": "2 attach · sulfur crosslink"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Ether",
+   "smiles": "*O*",
+   "meta": "2 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Fluoro",
+   "smiles": "F*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Chloro",
+   "smiles": "Cl*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Bromo",
+   "smiles": "Br*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Trifluoromethyl",
+   "smiles": "FC(F)(F)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Sulfonic acid",
+   "smiles": "OS(=O)(=O)*",
+   "meta": "1 attach"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Trimethoxysilyl",
+   "smiles": "CO[Si](OC)(OC)*",
+   "meta": "1 attach · coupling"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Triethoxysilyl",
+   "smiles": "CCO[Si](OCC)(OCC)*",
+   "meta": "1 attach · coupling"
+  },
+  {
+   "category": "Functional groups",
+   "name": "Silanol",
+   "smiles": "O[Si](O)(O)*",
+   "meta": "1 attach · silica surface"
+  },
+  {
+   "category": "Monomers",
+   "name": "Ethylene",
+   "smiles": "*CC*",
+   "meta": "monomer · PE"
+  },
+  {
+   "category": "Monomers",
+   "name": "Propylene",
+   "smiles": "*CC(*)C",
+   "meta": "monomer · PP"
+  },
+  {
+   "category": "Monomers",
+   "name": "Styrene",
+   "smiles": "*CC(*)c1ccccc1",
+   "meta": "monomer · PS"
+  },
+  {
+   "category": "Monomers",
+   "name": "cis-1,4-Isoprene",
+   "smiles": "*C/C=C(C)\\C*",
+   "meta": "monomer · NR, IR"
+  },
+  {
+   "category": "Monomers",
+   "name": "trans-1,4-Isoprene",
+   "smiles": "*C/C=C(C)/C*",
+   "meta": "monomer · gutta-percha"
+  },
+  {
+   "category": "Monomers",
+   "name": "cis-1,4-Butadiene",
+   "smiles": "*C/C=C\\C*",
+   "meta": "monomer · BR"
+  },
+  {
+   "category": "Monomers",
+   "name": "1,2-Butadiene (vinyl)",
+   "smiles": "*CC(*)C=C",
+   "meta": "monomer · BR vinyl"
+  },
+  {
+   "category": "Monomers",
+   "name": "Chloroprene",
+   "smiles": "*C/C=C(Cl)\\C*",
+   "meta": "monomer · CR"
+  },
+  {
+   "category": "Monomers",
+   "name": "Acrylonitrile",
+   "smiles": "*CC(*)C#N",
+   "meta": "monomer · NBR"
+  },
+  {
+   "category": "Monomers",
+   "name": "Isobutylene",
+   "smiles": "*CC(*)(C)C",
+   "meta": "monomer · IIR"
+  },
+  {
+   "category": "Monomers",
+   "name": "Dimethylsiloxane",
+   "smiles": "*[Si](C)(C)O*",
+   "meta": "monomer · silicone rubber"
+  },
+  {
+   "category": "Monomers",
+   "name": "Methyl methacrylate",
+   "smiles": "*CC(*)(C)C(=O)OC",
+   "meta": "monomer · PMMA"
+  },
+  {
+   "category": "Monomers",
+   "name": "Vinyl chloride",
+   "smiles": "*CC(*)Cl",
+   "meta": "monomer · PVC"
+  },
+  {
+   "category": "Monomers",
+   "name": "Vinyl acetate",
+   "smiles": "*CC(*)OC(C)=O",
+   "meta": "monomer · EVA"
+  },
+  {
+   "category": "Monomers",
+   "name": "Ethylene oxide",
+   "smiles": "*CCO*",
+   "meta": "monomer · PEO"
+  },
+  {
+   "category": "Monomers",
+   "name": "Tetrafluoroethylene",
+   "smiles": "*C(F)(F)C(F)(F)*",
+   "meta": "monomer · PTFE"
+  },
+  {
+   "category": "Monomers",
+   "name": "Acrylic acid",
+   "smiles": "*CC(*)C(=O)O",
+   "meta": "monomer"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Glycine",
+   "smiles": "*NCC(=O)*",
+   "meta": "G · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Alanine",
+   "smiles": "*N[C@@H](C)C(=O)*",
+   "meta": "A · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Arginine",
+   "smiles": "*N[C@@H](CCCNC(=N)N)C(=O)*",
+   "meta": "R · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Asparagine",
+   "smiles": "*N[C@@H](CC(=O)N)C(=O)*",
+   "meta": "N · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Aspartic acid",
+   "smiles": "*N[C@@H](CC(=O)O)C(=O)*",
+   "meta": "D · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Cysteine",
+   "smiles": "*N[C@@H](CS)C(=O)*",
+   "meta": "C · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Glutamine",
+   "smiles": "*N[C@@H](CCC(=O)N)C(=O)*",
+   "meta": "Q · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Glutamic acid",
+   "smiles": "*N[C@@H](CCC(=O)O)C(=O)*",
+   "meta": "E · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Histidine",
+   "smiles": "*N[C@@H](Cc1c[nH]cn1)C(=O)*",
+   "meta": "H · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Isoleucine",
+   "smiles": "*N[C@@H]([C@@H](C)CC)C(=O)*",
+   "meta": "I · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Leucine",
+   "smiles": "*N[C@@H](CC(C)C)C(=O)*",
+   "meta": "L · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Lysine",
+   "smiles": "*N[C@@H](CCCCN)C(=O)*",
+   "meta": "K · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Methionine",
+   "smiles": "*N[C@@H](CCSC)C(=O)*",
+   "meta": "M · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Phenylalanine",
+   "smiles": "*N[C@@H](Cc1ccccc1)C(=O)*",
+   "meta": "F · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Serine",
+   "smiles": "*N[C@@H](CO)C(=O)*",
+   "meta": "S · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Threonine",
+   "smiles": "*N[C@@H]([C@H](O)C)C(=O)*",
+   "meta": "T · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Tryptophan",
+   "smiles": "*N[C@@H](Cc1c[nH]c2ccccc12)C(=O)*",
+   "meta": "W · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Tyrosine",
+   "smiles": "*N[C@@H](Cc1ccc(O)cc1)C(=O)*",
+   "meta": "Y · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Valine",
+   "smiles": "*N[C@@H](C(C)C)C(=O)*",
+   "meta": "V · residue · 2 attach"
+  },
+  {
+   "category": "Amino acids",
+   "name": "Proline",
+   "smiles": "*N1[C@@H](CCC1)C(=O)*",
+   "meta": "P · residue · 2 attach"
+  },
+  {
+   "category": "Nucleotides",
+   "name": "Adenine",
+   "smiles": "*n1cnc2c(N)ncnc12",
+   "meta": "base · 1 attach (N9 / N1)"
+  },
+  {
+   "category": "Nucleotides",
+   "name": "Guanine",
+   "smiles": "*N1C=NC2=C1N=C(N)NC2=O",
+   "meta": "base · 1 attach (N9 / N1)"
+  },
+  {
+   "category": "Nucleotides",
+   "name": "Cytosine",
+   "smiles": "*N1C=CC(N)=NC1=O",
+   "meta": "base · 1 attach (N9 / N1)"
+  },
+  {
+   "category": "Nucleotides",
+   "name": "Thymine",
+   "smiles": "*N1C=C(C)C(=O)NC1=O",
+   "meta": "base · 1 attach (N9 / N1)"
+  },
+  {
+   "category": "Nucleotides",
+   "name": "Uracil",
+   "smiles": "*N1C=CC(=O)NC1=O",
+   "meta": "base · 1 attach (N9 / N1)"
+  },
+  {
+   "category": "Sugars",
+   "name": "β-D-Glucose",
+   "smiles": "*O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
+   "meta": "1 attach (O1) · cellulose unit"
+  },
+  {
+   "category": "Sugars",
+   "name": "β-D-Galactose",
+   "smiles": "*O[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O",
+   "meta": "1 attach (O1)"
+  },
+  {
+   "category": "Sugars",
+   "name": "D-Ribose",
+   "smiles": "*O[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O",
+   "meta": "1 attach (O1) · furanose"
+  },
+  {
+   "category": "Sugars",
+   "name": "Cellulose unit",
+   "smiles": "*O[C@H]1[C@H](O)[C@@H](O)[C@H](O*)O[C@@H]1CO",
+   "meta": "2 attach · β-1,4"
+  },
+  {
+   "category": "Solvents",
+   "name": "Water",
+   "smiles": "O",
+   "meta": "solvent"
+  },
+  {
+   "category": "Solvents",
+   "name": "Toluene",
+   "smiles": "Cc1ccccc1",
+   "meta": "swelling of NR, BR, SBR"
+  },
+  {
+   "category": "Solvents",
+   "name": "Cyclohexane",
+   "smiles": "C1CCCCC1",
+   "meta": "swelling"
+  },
+  {
+   "category": "Solvents",
+   "name": "n-Hexane",
+   "smiles": "CCCCCC",
+   "meta": "extraction"
+  },
+  {
+   "category": "Solvents",
+   "name": "Chloroform",
+   "smiles": "ClC(Cl)Cl",
+   "meta": "swelling"
+  },
+  {
+   "category": "Solvents",
+   "name": "Tetrahydrofuran",
+   "smiles": "C1CCOC1",
+   "meta": "GPC solvent"
+  },
+  {
+   "category": "Solvents",
+   "name": "Acetone",
+   "smiles": "CC(C)=O",
+   "meta": "extraction"
+  },
+  {
+   "category": "Solvents",
+   "name": "Methanol",
+   "smiles": "CO",
+   "meta": "polar"
+  },
+  {
+   "category": "Solvents",
+   "name": "Ethanol",
+   "smiles": "CCO",
+   "meta": "polar"
+  },
+  {
+   "category": "Solvents",
+   "name": "Dimethyl sulfoxide",
+   "smiles": "CS(C)=O",
+   "meta": "polar aprotic"
+  },
+  {
+   "category": "Solvents",
+   "name": "Xylene (o-)",
+   "smiles": "Cc1ccccc1C",
+   "meta": "swelling"
+  },
+  {
+   "category": "Solvents",
+   "name": "Methyl ethyl ketone",
+   "smiles": "CCC(C)=O",
+   "meta": "solvent"
+  },
+  {
+   "category": "Ions",
+   "name": "Sodium",
+   "smiles": "[Na+]",
+   "meta": "cation"
+  },
+  {
+   "category": "Ions",
+   "name": "Potassium",
+   "smiles": "[K+]",
+   "meta": "cation"
+  },
+  {
+   "category": "Ions",
+   "name": "Lithium",
+   "smiles": "[Li+]",
+   "meta": "cation"
+  },
+  {
+   "category": "Ions",
+   "name": "Calcium",
+   "smiles": "[Ca+2]",
+   "meta": "cation"
+  },
+  {
+   "category": "Ions",
+   "name": "Magnesium",
+   "smiles": "[Mg+2]",
+   "meta": "cation"
+  },
+  {
+   "category": "Ions",
+   "name": "Zinc",
+   "smiles": "[Zn+2]",
+   "meta": "cation · ZnO activator"
+  },
+  {
+   "category": "Ions",
+   "name": "Chloride",
+   "smiles": "[Cl-]",
+   "meta": "anion"
+  },
+  {
+   "category": "Ions",
+   "name": "Bromide",
+   "smiles": "[Br-]",
+   "meta": "anion"
+  },
+  {
+   "category": "Ions",
+   "name": "Sulfate",
+   "smiles": "[O-]S(=O)(=O)[O-]",
+   "meta": "anion"
+  },
+  {
+   "category": "Ions",
+   "name": "Nitrate",
+   "smiles": "[O-][N+](=O)[O-]",
+   "meta": "anion"
+  },
+  {
+   "category": "Ions",
+   "name": "Acetate",
+   "smiles": "CC(=O)[O-]",
+   "meta": "anion"
+  },
+  {
+   "category": "Ions",
+   "name": "Stearate",
+   "smiles": "CCCCCCCCCCCCCCCCCC(=O)[O-]",
+   "meta": "anion · zinc soap"
+  },
+  {
+   "category": "Ions",
+   "name": "Ammonium",
+   "smiles": "[NH4+]",
+   "meta": "cation"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Sulfur (S8)",
+   "smiles": "S1SSSSSSS1",
+   "meta": "cure agent"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "TMTD",
+   "smiles": "CN(C)C(=S)SSC(=S)N(C)C",
+   "meta": "ultra accelerator · thiuram"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "MBTS",
+   "smiles": "S(Sc1nc2ccccc2s1)c1nc2ccccc2s1",
+   "meta": "accelerator · thiazole"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "CBS",
+   "smiles": "C1CCC(CC1)NSc1nc2ccccc2s1",
+   "meta": "delayed-action accelerator"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "MBT",
+   "smiles": "S=C1Nc2ccccc2S1",
+   "meta": "accelerator"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "DPG",
+   "smiles": "N=C(Nc1ccccc1)Nc1ccccc1",
+   "meta": "secondary accelerator"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "ZDEC fragment",
+   "smiles": "CCN(CC)C(=S)S",
+   "meta": "dithiocarbamate (Zn salt)"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "6PPD",
+   "smiles": "CC(C)CC(C)Nc1ccc(Nc2ccccc2)cc1",
+   "meta": "antiozonant"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "TMQ unit",
+   "smiles": "CC1=CC(C)(C)Nc2ccccc12",
+   "meta": "antioxidant"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Stearic acid",
+   "smiles": "CCCCCCCCCCCCCCCCCC(=O)O",
+   "meta": "activator"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Dicumyl peroxide",
+   "smiles": "CC(C)(OOC(C)(C)c1ccccc1)c1ccccc1",
+   "meta": "peroxide cure"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "TESPT (Si69)",
+   "smiles": "CCO[Si](CCCSSSSCCC[Si](OCC)(OCC)OCC)(OCC)OCC",
+   "meta": "silica–rubber coupling agent"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Paraffinic oil (C20)",
+   "smiles": "CCCCCCCCCCCCCCCCCCCC",
+   "meta": "process oil model"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Resorcinol",
+   "smiles": "Oc1cccc(O)c1",
+   "meta": "RFL adhesion (cord–rubber)"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Hexamethoxymethylmelamine",
+   "smiles": "COCN(COC)c1nc(N(COC)COC)nc(N(COC)COC)n1",
+   "meta": "cord adhesion resin"
+  }
+ ]
+}

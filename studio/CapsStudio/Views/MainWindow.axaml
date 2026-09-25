@@ -284,73 +284,26 @@
               <StackPanel>
                 <Border Classes="phead">
                   <DockPanel>
-                    <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="Monomers ▾" Foreground="{DynamicResource MutedB}" /></Border>
+                    <Button DockPanel.Dock="Right" Classes="small ghost" Content="Library…" Click="OnFragmentLibrary" ToolTip.Tip="The fragment library: rings, groups, monomers, rubber additives …" />
                     <TextBlock Text="Fragments" Classes="h2" VerticalAlignment="Center" />
                   </DockPanel>
                 </Border>
-                <StackPanel Margin="10" Spacing="10" IsEnabled="False" ToolTip.Tip="The builder arrives with Studio editing" ToolTip.ShowOnDisabled="True">
-                  <Border Classes="inset" Padding="8,0" Height="30">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <local:Icon Kind="search" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                      <TextBlock Text="Search fragments" Foreground="{DynamicResource DimB}" FontSize="12" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </Border>
-                  <UniformGrid Columns="3">
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="ring" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Benzene" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="hex" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Cyclohexane" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="link" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Ester" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="link" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Amide" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="atom" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Methyl" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="bond" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Vinyl" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="flask" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Water" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="atom" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Na⁺ / Cl⁻" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                    <Border Margin="3" Height="62" Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Opacity="0.6">
-                      <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <local:Icon Kind="hex" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Styrene" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
-                  </UniformGrid>
+                <StackPanel Margin="10" Spacing="10">
+                  <TextBox Text="{Binding FragmentQuery}" Watermark="Search fragments" FontSize="12" KeyUp="OnFragmentSearchKey" />
+                  <ItemsControl ItemsSource="{Binding QuickFragments}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:FragmentItem">
+                        <Button Margin="3" Height="62" MinHeight="62" Padding="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnQuickFragment" Tag="{Binding}"
+                                ToolTip.Tip="{Binding Tip}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).HasDocument}">
+                          <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <local:Icon Kind="{Binding Icon}" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding Short}" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -1582,6 +1535,8 @@
       <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Surface & interface builder (design/boards/SurfaceBuilder) -->
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
+      <!-- Fragment library (design/boards/FragmentLibrary) -->
+      <pages:FragmentPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFragments}" />
       <!-- Split view (design/boards/LightSplit) -->
       <pages:SplitPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSplit}" />
       <!-- Torsion scan (design/boards/TorsionScan) -->

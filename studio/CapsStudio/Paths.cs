@@ -39,6 +39,7 @@ public static class Paths
     public static string? Polymers => Find(Path.Combine("data", "polymers"), "library.json") is { } d ? Path.Combine(d, "library.json") : null;
     /// <summary>data/crystals (bulk crystals as CIF, catalogue.json), or null.</summary>
     public static string? Crystals => Find(Path.Combine("data", "crystals"), "catalogue.json");
+    public static string? Fragments => Find(Path.Combine("data", "fragments"), "catalogue.json") is { } d ? Path.Combine(d, "catalogue.json") : null;
     /// <summary>The samples directory, or null.</summary>
     public static string? Samples => Find("samples", "ps_melt.data");
     /// <summary>The caps Python package that Python pipeline steps import (data/python/caps).</summary>

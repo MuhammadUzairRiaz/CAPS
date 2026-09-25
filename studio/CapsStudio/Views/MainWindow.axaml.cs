@@ -267,6 +267,9 @@ public partial class MainWindow : Window
     private void OnTrajectoryPlayer(object? s, RoutedEventArgs e) => _vm.OpenTrajectory();
     private void OnTorsionScan(object? s, RoutedEventArgs e) => _vm.OpenTorsion();
     private void OnSplit(object? s, RoutedEventArgs e) => _vm.OpenSplit();
+    private void OnFragmentLibrary(object? s, RoutedEventArgs e) => _vm.OpenFragments();
+    private async void OnQuickFragment(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.FragmentItem f) await _vm.UseFragment(f, false); }
+    private void OnFragmentSearchKey(object? s, KeyEventArgs e) { if (e.Key == Key.Enter) _vm.OpenFragments(_vm.FragmentQuery); }
     private void OnLoadCancel(object? s, RoutedEventArgs e) => _vm.CancelLoad();
     private void OnLoadBackground(object? s, RoutedEventArgs e) => _vm.LoadToBackground();
 
