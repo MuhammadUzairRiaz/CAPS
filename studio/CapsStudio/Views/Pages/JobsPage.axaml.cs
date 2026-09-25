@@ -128,4 +128,5 @@ public partial class JobsPage : PageBase
     }
 
     private void OnFullProvenance(object? s, RoutedEventArgs e) => Vm.OpenProvenance();
+    private void OnSweep(object? s, RoutedEventArgs e) => Vm.OpenSweep();
 }

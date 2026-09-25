@@ -1,0 +1,182 @@
+<!-- CAPS parameter sweep (design/boards/ParameterSweep.dc.html): tacticity × chain length × seed, each run grown, relaxed,
+     optionally simulated, analysed and saved with its provenance. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SweepPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="Button.run"><Setter Property="Width" Value="30" /><Setter Property="Height" Value="30" /><Setter Property="MinHeight" Value="30" /><Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="6" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Margin" Value="0,0,6,0" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Border Classes="chip"><TextBlock Text="{Binding SweepSummary}" /></Border>
+          <Button Click="OnPause" IsVisible="{Binding SweepRunning}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="pause" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding SweepPauseText}" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Content="Stop" Click="OnStop" IsVisible="{Binding SweepRunning}" />
+          <Button Click="OnAddSeeds" IsEnabled="{Binding SweepIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add a seed" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding SweepIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run sweep" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding SweepTitle}" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SweepSubtitle}" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="Every run keeps its own provenance manifest" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SweepFolder}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,400" ColumnSpacing="16" Margin="22,18">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="pcard" Margin="0,0,0,14">
+          <StackPanel Spacing="12">
+            <TextBlock Text="Runs" FontSize="13.5" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Margin="120,0,0,0">
+              <ItemsControl ItemsSource="{Binding SweepDpHeaders}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="h3" Width="130" Margin="10,0,0,0" /></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding SweepRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SweepRow">
+                  <Border BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1" Padding="0,10">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="{Binding Tacticity}" Width="120" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,0,0" />
+                      <ItemsControl ItemsSource="{Binding Cells}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:SweepCell">
+                            <ItemsControl ItemsSource="{Binding Runs}" Width="130" Margin="10,0,0,0">
+                              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SweepRun">
+                                  <Button Classes="run" Background="{Binding Fill}" Opacity="{Binding Dim}" ToolTip.Tip="{Binding Tip}" Click="OnRunSquare" Tag="{Binding}">
+                                    <TextBlock Text="{Binding SeedText}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccInkB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  </Button>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" VerticalAlignment="Center" /><TextBlock Text="done" /></StackPanel></Border>
+              <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="running" /></StackPanel></Border>
+              <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource DimB}" VerticalAlignment="Center" /><TextBlock Text="queued" /></StackPanel></Border>
+              <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource ErrB}" VerticalAlignment="Center" /><TextBlock Text="failed" /></StackPanel></Border>
+            </StackPanel>
+            <TextBlock Text="Each square is one run; the number is its seed. Click a finished square to open its cell (with its provenance)." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SweepError}" Foreground="{DynamicResource ErrB}" FontSize="12" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <Border Classes="pcard">
+          <DockPanel>
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+              <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="mean ± sd over seeds" /></Border>
+              <TextBlock Text="Results by condition" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="34*,24*,22*,20*" Margin="0,0,0,4">
+              <TextBlock Text="CONDITION" Classes="h3" /><TextBlock Grid.Column="1" Text="DENSITY (G/CM³)" Classes="h3" HorizontalAlignment="Right" />
+              <TextBlock Grid.Column="2" Text="RG (Å)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="SEEDS DONE" Classes="h3" HorizontalAlignment="Right" />
+            </Grid>
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding SweepResults}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SweepResult">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7">
+                      <Grid ColumnDefinitions="34*,24*,22*,20*">
+                        <TextBlock Text="{Binding Condition}" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Density}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="2" Text="{Binding Rg}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="{Binding Seeds}" FontSize="12" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+      </DockPanel>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14" IsEnabled="{Binding SweepIdle}">
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Parameters" FontSize="13.5" FontWeight="SemiBold" />
+              <StackPanel Spacing="6"><TextBlock Text="Polymer" Classes="label" /><ComboBox ItemsSource="{Binding SweepPolymers}" SelectedItem="{Binding SweepPolymer}" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="tacticity" Classes="label" />
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                  <CheckBox Content="isotactic" IsChecked="{Binding SweepIso}" /><CheckBox Content="syndiotactic" IsChecked="{Binding SweepSyn}" /><CheckBox Content="atactic" IsChecked="{Binding SweepAta}" />
+                </StackPanel>
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel Spacing="6"><TextBlock Text="dp" Classes="label" /><TextBox Text="{Binding SweepDps}" Classes="mono" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="seed" Classes="label" /><TextBox Text="{Binding SweepSeeds}" Classes="mono" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel Spacing="6"><TextBlock Text="Chains per cell" Classes="label" /><NumericUpDown Value="{Binding SweepChains}" Minimum="1" Maximum="500" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Grow at · g/cm³" Classes="label" /><NumericUpDown Value="{Binding SweepDensity}" Minimum="0.05" Maximum="1.5" Increment="0.05" FormatString="0.00" ShowButtonSpinner="False" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="6"><TextBlock Text="Combine as" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Full grid" /></ComboBox></StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Recipe" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="Grow (auto contact scale) → Relax (push-off, L-BFGS to 1 kcal/mol/Å) → Analyze (density, Rg) → save with provenance. Without NPT the density is the one grown at." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <CheckBox Classes="toggle" Content="NPT dynamics before analysing" IsChecked="{Binding SweepNpt}" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsEnabled="{Binding SweepNpt}">
+                <StackPanel Spacing="6"><TextBlock Text="Length · ps" Classes="label" /><NumericUpDown Value="{Binding SweepNptPs}" Minimum="1" Increment="10" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Temperature · K" Classes="label" /><NumericUpDown Value="{Binding SweepTemperature}" Minimum="1" Increment="10" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Size" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="20*,55*,25*">
+                <TextBlock Text="DP" Classes="h3" /><TextBlock Grid.Column="1" Text="ATOMS PER CELL" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="RUNS" Classes="h3" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding SweepSizes}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProvRow">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,6">
+                      <Grid ColumnDefinitions="20*,55*,25*">
+                        <TextBlock Text="{Binding Key}" Classes="mono" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="2" Text="{Binding Other}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Atom counts from one chain of the spec drawn at each length, times the chains per cell." FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Where" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel Spacing="6"><TextBlock Text="Host" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" ToolTip.Tip="Sweeps run on this machine; remote hosts take single jobs for now"><ComboBoxItem Content="This machine" /></ComboBox></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Runs at a time" Classes="label" /><NumericUpDown Value="{Binding SweepConcurrency}" Minimum="1" Maximum="8" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="6"><TextBlock Text="Output folder" Classes="label" /><TextBox Text="{Binding SweepFolder}" Classes="mono" FontSize="11.5" /></StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
