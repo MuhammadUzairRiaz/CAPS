@@ -142,7 +142,7 @@
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsAnalyze}" Click="OnModuleAnalyze" ToolTip.Tip="Properties with errors, compared with experiment">
+          <Button Classes="rail" Classes.on="{Binding IsAnalyzeRail}" Click="OnModuleAnalyze" ToolTip.Tip="Properties with errors, compared with experiment">
             <Panel Width="60" Height="52">
               <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -378,6 +378,58 @@
             </ScrollViewer>
           </DockPanel>
         </Border>
+        <!-- Visualize pipeline (design/boards/VisPipeline): steps run bottom to top, data source, visual elements -->
+        <Border Grid.Column="0" Width="300" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsVisualize}">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Classes="phead">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                  <Button Classes="tool" Width="30" Height="30" MinHeight="30" Click="OnAddStep" ToolTip.Tip="Add step"><local:Icon Kind="plus" Size="15" /></Button>
+                  <Button Classes="tool" Width="30" Height="30" MinHeight="30" Click="OnPipelineMenu" ToolTip.Tip="Save, load or clear the pipeline"><local:Icon Kind="dots" Size="15" /></Button>
+                </StackPanel>
+                <TextBlock Text="Pipeline" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <StackPanel DockPanel.Dock="Bottom" Margin="8,0,8,10" Spacing="2">
+              <TextBlock Text="VISUAL ELEMENTS" FontSize="11" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="10,6,0,4" />
+              <CheckBox Classes="toggle" Content="Simulation cell" IsChecked="{Binding ShowCell}" Margin="10,2" />
+              <CheckBox Classes="toggle" Content="Colour legend" IsChecked="{Binding PipeLegendVisible}" Margin="10,2" />
+              <CheckBox Classes="toggle" Content="Outlines" IsChecked="{Binding Outlines}" Margin="10,2" />
+            </StackPanel>
+            <Border DockPanel.Dock="Bottom" Margin="8,4,8,8" Padding="10,8" CornerRadius="6" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1">
+              <Button Classes="ghost" Padding="0" BorderThickness="0" Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="OnPipeSource">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="DATA SOURCE" FontSize="11" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" />
+                  <TextBlock Text="{Binding PipeSourceTitle}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding PipeSourceDetail}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+                </StackPanel>
+              </Button>
+            </Border>
+            <ScrollViewer>
+              <StackPanel Margin="8" Spacing="3">
+                <TextBlock Text="STEPS · RUN BOTTOM TO TOP" FontSize="11" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="10,4" />
+                <TextBlock Text="No steps: the file is shown as read. Add one with +." Classes="dim" TextWrapping="Wrap" Margin="10,4" IsVisible="{Binding !PipelineRows.Count}" />
+                <ItemsControl ItemsSource="{Binding PipelineRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PipelineRow">
+                      <Button Classes="pipestep" Classes.sel="{Binding Selected}" Click="OnPipeStep" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,3">
+                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                          <CheckBox IsChecked="{Binding Enabled}" VerticalAlignment="Center" MinWidth="0" Padding="0" />
+                          <local:Icon Grid.Column="1" Kind="{Binding Icon}" Size="14" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                          <StackPanel Grid.Column="2" Spacing="1">
+                            <TextBlock Text="{Binding Title}" FontSize="12.5" />
+                            <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="{Binding SummaryBrush}" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding PipeError}" Foreground="{DynamicResource ErrB}" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding HasPipeError}" Margin="10,4" />
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
         <Border Grid.Column="1" x:Name="ViewHost" Background="{DynamicResource Bg0B}" ClipToBounds="True" Focusable="True" IsTabStop="True"
                 AutomationProperties.Name="3D view · arrow keys walk the atoms, [ and ] the molecules, B the bonds">
           <Panel>
@@ -438,6 +490,45 @@
               </StackPanel>
             </Border>
             <TextBlock x:Name="HintText" IsVisible="False" />
+            <!-- Visualize: the colour coding's legend -->
+            <Border Classes="hud" Padding="12,10" Margin="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" MaxWidth="260" IsVisible="{Binding ShowPipeLegend}">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding PipeLegendTitle}" Classes="dim" />
+                <ItemsControl ItemsSource="{Binding PipeLegendEntries}" IsVisible="{Binding PipeLegendCategorical}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LegendSwatch">
+                      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,1,10,1">
+                        <Border Width="12" Height="12" CornerRadius="3" Background="{Binding Brush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Label}" FontSize="11.5" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Spacing="4" IsVisible="{Binding PipeLegendContinuous}" Width="180">
+                  <Rectangle Height="10" RadiusX="2" RadiusY="2" IsVisible="{Binding !PipeLegendDiverging}">
+                    <Rectangle.Fill>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#440154" /><GradientStop Offset="0.25" Color="#3B528B" /><GradientStop Offset="0.5" Color="#21918C" />
+                        <GradientStop Offset="0.75" Color="#5EC962" /><GradientStop Offset="1" Color="#FDE725" />
+                      </LinearGradientBrush>
+                    </Rectangle.Fill>
+                  </Rectangle>
+                  <Rectangle Height="10" RadiusX="2" RadiusY="2" IsVisible="{Binding PipeLegendDiverging}">
+                    <Rectangle.Fill>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#2166AC" /><GradientStop Offset="0.25" Color="#92C5DE" /><GradientStop Offset="0.5" Color="#F7F7F7" />
+                        <GradientStop Offset="0.75" Color="#F4A582" /><GradientStop Offset="1" Color="#B2182B" />
+                      </LinearGradientBrush>
+                    </Rectangle.Fill>
+                  </Rectangle>
+                  <Grid ColumnDefinitions="*,*">
+                    <TextBlock Text="{Binding PipeLegendLo}" Classes="mono" FontSize="11" />
+                    <TextBlock Grid.Column="1" Text="{Binding PipeLegendHi}" Classes="mono" FontSize="11" HorizontalAlignment="Right" />
+                  </Grid>
+                </StackPanel>
+              </StackPanel>
+            </Border>
             <!-- Render (design/boards/RenderOverlays): the output frame and its overlays -->
             <local:RenderGuideView x:Name="RenderGuide" IsVisible="{Binding IsRender}" IsHitTestVisible="False" />
             <!-- Keyboard walk (design/boards/VisAccess): what a screen reader says, shown for sighted keyboard users -->
@@ -457,6 +548,85 @@
         </Border>
         </Grid>
 
+        <!-- Visualize: data inspector (design/boards/DataInspector) -->
+        <Border Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Height="236">
+          <Border.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="HasDocument" />
+              <Binding Path="IsVisualize" />
+            </MultiBinding>
+          </Border.IsVisible>
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Padding="12,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBox Width="260" Classes="mono" Watermark="Filter: Molecule == 1" Text="{Binding InspectorFilter}" IsVisible="{Binding IsParticlesTab}" FontSize="12" />
+                  <ComboBox Width="260" ItemsSource="{Binding PipeTables}" SelectedIndex="{Binding PipeTable}" IsVisible="{Binding InspectorShowsTables}" />
+                </StackPanel>
+                <TabStrip SelectedIndex="{Binding InspectorTab}" Classes="small">
+                  <TabStripItem Content="Particles" /><TabStripItem Content="Bonds" /><TabStripItem Content="Global attributes" /><TabStripItem Content="Data tables" />
+                </TabStrip>
+              </DockPanel>
+            </Border>
+            <Border DockPanel.Dock="Bottom" Padding="12,3">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" IsVisible="{Binding InspectorShowsTable}">
+                  <Button Classes="small" Content="‹" Click="OnInspectorPrev" IsEnabled="{Binding InspectorCanPrev}" />
+                  <Button Classes="small" Content="›" Click="OnInspectorNext" IsEnabled="{Binding InspectorCanNext}" />
+                </StackPanel>
+                <TextBlock Text="{Binding InspectorNote}" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <Panel>
+              <!-- particle and bond rows, and a data table's rows -->
+              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !InspectorShowsAttributes}">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto">
+                  <StackPanel Margin="12,4">
+                    <ItemsControl ItemsSource="{Binding InspectorColumns}">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <TextBlock Text="{Binding}" Width="96" Classes="label" TextAlignment="Right" Margin="0,0,8,2" TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding InspectorRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TableRow">
+                          <Border Classes="trow" Classes.hl="{Binding Selected}" Height="21">
+                            <ItemsControl ItemsSource="{Binding Cells}">
+                              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                  <TextBlock Text="{Binding}" Width="96" Classes="mono" FontSize="11.5" TextAlignment="Right" Margin="0,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </ScrollViewer>
+                <local:LinePlot Grid.Column="1" Width="360" Margin="8,4,12,4" x:Name="PipeTablePlot" AutoRange="True" IsVisible="{Binding InspectorShowsTables}" />
+              </Grid>
+              <ScrollViewer IsVisible="{Binding InspectorShowsAttributes}">
+                <ItemsControl ItemsSource="{Binding PipeAttributes}" Margin="14,6" MaxWidth="520" HorizontalAlignment="Left">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:Row">
+                      <Border Padding="0,3" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Key}" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                          <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Panel>
+          </DockPanel>
+        </Border>
         <Border Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,10" Height="230">
           <Border.IsVisible>
             <MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -815,6 +985,59 @@
           <StackPanel>
           </StackPanel>
         </ScrollViewer>
+        <!-- Visualize: the selected step's editor -->
+        <DockPanel IsVisible="{Binding IsVisualize}" Background="{DynamicResource Bg1B}">
+          <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center" IsVisible="{Binding HasPipeSelected}"><TextBlock Text="{Binding PipeStepNumber}" Foreground="{DynamicResource MutedB}" /></Border>
+              <TextBlock Text="{Binding PipeStepTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="18,10,18,14" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" IsVisible="{Binding HasPipeSelected}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Classes="small" Click="OnStepUp" ToolTip.Tip="Move up (runs later)"><local:Icon Kind="chev" Size="13" RenderTransform="rotate(180deg)" /></Button>
+              <Button Classes="small" Click="OnStepDown" ToolTip.Tip="Move down (runs earlier)"><local:Icon Kind="chev" Size="13" /></Button>
+              <Button Classes="small" Content="Remove step" Click="OnStepRemove" />
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section" IsVisible="{Binding HasPipeSelected}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SETTINGS" Classes="h3" />
+                  <TextBlock Text="No settings: the step runs as it is." Classes="dim" IsVisible="{Binding !StepFields.Count}" />
+                  <ItemsControl ItemsSource="{Binding StepFields}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:StepField">
+                        <StackPanel Spacing="4" Margin="0,0,0,10">
+                          <TextBlock Text="{Binding Label}" Classes="label" IsVisible="{Binding !IsBool}" />
+                          <TextBox Text="{Binding Text}" IsVisible="{Binding IsText}" Classes.mono="{Binding IsMono}" Watermark="{Binding Hint}" AcceptsReturn="False" />
+                          <ComboBox ItemsSource="{Binding Choices}" SelectedIndex="{Binding ChoiceIndex}" IsVisible="{Binding IsChoice}" HorizontalAlignment="Stretch" />
+                          <CheckBox Classes="toggle" Content="{Binding Label}" IsChecked="{Binding On}" IsVisible="{Binding IsBool}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding HasPipeSelected}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="RESULT" Classes="h3" />
+                  <TextBlock Text="{Binding PipeSelected.Summary}" FontSize="12.5" TextWrapping="Wrap" Foreground="{Binding PipeSelected.SummaryBrush}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding !HasPipeSelected}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="DATA SOURCE" Classes="h3" />
+                  <TextBlock Text="{Binding PipeSourceTitle}" FontSize="12.5" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding PipeSourceDetail}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" LineHeight="18"
+                             Text="Steps never change the file. They run on every frame you show, bottom to top; each reads what the steps below it made. Pick a step to edit it, or add one with +." />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Render (design/boards/RenderOverlays) -->
         <DockPanel IsVisible="{Binding IsRender}" Background="{DynamicResource Bg1B}">
           <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -960,6 +1183,42 @@
       <pages:NanoPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsNano}" />
       <!-- Blend builder (design/boards/BlendBuilder) -->
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
+      <!-- Add pipeline step (design/boards/PipelineSteps) -->
+      <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding StepLibraryOpen}" ZIndex="2">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="22,10" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBox Width="320" Watermark="Search steps" Text="{Binding StepSearch}" />
+                <Button Content="Close" Click="OnCloseStepLibrary" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Add pipeline step" FontSize="19" FontWeight="SemiBold" />
+                <TextBlock Text="Each step is also a command: the same JSON runs with caps pipeline FILE --steps" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <ScrollViewer Padding="22,14">
+            <ItemsControl ItemsSource="{Binding StepLibraryRows}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:StepKind">
+                  <Button Classes="tile" Margin="6" Padding="14,10" Click="OnPickStep" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                      <local:Icon Kind="{Binding Icon}" Size="18" Foreground="{DynamicResource AccB}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                      <StackPanel Grid.Column="1" Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Medium" />
+                        <TextBlock Text="{Binding About}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Group}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
       <!-- Nothing open (design/boards/VisEmpty): Analyze before a trajectory is open -->
       <pages:EmptyPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding ShowEmpty}" ZIndex="1" />
       <!-- Export › Figure (design/boards/FigureBackground) -->
@@ -1031,6 +1290,9 @@
                 <TextBlock Text="Compare with" Classes="dim" />
                 <ComboBox Width="220" ItemsSource="{Binding Analyze.References}" SelectedIndex="{Binding Analyze.RefIndex}" />
               </StackPanel>
+              <Button Click="OnOpenVisualize" VerticalAlignment="Bottom" ToolTip.Tip="Pipeline of selection, colouring and measuring steps, with the data inspector">
+                <StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="eye" Size="14" VerticalAlignment="Center" /><TextBlock Text="Visualize" VerticalAlignment="Center" /></StackPanel>
+              </Button>
               <Button Content="Export CSV / LaTeX…" Click="OnAnalyzeExport" IsEnabled="{Binding Analyze.HasResults}" VerticalAlignment="Bottom" />
               <Button Classes="primary" Content="Run selected" Click="OnAnalyzeRun" IsVisible="{Binding Analyze.NotWorking}" VerticalAlignment="Bottom">
                 <Button.IsEnabled>

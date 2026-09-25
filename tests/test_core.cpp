@@ -12,6 +12,7 @@
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "caps/render.hpp"
+#include "caps/pipeline.hpp"
 
 using namespace caps;
 
@@ -489,6 +490,82 @@ TEST(Render, AmbientAccessibility) {
   long sp = 0, sa = 0;
   for (size_t k = 0; k < plain.rgba.size(); k += 4) { sp += plain.rgba[k]; sa += ao.rgba[k]; }
   EXPECT_LT(sa, sp);
+}
+
+TEST(Pipeline, StepsOnPolystyrene) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const System f = t.frame(0);
+  size_t nh = 0;
+  for (const auto& a : f.atoms) nh += a.element == 1;
+  auto run = [&](const std::string& json) { return run_pipeline(f, pipeline_from_json(Json::parse(json)), 0, 0); };
+
+  // select hydrogens (listed top to bottom, run bottom to top), then delete them
+  auto st = run(R"([{"type":"delete_selected"},{"type":"select_expression","expression":"Element == \"H\""}])");
+  EXPECT_EQ(st.steps[1].summary, std::to_string(nh) + " selected");
+  EXPECT_EQ(st.system.atoms.size(), f.atoms.size() - nh);
+  EXPECT_EQ(st.attribute("Particles"), double(f.atoms.size() - nh));
+  for (const auto& b : st.system.bonds) EXPECT_TRUE(st.system.atoms[b.i].element != 1 && st.system.atoms[b.j].element != 1);
+  EXPECT_EQ(st.origin.size(), st.system.atoms.size());
+  EXPECT_EQ(f.atoms[size_t(st.origin[5])].id, st.system.atoms[5].id);
+
+  // clusters by bonds are the ten chains; C–H coordination is 66 H on 64 C per chain (C8H8 units, two end caps)
+  st = run(R"([{"type":"coordination","cutoff":1.25,"element_a":6,"element_b":1},{"type":"cluster","mode":"bonds"}])");
+  EXPECT_EQ(st.attribute("ClusterAnalysis.cluster_count"), 10.0);
+  EXPECT_EQ(st.attribute("ClusterAnalysis.largest_size"), 130.0);
+  EXPECT_NEAR(st.attribute("CoordinationAnalysis.mean"), 66.0 / 64.0, 1e-12);
+  ASSERT_EQ(st.tables.size(), 2u);
+  EXPECT_EQ(st.tables[0].name, "clusters");
+  EXPECT_EQ(st.tables[1].name, "rdf");
+
+  // colour coding by molecule is categorical with ten entries; by z it is continuous
+  st = run(R"([{"type":"colour_coding","property":"Molecule"}])");
+  EXPECT_FALSE(st.legend.continuous);
+  EXPECT_EQ(st.legend.entries.size(), 10u);
+  EXPECT_NE(st.colour[0], kNoColour);
+  st = run(R"([{"type":"colour_coding","property":"Position.Z","map":"viridis"}])");
+  EXPECT_TRUE(st.legend.continuous);
+  EXPECT_LT(st.legend.lo, st.legend.hi);
+
+  // slice keeps a 12 Å slab through the centre; replicate doubles the particles and the cell
+  st = run(R"([{"type":"slice","normal":[0,0,1],"width":12}])");
+  EXPECT_GT(st.system.atoms.size(), 0u);
+  EXPECT_LT(st.system.atoms.size(), f.atoms.size());
+  for (const auto& a : st.system.atoms) EXPECT_LE(std::fabs(a.pos[2] - (f.cell.origin[2] + f.cell.c[2] / 2)), 6.0 + 1e-9);
+  st = run(R"([{"type":"replicate","nx":2,"ny":1,"nz":1}])");
+  EXPECT_EQ(st.system.atoms.size(), 2 * f.atoms.size());
+  EXPECT_EQ(st.system.bonds.size(), 2 * f.bonds.size());
+  EXPECT_NEAR(st.system.cell.a[0], 2 * f.cell.a[0], 1e-9);
+  EXPECT_NEAR(st.attribute("Density"), f.density(), 1e-9);
+
+  // density profile averages to the cell density; histogram counts every particle
+  st = run(R"([{"type":"histogram","property":"Charge","bins":20},{"type":"binning","axis":2,"bins":10,"reduction":"density"}])");
+  double mean = 0;
+  for (const auto& r : st.tables[0].rows) mean += r[1];
+  EXPECT_NEAR(mean / 10, f.density(), 1e-6);
+  double count = 0;
+  for (const auto& r : st.tables[1].rows) count += r[1];
+  EXPECT_EQ(count, double(f.atoms.size()));
+
+  // computed properties feed later steps; errors stay on their step
+  st = run(R"([{"type":"select_expression","expression":"Twice > 0 && Type != 3"},{"type":"compute_property","name":"Twice","expression":"2 * Charge"},{"type":"select_expression","expression":"Position.Q > 1"}])");
+  EXPECT_EQ(st.steps[2].level, "error");
+  EXPECT_NE(st.steps[2].summary.find("unknown property Position.Q"), std::string::npos);
+  EXPECT_EQ(st.steps[1].level, "ok");
+  EXPECT_EQ(st.props.at("Twice")[3], 2 * f.atoms[3].charge);
+  EXPECT_GT(st.selected_count(), 0u);
+  EXPECT_THROW(evaluate_expression(st, "1 +"), std::invalid_argument);
+  EXPECT_THROW(evaluate_expression(st, "sqrt(2, 3)"), std::invalid_argument);
+  const auto v = evaluate_expression(st, "max(Index, 3) % 2 == 1 || !(Index >= 0)");
+  EXPECT_EQ(v[0], 1.0);   // max(0, 3) = 3, odd
+  EXPECT_EQ(v[4], 0.0);
+
+  // result JSON and particle table
+  const Json r = pipeline_result_json(st);
+  EXPECT_TRUE(r["attributes"].size() >= 10);
+  const Json pj = particles_json(st, "Molecule == 1", 0, 5);
+  EXPECT_EQ(pj["total"].number(), 130.0);
+  EXPECT_EQ(pj["rows"].size(), 5u);
+  EXPECT_EQ(pipeline_to_json(pipeline_from_json(Json::parse(R"([{"type":"wrap","enabled":false}])")))["steps"][size_t(0)]["enabled"].boolean(), false);
 }
 
 TEST(Io, StagedOpen) {

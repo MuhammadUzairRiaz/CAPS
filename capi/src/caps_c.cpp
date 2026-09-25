@@ -28,6 +28,7 @@
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 #include "caps/checks.hpp"
+#include "caps/pipeline.hpp"
 #include "caps/crystal.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -74,6 +75,9 @@ struct caps_doc {
   std::string analysis;   // last caps_analyze result (JSON)
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
+  std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
+  std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
+  std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
 };
 
 namespace {
@@ -107,6 +111,22 @@ int32_t guard(F&& f) {
   return -1;
 }
 
+void run_doc_pipeline(caps_doc* d) {
+  d->pstate.reset();
+  d->shown_of.clear();
+  if (!d->pipeline) return;
+  const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
+  d->pstate = std::make_unique<caps::PipelineState>(caps::run_pipeline(d->frame, *d->pipeline, int(d->current), ts));
+  d->shown_of.assign(d->frame.atoms.size(), -1);
+  for (size_t k = 0; k < d->pstate->origin.size(); ++k) {
+    const int o = d->pstate->origin[k];
+    if (o >= 0 && size_t(o) < d->shown_of.size() && d->shown_of[size_t(o)] < 0) d->shown_of[size_t(o)] = int32_t(k);
+  }
+}
+
+// What the view draws: the pipeline's particles when there is a pipeline, else the frame.
+const caps::System& shown(const caps_doc* d) { return d->pstate ? d->pstate->system : d->frame; }
+
 void refresh(caps_doc* d) {
   d->frame = d->traj.frame(d->current);
   if (d->current + 1 != d->traj.frames()) d->frame.velocities.clear();   // velocities belong to the last frame
@@ -119,6 +139,7 @@ void refresh(caps_doc* d) {
     for (auto& a : d->frame.atoms) a.pos = d->frame.cell.wrap(a.pos);
     d->frame.unwrapped = false;
   }
+  run_doc_pipeline(d);
 }
 
 caps::Camera cam_of(const caps_camera* c) {
@@ -141,10 +162,19 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.outlines = o->outlines != 0;
   r.depth_cue = o->depth_cue != 0;
   r.show_cell = o->show_cell != 0;
-  for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0) r.highlight.push_back(o->highlight[k]);
-  r.focus = o->focus - 1;
+  // selection, focus and property colours refer to the frame's atoms; with a pipeline they map onto its particles
+  auto to_shown = [&](int i) { return !d->pstate ? i : i >= 0 && size_t(i) < d->shown_of.size() ? d->shown_of[size_t(i)] : -1; };
+  for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0 && to_shown(o->highlight[k]) >= 0) r.highlight.push_back(to_shown(o->highlight[k]));
+  r.focus = to_shown(o->focus - 1);
   r.ambient_occlusion = o->ambient_occlusion != 0;
-  if (r.colour_by == caps::ColourBy::Property) r.property = d->dcom;
+  if (d->pstate) {
+    const auto& st = *d->pstate;
+    r.colours = st.colour;
+    for (size_t i = 0; i < r.colours.size(); ++i) if (st.selected[i]) r.colours[i] = 0xE5484D;   // selected particles in red
+    if (r.colour_by == caps::ColourBy::Property) caps::property_values(st, "DistanceToCOM", r.property);
+  } else if (r.colour_by == caps::ColourBy::Property) {
+    r.property = d->dcom;
+  }
   return r;
 }
 
@@ -1199,18 +1229,22 @@ const char* caps_note(caps_doc* d, int32_t k) { return (k >= 0 && size_t(k) < d-
 
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba) {
   return guard([&] {
-    const auto img = d->renderer.render(d->frame, cam_of(cam), opts_of(d, opt));
+    const auto img = d->renderer.render(shown(d), cam_of(cam), opts_of(d, opt));
     std::memcpy(rgba, img.rgba.data(), img.rgba.size());
     return 0;
   });
 }
 
-int32_t caps_pick(caps_doc* d, int32_t x, int32_t y) { return d->renderer.pick(x, y); }
+int32_t caps_pick(caps_doc* d, int32_t x, int32_t y) {
+  const int k = d->renderer.pick(x, y);
+  if (k < 0 || !d->pstate) return k;
+  return size_t(k) < d->pstate->origin.size() ? d->pstate->origin[size_t(k)] : -1;   // the frame's atom under the pixel
+}
 
 int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path) {
   return guard([&] {
     caps::Renderer r;   // separate renderer so the view's pick buffer is not replaced
-    caps::write_png(r.render(d->frame, cam_of(cam), opts_of(d, opt)), path);
+    caps::write_png(r.render(shown(d), cam_of(cam), opts_of(d, opt)), path);
     return 0;
   });
 }
@@ -1219,7 +1253,7 @@ int32_t caps_export_svg(caps_doc* d, const caps_camera* cam, const caps_render_o
   return guard([&] {
     std::ofstream f(path);
     if (!f) throw std::runtime_error(std::string("cannot write ") + path);
-    f << caps::render_svg(d->frame, cam_of(cam), opts_of(d, opt));
+    f << caps::render_svg(shown(d), cam_of(cam), opts_of(d, opt));
     return 0;
   });
 }
@@ -1467,7 +1501,7 @@ int32_t caps_neighbours(caps_doc* d, int32_t i, int32_t k, int32_t* idx, double*
 
 double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt) {
   try {
-    return caps::view_scale(d->frame, cam_of(cam), opts_of(d, opt));
+    return caps::view_scale(shown(d), cam_of(cam), opts_of(d, opt));
   } catch (...) {
     return 0;
   }
@@ -2111,6 +2145,71 @@ extern "C" int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_
     report_out(t, report, cap);
     return 0;
   });
+}
+
+extern "C" int32_t caps_pipeline_set(caps_doc* d, const char* json) {
+  return guard([&] {
+    if (!json || !*json) d->pipeline.reset();
+    else {
+      auto p = caps::pipeline_from_json(caps::Json::parse(json));
+      if (p.steps.empty()) d->pipeline.reset();
+      else d->pipeline = std::make_unique<caps::Pipeline>(std::move(p));
+    }
+    run_doc_pipeline(d);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap) {
+  try {
+    if (!d->pstate) return report_out("", json, cap);
+    return report_out(caps::pipeline_result_json(*d->pstate).dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_pipeline_particles(caps_doc* d, const char* filter, int32_t offset, int32_t count, char* json, int32_t cap) {
+  try {
+    caps::PipelineState plain;
+    const caps::PipelineState* st = d->pstate.get();
+    if (!st) {   // no pipeline: the frame itself
+      plain = caps::run_pipeline(d->frame, caps::Pipeline{}, int(d->current), 0);
+      st = &plain;
+    }
+    return report_out(caps::particles_json(*st, filter ? filter : "", size_t(std::max(0, offset)), size_t(std::max(0, count))).dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t count, char* json, int32_t cap) {
+  try {
+    caps::PipelineState plain;
+    const caps::PipelineState* st = d->pstate.get();
+    if (!st) {
+      plain = caps::run_pipeline(d->frame, caps::Pipeline{}, int(d->current), 0);
+      st = &plain;
+    }
+    return report_out(caps::bonds_json(*st, size_t(std::max(0, offset)), size_t(std::max(0, count))).dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_pipeline_catalogue(char* json, int32_t cap) {
+  caps::Json a = caps::Json::array();
+  for (const auto& [type, title, about] : caps::pipeline_step_catalogue()) {
+    caps::Json o = caps::Json::object();
+    o["type"] = type;
+    o["title"] = title;
+    o["about"] = about;
+    a.push_back(std::move(o));
+  }
+  return report_out(a.dump(0), json, cap);
 }
 
 extern "C" int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap) {

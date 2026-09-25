@@ -354,6 +354,35 @@
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Bg2B}" />
   </Style>
+  <Style Selector="TabStrip.small TabStripItem">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <!-- Visualize pipeline rows and data-inspector rows -->
+  <Style Selector="Button.pipestep">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.pipestep:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+  </Style>
+  <Style Selector="Button.pipestep.sel /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+  </Style>
+  <Style Selector="Border.trow">
+    <Setter Property="BorderBrush" Value="{DynamicResource Bg2B}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.trow.hl">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+  </Style>
   <Style Selector="ToggleButton.chip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />
     <Setter Property="Foreground" Value="{DynamicResource MutedB}" />

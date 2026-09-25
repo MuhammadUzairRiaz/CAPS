@@ -327,6 +327,14 @@ int32_t caps_property_range(caps_doc* d, double* lo, double* hi);
 
 /* Nearest neighbours of an atom (minimum image): fills up to k indices and distances, returns count. */
 int32_t caps_neighbours(caps_doc* d, int32_t index, int32_t k, int32_t* idx, double* dist);
+/* v19 visualize pipeline (caps/pipeline.hpp): steps as JSON ({"steps":[{"type":…,"enabled":…,…}]}), run on every
+   shown frame; the view then draws its particles and colours (selected in red), and picks return the frame's atom.
+   NULL or "" clears it. Results, particle rows (filter: an expression) and bond rows are JSON, sized like the others. */
+int32_t caps_pipeline_set(caps_doc* d, const char* json);
+int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap);
+int32_t caps_pipeline_particles(caps_doc* d, const char* filter, int32_t offset, int32_t count, char* json, int32_t cap);
+int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t count, char* json, int32_t cap);
+int32_t caps_pipeline_catalogue(char* json, int32_t cap);
 /* Atoms bonded to atom index (up to cap written); returns the count. */
 int32_t caps_bonded(caps_doc* d, int32_t index, int32_t* idx, int32_t cap);
 /* The molecule (connected by bonds, 0-based) of every atom, up to cap written; returns the number of molecules. */
