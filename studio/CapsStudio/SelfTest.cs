@@ -353,6 +353,20 @@ internal static class SelfTest
         vm.Relax().GetAwaiter().GetResult();
         Check(vm.RelaxLog.Contains("UFF"), "interface relaxed with UFF, the surface held: " + vm.RelaxLog.Split('\n')[0]);
 
+        // Nanostructure builder: a (5,5) tube in a natural-rubber matrix
+        vm.OpenNano();
+        vm.NanoKind = 1;
+        vm.TubeN = 5;
+        vm.TubeM = 5;
+        vm.TubeLength = 12;
+        vm.NanoMatrix = true;
+        vm.MatrixChains = 4;
+        vm.MatrixDp = 8;
+        vm.MatrixDensity = 0.6m;
+        vm.BuildNano().GetAwaiter().GetResult();
+        var comp = vm.Document?.Summary();
+        Check(comp is { } csum && csum.Molecules == 5 && vm.HoldOn, $"nanotube composite: {vm.Title} · {comp?.Atoms} atoms · {vm.NanoError} {vm.Status}");
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");

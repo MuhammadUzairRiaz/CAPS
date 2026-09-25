@@ -376,6 +376,14 @@ int32_t caps_surface_terminations(const char* cif_path, int32_t h, int32_t k, in
 caps_doc* caps_surface_build(const char* cif_path, const char* options_json, char* report, int32_t cap);
 caps_doc* caps_interface_build(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
                                int32_t cap);
+/* Nanostructures (v17). Options JSON {kind: "tube" | "sheet" | "particle"; tube: n, m, length, periodic; sheet: lx, ly,
+   layers, periodic; particle: crystal (CIF path), shape (sphere | cube | octahedron | cuboctahedron), radius, on_atom,
+   passivate}. caps_nano_build: the filler alone. caps_nano_embed: the filler held at the centre of a periodic cell with
+   polymer chains grown around it; options add matrix: {chains, density}; the chain spec as caps_grow_chains; the filler
+   is molecule 1 and is held in Relax / Dynamics. */
+caps_doc* caps_nano_build(const char* options_json, char* report, int32_t cap);
+caps_doc* caps_nano_embed(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
+                          int32_t cap);
 /* Inserts `count` copies of a molecule (SMILES; hydrogens added, cleaned with UFF) into the free space of the current
    frame (the structure stays where it is), e.g. H–S–S–H sulfur donors for the sulfur_allylic cure. The document becomes
    that one frame; a Field assignment is cleared. 0 on success. */

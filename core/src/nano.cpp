@@ -345,14 +345,21 @@ System embed_filler(const System& filler, const ChainSpec& spec, const FillerMat
   for (const auto& a : filler.atoms)
     for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], a.pos[k]), hi[k] = std::max(hi[k], a.pos[k]);
   FillerReport R;
+  std::string widened;
   for (int k = 0; k < 3; ++k) {
     if (o.keep_axis[size_t(k)]) { L[size_t(k)] = fl[size_t(k)]; continue; }
     L[size_t(k)] = free_len;
     const double need = hi[k] - lo[k] + 7.0;
     if (L[size_t(k)] < need) {
       L[size_t(k)] = need;
-      R.notes.push_back(std::string("the cell was widened along ") + "xyz"[k] + " to fit the filler: the matrix is thinner than asked");
+      widened += std::string(widened.empty() ? "" : ", ") + "xyz"[k];
     }
+  }
+  if (!widened.empty()) {
+    const double room = L[0] * L[1] * L[2] - vf;
+    const int want = int(std::ceil(room * o.density * 0.602214076 / mchain));
+    R.notes.push_back("the cell was widened along " + widened + " to fit the filler, so the matrix is below " + std::to_string(o.density).substr(0, 4) +
+                      " g/cm³: about " + std::to_string(want) + " chains would fill it");
   }
   // the filler centred (free axes) in the new cell
   System sub = filler;
