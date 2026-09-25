@@ -750,6 +750,24 @@ TEST(Bundle, Sha256ZipAndReproduce) {
   std::filesystem::remove(bundle);
 }
 
+TEST(Io, InspectBeforeOpening) {
+  const std::string dump = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", data = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
+  const auto r = inspect_file(dump, data);
+  EXPECT_EQ(r.format, "lammps-dump");
+  EXPECT_EQ(r.atoms, 1300u);
+  EXPECT_EQ(r.frames, 3u);
+  ASSERT_FALSE(r.columns.empty());
+  EXPECT_EQ(r.columns[0].maps_to, "Particle Identifier");
+  EXPECT_EQ(r.types.size(), 4u);
+  EXPECT_NE(r.bonds_from.find("1370 bonds"), std::string::npos);
+  EXPECT_EQ(r.head[0], "ITEM: TIMESTEP");
+  const auto g = inspect_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.gro");
+  EXPECT_EQ(g.format, "gro");
+  EXPECT_EQ(g.atoms, 1300u);
+  EXPECT_EQ(g.frames, 1u);
+  EXPECT_FALSE(g.types.empty());
+}
+
 TEST(Io, FileWithoutAtomsIsAnError) {
   const std::string path = (std::filesystem::temp_directory_path() / "caps_test_garbage.data").string();
   { std::ofstream f(path); f << "garbage\n"; }

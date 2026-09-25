@@ -2316,6 +2316,44 @@ std::pair<caps::BundleOptions, caps::Pipeline> bundle_options(const char* json) 
 }
 }  // namespace
 
+extern "C" int32_t caps_inspect_file(const char* path, const char* topology_path, char* json, int32_t cap) {
+  try {
+    const auto r = caps::inspect_file(path, topology_path ? topology_path : "");
+    caps::Json j = caps::Json::object();
+    j["format"] = r.format;
+    j["format_name"] = r.format_name;
+    j["atoms"] = double(r.atoms);
+    j["frames"] = double(r.frames);
+    j["bytes"] = double(r.bytes);
+    j["bonds_from"] = r.bonds_from;
+    j["units"] = r.units;
+    caps::Json head = caps::Json::array();
+    for (const auto& l : r.head) head.push_back(l);
+    j["head"] = std::move(head);
+    caps::Json cols = caps::Json::array();
+    for (const auto& c : r.columns) {
+      caps::Json o = caps::Json::object();
+      o["name"] = c.name; o["maps_to"] = c.maps_to; o["kind"] = c.kind; o["used"] = c.used;
+      cols.push_back(std::move(o));
+    }
+    j["columns"] = std::move(cols);
+    caps::Json types = caps::Json::array();
+    for (const auto& t : r.types) {
+      caps::Json o = caps::Json::object();
+      o["type"] = double(t.type); o["label"] = t.label; o["mass"] = t.mass; o["element"] = t.element;
+      types.push_back(std::move(o));
+    }
+    j["types"] = std::move(types);
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : r.notes) notes.push_back(n);
+    j["notes"] = std::move(notes);
+    return report_out(j.dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_bundle_preview(caps_doc* d, const char* options, char* json, int32_t cap) {
   try {
     auto [b, p] = bundle_options(options);

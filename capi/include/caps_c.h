@@ -59,6 +59,8 @@ int32_t caps_abi_version(void);
 const char* caps_last_error(void);
 
 caps_doc* caps_open(const char* path, const char* topology_path);   /* NULL on error */
+/* v19: what a file holds before opening it (format, first lines, dump columns, types, frames, bonds) as JSON. */
+int32_t caps_inspect_file(const char* path, const char* topology_path, char* json, int32_t cap);
 /* Staged open (Studio progressive open): stage 0 format detected, 1 frame 0 read, 2 topology joined, 3 frames read
    (fraction of the file); return non-zero to stop — the frames read so far are kept. max_frames > 0 stops early. */
 typedef int32_t (*caps_open_progress_fn)(int32_t stage, double fraction, const char* detail, void* user);

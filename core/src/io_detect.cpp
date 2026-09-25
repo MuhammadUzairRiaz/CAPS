@@ -1,9 +1,12 @@
+#include <cctype>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <map>
 
 #include "caps/analysis.hpp"
 #include "caps/crystal.hpp"
+#include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "io_util.hpp"
 
@@ -129,6 +132,100 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr.topology.notes.push_back(std::to_string(tr.topology.bonds.size()) + " bonds perceived from distances (none in file)");
   }
   return tr;
+}
+
+FileInspection inspect_file(const std::string& path, const std::string& topology_path, int head_lines) {
+  FileInspection r;
+  r.format = detect_format(path);
+  r.format_name = format_name(r.format);
+  r.bytes = size_t(std::filesystem::file_size(path));
+  std::ifstream in(path, std::ios::binary);
+  std::string line;
+  // first lines, and the dump's header for its columns
+  for (int k = 0; k < head_lines && std::getline(in, line); ++k) {
+    if (!line.empty() && line.back() == '\r') line.pop_back();
+    r.head.push_back(line.size() > 200 ? line.substr(0, 200) + " …" : line);
+  }
+  if (r.format == "lammps-dump") {
+    in.clear();
+    in.seekg(0);
+    size_t natoms = 0;
+    bool got_cols = false;
+    while (std::getline(in, line)) {
+      if (line.rfind("ITEM: NUMBER OF ATOMS", 0) == 0 && std::getline(in, line)) natoms = std::stoull(trim(line));
+      else if (line.rfind("ITEM: ATOMS", 0) == 0 && !got_cols) {
+        got_cols = true;
+        for (const auto& c : split(line.substr(11))) {
+          FileColumn col{c, "", "float", true};
+          if (c == "id") col = {c, "Particle Identifier", "int", true};
+          else if (c == "mol") col = {c, "Molecule Identifier", "int", true};
+          else if (c == "type") col = {c, "Particle Type", "int", true};
+          else if (c == "element") col = {c, "Element", "text", true};
+          else if (c == "q") col = {c, "Charge", "float", true};
+          else if (c == "x" || c == "y" || c == "z") col.maps_to = "Position." + std::string(1, char(std::toupper(c[0]))) + " (wrapped)";
+          else if (c == "xu" || c == "yu" || c == "zu") col.maps_to = "Position." + std::string(1, char(std::toupper(c[0]))) + " (unwrapped)";
+          else if (c == "xs" || c == "ys" || c == "zs") col.maps_to = "Position." + std::string(1, char(std::toupper(c[0]))) + " (scaled)";
+          else if (c == "ix" || c == "iy" || c == "iz") col = {c, "Periodic image", "int", true};
+          else { col.maps_to = "not read"; col.used = false; }
+          r.columns.push_back(col);
+        }
+        // skip this frame's atoms quickly
+        for (size_t i = 0; i < natoms && std::getline(in, line); ++i) {}
+        r.frames = 1;
+      } else if (line.rfind("ITEM: TIMESTEP", 0) == 0 && got_cols) {
+        ++r.frames;
+      }
+    }
+    r.atoms = natoms;
+    size_t unused = 0;
+    for (const auto& c : r.columns) unused += !c.used;
+    if (unused) r.notes.push_back(std::to_string(unused) + " column(s) are not read (CAPS keeps positions, ids, molecules, types and charges)");
+  }
+  // types: from the data file (the file itself or the topology)
+  const std::string data = r.format == "lammps-data" ? path : topology_path;
+  if (!data.empty()) {
+    try {
+      const System t = read_lammps_data(data);
+      for (const auto& ti : t.types) {
+        FileType ft{ti.type, ti.label, ti.mass, ""};
+        for (const auto& a : t.atoms) if (a.type == ti.type && a.element) { ft.element = element(a.element).symbol; break; }
+        r.types.push_back(ft);
+      }
+      if (r.atoms == 0) r.atoms = t.atoms.size();
+      if (r.frames == 0) r.frames = 1;
+      r.bonds_from = t.bonds.empty() ? "perceived from distances (the data file has none)" :
+                     std::to_string(t.bonds.size()) + " bonds from " + std::filesystem::path(data).filename().string();
+      r.units = "LAMMPS real (Å, fs, kcal/mol, e)";
+    } catch (const std::exception& e) {
+      r.notes.push_back(std::string("topology: ") + e.what());
+    }
+  }
+  if (r.types.empty() || r.format != "lammps-dump") {
+    // other formats: open to count atoms and types (small files); frames as read
+    try {
+      const Trajectory t = open_file(path, topology_path);
+      r.atoms = t.topology.atoms.size();
+      r.frames = t.frames();
+      if (r.types.empty()) {
+        std::map<std::string, FileType> by;
+        for (const auto& a : t.topology.atoms) {
+          const std::string key = a.name.empty() ? element(a.element).symbol : a.name;
+          auto& ft = by[key];
+          ft.label = key;
+          ft.type = a.type;
+          ft.mass = element(a.element).mass;
+          ft.element = element(a.element).symbol;
+        }
+        for (auto& [k, v] : by) r.types.push_back(v);
+      }
+      if (r.bonds_from.empty()) r.bonds_from = t.topology.bonds_from_file ? std::to_string(t.topology.bonds.size()) + " bonds from the file" : "perceived from distances";
+      if (r.units.empty()) r.units = r.format == "gro" ? "nm in the file, converted to Å" : "Å";
+    } catch (const std::exception& e) {
+      r.notes.push_back(e.what());
+    }
+  }
+  if (r.bonds_from.empty()) r.bonds_from = "perceived from distances (no topology file)";
+  return r;
 }
 
 }  // namespace caps

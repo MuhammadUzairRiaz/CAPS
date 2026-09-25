@@ -189,6 +189,21 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>File picker, then the Open preview page (format, columns, types, topology) before reading.</summary>
+    public async Task OpenWithPreview()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open a structure or trajectory", AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.gro", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.cif"] },
+                new FilePickerFileType("All files") { Patterns = ["*"] },
+            ],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) _vm.PreviewOpen(p);
+    }
+
     public async Task OpenDialog()
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -322,6 +337,8 @@ public partial class MainWindow : Window
     /// <summary>Palette commands that need the window (file dialogs, the view's size).</summary>
     private void AddWindowCommands()
     {
+        _vm.AddCommand(new PaletteCommand { Title = "Open with preview…", Id = "document.open preview", Icon = "folder", Section = "File",
+            Keywords = "inspect columns types topology format first lines", Run = () => _ = OpenWithPreview() });
         _vm.AddCommand(new PaletteCommand { Title = "Open a structure or trajectory…", Id = "document.open", Icon = "folder", Shortcut = "⌘O", Section = "File",
             Keywords = "load file lammps gromacs pdb xyz mol2", Run = () => _ = OpenDialog() });
         _vm.AddCommand(new PaletteCommand { Title = "Save as LAMMPS data…", Id = "document.save data", Icon = "save", Shortcut = "⌘S", Section = "File",

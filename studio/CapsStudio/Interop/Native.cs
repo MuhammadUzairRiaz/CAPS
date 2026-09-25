@@ -207,6 +207,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_last_error")] private static extern IntPtr LastErrorPtr();
     public static string LastError() => Marshal.PtrToStringUTF8(LastErrorPtr()) ?? "";
 
+    [DllImport(Lib, EntryPoint = "caps_inspect_file")] public static extern int InspectFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open_staged")] public static extern IntPtr OpenStaged([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, int maxFrames, CapsOpenProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_adopt_frames")] public static extern int AdoptFrames(IntPtr dst, IntPtr src);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
@@ -454,6 +455,8 @@ public sealed class CapsDocument : IDisposable
     public string PipelineParticles(string filter, int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineParticles(_h, filter, offset, count, b, c)); }
     public string PipelineBonds(int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineBonds(_h, offset, count, b, c)); }
     public static string PipelineCatalogue() => Sized(Native.PipelineCatalogue);
+    /// <summary>What a file holds before opening it (scans a dump for its frames: call off the UI thread).</summary>
+    public static string InspectFile(string path, string? topology) => Sized((b, c) => Native.InspectFile(path, topology, b, c));
     /// <summary>The bundle's files with sizes and hashes (figures are made on write). Runs the pipeline twice: off the UI thread.</summary>
     public string BundlePreview(string options) { lock (_lock) return Sized((b, c) => Native.BundlePreview(_h, options, b, c)); }
     public int BundleWrite(string path, string options, in CapsCamera cam, in CapsRenderOpts opt)
