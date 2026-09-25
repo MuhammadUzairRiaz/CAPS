@@ -25,14 +25,18 @@
 //   unwrap              molecules made whole across the cell boundary
 //   molecule_shape      per molecule: Rg, κ², asphericity, mass → properties and table molecules
 //   topology            bond lengths, bond angles and dihedrals as histograms          → tables bonds, angles, dihedrals
-//   displacements       reference first|previous|frame, frame                              → Displacement(.X .Y .Z), MSD
-//   smooth              window (frames, centred): positions averaged over the trajectory
+//   displacements       reference first|previous|frame, frame, subtract_drift   → Displacement(.X .Y .Z), MSD, table
+//                       displacements (per molecule: mean and max |d| of heavy atoms, COM shift)
+//   smooth              window (frames, centred): positions averaged over the trajectory; C–C lengths stored and
+//                       averaged and the RMS shift as attributes; the frame is marked Smoothed
 //   vectors             property end_to_end|dipole|displacement|velocity, scale, radius       → arrows, table vectors
-//   trajectory_lines    particles centres|selected, from, to, stride, radius                  → paths over the frames
+//   trajectory_lines    particles centres|selected, from, to, stride, radius   → paths over the frames, table paths
+//                       (path length, net shift, net / path)
 //   voids               probe, grid, show (points)       accessible volume, voids by volume, probe sweep (needs a cell)
 //   voronoi             method grid|radical, grid        → AtomicVolume, table by type; cells sum to the box
 //   density_field       grid, sigma, axis, position       Gaussian mass density: mean, empty share, profile, slice points
-//   msd                 heavy_only, every, max_lag, timestep_fs    MSD(τ) of atoms and chain centres, D from the centres
+//   msd                 heavy_only, every, max_lag, fit_from, fit_to (lags, frames), timestep_fs
+//                       MSD(τ) of atoms and chain centres, D from the centres over the fit lags
 //   scatter             x, y, only_selected                         → table scatter (points), Pearson r
 //   python              file (a script with an @step function), timeout   — run in a Python process through the caps
 //                       package in data/python ($CAPS_PYTHON_PATH; interpreter $CAPS_PYTHON, else python3): the frame's
