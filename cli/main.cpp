@@ -125,7 +125,7 @@ int usage() {
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
-               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --steps N]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges keep|types|gasteiger]\n"
+               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --steps N]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
 }
@@ -1263,9 +1263,20 @@ int main(int argc, char** argv) {
           } else {
             for (const auto& a : s.atoms) types.push_back(a.name);
           }
-          const std::string charges = o.count("--charges") ? o["--charges"] : (s.has_charges ? "keep" : "types");
+          std::string charges = o.count("--charges") ? o["--charges"] : (s.has_charges ? "keep" : "types");
           ParamReport rep;
-          f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
+          if (charges == "auto") {   // the force field's own charges, else Gasteiger–Marsili (as the Studio's default)
+            try {
+              f = parameterize(s, ff, types, "types", &rep, o.count("--allow-missing"));
+              charges = "types";
+            } catch (const FFError& e) {
+              if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
+              rep = ParamReport{};
+              charges = "gasteiger";
+              std::printf("charges: %s has no charges on its types; Gasteiger–Marsili charges used\n", ff.name.c_str());
+            }
+          }
+          if (charges != "types" || !f.charge.size()) f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
           cutoff = ff.cutoff;
           for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
         }
