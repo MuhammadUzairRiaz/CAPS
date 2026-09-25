@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 19, "native ABI version 19");
+        Check(Native.AbiVersion() == 20, "native ABI version 20");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -374,6 +374,24 @@ internal static class SelfTest
         vm.BuildBlend().GetAwaiter().GetResult();
         var bsum = vm.Document?.Summary();
         Check(vm.BlendRows.Count == 2 && bsum is { } blendSum && blendSum.Molecules >= 5 && vm.Title.Contains("blend"), $"blend: {vm.Title} · {bsum?.Molecules} chains · {vm.BlendError}");
+
+        // Crystal builder: polyethylene (Pnam) to start, rutile's space group found from its CIF, a supercell built
+        vm.OpenCrystal();
+        Check(vm.CrystalGroup?.Number == 62 && vm.CrystalSites.Count == 3 && vm.CrystalGroups.Count >= 8 && vm.CrystalBFree,
+              $"crystal: starts from {vm.CrystalGroup?.Title} with {vm.CrystalSites.Count} sites · {vm.CrystalGroups.Count} groups listed · {vm.CrystalError}");
+        vm.CrystalQuery = "Fm-3m";
+        Check(vm.CrystalGroups.Any(g => g.Number == 225), "crystal: search Fm-3m → " + string.Join(", ", vm.CrystalGroups.Select(g => g.Title)));
+        vm.CrystalQuery = "14";
+        Check(vm.CrystalGroups.Count >= 9 && vm.CrystalGroups.All(g => g.Number == 14), $"crystal: search 14 → {vm.CrystalGroups.Count} settings");
+        vm.CrystalQuery = "";
+        var rutileCif = vm.Crystals.FirstOrDefault(c => c.Id == "rutile")?.File ?? "";
+        vm.ImportCrystalCif(rutileCif).GetAwaiter().GetResult();
+        Check(vm.CrystalGroup?.Number == 136 && vm.CrystalSites.Count == 2 && !vm.CrystalBFree && vm.CrystalCFree,
+              $"crystal: rutile.cif → {vm.CrystalGroup?.Title} · {vm.CrystalSites.Count} sites · {vm.CrystalLog} {vm.CrystalError}");
+        vm.CrystalSupercell = "2 × 2 × 3";
+        vm.BuildCrystal().GetAwaiter().GetResult();
+        var xsum = vm.Document?.Summary();
+        Check(xsum is { } xs && xs.Atoms == 72 && xs.Bonds == 144, $"crystal: rutile 2 × 2 × 3 → {xsum?.Atoms} atoms · {xsum?.Bonds} bonds · {vm.CrystalError} {vm.Status}");
 
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),

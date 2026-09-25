@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 19  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -442,6 +442,25 @@ int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap);
    an interface. A document from caps_interface_build holds molecule 1. */
 void caps_set_held_molecule(caps_doc* d, int64_t mol);
 int64_t caps_held_molecule(const caps_doc* d);
+
+/* Crystals from space groups (v20, design/boards/CrystalBuilder). A spec is JSON {space_group (key "227:2", number or
+   Hermann–Mauguin symbol), a, b, c (Å), alpha, beta, gamma (°), sites: [{label, element (symbol), x, y, z (fractional),
+   occupancy}], supercell: [na, nb, nc], tolerance (Å: images closer are one atom), primitive (bool: the primitive cell of
+   a centred lattice), title}.
+   caps_space_groups: [{key, number, hm, hall, system}] of the 530 settings of the 230 groups.
+   caps_crystal_info: {ok, error, key, hm, hall, system, number, operations, atoms_per_cell, atoms, bonds,
+   multiplicity: [per site], volume (Å³ of the cell), density, formula, centring, notes}.
+   caps_crystal_build: the crystal as a document; report lines in `report`.
+   caps_crystal_symmetrize: {ok, error, moved, spec} with every site moved onto its special position (images within
+   `snap` Å of the site averaged).
+   caps_crystal_find_symmetry: the highest-symmetry setting that maps the crystal of a spec (cif_path NULL or empty) or of
+   a CIF file onto itself within `tolerance` Å: {ok, error, key, hm, system, number, operations, atoms, spec (that
+   setting's asymmetric unit and the cell)}. All return the length needed including the final NUL. */
+int32_t caps_space_groups(char* json, int32_t cap);
+int32_t caps_crystal_info(const char* spec_json, char* json, int32_t cap);
+caps_doc* caps_crystal_build(const char* spec_json, char* report, int32_t cap);
+int32_t caps_crystal_symmetrize(const char* spec_json, double snap, char* json, int32_t cap);
+int32_t caps_crystal_find_symmetry(const char* spec_json, const char* cif_path, double tolerance, char* json, int32_t cap);
 
 #ifdef __cplusplus
 }

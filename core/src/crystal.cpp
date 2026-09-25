@@ -1,5 +1,6 @@
 // CAPS crystals and surfaces (see caps/crystal.hpp).
 #include "caps/crystal.hpp"
+#include "caps/spacegroup.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -115,50 +116,6 @@ double cif_number(const std::string& v, double fallback = 0) {
 }
 
 // ---------------------------------------------------------------- symmetry operations
-
-struct SymOp {
-  double R[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-  double t[3] = {0, 0, 0};
-};
-
-double parse_fraction(const std::string& s) {
-  const auto p = s.find('/');
-  if (p == std::string::npos) return std::stod(s);
-  return std::stod(s.substr(0, p)) / std::stod(s.substr(p + 1));
-}
-
-SymOp parse_symop(std::string s) {
-  SymOp op;
-  s.erase(std::remove_if(s.begin(), s.end(), [](char c) { return std::isspace(static_cast<unsigned char>(c)) || c == '\'' || c == '"'; }), s.end());
-  s = lower(s);
-  std::vector<std::string> comp;
-  std::stringstream ss(s);
-  for (std::string x; std::getline(ss, x, ',');) comp.push_back(x);
-  if (comp.size() != 3) throw CrystalError("symmetry operation '" + s + "' does not have three components");
-  for (int row = 0; row < 3; ++row) {
-    const std::string& c = comp[size_t(row)];
-    size_t i = 0;
-    while (i < c.size()) {
-      double sign = 1;
-      if (c[i] == '+' || c[i] == '-') { sign = c[i] == '-' ? -1 : 1; ++i; }
-      size_t j = i;
-      while (j < c.size() && c[j] != '+' && c[j] != '-') ++j;
-      std::string term = c.substr(i, j - i);
-      i = j;
-      if (term.empty()) continue;
-      const auto xyz = term.find_first_of("xyz");
-      if (xyz != std::string::npos) {
-        std::string coef = term.substr(0, xyz);
-        if (!coef.empty() && coef.back() == '*') coef.pop_back();
-        const double v = coef.empty() ? 1.0 : parse_fraction(coef);
-        op.R[row][term[xyz] - 'x'] += sign * v;
-      } else {
-        op.t[row] += sign * parse_fraction(term);
-      }
-    }
-  }
-  return op;
-}
 
 // Element from a CIF type symbol or label: "O2-" → O, "Si4+" → Si, "Fe1" → Fe, "OW1" → O.
 int element_of_site(const std::string& sym) {

@@ -23,6 +23,7 @@
 #include "caps/pipeline.hpp"
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
+#include "caps/spacegroup.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
@@ -67,6 +68,10 @@ int usage() {
                "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
                "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT]\n"
                "                                   a saved pipeline over many inputs: one row of attributes per input\n"
+               "  caps crystal --group 'P 42/m n m' --cell a,b,c[,α,β,γ] --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' -o OUT\n"
+               "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
+               "  caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit\n"
+               "  caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -150,7 +155,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -319,6 +324,100 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "crystal") {
+    try {
+      if (o.count("--groups")) {
+        const std::string q = pos.empty() ? "" : pos[0];
+        const auto* hit = q.empty() ? nullptr : find_space_group(q);
+        for (const auto& sg : space_group_settings()) {
+          if (hit && sg.number != hit->number) continue;
+          std::printf("%-8s %3d  %-18s %-16s %s\n", sg.key.c_str(), sg.number, sg.hm.c_str(), sg.hall.c_str(), crystal_system(sg.number).c_str());
+        }
+        if (!q.empty() && !hit) throw std::invalid_argument("no space group matches '" + q + "'");
+        return 0;
+      }
+      const double tol = o.count("--tolerance") ? std::stod(o["--tolerance"]) : -1;
+      if (o.count("--find-symmetry")) {
+        if (pos.empty()) return usage();
+        const auto ext = std::filesystem::path(pos[0]).extension().string();
+        const System s = ext == ".cif" ? read_cif(pos[0]) : load(pos[0], o);
+        const SymmetryFound f = find_symmetry(s, tol > 0 ? tol : 0.1);
+        std::printf("%s (No. %d, %s) · %d operations · setting %s\n", f.hm.c_str(), f.number, f.system.c_str(), f.operations, f.key.c_str());
+        std::printf("origin shift %.4f %.4f %.4f\n", f.origin[0], f.origin[1], f.origin[2]);
+        std::printf("%-8s %-3s %9s %9s %9s\n", "label", "el", "x", "y", "z");
+        for (const auto& site : f.sites)
+          std::printf("%-8s %-3s %9.5f %9.5f %9.5f\n", site.label.c_str(), element(site.element).symbol, site.frac[0], site.frac[1], site.frac[2]);
+        return 0;
+      }
+      if (!o.count("-o")) return usage();
+      CrystalSpec spec;
+      if (o.count("--group")) spec.space_group = o["--group"];
+      if (o.count("--cell")) {
+        std::vector<double> v;
+        std::stringstream ss(o["--cell"]);
+        for (std::string x; std::getline(ss, x, ',');) v.push_back(std::stod(x));
+        if (v.size() != 3 && v.size() != 6) throw std::invalid_argument("--cell a,b,c or a,b,c,alpha,beta,gamma");
+        spec.a = v[0], spec.b = v[1], spec.c = v[2];
+        if (v.size() == 6) spec.alpha = v[3], spec.beta = v[4], spec.gamma = v[5];
+      }
+      if (o.count("--sites")) {
+        std::stringstream ss(o["--sites"]);
+        for (std::string line; std::getline(ss, line, ';');) {
+          std::istringstream ls(line);
+          CrystalSite site;
+          std::string el;
+          if (!(ls >> site.label >> el >> site.frac[0] >> site.frac[1] >> site.frac[2])) {
+            if (line.find_first_not_of(" \t") == std::string::npos) continue;
+            throw std::invalid_argument("a site is 'LABEL EL x y z', not '" + line + "'");
+          }
+          site.element = element_from_symbol(el);
+          if (site.element <= 0) throw std::invalid_argument("unknown element '" + el + "'");
+          spec.sites.push_back(site);
+        }
+      }
+      if (o.count("--supercell")) {
+        std::stringstream ss(o["--supercell"]);
+        size_t k = 0;
+        for (std::string x; std::getline(ss, x, ',') && k < 3;) spec.supercell[k++] = std::max(1, std::stoi(x));
+      }
+      if (tol > 0) spec.tolerance = tol;
+      if (spec.sites.empty()) throw std::invalid_argument("no sites: --sites 'LABEL EL x y z; …'");
+      if (o.count("--symmetrize")) {
+        int moved = 0;
+        spec = symmetrize_sites(spec, 0.3, &moved);
+        std::printf("%d site(s) moved onto special positions\n", moved);
+      }
+      CrystalReport rep;
+      System s;
+      if (o.count("--primitive")) {
+        const auto sc = spec.supercell;
+        spec.supercell = {1, 1, 1};
+        s = build_crystal(spec, &rep);
+        const auto* sg = find_space_group(spec.space_group);
+        const bool rhomb_axes = sg->key.size() > 2 && sg->key.substr(sg->key.size() - 2) == ":r";
+        s = primitive_cell(s, rhomb_axes ? 'P' : sg->hm[0]);
+        std::printf("primitive cell: %zu atoms\n", s.atoms.size());
+        if (sc[0] * sc[1] * sc[2] > 1) s = supercell(s, sc[0], sc[1], sc[2]);
+        s.bonds = crystal_bonds(s);
+      } else {
+        s = build_crystal(spec, &rep);
+      }
+      for (const auto& n : s.notes) std::printf("%s\n", n.c_str());
+      for (size_t k = 0; k < spec.sites.size(); ++k) std::printf("  %-6s %-2s multiplicity %d\n", spec.sites[k].label.c_str(), element(spec.sites[k].element).symbol, rep.multiplicity[k]);
+      for (const auto& n : rep.notes) std::printf("note: %s\n", n.c_str());
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data(s, out);
+      std::printf("%zu atoms · %zu bonds · %.4f g/cm³ · wrote %s\n", s.atoms.size(), s.bonds.size(), s.density(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps crystal: %s\n", e.what());
       return 1;
     }
   }
