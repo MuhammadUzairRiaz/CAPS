@@ -351,6 +351,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsFigure));
         Raise(nameof(IsRender));
         Raise(nameof(IsVisualize));
+        Raise(nameof(HasTimeline));
         Raise(nameof(IsExport));
         Raise(nameof(IsBatch));
         Raise(nameof(IsCompare));

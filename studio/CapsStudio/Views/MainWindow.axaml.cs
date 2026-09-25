@@ -154,7 +154,11 @@ public partial class MainWindow : Window
             host.PointerWheelChanged += OnWheel;
         }
         _vm.Field.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(FieldViewModel.SelectedRow)) RequestRender(); };
-        _playTimer.Tick += (_, _) => _vm.StepFrame(1);
+        _playTimer.Tick += (_, _) => { if (!_vm.PlayStep()) _playTimer.Stop(); };
+        _vm.PlaybackChanged += () => _playTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / _vm.PlaybackFps);
+        Timeline.Vm = _vm;
+        _vm.TimelineChanged += () => Timeline.InvalidateVisual();
+        _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Frame)) Timeline.InvalidateVisual(); };
         AddHandler(KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(ViewHost, true);
         ViewHost.AddHandler(DragDrop.DropEvent, OnDrop);
