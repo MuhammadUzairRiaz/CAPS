@@ -403,6 +403,8 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     }
     colour[i] = rgb(c);
   }
+  if (opt.faded.size() == n)
+    for (size_t i = 0; i < n; ++i) if (opt.faded[i]) colour[i] = mixc(colour[i], bg, std::clamp(opt.fade, 0.0f, 1.0f));
 
   // Camera: centre on the cell (or the atoms), fit the rotated extent.
   const View v = fit_view(s, cam, opt, show, W, H);

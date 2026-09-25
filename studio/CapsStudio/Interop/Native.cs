@@ -272,6 +272,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_pore_build")] public static extern IntPtr PoreBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_vision_check")] public static extern int VisionCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string palettes, double threshold, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_vision")] public static extern int SetVision(IntPtr doc, int vision, double severity);
+    [DllImport(Lib, EntryPoint = "caps_periodic")] public static extern int Periodic(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_images")] public static extern int SetImages(IntPtr doc, int na, int nb, int nc, double fade);
+    [DllImport(Lib, EntryPoint = "caps_set_save_wrap")] public static extern int SetSaveWrap(IntPtr doc, int mode);
+    [DllImport(Lib, EntryPoint = "caps_centre_on")] public static extern int CentreOn(IntPtr doc, int[] idx, int n);
     [DllImport(Lib, EntryPoint = "caps_charges")] public static extern int Charges(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_snapshot")] public static extern int Snapshot(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
@@ -985,6 +989,11 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { lock (_lock) { Alive(); return Native.Undo(_h, redo ? 1 : 0) == 0; } }
     public string History() { lock (_lock) return JsonCall((b, c) => Native.History(_h, b, c)); }
+    /// <summary>The periodic box: crossing molecules, pieces when wrapped, one molecule measured three ways.</summary>
+    public string Periodic(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Periodic(_h, json, b, c)); } }
+    public void SetImages(int na, int nb, int nc, double fade) { lock (_lock) { Alive(); Native.SetImages(_h, na, nb, nc, fade); } }
+    public void SetSaveWrap(int mode) { lock (_lock) { Alive(); Native.SetSaveWrap(_h, mode); } }
+    public void CentreOn(int[] idx) { lock (_lock) { Alive(); Check(Native.CentreOn(_h, idx, idx.Length)); } }
     /// <summary>Partial charges (caps_charges): computed, described by group, applied when asked.</summary>
     public string Charges(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Charges(_h, json, b, c)); } }
     /// <summary>Snapshots and history branches (caps_snapshot): take, restore, delete, save, branch, drop_branch.</summary>
