@@ -624,10 +624,41 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           if (std::uniform_real_distribution<double>(0, 1)(brng) < spec.branch_probability) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
     }
   }
-  const bool ortho = o.cell[0] > 0 && o.cell[1] > 0 && o.cell[2] > 0;
-  const bool film = o.z_hi > o.z_lo;
+  bool ortho = o.cell[0] > 0 && o.cell[1] > 0 && o.cell[2] > 0;
+  double z_lo = o.z_lo, z_hi = o.z_hi;
   std::array<double, 3> Lv = o.cell;
-  if (!ortho) {
+  const bool cyl = o.cylinder_radius > 0 && !ortho;
+  const double R = o.cylinder_radius;
+  if (!ortho && o.slab_thickness > 0) {   // a film with vacuum: its edges in x, y from the density
+    if (o.density <= 0) throw GrowError("a slab needs a density");
+    const double h = o.slab_thickness, a = std::sqrt(mass / (o.density * 0.602214076 * h));
+    Lv = {a, a, h + std::max(0.0, o.slab_vacuum)};
+    z_lo = 0.5 * std::max(0.0, o.slab_vacuum), z_hi = z_lo + h;
+    ortho = true;
+  } else if (cyl) {
+    // the space the chains may use: π R² L inside, L² Lz − π R² Lz outside; the edge from the density
+    double Lz = o.cylinder_length;
+    auto room = [&](double L) { const double lz = Lz > 0 ? Lz : L; return o.cylinder_outside ? (L * L - kPi * R * R) * lz : kPi * R * R * lz; };
+    if (o.density <= 0) throw GrowError("a cylindrical region needs a density");
+    const double want = mass / (o.density * 0.602214076);
+    double L;
+    if (!o.cylinder_outside) {
+      L = 2 * R + 2.0;   // the cell just holds the cylinder (periodic images kept 2 Å apart)
+      if (Lz <= 0) Lz = want / (kPi * R * R);
+      if (room(L) < 0.999 * want && Lz > 0 && o.cylinder_length > 0)
+        throw GrowError("the chains do not fit in the cylinder at this density: make it longer or wider");
+    } else {
+      double lo = 2 * R + 2.0, hi = std::max(lo * 2, std::cbrt(want) * 4);
+      for (int it = 0; it < 200; ++it) {
+        const double mid = 0.5 * (lo + hi);
+        (room(mid) < want ? lo : hi) = mid;
+      }
+      L = hi;
+      if (Lz <= 0) Lz = L;
+    }
+    Lv = {L, L, Lz};
+    ortho = true;
+  } else if (!ortho) {
     double L = o.box;
     if (L <= 0) {
       if (o.density <= 0) throw GrowError("give a box edge or a density");
@@ -635,9 +666,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     Lv = {L, L, L};
   }
-  if (film && (o.z_lo < 0 || o.z_hi > Lv[2])) throw GrowError("the film heights lie outside the cell");
+  const bool film = z_hi > z_lo;
+  if (film && (z_lo < 0 || z_hi > Lv[2])) throw GrowError("the film heights lie outside the cell");
   const double L = Lv[0];
-  const double vol = Lv[0] * Lv[1] * (film ? o.z_hi - o.z_lo : Lv[2]);
+  const double vol = cyl ? (o.cylinder_outside ? Lv[0] * Lv[1] - kPi * R * R : kPi * R * R) * Lv[2] : Lv[0] * Lv[1] * (film ? z_hi - z_lo : Lv[2]);
   rep.box = L;
   rep.density = mass / (0.602214076 * vol);
   const double scale = o.contact_scale > 0 ? o.contact_scale : 1.0;
@@ -655,11 +687,17 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   // a film: heights outside [z_lo, z_hi] count as contacts
   const bool sphere = o.sphere_radius > 0;
   const Vec3 sc{o.sphere_centre[0], o.sphere_centre[1], o.sphere_centre[2]};
+  const Vec3 axis_c{0.5 * Lv[0], 0.5 * Lv[1], 0};
   auto region = [&](const Vec3& p) {
-    double m = film ? std::min(p[2] - o.z_lo, o.z_hi - p[2]) : 1e9;
+    double m = film ? std::min(p[2] - z_lo, z_hi - p[2]) : 1e9;
     if (sphere) {
       const double d = norm(cell.mi(p - sc));
       m = std::min(m, o.sphere_outside ? d - o.sphere_radius : o.sphere_radius - d);
+    }
+    if (cyl) {   // distance from the axis along z
+      Vec3 d = cell.mi(p - axis_c);
+      const double r = std::hypot(d[0], d[1]);
+      m = std::min(m, o.cylinder_outside ? r - R : R - r);
     }
     return m;
   };
@@ -835,9 +873,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       return;
     }
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
-    Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
-    for (int tries = 0; sphere && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
-      s = {U(rng) * Lv[0], U(rng) * Lv[1], film ? o.z_lo + 1 + U(rng) * std::max(0.0, o.z_hi - o.z_lo - 2) : U(rng) * Lv[2]};
+    Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
+    for (int tries = 0; (sphere || cyl) && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
+      s = {U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
     Vec3 u{Nd(rng), Nd(rng), Nd(rng)};
     u = unitv(u);
     Vec3 w{Nd(rng), Nd(rng), Nd(rng)};
@@ -1309,6 +1347,16 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   rep.notes.insert(rep.notes.begin(), units_text + " · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
                                           " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
+  if (!o.cell[0] && o.slab_thickness > 0) {
+    char b[160];
+    std::snprintf(b, sizeof b, "slab: a film %.1f Å thick between z = %.1f and %.1f Å, vacuum above and below", z_hi - z_lo, z_lo, z_hi);
+    rep.notes.push_back(b);
+  } else if (cyl) {
+    char b[200];
+    std::snprintf(b, sizeof b, o.cylinder_outside ? "chains around a cylinder of radius %.1f Å along z (left empty: a place for a fibre)"
+                                                  : "chains inside a cylinder of radius %.1f Å along z (periodic along z)", R);
+    rep.notes.push_back(b);
+  }
   if (report) *report = rep;
   return s;
 }

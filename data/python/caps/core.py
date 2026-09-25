@@ -582,7 +582,7 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             r2: Optional[float] = None, pm: Optional[float] = None, p_mr: Optional[float] = None, p_rm: Optional[float] = None,
             lengths: Optional[dict] = None, chain_dp: Optional[list] = None, architecture: str = "linear",
             arms: Optional[int] = None, arm_dp: Optional[int] = None, spacing: Optional[int] = None,
-            branch_probability: Optional[float] = None) -> Document:
+            branch_probability: Optional[float] = None, region: Optional[dict] = None) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
@@ -590,7 +590,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     "nn": 40, "pdi": 1.1, "seed": 1} or chain_dp=[…]; the provenance records the sample drawn. Branched molecules:
     architecture="star" with arms=3|4 (each arm dp units on one core carbon), "comb" with arm_dp and spacing, or
     "branched" with arm_dp and branch_probability; chains counts molecules. forcefield types it (default: the built-in
-    GAFF for C and H, else UFF); relax=True minimises."""
+    GAFF for C and H, else UFF); relax=True minimises. region={"shape": "slab", "thickness": 30, "vacuum": 30} grows a
+    film, {"shape": "cylinder" | "around_cylinder", "radius": 10} chains in or around a cylinder along z."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
@@ -604,6 +605,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             r["build"]["polymer"][k] = v
     if architecture != "linear":
         r["build"]["polymer"]["architecture"] = architecture
+    if region:
+        r["grow"]["region"] = region
     if forcefield or relax:
         r["type"] = {"forcefield": forcefield or "default"}
     if relax:
