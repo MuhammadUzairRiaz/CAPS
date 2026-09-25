@@ -1,0 +1,2018 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Inorganic: zeolite Hill Sauer",
+ "source": "INORGANIC_zeolite_Hill_Sauer.par",
+ "references": [],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "inversion"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center2_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "Al",
+   "element": "Al",
+   "mass": 26.9815,
+   "aliases": [
+    "Al3+#4_zeolite_aluminosilicate",
+    "Al3+#4_aluminasilicic"
+   ]
+  },
+  {
+   "name": "Si",
+   "element": "Si",
+   "mass": 28.0855,
+   "aliases": [
+    "Si4+#4_zeolite_aluminosilicate",
+    "Si4+#4_aluminasilicic",
+    "Si4+#4_zeolite_silicalite",
+    "Si4+#4_silica"
+   ]
+  },
+  {
+   "name": "Ob",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-AlSi#3_zeolite_aluminosilicate",
+    "O2-#3_aluminasilicic"
+   ]
+  },
+  {
+   "name": "O_AS",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-AlSi#2_zeolite_aluminosilicate",
+    "O2-AlSi#2_aluminasilicic"
+   ]
+  },
+  {
+   "name": "Hb",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "H+O#1_zeolite_aluminosilicate",
+    "H+O-AlSi#1_aluminasilicic"
+   ]
+  },
+  {
+   "name": "O_SS",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-SiSi#2_zeolite_aluminosilicate",
+    "O2-SiSi#2_aluminasilicic",
+    "O2-#2_zeolite_silicalite",
+    "O2-#2_silica"
+   ]
+  },
+  {
+   "name": "O_AH",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-AlH#2_aluminasilicic"
+   ]
+  },
+  {
+   "name": "O_SH",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-HSi#2_aluminasilicic",
+    "O2-H#2_silica"
+   ]
+  },
+  {
+   "name": "H_OA",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "H+O-Al#1_aluminasilicic"
+   ]
+  },
+  {
+   "name": "H_OS",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "H+O-Si#1_aluminasilicic",
+    "H+O#1_silica"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si-Si",
+   "match": [
+    "Si",
+    "Si"
+   ],
+   "style": "buck",
+   "params": [
+    320900,
+    0.2853,
+    0
+   ],
+   "comment": "X = 186910.96, R=0.99949"
+  },
+  {
+   "name": "Si-Al",
+   "match": [
+    "Si",
+    "Al"
+   ],
+   "style": "buck",
+   "params": [
+    657640,
+    0.233,
+    0
+   ],
+   "comment": "X = 61902.593, R=0.99958"
+  },
+  {
+   "name": "Si-Ob",
+   "match": [
+    "Si",
+    "Ob"
+   ],
+   "style": "buck",
+   "params": [
+    669370,
+    0.2504,
+    0
+   ],
+   "comment": "X = 120619.331, R=0.99958"
+  },
+  {
+   "name": "Si-O_SH",
+   "match": [
+    "Si",
+    "O_SH"
+   ],
+   "style": "buck",
+   "params": [
+    629070,
+    0.2355,
+    0
+   ],
+   "comment": "X = 65159.782, R = 0.99958"
+  },
+  {
+   "name": "Si-O_AS",
+   "match": [
+    "Si",
+    "O_AS"
+   ],
+   "style": "buck",
+   "params": [
+    619370,
+    0.2529,
+    0
+   ],
+   "comment": "X = 122006.684, R = 0.99958"
+  },
+  {
+   "name": "Si-O_AH",
+   "match": [
+    "Si",
+    "O_AH"
+   ],
+   "style": "buck",
+   "params": [
+    638600,
+    0.238,
+    0
+   ],
+   "comment": "X = 72715.6484"
+  },
+  {
+   "name": "Si-O_SS",
+   "match": [
+    "Si",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    628980,
+    0.2479,
+    0
+   ],
+   "comment": "X = 103590.638"
+  },
+  {
+   "name": "Si-Hb",
+   "match": [
+    "Si",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    667960,
+    0.1683,
+    0
+   ],
+   "comment": "X = 3357.4903, R=0.99959"
+  },
+  {
+   "name": "Si-H_OS",
+   "match": [
+    "Si",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    658190,
+    0.1882,
+    0
+   ],
+   "comment": "X = 9056.0584"
+  },
+  {
+   "name": "Si-H_OA",
+   "match": [
+    "Si",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    638740,
+    0.1708,
+    0
+   ],
+   "comment": "X = 3664.44603, R=0.99959"
+  },
+  {
+   "name": "Al-Al",
+   "match": [
+    "Al",
+    "Al"
+   ],
+   "style": "buck",
+   "params": [
+    602390,
+    0.2081,
+    0
+   ],
+   "comment": "X = 20501.371"
+  },
+  {
+   "name": "Al-Ob",
+   "match": [
+    "Al",
+    "Ob"
+   ],
+   "style": "buck",
+   "params": [
+    628860,
+    0.223,
+    0
+   ],
+   "comment": "X = 39947.627"
+  },
+  {
+   "name": "Al-O_SH",
+   "match": [
+    "Al",
+    "O_SH"
+   ],
+   "style": "buck",
+   "params": [
+    634090,
+    0.2081,
+    0
+   ],
+   "comment": "X = 21580.1122"
+  },
+  {
+   "name": "Al-O_AS",
+   "match": [
+    "Al",
+    "O_AS"
+   ],
+   "style": "buck",
+   "params": [
+    636090,
+    0.223,
+    0
+   ],
+   "comment": "X = 40407.102"
+  },
+  {
+   "name": "Al-O_AH",
+   "match": [
+    "Al",
+    "O_AH"
+   ],
+   "style": "buck",
+   "params": [
+    635770,
+    0.2106,
+    0
+   ],
+   "comment": "X = 24082.5215"
+  },
+  {
+   "name": "Al-O_SS",
+   "match": [
+    "Al",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    597510,
+    0.22055,
+    0
+   ],
+   "comment": "X = 34307.935"
+  },
+  {
+   "name": "Al-Hb",
+   "match": [
+    "Al",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    687440,
+    0.1483,
+    0
+   ],
+   "comment": "X = 1111.9592"
+  },
+  {
+   "name": "Al-H_OS",
+   "match": [
+    "Al",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    682360,
+    0.1658,
+    0
+   ],
+   "comment": "X = 2999.2543"
+  },
+  {
+   "name": "Al-H_OA",
+   "match": [
+    "Al",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    645930,
+    0.1508,
+    0
+   ],
+   "comment": "X = 1213.619"
+  },
+  {
+   "name": "Ob-Ob",
+   "match": [
+    "Ob",
+    "Ob"
+   ],
+   "style": "buck",
+   "params": [
+    622460,
+    0.2405,
+    0
+   ],
+   "comment": "X = 77839.326"
+  },
+  {
+   "name": "Ob-O_SH",
+   "match": [
+    "Ob",
+    "O_SH"
+   ],
+   "style": "buck",
+   "params": [
+    599000,
+    0.2255,
+    0
+   ],
+   "comment": "X = 42049.5908"
+  },
+  {
+   "name": "Ob-O_AS",
+   "match": [
+    "Ob",
+    "O_AS"
+   ],
+   "style": "buck",
+   "params": [
+    365960,
+    0.2554,
+    0
+   ],
+   "comment": "X = 78734.627"
+  },
+  {
+   "name": "Ob-O_AH",
+   "match": [
+    "Ob",
+    "O_AH"
+   ],
+   "style": "buck",
+   "params": [
+    605550,
+    0.228,
+    0
+   ],
+   "comment": "X = 46925.621"
+  },
+  {
+   "name": "Ob-O_SS",
+   "match": [
+    "Ob",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    587090,
+    0.238,
+    0
+   ],
+   "comment": "X = 66850.192"
+  },
+  {
+   "name": "Ob-Hb",
+   "match": [
+    "Ob",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    648640,
+    0.1608,
+    0
+   ],
+   "comment": "X = 2166.691"
+  },
+  {
+   "name": "Ob-H_OS",
+   "match": [
+    "Ob",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    611580,
+    0.1807,
+    0
+   ],
+   "comment": "X = 5844.15"
+  },
+  {
+   "name": "Ob-H_OA",
+   "match": [
+    "Ob",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    616510,
+    0.1633,
+    0
+   ],
+   "comment": "X = 2364.7786"
+  },
+  {
+   "name": "O_SH-O_SH",
+   "match": [
+    "O_SH",
+    "O_SH"
+   ],
+   "style": "buck",
+   "params": [
+    599680,
+    0.2106,
+    0
+   ],
+   "comment": "X = 22715.6141"
+  },
+  {
+   "name": "O_SH-O_AS",
+   "match": [
+    "O_SH",
+    "O_AS"
+   ],
+   "style": "buck",
+   "params": [
+    669560,
+    0.223,
+    0
+   ],
+   "comment": "X = 42533.2417"
+  },
+  {
+   "name": "O_SH-O_AH",
+   "match": [
+    "O_SH",
+    "O_AH"
+   ],
+   "style": "buck",
+   "params": [
+    602030,
+    0.2131,
+    0
+   ],
+   "comment": "X = 25349.6951"
+  },
+  {
+   "name": "O_SH-O_SS",
+   "match": [
+    "O_SH",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    628950,
+    0.2206,
+    0
+   ],
+   "comment": "X = 36113.1497"
+  },
+  {
+   "name": "O_SH-Hb",
+   "match": [
+    "O_SH",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    622960,
+    0.1508,
+    0
+   ],
+   "comment": "X = 1170.4682"
+  },
+  {
+   "name": "O_SH-H_OS",
+   "match": [
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    628080,
+    0.1683,
+    0
+   ],
+   "comment": "X = 3157.069"
+  },
+  {
+   "name": "O_SH-H_OA",
+   "match": [
+    "O_SH",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    679910,
+    0.1508,
+    0
+   ],
+   "comment": "X = 1277.4773"
+  },
+  {
+   "name": "O_AS-O_AS",
+   "match": [
+    "O_AS",
+    "O_AS"
+   ],
+   "style": "buck",
+   "params": [
+    636860,
+    0.2405,
+    0
+   ],
+   "comment": "X = 79640.226"
+  },
+  {
+   "name": "O_AS-O_AH",
+   "match": [
+    "O_AS",
+    "O_AH"
+   ],
+   "style": "buck",
+   "params": [
+    612510,
+    0.228,
+    0
+   ],
+   "comment": "X = 47465.356"
+  },
+  {
+   "name": "O_AS-O_SS",
+   "match": [
+    "O_AS",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    652810,
+    0.2355,
+    0
+   ],
+   "comment": "X = 67619.0975"
+  },
+  {
+   "name": "O_AS-Hb",
+   "match": [
+    "O_AS",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    656100,
+    0.1608,
+    0
+   ],
+   "comment": "X = 2191.6118"
+  },
+  {
+   "name": "O_AS-H_OS",
+   "match": [
+    "O_AS",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    618620,
+    0.1807,
+    0
+   ],
+   "comment": "X = 5911.3691"
+  },
+  {
+   "name": "O_AS-H_OA",
+   "match": [
+    "O_AS",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    623600,
+    0.1633,
+    0
+   ],
+   "comment": "X = 2391.9781"
+  },
+  {
+   "name": "O_AH-O_AH",
+   "match": [
+    "O_AH",
+    "O_AH"
+   ],
+   "style": "buck",
+   "params": [
+    605140,
+    0.2156,
+    0
+   ],
+   "comment": "X = 28289.2216"
+  },
+  {
+   "name": "O_AH-O_SS",
+   "match": [
+    "O_AH",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    634420,
+    0.223,
+    0
+   ],
+   "comment": "X = 40300.7961"
+  },
+  {
+   "name": "O_AH-Hb",
+   "match": [
+    "O_AH",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    695200,
+    0.1508,
+    0
+   ],
+   "comment": "X = 1306.1946"
+  },
+  {
+   "name": "O_AH-H_OS",
+   "match": [
+    "O_AH",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    614120,
+    0.1708,
+    0
+   ],
+   "comment": "X = 3523.1597"
+  },
+  {
+   "name": "O_AH-H_OA",
+   "match": [
+    "O_AH",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    654810,
+    0.1533,
+    0
+   ],
+   "comment": "X = 1425.6123"
+  },
+  {
+   "name": "O_SS-O_SS",
+   "match": [
+    "O_SS",
+    "O_SS"
+   ],
+   "style": "buck",
+   "params": [
+    609930,
+    0.233,
+    0
+   ],
+   "comment": "X = 57412.4729"
+  },
+  {
+   "name": "O_SS-Hb",
+   "match": [
+    "O_SS",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    641060,
+    0.1583,
+    0
+   ],
+   "comment": "X = 1860.8035"
+  },
+  {
+   "name": "O_SS-H_OS",
+   "match": [
+    "O_SS",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    595100,
+    0.1782,
+    0
+   ],
+   "comment": "X = 5019.0897"
+  },
+  {
+   "name": "O_SS-H_OA",
+   "match": [
+    "O_SS",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    608000,
+    0.1608,
+    0
+   ],
+   "comment": "X = 2030.9259"
+  },
+  {
+   "name": "Hb-Hb",
+   "match": [
+    "Hb",
+    "Hb"
+   ],
+   "style": "buck",
+   "params": [
+    414930,
+    0.1135,
+    0
+   ],
+   "comment": "X = 60.310756, R=0.9996"
+  },
+  {
+   "name": "Hb-H_OS",
+   "match": [
+    "Hb",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    630870,
+    0.121,
+    0
+   ],
+   "comment": "X = 162.6744"
+  },
+  {
+   "name": "Hb-H_OA",
+   "match": [
+    "Hb",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    452870,
+    0.1135,
+    0
+   ],
+   "comment": "X = 65.8246"
+  },
+  {
+   "name": "H_OS-H_OS",
+   "match": [
+    "H_OS",
+    "H_OS"
+   ],
+   "style": "buck",
+   "params": [
+    596900,
+    0.1359,
+    0
+   ],
+   "comment": "X = 438.7768"
+  },
+  {
+   "name": "H_OS-H_OA",
+   "match": [
+    "H_OS",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    688540,
+    0.121,
+    0
+   ],
+   "comment": "X = 177.546772"
+  },
+  {
+   "name": "H_OA-H_OA",
+   "match": [
+    "H_OA",
+    "H_OA"
+   ],
+   "style": "buck",
+   "params": [
+    494270,
+    0.1135,
+    0
+   ],
+   "comment": "X = 71.8426"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_AH-H_OA",
+   "match": [
+    "O_AH",
+    "H_OA"
+   ],
+   "style": "class2",
+   "params": [
+    0.9408,
+    730.0168,
+    -1566.4841,
+    1703.5916
+   ]
+  },
+  {
+   "name": "O_SH-H_OS",
+   "match": [
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "class2",
+   "params": [
+    0.9458,
+    707.2556,
+    -1531.5564,
+    1603.1003
+   ]
+  },
+  {
+   "name": "Ob-Hb",
+   "match": [
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    0.954,
+    656.8465,
+    -1627.4874,
+    3684.1929
+   ]
+  },
+  {
+   "name": "Al-O_AH",
+   "match": [
+    "Al",
+    "O_AH"
+   ],
+   "style": "class2",
+   "params": [
+    1.7096,
+    311.6053,
+    -734.839,
+    6022.397
+   ]
+  },
+  {
+   "name": "Al-O_AS",
+   "match": [
+    "Al",
+    "O_AS"
+   ],
+   "style": "class2",
+   "params": [
+    1.7193,
+    328.685,
+    -341.0143,
+    2189.0349
+   ]
+  },
+  {
+   "name": "Al-Ob",
+   "match": [
+    "Al",
+    "Ob"
+   ],
+   "style": "class2",
+   "params": [
+    1.9698,
+    86.8129,
+    26.3933,
+    758.4299
+   ]
+  },
+  {
+   "name": "Si-O_SH",
+   "match": [
+    "Si",
+    "O_SH"
+   ],
+   "style": "class2",
+   "params": [
+    1.6238,
+    431.7825,
+    -799.2202,
+    4446.0952
+   ]
+  },
+  {
+   "name": "Si-O_SS",
+   "match": [
+    "Si",
+    "O_SS"
+   ],
+   "style": "class2",
+   "params": [
+    1.6104,
+    459.0786,
+    -672.4445,
+    443.3651
+   ]
+  },
+  {
+   "name": "Si-O_AS",
+   "match": [
+    "Si",
+    "O_AS"
+   ],
+   "style": "class2",
+   "params": [
+    1.6157,
+    494.1042,
+    -36.7016,
+    2150.6836
+   ]
+  },
+  {
+   "name": "Si-Ob",
+   "match": [
+    "Si",
+    "Ob"
+   ],
+   "style": "class2",
+   "params": [
+    1.6581,
+    370.5744,
+    -569.4988,
+    3102.2502
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "Al-Ob-Hb",
+   "match": [
+    "Al",
+    "Ob",
+    "Hb"
+   ],
+   "style": "quartic",
+   "params": [
+    107.12,
+    43.9725,
+    -53.4364,
+    103.3838
+   ]
+  },
+  {
+   "name": "Si-Ob-Hb",
+   "match": [
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "quartic",
+   "params": [
+    119.2823,
+    43.0215,
+    -15.2099,
+    13.1396
+   ]
+  },
+  {
+   "name": "Si-Ob-Al",
+   "match": [
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "quartic",
+   "params": [
+    136.6645,
+    195.295,
+    48.8575,
+    185.3481
+   ]
+  },
+  {
+   "name": "Al-O_AS-Si",
+   "match": [
+    "Al",
+    "O_AS",
+    "Si"
+   ],
+   "style": "quartic",
+   "params": [
+    162.4,
+    10.3454,
+    12.6366,
+    9.0038
+   ]
+  },
+  {
+   "name": "Al-O_AH-H_OA",
+   "match": [
+    "Al",
+    "O_AH",
+    "H_OA"
+   ],
+   "style": "quartic",
+   "params": [
+    131.3984,
+    7.8119,
+    -1.6786,
+    53.6329
+   ]
+  },
+  {
+   "name": "Si-O_SH-H_OS",
+   "match": [
+    "Si",
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "quartic",
+   "params": [
+    118.9384,
+    20.0134,
+    -33.2675,
+    42.4295
+   ]
+  },
+  {
+   "name": "Si-O_SS-Si",
+   "match": [
+    "Si",
+    "O_SS",
+    "Si"
+   ],
+   "style": "quartic",
+   "params": [
+    173.7651,
+    20.7015,
+    27.5506,
+    10.993
+   ]
+  },
+  {
+   "name": "O_AS-Si-O_AS",
+   "match": [
+    "O_AS",
+    "Si",
+    "O_AS"
+   ],
+   "style": "quartic",
+   "params": [
+    110.612,
+    154.186,
+    -68.6595,
+    23.6292
+   ]
+  },
+  {
+   "name": "O_AS-Si-O_SS",
+   "match": [
+    "O_AS",
+    "Si",
+    "O_SS"
+   ],
+   "style": "quartic",
+   "params": [
+    112.4279,
+    88.0709,
+    -57.043,
+    92.4803
+   ]
+  },
+  {
+   "name": "O_AS-Si-O_SH",
+   "match": [
+    "O_AS",
+    "Si",
+    "O_SH"
+   ],
+   "style": "quartic",
+   "params": [
+    118.5582,
+    87.1068,
+    167.1975,
+    278.6751
+   ]
+  },
+  {
+   "name": "O_AS-Si-Ob",
+   "match": [
+    "O_AS",
+    "Si",
+    "Ob"
+   ],
+   "style": "quartic",
+   "params": [
+    102.9438,
+    103.827,
+    10.899,
+    0.6674
+   ]
+  },
+  {
+   "name": "O_SS-Si-Ob",
+   "match": [
+    "O_SS",
+    "Si",
+    "Ob"
+   ],
+   "style": "quartic",
+   "params": [
+    107.6066,
+    99.6715,
+    -33.1512,
+    10.7204
+   ]
+  },
+  {
+   "name": "O_SS-Si-O_SH",
+   "match": [
+    "O_SS",
+    "Si",
+    "O_SH"
+   ],
+   "style": "quartic",
+   "params": [
+    109.9424,
+    91.8675,
+    17.2882,
+    252.8231
+   ]
+  },
+  {
+   "name": "O_SS-Si-O_SS",
+   "match": [
+    "O_SS",
+    "Si",
+    "O_SS"
+   ],
+   "style": "quartic",
+   "params": [
+    112.02,
+    81.9691,
+    -36.5814,
+    116.9558
+   ]
+  },
+  {
+   "name": "O_AH-Al-O_AH",
+   "match": [
+    "O_AH",
+    "Al",
+    "O_AH"
+   ],
+   "style": "quartic",
+   "params": [
+    107.0368,
+    76.4087,
+    -274.149,
+    293.2546
+   ]
+  },
+  {
+   "name": "O_AS-Al-O_AH",
+   "match": [
+    "O_AS",
+    "Al",
+    "O_AH"
+   ],
+   "style": "quartic",
+   "params": [
+    118.337,
+    48.9048,
+    180.6775,
+    1557.5081
+   ]
+  },
+  {
+   "name": "O_AS-Al-O_AS",
+   "match": [
+    "O_AS",
+    "Al",
+    "O_AS"
+   ],
+   "style": "quartic",
+   "params": [
+    113.4,
+    300.052,
+    -32.5659,
+    67.2591
+   ]
+  },
+  {
+   "name": "Ob-Al-O_AS",
+   "match": [
+    "Ob",
+    "Al",
+    "O_AS"
+   ],
+   "style": "quartic",
+   "params": [
+    81.4988,
+    43.2829,
+    -113.779,
+    202.1476
+   ]
+  },
+  {
+   "name": "Ob-Al-O_AH",
+   "match": [
+    "Ob",
+    "Al",
+    "O_AH"
+   ],
+   "style": "quartic",
+   "params": [
+    97.9051,
+    27.692,
+    -41.0318,
+    35.4654
+   ]
+  },
+  {
+   "name": "O_SH-Si-O_SH",
+   "match": [
+    "O_SH",
+    "Si",
+    "O_SH"
+   ],
+   "style": "quartic",
+   "params": [
+    111.3627,
+    58.2199,
+    96.8353,
+    527.5761
+   ]
+  },
+  {
+   "name": "Ob-Si-O_SH",
+   "match": [
+    "Ob",
+    "Si",
+    "O_SH"
+   ],
+   "style": "quartic",
+   "params": [
+    103.9653,
+    103.5467,
+    -19.2943,
+    331.9679
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "Al-O_AS-Si-O_SH",
+   "match": [
+    "Al",
+    "O_AS",
+    "Si",
+    "O_SH"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    3.065,
+    1,
+    0,
+    0.3404,
+    2,
+    0,
+    0.0146,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AH-Al-O_AH-H_OA",
+   "match": [
+    "O_AH",
+    "Al",
+    "O_AH",
+    "H_OA"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -1.1075,
+    1,
+    0,
+    0.8045,
+    2,
+    0,
+    0.3328,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Al-O_AH-H_OA",
+   "match": [
+    "O_AS",
+    "Al",
+    "O_AH",
+    "H_OA"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -1.801,
+    1,
+    0,
+    0.6647,
+    2,
+    0,
+    0.5364,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "Ob-Al-O_AH-H_OA",
+   "match": [
+    "Ob",
+    "Al",
+    "O_AH",
+    "H_OA"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -0.9767,
+    1,
+    0,
+    0.7745,
+    2,
+    0,
+    -0.9612,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AH-Al-O_AS-Si",
+   "match": [
+    "O_AH",
+    "Al",
+    "O_AS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.9847,
+    1,
+    0,
+    -0.7285,
+    2,
+    0,
+    -0.5777,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "Ob-Al-O_AS-Si",
+   "match": [
+    "Ob",
+    "Al",
+    "O_AS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    2.1752,
+    1,
+    0,
+    -0.9201,
+    2,
+    0,
+    1.1534,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AH-Al-Ob-Hb",
+   "match": [
+    "O_AH",
+    "Al",
+    "Ob",
+    "Hb"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -6.3428,
+    1,
+    0,
+    -3.6734,
+    2,
+    0,
+    -0.3907,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AH-Al-Ob-Si",
+   "match": [
+    "O_AH",
+    "Al",
+    "Ob",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -7.3022,
+    1,
+    0,
+    3.1717,
+    2,
+    0,
+    0.3184,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Al-Ob-Hb",
+   "match": [
+    "O_AS",
+    "Al",
+    "Ob",
+    "Hb"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -3.699,
+    1,
+    0,
+    -3.0937,
+    2,
+    0,
+    0.852,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Al-Ob-Si",
+   "match": [
+    "O_AS",
+    "Al",
+    "Ob",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -4.1073,
+    1,
+    0,
+    3.5859,
+    2,
+    0,
+    0.2635,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Si-Ob-Al",
+   "match": [
+    "O_AS",
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    -1.8325,
+    1,
+    0,
+    2.228,
+    2,
+    0,
+    0.231,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Si-O_AS-Al",
+   "match": [
+    "O_AS",
+    "Si",
+    "O_AS",
+    "Al"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.8597,
+    1,
+    0,
+    -0.0231,
+    2,
+    0,
+    -0.4345,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Si-Ob-Hb",
+   "match": [
+    "O_AS",
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    5.7768,
+    1,
+    0,
+    -2.1457,
+    2,
+    0,
+    0.1001,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Si-O_SH-H_OS",
+   "match": [
+    "O_AS",
+    "Si",
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    3.0272,
+    1,
+    0,
+    -0.1573,
+    2,
+    0,
+    -0.2321,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Al-O_AS-Si",
+   "match": [
+    "O_AS",
+    "Al",
+    "O_AS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    6.0838,
+    1,
+    0,
+    -0.5702,
+    2,
+    0,
+    -1.4818,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SS-Si-Ob-Hb",
+   "match": [
+    "O_SS",
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    3.7091,
+    1,
+    0,
+    -0.656,
+    2,
+    0,
+    0.0856,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SS-Si-Ob-Al",
+   "match": [
+    "O_SS",
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.1641,
+    1,
+    0,
+    1.7914,
+    2,
+    0,
+    0.197,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "Ob-Si-O_AS-Al",
+   "match": [
+    "Ob",
+    "Si",
+    "O_AS",
+    "Al"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    5.7178,
+    1,
+    0,
+    0.1922,
+    2,
+    0,
+    -0.3374,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "Ob-Si-O_SS-Si",
+   "match": [
+    "Ob",
+    "Si",
+    "O_SS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.535,
+    1,
+    0,
+    -0.4717,
+    2,
+    0,
+    -0.0036,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SH-Si-O_SS-Si",
+   "match": [
+    "O_SH",
+    "Si",
+    "O_SS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.1277,
+    1,
+    0,
+    0.0442,
+    2,
+    0,
+    -0.0009,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_AS-Si-O_SS-Si",
+   "match": [
+    "O_AS",
+    "Si",
+    "O_SS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.0397,
+    1,
+    0,
+    0.0133,
+    2,
+    0,
+    -0.2453,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SS-Si-O_AS-Al",
+   "match": [
+    "O_SS",
+    "Si",
+    "O_AS",
+    "Al"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    2.1989,
+    1,
+    0,
+    0.7528,
+    2,
+    0,
+    -0.4936,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SS-Si-O_SH-H_OS",
+   "match": [
+    "O_SS",
+    "Si",
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    3.2254,
+    1,
+    0,
+    -0.2132,
+    2,
+    0,
+    -0.4145,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SS-Si-O_SS-Si",
+   "match": [
+    "O_SS",
+    "Si",
+    "O_SS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.0306,
+    1,
+    0,
+    -0.0105,
+    2,
+    0,
+    0.0804,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SH-Si-O_SH-H_OS",
+   "match": [
+    "O_SH",
+    "Si",
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.774,
+    1,
+    0,
+    -0.0772,
+    2,
+    0,
+    0.0326,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "Ob-Si-O_SH-H_OS",
+   "match": [
+    "Ob",
+    "Si",
+    "O_SH",
+    "H_OS"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.0464,
+    1,
+    0,
+    -1.5833,
+    2,
+    0,
+    -0.4804,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SH-Si-O_SS-Si",
+   "match": [
+    "O_SH",
+    "Si",
+    "O_SS",
+    "Si"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.1277,
+    1,
+    0,
+    0.0442,
+    2,
+    0,
+    -0.0009,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SH-Si-Ob-Hb",
+   "match": [
+    "O_SH",
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    4.6176,
+    1,
+    0,
+    -1.1913,
+    2,
+    0,
+    -0.1141,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "O_SH-Si-Ob-Al",
+   "match": [
+    "O_SH",
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.6228,
+    1,
+    0,
+    1.0917,
+    2,
+    0,
+    -0.1696,
+    3,
+    0
+   ]
+  }
+ ],
+ "impropers": [
+  {
+   "name": "Si-Ob-Hb-Al",
+   "match": [
+    "Si",
+    "Ob",
+    "Hb",
+    "Al"
+   ],
+   "style": "inversion",
+   "params": [
+    0.8407,
+    -0.2235
+   ]
+  }
+ ],
+ "notes": [
+  "converted by CAPS (inorganic_zeolite_HS, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "converted",
+ "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example."
+}

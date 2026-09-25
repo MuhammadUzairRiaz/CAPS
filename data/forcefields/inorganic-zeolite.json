@@ -1,0 +1,577 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Inorganic: zeolite",
+ "source": "INORGANIC_zeolite.par",
+ "references": [],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "Si1",
+   "element": "Si",
+   "mass": 28.0855,
+   "aliases": [
+    "Si4+#4_zeolite_silicalite1"
+   ]
+  },
+  {
+   "name": "O1",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-#2_zeolite_silicalite1"
+   ]
+  },
+  {
+   "name": "Si4",
+   "element": "Si",
+   "mass": 28.0855,
+   "aliases": [
+    "Si4+#4_zeolite_silicalite4"
+   ]
+  },
+  {
+   "name": "O4",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-#2_zeolite_silicalite4"
+   ]
+  },
+  {
+   "name": "O4c",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-#2c_zeolite_silicalite4"
+   ]
+  },
+  {
+   "name": "O4s",
+   "element": "O",
+   "mass": 0,
+   "aliases": [
+    "O2-#2s_zeolite_silicalite4"
+   ]
+  },
+  {
+   "name": "Si2",
+   "element": "Si",
+   "mass": 28.0855,
+   "aliases": [
+    "Si4+#4_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "O2c",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-#2c_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "O2s",
+   "element": "O",
+   "mass": 0,
+   "aliases": [
+    "O2-#2s_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "O2",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-#2_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "Ob2",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-H#3_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "Hb2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "H-O#1_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "Al2",
+   "element": "Al",
+   "mass": 26.9815,
+   "aliases": [
+    "Al3+#4_zeolite_faujasite2"
+   ]
+  },
+  {
+   "name": "Si3",
+   "element": "Si",
+   "mass": 28.0855,
+   "aliases": [
+    "Si4+#4_zeolite_faujasite3"
+   ]
+  },
+  {
+   "name": "Al3",
+   "element": "Al",
+   "mass": 26.9815,
+   "aliases": [
+    "Al3+#4_zeolite_faujasite3"
+   ]
+  },
+  {
+   "name": "O3",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2-#2_zeolite_faujasite3"
+   ]
+  },
+  {
+   "name": "Na3",
+   "element": "Na",
+   "mass": 22.9898,
+   "aliases": [
+    "Na+#0_zeolite_faujasite3"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si1-Si1",
+   "match": [
+    "Si1",
+    "Si1"
+   ],
+   "style": "buck",
+   "params": [
+    0,
+    0.30017,
+    0
+   ]
+  },
+  {
+   "name": "Si1-O1",
+   "match": [
+    "Si1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    35765.13429,
+    0.30017,
+    0
+   ]
+  },
+  {
+   "name": "O1-O1",
+   "match": [
+    "O1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    0,
+    0.30017,
+    0
+   ]
+  },
+  {
+   "name": "Si4-Si4",
+   "match": [
+    "Si4",
+    "Si4"
+   ],
+   "style": "buck",
+   "params": [
+    0,
+    0.3,
+    0
+   ]
+  },
+  {
+   "name": "Si4-O4",
+   "match": [
+    "Si4",
+    "O4"
+   ],
+   "style": "buck",
+   "params": [
+    29607.60592,
+    0.3205,
+    245.8623386
+   ]
+  },
+  {
+   "name": "Si4-O4s",
+   "match": [
+    "Si4",
+    "O4s"
+   ],
+   "style": "buck",
+   "params": [
+    29607.60592,
+    0.3205,
+    245.8623386
+   ]
+  },
+  {
+   "name": "O4-O4",
+   "match": [
+    "O4",
+    "O4"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "O4s-O4s",
+   "match": [
+    "O4s",
+    "O4s"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "Si2-Si2",
+   "match": [
+    "Si2",
+    "Si2"
+   ],
+   "style": "buck",
+   "params": [
+    0,
+    0.3,
+    0
+   ]
+  },
+  {
+   "name": "Si2-O2s",
+   "match": [
+    "Si2",
+    "O2s"
+   ],
+   "style": "buck",
+   "params": [
+    29607.599,
+    0.32052,
+    245.8618773
+   ]
+  },
+  {
+   "name": "Si2-O2",
+   "match": [
+    "Si2",
+    "O2"
+   ],
+   "style": "buck",
+   "params": [
+    29607.599,
+    0.32052,
+    245.8618773
+   ]
+  },
+  {
+   "name": "Si2-Ob2",
+   "match": [
+    "Si2",
+    "Ob2"
+   ],
+   "style": "buck",
+   "params": [
+    22681.35419,
+    0.32052,
+    245.8618773
+   ]
+  },
+  {
+   "name": "Al2-Al2",
+   "match": [
+    "Al2",
+    "Al2"
+   ],
+   "style": "buck",
+   "params": [
+    0,
+    0.3,
+    0
+   ]
+  },
+  {
+   "name": "Al2-O2s",
+   "match": [
+    "Al2",
+    "O2s"
+   ],
+   "style": "buck",
+   "params": [
+    33675.31824,
+    0.29912,
+    0
+   ]
+  },
+  {
+   "name": "Al2-O2",
+   "match": [
+    "Al2",
+    "O2"
+   ],
+   "style": "buck",
+   "params": [
+    33675.31824,
+    0.29912,
+    0
+   ]
+  },
+  {
+   "name": "Al2-Ob2",
+   "match": [
+    "Al2",
+    "Ob2"
+   ],
+   "style": "buck",
+   "params": [
+    26350.76934,
+    0.29912,
+    0
+   ]
+  },
+  {
+   "name": "O2s-O2s",
+   "match": [
+    "O2s",
+    "O2s"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "O2-O2",
+   "match": [
+    "O2",
+    "O2"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "O2s-Ob2",
+   "match": [
+    "O2s",
+    "Ob2"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "O2-Ob2",
+   "match": [
+    "O2",
+    "Ob2"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "Ob2-Ob2",
+   "match": [
+    "Ob2",
+    "Ob2"
+   ],
+   "style": "buck",
+   "params": [
+    524950.3147,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "O2s-Hb2",
+   "match": [
+    "O2s",
+    "Hb2"
+   ],
+   "style": "buck",
+   "params": [
+    7194.19916,
+    0.25,
+    0
+   ]
+  },
+  {
+   "name": "O2-Hb2",
+   "match": [
+    "O2",
+    "Hb2"
+   ],
+   "style": "buck",
+   "params": [
+    7194.19916,
+    0.25,
+    0
+   ]
+  },
+  {
+   "name": "Si3-O3",
+   "match": [
+    "Si3",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    692346.8326,
+    0.1621,
+    296.0974363
+   ]
+  },
+  {
+   "name": "Al3-O3",
+   "match": [
+    "Al3",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    622588.6749,
+    0.1622,
+    296.0974363
+   ]
+  },
+  {
+   "name": "O3-O3",
+   "match": [
+    "O3",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    20629.96624,
+    0.3244,
+    0
+   ]
+  },
+  {
+   "name": "Na3-O3",
+   "match": [
+    "Na3",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    189096.4936,
+    0.218,
+    272.1144664
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O4c-O4s",
+   "match": [
+    "O4c",
+    "O4s"
+   ],
+   "style": "class2",
+   "params": [
+    0,
+    863.8527402,
+    0,
+    0
+   ],
+   "comment": "core-shell spring · "
+  },
+  {
+   "name": "O2c-O2s",
+   "match": [
+    "O2c",
+    "O2s"
+   ],
+   "style": "class2",
+   "params": [
+    0,
+    863.8481281,
+    0,
+    0
+   ],
+   "comment": "core-shell spring · "
+  },
+  {
+   "name": "Ob2-Hb2",
+   "match": [
+    "Ob2",
+    "Hb2"
+   ],
+   "style": "morse",
+   "params": [
+    162.6345148,
+    2.1986,
+    0.9485
+   ],
+   "comment": "Ref. 2"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted by CAPS (inorganic_zeolite, unit eV); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "validated",
+ "validation": "4 of 4 silicalite / faujasite templates identical."
+}

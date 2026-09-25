@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write CAPS typing rules for OPLS-AA as DL_FIELD's OPLS2005 library names its types (data/typing/opls2005-dlfield).
+"""Write CAPS typing rules for OPLS-AA as DL_FIELD's OPLS2005 library names its types (data/typing/opls2005).
 
 Each type gets SMARTS for the chemistry its DL_FIELD atom types describe (the ATOM_TYPE table of OPLS2005.sf maps
 e.g. C_ester, CR_ester, C_ketone to CO4). Generic element rules have priority 0; more specific environments higher
@@ -182,5 +182,5 @@ json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2005 (D
            "description": "OPLS-AA atom types under DL_FIELD's OPLS2005 key names, from the chemistry each key's DL_FIELD atom types "
                           "describe. Residue-specific keys (amino-acid side-chain CB atoms, sugars, nucleic bases) are not "
                           "assigned automatically; water is TIP3P (OT3 / HT3).",
-           "rules": R}, open(os.path.join(out, "opls2005-dlfield.typing.json"), "w"), indent=1)
+           "rules": R}, open(os.path.join(out, "opls2005.typing.json"), "w"), indent=1)
 print(len(R), "rules")

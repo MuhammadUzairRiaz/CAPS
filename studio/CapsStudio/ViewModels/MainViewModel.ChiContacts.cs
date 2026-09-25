@@ -10,7 +10,7 @@ namespace CapsStudio.ViewModels;
 /// behaviour, failures included.</summary>
 public sealed partial class MainViewModel
 {
-    private static string? Gaff2Path => Paths.ForceFields is { } d && File.Exists(Path.Combine(d, "gaff-amber25-dlfield.json")) ? Path.Combine(d, "gaff-amber25-dlfield.json") : null;
+    private static string? Gaff2Path => Paths.ForceFields is { } d && File.Exists(Path.Combine(d, "gaff-amber25.json")) ? Path.Combine(d, "gaff-amber25.json") : null;
 
     private sealed record ContactFit(double A, double B, double Err, string Forcefield, string Notes);
     private readonly Dictionary<string, ContactFit> _ssContact = new();

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write CAPS typing rules for CGenFF (CHARMM General Force Field; data/typing/cgenff-dlfield.typing.json).
+"""Write CAPS typing rules for CGenFF (CHARMM General Force Field; data/typing/cgenff.typing.json).
 
 The types follow CGenFF's own definitions (the comments of top_all36_cgenff.rtf: e.g. CG331 aliphatic C for methyl
 group, HGA6 aliphatic H on fluorinated C, NG2S1 peptide nitrogen). Where DL_FIELD's templates deviate from them
@@ -191,5 +191,5 @@ json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF (CHARMM3
            "description": "CGenFF atom types from CGenFF's own definitions (top_all36_cgenff.rtf); conjugated alkenes pair "
                           "CG2DC1 / CG2DC2 (same type across a double bond); water is TIP3P (OT / H3P).",
            "pair_mode": "double_same", "pairs": [["CG2DC2", "CG2DC1"]], "rules": R},
-          open(os.path.join(out, "cgenff-dlfield.typing.json"), "w"), indent=1)
+          open(os.path.join(out, "cgenff.typing.json"), "w"), indent=1)
 print(len(R), "rules")

@@ -126,13 +126,13 @@ public sealed partial class MainViewModel
             try
             {
                 using var js = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "catalogue.json")));
-                var order = new[] { "gaff-amber25-dlfield", "gaff-amber16-dlfield", "opls2005-dlfield", "cgenff-dlfield", "pcff-dlfield", "cvff-dlfield" };
+                var order = new[] { "gaff-amber25", "gaff-amber16", "opls2005", "cgenff", "pcff", "cvff" };
                 var found = new Dictionary<string, CleanChoice>();
                 foreach (var e in js.RootElement.GetProperty("forcefields").EnumerateArray())
                 {
                     if (!e.TryGetProperty("typing", out var t) || t.ValueKind != JsonValueKind.Object) continue;
                     var id = e.GetProperty("id").GetString() ?? "";
-                    var name = id == "gaff-amber25-dlfield" ? "CAPS Field · GAFF2" : "CAPS Field · " + (e.GetProperty("name").GetString() ?? id);
+                    var name = id == "gaff-amber25" ? "CAPS Field · GAFF2" : "CAPS Field · " + (e.GetProperty("name").GetString() ?? id);
                     found[id] = new CleanChoice(name, Path.Combine(dir, e.GetProperty("file").GetString()!));
                 }
                 foreach (var id in order) if (found.Remove(id, out var c)) list.Add(c);

@@ -33,27 +33,27 @@ os.makedirs(work, exist_ok=True)
 
 # (label, structure source, force field, charges, typing: "rules" or "keys")
 CASES = [
-    ("PCFF favipiravir (class II + class I)", ("template", "PCFF", "favipiravir"), "pcff-dlfield", "types", "rules"),
-    ("PCFF acetylcholine (N+)", ("template", "PCFF", "acetylcholine"), "pcff-dlfield", "types", "rules"),
-    ("PCFF dimethyl carbonate", ("template", "PCFF", "dimethyl_carbonate"), "pcff-dlfield", "types", "rules"),
-    ("COMPASS (DL_FIELD) first template", ("template-first", "COMPASS", ""), "compass-dlfield", "types", "keys"),
-    ("CVFF phenol (cvff impropers)", ("template", "CVFF", "phenol"), "cvff-dlfield", "types", "rules"),
-    ("CVFF ethyl acetate", ("template", "CVFF", "ethylacetate"), "cvff-dlfield", "types", "rules"),
-    ("OPLS-AA methyl vinyl ketone", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005-dlfield", "gasteiger", "rules"),
-    ("OPLS-AA phthalimide", ("template", "OPLS2005", "phthalimide"), "opls2005-dlfield", "gasteiger", "rules"),
-    ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16-dlfield", "gasteiger", "rules"),
-    ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff-amber25-dlfield", "gasteiger", "rules"),
-    ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding-dlfield", "gasteiger", "keys"),
-    ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides-dlfield", "qeq", "keys"),
-    ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides-dlfield", "qeq", "keys"),
-    ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25-dlfield", "gasteiger", "rules"),
-    ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff-dlfield", "types", "rules"),
+    ("PCFF favipiravir (class II + class I)", ("template", "PCFF", "favipiravir"), "pcff", "types", "rules"),
+    ("PCFF acetylcholine (N+)", ("template", "PCFF", "acetylcholine"), "pcff", "types", "rules"),
+    ("PCFF dimethyl carbonate", ("template", "PCFF", "dimethyl_carbonate"), "pcff", "types", "rules"),
+    ("COMPASS (DL_FIELD) first template", ("template-first", "COMPASS", ""), "compass", "types", "keys"),
+    ("CVFF phenol (cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", "rules"),
+    ("CVFF ethyl acetate", ("template", "CVFF", "ethylacetate"), "cvff", "types", "rules"),
+    ("OPLS-AA methyl vinyl ketone", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", "rules"),
+    ("OPLS-AA phthalimide", ("template", "OPLS2005", "phthalimide"), "opls2005", "gasteiger", "rules"),
+    ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16", "gasteiger", "rules"),
+    ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff-amber25", "gasteiger", "rules"),
+    ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding", "gasteiger", "keys"),
+    ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides", "qeq", "keys"),
+    ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
+    ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25", "gasteiger", "rules"),
+    ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff", "types", "rules"),
     # every bonded kind hybrid: COMPASS (class II with all cross terms) plus an overlay turning one angle, one torsion
     # and one improper type into class I forms, so each class II section carries skip lines. (The improper is cvff,
     # K[1 − cos 2φ]: smooth. A harmonic improper with χ0 = 0 on a class II centre-second quadruple sits at χ ≈ 180°,
     # a cusp of K(χ − χ0)² where the two programs take different one-sided slopes.)
     ("COMPASS polystyrene + class I overlay (hybrid in every kind)", ("compass-ps",), "compass-published-moltemplate", "types", "keys"),
-    ("CGenFF toluene (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff-dlfield", "gasteiger", "rules"),
+    ("CGenFF toluene (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", "rules"),
     # UFF (every element): Fourier and periodic angles (linear, trigonal, square planar, octahedral, trigonal
     # bipyramid), sp2 and pyramidal-P inversions (improper fourier), group-16 torsions, full 1-4 van der Waals
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
@@ -88,7 +88,7 @@ def structure(src, base):
     if kind == "compass-ps":   # polystyrene melt with COMPASS types (from the GAFF2 typing: c3 → c4, ca → c3a, H → h1)
         ps = os.path.join(ROOT, "samples", "ps_melt.data")
         gt = os.path.join(work, base + ".gaff")
-        subprocess.run([CAPS, "ff", "type", ps, "--ff", ff_file("gaff-amber25-dlfield"), "-o", gt], capture_output=True, check=True)
+        subprocess.run([CAPS, "ff", "type", ps, "--ff", ff_file("gaff-amber25"), "-o", gt], capture_output=True, check=True)
         tfile = os.path.join(work, base + ".types")
         with open(tfile, "w") as f:
             for t in open(gt):

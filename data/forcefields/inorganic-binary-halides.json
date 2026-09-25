@@ -1,0 +1,957 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Inorganic: binary halides",
+ "source": "INORGANIC_binary_halides.par",
+ "references": [],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "Li1",
+   "element": "Li",
+   "mass": 6.941,
+   "description": "Ref. 1, potential set 1 [Li_1]F-_4",
+   "aliases": [
+    "Li+#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "Li2",
+   "element": "Li",
+   "mass": 6.941,
+   "description": "Ref. 1, potential set 1 [Li_2]Cl-_4",
+   "aliases": [
+    "Li+#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "Li3",
+   "element": "Li",
+   "mass": 6.941,
+   "description": "Ref. 1, potential set 1 [Li_3]Br-_4",
+   "aliases": [
+    "Li+#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "Li4",
+   "element": "Li",
+   "mass": 6.941,
+   "description": "Ref. 1, potential set 1 [Li_4]I-_4",
+   "aliases": [
+    "Li+#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "Na1",
+   "element": "Na",
+   "mass": 22.9898,
+   "description": "Ref. 1, potential set 1 [Na_1]Cl_1",
+   "aliases": [
+    "Na+#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "Na2",
+   "element": "Na",
+   "mass": 22.9898,
+   "description": "Ref. 1, potential set 1 [Na_2]F_1",
+   "aliases": [
+    "Na+#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "Na3",
+   "element": "Na",
+   "mass": 22.9898,
+   "description": "Ref. 1, potential set 1 [Na_3]Br_1",
+   "aliases": [
+    "Na+#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "Na4",
+   "element": "Na",
+   "mass": 22.9898,
+   "description": "Ref. 1, potential set 1 [Na_4]I_1",
+   "aliases": [
+    "Na+#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "K1",
+   "element": "K",
+   "mass": 39.0983,
+   "description": "Ref. 1, potential set 1 [K_1]F_2",
+   "aliases": [
+    "K+#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "K2",
+   "element": "K",
+   "mass": 39.0983,
+   "description": "Ref. 1, potential set 1 [K_2]Cl_2",
+   "aliases": [
+    "K+#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "K3",
+   "element": "K",
+   "mass": 39.0983,
+   "description": "Ref. 1, potential set 1 [K_3]Br-_2",
+   "aliases": [
+    "K+#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "K4",
+   "element": "K",
+   "mass": 39.0983,
+   "description": "Ref. 1, potential set 1 [K_4]I_2",
+   "aliases": [
+    "K+#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "Rb1",
+   "element": "Rb",
+   "mass": 85.4678,
+   "description": "Ref. 1, potential set 1 [Rb_1]F_3",
+   "aliases": [
+    "Rb+#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "Rb2",
+   "element": "Rb",
+   "mass": 85.4678,
+   "description": "Ref. 1, potential set 1 [Rb_2]Cl-_3",
+   "aliases": [
+    "Rb+#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "Rb3",
+   "element": "Rb",
+   "mass": 85.4678,
+   "description": "Ref. 1, potential set 1 [Rb_3]Br-_3",
+   "aliases": [
+    "Rb+#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "Rb4",
+   "element": "Rb",
+   "mass": 85.4678,
+   "description": "Ref. 1, potential set 1 [Rb_4]I-_3",
+   "aliases": [
+    "Rb+#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "Br1",
+   "element": "Br",
+   "mass": 79.904,
+   "description": "Ref. 1, potential set 1 Na_3[Br_1]",
+   "aliases": [
+    "Br-#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "Br2",
+   "element": "Br",
+   "mass": 79.904,
+   "description": "Ref. 1, potential set 1 K_3[Br_2]",
+   "aliases": [
+    "Br-#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "Br3",
+   "element": "Br",
+   "mass": 79.904,
+   "description": "Ref. 1, potential set 1 Rb_3[Br_3]",
+   "aliases": [
+    "Br-#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "Br4",
+   "element": "Br",
+   "mass": 79.904,
+   "description": "Ref. 1, potential set 1 Li_3[Br_4]",
+   "aliases": [
+    "Br-#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "Cl1",
+   "element": "Cl",
+   "mass": 35.4527,
+   "description": "Ref. 1, potential set 1 Na_1[Cl_1]",
+   "aliases": [
+    "Cl-#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "Cl2",
+   "element": "Cl",
+   "mass": 35.4527,
+   "description": "Ref. 1, potential set 1 K_2[Cl_2]",
+   "aliases": [
+    "Cl-#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "Cl3",
+   "element": "Cl",
+   "mass": 35.4527,
+   "description": "Ref. 1, potential set 1 Rb_2[Cl_3]",
+   "aliases": [
+    "Cl-#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "Cl4",
+   "element": "Cl",
+   "mass": 35.4527,
+   "description": "Ref. 1, potential set 1 Li_2[Cl_4]",
+   "aliases": [
+    "Cl-#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "F1",
+   "element": "F",
+   "mass": 18.9984,
+   "description": "Ref. 1, potential set 1 Na_2[F_1]",
+   "aliases": [
+    "F-#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "F2",
+   "element": "F",
+   "mass": 18.9984,
+   "description": "Ref. 1, potential set 1 K_1[F_2]",
+   "aliases": [
+    "F-#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "F3",
+   "element": "F",
+   "mass": 18.9984,
+   "description": "Ref. 1, potential set 1 Rb_1[F_3]",
+   "aliases": [
+    "F-#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "F4",
+   "element": "F",
+   "mass": 18.9984,
+   "description": "Ref. 1, potential set 1 Li_1[F_4]",
+   "aliases": [
+    "F-#6_binary_halide4"
+   ]
+  },
+  {
+   "name": "I1",
+   "element": "I",
+   "mass": 126.9045,
+   "description": "Ref. 1, potential set 1, Na_4[I_1]",
+   "aliases": [
+    "I-#6_binary_halide1"
+   ]
+  },
+  {
+   "name": "I2",
+   "element": "I",
+   "mass": 126.9045,
+   "description": "Ref. 1, potential set 1, K_4[I_2]",
+   "aliases": [
+    "I-#6_binary_halide2"
+   ]
+  },
+  {
+   "name": "I3",
+   "element": "I",
+   "mass": 126.9045,
+   "description": "Ref. 1, potential set 1, Rb_4[I_3]",
+   "aliases": [
+    "I-#6_binary_halide3"
+   ]
+  },
+  {
+   "name": "I4",
+   "element": "I",
+   "mass": 126.9045,
+   "description": "Ref. 1, potential set 1, Li_4[I_4]",
+   "aliases": [
+    "I-#6_binary_halide4"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Li1-F4",
+   "match": [
+    "Li1",
+    "F4"
+   ],
+   "style": "buck",
+   "params": [
+    11198.20211,
+    0.2614,
+    0
+   ]
+  },
+  {
+   "name": "Li2-Cl4",
+   "match": [
+    "Li2",
+    "Cl4"
+   ],
+   "style": "buck",
+   "params": [
+    31837.39257,
+    0.2786,
+    0
+   ]
+  },
+  {
+   "name": "Li3-Br4",
+   "match": [
+    "Li3",
+    "Br4"
+   ],
+   "style": "buck",
+   "params": [
+    38345.07921,
+    0.2882,
+    0
+   ]
+  },
+  {
+   "name": "Li4-I4",
+   "match": [
+    "Li4",
+    "I4"
+   ],
+   "style": "buck",
+   "params": [
+    205116.6563,
+    0.2617,
+    0
+   ]
+  },
+  {
+   "name": "Na1-Cl1",
+   "match": [
+    "Na1",
+    "Cl1"
+   ],
+   "style": "buck",
+   "params": [
+    53378.25046,
+    0.2903,
+    0
+   ]
+  },
+  {
+   "name": "Na2-F1",
+   "match": [
+    "Na2",
+    "F1"
+   ],
+   "style": "buck",
+   "params": [
+    36763.12562,
+    0.2555,
+    0
+   ]
+  },
+  {
+   "name": "Na3-Br1",
+   "match": [
+    "Na3",
+    "Br1"
+   ],
+   "style": "buck",
+   "params": [
+    59798.30702,
+    0.3014,
+    0
+   ]
+  },
+  {
+   "name": "Na4-I1",
+   "match": [
+    "Na4",
+    "I1"
+   ],
+   "style": "buck",
+   "params": [
+    85450.86061,
+    0.3099,
+    0
+   ]
+  },
+  {
+   "name": "K1-F2",
+   "match": [
+    "K1",
+    "F2"
+   ],
+   "style": "buck",
+   "params": [
+    55963.33789,
+    0.277,
+    0
+   ]
+  },
+  {
+   "name": "K2-Cl2",
+   "match": [
+    "K2",
+    "Cl2"
+   ],
+   "style": "buck",
+   "params": [
+    94961.03061,
+    0.3048,
+    0
+   ]
+  },
+  {
+   "name": "K3-Br2",
+   "match": [
+    "K3",
+    "Br2"
+   ],
+   "style": "buck",
+   "params": [
+    67890.25331,
+    0.3295,
+    0
+   ]
+  },
+  {
+   "name": "K4-I2",
+   "match": [
+    "K4",
+    "I2"
+   ],
+   "style": "buck",
+   "params": [
+    134728.9456,
+    0.3264,
+    0
+   ]
+  },
+  {
+   "name": "Rb1-F3",
+   "match": [
+    "Rb1",
+    "F3"
+   ],
+   "style": "buck",
+   "params": [
+    50947.6687,
+    0.2945,
+    0
+   ]
+  },
+  {
+   "name": "Rb2-Cl3",
+   "match": [
+    "Rb2",
+    "Cl3"
+   ],
+   "style": "buck",
+   "params": [
+    82093.24483,
+    0.3233,
+    0
+   ]
+  },
+  {
+   "name": "Rb3-Br3",
+   "match": [
+    "Rb3",
+    "Br3"
+   ],
+   "style": "buck",
+   "params": [
+    96160.17911,
+    0.3321,
+    0
+   ]
+  },
+  {
+   "name": "Rb4-I3",
+   "match": [
+    "Rb4",
+    "I3"
+   ],
+   "style": "buck",
+   "params": [
+    121805.8145,
+    0.3431,
+    0
+   ]
+  },
+  {
+   "name": "Li1-Li1",
+   "match": [
+    "Li1",
+    "Li1"
+   ],
+   "style": "buck",
+   "params": [
+    26607.26028,
+    0.1364,
+    293.0995651
+   ]
+  },
+  {
+   "name": "Li2-Li2",
+   "match": [
+    "Li2",
+    "Li2"
+   ],
+   "style": "buck",
+   "params": [
+    26607.26028,
+    0.1364,
+    7.84058632
+   ]
+  },
+  {
+   "name": "Li3-Li3",
+   "match": [
+    "Li3",
+    "Li3"
+   ],
+   "style": "buck",
+   "params": [
+    26607.26028,
+    0.1364,
+    0.23060548
+   ]
+  },
+  {
+   "name": "Li4-Li4",
+   "match": [
+    "Li4",
+    "Li4"
+   ],
+   "style": "buck",
+   "params": [
+    26607.26028,
+    0.1364,
+    0
+   ]
+  },
+  {
+   "name": "Na1-Na1",
+   "match": [
+    "Na1",
+    "Na1"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2507,
+    0.1709,
+    670.1395249
+   ]
+  },
+  {
+   "name": "Na2-Na2",
+   "match": [
+    "Na2",
+    "Na2"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2507,
+    0.1709,
+    269.3472006
+   ]
+  },
+  {
+   "name": "Na3-Na3",
+   "match": [
+    "Na3",
+    "Na3"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2507,
+    0.1709,
+    970.3878598
+   ]
+  },
+  {
+   "name": "Na4-Na4",
+   "match": [
+    "Na4",
+    "Na4"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2507,
+    0.1709,
+    631.3978042
+   ]
+  },
+  {
+   "name": "K1-K1",
+   "match": [
+    "K1",
+    "K1"
+   ],
+   "style": "buck",
+   "params": [
+    87558.5947,
+    0.2603,
+    1028.500441
+   ]
+  },
+  {
+   "name": "K2-K2",
+   "match": [
+    "K2",
+    "K2"
+   ],
+   "style": "buck",
+   "params": [
+    87558.5947,
+    0.2603,
+    2880.262445
+   ]
+  },
+  {
+   "name": "K3-K3",
+   "match": [
+    "K3",
+    "K3"
+   ],
+   "style": "buck",
+   "params": [
+    87558.5947,
+    0.2603,
+    4238.528722
+   ]
+  },
+  {
+   "name": "K4-K4",
+   "match": [
+    "K4",
+    "K4"
+   ],
+   "style": "buck",
+   "params": [
+    87558.5947,
+    0.2603,
+    6593.010673
+   ]
+  },
+  {
+   "name": "Rb1-Rb1",
+   "match": [
+    "Rb1",
+    "Rb1"
+   ],
+   "style": "buck",
+   "params": [
+    156998.5168,
+    0.2704,
+    1610.318067
+   ]
+  },
+  {
+   "name": "Rb2-Rb2",
+   "match": [
+    "Rb2",
+    "Rb2"
+   ],
+   "style": "buck",
+   "params": [
+    156998.5168,
+    0.2704,
+    4639.782258
+   ]
+  },
+  {
+   "name": "Rb3-Rb3",
+   "match": [
+    "Rb3",
+    "Rb3"
+   ],
+   "style": "buck",
+   "params": [
+    156998.5168,
+    0.2704,
+    6028.027247
+   ]
+  },
+  {
+   "name": "Rb4-Rb4",
+   "match": [
+    "Rb4",
+    "Rb4"
+   ],
+   "style": "buck",
+   "params": [
+    156998.5168,
+    0.2704,
+    9238.055529
+   ]
+  },
+  {
+   "name": "F1-F1",
+   "match": [
+    "F1",
+    "F1"
+   ],
+   "style": "buck",
+   "params": [
+    26005.37998,
+    0.2753,
+    269.3472006
+   ]
+  },
+  {
+   "name": "F2-F2",
+   "match": [
+    "F2",
+    "F2"
+   ],
+   "style": "buck",
+   "params": [
+    26005.37998,
+    0.2753,
+    1028.500441
+   ]
+  },
+  {
+   "name": "F3-F3",
+   "match": [
+    "F3",
+    "F3"
+   ],
+   "style": "buck",
+   "params": [
+    26005.37998,
+    0.2753,
+    1610.318067
+   ]
+  },
+  {
+   "name": "F4-F4",
+   "match": [
+    "F4",
+    "F4"
+   ],
+   "style": "buck",
+   "params": [
+    26005.37998,
+    0.2753,
+    293.0995651
+   ]
+  },
+  {
+   "name": "Cl1-Cl1",
+   "match": [
+    "Cl1",
+    "Cl1"
+   ],
+   "style": "buck",
+   "params": [
+    28299.90451,
+    0.3214,
+    670.1395249
+   ]
+  },
+  {
+   "name": "Cl2-Cl2",
+   "match": [
+    "Cl2",
+    "Cl2"
+   ],
+   "style": "buck",
+   "params": [
+    28299.90451,
+    0.3214,
+    2880.262445
+   ]
+  },
+  {
+   "name": "Cl3-Cl3",
+   "match": [
+    "Cl3",
+    "Cl3"
+   ],
+   "style": "buck",
+   "params": [
+    28299.90451,
+    0.3214,
+    4639.782258
+   ]
+  },
+  {
+   "name": "Cl3-Cl3",
+   "match": [
+    "Cl3",
+    "Cl3"
+   ],
+   "style": "buck",
+   "params": [
+    28299.90451,
+    0.3214,
+    7.84058632
+   ]
+  },
+  {
+   "name": "Br1-Br1",
+   "match": [
+    "Br1",
+    "Br1"
+   ],
+   "style": "buck",
+   "params": [
+    67987.10761,
+    0.3164,
+    970.3878598
+   ]
+  },
+  {
+   "name": "Br2-Br2",
+   "match": [
+    "Br2",
+    "Br2"
+   ],
+   "style": "buck",
+   "params": [
+    67987.10761,
+    0.3164,
+    4238.528722
+   ]
+  },
+  {
+   "name": "Br3-Br3",
+   "match": [
+    "Br3",
+    "Br3"
+   ],
+   "style": "buck",
+   "params": [
+    67987.10761,
+    0.3164,
+    6028.027247
+   ]
+  },
+  {
+   "name": "Br4-Br4",
+   "match": [
+    "Br4",
+    "Br4"
+   ],
+   "style": "buck",
+   "params": [
+    67987.10761,
+    0.3164,
+    0.23060548
+   ]
+  },
+  {
+   "name": "I1-I1",
+   "match": [
+    "I1",
+    "I1"
+   ],
+   "style": "buck",
+   "params": [
+    126890.6654,
+    0.3066,
+    631.3978042
+   ]
+  },
+  {
+   "name": "I2-I2",
+   "match": [
+    "I2",
+    "I2"
+   ],
+   "style": "buck",
+   "params": [
+    126890.6654,
+    0.3066,
+    6593.010673
+   ]
+  },
+  {
+   "name": "I3-I3",
+   "match": [
+    "I3",
+    "I3"
+   ],
+   "style": "buck",
+   "params": [
+    126890.6654,
+    0.3066,
+    9238.055529
+   ]
+  },
+  {
+   "name": "I4-I4",
+   "match": [
+    "I4",
+    "I4"
+   ],
+   "style": "buck",
+   "params": [
+    126890.6654,
+    0.3066,
+    0
+   ]
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted by CAPS (inorganic_binary_halide, unit eV); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "validated",
+ "validation": "14 of 14 ionic templates: every Buckingham pair identical to the reference FIELD file."
+}

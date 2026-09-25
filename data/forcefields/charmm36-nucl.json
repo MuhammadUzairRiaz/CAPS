@@ -1,0 +1,12236 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CHARMM36 nucleic acids",
+ "source": "CHARMM36_nucl.par",
+ "references": [
+  "K. Hart et al., J. Chem. Theory Comput. 8, 348 (2012)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/charmm/coul/long",
+  "bond": "harmonic",
+  "angle": "charmm",
+  "dihedral": "fourier",
+  "improper": "harmonic"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_reversible": true,
+ "improper_all_explicit": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "OT",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip3p",
+    "O_tip3p_c"
+   ]
+  },
+  {
+   "name": "H3P",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip3p"
+   ]
+  },
+  {
+   "name": "HT",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip3p_c"
+   ]
+  },
+  {
+   "name": "OTP",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_tip3p_pme"
+   ]
+  },
+  {
+   "name": "HTP",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_tip3p_pme"
+   ]
+  },
+  {
+   "name": "CN9",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "Cp_alkane"
+   ]
+  },
+  {
+   "name": "HN9",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC_alkane"
+   ]
+  },
+  {
+   "name": "P",
+   "element": "P",
+   "mass": 30.974,
+   "aliases": [
+    "PO4_phosphate",
+    "PO3_phosphate"
+   ]
+  },
+  {
+   "name": "P2",
+   "element": "P",
+   "mass": 30.974,
+   "aliases": [
+    "PO4_phosphate2"
+   ]
+  },
+  {
+   "name": "ON3",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OE_phosphate"
+   ]
+  },
+  {
+   "name": "ON2",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OL_phosphate"
+   ]
+  },
+  {
+   "name": "ON4",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "OH_phosphate"
+   ]
+  },
+  {
+   "name": "HN4",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO_phosphate"
+   ]
+  },
+  {
+   "name": "CN7B",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C1_ribose",
+    "C2_ribose",
+    "C1_deoxyribose"
+   ]
+  },
+  {
+   "name": "CN7",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C3_ribose",
+    "C4_ribose",
+    "C3_deoxyribose",
+    "C4_deoxyribose"
+   ]
+  },
+  {
+   "name": "CN8B",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C5_ribose",
+    "C5_deoxyribose"
+   ]
+  },
+  {
+   "name": "HN7",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC1_ribose",
+    "HC2_ribose",
+    "HC3_ribose",
+    "HC4_ribose",
+    "HC1_deoxyribose",
+    "HC3_deoxyribose",
+    "HC4_deoxyribose"
+   ]
+  },
+  {
+   "name": "HN8",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC5_ribose",
+    "HC2_deoxyribose",
+    "HC5_deoxyribose"
+   ]
+  },
+  {
+   "name": "ON5",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2_ribose",
+    "O3_ribose",
+    "O5_ribose",
+    "O2_deoxyribose",
+    "O3_deoxyribose",
+    "O5_deoxyribose"
+   ]
+  },
+  {
+   "name": "ON6B",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O4_ribose"
+   ]
+  },
+  {
+   "name": "HN5",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HO2_ribose",
+    "HO3_ribose",
+    "HO5_ribose",
+    "HO2_deoxyribose",
+    "HO3_deoxyribose",
+    "HO5_deoxyribose"
+   ]
+  },
+  {
+   "name": "CN8",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C2_deoxyribose"
+   ]
+  },
+  {
+   "name": "ON6",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O4_deoxyribose"
+   ]
+  },
+  {
+   "name": "NN2G",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_guanine"
+   ]
+  },
+  {
+   "name": "HN2",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HN1_guanine",
+    "HN3_thymine",
+    "HN3_uracil"
+   ]
+  },
+  {
+   "name": "CN2",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C2_guanine",
+    "C6_adenine",
+    "C4_cytosine"
+   ]
+  },
+  {
+   "name": "NN1",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N2_guanine",
+    "N6_adenine",
+    "N4_cytosine"
+   ]
+  },
+  {
+   "name": "HN1",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HN2_guanine",
+    "HN6_adenine",
+    "HN4_cytosine"
+   ]
+  },
+  {
+   "name": "NN3G",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N3_guanine"
+   ]
+  },
+  {
+   "name": "CN5",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C4_guanine",
+    "C4_adenine",
+    "C5_adenine"
+   ]
+  },
+  {
+   "name": "CN5G",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C5_guanine"
+   ]
+  },
+  {
+   "name": "CN1",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C6_guanine",
+    "C2_cytosine",
+    "C4_thymine",
+    "C4_uracil"
+   ]
+  },
+  {
+   "name": "ON1",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O6_guanine",
+    "O2_thymine",
+    "O4_thymine",
+    "O2_uracil",
+    "O4_uracil"
+   ]
+  },
+  {
+   "name": "NN4",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N7_guanine",
+    "N7_adenine"
+   ]
+  },
+  {
+   "name": "CN4",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C8_guanine",
+    "C2_adenine",
+    "C8_adenine"
+   ]
+  },
+  {
+   "name": "HN3",
+   "element": "H",
+   "mass": 1.00797,
+   "aliases": [
+    "HC8_guanine",
+    "HC2_adenine",
+    "HC8_adenine",
+    "HC5_cytosine",
+    "HC6_cytosine",
+    "HC6_thymine",
+    "HC5_uracil",
+    "HC6_uracil"
+   ]
+  },
+  {
+   "name": "NN2B",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N9_guanine",
+    "N1_thymine",
+    "N1_uracil"
+   ]
+  },
+  {
+   "name": "NN3A",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N1_adenine",
+    "N3_adenine"
+   ]
+  },
+  {
+   "name": "NN2",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N9_adenine",
+    "N1_cytosine"
+   ]
+  },
+  {
+   "name": "ON1C",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O2_cytosine"
+   ]
+  },
+  {
+   "name": "NN3",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N3_cytosine"
+   ]
+  },
+  {
+   "name": "CN3",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C5_cytosine",
+    "C6_cytosine",
+    "C6_thymine",
+    "C5_uracil",
+    "C6_uracil"
+   ]
+  },
+  {
+   "name": "CN1T",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C2_thymine",
+    "C2_uracil"
+   ]
+  },
+  {
+   "name": "NN2U",
+   "element": "N",
+   "mass": 14.0067,
+   "aliases": [
+    "N3_thymine",
+    "N3_uracil"
+   ]
+  },
+  {
+   "name": "CN3T",
+   "element": "C",
+   "mass": 12.0115,
+   "aliases": [
+    "C5_thymine"
+   ]
+  },
+  {
+   "name": "SOD",
+   "element": "",
+   "mass": 22.9898,
+   "aliases": [
+    "Na+_cation"
+   ]
+  },
+  {
+   "name": "POT",
+   "element": "",
+   "mass": 39.0983,
+   "aliases": [
+    "K+_cation"
+   ]
+  },
+  {
+   "name": "CLA",
+   "element": "",
+   "mass": 35.453,
+   "aliases": [
+    "Cl-_anion"
+   ]
+  },
+  {
+   "name": "QZ",
+   "element": "",
+   "mass": 0.5,
+   "description": "Dummy atom (no interactions)",
+   "aliases": [
+    "dummy_atom1"
+   ]
+  },
+  {
+   "name": "QY",
+   "element": "",
+   "mass": 0.2,
+   "description": "Dummy atom (no interactions)",
+   "aliases": [
+    "dummy_atom2"
+   ]
+  },
+  {
+   "name": "QX",
+   "element": "",
+   "mass": 0.6,
+   "description": "Dummy atom (no interactions)",
+   "aliases": [
+    "dummy_atom3"
+   ]
+  },
+  {
+   "name": "QW",
+   "element": "",
+   "mass": 0.7,
+   "description": "Dummy atom (no interactions)",
+   "aliases": [
+    "dummy_atom4"
+   ]
+  },
+  {
+   "name": "HN6",
+   "element": "",
+   "mass": 0
+  },
+  {
+   "name": "NN6",
+   "element": "",
+   "mass": 0
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OT",
+   "match": [
+    "OT"
+   ],
+   "params": [
+    0.1521,
+    3.150574227
+   ]
+  },
+  {
+   "name": "OTP",
+   "match": [
+    "OTP"
+   ],
+   "params": [
+    0.102,
+    3.187991973
+   ]
+  },
+  {
+   "name": "HT",
+   "match": [
+    "HT"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "H3P",
+   "match": [
+    "H3P"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HTP",
+   "match": [
+    "HTP"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "HN1",
+   "match": [
+    "HN1"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "HN2",
+   "match": [
+    "HN2"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "HN3",
+   "match": [
+    "HN3"
+   ],
+   "params": [
+    0.046,
+    1.95997718
+   ]
+  },
+  {
+   "name": "HN4",
+   "match": [
+    "HN4"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "HN5",
+   "match": [
+    "HN5"
+   ],
+   "params": [
+    0.046,
+    0.4000135244
+   ]
+  },
+  {
+   "name": "HN6",
+   "match": [
+    "HN6"
+   ],
+   "params": [
+    0.022,
+    2.351972616
+   ]
+  },
+  {
+   "name": "HN7",
+   "match": [
+    "HN7"
+   ],
+   "params": [
+    0.022,
+    2.351972616
+   ]
+  },
+  {
+   "name": "HN8",
+   "match": [
+    "HN8"
+   ],
+   "params": [
+    0.028,
+    2.387608565
+   ]
+  },
+  {
+   "name": "HN9",
+   "match": [
+    "HN9"
+   ],
+   "params": [
+    0.024,
+    2.387608565
+   ]
+  },
+  {
+   "name": "NN1",
+   "match": [
+    "NN1"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN2",
+   "match": [
+    "NN2"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN2B",
+   "match": [
+    "NN2B"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN2G",
+   "match": [
+    "NN2G"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN2U",
+   "match": [
+    "NN2U"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN3",
+   "match": [
+    "NN3"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN3A",
+   "match": [
+    "NN3A"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN3G",
+   "match": [
+    "NN3G"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN4",
+   "match": [
+    "NN4"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "NN6",
+   "match": [
+    "NN6"
+   ],
+   "params": [
+    0.2,
+    3.296325257
+   ]
+  },
+  {
+   "name": "ON1",
+   "match": [
+    "ON1"
+   ],
+   "params": [
+    0.12,
+    3.029055642
+   ]
+  },
+  {
+   "name": "ON1C",
+   "match": [
+    "ON1C"
+   ],
+   "params": [
+    0.12,
+    3.029055642
+   ]
+  },
+  {
+   "name": "ON2",
+   "match": [
+    "ON2"
+   ],
+   "params": [
+    0.1521,
+    3.153781462
+   ]
+  },
+  {
+   "name": "ON3",
+   "match": [
+    "ON3"
+   ],
+   "params": [
+    0.12,
+    3.029055642
+   ]
+  },
+  {
+   "name": "ON4",
+   "match": [
+    "ON4"
+   ],
+   "params": [
+    0.1521,
+    3.153781462
+   ]
+  },
+  {
+   "name": "ON5",
+   "match": [
+    "ON5"
+   ],
+   "params": [
+    0.1521,
+    3.153781462
+   ]
+  },
+  {
+   "name": "ON6",
+   "match": [
+    "ON6"
+   ],
+   "params": [
+    0.1521,
+    3.153781462
+   ]
+  },
+  {
+   "name": "ON6B",
+   "match": [
+    "ON6B"
+   ],
+   "params": [
+    0.1521,
+    3.153781462
+   ]
+  },
+  {
+   "name": "CN1",
+   "match": [
+    "CN1"
+   ],
+   "params": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN1T",
+   "match": [
+    "CN1T"
+   ],
+   "params": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN2",
+   "match": [
+    "CN2"
+   ],
+   "params": [
+    0.1,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN3",
+   "match": [
+    "CN3"
+   ],
+   "params": [
+    0.09,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN3T",
+   "match": [
+    "CN3T"
+   ],
+   "params": [
+    0.09,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN4",
+   "match": [
+    "CN4"
+   ],
+   "params": [
+    0.075,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN5",
+   "match": [
+    "CN5"
+   ],
+   "params": [
+    0.075,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN5G",
+   "match": [
+    "CN5G"
+   ],
+   "params": [
+    0.075,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN7",
+   "match": [
+    "CN7"
+   ],
+   "params": [
+    0.02,
+    4.053589168
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN7B",
+   "match": [
+    "CN7B"
+   ],
+   "params": [
+    0.02,
+    4.053589168
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN8",
+   "match": [
+    "CN8"
+   ],
+   "params": [
+    0.056,
+    3.581412847
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN8B",
+   "match": [
+    "CN8B"
+   ],
+   "params": [
+    0.056,
+    3.581412847
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "CN9",
+   "match": [
+    "CN9"
+   ],
+   "params": [
+    0.078,
+    3.63486677
+   ],
+   "lj14": [
+    0.01,
+    3.385415129
+   ]
+  },
+  {
+   "name": "P",
+   "match": [
+    "P"
+   ],
+   "params": [
+    0.585,
+    3.830864488
+   ]
+  },
+  {
+   "name": "P2",
+   "match": [
+    "P2"
+   ],
+   "params": [
+    0.585,
+    3.830864488
+   ]
+  },
+  {
+   "name": "POT",
+   "match": [
+    "POT"
+   ],
+   "params": [
+    0.087,
+    3.142645228
+   ]
+  },
+  {
+   "name": "SOD",
+   "match": [
+    "SOD"
+   ],
+   "params": [
+    0.0469,
+    2.513670733
+   ]
+  },
+  {
+   "name": "CLA",
+   "match": [
+    "CLA"
+   ],
+   "params": [
+    0.15,
+    4.04468018
+   ]
+  },
+  {
+   "name": "SOD-CLA",
+   "match": [
+    "SOD",
+    "CLA"
+   ],
+   "params": [
+    0.083875,
+    3.323943117
+   ]
+  },
+  {
+   "name": "POT-CLA",
+   "match": [
+    "POT",
+    "CLA"
+   ],
+   "params": [
+    0.114236,
+    3.635757669
+   ]
+  },
+  {
+   "name": "SOD-OC",
+   "match": [
+    "SOD",
+    "OC"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OS",
+   "match": [
+    "SOD",
+    "OS"
+   ],
+   "params": [
+    0.07502,
+    2.788512988
+   ]
+  },
+  {
+   "name": "SOD-OCL",
+   "match": [
+    "SOD",
+    "OCL"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OBL",
+   "match": [
+    "SOD",
+    "OBL"
+   ],
+   "params": [
+    0.07502,
+    2.788512988
+   ]
+  },
+  {
+   "name": "SOD-O2L",
+   "match": [
+    "SOD",
+    "O2L"
+   ],
+   "params": [
+    0.07502,
+    2.815239949
+   ]
+  },
+  {
+   "name": "SOD-OC2D2",
+   "match": [
+    "SOD",
+    "OC2D2"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OC2DP",
+   "match": [
+    "SOD",
+    "OC2DP"
+   ],
+   "params": [
+    0.07502,
+    2.815239949
+   ]
+  },
+  {
+   "name": "SOD-OG2D2",
+   "match": [
+    "SOD",
+    "OG2D2"
+   ],
+   "params": [
+    0.07502,
+    2.87760286
+   ]
+  },
+  {
+   "name": "SOD-OG2P1",
+   "match": [
+    "SOD",
+    "OG2P1"
+   ],
+   "params": [
+    0.07502,
+    2.815239949
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "CN8-ON2",
+   "match": [
+    "CN8",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.44
+   ]
+  },
+  {
+   "name": "CN7B-ON5",
+   "match": [
+    "CN7B",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.4
+   ]
+  },
+  {
+   "name": "ON5-HN5",
+   "match": [
+    "ON5",
+    "HN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    545,
+    0.96
+   ]
+  },
+  {
+   "name": "CN8B-HN8",
+   "match": [
+    "CN8B",
+    "HN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    309,
+    1.111
+   ]
+  },
+  {
+   "name": "CN7B-NN2B",
+   "match": [
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    220,
+    1.458
+   ]
+  },
+  {
+   "name": "CN7B-NN2",
+   "match": [
+    "CN7B",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    220,
+    1.456
+   ]
+  },
+  {
+   "name": "CN9-NN2B",
+   "match": [
+    "CN9",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.458
+   ]
+  },
+  {
+   "name": "CN8-NN2B",
+   "match": [
+    "CN8",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.458
+   ]
+  },
+  {
+   "name": "CN9-NN2",
+   "match": [
+    "CN9",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.456
+   ]
+  },
+  {
+   "name": "CN7-ON5",
+   "match": [
+    "CN7",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.42
+   ]
+  },
+  {
+   "name": "CN7B-ON2",
+   "match": [
+    "CN7B",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    310,
+    1.433
+   ]
+  },
+  {
+   "name": "CN7-ON2",
+   "match": [
+    "CN7",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    310,
+    1.433
+   ]
+  },
+  {
+   "name": "CN8B-ON5",
+   "match": [
+    "CN8B",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.42
+   ]
+  },
+  {
+   "name": "CN8B-ON2",
+   "match": [
+    "CN8B",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.44
+   ]
+  },
+  {
+   "name": "CN7-CN8B",
+   "match": [
+    "CN7",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.512
+   ]
+  },
+  {
+   "name": "CN7-CN7B",
+   "match": [
+    "CN7",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.46
+   ]
+  },
+  {
+   "name": "CN7B-CN7B",
+   "match": [
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.45
+   ]
+  },
+  {
+   "name": "CN7-ON6B",
+   "match": [
+    "CN7",
+    "ON6B"
+   ],
+   "style": "harmonic",
+   "params": [
+    240,
+    1.48
+   ]
+  },
+  {
+   "name": "CN7B-ON6B",
+   "match": [
+    "CN7B",
+    "ON6B"
+   ],
+   "style": "harmonic",
+   "params": [
+    260,
+    1.42
+   ]
+  },
+  {
+   "name": "CN7B-HN7",
+   "match": [
+    "CN7B",
+    "HN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    309,
+    1.111
+   ]
+  },
+  {
+   "name": "CN8-HN8",
+   "match": [
+    "CN8",
+    "HN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    309,
+    1.111
+   ]
+  },
+  {
+   "name": "CN7-HN7",
+   "match": [
+    "CN7",
+    "HN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    309,
+    1.111
+   ]
+  },
+  {
+   "name": "CN7-CN9",
+   "match": [
+    "CN7",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.516
+   ]
+  },
+  {
+   "name": "CN7-CN8",
+   "match": [
+    "CN7",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.516
+   ]
+  },
+  {
+   "name": "CN7-CN7",
+   "match": [
+    "CN7",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.529
+   ]
+  },
+  {
+   "name": "CN7-ON6",
+   "match": [
+    "CN7",
+    "ON6"
+   ],
+   "style": "harmonic",
+   "params": [
+    240,
+    1.446
+   ]
+  },
+  {
+   "name": "CN7B-CN8",
+   "match": [
+    "CN7B",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.518
+   ]
+  },
+  {
+   "name": "CN7B-ON6",
+   "match": [
+    "CN7B",
+    "ON6"
+   ],
+   "style": "harmonic",
+   "params": [
+    260,
+    1.42
+   ]
+  },
+  {
+   "name": "ON4-P2",
+   "match": [
+    "ON4",
+    "P2"
+   ],
+   "style": "harmonic",
+   "params": [
+    237,
+    1.58
+   ]
+  },
+  {
+   "name": "ON4-P",
+   "match": [
+    "ON4",
+    "P"
+   ],
+   "style": "harmonic",
+   "params": [
+    237,
+    1.58
+   ]
+  },
+  {
+   "name": "ON3-P2",
+   "match": [
+    "ON3",
+    "P2"
+   ],
+   "style": "harmonic",
+   "params": [
+    580,
+    1.48
+   ]
+  },
+  {
+   "name": "ON3-P",
+   "match": [
+    "ON3",
+    "P"
+   ],
+   "style": "harmonic",
+   "params": [
+    580,
+    1.48
+   ]
+  },
+  {
+   "name": "ON2-P2",
+   "match": [
+    "ON2",
+    "P2"
+   ],
+   "style": "harmonic",
+   "params": [
+    270,
+    1.6
+   ]
+  },
+  {
+   "name": "ON2-P",
+   "match": [
+    "ON2",
+    "P"
+   ],
+   "style": "harmonic",
+   "params": [
+    270,
+    1.6
+   ]
+  },
+  {
+   "name": "HN4-ON4",
+   "match": [
+    "HN4",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    545,
+    0.96
+   ]
+  },
+  {
+   "name": "HN2-NN2U",
+   "match": [
+    "HN2",
+    "NN2U"
+   ],
+   "style": "harmonic",
+   "params": [
+    474,
+    1.01
+   ]
+  },
+  {
+   "name": "HN2-NN2G",
+   "match": [
+    "HN2",
+    "NN2G"
+   ],
+   "style": "harmonic",
+   "params": [
+    471,
+    1.01
+   ]
+  },
+  {
+   "name": "HN2-NN2B",
+   "match": [
+    "HN2",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    474,
+    1.01
+   ]
+  },
+  {
+   "name": "HN2-NN2",
+   "match": [
+    "HN2",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    474,
+    1.01
+   ]
+  },
+  {
+   "name": "HN1-NN1",
+   "match": [
+    "HN1",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    488,
+    1
+   ]
+  },
+  {
+   "name": "CN9-ON2",
+   "match": [
+    "CN9",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.43
+   ]
+  },
+  {
+   "name": "CN9-HN9",
+   "match": [
+    "CN9",
+    "HN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    322,
+    1.111
+   ]
+  },
+  {
+   "name": "CN8-ON5",
+   "match": [
+    "CN8",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    428,
+    1.42
+   ]
+  },
+  {
+   "name": "CN8-NN2",
+   "match": [
+    "CN8",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.46
+   ]
+  },
+  {
+   "name": "CN8-CN9",
+   "match": [
+    "CN8",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.528
+   ]
+  },
+  {
+   "name": "CN8-CN8",
+   "match": [
+    "CN8",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.528
+   ]
+  },
+  {
+   "name": "CN5G-NN4",
+   "match": [
+    "CN5G",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    310,
+    1.365
+   ]
+  },
+  {
+   "name": "CN5-NN4",
+   "match": [
+    "CN5",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    310,
+    1.355
+   ]
+  },
+  {
+   "name": "CN5-NN3G",
+   "match": [
+    "CN5",
+    "NN3G"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.315
+   ]
+  },
+  {
+   "name": "CN5-NN3A",
+   "match": [
+    "CN5",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.312
+   ]
+  },
+  {
+   "name": "CN5-NN2B",
+   "match": [
+    "CN5",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    302,
+    1.375
+   ]
+  },
+  {
+   "name": "CN5-NN2",
+   "match": [
+    "CN5",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    300,
+    1.375
+   ]
+  },
+  {
+   "name": "CN5-CN5G",
+   "match": [
+    "CN5",
+    "CN5G"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.35
+   ]
+  },
+  {
+   "name": "CN5-CN5",
+   "match": [
+    "CN5",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    310,
+    1.361
+   ]
+  },
+  {
+   "name": "CN4-NN4",
+   "match": [
+    "CN4",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.305
+   ]
+  },
+  {
+   "name": "CN4-NN3A",
+   "match": [
+    "CN4",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    420,
+    1.322
+   ]
+  },
+  {
+   "name": "CN4-NN2B",
+   "match": [
+    "CN4",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    300,
+    1.378
+   ]
+  },
+  {
+   "name": "CN4-NN2",
+   "match": [
+    "CN4",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.374
+   ]
+  },
+  {
+   "name": "CN4-HN3",
+   "match": [
+    "CN4",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    380,
+    1.09
+   ]
+  },
+  {
+   "name": "CN3-NN2B",
+   "match": [
+    "CN3",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.343
+   ]
+  },
+  {
+   "name": "CN3-NN2",
+   "match": [
+    "CN3",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    302,
+    1.343
+   ]
+  },
+  {
+   "name": "CN3T-HN3",
+   "match": [
+    "CN3T",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.09
+   ]
+  },
+  {
+   "name": "CN3-HN3",
+   "match": [
+    "CN3",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.09
+   ]
+  },
+  {
+   "name": "CN3T-CN9",
+   "match": [
+    "CN3T",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    230,
+    1.478
+   ]
+  },
+  {
+   "name": "CN3-CN3T",
+   "match": [
+    "CN3",
+    "CN3T"
+   ],
+   "style": "harmonic",
+   "params": [
+    560,
+    1.32
+   ]
+  },
+  {
+   "name": "CN3-CN3",
+   "match": [
+    "CN3",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    500,
+    1.326
+   ]
+  },
+  {
+   "name": "CN2-NN3G",
+   "match": [
+    "CN2",
+    "NN3G"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.326
+   ]
+  },
+  {
+   "name": "CN2-NN3A",
+   "match": [
+    "CN2",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.342
+   ]
+  },
+  {
+   "name": "CN2-NN3",
+   "match": [
+    "CN2",
+    "NN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    1.343
+   ]
+  },
+  {
+   "name": "CN2-NN2G",
+   "match": [
+    "CN2",
+    "NN2G"
+   ],
+   "style": "harmonic",
+   "params": [
+    400,
+    1.392
+   ]
+  },
+  {
+   "name": "CN2-NN1",
+   "match": [
+    "CN2",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    360,
+    1.366
+   ]
+  },
+  {
+   "name": "CN2-CN5",
+   "match": [
+    "CN2",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    360,
+    1.358
+   ]
+  },
+  {
+   "name": "CN2-CN3",
+   "match": [
+    "CN2",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    320,
+    1.406
+   ]
+  },
+  {
+   "name": "CN1-ON1C",
+   "match": [
+    "CN1",
+    "ON1C"
+   ],
+   "style": "harmonic",
+   "params": [
+    620,
+    1.245
+   ]
+  },
+  {
+   "name": "CN1-ON1",
+   "match": [
+    "CN1",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    660,
+    1.234
+   ]
+  },
+  {
+   "name": "CN1T-ON1",
+   "match": [
+    "CN1T",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    860,
+    1.23
+   ]
+  },
+  {
+   "name": "CN1-NN3",
+   "match": [
+    "CN1",
+    "NN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    350,
+    1.335
+   ]
+  },
+  {
+   "name": "CN1T-NN2U",
+   "match": [
+    "CN1T",
+    "NN2U"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.383
+   ]
+  },
+  {
+   "name": "CN1-NN2U",
+   "match": [
+    "CN1",
+    "NN2U"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.389
+   ]
+  },
+  {
+   "name": "CN1-NN2G",
+   "match": [
+    "CN1",
+    "NN2G"
+   ],
+   "style": "harmonic",
+   "params": [
+    340,
+    1.396
+   ]
+  },
+  {
+   "name": "CN1T-NN2B",
+   "match": [
+    "CN1T",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    302,
+    1.348
+   ]
+  },
+  {
+   "name": "CN1-NN2",
+   "match": [
+    "CN1",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    380,
+    1.367
+   ]
+  },
+  {
+   "name": "CN1-CN5G",
+   "match": [
+    "CN1",
+    "CN5G"
+   ],
+   "style": "harmonic",
+   "params": [
+    302,
+    1.36
+   ]
+  },
+  {
+   "name": "CN1-CN3T",
+   "match": [
+    "CN1",
+    "CN3T"
+   ],
+   "style": "harmonic",
+   "params": [
+    302,
+    1.403
+   ]
+  },
+  {
+   "name": "CN1-CN3",
+   "match": [
+    "CN1",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    302,
+    1.409
+   ]
+  },
+  {
+   "name": "CN8-CN8B",
+   "match": [
+    "CN8",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    222.5,
+    1.528
+   ]
+  },
+  {
+   "name": "ON6-CN8B",
+   "match": [
+    "ON6",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    260,
+    1.42
+   ]
+  },
+  {
+   "name": "NN6-HN1",
+   "match": [
+    "NN6",
+    "HN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    403,
+    1.04
+   ]
+  },
+  {
+   "name": "CN8-NN6",
+   "match": [
+    "CN8",
+    "NN6"
+   ],
+   "style": "harmonic",
+   "params": [
+    200,
+    1.48
+   ]
+  },
+  {
+   "name": "HTP-HTP",
+   "match": [
+    "HTP",
+    "HTP"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ],
+   "comment": "For TIP3P with PME (for SHAKE)"
+  },
+  {
+   "name": "H3P-H3P",
+   "match": [
+    "H3P",
+    "H3P"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ],
+   "comment": "From TIP3P geometry (for SHAKE) (HT HT)"
+  },
+  {
+   "name": "HT-HT",
+   "match": [
+    "HT",
+    "HT"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.5139
+   ],
+   "comment": "From TIP3P geometry (for SHAKE) (HT HT)"
+  },
+  {
+   "name": "OTP-HTP",
+   "match": [
+    "OTP",
+    "HTP"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ],
+   "comment": "For TIP3P with PME (for SHAKE)"
+  },
+  {
+   "name": "OT-HT",
+   "match": [
+    "OT",
+    "HT"
+   ],
+   "style": "harmonic",
+   "params": [
+    450,
+    0.9572
+   ],
+   "comment": "From TIP3P geometry for CHARMM (OT HT)"
+  },
+  {
+   "name": "OT-H3P",
+   "match": [
+    "OT",
+    "H3P"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    0.9572
+   ],
+   "comment": "From TIP3P geometry"
+  }
+ ],
+ "angles": [
+  {
+   "name": "CN7B-CN7-CN8",
+   "match": [
+    "CN7B",
+    "CN7",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.6,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "ON6-CN7B-CN7",
+   "match": [
+    "ON6",
+    "CN7B",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    106.25
+   ]
+  },
+  {
+   "name": "ON5-P-ON3",
+   "match": [
+    "ON5",
+    "P",
+    "ON3"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    111.6
+   ]
+  },
+  {
+   "name": "HN8-CN8-ON2",
+   "match": [
+    "HN8",
+    "CN8",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "ON3-P2-ON3",
+   "match": [
+    "ON3",
+    "P2",
+    "ON3"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    120
+   ]
+  },
+  {
+   "name": "ON3-P-ON3",
+   "match": [
+    "ON3",
+    "P",
+    "ON3"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    120
+   ]
+  },
+  {
+   "name": "ON2-P2-ON3",
+   "match": [
+    "ON2",
+    "P2",
+    "ON3"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    111.6
+   ]
+  },
+  {
+   "name": "ON2-P-ON3",
+   "match": [
+    "ON2",
+    "P",
+    "ON3"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    111.6
+   ]
+  },
+  {
+   "name": "CN8-ON2-P2",
+   "match": [
+    "CN8",
+    "ON2",
+    "P2"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN8-ON2-P",
+   "match": [
+    "CN8",
+    "ON2",
+    "P"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7B"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN7B",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    109
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON5",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "ON5-CN7B-CN7",
+   "match": [
+    "ON5",
+    "CN7B",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    108
+   ]
+  },
+  {
+   "name": "ON5-CN7B-CN7B",
+   "match": [
+    "ON5",
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    108.4
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7B",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    110
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7B",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    110
+   ]
+  },
+  {
+   "name": "ON6B-CN7-CN9",
+   "match": [
+    "ON6B",
+    "CN7",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    108.2
+   ]
+  },
+  {
+   "name": "ON6B-CN7-CN8B",
+   "match": [
+    "ON6B",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    108.2
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN7",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    109
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON5",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN8",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110
+   ]
+  },
+  {
+   "name": "HN8-CN8B-ON5",
+   "match": [
+    "HN8",
+    "CN8B",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.9,
+    108.89
+   ]
+  },
+  {
+   "name": "CN8B-CN7-ON5",
+   "match": [
+    "CN8B",
+    "CN7",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    108.2
+   ]
+  },
+  {
+   "name": "CN7-CN8B-ON5",
+   "match": [
+    "CN7",
+    "CN8B",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON2",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON2",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN7",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN8-CN8B-HN8",
+   "match": [
+    "HN8",
+    "CN8B",
+    "HN8"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    109,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN8B",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    106
+   ]
+  },
+  {
+   "name": "HN8-CN8B-ON2",
+   "match": [
+    "HN8",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "charmm",
+   "params": [
+    34.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN7B-ON2-P2",
+   "match": [
+    "CN7B",
+    "ON2",
+    "P2"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN7B-ON2-P",
+   "match": [
+    "CN7B",
+    "ON2",
+    "P"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN7-ON2-P2",
+   "match": [
+    "CN7",
+    "ON2",
+    "P2"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN7-ON2-P",
+   "match": [
+    "CN7",
+    "ON2",
+    "P"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN8B-ON2-P2",
+   "match": [
+    "CN8B",
+    "ON2",
+    "P2"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN8B-ON2-P",
+   "match": [
+    "CN8B",
+    "ON2",
+    "P"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "CN8-CN7-ON2",
+   "match": [
+    "CN8",
+    "CN7",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    115,
+    109.7
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-ON2",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    115,
+    109.7
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON2",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    115,
+    109.7
+   ]
+  },
+  {
+   "name": "CN7-CN8B-ON2",
+   "match": [
+    "CN7",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    108.4
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN8B",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.6,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN8B",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    110
+   ]
+  },
+  {
+   "name": "ON6-CN7-CN9",
+   "match": [
+    "ON6",
+    "CN7",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    108.2
+   ]
+  },
+  {
+   "name": "ON6-CN7-CN8B",
+   "match": [
+    "ON6",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    108.2
+   ]
+  },
+  {
+   "name": "HN7-CN7B-HN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    109,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-HN7",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "charmm",
+   "params": [
+    33.4,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON6B",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON6B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.2,
+    107.24
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON6B",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.2,
+    107.24
+   ]
+  },
+  {
+   "name": "CN7B-CN7-CN7",
+   "match": [
+    "CN7B",
+    "CN7",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    60,
+    100,
+    8,
+    2.561
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-CN7",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    96
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-CN7B",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    106
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON6B",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    110
+   ]
+  },
+  {
+   "name": "CN7-ON6B-CN7B",
+   "match": [
+    "CN7",
+    "ON6B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    115
+   ]
+  },
+  {
+   "name": "HN7-CN7-HN7",
+   "match": [
+    "HN7",
+    "CN7",
+    "HN7"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    109,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "HN8-CN8-HN8",
+   "match": [
+    "HN8",
+    "CN8",
+    "HN8"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    109,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN8",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN7",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    34.5,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN8-CN7B-HN7",
+   "match": [
+    "CN8",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "charmm",
+   "params": [
+    33.4,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN7B-CN8-HN8",
+   "match": [
+    "CN7B",
+    "CN8",
+    "HN8"
+   ],
+   "style": "charmm",
+   "params": [
+    33.4,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    108
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON6",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON6"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.2,
+    107.24
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON6",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.2,
+    107.24
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON6",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    104
+   ]
+  },
+  {
+   "name": "CN9-CN7-CN7",
+   "match": [
+    "CN9",
+    "CN7",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    60,
+    102,
+    8,
+    2.561
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN7",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    60,
+    102,
+    8,
+    2.561
+   ]
+  },
+  {
+   "name": "CN7B-CN8-CN7",
+   "match": [
+    "CN7B",
+    "CN8",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    100
+   ]
+  },
+  {
+   "name": "ON6-CN7B-CN8",
+   "match": [
+    "ON6",
+    "CN7B",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    102
+   ]
+  },
+  {
+   "name": "CN7-ON6-CN7B",
+   "match": [
+    "CN7",
+    "ON6",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    108
+   ]
+  },
+  {
+   "name": "HN9-CN9-HN9",
+   "match": [
+    "HN9",
+    "CN9",
+    "HN9"
+   ],
+   "style": "charmm",
+   "params": [
+    35.5,
+    108.4,
+    5.4,
+    1.802
+   ]
+  },
+  {
+   "name": "CN7-CN8-ON5",
+   "match": [
+    "CN7",
+    "CN8",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.7,
+    110.1
+   ]
+  },
+  {
+   "name": "ON4-P2-ON4",
+   "match": [
+    "ON4",
+    "P2",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    104
+   ]
+  },
+  {
+   "name": "ON4-P-ON4",
+   "match": [
+    "ON4",
+    "P",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    104
+   ]
+  },
+  {
+   "name": "ON3-P2-ON4",
+   "match": [
+    "ON3",
+    "P2",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    108.23
+   ]
+  },
+  {
+   "name": "ON3-P-ON4",
+   "match": [
+    "ON3",
+    "P",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    98.9,
+    108.23
+   ]
+  },
+  {
+   "name": "ON2-P2-ON4",
+   "match": [
+    "ON2",
+    "P2",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.1,
+    108
+   ]
+  },
+  {
+   "name": "ON2-P-ON4",
+   "match": [
+    "ON2",
+    "P",
+    "ON4"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.1,
+    108
+   ]
+  },
+  {
+   "name": "ON2-P2-ON2",
+   "match": [
+    "ON2",
+    "P2",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    104.3
+   ]
+  },
+  {
+   "name": "ON2-P-ON2",
+   "match": [
+    "ON2",
+    "P",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    104.3
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN9",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    106
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN8",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    57.5,
+    106
+   ]
+  },
+  {
+   "name": "HN4-ON4-P2",
+   "match": [
+    "HN4",
+    "ON4",
+    "P2"
+   ],
+   "style": "charmm",
+   "params": [
+    30,
+    115,
+    40,
+    2.35
+   ]
+  },
+  {
+   "name": "HN4-ON4-P",
+   "match": [
+    "HN4",
+    "ON4",
+    "P"
+   ],
+   "style": "charmm",
+   "params": [
+    30,
+    115,
+    40,
+    2.35
+   ]
+  },
+  {
+   "name": "CN9-ON2-P",
+   "match": [
+    "CN9",
+    "ON2",
+    "P"
+   ],
+   "style": "charmm",
+   "params": [
+    20,
+    120,
+    35,
+    2.33
+   ]
+  },
+  {
+   "name": "HN9-CN9-ON2",
+   "match": [
+    "HN9",
+    "CN9",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    109.5
+   ]
+  },
+  {
+   "name": "HN8-CN8-NN2B",
+   "match": [
+    "HN8",
+    "CN8",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.43,
+    110.1
+   ]
+  },
+  {
+   "name": "HN9-CN9-NN2B",
+   "match": [
+    "HN9",
+    "CN9",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.43,
+    110.1
+   ]
+  },
+  {
+   "name": "HN9-CN9-NN2",
+   "match": [
+    "HN9",
+    "CN9",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.43,
+    110.1
+   ]
+  },
+  {
+   "name": "HN9-CN9-CN7",
+   "match": [
+    "HN9",
+    "CN9",
+    "CN7"
+   ],
+   "style": "charmm",
+   "params": [
+    33.43,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN8-CN9-HN9",
+   "match": [
+    "CN8",
+    "CN9",
+    "HN9"
+   ],
+   "style": "charmm",
+   "params": [
+    34.6,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN3T-CN9-HN9",
+   "match": [
+    "CN3T",
+    "CN9",
+    "HN9"
+   ],
+   "style": "charmm",
+   "params": [
+    33.43,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN3-CN9-HN9",
+   "match": [
+    "CN3",
+    "CN9",
+    "HN9"
+   ],
+   "style": "charmm",
+   "params": [
+    33.43,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN8-CN8-ON5",
+   "match": [
+    "HN8",
+    "CN8",
+    "ON5"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.9,
+    108.89
+   ]
+  },
+  {
+   "name": "HN8-CN8-NN2",
+   "match": [
+    "HN8",
+    "CN8",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.43,
+    110.1
+   ]
+  },
+  {
+   "name": "CN9-CN7-HN7",
+   "match": [
+    "CN9",
+    "CN7",
+    "HN7"
+   ],
+   "style": "charmm",
+   "params": [
+    34.6,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "CN9-CN8-HN8",
+   "match": [
+    "CN9",
+    "CN8",
+    "HN8"
+   ],
+   "style": "charmm",
+   "params": [
+    34.6,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2B",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    43,
+    111
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    43,
+    111
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2B",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    111
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2B",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    113.7
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2B",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    112
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2B",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    108
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    111
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    113.7
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    112
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    108
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN7B",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    126.3
+   ]
+  },
+  {
+   "name": "CN5-NN2B-CN7B",
+   "match": [
+    "CN5",
+    "NN2B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    126.5
+   ]
+  },
+  {
+   "name": "CN4-NN2-CN7B",
+   "match": [
+    "CN4",
+    "NN2",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    127.6
+   ]
+  },
+  {
+   "name": "CN5-NN2-CN7B",
+   "match": [
+    "CN5",
+    "NN2",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    126.1
+   ]
+  },
+  {
+   "name": "CN3-NN2-CN7B",
+   "match": [
+    "CN3",
+    "NN2",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    115.9
+   ]
+  },
+  {
+   "name": "CN1-NN2-CN7B",
+   "match": [
+    "CN1",
+    "NN2",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    120
+   ]
+  },
+  {
+   "name": "CN3-NN2B-CN7B",
+   "match": [
+    "CN3",
+    "NN2B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    119.6
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-CN7B",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "CN7B"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    118.4
+   ]
+  },
+  {
+   "name": "NN2B-CN8-CN9",
+   "match": [
+    "NN2B",
+    "CN8",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    113.7
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN8",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    126.9
+   ]
+  },
+  {
+   "name": "CN5-NN2B-CN8",
+   "match": [
+    "CN5",
+    "NN2B",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    125.9
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN9",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    126.9
+   ]
+  },
+  {
+   "name": "CN5-NN2B-CN9",
+   "match": [
+    "CN5",
+    "NN2B",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    125.9
+   ]
+  },
+  {
+   "name": "CN4-NN2-CN9",
+   "match": [
+    "CN4",
+    "NN2",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    127.8
+   ]
+  },
+  {
+   "name": "CN5-NN2-CN9",
+   "match": [
+    "CN5",
+    "NN2",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    125.9
+   ]
+  },
+  {
+   "name": "CN3-NN2-CN9",
+   "match": [
+    "CN3",
+    "NN2",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    120.5
+   ]
+  },
+  {
+   "name": "CN1-NN2-CN9",
+   "match": [
+    "CN1",
+    "NN2",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    115.4
+   ]
+  },
+  {
+   "name": "CN3-NN2B-CN9",
+   "match": [
+    "CN3",
+    "NN2B",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    122
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-CN9",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    116
+   ]
+  },
+  {
+   "name": "CN3T-CN3-HN3",
+   "match": [
+    "CN3T",
+    "CN3",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    122.1
+   ]
+  },
+  {
+   "name": "CN3-CN3T-CN9",
+   "match": [
+    "CN3",
+    "CN3T",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    38,
+    124.6
+   ]
+  },
+  {
+   "name": "CN1-CN3T-CN9",
+   "match": [
+    "CN1",
+    "CN3T",
+    "CN9"
+   ],
+   "style": "harmonic",
+   "params": [
+    38,
+    118.7
+   ]
+  },
+  {
+   "name": "CN3T-CN1-ON1",
+   "match": [
+    "CN3T",
+    "CN1",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    124.6
+   ]
+  },
+  {
+   "name": "CN3T-CN3-NN2B",
+   "match": [
+    "CN3T",
+    "CN3",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    123.6
+   ]
+  },
+  {
+   "name": "CN1-CN3T-CN3",
+   "match": [
+    "CN1",
+    "CN3T",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    116.7
+   ]
+  },
+  {
+   "name": "CN3T-CN1-NN2U",
+   "match": [
+    "CN3T",
+    "CN1",
+    "NN2U"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    113.5
+   ]
+  },
+  {
+   "name": "HN3-CN3-NN2B",
+   "match": [
+    "HN3",
+    "CN3",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    114.3
+   ]
+  },
+  {
+   "name": "CN1-CN3-HN3",
+   "match": [
+    "CN1",
+    "CN3",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    120.3
+   ]
+  },
+  {
+   "name": "CN3-CN1-ON1",
+   "match": [
+    "CN3",
+    "CN1",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    125.5
+   ]
+  },
+  {
+   "name": "NN2U-CN1-ON1",
+   "match": [
+    "NN2U",
+    "CN1",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    121.9
+   ]
+  },
+  {
+   "name": "CN1-NN2U-HN2",
+   "match": [
+    "CN1",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    40.5,
+    115.4
+   ]
+  },
+  {
+   "name": "CN1T-NN2U-HN2",
+   "match": [
+    "CN1T",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    40.5,
+    114.4
+   ]
+  },
+  {
+   "name": "NN2U-CN1T-ON1",
+   "match": [
+    "NN2U",
+    "CN1T",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    124.4
+   ]
+  },
+  {
+   "name": "NN2B-CN1T-ON1",
+   "match": [
+    "NN2B",
+    "CN1T",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    121.6
+   ]
+  },
+  {
+   "name": "CN3-NN2B-HN2",
+   "match": [
+    "CN3",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    32,
+    116
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-HN2",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    40.5,
+    122
+   ]
+  },
+  {
+   "name": "CN3-CN3-NN2B",
+   "match": [
+    "CN3",
+    "CN3",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    123.6
+   ]
+  },
+  {
+   "name": "CN1-CN3-CN3",
+   "match": [
+    "CN1",
+    "CN3",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    117.6
+   ]
+  },
+  {
+   "name": "NN2U-CN1-CN3",
+   "match": [
+    "NN2U",
+    "CN1",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    112.6
+   ]
+  },
+  {
+   "name": "CN1T-NN2U-CN1",
+   "match": [
+    "CN1T",
+    "NN2U",
+    "CN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    130.2
+   ]
+  },
+  {
+   "name": "NN2B-CN1T-NN2U",
+   "match": [
+    "NN2B",
+    "CN1T",
+    "NN2U"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    114
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-CN3",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    122
+   ]
+  },
+  {
+   "name": "HN3-CN3-NN2",
+   "match": [
+    "HN3",
+    "CN3",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    44,
+    115
+   ]
+  },
+  {
+   "name": "CN3-CN3-HN3",
+   "match": [
+    "CN3",
+    "CN3",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    38,
+    122.1
+   ]
+  },
+  {
+   "name": "CN2-CN3-HN3",
+   "match": [
+    "CN2",
+    "CN3",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    38,
+    120.1
+   ]
+  },
+  {
+   "name": "CN3-CN2-NN1",
+   "match": [
+    "CN3",
+    "CN2",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    81,
+    118.4
+   ]
+  },
+  {
+   "name": "NN3-CN2-NN1",
+   "match": [
+    "NN3",
+    "CN2",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    81,
+    122.3
+   ]
+  },
+  {
+   "name": "NN3-CN1-ON1C",
+   "match": [
+    "NN3",
+    "CN1",
+    "ON1C"
+   ],
+   "style": "harmonic",
+   "params": [
+    130,
+    123.8
+   ]
+  },
+  {
+   "name": "NN2-CN1-ON1C",
+   "match": [
+    "NN2",
+    "CN1",
+    "ON1C"
+   ],
+   "style": "harmonic",
+   "params": [
+    130,
+    119.4
+   ]
+  },
+  {
+   "name": "CN3-NN2-HN2",
+   "match": [
+    "CN3",
+    "NN2",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    37,
+    114.7
+   ]
+  },
+  {
+   "name": "CN1-NN2-HN2",
+   "match": [
+    "CN1",
+    "NN2",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    37,
+    121.2
+   ]
+  },
+  {
+   "name": "CN3-CN3-NN2",
+   "match": [
+    "CN3",
+    "CN3",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    122.9
+   ]
+  },
+  {
+   "name": "CN2-CN3-CN3",
+   "match": [
+    "CN2",
+    "CN3",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    117.8
+   ]
+  },
+  {
+   "name": "CN3-CN2-NN3",
+   "match": [
+    "CN3",
+    "CN2",
+    "NN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    119.3
+   ]
+  },
+  {
+   "name": "CN1-NN3-CN2",
+   "match": [
+    "CN1",
+    "NN3",
+    "CN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    85,
+    119.1
+   ]
+  },
+  {
+   "name": "NN2-CN1-NN3",
+   "match": [
+    "NN2",
+    "CN1",
+    "NN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    116.8
+   ]
+  },
+  {
+   "name": "CN1-NN2-CN3",
+   "match": [
+    "CN1",
+    "NN2",
+    "CN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    124.1
+   ]
+  },
+  {
+   "name": "CN5-NN2B-HN2",
+   "match": [
+    "CN5",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    129.3
+   ]
+  },
+  {
+   "name": "CN4-NN2B-HN2",
+   "match": [
+    "CN4",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    124.6
+   ]
+  },
+  {
+   "name": "HN3-CN4-NN2B",
+   "match": [
+    "HN3",
+    "CN4",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    122.2
+   ]
+  },
+  {
+   "name": "CN5G-CN1-ON1",
+   "match": [
+    "CN5G",
+    "CN1",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    124.7
+   ]
+  },
+  {
+   "name": "NN2G-CN1-ON1",
+   "match": [
+    "NN2G",
+    "CN1",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    127.5
+   ]
+  },
+  {
+   "name": "NN1-CN2-NN3G",
+   "match": [
+    "NN1",
+    "CN2",
+    "NN3G"
+   ],
+   "style": "harmonic",
+   "params": [
+    95,
+    122.4
+   ]
+  },
+  {
+   "name": "NN1-CN2-NN2G",
+   "match": [
+    "NN1",
+    "CN2",
+    "NN2G"
+   ],
+   "style": "harmonic",
+   "params": [
+    95,
+    115.4
+   ]
+  },
+  {
+   "name": "CN2-NN2G-HN2",
+   "match": [
+    "CN2",
+    "NN2G",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    115.6
+   ]
+  },
+  {
+   "name": "CN1-NN2G-HN2",
+   "match": [
+    "CN1",
+    "NN2G",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    45,
+    113.3
+   ]
+  },
+  {
+   "name": "CN1-CN5G-NN4",
+   "match": [
+    "CN1",
+    "CN5G",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    125,
+    129
+   ]
+  },
+  {
+   "name": "NN2B-CN5-NN3G",
+   "match": [
+    "NN2B",
+    "CN5",
+    "NN3G"
+   ],
+   "style": "harmonic",
+   "params": [
+    140,
+    125.5
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN5",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    107.2
+   ]
+  },
+  {
+   "name": "NN2B-CN4-NN4",
+   "match": [
+    "NN2B",
+    "CN4",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    113
+   ]
+  },
+  {
+   "name": "CN4-NN4-CN5G",
+   "match": [
+    "CN4",
+    "NN4",
+    "CN5G"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    103.8
+   ]
+  },
+  {
+   "name": "CN5-CN5G-NN4",
+   "match": [
+    "CN5",
+    "CN5G",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    111.4
+   ]
+  },
+  {
+   "name": "CN5G-CN5-NN2B",
+   "match": [
+    "CN5G",
+    "CN5",
+    "NN2B"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    104.6
+   ]
+  },
+  {
+   "name": "CN5G-CN1-NN2G",
+   "match": [
+    "CN5G",
+    "CN1",
+    "NN2G"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    107.8
+   ]
+  },
+  {
+   "name": "CN1-CN5G-CN5",
+   "match": [
+    "CN1",
+    "CN5G",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    119.6
+   ]
+  },
+  {
+   "name": "CN5G-CN5-NN3G",
+   "match": [
+    "CN5G",
+    "CN5",
+    "NN3G"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    129.9
+   ]
+  },
+  {
+   "name": "CN2-NN3G-CN5",
+   "match": [
+    "CN2",
+    "NN3G",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    109.4
+   ]
+  },
+  {
+   "name": "NN2G-CN2-NN3G",
+   "match": [
+    "NN2G",
+    "CN2",
+    "NN3G"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    122.2
+   ]
+  },
+  {
+   "name": "CN1-NN2G-CN2",
+   "match": [
+    "CN1",
+    "NN2G",
+    "CN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70,
+    131.1
+   ]
+  },
+  {
+   "name": "CN4-NN2-HN2",
+   "match": [
+    "CN4",
+    "NN2",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    125
+   ]
+  },
+  {
+   "name": "CN5-NN2-HN2",
+   "match": [
+    "CN5",
+    "NN2",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    129.4
+   ]
+  },
+  {
+   "name": "NN2-CN4-HN3",
+   "match": [
+    "NN2",
+    "CN4",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    39,
+    121.8
+   ]
+  },
+  {
+   "name": "NN4-CN4-HN3",
+   "match": [
+    "NN4",
+    "CN4",
+    "HN3"
+   ],
+   "style": "harmonic",
+   "params": [
+    39,
+    124.8
+   ]
+  },
+  {
+   "name": "HN1-NN1-HN1",
+   "match": [
+    "HN1",
+    "NN1",
+    "HN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    31,
+    117
+   ]
+  },
+  {
+   "name": "CN2-NN1-HN1",
+   "match": [
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    121.5
+   ]
+  },
+  {
+   "name": "CN5-CN2-NN1",
+   "match": [
+    "CN5",
+    "CN2",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    118.6
+   ]
+  },
+  {
+   "name": "NN3A-CN2-NN1",
+   "match": [
+    "NN3A",
+    "CN2",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    50,
+    130.7
+   ]
+  },
+  {
+   "name": "HN3-CN4-NN3A",
+   "match": [
+    "HN3",
+    "CN4",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    38,
+    113.5
+   ]
+  },
+  {
+   "name": "CN2-CN5-NN4",
+   "match": [
+    "CN2",
+    "CN5",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    129
+   ]
+  },
+  {
+   "name": "NN2-CN5-NN3A",
+   "match": [
+    "NN2",
+    "CN5",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    126.9
+   ]
+  },
+  {
+   "name": "CN4-NN2-CN5",
+   "match": [
+    "CN4",
+    "NN2",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    106.3
+   ]
+  },
+  {
+   "name": "NN2-CN4-NN4",
+   "match": [
+    "NN2",
+    "CN4",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    113.4
+   ]
+  },
+  {
+   "name": "CN4-NN4-CN5",
+   "match": [
+    "CN4",
+    "NN4",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    120,
+    104.6
+   ]
+  },
+  {
+   "name": "CN5-CN5-NN4",
+   "match": [
+    "CN5",
+    "CN5",
+    "NN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    110
+   ]
+  },
+  {
+   "name": "CN5-CN5-NN2",
+   "match": [
+    "CN5",
+    "CN5",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    100,
+    105.7
+   ]
+  },
+  {
+   "name": "CN5-CN2-NN3A",
+   "match": [
+    "CN5",
+    "CN2",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    110.7
+   ]
+  },
+  {
+   "name": "CN2-CN5-CN5",
+   "match": [
+    "CN2",
+    "CN5",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    121
+   ]
+  },
+  {
+   "name": "CN5-CN5-NN3A",
+   "match": [
+    "CN5",
+    "CN5",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    127.4
+   ]
+  },
+  {
+   "name": "CN4-NN3A-CN5",
+   "match": [
+    "CN4",
+    "NN3A",
+    "CN5"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    110.1
+   ]
+  },
+  {
+   "name": "NN3A-CN4-NN3A",
+   "match": [
+    "NN3A",
+    "CN4",
+    "NN3A"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    133
+   ]
+  },
+  {
+   "name": "CN2-NN3A-CN4",
+   "match": [
+    "CN2",
+    "NN3A",
+    "CN4"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    117.8
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN8B",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN8B"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN8",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    34.53,
+    110.1,
+    22.53,
+    2.179
+   ]
+  },
+  {
+   "name": "ON6-CN8B-HN8",
+   "match": [
+    "ON6",
+    "CN8B",
+    "HN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.2,
+    107.24
+   ]
+  },
+  {
+   "name": "CN8B-CN8-CN7",
+   "match": [
+    "CN8B",
+    "CN8",
+    "CN7"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    106
+   ]
+  },
+  {
+   "name": "ON6-CN8B-CN8",
+   "match": [
+    "ON6",
+    "CN8B",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    106
+   ]
+  },
+  {
+   "name": "CN7-ON6-CN8B",
+   "match": [
+    "CN7",
+    "ON6",
+    "CN8B"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    109
+   ]
+  },
+  {
+   "name": "ON2-CN8-CN8",
+   "match": [
+    "ON2",
+    "CN8",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    115,
+    109.7
+   ]
+  },
+  {
+   "name": "HN1-NN6-HN1",
+   "match": [
+    "HN1",
+    "NN6",
+    "HN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    44,
+    109.5
+   ]
+  },
+  {
+   "name": "NN6-CN8-CN8",
+   "match": [
+    "NN6",
+    "CN8",
+    "CN8"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.7,
+    110
+   ]
+  },
+  {
+   "name": "CN7-CN8-ON2",
+   "match": [
+    "CN7",
+    "CN8",
+    "ON2"
+   ],
+   "style": "harmonic",
+   "params": [
+    115,
+    109.7
+   ]
+  },
+  {
+   "name": "NN6-CN8-HN8",
+   "match": [
+    "NN6",
+    "CN8",
+    "HN8"
+   ],
+   "style": "charmm",
+   "params": [
+    45,
+    107.5,
+    35,
+    2.101
+   ]
+  },
+  {
+   "name": "HN1-NN6-CN8",
+   "match": [
+    "HN1",
+    "NN6",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    30,
+    109.5,
+    20,
+    2.074
+   ]
+  },
+  {
+   "name": "CN8-CN8-CN8",
+   "match": [
+    "CN8",
+    "CN8",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.6,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN8",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.6,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "CN7-CN8-CN8",
+   "match": [
+    "CN7",
+    "CN8",
+    "CN8"
+   ],
+   "style": "charmm",
+   "params": [
+    58.35,
+    113.6,
+    11.16,
+    2.561
+   ]
+  },
+  {
+   "name": "HTP-OTP-HTP",
+   "match": [
+    "HTP",
+    "OTP",
+    "HTP"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ]
+  },
+  {
+   "name": "HT-OT-HT",
+   "match": [
+    "HT",
+    "OT",
+    "HT"
+   ],
+   "style": "harmonic",
+   "params": [
+    55,
+    104.52
+   ]
+  },
+  {
+   "name": "H3P-OT-H3P",
+   "match": [
+    "H3P",
+    "OT",
+    "H3P"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    104.52
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "X-CN8-CN9-X",
+   "match": [
+    "*",
+    "CN8",
+    "CN9",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.15,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CN8-CN8-X",
+   "match": [
+    "*",
+    "CN8",
+    "CN8",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.15,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CN2-NN3G-X",
+   "match": [
+    "*",
+    "CN2",
+    "NN3G",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN2-NN3A-X",
+   "match": [
+    "*",
+    "CN2",
+    "NN3A",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5G-NN4-X",
+   "match": [
+    "*",
+    "CN5G",
+    "NN4",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5-NN4-X",
+   "match": [
+    "*",
+    "CN5",
+    "NN4",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5-NN3G-X",
+   "match": [
+    "*",
+    "CN5",
+    "NN3G",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5-NN3A-X",
+   "match": [
+    "*",
+    "CN5",
+    "NN3A",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5-NN2B-X",
+   "match": [
+    "*",
+    "CN5",
+    "NN2B",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5-NN2-X",
+   "match": [
+    "*",
+    "CN5",
+    "NN2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5G-CN5-X",
+   "match": [
+    "*",
+    "CN5G",
+    "CN5",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN5-CN5-X",
+   "match": [
+    "*",
+    "CN5",
+    "CN5",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN4-NN4-X",
+   "match": [
+    "*",
+    "CN4",
+    "NN4",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN4-NN3A-X",
+   "match": [
+    "*",
+    "CN4",
+    "NN3A",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN4-NN2B-X",
+   "match": [
+    "*",
+    "CN4",
+    "NN2B",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN4-NN2-X",
+   "match": [
+    "*",
+    "CN4",
+    "NN2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN2-CN5-X",
+   "match": [
+    "*",
+    "CN2",
+    "CN5",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN2-NN2G-X",
+   "match": [
+    "*",
+    "CN2",
+    "NN2G",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-CN5G-X",
+   "match": [
+    "*",
+    "CN1",
+    "CN5G",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN2-CN3-X",
+   "match": [
+    "*",
+    "CN2",
+    "CN3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-CN3T-X",
+   "match": [
+    "*",
+    "CN1",
+    "CN3T",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-CN3-X",
+   "match": [
+    "*",
+    "CN1",
+    "CN3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN3-CN3T-X",
+   "match": [
+    "*",
+    "CN3",
+    "CN3T",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN3-CN3-X",
+   "match": [
+    "*",
+    "CN3",
+    "CN3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN3-NN2B-X",
+   "match": [
+    "*",
+    "CN3",
+    "NN2B",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN3-NN2-X",
+   "match": [
+    "*",
+    "CN3",
+    "NN2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1T-NN2U-X",
+   "match": [
+    "*",
+    "CN1T",
+    "NN2U",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-NN2U-X",
+   "match": [
+    "*",
+    "CN1",
+    "NN2U",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-NN2G-X",
+   "match": [
+    "*",
+    "CN1",
+    "NN2G",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1T-NN2B-X",
+   "match": [
+    "*",
+    "CN1T",
+    "NN2B",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-NN2-X",
+   "match": [
+    "*",
+    "CN1",
+    "NN2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN1-NN3-X",
+   "match": [
+    "*",
+    "CN1",
+    "NN3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN2-NN3-X",
+   "match": [
+    "*",
+    "CN2",
+    "NN3",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "X-CN8-NN6-X",
+   "match": [
+    "*",
+    "CN8",
+    "NN6",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CN7-CN8-X",
+   "match": [
+    "*",
+    "CN7",
+    "CN8",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-CN8-ON2-X",
+   "match": [
+    "*",
+    "CN8",
+    "ON2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    -0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-ON4-P2-X",
+   "match": [
+    "*",
+    "ON4",
+    "P2",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "X-ON4-P-X",
+   "match": [
+    "*",
+    "ON4",
+    "P",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7B-HN7",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-CN7B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7-CN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7B-ON5",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-ON6-CN7-CN9",
+   "match": [
+    "CN7B",
+    "ON6",
+    "CN7",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN7B-CN7",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN7B",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.2,
+    3,
+    0,
+    0,
+    2,
+    180,
+    2,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN5-ON5-CN7B-CN7B",
+   "match": [
+    "HN5",
+    "ON5",
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0,
+    6,
+    180,
+    0.4,
+    3,
+    0,
+    0.4,
+    2,
+    0,
+    0.8,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON5-HN5",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7B-CN7-ON5",
+   "match": [
+    "ON5",
+    "CN7B",
+    "CN7",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7B-ON2",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7B-CN7-ON2",
+   "match": [
+    "ON5",
+    "CN7B",
+    "CN7",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-CN7B-ON5",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "CN7B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN7B-ON5",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN7B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7B-HN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7B-CN7B-HN7",
+   "match": [
+    "ON5",
+    "CN7B",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "NN2B-CN7B-CN7B-ON5",
+   "match": [
+    "NN2B",
+    "CN7B",
+    "CN7B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "NN2-CN7B-CN7B-ON5",
+   "match": [
+    "NN2",
+    "CN7B",
+    "CN7B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7B-ON6B",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7B",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7B-CN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7B",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7B-CN7B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON6B-CN7B",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON6B",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON6B-CN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON6B",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN7B-ON6B",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN7B",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN9-CN9-CN7-ON6B",
+   "match": [
+    "HN9",
+    "CN9",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-ON6B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7B-ON6-CN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "ON6",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON6-CN7B",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON6",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN7-CN7",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8-HN8",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN8-HN8",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-HN7",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN7B-ON6",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN7B",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-ON6",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN8-CN7",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN8",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8-CN7B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-CN8",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON6B-CN7B",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON6B",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON6-CN7B",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON6",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-CN7-CN7",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN8-CN7-CN7",
+   "match": [
+    "CN7B",
+    "CN8",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.4,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7B-CN7B-ON6B",
+   "match": [
+    "CN7",
+    "CN7B",
+    "CN7B",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.4,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN8-CN7B-ON6",
+   "match": [
+    "CN7",
+    "CN8",
+    "CN7B",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7-CN7-ON6B",
+   "match": [
+    "CN7B",
+    "CN7",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-ON6B-CN7",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "ON6B",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN7-ON6",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1,
+    4,
+    0,
+    0.3,
+    5,
+    180,
+    0.3,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7B-ON6-CN7",
+   "match": [
+    "CN8",
+    "CN7B",
+    "ON6",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-CN8B",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8B-HN8",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8B",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON5-HN5",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7-ON5-HN5",
+   "match": [
+    "CN7B",
+    "CN7",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.8,
+    3,
+    0,
+    0.5,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CN8-CN7-ON5-HN5",
+   "match": [
+    "CN8",
+    "CN7",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.5,
+    3,
+    0,
+    1,
+    2,
+    180,
+    0.3,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON5-HN5",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.5,
+    3,
+    0,
+    0.3,
+    2,
+    180,
+    1.5,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7B-ON2-P",
+   "match": [
+    "CN7",
+    "CN7B",
+    "ON2",
+    "P"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-ON2-P",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "ON2",
+    "P"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7-ON2-P",
+   "match": [
+    "CN7B",
+    "CN7",
+    "ON2",
+    "P"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7-ON2-P2",
+   "match": [
+    "CN8",
+    "CN7",
+    "ON2",
+    "P2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.9,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7-ON2-P",
+   "match": [
+    "CN8",
+    "CN7",
+    "ON2",
+    "P"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON2-P",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON2",
+    "P"
+   ],
+   "style": "fourier",
+   "params": [
+    5,
+    0.6,
+    5,
+    0,
+    0.2,
+    4,
+    0,
+    0,
+    3,
+    180,
+    0.4,
+    2,
+    0,
+    1.9,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-ON2-P2",
+   "match": [
+    "CN7",
+    "CN7",
+    "ON2",
+    "P2"
+   ],
+   "style": "fourier",
+   "params": [
+    5,
+    0.6,
+    5,
+    0,
+    0.2,
+    4,
+    0,
+    0,
+    3,
+    180,
+    0.4,
+    2,
+    0,
+    1.9,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-ON5",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-ON2",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7B-HN7",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7B-HN7",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN8-HN8",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN8-HN8",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7B-CN7B",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.6,
+    6,
+    0,
+    0,
+    5,
+    0,
+    1.6,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN8-CN7B",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN8",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.8,
+    6,
+    0,
+    0.4,
+    5,
+    0,
+    2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7B-CN7B",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7B",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.6,
+    6,
+    0,
+    0,
+    5,
+    0,
+    1.6,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN8-CN7B",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN8",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.8,
+    6,
+    0,
+    0.4,
+    5,
+    0,
+    2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-ON6B-CN7-CN9",
+   "match": [
+    "CN7B",
+    "ON6B",
+    "CN7",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-ON6B-CN7-CN8B",
+   "match": [
+    "CN7B",
+    "ON6B",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-ON6-CN7-CN8B",
+   "match": [
+    "CN7B",
+    "ON6",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.8,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7-ON6B",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.4,
+    6,
+    0,
+    0,
+    5,
+    0,
+    0,
+    4,
+    180,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7-ON6",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.5,
+    6,
+    0,
+    0.3,
+    5,
+    0,
+    0.6,
+    4,
+    180,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON2-CN7B-CN7B-ON6B",
+   "match": [
+    "ON2",
+    "CN7B",
+    "CN7B",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.4,
+    6,
+    0,
+    0,
+    5,
+    0,
+    0,
+    4,
+    180,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7-ON6B",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.4,
+    6,
+    0,
+    0,
+    5,
+    0,
+    0,
+    4,
+    180,
+    1.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7-ON6",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.5,
+    6,
+    0,
+    0.3,
+    5,
+    0,
+    0.6,
+    4,
+    180,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7-CN8B",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.2,
+    4,
+    0,
+    0.8,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7-CN8B",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.8,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7-CN8B",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    4,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7-CN7-CN8B",
+   "match": [
+    "CN7B",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    4,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN7-CN8B",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    4,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN7-CN9",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN7",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    4,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7-CN9",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.2,
+    4,
+    0,
+    0.8,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN7-CN9",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN7",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7-CN9-HN9",
+   "match": [
+    "ON6",
+    "CN7",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN9-HN9",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN9-HN9",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN9-CN7-CN7-CN8B",
+   "match": [
+    "CN9",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    4,
+    180
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN8-ON6",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN8",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8B-ON5",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-CN8B-ON2",
+   "match": [
+    "HN7",
+    "CN7",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN7-ON6B",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN7",
+    "ON6B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN7-ON6",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN7",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN7-CN8",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN7",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN7-CN7",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7-CN8B-ON5",
+   "match": [
+    "ON6B",
+    "CN7",
+    "CN8B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.4,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6-CN7-CN8B-ON5",
+   "match": [
+    "ON6",
+    "CN7",
+    "CN8B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.4,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6B-CN7-CN8B-ON2",
+   "match": [
+    "ON6B",
+    "CN7",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.4,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6-CN7-CN8B-ON2",
+   "match": [
+    "ON6",
+    "CN7",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.4,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN8B-ON5",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN8B",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.2,
+    4,
+    180,
+    0.8,
+    3,
+    180,
+    0.4,
+    2,
+    0,
+    2.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7-CN8B-ON2",
+   "match": [
+    "CN8",
+    "CN7",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN8B-ON2",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN8B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.2,
+    4,
+    180,
+    0.8,
+    3,
+    180,
+    0.4,
+    2,
+    0,
+    2.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "HN8-CN8B-ON5-HN5",
+   "match": [
+    "HN8",
+    "CN8B",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN8B-ON5-HN5",
+   "match": [
+    "CN7",
+    "CN8B",
+    "ON5",
+    "HN5"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    1.33,
+    1,
+    0,
+    0.18,
+    2,
+    0,
+    0.32,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN8B-ON2-P2",
+   "match": [
+    "CN7",
+    "CN8B",
+    "ON2",
+    "P2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    1,
+    120
+   ]
+  },
+  {
+   "name": "CN7-CN8B-ON2-P",
+   "match": [
+    "CN7",
+    "CN8B",
+    "ON2",
+    "P"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    1,
+    120
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7B-NN2B",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7B-NN2",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7B-CN7B-NN2B",
+   "match": [
+    "CN7",
+    "CN7B",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7B-CN7B-NN2",
+   "match": [
+    "CN7",
+    "CN7B",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN7B-NN2B",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8-CN7B-NN2",
+   "match": [
+    "HN8",
+    "CN8",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN8-CN7B-NN2B",
+   "match": [
+    "CN7",
+    "CN8",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN8-CN7B-NN2",
+   "match": [
+    "CN7",
+    "CN8",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-ON6B-CN7B-NN2B",
+   "match": [
+    "CN7",
+    "ON6B",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-ON6B-CN7B-NN2",
+   "match": [
+    "CN7",
+    "ON6B",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-ON6-CN7B-NN2B",
+   "match": [
+    "CN7",
+    "ON6",
+    "CN7B",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-ON6-CN7B-NN2",
+   "match": [
+    "CN7",
+    "ON6",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2B-CN4",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2B",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2B-CN5",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2B-CN4",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2B",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2B-CN5",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2B-CN4",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2B",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2B-CN5",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2B-CN4",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2B",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.4,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2B-CN5",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.2,
+    3,
+    0,
+    1.1,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2B-CN4",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2B",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.4,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2B-CN5",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.2,
+    3,
+    0,
+    1.1,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN5-NN3G",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN5",
+    "NN3G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN5-CN5G",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN5",
+    "CN5G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN4-NN4",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN4",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN4-HN3",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2B-CN3",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2B",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2B-CN1T",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2B",
+    "CN1T"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2B-CN3",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2B",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2B-CN1T",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2B",
+    "CN1T"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2B-CN3",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2B",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2B-CN1T",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2B",
+    "CN1T"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2B-CN3",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2B",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2B-CN1T",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2B",
+    "CN1T"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.7,
+    3,
+    0,
+    0.8,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2B-CN1",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2B",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2B-CN3",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2B",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.9,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2B-CN1T",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2B",
+    "CN1T"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.7,
+    3,
+    0,
+    0.8,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2B-CN1",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2B",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN3-CN3T",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN3",
+    "CN3T"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN1T-NN2U",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN1T",
+    "NN2U"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN1T-ON1",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN1T",
+    "ON1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2B-CN3-HN3",
+   "match": [
+    "CN7B",
+    "NN2B",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2-CN3",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2-CN1",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2-CN3",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2-CN1",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2-CN3",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2-CN1",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2-CN3",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2-CN1",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2-CN3",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2-CN1",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN3-CN3",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN3",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN1-NN3",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN1",
+    "NN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN1-ON1C",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN1",
+    "ON1C"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN3-HN3",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2-CN4",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-NN2-CN5",
+   "match": [
+    "HN7",
+    "CN7B",
+    "NN2",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2-CN4",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-CN7B-NN2-CN5",
+   "match": [
+    "CN7B",
+    "CN7B",
+    "NN2",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2-CN4",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN8-CN7B-NN2-CN5",
+   "match": [
+    "CN8",
+    "CN7B",
+    "NN2",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2-CN4",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.1,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6B-CN7B-NN2-CN5",
+   "match": [
+    "ON6B",
+    "CN7B",
+    "NN2",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.1,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2-CN4",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.1,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN7B-NN2-CN5",
+   "match": [
+    "ON6",
+    "CN7B",
+    "NN2",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.1,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN4-NN3A",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN4",
+    "NN3A"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN4-NN4",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN4",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN5-CN5",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN5",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    11,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7B-NN2-CN4-HN3",
+   "match": [
+    "CN7B",
+    "NN2",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN7-CN8B",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN7",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    4,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7B-ON6",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7B",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.5,
+    6,
+    0,
+    0.3,
+    5,
+    0,
+    0.6,
+    4,
+    180,
+    0.2,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7-ON2",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7-ON5",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON5-CN7-CN7-CN7",
+   "match": [
+    "ON5",
+    "CN7",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.8,
+    6,
+    0,
+    0.4,
+    5,
+    0,
+    2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7B-CN7-CN7",
+   "match": [
+    "ON2",
+    "CN7B",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.8,
+    6,
+    0,
+    0.4,
+    5,
+    0,
+    2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7-CN7-CN7",
+   "match": [
+    "ON2",
+    "CN7",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.8,
+    6,
+    0,
+    0.4,
+    5,
+    0,
+    2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN7B-ON6",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN7B",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN7-ON6",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN7",
+    "ON6"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7-CN7-CN9",
+   "match": [
+    "CN7B",
+    "CN7",
+    "CN7",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.4,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7B-CN7-CN7-CN7",
+   "match": [
+    "CN7B",
+    "CN7",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.4,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7B-ON6-CN7",
+   "match": [
+    "CN7",
+    "CN7B",
+    "ON6",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    6,
+    180
+   ]
+  },
+  {
+   "name": "ON2-CN7B-CN7B-NN2",
+   "match": [
+    "ON2",
+    "CN7B",
+    "CN7B",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7B-CN7B-ON2",
+   "match": [
+    "HN7",
+    "CN7B",
+    "CN7B",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN5-NN2B-CN8-CN9",
+   "match": [
+    "CN5",
+    "NN2B",
+    "CN8",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN8-CN9",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN8",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN5-NN2B-CN8-HN8",
+   "match": [
+    "CN5",
+    "NN2B",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN8-HN8",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN5-NN2B-CN9-HN9",
+   "match": [
+    "CN5",
+    "NN2B",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN9-HN9",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN3-NN2B-CN9-HN9",
+   "match": [
+    "CN3",
+    "NN2B",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-CN9-HN9",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN1-NN2B-CN9-HN9",
+   "match": [
+    "CN1",
+    "NN2B",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN5-NN2-CN9-HN9",
+   "match": [
+    "CN5",
+    "NN2",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN4-NN2-CN9-HN9",
+   "match": [
+    "CN4",
+    "NN2",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN3-NN2-CN9-HN9",
+   "match": [
+    "CN3",
+    "NN2",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN1-NN2-CN9-HN9",
+   "match": [
+    "CN1",
+    "NN2",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.19,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "NN3G-CN5-NN2B-CN4",
+   "match": [
+    "NN3G",
+    "CN5",
+    "NN2B",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-NN3G-CN5-NN2B",
+   "match": [
+    "CN2",
+    "NN3G",
+    "CN5",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-CN5G-NN4-CN4",
+   "match": [
+    "CN1",
+    "CN5G",
+    "NN4",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2G-CN1-CN5G-NN4",
+   "match": [
+    "NN2G",
+    "CN1",
+    "CN5G",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-CN5G-CN5-NN2",
+   "match": [
+    "CN1",
+    "CN5G",
+    "CN5",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3G-CN5-CN5G-NN4",
+   "match": [
+    "NN3G",
+    "CN5",
+    "CN5G",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2B-CN4-NN4",
+   "match": [
+    "HN2",
+    "NN2B",
+    "CN4",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2B-CN5-NN3G",
+   "match": [
+    "HN2",
+    "NN2B",
+    "CN5",
+    "NN3G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2B-CN5-CN5G",
+   "match": [
+    "HN2",
+    "NN2B",
+    "CN5",
+    "CN5G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN3-CN4-NN2B-HN2",
+   "match": [
+    "HN3",
+    "CN4",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN3-CN4-NN2B-CN5",
+   "match": [
+    "HN3",
+    "CN4",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN3-CN4-NN4-CN5G",
+   "match": [
+    "HN3",
+    "CN4",
+    "NN4",
+    "CN5G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2G-CN2-NN3G",
+   "match": [
+    "HN2",
+    "NN2G",
+    "CN2",
+    "NN3G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2G-CN1-CN5G",
+   "match": [
+    "HN2",
+    "NN2G",
+    "CN1",
+    "CN5G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3G-CN2-NN1-HN1",
+   "match": [
+    "NN3G",
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2G-CN2-NN1-HN1",
+   "match": [
+    "NN2G",
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN1-CN2-NN2G-HN2",
+   "match": [
+    "NN1",
+    "CN2",
+    "NN2G",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN1-CN2-NN3G-CN5",
+   "match": [
+    "NN1",
+    "CN2",
+    "NN3G",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN1-CN2-NN2G-CN1",
+   "match": [
+    "NN1",
+    "CN2",
+    "NN2G",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1-NN2G-HN2",
+   "match": [
+    "ON1",
+    "CN1",
+    "NN2G",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1-NN2G-CN2",
+   "match": [
+    "ON1",
+    "CN1",
+    "NN2G",
+    "CN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    14,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1-CN5G-NN4",
+   "match": [
+    "ON1",
+    "CN1",
+    "CN5G",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1-CN5G-CN5",
+   "match": [
+    "ON1",
+    "CN1",
+    "CN5G",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    14,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2B-CN5-CN5G-NN4",
+   "match": [
+    "NN2B",
+    "CN5",
+    "CN5G",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN4-NN2B-CN5-CN5G",
+   "match": [
+    "CN4",
+    "NN2B",
+    "CN5",
+    "CN5G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN4-CN4-NN2B-CN5",
+   "match": [
+    "NN4",
+    "CN4",
+    "NN2B",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5G-NN4-CN4-NN2B",
+   "match": [
+    "CN5G",
+    "NN4",
+    "CN4",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    16,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN5G-NN4-CN4",
+   "match": [
+    "CN5",
+    "CN5G",
+    "NN4",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5G-CN1-NN2G-CN2",
+   "match": [
+    "CN5G",
+    "CN1",
+    "NN2G",
+    "CN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN5G-CN1-NN2G",
+   "match": [
+    "CN5",
+    "CN5G",
+    "CN1",
+    "NN2G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3G-CN5-CN5G-CN1",
+   "match": [
+    "NN3G",
+    "CN5",
+    "CN5G",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-NN3G-CN5-CN5G",
+   "match": [
+    "CN2",
+    "NN3G",
+    "CN5",
+    "CN5G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2G-CN2-NN3G-CN5",
+   "match": [
+    "NN2G",
+    "CN2",
+    "NN3G",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-NN2G-CN2-NN3G",
+   "match": [
+    "CN1",
+    "NN2G",
+    "CN2",
+    "NN3G"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3A-CN5-NN2-CN4",
+   "match": [
+    "NN3A",
+    "CN5",
+    "NN2",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN4-NN3A-CN5-NN2",
+   "match": [
+    "CN4",
+    "NN3A",
+    "CN5",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-CN5-NN4-CN4",
+   "match": [
+    "CN2",
+    "CN5",
+    "NN4",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3A-CN2-CN5-NN4",
+   "match": [
+    "NN3A",
+    "CN2",
+    "CN5",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-CN5-CN5-NN2",
+   "match": [
+    "CN2",
+    "CN5",
+    "CN5",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    7,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3A-CN5-CN5-NN4",
+   "match": [
+    "NN3A",
+    "CN5",
+    "CN5",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    7,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3A-CN2-NN1-HN1",
+   "match": [
+    "NN3A",
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN2-NN1-HN1",
+   "match": [
+    "CN5",
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN4-CN5-CN2-NN1",
+   "match": [
+    "NN4",
+    "CN5",
+    "CN2",
+    "NN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN5-CN2-NN1",
+   "match": [
+    "CN5",
+    "CN5",
+    "CN2",
+    "NN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN4-NN3A-CN2-NN1",
+   "match": [
+    "CN4",
+    "NN3A",
+    "CN2",
+    "NN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2-CN4-HN3",
+   "match": [
+    "HN2",
+    "NN2",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN4-CN4-NN2-HN2",
+   "match": [
+    "NN4",
+    "CN4",
+    "NN2",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN5-NN2-HN2",
+   "match": [
+    "CN5",
+    "CN5",
+    "NN2",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-NN2-CN4-HN3",
+   "match": [
+    "CN5",
+    "NN2",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-NN4-CN4-HN3",
+   "match": [
+    "CN5",
+    "NN4",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-NN3A-CN4-HN3",
+   "match": [
+    "CN5",
+    "NN3A",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    8.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-NN3A-CN4-HN3",
+   "match": [
+    "CN2",
+    "NN3A",
+    "CN4",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    8.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2-CN5-CN5-NN4",
+   "match": [
+    "NN2",
+    "CN5",
+    "CN5",
+    "NN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    14,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN4-NN2-CN5-CN5",
+   "match": [
+    "CN4",
+    "NN2",
+    "CN5",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN4-CN4-NN2-CN5",
+   "match": [
+    "NN4",
+    "CN4",
+    "NN2",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-NN4-CN4-NN2",
+   "match": [
+    "CN5",
+    "NN4",
+    "CN4",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    14,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN5-NN4-CN4",
+   "match": [
+    "CN5",
+    "CN5",
+    "NN4",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN2-NN3A-CN4",
+   "match": [
+    "CN5",
+    "CN2",
+    "NN3A",
+    "CN4"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    10,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN5-CN5-CN2-NN3A",
+   "match": [
+    "CN5",
+    "CN5",
+    "CN2",
+    "NN3A"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3A-CN5-CN5-CN2",
+   "match": [
+    "NN3A",
+    "CN5",
+    "CN5",
+    "CN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN4-NN3A-CN5-CN5",
+   "match": [
+    "CN4",
+    "NN3A",
+    "CN5",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3A-CN4-NN3A-CN5",
+   "match": [
+    "NN3A",
+    "CN4",
+    "NN3A",
+    "CN5"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-NN3A-CN4-NN3A",
+   "match": [
+    "CN2",
+    "NN3A",
+    "CN4",
+    "NN3A"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-NN2-CN3-HN3",
+   "match": [
+    "CN1",
+    "NN2",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-CN3-CN3-HN3",
+   "match": [
+    "CN2",
+    "CN3",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2-CN3-CN3-HN3",
+   "match": [
+    "NN2",
+    "CN3",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.4,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3-CN2-CN3-HN3",
+   "match": [
+    "NN3",
+    "CN2",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.4,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1C-CN1-NN2-CN3",
+   "match": [
+    "ON1C",
+    "CN1",
+    "NN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1C-CN1-NN3-CN2",
+   "match": [
+    "ON1C",
+    "CN1",
+    "NN3",
+    "CN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1C-CN1-NN2-HN2",
+   "match": [
+    "ON1C",
+    "CN1",
+    "NN2",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN1-CN2-CN3-HN3",
+   "match": [
+    "NN1",
+    "CN2",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN1-CN2-CN3-CN3",
+   "match": [
+    "NN1",
+    "CN2",
+    "CN3",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN1-CN2-NN3-CN1",
+   "match": [
+    "NN1",
+    "CN2",
+    "NN3",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-CN2-NN1-HN1",
+   "match": [
+    "CN3",
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3-CN2-NN1-HN1",
+   "match": [
+    "NN3",
+    "CN2",
+    "NN1",
+    "HN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-CN3-NN2-CN1",
+   "match": [
+    "CN3",
+    "CN3",
+    "NN2",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN2-CN3-CN3-NN2",
+   "match": [
+    "CN2",
+    "CN3",
+    "CN3",
+    "NN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN3-CN2-CN3-CN3",
+   "match": [
+    "NN3",
+    "CN2",
+    "CN3",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-NN3-CN2-CN3",
+   "match": [
+    "CN1",
+    "NN3",
+    "CN2",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2-CN1-NN3-CN2",
+   "match": [
+    "NN2",
+    "CN1",
+    "NN3",
+    "CN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-NN2-CN1-NN3",
+   "match": [
+    "CN3",
+    "NN2",
+    "CN1",
+    "NN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3T-CN1-NN2U-HN2",
+   "match": [
+    "CN3T",
+    "CN1",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-CN3T-CN9-HN9",
+   "match": [
+    "CN3",
+    "CN3T",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.46,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN1-CN3T-CN9-HN9",
+   "match": [
+    "CN1",
+    "CN3T",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.46,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "NN2B-CN3-CN3T-CN9",
+   "match": [
+    "NN2B",
+    "CN3",
+    "CN3T",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2B-CN1-CN3T-CN9",
+   "match": [
+    "NN2B",
+    "CN1",
+    "CN3T",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-CN3T-CN3-NN2B",
+   "match": [
+    "CN1",
+    "CN3T",
+    "CN3",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2U-CN1-CN3T-CN3",
+   "match": [
+    "NN2U",
+    "CN1",
+    "CN3T",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-CN3-CN3T",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "CN3",
+    "CN3T"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2U-CN1T-NN2B-HN2",
+   "match": [
+    "NN2U",
+    "CN1T",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-CN3-NN2B-HN2",
+   "match": [
+    "CN3",
+    "CN3",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-CN1-NN2U-HN2",
+   "match": [
+    "CN3",
+    "CN1",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2B-CN1T-NN2U-HN2",
+   "match": [
+    "NN2B",
+    "CN1T",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.8,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN2-NN2B-CN3-HN3",
+   "match": [
+    "HN2",
+    "NN2B",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1T-NN2U-HN2",
+   "match": [
+    "ON1",
+    "CN1T",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1-NN2U-HN2",
+   "match": [
+    "ON1",
+    "CN1",
+    "NN2U",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "ON1-CN1T-NN2B-HN2",
+   "match": [
+    "ON1",
+    "CN1T",
+    "NN2B",
+    "HN2"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN3-CN3-CN1-ON1",
+   "match": [
+    "HN3",
+    "CN3",
+    "CN1",
+    "ON1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "HN3-CN3-CN3-HN3",
+   "match": [
+    "HN3",
+    "CN3",
+    "CN3",
+    "HN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-NN2B-CN1T-NN2U",
+   "match": [
+    "CN3",
+    "NN2B",
+    "CN1T",
+    "NN2U"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN3-CN3-NN2B-CN1T",
+   "match": [
+    "CN3",
+    "CN3",
+    "NN2B",
+    "CN1T"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1-CN3-CN3-NN2B",
+   "match": [
+    "CN1",
+    "CN3",
+    "CN3",
+    "NN2B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    6,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2U-CN1-CN3-CN3",
+   "match": [
+    "NN2U",
+    "CN1",
+    "CN3",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN1T-NN2U-CN1-CN3",
+   "match": [
+    "CN1T",
+    "NN2U",
+    "CN1",
+    "CN3"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "NN2B-CN1T-NN2U-CN1",
+   "match": [
+    "NN2B",
+    "CN1T",
+    "NN2U",
+    "CN1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.5,
+    2,
+    180
+   ]
+  },
+  {
+   "name": "CN9-CN8-CN8-CN8",
+   "match": [
+    "CN9",
+    "CN8",
+    "CN8",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.15,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CN9-CN8-CN8-CN9",
+   "match": [
+    "CN9",
+    "CN8",
+    "CN8",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.15,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "P2-ON2-CN9-HN9",
+   "match": [
+    "P2",
+    "ON2",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P-ON2-CN9-HN9",
+   "match": [
+    "P",
+    "ON2",
+    "CN9",
+    "HN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P-ON2-CN8-HN8",
+   "match": [
+    "P",
+    "ON2",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P2-ON2-CN8B-HN8",
+   "match": [
+    "P2",
+    "ON2",
+    "CN8B",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P-ON2-CN8B-HN8",
+   "match": [
+    "P",
+    "ON2",
+    "CN8B",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P-ON2-CN7B-HN7",
+   "match": [
+    "P",
+    "ON2",
+    "CN7B",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P2-ON2-CN7-HN7",
+   "match": [
+    "P2",
+    "ON2",
+    "CN7",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "P-ON2-CN7-HN7",
+   "match": [
+    "P",
+    "ON2",
+    "CN7",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P2-ON2-CN9",
+   "match": [
+    "ON4",
+    "P2",
+    "ON2",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P-ON2-CN9",
+   "match": [
+    "ON4",
+    "P",
+    "ON2",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P2-ON2-CN8B",
+   "match": [
+    "ON4",
+    "P2",
+    "ON2",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P-ON2-CN8B",
+   "match": [
+    "ON4",
+    "P",
+    "ON2",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P-ON2-CN8",
+   "match": [
+    "ON4",
+    "P",
+    "ON2",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P2-ON2-CN7",
+   "match": [
+    "ON4",
+    "P2",
+    "ON2",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON4-P-ON2-CN7",
+   "match": [
+    "ON4",
+    "P",
+    "ON2",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.95,
+    2,
+    0,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P2-ON2-CN9",
+   "match": [
+    "ON3",
+    "P2",
+    "ON2",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P-ON2-CN9",
+   "match": [
+    "ON3",
+    "P",
+    "ON2",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P2-ON2-CN8B",
+   "match": [
+    "ON3",
+    "P2",
+    "ON2",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P-ON2-CN8B",
+   "match": [
+    "ON3",
+    "P",
+    "ON2",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P2-ON2-CN8",
+   "match": [
+    "ON3",
+    "P2",
+    "ON2",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P-ON2-CN8",
+   "match": [
+    "ON3",
+    "P",
+    "ON2",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P-ON2-CN7B",
+   "match": [
+    "ON3",
+    "P",
+    "ON2",
+    "CN7B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P2-ON2-CN7",
+   "match": [
+    "ON3",
+    "P2",
+    "ON2",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON3-P-ON2-CN7",
+   "match": [
+    "ON3",
+    "P",
+    "ON2",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P2-ON2-CN9",
+   "match": [
+    "ON2",
+    "P2",
+    "ON2",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P-ON2-CN9",
+   "match": [
+    "ON2",
+    "P",
+    "ON2",
+    "CN9"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P-ON2-CN8B",
+   "match": [
+    "ON2",
+    "P",
+    "ON2",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P2-ON2-CN8B",
+   "match": [
+    "ON2",
+    "P2",
+    "ON2",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P2-ON2-CN8",
+   "match": [
+    "ON2",
+    "P2",
+    "ON2",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P-ON2-CN8",
+   "match": [
+    "ON2",
+    "P",
+    "ON2",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P-ON2-CN7",
+   "match": [
+    "ON2",
+    "P",
+    "ON2",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.2,
+    1,
+    180,
+    0.1,
+    2,
+    180,
+    0.1,
+    3,
+    180,
+    0,
+    6,
+    0
+   ]
+  },
+  {
+   "name": "ON2-P2-ON2-CN7",
+   "match": [
+    "ON2",
+    "P2",
+    "ON2",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.9,
+    1,
+    180,
+    0.4,
+    2,
+    180,
+    0.2,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN8B-ON6-CN7-CN7",
+   "match": [
+    "CN8B",
+    "ON6",
+    "CN7",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.5,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN7-CN7-CN8-CN8B",
+   "match": [
+    "CN7",
+    "CN7",
+    "CN8",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.5,
+    4,
+    0,
+    0.1,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN8B-CN8-CN7",
+   "match": [
+    "ON6",
+    "CN8B",
+    "CN8",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.7,
+    5,
+    180,
+    0.4,
+    4,
+    0,
+    0.4,
+    3,
+    180
+   ]
+  },
+  {
+   "name": "CN7-ON6-CN8B-CN8",
+   "match": [
+    "CN7",
+    "ON6",
+    "CN8B",
+    "CN8"
+   ],
+   "style": "fourier",
+   "params": [
+    2,
+    0.6,
+    6,
+    180,
+    0.6,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN8B-CN8-CN7-ON2",
+   "match": [
+    "CN8B",
+    "CN8",
+    "CN7",
+    "ON2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.4,
+    5,
+    0,
+    0.4,
+    3,
+    0,
+    0.7,
+    2,
+    0,
+    0.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN8B-CN8-CN7-ON5",
+   "match": [
+    "CN8B",
+    "CN8",
+    "CN7",
+    "ON5"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.4,
+    5,
+    0,
+    0.4,
+    3,
+    0,
+    0.7,
+    2,
+    0,
+    0.5,
+    1,
+    180
+   ]
+  },
+  {
+   "name": "CN8B-CN7-ON6-CN8B",
+   "match": [
+    "CN8B",
+    "CN7",
+    "ON6",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    3,
+    0.5,
+    5,
+    0,
+    0.1,
+    3,
+    180,
+    0.5,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN8-CN7",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN8",
+    "CN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN8-CN8B-CN8-HN8",
+   "match": [
+    "HN8",
+    "CN8B",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "CN8B-CN8-CN7-HN7",
+   "match": [
+    "CN8B",
+    "CN8",
+    "CN7",
+    "HN7"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "HN7-CN7-ON6-CN8B",
+   "match": [
+    "HN7",
+    "CN7",
+    "ON6",
+    "CN8B"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "ON6-CN8B-CN8-HN8",
+   "match": [
+    "ON6",
+    "CN8B",
+    "CN8",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CN7-ON6-CN8B-HN8",
+   "match": [
+    "CN7",
+    "ON6",
+    "CN8B",
+    "HN8"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.195,
+    1,
+    0
+   ]
+  }
+ ],
+ "impropers": [
+  {
+   "name": "CN1T-X-X-ON1",
+   "match": [
+    "CN1T",
+    "*",
+    "*",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "CN1-X-X-ON1",
+   "match": [
+    "CN1",
+    "*",
+    "*",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "HN1-X-X-NN1",
+   "match": [
+    "HN1",
+    "*",
+    "*",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    4,
+    0
+   ]
+  },
+  {
+   "name": "CN2-X-X-NN1",
+   "match": [
+    "CN2",
+    "*",
+    "*",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "CN1-X-X-ON1C",
+   "match": [
+    "CN1",
+    "*",
+    "*",
+    "ON1C"
+   ],
+   "style": "harmonic",
+   "params": [
+    80,
+    0
+   ]
+  },
+  {
+   "name": "HN2-X-X-NN2",
+   "match": [
+    "HN2",
+    "*",
+    "*",
+    "NN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    1,
+    0
+   ]
+  },
+  {
+   "name": "CN9-X-X-CN3T",
+   "match": [
+    "CN9",
+    "*",
+    "*",
+    "CN3T"
+   ],
+   "style": "harmonic",
+   "params": [
+    14,
+    0
+   ]
+  },
+  {
+   "name": "CN2-NN3-CN3-NN1",
+   "match": [
+    "CN2",
+    "NN3",
+    "CN3",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    60,
+    0
+   ]
+  },
+  {
+   "name": "CN2-NN3A-CN5-NN1",
+   "match": [
+    "CN2",
+    "NN3A",
+    "CN5",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "CN2-NN3G-NN2G-NN1",
+   "match": [
+    "CN2",
+    "NN3G",
+    "NN2G",
+    "NN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    40,
+    0
+   ]
+  },
+  {
+   "name": "CN1-NN2U-CN3T-ON1",
+   "match": [
+    "CN1",
+    "NN2U",
+    "CN3T",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "CN1T-NN2B-NN2U-ON1",
+   "match": [
+    "CN1T",
+    "NN2B",
+    "NN2U",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    110,
+    0
+   ]
+  },
+  {
+   "name": "CN1-NN2G-CN5G-ON1",
+   "match": [
+    "CN1",
+    "NN2G",
+    "CN5G",
+    "ON1"
+   ],
+   "style": "harmonic",
+   "params": [
+    90,
+    0
+   ]
+  },
+  {
+   "name": "NN1-CN2-HN1-HN1",
+   "match": [
+    "NN1",
+    "CN2",
+    "HN1",
+    "HN1"
+   ],
+   "style": "harmonic",
+   "params": [
+    6,
+    0
+   ]
+  },
+  {
+   "name": "NN2B-CN4-CN5-HN2",
+   "match": [
+    "NN2B",
+    "CN4",
+    "CN5",
+    "HN2"
+   ],
+   "style": "harmonic",
+   "params": [
+    7,
+    0
+   ]
+  }
+ ],
+ "notes": [
+  "converted by CAPS (CHARMM36_nucl, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "validated",
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): the original nucleic-acid example identical (types nucleic templates carry no impropers; CAPS adds them from the rules)."
+}

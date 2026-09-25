@@ -10,7 +10,7 @@ using namespace caps;
 
 namespace {
 
-const std::string kGaff = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/gaff-amber25-dlfield.json";
+const std::string kGaff = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/gaff-amber25.json";
 
 double dihedral(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d) {
   const Vec3 b1 = b - a, b2 = c - b, b3 = d - c;

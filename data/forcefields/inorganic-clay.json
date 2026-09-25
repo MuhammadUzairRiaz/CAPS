@@ -1,0 +1,867 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Inorganic: clay",
+ "source": "INORGANIC_clay.par",
+ "references": [],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "oh",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 standard CLAYFF oh (clay2, to differentiate from the rest)",
+   "aliases": [
+    "O2-H#2_clay2"
+   ]
+  },
+  {
+   "name": "ho",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "Ref. 1 hydroxyl hydrogen for CLAYFF",
+   "aliases": [
+    "H-O#1_clay1"
+   ]
+  },
+  {
+   "name": "o2h",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 hydroxyl oxygen for CLAYFF o2h=oh",
+   "equivalence": {
+    "angle": "oh",
+    "bond": "oh",
+    "vdw": "oh"
+   },
+   "aliases": [
+    "O2-H#2_clay1"
+   ]
+  },
+  {
+   "name": "o3h",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 hydroxyl oxygen bridge o3h=oh",
+   "equivalence": {
+    "angle": "oh",
+    "bond": "oh",
+    "vdw": "oh"
+   },
+   "aliases": [
+    "O2-H#3_clay1"
+   ]
+  },
+  {
+   "name": "ohs",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 hydroxyl O with substitution.",
+   "aliases": [
+    "O2-HM#3_clay1"
+   ]
+  },
+  {
+   "name": "ob",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 bridging oxygen for CLAYFF -Si-[O]-Si-",
+   "aliases": [
+    "O2-Si#2_clay1"
+   ]
+  },
+  {
+   "name": "obb",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 bridging O with two Al (oct) and one Si (tet)",
+   "aliases": [
+    "O2-#3_clay1"
+   ]
+  },
+  {
+   "name": "obc",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 bridging O with two Al (oct) and one Al (tet sub.) (obts)",
+   "equivalence": {
+    "vdw": "obt"
+   },
+   "aliases": [
+    "O2-Al3#3_clay1"
+   ]
+  },
+  {
+   "name": "obo",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 bridging O with oct substitution CLAYFF",
+   "aliases": [
+    "O2-M#3_clay1"
+   ]
+  },
+  {
+   "name": "obt",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 bridging O with tet substitution: Si sub. with Al (obts)",
+   "aliases": [
+    "O2-SiM#2_clay1"
+   ]
+  },
+  {
+   "name": "obs",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 bridging O with double substitution CLAYFF (obss)",
+   "aliases": [
+    "O2-MM#3_clay1"
+   ]
+  },
+  {
+   "name": "st",
+   "element": "Si",
+   "mass": 28.0855,
+   "description": "Ref. 1 tetrahedral silicone CLAYFF.",
+   "aliases": [
+    "Si4+#4_clay1"
+   ]
+  },
+  {
+   "name": "ao",
+   "element": "Al",
+   "mass": 26.98154,
+   "description": "Ref. 1 octahedral aluminium CLAYFF.",
+   "aliases": [
+    "Al3+#6_clay1"
+   ]
+  },
+  {
+   "name": "at",
+   "element": "Al",
+   "mass": 26.98154,
+   "description": "Ref. 1 tetrahedral aluminium CLAYFF.",
+   "aliases": [
+    "Al3+#4_clay1"
+   ]
+  },
+  {
+   "name": "mgo",
+   "element": "Mg",
+   "mass": 24.305,
+   "description": "Ref. 1 octahedral Mg CLAYFF.",
+   "aliases": [
+    "Mg2+#6_clay1"
+   ]
+  },
+  {
+   "name": "mgh",
+   "element": "Mg",
+   "mass": 24.305,
+   "description": "Ref. 1 hydroxide Mg CLAYFF.",
+   "aliases": [
+    "Mg2+O#6_clay1"
+   ]
+  },
+  {
+   "name": "cao",
+   "element": "Ca",
+   "mass": 40.078,
+   "description": "Ref. 1 octahedral Ca CLAYFF.",
+   "aliases": [
+    "Ca2+#6_clay1"
+   ]
+  },
+  {
+   "name": "cah",
+   "element": "Ca",
+   "mass": 40.078,
+   "description": "Ref. 1 hydroxide Ca CLAYFF.",
+   "aliases": [
+    "Ca2+O#6_clay1"
+   ]
+  },
+  {
+   "name": "feo",
+   "element": "Fe",
+   "mass": 55.845,
+   "description": "Ref. 1 octahedral iron CLAYFF.",
+   "aliases": [
+    "Fe3+#6_clay1"
+   ]
+  },
+  {
+   "name": "lio",
+   "element": "Li",
+   "mass": 6.941,
+   "description": "Ref. 1 octahedral Li CLAYFF.",
+   "aliases": [
+    "Li+#6_clay1"
+   ]
+  },
+  {
+   "name": "Na",
+   "element": "Na",
+   "mass": 22.98977,
+   "description": "Ref. 1 aqueous sodium ion CLAYFF.",
+   "aliases": [
+    "Na+#l_clay1"
+   ]
+  },
+  {
+   "name": "K",
+   "element": "K",
+   "mass": 39.0983,
+   "description": "Ref. 1 aqueous potassium ion CLAYFF.",
+   "aliases": [
+    "K+#l_clay1"
+   ]
+  },
+  {
+   "name": "Cs",
+   "element": "Cs",
+   "mass": 132.90545,
+   "description": "Ref. 1 aqueous ceasium ion CLAYFF.",
+   "aliases": [
+    "Cs+#l_clay1"
+   ]
+  },
+  {
+   "name": "Ca",
+   "element": "Ca",
+   "mass": 40.078,
+   "description": "Ref. 1 aqueous calcium ion CLAYFF.",
+   "aliases": [
+    "Ca2+#l_clay1"
+   ]
+  },
+  {
+   "name": "Ba",
+   "element": "Ba",
+   "mass": 137.327,
+   "description": "Ref. 1 aqueous barium ion CLAYFF.",
+   "aliases": [
+    "Ba2+#l_clay1"
+   ]
+  },
+  {
+   "name": "Cl",
+   "element": "Cl",
+   "mass": 35.453,
+   "description": "Ref. 1 aqueous chloride ion CLAYFF.",
+   "aliases": [
+    "Cl-#l_clay1"
+   ]
+  },
+  {
+   "name": "o*",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "SPC oxygen",
+   "aliases": [
+    "O2-#2l_water_spc"
+   ]
+  },
+  {
+   "name": "h*",
+   "element": "H",
+   "mass": 1.00797,
+   "description": "SPC hydrogen",
+   "aliases": [
+    "H+#1l_water_spc"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "h*-X",
+   "match": [
+    "h\\*"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "o*-X",
+   "match": [
+    "o\\*"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "ho-X",
+   "match": [
+    "ho"
+   ],
+   "params": [
+    0,
+    0
+   ]
+  },
+  {
+   "name": "oh-X",
+   "match": [
+    "oh"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "ob-X",
+   "match": [
+    "ob"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "obb-X",
+   "match": [
+    "obb"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "obo-X",
+   "match": [
+    "obo"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "obt-X",
+   "match": [
+    "obt"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "obs-X",
+   "match": [
+    "obs"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "ohs-X",
+   "match": [
+    "ohs"
+   ],
+   "params": [
+    0.1554,
+    3.165541
+   ]
+  },
+  {
+   "name": "st-X",
+   "match": [
+    "st"
+   ],
+   "params": [
+    1.8405e-06,
+    3.302027
+   ]
+  },
+  {
+   "name": "ao-X",
+   "match": [
+    "ao"
+   ],
+   "params": [
+    1.3298e-06,
+    4.271236
+   ]
+  },
+  {
+   "name": "at-X",
+   "match": [
+    "at"
+   ],
+   "params": [
+    1.8405e-06,
+    3.302027
+   ]
+  },
+  {
+   "name": "mgo-X",
+   "match": [
+    "mgo"
+   ],
+   "params": [
+    9.0298e-07,
+    5.264321
+   ]
+  },
+  {
+   "name": "mgh-X",
+   "match": [
+    "mgh"
+   ],
+   "params": [
+    9.0298e-07,
+    5.264321
+   ]
+  },
+  {
+   "name": "cao-X",
+   "match": [
+    "cao"
+   ],
+   "params": [
+    5.0298e-06,
+    5.566692
+   ]
+  },
+  {
+   "name": "cah-X",
+   "match": [
+    "cah"
+   ],
+   "params": [
+    5.0298e-06,
+    5.561703
+   ]
+  },
+  {
+   "name": "feo-X",
+   "match": [
+    "feo"
+   ],
+   "params": [
+    9.0298e-06,
+    4.906179
+   ]
+  },
+  {
+   "name": "lio-X",
+   "match": [
+    "lio"
+   ],
+   "params": [
+    9.0298e-06,
+    4.21012
+   ]
+  },
+  {
+   "name": "Na-X",
+   "match": [
+    "Na"
+   ],
+   "params": [
+    0.1301,
+    2.350013
+   ]
+  },
+  {
+   "name": "K-X",
+   "match": [
+    "K"
+   ],
+   "params": [
+    0.1,
+    3.33401
+   ]
+  },
+  {
+   "name": "Cs-X",
+   "match": [
+    "Cs"
+   ],
+   "params": [
+    0.1,
+    3.831043
+   ]
+  },
+  {
+   "name": "Ca-X",
+   "match": [
+    "Ca"
+   ],
+   "params": [
+    0.1,
+    2.87199
+   ]
+  },
+  {
+   "name": "Ba-X",
+   "match": [
+    "Ba"
+   ],
+   "params": [
+    0.047,
+    3.81661
+   ]
+  },
+  {
+   "name": "Cl-X",
+   "match": [
+    "Cl"
+   ],
+   "params": [
+    0.1001,
+    4.399971
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "o*-h*",
+   "match": [
+    "o\\*",
+    "h\\*"
+   ],
+   "style": "harmonic",
+   "params": [
+    554.1349,
+    1
+   ],
+   "comment": "SPC water H-O"
+  },
+  {
+   "name": "ohs-ho",
+   "match": [
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    554.1349,
+    1
+   ],
+   "comment": "O(sub)-H hydroxyl in CLAYFF"
+  },
+  {
+   "name": "oh-ho",
+   "match": [
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    554.1349,
+    1
+   ],
+   "comment": "O-H hydroxyl in CLAYFF"
+  }
+ ],
+ "angles": [
+  {
+   "name": "h*-o*-h*",
+   "match": [
+    "h\\*",
+    "o\\*",
+    "h\\*"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.7696,
+    109.47
+   ],
+   "comment": "SPC water"
+  },
+  {
+   "name": "ho-ohs-lio",
+   "match": [
+    "ho",
+    "ohs",
+    "lio"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Li(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-feo",
+   "match": [
+    "ho",
+    "ohs",
+    "feo"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Fe(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-cah",
+   "match": [
+    "ho",
+    "ohs",
+    "cah"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Mg(hydx)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-cao",
+   "match": [
+    "ho",
+    "ohs",
+    "cao"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Ca(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-mgh",
+   "match": [
+    "ho",
+    "ohs",
+    "mgh"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Mg(hydx)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-mgo",
+   "match": [
+    "ho",
+    "ohs",
+    "mgo"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Mg(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-at",
+   "match": [
+    "ho",
+    "ohs",
+    "at"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Al(tet)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-ao",
+   "match": [
+    "ho",
+    "ohs",
+    "ao"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Al(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-ohs-st",
+   "match": [
+    "ho",
+    "ohs",
+    "st"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Si(tet)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-lio",
+   "match": [
+    "ho",
+    "oh",
+    "lio"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Li(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-feo",
+   "match": [
+    "ho",
+    "oh",
+    "feo"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Fe(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-cah",
+   "match": [
+    "ho",
+    "oh",
+    "cah"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Mg(hydx)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-cao",
+   "match": [
+    "ho",
+    "oh",
+    "cao"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Ca(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-mgh",
+   "match": [
+    "ho",
+    "oh",
+    "mgh"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Mg(hydx)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-mgo",
+   "match": [
+    "ho",
+    "oh",
+    "mgo"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Mg(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-at",
+   "match": [
+    "ho",
+    "oh",
+    "at"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Al(tet)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-ao",
+   "match": [
+    "ho",
+    "oh",
+    "ao"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Al(oct)--O-H bend in CLAYFF"
+  },
+  {
+   "name": "ho-oh-st",
+   "match": [
+    "ho",
+    "oh",
+    "st"
+   ],
+   "style": "harmonic",
+   "params": [
+    30,
+    109.47
+   ],
+   "comment": "Si(tet)--O-H bend in CLAYFF"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted by CAPS (inorganic_clay, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "converted",
+ "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example."
+}

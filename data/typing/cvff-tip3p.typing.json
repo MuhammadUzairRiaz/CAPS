@@ -1,0 +1,20 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CVFF",
+ "description": "Overlay: water as TIP3P (types otip / htip). Load after the CVFF rules (--typing); its higher priority wins over CVFF's own o* / h*.",
+ "rules": [
+  {
+   "type": "htip",
+   "smarts": "[H][OX2H2]",
+   "priority": 10,
+   "description": "TIP3P water H"
+  },
+  {
+   "type": "otip",
+   "smarts": "[OX2H2]",
+   "priority": 10,
+   "description": "TIP3P water O"
+  }
+ ]
+}

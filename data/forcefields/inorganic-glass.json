@@ -1,0 +1,505 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Inorganic: glass",
+ "source": "INORGANIC_glass.par",
+ "references": [],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "improper_order": "center1_sorted",
+ "equivalence": "replace",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "atom_types": [
+  {
+   "name": "Li1",
+   "element": "Li",
+   "mass": 6.941,
+   "description": "Ref. 5 Lithium phosphate glass",
+   "aliases": [
+    "Li+#a_glass1"
+   ]
+  },
+  {
+   "name": "Na1",
+   "element": "Na",
+   "mass": 22.9898,
+   "description": "Ref. 3",
+   "aliases": [
+    "Na+#a_glass1"
+   ]
+  },
+  {
+   "name": "Na2",
+   "element": "Na",
+   "mass": 22.9898,
+   "description": "Ref. 4",
+   "aliases": [
+    "Na+#a_glass2"
+   ]
+  },
+  {
+   "name": "Al1",
+   "element": "Al",
+   "mass": 26.9815,
+   "description": "Ref. 1 Al in rare earth aluminosilicate",
+   "aliases": [
+    "Al3+#a_glass1"
+   ]
+  },
+  {
+   "name": "Ca1",
+   "element": "Ca",
+   "mass": 40.078,
+   "description": "Ref. 4",
+   "aliases": [
+    "Ca2+#a_glass1"
+   ]
+  },
+  {
+   "name": "P1",
+   "element": "P",
+   "mass": 30.9738,
+   "description": "Ref. 5 Lithium phosphate glass",
+   "aliases": [
+    "P5+#a_glass1"
+   ]
+  },
+  {
+   "name": "Sc1",
+   "element": "Sc",
+   "mass": 44.956,
+   "description": "Ref. 1 Sc in rare earth aluminosilicate",
+   "aliases": [
+    "Sc3+#a_glass1"
+   ]
+  },
+  {
+   "name": "Y1",
+   "element": "Y",
+   "mass": 88.906,
+   "description": "Ref. 1 Yttrium in rare earth aluminosilicate",
+   "aliases": [
+    "Y3+#a_glass1"
+   ]
+  },
+  {
+   "name": "Y2",
+   "element": "Y",
+   "mass": 88.906,
+   "description": "Ref. 2",
+   "aliases": [
+    "Y3+#a_glass2"
+   ]
+  },
+  {
+   "name": "Lu1",
+   "element": "Lu",
+   "mass": 174.967,
+   "description": "Ref. 1 Lutetium in rare earth aluminosilicate",
+   "aliases": [
+    "Lu3+#a_glass1"
+   ]
+  },
+  {
+   "name": "La1",
+   "element": "La",
+   "mass": 138.9055,
+   "description": "Ref. 1 Lanthanum in rare earth aluminosilicate",
+   "aliases": [
+    "La3+#a_glass1"
+   ]
+  },
+  {
+   "name": "Si1",
+   "element": "Si",
+   "mass": 28.0855,
+   "description": "Ref. 1 Si in rare earth aluminosilicate",
+   "aliases": [
+    "Si4+#a_glass1"
+   ]
+  },
+  {
+   "name": "Si3",
+   "element": "Si",
+   "mass": 28.0855,
+   "description": "Ref. 4",
+   "aliases": [
+    "Si4+#a_glass2"
+   ]
+  },
+  {
+   "name": "Si2",
+   "element": "Si",
+   "mass": 28.0855,
+   "description": "Ref. 3",
+   "aliases": [
+    "Si4+#4a_glass1"
+   ]
+  },
+  {
+   "name": "O2",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 3",
+   "aliases": [
+    "O2-#2a_glass1"
+   ]
+  },
+  {
+   "name": "O1",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 1 O in rare-earth aluminosilicate",
+   "aliases": [
+    "O2-#a_glass1"
+   ]
+  },
+  {
+   "name": "O3",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 5 O in lithium phosphate glass",
+   "aliases": [
+    "O2-#a_glass2"
+   ]
+  },
+  {
+   "name": "O3c",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 4 O core",
+   "aliases": [
+    "O2-#ac_glass2"
+   ]
+  },
+  {
+   "name": "O3s",
+   "element": "O",
+   "mass": 0,
+   "description": "Ref. 4 O shell",
+   "aliases": [
+    "O2-#as_glass2"
+   ]
+  }
+ ],
+ "pairs": [
+  {
+   "name": "O1-O1",
+   "match": [
+    "O1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    42540.84907,
+    0.343645,
+    4441.000334
+   ]
+  },
+  {
+   "name": "O2-O2",
+   "match": [
+    "O2",
+    "O2"
+   ],
+   "style": "buck",
+   "params": [
+    42540.84907,
+    0.343645,
+    4441.000334
+   ]
+  },
+  {
+   "name": "O3s-O3s",
+   "match": [
+    "O3s",
+    "O3s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328,
+    0.149,
+    642.9280782
+   ]
+  },
+  {
+   "name": "O3-O3",
+   "match": [
+    "O3",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    60990.53735,
+    0.29,
+    0
+   ]
+  },
+  {
+   "name": "Li1-Li1",
+   "match": [
+    "Li1",
+    "Li1"
+   ],
+   "style": "buck",
+   "params": [
+    3861.949974,
+    0.29,
+    0
+   ]
+  },
+  {
+   "name": "Li1-P1",
+   "match": [
+    "Li1",
+    "P1"
+   ],
+   "style": "buck",
+   "params": [
+    3645.642033,
+    0.29,
+    0
+   ]
+  },
+  {
+   "name": "Li1-O3",
+   "match": [
+    "Li1",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    6918.1644,
+    0.29,
+    0
+   ]
+  },
+  {
+   "name": "P1-P1",
+   "match": [
+    "P1",
+    "P1"
+   ],
+   "style": "buck",
+   "params": [
+    3434.407414,
+    0.29,
+    0
+   ]
+  },
+  {
+   "name": "P1-O3",
+   "match": [
+    "P1",
+    "O3"
+   ],
+   "style": "buck",
+   "params": [
+    16019.24027,
+    0.29,
+    0
+   ]
+  },
+  {
+   "name": "Na1-O2",
+   "match": [
+    "Na1",
+    "O2"
+   ],
+   "style": "buck",
+   "params": [
+    101091.8041,
+    0.243838,
+    707.9588236
+   ]
+  },
+  {
+   "name": "Na2-O3s",
+   "match": [
+    "Na2",
+    "O3s"
+   ],
+   "style": "buck",
+   "params": [
+    1302121.806,
+    0.193931,
+    0
+   ]
+  },
+  {
+   "name": "Ca1-O3s",
+   "match": [
+    "Ca1",
+    "O3s"
+   ],
+   "style": "buck",
+   "params": [
+    49634.52269,
+    0.309227,
+    2.293140893
+   ]
+  },
+  {
+   "name": "Al1-O1",
+   "match": [
+    "Al1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    281371.3624,
+    0.195628,
+    737.8683544
+   ]
+  },
+  {
+   "name": "Si1-O1",
+   "match": [
+    "Si1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    315996.4985,
+    0.193817,
+    1260.973825
+   ]
+  },
+  {
+   "name": "Si2-O2",
+   "match": [
+    "Si2",
+    "O2"
+   ],
+   "style": "buck",
+   "params": [
+    315996.4985,
+    0.193817,
+    1260.973825
+   ]
+  },
+  {
+   "name": "Si3-O3s",
+   "match": [
+    "Si3",
+    "O3s"
+   ],
+   "style": "buck",
+   "params": [
+    29607.66818,
+    0.32052,
+    245.8618773
+   ]
+  },
+  {
+   "name": "La1-O1",
+   "match": [
+    "La1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    219950.3538,
+    0.235917,
+    0
+   ]
+  },
+  {
+   "name": "Y1-O1",
+   "match": [
+    "Y1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    254118.0147,
+    0.224173,
+    0
+   ]
+  },
+  {
+   "name": "Y2-O1",
+   "match": [
+    "Y2",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    680908.2704,
+    0.211377,
+    1164.027281
+   ]
+  },
+  {
+   "name": "Lu1-O1",
+   "match": [
+    "Lu1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    153516.1435,
+    0.23036,
+    0
+   ]
+  },
+  {
+   "name": "Sc1-O1",
+   "match": [
+    "Sc1",
+    "O1"
+   ],
+   "style": "buck",
+   "params": [
+    71373.31848,
+    0.244357,
+    0
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O3c-O3s",
+   "match": [
+    "O3c",
+    "O3s"
+   ],
+   "style": "class2",
+   "params": [
+    0,
+    863.8481281,
+    0,
+    0
+   ],
+   "comment": "core-shell spring · "
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "converted by CAPS (inorganic_glass, unit eV); equivalences replace the type name for each kind of parameter"
+ ],
+ "version": "",
+ "status": "converted",
+ "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example."
+}

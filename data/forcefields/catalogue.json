@@ -3,20 +3,20 @@
  "format_version": 1,
  "forcefields": [
   {
-   "id": "pcff-dlfield",
-   "name": "PCFF (DL_FIELD, diagonal terms)",
-   "version": "cff91 family, 1994; DL_FIELD library v4.5 (2019)",
+   "id": "pcff",
+   "name": "PCFF (diagonal terms)",
+   "version": "cff91 family, 1994",
    "references": [
     "H. Sun, S. J. Mumby, J. R. Maple, A. T. Hagler, J. Am. Chem. Soc. 116, 2978 (1994)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "PCFF.par",
    "status": "validated",
-   "notes": "matches DL_FIELD's LAMMPS output term by term and in energies / forces (≤6e-5 kcal/mol/Å) for an ester-ether, propylbenzene and a siloxane, including distorted geometries and auto (cff91_auto) parameters. No class II cross terms: DL_FIELD keeps the diagonal part only.",
-   "file": "pcff-dlfield.json",
+   "notes": "validated term by term, energies and forces in LAMMPS (≤6e-5 kcal/mol/Å) for an ester-ether, propylbenzene and a siloxane, including distorted geometries and auto (cff91_auto) parameters. No class II cross terms: the original distribution keeps the diagonal part only.",
+   "file": "pcff.json",
    "typing": {
-    "rules": "typing/pcff-dlfield.typing.json",
-    "evidence": "92 DL_FIELD PCFF molecule templates typed from connectivity alone: 1387 / 1400 atoms (99.1 %) as DL_FIELD's templates (the rest: DL_FIELD's templates give furan, oxazole and indole ring carbons cp but pyrrole's c5, and neutral histidine carbons ci)."
+    "rules": "typing/pcff.typing.json",
+    "evidence": "92 the original distribution PCFF molecule templates typed from connectivity alone: 1387 / 1400 atoms (99.1 %) as reference templates (the rest: reference templates give furan, oxazole and indole ring carbons cp but pyrrole's c5, and neutral histidine carbons ci)."
    },
    "counts": {
     "atom_types": 117,
@@ -28,17 +28,17 @@
    }
   },
   {
-   "id": "compass-dlfield",
-   "name": "COMPASS (DL_FIELD, diagonal terms)",
+   "id": "compass",
+   "name": "COMPASS (diagonal terms)",
    "version": "1998",
    "references": [
     "H. Sun, J. Phys. Chem. B 102, 7338 (1998)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "COMPASS.par",
    "status": "validated",
-   "notes": "matches DL_FIELD for propylbenzene and a siloxane; DL_FIELD and CAPS both find no c4-c4-c3' angle for the ester. No cross terms.",
-   "file": "compass-dlfield.json",
+   "notes": "validated term by term for propylbenzene and a siloxane; the original and CAPS both find no c4-c4-c3' angle for the ester. No cross terms.",
+   "file": "compass.json",
    "counts": {
     "atom_types": 74,
     "pairs": 48,
@@ -49,20 +49,20 @@
    }
   },
   {
-   "id": "cvff-dlfield",
-   "name": "CVFF (DL_FIELD)",
+   "id": "cvff",
+   "name": "CVFF",
    "version": "1988",
    "references": [
     "P. Dauber-Osguthorpe et al., Proteins 4, 31 (1988)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CVFF.par",
    "status": "validated",
-   "notes": "matches DL_FIELD for ester, propylbenzene and siloxane, including wildcard-torsion scaling and cvff_auto parameters.",
-   "file": "cvff-dlfield.json",
+   "notes": "validated term by term for ester, propylbenzene and siloxane, including wildcard-torsion scaling and cvff_auto parameters.",
+   "file": "cvff.json",
    "typing": {
-    "rules": "typing/cvff-dlfield.typing.json",
-    "evidence": "23 DL_FIELD CVFF templates: 272 / 278 atoms (97.8 %; the rest are TIP3P / SPC water, chosen with the cvff-dlfield-tip3p / -spc overlays); Materials Studio's own typing of the msi2lmp examples (crambin, nylon, aromatics): 811 / 823 atoms (98.5 %)."
+    "rules": "typing/cvff.typing.json",
+    "evidence": "23 CVFF reference templates: 272 / 278 atoms (97.8 %; the rest are TIP3P / SPC water, chosen with the cvff-tip3p / -spc overlays); Materials Studio's own typing of the msi2lmp examples (crambin, nylon, aromatics): 811 / 823 atoms (98.5 %)."
    },
    "counts": {
     "atom_types": 131,
@@ -74,21 +74,21 @@
    }
   },
   {
-   "id": "opls2005-dlfield",
-   "name": "OPLS-AA / OPLS 2005 (DL_FIELD)",
+   "id": "opls2005",
+   "name": "OPLS-AA / OPLS 2005",
    "version": "2005",
    "references": [
     "J. L. Banks et al., J. Comput. Chem. 26, 1752 (2005)",
     "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "OPLS2005.par",
    "status": "validated",
-   "notes": "matches DL_FIELD for ester, propylbenzene and siloxane including impropers on distorted geometries.",
-   "file": "opls2005-dlfield.json",
+   "notes": "validated term by term for ester, propylbenzene and siloxane including impropers on distorted geometries.",
+   "file": "opls2005.json",
    "typing": {
-    "rules": "typing/opls2005-dlfield.typing.json",
-    "evidence": "99 DL_FIELD OPLS2005 templates (water models aside): 1368 / 1398 atoms (97.9 %). Residue-specific keys (amino-acid side-chain CB, sugars, nucleic bases) are not assigned automatically."
+    "rules": "typing/opls2005.typing.json",
+    "evidence": "99 OPLS2005 reference templates (water models aside): 1368 / 1398 atoms (97.9 %). Residue-specific keys (amino-acid side-chain CB, sugars, nucleic bases) are not assigned automatically."
    },
    "counts": {
     "atom_types": 238,
@@ -100,17 +100,15 @@
    }
   },
   {
-   "id": "opls2020-dlfield",
-   "name": "OPLS 2020 bond / angle supplement (DL_FIELD)",
-   "version": "as distributed with DL_FIELD 4.13",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "id": "opls2020",
+   "name": "OPLS 2020 bond / angle supplement",
+   "version": "as distributed",
+   "references": [],
+   "origin": "converted",
    "source_file": "OPLS2020.par",
    "status": "converted",
    "notes": "bonds and angles only; used together with OPLS 2005.",
-   "file": "opls2020-dlfield.json",
+   "file": "opls2020.json",
    "counts": {
     "atom_types": 0,
     "pairs": 0,
@@ -121,17 +119,17 @@
    }
   },
   {
-   "id": "opls-aam-dlfield",
-   "name": "OPLS-AA/M (DL_FIELD)",
+   "id": "opls-aam",
+   "name": "OPLS-AA/M",
    "version": "2015",
    "references": [
     "M. J. Robertson, J. Tirado-Rives, W. L. Jorgensen, J. Chem. Theory Comput. 11, 3499 (2015)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "OPLS_AAM.par",
    "status": "converted",
-   "notes": "same functional forms as OPLS 2005 (validated); DL_FIELD cannot type the test molecules with this set, so not yet compared.",
-   "file": "opls-aam-dlfield.json",
+   "notes": "same functional forms as OPLS 2005 (validated); the original distribution cannot type the test molecules with this set, so not yet compared.",
+   "file": "opls-aam.json",
    "counts": {
     "atom_types": 87,
     "pairs": 83,
@@ -142,17 +140,17 @@
    }
   },
   {
-   "id": "opls-clp-dlfield",
-   "name": "CL&P ionic liquids (OPLS-AA based, DL_FIELD)",
+   "id": "opls-clp",
+   "name": "CL&P ionic liquids (OPLS-AA based)",
    "version": "2004 onwards",
    "references": [
     "J. N. Canongia Lopes, A. A. H. Pádua, J. Phys. Chem. B 108, 2038 (2004)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "OPLS_CL_P.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 24 of 24 identical (kJ/mol constants confirmed as DL_POLY's k).",
-   "file": "opls-clp-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 24 of 24 identical (kJ/mol constants confirmed as DL_POLY's k).",
+   "file": "opls-clp.json",
    "counts": {
     "atom_types": 62,
     "pairs": 58,
@@ -163,17 +161,17 @@
    }
   },
   {
-   "id": "opls-des-dlfield",
-   "name": "OPLS-DES deep eutectic solvents (DL_FIELD)",
+   "id": "opls-des",
+   "name": "OPLS-DES deep eutectic solvents",
    "version": "2018",
    "references": [
     "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "OPLS_DES.par",
    "status": "converted",
-   "notes": "same forms as OPLS 2005; not yet compared with DL_FIELD.",
-   "file": "opls-des-dlfield.json",
+   "notes": "same forms as OPLS 2005; not yet compared with the original distribution.",
+   "file": "opls-des.json",
    "counts": {
     "atom_types": 57,
     "pairs": 52,
@@ -184,17 +182,17 @@
    }
   },
   {
-   "id": "amber-dlfield",
-   "name": "AMBER (DL_FIELD)",
+   "id": "amber",
+   "name": "AMBER",
    "version": "Cornell et al. 1995 family",
    "references": [
     "W. D. Cornell et al., J. Am. Chem. Soc. 117, 5179 (1995)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "AMBER.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) and a methyl glucoside identical.",
-   "file": "amber-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) and a methyl glucoside identical.",
+   "file": "amber.json",
    "counts": {
     "atom_types": 72,
     "pairs": 68,
@@ -205,20 +203,20 @@
    }
   },
   {
-   "id": "gaff-amber16-dlfield",
-   "name": "GAFF (AmberTools 16, DL_FIELD)",
+   "id": "gaff-amber16",
+   "name": "GAFF (AmberTools 16)",
    "version": "GAFF 1.8x, 2016",
    "references": [
     "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "AMBER16_gaff.par",
    "status": "validated",
-   "notes": "matches DL_FIELD for the ester and propylbenzene from mol2 input.",
-   "file": "gaff-amber16-dlfield.json",
+   "notes": "validated term by term for the ester and propylbenzene from mol2 input.",
+   "file": "gaff-amber16.json",
    "typing": {
-    "rules": "typing/gaff-amber16-dlfield.typing.json",
-    "evidence": "Rules follow antechamber's ATOMTYPE_GFF.DEF in order, with its ring classes and cc/cd-type conjugation pairs. 32 DL_FIELD GAFF templates (water models aside): 365 / 373 atoms (97.9 %); the rest are template deviations from antechamber (DMSO methyl H hc, azobenzene N n2)."
+    "rules": "typing/gaff-amber16.typing.json",
+    "evidence": "Rules follow antechamber's ATOMTYPE_GFF.DEF in order, with its ring classes and cc/cd-type conjugation pairs. 32 GAFF reference templates (water models aside): 365 / 373 atoms (97.9 %); the rest are template deviations from antechamber (DMSO methyl H hc, azobenzene N n2)."
    },
    "counts": {
     "atom_types": 105,
@@ -230,20 +228,20 @@
    }
   },
   {
-   "id": "gaff-amber25-dlfield",
-   "name": "GAFF (AmberTools 25, DL_FIELD)",
+   "id": "gaff-amber25",
+   "name": "GAFF (AmberTools 25)",
    "version": "2025",
    "references": [
     "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "AMBER25_gaff.par",
    "status": "validated",
-   "notes": "matches DL_FIELD for the ester and propylbenzene; one carbonyl improper (X-X-c-o) is listed by DL_FIELD in an order that moves the key's end atom — CAPS follows the key.",
-   "file": "gaff-amber25-dlfield.json",
+   "notes": "validated term by term for the ester and propylbenzene; one carbonyl improper (X-X-c-o) is listed by the original distribution in an order that moves the key's end atom — CAPS follows the key.",
+   "file": "gaff-amber25.json",
    "typing": {
-    "rules": "typing/gaff-amber25-dlfield.typing.json",
-    "evidence": "GAFF2 rules after antechamber's ATOMTYPE_GFF2.DEF (c5 / c6, n7-n9, ns / nt, nu / nv ...). 27 DL_FIELD templates: 304 / 316 atoms (96.2 %; the rest: templates type H on C-O / C-S as hc where antechamber gives h1). A 6440-atom polystyrene melt: every atom as CAPS's GAFF builder typed it."
+    "rules": "typing/gaff-amber25.typing.json",
+    "evidence": "GAFF2 rules after antechamber's ATOMTYPE_GFF2.DEF (c5 / c6, n7-n9, ns / nt, nu / nv ...). 27 the original distribution templates: 304 / 316 atoms (96.2 %; the rest: templates type H on C-O / C-S as hc where antechamber gives h1). A 6440-atom polystyrene melt: every atom as CAPS's GAFF builder typed it."
    },
    "counts": {
     "atom_types": 114,
@@ -255,17 +253,17 @@
    }
   },
   {
-   "id": "charmm-dlfield",
-   "name": "CHARMM (DL_FIELD)",
+   "id": "charmm",
+   "name": "CHARMM",
    "version": "",
    "references": [
     "B. R. Brooks et al., J. Comput. Chem. 30, 1545 (2009)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres DL_FIELD's templates leave out.",
-   "file": "charmm-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres reference templates leave out.",
+   "file": "charmm.json",
    "counts": {
     "atom_types": 129,
     "pairs": 125,
@@ -276,17 +274,17 @@
    }
   },
   {
-   "id": "charmm19-dlfield",
-   "name": "CHARMM19 united atom (DL_FIELD)",
+   "id": "charmm19",
+   "name": "CHARMM19 united atom",
    "version": "",
    "references": [
     "E. Neria, S. Fischer, M. Karplus, J. Chem. Phys. 105, 1902 (1996)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM19.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): butane, octane, ethanol and DL_FIELD's C18 alkane example identical.",
-   "file": "charmm19-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): butane, octane, ethanol and the original C18 alkane example identical.",
+   "file": "charmm19.json",
    "counts": {
     "atom_types": 29,
     "pairs": 24,
@@ -297,17 +295,17 @@
    }
   },
   {
-   "id": "charmm22-prot-dlfield",
-   "name": "CHARMM22 proteins (DL_FIELD)",
+   "id": "charmm22-prot",
+   "name": "CHARMM22 proteins",
    "version": "1998",
    "references": [
     "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM22_prot.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 35 of 35 buildable templates and the whole SOD1 protein (4412 bonds, 7986 angles, 8968 torsion terms, 3556 Urey-Bradley, 11472 1-4 pairs) identical.",
-   "file": "charmm22-prot-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 35 of 35 buildable templates and the whole SOD1 protein (4412 bonds, 7986 angles, 8968 torsion terms, 3556 Urey-Bradley, 11472 1-4 pairs) identical.",
+   "file": "charmm22-prot.json",
    "counts": {
     "atom_types": 69,
     "pairs": 76,
@@ -318,17 +316,17 @@
    }
   },
   {
-   "id": "charmm36-carb-dlfield",
-   "name": "CHARMM36 carbohydrates (DL_FIELD)",
+   "id": "charmm36-carb",
+   "name": "CHARMM36 carbohydrates",
    "version": "",
    "references": [
     "O. Guvench et al., J. Chem. Theory Comput. 7, 3162 (2011)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM36_carb.par",
    "status": "converted",
-   "notes": "same forms as CHARMM36 (validated); DL_FIELD could not build its own carbohydrate examples.",
-   "file": "charmm36-carb-dlfield.json",
+   "notes": "same forms as CHARMM36 (validated); the original distribution could not build its own carbohydrate examples.",
+   "file": "charmm36-carb.json",
    "counts": {
     "atom_types": 60,
     "pairs": 71,
@@ -339,19 +337,19 @@
    }
   },
   {
-   "id": "cgenff-dlfield",
-   "name": "CGenFF (CHARMM36, DL_FIELD)",
+   "id": "cgenff",
+   "name": "CGenFF (CHARMM36)",
    "version": "",
    "references": [
     "K. Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM36_cgenff.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 60 of 60 buildable templates identical, including Urey-Bradley, separate 1-4 LJ and NBFIX.",
-   "file": "cgenff-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 60 of 60 buildable templates identical, including Urey-Bradley, separate 1-4 LJ and NBFIX.",
+   "file": "cgenff.json",
    "typing": {
-    "rules": "typing/cgenff-dlfield.typing.json",
+    "rules": "typing/cgenff.typing.json",
     "evidence": "Rules from CGenFF's own type definitions. The 494 model compounds of top_all36_cgenff.rtf (CGenFF 3.0.1), typed from their bonds alone: 9024 / 9174 atoms (98.4 %) as CGenFF's developers typed them, 417 residues fully right."
    },
    "counts": {
@@ -364,17 +362,17 @@
    }
   },
   {
-   "id": "charmm36-lipid-dlfield",
-   "name": "CHARMM36 lipids (DL_FIELD)",
+   "id": "charmm36-lipid",
+   "name": "CHARMM36 lipids",
    "version": "2010",
    "references": [
     "J. B. Klauda et al., J. Phys. Chem. B 114, 7830 (2010)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM36_lipid.par",
    "status": "converted",
    "notes": "same forms as CHARMM36 (validated); the library holds no buildable lipid templates.",
-   "file": "charmm36-lipid-dlfield.json",
+   "file": "charmm36-lipid.json",
    "counts": {
     "atom_types": 54,
     "pairs": 58,
@@ -385,17 +383,17 @@
    }
   },
   {
-   "id": "charmm36-nucl-dlfield",
-   "name": "CHARMM36 nucleic acids (DL_FIELD)",
+   "id": "charmm36-nucl",
+   "name": "CHARMM36 nucleic acids",
    "version": "",
    "references": [
     "K. Hart et al., J. Chem. Theory Comput. 8, 348 (2012)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM36_nucl.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): DL_FIELD's nucleic-acid example identical (DL_FIELD's nucleic templates carry no impropers; CAPS adds them from the rules).",
-   "file": "charmm36-nucl-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): the original nucleic-acid example identical (types nucleic templates carry no impropers; CAPS adds them from the rules).",
+   "file": "charmm36-nucl.json",
    "counts": {
     "atom_types": 54,
     "pairs": 61,
@@ -406,17 +404,17 @@
    }
   },
   {
-   "id": "charmm36-prot-dlfield",
-   "name": "CHARMM36 proteins (DL_FIELD)",
+   "id": "charmm36-prot",
+   "name": "CHARMM36 proteins",
    "version": "2012",
    "references": [
     "R. B. Best et al., J. Chem. Theory Comput. 8, 3257 (2012)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "CHARMM36_prot.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) identical: 896 bonds, 1608 angles, 1843 torsion terms, 700 Urey-Bradley, 2322 1-4 pairs.",
-   "file": "charmm36-prot-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) identical: 896 bonds, 1608 angles, 1843 torsion terms, 700 Urey-Bradley, 2322 1-4 pairs.",
+   "file": "charmm36-prot.json",
    "counts": {
     "atom_types": 93,
     "pairs": 100,
@@ -427,17 +425,17 @@
    }
   },
   {
-   "id": "dreiding-dlfield",
-   "name": "DREIDING (DL_FIELD)",
+   "id": "dreiding",
+   "name": "DREIDING",
    "version": "1990",
    "references": [
     "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "DREIDING.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 29 of 29 buildable templates identical (planar inversions, linear angles, conjugated and ammonium torsions).",
-   "file": "dreiding-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 29 of 29 buildable templates identical (planar inversions, linear angles, conjugated and ammonium torsions).",
+   "file": "dreiding.json",
    "counts": {
     "atom_types": 51,
     "pairs": 39,
@@ -448,17 +446,17 @@
    }
   },
   {
-   "id": "gromos-54a7-dlfield",
-   "name": "GROMOS 54A7 (DL_FIELD)",
+   "id": "gromos-54a7",
+   "name": "GROMOS 54A7",
    "version": "2011",
    "references": [
     "N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "GROMOS_G54A7.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): octane identical; bonds kept as the GROMOS quartic form (DL_FIELD writes a harmonic approximation).",
-   "file": "gromos-54a7-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): octane identical; bonds kept as the GROMOS quartic form (the original distribution writes a harmonic approximation).",
+   "file": "gromos-54a7.json",
    "counts": {
     "atom_types": 28,
     "pairs": 22,
@@ -469,17 +467,17 @@
    }
   },
   {
-   "id": "trappe-ua-dlfield",
-   "name": "TraPPE-UA (DL_FIELD)",
+   "id": "trappe-ua",
+   "name": "TraPPE-UA",
    "version": "1998",
    "references": [
     "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "TRAPPE_UA.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are DL_FIELD's C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion.",
-   "file": "trappe-ua-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are the original C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion.",
+   "file": "trappe-ua.json",
    "counts": {
     "atom_types": 39,
     "pairs": 27,
@@ -490,17 +488,17 @@
    }
   },
   {
-   "id": "trappe-eh-dlfield",
-   "name": "TraPPE-EH (DL_FIELD)",
+   "id": "trappe-eh",
+   "name": "TraPPE-EH",
    "version": "2007",
    "references": [
     "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)"
    ],
-   "origin": "dlfield",
+   "origin": "converted",
    "source_file": "TRAPPE_EH.par",
    "status": "validated",
-   "notes": "checked term by term against DL_FIELD's DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical.",
-   "file": "trappe-eh-dlfield.json",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical.",
+   "file": "trappe-eh.json",
    "counts": {
     "atom_types": 65,
     "pairs": 17,
@@ -511,17 +509,15 @@
    }
   },
   {
-   "id": "misc-dlfield",
-   "name": "Miscellaneous (DL_FIELD)",
+   "id": "misc",
+   "name": "Miscellaneous",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "MISC_FF.par",
    "status": "converted",
-   "notes": "converted; DL_FIELD cannot write this scheme for LAMMPS and has no buildable examples.",
-   "file": "misc-dlfield.json",
+   "notes": "converted; the original distribution cannot write this scheme for LAMMPS and has no buildable examples.",
+   "file": "misc.json",
    "counts": {
     "atom_types": 15,
     "pairs": 21,
@@ -532,17 +528,15 @@
    }
   },
   {
-   "id": "inorganic-binary-halides-dlfield",
-   "name": "Inorganic: binary halides (DL_FIELD)",
+   "id": "inorganic-binary-halides",
+   "name": "Inorganic: binary halides",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_binary_halides.par",
    "status": "validated",
-   "notes": "14 of 14 ionic templates: every Buckingham pair identical to DL_FIELD's FIELD file.",
-   "file": "inorganic-binary-halides-dlfield.json",
+   "notes": "14 of 14 ionic templates: every Buckingham pair identical to the reference FIELD file.",
+   "file": "inorganic-binary-halides.json",
    "counts": {
     "atom_types": 32,
     "pairs": 48,
@@ -553,17 +547,15 @@
    }
   },
   {
-   "id": "inorganic-binary-misc-dlfield",
-   "name": "Inorganic: binary misc (DL_FIELD)",
+   "id": "inorganic-binary-misc",
+   "name": "Inorganic: binary misc",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_binary_misc.par",
    "status": "validated",
-   "notes": "GaN: Buckingham pairs identical to DL_FIELD's FIELD file.",
-   "file": "inorganic-binary-misc-dlfield.json",
+   "notes": "GaN: Buckingham pairs identical to the reference FIELD file.",
+   "file": "inorganic-binary-misc.json",
    "counts": {
     "atom_types": 4,
     "pairs": 3,
@@ -574,17 +566,15 @@
    }
   },
   {
-   "id": "inorganic-binary-oxides-dlfield",
-   "name": "Inorganic: binary oxides (DL_FIELD)",
+   "id": "inorganic-binary-oxides",
+   "name": "Inorganic: binary oxides",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_binary_oxides.par",
    "status": "validated",
    "notes": "17 of 17 buildable templates plus the alpha-Al2O3 and MgO shell-model examples: Buckingham pairs and core-shell springs identical.",
-   "file": "inorganic-binary-oxides-dlfield.json",
+   "file": "inorganic-binary-oxides.json",
    "counts": {
     "atom_types": 81,
     "pairs": 50,
@@ -595,17 +585,15 @@
    }
   },
   {
-   "id": "inorganic-clay-dlfield",
-   "name": "Inorganic: clay (DL_FIELD)",
+   "id": "inorganic-clay",
+   "name": "Inorganic: clay",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_clay.par",
    "status": "converted",
-   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable DL_FIELD example.",
-   "file": "inorganic-clay-dlfield.json",
+   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+   "file": "inorganic-clay.json",
    "counts": {
     "atom_types": 28,
     "pairs": 25,
@@ -616,17 +604,15 @@
    }
   },
   {
-   "id": "inorganic-glass-dlfield",
-   "name": "Inorganic: glass (DL_FIELD)",
+   "id": "inorganic-glass",
+   "name": "Inorganic: glass",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_glass.par",
    "status": "converted",
-   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable DL_FIELD example.",
-   "file": "inorganic-glass-dlfield.json",
+   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+   "file": "inorganic-glass.json",
    "counts": {
     "atom_types": 19,
     "pairs": 21,
@@ -637,17 +623,15 @@
    }
   },
   {
-   "id": "inorganic-ternary-oxides-dlfield",
-   "name": "Inorganic: ternary oxides (DL_FIELD)",
+   "id": "inorganic-ternary-oxides",
+   "name": "Inorganic: ternary oxides",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_ternary_oxides.par",
    "status": "validated",
-   "notes": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (DL_FIELD's FIELD file runs large spring constants together).",
-   "file": "inorganic-ternary-oxides-dlfield.json",
+   "notes": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (the reference FIELD file runs large spring constants together).",
+   "file": "inorganic-ternary-oxides.json",
    "counts": {
     "atom_types": 44,
     "pairs": 40,
@@ -658,17 +642,15 @@
    }
   },
   {
-   "id": "inorganic-zeolite-dlfield",
-   "name": "Inorganic: zeolite (DL_FIELD)",
+   "id": "inorganic-zeolite",
+   "name": "Inorganic: zeolite",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_zeolite.par",
    "status": "validated",
    "notes": "4 of 4 silicalite / faujasite templates identical.",
-   "file": "inorganic-zeolite-dlfield.json",
+   "file": "inorganic-zeolite.json",
    "counts": {
     "atom_types": 17,
     "pairs": 27,
@@ -679,17 +661,15 @@
    }
   },
   {
-   "id": "inorganic-zeolite-hill-sauer-dlfield",
-   "name": "Inorganic: zeolite Hill Sauer (DL_FIELD)",
+   "id": "inorganic-zeolite-hill-sauer",
+   "name": "Inorganic: zeolite Hill Sauer",
    "version": "",
-   "references": [
-    "DL_FIELD 4.13 library (C. W. Yong, STFC Daresbury Laboratory)"
-   ],
-   "origin": "dlfield",
+   "references": [],
+   "origin": "converted",
    "source_file": "INORGANIC_zeolite_Hill_Sauer.par",
    "status": "converted",
-   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable DL_FIELD example.",
-   "file": "inorganic-zeolite-hill-sauer-dlfield.json",
+   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+   "file": "inorganic-zeolite-hill-sauer.json",
    "counts": {
     "atom_types": 10,
     "pairs": 55,
