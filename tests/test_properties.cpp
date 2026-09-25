@@ -163,3 +163,38 @@ TEST(Properties, UnknownIdAndJson) {
   EXPECT_NE(j.find("\"id\":\"density\""), std::string::npos);
   EXPECT_NE(j.find("null"), std::string::npos);   // MSD of one frame: no value
 }
+
+TEST(Properties, OrientationOfAlignedAndRandomChains) {
+  // nine all-trans zigzag chains along z (a crude PE crystal): S = 1, Herman f along z = 1
+  System s;
+  s.cell.a = {15, 0, 0};
+  s.cell.b = {0, 15, 0};
+  s.cell.c = {0, 0, 25.4};
+  s.unwrapped = true;
+  s.has_mol = true;
+  for (int cx = 0; cx < 3; ++cx)
+    for (int cy = 0; cy < 3; ++cy) {
+      const uint32_t first = uint32_t(s.atoms.size());
+      for (int k = 0; k < 20; ++k) {
+        Atom a;
+        a.element = 6;
+        a.mol = cx * 3 + cy + 1;
+        a.pos = {2.5 + cx * 5 + (k % 2 ? 0.42 : -0.42), 2.5 + cy * 5, 0.5 + k * 1.27};
+        s.atoms.push_back(a);
+        if (k > 0) s.bonds.push_back({first + uint32_t(k - 1), first + uint32_t(k), 1});
+      }
+    }
+  Trajectory t;
+  t.topology = s;
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  t.positions.push_back(p);
+  t.cells.push_back(s.cell);
+  t.timesteps.push_back(0);
+  const auto props = analyze(t, {"orientation"}, AnalyzeOptions{});
+  ASSERT_EQ(props.size(), 1u);
+  EXPECT_NEAR(props[0].value, 1.0, 1e-9);
+  EXPECT_NEAR(props[0].extra.at("Herman f along z"), 1.0, 1e-9);
+  EXPECT_NEAR(std::fabs(props[0].extra.at("director z")), 1.0, 1e-9);
+  EXPECT_GT(props[0].extra.at("local crystallinity (fraction)"), 0.5);
+}

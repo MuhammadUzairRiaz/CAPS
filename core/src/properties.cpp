@@ -904,6 +904,127 @@ Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   return p;
 }
 
+// ---------------------------------------------------------------- orientation
+
+// Eigenvalues (ascending) and the eigenvector of the largest, of a symmetric 3×3 matrix (Jacobi rotations).
+std::pair<std::array<double, 3>, Vec3> sym_eigen(double A[3][3]) {
+  double V[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  for (int it = 0; it < 60; ++it) {
+    int p = 0, q = 1;
+    for (int i = 0; i < 3; ++i)
+      for (int j = i + 1; j < 3; ++j)
+        if (std::fabs(A[i][j]) > std::fabs(A[p][q])) p = i, q = j;
+    if (std::fabs(A[p][q]) < 1e-14) break;
+    const double th = 0.5 * std::atan2(2 * A[p][q], A[q][q] - A[p][p]), c = std::cos(th), s = std::sin(th);
+    for (int k = 0; k < 3; ++k) {
+      const double akp = A[k][p], akq = A[k][q];
+      A[k][p] = c * akp - s * akq, A[k][q] = s * akp + c * akq;
+    }
+    for (int k = 0; k < 3; ++k) {
+      const double apk = A[p][k], aqk = A[q][k];
+      A[p][k] = c * apk - s * aqk, A[q][k] = s * apk + c * aqk;
+    }
+    for (int k = 0; k < 3; ++k) {
+      const double vkp = V[k][p], vkq = V[k][q];
+      V[k][p] = c * vkp - s * vkq, V[k][q] = s * vkp + c * vkq;
+    }
+  }
+  int imax = 0;
+  for (int i = 1; i < 3; ++i) if (A[i][i] > A[imax][imax]) imax = i;
+  std::array<double, 3> ev{A[0][0], A[1][1], A[2][2]};
+  std::sort(ev.begin(), ev.end());
+  return {ev, Vec3{V[0][imax], V[1][imax], V[2][imax]}};
+}
+
+Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o, const ChainFrames& c) {
+  Property p{"orientation", "Orientation order", "", "", NaN, NaN, {}, {}, {}};
+  std::vector<std::vector<uint32_t>> bb;
+  for (const auto& b : c.bb)
+    if (b.size() >= 3 && (o.exclude_mol == 0 || t.topology.atoms[b[0]].mol != o.exclude_mol)) bb.push_back(b);
+  if (bb.empty()) { p.notes.push_back("no chain backbones of three or more heavy atoms"); return p; }
+  const Cell& c0 = t.topology.cell;
+  const bool cell = c0.valid();
+  const double Lz = cell ? std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b)))) : 0;
+  const int nzb = cell ? std::max(1, int(std::ceil(Lz / 1.0))) : 0;
+  std::vector<double> p2z(size_t(nzb), 0), cnt(size_t(nzb), 0);
+  std::vector<double> Sf, fz, cryst;
+  double Qall[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  size_t nall = 0;
+  Series ss{"S per frame", "time (ps)", "S", {}, {}};
+  const auto times = frame_times(t, o);
+  for (size_t q = 0; q < c.pos.size(); ++q) {
+    if (cancelled(o, "orientation", double(q) / c.pos.size())) throw Cancel();
+    const auto& x = c.pos[q];
+    std::vector<Vec3> u, mid;
+    for (const auto& b : bb)
+      for (size_t i = 0; i + 2 < b.size(); ++i) {
+        const Vec3 d = x[b[i + 2]] - x[b[i]];
+        const double l = norm(d);
+        if (l < 1e-9) continue;
+        u.push_back(d * (1 / l));
+        mid.push_back((x[b[i + 2]] + x[b[i]]) * 0.5);
+      }
+    double Q[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    double f = 0;
+    for (size_t i = 0; i < u.size(); ++i) {
+      for (int a = 0; a < 3; ++a)
+        for (int b2 = 0; b2 < 3; ++b2) Q[a][b2] += 1.5 * u[i][a] * u[i][b2] - (a == b2 ? 0.5 : 0);
+      f += 1.5 * u[i][2] * u[i][2] - 0.5;
+      if (cell) {
+        const Cell& fc = t.cells.size() > fr[q] ? t.cells[fr[q]] : c0;
+        const int b2 = std::clamp(int(cell_height(fc, mid[i]) / (Lz / nzb)), 0, nzb - 1);
+        p2z[size_t(b2)] += 1.5 * u[i][2] * u[i][2] - 0.5;
+        cnt[size_t(b2)] += 1;
+      }
+    }
+    for (int a = 0; a < 3; ++a)
+      for (int b2 = 0; b2 < 3; ++b2) Qall[a][b2] += Q[a][b2], Q[a][b2] /= double(u.size());
+    nall += u.size();
+    auto e = sym_eigen(Q);
+    Sf.push_back(e.first[2]);
+    fz.push_back(f / double(u.size()));
+    ss.x.push_back(times[fr[q]] - times[fr[0]]);
+    ss.y.push_back(e.first[2]);
+    // local crystallinity: chords with at least 8 neighbours (midpoints within 5 Å) aligned within 10°
+    const size_t nc = std::min<size_t>(u.size(), 3000), stride = std::max<size_t>(1, u.size() / nc);
+    int crys = 0, tried = 0;
+    const double c10 = std::cos(10 * 3.14159265358979 / 180);
+    for (size_t i = 0; i < u.size(); i += stride) {
+      int al = 0;
+      for (size_t j = 0; j < u.size() && al < 8; ++j) {
+        if (j == i) continue;
+        const Vec3 d = cell ? c0.minimum_image(mid[j] - mid[i]) : mid[j] - mid[i];
+        if (dot(d, d) <= 25.0 && std::fabs(dot(u[i], u[j])) >= c10) ++al;
+      }
+      crys += al >= 8;
+      ++tried;
+    }
+    cryst.push_back(tried ? double(crys) / tried : 0);
+  }
+  for (auto& r : Qall)
+    for (auto& v : r) v /= double(nall);
+  const auto e = sym_eigen(Qall);
+  std::tie(p.value, p.error) = block_mean(Sf, o.blocks);
+  p.extra["director x"] = e.second[0];
+  p.extra["director y"] = e.second[1];
+  p.extra["director z"] = e.second[2];
+  p.extra["Herman f along z"] = std::accumulate(fz.begin(), fz.end(), 0.0) / fz.size();
+  p.extra["local crystallinity (fraction)"] = std::accumulate(cryst.begin(), cryst.end(), 0.0) / cryst.size();
+  p.extra["chord vectors per frame"] = double(nall) / double(c.pos.size());
+  p.method = "S = largest eigenvalue of Q = ⟨3/2 u u − 1/2 I⟩ over backbone chords u (i → i+2), " + std::to_string(bb.size()) +
+             " chains, " + std::to_string(c.pos.size()) + " frames; Herman f = ⟨P₂(u·z)⟩; crystallinity: chords with ≥ 8 neighbours within 5 Å aligned within 10°";
+  if (o.exclude_mol) p.notes.push_back("molecule " + std::to_string(o.exclude_mol) + " (the held surface) left out");
+  if (Sf.size() == 1 && nall < 500) p.notes.push_back("few chords: S of an isotropic sample is not zero but about 1/√N");
+  p.series.push_back(std::move(ss));
+  if (cell) {
+    Series sz{"P₂(cos θ_z) along z", "z (Å)", "⟨P₂⟩ against z", {}, {}};
+    for (int b2 = 0; b2 < nzb; ++b2)
+      if (cnt[size_t(b2)] > 0) sz.x.push_back((b2 + 0.5) * Lz / nzb), sz.y.push_back(p2z[size_t(b2)] / cnt[size_t(b2)]);
+    p.series.insert(p.series.begin(), std::move(sz));
+  }
+  return p;
+}
+
 // ---------------------------------------------------------------- free volume
 
 struct FreeGrid {
@@ -1235,7 +1356,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
-                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion"};
+                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "orientation"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -1253,8 +1374,9 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     for (const char* k : {"sq", "xray", "neutron"})
       if (want(k)) out.push_back(scattering_prop(t, fr, o, k));
     if (want("rg")) out.push_back(rg_prop(t, fr, o));
-    if (want("ree") || want("cn") || want("persistence")) {
+    if (want("ree") || want("cn") || want("persistence") || want("orientation")) {
       const ChainFrames c = chain_frames(t, fr);
+      if (want("orientation")) out.push_back(orientation_prop(t, fr, o, c));
       if (want("ree")) out.push_back(ree_prop(t, fr, o, c));
       if (want("cn")) out.push_back(cn_prop(o, c));
       if (want("persistence")) out.push_back(persistence_prop(o, c));
