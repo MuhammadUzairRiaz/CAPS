@@ -128,7 +128,11 @@ public partial class MainWindow : Window
                 _vm.ShowRdf = true;
                 AnalysisTabs.SelectedIndex = 2;
             }
-            if (e.PropertyName == nameof(MainViewModel.ChainCurve)) ChainPlot.SetData(_vm.ChainCurve);
+            if (e.PropertyName == nameof(MainViewModel.ChainCurve))
+            {
+                if (_vm.RisCurve.Length > 0) ChainPlot.SetCompare(_vm.ChainCurve, _vm.RisCurve);
+                else ChainPlot.SetData(_vm.ChainCurve);
+            }
             if (e.PropertyName == nameof(MainViewModel.Reacting) && _vm.Reacting)
             {
                 ConvPlot.RefY = null;

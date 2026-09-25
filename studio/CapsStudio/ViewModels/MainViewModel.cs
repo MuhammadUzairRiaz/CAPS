@@ -276,6 +276,9 @@ public sealed partial class MainViewModel : ObservableObject
     private (double X, double Y)[] _chainCurve = [];
     private string _chainNote = "";
     public (double X, double Y)[] ChainCurve { get => _chainCurve; private set => Set(ref _chainCurve, value); }
+    /// <summary>The rotational isomeric state reference (polyethylene, Flory) for alkane chains, else empty.</summary>
+    private (double X, double Y)[] _risCurve = [];
+    public (double X, double Y)[] RisCurve { get => _risCurve; private set => Set(ref _risCurve, value); }
     public string ChainNote { get => _chainNote; private set => Set(ref _chainNote, value); }
 
     private void RefreshChains()
@@ -284,11 +287,37 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var (n, r, chains, b2) = _doc.InternalDistances();
+            // alkanes (every molecule C_nH_2n+2): the polyethylene RIS reference at the Dynamics temperature, dashed
+            var ris = Array.Empty<(double, double)>();
+            if (chains > 0 && n.Length > 1 && IsAlkane(_doc))
+            {
+                var nmax = (int)n.Max();
+                var c = new double[nmax];
+                if (Native.RisCn(_mdTemp, nmax, c) == nmax) ris = n.Select(v => ((double)v, c[Math.Clamp(v, 1, nmax) - 1])).ToArray();
+            }
+            RisCurve = ris;
             ChainCurve = n.Select((v, k) => ((double)v, r[k])).ToArray();
             ChainNote = chains == 0 ? "no chains of four or more heavy atoms"
-                : string.Format(CultureInfo.InvariantCulture, "{0} backbones · ⟨b²⟩ {1:F3} Å² · plateau → C∞ for equilibrated long chains · frame {2}", chains, b2, _frame);
+                : string.Format(CultureInfo.InvariantCulture, "{0} backbones · ⟨b²⟩ {1:F3} Å² · plateau → C∞ for equilibrated long chains · frame {2}", chains, b2, _frame)
+                  + (ris.Length > 0 ? string.Format(CultureInfo.InvariantCulture, " · dashed: RIS polyethylene at {0:F0} K (Flory), C_{1} = {2:F2}", _mdTemp, n.Max(), ris[^1].Item2) : "");
         }
         catch (Exception e) { ChainCurve = []; ChainNote = e.Message; }
+    }
+
+    /// <summary>Every molecule an acyclic alkane (C_nH_2n+2, n ≥ 4): the RIS polyethylene reference applies.</summary>
+    private static bool IsAlkane(CapsDocument doc)
+    {
+        var s = doc.Summary();
+        if (s.Atoms > 200000) return false;
+        var c = new Dictionary<long, (int C, int H)>();
+        for (var i = 0; i < s.Atoms; ++i)
+        {
+            var a = doc.Atom(i);
+            if (a.Element != 6 && a.Element != 1) return false;
+            c.TryGetValue(a.Mol, out var t);
+            c[a.Mol] = a.Element == 6 ? (t.C + 1, t.H) : (t.C, t.H + 1);
+        }
+        return c.Count > 0 && c.Values.All(t => t.C >= 4 && t.H == 2 * t.C + 2);
     }
 
     private void RefreshMolecules()

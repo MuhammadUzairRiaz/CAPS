@@ -276,6 +276,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_hydrogen_plan")] public static extern int HydrogenPlan(IntPtr doc, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_doc_copy")] public static extern IntPtr DocCopy(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_resolution_summary")] public static extern int ResolutionSummary(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_ris_cn")] public static extern int RisCn(double temperature, int nmax, double[] outCn);
     [DllImport(Lib, EntryPoint = "caps_backmap")] public static extern IntPtr Backmap(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string beads, int perBead, int relax, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_resolution_convert")] public static extern IntPtr ResolutionConvert(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_expression_count")] public static extern int ExpressionCount(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string expr, byte[]? outJson, int cap);

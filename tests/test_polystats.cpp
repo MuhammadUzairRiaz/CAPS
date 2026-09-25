@@ -230,3 +230,19 @@ TEST(Resolution, BackmapFollowsRigidlyMovedBeads) {
   three.atoms.pop_back();
   EXPECT_THROW(backmap(aa, three, 5), std::invalid_argument);
 }
+
+// RIS by generator matrices: with equal weights the chain rotates freely (C₂ = 1 + cos θ, C∞ = (1 + cos θ)/(1 − cos θ));
+// polyethylene at 413 K (Flory's parameters) gives C∞ ≈ 6.9, near the measured 6.7 ± 0.3
+TEST(Polystats, RisGeneratorMatrices) {
+  RisModel fr;
+  fr.e_sigma = 0, fr.e_omega = 0;
+  const auto a = ris_cn(fr, 300, 3000);
+  const double c = std::cos((180 - 112) * M_PI / 180);
+  EXPECT_NEAR(a[0], 1.0, 1e-12);
+  EXPECT_NEAR(a[1], 1 + c, 1e-9);
+  EXPECT_NEAR(a.back(), (1 + c) / (1 - c), 0.01);
+  const auto pe = ris_cn(RisModel{}, 413, 3000);
+  EXPECT_GT(pe.back(), 6.5);
+  EXPECT_LT(pe.back(), 7.2);
+  EXPECT_GT(ris_cn(RisModel{}, 300, 3000).back(), pe.back());   // colder: more trans, stiffer
+}

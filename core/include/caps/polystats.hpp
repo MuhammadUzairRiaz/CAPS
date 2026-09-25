@@ -64,4 +64,14 @@ double hildebrand_chi(double v_solvent, double delta_solvent, double delta_polym
 // Mesh points along an edge: the smallest size ≥ edge / spacing (and ≥ order + 1) whose factors are 2, 3, 5 and 7.
 int pme_mesh_size(double edge, double spacing, int order = 4);
 
+// Rotational isomeric state chain statistics (Flory, Statistical Mechanics of Chain Molecules, 1969): C_n = ⟨r²⟩₀ / (n l²)
+// of a symmetric three-state chain (trans, gauche±) by Flory's generator matrices, exact for each n. Polyethylene
+// (Abe, Jernigan & Flory 1966, as in Flory's book): l 1.53 Å, bond angle 112°, gauche ±120°, E_σ 0.5 kcal/mol for a
+// gauche bond, E_ω 2.0 kcal/mol for the g±g∓ pentane clash. Returns C_n for n = 1 … nmax bonds.
+struct RisModel {
+  double bond = 1.53, angle_deg = 112.0, gauche_deg = 120.0;
+  double e_sigma = 0.5, e_omega = 2.0;   // kcal/mol
+};
+std::vector<double> ris_cn(const RisModel& m, double temperature, int nmax);
+
 }  // namespace caps

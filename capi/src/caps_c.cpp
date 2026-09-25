@@ -5658,6 +5658,17 @@ extern "C" int32_t caps_stereo(const char* json, char* out, int32_t cap) {
   }
 }
 
+extern "C" int32_t caps_ris_cn(double temperature, int32_t nmax, double* out) {
+  try {
+    const auto c = caps::ris_cn(caps::RisModel{}, temperature, std::max(1, int(nmax)));
+    for (size_t k = 0; k < c.size(); ++k) out[k] = c[k];
+    return int32_t(c.size());
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {
