@@ -7,7 +7,25 @@ namespace CapsStudio.Views.Pages;
 
 public partial class GrowPage : PageBase
 {
-    public GrowPage() => AvaloniaXamlLoader.Load(this);
+    private CapsStudio.ViewModels.MainViewModel? _hooked;
+    public GrowPage()
+    {
+        AvaloniaXamlLoader.Load(this);
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is not CapsStudio.ViewModels.MainViewModel vm || vm == _hooked) return;
+            _hooked = vm;
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(CapsStudio.ViewModels.MainViewModel.GrowLiveDoc)) return;
+                var v = this.FindControl<MolView>("LiveView")!;
+                var first = v.Document == null;
+                v.ColourMode = 1; v.ShowCell = true; v.DrawStyle = vm.StyleIndex;
+                v.Document = vm.GrowLiveDoc;   // the camera stays put between snapshots
+                if (first && vm.GrowLiveDoc != null) v.Reset(); else v.Refresh();
+            };
+        };
+    }
     /// <summary>Where the 3D view goes while this page shows.</summary>
     public Decorator Slot => this.FindControl<Decorator>("ViewSlot")!;
 

@@ -747,4 +747,37 @@ public partial class MainViewModel
         foreach (var n in new[] { nameof(EsMethod), nameof(EsPme), nameof(EsTolerance), nameof(EsOrder), nameof(EsSpacing), nameof(EsCutoff) }) Raise(n);
         EsRecompute();
     }
+
+    // ---------------------------------------------------------------- Grow › live cell (design/boards/GrowAllAtom)
+    private int _growLiveTicket, _growTrials = 120;
+    private bool _growLiveView = true;
+    private CapsDocument? _growLiveDoc;
+    /// <summary>The chains so far while Grow runs (a snapshot about four times a second), null otherwise.</summary>
+    public CapsDocument? GrowLiveDoc { get => _growLiveDoc; private set { if (Set(ref _growLiveDoc, value)) Raise(nameof(GrowLiveShown)); } }
+    public bool GrowLiveShown => _growLiveDoc != null;
+    public bool GrowLiveView { get => _growLiveView; set => Set(ref _growLiveView, value); }
+    public decimal GrowTrialsD { get => _growTrials; set { _growTrials = (int)Math.Clamp(value, 4, 5000); Raise(); } }
+    public string GrowCleanFf => DefaultCleanForceField() is { } f ? Path.GetFileNameWithoutExtension(f) : "UFF";
+    private string _growUnitsText = "—", _growMarginText = "—", _growDensityNowText = "—", _growLiveAtoms = "";
+    public string GrowUnitsText { get => _growUnitsText; private set => Set(ref _growUnitsText, value); }
+    public string GrowMarginText { get => _growMarginText; private set => Set(ref _growMarginText, value); }
+    public string GrowDensityNowText { get => _growDensityNowText; private set => Set(ref _growDensityNowText, value); }
+    public string GrowLiveAtoms { get => _growLiveAtoms; private set => Set(ref _growLiveAtoms, value); }
+    private double _growUnitFraction;
+    public double GrowUnitFraction { get => _growUnitFraction; private set => Set(ref _growUnitFraction, value); }
+
+    private void GrowLiveStats(string stats)
+    {
+        try
+        {
+            var j = JsonNode.Parse(stats)!;
+            double D(string k) => (double?)j[k] ?? double.NaN;
+            GrowUnitsText = $"{D("units"):0} / {D("units_total"):0}";
+            GrowUnitFraction = D("units_total") > 0 ? D("units") / D("units_total") : 0;
+            GrowMarginText = double.IsFinite(D("worst_margin")) ? D("worst_margin").ToString("+0.00;−0.00", Inv) + " Å" : "—";
+            GrowDensityNowText = D("density").ToString("0.00", Inv) + " g/cm³";
+            GrowLiveAtoms = $"{D("atoms"):N0} atoms placed · colour: molecule";
+        }
+        catch { }
+    }
 }

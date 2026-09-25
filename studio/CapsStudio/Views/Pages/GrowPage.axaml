@@ -152,6 +152,16 @@
                     </StackPanel>
                   </Grid>
                 </Border>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" Margin="0,4,0,0">
+                  <StackPanel Spacing="4" ToolTip.Tip="Torsion and ring trials per growth step; the roomiest is kept">
+                    <TextBlock Text="Trial directions k" Classes="label" /><NumericUpDown Value="{Binding GrowTrialsD}" Minimum="4" Maximum="5000" Increment="20" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Look-ahead" Classes="label" /><TextBlock Text="1 atom" Classes="mono" Margin="0,7,0,0" /></StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="4" ToolTip.Tip="Unit templates are cleaned with the default force field (Settings), UFF where it cannot type them">
+                    <TextBlock Text="Unit clean-up" Classes="label" /><TextBlock Text="{Binding GrowCleanFf}" Classes="mono" Margin="0,7,0,0" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+                <CheckBox Classes="toggle" Content="Live cell while growing" IsChecked="{Binding GrowLiveView}" />
                 <CheckBox Classes="toggle" Content="Curved start (gauche-rich first bonds)" IsChecked="{Binding GrowCurve}" Margin="0,4,0,0" />
               </StackPanel>
             </StackPanel>
@@ -188,6 +198,13 @@
               </DockPanel>
             </Border>
             <Decorator Grid.Row="1" x:Name="ViewSlot" />
+            <!-- while growing: the chains so far (snapshots from the grower), over the 3D view -->
+            <Panel Grid.Row="1" IsVisible="{Binding GrowLiveShown}" Background="{DynamicResource Bg0B}">
+              <v:MolView x:Name="LiveView" />
+              <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Classes="chip">
+                <TextBlock Text="{Binding GrowLiveAtoms}" Foreground="{DynamicResource MutedB}" />
+              </Border>
+            </Panel>
           </Grid>
         </Border>
         <UniformGrid Grid.Row="1" Columns="3">
@@ -195,9 +212,18 @@
             <StackPanel Spacing="3"><TextBlock Text="Chains grown" Classes="label" /><TextBlock Text="{Binding GrowDoneText}" Classes="mono" FontSize="18" /></StackPanel>
           </Border>
           <Border Classes="card" Margin="6,0,6,6" Padding="14,10">
-            <StackPanel Spacing="3"><TextBlock Text="Restarts" Classes="label" /><TextBlock Text="{Binding GrowRestarts}" Classes="mono" FontSize="18" /></StackPanel>
+            <StackPanel Spacing="3"><TextBlock Text="Units placed" Classes="label" /><TextBlock Text="{Binding GrowUnitsText}" Classes="mono" FontSize="18" /></StackPanel>
           </Border>
           <Border Classes="card" Margin="6,0,0,6" Padding="14,10">
+            <StackPanel Spacing="3"><TextBlock Text="Restarts" Classes="label" /><TextBlock Text="{Binding GrowRestarts}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="0,6,6,6" Padding="14,10" ToolTip.Tip="Smallest (distance − contact limit) over the pairs accepted so far">
+            <StackPanel Spacing="3"><TextBlock Text="Closest contact margin" Classes="label" /><TextBlock Text="{Binding GrowMarginText}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="6,6,6,6" Padding="14,10">
+            <StackPanel Spacing="3"><TextBlock Text="Density now" Classes="label" /><TextBlock Text="{Binding GrowDensityNowText}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="6,6,0,6" Padding="14,10">
             <StackPanel Spacing="3"><TextBlock Text="Elapsed" Classes="label" /><TextBlock Text="{Binding GrowElapsedText}" Classes="mono" FontSize="18" /></StackPanel>
           </Border>
         </UniformGrid>
@@ -206,7 +232,7 @@
             <TextBlock DockPanel.Dock="Right" Text="{Binding GrowDoneText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
             <TextBlock Text="Overall" Classes="label" />
           </DockPanel>
-          <ProgressBar Value="{Binding GrowProgress}" Minimum="0" Maximum="1" Height="6" />
+          <ProgressBar Value="{Binding GrowUnitFraction}" Minimum="0" Maximum="1" Height="6" />
         </StackPanel>
       </Grid>
     </Grid>

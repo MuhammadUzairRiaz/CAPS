@@ -3,6 +3,7 @@
 #include "caps/uff.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <array>
 #include <cmath>
@@ -872,11 +873,44 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
 
   for (int c = 0; c < nchains; ++c) start_chain(c);
   int finished = 0;
+  long units_total = 0;
+  for (const auto& ch : C) units_total += long(ch.seq.size());
+  auto last_snap = std::chrono::steady_clock::now() - std::chrono::hours(1);
+  auto snapshot = [&] {   // the chains so far, for a live view
+    System p;
+    p.cell.a = {Lv[0], 0, 0}, p.cell.b = {0, Lv[1], 0}, p.cell.c = {0, 0, Lv[2]};
+    p.has_mol = true;
+    GrowOptions::Live live;
+    live.chains = nchains, live.units_total = units_total, live.restarts = rep.restarts, live.worst_margin = rep.worst_margin;
+    double placed = 0;
+    for (int c = 0; c < nchains; ++c) {
+      const auto& ch = C[size_t(c)];
+      live.chains_done += ch.done ? 1 : 0;
+      live.units += long(ch.unit_start.size());
+      const uint32_t off = uint32_t(p.atoms.size());
+      for (size_t i = 3; i < ch.pos.size(); ++i) {
+        Atom a;
+        a.element = ch.z[i], a.pos = ch.pos[i], a.mol = c + 1, a.id = int64_t(p.atoms.size() + 1);
+        p.atoms.push_back(a);
+        placed += element(ch.z[i]).mass;
+      }
+      for (size_t i = 3; i < ch.adj.size(); ++i)
+        for (int j : ch.adj[i])
+          if (j > int(i) && j >= 3) p.bonds.push_back({off + uint32_t(i - 3), off + uint32_t(j - 3), 1});
+    }
+    p.bonds_from_file = true;
+    live.density = placed / (6.02214076e23 * vol * 1e-24);
+    o.snapshot(p, live);
+  };
   while (finished < nchains) {
     for (int c = 0; c < nchains; ++c)
       if (!C[size_t(c)].done) advance(c);
     finished = int(std::count_if(C.begin(), C.end(), [](const ChainState& s) { return s.done; }));
     if (o.progress && !o.progress(finished, nchains, rep.restarts)) throw GrowError("cancelled");
+    if (o.snapshot && (finished == nchains || std::chrono::steady_clock::now() - last_snap > std::chrono::duration<double>(o.snapshot_seconds))) {
+      snapshot();
+      last_snap = std::chrono::steady_clock::now();
+    }
   }
 
   // assemble: per chain its atoms (without the ghosts), the bonds, and a hydrogen cap on each end

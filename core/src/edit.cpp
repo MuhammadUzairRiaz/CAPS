@@ -233,18 +233,67 @@ void delete_atoms(System& s, const std::vector<char>& remove) {
   s.bonds = std::move(bonds);
 }
 
+namespace {
+// Hydrogens an atom lacks: its usual valence (formal charge counted) less the bond orders it has (aromatic 1.5).
+int missing_h(const System& s, uint32_t i, const std::vector<double>& order_sum) {
+  const int z = s.atoms[i].element;
+  if (z == 1) return 0;
+  const int charge = int(std::lround(s.atoms[i].charge));
+  const int val = default_valence(z, std::fabs(s.atoms[i].charge - charge) < 0.05 ? charge : 0);
+  if (val == 0) return 0;
+  return std::max(0, val - int(std::lround(order_sum[i] - 1e-9)));
+}
+std::vector<double> order_sums(const System& s) {
+  std::vector<double> v(s.atoms.size(), 0.0);
+  for (const auto& b : s.bonds) {
+    const double o = b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;
+    v[b.i] += o, v[b.j] += o;
+  }
+  return v;
+}
+}  // namespace
+
+std::vector<HydrogenPlanRow> hydrogen_plan(const System& s, const std::vector<char>& atoms) {
+  const auto sums = order_sums(s);
+  const auto nb = neighbours(s);
+  std::vector<int> kind(s.atoms.size(), 3);   // 0 aromatic, 1 sp, 2 sp², 3 sp³
+  for (const auto& b : s.bonds) {
+    const int k = b.order == 4 ? 0 : b.order == 3 ? 1 : b.order == 2 ? 2 : 3;
+    kind[b.i] = std::min(kind[b.i], k), kind[b.j] = std::min(kind[b.j], k);
+  }
+  std::map<std::tuple<int, int, int, bool>, HydrogenPlanRow> rows;   // (kind, element, heavy neighbours, all C)
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+    if (s.atoms[i].element == 1 || (!atoms.empty() && (i >= atoms.size() || !atoms[i]))) continue;
+    int heavy = 0;
+    bool all_c = true;
+    for (uint32_t q : nb[i])
+      if (s.atoms[q].element != 1) ++heavy, all_c = all_c && s.atoms[q].element == 6;
+    auto& r = rows[{kind[i], s.atoms[i].element, heavy, all_c}];
+    if (r.label.empty()) {
+      static const char* hyb[] = {"aromatic", "sp", "sp²", "sp³"};
+      const std::string sym = element(s.atoms[i].element).symbol;
+      r.label = std::string(hyb[kind[i]]) + " " + sym + " with " + std::to_string(heavy) + (all_c && heavy ? " C" : " heavy") + (heavy == 1 ? " neighbour" : " neighbours");
+    }
+    ++r.atoms;
+    r.hydrogens += missing_h(s, i, sums);
+  }
+  std::vector<HydrogenPlanRow> out;
+  for (auto& [k, r] : rows) out.push_back(std::move(r));
+  return out;
+}
+
 int add_hydrogens(System& s, const std::vector<char>& atoms) {
   const size_t n = s.atoms.size();
   int added = 0;
+  const auto sums = order_sums(s);
+  const auto nb = neighbours(s);   // each atom's own bonds: the H added to earlier atoms do not change them
   for (size_t i = 0; i < n; ++i) {
     if (!atoms.empty() && (i >= atoms.size() || !atoms[i])) continue;
     const int z = s.atoms[i].element;
     if (z == 1) continue;
     const int charge = int(std::lround(s.atoms[i].charge));
-    const int val = default_valence(z, std::fabs(s.atoms[i].charge - charge) < 0.05 ? charge : 0);
-    const int missing = val - int(std::lround(bond_order_sum(s, uint32_t(i)) - 1e-9));
-    if (val == 0 || missing <= 0) continue;
-    const auto nb = neighbours(s);
+    const int missing = missing_h(s, uint32_t(i), sums);
+    if (missing <= 0) continue;
     std::vector<Vec3> dirs;
     for (uint32_t q : nb[i]) dirs.push_back(unitv(rel(s, uint32_t(i), q)));
     const int bonds_now = int(nb[i].size());
