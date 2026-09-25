@@ -19,7 +19,7 @@ public sealed partial class MainViewModel
 {
     public bool IsRender => _module == 19;
     public bool ShowAnalysisPanel => _module is not (19 or 20);
-    public bool IsAnalyzeRail => _module is 1 or 20 or 22;
+    public bool IsAnalyzeRail => _module is 1 or 20 or 22 or 23;
 
     public static readonly string[] RenderAntialias = ["1 sample", "4× (2 × 2)", "9× (3 × 3)", "16× (4 × 4)"];
     public static readonly string[] RenderFrameChoices = ["This frame", "All frames", "Every 10th frame"];

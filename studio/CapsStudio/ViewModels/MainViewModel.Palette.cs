@@ -55,6 +55,7 @@ public sealed partial class MainViewModel
             ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
             ("Blend builder", 16, "grow", "blend mixture nr br sbr tyre compound two polymers"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),
+            ("Compare", 23, "layers", "compare two cells seeds runs a b difference side by side"),
             ("Batch", 22, "layers", "batch many files seeds pipeline table results csv compare replicas"),
             ("Export data", 21, "download", "save write lammps data dump gromacs gro pdb xyz mol2 coefficients preview"),
             ("Visualize", 20, "eye", "pipeline steps modifiers ovito colour coding selection expression slice cluster rdf coordination data inspector particles bonds attributes tables"),
@@ -65,7 +66,7 @@ public sealed partial class MainViewModel
             AddCommand(new PaletteCommand
             {
                 Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
-                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else SetModule(m); },
+                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else SetModule(m); },
             });
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });
