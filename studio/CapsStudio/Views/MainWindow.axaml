@@ -1583,6 +1583,8 @@
       <pages:MechanicsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMechanics}" />
       <pages:ScatteringPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsScattering}" />
       <pages:FreeVolumePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFreeVolume}" />
+      <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
+      <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->
       <pages:SweepPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSweep}" />
       <!-- Project home (design/boards/ProjectHome) -->

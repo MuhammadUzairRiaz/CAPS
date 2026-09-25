@@ -46,4 +46,5 @@ public partial class SurfacePage : PageBase
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) Vm.UseCif(path);
     }
+    private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();
 }

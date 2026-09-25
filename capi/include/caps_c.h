@@ -349,6 +349,11 @@ int32_t caps_voids_pdb(caps_doc* d, const char* path);
    "seed":1}. The walls are molecule 1; the fluid is packed inside the pore. Report JSON {wall_atoms, fluid_molecules,
    width, pore_volume, fluid_density, dmin, notes[]}. NULL on error. */
 caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
+/* v20 Kremer–Grest melts (design/boards/CoarseGrained): {"chains":50, "beads":100, "density":0.85, "k_theta":0, "seed":1};
+   report {box, closest, r2_per_bond}. caps_kg_lammps writes STEM.data and STEM.in (push-off, then FENE + WCA; steps ≤ 0:
+   20 000 and 100 000). */
+caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap);
+int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps);
 /* v20 export dialog (design/boards/ExportDialog). options: {"bits":8|16, "dpi":600, "colour_profile":"srgb"|"none",
    "provenance":true, "source":"<the structure's path, hashed into the manifest>"}. 16-bit keeps the supersampled
    average at full precision. The manifest (caps-image/1.0: generator, created, source + sha256, frame, atoms, camera,

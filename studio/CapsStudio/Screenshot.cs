@@ -358,6 +358,11 @@ internal static class Screenshot
                 }
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "cg")   // cg=1: the coarse-grained builder
+            {
+                w.ViewModel.OpenCg();
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();
