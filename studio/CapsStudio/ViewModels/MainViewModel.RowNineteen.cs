@@ -216,6 +216,16 @@ public partial class MainViewModel
     public ObservableCollection<HydrogenRow> AhRows { get; } = new();
     private bool _ahKeep = true, _ahRelax = true;
     public bool AhKeep { get => _ahKeep; set { if (Set(ref _ahKeep, value)) _ = AhPreview(); } }
+    // protonation by pH (amino-acid residues, model pKa values): set on the document, used by the plan and add_h
+    private bool _ahPhOn;
+    private decimal _ahPh = 7.0m;
+    public bool AhPhOn { get => _ahPhOn; set { if (Set(ref _ahPhOn, value)) ApplyAhPh(); } }
+    public decimal AhPhD { get => _ahPh; set { if (Set(ref _ahPh, Math.Clamp(value, 0m, 14m)) && _ahPhOn) ApplyAhPh(); } }
+    private void ApplyAhPh()
+    {
+        try { _doc?.SetPh(_ahPhOn ? (double)_ahPh : -1); } catch { }
+        _ = AhPreview();
+    }
     public bool AhRelax { get => _ahRelax; set => Set(ref _ahRelax, value); }
     private string _ahSource = "", _ahOrders = "", _ahHeavy = "—", _ahAdded = "—", _ahCharge = "—", _ahBefore = "", _ahAfter = "", _ahStatus = "", _ahTotal = "";
     public string AhSource { get => _ahSource; private set => Set(ref _ahSource, value); }
@@ -271,7 +281,7 @@ public partial class MainViewModel
                     after.Select("{\"mode\":\"element\",\"pattern\":\"H\"}");
                     after.Edit("{\"op\":\"delete\",\"atoms\":\"selection\"}");
                 }
-                after.Edit("{\"op\":\"add_h\",\"atoms\":\"\"}");
+                after.Edit(_ahPhOn ? new JsonObject { ["op"] = "add_h", ["atoms"] = "", ["ph"] = (double)_ahPh }.ToJsonString() : "{\"op\":\"add_h\",\"atoms\":\"\"}");
             });
             var n1 = (int)after.Summary().Atoms;
             var added = n1 - n0;

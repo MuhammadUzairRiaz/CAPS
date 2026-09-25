@@ -1584,6 +1584,21 @@ internal static class SelfTest
             vm.RemoveGrowSmall(vm.GrowSmall[0]);
         }
 
+        // Add hydrogens by pH: a peptide built at pH 7, stripped of its hydrogens, gets them back at pH 7
+        {
+            var (pep, _) = CapsDocument.PeptideBuild("{\"sequence\":\"KDEHRYCA\",\"ph\":7,\"cleanup\":false}", "pH peptide");
+            var h0 = pep.Summary().Atoms;
+            pep.Select("{\"mode\":\"element\",\"pattern\":\"H\"}");
+            pep.Edit("{\"op\":\"delete\",\"atoms\":\"selection\"}");
+            var heavy = pep.Summary().Atoms;
+            pep.SetPh(7);
+            var plan = System.Text.Json.Nodes.JsonNode.Parse(pep.HydrogenPlan())!;
+            pep.Edit("{\"op\":\"add_h\",\"atoms\":\"\"}");
+            var h1 = pep.Summary().Atoms;
+            Check(h1 == h0, $"add hydrogens at pH 7: {heavy} heavy → {h1} atoms (built {h0}) · plan net formal charge {(double?)plan["net_charge"]}");
+            pep.Dispose();
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

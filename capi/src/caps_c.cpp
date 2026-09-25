@@ -122,6 +122,7 @@ struct caps_doc {
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
+  double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
@@ -3131,6 +3132,10 @@ extern "C" int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap) {
   }
 }
 
+extern "C" void caps_set_ph(caps_doc* d, double ph) {
+  if (d) d->ph = ph;
+}
+
 extern "C" int32_t caps_set_restraints(caps_doc* d, const char* json) {
   if (!d) return -1;
   int32_t n = 0;
@@ -3932,10 +3937,11 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
       const size_t before = s.atoms.size();
       if (needs_geometry_orders(s)) caps::orders_from_geometry(s);   // heavy atoms only, orders never assigned
-      const int k = caps::add_hydrogens(s, m);
+      const double ph = j.has("ph") ? j["ph"].number() : d->ph;
+      const int k = ph >= 0 ? caps::add_hydrogens_at_ph(s, ph, m) : caps::add_hydrogens(s, m);
       if (k == 0) throw std::invalid_argument("no atom lacks hydrogens");
       for (size_t i = before; i < s.atoms.size(); ++i) added.push_back(double(i));
-      what = "Add " + std::to_string(k) + " hydrogens";
+      what = "Add " + std::to_string(k) + " hydrogens" + (ph >= 0 ? " at pH " + std::to_string(ph).substr(0, 4) : "");
     } else if (op == "invert") {
       const uint32_t c = uint32_t(j.num("centre", -1));
       caps::invert_centre(s, c);
@@ -5880,7 +5886,11 @@ extern "C" int32_t caps_hydrogen_plan(caps_doc* d, char* out, int32_t cap) {
     caps::System perceived;
     const bool geo = needs_geometry_orders(d->frame);
     if (geo) perceived = d->frame, caps::orders_from_geometry(perceived);
-    const auto& s = geo ? perceived : d->frame;
+    if (d->ph >= 0) {   // residues protonated at the pH first: their formal charges change what each atom lacks
+      if (!geo) perceived = d->frame;
+      caps::protonate_residues(perceived, d->ph);
+    }
+    const auto& s = geo || d->ph >= 0 ? perceived : d->frame;
     std::vector<char> sel;
     if (d->selection.size() == s.atoms.size() && std::any_of(d->selection.begin(), d->selection.end(), [](char c) { return c != 0; })) sel = d->selection;
     const auto rows = caps::hydrogen_plan(s, sel);

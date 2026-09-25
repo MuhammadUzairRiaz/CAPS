@@ -41,8 +41,11 @@
                 <TextBlock Text="OPTIONS" Classes="h3" />
                 <CheckBox Classes="toggle" Content="Keep hydrogens already present" IsChecked="{Binding AhKeep}" />
                 <CheckBox Classes="toggle" Content="Relax new H only" IsChecked="{Binding AhRelax}" ToolTip.Tip="UFF, the heavy atoms held" />
-                <CheckBox Classes="toggle" Content="Protonation by pH (biomolecules)" IsEnabled="False" ToolTip.ShowOnDisabled="True"
-                          ToolTip.Tip="Not here: the Biomolecule builder protonates residues by pH; these rules give neutral valences" />
+                <Grid ColumnDefinitions="*,80" ColumnSpacing="8">
+                  <CheckBox Classes="toggle" Content="Protonation by pH (amino acids)" IsChecked="{Binding AhPhOn}"
+                            ToolTip.Tip="Asp, Glu, His, Cys, Tyr, Lys, Arg and the termini charged at the pH from model pKa values (as the Biomolecule builder); no shifts from the protein's environment" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding AhPhD}" Minimum="0" Maximum="14" Increment="0.5" FormatString="0.0" IsEnabled="{Binding AhPhOn}" />
+                </Grid>
                 <DockPanel><TextBlock DockPanel.Dock="Right" Text="built-in rules" FontSize="12" /><TextBlock Text="Tool" Classes="muted" /></DockPanel>
               </StackPanel>
             </Border>
