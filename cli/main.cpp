@@ -65,6 +65,8 @@ int usage() {
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
                "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
+               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT]\n"
+               "                                   a saved pipeline over many inputs: one row of attributes per input\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -104,6 +106,40 @@ int usage() {
                "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in]] [--overlay USER.json] [--types TYPES.txt] [--charges keep|types|gasteiger]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
+}
+
+// Files matching a pattern with * and ? in any path segment (cells/seed*/PS_melt.data), sorted.
+bool wild_match(const char* p, const char* t) {
+  if (!*p) return !*t;
+  if (*p == '*') return wild_match(p + 1, t) || (*t && wild_match(p, t + 1));
+  return *t && (*p == '?' || *p == *t) && wild_match(p + 1, t + 1);
+}
+std::vector<std::string> glob_files(const std::string& pattern) {
+  namespace fs = std::filesystem;
+  if (pattern.find_first_of("*?") == std::string::npos) return fs::exists(pattern) ? std::vector<std::string>{pattern} : std::vector<std::string>{};
+  const fs::path full = fs::absolute(pattern);
+  std::vector<fs::path> current = {full.root_path()};
+  std::vector<std::string> parts;
+  for (const auto& part : full.relative_path()) parts.push_back(part.string());
+  for (size_t k = 0; k < parts.size(); ++k) {
+    std::vector<fs::path> next;
+    const bool last = k + 1 == parts.size();
+    for (const auto& dir : current) {
+      std::error_code ec;
+      if (parts[k].find_first_of("*?") == std::string::npos) {
+        const fs::path p = dir / parts[k];
+        if (last ? fs::is_regular_file(p, ec) : fs::is_directory(p, ec)) next.push_back(p);
+        continue;
+      }
+      for (const auto& e : fs::directory_iterator(dir, ec))
+        if ((last ? e.is_regular_file() : e.is_directory()) && wild_match(parts[k].c_str(), e.path().filename().string().c_str())) next.push_back(e.path());
+    }
+    std::sort(next.begin(), next.end());
+    current = std::move(next);
+  }
+  std::vector<std::string> out;
+  for (const auto& p : current) out.push_back(p.string());
+  return out;
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -510,6 +546,65 @@ int main(int argc, char** argv) {
       std::fprintf(stderr, "caps surface: %s\n", e.what());
       return 1;
     }
+  }
+  if (cmd == "run") {   // a saved pipeline over many inputs: caps run PIPE.yaml --input 'runs/*/X.lammpstrj' [--frame first|last] [--csv OUT]
+    if (pos.empty()) return usage();
+    std::ifstream pf(pos[0]);
+    if (!pf) throw std::runtime_error("cannot read " + pos[0]);
+    const std::string text((std::istreambuf_iterator<char>(pf)), std::istreambuf_iterator<char>());
+    std::string name, file, topo;
+    const Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
+    const std::string pattern = o.count("--input") ? o["--input"] : file;
+    const auto inputs = glob_files(pattern);
+    if (inputs.empty()) throw std::runtime_error("no files match " + pattern);
+    const bool last = !o.count("--frame") || o["--frame"] != "first";
+    std::vector<std::string> keys;
+    std::vector<std::pair<std::string, std::map<std::string, double>>> rows;
+    for (const auto& in : inputs) {
+      try {
+        std::string tp = o.count("--topology") ? o["--topology"] : "";
+        if (tp.empty() && (in.size() > 10 && (in.rfind(".lammpstrj") == in.size() - 10 || in.rfind(".dump") == in.size() - 5))) {
+          const auto d = std::filesystem::path(in).replace_extension(".data");
+          if (std::filesystem::exists(d)) tp = d.string();
+        }
+        const Trajectory t = open_file(in, tp);
+        const int fr = last ? int(t.frames()) - 1 : 0;
+        System f0 = t.frame(size_t(fr));
+        if (!f0.unwrapped && f0.cell.valid()) make_molecules_whole(f0);
+        const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
+        std::map<std::string, double> m;
+        for (const auto& [k, v] : st.attributes) {
+          m[k] = v;
+          if (std::find(keys.begin(), keys.end(), k) == keys.end()) keys.push_back(k);
+        }
+        rows.push_back({in, m});
+        std::fprintf(stderr, "done    %s\n", in.c_str());
+      } catch (const std::exception& e) {
+        rows.push_back({in, {}});
+        std::fprintf(stderr, "failed  %s · %s\n", in.c_str(), e.what());
+      }
+    }
+    std::string csv = "input,state";
+    for (const auto& k : keys) csv += "," + k;
+    csv += "\n";
+    char b[40];
+    for (const auto& [in, m] : rows) {
+      csv += in + (m.empty() ? ",failed" : ",done");
+      for (const auto& k : keys) {
+        auto it = m.find(k);
+        if (it == m.end()) csv += ",";
+        else { std::snprintf(b, sizeof b, ",%.10g", it->second); csv += b; }
+      }
+      csv += "\n";
+    }
+    if (o.count("--csv")) {
+      std::ofstream out(o["--csv"]);
+      out << csv;
+      std::fprintf(stderr, "wrote %s\n", o["--csv"].c_str());
+    } else {
+      std::fputs(csv.c_str(), stdout);
+    }
+    return 0;
   }
   if (cmd == "reproduce") {   // a figure bundle: rebuild its data from its input and pipeline, compare the hashes
     std::vector<std::string> report;
@@ -1316,7 +1411,8 @@ int main(int argc, char** argv) {
       const int fr = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
       if (fr < 0 || size_t(fr) >= t.frames()) throw std::runtime_error("frame out of range");
       const System f0 = t.frame(size_t(fr));
-      const auto st = run_pipeline(f0, pipeline_from_json(Json::parse(text)), fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
+      const Pipeline pl = text.rfind("caps_pipeline", 0) == 0 || text.find("\ncaps_pipeline") != std::string::npos ? pipeline_from_yaml(text) : pipeline_from_json(Json::parse(text));
+      const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
       for (size_t k = st.steps.size(); k-- > 0;)
         std::printf("%-8s %-22s %s\n", st.steps[k].level.c_str(), st.steps[k].title.c_str(), st.steps[k].summary.c_str());
       for (const auto& [k, v] : st.attributes) std::printf("  %-34s %.6g\n", k.c_str(), v);

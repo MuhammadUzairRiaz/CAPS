@@ -106,6 +106,9 @@ struct Pipeline {
 // {"steps": [{"type": …, "enabled": …, <parameters>}]} or the bare array.
 Pipeline pipeline_from_json(const Json& j);
 Json pipeline_to_json(const Pipeline& p);
+// YAML (design/boards/SavePipeline): steps in the order they run, one flow mapping each; name and source optional.
+std::string pipeline_to_yaml(const Pipeline& p, const std::string& name = "", const std::string& file = "", const std::string& topology = "");
+Pipeline pipeline_from_yaml(const std::string& text, std::string* name = nullptr, std::string* file = nullptr, std::string* topology = nullptr);
 // Types known to run_pipeline, with a title and a one-line description each.
 std::vector<std::array<std::string, 3>> pipeline_step_catalogue();
 std::string step_title(const std::string& type);

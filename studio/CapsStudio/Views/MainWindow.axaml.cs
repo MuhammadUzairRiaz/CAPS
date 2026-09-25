@@ -748,7 +748,8 @@ public partial class MainWindow : Window
         {
             ItemsSource = new[]
             {
-                new MenuItem { Header = "Save pipeline…", Command = new RelayCommand(SavePipelineAsync) },
+                new MenuItem { Header = "Save pipeline (YAML)…", Command = new RelayCommand(() => { _vm.OpenSavePipeline(); return Task.CompletedTask; }) },
+                new MenuItem { Header = "Save pipeline as JSON…", Command = new RelayCommand(SavePipelineAsync) },
                 new MenuItem { Header = "Load pipeline…", Command = new RelayCommand(LoadPipelineAsync) },
                 new MenuItem { Header = "Colour by… (gallery)", Command = new RelayCommand(() => { _vm.OpenColourBy(); return Task.CompletedTask; }) },
                 new MenuItem { Header = "Compare with another file…", Command = new RelayCommand(() => { _vm.OpenCompare(); return Task.CompletedTask; }) },
@@ -777,7 +778,7 @@ public partial class MainWindow : Window
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Load pipeline", AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("CAPS pipeline (JSON)") { Patterns = ["*.json"] }],
+            FileTypeFilter = [new FilePickerFileType("CAPS pipeline") { Patterns = ["*.yaml", "*.yml", "*.json"] }],
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) _vm.LoadPipeline(path);
     }

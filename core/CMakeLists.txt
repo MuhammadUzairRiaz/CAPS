@@ -36,6 +36,7 @@ add_library(caps_core STATIC
   src/pipeline.cpp
   src/bundle.cpp
   src/pipeline_expr.cpp
+  src/pipeline_yaml.cpp
   src/embed.cpp
   src/bench.cpp
   src/polymer.cpp

@@ -2421,6 +2421,31 @@ extern "C" int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyz
   }
 }
 
+extern "C" int32_t caps_pipeline_to_yaml(const char* json, const char* name, const char* file, const char* topology, char* yaml, int32_t cap) {
+  try {
+    const auto p = caps::pipeline_from_json(caps::Json::parse(json && *json ? json : "[]"));
+    return report_out(caps::pipeline_to_yaml(p, name ? name : "", file ? file : "", topology ? topology : ""), yaml, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_pipeline_from_yaml(const char* yaml, char* json, int32_t cap) {
+  try {
+    std::string name, file, topo;
+    const auto p = caps::pipeline_from_yaml(yaml ? yaml : "", &name, &file, &topo);
+    caps::Json j = caps::pipeline_to_json(p);
+    j["name"] = name;
+    j["file"] = file;
+    j["topology"] = topo;
+    return report_out(j.dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_pipeline_catalogue(char* json, int32_t cap) {
   caps::Json a = caps::Json::array();
   for (const auto& [type, title, about] : caps::pipeline_step_catalogue()) {

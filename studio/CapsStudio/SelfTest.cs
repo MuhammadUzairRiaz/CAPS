@@ -589,6 +589,23 @@ internal static class SelfTest
                   $"open preview: {j["format"]} · {j["frames"]} frames · {g["format"]} {g["atoms"]} atoms");
         }
 
+        // Save pipeline (SavePipeline): YAML out, and back into Visualize
+        {
+            vm.ClearPipeline();
+            vm.AddStep("coordination");
+            vm.AddStep("colour_coding");
+            vm.OpenSavePipeline();
+            var yamlPath = Path.Combine(outDir, "caps-selftest.caps-pipeline.yaml");
+            vm.SavePipelineYaml(yamlPath);
+            var jsonBefore = vm.PipelineJson();
+            vm.ClearPipeline();
+            vm.LoadPipeline(yamlPath);
+            Check(File.ReadAllText(yamlPath).StartsWith("caps_pipeline: 1") && vm.PipelineRows.Count == 2 && vm.PipelineJson() == jsonBefore && vm.PipelineYamlHash.Length == 64,
+                  $"save pipeline: {vm.PipelineRows.Count} steps back from YAML · sha256 {vm.PipelineYamlHash[..12]}");
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
