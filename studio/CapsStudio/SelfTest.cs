@@ -764,6 +764,33 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Project home: two seed-only replicas saved with provenance, the methods written for them
+        {
+            var proj = Path.Combine(outDir, "caps-selftest-project");
+            if (Directory.Exists(proj)) Directory.Delete(proj, true);
+            Directory.CreateDirectory(proj);
+            foreach (var (name, seed) in new[] { ("cell_a.data", 11UL), ("cell_b.data", 12UL) })
+            {
+                using var d = CapsDocument.Open(Path.Combine(dir, "ps_melt.data"));
+                d.Edit($"{{\"op\":\"place\",\"smiles\":\"O\",\"name\":\"Water {seed}\"}}");
+                d.Save(Path.Combine(proj, name));
+            }
+            // make b differ from a only by a seed: rewrite its sidecar's first place name back and add rng
+            var sa = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(proj, "cell_a.data.provenance.json")))!;
+            var sb2 = System.Text.Json.Nodes.JsonNode.Parse(sa.ToJsonString())!;
+            sa["steps"]![1]!["rng"] = "mt19937-64 · seed 11";
+            sb2["steps"]![1]!["rng"] = "mt19937-64 · seed 12";
+            File.WriteAllText(Path.Combine(proj, "cell_a.data.provenance.json"), sa.ToJsonString());
+            File.WriteAllText(Path.Combine(proj, "cell_b.data.provenance.json"), sb2.ToJsonString());
+            vm.OpenProject(proj);
+            for (int k = 0; k < 40; k++) { Thread.Sleep(20); }
+            var zip = Path.Combine(outDir, "caps-selftest-project.zip");
+            var shared = vm.ShareProject(zip);
+            Check(vm.IsProject && vm.ProjectDocs.Count == 2 && vm.ProjectDocs.All(d => d.HasProvenance) && vm.ProjectMethods.Contains("2 independent replicas") && File.Exists(zip),
+                  $"project: {vm.ProjectDocs.Count} structures · {vm.ProjectMethodsFor} · {shared}");
+            vm.SetModule(8);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

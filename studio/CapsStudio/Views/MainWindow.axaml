@@ -1303,6 +1303,9 @@
                     <Button Classes="small" Click="OnExportDialog" HorizontalAlignment="Left" ToolTip.Tip="4K, journal and poster sizes, 16-bit PNG, provenance in the file; movies of the frames or a turntable (⌘E)">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Image or movie…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
+                    <Button Classes="small" Click="OnProjectPage" HorizontalAlignment="Left" ToolTip.Tip="This folder's structures, their status and a methods section from provenance">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="folder" Size="13" VerticalAlignment="Center" /><TextBlock Text="Project home…" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <Button Classes="small" Click="OnProvenancePage" HorizontalAlignment="Left" ToolTip.Tip="Every step that produced this structure: parameters, seeds, citations, approximations; BibTeX">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="13" VerticalAlignment="Center" /><TextBlock Text="Provenance…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
@@ -1580,6 +1583,8 @@
       <pages:MechanicsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMechanics}" />
       <pages:ScatteringPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsScattering}" />
       <pages:FreeVolumePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFreeVolume}" />
+      <!-- Project home (design/boards/ProjectHome) -->
+      <pages:ProjectPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsProject}" />
       <!-- Theory manual (design/boards/TheoryManual) -->
       <pages:ManualPageView Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsManual}" />
       <!-- Provenance (design/boards/Provenance) -->

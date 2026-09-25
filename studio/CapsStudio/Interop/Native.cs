@@ -229,6 +229,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_voids")] public static extern int Voids(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_voids_pdb")] public static extern int VoidsPdb(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
     [DllImport(Lib, EntryPoint = "caps_citation_text")] public static extern int CitationText([MarshalAs(UnmanagedType.LPUTF8Str)] string key, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_methods_text")] public static extern int MethodsText([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, [MarshalAs(UnmanagedType.LPUTF8Str)] string? replicas, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -387,6 +388,7 @@ public sealed class CapsDocument : IDisposable
     public static string ProvenanceCompare(string a, string b) => Sized((x, c) => Native.ProvenanceCompare(a, b, x, c));
     public static string ProvenanceBibtex(string manifest) => Sized((b, c) => Native.ProvenanceBibtex(manifest, b, c));
     public static string CitationText(string key) => Sized((b, c) => Native.CitationText(key, b, c));
+    public static string MethodsText(string manifest, string? replicas) => Sized((b, c) => Native.MethodsText(manifest, replicas, b, c));
     /// <summary>The PNG's text chunks (a provenance manifest among them) as a JSON object.</summary>
     public static string PngText(string path) => Sized((b, c) => Native.PngText(path, b, c));
 

@@ -60,7 +60,7 @@ int usage() {
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
                "  caps convert FILE OUT.data|OUT.xyz|OUT.pdb [--topology DATA]\n"
-               "  caps provenance FILE [--json | --bibtex] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)\n"
+               "  caps provenance FILE [--json | --bibtex | --methods] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)\n"
                "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
@@ -167,7 +167,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--vacuum" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--vacuum" || a == "--methods" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -407,6 +407,12 @@ int main(int argc, char** argv) {
     if (!m) { std::fprintf(stderr, "caps provenance: no %s\n", sidecar_path(pos[0]).c_str()); return 1; }
     if (o.count("--json")) { std::printf("%s\n", manifest_json(*m).dump(2).c_str()); return 0; }
     if (o.count("--bibtex")) { std::printf("%s", bibtex(all_cites(*m)).c_str()); return 0; }
+    if (o.count("--methods")) {
+      std::vector<std::string> refs;
+      std::printf("%s\n\n", methods_text(*m, &refs).c_str());
+      for (size_t k = 0; k < refs.size(); ++k) std::printf("[%zu] %s\n", k + 1, refs[k].c_str());
+      return 0;
+    }
     if (auto c = o.find("--compare"); c != o.end()) {
       const auto other = read_manifest(c->second);
       if (!other) { std::fprintf(stderr, "caps provenance: no %s\n", sidecar_path(c->second).c_str()); return 1; }

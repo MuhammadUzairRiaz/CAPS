@@ -912,6 +912,7 @@ public partial class MainWindow : Window
 
     private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
     private void OnProvenancePage(object? s, RoutedEventArgs e) => _vm.OpenProvenance();
+    private void OnProjectPage(object? s, RoutedEventArgs e) => _vm.OpenProject();
 
     /// <summary>Compact layout: rail and toolbar icons only, the inspector and project as drawers, the dock folded.</summary>
     private void ApplyCompact()

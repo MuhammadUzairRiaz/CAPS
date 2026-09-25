@@ -249,3 +249,28 @@ TEST(Provenance, CitationTextReadsTheEntries) {
   EXPECT_NE(citation_text("prince2004").find("(ed.)"), std::string::npos);
   EXPECT_EQ(citation_text("nobody2099"), "");
 }
+
+TEST(Provenance, MethodsTextNumbersItsReferences) {
+  Manifest m;
+  ProvStep r;
+  r.engine = "relax.lbfgs";
+  r.params = {{"minimiser", "L-BFGS"}, {"|F|max", "0.5 kcal/mol/Å"}, {"push-off", "on"}};
+  r.cites = {"liu1989", "auhl2003", "fennell2006"};
+  r.approximations = {{"van der Waals", "cut-off 12 Å + tail correction"}, {"Electrostatics", "damped shifted force · cut-off 12 Å"}};
+  ProvStep d;
+  d.engine = "dynamics.npt";
+  d.params = {{"length", "1000 ps · 1000000 steps of 1 fs"}, {"temperature", "300 K"}, {"thermostat", "Bussi velocity rescaling · τ 100 fs"},
+              {"barostat", "stochastic cell rescaling · 1 atm · τ 1000 fs"}};
+  d.cites = {"swope1982", "bussi2007", "bernetti2020", "fennell2006"};
+  m.steps = {r, d};
+  std::vector<std::string> refs;
+  const std::string t = methods_text(m, &refs, {m});
+  EXPECT_NE(t.find("minimised with L-BFGS [1]"), std::string::npos) << t;
+  EXPECT_NE(t.find("push-off stages [2]"), std::string::npos) << t;
+  EXPECT_NE(t.find("(velocity Verlet [3], 1 fs time step) was run for 1000 ps at 300 K"), std::string::npos) << t;
+  EXPECT_NE(t.find("truncated at 12 Å with analytic tail corrections"), std::string::npos) << t;
+  EXPECT_NE(t.find("damped shifted force method [6] (cut-off 12 Å)"), std::string::npos) << t;
+  EXPECT_NE(t.find("2 independent replicas"), std::string::npos) << t;
+  ASSERT_EQ(refs.size(), 6u);
+  EXPECT_EQ(refs[0].rfind("Liu, D. C.", 0), 0u);
+}
