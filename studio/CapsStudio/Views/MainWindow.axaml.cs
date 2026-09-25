@@ -67,6 +67,11 @@ public partial class MainWindow : Window
         _vm.RenderRequested += RequestRender;
         _vm.PropertyChanged += (_, e) =>
         {
+            if (e.PropertyName == nameof(MainViewModel.HasFocusAtom) && _vm.HasFocusAtom && !_focusTabShown)
+            {
+                _focusTabShown = true;   // the first walk shows the neighbour table; later the user's tab choice stays
+                AnalysisTabs.SelectedItem = FocusTab;
+            }
             if (e.PropertyName == nameof(MainViewModel.ViewIsLight))
             {
                 ViewHost.Background = _vm.ViewIsLight ? Avalonia.Media.Brushes.White : (Avalonia.Media.IBrush)this.FindResource("Bg0B")!;
@@ -205,6 +210,8 @@ public partial class MainWindow : Window
         var files = e.Data.GetFiles();
         if (files != null) OpenMany(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
+
+    private bool _focusTabShown;
 
     public void OnOpenSample(object? sender, RoutedEventArgs e) => OpenSample("ps");
 
@@ -500,6 +507,27 @@ public partial class MainWindow : Window
         }
         if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control && _vm.Document != null) { _vm.CloseDocument(); e.Handled = true; return; }
         if (_vm.Document == null || _vm.Busy || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
+        // Keyboard walk (design/boards/VisAccess): in the 3D view, or anywhere once an atom has the focus ring
+        var focused = FocusManager?.GetFocusedElement();
+        var walk = _vm.IsStudio && (focused == ViewHost || (_vm.HasFocusAtom && focused is not (ListBox or Slider or TreeView or TabItem)));
+        if (e.Key == Key.A && e.KeyModifiers == ((OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) | KeyModifiers.Shift))
+        {
+            _vm.AnnounceSelection(); e.Handled = true; return;
+        }
+        if (walk && e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
+        {
+            switch (e.Key)
+            {
+                case Key.Up: _vm.FocusStep(-1); e.Handled = true; return;
+                case Key.Down: _vm.FocusStep(1); e.Handled = true; return;
+                case Key.OemOpenBrackets: _vm.FocusMolecule(-1); e.Handled = true; return;
+                case Key.OemCloseBrackets: _vm.FocusMolecule(1); e.Handled = true; return;
+                case Key.B: _vm.FocusBond(); e.Handled = true; return;
+                case Key.M when _vm.HasFocusAtom: _vm.FocusMeasure(); e.Handled = true; return;
+                case Key.Space when _vm.HasFocusAtom: _vm.FocusSelect(); e.Handled = true; return;
+                case Key.Escape when _vm.HasFocusAtom: _vm.ClearFocus(); e.Handled = true; return;
+            }
+        }
         switch (e.Key)
         {
             case Key.Left: _vm.StepFrame(-1); e.Handled = true; break;

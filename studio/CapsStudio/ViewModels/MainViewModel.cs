@@ -218,6 +218,7 @@ public sealed partial class MainViewModel : ObservableObject
             RefreshRdf();
             RefreshMolecules();
             RefreshLegend();
+            FocusOnFrame();
             RenderRequested?.Invoke();
         }
     }
@@ -1421,6 +1422,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_wrap) doc.SetWrap(true);
         Document?.Dispose();
         Document = doc;
+        ClearFocus();
         Field.Reset();
         Analyze.Load("");
         SyncHeld();
@@ -1590,6 +1592,7 @@ public sealed partial class MainViewModel : ObservableObject
         Highlight1 = _selection.Count > 1 ? _selection[1] : -1,
         Highlight2 = _selection.Count > 2 ? _selection[2] : -1,
         Highlight3 = _selection.Count > 3 ? _selection[3] : -1,
+        Focus = _focusAtom >= 0 ? _focusAtom + 1 : 0,
     };
 
     /// <summary>The Field page's view: coloured by force-field type, ball and stick, the selected row's atom highlighted.</summary>

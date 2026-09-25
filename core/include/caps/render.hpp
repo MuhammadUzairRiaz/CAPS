@@ -35,6 +35,7 @@ struct RenderOptions {
   bool depth_cue = true;
   bool show_cell = true;
   std::vector<int> highlight;          // atom indices drawn with a selection ring
+  int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
 };
 
 struct Image {
