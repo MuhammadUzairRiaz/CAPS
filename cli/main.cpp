@@ -878,7 +878,7 @@ int main(int argc, char** argv) {
           write_lammps_data_ff(s, f, eo, o["-o"]);
           std::printf("wrote %s\n", o["-o"].c_str());
           if (o.count("--lammps-input")) {   // the LAMMPS commands that reproduce this energy with the data file
-            write_lammps_input(s, f, eo, o["-o"], o["--lammps-input"]);
+            write_lammps_input(s, f, eo, o["-o"], o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0);
             std::printf("wrote %s\n", o["--lammps-input"].c_str());
           }
         }

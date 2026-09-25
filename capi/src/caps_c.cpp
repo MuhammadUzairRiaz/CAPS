@@ -494,7 +494,7 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
     if (d->field && d->field->complete) ff = *d->field->ff;
     else ff = default_ff(d->frame);
     const auto tmp = std::filesystem::temp_directory_path() / ("caps_input_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + ".in");
-    caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string());
+    caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string(), d->held_mol);
     std::ifstream in(tmp);
     std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();

@@ -94,6 +94,8 @@ double max_force(const std::vector<double>& f);
 // FieldError for terms LAMMPS cannot reproduce exactly (separate 1-4 LJ parameters, non-planar cvff impropers).
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path);
 // A LAMMPS input script for that data file: styles, special_bonds, read_data, run 0 with every energy term.
-void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path);
+// held_mol > 0: that molecule is held in place (group, zero velocity, fix setforce), as CAPS holds an interface's surface.
+void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
+                        int64_t held_mol = 0);
 
 }  // namespace caps

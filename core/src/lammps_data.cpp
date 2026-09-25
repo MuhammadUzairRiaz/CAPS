@@ -364,7 +364,8 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   }
 }
 
-void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path) {
+void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
+                        int64_t held_mol) {
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
@@ -377,6 +378,11 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   char b[160];
   std::snprintf(b, sizeof b, "neighbor %.3g bin\ncomm_modify cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
+  if (held_mol > 0)
+    out << "# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
+        << "group held molecule " << held_mol << "\n"
+        << "velocity held set 0.0 0.0 0.0\n"
+        << "fix held_in_place held setforce 0.0 0.0 0.0\n";
   out << "thermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press\n"
          "thermo_modify format float %.10f\n"
          "run 0\n";
