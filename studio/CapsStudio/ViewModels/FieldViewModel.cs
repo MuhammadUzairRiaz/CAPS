@@ -58,7 +58,7 @@ public sealed class FieldMissingRow
 
 /// <summary>CAPS Field: choose a force field, see why every atom has its type, override types, and complete missing
 /// parameters (imported, or entered by hand and flagged estimated).</summary>
-public sealed class FieldViewModel : ObservableObject
+public sealed partial class FieldViewModel : ObservableObject
 {
     private readonly Func<CapsDocument?> _doc;
     private readonly Action<string> _status;
@@ -307,6 +307,7 @@ public sealed class FieldViewModel : ObservableObject
             var complete = await Task.Run(() => action(doc));
             LoadReport(doc);
             _changed();
+            _ = CheckCoverage(auto: true);   // when this force field cannot describe the structure: why, and which can
             _status(complete ? $"{what} · {_ffName}: complete" : $"{what} · {_ffName}: {UntypedText}, {MissingText}");
         }
         catch (Exception ex) { Log = what + " failed: " + ex.Message; _status(Log); }
@@ -457,6 +458,11 @@ public sealed class FieldViewModel : ObservableObject
             Missing.Add(new FieldMissingRow { Kind = "atom type", Title = $"Atom type · {row.Atom}", Detail = "No typing rule matched: set its type by hand", Atom = row.Index });
         foreach (var m in missing.Take(500))
         {
+            if (m.StartsWith("charges:", StringComparison.Ordinal))   // the physics check, not a parameter to enter
+            {
+                Missing.Add(new FieldMissingRow { Kind = "charges", Title = "Charges do not balance", Detail = m["charges:".Length..].Trim() });
+                continue;
+            }
             // "bond c3(c) ca": the kind, then each type with its lookup name in parentheses when different
             var kind = m.StartsWith("bond increment", StringComparison.Ordinal) ? "bond increment" : m.Split(' ')[0];
             var rest = m[kind.Length..].Trim();

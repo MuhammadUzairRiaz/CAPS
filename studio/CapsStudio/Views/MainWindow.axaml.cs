@@ -1178,4 +1178,14 @@ public partial class MainWindow : Window
         _vm.SetViewAspect(ViewHost.Bounds.Width, ViewHost.Bounds.Height);
         _vm.OpenFigure();
     }
+    // Field › coverage: select the atoms a force field has no type for, assign a force field that covers the structure
+    private void OnUntypedSelect(object? s, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is ViewModels.UntypedGroupRow g) ViewModel.Field.SelectGroup(g);
+    }
+    private async void OnUseForceField(object? s, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is string id) await ViewModel.Field.UseForceField(id);
+    }
+    private async void OnCheckCoverage(object? s, Avalonia.Interactivity.RoutedEventArgs e) => await ViewModel.Field.CheckCoverage();
 }
