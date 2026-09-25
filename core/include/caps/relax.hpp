@@ -96,11 +96,29 @@ double max_force(const std::vector<double>& f);
 // with the same energy; kinds that mix forms (class II with class I, Morse with harmonic bonds, ...) become hybrid
 // styles with "skip" lines in the class II sections. The header lists the LAMMPS commands that go with it. Throws
 // FieldError for terms LAMMPS cannot reproduce exactly (separate 1-4 LJ parameters, non-planar cvff impropers).
-void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path);
-// A LAMMPS input script for that data file: styles, special_bonds, read_data, run 0 with every energy term.
-// held_mol > 0: that molecule is held in place (group, zero velocity, fix setforce), as CAPS holds an interface's surface.
+// pair_coeffs false: the pair coefficients go in the input script instead (write_lammps_input with pair_coeffs), and
+// the data file holds the structure, masses and bonded coefficients only.
+void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true);
+
+// How a LAMMPS input ends. Check: a single point with every energy term printed (the parity benches). Otherwise a
+// protocol: an optional conjugate-gradient minimisation, then NVT or NPT (Nosé–Hoover, LAMMPS's standard; CAPS's own
+// runs use Bussi and stochastic cell rescaling), with thermo output, a dump and the final structure written.
+struct LammpsRun {
+  enum class Kind { Check, None, Minimize, NVT, NPT } kind = Kind::Check;
+  bool minimize_first = true;
+  double temperature = 300, pressure = 1.0;   // K, atm
+  double dt = 1.0;                             // fs
+  int64_t steps = 100000;
+  double tdamp = 100, pdamp = 1000;            // fs
+  int thermo_every = 1000, dump_every = 5000;
+  uint64_t seed = 4928459;
+};
+// A LAMMPS input script for that data file: units, styles, special_bonds, read_data (as data_path is given), the pair
+// coefficients when pair_coeffs (every i-j pair written out: nothing left to LAMMPS's mixing), neighbour settings, then
+// the run section. held_mol > 0: that molecule is held in place (group, zero velocity, fix setforce), as CAPS holds an
+// interface's surface.
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
-                        int64_t held_mol = 0);
+                        int64_t held_mol = 0, bool pair_coeffs = false, const LammpsRun& run = {});
 
 // GROMACS files with the force field: STEM.top (every term in the GROMACS function with the same energy; every
 // Lennard-Jones type pair and 1-4 pair written out, CAPS's exclusions listed), STEM.gro (nm, 8 decimals; molecules made

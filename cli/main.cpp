@@ -125,7 +125,7 @@ int usage() {
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
-               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges keep|types|gasteiger]\n"
+               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --steps N]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges keep|types|gasteiger]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
 }
@@ -1373,10 +1373,24 @@ int main(int argc, char** argv) {
         if (o.count("-o")) {
           for (size_t i = 0; i < s.atoms.size(); ++i) { s.atoms[i].charge = f.charge[i]; s.atoms[i].name = f.atom_type[i]; }
           s.has_charges = true;
-          write_lammps_data_ff(s, f, eo, o["-o"]);
+          // with an input script beside it, the pair coefficients go in the script and the data file stays plain
+          const bool with_in = o.count("--lammps-input") > 0;
+          write_lammps_data_ff(s, f, eo, o["-o"], !with_in);
           std::printf("wrote %s\n", o["-o"].c_str());
-          if (o.count("--lammps-input")) {   // the LAMMPS commands that reproduce this energy with the data file
-            write_lammps_input(s, f, eo, o["-o"], o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0);
+          if (with_in) {   // the LAMMPS commands that reproduce this energy with the data file
+            namespace fs = std::filesystem;
+            const fs::path dp(o["-o"]), ip(o["--lammps-input"]);
+            // read_data as the script will see it: the file name when both sit in one folder
+            const std::string rel = fs::absolute(dp).parent_path() == fs::absolute(ip).parent_path() ? dp.filename().string() : o["-o"];
+            LammpsRun run;   // --lammps-run check (default: a single point with every term) | minimize | nvt | npt | none
+            const std::string rk = o.count("--lammps-run") ? o["--lammps-run"] : "check";
+            run.kind = rk == "minimize" ? LammpsRun::Kind::Minimize : rk == "nvt" ? LammpsRun::Kind::NVT : rk == "npt" ? LammpsRun::Kind::NPT
+                     : rk == "none" ? LammpsRun::Kind::None : LammpsRun::Kind::Check;
+            if (o.count("--temp")) run.temperature = std::stod(o["--temp"]);
+            if (o.count("--press")) run.pressure = std::stod(o["--press"]);
+            if (o.count("--steps")) run.steps = std::stoll(o["--steps"]);
+            if (o.count("--dt")) run.dt = std::stod(o["--dt"]);
+            write_lammps_input(s, f, eo, rel, o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0, true, run);
             std::printf("wrote %s\n", o["--lammps-input"].c_str());
           }
         }
