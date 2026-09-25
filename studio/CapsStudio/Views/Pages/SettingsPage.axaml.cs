@@ -114,4 +114,5 @@ public partial class SettingsPage : PageBase
     private void OnRemoveHost(object? s, RoutedEventArgs e) => Vm.RemoveHost();
     private async void OnTestHost(object? s, RoutedEventArgs e) => await Vm.TestHost();
     private void OnResetTemplate(object? s, RoutedEventArgs e) => Vm.ResetJobTemplate();
+    private void OnColourVision(object? s, RoutedEventArgs e) => Vm.OpenColourVision();
 }

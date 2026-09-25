@@ -411,3 +411,32 @@ TEST(Recipe, ExitCodes) {
   EXPECT_EQ(code("build: {polymer: {smiles: \"*CC*\", dp: 2, chains: 1}}\ntype: {forcefield: nothing-here.json}\n"), 2);
   EXPECT_EQ(code("build: {molecule: CCO}\ntype: {forcefield: uff}\nrelax: {fmax: 2}\n"), 0);
 }
+
+#include "caps/colourvision.hpp"
+
+TEST(ColourVision, MachadoSimulationAndDeltaE) {
+  using caps::Vision;
+  // greys are unchanged (each Machado row sums to 1); black–white is ΔE 100
+  for (Vision v : {Vision::Protan, Vision::Deutan, Vision::Tritan}) {
+    const unsigned g = caps::simulate_vision(0x808080, v);
+    EXPECT_NEAR(double((g >> 16) & 255), 128.0, 1.0);
+    EXPECT_NEAR(double(g & 255), 128.0, 1.0);
+  }
+  EXPECT_NEAR(caps::delta_e76(0x000000, 0xFFFFFF), 100.0, 1e-4);
+  EXPECT_EQ(caps::simulate_vision(0xE35049, Vision::Normal), 0xE35049u);
+  // a red and a green of similar lightness stay far apart normally and collapse for deuteranopes
+  const unsigned red = 0xC0504D, green = 0x6E9A3C;
+  EXPECT_GT(caps::delta_e76(red, green), 40);
+  EXPECT_LT(caps::delta_e76(caps::simulate_vision(red, Vision::Deutan), caps::simulate_vision(green, Vision::Deutan)), 15);
+  const auto pairs = caps::confusable_pairs({{"test", {"red", "green", "blue"}, {red, green, 0x2271DB}}}, 15);
+  ASSERT_FALSE(pairs.empty());
+  EXPECT_EQ(pairs[0].a, 0);
+  EXPECT_EQ(pairs[0].b, 1);
+  // an image is simulated in place, alpha kept
+  caps::Image img;
+  img.width = 1; img.height = 1;
+  img.rgba = {0xC0, 0x50, 0x4D, 77};
+  caps::simulate_vision(img, Vision::Protan);
+  EXPECT_EQ(img.rgba[3], 77);
+  EXPECT_EQ((unsigned(img.rgba[0]) << 16) | (unsigned(img.rgba[1]) << 8) | img.rgba[2], caps::simulate_vision(red, Vision::Protan));
+}

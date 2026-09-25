@@ -148,6 +148,9 @@
               </ItemsControl>
               <TextBlock x:Name="PaletteNote" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
                          Text="Atoms, molecule and chain colours follow the palette in the view, the builder preview and exported figures. The monochrome palette separates elements by lightness alone, so figures read in greyscale." />
+              <Button Classes="small" Click="OnColourVision" HorizontalAlignment="Left" ToolTip.Tip="The palettes as seen with protanopia, deuteranopia and tritanopia, and a preview of the view">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="eye" Size="14" VerticalAlignment="Center" /><TextBlock Text="Colour-vision check…" VerticalAlignment="Center" /></StackPanel>
+              </Button>
             </StackPanel>
           </StackPanel>
 
