@@ -128,3 +128,33 @@ TEST(Polymer, RubbersGrowAtFullContactLimits) {
     EXPECT_NEAR(s.density(), 0.5, 0.01);
   }
 }
+
+TEST(Polymer, BlendsOfTwoRubbers) {
+  BlendComponent nr, br;
+  nr.spec.units = {{"NR", "[*]C/C=C(C)\\C[*]"}};
+  nr.spec.dp = 10;
+  nr.weight = 0.7;
+  br.spec.units = {{"BR", "[*]C/C=C\\C[*]"}};
+  br.spec.dp = 10;
+  br.weight = 0.3;
+  BlendOptions o;
+  o.chains = 6;
+  BlendReport r;
+  const System s = grow_blend({nr, br}, o, &r);
+  ASSERT_EQ(r.chains.size(), 2u);
+  EXPECT_EQ(r.chains[0], 6);
+  EXPECT_NEAR(r.weight_fraction[0], 0.7, 0.08);   // whole chains: close to the asked fractions
+  EXPECT_EQ(r.molecules[1].first, r.molecules[0].second + 1);
+  int64_t top = 0;
+  for (const auto& a : s.atoms) top = std::max(top, a.mol);
+  EXPECT_EQ(top, r.chains[0] + r.chains[1]);
+  // two slabs: each component in its own half of the cell along z
+  o.morphology = BlendMorphology::Slabs;
+  const System t = grow_blend({nr, br}, o, &r);
+  const double half = norm(t.cell.c) / 2;
+  for (const auto& a : t.atoms) {
+    if (a.element == 1) continue;
+    if (a.mol <= r.molecules[0].second) EXPECT_LT(a.pos[2], half);
+    else EXPECT_GT(a.pos[2], half);
+  }
+}

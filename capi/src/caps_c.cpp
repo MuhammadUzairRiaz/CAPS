@@ -1981,6 +1981,40 @@ extern "C" caps_doc* caps_nano_embed(const char* options_json, const char* spec_
   }
 }
 
+extern "C" caps_doc* caps_grow_blend(const char* options_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    std::vector<caps::BlendComponent> comps;
+    if (j.has("components"))
+      for (const auto& c : j["components"].items()) {
+        caps::BlendComponent b;
+        b.spec = spec_from(c.has("spec") ? c["spec"].dump() : "{}");
+        b.weight = c.num("weight", 1);
+        b.chains = int(c.num("chains", 0));
+        comps.push_back(b);
+      }
+    caps::BlendOptions bo;
+    bo.chains = int(j.num("chains", 8));
+    bo.density = j.num("density", 0.5);
+    bo.morphology = j.text("morphology", "mixed") == "slabs" ? caps::BlendMorphology::Slabs : caps::BlendMorphology::Mixed;
+    if (o) {
+      bo.grow.seed = o->seed;
+      bo.grow.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+      bo.grow.curve = o->curve != 0;
+    }
+    if (progress) bo.grow.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::BlendReport br;
+    const caps::System s = caps::grow_blend(comps, bo, &br);
+    std::string t;
+    for (const auto& n : br.notes) t += n + "\n";
+    report_out(t, report, cap);
+    return doc_of(s);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
 extern "C" int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_t count, double tolerance, uint64_t seed, char* report, int32_t cap) {
   return guard([&] {
     caps::BuildOptions bo;

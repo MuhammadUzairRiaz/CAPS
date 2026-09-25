@@ -38,5 +38,6 @@ public partial class PolymerPage : PageBase
     private void OnRemoveUnit(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is PolyUnit u) { Vm.RemovePolyUnit(u); if (_slot == u) _slot = null; } }
     private async void OnPreview(object? s, RoutedEventArgs e) => await Vm.BuildPolyPreview();
     private void OnSendGrow(object? s, RoutedEventArgs e) => Vm.SendPolymerToGrow();
+    private void OnBlend(object? s, RoutedEventArgs e) => Vm.OpenBlend();
     private async void OnBuildOne(object? s, RoutedEventArgs e) => await Vm.BuildPolymerInStudio();
 }

@@ -727,6 +727,8 @@
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
       <!-- Nanostructure builder (design/boards/NanoBuilder, Nanoparticle) -->
       <pages:NanoPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsNano}" />
+      <!-- Blend builder (design/boards/BlendBuilder) -->
+      <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
       <!-- Bench (design/boards/Bench) -->
       <pages:BenchPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBench}" />
       <!-- Jobs (design/boards/Jobs, FailedJob) -->

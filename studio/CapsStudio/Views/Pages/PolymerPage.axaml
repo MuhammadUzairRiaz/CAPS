@@ -67,7 +67,12 @@
     <Border Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
       <DockPanel>
         <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-          <TextBlock Text="Polymer builder" Classes="h2" VerticalAlignment="Center" />
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="small" Click="OnBlend" VerticalAlignment="Center" ToolTip.Tip="Blends of two or more polymers (NR/BR, SBR/BR …)">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="grow" Size="13" VerticalAlignment="Center" /><TextBlock Text="Blend…" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <TextBlock Text="Polymer builder" Classes="h2" VerticalAlignment="Center" />
+          </DockPanel>
         </Border>
         <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <Grid ColumnDefinitions="*,*" ColumnSpacing="8">

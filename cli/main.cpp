@@ -64,6 +64,7 @@ int usage() {
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
+               "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs] -o OUT\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
@@ -103,7 +104,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -339,6 +340,48 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps nano: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "blend") {
+    // caps blend --components SMILES1,SMILES2[,…] [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs] -o OUT
+    try {
+      if (!o.count("-o") || !o.count("--components")) return usage();
+      auto list = [](const std::string& t) {
+        std::vector<std::string> v;
+        std::stringstream ss(t);
+        for (std::string x; std::getline(ss, x, ',');) v.push_back(x);
+        return v;
+      };
+      std::vector<BlendComponent> comps;
+      const auto smi = list(o["--components"]);
+      const auto w = o.count("--weights") ? list(o["--weights"]) : std::vector<std::string>{};
+      for (size_t k = 0; k < smi.size(); ++k) {
+        BlendComponent c;
+        c.spec.units.push_back({smi[k], smi[k]});
+        c.spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 20;
+        if (o.count("--ff")) c.spec.forcefield = o["--ff"];
+        c.weight = k < w.size() ? std::stod(w[k]) : 1.0;
+        comps.push_back(c);
+      }
+      BlendOptions bo;
+      if (o.count("--chains")) bo.chains = std::stoi(o["--chains"]);
+      if (o.count("--density")) bo.density = std::stod(o["--density"]);
+      if (o.count("--seed")) bo.grow.seed = std::stoull(o["--seed"]);
+      if (o.count("--slabs")) bo.morphology = BlendMorphology::Slabs;
+      BlendReport br;
+      const System s = grow_blend(comps, bo, &br);
+      for (const auto& n : br.notes) std::printf("%s\n", n.c_str());
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data(s, out);
+      std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps blend: %s\n", e.what());
       return 1;
     }
   }
