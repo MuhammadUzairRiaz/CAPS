@@ -303,6 +303,52 @@ void step_cluster(PipelineState& st, const Json& p, StepStatus& out) {
   t.name = "clusters";
   t.title = "Cluster list";
   t.columns = {"Cluster", "Size", "Mass (g/mol)", "Rg (Å)", "COM.X", "COM.Y", "COM.Z"};
+  // which molecules each cluster holds (molecule ids from 1)
+  const auto molid = s.molecules();
+  t.label_column = "Molecules";
+  for (const auto& g : cl) {
+    std::set<int> ms;
+    for (uint32_t i : g) ms.insert(molid[i] + 1);
+    std::string txt;
+    int shown = 0;
+    for (int m : ms) {
+      if (shown++ == 8) { txt += ", …"; break; }
+      txt += (txt.empty() ? "" : ", ") + std::to_string(m);
+    }
+    t.labels.push_back(txt);
+  }
+  // cutoff sweep (cutoff mode): how the cluster count and the largest cluster move with the cutoff
+  if (mode == "cutoff" && flag(p, "sweep", true)) {
+    DataTable sw;
+    sw.name = "cluster_sweep";
+    sw.title = "Cutoff sweep";
+    sw.columns = {"Cutoff (Å)", "Clusters", "Largest (molecules)", "Largest (atoms)"};
+    const bool whole = p.text("unit", "atoms") == "molecules";
+    for (double f : {rc - 0.2, rc, rc + 0.3, rc + 0.7}) {
+      if (f <= 0) continue;
+      std::vector<uint32_t> par(n);
+      std::iota(par.begin(), par.end(), 0u);
+      std::function<uint32_t(uint32_t)> fd = [&](uint32_t x) { while (par[x] != x) x = par[x] = par[par[x]]; return x; };
+      auto un = [&](uint32_t a, uint32_t b) {
+        if (only_sel && (!st.selected[a] || !st.selected[b])) return;
+        a = fd(a), b = fd(b);
+        if (a != b) par[std::max(a, b)] = std::min(a, b);
+      };
+      for_pairs(s, f, [&](uint32_t i, uint32_t j, double, const Vec3&) { if (!heavy || (s.atoms[i].element != 1 && s.atoms[j].element != 1)) un(i, j); });
+      if (whole) {
+        std::map<int, uint32_t> first;
+        for (uint32_t i = 0; i < n; ++i) { auto [it, fresh] = first.emplace(molid[i], i); if (!fresh) un(it->second, i); }
+      }
+      std::map<uint32_t, std::set<int>> mols;
+      std::map<uint32_t, int> atoms;
+      for (uint32_t i = 0; i < n; ++i) if (!only_sel || st.selected[i]) mols[fd(i)].insert(molid[i]), ++atoms[fd(i)];
+      size_t big = 0;
+      int big_atoms = 0;
+      for (const auto& [r, m] : mols) if (m.size() > big) big = m.size(), big_atoms = atoms[r];
+      sw.rows.push_back({f, double(mols.size()), double(big), double(big_atoms)});
+    }
+    st.tables.push_back(std::move(sw));
+  }
   const auto adj = mode == "cutoff" ? std::vector<std::vector<uint32_t>>{} : adjacency(s);
   for (size_t c = 0; c < cl.size(); ++c) {
     const auto& g = cl[c];
@@ -1558,6 +1604,12 @@ Json pipeline_result_json(const PipelineState& st) {
     }
     o["rows"] = std::move(rows);
     o["points"] = t.points;
+    if (!t.labels.empty()) {
+      Json labels = Json::array();
+      for (const auto& l : t.labels) labels.push_back(l);
+      o["labels"] = std::move(labels);
+      o["label_column"] = t.label_column;
+    }
     tables.push_back(std::move(o));
   }
   j["tables"] = std::move(tables);

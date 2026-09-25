@@ -11,7 +11,8 @@
 //   slice               normal [x,y,z], distance (default: through the cell centre), width, invert, select_only
 //   colour_coding       property, mode auto|categorical|continuous, map viridis|diverging, start, end, lighten_h, only_selected
 //   assign_colour       colour "#RRGGBB", keep_selection
-//   cluster             mode bonds|cutoff, cutoff, only_selected, sort_by_size, colour
+//   cluster             mode bonds|cutoff, cutoff, heavy_only, unit atoms|molecules, only_selected, sort_by_size, colour, sweep
+//                       → Cluster, tables clusters (with the molecules each holds) and cluster_sweep (cutoff mode)
 //   coordination        cutoff, bins, element_a, element_b (0: any), only_selected       → Coordination, table rdf
 //   compute_property    name, expression, only_selected (Position.X/Y/Z, Charge and Selection write through)
 //   wrap                positions folded into the cell
@@ -60,6 +61,9 @@ struct DataTable {
   std::vector<std::string> columns;
   std::vector<std::vector<double>> rows;
   bool points = false;   // a scatter: plot the rows as points, not a line
+  // an optional text column (one entry per row), shown after the first column: which molecules a cluster holds …
+  std::string label_column;
+  std::vector<std::string> labels;
 };
 
 struct PipelineLegend {
