@@ -43,6 +43,7 @@ struct Segment {
 struct RenderOptions {
   int width = 1280, height = 800;
   int supersample = 2;
+  bool deep = false;                   // also keep 16-bit channels (Image::rgba16) from the supersampled average
   Background background = Background::Dark;
   unsigned custom_rgb = 0x0F1113;
   ColourBy colour_by = ColourBy::Molecule;
@@ -69,6 +70,7 @@ struct RenderOptions {
 struct Image {
   int width = 0, height = 0;
   std::vector<uint8_t> rgba;           // straight (non-premultiplied) alpha, row-major, top row first
+  std::vector<uint16_t> rgba16;        // the same at 16 bits per channel when rendered with deep = true
 };
 
 struct Renderer {
@@ -96,6 +98,35 @@ unsigned background_rgb(Background b, unsigned custom);
 
 void write_png(const Image& img, const std::string& path);
 std::vector<uint8_t> encode_png(const Image& img);
+
+// PNG with 16-bit channels (from rgba16, else the 8-bit values widened), the dpi (pHYs), the sRGB chunk and text
+// chunks (iTXt, UTF-8) such as a provenance manifest.
+struct PngOptions {
+  bool sixteen = false;
+  double dpi = 0;
+  bool srgb = true;
+  std::vector<std::pair<std::string, std::string>> text;
+};
+std::vector<uint8_t> encode_png(const Image& img, const PngOptions& o);
+void write_png(const Image& img, const std::string& path, const PngOptions& o);
+// The text chunks (tEXt, iTXt without compression) of a PNG file.
+std::vector<std::pair<std::string, std::string>> read_png_text(const std::string& path);
+
+// Animated PNG, streamed frame by frame (8-bit RGBA; every frame the size of the first). Plays in browsers and most
+// image viewers; the first frame is the still image for viewers without APNG.
+class ApngWriter {
+ public:
+  ApngWriter(const std::string& path, int fps, int loops = 0, const PngOptions& o = {});
+  ~ApngWriter();
+  void add(const Image& frame);
+  void close();   // writes IEND and the frame count
+  int frames() const { return frames_; }
+
+ private:
+  struct Impl;
+  Impl* impl_;
+  int frames_ = 0;
+};
 // Vector figure: painter-sorted spheres with shading gradients; no background shape when transparent.
 std::string render_svg(const System& s, const Camera& cam, const RenderOptions& opt);
 // Pixels per Å at the focal plane for an opt.width × opt.height image (exact in orthographic views): scale bars.

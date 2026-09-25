@@ -187,6 +187,7 @@
       <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+            <Button Classes="tool" Click="OnExportDialog" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Export image or movie (⌘E)"><local:Icon Kind="download" Size="18" /></Button>
             <Button Classes="tool" Click="OnSplit" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Split view: this document beside another, cameras synced (design/boards/LightSplit)"><local:Icon Kind="layers" Size="18" /></Button>
             <ToggleButton Classes="tool" IsChecked="{Binding InteractionsOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Interactions &amp; checks (design/boards/Interactions): H-bonds, contacts, clashes and fixes">
@@ -1265,6 +1266,9 @@
                       </Button>
                       <Button Content="Export SVG…" Click="OnExportSvg" />
                     </StackPanel>
+                    <Button Classes="small" Click="OnExportDialog" HorizontalAlignment="Left" ToolTip.Tip="4K, journal and poster sizes, 16-bit PNG, provenance in the file; movies of the frames or a turntable (⌘E)">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Image or movie…" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <Button Classes="small" Click="OnViewportsPage" HorizontalAlignment="Left" ToolTip.Tip="Top, front, left and perspective views together">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="cube" Size="13" VerticalAlignment="Center" /><TextBlock Text="Four views…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
@@ -1555,6 +1559,8 @@
       <pages:NanoPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsNano}" />
       <!-- Blend builder (design/boards/BlendBuilder) -->
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
+      <!-- Export image / movie (design/boards/ExportDialog) -->
+      <pages:ExportDialog x:Name="ExportDlg" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="2" ZIndex="21" IsVisible="{Binding ExportDialogOpen}" />
       <!-- Import (design/boards/ImportDialog): files without a topology -->
       <pages:ImportDialog Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="2" ZIndex="21" IsVisible="{Binding ImportOpen}" />
       <!-- Element picker (design/boards/ElementPicker): the periodic table, the element for new atoms -->

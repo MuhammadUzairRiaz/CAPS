@@ -113,6 +113,54 @@ public static class FigureDrawing
         }
     }
 
+    /// <summary>Atom labels and the measurement between picked atoms as a transparent layer of w × h (straight-alpha
+    /// RGBA) for the export dialog; the core lays it over the image at 8 or 16 bits. Sizes follow the image height.</summary>
+    public static byte[] MarksLayer(int w, int h, List<ViewLabel> labels, (double X1, double Y1, double X2, double Y2)? line, string measure, bool darkBg)
+    {
+        var u = Math.Max(1.0, h / 800.0);
+        var ink = darkBg ? Color.FromRgb(0xEE, 0xEF, 0xF1) : Color.FromRgb(0x16, 0x19, 0x1C);
+        var plate = darkBg ? Color.FromArgb(0xB0, 0x16, 0x19, 0x1C) : Color.FromArgb(0xD0, 0xFF, 0xFF, 0xFF);
+        var accent = Color.FromRgb(0xE8, 0x9A, 0x2C);
+        using var rtb = new RenderTargetBitmap(new PixelSize(w, h), new Vector(96, 96));
+        using (var ctx = rtb.CreateDrawingContext())
+        {
+            foreach (var l in labels)
+            {
+                var ft = Text(l.Text, Mono, FontWeight.Normal, 10.5 * u, new SolidColorBrush(ink));
+                var x = l.X + 5 * u;
+                var y = l.Y - ft.Height - 2 * u;
+                ctx.FillRectangle(new SolidColorBrush(plate), new Rect(x - 2 * u, y, ft.Width + 4 * u, ft.Height), (float)(2 * u));
+                ctx.DrawText(ft, new Point(x, y));
+            }
+            if (line is { } ln && measure.Length > 0)
+            {
+                var pen = new Pen(new SolidColorBrush(accent), 2 * u, new DashStyle([3, 2], 0));
+                ctx.DrawLine(pen, new Point(ln.X1, ln.Y1), new Point(ln.X2, ln.Y2));
+                var value = measure.Contains(':') ? measure[(measure.LastIndexOf(':') + 1)..].Trim() : measure;
+                var ft = Text(value, Mono, FontWeight.SemiBold, 12 * u, new SolidColorBrush(Color.FromRgb(0x16, 0x19, 0x1C)));
+                var mid = new Point((ln.X1 + ln.X2) / 2, (ln.Y1 + ln.Y2) / 2);
+                var r = new Rect(mid.X - ft.Width / 2 - 7 * u, mid.Y - ft.Height / 2 - 3 * u, ft.Width + 14 * u, ft.Height + 6 * u);
+                ctx.FillRectangle(new SolidColorBrush(accent), r, (float)(r.Height / 2));
+                ctx.DrawText(ft, new Point(r.X + 7 * u, r.Y + 3 * u));
+            }
+        }
+        var bgra = new byte[w * h * 4];
+        unsafe
+        {
+            fixed (byte* p = bgra) rtb.CopyPixels(new PixelRect(0, 0, w, h), (IntPtr)p, bgra.Length, w * 4);
+        }
+        // premultiplied (BGRA or RGBA, as the platform renders) → straight RGBA
+        var swap = rtb.Format is not { } f || f == Avalonia.Platform.PixelFormats.Bgra8888;
+        for (int k = 0; k < bgra.Length; k += 4)
+        {
+            var a = bgra[k + 3];
+            byte b = bgra[swap ? k : k + 2], g = bgra[k + 1], r = bgra[swap ? k + 2 : k];
+            if (a > 0 && a < 255) { r = (byte)Math.Min(255, r * 255 / a); g = (byte)Math.Min(255, g * 255 / a); b = (byte)Math.Min(255, b * 255 / a); }
+            bgra[k] = r; bgra[k + 1] = g; bgra[k + 2] = b;
+        }
+        return bgra;
+    }
+
     /// <summary>A rendered image with the render overlays, written as PNG.</summary>
     public static void SaveRenderPng(byte[] rgba, int w, int h, RenderSpec o, string path)
     {
