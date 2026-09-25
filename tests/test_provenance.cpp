@@ -564,3 +564,46 @@ TEST(Recipe, CheckedWithoutRunning) {
   EXPECT_FALSE(bad.stages[1].ok);
   EXPECT_NE(bad.error.find("build"), std::string::npos);
 }
+
+#include "caps/molinfo.hpp"
+
+TEST(MoleculeInfo, StyreneAndButane) {
+  caps::BuildOptions b;
+  b.forcefield = "uff";
+  const auto sty = caps::build_molecule("C=Cc1ccccc1", b);
+  const auto i = caps::molecule_info(sty.system, 0);
+  EXPECT_EQ(i.formula, "C8H8");
+  EXPECT_NEAR(i.mass, 104.152, 0.01);
+  EXPECT_NEAR(i.monoisotopic, 104.0626, 1e-3);
+  EXPECT_NEAR(i.dbe, 5.0, 1e-12);
+  EXPECT_EQ(i.atoms, 16);
+  EXPECT_EQ(i.rings, 1);
+  EXPECT_EQ(i.rotatable, 1);
+  EXPECT_LT(std::fabs(i.inertia_defect), 6.0);   // (near) planar
+  EXPECT_LE(i.inertia[0], i.inertia[1]);
+  const auto g = caps::parse_smiles(i.smiles);   // the written SMILES reads back as the same molecule
+  caps::MolGraph gh = g;
+  caps::add_hydrogens(gh);
+  EXPECT_EQ(gh.atoms.size(), 16u) << i.smiles;
+  const auto but = caps::molecule_info(caps::build_molecule("CCCC", b).system, 0);
+  EXPECT_EQ(but.rotatable, 1);
+  EXPECT_EQ(caps::molecule_info(caps::build_molecule("CCO", b).system, 0).rotatable, 0);
+}
+
+TEST(Sasa, IsolatedAtomAndTwoTouching) {
+  caps::System s;
+  caps::Atom a;
+  a.element = 18;   // argon, Bondi 1.88 Å
+  a.pos = {0, 0, 0};
+  s.atoms.push_back(a);
+  const auto one = caps::sasa(s, 1.4, 400);
+  EXPECT_NEAR(one.total, 4 * M_PI * 3.28 * 3.28, 1e-9);
+  a.pos = {3.0, 0, 0};
+  s.atoms.push_back(a);
+  const auto two = caps::sasa(s, 1.4, 400);
+  EXPECT_LT(two.total, 2 * one.total);
+  EXPECT_NEAR(two.area[0], two.area[1], 0.02 * two.area[0]);
+  // the lens cut from each sphere: 2π R h with h = R − d/2
+  const double R = 3.28, h = R - 1.5, exact = 2 * (4 * M_PI * R * R - 2 * M_PI * R * h);
+  EXPECT_NEAR(two.total, exact, 0.02 * exact);
+}
