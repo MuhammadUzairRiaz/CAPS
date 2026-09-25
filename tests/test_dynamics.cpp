@@ -187,3 +187,25 @@ TEST(Dynamics, RejectsBadSettings) {
   o.barostat = Barostat::CRescale;
   EXPECT_THROW(run_dynamics(s, o), std::invalid_argument);
 }
+
+// NPH: the Berendsen barostat with no thermostat (stochastic cell rescaling needs one and is refused): the cell follows
+// the target pressure while the temperature is left to the dynamics
+TEST(Dynamics, NphScalesTheCellWithoutAThermostat) {
+  System s = relaxed_cell();
+  DynamicsOptions o;
+  o.thermostat = Thermostat::None;
+  o.barostat = Barostat::Berendsen;
+  o.pressure = 20000.0;
+  o.tau_p = 200;
+  o.steps = 2000;
+  o.seed = 4;
+  DynamicsReport r;
+  run_dynamics(s, o, &r);
+  EXPECT_GT(s.density(), relaxed_cell().density() + 0.01);
+  const double t = mean(r.thermo, r.thermo.size() / 2, &ThermoRow::temperature);
+  EXPECT_GT(t, 100);
+  EXPECT_LT(t, 900);
+  System c = relaxed_cell();
+  o.barostat = Barostat::CRescale;
+  EXPECT_THROW(run_dynamics(c, o), std::invalid_argument);
+}
