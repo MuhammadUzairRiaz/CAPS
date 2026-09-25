@@ -756,12 +756,20 @@
           </StackPanel>
         </Border>
         <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,8" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
+          <StackPanel Spacing="6">
+          <!-- Timeline (design/boards/Timeline): a sparkline and markers once a time series is computed -->
+          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="12" IsVisible="{Binding HasTimeline}">
+            <ComboBox ItemsSource="{Binding TimelineAttributes}" SelectedItem="{Binding SparkAttribute}" FontSize="11.5" HorizontalAlignment="Stretch" ToolTip.Tip="Attribute drawn over the frames" />
+            <local:TimelineView Grid.Column="1" x:Name="Timeline" Height="40" Cursor="Hand" />
+            <TextBlock Grid.Column="2" Text="{Binding MarkerNote}" FontSize="11" Foreground="{DynamicResource WarnB}" VerticalAlignment="Center" MaxWidth="200" TextWrapping="Wrap" />
+          </Grid>
           <Grid ColumnDefinitions="Auto,Auto,*,Auto">
             <Button Content="{Binding PlayLabel}" Click="OnPlay" Width="64" Margin="0,0,12,0" ToolTip.Tip="Play / pause (Space) · ← → step frames" />
             <TextBlock Grid.Column="1" Text="Frame" Classes="muted" VerticalAlignment="Center" Margin="0,0,12,0" />
             <Slider Grid.Column="2" Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" />
             <TextBlock Grid.Column="3" Text="{Binding FrameLabel}" Classes="mono" VerticalAlignment="Center" Margin="12,0,0,0" />
           </Grid>
+          </StackPanel>
         </Border>
       </Grid>
 
@@ -1035,6 +1043,30 @@
                 <StackPanel Spacing="6">
                   <TextBlock Text="RESULT" Classes="h3" />
                   <TextBlock Text="{Binding PipeSelected.Summary}" FontSize="12.5" TextWrapping="Wrap" Foreground="{Binding PipeSelected.SummaryBrush}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding !HasPipeSelected}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="PIPELINE AT THIS FRAME" Classes="h3" />
+                  <TextBlock Text="{Binding PipelineAtFrameText}" FontSize="12" TextWrapping="Wrap" LineHeight="19" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding !HasPipeSelected}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="PLAYBACK" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <StackPanel Spacing="4"><TextBlock Text="Every (frames)" Classes="label" /><NumericUpDown Value="{Binding PlaybackEvery}" Minimum="1" Maximum="10000" Increment="1" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Frames per second" Classes="label" /><NumericUpDown Value="{Binding PlaybackFps}" Minimum="1" Maximum="60" Increment="1" FormatString="0" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Loop" IsChecked="{Binding PlaybackLoop}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding !HasPipeSelected}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="MARKERS" Classes="h3" />
+                  <ComboBox ItemsSource="{Binding TimelineAttributes}" SelectedItem="{Binding MarkerAttribute}" HorizontalAlignment="Stretch" ToolTip.Tip="A marker wherever this attribute changes" />
+                  <TextBlock Text="{Binding MarkerNote}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+                  <CheckBox Classes="toggle" Content="Show on the timeline" IsChecked="{Binding ShowMarkers}" />
                 </StackPanel>
               </Border>
               <Border Classes="section" IsVisible="{Binding !HasPipeSelected}">

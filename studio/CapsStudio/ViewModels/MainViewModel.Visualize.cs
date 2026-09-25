@@ -231,8 +231,14 @@ public sealed partial class MainViewModel
             }));
             _series = JsonNode.Parse(text) as JsonObject;
             RefreshPipeline();
+            RefreshTimeline();
             var idx = PipeTables.Count - 1;
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => { PipeTable = idx; InspectorTab = 3; });
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                PipeTable = idx;
+                InspectorTab = 3;
+                if (SparkAttribute != null) PipeYColumnName = SparkAttribute;   // plot the attribute, not the timestep
+            });
             Status = $"Time series over {((JsonArray?)_series?["rows"])?.Count ?? 0} frames" + (stride > 1 ? $" (every {stride}th)" : "");
         }
         catch (Exception e) { Status = "Time series failed: " + e.Message; }
@@ -560,6 +566,8 @@ public sealed partial class MainViewModel
         if (_showTableAfterApply) { _showTableAfterApply = false; ShowTableOf(_pipeSel?.Type); }
         var particles = (double?)_pipeResult?["particles"] ?? _doc.Summary().Atoms;
         PipeStatus = string.Format(inv, "{0:N0} particles · {1} step{2}", particles, PipelineRows.Count, PipelineRows.Count == 1 ? "" : "s");
+        Raise(nameof(PipelineAtFrameText));
+        TimelineChanged?.Invoke();
         Raise(nameof(PipeStatus));
         LoadInspector();
     }
