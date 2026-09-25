@@ -273,6 +273,12 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "exportbg") w.ViewModel.ExportDlgBackground = int.Parse(kv[1]);
+            if (kv[0] == "provenance")   // provenance=OTHER|-: the provenance page, compared with OTHER's
+            {
+                w.ViewModel.OpenProvenance();
+                if (kv[1] != "-") w.ViewModel.CompareProvenanceWith(kv[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

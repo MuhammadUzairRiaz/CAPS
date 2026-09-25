@@ -659,6 +659,29 @@ internal static class SelfTest
             vm.Frame = 0;
         }
 
+        // Provenance: an edit recorded after the read, provSaved beside the file, read back on open, compared with itself
+        {
+            var src = Path.Combine(outDir, "caps-selftest-prov-src.data");
+            File.Copy(Path.Combine(dir, "ps_melt.data"), src, true);
+            if (File.Exists(src + ".provenance.json")) File.Delete(src + ".provenance.json");
+            vm.Open(src);
+            vm.Document!.Edit("{\"op\":\"place\",\"smiles\":\"O\",\"name\":\"Water\",\"resname\":\"WAT\"}");
+            var provSaved = Path.Combine(outDir, "caps-selftest-prov.data");
+            vm.Document.Save(provSaved);
+            var side = File.Exists(provSaved + ".provenance.json");
+            vm.Open(provSaved);
+            vm.OpenProvenance();
+            var engines = string.Join(",", vm.ProvSteps.Select(r => r.Engine));
+            vm.CompareProvenanceWith(provSaved);
+            var same = vm.ProvDiff.Count == 0 && vm.ProvDiffNotes.Count == 0;
+            var bib = vm.ProvenanceBibtex();
+            Check(side && engines == "io.read,edit.builder" && vm.ProvInputs.Count == 1 && same && vm.IsProvenance && bib.Length == 0,
+                  $"provenance: {engines} · inputs {vm.ProvInputs.Count} · compare with itself: {vm.ProvDiffSummary}");
+            vm.ClearProvenanceCompare();
+            vm.SetModule(8);
+        }
+        vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

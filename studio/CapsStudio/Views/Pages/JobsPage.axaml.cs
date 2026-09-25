@@ -126,4 +126,6 @@ public partial class JobsPage : PageBase
         await cb.SetTextAsync(Vm.JobJson(j));
         Vm.Status = $"Copied {j.Id} (log and provenance) as JSON";
     }
+
+    private void OnFullProvenance(object? s, RoutedEventArgs e) => Vm.OpenProvenance();
 }

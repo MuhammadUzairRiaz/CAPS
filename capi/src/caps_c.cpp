@@ -7,6 +7,7 @@
 #include <cstring>
 #include <ctime>
 #include <filesystem>
+#include <thread>
 #include <fstream>
 #include <string>
 
@@ -42,6 +43,7 @@
 #include "caps/edit.hpp"
 #include "caps/interactions.hpp"
 #include "caps/import.hpp"
+#include "caps/provenance.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -119,6 +121,7 @@ struct caps_doc {
   struct Snapshot { caps::System topology; std::vector<caps::Vec3> positions; std::string what; };
   std::vector<Snapshot> undo, redo;                // caps_edit history
   std::vector<caps::Segment> checks;               // caps_interactions: H-bonds, contacts, clashes drawn in the view
+  caps::Manifest prov;                             // provenance: the steps that produced this structure
 };
 
 namespace {
@@ -590,6 +593,102 @@ int32_t report_out(const std::string& t, char* buf, int32_t cap) {
   return int32_t(t.size() + 1);
 }
 
+// ---------------------------------------------------------------- provenance helpers
+std::string g6(double x) {
+  char b[32];
+  std::snprintf(b, sizeof b, "%.6g", x);
+  return b;
+}
+
+// sha256 of a file (files over 1 GB are not hashed: their size stands in).
+std::string file_sha256(const std::string& path) {
+  std::error_code ec;
+  const auto n = std::filesystem::file_size(path, ec);
+  if (ec) return "";
+  if (n > (1ull << 30)) return "not hashed (" + std::to_string(n) + " bytes)";
+  std::ifstream f(path, std::ios::binary);
+  std::string bytes((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  return caps::sha256_hex(bytes);
+}
+
+void prov_input(caps_doc* d, const std::string& path) {
+  if (path.empty()) return;
+  const std::string name = std::filesystem::path(path).filename().string();
+  for (const auto& [n, h] : d->prov.inputs) if (n == name) return;
+  d->prov.inputs.push_back({name, file_sha256(path)});
+}
+
+void prov_step(caps_doc* d, const std::string& engine, const std::string& summary, caps::KeyValues params, const std::string& rng = "",
+               std::vector<std::string> cites = {}, caps::KeyValues approx = {}) {
+  caps::ProvStep s;
+  s.engine = engine;
+  s.summary = summary;
+  s.params = std::move(params);
+  s.rng = rng;
+  s.cites = std::move(cites);
+  s.approximations = std::move(approx);
+  s.time = caps::now_iso();
+  d->prov.steps.push_back(std::move(s));
+}
+
+std::string seeded(uint64_t seed) { return "mt19937-64 · seed " + std::to_string(seed); }
+
+// A JSON options object as ordered parameters (nested values as compact JSON).
+caps::KeyValues json_params(const caps::Json& j) {
+  caps::KeyValues out;
+  if (!j.is_object()) return out;
+  for (const auto& [k, v] : j.members()) out.push_back({k, v.is_string() ? v.str() : v.is_number() ? g6(v.number()) : v.dump(0)});
+  return out;
+}
+caps::KeyValues json_params(const char* text) {
+  try { return json_params(caps::Json::parse(text && *text ? text : "{}")); } catch (...) { return {}; }
+}
+
+// The modelling choices of an energy evaluation, and the papers behind them.
+// Worker threads an evaluation uses (0 asks for the default: the configured maximum, else the hardware's, at most 16).
+int threads_used(int requested) {
+  if (requested > 0) return requested;
+  if (const int n = caps::max_threads(); n > 0) return n;
+  const unsigned h = std::thread::hardware_concurrency();
+  return int(std::clamp(h == 0 ? 1u : h, 1u, 16u));
+}
+
+caps::KeyValues energy_approx(double cutoff, bool coulomb, bool tail, int threads) {
+  caps::KeyValues a;
+  a.push_back({"van der Waals", "cut-off " + g6(cutoff) + " Å" + (tail ? " + tail correction" : "")});
+  a.push_back({"Electrostatics", !coulomb ? "off" : g_elec.mode == 1 ? "SPME · relative tolerance " + g6(g_elec.rtol) : "damped shifted force · cut-off " + g6(cutoff) + " Å"});
+  a.push_back({"Constraints", "none"});
+  // forces are summed in worker order: the same thread count gives the same trajectory bit for bit
+  a.push_back({"Precision", "double · reproducible with " + std::to_string(threads_used(threads)) + " threads"});
+  return a;
+}
+void elec_cites(std::vector<std::string>& c, bool coulomb) {
+  if (coulomb) c.push_back(g_elec.mode == 1 ? "essmann1995" : "fennell2006");
+}
+
+// A document just read from a file: its manifest from the sidecar, else the file as the first input.
+std::string ff_label(const caps_doc* d) {
+  if (!d->field) return "built-in default (GAFF for C and H, UFF otherwise)";
+  const std::string name = d->field->base.name.empty() ? std::filesystem::path(d->field->ff_path).stem().string() : d->field->base.name;
+  return name + (d->field->complete ? "" : " (incomplete)");
+}
+
+void prov_opened(caps_doc* d, const std::string& path, const std::string& topology, const std::string& how, caps::KeyValues params = {},
+                 std::vector<std::string> cites = {}) {
+  if (auto m = caps::read_manifest(path)) {
+    d->prov = std::move(*m);
+    return;
+  }
+  prov_input(d, path);
+  if (!topology.empty()) prov_input(d, topology);
+  const auto& t = d->traj.topology;
+  params.insert(params.begin(), {"file", std::filesystem::path(path).filename().string()});
+  params.push_back({"atoms", std::to_string(t.atoms.size())});
+  params.push_back({"frames", std::to_string(d->traj.frames())});
+  params.push_back({"bonds", std::to_string(t.bonds.size()) + (t.bonds_from_file ? " from the file" : " perceived")});
+  prov_step(d, how, "read " + std::filesystem::path(path).filename().string(), std::move(params), "", std::move(cites));
+}
+
 }  // namespace
 
 extern "C" {
@@ -602,6 +701,7 @@ caps_doc* caps_open(const char* path, const char* topology_path) {
     auto* d = new caps_doc;
     d->traj = caps::open_file(path, topology_path ? topology_path : "");
     refresh(d);
+    prov_opened(d, path, topology_path ? topology_path : "", "io.read");
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -619,6 +719,7 @@ caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t 
     auto* d = new caps_doc;
     d->traj = caps::open_file(path, topology_path ? topology_path : "", p);
     refresh(d);
+    prov_opened(d, path, topology_path ? topology_path : "", "io.read");
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -667,6 +768,10 @@ caps_doc* caps_grow(const caps_grow_opts* o, caps_progress_fn progress, void* us
     d->traj.cells.push_back(s.cell);
     d->traj.timesteps.push_back(0);
     refresh(d);
+    prov_step(d, "grow.trials", "polystyrene chains grown in a periodic cell, best-of-k trial placement by contact margin",
+              {{"chains", std::to_string(o->chains)}, {"DP", std::to_string(o->dp)}, {"tacticity", o->tacticity == 1 ? "isotactic" : o->tacticity == 2 ? "syndiotactic" : "atactic"},
+               {o->box > 0 ? "box" : "density", o->box > 0 ? g6(o->box) + " Å" : g6(o->density) + " g/cm³"}, {"contact scale", g6(g.contact_scale)}},
+              seeded(o->seed), {"matsumoto1998"});
     if (report && cap > 0) {
       std::string t;
       for (const auto& n : rep.notes) t += n + "\n";
@@ -698,6 +803,9 @@ int32_t caps_save(caps_doc* d, const char* path) {
       try { ff = default_ff(d->frame); } catch (const caps::FieldError&) { typed = false; }
       if (typed) caps::write_lammps_data_ff(d->frame, ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
+    }
+    if (!d->prov.steps.empty()) {
+      try { caps::write_manifest(d->prov, p); } catch (...) {}   // the structure is written; the sidecar is a bonus
     }
     return 0;
   });
@@ -774,6 +882,24 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     };
     caps::RelaxReport rep;
     caps::relax(s, r, &rep);
+    {
+      static const char* names[] = {"sd", "cg", "lbfgs", "fire"};
+      static const char* titles[] = {"steepest descent", "Polak–Ribière conjugate gradients", "L-BFGS", "FIRE"};
+      const int mth = std::clamp(o->method, 0, 3);
+      std::vector<std::string> c;
+      if (mth == 1) c.push_back("polak1969");
+      if (mth == 2) c.push_back("liu1989");
+      if (mth == 3) c.push_back("bitzek2006");
+      if (r.pushoff) c.push_back("auhl2003");
+      elec_cites(c, r.energy.coulomb);
+      caps::KeyValues pr = {{"minimiser", titles[mth]}, {"|F|max", g6(r.ftol) + " kcal/mol/Å"}, {"max iterations", std::to_string(r.max_iterations)},
+                            {"push-off", r.pushoff ? "on" : "off"}, {"force field", ff_label(d)}};
+      if (r.target_density > 0) pr.push_back({"target density", g6(r.target_density) + " g/cm³"});
+      if (r.relax_box) pr.push_back({"box relaxation", g6(r.pressure) + " atm"});
+      if (d->held_mol > 0) pr.push_back({"held molecule", std::to_string(d->held_mol)});
+      prov_step(d, std::string("relax.") + names[mth], std::string(titles[mth]) + (rep.converged ? ", converged" : ", stopped before the tolerance"), std::move(pr), "",
+                std::move(c), energy_approx(r.energy.cutoff, r.energy.coulomb, false, r.energy.threads));
+    }
     // the final structure is the last snapshot; keep charges and the final cell on the topology
     out.topology.atoms = s.atoms;
     out.topology.cell = s.cell;
@@ -844,6 +970,21 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     if (m.frame_every <= 0) m.frame_every = int(std::max<int64_t>(1, m.steps));   // at least the start and the end
     caps::DynamicsReport rep;
     caps::run_dynamics(s, m, &rep);
+    {
+      const bool nvt = m.thermostat != caps::Thermostat::None, npt = nvt && m.barostat != caps::Barostat::None;
+      std::vector<std::string> c = {"swope1982"};
+      if (m.thermostat == caps::Thermostat::Bussi) c.push_back("bussi2007");
+      if (npt && m.barostat == caps::Barostat::CRescale) c.push_back("bernetti2020");
+      if (npt && m.barostat == caps::Barostat::Berendsen) c.push_back("berendsen1984");
+      elec_cites(c, m.energy.coulomb);
+      caps::KeyValues pr = {{"length", g6(m.dt * double(m.steps) / 1000.0) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs"},
+                            {"temperature", g6(m.temperature) + " K"}, {"thermostat", std::string(caps::to_string(m.thermostat)) + (nvt ? " · τ " + g6(m.tau_t) + " fs" : "")}};
+      if (npt) pr.push_back({"barostat", std::string(caps::to_string(m.barostat)) + " · " + g6(m.pressure) + " atm · τ " + g6(m.tau_p) + " fs"});
+      pr.push_back({"force field", ff_label(d)});
+      const bool drew = m.new_velocities || s.velocities.empty();
+      prov_step(d, npt ? "dynamics.npt" : nvt ? "dynamics.nvt" : "dynamics.nve", npt ? "NPT molecular dynamics" : nvt ? "NVT molecular dynamics" : "NVE molecular dynamics",
+                std::move(pr), drew || nvt ? seeded(m.seed) : "", std::move(c), energy_approx(m.energy.cutoff, m.energy.coulomb, m.energy.tail, m.energy.threads));
+    }
     out.topology.atoms = s.atoms;
     out.topology.cell = s.cell;
     out.topology.velocities = s.velocities;
@@ -936,6 +1077,22 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     };
     caps::EquilibrateReport rep;
     caps::equilibrate(s, e, &rep);
+    {
+      const bool l21 = e.stages.size() == 21 && e.stages.back().label.find("final") != std::string::npos;
+      double pmax = 0;
+      for (const auto& st : e.stages) pmax = std::max(pmax, st.pressure);
+      std::vector<std::string> c = {"swope1982", e.md.thermostat == caps::Thermostat::Bussi ? "bussi2007" : ""};
+      c.push_back(e.md.barostat == caps::Barostat::CRescale ? "bernetti2020" : "berendsen1984");
+      if (l21) c.insert(c.begin(), "larsen2011");
+      elec_cites(c, e.md.energy.coulomb);
+      c.erase(std::remove(c.begin(), c.end(), std::string()), c.end());
+      const std::string text = protocol ? protocol : "";
+      prov_step(d, l21 ? "equilibrate.larsen21" : "equilibrate.protocol",
+                (l21 ? "21-step compression and decompression" : std::to_string(e.stages.size()) + "-stage protocol") + std::string(rep.converged ? ", converged" : ""),
+                {{"stages", std::to_string(e.stages.size())}, {"Pmax", g6(pmax) + " atm"}, {"length", g6(rep.ps) + " ps"},
+                 {"protocol sha256", caps::sha256_hex(text).substr(0, 12)}, {"force field", ff_label(d)}},
+                seeded(e.md.seed), std::move(c), energy_approx(e.md.energy.cutoff, e.md.energy.coulomb, e.md.energy.tail, e.md.energy.threads));
+    }
     out.topology.atoms = s.atoms;
     out.topology.cell = s.cell;
     out.topology.velocities = s.velocities;
@@ -1030,6 +1187,10 @@ caps_doc* caps_pack(const char* text, const char* base_dir, int32_t threads, cap
     d->traj.timesteps.push_back(0);
     d->traj.topology.notes = rep.notes;
     refresh(d);
+    prov_step(d, "pack.lbfgs", std::to_string(rep.molecules) + " molecules packed without overlaps",
+              {{"molecules", std::to_string(rep.molecules)}, {"atoms", std::to_string(rep.atoms)}, {"closest contact", g6(rep.dmin) + " Å"},
+               {"input sha256", caps::sha256_hex(text ? text : "").substr(0, 12)}},
+              "", {"martinez2009", "liu1989"});
     write_report();
     return d;
   } catch (const std::exception& e) {
@@ -1087,6 +1248,15 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     r.frame = [&](const caps::System& x, int) { frames.push_back(x); };
     caps::ReactReport rep;
     caps::react(s, r, &rep);
+    {
+      std::string names;
+      for (const auto& t : r.templates) names += (names.empty() ? "" : ", ") + t.name;
+      const double conv = rep.cycles.empty() ? 0 : rep.cycles.back().conversion;
+      prov_step(d, "react.templates", std::to_string(rep.reactions) + " reactions · conversion " + g6(conv),
+                {{"templates", names}, {"target conversion", g6(r.target_conversion)}, {"cycles", std::to_string(rep.cycles.size())},
+                 {"relax between cycles", r.relax ? "yes" : "no"}, {"MD between cycles", g6(r.md_ps) + " ps"}},
+                seeded(r.seed), {"matsumoto1998"});
+    }
     caps::Trajectory out;
     const bool same = frames.front().atoms.size() == s.atoms.size();
     out.topology = s;
@@ -1154,6 +1324,20 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
     d->field = std::move(F);
     refresh(d);
     field_run(d);
+    {
+      const std::string ffp = d->field->ff_path;
+      const bool uff = caps::is_uff(ffp);
+      std::vector<std::string> c;
+      if (uff) c.push_back("rappe1992");
+      else if (ffp.find("gaff") != std::string::npos) c.push_back("wang2004");
+      if (d->field->charges == "qeq") c.push_back("rappe1991");
+      if (d->field->charges == "gasteiger") c.push_back("gasteiger1980");
+      if (!uff) prov_input(d, ffp);
+      const std::string ch = d->field->charges == "types" ? "from the force field" : d->field->charges == "keep" ? "kept from the file" : d->field->charges == "qeq" ? "QEq" : "Gasteiger–Marsili";
+      prov_step(d, "field.assign", ff_label(d) + " · charges " + ch,
+                {{"force field", uff ? "UFF" : std::filesystem::path(ffp).filename().string()}, {"charges", ch}, {"typed", d->field->complete ? "every atom" : "incomplete"}},
+                "", std::move(c), {{"Estimated parameters", d->field->complete ? "none" : "some atoms untyped (see the typing report)"}});
+    }
     return d->field->complete ? 0 : 1;
   });
 }
@@ -1739,6 +1923,12 @@ extern "C" caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, 
       d->traj.timesteps.push_back(int64_t(d->traj.timesteps.size()));
     }
     refresh(d);
+    {
+      const bool uff = caps::is_uff(b.forcefield);
+      prov_step(d, "chem.build", "3D structure from SMILES · " + r.method,
+                {{"smiles", r.graph.smiles}, {"conformers", std::to_string(b.conformers)}, {"clean-up", b.forcefield.empty() ? "embedding only" : uff ? "UFF" : std::filesystem::path(b.forcefield).filename().string()}},
+                seeded(b.seed), uff ? std::vector<std::string>{"rappe1992"} : std::vector<std::string>{});
+    }
     caps::Json j = mol_json(r.info);
     j["smiles"] = r.graph.smiles;
     j["method"] = r.method;
@@ -2016,6 +2206,14 @@ extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opt
     d->traj.cells.push_back(s.cell);
     d->traj.timesteps.push_back(0);
     refresh(d);
+    {
+      caps::KeyValues pr = json_params(spec_json);
+      pr.push_back({"chains", std::to_string(o->chains)});
+      pr.push_back({o->box > 0 ? "box" : "density", o->box > 0 ? g6(o->box) + " Å" : g6(o->density) + " g/cm³"});
+      pr.push_back({"contact scale", g6(g.contact_scale) + (g.auto_scale ? " (lowered when crowded)" : "")});
+      prov_step(d, "grow.trials", std::to_string(o->chains) + " chains grown in a periodic cell, best-of-k trial placement by contact margin", std::move(pr),
+                seeded(o->seed), {"matsumoto1998"});
+    }
     std::string t;
     for (const auto& n : rep.notes) t += n + "\n";
     report_out(t, report, cap);
@@ -2102,7 +2300,10 @@ extern "C" caps_doc* caps_surface_build(const char* cif_path, const char* option
     std::string t;
     for (const auto& n : rep.notes) t += n + "\n";
     report_out(t, report, cap);
-    return doc_of(s);
+    caps_doc* d = doc_of(s);
+    prov_input(d, cif_path ? cif_path : "");
+    prov_step(d, "surface.build", "slab cut from a crystal", json_params(options_json));
+    return d;
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;
@@ -2140,6 +2341,11 @@ extern "C" caps_doc* caps_interface_build(const char* options_json, const char* 
     for (const auto& n : rep.notes) t += n + "\n";
     report_out(t, report, cap);
     caps_doc* d = doc_of(s);
+    {
+      caps::KeyValues pr = json_params(options_json);
+      for (auto& kv : json_params(spec_json)) pr.push_back({"chain " + kv.first, kv.second});
+      prov_step(d, "interface.build", "polymer grown against a surface", std::move(pr), seeded(o ? o->seed : 0), {"matsumoto1998"});
+    }
     d->held_mol = 1;
     return d;
   } catch (const std::exception& e) {
@@ -2191,7 +2397,9 @@ extern "C" caps_doc* caps_nano_build(const char* options_json, char* report, int
     std::string notes;
     const caps::System f = nano_from(caps::Json::parse(options_json && *options_json ? options_json : "{}"), keep, notes);
     report_out(notes, report, cap);
-    return doc_of(f);
+    caps_doc* d = doc_of(f);
+    prov_step(d, "nano.build", "nanostructure", json_params(options_json));
+    return d;
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;
@@ -2224,6 +2432,11 @@ extern "C" caps_doc* caps_nano_embed(const char* options_json, const char* spec_
     for (const auto& n : fr.notes) notes += n + "\n";
     report_out(notes, report, cap);
     caps_doc* d = doc_of(s);
+    {
+      caps::KeyValues pr = json_params(options_json);
+      for (auto& kv : json_params(spec_json)) pr.push_back({"chain " + kv.first, kv.second});
+      prov_step(d, "nano.embed", "nanostructure in a grown polymer matrix", std::move(pr), seeded(o ? o->seed : 0), {"matsumoto1998"});
+    }
     d->held_mol = 1;
     return d;
   } catch (const std::exception& e) {
@@ -2260,7 +2473,9 @@ extern "C" caps_doc* caps_grow_blend(const char* options_json, const caps_grow_o
     std::string t;
     for (const auto& n : br.notes) t += n + "\n";
     report_out(t, report, cap);
-    return doc_of(s);
+    caps_doc* d = doc_of(s);
+    prov_step(d, "grow.blend", "polymer blend grown in a periodic cell", json_params(options_json), seeded(o ? o->seed : 0), {"matsumoto1998"});
+    return d;
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;
@@ -2290,6 +2505,9 @@ extern "C" int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_
     d->traj.timesteps.push_back(0);
     d->current = 0;
     refresh(d);
+    prov_step(d, "pack.insert", std::to_string(std::max(1, count)) + " × " + std::string(smiles ? smiles : "") + " inserted",
+              {{"smiles", smiles ? smiles : ""}, {"count", std::to_string(std::max(1, count))}, {"tolerance", g6(po.tolerance) + " Å"}}, seeded(po.seed),
+              {"martinez2009", "rappe1992"});
     std::string t;
     for (const auto& n : pr.notes) t += n + "\n";
     report_out(t, report, cap);
@@ -2763,6 +2981,7 @@ extern "C" caps_doc* caps_crystal_build(const char* spec_json, char* report, int
     for (const auto& n : s.notes) notes += n + "\n";
     report_out(notes, report, cap);
     caps_doc* d = doc_of(s);
+    prov_step(d, "crystal.build", "crystal from a space group and its asymmetric unit", json_params(spec_json), "", {"hall1981"});
     const caps::Json j = caps::Json::parse(spec_json && *spec_json ? spec_json : "{}");
     if (j.has("supercell") && j["supercell"].is_array())
       for (size_t k = 0; k < 3 && k < j["supercell"].size(); ++k) d->cell_repeats[k] = std::max(1, int(j["supercell"][k].number()));
@@ -2912,6 +3131,7 @@ extern "C" caps_doc* caps_peptide_build(const char* options_json, char* report, 
     for (const auto& n : s.notes) notes += n + "\n";
     report_out(notes, report, cap);
     caps_doc* d = doc_of(s);
+    prov_step(d, "bio.peptide", "peptide from its sequence, backbone placed by NeRF", json_params(options_json), "", {"engh1991", "parsons2005"});
     if (j.has("ribbon") && (j["ribbon"].kind() == caps::Json::Bool ? j["ribbon"].boolean() : j["ribbon"].number() != 0)) d->overlay = peptide_ribbon(s, rep.structure);
     return d;
   } catch (const std::exception& e) {
@@ -3025,7 +3245,16 @@ extern "C" caps_doc* caps_solvate(caps_doc* solute, const char* options_json, ca
     std::snprintf(b, sizeof b, "min. distance %.2f Å · %d molecules · %d atoms", rep.pack.dmin, rep.pack.molecules, rep.pack.atoms);
     notes += b;
     report_out(notes, report, cap);
-    return doc_of(out);
+    caps_doc* d = doc_of(out);
+    if (solute) { d->prov = solute->prov; }
+    {
+      std::vector<std::string> c = {"martinez2009"};
+      const std::string wm = o.water_model;
+      if (o.solvent == "water") c.push_back(wm == "TIP4P/2005" ? "abascal2005" : wm == "TIP3P" ? "jorgensen1983" : wm == "SPC/E" ? "berendsen1987" : "");
+      c.erase(std::remove(c.begin(), c.end(), std::string()), c.end());
+      prov_step(d, "solvate.pack", std::to_string(rep.pack.molecules) + " molecules packed · closest contact " + g6(rep.pack.dmin) + " Å", json_params(options_json), "", std::move(c));
+    }
+    return d;
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;
@@ -3442,6 +3671,20 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       throw std::invalid_argument("unknown edit '" + op + "'");
     }
     push_undo(d, what);
+    {
+      // consecutive builder edits are one step listing its operations
+      if (d->prov.steps.empty() || d->prov.steps.back().engine != "edit.builder") {
+        prov_step(d, "edit.builder", "", {{"operations", "0"}}, "", op == "clean" ? std::vector<std::string>{"rappe1992"} : std::vector<std::string>{});
+      }
+      auto& st = d->prov.steps.back();
+      const int n = std::stoi(st.params[0].second) + 1;
+      st.params[0].second = std::to_string(n);
+      st.params.push_back({"#" + std::to_string(n), what});
+      if (st.params.size() > 41) st.params.erase(st.params.begin() + 1);   // the last 40 operations
+      st.summary = std::to_string(n) + " edit" + (n == 1 ? "" : "s") + " in the builder";
+      if (op == "clean" && std::find(st.cites.begin(), st.cites.end(), "rappe1992") == st.cites.end()) st.cites.push_back("rappe1992");
+      st.time = caps::now_iso();
+    }
     store(d, s);
     r["ok"] = true;
     r["what"] = what;
@@ -3669,8 +3912,13 @@ caps::ImportOptions import_options(const char* options_json) {
 extern "C" caps_doc* caps_import(const char* path, const char* topology_path, const char* options_json) {
   try {
     auto* d = new caps_doc;
-    d->traj = caps::import_file(path, topology_path ? topology_path : "", import_options(options_json));
+    const caps::ImportOptions io = import_options(options_json);
+    d->traj = caps::import_file(path, topology_path ? topology_path : "", io);
     refresh(d);
+    caps::KeyValues ip = {{"bonds", io.bonds == 0 ? "perceived · covalent radii + " + g6(io.tolerance) + " Å" : io.bonds == 1 ? "from the file" : "none"},
+                          {"bond orders", io.bond_orders ? "from valences" : "not assigned"}, {"molecules", io.split ? "by connectivity" : "as read"},
+                          {"unwrap", io.unwrap ? "yes" : "no"}, {"cell", io.use_cell ? "from the file" : "dropped"}};
+    prov_opened(d, path, topology_path ? topology_path : "", "io.import", std::move(ip), io.bonds == 0 ? std::vector<std::string>{"cordero2008"} : std::vector<std::string>{});
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -3863,4 +4111,61 @@ extern "C" int32_t caps_export_movie(caps_doc* d, const caps_camera* cam, const 
     if (d->current != keep) { d->current = keep; refresh(d); }
     return written;
   });
+}
+
+// ---------------------------------------------------------------- provenance (design/boards/Provenance)
+extern "C" int32_t caps_provenance(caps_doc* d, char* json, int32_t cap) {
+  return report_out(caps::manifest_json(d->prov).dump(0), json, cap);
+}
+
+extern "C" int32_t caps_provenance_file(const char* path, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  if (auto m = caps::read_manifest(path ? path : "")) {
+    j = caps::manifest_json(*m);
+    j["ok"] = true;
+  } else {
+    j["ok"] = false;
+    j["error"] = std::string("no provenance beside ") + (path ? path : "") + " (" + caps::sidecar_path(path ? path : "") + ")";
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_provenance_compare(const char* a_json, const char* b_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const auto a = caps::manifest_from_json(caps::Json::parse(a_json && *a_json ? a_json : "{}"));
+    const auto b = caps::manifest_from_json(caps::Json::parse(b_json && *b_json ? b_json : "{}"));
+    const auto d = caps::compare(a, b);
+    j["ok"] = true;
+    j["same_inputs"] = d.same_inputs;
+    j["same_generator"] = d.same_generator;
+    j["steps_a"] = d.steps_a;
+    j["steps_b"] = d.steps_b;
+    j["differing_steps"] = d.differing_steps;
+    caps::Json rows = caps::Json::array();
+    for (const auto& r : d.rows) {
+      caps::Json o = caps::Json::object();
+      o["step"] = r.step; o["engine"] = r.engine; o["key"] = r.key; o["a"] = r.a; o["b"] = r.b;
+      rows.push_back(std::move(o));
+    }
+    j["rows"] = std::move(rows);
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : d.notes) notes.push_back(n);
+    j["notes"] = std::move(notes);
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_provenance_bibtex(const char* manifest_json, char* text, int32_t cap) {
+  try {
+    const auto m = caps::manifest_from_json(caps::Json::parse(manifest_json && *manifest_json ? manifest_json : "{}"));
+    return report_out(caps::bibtex(caps::all_cites(m)), text, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
 }
