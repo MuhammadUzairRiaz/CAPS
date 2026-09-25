@@ -295,6 +295,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_pipeline_result")] public static extern int PipelineResult(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_particles")] public static extern int PipelineParticles(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? filter, int offset, int count, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_bonds")] public static extern int PipelineBonds(IntPtr doc, int offset, int count, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_series")] public static extern int PipelineSeries(IntPtr doc, int stride, CapsAnalyzeProgress? progress, IntPtr user, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
@@ -449,6 +450,21 @@ public sealed class CapsDocument : IDisposable
     public string PipelineParticles(string filter, int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineParticles(_h, filter, offset, count, b, c)); }
     public string PipelineBonds(int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineBonds(_h, offset, count, b, c)); }
     public static string PipelineCatalogue() => Sized(Native.PipelineCatalogue);
+    /// <summary>The pipeline's attributes on every stride-th frame (runs the pipeline once to size, once to fill: call off the UI thread).</summary>
+    public string PipelineSeries(int stride, Func<double, bool>? progress)
+    {
+        CapsAnalyzeProgress? cb = progress == null ? null : (_, f, _) => progress(f) ? 0 : 1;
+        lock (_lock)
+        {
+            // one run fills a generous buffer; a second only if it was too small
+            var buf = new byte[1 << 20];
+            var n = Native.PipelineSeries(_h, stride, cb, IntPtr.Zero, buf, buf.Length);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            if (n > buf.Length) { buf = new byte[n]; Native.PipelineSeries(_h, stride, null, IntPtr.Zero, buf, buf.Length); }
+            GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
 
     public string FileChecks()
     {

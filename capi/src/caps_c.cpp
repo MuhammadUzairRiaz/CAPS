@@ -116,7 +116,7 @@ void run_doc_pipeline(caps_doc* d) {
   d->shown_of.clear();
   if (!d->pipeline) return;
   const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
-  d->pstate = std::make_unique<caps::PipelineState>(caps::run_pipeline(d->frame, *d->pipeline, int(d->current), ts));
+  d->pstate = std::make_unique<caps::PipelineState>(caps::run_pipeline(d->frame, *d->pipeline, int(d->current), ts, &d->traj));
   d->shown_of.assign(d->frame.atoms.size(), -1);
   for (size_t k = 0; k < d->pstate->origin.size(); ++k) {
     const int o = d->pstate->origin[k];
@@ -2194,6 +2194,30 @@ extern "C" int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t coun
       st = &plain;
     }
     return report_out(caps::bonds_json(*st, size_t(std::max(0, offset)), size_t(std::max(0, count))).dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyze_progress_fn progress, void* user, char* json, int32_t cap) {
+  try {
+    const caps::Pipeline p = d->pipeline ? *d->pipeline : caps::Pipeline{};
+    const auto t = caps::pipeline_series(d->traj, p, stride, d->wrap, [&](int done, int total) {
+      return !progress || progress("frames", double(done) / std::max(1, total), user) == 0;
+    });
+    caps::Json j = caps::Json::object();
+    caps::Json c = caps::Json::array();
+    for (const auto& x : t.columns) c.push_back(x);
+    j["columns"] = std::move(c);
+    caps::Json rows = caps::Json::array();
+    for (const auto& r : t.rows) {
+      caps::Json row = caps::Json::array();
+      for (double x : r) row.push_back(std::isfinite(x) ? caps::Json(x) : caps::Json());
+      rows.push_back(std::move(row));
+    }
+    j["rows"] = std::move(rows);
+    return report_out(j.dump(0), json, cap);
   } catch (const std::exception& e) {
     g_error = e.what();
     return -1;

@@ -1284,7 +1284,7 @@ int main(int argc, char** argv) {
       const int fr = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
       if (fr < 0 || size_t(fr) >= t.frames()) throw std::runtime_error("frame out of range");
       const System f0 = t.frame(size_t(fr));
-      const auto st = run_pipeline(f0, pipeline_from_json(Json::parse(text)), fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)]);
+      const auto st = run_pipeline(f0, pipeline_from_json(Json::parse(text)), fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
       for (size_t k = st.steps.size(); k-- > 0;)
         std::printf("%-8s %-22s %s\n", st.steps[k].level.c_str(), st.steps[k].title.c_str(), st.steps[k].summary.c_str());
       for (const auto& [k, v] : st.attributes) std::printf("  %-34s %.6g\n", k.c_str(), v);
