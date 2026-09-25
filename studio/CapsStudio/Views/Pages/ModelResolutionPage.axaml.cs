@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using CapsStudio.ViewModels;
 
 namespace CapsStudio.Views.Pages;
@@ -38,4 +39,11 @@ public partial class ModelResolutionPage : PageBase
         if (change.Property == IsVisibleProperty && IsVisible && DataContext is MainViewModel vm) Show(vm);
     }
     private void OnBackmap(object? s, RoutedEventArgs e) => Vm.SetModule(44);
+    private async void OnBackmapFile(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions { Title = "Beads to backmap onto (dump, data, xyz, pdb)", AllowMultiple = false });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is string path) await Vm.BackmapFrom(path);
+    }
 }

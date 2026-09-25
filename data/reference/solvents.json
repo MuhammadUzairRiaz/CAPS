@@ -3,23 +3,23 @@
   "description": "Inputs for the Hildebrand solvent screen (Analyze › Solvent screen): solubility parameters δ from Barton, CRC Handbook of Solubility Parameters and Other Cohesion Parameters (1991); molar volumes V = M/ρ from densities at 20–25 °C. Known behaviour is qualitative handbook knowledge, shown beside the estimate so its failures are visible. Check the edition you cite before publishing; add solvents and polymers freely.",
   "source": "Barton, CRC Handbook of Solubility Parameters (1991); densities at 20–25 °C; V = M/ρ",
   "solvents": [
-    { "name": "Chloroform", "v": 80.2, "delta": 19.0 },
-    { "name": "Toluene", "v": 106.3, "delta": 18.2 },
-    { "name": "THF", "v": 81.1, "delta": 19.4 },
-    { "name": "Acetone", "v": 73.4, "delta": 20.0 },
-    { "name": "Cyclohexane", "v": 108.0, "delta": 16.8 },
-    { "name": "n-Hexane", "v": 131.6, "delta": 14.9 },
-    { "name": "Ethanol", "v": 58.4, "delta": 26.5 },
-    { "name": "Water", "v": 18.1, "delta": 47.8 }
+    { "name": "Chloroform", "v": 80.2, "delta": 19.0, "smiles": "ClC(Cl)Cl" },
+    { "name": "Toluene", "v": 106.3, "delta": 18.2, "smiles": "Cc1ccccc1" },
+    { "name": "THF", "v": 81.1, "delta": 19.4, "smiles": "C1CCOC1" },
+    { "name": "Acetone", "v": 73.4, "delta": 20.0, "smiles": "CC(C)=O" },
+    { "name": "Cyclohexane", "v": 108.0, "delta": 16.8, "smiles": "C1CCCCC1" },
+    { "name": "n-Hexane", "v": 131.6, "delta": 14.9, "smiles": "CCCCCC" },
+    { "name": "Ethanol", "v": 58.4, "delta": 26.5, "smiles": "CCO" },
+    { "name": "Water", "v": 18.1, "delta": 47.8, "smiles": "O" }
   ],
   "polymers": [
     {
-      "id": "ps", "name": "polystyrene", "short": "PS", "delta": 18.6, "range": "literature 17.4–19.0",
+      "id": "ps", "name": "polystyrene", "short": "PS", "unit": "*CC(*)c1ccccc1", "delta": 18.6, "range": "literature 17.4–19.0",
       "known": { "Chloroform": "good solvent", "Toluene": "good solvent", "THF": "good solvent", "Acetone": "non-solvent",
                  "Cyclohexane": "Θ solvent near 34.5 °C", "n-Hexane": "non-solvent", "Ethanol": "non-solvent", "Water": "non-solvent" }
     },
     {
-      "id": "nr", "name": "natural rubber", "short": "NR", "delta": 16.6, "range": "literature about 16.2–17.0",
+      "id": "nr", "name": "natural rubber", "short": "NR", "unit": "*C/C=C(C)\\C*", "delta": 16.6, "range": "literature about 16.2–17.0",
       "known": { "Chloroform": "good solvent", "Toluene": "good solvent", "THF": "good solvent", "Acetone": "non-solvent",
                  "Cyclohexane": "good solvent", "n-Hexane": "good solvent", "Ethanol": "non-solvent", "Water": "non-solvent" }
     }

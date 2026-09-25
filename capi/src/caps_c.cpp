@@ -23,6 +23,7 @@
 #include "caps/config.hpp"
 #include "caps/bench.hpp"
 #include "caps/polymer.hpp"
+#include "caps/chimd.hpp"
 #include "caps/polystats.hpp"
 #include "caps/resolution.hpp"
 #include "caps/kspace.hpp"
@@ -5657,6 +5658,42 @@ extern "C" int32_t caps_stereo(const char* json, char* out, int32_t cap) {
   }
 }
 
+extern "C" int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::ChiMdOptions o;
+    o.polymer = spec_from(j["polymer"].dump());
+    o.chains = int(j.num("chains", 6));
+    if (j.has("polymer_b")) o.b_polymer = true, o.polymer_b = spec_from(j["polymer_b"].dump()), o.chains_b = int(j.num("chains_b", 6));
+    o.solvent_smiles = j.text("solvent");
+    o.solvent_molecules = int(j.num("solvent_molecules", 0));
+    o.temperature = j.num("temperature", 300);
+    o.pressure = j.num("pressure", 1);
+    o.eq_ps = j.num("eq_ps", 20), o.prod_ps = j.num("prod_ps", 20);
+    o.seed = uint64_t(j.num("seed", 1));
+    if (progress) o.progress = [&](const std::string& st, double f) { return progress(st.c_str(), f, user) == 0; };
+    const caps::ChiMdResult c = caps::chi_by_md(o);
+    r["ok"] = true;
+    r["chi"] = c.chi, r["chi_error"] = c.chi_error, r["phi_a"] = c.phi_a, r["v_ref"] = c.v_ref, r["de_mix"] = c.de_mix;
+    caps::Json cells = caps::Json::array();
+    for (const caps::ChiMdCell* x : {&c.a, &c.b, &c.mix}) {
+      caps::Json e = caps::Json::object();
+      e["name"] = x->name, e["atoms"] = double(x->atoms), e["molecules"] = double(x->molecules), e["density"] = x->density;
+      e["ced"] = x->e_density / 1.4393e-4, e["ced_error"] = x->e_error / 1.4393e-4;
+      cells.push_back(std::move(e));
+    }
+    r["cells"] = std::move(cells);
+    caps::Json n = caps::Json::array();
+    for (const auto& x : c.notes) n.push_back(x);
+    r["notes"] = std::move(n);
+  } catch (const std::exception& e) {
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(), out, cap);
+}
+
 extern "C" int32_t caps_blend_phase(const char* json, char* out, int32_t cap) {
   try {
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
@@ -5955,6 +5992,35 @@ extern "C" caps_doc* caps_resolution_convert(caps_doc* d, const char* json, char
                              {{"to", to}, {"sites", std::to_string(rep.sites)}});
     std::string t;
     for (const auto& n : rep.notes) t += n + "\n";
+    report_out(t, report, cap);
+    return nd;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" caps_doc* caps_backmap(caps_doc* d, const char* beads_path, int32_t per_bead, int32_t relax_after, char* report, int32_t cap) {
+  try {
+    if (!beads_path || !*beads_path) throw std::runtime_error("choose the file with the moved beads");
+    const caps::Trajectory bt = caps::open_file(beads_path, "");
+    const caps::System beads = bt.frame(bt.frames() - 1);   // the last frame of a bead trajectory
+    caps::BackmapReport rep;
+    caps::System s = caps::backmap(d->frame, beads, std::clamp(int(per_bead), 1, 100), &rep);
+    std::vector<std::string> notes = rep.notes;
+    if (relax_after) {   // the bonds between beads settle: push-off, then minimisation
+      caps::RelaxOptions ro;
+      ro.ftol = 1.0;
+      ro.max_iterations = 3000;
+      ro.energy = elec(ro.energy);
+      caps::RelaxReport rr;
+      caps::relax(s, ro, &rr);
+      notes.push_back("relaxed: " + (rr.notes.empty() ? std::string() : rr.notes.front()));
+    }
+    auto* nd = doc_of_system(std::move(s), d, "model.backmap", "backmapped onto the beads of " + std::string(beads_path),
+                             {{"per_bead", std::to_string(per_bead)}, {"beads", std::to_string(rep.beads)}, {"relaxed", relax_after ? "yes" : "no"}});
+    std::string t;
+    for (const auto& n : notes) t += n + "\n";
     report_out(t, report, cap);
     return nd;
   } catch (const std::exception& e) {

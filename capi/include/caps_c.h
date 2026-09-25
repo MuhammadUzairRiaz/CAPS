@@ -584,6 +584,17 @@ int32_t caps_set_restraints(caps_doc* d, const char* json);
 /* Add hydrogens by pH (v21): amino-acid residues protonated at `ph` (model pKa values) before the "add_h" edit and
    in caps_hydrogen_plan; a negative pH goes back to neutral valences. "add_h" also takes {ph} for one edit. */
 void caps_set_ph(caps_doc* d, double ph);
+
+/* χ by MD (v21, chimd.hpp): JSON {polymer: {units: [{name, smiles}], dp …} (a chain spec), chains, solvent (SMILES) and
+   solvent_molecules, or polymer_b and chains_b, temperature, pressure, eq_ps, prod_ps, seed} → {ok, error, chi,
+   chi_error, phi_a, v_ref, de_mix, cells: [{name, atoms, molecules, density, ced, ced_error}], notes}. Minutes of
+   CPU: progress gets (stage, fraction) and returns non-zero to cancel. */
+typedef int32_t (*caps_stage_fn)(const char* stage, double fraction, void* user);
+int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
+/* Backmap (v21): the current structure's coarse-grained beads (per_bead backbone atoms each, as caps_resolution_convert
+   makes them) moved to those of the file (the last frame; same count and order, e.g. a LAMMPS dump of the beads); each
+   bead's atoms carried along and turned with it, then relaxed when relax is set. A new document, or NULL. */
+caps_doc* caps_backmap(caps_doc* d, const char* beads_path, int32_t per_bead, int32_t relax, char* report, int32_t cap);
 int64_t caps_held_molecule(const caps_doc* d);
 
 /* Crystals from space groups (v20, design/boards/CrystalBuilder). A spec is JSON {space_group (key "227:2", number or
