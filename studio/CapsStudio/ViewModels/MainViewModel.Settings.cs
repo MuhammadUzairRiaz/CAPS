@@ -38,6 +38,7 @@ public sealed partial class MainViewModel
     private void ApplyAll()
     {
         Tokens.UseTheme(_settings.Theme);
+        Motion.Mode = _settings.ReduceMotion;
         try { Native.SetPalette(_settings.Palette); Native.SetThreads(_settings.Threads); ApplyElectrostatics(); } catch { /* an older core: defaults */ }
         _viewBackground = _settings.Background; Raise(nameof(ViewBackground)); Raise(nameof(ViewIsLight));
         _outlines = _settings.Outlines; Raise(nameof(Outlines));
@@ -54,7 +55,7 @@ public sealed partial class MainViewModel
         Raise(nameof(JobTemplate));
         foreach (var n in new[] { nameof(SetTheme), nameof(SetScale), nameof(ScaleText), nameof(SetPalette), nameof(SetThreads), nameof(ThreadsText),
                                   nameof(SetBackground), nameof(SetOutlines), nameof(SetDepthCue), nameof(SetStyle), nameof(SetForceField),
-                                  nameof(SetElectrostatics), nameof(PmeOn), nameof(SetEwaldExponent), nameof(SetPmeSpacing), nameof(SetPmeOrder) })
+                                  nameof(SetElectrostatics), nameof(PmeOn), nameof(SetEwaldExponent), nameof(SetPmeSpacing), nameof(SetPmeOrder), nameof(SetReduceMotion), nameof(MotionText) })
             Raise(n);
         RenderRequested?.Invoke();
         MolViewChanged?.Invoke();

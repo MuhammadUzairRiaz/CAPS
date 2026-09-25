@@ -4422,6 +4422,52 @@ extern "C" int32_t caps_vision_check(const char* palettes_json, double threshold
 
 extern "C" uint32_t caps_category_colour(int32_t k) { return caps::category_colour(k); }
 
+extern "C" int32_t caps_camera_focus(caps_doc* d, const caps_camera* cam, const int32_t* idx, int32_t n, double fill, caps_camera* out) {
+  return guard([&] {
+    if (!cam || !out) throw std::invalid_argument("camera_focus: no camera");
+    const caps::System& s = shown(d);
+    *out = *cam;
+    out->pan_x = out->pan_y = 0;
+    if (s.atoms.empty() || n <= 0) { out->zoom = 1; return 0; }
+    // the view's rotation about the frame centre, as the renderer fits it (cell centre, else the atoms' box)
+    caps::Vec3 centre{0, 0, 0};
+    if (s.cell.valid()) centre = s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5;
+    else {
+      caps::Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
+      for (const auto& a : s.atoms) for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], a.pos[k]); hi[k] = std::max(hi[k], a.pos[k]); }
+      centre = (lo + hi) * 0.5;
+    }
+    const double cy = std::cos(cam->yaw), sy = std::sin(cam->yaw), cp = std::cos(cam->pitch), sp = std::sin(cam->pitch);
+    auto rot = [&](const caps::Vec3& p) {
+      const caps::Vec3 q = p - centre;
+      const double x = q[0] * cy + q[2] * sy, z = -q[0] * sy + q[2] * cy, y = q[1];
+      return std::array<double, 2>{x, y * cp - z * sp};
+    };
+    double ax = 1e-6, ay = 1e-6;   // the whole frame's half extent (zoom 1)
+    if (s.cell.valid())
+      for (int i = 0; i < 2; ++i) for (int j = 0; j < 2; ++j) for (int k = 0; k < 2; ++k) {
+        const auto r = rot(s.cell.origin + s.cell.a * i + s.cell.b * j + s.cell.c * k);
+        ax = std::max(ax, std::fabs(r[0])); ay = std::max(ay, std::fabs(r[1]));
+      }
+    for (const auto& a : s.atoms) { const auto r = rot(a.pos); ax = std::max(ax, std::fabs(r[0])); ay = std::max(ay, std::fabs(r[1])); }
+    double lx = 1e300, hx = -1e300, ly = 1e300, hy = -1e300;
+    int used = 0;
+    for (int32_t k = 0; k < n; ++k) {
+      if (idx[k] < 0 || size_t(idx[k]) >= s.atoms.size()) continue;
+      const auto r = rot(s.atoms[size_t(idx[k])].pos);
+      lx = std::min(lx, r[0]); hx = std::max(hx, r[0]); ly = std::min(ly, r[1]); hy = std::max(hy, r[1]);
+      ++used;
+    }
+    if (!used) { out->zoom = 1; return 0; }
+    out->pan_x = -(lx + hx) / 2;
+    out->pan_y = -(ly + hy) / 2;
+    const double f = fill > 0 && fill <= 1 ? fill : 0.6;
+    const double hx2 = std::max(2.0, (hx - lx) / 2 + 2), hy2 = std::max(2.0, (hy - ly) / 2 + 2);   // 2 Å for the atoms' own size
+    out->zoom = std::clamp(f * std::min(ax / hx2, ay / hy2), 1.0, 40.0);
+    return 0;
+  });
+}
+
 extern "C" int32_t caps_set_vision(caps_doc* d, int32_t vision, double severity) {
   if (!d || vision < 0 || vision > 3) return -1;
   d->vision = vision;

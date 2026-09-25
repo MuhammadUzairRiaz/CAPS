@@ -95,6 +95,10 @@ public sealed partial class MainViewModel
             Enabled = () => _doc != null, Run = CloseDocument });
         AddCommand(new PaletteCommand { Title = "Reset view", Id = "view.reset", Icon = "rotate", Shortcut = "R", Section = "View",
             Enabled = () => _doc != null, Run = ResetView });
+        AddCommand(new PaletteCommand { Title = "Frame selection", Id = "view.frame", Icon = "cube", Shortcut = "F", Section = "View",
+            Keywords = "focus fit zoom to selection centre camera fly", Enabled = () => _doc != null, Run = FrameSelection });
+        AddCommand(new PaletteCommand { Title = "Reduce motion", Id = "settings.motion", Icon = "gear", Section = "Settings",
+            Keywords = "motion animation reduce accessibility camera fly cut vestibular", Run = () => SetReduceMotion = Motion.Reduced ? "off" : "on" });
         for (var k = 0; k < Styles.Length; k++)
         {
             var s = k;
