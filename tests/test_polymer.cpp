@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/analysis.hpp"
 #include "caps/polymer.hpp"
 
 using namespace caps;
@@ -295,5 +296,35 @@ TEST(Polymer, SlabAndCylinderRegions) {
     for (const auto& a : s.atoms) mass += s.mass_of(a);
     const double room = shape == 0 ? Lx * s.cell.b[1] * 20 : shape == 1 ? M_PI * 121 * Lz : (Lx * Lx - M_PI * 64) * Lz;
     EXPECT_NEAR(mass / (0.602214076 * room), 0.6, 0.02) << "shape " << shape;
+  }
+}
+
+// Growth methods: keeping the roomiest trial stretches polyethylene (trans-rich); Rosenbluth selection with butane
+// torsions at 450 K gives the trans share of a Boltzmann chain (about 0.57 for three states) and reports ln W
+TEST(Polymer, RosenbluthGrowthIsLessStretched) {
+  ChainSpec c = spec({"*CC*"}, Sequence::Homopolymer, 40);
+  double trans[3];
+  for (int method = 0; method < 3; ++method) {
+    GrowOptions o;
+    o.chains = 6;
+    o.density = 0.4;
+    o.seed = 5;
+    o.method = method;
+    o.auto_scale = true;
+    GrowReport r;
+    System s = grow_chains(c, o, &r);
+    int nt = 0, n = 0;
+    for (const auto& b : backbones(s))
+      for (size_t k = 0; k + 3 < b.size(); ++k, ++n) nt += std::fabs(measure(s, {b[k], b[k + 1], b[k + 2], b[k + 3]})) > 120;
+    trans[method] = double(nt) / n;
+    if (method > 0) {
+      EXPECT_TRUE(std::isfinite(r.ln_rosenbluth) && r.ln_rosenbluth < 0) << r.ln_rosenbluth;
+      EXPECT_NE(r.notes.back().find("Rosenbluth growth"), std::string::npos);
+    }
+  }
+  EXPECT_GT(trans[0], 0.68);
+  for (int m : {1, 2}) {
+    EXPECT_LT(trans[m], trans[0] - 0.08) << "method " << m;
+    EXPECT_GT(trans[m], 0.40) << "method " << m;
   }
 }

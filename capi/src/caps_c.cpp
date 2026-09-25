@@ -2441,6 +2441,10 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
     try {   // optional growth settings carried in the spec: trial directions per step
       const caps::Json sj = caps::Json::parse(spec_json ? spec_json : "{}");
       if (sj.has("trials")) g.trials = std::clamp(int(sj["trials"].number()), 4, 5000);
+      // method: trials (best by contact margin) | rosenbluth (soft spheres) | rosenbluth_lj (UFF Lennard-Jones); temperature K
+      const std::string meth = sj.text("method", "trials");
+      g.method = meth == "rosenbluth" ? 1 : meth == "rosenbluth_lj" ? 2 : 0;
+      g.method_temperature = sj.num("temperature", 450);
       // region: {shape: slab, thickness, vacuum} | {shape: cylinder | around_cylinder, radius, length}
       if (sj.has("region") && sj["region"].is_object()) {
         const caps::Json& R = sj["region"];

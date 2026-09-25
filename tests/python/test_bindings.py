@@ -120,4 +120,7 @@ arch = [st for st in star.provenance()["steps"] if st["engine"] == "grow.trials"
 check(star.summary()["molecules"] == 2 and star.atoms == 2 * (4 * 8 * 10 + 4 - 2) and arch.startswith("star, 4 arms"), f"polymer: star BR, {star.atoms} atoms")
 film = caps.polymer("*CC=CC*", dp=10, chains=4, density=0.6, region={"shape": "slab", "thickness": 20, "vacuum": 30}, seed=2)
 check(abs(film.summary()["cell_c"] - 50.0) < 1e-6 and film.atoms == 4 * 102, f"polymer: a slab with vacuum · {film.atoms} atoms, c {film.summary()['cell_c']:.1f} Å")
+rb = caps.polymer("*CC*", dp=20, chains=3, density=0.4, method="rosenbluth", seed=4)
+st = [x for x in rb.provenance()["steps"] if x["engine"] == "grow.rosenbluth"]
+check(len(st) == 1 and "ln W" in st[0]["params"]["method"], "polymer: Rosenbluth growth recorded in the provenance")
 print("all python checks passed")

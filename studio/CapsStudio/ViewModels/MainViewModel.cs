@@ -456,6 +456,19 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
     public bool GrowHasRegion => _growShape > 0;
+    // growth method: 0 roomiest trial, 1 Rosenbluth soft spheres, 2 Rosenbluth UFF Lennard-Jones
+    private int _growMethod;
+    private double _growMethodT = 450;
+    public int GrowMethod
+    {
+        get => _growMethod;
+        set { if (Set(ref _growMethod, Math.Clamp(value, 0, 2))) { Raise(nameof(GrowMethodIs0)); Raise(nameof(GrowMethodIs1)); Raise(nameof(GrowMethodIs2)); } }
+    }
+    public bool GrowMethodIs0 => _growMethod == 0;
+    public bool GrowMethodIs1 => _growMethod == 1;
+    public bool GrowMethodIs2 => _growMethod == 2;
+    public decimal GrowMethodTempD { get => (decimal)_growMethodT; set { _growMethodT = Math.Clamp((double)value, 100, 2000); Raise(); } }
+    private static readonly string[] GrowMethodIds = ["trials", "rosenbluth", "rosenbluth_lj"];
     public string GrowRegionALabel => _growShape == 1 ? "Film thickness (Å)" : "Cylinder radius (Å)";
     public string GrowRegionBLabel => _growShape == 1 ? "Vacuum, above + below (Å)" : "Length along z (Å, 0: from the density)";
     public decimal GrowRegionAD
@@ -553,6 +566,7 @@ public sealed partial class MainViewModel : ObservableObject
         sb.Append("grow:\n").Append(_growUseBox && _growShape == 0 ? $"  box: {_growBox.ToString(inv)}\n" : $"  density: {_growDensity.ToString(inv)}\n");
         if (GrowRegionJson() is { } region) sb.Append("  region: ").Append(region.ToJsonString().Replace("\"", "").Replace(",", ", ").Replace(":", ": ")).Append('\n');
         sb.Append(inv, $"  seed: {_growSeed}\n  contact_scale: {(_growAutoScale ? "auto" : _growScale.ToString(inv))}\n  curve: {(_growCurve ? "true" : "false")}\n");
+        if (_growMethod > 0) sb.Append(inv, $"  method: {GrowMethodIds[_growMethod]}\n  temperature: {_growMethodT}\n");
         sb.Append("relax: { method: lbfgs, fmax: 1.0 }\nexport: [lammps, pdb]\n");
         return sb.ToString();
     }
@@ -570,6 +584,7 @@ public sealed partial class MainViewModel : ObservableObject
             extra += arch == "star" ? $", architecture=\"star\", arms={(int?)j!["arms"] ?? 4}"
                    : string.Format(inv, ", architecture=\"{0}\", arm_dp={1}{2}", arch, (int?)j!["arm_dp"] ?? 5,
                                    arch == "comb" ? $", spacing={(int?)j["spacing"] ?? 4}" : string.Format(inv, ", branch_probability={0}", (double?)j["branch_probability"] ?? 0.1));
+        if (_growMethod > 0) extra += string.Format(inv, ", method=\"{0}\", method_temperature={1}", GrowMethodIds[_growMethod], _growMethodT);
         if (GrowRegionJson() is { } region)
             extra += ", region={" + string.Join(", ", region.Select(kv => $"\"{kv.Key}\": " + (kv.Value is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var sv) ? $"\"{sv}\"" : kv.Value!.ToJsonString()))) + "}";
         return "import caps\n\n" + string.Format(inv, "cell = caps.polymer({0}, dp={1}, chains={2}, tacticity=\"{3}\", seed={4}, density={5}{6})\n",
@@ -664,6 +679,7 @@ public sealed partial class MainViewModel : ObservableObject
             sj["dp"] = _growDp;
             sj["trials"] = _growTrials;
             if (GrowRegionJson() is { } region) { sj["region"] = region; o.Box = 0; o.Density = _growDensity; }
+            if (_growMethod > 0) { sj["method"] = GrowMethodIds[_growMethod]; sj["temperature"] = _growMethodT; }
             spec = sj.ToJsonString();
         }
         var stem = spec == null ? "PS" : string.Concat(_growSpecName.Where(char.IsLetterOrDigit).Take(16));
@@ -698,6 +714,7 @@ public sealed partial class MainViewModel : ObservableObject
                             lastUi = sw.ElapsedMilliseconds;
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                             {
+                                if (!_growing) return;   // arrived after the run ended: the finished numbers stay
                                 GrowLog = $"Growing (seed {s0})… {d} of {t} chains finished · {r} restarts · {sw.Elapsed.TotalSeconds:F1} s";
                                 GrowDone = d;
                                 GrowRestarts = r;
