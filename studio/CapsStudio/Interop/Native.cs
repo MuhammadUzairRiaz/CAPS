@@ -273,6 +273,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_vision_check")] public static extern int VisionCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string palettes, double threshold, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_vision")] public static extern int SetVision(IntPtr doc, int vision, double severity);
     [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
+    [DllImport(Lib, EntryPoint = "caps_camera_focus")] public static extern int CameraFocus(IntPtr doc, in CapsCamera cam, int[] idx, int n, double fill, out CapsCamera focused);
     [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
                                                                           CapsRecipeProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -571,6 +572,11 @@ public sealed class CapsDocument : IDisposable
         var buf = new byte[n];
         Native.VisionCheck(palettes, threshold, buf, n);
         return System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0');
+    }
+    /// <summary>The camera (same direction) that centres atoms idx and fills `fill` of the view with them.</summary>
+    public CapsCamera Focus(CapsCamera cam, int[] idx, double fill = 0.6)
+    {
+        lock (_lock) { Alive(); Check(Native.CameraFocus(_h, cam, idx, idx.Length, fill, out var f)); return f; }
     }
     /// <summary>The view as seen with a colour-vision deficiency (0 normal … 3 tritanopia); exports are never simulated.</summary>
     public void SetVision(int vision) { lock (_lock) { Alive(); Native.SetVision(_h, vision, 1.0); } }

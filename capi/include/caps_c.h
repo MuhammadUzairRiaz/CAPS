@@ -366,6 +366,9 @@ int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, 
    3 tritanopia); exports are never simulated. */
 int32_t caps_vision_check(const char* palettes_json, double threshold, char* json, int32_t cap);
 int32_t caps_set_vision(caps_doc* d, int32_t vision, double severity);
+/* v20 motion (design/boards/Motion): the camera that frames atoms idx[0..n) — same yaw and pitch as cam, the pan that
+   centres them and the zoom at which their extent fills `fill` (0.6) of the view (1 … 40); n = 0 frames everything. */
+int32_t caps_camera_focus(caps_doc* d, const caps_camera* cam, const int32_t* idx, int32_t n, double fill, caps_camera* out);
 /* v20 the k-th molecule / chain colour of the current palette (0xRRGGBB). */
 uint32_t caps_category_colour(int32_t k);
 /* v20 recipes (design/boards/CommandLine, JupyterNotebook): runs a recipe (YAML or JSON text, see recipe.hpp) — build,

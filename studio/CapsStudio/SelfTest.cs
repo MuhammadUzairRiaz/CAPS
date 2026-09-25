@@ -1080,6 +1080,27 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Motion: the standard easing, reduced motion cuts, a flight lands on its target, F frames the selection
+        {
+            var ease = Math.Abs(Motion.Standard(0)) < 1e-9 && Math.Abs(Motion.Standard(1) - 1) < 1e-9 && Motion.Standard(0.5) > 0.75;
+            vm.SetReduceMotion = "on";
+            vm.Camera = new CapsCamera { Yaw = 1.0, Pitch = 0.1, Zoom = 3 };
+            vm.ResetView();
+            var cut = Math.Abs(vm.Camera.Yaw - 0.55) < 1e-12 && Math.Abs(vm.Camera.Zoom - 1) < 1e-12;
+            vm.SetReduceMotion = "off";
+            vm.Camera = new CapsCamera { Yaw = 1.0, Pitch = 0.1, Zoom = 3 };
+            vm.ResetView();
+            vm.StopFly();
+            vm.FlyStep(0.5);
+            var mid = vm.Camera.Yaw < 1.0 && vm.Camera.Yaw > 0.55 && vm.Camera.Zoom < 3 && vm.Camera.Zoom > 1;
+            vm.FlyStep(1.0);
+            var landed = Math.Abs(vm.Camera.Yaw - 0.55) < 1e-12 && Math.Abs(vm.Camera.Pitch - 0.40) < 1e-12 && Math.Abs(vm.Camera.Zoom - 1) < 1e-12;
+            var one = vm.Document!.Focus(vm.Camera, Enumerable.Range(0, 130).ToArray());   // molecule 1
+            vm.SetReduceMotion = "system";
+            Check(ease && cut && mid && landed && one.Zoom > 1.2 && (Math.Abs(one.PanX) + Math.Abs(one.PanY)) > 0.5,
+                  $"motion: easing {ease} · reduced cut {cut} · mid-flight {mid} · landed {landed} · focus zoom {one.Zoom:0.00}");
+        }
+
         // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document
         {
             var rdir = Path.Combine(outDir, "caps-selftest-recipe");

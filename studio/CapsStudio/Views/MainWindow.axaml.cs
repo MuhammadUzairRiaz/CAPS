@@ -616,11 +616,13 @@ public partial class MainWindow : Window
             case Key.Right: _vm.StepFrame(1); e.Handled = true; break;
             case Key.Space: TogglePlay(); e.Handled = true; break;
             case Key.R when e.KeyModifiers == KeyModifiers.None: _vm.ResetView(); e.Handled = true; break;
+            case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
             case Key.Escape: _vm.ClearSelection(); e.Handled = true; break;
         }
     }
 
     private void OnResetView(object? s, RoutedEventArgs e) => _vm.ResetView();
+    private void OnFrameSelection(object? s, RoutedEventArgs e) => _vm.FrameSelection();
     private void OnViewTop(object? s, RoutedEventArgs e) => _vm.SetView(0, Math.PI / 2);
     private void OnViewFront(object? s, RoutedEventArgs e) => _vm.SetView(0, 0);
     private void OnViewSide(object? s, RoutedEventArgs e) => _vm.SetView(Math.PI / 2, 0);
@@ -770,6 +772,7 @@ public partial class MainWindow : Window
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        _vm.StopFly();   // the hand wins over a camera flight
         _hostField = sender as Control ?? ViewHost;
         var p = e.GetCurrentPoint(_host);
         _press = _last = p.Position;
@@ -826,6 +829,7 @@ public partial class MainWindow : Window
     private void OnWheel(object? sender, PointerWheelEventArgs e)
     {
         if (_vm.Document == null || _vm.Busy) return;
+        _vm.StopFly();
         _vm.Camera.Zoom = Math.Clamp(_vm.Camera.Zoom * Math.Pow(1.12, e.Delta.Y), 0.1, 40);
         RequestRender();
     }
