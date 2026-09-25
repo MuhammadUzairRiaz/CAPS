@@ -280,8 +280,8 @@
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="2" ClipToBounds="True">
             <Button Classes="tool" Classes.on="{Binding !MeasureTool}" Click="OnToolSelect" ToolTip.Tip="Select: click an atom · ⇧ click adds (up to 4 measure)"><local:Icon Kind="cursor" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Lasso select — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="lasso" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Translate — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="move" Size="18" /></Button>
+          <Button Classes="tool" Classes.on="{Binding IsLassoTool}" Click="OnToolLasso" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Lasso select: drag around atoms (⇧ adds to the selection)"><local:Icon Kind="lasso" Size="18" /></Button>
+          <Button Classes="tool" Classes.on="{Binding IsMoveTool}" Click="OnToolMove" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Translate: drag the selection, or the molecule under the cursor, in the view plane (undo with ⌘Z)"><local:Icon Kind="move" Size="18" /></Button>
             <Button Classes="tool" Click="OnResetView" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Reset the view (R); drag in the view rotates"><local:Icon Kind="rotate" Size="18" /></Button>
             <Rectangle Classes="vsep" />
           <Button Classes="tool" Classes.on="{Binding IsPlaceTool}" Click="OnToolPlace" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Place atom: click an atom to bond a new one to it (the element on the right)"><local:Icon Kind="atom" Size="18" /></Button>
@@ -300,7 +300,7 @@
             <Rectangle Classes="vsep" />
             <Button Classes="tool" Classes.on="{Binding MeasureTool}" Click="OnToolMeasure" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Measure: click 2–4 atoms for a distance, angle or dihedral"><local:Icon Kind="ruler" Size="18" /></Button>
             <Button Classes="tool" Click="OnTorsionScan" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Torsion scan: the energy along the dihedral of four picked atoms (⇧ click them first)"><local:Icon Kind="chart" Size="18" /></Button>
-          <Button Classes="tool" ToolTip.Tip="Pin monitor — coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="pin" Size="18" /></Button>
+          <Button Classes="tool" Click="OnPinMonitor" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Pin monitor: keep the distance, angle or dihedral of the picked atoms in the view; it follows the frames"><local:Icon Kind="pin" Size="18" /></Button>
           <Button Classes="tool" Click="OnInvert" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Invert the picked stereocentre (swap its two smallest branches)"><local:Icon Kind="mirror" Size="18" /></Button>
             <Rectangle Classes="vsep" />
           <Button Classes="tool" Click="OnAutoClean" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Auto-clean: minimise the picked atoms (or all) with UFF"><local:Icon Kind="wand" Size="18" /></Button>
@@ -462,6 +462,26 @@
           <Panel>
             <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
             <local:LabelOverlay x:Name="Labels" />
+            <!-- pinned measurements (the toolbar's Pin monitor): they follow the frames and edits -->
+            <Border Classes="hud" Padding="10,8" Margin="14,14,14,58" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding HasMonitors}">
+              <StackPanel Spacing="4">
+                <TextBlock Text="PINNED" Classes="label" FontSize="10.5" />
+                <ItemsControl ItemsSource="{Binding Monitors}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MonitorRow">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="{Binding Kind}" Foreground="{DynamicResource AccB}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Ids}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+                          <TextBlock Text="{Binding Value}" Classes="mono" FontSize="11.5" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Classes="ghost" Content="×" Padding="4,0" Click="OnUnpin" Tag="{Binding}" ToolTip.Tip="Unpin" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
             <!-- Appearance legend (design/boards/Appearance): partial charge or surface potential -->
             <Border Classes="hud" Width="260" Padding="12,10" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Bottom" IsVisible="{Binding ShowAppLegend}">
               <StackPanel Spacing="6">

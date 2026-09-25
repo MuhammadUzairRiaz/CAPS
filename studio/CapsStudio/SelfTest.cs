@@ -1520,6 +1520,41 @@ internal static class SelfTest
             vm.RemoveRestraint(vm.RelaxRestraints[0]);
         }
 
+        // View tools: the view-plane fit behind Move, lasso selection, a move with undo, a pinned distance
+        {
+            // an orthographic view: screen = 12 (r·w, u·w) + (400, 300); a drag of (30, −20) px is a move in the r–u plane
+            double[] r = [0.6, 0.8, 0], u = [-0.48, 0.36, 0.8];
+            var pts = new List<(double, double, double, double, double)>();
+            var rng = new Random(3);
+            for (var k = 0; k < 20; ++k)
+            {
+                double x = rng.NextDouble() * 20, y = rng.NextDouble() * 20, z = rng.NextDouble() * 20;
+                pts.Add((x, y, z, 400 + 12 * (r[0] * x + r[1] * y + r[2] * z), 300 + 12 * (u[0] * x + u[1] * y + u[2] * z)));
+            }
+            var dw = MainViewModel.ScreenToWorld(pts, 30, -20)!;
+            double sx = 12 * (r[0] * dw[0] + r[1] * dw[1] + r[2] * dw[2]), sy = 12 * (u[0] * dw[0] + u[1] * dw[1] + u[2] * dw[2]);
+            double[] nrm = [r[1] * u[2] - r[2] * u[1], r[2] * u[0] - r[0] * u[2], r[0] * u[1] - r[1] * u[0]];
+            var off = nrm[0] * dw[0] + nrm[1] * dw[1] + nrm[2] * dw[2];
+            var fitOk = Math.Abs(sx - 30) < 1e-6 && Math.Abs(sy + 20) < 1e-6 && Math.Abs(off) < 1e-6;
+
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.LassoSelect(Enumerable.Range(0, 10).ToArray(), false);
+            var lassoOk = vm.SelectedCount == 10;
+            vm.ClearDocSelection();
+            var x0 = vm.Document!.Atom(0).X;
+            vm.TranslateAtoms([0, 1, 2], [1.5, 0, 0]);
+            var moved = vm.Document!.Atom(0).X - x0;
+            vm.UndoEdit(false);
+            var back = vm.Document!.Atom(0).X - x0;
+            vm.Pick(0);
+            vm.Pick(5, true);
+            vm.PinMeasurement();
+            var pinOk = vm.Monitors.Count == 1 && vm.Monitors[0].Value.EndsWith(" Å") && vm.Monitors[0].Kind == "d";
+            vm.UnpinMonitor(vm.Monitors[0]);
+            Check(fitOk && lassoOk && Math.Abs(moved - 1.5) < 1e-9 && Math.Abs(back) < 1e-9 && pinOk && vm.Monitors.Count == 0,
+                  $"view tools: [{fitOk} {lassoOk} {moved:F2} {back:F2} {pinOk}] move {dw[0]:F3} {dw[1]:F3} {dw[2]:F3} Å");
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

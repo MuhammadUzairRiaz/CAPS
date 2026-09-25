@@ -35,6 +35,13 @@ public partial class MainWindow : Window
     private Control? _hostField;
     private Control _host => _hostField ?? ViewHost;
     private bool _dragging, _moved;
+    // lasso and move tools: the lasso's points, the atoms a move carries and the projected atoms that fix the view plane
+    private List<Point>? _lassoPts;
+    private int[]? _moveAtoms;
+    private List<(double X, double Y, double Z, double Sx, double Sy)>? _moveFit;
+    private Interop.CapsCamera _lastCam;
+    private Interop.CapsRenderOpts _lastOpt;
+    private bool _haveLast;
     private bool _pan, _addPick;
 
     private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(125) };
@@ -733,6 +740,8 @@ public partial class MainWindow : Window
                     try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>()); }
                     catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
                     Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
+                    try { Labels.SetMonitors(_vm.MonitorMarks(cam, opt, _scaling)); } catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
+                    _lastCam = cam; _lastOpt = opt; _haveLast = true;
                 }
                 _rendered = ticket;
             }
@@ -756,6 +765,19 @@ public partial class MainWindow : Window
     private void OnAddHydrogens(object? s, RoutedEventArgs e) => _vm.AddHydrogensAll();
     private void OnInvert(object? s, RoutedEventArgs e) => _vm.InvertPicked();
     private void OnFuseRing(object? s, RoutedEventArgs e) => _vm.FuseRingPicked();
+    private void OnToolLasso(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 4 ? 0 : 4;
+    private void OnToolMove(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 5 ? 0 : 5;
+    private void OnPinMonitor(object? s, RoutedEventArgs e) { _vm.PinMeasurement(); RequestRender(); }
+    private void OnUnpin(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.MonitorRow m) { _vm.UnpinMonitor(m); RequestRender(); } }
+
+    /// <summary>Even–odd rule: is (x, y) inside the polygon?</summary>
+    private static bool InPolygon(List<Point> poly, double x, double y)
+    {
+        var inside = false;
+        for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+            if ((poly[i].Y > y) != (poly[j].Y > y) && x < (poly[j].X - poly[i].X) * (y - poly[i].Y) / (poly[j].Y - poly[i].Y) + poly[i].X) inside = !inside;
+        return inside;
+    }
     private void OnFragmentTool(object? s, RoutedEventArgs e) => _vm.OpenFragments();
     private async void OnAutoClean(object? s, RoutedEventArgs e) => await _vm.AutoClean();
     private void OnUndo(object? s, RoutedEventArgs e) => _vm.UndoEdit(false);
@@ -834,6 +856,36 @@ public partial class MainWindow : Window
         _moved = false;
         _pan = p.Properties.IsRightButtonPressed || e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         _addPick = e.KeyModifiers.HasFlag(KeyModifiers.Shift) || e.KeyModifiers.HasFlag(KeyModifiers.Meta) || _vm.MeasureTool;
+        _lassoPts = null;
+        _moveAtoms = null;
+        if (_host == ViewHost && _vm.IsStudio && _vm.Document is { } doc && !_vm.Busy && !_pan)
+        {
+            if (_vm.EditTool == 4) _lassoPts = new List<Point> { p.Position };
+            else if (_vm.EditTool == 5 && _haveLast)
+            {
+                try
+                {
+                    var hit = doc.Pick((int)(p.Position.X * _scaling), (int)(p.Position.Y * _scaling));
+                    var set = _vm.MoveSet(hit);
+                    if (set.Length > 0)
+                    {
+                        // the view plane from the visible atoms' projections (a sample of them)
+                        var n = (int)doc.Summary().Atoms;
+                        var proj = doc.ProjectAtoms(_lastCam, _lastOpt, n);
+                        var fit = new List<(double, double, double, double, double)>();
+                        var step = Math.Max(1, n / 600);
+                        for (var i = 0; i < n; i += step)
+                        {
+                            if (proj[3 * i + 2] <= 0) continue;
+                            var a = doc.Atom(i);
+                            fit.Add((a.X, a.Y, a.Z, proj[3 * i] / _scaling, proj[3 * i + 1] / _scaling));
+                        }
+                        if (fit.Count >= 4) { _moveAtoms = set; _moveFit = fit; }
+                    }
+                }
+                catch { _moveAtoms = null; }
+            }
+        }
         e.Pointer.Capture(_host);
         _host.Focus();
     }
@@ -849,6 +901,18 @@ public partial class MainWindow : Window
         }
         if (!_dragging || _vm.Document == null || _vm.Busy) return;
         var pos = e.GetPosition(_host);
+        if (_lassoPts != null || _moveAtoms != null)   // the lasso or move tool owns the drag: the camera stays
+        {
+            if (Math.Abs(pos.X - _press.X) + Math.Abs(pos.Y - _press.Y) > 3) _moved = true;
+            if (_lassoPts != null)
+            {
+                if (_lassoPts.Count == 0 || Math.Abs(pos.X - _lassoPts[^1].X) + Math.Abs(pos.Y - _lassoPts[^1].Y) > 2) _lassoPts.Add(pos);
+                Labels.SetLasso(_lassoPts);
+            }
+            else Labels.SetArrow((_press, pos));
+            _last = pos;
+            return;
+        }
         var d = pos - _last;
         _last = pos;
         if (Math.Abs(pos.X - _press.X) + Math.Abs(pos.Y - _press.Y) > 3) _moved = true;
@@ -875,6 +939,40 @@ public partial class MainWindow : Window
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         e.Pointer.Capture(null);
+        if (_dragging && _moved && _lassoPts != null && _vm.Document is { } ldoc)
+        {
+            // the visible atoms whose centres are inside the lasso polygon
+            var poly = _lassoPts;
+            var inside = new List<int>();
+            if (poly.Count >= 3 && _haveLast)
+            {
+                var n = (int)ldoc.Summary().Atoms;
+                var proj = ldoc.ProjectAtoms(_lastCam, _lastOpt, n);
+                for (var i = 0; i < n; ++i)
+                    if (proj[3 * i + 2] > 0 && InPolygon(poly, proj[3 * i] / _scaling, proj[3 * i + 1] / _scaling)) inside.Add(i);
+            }
+            _vm.LassoSelect(inside, e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            _lassoPts = null;
+            Labels.SetLasso(new List<Point>());
+            _dragging = false;
+            RequestRender();
+            return;
+        }
+        if (_dragging && _moved && _moveAtoms != null && _moveFit != null)
+        {
+            var pos = e.GetPosition(_host);
+            var by = ViewModels.MainViewModel.ScreenToWorld(_moveFit, pos.X - _press.X, pos.Y - _press.Y);
+            if (by != null) _vm.TranslateAtoms(_moveAtoms, by);
+            _moveAtoms = null;
+            Labels.SetArrow(null);
+            _dragging = false;
+            RequestRender();
+            return;
+        }
+        _lassoPts = null;
+        _moveAtoms = null;
+        Labels.SetLasso(new List<Point>());
+        Labels.SetArrow(null);
         if (_dragging && !_moved && _vm.Document != null && !_vm.Busy)
         {
             var pos = e.GetPosition(_host);
