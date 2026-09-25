@@ -122,6 +122,9 @@ struct EnergyOptions {
   double force_cap = 0.0;        // > 0: LJ becomes linear inside the radius where |F| reaches the cap (push-off)
   int threads = 0;               // worker threads for pair terms; 0 = one per hardware thread (at most 16)
   bool tail = true;              // LJ long-range tail corrections to energy and pressure (homogeneous fluid beyond rc)
+  // Which terms (r-RESPA splits them): 1 bonded (bonds, angles, torsions, impropers, cross terms), 2 non-bonded (pairs,
+  // 1-4 pairs, electrostatics of bonded partners, k-space, self and tail terms), 3 both
+  int parts = 3;
 };
 
 struct EnergyTerms {

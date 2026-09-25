@@ -632,54 +632,58 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   f.assign(x.size(), 0.0);
   EnergyTerms e;
 
-  auto same = [](const Cell& p, const Cell& q) { return p.a == q.a && p.b == q.b && p.c == q.c && p.origin == q.origin; };
-  bool rebuild = !built_ || x0_.size() != x.size();
-  if (frozen_ && !rebuild) {
-    if (!same(cell, cells_) && cell.valid()) {
-      for (size_t p = 0; p < shift_.size(); p += 3) {
-        const Vec3 v = cell.a * ishift_[p] + cell.b * ishift_[p + 1] + cell.c * ishift_[p + 2];
-        shift_[p] = v[0]; shift_[p + 1] = v[1]; shift_[p + 2] = v[2];
-      }
-      cells_ = cell;
-    }
-  } else if (!rebuild) {
-    if (same(cell, cell0_)) {
-      const double lim = 0.25 * opt_.skin * opt_.skin;
-      for (size_t i = 0; i < n && !rebuild; ++i) {
-        const double dx = x[3 * i] - x0_[3 * i], dy = x[3 * i + 1] - x0_[3 * i + 1], dz = x[3 * i + 2] - x0_[3 * i + 2];
-        rebuild = dx * dx + dy * dy + dz * dz > lim;
-      }
-    } else if (!cell.valid() || !cell0_.valid()) {
-      rebuild = true;
-    } else {
-      // The cell was deformed since the build. Shrinking eats into the skin by (1 − s)(rc + skin), s the smallest
-      // ratio of perpendicular widths; the rest of the skin covers moves relative to the affinely mapped positions.
-      auto widths = [](const Cell& c) {
-        const double v = c.volume();
-        return Vec3{v / norm(cross(c.b, c.c)), v / norm(cross(c.c, c.a)), v / norm(cross(c.a, c.b))};
-      };
-      const Vec3 w0 = widths(cell0_), w1 = widths(cell);
-      const double sr = std::min({w1[0] / w0[0], w1[1] / w0[1], w1[2] / w0[2], 1.0});
-      const double allow = opt_.skin - (1 - sr) * (opt_.cutoff + opt_.skin);
-      if (allow < 0.1 * opt_.skin) rebuild = true;
-      const double lim = 0.25 * allow * allow;
-      for (size_t i = 0; i < n && !rebuild; ++i) {
-        const Vec3 m = cell.to_cartesian(cell0_.to_fractional({x0_[3 * i], x0_[3 * i + 1], x0_[3 * i + 2]}));
-        const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
-        rebuild = dx * dx + dy * dy + dz * dz > lim;
-      }
-      if (!rebuild && !same(cell, cells_)) {
+  // r-RESPA splits the forces: bonded terms alone need no pair list
+  const bool nonb = opt_.parts & 2, bonded = opt_.parts & 1;
+  if (nonb) {
+    auto same = [](const Cell& p, const Cell& q) { return p.a == q.a && p.b == q.b && p.c == q.c && p.origin == q.origin; };
+    bool rebuild = !built_ || x0_.size() != x.size();
+    if (frozen_ && !rebuild) {
+      if (!same(cell, cells_) && cell.valid()) {
         for (size_t p = 0; p < shift_.size(); p += 3) {
           const Vec3 v = cell.a * ishift_[p] + cell.b * ishift_[p + 1] + cell.c * ishift_[p + 2];
           shift_[p] = v[0]; shift_[p + 1] = v[1]; shift_[p + 2] = v[2];
         }
         cells_ = cell;
       }
+    } else if (!rebuild) {
+      if (same(cell, cell0_)) {
+        const double lim = 0.25 * opt_.skin * opt_.skin;
+        for (size_t i = 0; i < n && !rebuild; ++i) {
+          const double dx = x[3 * i] - x0_[3 * i], dy = x[3 * i + 1] - x0_[3 * i + 1], dz = x[3 * i + 2] - x0_[3 * i + 2];
+          rebuild = dx * dx + dy * dy + dz * dz > lim;
+        }
+      } else if (!cell.valid() || !cell0_.valid()) {
+        rebuild = true;
+      } else {
+        // The cell was deformed since the build. Shrinking eats into the skin by (1 − s)(rc + skin), s the smallest
+        // ratio of perpendicular widths; the rest of the skin covers moves relative to the affinely mapped positions.
+        auto widths = [](const Cell& c) {
+          const double v = c.volume();
+          return Vec3{v / norm(cross(c.b, c.c)), v / norm(cross(c.c, c.a)), v / norm(cross(c.a, c.b))};
+        };
+        const Vec3 w0 = widths(cell0_), w1 = widths(cell);
+        const double sr = std::min({w1[0] / w0[0], w1[1] / w0[1], w1[2] / w0[2], 1.0});
+        const double allow = opt_.skin - (1 - sr) * (opt_.cutoff + opt_.skin);
+        if (allow < 0.1 * opt_.skin) rebuild = true;
+        const double lim = 0.25 * allow * allow;
+        for (size_t i = 0; i < n && !rebuild; ++i) {
+          const Vec3 m = cell.to_cartesian(cell0_.to_fractional({x0_[3 * i], x0_[3 * i + 1], x0_[3 * i + 2]}));
+          const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
+          rebuild = dx * dx + dy * dy + dz * dz > lim;
+        }
+        if (!rebuild && !same(cell, cells_)) {
+          for (size_t p = 0; p < shift_.size(); p += 3) {
+            const Vec3 v = cell.a * ishift_[p] + cell.b * ishift_[p + 1] + cell.c * ishift_[p + 2];
+            shift_[p] = v[0]; shift_[p + 1] = v[1]; shift_[p + 2] = v[2];
+          }
+          cells_ = cell;
+        }
+      }
     }
-  }
-  if (rebuild) {
-    if (frozen_) throw std::logic_error("frozen pair list: the configuration changed size");
-    build(x, cell);
+    if (rebuild) {
+      if (frozen_) throw std::logic_error("frozen pair list: the configuration changed size");
+      build(x, cell);
+    }
   }
 
   const bool ortho = cell.valid() && orthogonal(cell);
@@ -763,7 +767,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
 
   const bool frozen = frozen_;
   // Phase 1: pair list. Every worker is called (possibly with an empty range) and clears its own force buffer.
-  pool_->run(pi_.size(), [&](int t, size_t b, size_t en) {
+  pool_->run(nonb ? pi_.size() : 0, [&](int t, size_t b, size_t en) {
     std::vector<double>& ft = tf_[t];
     ft.assign(x.size(), 0.0);
     double evdw = 0, ecoul = 0, vir = 0, wv[6] = {0, 0, 0, 0, 0, 0};
@@ -845,6 +849,8 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       V(r2, f2); V(r3, f3); V(r4, f4);
     };
     for (size_t k = b; k < en; ++k) {
+      // 1-4 pairs and the electrostatics of bonded partners are non-bonded; everything else is bonded
+      if ((k >= o4 && k < o6) ? !nonb : !bonded) continue;
       if (k < o1) {
         const auto& bd = ff_.bonds[k];
         const Vec3 d = mi(pos(bd.j) - pos(bd.i));
@@ -1058,6 +1064,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     e.virial += acc[t][6];
     for (int c = 0; c < 6; ++c) e.w[c] += acc[t][7 + c];
   }
+  if (!nonb) return e;   // r-RESPA inner step: bonded terms only
   if (pme) {
     // reciprocal part (Fortran), self energy −β/√π Σq², and the neutralising background −π Q²/(2Vβ²) for a net charge
     const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);

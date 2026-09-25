@@ -38,6 +38,9 @@ struct DynamicsOptions {
   // The force field to use (from CAPS Field); null: CAPS's built-in GAFF typing of C and H.
   std::shared_ptr<const ForceField> field;
   double dt = 1.0;                  // fs
+  // r-RESPA (Tuckerman, Berne & Martyna, J. Chem. Phys. 97, 1990 (1992)): > 1 splits each step: non-bonded forces at dt,
+  // bonded forces at dt / respa. NVE or the Bussi thermostat; barostats act on the outer step.
+  int respa = 1;
   int64_t steps = 10000;
   double temperature = 300.0;       // K, thermostat target and initial velocities
   double temperature_end = -1.0;    // K; ≥ 0 ramps the thermostat target linearly to this over the run

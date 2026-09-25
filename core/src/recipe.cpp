@@ -436,6 +436,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           m.field = ff;
           m.energy = energy;
           m.dt = num(J, "dt", 1.0);
+          m.respa = int(num(J, "respa", 1));   // r-RESPA: bonded forces every dt / respa
           const double ps = num(J, "ps", 10);
           m.steps = int64_t(ps * 1000 / m.dt);
           m.temperature = num(J, "temperature", 300);
@@ -453,11 +454,14 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           };
           try { run_dynamics(s, m); } catch (const std::exception& e) { throw RecipeError(4, std::string("md: ") + e.what()); }
           std::vector<std::string> c = {"swope1982"};
+          if (m.respa > 1) c.push_back("tuckerman1992");
           if (m.thermostat == Thermostat::Bussi) c.push_back("bussi2007");
           if (m.barostat == Barostat::CRescale) c.push_back("bernetti2020");
           if (m.barostat == Barostat::Berendsen) c.push_back("berendsen1984");
           elec_cite(c, energy);
-          KeyValues pr = {{"length", g6(ps) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs"}, {"temperature", g6(m.temperature) + " K"},
+          KeyValues pr = {{"length", g6(ps) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs" +
+                                         (m.respa > 1 ? " (r-RESPA: bonded forces every " + g6(m.dt / m.respa) + " fs)" : "")},
+                          {"temperature", g6(m.temperature) + " K"},
                           {"thermostat", m.thermostat == Thermostat::Bussi ? "Bussi velocity rescaling · τ 100 fs" : "none"}};
           if (m.barostat == Barostat::CRescale) pr.push_back({"barostat", "stochastic cell rescaling · " + g6(m.pressure) + " atm · τ 1000 fs"});
           if (m.barostat == Barostat::Berendsen) pr.push_back({"barostat", "Berendsen · " + g6(m.pressure) + " atm · τ 1000 fs (no thermostat: NPH)"});

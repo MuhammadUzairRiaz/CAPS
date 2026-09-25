@@ -43,7 +43,9 @@
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
                   <TextBlock Text="Integrator" Classes="label" /><TextBlock Grid.Column="1" Text="Multiple time step" Classes="label" /><TextBlock Grid.Column="2" Text="Δt (fs)" Classes="label" />
                   <ComboBox Grid.Row="1" SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Velocity Verlet" /></ComboBox>
-                  <ComboBox Grid.Row="1" Grid.Column="1" SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False" ToolTip.Tip="r-RESPA: coming" ToolTip.ShowOnDisabled="True"><ComboBoxItem Content="r-RESPA · off" /></ComboBox>
+                  <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.RespaChoices}" SelectedIndex="{Binding MdRespa}" HorizontalAlignment="Stretch"
+                            IsEnabled="{Binding MdRespaAllowed}" ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Bonded forces every Δt/2 or Δt/4, non-bonded every Δt: Δt 2 fs with ×4 keeps the C–H stretches at 0.5 fs. With the Bussi thermostat or none" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding MdDtD}" Minimum="0.1" Maximum="5" Increment="0.25" FormatString="0.##" />
                 </Grid>
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasThermostat}">

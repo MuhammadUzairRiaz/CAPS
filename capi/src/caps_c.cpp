@@ -1122,6 +1122,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy = elec(m.energy);
     m.energy.tail = o->tail != 0;
     m.energy.threads = o->threads;
+    m.respa = std::clamp(o->respa, 1, 16);
     if (progress)
       m.progress = [&](const caps::ThermoRow& r) {
         caps_thermo t{r.step, r.time_ps, r.temperature, r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density};
