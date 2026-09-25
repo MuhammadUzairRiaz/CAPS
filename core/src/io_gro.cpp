@@ -1,5 +1,6 @@
 // GROMACS .gro (fixed columns, nm) and XYZ / extended XYZ readers.
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 
 #include "caps/elements.hpp"
@@ -132,6 +133,34 @@ void write_xyz(const System& s, const std::string& path) {
   else
     out << s.title << "\n";
   for (const auto& a : s.atoms) out << element(a.element).symbol << " " << a.pos[0] << " " << a.pos[1] << " " << a.pos[2] << "\n";
+}
+
+void write_gro(const System& s, const std::string& path) {
+  std::ofstream out(path);
+  if (!out) throw ReadError("cannot write " + path);
+  out << (s.title.empty() ? "CAPS structure" : s.title) << "\n" << s.atoms.size() << "\n";
+  const auto mol = s.molecules();
+  char b[96];
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    const Atom& a = s.atoms[i];
+    const long res = (s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1)) % 100000;
+    std::string rn = a.resname.empty() ? "MOL" : a.resname.substr(0, 5);
+    std::string an = a.name.empty() ? element(a.element).symbol : a.name.substr(0, 5);
+    std::snprintf(b, sizeof b, "%5ld%-5s%5s%5ld%8.3f%8.3f%8.3f\n", res, rn.c_str(), an.c_str(), long((i + 1) % 100000), a.pos[0] / 10, a.pos[1] / 10, a.pos[2] / 10);
+    out << b;
+  }
+  const Cell& c = s.cell;
+  if (c.valid()) {
+    std::snprintf(b, sizeof b, "%10.5f%10.5f%10.5f", c.a[0] / 10, c.b[1] / 10, c.c[2] / 10);
+    out << b;
+    if (std::fabs(c.a[1]) + std::fabs(c.a[2]) + std::fabs(c.b[0]) + std::fabs(c.b[2]) + std::fabs(c.c[0]) + std::fabs(c.c[1]) > 1e-9) {
+      std::snprintf(b, sizeof b, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f", c.a[1] / 10, c.a[2] / 10, c.b[0] / 10, c.b[2] / 10, c.c[0] / 10, c.c[1] / 10);
+      out << b;
+    }
+    out << "\n";
+  } else {
+    out << "   0.00000   0.00000   0.00000\n";
+  }
 }
 
 }  // namespace caps

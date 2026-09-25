@@ -296,6 +296,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_pipeline_particles")] public static extern int PipelineParticles(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? filter, int offset, int count, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_bonds")] public static extern int PipelineBonds(IntPtr doc, int offset, int count, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_series")] public static extern int PipelineSeries(IntPtr doc, int stride, CapsAnalyzeProgress? progress, IntPtr user, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_export_data")] public static extern int ExportData(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string format, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
+    [DllImport(Lib, EntryPoint = "caps_export_preview")] public static extern int ExportPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string format, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, int lines, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
@@ -450,6 +452,19 @@ public sealed class CapsDocument : IDisposable
     public string PipelineParticles(string filter, int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineParticles(_h, filter, offset, count, b, c)); }
     public string PipelineBonds(int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineBonds(_h, offset, count, b, c)); }
     public static string PipelineCatalogue() => Sized(Native.PipelineCatalogue);
+    public void ExportData(string path, string format, string options) { lock (_lock) { if (Native.ExportData(_h, path, format, options) != 0) throw new InvalidOperationException(Native.LastError()); } }
+    /// <summary>Writes the export to a scratch file and returns its first lines, size and section counts (JSON). Writes twice; call off the UI thread.</summary>
+    public string ExportPreview(string format, string options, int lines)
+    {
+        lock (_lock)
+        {
+            var buf = new byte[1 << 16];
+            var n = Native.ExportPreview(_h, format, options, lines, buf, buf.Length);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            if (n > buf.Length) { buf = new byte[n]; Native.ExportPreview(_h, format, options, lines, buf, buf.Length); }
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
     /// <summary>The pipeline's attributes on every stride-th frame (runs the pipeline once to size, once to fill: call off the UI thread).</summary>
     public string PipelineSeries(int stride, Func<double, bool>? progress)
     {
