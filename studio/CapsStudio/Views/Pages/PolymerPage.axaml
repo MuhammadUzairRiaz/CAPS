@@ -44,7 +44,7 @@
       <Panel>
         <v:MolView x:Name="Preview" />
         <StackPanel Orientation="Horizontal" Spacing="6" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Top">
-          <Border Classes="hud" Padding="10,4"><TextBlock Text="Preview · one chain" FontSize="12" /></Border>
+          <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding PolyPreviewCaption}" FontSize="12" /></Border>
           <Border Classes="hud" Padding="10,4" IsVisible="{Binding PolyBuilding}"><TextBlock Text="building…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
         </StackPanel>
         <Button Classes="small" Margin="14" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnPreview" IsEnabled="{Binding !PolyHasError}">
@@ -132,12 +132,41 @@
               <StackPanel Spacing="10">
                 <TextBlock Text="ARCHITECTURE" Classes="h3" />
                 <WrapPanel>
-                  <ToggleButton Classes="chip" Content="Linear" IsChecked="True" IsEnabled="False" Margin="0,0,6,6" />
-                  <ToggleButton Classes="chip" Content="Branched" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Not in this version" ToolTip.ShowOnDisabled="True" />
-                  <ToggleButton Classes="chip" Content="Star" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Not in this version" ToolTip.ShowOnDisabled="True" />
-                  <ToggleButton Classes="chip" Content="Comb" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Not in this version" ToolTip.ShowOnDisabled="True" />
+                  <ToggleButton Classes="chip" Content="Linear" Tag="0" Click="OnArch" Margin="0,0,6,6"
+                                IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                  <ToggleButton Classes="chip" Content="Branched" Tag="1" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="Random long-chain branches"
+                                IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                  <ToggleButton Classes="chip" Content="Star" Tag="2" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="3 or 4 arms on one core carbon"
+                                IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                  <ToggleButton Classes="chip" Content="Comb" Tag="3" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="A side chain on every n-th backbone unit"
+                                IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" />
                   <ToggleButton Classes="chip" Content="Network" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Crosslink a grown cell in React" ToolTip.ShowOnDisabled="True" />
                 </WrapPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyIsStar}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Arms" Classes="label" />
+                    <NumericUpDown Value="{Binding PolyArms}" Minimum="3" Maximum="4" Increment="1" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Units per arm" Classes="label" />
+                    <TextBlock Text="{Binding GrowDpD, StringFormat='{}{0:0} (the DP below)'}" Classes="mono" VerticalAlignment="Center" Margin="0,6,0,0" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyHasSideChains}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Units per side chain" Classes="label" />
+                    <NumericUpDown Value="{Binding PolyArmDp}" Minimum="1" Maximum="500" Increment="1" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PolyIsComb}">
+                    <TextBlock Text="Every n-th backbone unit" Classes="label" />
+                    <NumericUpDown Value="{Binding PolySpacing}" Minimum="1" Maximum="500" Increment="1" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PolyIsBranched}">
+                    <TextBlock Text="Branch probability per unit" Classes="label" />
+                    <NumericUpDown Value="{Binding PolyBranchP}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="{Binding PolyArchNote}" IsVisible="{Binding !PolyIsLinear}" />
               </StackPanel>
             </Border>
             <Border Classes="section" Padding="16,14">

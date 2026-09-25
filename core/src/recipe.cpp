@@ -326,7 +326,14 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
               spec.chain_dp = draw_chain_lengths(text(L, "distribution", "schulz-zimm"), num(L, "nn", spec.dp), num(L, "pdi", 1.1), chains, uint64_t(num(L, "seed", 1)));
             } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.lengths: ") + e.what()); }
           }
-          report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + " chains · unit " + info.formula + " · " + tac, "done", 1);
+          // architecture: linear (default), star {arms}, comb {arm_dp, spacing}, branched {arm_dp, branch_probability}
+          try { spec.architecture = architecture_from_string(text(P, "architecture", "linear")); } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.architecture: ") + e.what()); }
+          if (P.has("arms")) spec.arms = int(P["arms"].number());
+          if (P.has("arm_dp")) spec.arm_dp = int(P["arm_dp"].number());
+          if (P.has("spacing")) spec.spacing = int(P["spacing"].number());
+          if (P.has("branch_probability")) spec.branch_probability = P["branch_probability"].number();
+          report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + (spec.architecture == Architecture::Linear ? " chains" : std::string(" ") + to_string(spec.architecture) + " molecules") +
+                            " · unit " + info.formula + " · " + tac, "done", 1);
         } else if (J.has("molecule")) {
           BuildOptions bo;
           bo.forcefield = "uff";
@@ -372,7 +379,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (J.has("box")) g.box = J["box"].number();
         g.curve = flag(J, "curve", true);
         const std::string method = text(J, "method", "trials");
-        if (method != "trials" && method != "cbmc") throw RecipeError(2, "grow.method: trials (best-of-k torsion trials)");
+        if (method != "trials") throw RecipeError(2, "grow.method: trials (best-of-k torsion trials); configurational-bias Monte Carlo is not built");
         if (J.has("trials")) g.trials = int(J["trials"].number());
         g.progress = [&](int done, int total, int restarts) {
           report(k, st, "chain " + std::to_string(done) + "/" + std::to_string(total) + (restarts ? " · " + std::to_string(restarts) + " restarts" : ""), "running", total ? double(done) / total : 0);
@@ -390,6 +397,12 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         }
         if (spec.sequence == Sequence::Terminal) gp.push_back({"sequence", "terminal model, r1 " + g6(spec.r1) + ", r2 " + g6(spec.r2)});
         if (spec.p_mr >= 0 && spec.p_rm >= 0) gp.push_back({"tacticity", "Markov, P(r|m) " + g6(spec.p_mr) + ", P(m|r) " + g6(spec.p_rm)});
+        if (spec.architecture == Architecture::Star) gp.push_back({"architecture", "star, " + std::to_string(spec.arms) + " arms of DP units on one core carbon"});
+        else if (spec.architecture == Architecture::Comb)
+          gp.push_back({"architecture", "comb, side chains of " + std::to_string(spec.arm_dp) + " units on every " + std::to_string(spec.spacing) + "th unit (or the one beside it with more room)"});
+        else if (spec.architecture == Architecture::Branched)
+          gp.push_back({"architecture", "branched, side chains of " + std::to_string(spec.arm_dp) + " units with probability " + g6(spec.branch_probability) + " per backbone unit"});
+        if (!gr.notes.empty()) gp.push_back({"built", gr.notes.front()});
         res.manifest.steps.push_back(step("grow.trials", std::to_string(chains) + " chains grown in a periodic cell, best-of-k trial placement by contact margin",
                                           std::move(gp), seeded(g.seed), {"parsons2005", "matsumoto1998"}));
         report(k, st, "best of " + std::to_string(g.trials) + " trials · " + std::to_string(chains) + " chains · " + std::to_string(s.atoms.size()) + " atoms · box " + g6(gr.box) + " Å", "done", 1);

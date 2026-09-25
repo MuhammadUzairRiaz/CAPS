@@ -578,13 +578,17 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             forcefield: Optional[str] = None, relax: bool = False, sequence: str = "homopolymer", trials: int = 120,
             blocks: Optional[list] = None, weights: Optional[list] = None, pattern: str = "", r1: Optional[float] = None,
             r2: Optional[float] = None, pm: Optional[float] = None, p_mr: Optional[float] = None, p_rm: Optional[float] = None,
-            lengths: Optional[dict] = None, chain_dp: Optional[list] = None) -> Document:
+            lengths: Optional[dict] = None, chain_dp: Optional[list] = None, architecture: str = "linear",
+            arms: Optional[int] = None, arm_dp: Optional[int] = None, spacing: Optional[int] = None,
+            branch_probability: Optional[float] = None) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
     chains: pm (Bernoulli) or p_mr, p_rm (first-order Markov). Polydisperse: lengths={"distribution": "schulz-zimm",
-    "nn": 40, "pdi": 1.1, "seed": 1} or chain_dp=[…]; the provenance records the sample drawn. forcefield types it
-    (default: the built-in GAFF for C and H, else UFF); relax=True minimises."""
+    "nn": 40, "pdi": 1.1, "seed": 1} or chain_dp=[…]; the provenance records the sample drawn. Branched molecules:
+    architecture="star" with arms=3|4 (each arm dp units on one core carbon), "comb" with arm_dp and spacing, or
+    "branched" with arm_dp and branch_probability; chains counts molecules. forcefield types it (default: the built-in
+    GAFF for C and H, else UFF); relax=True minimises."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
@@ -592,9 +596,12 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     for k, v in (("blocks", blocks), ("weights", weights), ("pattern", pattern), ("lengths", lengths), ("chain_dp", chain_dp)):
         if v:
             r["build"]["polymer"][k] = v
-    for k, v in (("r1", r1), ("r2", r2), ("pm", pm), ("p_mr", p_mr), ("p_rm", p_rm)):
+    for k, v in (("r1", r1), ("r2", r2), ("pm", pm), ("p_mr", p_mr), ("p_rm", p_rm), ("arms", arms), ("arm_dp", arm_dp),
+                 ("spacing", spacing), ("branch_probability", branch_probability)):
         if v is not None:
             r["build"]["polymer"][k] = v
+    if architecture != "linear":
+        r["build"]["polymer"]["architecture"] = architecture
     if forcefield or relax:
         r["type"] = {"forcefield": forcefield or "default"}
     if relax:

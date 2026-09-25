@@ -35,6 +35,17 @@ enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern
 Sequence sequence_from_string(const std::string& s);
 const char* to_string(Sequence s);
 
+// Architecture (design/boards/PolymerBuilder): linear chains, or molecules of several chains joined at branch points.
+//   star      `arms` arms of dp units each on one core atom (the first arm's head atom, which needs arms − 2 hydrogens):
+//             3 or 4 arms, as star SBR and BR coupled on silicon or tin
+//   comb      a backbone of dp units with a side chain of arm_dp units on every `spacing`-th unit
+//   branched  side chains of arm_dp units on backbone units drawn with probability branch_probability (long-chain branches)
+// A side chain replaces a hydrogen on its unit's head atom (else its tail atom) and repeats the chain's units, sequence
+// kind and tacticity. Arms grow one after another once the chain they hang on is complete, with the same trial placement.
+enum class Architecture { Linear, Star, Comb, Branched };
+Architecture architecture_from_string(const std::string& s);
+const char* to_string(Architecture a);
+
 struct ChainSpec {
   std::vector<RepeatUnit> units;   // A, B, …
   Sequence sequence = Sequence::Homopolymer;
@@ -48,6 +59,11 @@ struct ChainSpec {
   std::string forcefield;          // caps-forcefield JSON with typing rules for the unit templates (optional)
   double r1 = 1, r2 = 1;           // Terminal: reactivity ratios of A and B
   std::vector<int> chain_dp;       // per chain (polydispersity): overrides dp for chain k when given
+  Architecture architecture = Architecture::Linear;
+  int arms = 4;                    // Star: arms on the core (3 or 4), each of dp units
+  int arm_dp = 5;                  // Comb, Branched: units per side chain
+  int spacing = 4;                 // Comb: a side chain on every spacing-th backbone unit
+  double branch_probability = 0.1; // Branched: chance that a backbone unit carries a side chain
 };
 
 // Chain lengths drawn from a distribution (design/boards/Polydispersity): "monodisperse", "schulz-zimm" (Gamma with

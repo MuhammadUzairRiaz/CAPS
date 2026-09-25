@@ -81,6 +81,38 @@ public sealed partial class MainViewModel
     public bool PolyShowWeights => _polySeq == 3;
     public bool PolyShowBlocks => _polySeq == 2;
     public bool PolyShowPattern => _polySeq == 5;
+    // ---- architecture: linear, branched (random side chains), star, comb
+    private static readonly string[] ArchIds = ["linear", "branched", "star", "comb"];
+    private int _polyArch;
+    private decimal _polyArms = 4, _polyArmDp = 5, _polySpacing = 4, _polyBranchP = 0.1m;
+    public int PolyArch
+    {
+        get => _polyArch;
+        set
+        {
+            if (!Set(ref _polyArch, Math.Clamp(value, 0, 3))) return;
+            Raise(nameof(PolyIsLinear)); Raise(nameof(PolyIsStar)); Raise(nameof(PolyHasSideChains)); Raise(nameof(PolyIsComb)); Raise(nameof(PolyIsBranched));
+            Raise(nameof(PolyArchNote)); Raise(nameof(PolyPreviewCaption));
+            PolyChanged();
+        }
+    }
+    public bool PolyIsLinear => _polyArch == 0;
+    public string PolyPreviewCaption => _polyArch == 0 ? "Preview · one chain" : "Preview · one " + ArchIds[_polyArch] + " molecule";
+    public bool PolyIsBranched => _polyArch == 1;
+    public bool PolyIsStar => _polyArch == 2;
+    public bool PolyIsComb => _polyArch == 3;
+    public bool PolyHasSideChains => _polyArch is 1 or 3;
+    public decimal PolyArms { get => _polyArms; set { if (Set(ref _polyArms, Math.Clamp(value, 3, 4))) PolyChanged(); } }
+    public decimal PolyArmDp { get => _polyArmDp; set { if (Set(ref _polyArmDp, Math.Clamp(value, 1, 500))) PolyChanged(); } }
+    public decimal PolySpacing { get => _polySpacing; set { if (Set(ref _polySpacing, Math.Clamp(value, 1, 500))) PolyChanged(); } }
+    public decimal PolyBranchP { get => _polyBranchP; set { if (Set(ref _polyBranchP, Math.Clamp(value, 0, 1))) PolyChanged(); } }
+    public string PolyArchNote => _polyArch switch
+    {
+        2 => "Arms of DP units on one core carbon, the first arm's head atom (star SBR and BR are coupled on silicon or tin: here the core is carbon). Four arms need a CH₂ or CH₃ head.",
+        3 => "A side chain of the chain's own units on every n-th backbone unit, on a hydrogen of its head or tail atom (or of the unit beside it when that has clearly more room).",
+        1 => "Long-chain branches: each backbone unit carries a side chain with this probability.",
+        _ => "",
+    } + (_polyArch == 0 ? "" : " Branch points are crowded: they may grow at a reduced contact scale; relax with push-off before dynamics.");
     private string _polyPattern = "AB";
     public string PolyPattern { get => _polyPattern; set { if (Set(ref _polyPattern, value)) PolyChanged(); } }
     private string _polyName = "Polystyrene";
@@ -209,6 +241,14 @@ public sealed partial class MainViewModel
             ["blocks"] = new JsonArray(PolyUnits.Select(u => (JsonNode)(int)u.Block).ToArray()),
             ["pattern"] = _polyPattern,
         };
+        if (_polyArch != 0)
+        {
+            o["architecture"] = ArchIds[_polyArch];
+            o["arms"] = (int)_polyArms;
+            o["arm_dp"] = (int)_polyArmDp;
+            o["spacing"] = (int)_polySpacing;
+            o["branch_probability"] = (double)_polyBranchP;
+        }
         // unit templates cleaned with the default force field when it types them (GAFF2 unless Settings says otherwise)
         if (CleanChoices.FirstOrDefault(c => c.File != null && Path.GetFileNameWithoutExtension(c.File) == _settings.ForceField)?.File is { } clean) o["forcefield"] = clean;
         else if (CleanChoices.FirstOrDefault(c => c.File != null)?.File is { } first) o["forcefield"] = first;
@@ -231,6 +271,15 @@ public sealed partial class MainViewModel
                 string.Join(" · ", PolyUnits.Select((u, k) => $"{u.Letter} {counts[k]}")));
             _polyAtoms = (int?)r["atoms"] ?? 0;
             _polyMass = (double?)r["mass"] ?? 0;
+            if (r["molecule"] is JsonObject m)   // a branched molecule: its arms, atoms and mass
+            {
+                var arms = (double?)m["arms"] ?? 0;
+                _polyAtoms = (int)Math.Round((double?)m["atoms"] ?? _polyAtoms);
+                _polyMass = (double?)m["mass"] ?? _polyMass;
+                PolyPreview += string.Format(CultureInfo.InvariantCulture, "\nper molecule: {0} {1} · {4}{2:N0} atoms · {4}{3:N0} g/mol",
+                    _polyArch == 1 ? "≈ " + arms.ToString("0.#", CultureInfo.InvariantCulture) : arms.ToString("0", CultureInfo.InvariantCulture),
+                    _polyArch == 2 ? "more arms" : "side chains", _polyAtoms, _polyMass, PolyUnits.Count > 1 || _polyArch == 1 ? "≈ " : "");   // each arm draws its own sequence
+            }
             PolyStripChanged?.Invoke();
         }
         catch (Exception e) { PolyError = e.Message; }
@@ -247,7 +296,8 @@ public sealed partial class MainViewModel
         var tact = _growTact;
         try
         {
-            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = 1, Density = 0.02, ContactScale = 0.8, Curve = 1 }, null, "chain"));
+            var scale = _polyArch == 0 ? 0.8 : -0.8;   // branched: step down where a branch point is crowded
+            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = 1, Density = 0.02, ContactScale = scale, Curve = 1 }, null, "chain"));
             var old = _polyDoc;
             PolyDoc = doc;
             old?.Dispose();
@@ -265,8 +315,9 @@ public sealed partial class MainViewModel
         PolyBuilding = true;
         try
         {
-            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = 1, Density = 0.02, ContactScale = 0.8, Curve = 1 }, null, "chain"));
-            Show(doc, (_polyName.Length > 0 ? _polyName : "polymer") + $" · 1 chain × {_growDp}");
+            var scale = _polyArch == 0 ? 0.8 : -0.8;
+            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = 1, Density = 0.02, ContactScale = scale, Curve = 1 }, null, "chain"));
+            Show(doc, (_polyName.Length > 0 ? _polyName : "polymer") + (_polyArch == 0 ? $" · 1 chain × {_growDp}" : $" · 1 {ArchIds[_polyArch]} molecule"));
             GrownUnsaved = true;
             SetModule(8);
         }
