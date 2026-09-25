@@ -49,7 +49,9 @@
             <Border Classes="section">
               <StackPanel Spacing="8">
                 <TextBlock Text="CONVERTING BACK UP" Classes="h3" />
-                <StackPanel Spacing="2"><TextBlock Text="Coarse-grained → all-atom" FontSize="12" /><TextBlock Text="backmap, then relax (not built here)" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Coarse-grained → all-atom" FontSize="12" /><TextBlock Text="beads moved elsewhere (a LAMMPS dump): each bead's atoms carried and turned with it, then relaxed" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" /></StackPanel>
+                <Button Classes="small" Content="Backmap from a bead file…" Click="OnBackmapFile" HorizontalAlignment="Left"
+                        ToolTip.Tip="Open the all-atom structure first; the file holds its beads at this resolution (same count and order), e.g. after a CG run in LAMMPS" />
                 <StackPanel Spacing="2"><TextBlock Text="United-atom → all-atom" FontSize="12" /><TextBlock Text="add H at 1.09 Å, then relax them" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" /></StackPanel>
                 <Button Classes="small ghost" Content="Open the coarse-grained builder →" Click="OnBackmap" HorizontalAlignment="Left" Foreground="{DynamicResource AccB}" />
               </StackPanel>

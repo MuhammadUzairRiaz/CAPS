@@ -1599,6 +1599,20 @@ internal static class SelfTest
             pep.Dispose();
         }
 
+        // Model resolution › backmap: the melt's beads saved and read back, the atoms carried onto them and relaxed
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.MrPerBead = 5;
+            var (cg, _) = vm.Document!.ResolutionConvert("{\"to\":\"coarse-grained\",\"per_bead\":5}", "beads");
+            var beadsFile = Path.Combine(outDir, "ps_beads.xyz");
+            cg.Save(beadsFile);
+            var nBeads = cg.Summary().Atoms;
+            cg.Dispose();
+            vm.BackmapFrom(beadsFile).GetAwaiter().GetResult();
+            Check(vm.Document!.Summary().Atoms == 1300 && vm.Status.StartsWith("Backmapped") && vm.Title.Contains("backmapped"),
+                  $"backmap: {nBeads} beads → {vm.Document!.Summary().Atoms} atoms · {vm.Status}");
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

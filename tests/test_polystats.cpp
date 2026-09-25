@@ -197,3 +197,36 @@ TEST(Entanglement, KremerGrestMeltMatchesTheLammpsPrimitivePaths) {
   EXPECT_NEAR(e.ne_mscoil, 68.1, 0.05 * 68.1);
   EXPECT_NEAR(e.ne_coil, 42.2, 0.03 * 42.2);
 }
+
+// Backmapping: beads of eicosane (5 backbone atoms each) turned and moved rigidly carry their atoms rigidly — exact for
+// beads with two bonded neighbours; every bond inside a bead keeps its length; the wrong bead count is refused
+TEST(Resolution, BackmapFollowsRigidlyMovedBeads) {
+  BuildOptions b;
+  b.forcefield = "uff";
+  const System aa = build_molecule("CCCCCCCCCCCCCCCCCCCC", b).system;
+  ResolutionReport rr;
+  System beads = coarse_grain(aa, 5, &rr);
+  ASSERT_EQ(beads.atoms.size(), 4u);
+  // rotate 40° about (1, 2, 3) and shift
+  const Vec3 ax = Vec3{1, 2, 3} * (1 / std::sqrt(14.0));
+  const double th = 40 * M_PI / 180, c = std::cos(th), s = std::sin(th);
+  auto rot = [&](const Vec3& v) { return v * c + cross(ax, v) * s + ax * (dot(ax, v) * (1 - c)); };
+  for (auto& a : beads.atoms) a.pos = rot(a.pos) + Vec3{5, -3, 2};
+  BackmapReport rep;
+  const System back = backmap(aa, beads, 5, &rep);
+  ASSERT_EQ(back.atoms.size(), aa.atoms.size());
+  const auto nbb = beads.neighbours();
+  for (size_t i = 0; i < aa.atoms.size(); ++i) {
+    if (nbb[size_t(rr.site_of[i])].size() < 2) continue;   // end beads may roll about their one bond
+    const Vec3 want = rot(aa.atoms[i].pos) + Vec3{5, -3, 2};
+    EXPECT_NEAR(norm(back.atoms[i].pos - want), 0.0, 1e-6) << "atom " << i;
+  }
+  for (const auto& bd : aa.bonds)
+    if (rr.site_of[bd.i] == rr.site_of[bd.j])
+      EXPECT_NEAR(norm(back.atoms[bd.j].pos - back.atoms[bd.i].pos), norm(aa.atoms[bd.j].pos - aa.atoms[bd.i].pos), 1e-9);
+  EXPECT_GT(rep.rms_turn, 25.0);   // the two middle beads turn 40°, the ends the smallest rotation that aligns their bond
+  EXPECT_LE(rep.rms_turn, 40.0 + 1e-6);
+  System three = beads;
+  three.atoms.pop_back();
+  EXPECT_THROW(backmap(aa, three, 5), std::invalid_argument);
+}
