@@ -243,6 +243,12 @@ internal static class Screenshot
                 Console.WriteLine($"unnamed buttons: {un.Count}");
                 foreach (var b in un.Take(40)) Console.WriteLine($"  {b.GetType().Name} {b.Name} {(b.Content as Avalonia.Controls.Control)?.GetType().Name} classes={string.Join(".", b.Classes)}");
             }
+            if (kv[0] == "update")   // update=1: check for updates (set CAPS_UPDATE_FEED to a local release JSON)
+            {
+                var t = w.ViewModel.CheckForUpdates();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "vision") w.ViewModel.OpenColourVision();                    // vision=1: Settings › Colour vision
             if (kv[0] == "cvd") w.ViewModel.VisionPreview = int.Parse(kv[1]);          // cvd=0..3: the view as seen with a deficiency
             if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested

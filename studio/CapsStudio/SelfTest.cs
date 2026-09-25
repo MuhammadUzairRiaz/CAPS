@@ -1113,6 +1113,25 @@ internal static class SelfTest
             Check(n1 == "Export image or movie" && n2 == "Interactions & checks" && n3 == "Reset the view", $"accessible names: {n1} | {n2} | {n3}");
         }
 
+        // Update available: a local feed with a newer release opens the dialog, results-altering notes first
+        {
+            var feed = Path.Combine(outDir, "caps-selftest-release.json");
+            File.WriteAllText(feed, new System.Text.Json.Nodes.JsonObject
+            {
+                ["tag_name"] = "v9.9.0", ["html_url"] = "https://github.com/MuhammadUzairRiaz/CAPS/releases/tag/v9.9.0",
+                ["body"] = "## New\n- Trajectory export to XTC\n## Changes that can alter results\n- PME tolerance 1e-5 → 1e-6\n## Fixed\n- A fix",
+            }.ToJsonString());
+            Environment.SetEnvironmentVariable("CAPS_UPDATE_FEED", feed);
+            vm.CheckForUpdates().GetAwaiter().GetResult();
+            var first = vm.UpdateSections.FirstOrDefault();
+            var ok = vm.UpdateOpen && vm.UpdateVersion == "9.9.0" && vm.UpdateSections.Count == 3 && first!.AltersResults && first.Items[0].StartsWith("PME");
+            vm.CloseUpdate();
+            File.WriteAllText(feed, "{\"tag_name\":\"v0.0.1\",\"body\":\"\"}");
+            vm.CheckForUpdates().GetAwaiter().GetResult();
+            Environment.SetEnvironmentVariable("CAPS_UPDATE_FEED", null);
+            Check(ok && !vm.UpdateOpen && vm.UpdateText.Contains("latest"), $"update: {vm.UpdateTitle} · {vm.UpdateSections.Count} sections · then {vm.UpdateText}");
+        }
+
         // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document
         {
             var rdir = Path.Combine(outDir, "caps-selftest-recipe");
