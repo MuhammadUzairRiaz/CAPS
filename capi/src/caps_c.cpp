@@ -2639,6 +2639,8 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     t.n = int(j.num("n", 10)), t.m = int(j.num("m", 10));
     t.length = j.num("length", 25);
     t.periodic = j.num("periodic", 1) != 0;
+    t.cc = j.num("cc", 1.42);
+    t.walls = int(j.num("walls", 1));
     f = caps::nanotube(t, &r);
     keep = {false, false, t.periodic};
   } else if (kind == "sheet") {
@@ -2646,6 +2648,7 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     sh.lx = j.num("lx", 20), sh.ly = j.num("ly", 20);
     sh.layers = int(j.num("layers", 1));
     sh.periodic = j.num("periodic", 1) != 0;
+    sh.cc = j.num("cc", 1.42);
     f = caps::graphene_sheet(sh, &r);
     keep = {sh.periodic, sh.periodic, false};
   } else if (kind == "particle") {
