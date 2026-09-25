@@ -249,6 +249,11 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_insert_molecules")] public static extern int InsertMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, int count, double tolerance, ulong seed, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_space_groups")] public static extern int SpaceGroups(byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_crystal_info")] public static extern int CrystalInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_crystal_build")] public static extern IntPtr CrystalBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_crystal_symmetrize")] public static extern int CrystalSymmetrize([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, double snap, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_crystal_find_symmetry")] public static extern int CrystalFindSymmetry([MarshalAs(UnmanagedType.LPUTF8Str)] string? spec, [MarshalAs(UnmanagedType.LPUTF8Str)] string? cif, double tolerance, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
     [DllImport(Lib, EntryPoint = "caps_set_threads")] public static extern void SetThreads(int threads);
     [DllImport(Lib, EntryPoint = "caps_set_electrostatics")] public static extern void SetElectrostatics(int mode, double ewaldRtol, double pmeSpacing, int pmeOrder);
@@ -403,6 +408,31 @@ public sealed class CapsDocument : IDisposable
         CapsProgress? cb = progress == null ? null : (d, t, r, _) => progress(d, t, r) ? 0 : 1;
         var h = Native.InterfaceBuild(options, spec, o, cb, IntPtr.Zero, report, report.Length);
         GC.KeepAlive(cb);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>Calls that do real work: one call into a large buffer, a second only when the answer did not fit.</summary>
+    private static string JsonCallOnce(Func<byte[]?, int, int> f)
+    {
+        var buf = new byte[1 << 16];
+        var n = f(buf, buf.Length);
+        if (n > buf.Length) { buf = new byte[n]; f(buf, buf.Length); }
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+    }
+    /// <summary>The 530 space-group settings (caps_space_groups).</summary>
+    public static string SpaceGroups() => JsonCall(Native.SpaceGroups);
+    /// <summary>What a crystal spec builds (caps_crystal_info).</summary>
+    public static string CrystalInfo(string spec) => JsonCallOnce((b, c) => Native.CrystalInfo(spec, b, c));
+    /// <summary>The spec with its sites on their special positions (caps_crystal_symmetrize).</summary>
+    public static string CrystalSymmetrize(string spec, double snap) => JsonCallOnce((b, c) => Native.CrystalSymmetrize(spec, snap, b, c));
+    /// <summary>The space group and asymmetric unit of a spec's crystal or of a CIF file (caps_crystal_find_symmetry).</summary>
+    public static string CrystalFindSymmetry(string? spec, string? cif, double tolerance) => JsonCallOnce((b, c) => Native.CrystalFindSymmetry(spec, cif, tolerance, b, c));
+    /// <summary>A crystal from a space group, a lattice and an asymmetric unit (caps_crystal_build).</summary>
+    public static (CapsDocument Doc, string Report) CrystalBuild(string spec, string label)
+    {
+        var report = new byte[4096];
+        var h = Native.CrystalBuild(spec, report, report.Length);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }

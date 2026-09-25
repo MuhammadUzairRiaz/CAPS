@@ -34,6 +34,7 @@ public partial class StartPage : PageBase
         {
             if (b.Module == 9) Vm.OpenBuilder();
             else if (b.Module == 14) Vm.OpenSurface();
+            else if (b.Module == 29) Vm.OpenCrystal();
             else Vm.SetModule(b.Module);
         }
     }

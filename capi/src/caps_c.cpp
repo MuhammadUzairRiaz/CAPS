@@ -32,6 +32,7 @@
 #include "caps/pipeline.hpp"
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
+#include "caps/spacegroup.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -80,6 +81,7 @@ struct caps_doc {
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
+  std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
 };
 
 namespace {
@@ -164,6 +166,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.outlines = o->outlines != 0;
   r.depth_cue = o->depth_cue != 0;
   r.show_cell = o->show_cell != 0;
+  r.cell_repeats = d->cell_repeats;
   // selection, focus and property colours refer to the frame's atoms; with a pipeline they map onto its particles
   auto to_shown = [&](int i) { return !d->pstate ? i : i >= 0 && size_t(i) < d->shown_of.size() ? d->shown_of[size_t(i)] : -1; };
   for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0 && to_shown(o->highlight[k]) >= 0) r.highlight.push_back(to_shown(o->highlight[k]));
@@ -2489,4 +2492,191 @@ extern "C" void caps_set_electrostatics(int32_t mode, double ewald_rtol, double 
   if (ewald_rtol > 0) g_elec.rtol = ewald_rtol;
   if (pme_spacing > 0) g_elec.spacing = pme_spacing;
   if (pme_order >= 3 && pme_order <= 12) g_elec.order = pme_order;
+}
+
+// ---------------------------------------------------------------- crystals from space groups (v20)
+
+namespace {
+
+caps::CrystalSpec crystal_spec_from(const caps::Json& j) {
+  caps::CrystalSpec c;
+  c.space_group = j.text("space_group", "P 1");
+  c.a = j.num("a", 5), c.b = j.num("b", 5), c.c = j.num("c", 5);
+  c.alpha = j.num("alpha", 90), c.beta = j.num("beta", 90), c.gamma = j.num("gamma", 90);
+  c.tolerance = j.num("tolerance", 0.01);
+  c.title = j.text("title");
+  if (j.has("supercell") && j["supercell"].is_array())
+    for (size_t k = 0; k < 3 && k < j["supercell"].size(); ++k) c.supercell[k] = std::max(1, int(j["supercell"][k].number()));
+  if (j.has("sites") && j["sites"].is_array())
+    for (const auto& x : j["sites"].items()) {
+      caps::CrystalSite site;
+      site.label = x.text("label");
+      const std::string el = x.text("element");
+      site.element = caps::element_from_symbol(el);
+      if (site.element <= 0) throw std::invalid_argument("site " + site.label + ": unknown element '" + el + "'");
+      site.frac = {x.num("x", 0), x.num("y", 0), x.num("z", 0)};
+      site.occupancy = x.num("occupancy", 1);
+      c.sites.push_back(site);
+    }
+  return c;
+}
+
+caps::Json crystal_spec_json(const caps::CrystalSpec& c) {
+  caps::Json j = caps::Json::object();
+  j["space_group"] = c.space_group;
+  j["a"] = c.a, j["b"] = c.b, j["c"] = c.c, j["alpha"] = c.alpha, j["beta"] = c.beta, j["gamma"] = c.gamma;
+  caps::Json sc = caps::Json::array();
+  for (int n : c.supercell) sc.push_back(double(n));
+  j["supercell"] = sc;
+  j["tolerance"] = c.tolerance;
+  caps::Json sites = caps::Json::array();
+  for (const auto& s : c.sites) {
+    caps::Json x = caps::Json::object();
+    x["label"] = s.label;
+    x["element"] = std::string(caps::element(s.element).symbol);
+    x["x"] = s.frac[0], x["y"] = s.frac[1], x["z"] = s.frac[2];
+    x["occupancy"] = s.occupancy;
+    sites.push_back(x);
+  }
+  j["sites"] = sites;
+  return j;
+}
+
+// The lattice centring of a setting: the first letter of its symbol; rhombohedral axes (":r") are primitive.
+char crystal_centring(const caps::SpaceGroupSetting& sg) {
+  if (sg.key.size() > 2 && sg.key.substr(sg.key.size() - 2) == ":r") return 'P';
+  return sg.hm.empty() ? 'P' : sg.hm[0];
+}
+
+// The crystal of a spec; "primitive": true reduces a centred cell before the supercell repeats.
+caps::System crystal_of(const caps::Json& j, caps::CrystalReport* rep) {
+  caps::CrystalSpec c = crystal_spec_from(j);
+  const bool primitive = j.num("primitive", 0) != 0 || (j.has("primitive") && j["primitive"].kind() == caps::Json::Bool && j["primitive"].boolean());
+  if (!primitive) return caps::build_crystal(c, rep);
+  const auto sc = c.supercell;
+  c.supercell = {1, 1, 1};
+  caps::System s = caps::build_crystal(c, rep);
+  const auto* sg = caps::find_space_group(c.space_group);
+  s = caps::primitive_cell(s, sg ? crystal_centring(*sg) : 'P');
+  if (rep) rep->atoms_per_cell = s.atoms.size(), rep->volume = s.cell.volume();
+  if (sc[0] * sc[1] * sc[2] > 1) s = caps::supercell(s, sc[0], sc[1], sc[2]);
+  s.bonds = caps::crystal_bonds(s);
+  return s;
+}
+
+}  // namespace
+
+extern "C" int32_t caps_space_groups(char* json, int32_t cap) {
+  caps::Json arr = caps::Json::array();
+  for (const auto& sg : caps::space_group_settings()) {
+    caps::Json x = caps::Json::object();
+    x["key"] = sg.key;
+    x["number"] = double(sg.number);
+    x["hm"] = sg.hm;
+    x["hall"] = sg.hall;
+    x["system"] = caps::crystal_system(sg.number);
+    arr.push_back(x);
+  }
+  return report_out(arr.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_crystal_info(const char* spec_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json spec = caps::Json::parse(spec_json && *spec_json ? spec_json : "{}");
+    caps::CrystalReport rep;
+    const caps::System s = crystal_of(spec, &rep);
+    j["ok"] = true;
+    j["key"] = rep.key, j["hm"] = rep.hm, j["hall"] = rep.hall, j["system"] = rep.system;
+    j["number"] = double(rep.number), j["operations"] = double(rep.operations);
+    j["atoms_per_cell"] = double(rep.atoms_per_cell), j["atoms"] = double(s.atoms.size()), j["bonds"] = double(s.bonds.size());
+    caps::Json m = caps::Json::array();
+    for (int k : rep.multiplicity) m.push_back(double(k));
+    j["multiplicity"] = m;
+    j["volume"] = rep.volume;
+    j["density"] = s.density();
+    std::vector<size_t> all(s.atoms.size());
+    for (size_t i = 0; i < all.size(); ++i) all[i] = i;
+    j["formula"] = caps::formula_of(s, all);
+    const auto* sg = caps::find_space_group(rep.key);
+    j["centring"] = std::string(1, sg ? crystal_centring(*sg) : 'P');
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : rep.notes) notes.push_back(n);
+    j["notes"] = notes;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" caps_doc* caps_crystal_build(const char* spec_json, char* report, int32_t cap) {
+  try {
+    caps::CrystalReport rep;
+    const caps::System s = crystal_of(caps::Json::parse(spec_json && *spec_json ? spec_json : "{}"), &rep);
+    std::string notes;
+    for (const auto& n : s.notes) notes += n + "\n";
+    report_out(notes, report, cap);
+    caps_doc* d = doc_of(s);
+    const caps::Json j = caps::Json::parse(spec_json && *spec_json ? spec_json : "{}");
+    if (j.has("supercell") && j["supercell"].is_array())
+      for (size_t k = 0; k < 3 && k < j["supercell"].size(); ++k) d->cell_repeats[k] = std::max(1, int(j["supercell"][k].number()));
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_crystal_symmetrize(const char* spec_json, double snap, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json in = caps::Json::parse(spec_json && *spec_json ? spec_json : "{}");
+    int moved = 0;
+    caps::Json out = crystal_spec_json(caps::symmetrize_sites(crystal_spec_from(in), snap > 0 ? snap : 0.3, &moved));
+    if (in.has("primitive")) out["primitive"] = in["primitive"];
+    j["ok"] = true;
+    j["moved"] = double(moved);
+    j["spec"] = out;
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_crystal_find_symmetry(const char* spec_json, const char* cif_path, double tolerance, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    caps::System s;
+    caps::CrystalSpec base;
+    if (cif_path && *cif_path) {
+      s = caps::read_cif(cif_path);
+      base.title = s.title;
+    } else {
+      const caps::Json in = caps::Json::parse(spec_json && *spec_json ? spec_json : "{}");
+      base = crystal_spec_from(in);
+      caps::CrystalSpec one = base;
+      one.supercell = {1, 1, 1};
+      s = caps::build_crystal(one);
+    }
+    const caps::SymmetryFound f = caps::find_symmetry(s, tolerance > 0 ? tolerance : 0.1);
+    caps::CrystalSpec out = base;
+    const auto& c = s.cell;
+    const double A = caps::norm(c.a), B = caps::norm(c.b), C = caps::norm(c.c);
+    auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 57.29577951308232; };
+    out.a = A, out.b = B, out.c = C, out.alpha = ang(c.b, c.c), out.beta = ang(c.a, c.c), out.gamma = ang(c.a, c.b);
+    out.space_group = f.key;
+    out.sites = f.sites;
+    j["ok"] = true;
+    j["key"] = f.key, j["hm"] = f.hm, j["system"] = f.system;
+    j["number"] = double(f.number), j["operations"] = double(f.operations);
+    j["atoms"] = double(s.atoms.size());
+    j["spec"] = crystal_spec_json(out);
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
 }
