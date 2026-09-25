@@ -580,6 +580,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     ch.mirror.resize(ch.seq.size());
     for (size_t k = 0; k < ch.seq.size(); ++k) {
+      if (spec.keep_configuration) { ch.mirror[k] = 0; continue; }   // D-sugars stay D
       if (k == 0) ch.mirror[k] = U(rng) < 0.5;
       else if (spec.tacticity == Tacticity::Isotactic) ch.mirror[k] = ch.mirror[k - 1];
       else if (spec.tacticity == Tacticity::Syndiotactic) ch.mirror[k] = !ch.mirror[k - 1];

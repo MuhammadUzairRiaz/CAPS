@@ -84,6 +84,10 @@ int protonate_residues(System& s, double ph, std::vector<std::string>* notes = n
 // both ring nitrogens of His+, the one farther from the backbone (HIE) of neutral His. Returns the hydrogens added.
 int add_hydrogens_at_ph(System& s, double ph, const std::vector<char>& atoms = {}, std::vector<std::string>* notes = nullptr);
 
+// Hydrogens on phosphorus become hydroxyls (a nucleic-acid strand's 3′ end, capped with H by the grower, becomes a
+// 3′-phosphate P–OH): the H turns into O at 1.61 Å and gets its own H. Returns the groups changed.
+int hydroxylate_phosphorus(System& s);
+
 // Minimises the flagged atoms (the rest held) with UFF; push-off first for overlaps.
 void clean_up(System& s, const std::vector<char>& atoms = {}, double ftol = 0.5);
 

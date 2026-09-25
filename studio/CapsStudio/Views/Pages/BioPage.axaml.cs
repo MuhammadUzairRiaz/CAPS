@@ -17,6 +17,15 @@ public partial class BioPage : PageBase
         {
             if (DataContext is not MainViewModel vm) return;
             vm.BioViewChanged += () => { var fresh = preview.Document == null; preview.Document = vm.BioDoc; if (fresh) preview.Reset(); };
+            var na = this.FindControl<MolView>("NaPreview")!;
+            vm.PropertyChanged += (_, a) =>
+            {
+                if (a.PropertyName != nameof(MainViewModel.NaDoc)) return;
+                na.Document = vm.NaDoc;
+                na.Reset();
+                if (vm.NaDoc is { } d)   // frame the strand, not its roomy cell
+                    try { na.Camera = d.Focus(na.Camera, System.Linq.Enumerable.Range(0, (int)d.Summary().Atoms).ToArray(), 0.85); } catch { }
+            };
         };
     }
 
@@ -26,7 +35,7 @@ public partial class BioPage : PageBase
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
-    private async void OnBuild(object? s, RoutedEventArgs e) => await Vm.BuildPeptide();
+    private async void OnBuild(object? s, RoutedEventArgs e) { if (Vm.BioNucleic) await Vm.BuildNucleic(); else await Vm.BuildPeptide(); }
 
     private void OnResidue(object? s, RoutedEventArgs e)
     {

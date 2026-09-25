@@ -64,6 +64,9 @@ struct ChainSpec {
   int arm_dp = 5;                  // Comb, Branched: units per side chain
   int spacing = 4;                 // Comb: a side chain on every spacing-th backbone unit
   double branch_probability = 0.1; // Branched: chance that a backbone unit carries a side chain
+  // Keep every unit's configuration as written (no mirrored units): chiral units such as nucleotides and sugars, whose
+  // stereocentres are fixed (D-ribose), not a tacticity. Tacticity settings are then ignored.
+  bool keep_configuration = false;
 };
 
 // Chain lengths drawn from a distribution (design/boards/Polydispersity): "monodisperse", "schulz-zimm" (Gamma with
