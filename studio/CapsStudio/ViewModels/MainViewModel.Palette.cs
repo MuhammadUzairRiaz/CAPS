@@ -55,6 +55,7 @@ public sealed partial class MainViewModel
             ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
             ("Blend builder", 16, "grow", "blend mixture nr br sbr tyre compound two polymers"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),
+            ("Figure bundle", 26, "download", "bundle zip reproduce provenance sha256 hash data csv figure paper supplementary"),
             ("Four views", 25, "cube", "viewports top front left side perspective ortho orthographic quad layout"),
             ("Colour by", 24, "eye", "colour color gallery element chain type charge position property map"),
             ("Compare", 23, "layers", "compare two cells seeds runs a b difference side by side"),
@@ -68,7 +69,7 @@ public sealed partial class MainViewModel
             AddCommand(new PaletteCommand
             {
                 Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
-                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else SetModule(m); },
+                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else if (m == 26) OpenBundle(); else SetModule(m); },
             });
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });

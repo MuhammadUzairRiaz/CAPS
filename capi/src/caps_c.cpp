@@ -29,6 +29,7 @@
 #include "caps/uff.hpp"
 #include "caps/checks.hpp"
 #include "caps/pipeline.hpp"
+#include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -2293,6 +2294,69 @@ extern "C" int32_t caps_export_preview(caps_doc* d, const char* format, const ch
     g_error = e.what();
     return -1;
   }
+}
+
+namespace {
+std::pair<caps::BundleOptions, caps::Pipeline> bundle_options(const char* json) {
+  const caps::Json o = caps::Json::parse(json && *json ? json : "{}");
+  caps::BundleOptions b;
+  b.name = o.text("name", "figure");
+  b.input = o.text("input", "");
+  b.topology = o.text("topology", "");
+  b.frame = int(o.num("frame", 0));
+  b.width = int(o.num("width", 1920));
+  b.height = int(o.num("height", 1080));
+  auto flag = [&](const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
+  b.include_input = flag("include_input", false);
+  b.include_pipeline = flag("include_pipeline", true);
+  b.include_data = flag("include_data", true);
+  b.include_readme = flag("include_readme", true);
+  caps::Pipeline p = o.has("pipeline") ? caps::pipeline_from_json(o["pipeline"]) : caps::Pipeline{};
+  return {b, p};
+}
+}  // namespace
+
+extern "C" int32_t caps_bundle_preview(caps_doc* d, const char* options, char* json, int32_t cap) {
+  try {
+    auto [b, p] = bundle_options(options);
+    b.include_figures = false;
+    const auto files = caps::bundle_files(d->traj, p, b, caps::Camera{}, caps::RenderOptions{});
+    caps::Json j = caps::Json::object();
+    caps::Json fl = caps::Json::array();
+    auto add = [&](const std::string& name, const std::string& note, double bytes, const std::string& hash) {
+      caps::Json f = caps::Json::object();
+      f["name"] = name;
+      f["note"] = note;
+      f["bytes"] = bytes;
+      f["sha256"] = hash;
+      fl.push_back(std::move(f));
+    };
+    add("figure.svg", "vector figure", -1, "");
+    add("figure.png", std::to_string(b.width) + " × " + std::to_string(b.height) + " raster", -1, "");
+    std::string first_csv, first_name;
+    for (const auto& f : files) {
+      add(f.name, f.content_note, double(f.bytes.size()), f.name == "provenance.json" ? "" : caps::sha256_hex(f.bytes));
+      if (f.name == "provenance.json") j["provenance"] = f.bytes;
+      if (first_csv.empty() && f.name.rfind("data/", 0) == 0) { first_csv = f.bytes; first_name = f.name; }
+    }
+    j["files"] = std::move(fl);
+    j["csv"] = first_csv.substr(0, 2000);
+    j["csv_name"] = first_name;
+    return report_out(j.dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_bundle_write(caps_doc* d, const char* path, const char* options, const caps_camera* cam, const caps_render_opts* opt) {
+  return guard([&] {
+    auto [b, p] = bundle_options(options);
+    caps::RenderOptions r = opts_of(d, opt);
+    const auto files = caps::bundle_files(d->traj, p, b, cam_of(cam), r);
+    caps::write_bundle(path, files);
+    return int32_t(files.size());
+  });
 }
 
 extern "C" int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyze_progress_fn progress, void* user, char* json, int32_t cap) {

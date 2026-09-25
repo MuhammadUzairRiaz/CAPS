@@ -736,6 +736,7 @@ public partial class MainWindow : Window
                 new MenuItem { Header = "Colour by… (gallery)", Command = new RelayCommand(() => { _vm.OpenColourBy(); return Task.CompletedTask; }) },
                 new MenuItem { Header = "Compare with another file…", Command = new RelayCommand(() => { _vm.OpenCompare(); return Task.CompletedTask; }) },
                 new MenuItem { Header = "Run on many files…", Command = new RelayCommand(() => { _vm.OpenBatch(); return Task.CompletedTask; }) },
+                new MenuItem { Header = "Figure bundle…", Command = new RelayCommand(() => { _vm.OpenBundle(); return Task.CompletedTask; }) },
                 new MenuItem { Header = "Export the result…", Command = new RelayCommand(() => { _vm.OpenExport(); return Task.CompletedTask; }) },
                 new MenuItem { Header = "Clear all steps", Command = new RelayCommand(() => { _vm.ClearPipeline(); return Task.CompletedTask; }) },
             },
