@@ -30,6 +30,7 @@ public sealed class AppSettings
     public List<MyFragment> MyFragments { get; set; } = new();   // the fragment library's "My fragments"
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }
+    public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>

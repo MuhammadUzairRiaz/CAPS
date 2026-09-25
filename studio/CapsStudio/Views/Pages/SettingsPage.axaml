@@ -148,6 +148,15 @@
               </ItemsControl>
               <TextBlock x:Name="PaletteNote" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
                          Text="Atoms, molecule and chain colours follow the palette in the view, the builder preview and exported figures. The monochrome palette separates elements by lightness alone, so figures read in greyscale." />
+              <StackPanel Spacing="8" Margin="0,8,0,0">
+                <TextBlock Text="Motion" Classes="h2" />
+                <StackPanel Orientation="Horizontal">
+                  <RadioButton Classes="seg" GroupName="motion" Content="Follow system" IsChecked="{Binding SetReduceMotion, Converter={x:Static v:StringEqualsConverter.Instance}, ConverterParameter=system}" />
+                  <RadioButton Classes="seg" GroupName="motion" Content="Reduce" IsChecked="{Binding SetReduceMotion, Converter={x:Static v:StringEqualsConverter.Instance}, ConverterParameter=on}" />
+                  <RadioButton Classes="seg" GroupName="motion" Content="Full" IsChecked="{Binding SetReduceMotion, Converter={x:Static v:StringEqualsConverter.Instance}, ConverterParameter=off}" />
+                </StackPanel>
+                <TextBlock Text="{Binding MotionText}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left" />
+              </StackPanel>
               <Button Classes="small" Click="OnColourVision" HorizontalAlignment="Left" ToolTip.Tip="The palettes as seen with protanopia, deuteranopia and tritanopia, and a preview of the view">
                 <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="eye" Size="14" VerticalAlignment="Center" /><TextBlock Text="Colour-vision check…" VerticalAlignment="Center" /></StackPanel>
               </Button>

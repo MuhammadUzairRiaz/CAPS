@@ -1733,15 +1733,7 @@ public sealed partial class MainViewModel : ObservableObject
         return o;
     }
 
-    public void ResetView()
-    {
-        Camera.Yaw = 0.55; Camera.Pitch = 0.40; Camera.Zoom = 1; Camera.PanX = 0; Camera.PanY = 0;
-        RenderRequested?.Invoke();
-    }
+    public void ResetView() => FlyTo(new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1, Perspective = Camera.Perspective });
 
-    public void SetView(double yaw, double pitch)
-    {
-        Camera.Yaw = yaw; Camera.Pitch = pitch; Camera.PanX = 0; Camera.PanY = 0;
-        RenderRequested?.Invoke();
-    }
+    public void SetView(double yaw, double pitch) => FlyTo(new CapsCamera { Yaw = yaw, Pitch = pitch, Zoom = Camera.Zoom, Perspective = Camera.Perspective });
 }

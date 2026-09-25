@@ -246,7 +246,7 @@
                 <MenuFlyout>
                   <MenuItem Header="Perspective" Click="OnPerspectiveOn" /><MenuItem Header="Orthographic" Click="OnPerspectiveOff" />
                   <Separator />
-                  <MenuItem Header="Reset view (R)" Click="OnResetView" /><MenuItem Header="Top" Click="OnViewTop" />
+                  <MenuItem Header="Reset view (R)" Click="OnResetView" /><MenuItem Header="Frame selection (F)" Click="OnFrameSelection" /><MenuItem Header="Top" Click="OnViewTop" />
                   <MenuItem Header="Front" Click="OnViewFront" /><MenuItem Header="Side" Click="OnViewSide" />
                 </MenuFlyout>
               </Button.Flyout>
