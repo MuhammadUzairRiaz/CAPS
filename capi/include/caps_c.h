@@ -393,6 +393,12 @@ uint32_t caps_category_colour(int32_t k);
    (exit 2 input, 3 missing parameters, 4 failed run). */
 typedef int32_t (*caps_recipe_progress_fn)(int32_t stage, int32_t stages, const char* name, const char* status, const char* detail, double fraction, void* user);
 caps_doc* caps_recipe_run(const char* recipe, const char* options_json, caps_recipe_progress_fn progress, void* user, char* report, int32_t cap);
+/* v20 a recipe checked without running it (design/boards/RecipeEditor): {ok, code, error, name, sha256, stages: [{name,
+   summary, ok}], protocol, schedule: [{label, ensemble, ps, t_start, t_end, pressure_bar}]}. Runs record the recipe's
+   SHA-256 as the first step of their provenance. */
+int32_t caps_recipe_check(const char* recipe, char* out, int32_t cap);
+/* v20 the YAML subset recipes use, as JSON ({"ok": false, "error"} when it does not parse). */
+int32_t caps_yaml_to_json(const char* yaml, char* out, int32_t cap);
 /* v20 the current frame for a viewer outside the Studio (the notebook's caps.View): {"atoms", "shown", "z": [...],
    "xyz": [x0, y0, z0, …] (Å, 3 decimals), "bonds": [i0, j0, …], "colours": {"6": "#909090", …}, "radii": {"6": 1.7, …}
    (van der Waals), "cell": [ox, oy, oz, ax, ay, az, bx, …] or null}. options: {"max_atoms": 60000, "hydrogens": true}

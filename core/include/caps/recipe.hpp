@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/equilibrate.hpp"
 #include "caps/field.hpp"
 #include "caps/json.hpp"
 #include "caps/properties.hpp"
@@ -51,6 +52,7 @@ struct RecipeOptions {
   std::string forcefield_dir;        // the library (catalogue.json) for force-field names
   long long seed = -1;               // ≥ 0 overrides every seed of the recipe
   int threads = 0;                   // 0: automatic
+  std::string sha256;                // of the recipe's text: recorded as the manifest's first step, so every run names its recipe
   std::function<void(const RecipeEvent&)> progress;
 };
 
@@ -66,6 +68,21 @@ struct RecipeResult {
 
 // The stages the recipe will run, in order (checks the keys; throws RecipeError 2).
 std::vector<std::string> recipe_stages(const Json& recipe);
+
+// A recipe checked without running it (design/boards/RecipeEditor): each stage summarised, the first problem found
+// (code 2 input), and the equilibration schedule when there is one.
+struct RecipeStageInfo {
+  std::string name, summary;
+  bool ok = true;
+};
+struct RecipeCheck {
+  std::vector<RecipeStageInfo> stages;
+  int code = 0;
+  std::string error;
+  std::string protocol;              // the equilibrate stage's protocol, if any
+  std::vector<Stage> schedule;
+};
+RecipeCheck check_recipe(const Json& recipe);
 RecipeResult run_recipe(const Json& recipe, const RecipeOptions& o);
 
 }  // namespace caps

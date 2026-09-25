@@ -548,3 +548,19 @@ TEST(Orientation, PolyethyleneCrystalIsPerfectlyOrdered) {
   EXPECT_NEAR(std::fabs(props[0].extra.at("director z")), 1.0, 1e-9);
   EXPECT_NEAR(props[0].extra.at("local crystallinity (fraction)"), 1.0, 1e-9);
 }
+
+TEST(Recipe, CheckedWithoutRunning) {
+  const auto ok = caps::check_recipe(caps::yaml_parse(
+      "recipe: 1\nbuild: {polymer: {smiles: \"*CC(*)c1ccccc1\", dp: 40, chains: 20}}\ntype: {forcefield: gaff2}\ngrow: {density: 0.5}\n"
+      "relax: {method: lbfgs, fmax: 0.02}\nequilibrate: {protocol: larsen21, t_max: 600}\nexport: [lammps, gromacs]\n"));
+  EXPECT_EQ(ok.code, 0) << ok.error;
+  ASSERT_EQ(ok.stages.size(), 6u);
+  EXPECT_NE(ok.stages[0].summary.find("C8H8 · DP 40 × 20 chains"), std::string::npos);
+  EXPECT_EQ(ok.protocol, "larsen21");
+  EXPECT_EQ(ok.schedule.size(), 21u);
+  const auto bad = caps::check_recipe(caps::yaml_parse("build: {polymer: {smiles: \"CC\"}}\nexport: [xyz, tiff]\n"));
+  EXPECT_EQ(bad.code, 2);
+  EXPECT_FALSE(bad.stages[0].ok);
+  EXPECT_FALSE(bad.stages[1].ok);
+  EXPECT_NE(bad.error.find("build"), std::string::npos);
+}

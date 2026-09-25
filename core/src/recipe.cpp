@@ -87,6 +87,82 @@ std::vector<std::string> recipe_stages(const Json& r) {
   return out;
 }
 
+RecipeCheck check_recipe(const Json& r) {
+  RecipeCheck c;
+  std::vector<std::string> stages;
+  try { stages = recipe_stages(r); } catch (const RecipeError& e) { c.code = e.code; c.error = e.what(); return c; }
+  auto list = [](const Json& a) { std::string out; if (a.is_array()) for (const auto& x : a.items()) out += (out.empty() ? "" : ", ") + (x.is_string() ? x.str() : g6(x.number())); return out; };
+  for (const auto& st : stages) {
+    const Json& J = r[st];
+    RecipeStageInfo info{st, "", true};
+    try {
+      if (st == "build") {
+        if (J.has("polymer")) {
+          const Json& P = J["polymer"];
+          std::vector<std::string> units;
+          if (P.has("units") && P["units"].is_array()) for (const auto& u : P["units"].items()) units.push_back(u.is_string() ? u.str() : u.text("smiles"));
+          else units.push_back(text(P, "smiles", ""));
+          std::string formula;
+          for (const auto& u : units) {
+            if (u.empty()) throw RecipeError(2, "a repeat unit needs SMILES with two * points");
+            try { formula += (formula.empty() ? "" : " + ") + repeat_unit_info(u).formula; } catch (const std::exception& e) { throw RecipeError(2, "repeat unit " + u + ": " + e.what()); }
+          }
+          info.summary = formula + " · DP " + g6(num(P, "dp", 20)) + " × " + g6(num(P, "chains", 10)) + " chains · " + text(P, "tacticity", "atactic") +
+                         (units.size() > 1 ? " · " + text(P, "sequence", "homopolymer") : "");
+        } else if (J.has("molecule")) {
+          info.summary = "molecule " + (J["molecule"].is_string() ? J["molecule"].str() : text(J["molecule"], "smiles", ""));
+        } else if (J.has("file")) {
+          info.summary = "file " + J["file"].str();
+        } else {
+          throw RecipeError(2, "build needs polymer, molecule or file");
+        }
+      } else if (st == "type") {
+        info.summary = text(J, "forcefield", "default") + " · charges " + text(J, "charges", "auto");
+      } else if (st == "grow") {
+        info.summary = (J.has("box") ? "box " + g6(num(J, "box", 0)) + " Å" : "ρ " + g6(num(J, "density", 0.5)) + " g/cm³") + " · seed " + g6(num(J, "seed", 1)) +
+                       " · best of " + g6(num(J, "trials", 120)) + " trials";
+      } else if (st == "relax") {
+        const Minimiser m = minimiser_from_string(text(J, "method", "lbfgs"));
+        info.summary = std::string(to_string(m)) + " · |F|max " + g6(num(J, "fmax", 0.5));
+      } else if (st == "md") {
+        const std::string ens = text(J, "ensemble", "nvt");
+        if (ens != "nve" && ens != "nvt" && ens != "npt") throw RecipeError(2, "md.ensemble: nve, nvt or npt");
+        info.summary = ens + " · " + g6(num(J, "temperature", 300)) + " K · " + g6(num(J, "ps", 10)) + " ps";
+      } else if (st == "equilibrate") {
+        ProtocolParams pp;
+        pp.t_max = num(J, "t_max", pp.t_max);
+        pp.t_final = num(J, "t_final", pp.t_final);
+        if (J.has("p_max")) pp.p_max = J["p_max"].number() / 1.01325;
+        pp.time_scale = num(J, "time_scale", 1.0);
+        c.protocol = text(J, "protocol", "larsen21");
+        try { c.schedule = protocol_by_name(c.protocol, pp); } catch (const std::exception& e) { throw RecipeError(2, e.what()); }
+        double ps = 0;
+        for (const auto& sg : c.schedule) ps += sg.ps;
+        info.summary = c.protocol + " · " + std::to_string(c.schedule.size()) + " steps · " + g6(ps) + " ps";
+      } else if (st == "analyze") {
+        info.summary = J.has("properties") ? list(J["properties"]) : "density";
+      } else if (st == "export") {
+        std::vector<std::string> f;
+        if (J.is_array()) for (const auto& x : J.items()) f.push_back(x.str());
+        else if (J.is_string()) f.push_back(J.str());
+        for (const auto& x : f)
+          if (x != "lammps" && x != "gromacs" && x != "gro" && x != "pdb" && x != "xyz" && x != "mol2") throw RecipeError(2, "export: unknown format '" + x + "'");
+        info.summary = list(J.is_array() ? J : Json::array());
+      }
+    } catch (const RecipeError& e) {
+      info.ok = false;
+      info.summary = e.what();
+      if (!c.code) { c.code = e.code; c.error = st + ": " + e.what(); }
+    } catch (const std::exception& e) {
+      info.ok = false;
+      info.summary = e.what();
+      if (!c.code) { c.code = 2; c.error = st + ": " + e.what(); }
+    }
+    c.stages.push_back(std::move(info));
+  }
+  return c;
+}
+
 RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   const auto stages = recipe_stages(r);
   RecipeResult res;
@@ -110,6 +186,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   int chains = 1;
   std::shared_ptr<const ForceField> ff;
   std::string ffname = "built-in default (GAFF for C and H, UFF otherwise)";
+  if (!o.sha256.empty())
+    res.manifest.steps.push_back(step("recipe.run", "recipe " + res.name, {{"recipe", res.name}, {"sha256", o.sha256}, {"stages", std::to_string(n)}}, "", {}));
   // Types a structure with the recipe's force field (throws RecipeError 3 for untyped atoms or missing parameters).
   std::string borrowed;   // a library force field typed with its family's rules
   auto type_now = [&](const System& sys) {

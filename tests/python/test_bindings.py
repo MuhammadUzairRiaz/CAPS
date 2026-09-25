@@ -68,7 +68,7 @@ with tempfile.TemporaryDirectory() as tmp:
                     out_dir=tmp, progress=lambda e: events.append((e["name"], e["status"])))
     check(cell.atoms == 2 * 26 and os.path.exists(os.path.join(tmp, "pe.pdb")) and ("relax", "done") in events, "run: recipe with progress")
     check(abs(cell.properties[0]["value"] - 0.5) < 0.05, "run: analysed density")
-    check([st["engine"] for st in cell.provenance()["steps"]][:2] == ["field.assign", "grow.trials"], "run: provenance")
+    check([st["engine"] for st in cell.provenance()["steps"]][:3] == ["recipe.run", "field.assign", "grow.trials"], "run: provenance names the recipe")
     try:
         caps.run("build: {molecule: CCO}\nbogus: 1\n")
         check(False, "a wrong recipe raises")

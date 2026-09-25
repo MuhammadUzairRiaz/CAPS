@@ -322,6 +322,8 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
           " at " + param(s, "temperature") +
           (nvt || npt ? " with the " + th + " thermostat" + cite(only(s, {"bussi2007"})) : std::string()) +
           (npt ? " and " + param(s, "barostat").substr(0, param(s, "barostat").find(" · ")) + " pressure control" + cite(only(s, {"bernetti2020", "berendsen1984"})) : std::string()) + ".";
+    } else if (e == "recipe.run") {
+      t = "The structure was made by the CAPS recipe “" + param(s, "recipe") + "” (SHA-256 " + param(s, "sha256").substr(0, 12) + "…), whose steps follow.";
     } else if (e == "analysis.tg") {
       t = "The glass transition temperature was estimated from a stepwise NPT cooling scan from " + param(s, "from") + " to " + param(s, "to") + " in steps of " +
           param(s, "step") + ", holding " + param(s, "hold") + " at each temperature, by a two-line fit of the specific volume against temperature" +

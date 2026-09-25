@@ -20,13 +20,17 @@ public partial class MainViewModel
 
     public async Task RunRecipeFile(string path)
     {
-        if (Busy || _recipeRunning) { Status = "Wait for the run to finish (or cancel it) before running a recipe"; return; }
         string text;
         try { text = File.ReadAllText(path); }
         catch (Exception e) { Status = "Could not read the recipe: " + e.Message; return; }
-        var dir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
+        await RunRecipeText(text, Path.GetFileNameWithoutExtension(path), Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".");
+    }
+
+    /// <summary>Runs recipe text (YAML or JSON); relative paths and exported files are in `dir`.</summary>
+    public async Task RunRecipeText(string text, string label, string dir)
+    {
+        if (Busy || _recipeRunning) { Status = "Wait for the run to finish (or cancel it) before running a recipe"; return; }
         var options = new JsonObject { ["base_dir"] = dir, ["out_dir"] = dir, ["forcefield_dir"] = Paths.ForceFields ?? "", ["threads"] = _settings.Threads }.ToJsonString();
-        var label = Path.GetFileNameWithoutExtension(path);
         RecipeRunning = true;
         _recipeCancel = new CancellationTokenSource();
         var token = _recipeCancel.Token;

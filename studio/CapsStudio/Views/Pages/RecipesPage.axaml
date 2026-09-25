@@ -1,0 +1,117 @@
+<!-- CAPS Jobs › Recipes (design/boards/RecipeEditor): recipes as plain YAML (the same files caps run reads), checked as
+     they are edited, the equilibration schedule, saved with their SHA-256, duplicated, run alone or on the open structure. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.RecipesPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="Border.stage"><Setter Property="Background" Value="{DynamicResource Bg2B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="10,8" /><Setter Property="Margin" Value="0,0,8,8" /><Setter Property="Width" Value="170" /></Style>
+    <Style Selector="Border.stage.bad"><Setter Property="BorderBrush" Value="{DynamicResource ErrB}" /><Setter Property="Background" Value="{DynamicResource ErrBgB}" /></Style>
+    <Style Selector="ListBox.recipes ListBoxItem"><Setter Property="Padding" Value="10,7" /><Setter Property="CornerRadius" Value="7" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Duplicate" Click="OnDuplicate" />
+          <Button Click="OnSave" IsEnabled="{Binding RecipeOk}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Click="OnRunOnDoc" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The recipe's steps on the open structure (its build and grow stages are skipped)">
+            <TextBlock Text="{Binding Title, StringFormat='Run on {0}'}" MaxWidth="220" TextTrimming="CharacterEllipsis" />
+          </Button>
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding RecipeOk}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding RecipeName, StringFormat='Recipe · {0}'}" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="A reusable chain of steps; every run of it is logged with the recipe hash" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding RecipeSha, StringFormat='sha256 {0}'}" Classes="mono dim" VerticalAlignment="Center" MaxWidth="520" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{Binding RecipePathText}" Classes="mono dim" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="260,*,440" ColumnSpacing="14" Margin="22,18">
+      <Border Classes="pcard" Padding="10,12">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Recipes" FontSize="13.5" FontWeight="SemiBold" Margin="6,0,0,8" />
+          <TextBlock DockPanel.Dock="Bottom" Classes="dim" TextWrapping="Wrap" Margin="6,8,6,0"
+                     Text="Recipes are plain YAML (the format caps run reads), kept in ~/CAPS/recipes; runs record the exact recipe hash." />
+          <ListBox Classes="recipes" ItemsSource="{Binding Recipes}" SelectedItem="{Binding SelectedRecipe}" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:RecipeItem">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Detail}" Classes="dim" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" Classes.ok="{Binding RecipeOk}" Classes.err="{Binding !RecipeOk}" MaxWidth="360"><TextBlock Text="{Binding RecipeValid}" TextTrimming="CharacterEllipsis" /></Border>
+                <TextBlock Text="Pipeline" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <ItemsControl ItemsSource="{Binding RecipeStages}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RecipeStageChip">
+                    <Border Classes="stage" Classes.bad="{Binding !Ok}">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Summary}" Classes="dim" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding RecipeHasSchedule}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding RecipeProtocol, StringFormat='Temperature and pressure · {0}'}" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Temp" Height="130" XLabel="time (ps)" YLabel="T (K)" AutoRange="True" />
+              <v:LinePlot x:Name="Pres" Height="110" XLabel="time (ps)" YLabel="log₁₀ P (bar)" AutoRange="True" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Drawn from the schedule table; P is shown only for NPT steps." />
+              <Grid ColumnDefinitions="40,60,*,*,60" Margin="0,6,0,0">
+                <TextBlock Text="#" Classes="h3" /><TextBlock Grid.Column="1" Text="ENS." Classes="h3" /><TextBlock Grid.Column="2" Text="T (K)" Classes="h3" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="3" Text="P (BAR)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="PS" Classes="h3" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding RecipeSchedule}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ScheduleRow">
+                    <Grid ColumnDefinitions="40,60,*,*,60" Height="20">
+                      <TextBlock Text="{Binding Number}" Classes="mono dim" />
+                      <TextBlock Grid.Column="1" Text="{Binding Ensemble}" Classes="mono" FontSize="11.5" />
+                      <TextBlock Grid.Column="2" Text="{Binding T}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="3" Text="{Binding P}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="4" Text="{Binding Ps}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Larsen, Lin, Hart &amp; Colina, Macromolecules 44, 6944 (2011)." FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <Border Grid.Column="2" Classes="pcard" Padding="0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="14,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="YAML" FontSize="13.5" FontWeight="SemiBold" />
+          </Border>
+          <TextBox Text="{Binding RecipeText}" AcceptsReturn="True" AcceptsTab="False" TextWrapping="NoWrap" Classes="mono" FontSize="12"
+                   BorderThickness="0" Background="Transparent" Padding="14,10" />
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
