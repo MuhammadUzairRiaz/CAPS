@@ -1,0 +1,191 @@
+<!doctype html>
+<!-- CAPS download page (design/boards/DownloadPage). Static: open it from disk or serve the folder. Installers come from
+     the GitHub release named by VERSION below; the page never claims a feature CAPS does not have. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAPS · Chain Assembly and Packing Suite</title>
+<meta name="description" content="Build, pack and equilibrate polymer systems, with every step cited. One program from monomer SMILES to an equilibrated cell.">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg0: #0F1113; --bg1: #16191C; --bg2: #1E2226; --bg3: #262B30; --line: #2C3137;
+    --text: #E8E6E1; --muted: #A5ABB1; --dim: #868D94; --acc: #F0A83C; --acc-ink: #1A1206; --ok: #83CC91;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg0: #F4F2EE; --bg1: #FFFFFF; --bg2: #F1EFEB; --bg3: #E7E4DF; --line: #D9D5CF;
+      --text: #1E2226; --muted: #555B62; --dim: #6B7178; --acc: #A35C00; --acc-ink: #FFFFFF; --ok: #2E7D32;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg0: #F4F2EE; --bg1: #FFFFFF; --bg2: #F1EFEB; --bg3: #E7E4DF; --line: #D9D5CF;
+    --text: #1E2226; --muted: #555B62; --dim: #6B7178; --acc: #A35C00; --acc-ink: #FFFFFF; --ok: #2E7D32;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg0); color: var(--text); font: 15px/1.55 'IBM Plex Sans', system-ui, sans-serif; }
+  a { color: inherit; }
+  code, pre, .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  header { border-bottom: 1px solid var(--line); background: var(--bg1); position: sticky; top: 0; z-index: 5; }
+  header .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; }
+  .brand img { width: 26px; height: 26px; }
+  nav { display: flex; gap: 22px; flex: 1; }
+  nav a { text-decoration: none; color: var(--muted); font-size: 14px; }
+  nav a:hover { color: var(--text); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
+         background: var(--bg2); color: var(--text); font: 500 14px 'IBM Plex Sans', sans-serif; text-decoration: none; cursor: pointer; }
+  .btn:hover { background: var(--bg3); }
+  .btn.primary { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn svg { width: 16px; height: 16px; }
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 64px 0 48px; }
+  .eyebrow { font: 500 12.5px 'IBM Plex Mono', monospace; color: var(--acc); letter-spacing: .02em; }
+  h1 { font-size: 46px; line-height: 1.08; margin: 14px 0 18px; letter-spacing: -0.01em; }
+  .lede { color: var(--muted); font-size: 16.5px; max-width: 34em; }
+  .cta { display: flex; gap: 10px; margin: 26px 0 12px; flex-wrap: wrap; }
+  .fine { color: var(--dim); font-size: 13px; }
+  .shot { background: #0F1113; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot figcaption { font-size: 12.5px; color: #A5ABB1; padding: 10px 14px; border-top: 1px solid #2C3137; background: #16191C; }
+  h2 { font-size: 24px; margin: 56px 0 18px; }
+  .dl { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 14px; }
+  .card { background: var(--bg1); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; }
+  .card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .card a.file { display: block; margin-top: 10px; font: 12.5px 'IBM Plex Mono', monospace; color: var(--acc); text-decoration: none; }
+  .card a.file:hover { text-decoration: underline; }
+  .term { background: var(--bg1); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; font: 13px/1.8 'IBM Plex Mono', monospace; overflow-x: auto; }
+  .term .c { color: var(--dim); } .term .p { color: var(--acc); }
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .features .card h3 { font-size: 15.5px; margin-bottom: 6px; }
+  .cite { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  footer { border-top: 1px solid var(--line); margin-top: 64px; padding: 26px 0 40px; color: var(--dim); font-size: 13.5px; }
+  footer .wrap { display: flex; gap: 22px; flex-wrap: wrap; }
+  @media (max-width: 900px) {
+    .hero, .dl, .features, .cite { grid-template-columns: 1fr; }
+    nav { display: none; }
+    h1 { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon.png" alt="">CAPS</a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#docs">Documentation</a>
+      <a href="#benchmarks">Benchmarks</a>
+      <a href="#cite">Cite</a>
+      <a href="https://github.com/MuhammadUzairRiaz/CAPS">Source</a>
+    </nav>
+    <a class="btn primary" href="#download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Download</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Chain Assembly and Packing Suite · <span class="version">0.1.0</span></div>
+      <h1>Build, pack and equilibrate polymer systems, with every step cited.</h1>
+      <p class="lede">One program from monomer SMILES to an equilibrated cell. Its own engines for growth, packing, minimisation
+        and dynamics, and LAMMPS input decks that reproduce its energies and forces.</p>
+      <div class="cta">
+        <a class="btn primary" id="primary" href="#download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Download CAPS</span></a>
+        <a class="btn" href="#download">Other platforms</a>
+      </div>
+      <div class="fine">macOS, Windows and Linux · licence in the repository</div>
+    </div>
+    <figure class="shot">
+      <img src="hero.png" width="960" height="640" alt="Ten atactic polystyrene chains in a periodic cell, coloured by chain, rendered by CAPS">
+      <figcaption>10 atactic polystyrene chains of 8 units in a 33 Å cell · rendered by CAPS</figcaption>
+    </figure>
+  </section>
+
+  <h2 id="download">Download</h2>
+  <div class="dl">
+    <div class="card">
+      <h3>macOS</h3>
+      <p>Apple silicon, macOS 14 or later · disk image with CAPS Studio.app</p>
+      <a class="file" data-file="CAPS-{v}-macos-arm64.dmg">CAPS-0.1.0-macos-arm64.dmg</a>
+    </div>
+    <div class="card">
+      <h3>Windows</h3>
+      <p>x64 · installer with CAPS Studio and the caps command</p>
+      <a class="file" data-file="CAPS-{v}-windows-x64-setup.exe">CAPS-0.1.0-windows-x64-setup.exe</a>
+    </div>
+    <div class="term" aria-label="Command line">
+      <div><span class="c"># the command line comes with every install</span></div>
+      <div><span class="p">$</span> caps run samples/ps_cell.yaml</div>
+      <div><span class="c"># Python: the caps package ships in the app's data/python</span></div>
+      <div><span class="p">&gt;&gt;&gt;</span> import caps; caps.polymer("*CC(*)c1ccccc1", dp=40)</div>
+    </div>
+    <div class="card">
+      <h3>Linux</h3>
+      <p>AppImage for any distribution, a .deb for Debian and Ubuntu, a PKGBUILD for Arch</p>
+      <a class="file" data-file="CAPS-{v}-linux-x86_64.AppImage">CAPS-0.1.0-linux-x86_64.AppImage</a>
+      <a class="file" data-file="caps-studio_{v}_amd64.deb">caps-studio_0.1.0_amd64.deb</a>
+    </div>
+    <div class="card">
+      <h3>From source</h3>
+      <p>C++20 core with a Fortran PME kernel, CMake, .NET 10 for the Studio</p>
+      <a class="file" href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a>
+    </div>
+  </div>
+
+  <h2 id="features">What it does</h2>
+  <div class="features">
+    <div class="card"><h3>Growth from repeat units</h3><p>Chains are built unit by unit from SMILES with two attachment points, choosing among trial torsions the placement with the most clearance, with periodic contact checks, back-tracking and restarts. Copolymer sequences, tacticity, blends, films on surfaces and fillers.</p></div>
+    <div class="card"><h3>Packing without packmol</h3><p>Rigid molecules in boxes, spheres, cylinders and half-spaces; the overlap penalty is minimised with L-BFGS and every contact is checked before a cell is returned. Packmol inputs open directly.</p></div>
+    <div class="card"><h3>Its own MD engine</h3><p>Velocity Verlet; Bussi and Langevin thermostats; stochastic cell rescaling and Berendsen barostats; damped shifted force or smooth PME electrostatics; the 21-step equilibration protocol.</p></div>
+    <div class="card"><h3>Typing you can explain</h3><p>Every atom type comes with the rule that assigned it, for GAFF, OPLS, PCFF, CVFF, CGenFF and UFF. Missing parameters stop the run; CAPS never guesses them.</p></div>
+    <div class="card"><h3>Provenance by default</h3><p>Every saved file carries its inputs, versions, seeds, approximations and citations, and CAPS writes the methods paragraph and BibTeX from it.</p></div>
+    <div class="card" id="benchmarks"><h3>Benchmarks you can rerun</h3><p><code>caps bench --all</code> regenerates the validation tables: forces and virial against finite differences, PME against Ewald, NVE drift, thread scaling and reproducibility.</p></div>
+  </div>
+
+  <h2 id="cite">How to cite</h2>
+  <div class="cite">
+    <div class="card">
+      <p>A software paper is in preparation. Until then, cite the repository and the methods CAPS used — every provenance manifest lists them, and <code>caps provenance FILE --bibtex</code> writes the BibTeX.</p>
+    </div>
+    <div class="card" id="docs">
+      <h3>Coming from scripts?</h3>
+      <p>CAPS reads YAML and JSON recipes (<code>caps run RECIPE.yaml</code>): build, type, grow, relax, dynamics, equilibrate, analyse and export in one file. Packmol inputs import into Pack, and LAMMPS data files are written with their force field. The theory manual ships with the Studio.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>CAPS · Chain Assembly and Packing Suite</span>
+    <a href="https://github.com/MuhammadUzairRiaz/CAPS">Source code</a>
+    <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases">Releases</a>
+  </div>
+</footer>
+
+<script>
+  // One version for every link; the primary button names this computer's platform.
+  const VERSION = "0.1.0";
+  const release = "https://github.com/MuhammadUzairRiaz/CAPS/releases/download/v" + VERSION + "/";
+  document.querySelectorAll(".version").forEach(e => e.textContent = VERSION);
+  document.querySelectorAll("a.file[data-file]").forEach(a => {
+    const f = a.dataset.file.replace("{v}", VERSION);
+    a.href = release + f;
+    a.textContent = f;
+  });
+  const ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || "";
+  const p = /mac/i.test(ua) ? ["macOS", "CAPS-{v}-macos-arm64.dmg"] : /win/i.test(ua) ? ["Windows", "CAPS-{v}-windows-x64-setup.exe"]
+          : /linux/i.test(ua) ? ["Linux", "CAPS-{v}-linux-x86_64.AppImage"] : null;
+  if (p) {
+    const b = document.getElementById("primary");
+    b.href = release + p[1].replace("{v}", VERSION);
+    b.querySelector("span").textContent = "Download for " + p[0];
+  }
+</script>
+</body>
+</html>
