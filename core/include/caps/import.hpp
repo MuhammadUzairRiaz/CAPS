@@ -38,4 +38,9 @@ struct ImportPreview {
 // Frame 0 only, so the preview is quick for long trajectories.
 ImportPreview import_preview(const std::string& path, const ImportOptions& o, int heavy = 10);
 
+// Bond orders of a structure without hydrogens (heavy atoms only) from its geometry: hybridisation from bond angles
+// (terminal atoms: the bond length), flat sp² six-rings aromatic (4), flat five-rings conjugated, then double and triple
+// bonds paired shortest first; a planar N with three bonds keeps its lone pair.
+void orders_from_geometry(System& s);
+
 }  // namespace caps

@@ -459,9 +459,10 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
         line(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], std::max(1.0, 1.4 * ss), colour[b.j], int32_t(b.j));
         continue;
       }
-      const double R = bond_r * v.scale * (pk[b.i] + pk[b.j]) / 2;
-      capsule(B, px[b.i], py[b.i], pz[b.i], mx, my, mz, R, bond_r, colour[b.i], int32_t(b.i));
-      capsule(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], R, bond_r, colour[b.j], int32_t(b.j));
+      const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : bond_r;   // tubes between backbone atoms
+      const double R = br * v.scale * (pk[b.i] + pk[b.j]) / 2;
+      capsule(B, px[b.i], py[b.i], pz[b.i], mx, my, mz, R, br, colour[b.i], int32_t(b.i));
+      capsule(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
     }
   }
   // Atoms.

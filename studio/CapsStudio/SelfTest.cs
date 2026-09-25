@@ -796,6 +796,39 @@ internal static class SelfTest
                   $"row 18: [{pdRows} {pdUsed} {pdAtoms} {coOk} {nbr} {ssOk} {tsOk} {fitOk} {bpOk} {esOk}] k {vm.PdK} · F1 {vm.CoRows.FirstOrDefault()?.A} · mismatches {vm.SsRows.Count(r => r.Mismatch)} · dyads {vm.TsDyads.Length} · fit {vm.TsFit} · χc {vm.BpResults.FirstOrDefault()?.Value} · β {vm.EsBeta} mesh {vm.EsMeshText}");
         }
 
+        // Row 19: display styles, lens, add hydrogens, model resolution, live grow
+        {
+            vm.OpenDisplayStyles();
+            var dsOk = vm.DsBackboneCaption.StartsWith("10 tubes through 160", StringComparison.Ordinal) && vm.DsAuto.Count == 4 && vm.DsAuto[0].Now;
+            vm.DsStyle = 2;
+            var bbStatus = vm.DisplayStatus == "Display: Backbone";
+            vm.DsStyle = 0;
+            vm.SetModule(8);
+            vm.LensOpen = true;
+            var lensOk = vm.LensOn && int.TryParse(vm.LensInsideCount.Replace("\u202F", ""), out var inLens) && inLens > 10 && inLens < 1300 && vm.DisplayStatus.Contains("lens", StringComparison.Ordinal);
+            vm.LensOn = false;
+            vm.LensOpen = false;
+            // heavy atoms of a PS 4-mer: 34 H by the valence rules (aromatic C from the geometry)
+            var frag = CapsDocument.Open(Path.Combine(dir, "ps_frag.pdb"));
+            var plan = System.Text.Json.Nodes.JsonNode.Parse(frag.HydrogenPlan())!;
+            var ahOk = (double?)plan["add"] == 34 && (double?)plan["aromatic_bonds"] == 24;
+            var fragCopy = frag.Copy("copy");
+            fragCopy.Edit("{\"op\":\"add_h\",\"atoms\":\"\"}");
+            ahOk = ahOk && fragCopy.Summary().Atoms == 66 && frag.Summary().Atoms == 32;
+            fragCopy.Dispose(); frag.Dispose();
+            var res = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.ResolutionSummary("{\"per_bead\":5}"))!;
+            var mOk = Math.Abs((double)res["all_atom"]!["mass"]! - (double)res["coarse_grained"]!["mass"]!) < 1e-6 && (double)res["united_atom"]!["sites"]! == 640 && (double)res["united_atom"]!["hydrogens"]! == 0;
+            // a live grow: snapshots arrive while growing and the finished cell replaces them
+            var snaps = 0;
+            var (liveDoc, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"styrene\",\"smiles\":\"[*]CC([*])C1=CC=CC=C1\"}],\"dp\":20}",
+                new CapsGrowOpts { Chains = 6, Dp = 0, Seed = 4, Density = 0.3, ContactScale = 1.0, Curve = 1 }, null, "live", (d, stats) => { snaps++; d.Dispose(); });
+            var liveOk = snaps >= 1 && liveDoc.Summary().Atoms == 6 * (20 * 16 + 2);
+            liveDoc.Dispose();
+            vm.SetModule(8);
+            Check(dsOk && bbStatus && lensOk && ahOk && mOk && liveOk,
+                  $"row 19: [{dsOk} {bbStatus} {lensOk} {ahOk} {mOk} {liveOk}] backbone '{vm.DsBackboneCaption}' · lens {vm.LensInsideCount} · H plan {plan["add"]} · UA sites {res["united_atom"]!["sites"]} · live snapshots {snaps}");
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

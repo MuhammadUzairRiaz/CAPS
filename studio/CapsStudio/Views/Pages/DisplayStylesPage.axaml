@@ -1,0 +1,127 @@
+<!-- CAPS Studio › Display styles (design/boards/DisplayStyles): how much of the all-atom model the view draws; the model keeps every atom. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.DisplayStylesPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /></Style>
+    <Style Selector="Border.pcard.on"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Border.now"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding DisplayStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding DsAllCaption}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <!-- right: the view's display settings -->
+    <Border DockPanel.Dock="Right" Width="360" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="18,13" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="view only" Foreground="{DynamicResource MutedB}" /></Border>
+            <TextBlock Text="Display" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="18,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="Reset" Click="OnReset" />
+            <Button Classes="primary" Content="Save as default" Click="OnSaveDefault" />
+          </StackPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="STYLE" Classes="h3" />
+                <Border Classes="seg">
+                  <UniformGrid Columns="3">
+                    <RadioButton Classes="seg" GroupName="dsstyle" Content="All atoms" IsChecked="{Binding DsStyle, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" Click="OnStyle" Tag="0" />
+                    <RadioButton Classes="seg" GroupName="dsstyle" Content="No H" IsChecked="{Binding DsStyle, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" Click="OnStyle" Tag="1" />
+                    <RadioButton Classes="seg" GroupName="dsstyle" Content="Backbone" IsChecked="{Binding DsStyle, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" Click="OnStyle" Tag="2" />
+                  </UniformGrid>
+                </Border>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="4"><TextBlock Text="Colour by" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ColourModes}" SelectedIndex="{Binding ColourIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Atoms" Classes="label" />
+                    <ComboBox SelectedIndex="{Binding DsAtoms}" HorizontalAlignment="Stretch">
+                      <ComboBoxItem Content="ball-and-stick" /><ComboBoxItem Content="space filling" /><ComboBoxItem Content="sticks" />
+                    </ComboBox>
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="9">
+                <TextBlock Text="HYDROGENS" Classes="h3" />
+                <CheckBox Classes="toggle" Content="Show hydrogens" IsChecked="{Binding DsShowH}" />
+                <CheckBox Classes="toggle" Content="Show polar H only" IsChecked="{Binding DsPolarOnly}" ToolTip.Tip="Hydrogens on carbon hidden; O–H, N–H and S–H stay" />
+                <CheckBox Classes="toggle" Content="Selections always show all atoms" IsChecked="{Binding DsSelectionFull}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="9">
+                <TextBlock Text="AUTOMATIC BY SIZE" Classes="h3" />
+                <CheckBox Classes="toggle" Content="Pick the style when a structure opens" IsChecked="{Binding AutoStyleOn}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section" BorderThickness="0">
+              <StackPanel Spacing="8">
+                <TextBlock Text="WHAT NEVER CHANGES" Classes="h3" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" /><TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Text="The model is all-atom with every H: typing, charges, energies, density and exports use all of them." /></Grid>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" /><TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Text="Hiding H or drawing tubes changes the picture only." /></Grid>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" /><TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Text="Measurements snap to real atoms, also in Backbone style." /></Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+    <!-- left: the three styles side by side, and the size thresholds -->
+    <Grid Margin="18" ColumnDefinitions="*,*" RowDefinitions="*,*" ColumnSpacing="14" RowSpacing="14">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+          <TextBlock Text="All atoms" FontWeight="SemiBold" /><TextBlock Text="{Binding DsAllCaption}" Classes="dim" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border x:Name="CardAll" Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="All" /></Panel></Border>
+      </DockPanel>
+      <DockPanel Grid.Column="1">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+          <TextBlock Text="No H" FontWeight="SemiBold" /><TextBlock Text="{Binding DsNoHCaption}" Classes="dim" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border x:Name="CardNoH" Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="NoH" /></Panel></Border>
+      </DockPanel>
+      <DockPanel Grid.Row="1">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+          <TextBlock Text="Backbone" FontWeight="SemiBold" /><TextBlock Text="{Binding DsBackboneCaption}" Classes="dim" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border x:Name="CardBb" Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Bb" /></Panel></Border>
+      </DockPanel>
+      <DockPanel Grid.Row="1" Grid.Column="1">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+          <TextBlock Text="Automatic by size" FontWeight="SemiBold" /><TextBlock Text="thresholds are settings" Classes="dim" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border Classes="pcard" Padding="16,10">
+          <StackPanel Spacing="0">
+            <Grid ColumnDefinitions="*,*,*" Height="30">
+              <TextBlock Text="ATOMS IN VIEW" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="DEFAULT" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="DETAIL" Classes="h3" VerticalAlignment="Center" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding DsAuto}">
+              <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:AutoStyleRow">
+                <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Classes.now="{Binding Now}" CornerRadius="4">
+                  <Grid ColumnDefinitions="*,*,*" Height="32" Margin="4,0">
+                    <TextBlock Text="{Binding Atoms}" Classes="mono" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Default}" FontSize="12.5" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Detail}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Margin="0,12,0,0" Classes="dim" TextWrapping="Wrap" Text="The status bar always says which style is on and how many atoms the model holds, so a simplified view is never mistaken for a simplified model." />
+          </StackPanel>
+        </Border>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

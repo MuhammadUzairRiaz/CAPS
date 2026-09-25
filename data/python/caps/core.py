@@ -142,6 +142,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_recipe_run": ([S, S, _RecipeProgress, P, B, I], P), "caps_scene_json": ([P, S, B, I], I),
         "caps_analyze": ([P, S, C.POINTER(_AnalyzeOpts), P, P], I), "caps_analyze_ex": ([P, S, C.POINTER(_AnalyzeOpts), C.POINTER(_MechOpts), P, P], I),
         "caps_analyze_report": ([P, B, I], I),
+        "caps_hydrogen_plan": ([P, B, I], I), "caps_resolution_summary": ([P, S, B, I], I), "caps_resolution_convert": ([P, S, B, I], P),
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
@@ -333,6 +334,30 @@ class Document:
 
     def tacticity(self) -> dict:
         return _json_call(library().caps_tacticity, self._h)
+
+    def hydrogen_plan(self) -> dict:
+        """What add_h would add, by kind of atom: {rows: [{label, atoms, hydrogens}], heavy, h, add, …} (bond orders
+        from the geometry when the structure has no H and no multiple bonds)."""
+        return _json_call(library().caps_hydrogen_plan, self._h)
+
+    def add_hydrogens(self) -> int:
+        """Adds the hydrogens every atom lacks (valence rules); returns how many."""
+        before = self.atoms
+        _json_call(library().caps_edit, self._h, _enc('{"op": "add_h"}'))
+        return self.atoms - before
+
+    def resolution(self, per_bead: int = 5) -> dict:
+        """Sites, hydrogens and mass all-atom, united-atom and coarse-grained (mass conserved)."""
+        return _json_call(library().caps_resolution_summary, self._h, _enc(json.dumps({"per_bead": per_bead})))
+
+    def convert(self, to: str = "united-atom", per_bead: int = 5) -> "Document":
+        """A new document at another resolution: "united-atom" (H on carbon folded in) or "coarse-grained" (beads of
+        per_bead backbone atoms at their centre of mass); this one is unchanged."""
+        rep = _report()
+        h = library().caps_resolution_convert(self._h, _enc(json.dumps({"to": to, "per_bead": per_bead})), rep, len(rep))
+        d = Document(h, f"{self.label} ({to})")
+        d.report = rep.value.decode()
+        return d
 
     def interactions(self, **options) -> dict:
         return _json_call(library().caps_interactions, self._h, _enc(json.dumps(options)))

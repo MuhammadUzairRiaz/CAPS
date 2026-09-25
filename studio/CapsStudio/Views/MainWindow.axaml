@@ -231,6 +231,10 @@
                           ToolTip.Tip="History &amp; snapshots (design/boards/History): every edit, undone branches, named snapshots to compare">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="18" VerticalAlignment="Center" /><TextBlock Text="History" VerticalAlignment="Center" /></StackPanel>
             </ToggleButton>
+            <ToggleButton Classes="tool" IsChecked="{Binding LensOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="All-atom lens (design/boards/LensView): every atom inside, a lighter style outside; hold L to move it">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="search" Size="18" VerticalAlignment="Center" /><TextBlock Text="Lens" VerticalAlignment="Center" /></StackPanel>
+            </ToggleButton>
             <ToggleButton Classes="tool" IsChecked="{Binding LodOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Performance (design/boards/MillionAtoms): level of detail, frame time, memory">
               <local:Icon Kind="gauge" Size="18" />
@@ -1214,6 +1218,49 @@
             </StackPanel>
           </ScrollViewer>
         </DockPanel>
+        <!-- All-atom lens (design/boards/LensView) -->
+        <DockPanel IsVisible="{Binding ShowLensPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="hold L to move" Foreground="{DynamicResource MutedB}" /></Border>
+              <TextBlock Text="Lens" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <DockPanel><ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding LensOn}" OnContent="" OffContent="" /><TextBlock Text="INSIDE THE LENS" Classes="h3" VerticalAlignment="Center" /></DockPanel>
+                  <StackPanel Spacing="4"><TextBlock Text="Style" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DisplayNames}" SelectedIndex="{Binding LensInside}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding LensInsideCount}" Classes="mono" /><TextBlock Text="Atoms" Classes="muted" /></DockPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding LensInsideH}" Classes="mono" /><TextBlock Text="of them H" Classes="muted" /></DockPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="OUTSIDE" Classes="h3" />
+                  <StackPanel Spacing="4"><TextBlock Text="Style" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DisplayNames}" SelectedIndex="{Binding LensOutside}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding LensChains}" Classes="mono" /><TextBlock Text="Chains" Classes="muted" /></DockPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding LensModelAtoms}" Classes="mono" /><TextBlock Text="Atoms in model" Classes="muted" /></DockPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="LENS OPTIONS" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="4"><TextBlock Text="Radius · Å" Classes="label" /><NumericUpDown Value="{Binding LensRadius}" Minimum="2" Maximum="200" Increment="1" FormatString="0.#" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Follows" Classes="label" /><ComboBox ItemsSource="{Binding LensFollowNames}" SelectedIndex="{Binding LensFollows}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Dim outside" IsChecked="{Binding LensDim}" />
+                  <CheckBox Classes="toggle" Content="Measurements only inside" IsChecked="{Binding LensMeasureInside}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" BorderThickness="0">
+                <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="12" Text="The lens is how large systems stay readable without losing atoms: detail where you look, tubes elsewhere, every atom still in the model." />
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Performance (design/boards/MillionAtoms): level of detail, memory, quality -->
         <DockPanel IsVisible="{Binding ShowLodPanel}">
           <Border DockPanel.Dock="Top" Classes="phead">
@@ -1880,6 +1927,9 @@
       <pages:TacticityPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTacticityStats}" />
       <pages:BlendPhasePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlendPhase}" />
       <pages:ElectrostaticsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsElectrostatics}" />
+      <pages:DisplayStylesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDisplayStyles}" />
+      <pages:AddHydrogensPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsAddHydrogens}" />
+      <pages:ModelResolutionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsModelResolution}" />
       <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
       <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->
@@ -2578,6 +2628,7 @@
       <Grid ColumnDefinitions="Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
           <TextBlock Text="{Binding StatusCounts}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
+          <TextBlock Text="{Binding DisplayStatus}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
           <TextBlock Text="{Binding StatusSelection}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
           <TextBlock Text="{Binding StatusCell}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
         </StackPanel>

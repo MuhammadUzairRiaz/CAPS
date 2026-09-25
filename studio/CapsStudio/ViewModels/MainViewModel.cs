@@ -130,7 +130,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string Title { get => _title; set => Set(ref _title, value); }
     public string Status { get => _status; set => Set(ref _status, value); }
 
-    public int StyleIndex { get => _style; set { if (Set(ref _style, value)) { Raise(nameof(StyleText)); RenderRequested?.Invoke(); } } }
+    public int StyleIndex { get => _style; set { if (Set(ref _style, value)) { Raise(nameof(StyleText)); Raise(nameof(DisplayStatus)); Raise(nameof(DsStyle)); RenderRequested?.Invoke(); } } }
     // toolbar texts (Main board: "Ball & stick", "Colour: element", "Perspective")
     public string StyleText => Styles[Math.Clamp(_style, 0, Styles.Length - 1)];
     public string ColourText => "Colour: " + (_appColour == 4 ? "partial charge" : ColourModes[Math.Clamp(ColourIndex, 0, ColourModes.Length - 1)].ToLowerInvariant());
@@ -325,7 +325,8 @@ public sealed partial class MainViewModel : ObservableObject
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
         "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Pack › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
-        "Grow › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics"];
+        "Grow › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
+        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -403,6 +404,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsSurfaceArea));
         Raise(nameof(IsCellEditor));
         Raise(nameof(IsPolydispersity)); Raise(nameof(IsCopolymer)); Raise(nameof(IsSolventScreen)); Raise(nameof(IsTacticityStats)); Raise(nameof(IsBlendPhase)); Raise(nameof(IsElectrostatics));
+        Raise(nameof(IsDisplayStyles)); Raise(nameof(IsAddHydrogens)); Raise(nameof(IsModelResolution)); Raise(nameof(ShowLensPanel));
         if (was == 57 && m != 57) ClearSurfaceColour();
         if (m != 51) LeavePeriodic();
         Raise(nameof(ShowLodPanel));
@@ -587,18 +589,23 @@ public sealed partial class MainViewModel : ObservableObject
             Chains = _growChains, Dp = _growDp, Tacticity = _growTact, Seed = (ulong)_growSeed,
             Box = _growUseBox ? _growBox : 0, Density = _growUseBox ? 0 : _growDensity, ContactScale = _growScale, Curve = _growCurve ? 1 : 0,
         };
-        var spec = GrowSpecWithStatistics(_growSpec);   // per-chain lengths (Polydispersity) and the stereo model (Tacticity)
+        // every cell goes through the repeat-unit grower (polystyrene as a styrene unit), so the live view and the
+        // per-chain lengths (Polydispersity) and stereo model (Tacticity) apply to all of them
+        string? spec = GrowSpecWithStatistics(_growSpec) ?? GrowSpecObject().ToJsonString();
         if (spec != null && _growAutoScale) o.ContactScale = -_growScale;   // caps_grow_chains: start here, lower it when crowded
         if (spec != null)
         {
             var sj = System.Text.Json.Nodes.JsonNode.Parse(spec)!.AsObject();
             sj["dp"] = _growDp;
+            sj["trials"] = _growTrials;
             spec = sj.ToJsonString();
         }
         var stem = spec == null ? "PS" : string.Concat(_growSpecName.Where(char.IsLetterOrDigit).Take(16));
         var dpTag = _growChainDp != null && _growChainDp.Length == _growChains ? $"Nn{_growChainDp.Average():0}" : _growDp.ToString(CultureInfo.InvariantCulture);
         var label = $"{stem}_{_growChains}x{dpTag}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
         GrowLog = "Growing…";
+        GrowUnitsText = GrowMarginText = GrowDensityNowText = "—";
+        GrowUnitFraction = 0;
         GrowDone = 0;
         GrowRestarts = 0;
         GrowElapsed = 0;
@@ -634,7 +641,16 @@ public sealed partial class MainViewModel : ObservableObject
                         return !token.IsCancellationRequested;
                     };
                     var lbl = label.Replace($"seed{_growSeed}", $"seed{s0}");
-                    result = await Task.Run(() => spec == null ? CapsDocument.Grow(oa, onProgress, lbl) : CapsDocument.GrowChains(spec, oa, onProgress, lbl));
+                    var ticket = ++_growLiveTicket;
+                    Action<CapsDocument, string> onLive = (live, stats) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        if (ticket != _growLiveTicket || !_growing) { live.Dispose(); return; }
+                        var old = GrowLiveDoc;
+                        GrowLiveDoc = live;
+                        old?.Dispose();
+                        GrowLiveStats(stats);
+                    });
+                    result = await Task.Run(() => spec == null ? CapsDocument.Grow(oa, onProgress, lbl) : CapsDocument.GrowChains(spec, oa, onProgress, lbl, _growLiveView ? onLive : null));
                 }
                 catch (InvalidOperationException e) when (e.Message != "cancelled")
                 {
@@ -662,6 +678,10 @@ public sealed partial class MainViewModel : ObservableObject
         finally
         {
             Growing = false;
+            ++_growLiveTicket;
+            var old = GrowLiveDoc;
+            GrowLiveDoc = null;   // the finished cell is the document now
+            old?.Dispose();
         }
     }
 
@@ -1567,6 +1587,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var n in doc.Notes()) Notes.Add(n);
         if (IsProvenance) LoadProvenance();
         AutoLod(doc);
+        AutoStyle(doc);
         LoadFileChecks();
         var look = FileChecks.Count(c => c.NeedsLook);
         Status = $"Opened {Title} · {s.Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · {s.Format}" + (look > 0 ? $" · {look} file check{(look == 1 ? "" : "s")} need a look" : "");

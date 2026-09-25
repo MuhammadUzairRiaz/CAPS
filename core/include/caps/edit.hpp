@@ -38,6 +38,12 @@ bool remove_bond(System& s, uint32_t i, uint32_t j);
 void delete_atoms(System& s, const std::vector<char>& remove);
 // Adds the hydrogens the flagged atoms (empty: all) lack; returns how many.
 int add_hydrogens(System& s, const std::vector<char>& atoms = {});
+// What add_hydrogens would do, by kind of atom ("aromatic C with 2 C neighbours": atoms, H to add).
+struct HydrogenPlanRow {
+  std::string label;
+  int atoms = 0, hydrogens = 0;
+};
+std::vector<HydrogenPlanRow> hydrogen_plan(const System& s, const std::vector<char>& atoms = {});
 void invert_centre(System& s, uint32_t centre);
 
 struct TacticityChain {
