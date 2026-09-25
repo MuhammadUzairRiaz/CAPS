@@ -90,7 +90,7 @@ internal static class SelfTest
             }
             catch (Exception e) { Check(false, "field assign in the core: " + e.Message); }
             vm.Field.FfIndex = gaff;
-            vm.Field.ChargeMode = 1;
+            vm.Field.ChargeMode = 2;   // Gasteiger–Marsili
             vm.Field.Assign().GetAwaiter().GetResult();
             Check(vm.Field.Assigned && vm.Field.Complete, $"Field: {vm.Field.ForceFieldName} · {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
             Check(vm.Field.Swatches.Select(x => x.Name).OrderBy(x => x).SequenceEqual(["c3", "ca", "ha", "hc"]), "polystyrene types c3 ca ha hc: " + string.Join(" ", vm.Field.Swatches.Select(x => x.Label)));
@@ -103,6 +103,18 @@ internal static class SelfTest
             vm.Field.Clear().GetAwaiter().GetResult();
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
+        }
+        // Automatic charges: DL_FIELD's OPLS-AA keeps charges on templates, not types; the default falls back to Gasteiger
+        var opls = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005-dlfield");
+        if (opls >= 0)
+        {
+            vm.Field.FfIndex = opls;
+            vm.Field.ChargeMode = 0;
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var rep = vm.Document!.FieldReport();
+            Check(vm.Field.Assigned && vm.Field.Complete && rep.Contains("Gasteiger–Marsili charges were used instead", StringComparison.Ordinal),
+                  $"Field OPLS-AA 2005 with automatic charges: {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
+            vm.Field.Clear().GetAwaiter().GetResult();
         }
         // UFF from the same library: every atom typed from its bonds (polystyrene: C_3, C_R, H_)
         var uffFf = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");

@@ -80,6 +80,7 @@ struct FieldState {
   std::vector<std::string> imported;         // files the imported rules came from
   std::map<int32_t, std::string> overrides;  // atom → type set by hand
   std::string charges = "types";             // types (force field), gasteiger, keep (from the file)
+  bool auto_charges = false;                 // automatic: the force field's charges, Gasteiger when its types carry none
   caps::TypingResult typing;
   std::vector<std::string> types;
   caps::ParamReport rep;
@@ -566,7 +567,23 @@ void field_run(caps_doc* d) {
     F.ff = std::make_shared<caps::ForceField>(caps::assign_uff(s, uo));
     for (const auto& note : F.ff->notes) F.rep.notes.push_back(note);
   } else if (!untyped) {
-    F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
+    if (F.auto_charges) {
+      // the force field's own charges when its types carry them; libraries that keep charges on molecule templates
+      // (DL_FIELD's OPLS-AA, GAFF, CHARMM) have none per type, and then Gasteiger–Marsili, said in the report
+      try {
+        F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "types", &F.rep, true));
+        F.charges = "types";
+      } catch (const caps::FFError& e) {
+        if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
+        F.rep = caps::ParamReport{};
+        F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "gasteiger", &F.rep, true));
+        F.charges = "gasteiger";
+        F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + std::string(e.what()).substr(std::string(e.what()).find("type")) +
+                              "): Gasteiger–Marsili charges were used instead (charges: automatic)");
+      }
+    } else {
+      F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
+    }
   }
   F.complete = F.ff && F.rep.missing.empty();
 
@@ -1514,6 +1531,7 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       caps::load_typing(F->base, rules_path);
     }
     F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : charges == 3 ? "qeq" : "types";
+    F->auto_charges = charges == 4;
     // keep the file's types to restore them on clear (and the previous assignment's, if any)
     if (d->field) {
       F->file_types = d->field->file_types;
