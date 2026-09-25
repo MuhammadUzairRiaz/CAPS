@@ -109,6 +109,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 Raise(nameof(HasDocument));
                 Raise(nameof(NoDocument));
+                Raise(nameof(ShowEmpty));
                 Raise(nameof(CanRelax));
                 Raise(nameof(CanRun));
                 Raise(nameof(CanEquilibrate));
@@ -292,6 +293,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void Open(string path, string? topology = null)
     {
+        if (OpensProgressively(path)) { _ = OpenProgressive(path, topology); return; }
         Show(CapsDocument.Open(path, topology), System.IO.Path.GetFileName(path));
         if (_doc?.Path == path) Remember(path, topology);
     }
@@ -338,6 +340,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsSurface));
         Raise(nameof(IsNano));
         Raise(nameof(IsBlend));
+        Raise(nameof(ShowEmpty));
         Raise(nameof(IsChecks));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));

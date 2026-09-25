@@ -69,6 +69,8 @@ public sealed partial class MainViewModel
         Recent.Clear();
         foreach (var r in RecentFiles.Load().Take(6)) Recent.Add(r);
         Raise(nameof(HasRecent));
+        Raise(nameof(RecentFew));
+        Raise(nameof(RecentCount));
     }
 
     /// <summary>Records the open document in the recent list with a thumbnail rendered off the UI thread.</summary>

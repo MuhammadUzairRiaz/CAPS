@@ -152,9 +152,17 @@ System read_lammps_data(const std::string& path) {
   return s;
 }
 
-Trajectory read_lammps_dump(const std::string& path, const System* topology) {
-  std::ifstream in(path);
+Trajectory read_lammps_dump(const std::string& path, const System* topology) { return read_lammps_dump(path, topology, 0, {}); }
+
+Trajectory read_lammps_dump(const std::string& path, const System* topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress) {
+  std::ifstream in(path, std::ios::binary);
   if (!in) throw ReadError("cannot open " + path);
+  double file_size = 0;
+  if (progress) {
+    in.seekg(0, std::ios::end);
+    file_size = static_cast<double>(in.tellg());
+    in.seekg(0, std::ios::beg);
+  }
   Trajectory tr;
   std::string line;
   int64_t step = -1;
@@ -255,6 +263,11 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology) {
       tr.positions.push_back(std::move(pos));
       tr.cells.push_back(cell);
       tr.timesteps.push_back(step);
+      if (max_frames && tr.positions.size() >= max_frames) break;
+      if (progress && !progress(file_size > 0 ? std::min(1.0, static_cast<double>(in.tellg()) / file_size) : 1.0, tr)) {
+        tr.topology.notes.push_back("reading stopped after " + std::to_string(tr.positions.size()) + " frames");
+        break;
+      }
     }
   }
   if (tr.positions.empty()) throw ReadError(path + ": no frames found");

@@ -379,6 +379,38 @@ internal static class SelfTest
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");
 
+        // Progressive open (VisLoading): frame 0 first, the other frames read into the same document, then the file checks
+        {
+            var text = File.ReadAllText(Path.Combine(dir, "ps_melt.lammpstrj"));
+            var chunks = text.Split("ITEM: TIMESTEP\n", StringSplitOptions.RemoveEmptyEntries);
+            var longDump = Path.Combine(Path.GetTempPath(), "caps-selftest-long.lammpstrj");
+            using (var w = new StreamWriter(longDump))
+                for (int k = 0; k < 40; ++k) w.Write("ITEM: TIMESTEP\n" + (k * 1000) + "\n" + chunks[k % chunks.Length].Split('\n', 2)[1]);
+            var progressiveBytes = MainViewModel.ProgressiveBytes;
+            MainViewModel.ProgressiveBytes = 0;
+            vm.SetModule(8);
+            vm.OpenProgressive(longDump, Path.Combine(dir, "ps_melt.data")).GetAwaiter().GetResult();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Check(vm.Frames == 40 && !vm.IsLoading && vm.LoadStages.Count == 5 && vm.LoadStages.All(st => st.State == "done") && vm.FileChecks.Count > 3,
+                  $"progressive open: {vm.Frames} frames · " + string.Join(", ", vm.LoadStages.Select(st => st.Title + " " + st.State)));
+            // cancelled at once: frame 0 stays open, reading stops after a frame
+            var t = vm.OpenProgressive(longDump, Path.Combine(dir, "ps_melt.data"));
+            vm.CancelLoad();
+            t.GetAwaiter().GetResult();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Check(vm.HasDocument && vm.Frames < 40 && vm.LoadStages[3].State == "stopped", $"progressive open cancelled: {vm.Frames} frames kept · {vm.LoadStages[3].Detail}");
+            MainViewModel.ProgressiveBytes = progressiveBytes;
+            File.Delete(longDump);
+        }
+
+        // Nothing open (VisEmpty): Analyze shows where to get a structure
+        vm.CloseDocument();
+        vm.SetModule(1);
+        Check(vm.ShowEmpty && vm.KeyOpen.EndsWith("O") && vm.RecentFew.Count <= 4, $"empty state on Analyze · {vm.RecentCount} recent");
+        vm.SetModule(8);
+        Check(!vm.ShowEmpty, "Studio shows Start, not the empty state");
+        vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
