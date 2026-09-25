@@ -29,6 +29,8 @@
 //   voids               probe, grid, show (points)       accessible volume, voids by volume, probe sweep (needs a cell)
 //   voronoi             method grid|radical, grid        → AtomicVolume, table by type; cells sum to the box
 //   density_field       grid, sigma, axis, position       Gaussian mass density: mean, empty share, profile, slice points
+//   msd                 heavy_only, every, max_lag, timestep_fs    MSD(τ) of atoms and chain centres, D from the centres
+//   scatter             x, y, only_selected                         → table scatter (points), Pearson r
 //
 // Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
 // Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,
@@ -54,6 +56,7 @@ struct DataTable {
   std::string name, title;
   std::vector<std::string> columns;
   std::vector<std::vector<double>> rows;
+  bool points = false;   // a scatter: plot the rows as points, not a line
 };
 
 struct PipelineLegend {

@@ -1049,6 +1049,106 @@ void step_density_field(PipelineState& st, const Json& p, StepStatus& out) {
                 fmt("%.2g Å", sigma);
 }
 
+void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
+  if (!st.traj || st.traj->frames() < 3) { out.level = "warning"; out.summary = "fewer than three frames: no MSD"; return; }
+  const Trajectory& tr = *st.traj;
+  const int nf = int(tr.frames());
+  const int max_lag = std::clamp(int(p.num("max_lag", nf / 2)), 1, nf - 1);
+  const bool heavy = flag(p, "heavy_only", true);
+  const int every = std::max(1, int(p.num("every", 1)));
+  std::vector<uint32_t> atoms;
+  for (uint32_t i = 0; i < tr.topology.atoms.size(); ++i)
+    if ((!heavy || tr.topology.atoms[i].element != 1) && i % every == 0) atoms.push_back(i);
+  int nm = 0;
+  tr.topology.molecules(&nm);
+  // continuous paths: frames made whole, then followed from frame to frame by minimum image
+  std::vector<std::vector<Vec3>> ra(static_cast<size_t>(nf)), rc(static_cast<size_t>(nf));
+  for (int f = 0; f < nf; ++f) {
+    System s = tr.frame(size_t(f));
+    if (!s.unwrapped && s.cell.valid()) make_molecules_whole(s);
+    ra[size_t(f)].resize(atoms.size());
+    for (size_t k = 0; k < atoms.size(); ++k) ra[size_t(f)][k] = s.atoms[atoms[k]].pos;
+    const auto shapes = molecule_shapes(s);
+    rc[size_t(f)].resize(shapes.size());
+    for (size_t m = 0; m < shapes.size(); ++m) rc[size_t(f)][m] = shapes[m].com;
+    if (f > 0 && s.cell.valid() && !s.unwrapped) {
+      for (size_t k = 0; k < atoms.size(); ++k) ra[size_t(f)][k] = ra[size_t(f - 1)][k] + s.cell.minimum_image(ra[size_t(f)][k] - ra[size_t(f - 1)][k]);
+      for (size_t m = 0; m < shapes.size() && m < rc[size_t(f - 1)].size(); ++m)
+        rc[size_t(f)][m] = rc[size_t(f - 1)][m] + s.cell.minimum_image(rc[size_t(f)][m] - rc[size_t(f - 1)][m]);
+    }
+  }
+  auto msd = [&](const std::vector<std::vector<Vec3>>& r, int lag) {
+    double sum = 0;
+    size_t cnt = 0;
+    const int stride = std::max(1, (nf - lag) / 100);   // up to about 100 time origins
+    for (int t0 = 0; t0 + lag < nf; t0 += stride)
+      for (size_t k = 0; k < r[size_t(t0)].size() && k < r[size_t(t0 + lag)].size(); ++k) {
+        const Vec3 d = r[size_t(t0 + lag)][k] - r[size_t(t0)][k];
+        sum += dot(d, d);
+        ++cnt;
+      }
+    return cnt ? sum / cnt : 0.0;
+  };
+  const double dts = tr.timesteps.size() >= 2 ? double(tr.timesteps.back() - tr.timesteps.front()) / (nf - 1) : 1.0;
+  DataTable t;
+  t.name = "msd";
+  t.title = "Mean-square displacement";
+  t.columns = {"Lag (timesteps)", "MSD atoms (Å²)", "MSD centres (Å²)", "Lag (frames)"};
+  std::vector<double> x, y;
+  for (int lag = 1; lag <= max_lag; ++lag) {
+    const double a = msd(ra, lag), c = msd(rc, lag);
+    t.rows.push_back({lag * dts, a, c, double(lag)});
+    if (lag >= max_lag / 4) { x.push_back(lag * dts); y.push_back(c); }
+  }
+  st.tables.push_back(std::move(t));
+  // D from the centres of mass: MSD = 6 D τ over the last three quarters of the lags
+  double D = 0;
+  if (x.size() >= 2) {
+    double mx = 0, my = 0;
+    for (size_t k = 0; k < x.size(); ++k) { mx += x[k]; my += y[k]; }
+    mx /= x.size(); my /= x.size();
+    double sxy = 0, sxx = 0;
+    for (size_t k = 0; k < x.size(); ++k) { sxy += (x[k] - mx) * (y[k] - my); sxx += (x[k] - mx) * (x[k] - mx); }
+    D = sxx > 0 ? sxy / sxx / 6 : 0;   // Å² per timestep unit
+  }
+  const double fs = p.num("timestep_fs", 0);
+  st.set_attribute("MSD.D_centres", D);
+  if (fs > 0) st.set_attribute("MSD.D_centres_cm2s", D / fs * 0.1);   // Å²/fs = 0.1 cm²/s
+  out.summary = std::to_string(atoms.size()) + " atoms, " + std::to_string(nm) + " centres · lags to " + std::to_string(max_lag) + " frames · D " +
+                (fs > 0 ? fmt("%.3g cm²/s", D / fs * 0.1) : fmt("%.3g Å²/timestep", D));
+}
+
+void step_scatter(PipelineState& st, const Json& p, StepStatus& out) {
+  const std::string xn = p.text("x", "DistanceToCOM"), yn = p.text("y", "Charge");
+  std::vector<double> x, y;
+  if (!property_values(st, xn, x)) throw std::invalid_argument("no property " + xn);
+  if (!property_values(st, yn, y)) throw std::invalid_argument("no property " + yn);
+  const bool only_sel = flag(p, "only_selected", false);
+  size_t n = 0;
+  for (size_t i = 0; i < x.size(); ++i) n += (!only_sel || st.selected[i]) && std::isfinite(x[i]) && std::isfinite(y[i]);
+  const size_t every = std::max<size_t>(1, n / 20000);
+  DataTable t;
+  t.name = "scatter";
+  t.title = "Scatter · " + yn + " against " + xn;
+  t.columns = {xn, yn};
+  t.points = true;
+  double sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+  size_t used = 0, seen = 0;
+  for (size_t i = 0; i < x.size(); ++i) {
+    if ((only_sel && !st.selected[i]) || !std::isfinite(x[i]) || !std::isfinite(y[i])) continue;
+    sx += x[i]; sy += y[i]; sxx += x[i] * x[i]; syy += y[i] * y[i]; sxy += x[i] * y[i]; ++used;
+    if (seen++ % every == 0) t.rows.push_back({x[i], y[i]});
+  }
+  st.tables.push_back(std::move(t));
+  double r = 0;
+  if (used > 1) {
+    const double cxy = sxy - sx * sy / used, cxx = sxx - sx * sx / used, cyy = syy - sy * sy / used;
+    r = cxx > 0 && cyy > 0 ? cxy / std::sqrt(cxx * cyy) : 0;
+  }
+  st.set_attribute("Scatter.pearson_r", r);
+  out.summary = std::to_string(used) + " points · Pearson r " + fmt("%.3f", r);
+}
+
 struct StepDef {
   const char* type;
   const char* title;
@@ -1089,6 +1189,8 @@ const StepDef kSteps[] = {
     {"voids", "Voids & pores", "accessible volume for a probe, voids by size", step_voids},
     {"voronoi", "Voronoi volumes", "volume per atom on a grid", step_voronoi},
     {"density_field", "Density field", "Gaussian-smoothed mass density, profile, slice", step_density_field},
+    {"msd", "Mean-square displacement", "MSD(τ) of atoms and chain centres, diffusion", step_msd},
+    {"scatter", "Scatter plot", "one property against another", step_scatter},
 };
 
 }  // namespace
@@ -1292,6 +1394,7 @@ Json pipeline_result_json(const PipelineState& st) {
       rows.push_back(std::move(row));
     }
     o["rows"] = std::move(rows);
+    o["points"] = t.points;
     tables.push_back(std::move(o));
   }
   j["tables"] = std::move(tables);
