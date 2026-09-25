@@ -14,6 +14,10 @@ public sealed class LinePlot : Control
     public string YLabel { get; set; } = "";
     public bool AutoRange { get; set; }
     public double? RefY { get; set; } = 1.0;
+    /// <summary>A dashed vertical line at this x (a trajectory player's current frame).</summary>
+    public double? CursorX { get; set; }
+    /// <summary>The curve's colour (default: the accent).</summary>
+    public IBrush? LineBrush { get; set; }
 
     public void SetData((double X, double Y)[] data)
     {
@@ -84,7 +88,7 @@ public sealed class LinePlot : Control
             ymin = all.Min(p => p.Y);
             ymax = all.Max(p => p.Y);
             if (RefY is double r) { ymin = Math.Min(ymin, r); ymax = Math.Max(ymax, r); }
-            var pad = Math.Max(1e-9, (ymax - ymin) * 0.08);
+            var pad = Math.Max(Math.Max(1e-9, Math.Abs(ymax) * 1e-3), (ymax - ymin) * 0.08);   // a flat series still gets a readable axis
             ymin -= pad;
             ymax += pad;
         }
@@ -95,7 +99,9 @@ public sealed class LinePlot : Control
         }
         double X(double v) => L + (v - xmin) / (xmax - xmin) * w;
         double Y(double v) => T + h - (v - ymin) / (ymax - ymin) * h;
-        string Fmt(double v) => Math.Abs(v) >= 1000 ? v.ToString("0", CultureInfo.InvariantCulture) : v.ToString("0.##", CultureInfo.InvariantCulture);
+        // enough decimals that the three y ticks differ (a flat density still reads 0.3998 / 0.4 / 0.4002)
+        var ydec = Math.Clamp((int)Math.Ceiling(-Math.Log10(Math.Max(1e-12, (ymax - ymin) / 2))) + 1, 0, 6);
+        string Fmt(double v) => Math.Abs(v) >= 1000 && ydec <= 1 ? v.ToString("0", CultureInfo.InvariantCulture) : v.ToString(ydec <= 2 ? "0.##" : "0." + new string('#', ydec), CultureInfo.InvariantCulture);
 
         foreach (var t in new[] { ymin, (ymin + ymax) / 2, ymax })
         {
@@ -138,8 +144,10 @@ public sealed class LinePlot : Control
         }
         else
         {
-            ctx.DrawGeometry(null, Curve, Line(_data));
+            ctx.DrawGeometry(null, LineBrush != null ? new Pen(LineBrush, 1.6, lineJoin: PenLineJoin.Round) : Curve, Line(_data));
         }
+        if (CursorX is double cx && cx >= xmin && cx <= xmax)
+            ctx.DrawLine(new Pen(Tokens.Brush("TextB"), 1, new DashStyle([3, 3], 0)), new Point(X(cx), T), new Point(X(cx), T + h));
         Text(YLabel, L, T - 9);
         if (AutoRange) Text("x: " + XLabel, L + w, T - 9, right: true);
         else Text(XLabel, L + w, T + h + 12 + 0, right: true);
