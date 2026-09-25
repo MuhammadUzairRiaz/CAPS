@@ -21,6 +21,14 @@ struct Camera {
   double fov_deg = 35.0;
 };
 
+// A world-space tube (pipeline vectors, trajectory lines); an arrow ends in a cone.
+struct Segment {
+  Vec3 a{0, 0, 0}, b{0, 0, 0};
+  unsigned rgb = 0xF5A524;
+  double radius = 0.25;   // Å
+  bool arrow = false;
+};
+
 struct RenderOptions {
   int width = 1280, height = 800;
   int supersample = 2;
@@ -38,6 +46,7 @@ struct RenderOptions {
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
   std::vector<unsigned> colours;       // per atom 0xRRGGBB overriding colour_by (a pipeline's colours); 0xFFFFFFFF keeps it
+  std::vector<Segment> segments;       // tubes and arrows drawn with the atoms
 };
 
 struct Image {
