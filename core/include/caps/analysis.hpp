@@ -26,6 +26,7 @@ struct MoleculeShape {
   double rg;
   double lambda[3];   // gyration tensor eigenvalues, ascending
   double kappa2;      // relative shape anisotropy
+  Vec3 axis[3];       // the principal axes (unit vectors) for lambda[0..2]
 };
 std::vector<MoleculeShape> molecule_shapes(const System& s);
 

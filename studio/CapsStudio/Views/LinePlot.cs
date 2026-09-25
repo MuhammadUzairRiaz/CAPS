@@ -19,6 +19,45 @@ public sealed class LinePlot : Control
     /// <summary>The curve's colour (default: the accent).</summary>
     public IBrush? LineBrush { get; set; }
 
+    // ---- brushing (design/boards/HistScatter): drag a box on the plot to select what lies in it
+    /// <summary>Allow a drag box; Brushed gets (x0, x1, y0, y1) in data units, NaN when cleared by a click.</summary>
+    public bool Brushable { get; set; }
+    public event Action<double, double, double, double>? Brushed;
+    private Rect _plot;
+    private double _xmin, _xmax, _ymin, _ymax;
+    private Point? _b0, _b1;
+
+    protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (!Brushable) return;
+        var p = e.GetPosition(this);
+        if (!_plot.Contains(p)) return;
+        _b0 = _b1 = p;
+        e.Pointer.Capture(this);
+        InvalidateVisual();
+    }
+    protected override void OnPointerMoved(Avalonia.Input.PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_b0 == null || !Brushable) return;
+        var p = e.GetPosition(this);
+        _b1 = new Point(Math.Clamp(p.X, _plot.Left, _plot.Right), Math.Clamp(p.Y, _plot.Top, _plot.Bottom));
+        InvalidateVisual();
+    }
+    protected override void OnPointerReleased(Avalonia.Input.PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        if (_b0 is not { } a || _b1 is not { } b || !Brushable) return;
+        e.Pointer.Capture(null);
+        if (Math.Abs(a.X - b.X) < 3 && Math.Abs(a.Y - b.Y) < 3) { _b0 = _b1 = null; InvalidateVisual(); Brushed?.Invoke(double.NaN, double.NaN, double.NaN, double.NaN); return; }
+        double Dx(double px) => _xmin + (px - _plot.Left) / _plot.Width * (_xmax - _xmin);
+        double Dy(double py) => _ymin + (_plot.Bottom - py) / _plot.Height * (_ymax - _ymin);
+        Brushed?.Invoke(Math.Min(Dx(a.X), Dx(b.X)), Math.Max(Dx(a.X), Dx(b.X)), Math.Min(Dy(a.Y), Dy(b.Y)), Math.Max(Dy(a.Y), Dy(b.Y)));
+    }
+    /// <summary>Clears the drawn brush box (new data).</summary>
+    public void ClearBrush() { _b0 = _b1 = null; InvalidateVisual(); }
+
     public void SetData((double X, double Y)[] data)
     {
         _data = data;
@@ -127,6 +166,14 @@ public sealed class LinePlot : Control
         }
         double X(double v) => L + (v - xmin) / (xmax - xmin) * w;
         double Y(double v) => T + h - (v - ymin) / (ymax - ymin) * h;
+        _plot = new Rect(L, T, w, h);
+        _xmin = xmin; _xmax = xmax; _ymin = ymin; _ymax = ymax;
+        if (_b0 is { } ba && _b1 is { } bb)   // the brush box
+        {
+            var r = new Rect(new Point(Math.Min(ba.X, bb.X), Math.Min(ba.Y, bb.Y)), new Point(Math.Max(ba.X, bb.X), Math.Max(ba.Y, bb.Y)));
+            ctx.FillRectangle(new SolidColorBrush((Tokens.Brush("SelB") as ISolidColorBrush)?.Color ?? Colors.SteelBlue, 0.14), r);
+            ctx.DrawRectangle(null, new Pen(Tokens.Brush("SelB"), 1, new DashStyle([4, 3], 0)), r);
+        }
         // enough decimals that the three y ticks differ (a flat density still reads 0.3998 / 0.4 / 0.4002)
         var ydec = Math.Clamp((int)Math.Ceiling(-Math.Log10(Math.Max(1e-12, (ymax - ymin) / 2))) + 1, 0, 6);
         string Fmt(double v) => Math.Abs(v) >= 1000 && ydec <= 1 ? v.ToString("0", CultureInfo.InvariantCulture) : v.ToString(ydec <= 2 ? "0.##" : "0." + new string('#', ydec), CultureInfo.InvariantCulture);
