@@ -224,7 +224,8 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
 int32_t caps_field_info(caps_doc* d, char* text, int32_t cap);
 
 /* CAPS Field. Assigns a force field (a caps-forcefield JSON file; typed by its own rules, or by rules_path when given)
-   to the document: types every atom, sets charges (charges: 0 from the force field, 1 Gasteiger, 2 keep the file's, 3 QEq)
+   to the document: types every atom, sets charges (charges: 0 from the force field, 1 Gasteiger, 2 keep the file's, 3 QEq, 4 automatic: the force
+   field's when its types carry charges, else Gasteiger, noted in the report)
    and looks up every parameter. The types are written into the document (colour by type shows them). Relax,
    Dynamics, Equilibrate and LAMMPS data then use this force field; while atoms are untyped or parameters missing they
    refuse to run (CAPS never guesses parameters). Returns 0 when complete, 1 when something is missing, -1 on error. */

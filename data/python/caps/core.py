@@ -193,11 +193,11 @@ class _Field:
     def __init__(self, doc: "Document"):
         self._doc = doc
 
-    def assign(self, forcefield: str = "uff", charges: str = "forcefield") -> dict:
+    def assign(self, forcefield: str = "uff", charges: str = "auto") -> dict:
         """Types every atom and looks up every parameter: a force-field id from the library (gaff2, opls2005 …), a path
-        to a caps-forcefield JSON, or "uff". charges: forcefield | gasteiger | keep | qeq."""
+        to a caps-forcefield JSON, or "uff". charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq."""
         path = _forcefield_path(forcefield)
-        code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3}[charges]
+        code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
         if rc < 0:
             raise _error()
