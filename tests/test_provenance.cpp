@@ -308,3 +308,25 @@ TEST(KremerGrest, ChainsBoxAndDeck) {
   EXPECT_NE(data.find("300 atoms"), std::string::npos);
   EXPECT_NE(data.find("280 angles"), std::string::npos);
 }
+
+#include "caps/react.hpp"
+
+TEST(ReactTemplate, ViewOfTheEpoxyAmineTemplate) {
+  const auto t = parse_templates(builtin_template("epoxy_amine_primary"));
+  ASSERT_FALSE(t.empty());
+  const Json v = Json::parse(template_view(t[0]));
+  EXPECT_GE(v["pre"]["atoms"].size(), 4u);
+  EXPECT_GE(v["changes"].size(), 2u);
+  bool formed = false, broken = false;
+  for (const auto& c : v["changes"].items()) { formed |= c["kind"].str() == "formed"; broken |= c["kind"].str() == "broken"; }
+  EXPECT_TRUE(formed);
+  EXPECT_TRUE(broken);
+  for (const auto& c : v["checks"].items()) EXPECT_TRUE(c["ok"].boolean()) << c["text"].str();
+  // a broken template: breaking a bond that is not there
+  auto bad = t[0];
+  bad.brk.push_back({bad.atoms.front().map, bad.atoms.back().map});
+  const Json w = Json::parse(template_view(bad));
+  bool flagged = false;
+  for (const auto& c : w["checks"].items()) flagged |= !c["ok"].boolean();
+  EXPECT_TRUE(flagged);
+}

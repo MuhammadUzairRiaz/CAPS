@@ -36,6 +36,7 @@ add_library(caps_core STATIC
   src/provenance.cpp
   src/voids.cpp
   src/kremer_grest.cpp
+  src/react_view.cpp
   src/appearance.cpp
   src/trajectory.cpp
   src/torsion.cpp

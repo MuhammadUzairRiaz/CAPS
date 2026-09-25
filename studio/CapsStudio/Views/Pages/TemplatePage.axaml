@@ -1,0 +1,120 @@
+<!-- CAPS reaction template editor (design/boards/ReactionTemplate.dc.html): the atom-mapped template drawn before and after
+     the reaction, its bond changes and checks, tested on the open structure, handed to React. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.TemplatePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="Border.pane"><Setter Property="Background" Value="{DynamicResource Bg0B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="ClipToBounds" Value="True" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <ComboBox ItemsSource="{Binding TemplateNames}" SelectedItem="{Binding TemplateName}" Width="220" />
+          <Button Click="OnImport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Import template" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Click="OnTest" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Reactive sites and matches within the capture distance on the open structure"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Test on the structure" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Content="Use in React" Click="OnUse" />
+          <Button Classes="primary" Click="OnSave"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save template" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding TemplateTitle}" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Atom-mapped pre/post templates used by CAPS React" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="Saved as CAPS template text in ~/.caps/templates" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding TemplateFooter}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,400">
+      <DockPanel Margin="22,18,0,18">
+        <TabStrip DockPanel.Dock="Top" Classes="small" ItemsSource="{Binding TemplateTabs}" SelectedIndex="{Binding TemplateIndex}" Margin="0,0,0,10" />
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,40,*" Height="340">
+          <Border Classes="pane">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="38" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <TextBlock Text="Pre-reaction" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </Border>
+              <v:TemplateDrawing x:Name="Pre" />
+            </DockPanel>
+          </Border>
+          <v:Icon Grid.Column="1" Kind="chevr" Size="26" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Border Grid.Column="2" Classes="pane">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="38" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <TextBlock Text="Post-reaction" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </Border>
+              <v:TemplateDrawing x:Name="Post" />
+            </DockPanel>
+          </Border>
+        </Grid>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
+          <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="12" Height="12" Stroke="{DynamicResource AccB}" StrokeThickness="1" VerticalAlignment="Center" /><TextBlock Text="map number" /></StackPanel></Border>
+          <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="12" Height="12" Stroke="{DynamicResource SelB}" StrokeThickness="2" VerticalAlignment="Center" /><TextBlock Text="reacting atom" /></StackPanel></Border>
+          <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Rectangle Width="14" Height="3" Fill="{DynamicResource OkB}" VerticalAlignment="Center" /><TextBlock Text="bond formed" /></StackPanel></Border>
+          <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Rectangle Width="14" Height="3" Fill="{DynamicResource ErrB}" VerticalAlignment="Center" /><TextBlock Text="bond broken" /></StackPanel></Border>
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Text="{Binding TemplateInfo}" FontSize="12" Foreground="{DynamicResource MutedB}" Margin="0,8,0,8" />
+        <TextBlock DockPanel.Dock="Top" Text="{Binding TemplateError}" IsVisible="{Binding TemplateHasError}" Foreground="{DynamicResource ErrB}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8" />
+        <Border Classes="pane" Padding="2">
+          <TextBox Text="{Binding TemplateText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="{DynamicResource Mono}" FontSize="12" BorderThickness="0" Background="{DynamicResource Bg0B}" />
+        </Border>
+      </DockPanel>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14" Margin="16,18,22,18">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel><Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding TemplateChanges.Count}" /></Border><TextBlock Text="Bond changes" FontSize="13.5" FontWeight="SemiBold" /></DockPanel>
+              <ItemsControl ItemsSource="{Binding TemplateChanges}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProvRow">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7">
+                      <Grid ColumnDefinitions="38*,62*">
+                        <TextBlock Text="{Binding Key}" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel><Border DockPanel.Dock="Right" Classes="chip" Classes.ok="{Binding TemplateChecksPass}" Classes.warn="{Binding !TemplateChecksPass}"><TextBlock Text="{Binding TemplateChecksChip}" /></Border><TextBlock Text="Checks" FontSize="13.5" FontWeight="SemiBold" /></DockPanel>
+              <ItemsControl ItemsSource="{Binding TemplateChecks}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:TemplateCheck">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,3">
+                      <v:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" IsVisible="{Binding Ok}" />
+                      <v:Icon Kind="alert" Size="15" Foreground="{DynamicResource WarnB}" IsVisible="{Binding !Ok}" />
+                      <TextBlock Text="{Binding Text}" FontSize="12.5" TextWrapping="Wrap" MaxWidth="300" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="On the open structure" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding TemplateTestText}" FontSize="12" Classes="mono" TextWrapping="Wrap" />
+              <TextBlock Text="Test counts the reactive sites and the matches whose initiators are within the capture distance on the current frame." FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="7">
+              <TextBlock Text="After reaction" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="React retypes the structure and relaxes it after every cycle (settings on the React page); partial charges follow the force field." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

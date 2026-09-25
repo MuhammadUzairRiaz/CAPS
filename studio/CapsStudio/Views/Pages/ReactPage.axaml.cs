@@ -30,4 +30,5 @@ public partial class ReactPage : PageBase
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelReact();
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
     private async void OnInsertCurative(object? s, RoutedEventArgs e) => await Vm.InsertCurative();
+    private void OnTemplateEditor(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenTemplateEditor();
 }
