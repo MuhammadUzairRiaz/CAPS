@@ -633,6 +633,9 @@ public partial class MainWindow : Window
     }
 
     private void OnResetView(object? s, RoutedEventArgs e) => _vm.ResetView();
+    private void OnUseExpression(object? s, RoutedEventArgs e) { if (s is Control { Tag: string x }) _vm.UseExpression(x); }
+    private void OnSaveExpression(object? s, RoutedEventArgs e) => _vm.SaveExpression();
+    private void OnMakeReal(object? s, RoutedEventArgs e) => _vm.MakeReal();
     private void OnFrameSelection(object? s, RoutedEventArgs e) => _vm.FrameSelection();
     private async void OnCopyMolTable(object? s, RoutedEventArgs e)
     {

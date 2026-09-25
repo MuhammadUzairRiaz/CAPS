@@ -13,53 +13,79 @@ namespace caps {
 
 namespace {
 
+// A value: a number, or a 3-vector (Position, MoleculeCOM, any property with .X .Y .Z components).
+struct Val {
+  double x = 0, y = 0, z = 0;
+  bool vec = false;
+  static Val num(double v) { return {v, 0, 0, false}; }
+  double scalar() const {
+    if (vec) throw std::invalid_argument("a vector where a number is needed: use norm(…) or a component (.X)");
+    return x;
+  }
+};
+
 struct Node {
-  enum Kind { Num, Var, Neg, Not, Bin, Call } kind = Num;
+  enum Kind { Num, Var, VecVar, Neg, Not, Bin, Call } kind = Num;
   double value = 0;
   const std::vector<double>* var = nullptr;
+  const std::vector<double>* comp[3] = {nullptr, nullptr, nullptr};
   std::string op;
   std::vector<std::unique_ptr<Node>> args;
 
-  double eval(size_t i) const {
+  Val eval(size_t i) const {
     switch (kind) {
-      case Num: return value;
-      case Var: return (*var)[i];
-      case Neg: return -args[0]->eval(i);
-      case Not: return args[0]->eval(i) == 0 ? 1 : 0;
+      case Num: return Val::num(value);
+      case Var: return Val::num((*var)[i]);
+      case VecVar: return {(*comp[0])[i], (*comp[1])[i], (*comp[2])[i], true};
+      case Neg: { Val a = args[0]->eval(i); return {-a.x, -a.y, -a.z, a.vec}; }
+      case Not: return Val::num(args[0]->eval(i).scalar() == 0 ? 1 : 0);
       case Bin: {
-        if (op == "&&") return args[0]->eval(i) != 0 && args[1]->eval(i) != 0 ? 1 : 0;
-        if (op == "||") return args[0]->eval(i) != 0 || args[1]->eval(i) != 0 ? 1 : 0;
-        const double a = args[0]->eval(i), b = args[1]->eval(i);
-        if (op == "+") return a + b;
-        if (op == "-") return a - b;
-        if (op == "*") return a * b;
-        if (op == "/") return b != 0 ? a / b : std::nan("");
-        if (op == "%") return b != 0 ? std::fmod(a, b) : std::nan("");
-        if (op == "^") return std::pow(a, b);
+        if (op == "&&") return Val::num(args[0]->eval(i).scalar() != 0 && args[1]->eval(i).scalar() != 0 ? 1 : 0);
+        if (op == "||") return Val::num(args[0]->eval(i).scalar() != 0 || args[1]->eval(i).scalar() != 0 ? 1 : 0);
+        const Val A = args[0]->eval(i), B = args[1]->eval(i);
+        if (A.vec || B.vec) {   // vectors: + − between vectors, × and ÷ by a number
+          if ((op == "+" || op == "-") && A.vec && B.vec) { const double sg = op == "+" ? 1 : -1; return {A.x + sg * B.x, A.y + sg * B.y, A.z + sg * B.z, true}; }
+          if (op == "*" && A.vec != B.vec) { const Val& v = A.vec ? A : B; const double k = A.vec ? B.x : A.x; return {v.x * k, v.y * k, v.z * k, true}; }
+          if (op == "/" && A.vec && !B.vec) return {A.x / B.x, A.y / B.x, A.z / B.x, true};
+          throw std::invalid_argument("'" + op + "' does not apply to these vectors");
+        }
+        const double a = A.x, b = B.x;
+        if (op == "+") return Val::num(a + b);
+        if (op == "-") return Val::num(a - b);
+        if (op == "*") return Val::num(a * b);
+        if (op == "/") return Val::num(b != 0 ? a / b : std::nan(""));
+        if (op == "%") return Val::num(b != 0 ? std::fmod(a, b) : std::nan(""));
+        if (op == "^") return Val::num(std::pow(a, b));
         constexpr double eps = 1e-9;
-        if (op == "==") return std::fabs(a - b) <= eps * std::max(1.0, std::fabs(a)) ? 1 : 0;
-        if (op == "!=") return std::fabs(a - b) > eps * std::max(1.0, std::fabs(a)) ? 1 : 0;
-        if (op == "<") return a < b ? 1 : 0;
-        if (op == "<=") return a <= b ? 1 : 0;
-        if (op == ">") return a > b ? 1 : 0;
-        if (op == ">=") return a >= b ? 1 : 0;
-        return 0;
+        if (op == "==") return Val::num(std::fabs(a - b) <= eps * std::max(1.0, std::fabs(a)) ? 1 : 0);
+        if (op == "!=") return Val::num(std::fabs(a - b) > eps * std::max(1.0, std::fabs(a)) ? 1 : 0);
+        if (op == "<") return Val::num(a < b ? 1 : 0);
+        if (op == "<=") return Val::num(a <= b ? 1 : 0);
+        if (op == ">") return Val::num(a > b ? 1 : 0);
+        if (op == ">=") return Val::num(a >= b ? 1 : 0);
+        return Val::num(0);
       }
       case Call: {
-        const double a = args[0]->eval(i);
-        if (op == "abs") return std::fabs(a);
-        if (op == "sqrt") return std::sqrt(a);
-        if (op == "exp") return std::exp(a);
-        if (op == "log") return std::log(a);
-        if (op == "floor") return std::floor(a);
-        if (op == "ceil") return std::ceil(a);
-        if (op == "round") return std::round(a);
-        if (op == "min") return std::min(a, args[1]->eval(i));
-        if (op == "max") return std::max(a, args[1]->eval(i));
-        return 0;
+        if (op == "norm") { const Val v = args[0]->eval(i); return Val::num(v.vec ? std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z) : std::fabs(v.x)); }
+        if (op == "dot") {
+          const Val a = args[0]->eval(i), b = args[1]->eval(i);
+          if (!a.vec || !b.vec) throw std::invalid_argument("dot(…) takes two vectors");
+          return Val::num(a.x * b.x + a.y * b.y + a.z * b.z);
+        }
+        const double a = args[0]->eval(i).scalar();
+        if (op == "abs") return Val::num(std::fabs(a));
+        if (op == "sqrt") return Val::num(std::sqrt(a));
+        if (op == "exp") return Val::num(std::exp(a));
+        if (op == "log") return Val::num(std::log(a));
+        if (op == "floor") return Val::num(std::floor(a));
+        if (op == "ceil") return Val::num(std::ceil(a));
+        if (op == "round") return Val::num(std::round(a));
+        if (op == "min") return Val::num(std::min(a, args[1]->eval(i).scalar()));
+        if (op == "max") return Val::num(std::max(a, args[1]->eval(i).scalar()));
+        return Val::num(0);
       }
     }
-    return 0;
+    return Val::num(0);
   }
 };
 
@@ -79,6 +105,17 @@ class Parser {
   const std::string& s_;
   size_t p_ = 0;
   std::function<const std::vector<double>*(const std::string&)> lookup_;
+
+  // a name with .X .Y .Z components is a vector (Position, MoleculeCOM …)
+  bool vector_name(const std::string& name) { return lookup_(name + ".X") && lookup_(name + ".Y") && lookup_(name + ".Z"); }
+  std::unique_ptr<Node> vector_var(const std::string& name, size_t at) {
+    auto n = std::make_unique<Node>();
+    n->kind = Node::VecVar;
+    const char* c[] = {".X", ".Y", ".Z"};
+    for (int k = 0; k < 3; ++k)
+      if (!(n->comp[k] = lookup_(name + c[k]))) { p_ = at; fail("unknown property " + name); }
+    return n;
+  }
 
   [[noreturn]] void fail(const std::string& what) const {
     throw std::invalid_argument(what + " at character " + std::to_string(p_ + 1));
@@ -192,9 +229,16 @@ class Parser {
       while (p_ < s_.size() && (std::isalnum(static_cast<unsigned char>(s_[p_])) || s_[p_] == '_' || s_[p_] == '.')) ++p_;
       const std::string name = s_.substr(b, p_ - b);
       skip();
+      if (p_ < s_.size() && s_[p_] == '(' && vector_name(name)) {   // MoleculeCOM(MoleculeIdentifier): the argument names the grouping
+        ++p_;
+        int depth = 1;
+        while (p_ < s_.size() && depth > 0) depth += s_[p_] == '(' ? 1 : s_[p_] == ')' ? -1 : 0, ++p_;
+        if (depth != 0) fail("missing ')'");
+        return vector_var(name, b);
+      }
       if (p_ < s_.size() && s_[p_] == '(') {
-        static const char* one[] = {"abs", "sqrt", "exp", "log", "floor", "ceil", "round"};
-        const bool two = name == "min" || name == "max";
+        static const char* one[] = {"abs", "sqrt", "exp", "log", "floor", "ceil", "round", "norm"};
+        const bool two = name == "min" || name == "max" || name == "dot";
         bool known = two;
         for (const char* f : one) known |= name == f;
         if (!known) { p_ = b; fail("unknown function " + name); }
@@ -214,6 +258,7 @@ class Parser {
       if (name == "true") { auto n = std::make_unique<Node>(); n->value = 1; return n; }
       if (name == "false") { auto n = std::make_unique<Node>(); n->value = 0; return n; }
       const auto* v = lookup_(name);
+      if (!v && vector_name(name)) return vector_var(name, b);
       if (!v) { p_ = b; fail("unknown property " + name); }
       auto n = std::make_unique<Node>();
       n->kind = Node::Var;
@@ -237,11 +282,14 @@ std::vector<double> evaluate_expression(const PipelineState& st, const std::stri
     return &(cache[name] = std::move(v));
   };
   std::string text = expr;
+  for (const auto& [from, to] : {std::pair<std::string, std::string>{"\u2212", "-"}, {"\u00D7", "*"}, {"\u00B7", "*"}}) {   // − × ·
+    for (size_t k = text.find(from); k != std::string::npos; k = text.find(from, k + to.size())) text.replace(k, from.size(), to);
+  }
   if (text.find_first_not_of(" \t\r\n") == std::string::npos) return std::vector<double>(n, 1.0);
   Parser parser(text, lookup);
   const auto root = parser.parse();
   std::vector<double> out(n);
-  for (size_t i = 0; i < n; ++i) out[i] = root->eval(i);
+  for (size_t i = 0; i < n; ++i) out[i] = root->eval(i).scalar();
   return out;
 }
 

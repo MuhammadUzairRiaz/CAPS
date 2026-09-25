@@ -740,6 +740,12 @@ int32_t caps_hydrogen_plan(caps_doc* d, char* out, int32_t cap);
 caps_doc* caps_doc_copy(caps_doc* d);
 int32_t caps_resolution_summary(caps_doc* d, const char* json, char* out, int32_t cap);
 caps_doc* caps_resolution_convert(caps_doc* d, const char* json, char* report, int32_t cap);
+/* v20 "Make real" (design/boards/Replicate): the pipeline's current particles (replicas, deletions …) as a new document
+   with unique identifiers; NULL without a pipeline result. */
+caps_doc* caps_pipeline_materialize(caps_doc* d);
+/* v20 how many particles of the current frame an expression selects (design/boards/ExpressionSelect): {ok, error,
+   count, total, types: {"2": "ca", …}}. */
+int32_t caps_expression_count(caps_doc* d, const char* expr, char* out, int32_t cap);
 
 #ifdef __cplusplus
 }

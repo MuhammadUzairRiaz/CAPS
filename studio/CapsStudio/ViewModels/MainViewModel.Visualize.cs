@@ -161,6 +161,7 @@ public sealed partial class MainViewModel
             BuildStepFields();
             AddGroupField();
             ShowTableOf(_pipeSel?.Type);
+            RefreshExpressions();
         }
     }
 
@@ -403,7 +404,8 @@ public sealed partial class MainViewModel
         "colour_coding" => new JsonObject { ["property"] = "Molecule", ["mode"] = "auto", ["map"] = "viridis", ["lighten_h"] = true, ["only_selected"] = false },
         "assign_colour" => new JsonObject { ["colour"] = "#E5484D", ["keep_selection"] = false },
         "cluster" => new JsonObject { ["mode"] = "cutoff", ["cutoff"] = 3.3, ["heavy_only"] = true, ["unit"] = "molecules", ["sort_by_size"] = true, ["only_selected"] = false, ["colour"] = true, ["sweep"] = true },
-        "coordination" => new JsonObject { ["cutoff"] = 3.2, ["bins"] = 200, ["element_a"] = 0, ["element_b"] = 0, ["only_selected"] = false },
+        "coordination" => new JsonObject { ["cutoff"] = 5.0, ["rmax"] = 10.0, ["bins"] = 200, ["element_a"] = 6, ["element_b"] = 6, ["inter_only"] = true, ["only_selected"] = false, ["average_frames"] = false, ["every"] = 1 },
+        "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
         "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["only_selected"] = false },
@@ -419,7 +421,6 @@ public sealed partial class MainViewModel
         "voronoi" => new JsonObject { ["method"] = "grid", ["grid"] = 0.5 },
         "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5 },
         "trajectory_lines" => new JsonObject { ["particles"] = "centres", ["from"] = 0, ["radius"] = 0.12 },
-        "create_bonds" => new JsonObject { ["mode"] = "perceive", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["replace"] = false, ["only_selected"] = false },
         _ => new JsonObject(),
     };
 
@@ -462,8 +463,9 @@ public sealed partial class MainViewModel
                 Choice("mode", "Neighbours", ["bonds", "cutoff"]); Text("cutoff", "Cutoff (Å)", "number"); Choice("unit", "Unit", ["atoms", "molecules"]);
                 Bool("heavy_only", "Cutoff between heavy atoms"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour by cluster"); Bool("sweep", "Cutoff sweep (cutoff mode)"); Bool("only_selected", "Only selected"); break;
             case "coordination":
-                Text("cutoff", "Cutoff (Å)", "number"); Text("bins", "Bins", "number"); Text("element_a", "Central element (0: any)", "number"); Text("element_b", "Neighbour element (0: any)", "number");
-                Bool("inter_only", "Only different molecules"); Bool("only_selected", "Only selected"); break;
+                Text("element_a", "A · element number (0: any)", "number"); Text("element_b", "B · element number (0: any)", "number"); Bool("inter_only", "Only different molecules");
+                Text("rmax", "g(r) out to r max (Å)", "number"); Text("bins", "Bins", "number"); Text("cutoff", "Coordination cutoff (Å)", "number");
+                Bool("average_frames", "Average g(r) over the frames"); Text("every", "Every n-th frame", "number"); Bool("only_selected", "Only selected"); break;
             case "topology": Text("bins", "Bins", "number"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
@@ -486,8 +488,9 @@ public sealed partial class MainViewModel
                 Choice("particles", "Trace", ["centres", "selected"]); Text("from", "From frame", "number"); Text("to", "To frame", "number", "blank: the last");
                 Text("stride", "Every n-th frame", "number", "blank: about 200 steps"); Text("radius", "Line radius (Å)", "number"); break;
             case "create_bonds":
-                Choice("mode", "Mode", ["perceive", "cutoff"]); Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "Cutoff (Å)", "number");
-                Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
+                Choice("mode", "Mode", ["pairs", "perceive", "cutoff"]); Text("pairs", "Cutoff by pair (Å)", "text", "C-C 1.70, C-H 1.25 (a pair not listed: never bonded)");
+                Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
+                Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
             case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); break;
             case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Bool("only_selected", "Only selected"); break;
@@ -728,4 +731,65 @@ public sealed partial class MainViewModel
         _inspectorOffset = Math.Max(0, _inspectorOffset + d * InspectorPage);
         LoadInspector();
     }
+
+    // ---- Expression selection (design/boards/ExpressionSelect): saved expressions with their counts on this frame
+    public ObservableCollection<ExpressionRow> SavedExpressions { get; } = new();
+    public bool PipeIsExpression => _pipeSel?.Type == "select_expression";
+    public bool PipeCanMakeReal => _pipeSel?.Type is "replicate" or "delete_selected" or "slice";
+    private string _exprMeaning = "";
+    public string ExprMeaning { get => _exprMeaning; private set => Set(ref _exprMeaning, value); }
+    public void RefreshExpressions()
+    {
+        Raise(nameof(PipeIsExpression)); Raise(nameof(PipeCanMakeReal));
+        SavedExpressions.Clear();
+        if (_doc == null || !PipeIsExpression) return;
+        JsonObject? types = null;
+        foreach (var e in _settings.PipelineExpressions)
+        {
+            try
+            {
+                var j = JsonNode.Parse(_doc.ExpressionCount(e))!;
+                types ??= j["types"] as JsonObject;
+                SavedExpressions.Add(new(e, (bool?)j["ok"] == true ? ((double?)j["count"] ?? 0).ToString("0", CultureInfo.InvariantCulture) : "error"));
+            }
+            catch { SavedExpressions.Add(new(e, "error")); }
+        }
+        // what the types in the current expression are (Type == 2 → ca)
+        var cur = _pipeSel?.Params["expression"]?.ToString() ?? "";
+        var m = System.Text.RegularExpressions.Regex.Matches(cur, @"Type\s*==\s*(\d+)");
+        ExprMeaning = types == null || m.Count == 0 ? "" : string.Join(" · ", m.Select(x => $"Type {x.Groups[1].Value} means {(string?)types[x.Groups[1].Value] ?? "an unlabelled type"}").Distinct());
+    }
+    public void UseExpression(string e)
+    {
+        if (_pipeSel == null) return;
+        _pipeSel.Params["expression"] = e;
+        BuildStepFields();
+        ApplyPipeline();
+        RefreshExpressions();
+    }
+    public void SaveExpression()
+    {
+        var cur = _pipeSel?.Params["expression"]?.ToString() ?? "";
+        if (cur.Length == 0 || _settings.PipelineExpressions.Contains(cur)) return;
+        _settings.PipelineExpressions.Add(cur);
+        Changed("Saved expressions");
+        RefreshExpressions();
+    }
+    /// <summary>The pipeline's particles (the replicas, what is left after deleting) as a new document.</summary>
+    public void MakeReal()
+    {
+        if (_doc == null) return;
+        try
+        {
+            var d = _doc.MaterializePipeline(Title.Replace(" (unsaved)", "") + " (made real, unsaved)");
+            var n = d.Summary().Atoms;
+            ClearPipeline();
+            Show(d, Title.Replace(" (unsaved)", "") + " (made real, unsaved)");
+            GrownUnsaved = true;
+            Status = $"Made real: {n:N0} atoms with unique identifiers · the original file is unchanged";
+        }
+        catch (Exception e) { Status = "Make real: " + e.Message; }
+    }
 }
+
+public sealed record ExpressionRow(string Expression, string Count);

@@ -13,13 +13,15 @@
 //   assign_colour       colour "#RRGGBB", keep_selection
 //   cluster             mode bonds|cutoff, cutoff, heavy_only, unit atoms|molecules, only_selected, sort_by_size, colour, sweep
 //                       → Cluster, tables clusters (with the molecules each holds) and cluster_sweep (cutoff mode)
-//   coordination        cutoff, bins, element_a, element_b (0: any), only_selected       → Coordination, table rdf
+//   coordination        cutoff, rmax, bins, element_a, element_b (0: any), inter_only, only_selected, average_frames,
+//                       every → Coordination (within cutoff), table rdf (to rmax; averaged over frames when asked)
 //   compute_property    name, expression, only_selected (Position.X/Y/Z, Charge and Selection write through)
 //   wrap                positions folded into the cell
 //   replicate           nx, ny, nz, adjust_cell
 //   histogram           property, bins, start, end, only_selected                        → table histogram
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
-//   create_bonds        mode perceive|cutoff, cutoff, tolerance, only_selected, replace   (bonds between particles)
+//   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
+//                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace
 //   unwrap              molecules made whole across the cell boundary
 //   molecule_shape      per molecule: Rg, κ², asphericity, mass → properties and table molecules
 //   topology            bond lengths, bond angles and dihedrals as histograms          → tables bonds, angles, dihedrals
@@ -37,8 +39,10 @@
 //                       particles, bonds and attributes go in; attributes, tables, properties and a selection come back
 //
 // Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
-// Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,
-// == != < <= > >=, && || ! (also and, or, not), abs sqrt exp log min max floor ceil round, parentheses.
+// Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, Monomer, MoleculeCOM.X/Y/Z, any computed
+// property), + - * / % ^, == != < <= > >=, && || ! (also and, or, not), abs sqrt exp log min max floor ceil round,
+// parentheses. Vectors: a name with .X .Y .Z parts (Position, MoleculeCOM(MoleculeIdentifier)) adds, subtracts and
+// scales, and norm(v), dot(a, b) and the components make numbers of them: norm(Position − MoleculeCOM(MoleculeIdentifier)).
 #pragma once
 #include <array>
 #include <cstdint>
