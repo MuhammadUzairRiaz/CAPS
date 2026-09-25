@@ -343,6 +343,7 @@ Sequence sequence_from_string(const std::string& s) {
   if (s == "block") return Sequence::Block;
   if (s == "random") return Sequence::Random;
   if (s == "gradient") return Sequence::Gradient;
+  if (s == "terminal") return Sequence::Terminal;
   if (s == "pattern") return Sequence::Pattern;
   return Sequence::Homopolymer;
 }
@@ -353,6 +354,7 @@ const char* to_string(Sequence s) {
     case Sequence::Block: return "block";
     case Sequence::Random: return "random";
     case Sequence::Gradient: return "gradient";
+    case Sequence::Terminal: return "terminal";
     case Sequence::Pattern: return "pattern";
     default: return "homopolymer";
   }
@@ -451,6 +453,21 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       }
       break;
     }
+    case Sequence::Terminal: {
+      // f1: A in the feed; P(A→A) = r1 f1 / (r1 f1 + f2), P(B→B) = r2 f2 / (r2 f2 + f1); the first unit from the
+      // instantaneous copolymer composition F1 (Mayo & Lewis 1944)
+      double f1 = spec.weights.size() >= 2 ? spec.weights[0] / std::max(1e-12, spec.weights[0] + spec.weights[1]) : spec.weights.size() == 1 ? spec.weights[0] : 0.5;
+      f1 = std::clamp(f1, 0.0, 1.0);
+      const double f2 = 1 - f1, r1 = std::max(0.0, spec.r1), r2 = std::max(0.0, spec.r2);
+      const double paa = r1 * f1 + f2 > 0 ? r1 * f1 / (r1 * f1 + f2) : 0, pbb = r2 * f2 + f1 > 0 ? r2 * f2 / (r2 * f2 + f1) : 0;
+      const double den = r1 * f1 * f1 + 2 * f1 * f2 + r2 * f2 * f2, F1 = den > 0 ? (r1 * f1 * f1 + f1 * f2) / den : f1;
+      auto u01 = [&] { return double(rng() >> 11) * (1.0 / 9007199254740992.0); };
+      for (int i = 0; i < n; ++i) {
+        if (i == 0) s[0] = u01() < F1 ? 0 : 1 % nu;
+        else s[size_t(i)] = s[size_t(i - 1)] == 0 ? (u01() < paa ? 0 : 1 % nu) : (u01() < pbb ? 1 % nu : 0);
+      }
+      break;
+    }
     case Sequence::Pattern: {
       std::vector<int> p;
       for (char c : spec.pattern)
@@ -523,13 +540,24 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   double mass = 0;
   for (int c = 0; c < nchains; ++c) {
     auto& ch = C[size_t(c)];
-    ch.seq = chain_sequence(spec, o.seed + uint64_t(c) * 101);
+    if (size_t(c) < spec.chain_dp.size()) {   // polydisperse: this chain's own length
+      ChainSpec one = spec;
+      one.dp = std::max(1, spec.chain_dp[size_t(c)]);
+      ch.seq = chain_sequence(one, o.seed + uint64_t(c) * 101);
+    } else {
+      ch.seq = chain_sequence(spec, o.seed + uint64_t(c) * 101);
+    }
     ch.mirror.resize(ch.seq.size());
     for (size_t k = 0; k < ch.seq.size(); ++k) {
       if (k == 0) ch.mirror[k] = U(rng) < 0.5;
       else if (spec.tacticity == Tacticity::Isotactic) ch.mirror[k] = ch.mirror[k - 1];
       else if (spec.tacticity == Tacticity::Syndiotactic) ch.mirror[k] = !ch.mirror[k - 1];
-      else ch.mirror[k] = U(rng) < std::clamp(spec.pm, 0.0, 1.0) ? ch.mirror[k - 1] : !ch.mirror[k - 1];
+      else if (spec.p_mr >= 0 && spec.p_rm >= 0) {   // Markov: the next dyad depends on the previous one
+        const double a = std::min(1.0, spec.p_mr), b = std::min(1.0, spec.p_rm);
+        const bool prev_m = k >= 2 ? ch.mirror[k - 1] == ch.mirror[k - 2] : U(rng) < (a + b > 0 ? b / (a + b) : 0.5);
+        const bool m = prev_m ? U(rng) >= a : U(rng) < b;
+        ch.mirror[k] = m ? ch.mirror[k - 1] : !ch.mirror[k - 1];
+      } else ch.mirror[k] = U(rng) < std::clamp(spec.pm, 0.0, 1.0) ? ch.mirror[k - 1] : !ch.mirror[k - 1];
     }
     mass += chain_mass(spec, ch.seq);
   }
@@ -886,6 +914,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   };
   // the substrate first, keeping its molecule ids (a slab or filler is molecule 1; an earlier blend component keeps its
   // chains); the new chains are numbered after them
+  // residue names: the unit's name, three letters upper case (PDB), else U + its letter
+  std::vector<std::string> unit_code;
+  for (size_t u = 0; u < spec.units.size(); ++u) {
+    std::string code;
+    for (char ch : spec.units[u].name)
+      if (std::isalnum(static_cast<unsigned char>(ch)) && code.size() < 3) code += char(std::toupper(static_cast<unsigned char>(ch)));
+    unit_code.push_back(code.empty() ? std::string("U") + char('A' + int(u % 26)) : code);
+  }
   int mol0 = 0;
   if (o.substrate) {
     int64_t top = 0;
@@ -897,7 +933,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   for (int c = 0; c < nchains; ++c) {
     auto& ch = C[size_t(c)];
     std::vector<uint32_t> map(ch.pos.size());
-    for (size_t i = 3; i < ch.pos.size(); ++i) map[i] = add(ch.z[i], ch.pos[i], c + 1 + mol0);
+    for (size_t i = 3; i < ch.pos.size(); ++i) {
+      map[i] = add(ch.z[i], ch.pos[i], c + 1 + mol0);
+      if (const int k = ch.unit_of[i]; k >= 0) {   // residues: one per repeat unit, numbered along the chain
+        s.atoms[map[i]].resid = k + 1;
+        s.atoms[map[i]].resname = unit_code[size_t(ch.seq[size_t(k)])];
+      }
+    }
     for (size_t k = 0; k < ch.unit_start.size(); ++k) {
       const Template& t = T[size_t(ch.seq[k])];
       const int base = ch.unit_start[k];
@@ -911,19 +953,28 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     const int head = ch.unit_start.front();
     const Vec3 hp = ch.pos[size_t(head)] + unitv(ch.pos[2] - ch.pos[size_t(head)]) * 1.09;
     s.bonds.push_back({map[size_t(head)], add(1, hp, c + 1 + mol0), 1});
+    s.atoms.back().resid = 1, s.atoms.back().resname = unit_code[size_t(ch.seq.front())];
     const Template& tl = T[size_t(ch.seq.back())];
     const int tail = ch.unit_start.back() + tl.tail;
     const int tp = ch.tparent[size_t(tail)], tgp = ch.tparent[size_t(tp)];
     const auto fv = free_valence(c, int(ch.unit_start.size()) - 1);
     const Vec3 tpos = fv ? ch.pos[size_t(tail)] + *fv * 1.09 : place(ch.pos[size_t(tgp)], ch.pos[size_t(tp)], ch.pos[size_t(tail)], 1.09, tl.tail_angle, kPi);
     s.bonds.push_back({map[size_t(tail)], add(1, tpos, c + 1 + mol0), 1});
+    s.atoms.back().resid = int64_t(ch.seq.size()), s.atoms.back().resname = unit_code[size_t(ch.seq.back())];
   }
   s.bonds_from_file = true;
   rep.chains_placed = nchains;
   char cb[96];
   if (ortho) std::snprintf(cb, sizeof cb, "cell %.2f × %.2f × %.2f Å", Lv[0], Lv[1], Lv[2]);
   else std::snprintf(cb, sizeof cb, "box %.3f Å", L);
-  rep.notes.insert(rep.notes.begin(), std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
+  std::string units_text = std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units";
+  if (!spec.chain_dp.empty()) {
+    int lo = 1 << 30, hi = 0;
+    long total = 0;
+    for (const auto& ch : C) lo = std::min(lo, int(ch.seq.size())), hi = std::max(hi, int(ch.seq.size())), total += long(ch.seq.size());
+    units_text = std::to_string(nchains) + " chains, " + std::to_string(lo) + "–" + std::to_string(hi) + " units (Σ " + std::to_string(total) + ")";
+  }
+  rep.notes.insert(rep.notes.begin(), units_text + " · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
                                           " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
   if (report) *report = rep;
@@ -955,6 +1006,70 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     }
   }
   throw GrowError("no contact scale worked");
+}
+
+// ---------------------------------------------------------------- chain-length distributions
+
+namespace {
+struct Draw {
+  std::mt19937_64 rng;
+  double u01() { return (double(rng() >> 11) + 0.5) * (1.0 / 9007199254740992.0); }
+  double normal() { return std::sqrt(-2 * std::log(u01())) * std::cos(2 * M_PI * u01()); }
+  // Marsaglia & Tsang (2000); shape < 1 by the boost x = G(shape + 1) · U^(1/shape)
+  double gamma(double k) {
+    if (k < 1) return gamma(k + 1) * std::pow(u01(), 1 / k);
+    const double d = k - 1.0 / 3, c = 1 / std::sqrt(9 * d);
+    for (;;) {
+      double x, v;
+      do { x = normal(); v = 1 + c * x; } while (v <= 0);
+      v = v * v * v;
+      const double u = u01();
+      if (u < 1 - 0.0331 * x * x * x * x || std::log(u) < 0.5 * x * x + d * (1 - v + std::log(v))) return d * v;
+    }
+  }
+  int poisson(double lam) {   // Knuth for small means, a normal approximation above 60
+    if (lam > 60) return std::max(0, int(std::lround(lam + std::sqrt(lam) * normal())));
+    const double L = std::exp(-lam);
+    int k = 0;
+    double p = 1;
+    do { ++k; p *= u01(); } while (p > L);
+    return k - 1;
+  }
+};
+}  // namespace
+
+std::vector<int> draw_chain_lengths(const std::string& dist, double nn, double pdi, int count, uint64_t seed) {
+  if (count < 1) return {};
+  nn = std::max(2.0, nn);
+  Draw d{std::mt19937_64(seed * 0x9E3779B97F4A7C15ull + 31)};
+  std::vector<int> out;
+  for (int i = 0; i < count; ++i) {
+    double x = nn;
+    if (dist == "schulz-zimm") {
+      const double k = pdi > 1.0001 ? 1 / (pdi - 1) : 1e4;
+      x = d.gamma(k) * nn / k;
+    } else if (dist == "flory") {   // geometric with mean nn: P(N) = p (1 − p)^(N − 1)
+      const double p = 1 / nn;
+      x = 1 + std::floor(std::log(d.u01()) / std::log(1 - p));
+    } else if (dist == "poisson") {
+      x = 1 + d.poisson(nn - 1);
+    } else if (dist != "monodisperse") {
+      throw std::invalid_argument("chain lengths: monodisperse, schulz-zimm, flory or poisson");
+    }
+    out.push_back(std::max(2, int(std::lround(x))));
+  }
+  return out;
+}
+
+double chain_length_pdf(const std::string& dist, double nn, double pdi, double n) {
+  if (n <= 0) return 0;
+  if (dist == "schulz-zimm") {
+    const double k = pdi > 1.0001 ? 1 / (pdi - 1) : 1e4, th = nn / k;
+    return std::exp((k - 1) * std::log(n) - n / th - std::lgamma(k) - k * std::log(th));
+  }
+  if (dist == "flory") return (1 / nn) * std::pow(1 - 1 / nn, n - 1);
+  if (dist == "poisson") { const double lam = nn - 1, m = std::round(n) - 1; return m < 0 ? 0 : std::exp(m * std::log(lam) - lam - std::lgamma(m + 1)); }
+  return std::fabs(n - nn) < 0.5 ? 1.0 : 0.0;
 }
 
 }  // namespace caps

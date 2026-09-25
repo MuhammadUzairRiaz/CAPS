@@ -142,6 +142,8 @@ def _declare(L: C.CDLL) -> None:
         "caps_recipe_run": ([S, S, _RecipeProgress, P, B, I], P), "caps_scene_json": ([P, S, B, I], I),
         "caps_analyze": ([P, S, C.POINTER(_AnalyzeOpts), P, P], I), "caps_analyze_ex": ([P, S, C.POINTER(_AnalyzeOpts), C.POINTER(_MechOpts), P, P], I),
         "caps_analyze_report": ([P, B, I], I),
+        "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
+        "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
     for name, (args, res) in sig.items():
         f = getattr(L, name, None)
@@ -549,17 +551,24 @@ def run(recipe, out_dir: str = ".", seed: Optional[int] = None, threads: int = 0
 
 def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", seed: int = 1, density: Optional[float] = None,
             forcefield: Optional[str] = None, relax: bool = False, sequence: str = "homopolymer", trials: int = 120,
-            blocks: Optional[list] = None, weights: Optional[list] = None, pattern: str = "") -> Document:
+            blocks: Optional[list] = None, weights: Optional[list] = None, pattern: str = "", r1: Optional[float] = None,
+            r2: Optional[float] = None, pm: Optional[float] = None, p_mr: Optional[float] = None, p_rm: Optional[float] = None,
+            lengths: Optional[dict] = None, chain_dp: Optional[list] = None) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
-    with blocks=[…], random with weights=[…], gradient, pattern="AAB") grown in a periodic cell:
-    one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. forcefield types it (default: the
-    built-in GAFF for C and H, else UFF); relax=True minimises."""
+    with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
+    in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
+    chains: pm (Bernoulli) or p_mr, p_rm (first-order Markov). Polydisperse: lengths={"distribution": "schulz-zimm",
+    "nn": 40, "pdi": 1.1, "seed": 1} or chain_dp=[…]; the provenance records the sample drawn. forcefield types it
+    (default: the built-in GAFF for C and H, else UFF); relax=True minimises."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
          "grow": {"density": density if density is not None else (0.1 if chains == 1 else 0.5), "seed": seed, "trials": trials}}
-    for k, v in (("blocks", blocks), ("weights", weights), ("pattern", pattern)):
+    for k, v in (("blocks", blocks), ("weights", weights), ("pattern", pattern), ("lengths", lengths), ("chain_dp", chain_dp)):
         if v:
+            r["build"]["polymer"][k] = v
+    for k, v in (("r1", r1), ("r2", r2), ("pm", pm), ("p_mr", p_mr), ("p_rm", p_rm)):
+        if v is not None:
             r["build"]["polymer"][k] = v
     if forcefield or relax:
         r["type"] = {"forcefield": forcefield or "default"}
@@ -621,6 +630,55 @@ class build:
         d = Document(library().caps_solvate(h, _enc(json.dumps(options)), None, None, rep, len(rep)), "solvated")
         d.report = rep.value.decode()
         return d
+
+
+# ---------------------------------------------------------------------------------------------------------------- polymer statistics
+
+def chain_lengths(distribution: str = "schulz-zimm", nn: float = 40, pdi: float = 1.1, count: int = 20, seed: int = 2026,
+                  m0: float = 104.15, best_of: int = 1) -> dict:
+    """Chain lengths drawn from a distribution (monodisperse, schulz-zimm, flory, poisson): {lengths, sample {nn, mn,
+    mw, pdi, min, max, sum}, target {…}, curve {n, number, weight}}. m0 is the repeat unit's molar mass (g/mol)."""
+    return _json_call(library().caps_chain_lengths, _enc(json.dumps({"distribution": distribution, "nn": nn, "pdi": pdi, "count": count,
+                                                                     "seed": seed, "m0": m0, "best_of": best_of})))
+
+
+def copolymer_model(r1: float, r2: float, f1: float, dp: int = 80, seed: int = 1) -> dict:
+    """The terminal (Mayo–Lewis) model: {F1, paa, pbb, run_a, run_b, azeotrope, curve {f1, F1}, sequence, chain {…}};
+    sequence is what polymer(…, sequence="terminal") grows for its first chain at this seed."""
+    return _json_call(library().caps_copolymer, _enc(json.dumps({"r1": r1, "r2": r2, "f1": f1, "dp": dp, "seed": seed})))
+
+
+def stereo(pm: float = 0.5, p_mr: Optional[float] = None, p_rm: Optional[float] = None, dyads: str = "",
+           measured: Optional[list] = None) -> dict:
+    """Bernoulli (pm) or first-order Markov (p_mr, p_rm) triads and pentads; with dyads ("mrrm…", e.g. from
+    Document.tacticity()) the counted values; with measured (ten pentad fractions, NMR) Bernoulli and Markov fits."""
+    q: dict = {"model": "markov", "p_mr": p_mr, "p_rm": p_rm} if p_mr is not None and p_rm is not None else {"model": "bernoulli", "pm": pm}
+    if dyads:
+        q["dyads"] = dyads
+    if measured is not None:
+        q["measured"] = list(measured)
+    return _json_call(library().caps_stereo, _enc(json.dumps(q)))
+
+
+def blend_phase(na: float, nb: float, a: float, b: float, t: float = 300.0) -> dict:
+    """Flory–Huggins binary blend with χ = a + b/T: {chi_c, phi_c, tc, chi_t, coexist, spinodal, binodal {phi, t},
+    spinodal_curve {phi, t}}."""
+    return _json_call(library().caps_blend_phase, _enc(json.dumps({"na": na, "nb": nb, "a": a, "b": b, "t": t})))
+
+
+def solvent_chi(delta_polymer: float, solvents: list, t: float = 298.15) -> list:
+    """Hildebrand χ ≈ V(δs − δp)²/RT + 0.34 for [{name, v (cm³/mol), delta (MPa½)}]: [{name, chi, predicted}]. It ignores
+    polarity and hydrogen bonding: check it against known behaviour."""
+    return _json_call(library().caps_solvent_chi, _enc(json.dumps({"delta_polymer": delta_polymer, "t": t, "solvents": solvents})))["solvents"]
+
+
+def ewald_params(cutoff: float = 12.0, tolerance: float = 1e-5, spacing: float = 1.2, order: int = 4, edges: Optional[list] = None,
+                 doc: Optional["Document"] = None) -> dict:
+    """β from erfc(β rc) = tolerance and the PME mesh (FFT sizes with factors 2, 3, 5, 7) for edges or doc's cell."""
+    q: dict = {"cutoff": cutoff, "tolerance": tolerance, "spacing": spacing, "order": order}
+    if edges is not None:
+        q["edges"] = list(edges)
+    return _json_call(library().caps_ewald_params, doc._h if doc is not None else None, _enc(json.dumps(q)))
 
 
 def space_groups() -> list:

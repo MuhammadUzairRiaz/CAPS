@@ -15,11 +15,11 @@ constexpr double kCoulombConstant = 332.06371;   // kcal·Å/(mol·e²), as LAMM
 double ewald_beta(double cutoff, double rtol);
 
 struct PmeGrid {
-  int k[3] = {0, 0, 0};   // grid points along a, b, c (products of 2, 3 and 5)
+  int k[3] = {0, 0, 0};   // grid points along a, b, c (products of 2, 3, 5 and 7)
   int order = 4;          // B-spline order (4: cubic, as GROMACS's default)
   double beta = 0;
 };
-// Grid for a cell: the smallest 2-3-5 sizes with spacing at most `spacing` Å along each edge.
+// Grid for a cell: the smallest 2-3-5-7 sizes with spacing at most `spacing` Å along each edge.
 PmeGrid pme_grid(const Cell& cell, double beta, double spacing = 1.2, int order = 4);
 
 // Reciprocal-space energy (kcal/mol); forces are added to f (3N); vir receives Σ r·f (xx yy zz xy xz yz).

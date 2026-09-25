@@ -77,7 +77,9 @@ TEST(Kspace, FftMatchesTheDirectTransform) {
     EXPECT_LT(worst, 1e-10) << k1;
   }
   EXPECT_EQ(fft_good_size(31), 32);
-  EXPECT_EQ(fft_good_size(49), 50);
+  EXPECT_EQ(fft_good_size(49), 49);   // 7²: radix 7 is FFT-friendly too
+  EXPECT_EQ(fft_good_size(13), 14);
+  EXPECT_EQ(fft_good_size(43), 45);
 }
 
 TEST(Kspace, MadelungConstantOfRockSalt) {

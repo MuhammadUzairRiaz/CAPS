@@ -324,7 +324,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Pack › Density calculator", "Analyze › Surface area", "Studio › Unit cell"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Pack › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
+        "Grow › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -401,6 +402,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsDensityCalc));
         Raise(nameof(IsSurfaceArea));
         Raise(nameof(IsCellEditor));
+        Raise(nameof(IsPolydispersity)); Raise(nameof(IsCopolymer)); Raise(nameof(IsSolventScreen)); Raise(nameof(IsTacticityStats)); Raise(nameof(IsBlendPhase)); Raise(nameof(IsElectrostatics));
         if (was == 57 && m != 57) ClearSurfaceColour();
         if (m != 51) LeavePeriodic();
         Raise(nameof(ShowLodPanel));
@@ -490,7 +492,13 @@ public sealed partial class MainViewModel : ObservableObject
         if (seq == "block" && j?["blocks"] is System.Text.Json.Nodes.JsonArray ba) sb.Append("    blocks: [").Append(string.Join(", ", ba.Select(b => (int?)b ?? 1))).Append("]\n");
         if (seq == "random" && j?["weights"] is System.Text.Json.Nodes.JsonArray wa) sb.Append("    weights: [").Append(string.Join(", ", wa.Select(w => ((double?)w ?? 1).ToString(inv)))).Append("]\n");
         if (seq == "pattern") sb.Append("    pattern: ").Append((string?)j?["pattern"] ?? "A").Append('\n');
+        if (seq == "terminal" && j?["weights"] is System.Text.Json.Nodes.JsonArray tw)
+            sb.Append(inv, $"    weights: [{string.Join(", ", tw.Select(w => ((double?)w ?? 0.5).ToString(inv)))}]\n    r1: {((double?)j["r1"] ?? 1).ToString(inv)}\n    r2: {((double?)j["r2"] ?? 1).ToString(inv)}\n");
         sb.Append(inv, $"    dp: {_growDp}\n    chains: {_growChains}\n    tacticity: {Tacticities[_growTact].ToLowerInvariant()}\n");
+        if (_growChainDp != null && _growChainDp.Length == _growChains)   // the lengths drawn here, one per chain
+            sb.Append("    chain_dp: [").Append(string.Join(", ", _growChainDp)).Append("]   # ").Append(_growChainDpText).Append('\n');
+        if (_growTact == 0 && _growStereo is { } gs)
+            sb.Append(gs.Kind == 1 ? FormattableString.Invariant($"    p_mr: {gs.A}\n    p_rm: {gs.B}\n") : FormattableString.Invariant($"    pm: {gs.Pm}\n"));
         sb.Append("type: { forcefield: default }\n");
         sb.Append("grow:\n").Append(_growUseBox ? $"  box: {_growBox.ToString(inv)}\n" : $"  density: {_growDensity.ToString(inv)}\n");
         sb.Append(inv, $"  seed: {_growSeed}\n  contact_scale: {(_growAutoScale ? "auto" : _growScale.ToString(inv))}\n  curve: {(_growCurve ? "true" : "false")}\n");
@@ -579,7 +587,7 @@ public sealed partial class MainViewModel : ObservableObject
             Chains = _growChains, Dp = _growDp, Tacticity = _growTact, Seed = (ulong)_growSeed,
             Box = _growUseBox ? _growBox : 0, Density = _growUseBox ? 0 : _growDensity, ContactScale = _growScale, Curve = _growCurve ? 1 : 0,
         };
-        var spec = _growSpec;
+        var spec = GrowSpecWithStatistics(_growSpec);   // per-chain lengths (Polydispersity) and the stereo model (Tacticity)
         if (spec != null && _growAutoScale) o.ContactScale = -_growScale;   // caps_grow_chains: start here, lower it when crowded
         if (spec != null)
         {
@@ -588,7 +596,8 @@ public sealed partial class MainViewModel : ObservableObject
             spec = sj.ToJsonString();
         }
         var stem = spec == null ? "PS" : string.Concat(_growSpecName.Where(char.IsLetterOrDigit).Take(16));
-        var label = $"{stem}_{_growChains}x{_growDp}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
+        var dpTag = _growChainDp != null && _growChainDp.Length == _growChains ? $"Nn{_growChainDp.Average():0}" : _growDp.ToString(CultureInfo.InvariantCulture);
+        var label = $"{stem}_{_growChains}x{dpTag}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
         GrowLog = "Growing…";
         GrowDone = 0;
         GrowRestarts = 0;
@@ -638,6 +647,7 @@ public sealed partial class MainViewModel : ObservableObject
             var used = seed - 1;
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
+            AfterGrowStatistics(doc);
             GrownUnsaved = true;
             GrowDone = _growChains;
             GrowElapsed = sw.Elapsed.TotalSeconds;

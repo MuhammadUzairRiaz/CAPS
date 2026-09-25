@@ -695,6 +695,30 @@ int32_t caps_element_info(int32_t z, double* mass, double* covalent, double* vdw
 int32_t caps_interactions(caps_doc* d, const char* options_json, char* json, int32_t cap);
 void caps_clear_checks(caps_doc* d);
 
+/* v20 polymer statistics (design/boards Polydispersity, Copolymer, Tacticity, BlendPhase, SolventScreen, Electrostatics).
+   JSON in, JSON out ({ok, error} on failure).
+   caps_chain_lengths {distribution: monodisperse | schulz-zimm | flory | poisson, nn, pdi, count, seed, m0, best_of} →
+     {lengths[], sample {nn, mn, mw, pdi, min, max, sum}, target {nn, mn, mw, pdi}, k, curve {n[], number[], weight[]}}
+   caps_copolymer {r1, r2, f1, dp, seed} → {F1, paa, pbb, run_a, run_b, azeotrope|null, curve {f1[], F1[]}, sequence[]
+     (Grow's chain 0 at this seed), chain {F1, run_a, run_b, longest, a, b}}
+   caps_stereo {model: bernoulli | markov, pm | p_mr, p_rm, dyads | dp + seed, measured[10]} → {model {pm, p_mr, p_rm, mm, mr,
+     rr, pentads[]}, names[], chain {dyads, m, r, mm, mr, rr, pentads[]}, fit {bernoulli, bernoulli_rms, markov, markov_rms,
+     mm_rr, mr2_4}}
+   caps_blend_phase {na, nb, a, b, t, t_min | t_max} (χ = a + b/T) → {chi_c, phi_c, tc|null, kind, chi_t, coexist[2],
+     spinodal[2], binodal {phi[], t[]}, spinodal_curve {phi[], t[]}}
+   caps_solvent_chi {delta_polymer, t, solvents: [{name, v, delta}]} → {rt, solvents: [{name, chi, predicted}]}
+   caps_ewald_params (doc may be NULL) {cutoff, tolerance, spacing, order, edges[3]} → {beta, beta_rc, table[], edges[],
+     mesh[], spacing[], fits, curve {r[], erfc[]}} — edges from the document's cell when not given. */
+int32_t caps_chain_lengths(const char* json, char* out, int32_t cap);
+int32_t caps_copolymer(const char* json, char* out, int32_t cap);
+int32_t caps_stereo(const char* json, char* out, int32_t cap);
+int32_t caps_blend_phase(const char* json, char* out, int32_t cap);
+int32_t caps_solvent_chi(const char* json, char* out, int32_t cap);
+int32_t caps_ewald_params(caps_doc* d, const char* json, char* out, int32_t cap);
+/* v20 each atom's residue number (0 = none; Grow numbers the repeat units along each chain from 1); returns the atom
+   count, filling at most cap entries. */
+int32_t caps_atom_residues(caps_doc* d, int32_t* out, int32_t cap);
+
 #ifdef __cplusplus
 }
 #endif
