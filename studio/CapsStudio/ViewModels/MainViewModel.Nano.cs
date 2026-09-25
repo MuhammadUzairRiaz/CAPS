@@ -9,7 +9,7 @@ namespace CapsStudio.ViewModels;
 public sealed partial class MainViewModel
 {
     public bool IsNano => _module == 15;
-    public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube"];
+    public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre"];
 
     public void OpenNano()
     {
@@ -74,7 +74,10 @@ public sealed partial class MainViewModel
     private decimal _particleRadius = 12;
     private bool _particleOnAtom = true, _particlePassivate = true;
     public int ParticleCrystal { get => _particleCrystal; set { if (Set(ref _particleCrystal, value)) NanoPreview(); } }
-    public int ParticleShape { get => _particleShape; set { if (Set(ref _particleShape, value)) NanoPreview(); } }
+    public int ParticleShape { get => _particleShape; set { if (Set(ref _particleShape, value)) { Raise(nameof(ParticleIsFibre)); RaiseNano(); NanoPreview(); } } }
+    public bool ParticleIsFibre => _particleShape == 4;
+    private decimal _fibreLength = 22;
+    public decimal FibreLength { get => _fibreLength; set { if (Set(ref _fibreLength, Math.Clamp(value, 3, 500))) NanoPreview(); } }
     public decimal ParticleRadius { get => _particleRadius; set { if (Set(ref _particleRadius, Math.Clamp(value, 3, 60))) NanoPreview(); } }
     public int ParticleCentre { get => _particleOnAtom ? 0 : 1; set { _particleOnAtom = value == 0; Raise(); NanoPreview(); } }
     public bool ParticlePassivate { get => _particlePassivate; set { if (Set(ref _particlePassivate, value)) NanoPreview(); } }
@@ -96,7 +99,8 @@ public sealed partial class MainViewModel
         1 => $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")} · d = {TubeGeometry()[0]:F2} Å",
         _ => $"{(_particleCrystal < Crystals.Count ? Crystals[_particleCrystal].Name : "crystal")} {ParticleShapes[_particleShape].ToLowerInvariant()} · r = {_particleRadius:0.#} Å",
     };
-    public string NanoAxisText => _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake") : "cut from the crystal";
+    public string NanoAxisText => _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake")
+        : _particleShape == 4 ? "fibre · periodic along z" : "cut from the crystal";
     public string NanoBuildText => _nanoMatrix ? "Build composite" : _nanoKind switch { 0 => "Build sheet", 1 => "Build nanotube", _ => "Build particle" };
     public string NanoBuildIcon => _nanoKind == 2 ? "atom" : _nanoKind == 0 ? "hex" : "layers";
 
@@ -120,6 +124,7 @@ public sealed partial class MainViewModel
                 o["radius"] = (double)_particleRadius;
                 o["on_atom"] = _particleOnAtom ? 1 : 0;
                 o["passivate"] = _particlePassivate ? 1 : 0;
+                o["length"] = (double)_fibreLength;
                 break;
         }
         return o.ToJsonString();

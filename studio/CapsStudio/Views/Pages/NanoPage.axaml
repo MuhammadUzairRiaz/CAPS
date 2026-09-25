@@ -149,6 +149,10 @@
                     <StackPanel Spacing="6"><TextBlock Text="Radius · Å (circumscribed)" Classes="label" /><NumericUpDown Value="{Binding ParticleRadius}" Minimum="3" Maximum="60" Increment="0.5" FormatString="0.0" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Centre" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ParticleCentres}" SelectedIndex="{Binding ParticleCentre}" HorizontalAlignment="Stretch" /></StackPanel>
                   </Grid>
+                  <StackPanel Spacing="6" IsVisible="{Binding ParticleIsFibre}">
+                    <TextBlock Text="Fibre length along z · Å (periodic; the crystal's c axis)" Classes="label" />
+                    <NumericUpDown Value="{Binding FibreLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" />
+                  </StackPanel>
                   <CheckBox Classes="toggle" Content="Passivate the surface (Si–OH, O–H)" IsChecked="{Binding ParticlePassivate}" />
                 </StackPanel>
               </Border>

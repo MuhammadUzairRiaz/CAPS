@@ -60,9 +60,9 @@ int usage() {
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
                "               [--chains N] [--dp 10] [--gap 1] [--vacuum 0] [--sequence …] [--ff FF]   a polymer film on a surface\n"
                "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
-               "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron --radius 12 --passivate]\n"
+               "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|fibre --radius 12 --length 20 --passivate]\n"
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
-               "  caps pull    FILE [--normal] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
+               "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
@@ -306,7 +306,9 @@ int main(int argc, char** argv) {
         if (o.count("--radius")) po.radius = std::stod(o["--radius"]);
         po.on_atom = !(o.count("--centre") && o["--centre"] == "cell");
         po.passivate = o.count("--passivate");
+        if (o.count("--length")) po.length = std::stod(o["--length"]);
         f = nanoparticle(read_cif(pos[1]), po, &nr);
+        keep = {false, false, po.shape == ParticleShape::Fibre};
       } else {
         throw std::invalid_argument("kind must be tube, sheet or particle");
       }
@@ -973,6 +975,7 @@ int main(int argc, char** argv) {
       System s = open_file(pos[0], o.count("--topology") ? o["--topology"] : "").frame(0);
       PullOptions po;
       po.normal = o.count("--normal");
+      if (o.count("--axis")) po.axis = axis_of(o["--axis"]);
       if (o.count("--distance")) po.distance = std::stod(o["--distance"]);
       if (o.count("--rate")) po.rate = std::stod(o["--rate"]);
       if (o.count("--spring")) po.spring = std::stod(o["--spring"]);
