@@ -2200,6 +2200,100 @@ extern "C" int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t coun
   }
 }
 
+namespace {
+// What an export writes, and the notes that say what was done.
+void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, const std::string& path, std::vector<std::string>& notes) {
+  const bool use_pipeline = o.has("pipeline") && o["pipeline"].kind() == caps::Json::Bool && o["pipeline"].boolean() && d->pstate;
+  caps::System s = use_pipeline ? d->pstate->system : d->frame;
+  if (use_pipeline) notes.push_back("the Visualize pipeline's particles (" + std::to_string(s.atoms.size()) + ")");
+  const bool wrap = o.has("wrap") && o["wrap"].kind() == caps::Json::Bool && o["wrap"].boolean();
+  if (wrap && s.cell.valid() && fmt != "lammps-data") {
+    for (auto& a : s.atoms) a.pos = s.cell.wrap(a.pos);
+    notes.push_back("positions wrapped into the cell");
+  }
+  const bool coeffs = !o.has("coeffs") || o["coeffs"].kind() != caps::Json::Bool || o["coeffs"].boolean();
+  if (fmt == "pdb") caps::write_pdb(s, path);
+  else if (fmt == "xyz") caps::write_xyz(s, path);
+  else if (fmt == "mol2") caps::write_mol2(s, path);
+  else if (fmt == "gro") caps::write_gro(s, path);
+  else if (fmt == "lammps-dump") {
+    caps::write_lammps_dump(d->traj, path);
+    notes.push_back("every frame, unwrapped coordinates; the pipeline is not applied to a dump");
+  } else if (fmt == "lammps-data") {
+    notes.push_back("wrapped coordinates with image flags");
+    const bool same = s.atoms.size() == d->frame.atoms.size() && !use_pipeline;
+    if (coeffs && d->field && d->field->complete && same) {
+      caps::write_lammps_data_ff(s, *d->field->ff, elec(), path);
+      notes.push_back("coefficients from Field: " + d->field->ff->name);
+    } else if (coeffs) {
+      try {
+        caps::write_lammps_data_ff(s, default_ff(s), elec(), path);
+        notes.push_back("coefficients from the built-in force field (GAFF for C/H, else UFF)");
+      } catch (const std::exception& e) {
+        caps::write_lammps_data(s, path);
+        notes.push_back(std::string("no coefficients: ") + e.what());
+      }
+    } else {
+      caps::write_lammps_data(s, path);
+      notes.push_back("structure only: no Coeffs sections");
+    }
+  } else {
+    throw std::invalid_argument("unknown format " + fmt);
+  }
+}
+}  // namespace
+
+extern "C" int32_t caps_export_data(caps_doc* d, const char* path, const char* format, const char* options) {
+  return guard([&] {
+    std::vector<std::string> notes;
+    export_write(d, format ? format : "lammps-data", caps::Json::parse(options && *options ? options : "{}"), path, notes);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_export_preview(caps_doc* d, const char* format, const char* options, int32_t lines, char* json, int32_t cap) {
+  try {
+    const std::string fmt = format ? format : "lammps-data";
+    const auto tmp = std::filesystem::temp_directory_path() / ("caps_export_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + "." + fmt);
+    std::vector<std::string> notes;
+    export_write(d, fmt, caps::Json::parse(options && *options ? options : "{}"), tmp.string(), notes);
+    caps::Json j = caps::Json::object();
+    j["bytes"] = double(std::filesystem::file_size(tmp));
+    caps::Json out = caps::Json::array();
+    std::ifstream in(tmp);
+    std::string line;
+    std::map<std::string, double> counts;
+    int k = 0;
+    while (std::getline(in, line)) {
+      if (k < lines) out.push_back(line);
+      ++k;
+      if (fmt == "lammps-data" && k < 40) {   // header counts: "1300 atoms", "4 atom types"
+        std::istringstream ls(line);
+        double v;
+        std::string a, b;
+        if (ls >> v >> a) {
+          if (ls >> b && b == "types") counts[a + "_types"] = v;
+          else if (a == "atoms" || a == "bonds" || a == "angles" || a == "dihedrals" || a == "impropers") counts[a] = v;
+        }
+      }
+    }
+    in.close();
+    std::filesystem::remove(tmp);
+    j["lines"] = std::move(out);
+    j["line_count"] = double(k);
+    const caps::System& s = d->pstate && std::strstr(options ? options : "", "\"pipeline\":true") ? d->pstate->system : d->frame;
+    if (counts.empty()) { counts["atoms"] = double(s.atoms.size()); counts["bonds"] = double(fmt == "xyz" || fmt == "gro" ? 0 : s.bonds.size()); }
+    for (const auto& [key, v] : counts) j[key] = v;
+    caps::Json nj = caps::Json::array();
+    for (const auto& n : notes) nj.push_back(n);
+    j["notes"] = std::move(nj);
+    return report_out(j.dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyze_progress_fn progress, void* user, char* json, int32_t cap) {
   try {
     const caps::Pipeline p = d->pipeline ? *d->pipeline : caps::Pipeline{};

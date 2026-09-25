@@ -45,6 +45,8 @@ void write_lammps_data(const System& s, const std::string& path);
 // All frames as a LAMMPS text dump with unwrapped coordinates (id mol type xu yu zu).
 void write_lammps_dump(const Trajectory& t, const std::string& path);
 void write_xyz(const System& s, const std::string& path);
+// GROMACS .gro: one residue per molecule (its residue name, else MOL), positions and box in nm.
+void write_gro(const System& s, const std::string& path);
 void write_pdb(const System& s, const std::string& path);
 // Tripos mol2 with Atom::name as the atom type (force-field types or SYBYL), charges and bond orders.
 void write_mol2(const System& s, const std::string& path);

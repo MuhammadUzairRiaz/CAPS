@@ -731,6 +731,7 @@ public partial class MainWindow : Window
             {
                 new MenuItem { Header = "Save pipeline…", Command = new RelayCommand(SavePipelineAsync) },
                 new MenuItem { Header = "Load pipeline…", Command = new RelayCommand(LoadPipelineAsync) },
+                new MenuItem { Header = "Export the result…", Command = new RelayCommand(() => { _vm.OpenExport(); return Task.CompletedTask; }) },
                 new MenuItem { Header = "Clear all steps", Command = new RelayCommand(() => { _vm.ClearPipeline(); return Task.CompletedTask; }) },
             },
         };

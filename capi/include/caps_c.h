@@ -335,6 +335,12 @@ int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap);
 int32_t caps_pipeline_particles(caps_doc* d, const char* filter, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_catalogue(char* json, int32_t cap);
+/* v19 export (design/boards/ExportData): format lammps-data | lammps-dump (all frames) | gro | pdb | xyz | mol2;
+   options JSON {"pipeline": bool (the Visualize result instead of the frame), "wrap": bool, "coeffs": bool (force-field
+   sections in LAMMPS data)}. The preview writes to a scratch file and returns {"lines":[first n],"bytes","atoms","bonds",
+   "angles","dihedrals","atom_types","bond_types","angle_types","dihedral_types","notes":[…]}. */
+int32_t caps_export_data(caps_doc* d, const char* path, const char* format, const char* options);
+int32_t caps_export_preview(caps_doc* d, const char* format, const char* options, int32_t lines, char* json, int32_t cap);
 /* The pipeline's global attributes on every stride-th frame: {"columns":[…],"rows":[[…]]}. progress may be NULL. */
 int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyze_progress_fn progress, void* user, char* json, int32_t cap);
 /* Atoms bonded to atom index (up to cap written); returns the count. */

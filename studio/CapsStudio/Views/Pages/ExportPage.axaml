@@ -1,0 +1,127 @@
+<!-- CAPS Export › Data (design/boards/ExportData): format, options, a preview of the real file, what it holds. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ExportPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Back" Click="OnBack" />
+          <Button Classes="primary" Click="OnExport" IsEnabled="{Binding ExportIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export…" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Export data" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="The preview is the file itself, written from this frame; nothing is estimated" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="300,*,320" ColumnSpacing="16" Margin="22,16">
+      <!-- format and options -->
+      <StackPanel Spacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Format" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <ListBox ItemsSource="{x:Static vm:MainViewModel.ExportFormats}" SelectedIndex="{Binding ExportFormatIndex}" Background="Transparent" Margin="6">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ExportFormat">
+                  <StackPanel Spacing="1" Margin="2,3">
+                    <TextBlock Text="{Binding Name}" FontSize="12.5" />
+                    <TextBlock Text="{Binding About}" FontSize="11" Foreground="{DynamicResource DimB}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Options" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,12" Spacing="10">
+              <CheckBox Classes="toggle" Content="Force-field sections (Coeffs)" IsChecked="{Binding ExportCoeffs}" IsVisible="{Binding ExportIsData}" />
+              <CheckBox Classes="toggle" Content="Wrap positions into the cell" IsChecked="{Binding ExportWrap}" IsVisible="{Binding !ExportIsData}" />
+              <CheckBox Classes="toggle" Content="The Visualize result" IsChecked="{Binding ExportPipeline}" IsEnabled="{Binding ExportPipelineAvailable}"
+                        ToolTip.Tip="The particles after the pipeline's steps (slices, deletions, replicas) instead of the frame" ToolTip.ShowOnDisabled="True" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <!-- preview -->
+      <Border Grid.Column="1" Classes="card" CornerRadius="10">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="real values of this frame" Foreground="{DynamicResource OkB}" /></Border>
+              <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                <Run Text="{Binding ExportName}" /><Run Text=" · preview" Foreground="{DynamicResource MutedB}" FontWeight="Normal" />
+              </TextBlock>
+            </DockPanel>
+          </Border>
+          <TextBlock DockPanel.Dock="Bottom" Text="{Binding ExportError}" IsVisible="{Binding ExportHasError}" Foreground="{DynamicResource ErrB}" Margin="16,8" TextWrapping="Wrap" />
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" Padding="0,6">
+            <ItemsControl ItemsSource="{Binding ExportPreviewLines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PreviewLine">
+                  <StackPanel Orientation="Horizontal" Spacing="12" Margin="10,0">
+                    <TextBlock Text="{Binding Number}" Width="28" TextAlignment="Right" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" />
+                    <TextBlock Text="{Binding Text}" Classes="mono" FontSize="11.5" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+
+      <!-- what is written -->
+      <StackPanel Grid.Column="2" Spacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Topology written" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,10" Spacing="6">
+              <ItemsControl ItemsSource="{Binding ExportSections}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:Row">
+                    <Border Padding="0,5" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding Key}" FontSize="12.5" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ItemsControl ItemsSource="{Binding ExportNotes}" Margin="0,4,0,0">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{Binding}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" Margin="0,2" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="File" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,10" Spacing="6">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Name" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding ExportName}" Classes="mono" FontSize="12" /></Grid>
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Size" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding ExportFileSize}" Classes="mono" FontSize="12" /></Grid>
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Length" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding ExportLineCount}" Classes="mono" FontSize="12" /></Grid>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
