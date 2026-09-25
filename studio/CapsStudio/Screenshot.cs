@@ -684,6 +684,12 @@ internal static class Screenshot
                 var t = w.ViewModel.Field.Assign();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
+            if (kv[0] == "coverage")   // coverage=1: the Field page's check of the library against the open structure, awaited
+            {
+                var tc = w.ViewModel.Field.CheckCoverage();
+                while (!tc.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             if (kv[0] == "fieldpick") w.ViewModel.Field.SelectAtom(int.Parse(kv[1]));
             if (kv[0] == "fieldmissing") w.ViewModel.Field.SelectedMissing = w.ViewModel.Field.Missing.ElementAtOrDefault(int.Parse(kv[1]));
             if (kv[0] == "fieldset")

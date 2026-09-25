@@ -2604,6 +2604,43 @@
                     </Grid>
                   </Border>
                   <StackPanel Margin="16,10" Spacing="8" IsEnabled="{Binding Field.NotWorking}">
+                    <!-- coverage: why this force field cannot describe the structure, and which ones can -->
+                    <Border CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource WarnB}" Background="{DynamicResource WarnBgB}" Padding="12,10"
+                            IsVisible="{Binding Field.ShowCoverage}">
+                      <StackPanel Spacing="8">
+                        <DockPanel>
+                          <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="40" Height="4" Margin="0,0,8,0" VerticalAlignment="Center" IsVisible="{Binding Field.CoverageBusy}" />
+                          <TextBlock Text="{Binding Field.CoverageNote}" TextWrapping="Wrap" FontSize="12.5" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Field.UntypedGroups}" IsVisible="{Binding Field.HasUntypedGroups}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:UntypedGroupRow">
+                              <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                <TextBlock Text="{Binding Title}" Classes="mono" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="These atoms have no type in the assigned force field" />
+                                <Button Grid.Column="1" Classes="small" Content="Select" Tag="{Binding}" Click="OnUntypedSelect" ToolTip.Tip="Select these atoms in the view" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding Field.BalanceNote}" IsVisible="{Binding Field.HasBalanceNote}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" FontSize="12" />
+                        <ItemsControl ItemsSource="{Binding Field.Alternatives}" IsVisible="{Binding Field.HasAlternatives}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CoverageRow">
+                              <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                <StackPanel Spacing="0" VerticalAlignment="Center">
+                                  <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
+                                  <TextBlock Text="{Binding Detail}" Classes="dim" FontSize="11.5" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="small" Content="Use" Tag="{Binding Id}" Click="OnUseForceField" ToolTip.Tip="Assign this force field instead" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                    <Button Classes="small" Content="Which force fields describe this structure?" Click="OnCheckCoverage" HorizontalAlignment="Left"
+                            IsVisible="{Binding !Field.ShowCoverage}" ToolTip.Tip="Try every force field of the library on the open structure" />
                     <ListBox ItemsSource="{Binding Field.Missing}" SelectedItem="{Binding Field.SelectedMissing}" MaxHeight="170" Background="Transparent"
                              IsVisible="{Binding Field.Incomplete}">
                       <ListBox.Styles>

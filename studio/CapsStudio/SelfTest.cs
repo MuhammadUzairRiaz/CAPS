@@ -116,6 +116,19 @@ internal static class SelfTest
                   $"Field OPLS-AA 2005 with automatic charges: {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
             vm.Field.Clear().GetAwaiter().GetResult();
         }
+        // Coverage: OPLS-AA 2024 by type number types polystyrene completely and neutrally; the library check lists the others
+        var opls24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+        if (opls24 >= 0)
+        {
+            vm.Field.FfIndex = opls24;
+            vm.Field.ChargeMode = 0;
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var complete24 = vm.Field.Assigned && vm.Field.Complete;
+            vm.Field.CheckCoverage().GetAwaiter().GetResult();
+            Check(complete24 && vm.Field.Alternatives.Any(a => a.Id == "pcff") && !vm.Field.HasUntypedGroups && !vm.Field.HasBalanceNote,
+                  $"Field OPLS-AA 2024 by number: complete {complete24} · {vm.Field.TypedText} · {vm.Field.MissingText} · alternatives {string.Join(", ", vm.Field.Alternatives.Select(a => a.Id))} · {vm.Field.CoverageNote}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+        }
         // UFF from the same library: every atom typed from its bonds (polystyrene: C_3, C_R, H_)
         var uffFf = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");
         if (uffFf >= 0)
