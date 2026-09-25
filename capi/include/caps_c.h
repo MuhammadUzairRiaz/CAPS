@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 22  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs) */
+#define CAPS_ABI_VERSION 22  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -596,6 +596,12 @@ void caps_set_ph(caps_doc* d, double ph);
    CPU: progress gets (stage, fraction) and returns non-zero to cancel. */
 typedef int32_t (*caps_stage_fn)(const char* stage, double fraction, void* user);
 int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
+/* χ(T) from pair contacts (v22; Fan, Olafson, Blanco & Hsu 1992): json {a, b (SMILES; * ends capped with H),
+   forcefield (a caps-forcefield JSON with typing rules; empty: built-in GAFF subset or UFF), samples, pack_trials,
+   temperatures [K], t (report temperature), seed}. Returns {ok, chi, chi_error (at t), fit_a, fit_b (χ = A + B/T),
+   temperatures[], chi_t[], chi_t_error[], kinds: [{name, z, z_error, e_min, e_mean, e_t[], hist_e[], hist_p[]}],
+   forcefield, a, b, notes}. Seconds for small molecules. */
+int32_t caps_chi_contacts(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* RIS reference (v21): C_n of polyethylene (Flory's three-state model) at temperature T for n = 1 … nmax into out;
    returns nmax. */
 int32_t caps_ris_cn(double temperature, int32_t nmax, double* out);

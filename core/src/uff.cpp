@@ -1,5 +1,6 @@
 // CAPS UFF: typing and parameters of the Universal Force Field for every element (see caps/uff.hpp).
 #include "caps/uff.hpp"
+#include "caps/charges.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -515,6 +516,24 @@ ForceField assign_uff(const System& s, const UffOptions& o) {
   }
   for (const auto& note : p.notes) ff.notes.push_back(note);
   return ff;
+}
+
+ForceField uff_with_charges(const System& s, std::string* method) {
+  try {
+    const ChargeReport cr = compute_charges(s, "gasteiger");
+    System c = s;
+    for (size_t i = 0; i < c.atoms.size(); ++i) c.atoms[i].charge = cr.q[i];
+    c.has_charges = true;
+    UffOptions o;
+    o.keep_charges = true;
+    if (method) *method = "Gasteiger–Marsili";
+    return assign_uff(c, o);
+  } catch (const std::exception&) {
+    UffOptions o;
+    o.qeq = true;
+    if (method) *method = "QEq";
+    return assign_uff(s, o);
+  }
 }
 
 bool uff_vdw(int z, double& x, double& d) {

@@ -617,6 +617,20 @@ internal static class Screenshot
             }
             if (kv[0] == "mdsteps") w.ViewModel.MdStepsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "ensemble") w.ViewModel.MdEnsemble = int.Parse(kv[1]);
+            if (kv[0] == "contacts")   // contacts=1 on the Solvent screen or the Blend phase page: χ by pair contacts run there
+            {
+                var vmc = w.ViewModel;
+                Task tk;
+                if (vmc.IsBlendPhase)
+                {
+                    var bn = vmc.BpUnitNames;
+                    vmc.BpUnitA = Math.Max(0, Array.FindIndex(bn, n => n.Contains("styrene", StringComparison.OrdinalIgnoreCase)));
+                    vmc.BpUnitB = Math.Max(0, Array.FindIndex(bn, n => n.Contains("natural rubber", StringComparison.OrdinalIgnoreCase) || n.Contains("cis-1,4-polyisoprene", StringComparison.OrdinalIgnoreCase)));
+                    tk = vmc.BpFitContacts();
+                }
+                else tk = vmc.SsComputeContacts();
+                while (!tk.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             if (kv[0] == "engine") w.ViewModel.MdGromacs = kv[1] == "gromacs";   // Dynamics › Export to other engines
             if (kv[0] == "scroll")   // scroll=end: every scroll viewer of the page to its end (cards at the bottom)
             {

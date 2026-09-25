@@ -7,6 +7,7 @@
 
 #include "caps/dynamics.hpp"
 #include "caps/properties.hpp"
+#include "caps/grow.hpp"
 #include "caps/uff.hpp"
 #include "caps/molecule.hpp"
 #include "caps/pack.hpp"
@@ -61,10 +62,32 @@ ChiMdResult chi_by_md(const ChiMdOptions& o) {
   const System guest = o.b_polymer ? System{} : solvent_molecule_from(o.solvent_smiles);
   const double m_guest = o.b_polymer ? 0 : total_mass(guest);
 
+  // One force-field family for all three cells: GAFF when it types both components (C and H, no C=C in the built-in
+  // subset), else UFF for every cell. Typing each cell on its own would mix families (a rubber in UFF, toluene in GAFF,
+  // their mixture in UFF) and the cohesive energies would not be comparable.
+  auto gaff_types = [](const System& s) {
+    if (!std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; })) return false;
+    try { assign_gaff(s); return true; } catch (const FieldError&) { return false; }
+  };
+  bool gaff = true;
+  {
+    GrowOptions g;
+    g.chains = 1;
+    g.density = 0.2;
+    g.seed = o.seed;
+    g.auto_scale = true;
+    gaff = gaff_types(grow_chains(o.polymer, g));
+    if (gaff) gaff = o.b_polymer ? gaff_types(grow_chains(o.polymer_b, g)) : gaff_types(guest);
+  }
+  // UFF with Gasteiger (or QEq) charges: the built-in UFF is neutral, and χ needs the electrostatics of polar molecules
+  auto field_of = [&](const System& s) { return std::make_shared<const ForceField>(gaff ? assign_gaff(s) : uff_with_charges(s)); };
+
   // relax with push-off, compress towards a liquid density, NPT; e = E/V averaged over the production rows
   auto measure = [&](System& s, ChiMdCell& cell, const std::string& stage) {
+    const auto field = field_of(s);
     tell(stage + ": relax", 0);
     RelaxOptions rl;
+    rl.field = field;
     rl.target_density = 0.85;
     rl.ftol = 2.0;
     rl.max_iterations = 2000;
@@ -72,6 +95,7 @@ ChiMdResult chi_by_md(const ChiMdOptions& o) {
     rl.energy.threads = o.threads;
     relax(s, rl);
     DynamicsOptions d;
+    d.field = field;
     d.dt = o.dt;
     d.temperature = o.temperature;
     d.thermostat = Thermostat::Bussi;
@@ -113,9 +137,8 @@ ChiMdResult chi_by_md(const ChiMdOptions& o) {
     tell(stage + ": cohesive energy", 0);
     t.topology = s;
     t.topology.unwrapped = false;   // the analysis makes every molecule whole (inserted ones may straddle the boundary)
-    const ForceField ff = default_forcefield(s);
     AnalyzeOptions ao;
-    ao.ff = &ff;
+    ao.ff = field.get();
     ao.energy.cutoff = o.cutoff;
     ao.energy.threads = o.threads;
     ao.threads = o.threads;
@@ -225,7 +248,8 @@ ChiMdResult chi_by_md(const ChiMdOptions& o) {
                   c->e_density / 1.4393e-4, c->e_error / 1.4393e-4);
     r.notes.push_back(b);
   }
-  r.notes.push_back("force field: the built-in typing (GAFF for C and H, UFF otherwise), the same for all three cells; no entropic part");
+  r.notes.push_back(std::string("force field: ") + (gaff ? "GAFF (the built-in C and H subset)" : "UFF with Gasteiger charges (QEq where Gasteiger has no parameters)") +
+                    " for all three cells (GAFF only when it types both components); no entropic part");
   if (r.chi_error > 0.5 * std::fabs(r.chi)) r.notes.push_back("the error is large next to χ: run longer (prod_ps) or with more molecules");
   return r;
 }

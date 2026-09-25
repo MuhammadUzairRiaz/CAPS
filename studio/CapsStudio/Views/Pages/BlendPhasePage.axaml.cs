@@ -43,4 +43,5 @@ public partial class BlendPhasePage : PageBase
         var f = await sp.SaveFilePickerAsync(new FilePickerSaveOptions { Title = "Export the phase diagram", SuggestedFileName = "blend_phase.csv", DefaultExtension = "csv" });
         if (f?.TryGetLocalPath() is { } path) { File.WriteAllText(path, Vm.BlendCsv()); Vm.Status = "Saved " + Path.GetFileName(path); }
     }
+    private async void OnFit(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is ViewModels.MainViewModel vm) await vm.BpFitContacts(); }
 }
