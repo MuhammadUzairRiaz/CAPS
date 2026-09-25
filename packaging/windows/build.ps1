@@ -23,7 +23,7 @@ dotnet publish "$Root\studio\CapsStudio\CapsStudio.csproj" -c Release -r win-x64
   -p:CapsNativeDir="$Native\capi" -p:Version=$Version -o $App | Out-Null
 Copy-Item "$Native\cli\caps.exe" $App
 New-Item -ItemType Directory -Force "$App\data" | Out-Null
-Copy-Item -Recurse "$Root\data\forcefields", "$Root\data\typing", "$Root\data\reference", "$Root\data\polymers", "$Root\data\crystals", "$Root\data\fragments", "$Root\data\python" "$App\data"
+Copy-Item -Recurse "$Root\data\forcefields", "$Root\data\typing", "$Root\data\reference", "$Root\data\polymers", "$Root\data\crystals", "$Root\data\fragments", "$Root\data\manual", "$Root\data\python" "$App\data"
 Copy-Item -Recurse "$Root\licenses" "$App\licenses"
 Copy-Item -Recurse "$Root\samples" $App
 Get-ChildItem $App -Filter *.pdb -File | Remove-Item   # debug symbols (the samples folder keeps its .pdb structures)

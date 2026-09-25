@@ -1,0 +1,871 @@
+{
+ "version": "CAPS 0.1.0",
+ "pages": [
+  {
+   "id": "velocity-verlet",
+   "group": "Integrators",
+   "title": "Velocity Verlet",
+   "summary": "Positions and velocities advance together with half-step kicks around a full drift. The scheme is time-reversible and symplectic, so the energy of an unthermostatted run fluctuates without drifting when the time step is small enough.",
+   "equation": "v(t+½Δt) = v(t) + ½Δt F(t)/m;  x(t+Δt) = x(t) + Δt v(t+½Δt);  v(t+Δt) = v(t+½Δt) + ½Δt F(t+Δt)/m",
+   "equation_note": "Swope et al. 1982",
+   "symbols": [
+    [
+     "Δt",
+     "time step",
+     "dt · 1 fs by default"
+    ],
+    [
+     "F",
+     "force from the force field",
+     "Field, else GAFF (C, H) or UFF"
+    ],
+    [
+     "m",
+     "atomic mass",
+     "from the element or the data file"
+    ]
+   ],
+   "when": "Every molecular-dynamics run in CAPS. All-atom models with hydrogens need Δt ≤ 1 fs: CAPS has no bond constraints (SHAKE, LINCS) yet.",
+   "cites": [
+    "swope1982"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.NveConservesEnergy · Dynamics.SameSeedSameTrajectory",
+   "deviation": "none",
+   "engines": [
+    "dynamics.nve",
+    "dynamics.nvt",
+    "dynamics.npt"
+   ]
+  },
+  {
+   "id": "csvr",
+   "group": "Thermostats",
+   "title": "Stochastic velocity rescaling (CSVR)",
+   "summary": "CSVR rescales all velocities by one factor each step. The factor is drawn so that the kinetic energy follows the stochastic equation below, which samples the canonical ensemble exactly while disturbing the dynamics as little as a Berendsen thermostat does. CAPS draws the new kinetic energy in one step from its exact distribution, as in the paper's appendix.",
+   "equation": "dK = (K̄ − K) dt/τ + 2 √(K K̄ / N_f) dW / √τ",
+   "equation_note": "Bussi et al. 2007, eq. 7",
+   "symbols": [
+    [
+     "K",
+     "instantaneous kinetic energy",
+     "—"
+    ],
+    [
+     "K̄",
+     "target kinetic energy, N_f k_B T / 2",
+     "T"
+    ],
+    [
+     "τ",
+     "thermostat relaxation time",
+     "τ_T · default 100 fs"
+    ],
+    [
+     "N_f",
+     "degrees of freedom: 3N − 3, held atoms excluded",
+     "computed"
+    ],
+    [
+     "dW",
+     "Wiener noise: one Gaussian and a χ² sum of N_f − 1 per step",
+     "mt19937-64 stream from the run's seed"
+    ]
+   ],
+   "when": "The default for NVT and NPT in CAPS. The energy it exchanges with the bath is tracked, so the conserved quantity reports integration error. Prefer Langevin (BAOAB) for far-from-equilibrium starts that need strong damping.",
+   "cites": [
+    "bussi2007"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.ThermostatsHoldTheTemperature · Dynamics.BussiConservedQuantity",
+   "deviation": "none",
+   "engines": [
+    "dynamics.nvt",
+    "dynamics.npt",
+    "equilibrate.larsen21",
+    "equilibrate.protocol"
+   ]
+  },
+  {
+   "id": "langevin",
+   "group": "Thermostats",
+   "title": "Langevin dynamics (BAOAB)",
+   "summary": "Each step splits into half kicks (B), half drifts (A) and an exact Ornstein–Uhlenbeck update of the velocities (O) in the order B A O A B. The splitting gives accurate configurational averages at larger friction than other Langevin schemes.",
+   "equation": "O:  v ← c₁ v + c₂ √(k_B T / m) ξ,   c₁ = exp(−γ Δt),   c₂ = √(1 − c₁²)",
+   "equation_note": "Leimkuhler & Matthews 2013",
+   "symbols": [
+    [
+     "γ",
+     "friction, 1/τ_T",
+     "τ_T · default 100 fs"
+    ],
+    [
+     "ξ",
+     "standard Gaussian per component",
+     "mt19937-64 stream from the run's seed"
+    ],
+    [
+     "T",
+     "target temperature",
+     "T (or a linear ramp)"
+    ]
+   ],
+   "when": "Robust thermalisation of stiff or strained starts. The friction slows diffusion and relaxation, so measure dynamics (MSD, relaxation times) with CSVR instead.",
+   "cites": [
+    "leimkuhler2013"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.ThermostatsHoldTheTemperature",
+   "deviation": "none",
+   "engines": [
+    "dynamics.nvt",
+    "dynamics.npt"
+   ]
+  },
+  {
+   "id": "berendsen-barostat",
+   "group": "Barostats",
+   "title": "Berendsen pressure coupling",
+   "summary": "The cell and all positions are scaled so that the pressure relaxes exponentially towards the target. It controls the density quickly but does not sample the isothermal–isobaric ensemble: volume fluctuations are too small.",
+   "equation": "μ = exp(−β Δt_p (P₀ − P) / (3 τ_P)),   x ← μ x,   h ← μ h",
+   "equation_note": "Berendsen et al. 1984, in CAPS's exponential form",
+   "symbols": [
+    [
+     "β",
+     "isothermal compressibility",
+     "4.5 × 10⁻⁵ atm⁻¹"
+    ],
+    [
+     "τ_P",
+     "pressure relaxation time",
+     "τ_P · default 1000 fs"
+    ],
+    [
+     "Δt_p",
+     "time between cell updates",
+     "10 steps"
+    ],
+    [
+     "P",
+     "virial pressure (2K + W)/(3V)",
+     "computed"
+    ]
+   ],
+   "when": "Early equilibration and the lateral axes of a tensile test (per-axis form). Use stochastic cell rescaling for production NPT.",
+   "cites": [
+    "berendsen1984"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.BarostatRespondsToTargetPressure",
+   "deviation": "exponential rather than linear scaling; the volume change is limited to 1 % per update; a per-axis variant scales each axis from P_kk",
+   "engines": [
+    "dynamics.npt"
+   ]
+  },
+  {
+   "id": "cell-rescaling",
+   "group": "Barostats",
+   "title": "Stochastic cell rescaling",
+   "summary": "A first-order barostat like Berendsen's, with a noise term that restores the correct volume fluctuations of the isothermal–isobaric ensemble. Velocities are scaled by the inverse factor so the kinetic energy stays consistent.",
+   "equation": "dε = −(β/τ_P)(P₀ − P) dt + √(2 k_B T β dt / (V τ_P)) dW,   μ = exp(dε/3),   v ← v/μ",
+   "equation_note": "Bernetti & Bussi 2020, isotropic",
+   "symbols": [
+    [
+     "ε",
+     "logarithm of the volume",
+     "—"
+    ],
+    [
+     "β",
+     "compressibility (sets the response, not the result)",
+     "4.5 × 10⁻⁵ atm⁻¹"
+    ],
+    [
+     "τ_P",
+     "relaxation time",
+     "τ_P · default 1000 fs"
+    ],
+    [
+     "dW",
+     "Gaussian noise",
+     "mt19937-64 stream from the run's seed"
+    ]
+   ],
+   "when": "The default barostat for NPT production and for the NPT stages of equilibration protocols.",
+   "cites": [
+    "bernetti2020"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.BarostatRespondsToTargetPressure",
+   "deviation": "the −k_B T/V term of the drift is left out (a fraction of an atmosphere for cells of thousands of atoms); isotropic only; dε limited to ±1 % per update",
+   "engines": [
+    "dynamics.npt",
+    "equilibrate.larsen21",
+    "equilibrate.protocol"
+   ]
+  },
+  {
+   "id": "dsf",
+   "group": "Electrostatics",
+   "title": "Damped shifted force (DSF)",
+   "summary": "A pairwise alternative to Ewald sums: the Coulomb interaction is damped by erfc and shifted so that both the energy and the force go to zero at the cut-off. It converges to Ewald results for condensed phases at modest cost.",
+   "equation": "E = q_i q_j [ erfc(αr)/r − erfc(αr_c)/r_c + (erfc(αr_c)/r_c² + (2α/√π) exp(−α²r_c²)/r_c)(r − r_c) ],  r < r_c",
+   "equation_note": "Fennell & Gezelter 2006",
+   "symbols": [
+    [
+     "α",
+     "damping parameter",
+     "0.2 Å⁻¹"
+    ],
+    [
+     "r_c",
+     "cut-off, shared with van der Waals",
+     "10 Å (set per run)"
+    ],
+    [
+     "erfc",
+     "complementary error function",
+     "Abramowitz–Stegun 7.1.26, as LAMMPS"
+    ]
+   ],
+   "when": "The default electrostatics in CAPS: cheap, no grid, fine for neutral bulk polymers. Use smooth PME for ionic systems, interfaces with net dipoles, or when comparing with Ewald-based codes.",
+   "cites": [
+    "fennell2006"
+   ],
+   "source": "core/src/field.cpp",
+   "tested": "Field.ForcesMatchFiniteDifferences · bench/ff/check_data_lammps.py (LAMMPS lj/cut/coul/dsf)",
+   "deviation": "bonded partners are treated as LAMMPS coul/dsf does (the damped sum includes them, the excluded part is removed)",
+   "engines": [
+    "relax.lbfgs",
+    "relax.cg",
+    "relax.sd",
+    "relax.fire",
+    "dynamics.nve",
+    "dynamics.nvt",
+    "dynamics.npt"
+   ]
+  },
+  {
+   "id": "spme",
+   "group": "Electrostatics",
+   "title": "Smooth particle-mesh Ewald (SPME)",
+   "summary": "The Ewald sum split into a short-ranged real-space part and a smooth reciprocal part evaluated on a grid: charges are spread with B-splines, transformed by FFT, multiplied by the influence function and gathered back as forces.",
+   "equation": "E_rec = (1/2πV) Σ_{m≠0} exp(−π²m²/β²)/m² · B(m) |F(Q)(m)|²,   erfc(β r_c) = ε_rel",
+   "equation_note": "Essmann et al. 1995",
+   "symbols": [
+    [
+     "β",
+     "Ewald coefficient",
+     "from erfc(β r_c) = 10⁻⁵, as GROMACS"
+    ],
+    [
+     "p",
+     "B-spline order",
+     "5"
+    ],
+    [
+     "h",
+     "largest grid spacing",
+     "1.0 Å"
+    ],
+    [
+     "Q",
+     "charge grid",
+     "—"
+    ]
+   ],
+   "when": "Charged or strongly polar systems, ionic crystals, interfaces, and whenever results must match Ewald-based codes. Periodic cells only; about 1.5 × the cost of DSF in MD.",
+   "cites": [
+    "essmann1995"
+   ],
+   "source": "core/fortran/caps_kspace.f90 · core/src/kspace.cpp",
+   "tested": "Kspace.PmeMatchesEwaldForForcesEnergyAndVirial · Kspace.MadelungConstantOfRockSalt · Kspace.FftMatchesTheDirectTransform · bench/ff/check_data_lammps.py --pme",
+   "deviation": "none",
+   "engines": [
+    "relax.lbfgs",
+    "dynamics.nvt",
+    "dynamics.npt"
+   ]
+  },
+  {
+   "id": "ewald",
+   "group": "Electrostatics",
+   "title": "Ewald summation (reference)",
+   "summary": "The plain Ewald sum over reciprocal-lattice vectors. CAPS keeps it as the reference the PME kernel is tested against; runs use PME.",
+   "equation": "E = E_real + E_rec + E_self,   E_self = −(β/√π) Σ q_i²",
+   "equation_note": "Ewald 1921",
+   "symbols": [
+    [
+     "β",
+     "Ewald coefficient",
+     "as PME"
+    ],
+    [
+     "k_max",
+     "reciprocal vectors",
+     "enough for 10⁻⁸ relative accuracy in tests"
+    ]
+   ],
+   "when": "Not offered for runs: its cost grows as N^{3/2}–N². It checks PME forces, energy and virial.",
+   "cites": [
+    "ewald1921"
+   ],
+   "source": "core/fortran/caps_kspace.f90",
+   "tested": "Kspace.PmeMatchesEwaldForForcesEnergyAndVirial",
+   "deviation": "reference only",
+   "engines": []
+  },
+  {
+   "id": "lbfgs",
+   "group": "Minimisers",
+   "title": "L-BFGS",
+   "summary": "A quasi-Newton minimiser that approximates the inverse Hessian from the last few steps (two-loop recursion). It is the fastest of CAPS's minimisers for smooth energies of thousands of atoms.",
+   "equation": "d = −H_k ∇E,  H_k from the last m pairs (s_i = x_{i+1} − x_i, y_i = ∇E_{i+1} − ∇E_i)",
+   "equation_note": "Liu & Nocedal 1989",
+   "symbols": [
+    [
+     "m",
+     "stored pairs",
+     "10"
+    ],
+    [
+     "ftol",
+     "stop when the largest atomic force is below",
+     "0.5 kcal/mol/Å by default"
+    ],
+    [
+     "etol",
+     "or the relative energy change is below",
+     "10⁻⁸"
+    ]
+   ],
+   "when": "The default minimiser. After growth with a contact scale below 1, run the capped push-off first (Relax does by default).",
+   "cites": [
+    "liu1989"
+   ],
+   "source": "core/src/relax.cpp",
+   "tested": "Relax.EveryMinimiserLowersEnergy · Relax.CompressesOverlappingCellToTarget",
+   "deviation": "none",
+   "engines": [
+    "relax.lbfgs"
+   ]
+  },
+  {
+   "id": "fire",
+   "group": "Minimisers",
+   "title": "FIRE",
+   "summary": "A damped dynamics minimiser: velocities are mixed towards the force direction and the time step grows while the power F·v stays positive; the motion stops when it turns uphill.",
+   "equation": "v ← (1 − α) v + α |v| F/|F|,  if F·v < 0: v = 0, Δt ← Δt f_dec, α = α_start",
+   "equation_note": "Bitzek et al. 2006",
+   "symbols": [
+    [
+     "α_start",
+     "mixing",
+     "0.1"
+    ],
+    [
+     "f_inc, f_dec",
+     "time-step growth and cut",
+     "1.1, 0.5"
+    ],
+    [
+     "N_min",
+     "steps before growth",
+     "5"
+    ]
+   ],
+   "when": "Rough starts with large forces, where line searches struggle.",
+   "cites": [
+    "bitzek2006"
+   ],
+   "source": "core/src/relax.cpp",
+   "tested": "Relax.EveryMinimiserLowersEnergy",
+   "deviation": "standard parameters of the paper",
+   "engines": [
+    "relax.fire"
+   ]
+  },
+  {
+   "id": "cg-sd",
+   "group": "Minimisers",
+   "title": "Conjugate gradients and steepest descent",
+   "summary": "Steepest descent follows the force; Polak–Ribière conjugate gradients mixes in the previous direction so successive steps do not undo each other.",
+   "equation": "d_{k+1} = F_{k+1} + β d_k,   β = max(0, F_{k+1}·(F_{k+1} − F_k) / F_k·F_k)",
+   "equation_note": "Polak & Ribière 1969",
+   "symbols": [
+    [
+     "β",
+     "Polak–Ribière coefficient, reset to 0 when negative",
+     "—"
+    ],
+    [
+     "ftol",
+     "force tolerance",
+     "0.5 kcal/mol/Å"
+    ]
+   ],
+   "when": "Comparison and teaching; L-BFGS is faster for the same tolerance.",
+   "cites": [
+    "polak1969"
+   ],
+   "source": "core/src/relax.cpp",
+   "tested": "Relax.EveryMinimiserLowersEnergy",
+   "deviation": "none",
+   "engines": [
+    "relax.cg",
+    "relax.sd"
+   ]
+  },
+  {
+   "id": "pushoff",
+   "group": "Minimisers",
+   "title": "Capped-force push-off",
+   "summary": "Overlapping atoms (from growth with lowered contact limits, or packing) make Lennard-Jones forces explode. The push-off caps them: inside the radius where the force would exceed the cap the potential becomes linear, and the cap is raised stage by stage while minimising.",
+   "equation": "F_LJ(r) → sign(F) · min(|F_LJ(r)|, F_cap),   F_cap = 5, 20, 100, 500 kcal/mol/Å",
+   "equation_note": "after Auhl et al. 2003",
+   "symbols": [
+    [
+     "F_cap",
+     "cap of each stage",
+     "5, 20, 100, 500 kcal/mol/Å"
+    ]
+   ],
+   "when": "Always before minimising a grown or packed cell; Relax does it by default.",
+   "cites": [
+    "auhl2003"
+   ],
+   "source": "core/src/relax.cpp · core/src/field.cpp (force_cap)",
+   "tested": "Equilibrate.PushoffTamesOverlaps",
+   "deviation": "capped-force minimisation stages rather than the capped-force dynamics of the paper",
+   "engines": [
+    "relax.lbfgs",
+    "relax.fire"
+   ]
+  },
+  {
+   "id": "trial-growth",
+   "group": "Growth",
+   "title": "Chain growth by trial placement",
+   "summary": "Chains grow unit by unit inside the periodic cell. Each step places the next backbone atom and its substituents from internal coordinates (NeRF), tries many torsions (trans and gauche with jitter, ring rotations) and keeps the roomiest: the trial whose worst distance to any atom already in the cell, minus its contact limit, is largest. A poor step backs up a few units; a chain that cannot continue restarts elsewhere.",
+   "equation": "keep argmax_trials  min_j ( |r − r_j| − ℓ(z, z_j) · s )",
+   "equation_note": "CAPS's own scheme",
+   "symbols": [
+    [
+     "ℓ",
+     "contact limits",
+     "C–C 3.0, C–H 2.45, H–H 2.0 Å"
+    ],
+    [
+     "s",
+     "contact scale",
+     "1, or lowered step by step when crowded (then push-off)"
+    ],
+    [
+     "trials",
+     "per growth step",
+     "120"
+    ],
+    [
+     "seed",
+     "random stream",
+     "mt19937-64 from the run's seed"
+    ]
+   ],
+   "when": "Building amorphous cells, films on surfaces and blends at a chosen density. Measure chain dimensions only after equilibration.",
+   "cites": [
+    "parsons2005",
+    "matsumoto1998"
+   ],
+   "source": "core/src/grow.cpp · core/src/polymer.cpp",
+   "tested": "Grow and polymer tests (tests/test_polymer.cpp)",
+   "deviation": "not configurational-bias Monte Carlo: trials are ranked by geometric room, not Boltzmann weights, so the grown chains are not a Rosenbluth-weighted ensemble",
+   "engines": [
+    "grow.trials",
+    "grow.blend",
+    "interface.build",
+    "nano.embed"
+   ]
+  },
+  {
+   "id": "overlap-penalty",
+   "group": "Packing",
+   "title": "Overlap-penalty packing",
+   "summary": "Molecules are rigid bodies (centre and rotation). A smooth penalty for atoms of different molecules closer than the tolerance, plus penalties for leaving their regions, is minimised with L-BFGS; the worst-placed molecules are moved between rounds.",
+   "equation": "f = Σ_{i<j, different molecules} max(0, d² − |x_i − x_j|²)² + w Σ_i g_region(x_i)²",
+   "equation_note": "Martínez et al. 2009 (the Packmol objective)",
+   "symbols": [
+    [
+     "d",
+     "tolerance",
+     "2.0 Å"
+    ],
+    [
+     "w",
+     "region weight",
+     "—"
+    ],
+    [
+     "rounds",
+     "optimisation rounds",
+     "60 × 400 L-BFGS iterations"
+    ]
+   ],
+   "when": "Solvents, fluids in pores, curatives inserted into a cell, mixtures from packmol input files.",
+   "cites": [
+    "martinez2009",
+    "liu1989"
+   ],
+   "source": "core/src/pack.cpp",
+   "tested": "Pack.PeriodicWaterBoxMeetsTolerance · Pack.RegionsAndFixedMolecules · Pack.SameSeedSamePacking",
+   "deviation": "none",
+   "engines": [
+    "pack.lbfgs",
+    "pack.insert",
+    "solvate.pack",
+    "nano.pore"
+   ]
+  },
+  {
+   "id": "uff",
+   "group": "Force fields",
+   "title": "Universal force field (UFF)",
+   "summary": "Every element from H to Lr, typed from its bonds, hybridisation and oxidation state. Used for clean-up and for any structure the other force fields cannot type (metals, silicon, phosphorus, halogens).",
+   "equation": "E = Σ k(r − r₀)² + Σ K[C₀ + C₁ cos θ + C₂ cos 2θ] + Σ ½V[1 − cos(nφ₀) cos(nφ)] + Σ D[(x/r)¹² − 2(x/r)⁶] + inversions",
+   "equation_note": "Rappé et al. 1992",
+   "symbols": [
+    [
+     "r₀",
+     "natural bond length r_i + r_j + r_BO − r_EN",
+     "from the atom types"
+    ],
+    [
+     "k",
+     "bond constant 332.06 Z_i Z_j / r₀³",
+     "from the atom types"
+    ],
+    [
+     "D, x",
+     "van der Waals well and distance",
+     "geometric means"
+    ]
+   ],
+   "when": "Geometry clean-up of any molecule; runs on structures outside GAFF's scope. UFF has no charges of its own: use QEq when electrostatics matter.",
+   "cites": [
+    "rappe1992"
+   ],
+   "source": "core/src/uff.cpp · core/src/uff_params.inc",
+   "tested": "Uff.TableCoversEveryElementToLawrencium · Uff.ForcesMatchFiniteDifferences · Uff.CleanUpGivesTextbookGeometry",
+   "deviation": "functional forms and special cases follow RDKit's UFF, whose parameter table CAPS carries; LAMMPS export checked term by term",
+   "engines": [
+    "field.assign",
+    "chem.build",
+    "edit.builder"
+   ]
+  },
+  {
+   "id": "qeq",
+   "group": "Force fields",
+   "title": "Charge equilibration (QEq)",
+   "summary": "Charges that equalise the electronegativity of every atom at fixed total charge, for any element. The energy below is minimised; the linear system is solved by conjugate gradients.",
+   "equation": "E(q) = Σ χ_i q_i + ½ Σ J_i q_i² + Σ_{i<j} q_i q_j K(r_ij),   K = 14.40 / √(r² + a_ij²) eV,   a_ij = 7.20 (1/J_i + 1/J_j) Å",
+   "equation_note": "Rappé & Goddard 1991, with the Ohno–Klopman kernel",
+   "symbols": [
+    [
+     "χ, J",
+     "electronegativity and idempotential",
+     "UFF / QEq table"
+    ],
+    [
+     "K",
+     "shielded Coulomb kernel",
+     "Ohno–Klopman, tapered to zero at the cut-off"
+    ],
+    [
+     "r_c",
+     "cut-off",
+     "10 Å (half the cell at most)"
+    ]
+   ],
+   "when": "Charges for structures with metals, silicon or other elements without force-field charges, such as fillers and coupling agents. Like the original QEq it gives ionic crystals large charges (quartz O ≈ −1.6 e).",
+   "cites": [
+    "rappe1991"
+   ],
+   "source": "core/src/qeq.cpp",
+   "tested": "QEq.MoleculesAreNeutralWithSensibleSigns · QEq.PeriodicCrystals",
+   "deviation": "the Ohno–Klopman kernel with a 7th-order taper replaces the paper's Slater-orbital Coulomb integrals; J of hydrogen does not depend on its charge",
+   "engines": [
+    "field.assign"
+   ]
+  },
+  {
+   "id": "gaff",
+   "group": "Force fields",
+   "title": "General AMBER force field (GAFF)",
+   "summary": "Atom types for organic molecules assigned by rules in antechamber's order (rings, aromaticity, conjugation), with AMBER functional forms: harmonic bonds and angles, cosine torsions, 12–6 Lennard-Jones, 1–4 interactions scaled by ½ (LJ) and 1/1.2 (Coulomb).",
+   "equation": "E = Σ k_b(r − r₀)² + Σ k_θ(θ − θ₀)² + Σ (V_n/2)[1 + cos(nφ − γ)] + Σ 4ε[(σ/r)¹² − (σ/r)⁶] + Σ q_i q_j / r",
+   "equation_note": "Wang et al. 2004",
+   "symbols": [
+    [
+     "types",
+     "c3, ca, hc, ha … assigned by rules",
+     "data/typing/gaff*"
+    ],
+    [
+     "1–4 scaling",
+     "LJ and Coulomb",
+     "½ and 1/1.2"
+    ]
+   ],
+   "when": "Organic polymers and additives. CAPS's built-in default for pure hydrocarbons; the library also holds GAFF2 and other force fields converted from moltemplate and DL_FIELD.",
+   "cites": [
+    "wang2004"
+   ],
+   "source": "core/src/typing.cpp · core/src/ffdef.cpp · data/forcefields",
+   "tested": "Field.TypesPolystyrene · tests/test_typing.cpp · bench/ff/check_data_lammps.py",
+   "deviation": "none",
+   "engines": [
+    "field.assign"
+   ]
+  },
+  {
+   "id": "gasteiger",
+   "group": "Force fields",
+   "title": "Gasteiger–Marsili charges (PEOE)",
+   "summary": "Partial equalisation of orbital electronegativity: charge flows along each bond from the less to the more electronegative atom, in six iterations damped by half each time, so it stays local.",
+   "equation": "χ_i = a_i + b_i q_i + c_i q_i²,   Δq_i = Σ_j (χ_j − χ_i)/χ⁺ · ½ᵏ",
+   "equation_note": "Gasteiger & Marsili 1980",
+   "symbols": [
+    [
+     "a, b, c",
+     "per element and hybridisation",
+     "H, C, N, O (sp³, sp², sp), F, Cl, Br, I, sp³ S"
+    ],
+    [
+     "χ⁺",
+     "χ of the cation (H: 20.02)",
+     "—"
+    ],
+    [
+     "k",
+     "iteration",
+     "1 … 6"
+    ]
+   ],
+   "when": "Quick charges for organic molecules. Other elements are refused; use QEq for them.",
+   "cites": [
+    "gasteiger1980"
+   ],
+   "source": "core/src/grow.cpp (gasteiger_ch)",
+   "tested": "Gasteiger.HeteroatomsGetTheirOwnParameters",
+   "deviation": "parameters of Table 1 plus the sp³ sulfur extension",
+   "engines": [
+    "field.assign"
+   ]
+  },
+  {
+   "id": "larsen21",
+   "group": "Protocols",
+   "title": "21-step compression and decompression",
+   "summary": "Alternating NVT heating, NVT cooling and NPT compression up to a maximum pressure, then decompression stages, then a final NPT stage at the target conditions. It relaxes the density of glassy polymer cells far faster than plain NPT at room temperature.",
+   "equation": "21 stages: heat T_max / cool T_final / compress 0.02, 0.6, 1.0 P_max …, decompress 0.5, 0.1, 0.01 P_max, final NPT at P_final",
+   "equation_note": "Larsen et al. 2011, Table 1",
+   "symbols": [
+    [
+     "T_max",
+     "heating temperature",
+     "600 K (choose Tg + 200–300 K)"
+    ],
+    [
+     "P_max",
+     "largest pressure",
+     "5 × 10⁴ bar (49 346 atm)"
+    ],
+    [
+     "time scale",
+     "multiplies every duration",
+     "1 (shortened runs are labelled)"
+    ]
+   ],
+   "when": "Glassy polymer cells before property calculations. Rubbers far above Tg equilibrate with plain NPT.",
+   "cites": [
+    "larsen2011"
+   ],
+   "source": "core/src/equilibrate.cpp",
+   "tested": "Protocol.Larsen21MatchesThePublishedSchedule · Equilibrate.RunsStagesContinuously",
+   "deviation": "none",
+   "engines": [
+    "equilibrate.larsen21"
+   ]
+  },
+  {
+   "id": "structure-factor",
+   "group": "Analysis",
+   "title": "Structure factors: S(q), X-ray and neutron",
+   "summary": "At low q the exact sum over every reciprocal-lattice vector the cell allows; above the switch-over, the Fourier transform of the partial pair distributions with a Lorch window against truncation ripples. X-ray and neutron patterns weight the partials by form factors or scattering lengths (Faber–Ziman).",
+   "equation": "S(q) = 1 + (|Σ_j w_j e^{i q·r_j}|²/N − ⟨w²⟩) / ⟨w⟩²;   S_ab(q) − 1 = 4πρ ∫ r² (g_ab − 1) sin(qr)/(qr) L(r) dr",
+   "equation_note": "Faber & Ziman 1965; Lorch 1969",
+   "symbols": [
+    [
+     "w",
+     "weight: 1, Cromer–Mann f(q) or coherent b",
+     "S(q), X-ray, neutron"
+    ],
+    [
+     "q_direct",
+     "switch-over",
+     "4 Å⁻¹"
+    ],
+    [
+     "L(r)",
+     "Lorch window sin(πr/r_max)/(πr/r_max)",
+     "—"
+    ],
+    [
+     "b",
+     "scattering lengths",
+     "NIST (Sears 1992); ²H 6.671 fm for deuteration"
+    ]
+   ],
+   "when": "Comparing a cell with diffraction data, and neutron contrast with deuterated backbones or rings.",
+   "cites": [
+    "faber1965",
+    "lorch1969",
+    "sears1992",
+    "prince2004"
+   ],
+   "source": "core/src/properties.cpp",
+   "tested": "Scattering.DeuterationPatternsSplitTheHydrogens · bench/analyze/check_analyze.py (MDAnalysis)",
+   "deviation": "no q below the cell's first shell 2π/L; no instrument resolution or polarisation factors",
+   "engines": []
+  },
+  {
+   "id": "free-volume",
+   "group": "Analysis",
+   "title": "Free volume and pore sizes",
+   "summary": "Probe insertion on a grid: a point is free when a probe of the given radius centred there overlaps no van der Waals sphere. Bondi's fractional free volume uses the occupied van der Waals volume; each free point's pore size is the largest atom-free sphere containing it.",
+   "equation": "FFV = 1 − 1.3 V_w / V;   PSD: d(x) = max { 2R : x ∈ sphere(c, R) free of atoms }",
+   "equation_note": "Bondi 1964; Gelb & Gubbins 1999",
+   "symbols": [
+    [
+     "V_w",
+     "van der Waals volume",
+     "Bondi radii"
+    ],
+    [
+     "probe",
+     "probe radius",
+     "1.4 Å (0 for the point probe)"
+    ],
+    [
+     "grid",
+     "spacing",
+     "0.4–0.5 Å"
+    ]
+   ],
+   "when": "Gas permeation, voids in glassy polymers and filled rubbers, pores of frameworks.",
+   "cites": [
+    "bondi1964",
+    "gelb1999"
+   ],
+   "source": "core/src/properties.cpp · core/src/voids.cpp",
+   "tested": "Voids.OneAtomLeavesTheFarCornerEmpty · bench/analyze/check_analyze.py",
+   "deviation": "the 1.3 packing factor of Bondi is used as published",
+   "engines": []
+  },
+  {
+   "id": "msd-diffusion",
+   "group": "Analysis",
+   "title": "Mean-square displacement and diffusion",
+   "summary": "Displacements of atoms and of molecule centres over every time origin, with the drift of the whole system removed. The diffusion coefficient comes from the linear part of the molecule-centre MSD.",
+   "equation": "D = lim_{t→∞} ⟨|r(t) − r(0)|²⟩ / (6t),   fitted over 20–50 % of the run",
+   "equation_note": "Einstein 1905",
+   "symbols": [
+    [
+     "fit window",
+     "part of the run fitted",
+     "0.2–0.5 (fractions)"
+    ],
+    [
+     "origins",
+     "time origins",
+     "every stored frame"
+    ]
+   ],
+   "when": "Small molecules in polymers (curatives, solvents, gases). Check the log–log slope reaches 1 before trusting D.",
+   "cites": [
+    "einstein1905"
+   ],
+   "source": "core/src/properties.cpp",
+   "tested": "bench/analyze/check_analyze.py (MDAnalysis)",
+   "deviation": "no finite-size (Yeh–Hummer) correction",
+   "engines": []
+  },
+  {
+   "id": "elastic-static",
+   "group": "Analysis",
+   "title": "Elastic constants by static strain",
+   "summary": "The minimised cell is strained by ±ε along each of the six components, re-minimised with the pair list frozen, and the stress read from the virial; C_ij are the central differences. Isotropic moduli are Hill averages of the Voigt and Reuss bounds.",
+   "equation": "C_ij = −(σ_i(+ε_j) − σ_i(−ε_j)) / (2ε),   K_H, G_H = ½(Voigt + Reuss)",
+   "equation_note": "Theodorou & Suter 1986",
+   "symbols": [
+    [
+     "ε",
+     "strain per component",
+     "10⁻⁴ by default"
+    ],
+    [
+     "σ",
+     "stress from the virial tensor",
+     "—"
+    ],
+    [
+     "configurations",
+     "relaxed structures averaged",
+     "1 or more"
+    ]
+   ],
+   "when": "Glassy polymers and crystals at 0 K. Rubbers above Tg need the fluctuation method or tensile runs.",
+   "cites": [
+    "theodorou1986"
+   ],
+   "source": "core/src/mechanics.cpp",
+   "tested": "Mechanics.StaticConstantsOfBravaisLattice · bench/mechanics/check_born_lammps.py",
+   "deviation": "none",
+   "engines": []
+  },
+  {
+   "id": "elastic-fluct",
+   "group": "Analysis",
+   "title": "Elastic constants from stress fluctuations",
+   "summary": "At finite temperature the elastic constants are the Born term (second strain derivatives of the energy) minus the stress fluctuations, plus the kinetic term, averaged over an NVT run.",
+   "equation": "C_ijkl = ⟨C^B_ijkl⟩ − (V/k_BT)(⟨σ_ij σ_kl⟩ − ⟨σ_ij⟩⟨σ_kl⟩) + (N k_B T/V)(δ_ik δ_jl + δ_il δ_jk)",
+   "equation_note": "Lutsko 1989; Clavier et al. 2017",
+   "symbols": [
+    [
+     "C^B",
+     "Born matrix",
+     "analytic"
+    ],
+    [
+     "σ",
+     "instantaneous stress",
+     "sampled every step"
+    ],
+    [
+     "run",
+     "NVT length",
+     "100 ps by default"
+    ]
+   ],
+   "when": "Finite-temperature constants. For bonded polymers the fluctuation term converges slowly: errors stay at the GPa level over 100 ps, which CAPS reports.",
+   "cites": [
+    "lutsko1989",
+    "clavier2017"
+   ],
+   "source": "core/src/mechanics.cpp",
+   "tested": "Mechanics.FluctuationConstantsOfColdCrystal · Mechanics.BornMatrixMatchesLatticeSum",
+   "deviation": "none",
+   "engines": []
+  }
+ ]
+}

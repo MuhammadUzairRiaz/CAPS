@@ -29,7 +29,7 @@ package() {
   find "$pkgdir/opt/caps" -maxdepth 1 -name "*.pdb" -delete
   install -Dm755 build/cli/caps "$pkgdir/opt/caps/caps"
   install -d "$pkgdir/opt/caps/data"
-  cp -R data/forcefields data/typing data/reference data/polymers data/crystals data/fragments data/python "$pkgdir/opt/caps/data/"
+  cp -R data/forcefields data/typing data/reference data/polymers data/crystals data/fragments data/manual data/python "$pkgdir/opt/caps/data/"
   install -Dm644 licenses/RDKit-UFF-parameters.txt "$pkgdir/usr/share/licenses/$pkgname/RDKit-UFF-parameters.txt"
   cp -R samples "$pkgdir/opt/caps/"
   ln -s /opt/caps/CapsStudio "$pkgdir/usr/bin/caps-studio"
