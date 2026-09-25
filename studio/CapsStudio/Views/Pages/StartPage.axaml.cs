@@ -33,6 +33,7 @@ public partial class StartPage : PageBase
         if ((s as Control)?.Tag is StartBuilder b && b.Available)
         {
             if (b.Module == 9) Vm.OpenBuilder();
+            else if (b.Module == 14) Vm.OpenSurface();
             else Vm.SetModule(b.Module);
         }
     }

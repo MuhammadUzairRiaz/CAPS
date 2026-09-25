@@ -1,5 +1,6 @@
 // CAPS Grow: all-atom polymer chains built from internal coordinates and grown inside a periodic cell.
 #pragma once
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <stdexcept>
@@ -33,6 +34,11 @@ struct GrowOptions {
   // Called once per growth round with (chains finished, chains, restarts so far); return false to cancel.
   std::function<bool(int, int, int)> progress;
   double contact_scale = 1.0;            // scales the contact limits (C–C 3.0, C–H 2.45, H–H 2.0 Å); < 1 needs Relax afterwards
+  // Films and interfaces (the general polymer builder, grow_chains): an orthorhombic cell, a height range for the
+  // chains, and fixed atoms they must avoid.
+  std::array<double, 3> cell{0, 0, 0};   // edges x, y, z (Å), used when all three are > 0 (box and density are then ignored)
+  double z_lo = 0, z_hi = 0;             // when z_hi > z_lo, every chain atom stays between these heights
+  const System* substrate = nullptr;     // fixed atoms (a slab) the chains avoid; they come first in the result
 };
 
 struct GrowReport {

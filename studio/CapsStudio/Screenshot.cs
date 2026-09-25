@@ -54,6 +54,19 @@ internal static class Screenshot
                 var t = w.ViewModel.BuildPolyPreview();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
+            if (kv[0] == "surface")   // surface=<crystal id>: the Surface builder with that crystal's slab previewed
+            {
+                w.ViewModel.OpenSurface();
+                var ix = w.ViewModel.Crystals.ToList().FindIndex(c => c.Id == kv[1]);
+                if (ix >= 0) w.ViewModel.SurfCrystal = ix;
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine($"surface: termination {w.ViewModel.SurfTermination} of {w.ViewModel.SurfTerminations.Count}");
+            }
+            if (kv[0] == "surfbuild")   // grows the film (or builds the slab) and opens it in the Studio
+            {
+                var t = w.ViewModel.BuildSurface();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             if (kv[0] == "polygrow")
             {
                 w.ViewModel.SendPolymerToGrow();

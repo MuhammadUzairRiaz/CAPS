@@ -68,6 +68,22 @@ double chain_mass(const ChainSpec& spec, const std::vector<int>& sequence);
 // Uses o.seed, o.trials, o.accept, o.contact_scale, o.max_restarts, o.progress; o.polymer and o.dp are ignored.
 // Positions are unwrapped; atoms carry element names, molecule ids per chain and no charges (assign a force field in
 // Field). Throws GrowError when a chain cannot be placed.
+// With o.cell, o.z_lo / o.z_hi and o.substrate the chains grow as a film on fixed atoms (see build_interface).
 System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* report = nullptr);
+
+// A polymer film grown onto a slab (crystal surface from cleave, rectangular surface cell): the slab at the bottom,
+// the film above it from gap to gap + film, then vacuum, or with vacuum 0 the film meets the slab's periodic image
+// (a periodic interface, film sandwiched between surfaces). The chain count comes from the film density unless
+// chains > 0. The slab is molecule 1 and stays where it was put; bonds and orders are kept.
+struct InterfaceOptions {
+  double film = 30.0;        // film thickness, Å
+  double density = 0.9;      // target film density, g/cm³
+  int chains = 0;            // > 0: exactly this many chains
+  double gap = 1.0;          // Å between the slab's top atoms and the film's lower bound (contact limits keep the rest)
+  double vacuum = 0.0;       // Å above the film; 0 = periodic interface
+  bool auto_scale = true;    // lower the contact scale (0.85 … 0.6) when the film is too crowded at the first
+  GrowOptions grow;          // seed, trials, contact scale, progress …
+};
+System build_interface(const System& slab, const ChainSpec& spec, const InterfaceOptions& o, GrowReport* report = nullptr);
 
 }  // namespace caps
