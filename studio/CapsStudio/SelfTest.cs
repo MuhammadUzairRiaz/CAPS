@@ -819,6 +819,17 @@ internal static class SelfTest
             Check(ok, $"coarse-grained: 100 beads, 95 bonds, deck written · {rep}");
         }
 
+        // Reaction template editor: the epoxy–amine templates pass their checks; a broken edit is flagged
+        {
+            vm.OpenTemplateEditor("epoxy_amine_primary");
+            var pass = vm.TemplateChecksPass && vm.TemplateFormed.Count == 2 && vm.TemplateBroken.Count == 2;
+            vm.TestTemplate();
+            vm.TemplateText = vm.TemplateText + "\nbreak 4 1\n";
+            var flagged = !vm.TemplateChecksPass && vm.TemplateHasError;
+            Check(vm.IsTemplate && pass && flagged && vm.TemplateTestText.Contains("reactive sites"), $"template: pass {pass} · edit flagged {flagged} · {vm.TemplateTestText}");
+            vm.SetModule(8);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

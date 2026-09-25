@@ -230,6 +230,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_voids_pdb")] public static extern int VoidsPdb(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
     [DllImport(Lib, EntryPoint = "caps_citation_text")] public static extern int CitationText([MarshalAs(UnmanagedType.LPUTF8Str)] string key, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_methods_text")] public static extern int MethodsText([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, [MarshalAs(UnmanagedType.LPUTF8Str)] string? replicas, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_template_view")] public static extern int TemplateView([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_template_test")] public static extern int TemplateTest(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -389,6 +391,7 @@ public sealed class CapsDocument : IDisposable
     public static string ProvenanceFile(string path) => Sized((b, c) => Native.ProvenanceFile(path, b, c));
     public static string ProvenanceCompare(string a, string b) => Sized((x, c) => Native.ProvenanceCompare(a, b, x, c));
     public static string ProvenanceBibtex(string manifest) => Sized((b, c) => Native.ProvenanceBibtex(manifest, b, c));
+    public static string TemplateView(string text) => Sized((b, c) => Native.TemplateView(text, b, c));
     public static string CitationText(string key) => Sized((b, c) => Native.CitationText(key, b, c));
     public static string MethodsText(string manifest, string? replicas) => Sized((b, c) => Native.MethodsText(manifest, replicas, b, c));
     /// <summary>The PNG's text chunks (a provenance manifest among them) as a JSON object.</summary>
@@ -973,6 +976,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>The largest empty spheres of the frame and the accessible shares (caps_voids), JSON; drawn when shown.</summary>
     public string Voids(string options) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Voids(_h, options, b, c)); } }
     public void VoidsPdb(string path) { lock (_lock) { Alive(); Check(Native.VoidsPdb(_h, path)); } }
+    /// <summary>Each template's reactive sites and matches within capture on the current frame (caps_template_test).</summary>
+    public string TemplateTest(string text) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.TemplateTest(_h, text, b, c)); } }
     /// <summary>The steps that produced this structure (caps-manifest/1.0).</summary>
     public string Provenance() { lock (_lock) { Alive(); return Sized((b, c) => Native.Provenance(_h, b, c)); } }
     public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }

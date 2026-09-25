@@ -363,6 +363,12 @@ internal static class Screenshot
                 w.ViewModel.OpenCg();
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "template")   // template=NAME: the reaction template editor
+            {
+                w.ViewModel.OpenTemplateEditor(kv[1]);
+                w.ViewModel.TestTemplate();
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();
