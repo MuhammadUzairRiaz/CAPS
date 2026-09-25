@@ -51,6 +51,24 @@ public sealed class PipelineRow : INotifyPropertyChanged
     public string Summary { get => _summary; set { _summary = value; Raise(nameof(Summary)); } }
     public string Level { get => _level; set { _level = value; Raise(nameof(Level)); Raise(nameof(SummaryBrush)); } }
     public IBrush SummaryBrush => Tokens.Brush(_level switch { "error" => "ErrB", "warning" => "WarnB", _ => "DimB" });
+
+    // groups (design/boards/PipelineGroups): a "group" parameter the core ignores; consecutive steps of one group
+    // show under one header that turns them all on or off and folds them away
+    public string Group => Params["group"] is JsonValue v && v.TryGetValue<string>(out var g) ? g : "";
+    public bool HasGroup => Group.Length > 0;
+    private bool _header, _visible = true, _groupOn = true, _collapsed;
+    private int _groupCount;
+    public bool GroupHeader { get => _header; set { _header = value; Raise(nameof(GroupHeader)); } }
+    public int GroupCount { get => _groupCount; set { _groupCount = value; Raise(nameof(GroupCount)); Raise(nameof(GroupLabel)); } }
+    public string GroupLabel => $"{GroupCount} step{(GroupCount == 1 ? "" : "s")}";
+    public bool RowVisible { get => _visible; set { _visible = value; Raise(nameof(RowVisible)); } }
+    public bool Collapsed { get => _collapsed; set { _collapsed = value; Raise(nameof(Collapsed)); Raise(nameof(GroupChevron)); } }
+    public string GroupChevron => _collapsed ? "chevr" : "chev";
+    public Action<PipelineRow, bool>? GroupToggled;
+    public Action<PipelineRow>? GroupFolded;
+    public bool GroupOn { get => _groupOn; set { if (_groupOn == value) return; _groupOn = value; Raise(nameof(GroupOn)); GroupToggled?.Invoke(this, value); } }
+    public void SetGroupOn(bool on) { _groupOn = on; Raise(nameof(GroupOn)); }
+    public void RaiseGroup() { Raise(nameof(Group)); Raise(nameof(HasGroup)); }
 }
 
 public sealed record StepKind(string Type, string Title, string About, string Group, string Icon);
@@ -141,6 +159,7 @@ public sealed partial class MainViewModel
             Raise(nameof(PipeStepTitle));
             Raise(nameof(PipeStepNumber));
             BuildStepFields();
+            AddGroupField();
             ShowTableOf(_pipeSel?.Type);
         }
     }
@@ -259,7 +278,8 @@ public sealed partial class MainViewModel
         var kind = StepLibrary.FirstOrDefault(k => k.Type == type);
         if (kind == null) return;
         var row = new PipelineRow { Type = type, Title = kind.Title, Icon = kind.Icon, Params = DefaultParams(type) };
-        row.Toggled = ApplyPipeline;
+        if (_pipeSel?.Group is { Length: > 0 } g) row.Params["group"] = g;   // a new step joins the selected step's group
+        WireRow(row);
         // inserted above the selected step, so it runs after it (the list runs bottom to top)
         var at = _pipeSel != null ? PipelineRows.IndexOf(_pipeSel) : 0;
         PipelineRows.Insert(Math.Max(0, at), row);
@@ -286,6 +306,46 @@ public sealed partial class MainViewModel
         PipelineRows.Move(i, j);
         Raise(nameof(PipeStepNumber));
         ApplyPipeline();
+    }
+
+    private readonly HashSet<string> _foldedGroups = new();
+
+    private void WireRow(PipelineRow row)
+    {
+        row.Toggled = ApplyPipeline;
+        row.GroupToggled = (r, on) =>
+        {
+            foreach (var x in PipelineRows.Where(x => x.Group == r.Group)) x.Enabled = on;
+            ApplyPipeline();
+        };
+        row.GroupFolded = r =>
+        {
+            if (!_foldedGroups.Remove(r.Group)) _foldedGroups.Add(r.Group);
+            RefreshGroups();
+        };
+    }
+
+    /// <summary>Headers on the first step of each run of one group, and folded groups hidden behind their header.</summary>
+    private void RefreshGroups()
+    {
+        string? prev = null;
+        for (int k = 0; k < PipelineRows.Count; ++k)
+        {
+            var r = PipelineRows[k];
+            r.RaiseGroup();
+            var g = r.Group;
+            var first = g.Length > 0 && g != prev;
+            r.GroupHeader = first;
+            if (first)
+            {
+                var run = PipelineRows.Skip(k).TakeWhile(x => x.Group == g).ToList();
+                r.GroupCount = run.Count;
+                r.SetGroupOn(run.Any(x => x.Enabled));
+                r.Collapsed = _foldedGroups.Contains(g);
+            }
+            r.RowVisible = g.Length == 0 || !_foldedGroups.Contains(g);
+            prev = g;
+        }
     }
 
     public void ClearPipeline()
@@ -324,7 +384,7 @@ public sealed partial class MainViewModel
                 prm.Remove("enabled");
                 var row = new PipelineRow { Type = type, Title = kind?.Title ?? type, Icon = kind?.Icon ?? "sliders", Params = prm };
                 row.Enabled = enabled;
-                row.Toggled = ApplyPipeline;
+                WireRow(row);
                 PipelineRows.Add(row);
             }
             PipeSelected = PipelineRows.FirstOrDefault();
@@ -435,6 +495,15 @@ public sealed partial class MainViewModel
         }
     }
 
+    private void AddGroupField()
+    {
+        if (_pipeSel == null) return;
+        var f = new StepField { Key = "group", Label = "Group (steps with the same name fold together)", Kind = "text", Hint = "e.g. Prepare · Structure · Look",
+                                Text = _pipeSel.Group };
+        f.Changed = () => WriteField(f);
+        StepFields.Add(f);
+    }
+
     private string[] PipeProperties()
     {
         var list = new List<string> { "Molecule", "Type", "Element", "Charge", "Mass", "Position.X", "Position.Y", "Position.Z", "DistanceToCOM", "Identifier", "Selection",
@@ -462,6 +531,7 @@ public sealed partial class MainViewModel
                 p[f.Key] = new JsonArray(parts.Select(x => (JsonNode)x).ToArray());
                 break;
             case "choice" when f.Key == "axis": p[f.Key] = int.Parse(f.Text, CultureInfo.InvariantCulture); break;
+            case "text" when f.Key == "group" && f.Text.Trim().Length == 0: p.Remove("group"); break;
             default: p[f.Key] = f.Text; break;
         }
         ApplyPipeline();
@@ -490,6 +560,7 @@ public sealed partial class MainViewModel
         }
         catch (Exception e) { PipeError = e.Message; }
         RefreshPipeline();
+        RefreshGroups();
         RenderRequested?.Invoke();
     }
 
