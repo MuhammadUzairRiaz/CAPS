@@ -109,4 +109,9 @@ public partial class SettingsPage : PageBase
         });
         if (f.Count > 0 && f[0].TryGetLocalPath() is { } p) Vm.ImportSettings(p);
     }
+
+    private void OnAddHost(object? s, RoutedEventArgs e) => Vm.AddHost();
+    private void OnRemoveHost(object? s, RoutedEventArgs e) => Vm.RemoveHost();
+    private async void OnTestHost(object? s, RoutedEventArgs e) => await Vm.TestHost();
+    private void OnResetTemplate(object? s, RoutedEventArgs e) => Vm.ResetJobTemplate();
 }
