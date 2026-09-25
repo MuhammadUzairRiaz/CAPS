@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <memory>
 #include <cstdio>
 #include <random>
 
@@ -73,13 +74,25 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.deform_axis >= 0 && (o.deform_axis > 2 || !s.cell.valid())) throw std::invalid_argument("deformation needs a periodic cell and an axis 0, 1 or 2");
   if (o.deform_axis >= 0 && o.barostat != Barostat::None && (!o.anisotropic || o.couple_axis[o.deform_axis]))
     throw std::invalid_argument("the deformed axis cannot also follow the barostat: use per-axis coupling without that axis");
+  if (o.respa < 1 || o.respa > 16) throw std::invalid_argument("r-RESPA inner steps must be 1 … 16");
+  if (o.respa > 1 && o.thermostat == Thermostat::Langevin) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
 
   if (o.field && o.field->atom_type.size() != n)
     throw FieldError("the assigned force field is for " + std::to_string(o.field->atom_type.size()) + " atoms, the structure has " +
                      std::to_string(n));
   const ForceField ff = o.field ? *o.field : default_forcefield(s);
   for (const auto& note : ff.notes) rep.notes.push_back(note);
-  Evaluator ev(ff, o.energy);
+  // r-RESPA (Tuckerman, Berne & Martyna 1992): the non-bonded forces every step, the bonded ones respa times per step
+  const int respa = std::max(1, o.respa);
+  EnergyOptions eo = o.energy;
+  if (respa > 1) eo.parts = 2;
+  Evaluator ev(ff, eo);
+  std::unique_ptr<Evaluator> ev_fast;
+  if (respa > 1) {
+    EnergyOptions ef = o.energy;
+    ef.parts = 1;
+    ev_fast = std::make_unique<Evaluator>(ff, ef);
+  }
   const std::vector<double>& m = ff.mass;
   double mtot = 0;
   for (double x : m) mtot += x;
@@ -92,7 +105,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (nheld) rep.notes.push_back(std::to_string(nheld) + " atoms held in place");
 
   Cell cell = s.cell;
-  std::vector<double> x(3 * n), v(3 * n, 0.0), f;
+  std::vector<double> x(3 * n), v(3 * n, 0.0), f, f_slow, f_fast;   // f_slow, f_fast: r-RESPA's two parts (f is their sum)
   for (size_t i = 0; i < n; ++i)
     for (int k = 0; k < 3; ++k) x[3 * i + k] = s.atoms[i].pos[k];
 
@@ -143,17 +156,34 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     if (o.pull_group[i] && !held[i]) pulled.push_back(uint32_t(i)), mpull += m[i];
   if (!pulled.empty()) com0 = pull_com();
   // forces, with none on held atoms and the pulling spring on the group
-  auto compute = [&] {
-    EnergyTerms t = ev.compute(x, cell, f);
+  auto hold = [&](std::vector<double>& F) {
     if (nheld)
       for (size_t i = 0; i < n; ++i)
-        if (held[i]) f[3 * i] = f[3 * i + 1] = f[3 * i + 2] = 0;
+        if (held[i]) F[3 * i] = F[3 * i + 1] = F[3 * i + 2] = 0;
+  };
+  EnergyTerms et_fast;
+  auto compute_fast = [&] {   // r-RESPA inner step: bonded forces only
+    et_fast = ev_fast->compute(x, cell, f_fast);
+    hold(f_fast);
+  };
+  auto compute = [&] {
+    EnergyTerms t = ev.compute(x, cell, respa > 1 ? f_slow : f);
+    auto& F = respa > 1 ? f_slow : f;
+    hold(F);
     if (!pulled.empty()) {
       pull_x = pull_com() - com0;
       const double anchor = o.pull_rate * double(cur_step) * o.dt * 1e-3;
       pull_f = o.pull_k * (anchor - pull_x);
       for (uint32_t i : pulled)
-        for (int k = 0; k < 3; ++k) f[3 * i + k] += pdir[k] * pull_f * m[i] / mpull;
+        for (int k = 0; k < 3; ++k) F[3 * i + k] += pdir[k] * pull_f * m[i] / mpull;
+    }
+    if (respa > 1) {   // both parts, for the energies, the virial and anyone reading f
+      compute_fast();
+      t.bond = et_fast.bond, t.angle = et_fast.angle, t.dihedral = et_fast.dihedral, t.improper = et_fast.improper;
+      t.virial += et_fast.virial;
+      for (int c = 0; c < 6; ++c) t.w[c] += et_fast.w[c];
+      f.resize(f_slow.size());
+      for (size_t k = 0; k < f.size(); ++k) f[k] = f_slow[k] + f_fast[k];
     }
     return t;
   };
@@ -205,14 +235,15 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   double kt_target = 0.5 * ndof * kB * o.temperature;
   double t_now = o.temperature;
 
-  auto kick = [&](double h) {
+  auto kick_with = [&](const std::vector<double>& F, double h) {
     for (size_t i = 0; i < n; ++i) {
       const double a = h * kAcc / m[i];
-      v[3 * i] += a * f[3 * i];
-      v[3 * i + 1] += a * f[3 * i + 1];
-      v[3 * i + 2] += a * f[3 * i + 2];
+      v[3 * i] += a * F[3 * i];
+      v[3 * i + 1] += a * F[3 * i + 1];
+      v[3 * i + 2] += a * F[3 * i + 2];
     }
   };
+  auto kick = [&](double h) { kick_with(f, h); };
   auto drift = [&](double h) {
     for (size_t k = 0; k < x.size(); ++k) x[k] += h * v[k];
   };
@@ -274,6 +305,20 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       deform(step);
       et = compute();
       kick(0.5 * dt);
+    } else if (respa > 1) {
+      // outer half kick with the non-bonded forces, `respa` velocity-Verlet steps with the bonded ones, outer half kick
+      const double h = dt / respa;
+      kick_with(f_slow, 0.5 * dt);
+      for (int j = 0; j < respa; ++j) {
+        kick_with(f_fast, 0.5 * h);
+        drift(h);
+        if (j == respa - 1) deform(step);
+        if (j + 1 < respa) compute_fast();
+        else et = compute();   // the last inner step: both parts at the new positions
+        kick_with(f_fast, 0.5 * h);
+      }
+      kick_with(f_slow, 0.5 * dt);
+      if (o.thermostat == Thermostat::Bussi) bussi(dt);
     } else {
       kick(0.5 * dt);
       drift(dt);
@@ -328,6 +373,10 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   rep.notes.insert(rep.notes.begin(), b);
   std::snprintf(b, sizeof b, "thermostat %s (τ %.0f fs) · barostat %s", to_string(o.thermostat), o.tau_t, to_string(o.barostat));
   rep.notes.insert(rep.notes.begin() + 1, b);
+  if (respa > 1) {
+    std::snprintf(b, sizeof b, "r-RESPA: non-bonded forces every %.2f fs, bonded forces every %.3f fs (%d inner steps)", dt, dt / respa, respa);
+    rep.notes.insert(rep.notes.begin() + 2, b);
+  }
   if (o.barostat != Barostat::None) {
     std::snprintf(b, sizeof b, "barostat target %.1f atm, τ %.0f fs, compressibility %.2e atm⁻¹, every %d steps%s; LJ tail correction %s",
                   o.pressure, o.tau_p, o.compressibility, o.barostat_every, o.anisotropic ? ", each axis on its own" : "", o.energy.tail ? "on" : "off");

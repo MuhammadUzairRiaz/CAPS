@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 20, "native ABI version 20");
+        Check(Native.AbiVersion() == 21, "native ABI version 21");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -229,6 +229,10 @@ internal static class SelfTest
             Check(tr.Summary().Frames == 5, $"md: trajectory reopens with {tr.Summary().Frames} frames");
         var cont = cell.Md(mdOpts with { Steps = 100 }, null);
         Check(cont.Contains("velocities taken"), "md: a second run continues with the same velocities");
+        var respaRows = new List<CapsThermo>();
+        var respa = cell.Md(mdOpts with { Dt = 2, Steps = 100, Thermostat = 0, Respa = 4, ThermoEvery = 10 }, (r, n) => { respaRows.Add(r); return true; });
+        var band = respaRows.Max(r => r.Total) - respaRows.Min(r => r.Total);
+        Check(respa.Contains("r-RESPA") && band < 0.03 * respaRows.Average(r => r.Kinetic), $"md: r-RESPA 2 fs × 4 inner steps, NVE energy band {band:F2} kcal/mol");
         // Equilibrate: a named protocol's text, a short custom protocol with convergence blocks, chain statistics.
         var l21 = CapsDocument.ProtocolText("larsen21", new CapsProtocolParams { TFinal = 300, TMax = 600, PFinal = 1, PMax = 49346.2, TimeScale = 1 });
         Check(l21.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length == 21 && l21.Contains("P 49346.2 atm"), "equilibrate: Larsen 21-step text");

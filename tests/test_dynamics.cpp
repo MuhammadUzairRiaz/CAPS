@@ -209,3 +209,36 @@ TEST(Dynamics, NphScalesTheCellWithoutAThermostat) {
   o.barostat = Barostat::CRescale;
   EXPECT_THROW(run_dynamics(c, o), std::invalid_argument);
 }
+
+// r-RESPA: bonded forces at 0.5 fs inside 2 fs steps conserve energy as plain 0.5 fs steps do (and far better than
+// plain 2 fs steps, which the C–H stretches do not allow); respa = 1 is the ordinary integrator
+TEST(Dynamics, RespaConservesEnergyWithLongOuterSteps) {
+  auto band = [](int respa, double dt, int steps) {
+    System s = relaxed_cell();
+    DynamicsOptions o;
+    o.thermostat = Thermostat::None;
+    o.dt = dt;
+    o.respa = respa;
+    o.steps = steps;
+    o.thermo_every = 5;
+    o.seed = 7;
+    o.new_velocities = true;
+    DynamicsReport r;
+    run_dynamics(s, o, &r);
+    double lo = 1e300, hi = -1e300;
+    for (size_t k = 4; k < r.thermo.size(); ++k) lo = std::min(lo, r.thermo[k].total), hi = std::max(hi, r.thermo[k].total);
+    return std::make_pair(hi - lo, mean(r.thermo, 4, &ThermoRow::kinetic));
+  };
+  const auto [plain_fine, kin] = band(1, 0.5, 1200);
+  const auto [respa, kin2] = band(4, 2.0, 300);
+  const auto [plain_coarse, kin3] = band(1, 2.0, 300);
+  EXPECT_LT(respa, 0.02 * kin2) << "r-RESPA band " << respa;
+  EXPECT_LT(respa, 0.5 * plain_coarse) << "r-RESPA " << respa << " vs plain 2 fs " << plain_coarse;
+  EXPECT_LT(plain_fine, 0.01 * kin);
+  (void)kin3;
+  System c = relaxed_cell();
+  DynamicsOptions o;
+  o.respa = 2;
+  o.thermostat = Thermostat::Langevin;
+  EXPECT_THROW(run_dynamics(c, o), std::invalid_argument);
+}
