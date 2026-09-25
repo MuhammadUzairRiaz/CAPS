@@ -3,6 +3,7 @@
 #include "caps/uff.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <array>
 #include <cmath>
 #include <functional>
@@ -499,7 +500,8 @@ double chain_mass(const ChainSpec& spec, const std::vector<int>& seq) {
   return m;
 }
 
-System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
+namespace {
+System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
   if (spec.units.empty()) throw GrowError("no repeat unit");
   GrowReport rep;
   std::vector<Template> T;
@@ -682,13 +684,12 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     }
     std::vector<Vec3> best, trial(size_t(t.n));
     double best_m = -1e9;
-    std::vector<double> gv(t.group_kind.size());
-    for (int tr = 0; tr < trials; ++tr) {
-      const double root_t = draw(root_kind, 0);
-      for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
-      // the template's own torsion is the reference for groups next to an sp2 atom
-      for (int a = 1; a < t.n; ++a)
-        if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+    std::vector<double> gv(t.group_kind.size()), best_gv;
+    double best_root = 0;
+    // places the unit's atoms for a root torsion and group torsions, and returns the worst contact margin (Å); stops
+    // counting once the margin is below `floor`
+    auto score = [&](double root_t, const std::vector<double>& gv, double floor) {
+      const double best_m = floor;
       auto P = [&](int local) -> Vec3 {
         const int a = absref(local);
         return a >= base ? trial[size_t(a - base)] : ch.pos[size_t(a)];
@@ -758,10 +759,42 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
             if (m < worst) worst = m;
           }
       }
+      return worst;
+    };
+    for (int tr = 0; tr < trials; ++tr) {
+      const double root_t = draw(root_kind, 0);
+      for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+      // the template's own torsion is the reference for groups next to an sp2 atom
+      for (int a = 1; a < t.n; ++a)
+        if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+      const double worst = score(root_t, gv, best_m);
       if (worst > best_m) {
         best_m = worst;
         best = trial;
+        best_gv = gv;
+        best_root = root_t;
         if (o.comfortable > 0 && worst >= o.comfortable) break;
+      }
+    }
+    // just short of the limits (long flexible units, crowded junctions): nudge single torsions of the best trial
+    if (best_m < 0.05 && best_m > -0.8 && !best.empty()) {
+      for (int it = 0; it < 160 && best_m < 0.05; ++it) {
+        std::vector<double> g = best_gv;
+        double r = best_root;
+        const int moves = U(rng) < 0.3 ? 2 : 1;
+        for (int mv = 0; mv < moves; ++mv) {
+          const size_t pick = size_t(U(rng) * double(g.size() + 1));
+          const double step = Nd(rng) * 15 * kPi / 180;
+          if (pick >= g.size()) r += step;
+          else g[pick] += step;
+        }
+        const double worst = score(r, g, best_m);
+        if (worst > best_m) {
+          best_m = worst;
+          best = trial;
+          best_gv = std::move(g);
+          best_root = r;
+        }
       }
     }
     if (best_m < o.accept) {
@@ -880,6 +913,33 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
   if (report) *report = rep;
   return s;
+}
+
+}  // namespace
+
+System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
+  if (!o.auto_scale) return grow_chains_once(spec, o, report);
+  std::vector<double> scales = {o.contact_scale > 0 ? o.contact_scale : 1.0};
+  for (double x : {0.85, 0.75, 0.7, 0.6})
+    if (x < scales.front() - 1e-9) scales.push_back(x);
+  for (size_t k = 0; k < scales.size(); ++k) {
+    GrowOptions g = o;
+    g.auto_scale = false;
+    g.contact_scale = scales[k];
+    if (k + 1 < scales.size()) g.max_restarts = std::min(o.max_restarts, 10);   // give up early on the stricter limits
+    try {
+      System s = grow_chains_once(spec, g, report);
+      if (k > 0 && report) {
+        char n[200];
+        std::snprintf(n, sizeof n, "grown at contact scale %.2f (%.2f was too crowded); relax with push-off before dynamics", scales[k], scales[0]);
+        report->notes.push_back(n);
+      }
+      return s;
+    } catch (const GrowError& e) {
+      if (k + 1 == scales.size() || std::string(e.what()) == "cancelled") throw;
+    }
+  }
+  throw GrowError("no contact scale worked");
 }
 
 }  // namespace caps

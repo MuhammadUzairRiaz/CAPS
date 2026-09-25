@@ -73,7 +73,7 @@
           <Border Classes="card">
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Cell" Classes="h2" VerticalAlignment="Center" /></Border>
-              <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+              <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
                 <TextBlock Text="Size from" Classes="label" />
                 <TextBlock Grid.Column="1" Text="{Binding GrowSizeLabel}" Classes="label" />
                 <TextBlock Grid.Column="2" Text="Shape" Classes="label" />
@@ -98,6 +98,8 @@
                 <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding GrowScaleD}" Minimum="0.5" Maximum="1.2" Increment="0.05" FormatString="0.00"
                                ToolTip.Tip="Contacts closer than this fraction of the van der Waals sum are rejected; below 1 needs a push-off in Relax" />
                 <TextBlock Grid.Row="4" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                <CheckBox Grid.Row="5" Grid.ColumnSpan="3" Content="Lower the contact scale when a chain cannot be placed (repeat-unit chains)" IsChecked="{Binding GrowAutoScale}" Margin="0,6,0,0"
+                          ToolTip.Tip="Steps 0.85, 0.75, 0.7, 0.6 for crowded backbones (polyisobutylene, methacrylates); relax with push-off afterwards" />
               </Grid>
             </StackPanel>
           </Border>

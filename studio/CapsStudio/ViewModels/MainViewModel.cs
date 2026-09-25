@@ -421,6 +421,9 @@ public sealed partial class MainViewModel : ObservableObject
     public decimal? GrowDensityD { get => (decimal)_growDensity; set { GrowDensity = (double)(value ?? 0.4m); Raise(); } }
     public decimal? GrowBoxD { get => (decimal)_growBox; set { GrowBox = (double)(value ?? 0m); Raise(); } }
     public decimal? GrowScaleD { get => (decimal)_growScale; set { GrowScale = (double)(value ?? 1m); Raise(); } }
+    private bool _growAutoScale = true;
+    /// <summary>Repeat-unit chains: lower the contact scale (0.85 … 0.6) when a chain cannot be placed.</summary>
+    public bool GrowAutoScale { get => _growAutoScale; set => Set(ref _growAutoScale, value); }
 
     public string GrowEstimate
     {
@@ -463,6 +466,7 @@ public sealed partial class MainViewModel : ObservableObject
             Box = _growUseBox ? _growBox : 0, Density = _growUseBox ? 0 : _growDensity, ContactScale = _growScale, Curve = _growCurve ? 1 : 0,
         };
         var spec = _growSpec;
+        if (spec != null && _growAutoScale) o.ContactScale = -_growScale;   // caps_grow_chains: start here, lower it when crowded
         if (spec != null)
         {
             var sj = System.Text.Json.Nodes.JsonNode.Parse(spec)!.AsObject();
