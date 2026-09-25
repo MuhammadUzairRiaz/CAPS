@@ -8,6 +8,7 @@
 #include <set>
 
 #include "caps/analysis.hpp"
+#include "caps/checks.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "caps/render.hpp"
@@ -443,4 +444,44 @@ TEST(Grow, RejectsImpossibleRequestsClearly) {
   o.box = 0; o.density = 0;
   EXPECT_THROW(grow(o), std::invalid_argument);
   EXPECT_NEAR(box_for_density([] { GrowOptions g; g.chains = 10; g.dp = 8; g.density = 0.386; return g; }()), 33.0, 0.01);
+}
+
+TEST(FileChecks, SampleAndBrokenStructures) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const auto c = file_checks(t);
+  auto has = [&](const std::string& level, const std::string& title) {
+    return std::any_of(c.begin(), c.end(), [&](const FileCheck& x) { return x.level == level && x.title.find(title) != std::string::npos; });
+  };
+  EXPECT_TRUE(has("pass", "Atom counts agree"));
+  EXPECT_TRUE(has("pass", "Bonds are plausible"));
+  EXPECT_TRUE(has("pass", "Charges are neutral"));
+  EXPECT_TRUE(has("note", "outside the box"));
+  // two atoms on top of each other, a stretched bond, a net charge
+  Trajectory b;
+  System& s = b.topology;
+  s.cell.a = {20, 0, 0};
+  s.cell.b = {0, 20, 0};
+  s.cell.c = {0, 0, 20};
+  for (int k = 0; k < 4; ++k) {
+    Atom a;
+    a.id = k + 1;
+    a.element = 6;
+    a.charge = 0.25;
+    a.pos = {5.0 + (k == 3 ? 0.3 : 3.0 * k), 5, 5};
+    s.atoms.push_back(a);
+  }
+  s.has_charges = true;
+  s.bonds = {{0, 1, 1}};   // 3.0 Å: stretched
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  b.positions.push_back(p);
+  b.cells.push_back(s.cell);
+  b.timesteps.push_back(0);
+  const auto d = file_checks(b);
+  auto dhas = [&](const std::string& level, const std::string& title) {
+    return std::any_of(d.begin(), d.end(), [&](const FileCheck& x) { return x.level == level && x.title.find(title) != std::string::npos; });
+  };
+  EXPECT_TRUE(dhas("warn", "stretched"));
+  EXPECT_TRUE(dhas("warn", "closer than 0.7"));
+  EXPECT_TRUE(dhas("warn", "Net charge"));
 }

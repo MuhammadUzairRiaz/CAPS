@@ -54,12 +54,13 @@ public sealed partial class MainViewModel
             ("Polymer builder", 13, "grow", "repeat unit copolymer smiles library rubber"), ("Surface builder", 14, "layers", "slab cleave cif crystal interface film fibre silica graphite"),
             ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
             ("Blend builder", 16, "grow", "blend mixture nr br sbr tyre compound two polymers"),
+            ("File checks", 17, "check", "problems warnings validation report file errors"),
         };
         foreach (var (name, m, icon, words) in modules)
             AddCommand(new PaletteCommand
             {
                 Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
-                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else SetModule(m); },
+                Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else SetModule(m); },
             });
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });

@@ -391,6 +391,9 @@ caps_doc* caps_grow_blend(const char* options_json, const caps_grow_opts* o, cap
    frame (the structure stays where it is), e.g. H–S–S–H sulfur donors for the sulfur_allylic cure. The document becomes
    that one frame; a Field assignment is cleared. 0 on success. */
 int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_t count, double tolerance, uint64_t seed, char* report, int32_t cap);
+/* File checks of the open document (v17): JSON [{level: pass|note|warn|error, title, detail, action}]; the action is
+   one suggested fix id (wrap, relax, field) or empty. Returns the length needed including the final NUL. */
+int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap);
 /* Holds every atom of molecule `mol` in place in caps_relax, caps_md and caps_equilibrate (0: none), e.g. the substrate of
    an interface. A document from caps_interface_build holds molecule 1. */
 void caps_set_held_molecule(caps_doc* d, int64_t mol);
