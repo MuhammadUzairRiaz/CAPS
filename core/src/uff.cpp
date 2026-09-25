@@ -43,6 +43,12 @@ std::string label_symbol(const char* l) {
   if (s.size() == 2 && s[1] == '_') s.resize(1);
   return s;
 }
+
+std::string label_element(const char* l) {   // leading letters: "Be3+2" → Be, "C_3" → C
+  std::string s(1, l[0]);
+  if (l[1] >= 'a' && l[1] <= 'z') s += l[1];
+  return s;
+}
 char label_hyb(const char* l) { return std::strlen(l) > 2 ? l[2] : 0; }
 int label_ox(const char* l) {
   const char* p = std::strchr(l, '+');
@@ -509,6 +515,14 @@ ForceField assign_uff(const System& s, const UffOptions& o) {
   }
   for (const auto& note : p.notes) ff.notes.push_back(note);
   return ff;
+}
+
+bool uff_vdw(int z, double& x, double& d) {
+  if (z <= 0) return false;
+  const std::string sym = element(z).symbol;
+  for (const auto& p : kUff)
+    if (label_element(p.label) == sym) { x = p.x1, d = p.D1; return true; }
+  return false;
 }
 
 }  // namespace caps

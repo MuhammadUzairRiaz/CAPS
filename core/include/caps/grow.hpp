@@ -51,6 +51,14 @@ struct GrowOptions {
   double slab_thickness = 0, slab_vacuum = 0;
   double cylinder_radius = 0, cylinder_length = 0;
   bool cylinder_outside = false;
+  // Growth method (grow_chains): 0 best of the trials by contact margin (roomy but stretched chains); 1 Rosenbluth: a
+  // trial drawn with probability ∝ exp(−E/kT), E soft-sphere overlap + torsion energy (after Theodorou & Suter 1985);
+  // 2 Rosenbluth with UFF Lennard-Jones between atoms (by element, cut at 6 Å) + the same torsion energy
+  // (configurational-bias growth; there is no Monte Carlo acceptance step). The torsion energy about sp3–sp3 bonds is
+  // Jorgensen's butane potential (J. Am. Chem. Soc. 106, 6638 (1984): trans 0, gauche 0.86, barrier 4.6 kcal/mol).
+  // Trials under the contact limits still fail. The chains' Rosenbluth weights are reported.
+  int method = 0;
+  double method_temperature = 450;       // K, of the Boltzmann factors
   // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
   // (quaternary backbones such as polyisobutylene and methacrylates, dense films); Relax with push-off afterwards
   bool auto_scale = false;
@@ -74,6 +82,7 @@ struct GrowReport {
   double worst_margin = 0.0;             // smallest (distance − limit) over accepted non-bonded pairs, Å
   double box = 0.0;
   double density = 0.0;
+  double ln_rosenbluth = 0.0;            // Rosenbluth methods: mean over chains of ln W (W = Π_steps Σ w / k)
   std::vector<std::string> notes;
 };
 

@@ -333,6 +333,7 @@ struct ChainState {
   std::vector<char> sp2, donor, backbone;
   std::vector<std::vector<int>> adj;
   std::vector<int> unit_start;   // local index of each placed unit's head
+  std::vector<double> unit_lnw;  // Rosenbluth methods: ln(Σ w / k) of each placed unit's step
   int backtracks = 0, fails = 0, starts = 0;
   bool done = false;
   // branched molecules (star, comb, branched): a chain hung on an atom of another, grown once that chain (and the arm
@@ -681,7 +682,18 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     return scale * (0.88 * (element(a).vdw + element(b).vdw) - 0.08 * ((a == 1) + (b == 1)) + extra);
   };
   Cell3 cell;
-  cell.init(Lv, scale * 0.86 * 2 * 2.3);
+  cell.init(Lv, o.method == 2 ? std::max(6.0, scale * 0.86 * 2 * 2.3) : scale * 0.86 * 2 * 2.3);   // LJ energies reach 6 Å
+  // Rosenbluth methods: UFF van der Waals by element (method 2), kT
+  const double kT = 0.0019872043 * std::max(1.0, o.method_temperature);
+  std::map<int, std::pair<double, double>> uff_by_z;
+  auto uff_of = [&](int z) {
+    z = std::abs(z);
+    auto it = uff_by_z.find(z);
+    if (it != uff_by_z.end()) return it->second;
+    double x = 3.851, d = 0.105;   // carbon when the table has nothing
+    uff_vdw(z, x, d);
+    return uff_by_z[z] = {x, d};
+  };
   if (o.substrate)
     for (size_t i = 0; i < o.substrate->atoms.size(); ++i) cell.add(o.substrate->atoms[i].pos, o.substrate->atoms[i].element, -1, int(i));
   // a film: heights outside [z_lo, z_hi] count as contacts
@@ -845,6 +857,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     for (size_t i = 3; i < ch.gid.size(); ++i)
       if (ch.gid[i] >= 0) cell.kill(ch.gid[i]);
     ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
+    ch.unit_lnw.clear();
     if (ch.parent >= 0) {   // an arm: the ghosts are its anchor atom and the two atoms before it in the parent
       if (!ch.started) begin_arm(ci);
       const auto& par = C[size_t(ch.parent)];
@@ -896,6 +909,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     for (int r = 0; r < count && !ch.unit_start.empty(); ++r) {
       const int from = ch.unit_start.back();
       ch.unit_start.pop_back();
+      if (!ch.unit_lnw.empty()) ch.unit_lnw.pop_back();
       for (int i = int(ch.pos.size()) - 1; i >= from; --i) {
         if (ch.gid[size_t(i)] >= 0) cell.kill(ch.gid[size_t(i)]);
         for (int w : ch.adj[size_t(i)]) {
@@ -1092,40 +1106,117 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       }
       return worst;
     };
-    for (int tr = 0; tr < trials; ++tr) {
-      const double root_t = draw(root_kind, 0);
-      for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
-      // the template's own torsion is the reference for groups next to an sp2 atom
-      for (int a = 1; a < t.n; ++a)
-        if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
-      const double worst = score(root_t, gv, best_m);
-      if (worst > best_m) {
-        best_m = worst;
-        best = trial;
-        best_gv = gv;
-        best_root = root_t;
-        if (o.comfortable > 0 && worst >= o.comfortable) break;
-      }
-    }
-    // just short of the limits (long flexible units, crowded junctions): nudge single torsions of the best trial
-    if (best_m < 0.05 && best_m > -0.8 && !best.empty()) {
-      for (int it = 0; it < 160 && best_m < 0.05; ++it) {
-        std::vector<double> g = best_gv;
-        double r = best_root;
-        const int moves = U(rng) < 0.3 ? 2 : 1;
-        for (int mv = 0; mv < moves; ++mv) {
-          const size_t pick = size_t(U(rng) * double(g.size() + 1));
-          const double step = Nd(rng) * 15 * kPi / 180;
-          if (pick >= g.size()) r += step;
-          else g[pick] += step;
-        }
-        const double worst = score(r, g, best_m);
+    double step_lnw = 0;
+    if (o.method == 0) {
+      for (int tr = 0; tr < trials; ++tr) {
+        const double root_t = draw(root_kind, 0);
+        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+        // the template's own torsion is the reference for groups next to an sp2 atom
+        for (int a = 1; a < t.n; ++a)
+          if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+        const double worst = score(root_t, gv, best_m);
         if (worst > best_m) {
           best_m = worst;
           best = trial;
-          best_gv = std::move(g);
-          best_root = r;
+          best_gv = gv;
+          best_root = root_t;
+          if (o.comfortable > 0 && worst >= o.comfortable) break;
         }
+      }
+      // just short of the limits (long flexible units, crowded junctions): nudge single torsions of the best trial
+      if (best_m < 0.05 && best_m > -0.8 && !best.empty()) {
+        for (int it = 0; it < 160 && best_m < 0.05; ++it) {
+          std::vector<double> g = best_gv;
+          double r = best_root;
+          const int moves = U(rng) < 0.3 ? 2 : 1;
+          for (int mv = 0; mv < moves; ++mv) {
+            const size_t pick = size_t(U(rng) * double(g.size() + 1));
+            const double step = Nd(rng) * 15 * kPi / 180;
+            if (pick >= g.size()) r += step;
+            else g[pick] += step;
+          }
+          const double worst = score(r, g, best_m);
+          if (worst > best_m) {
+            best_m = worst;
+            best = trial;
+            best_gv = std::move(g);
+            best_root = r;
+          }
+        }
+      }
+    } else {
+      // Rosenbluth: every trial within the contact limits weighted by exp(−E/kT); one drawn by its weight
+      auto pair_energy = [&](int za, int zb, double d, int bonds) {
+        if (o.method == 1) {   // soft spheres: 20 kcal/mol (1 − d/limit)² inside the limit
+          const double lim = (bonds == 4 ? 0.85 : 1.0) * limit(za, zb);
+          return d < lim ? 20.0 * (1 - d / lim) * (1 - d / lim) : 0.0;
+        }
+        if (d >= 6.0) return 0.0;   // UFF: D [(x/r)¹² − 2 (x/r)⁶], geometric means, shifted to zero at 6 Å
+        const auto [xa, da] = uff_of(za);
+        const auto [xb, db] = uff_of(zb);
+        const double x = std::sqrt(xa * xb), dd = std::sqrt(da * db);
+        auto lj = [&](double r) { const double q = std::pow(x / r, 6); return dd * (q * q - 2 * q); };
+        return lj(std::max(d, 0.5)) - lj(6.0);
+      };
+      auto trial_energy = [&] {
+        double E = 0;
+        for (int a = 0; a < t.n; ++a) {
+          const Vec3& x = trial[size_t(a)];
+          cell.near(x, [&](int id) {
+            int bonds = 99;
+            if (cell.chain[size_t(id)] == ci) {
+              const auto it = excl[size_t(a)].find(cell.local[size_t(id)]);
+              if (it != excl[size_t(a)].end()) {
+                if (it->second <= 3) return;
+                bonds = it->second;
+              }
+            } else if (dhead[size_t(a)] <= 3) {
+              const auto it = ch.pdist.find(id);
+              if (it != ch.pdist.end()) {
+                bonds = dhead[size_t(a)] + 1 + it->second;
+                if (bonds <= 3) return;
+              }
+            }
+            E += pair_energy(t.z[size_t(a)], cell.z[size_t(id)], norm(cell.mi(x - cell.x[size_t(id)])), bonds);
+          });
+          for (int b2 = a + 1; b2 < t.n; ++b2) {
+            const auto it = excl[size_t(a)].find(base + b2);
+            if (it != excl[size_t(a)].end() && it->second <= 3) continue;
+            E += pair_energy(t.z[size_t(a)], t.z[size_t(b2)], norm(cell.mi(x - trial[size_t(b2)])), it == excl[size_t(a)].end() ? 99 : it->second);
+          }
+        }
+        return E;
+      };
+      // torsion energy about sp3–sp3 bonds (φ = 180° trans): Jorgensen's butane potential, ½V1(1 + cos φ) +
+      // ½V2(1 − cos 2φ) + ½V3(1 + cos 3φ) with V1 1.411, V2 −0.271, V3 3.145 kcal/mol
+      auto tors_energy = [&](int kind, double phi) {
+        if (kind != 0) return 0.0;
+        return 0.5 * 1.411 * (1 + std::cos(phi)) - 0.5 * 0.271 * (1 - std::cos(2 * phi)) + 0.5 * 3.145 * (1 + std::cos(3 * phi));
+      };
+      std::vector<std::vector<Vec3>> kept;
+      std::vector<double> kept_e, kept_m, kept_root;
+      std::vector<std::vector<double>> kept_gv;
+      for (int tr = 0; tr < trials; ++tr) {
+        const double root_t = draw(root_kind, 0);
+        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+        for (int a = 1; a < t.n; ++a)
+          if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+        const double m = score(root_t, gv, o.accept);
+        if (m < o.accept) continue;
+        double E = trial_energy() + (next_dir ? 0.0 : tors_energy(root_kind, root_t));
+        for (size_t gi = 0; gi < gv.size(); ++gi) E += tors_energy(int(gi) == t.link_group ? link_kind : t.group_kind[gi], gv[gi]);
+        kept.push_back(trial), kept_e.push_back(E), kept_m.push_back(m), kept_root.push_back(root_t), kept_gv.push_back(gv);
+      }
+      if (!kept.empty()) {
+        const double emin = *std::min_element(kept_e.begin(), kept_e.end());
+        std::vector<double> w(kept.size());
+        double sw = 0;
+        for (size_t i = 0; i < kept.size(); ++i) sw += (w[i] = std::exp(-(kept_e[i] - emin) / kT));
+        double r = U(rng) * sw;
+        size_t pick = 0;
+        while (pick + 1 < kept.size() && (r -= w[pick]) > 0) ++pick;
+        best = kept[pick], best_m = kept_m[pick], best_gv = kept_gv[pick], best_root = kept_root[pick];
+        step_lnw = std::log(sw) - emin / kT - std::log(double(trials));
       }
     }
     if (best_m < o.accept) {
@@ -1150,6 +1241,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     ch.fails = std::max(0, ch.fails - 1);
     rep.worst_margin = std::min(rep.worst_margin, best_m);
     ch.unit_start.push_back(base);
+    ch.unit_lnw.push_back(step_lnw);
     for (int a = 0; a < t.n; ++a) {
       const int idx = base + a;
       ch.pos.push_back(best[size_t(a)]);
@@ -1347,6 +1439,22 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   rep.notes.insert(rep.notes.begin(), units_text + " · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
                                           " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
+  if (o.method > 0) {   // each molecule's ln W: the sum over its chains' growth steps
+    std::vector<double> lw(size_t(nchains), 0.0);
+    for (const auto& ch : C)
+      for (double x : ch.unit_lnw) lw[size_t(ch.mol)] += x;
+    double m = 0, v = 0;
+    for (double x : lw) m += x;
+    m /= double(lw.size());
+    for (double x : lw) v += (x - m) * (x - m);
+    rep.ln_rosenbluth = m;
+    char b[320];
+    std::snprintf(b, sizeof b, "%s at %.0f K (a trial drawn with probability ∝ exp(−E/kT); sp3–sp3 torsions: Jorgensen's butane potential): ln W per chain %.1f ± %.1f",
+                  o.method == 1 ? "Rosenbluth growth, soft spheres (after Theodorou & Suter 1985)"
+                                : "Rosenbluth growth with UFF Lennard-Jones (configurational-bias, no Monte Carlo acceptance)",
+                  o.method_temperature, m, std::sqrt(v / std::max<size_t>(1, lw.size() - 1)));
+    rep.notes.push_back(b);
+  }
   if (!o.cell[0] && o.slab_thickness > 0) {
     char b[160];
     std::snprintf(b, sizeof b, "slab: a film %.1f Å thick between z = %.1f and %.1f Å, vacuum above and below", z_hi - z_lo, z_lo, z_hi);
