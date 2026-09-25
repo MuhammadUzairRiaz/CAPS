@@ -300,7 +300,9 @@ public sealed partial class MainViewModel
     {
         try
         {
-            var j = JsonNode.Parse(System.IO.File.ReadAllText(path))!;
+            var text = System.IO.File.ReadAllText(path);
+            if (text.TrimStart().StartsWith("caps_pipeline")) text = CapsDocument.PipelineFromYaml(text);   // YAML (SavePipeline)
+            var j = JsonNode.Parse(text)!;
             var steps = j is JsonArray a ? a : (JsonArray)j["steps"]!;
             PipelineRows.Clear();
             foreach (var st in steps)

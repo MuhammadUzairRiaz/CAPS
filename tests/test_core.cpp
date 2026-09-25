@@ -768,6 +768,25 @@ TEST(Io, InspectBeforeOpening) {
   EXPECT_FALSE(g.types.empty());
 }
 
+TEST(Pipeline, YamlRoundTrip) {
+  const Pipeline p = pipeline_from_json(Json::parse(R"([
+    {"type":"colour_coding","property":"DistanceToCOM","map":"viridis"},
+    {"type":"select_expression","expression":"Type == 2 && Position.Z > 13","enabled":false},
+    {"type":"slice","normal":[0,0,1],"width":12.5,"invert":true},
+    {"type":"unwrap"}])"));
+  const std::string y = pipeline_to_yaml(p, "PS melt · structure report", "PS_melt.lammpstrj", "PS_melt.data");
+  EXPECT_NE(y.find("  - unwrap: {}"), std::string::npos);
+  EXPECT_LT(y.find("unwrap"), y.find("colour_coding"));   // written in the order they run
+  std::string name, file, topo;
+  const Pipeline q = pipeline_from_yaml(y, &name, &file, &topo);
+  EXPECT_EQ(name, "PS melt · structure report");
+  EXPECT_EQ(file, "PS_melt.lammpstrj");
+  EXPECT_EQ(topo, "PS_melt.data");
+  EXPECT_EQ(pipeline_to_json(q).dump(0), pipeline_to_json(p).dump(0));
+  EXPECT_THROW(pipeline_from_yaml("steps:\n  - wrap: {}\n"), std::invalid_argument);
+  EXPECT_THROW(pipeline_from_yaml("caps_pipeline: 1\nsteps:\n  - wrap: {a: [1, 2}\n"), std::invalid_argument);
+}
+
 TEST(Io, FileWithoutAtomsIsAnError) {
   const std::string path = (std::filesystem::temp_directory_path() / "caps_test_garbage.data").string();
   { std::ofstream f(path); f << "garbage\n"; }

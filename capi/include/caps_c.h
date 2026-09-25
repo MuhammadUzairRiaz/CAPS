@@ -337,6 +337,10 @@ int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap);
 int32_t caps_pipeline_particles(caps_doc* d, const char* filter, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_catalogue(char* json, int32_t cap);
+/* v19 pipeline YAML (design/boards/SavePipeline): steps JSON to YAML text (name, source file and topology optional),
+   and YAML back to steps JSON ({"steps":[…],"name":…,"file":…,"topology":…}). */
+int32_t caps_pipeline_to_yaml(const char* json, const char* name, const char* file, const char* topology, char* yaml, int32_t cap);
+int32_t caps_pipeline_from_yaml(const char* yaml, char* json, int32_t cap);
 /* v19 export (design/boards/ExportData): format lammps-data | lammps-dump (all frames) | gro | pdb | xyz | mol2;
    options JSON {"pipeline": bool (the Visualize result instead of the frame), "wrap": bool, "coeffs": bool (force-field
    sections in LAMMPS data)}. The preview writes to a scratch file and returns {"lines":[first n],"bytes","atoms","bonds",
