@@ -58747,5 +58747,6 @@
  ],
  "version": "2024",
  "status": "validated",
- "validation": "methyl benzoate: forces to 4.7e-8 kcal/mol/Å against LAMMPS."
+ "validation": "methyl benzoate: forces to 4.7e-8 kcal/mol/Å against LAMMPS.",
+ "typing": "../typing/oplsaa2024-moltemplate.typing.json"
 }
