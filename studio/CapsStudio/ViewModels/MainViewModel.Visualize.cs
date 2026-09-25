@@ -94,6 +94,9 @@ public sealed partial class MainViewModel
         new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
+        new("voids", "Voids & pores", "accessible volume for a probe, voids by size", "Structure", "atom"),
+        new("voronoi", "Voronoi volumes", "volume per atom (grid or radical)", "Structure", "hex"),
+        new("density_field", "Density field", "smoothed mass density, profile, slice", "Structure", "layers"),
         new("vectors", "Vectors", "end-to-end, dipoles, displacements, velocities", "Visual", "move"),
         new("trajectory_lines", "Trajectory lines", "paths of chain centres or particles", "Visual", "history"),
     ];
@@ -318,6 +321,9 @@ public sealed partial class MainViewModel
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
+        "voids" => new JsonObject { ["probe"] = 1.4, ["grid"] = 0.5, ["show"] = true },
+        "voronoi" => new JsonObject { ["method"] = "grid", ["grid"] = 0.5 },
+        "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5 },
         "trajectory_lines" => new JsonObject { ["particles"] = "centres", ["from"] = 0, ["radius"] = 0.12 },
         "create_bonds" => new JsonObject { ["mode"] = "perceive", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["replace"] = false, ["only_selected"] = false },
         _ => new JsonObject(),
@@ -367,6 +373,11 @@ public sealed partial class MainViewModel
             case "topology": Text("bins", "Bins", "number"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
+            case "voids": Text("probe", "Probe radius (Å)", "number"); Text("grid", "Grid (Å)", "number"); Bool("show", "Show void points, coloured by void"); break;
+            case "voronoi": Choice("method", "Method", ["grid", "radical"]); Text("grid", "Grid (Å)", "number"); break;
+            case "density_field":
+                Text("grid", "Grid (Å)", "number"); Text("sigma", "Smoothing σ (Å)", "number"); Choice("axis", "Slice normal (0 x · 1 y · 2 z)", ["0", "1", "2"]);
+                Text("position", "Slice position (0–1 of the cell)", "number"); break;
             case "vectors":
                 Choice("property", "Vector", ["end_to_end", "dipole", "displacement", "velocity"]); Text("scale", "Scale (dipole, displacement, velocity)", "number");
                 Text("radius", "Arrow radius (Å)", "number"); break;

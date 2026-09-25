@@ -638,6 +638,43 @@ TEST(Pipeline, VectorsAndPaths) {
   EXPECT_NE(with.rgba, without.rgba);
 }
 
+TEST(Pipeline, GridFields) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const System f = t.frame(0);
+  auto run = [&](const std::string& json) { return run_pipeline(f, pipeline_from_json(Json::parse(json)), 0, 0, &t); };
+  // Voronoi cells fill the box; radical weights move volume from hydrogens (on the chains' surface, facing the empty
+  // space of this loose cell) towards the larger carbons
+  auto carbon = [&](const PipelineState& x) {
+    double v = 0;
+    for (size_t i = 0; i < f.atoms.size(); ++i) if (f.atoms[i].element == 6) v += x.props.at("AtomicVolume")[i];
+    return v;
+  };
+  auto st = run(R"([{"type":"voronoi","method":"radical","grid":0.6}])");
+  EXPECT_NEAR(st.attribute("Voronoi.sum"), f.cell.volume(), 1e-6 * f.cell.volume());
+  const double radical = carbon(st);
+  st = run(R"([{"type":"voronoi","method":"grid","grid":0.6}])");
+  EXPECT_NEAR(st.attribute("Voronoi.sum"), f.cell.volume(), 1e-6 * f.cell.volume());
+  EXPECT_GT(radical, carbon(st));
+  // accessibility falls as the probe grows
+  st = run(R"([{"type":"voids","probe":1.4,"grid":0.7,"show":false}])");
+  const auto& sweep = st.tables[1].rows;
+  for (size_t k = 1; k < sweep.size(); ++k) EXPECT_LE(sweep[k][1], sweep[k - 1][1]);
+  EXPECT_GT(st.attribute("Voids.accessible_fraction"), 0.0);
+  EXPECT_TRUE(st.segments.empty());
+  // the smoothed density holds the cell's mass exactly; its profile averages to it
+  st = run(R"([{"type":"density_field","grid":0.9,"sigma":1.5}])");
+  EXPECT_NEAR(st.attribute("DensityField.mean"), f.density(), 1e-9);
+  double m = 0;
+  for (const auto& r : st.tables[0].rows) m += r[1];
+  EXPECT_NEAR(m / st.tables[0].rows.size(), f.density(), 1e-9);
+  EXPECT_FALSE(st.segments.empty());
+  // no cell: an error on the step, not a crash
+  System open = f;
+  open.cell = Cell{};
+  const auto e = run_pipeline(open, pipeline_from_json(Json::parse(R"([{"type":"voids"}])")));
+  EXPECT_EQ(e.steps[0].level, "error");
+}
+
 TEST(Io, FileWithoutAtomsIsAnError) {
   const std::string path = (std::filesystem::temp_directory_path() / "caps_test_garbage.data").string();
   { std::ofstream f(path); f << "garbage\n"; }
