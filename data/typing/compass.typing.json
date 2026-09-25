@@ -1,0 +1,303 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "COMPASS (diagonal terms)",
+ "description": "CAPS rules for COMPASS from the published type definitions (Sun, J. Phys. Chem. B 102, 7338 (1998)); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "h1",
+   "smarts": "[H][#6,#14]",
+   "priority": 0,
+   "description": "non-polar H (on C or Si)"
+  },
+  {
+   "type": "h1o",
+   "smarts": "[H][O,F]",
+   "priority": 1,
+   "description": "strongly polar H (on O or F)"
+  },
+  {
+   "type": "h1n",
+   "smarts": "[H][N,Cl]",
+   "priority": 1,
+   "description": "H on N"
+  },
+  {
+   "type": "h1h",
+   "smarts": "[H][H]",
+   "priority": 2,
+   "description": "H in H2"
+  },
+  {
+   "type": "c4",
+   "smarts": "[CX4]",
+   "priority": 0,
+   "description": "generic sp3 C"
+  },
+  {
+   "type": "c43",
+   "smarts": "[CX4H1]",
+   "priority": 2,
+   "description": "sp3 C with three heavy atoms attached"
+  },
+  {
+   "type": "c44",
+   "smarts": "[CX4H0]",
+   "priority": 2,
+   "description": "sp3 C with four heavy atoms attached"
+  },
+  {
+   "type": "c4o",
+   "smarts": "[CX4][OX2]",
+   "priority": 4,
+   "description": "sp3 C alpha to an oxygen"
+  },
+  {
+   "type": "c41o",
+   "smarts": "[CX4H3][OX2H1]",
+   "priority": 5,
+   "description": "C of methanol"
+  },
+  {
+   "type": "c43o",
+   "smarts": "[CX4H1][OX2H1]",
+   "priority": 5,
+   "description": "C of a secondary alcohol"
+  },
+  {
+   "type": "c4z",
+   "smarts": "[CX4][NX2]=[NX2+]=[NX1-]",
+   "priority": 5,
+   "description": "sp3 C bonded to -N3"
+  },
+  {
+   "type": "c4x",
+   "smarts": "[CX4][Cl]",
+   "priority": 3,
+   "description": "sp3 C bonded to Cl"
+  },
+  {
+   "type": "c3a",
+   "smarts": "c",
+   "priority": 1,
+   "description": "aromatic C"
+  },
+  {
+   "type": "c3=",
+   "smarts": "[CX3]=[CX3]",
+   "priority": 1,
+   "description": "sp2 C of C=C"
+  },
+  {
+   "type": "c3'",
+   "smarts": "[CX3](=[OX1])[OX2,NX3]",
+   "priority": 4,
+   "description": "carbonyl C with one polar substituent (ester, acid, amide)"
+  },
+  {
+   "type": "c3o",
+   "smarts": "[CX3](=[OX1])([#6,#1])[#6,#1]",
+   "priority": 3,
+   "description": "carbonyl C of an aldehyde or ketone"
+  },
+  {
+   "type": "c3-",
+   "smarts": "[CX3](=[OX1])[OX1-]",
+   "priority": 5,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "c3n",
+   "smarts": "[CX3]=[NX2]",
+   "priority": 3,
+   "description": "sp2 C bonded to N (imine)"
+  },
+  {
+   "type": "c2t",
+   "smarts": "[CX2]#[C,N]",
+   "priority": 1,
+   "description": "sp C of a triple bond"
+  },
+  {
+   "type": "c2=",
+   "smarts": "[CX2](=O)=O",
+   "priority": 5,
+   "description": "C in CO2"
+  },
+  {
+   "type": "c1o",
+   "smarts": "[CX1-]#[OX1+]",
+   "priority": 5,
+   "description": "C in CO"
+  },
+  {
+   "type": "o2",
+   "smarts": "[OX2]",
+   "priority": 0,
+   "description": "generic O with two bonds"
+  },
+  {
+   "type": "o1=",
+   "smarts": "[OX1]=[#6,#7,#16]",
+   "priority": 1,
+   "description": "carbonyl O (and O in NO2, SO2)"
+  },
+  {
+   "type": "o2e",
+   "smarts": "[OX2]([#6])[#6]",
+   "priority": 2,
+   "description": "ether O"
+  },
+  {
+   "type": "o2s",
+   "smarts": "[OX2]([#6])[CX3]=[OX1]",
+   "priority": 3,
+   "description": "ester O"
+  },
+  {
+   "type": "o2h",
+   "smarts": "[OX2H1]",
+   "priority": 3,
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "o2c",
+   "smarts": "[OX2H1][CX3]=[OX1]",
+   "priority": 4,
+   "description": "hydroxyl O of a carboxylic acid"
+  },
+  {
+   "type": "o1-",
+   "smarts": "[OX1-][CX3]=[OX1]",
+   "priority": 5,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "o2z",
+   "smarts": "[OX2]([Si])[Si,Al]",
+   "priority": 3,
+   "description": "O in siloxanes and zeolites"
+  },
+  {
+   "type": "o12",
+   "smarts": "[OX1]~[NX3](~[OX1])[#6]",
+   "priority": 4,
+   "description": "O in a nitro group"
+  },
+  {
+   "type": "o2n",
+   "smarts": "[OX2][NX3](~[OX1])~[OX1]",
+   "priority": 4,
+   "description": "O in a nitrate"
+  },
+  {
+   "type": "n3",
+   "smarts": "[NX3]",
+   "priority": 0,
+   "description": "sp3 N in an amine"
+  },
+  {
+   "type": "n3h2",
+   "smarts": "[NX3H2]c",
+   "priority": 1,
+   "description": "N of an aniline"
+  },
+  {
+   "type": "n3mh",
+   "smarts": "[NX3;H1,H2][CX3]=[OX1]",
+   "priority": 3,
+   "description": "amide N with H"
+  },
+  {
+   "type": "n3m",
+   "smarts": "[NX3H0][CX3]=[OX1]",
+   "priority": 3,
+   "description": "amide N without H"
+  },
+  {
+   "type": "n1t",
+   "smarts": "[NX1]#[#6]",
+   "priority": 2,
+   "description": "sp N of a nitrile"
+  },
+  {
+   "type": "n3o",
+   "smarts": "[NX3](~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "N of a nitro group"
+  },
+  {
+   "type": "n2=",
+   "smarts": "[NX2]=[#6,#7,#8]",
+   "priority": 1,
+   "description": "sp2 N (imine, nitroso)"
+  },
+  {
+   "type": "n3a",
+   "smarts": "[nX3]",
+   "priority": 2,
+   "description": "aromatic N with three connections (pyrrole)"
+  },
+  {
+   "type": "n2a",
+   "smarts": "[nX2]",
+   "priority": 2,
+   "description": "aromatic N with two connections (pyridine)"
+  },
+  {
+   "type": "n4+",
+   "smarts": "[NX4+]",
+   "priority": 3,
+   "description": "ammonium N"
+  },
+  {
+   "type": "si4",
+   "smarts": "[SiX4]",
+   "priority": 0,
+   "description": "generic Si with four bonds"
+  },
+  {
+   "type": "si4c",
+   "smarts": "[SiX4H0]",
+   "priority": 1,
+   "description": "Si with no H attached (siloxanes)"
+  },
+  {
+   "type": "f1",
+   "smarts": "[F][CX4;!$(*(F)F)]",
+   "priority": 0,
+   "description": "F on a C with one halogen"
+  },
+  {
+   "type": "f12",
+   "smarts": "[F][CX4;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 1,
+   "description": "F on a C with two halogens"
+  },
+  {
+   "type": "f13",
+   "smarts": "[F][CX4;$(*(F)(F)F)]",
+   "priority": 1,
+   "description": "F on a C with three halogens"
+  },
+  {
+   "type": "cl1",
+   "smarts": "[Cl][CX4;!$(*(Cl)[Cl,F,Br,I])]",
+   "priority": 0,
+   "description": "Cl on a C with one halogen"
+  },
+  {
+   "type": "cl12",
+   "smarts": "[Cl][CX4;$(*(Cl)[Cl,F,Br,I]);!$(*(Cl)(Cl)(Cl)Cl)]",
+   "priority": 1,
+   "description": "Cl on a C with two or three halogens"
+  },
+  {
+   "type": "cl14",
+   "smarts": "[Cl][CX4;$(*(Cl)(Cl)(Cl)Cl)]",
+   "priority": 2,
+   "description": "Cl on a C with four halogens"
+  }
+ ]
+}

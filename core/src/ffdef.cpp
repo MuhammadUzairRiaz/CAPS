@@ -875,6 +875,8 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     for (const auto& b : s.bonds) {
       bool rev = false;
       const FFRule* r = lookup(def.bond_increments, Nq, {b.i, b.j}, &rev);
+      // then the bond equivalents, as COMPASS's tools match increments (c43, c44, c4o are c4 for bonds: c4-c43 is c4-c4)
+      if (!r) r = lookup(def.bond_increments, Nb, {b.i, b.j}, &rev);
       if (!r || r->params.size() < 2) {
         if (!unmatched++) rep.missing.push_back("bond increment " + shown(Nq, {b.i, b.j}));
         continue;
