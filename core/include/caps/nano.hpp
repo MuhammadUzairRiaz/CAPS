@@ -3,7 +3,7 @@
 //
 //  graphene_sheet  Rectangular graphene (zigzag along x), one or more AB-stacked layers 3.35 Å apart; periodic in the
 //                  plane, or a flake with its edge carbons capped by hydrogen.
-//  nanotube        (n, m) single-walled tube rolled from graphene (Saito, Dresselhaus & Dresselhaus, 1998): diameter
+//  nanotube        (n, m) tube rolled from graphene (or several concentric armchair / zigzag walls) (Saito, Dresselhaus & Dresselhaus, 1998): diameter
 //                  a √(n² + nm + m²) / π, a = √3 × C–C; periodic along z, or a finite tube with hydrogen-capped ends.
 //  nanoparticle    A sphere, cube, octahedron or cuboctahedron (the size is the circumscribed radius), or a fibre
 //                  (a cylinder periodic along the crystal's c axis) cut from a bulk
@@ -46,6 +46,9 @@ struct NanotubeOptions {
   double cc = 1.42;
   bool periodic = true;           // periodic along z; false: finite, ends capped with hydrogen
   double vacuum = 10.0;           // Å around the tube
+  // multi-walled: concentric armchair or zigzag walls about wall_spacing apart ((5,5)@(10,10)@(15,15) at 3.4 Å)
+  int walls = 1;
+  double wall_spacing = 3.4;      // Å, the target; whole (n, m) steps give 3.39 Å (armchair) or 3.52 Å (zigzag)
 };
 System nanotube(const NanotubeOptions& o, NanoReport* rep = nullptr);
 // Diameter (Å), chiral angle (degrees) and period |T| (Å) of an (n, m) tube.

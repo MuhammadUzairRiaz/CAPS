@@ -114,11 +114,15 @@
                   <TextBlock Text="GEOMETRY" Classes="h3" />
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <StackPanel Spacing="6"><TextBlock Text="Length · Å" Classes="label" /><NumericUpDown Value="{Binding TubeLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" /></StackPanel>
-                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="C–C · Å" Classes="label" /><NumericUpDown Value="1.42" IsEnabled="False" FormatString="0.00" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="C–C · Å" Classes="label" /><NumericUpDown Value="{Binding NanoCc}" Minimum="1.30" Maximum="1.60" Increment="0.01" FormatString="0.00" /></StackPanel>
                   </Grid>
                   <CheckBox Classes="toggle" Content="Periodic along the tube axis" IsChecked="{Binding NanoPeriodic}" />
                   <CheckBox Classes="toggle" Content="Cap the ends with hydrogen" IsChecked="{Binding NanoCap}" />
-                  <CheckBox Classes="toggle" Content="Multi-walled" IsEnabled="False" ToolTip.Tip="Single-walled tubes in this version" ToolTip.ShowOnDisabled="True" />
+                  <Grid ColumnDefinitions="*,90" ColumnSpacing="10">
+                    <CheckBox Classes="toggle" Content="Multi-walled" IsChecked="{Binding TubeMultiWalled}" IsEnabled="{Binding TubeWallsAllowed}" ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="Concentric walls about 3.4 Å apart: armchair (n,n)@(n+5,n+5) or zigzag (n,0)@(n+9,0); chiral walls do not share a period along the axis" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding TubeWalls}" Minimum="2" Maximum="6" Increment="1" FormatString="0" IsVisible="{Binding TubeMultiWalled}" />
+                  </Grid>
                 </StackPanel>
               </Border>
 

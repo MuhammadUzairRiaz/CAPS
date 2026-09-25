@@ -153,6 +153,12 @@ internal static class Screenshot
                 w.ViewModel.NanoKind = int.Parse(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "walls")   // walls=N after nano=1: a multi-walled tube (armchair by default)
+            {
+                w.ViewModel.TubeN = 5;
+                w.ViewModel.TubeWalls = int.Parse(kv[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "crystal")   // crystal=1: the Crystal builder (polyethylene); crystal=ID: a library crystal imported through Find symmetry
             {
                 w.ViewModel.OpenCrystal();

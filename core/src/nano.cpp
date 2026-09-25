@@ -173,48 +173,73 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
   const int n = o.n, m = o.m;
   if (n < 1 || m < 0 || m > n) throw std::invalid_argument("chirality (n, m) needs n ≥ 1 and 0 ≤ m ≤ n");
   const double cc = o.cc > 0 ? o.cc : 1.42, a = std::sqrt(3.0) * cc;
+  const int walls = std::max(1, o.walls);
+  if (walls > 1 && m != n && m != 0)
+    throw std::invalid_argument("multi-walled tubes need armchair (n,n) or zigzag (n,0) walls, whose periods along the axis match");
+  // walls about 2 × spacing wider each: Δd = a√3 Δn / π (armchair) or a Δn / π (zigzag)
+  const double spacing = o.wall_spacing > 0 ? o.wall_spacing : 3.4;
+  const int dn = walls == 1 ? 0 : std::max(1, int(std::lround(2 * spacing * kPi / (m == n ? a * std::sqrt(3.0) : a))));
   const Vec3 a1{a, 0, 0}, a2{a / 2, a * std::sqrt(3.0) / 2, 0};
-  const Vec3 Ch = a1 * n + a2 * m;
-  const int dr = std::gcd(2 * m + n, 2 * n + m);
-  const int t1 = (2 * m + n) / dr, t2 = -(2 * n + m) / dr;
-  const Vec3 T = a1 * t1 + a2 * t2;
-  const double lc = norm(Ch), lt = norm(T), R = lc / (2 * kPi);
   const Vec3 basis[2] = {{0, 0, 0}, (a1 + a2) * (1.0 / 3)};
-  // atoms of one period: graphene points inside the parallelogram of Ch and T
-  std::vector<std::pair<double, double>> uv;
-  const int span = 2 * (std::abs(n) + std::abs(m) + std::abs(t1) + std::abs(t2)) + 2;
-  for (int i = -span; i <= span; ++i)
-    for (int j = -span; j <= span; ++j)
-      for (const auto& b : basis) {
-        const Vec3 r = a1 * i + a2 * j + b;
-        const double u = dot(r, Ch) / (lc * lc), v = dot(r, T) / (lt * lt);
-        if (u >= -1e-9 && u < 1 - 1e-9 && v >= -1e-9 && v < 1 - 1e-9) uv.push_back({u, v});
-      }
-  const int expect = 4 * (n * n + n * m + m * m) / dr;
-  if (int(uv.size()) != expect) throw std::runtime_error("nanotube: " + std::to_string(uv.size()) + " atoms per period, expected " + std::to_string(expect));
+  // one wall's period: graphene points inside the parallelogram of Ch and T, as (u around, v along)
+  struct Wall { int n, m, expect; double R, lt; std::vector<std::pair<double, double>> uv; };
+  auto roll = [&](int wn, int wm) {
+    Wall w{wn, wm, 0, 0, 0, {}};
+    const Vec3 Ch = a1 * wn + a2 * wm;
+    const int dr = std::gcd(2 * wm + wn, 2 * wn + wm);
+    const int t1 = (2 * wm + wn) / dr, t2 = -(2 * wn + wm) / dr;
+    const Vec3 T = a1 * t1 + a2 * t2;
+    const double lc = norm(Ch);
+    w.lt = norm(T), w.R = lc / (2 * kPi);
+    const int span = 2 * (std::abs(wn) + std::abs(wm) + std::abs(t1) + std::abs(t2)) + 2;
+    for (int i = -span; i <= span; ++i)
+      for (int j = -span; j <= span; ++j)
+        for (const auto& bv : basis) {
+          const Vec3 r = a1 * i + a2 * j + bv;
+          const double u = dot(r, Ch) / (lc * lc), v = dot(r, T) / (w.lt * w.lt);
+          if (u >= -1e-9 && u < 1 - 1e-9 && v >= -1e-9 && v < 1 - 1e-9) w.uv.push_back({u, v});
+        }
+    w.expect = 4 * (wn * wn + wn * wm + wm * wm) / dr;
+    if (int(w.uv.size()) != w.expect)
+      throw std::runtime_error("nanotube: " + std::to_string(w.uv.size()) + " atoms per period, expected " + std::to_string(w.expect));
+    return w;
+  };
+  std::vector<Wall> W;
+  for (int k = 0; k < walls; ++k) W.push_back(roll(n + k * dn, m == 0 ? 0 : m + k * dn));
+  const double lt = W.front().lt, Rout = W.back().R;
   int periods = std::max(1, int(std::lround(o.length / lt)));
   if (o.periodic) periods = std::max(periods, int(std::ceil(6.0 / lt)));   // at least 6 Å along the axis
   const double Lz = periods * lt, vac = std::max(0.0, o.vacuum);
   System s;
-  const double box = 2 * R + 2 * vac;
+  const double box = 2 * Rout + 2 * vac;
   s.cell.a = {box, 0, 0};
   s.cell.b = {0, box, 0};
   s.cell.c = {0, 0, o.periodic ? Lz : Lz + 2 * vac};
   const double zoff = o.periodic ? 0 : vac;
-  for (int p = 0; p < periods; ++p)
-    for (const auto& [u, v] : uv) {
-      const double th = 2 * kPi * u;
-      add(s, 6, {box / 2 + R * std::cos(th), box / 2 + R * std::sin(th), zoff + (v + p) * lt});
-    }
+  int per_period = 0;
+  for (const auto& w : W) {
+    per_period += w.expect;
+    for (int p = 0; p < periods; ++p)
+      for (const auto& [u, v] : w.uv) {
+        const double th = 2 * kPi * u;
+        add(s, 6, {box / 2 + w.R * std::cos(th), box / 2 + w.R * std::sin(th), zoff + (v + p) * lt});
+      }
+  }
   NanoReport r;
   const auto g = nanotube_geometry(n, m, cc);
-  r.diameter = g[0], r.chiral_angle = g[1], r.translation = g[2], r.atoms_per_period = expect;
-  finish(s, "(" + std::to_string(n) + "," + std::to_string(m) + ") nanotube");
+  r.diameter = 2 * Rout, r.chiral_angle = g[1], r.translation = g[2], r.atoms_per_period = per_period;
+  std::string name = "(" + std::to_string(n) + "," + std::to_string(m) + ")";
+  for (size_t k = 1; k < W.size(); ++k) name += "@(" + std::to_string(W[k].n) + "," + std::to_string(W[k].m) + ")";
+  finish(s, name + " nanotube");
   if (!o.periodic) r.capped = cap_edges(s);
   const char* kind = m == n ? "armchair" : m == 0 ? "zigzag" : "chiral";
-  char b[200];
-  std::snprintf(b, sizeof b, "(%d,%d) %s nanotube · d = %.2f Å · chiral angle %.2f° · |T| = %.3f Å · %d atoms per period × %d · %s", n, m, kind, r.diameter,
-                r.chiral_angle, r.translation, expect, periods, o.periodic ? "periodic along z" : "finite, ends capped with H");
+  char b[320];
+  if (walls == 1)
+    std::snprintf(b, sizeof b, "(%d,%d) %s nanotube · d = %.2f Å · chiral angle %.2f° · |T| = %.3f Å · %d atoms per period × %d · %s", n, m, kind, r.diameter,
+                  r.chiral_angle, r.translation, per_period, periods, o.periodic ? "periodic along z" : "finite, ends capped with H");
+  else
+    std::snprintf(b, sizeof b, "%s %d-walled %s nanotube · outer d = %.2f Å · walls %.2f Å apart · |T| = %.3f Å · %d atoms per period × %d · %s", name.c_str(), walls,
+                  kind, r.diameter, W[1].R - W[0].R, r.translation, per_period, periods, o.periodic ? "periodic along z" : "finite, ends capped with H");
   r.notes.push_back(b);
   s.notes = r.notes;
   if (rep) *rep = r;
