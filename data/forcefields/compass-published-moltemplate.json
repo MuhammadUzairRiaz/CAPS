@@ -26563,5 +26563,6 @@
  ],
  "version": "1998",
  "status": "validated",
- "validation": "all cross terms; energies / forces equal LAMMPS CLASS2 (≤7e-8 kcal/mol/Å) for an ester-ether, propylbenzene and a siloxane. Every cross-term reference length / angle lies on its own bond / angle in CAPS (moltemplate's canonical sort misplaces up to 55 %, and it doubles bond increments with 'Data Bond List')."
+ "validation": "all cross terms; energies / forces equal LAMMPS CLASS2 (≤7e-8 kcal/mol/Å) for an ester-ether, propylbenzene and a siloxane. Every cross-term reference length / angle lies on its own bond / angle in CAPS (moltemplate's canonical sort misplaces up to 55 %, and it doubles bond increments with 'Data Bond List').",
+ "typing": "../typing/compass-published-moltemplate.typing.json"
 }
