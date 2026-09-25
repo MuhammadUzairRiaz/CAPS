@@ -100,6 +100,7 @@ public struct CapsMdOpts
     public int ThermoEvery, FrameEvery;
     public double Cutoff;
     public int Coulomb, Tail, Threads;
+    public int Respa;             // r-RESPA inner steps (0 or 1: off)
 }
 
 [StructLayout(LayoutKind.Sequential)]
