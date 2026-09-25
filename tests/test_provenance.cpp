@@ -208,3 +208,36 @@ TEST(Pore, ChannelInQuartzIsEmptyAlongItsAxis) {
   }
   EXPECT_EQ(int(s.atoms.size()), r.wall_atoms + 8 * 3);
 }
+
+#include "caps/grow.hpp"
+
+TEST(Gasteiger, HeteroatomsGetTheirOwnParameters) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  const System ethanol = build_molecule("CCO", bo).system;
+  const auto q = gasteiger_ch(ethanol, {});
+  double qo = 0, qho = 0, total = 0;
+  for (size_t i = 0; i < ethanol.atoms.size(); ++i) {
+    total += q[i];
+    if (ethanol.atoms[i].element == 8) qo = q[i];
+  }
+  for (const auto& b : ethanol.bonds) {
+    const auto& ai = ethanol.atoms[b.i];
+    const auto& aj = ethanol.atoms[b.j];
+    if (ai.element == 8 && aj.element == 1) qho = q[b.j];
+    if (aj.element == 8 && ai.element == 1) qho = q[b.i];
+  }
+  EXPECT_NEAR(total, 0.0, 1e-9);
+  EXPECT_LT(qo, -0.35);    // PEOE ethanol O ≈ −0.39
+  EXPECT_GT(qho, 0.18);    // hydroxyl H ≈ +0.21
+  const System nitrile = build_molecule("CC#N", bo).system;   // acrylonitrile units in NBR carry C≡N
+  const auto qn = gasteiger_ch(nitrile, {});
+  for (size_t i = 0; i < nitrile.atoms.size(); ++i)
+    if (nitrile.atoms[i].element == 7) EXPECT_NEAR(qn[i], -0.197, 0.01);   // PEOE acetonitrile N
+  const System chloro = build_molecule("C=CCl", bo).system;   // chloroprene-like vinyl chloride
+  const auto qc = gasteiger_ch(chloro, {});
+  for (size_t i = 0; i < chloro.atoms.size(); ++i)
+    if (chloro.atoms[i].element == 17) EXPECT_LT(qc[i], -0.05);
+  const System silane = build_molecule("[SiH4]", bo).system;
+  EXPECT_THROW(gasteiger_ch(silane, {}), std::invalid_argument);
+}

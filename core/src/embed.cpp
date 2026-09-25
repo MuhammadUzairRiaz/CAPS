@@ -663,8 +663,8 @@ std::shared_ptr<const ForceField> molecule_forcefield(const MolGraph& g, const s
     } catch (const std::exception&) {
       if (charges == "types") throw;
       pr = ParamReport{};
-      ff = std::make_shared<ForceField>(parameterize(s0, def, t.types, "types", &pr, true));   // Gasteiger covers C, H, N, O only
-      notes.push_back("charges from the force field's types (Gasteiger covers C, H, N and O only)");
+      ff = std::make_shared<ForceField>(parameterize(s0, def, t.types, "types", &pr, true));   // Gasteiger covers H, C, N, O, halogens and sp³ S
+      notes.push_back("charges from the force field's types (Gasteiger covers H, C, N, O, halogens and sp³ S)");
     }
     if (!pr.missing.empty())
       notes.push_back(std::to_string(pr.missing.size()) + " " + def.name + " terms are missing and left out of the clean-up (first: " + pr.missing.front() + ")");

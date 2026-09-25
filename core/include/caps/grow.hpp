@@ -74,7 +74,8 @@ double box_for_density(const GrowOptions& o);
 // Throws GrowError when a chain cannot be placed within the limits.
 System grow(const GrowOptions& o, GrowReport* report = nullptr);
 
-// Gasteiger–Marsili partial charges for C/H systems (sp3 C, aromatic C, H). Returns one charge per atom.
+// Gasteiger–Marsili partial charges (H, C, N, O, F, Cl, Br, I, sp³ S; hybridisation from the perceived bonds). One
+// charge per atom; throws std::invalid_argument for other elements.
 std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aromatic, int iterations = 6);
 
 }  // namespace caps
