@@ -1059,7 +1059,7 @@ public sealed partial class MainViewModel : ObservableObject
             Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
             NewVelocities = _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
             ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = 1, Respa = RespaSteps,
+            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps,
         };
         _thermo.Clear();
         ThermoChanged?.Invoke();
@@ -1208,7 +1208,7 @@ public sealed partial class MainViewModel : ObservableObject
         var o = new CapsEquilOpts
         {
             Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = 1,
+            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
             FramePs = 10, ThermoPs = 0.5, UntilConverged = _eqUntil ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks,
         };
         _thermo.Clear();

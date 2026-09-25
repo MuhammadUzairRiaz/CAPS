@@ -80,8 +80,9 @@
                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" IsEnabled="{Binding EsPme}"><TextBlock Text="Tolerance" Classes="label" /><ComboBox ItemsSource="{Binding EsTolerances}" SelectedIndex="{Binding EsTolerance}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Grid.Row="2" Spacing="4" IsEnabled="{Binding EsPme}"><TextBlock Text="Max grid spacing · Å" Classes="label" /><NumericUpDown Value="{Binding EsSpacing}" Minimum="0.3" Maximum="3" Increment="0.05" FormatString="0.0#" /></StackPanel>
                 <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Text="LJ" Classes="label" />
-                  <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False" ToolTip.Tip="Dynamics and Equilibrate add the long-range dispersion correction to energy and pressure" ToolTip.ShowOnDisabled="True">
-                    <ComboBoxItem Content="cut-off + tail correction" />
+                  <ComboBox SelectedIndex="{Binding LjTailChoice}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="Dynamics and Equilibrate: the long-range dispersion correction to energy and pressure for a homogeneous fluid beyond r_c (as LAMMPS pair_modify tail yes), or none (interfaces, films)">
+                    <ComboBoxItem Content="cut-off + tail correction" /><ComboBoxItem Content="cut-off only" />
                   </ComboBox>
                 </StackPanel>
                 <StackPanel Grid.Row="3" Spacing="4" IsVisible="{Binding EsNoCell}"><TextBlock Text="Box edge · Å (no periodic cell open)" Classes="label" /><NumericUpDown Value="{Binding EsBox}" Minimum="5" Maximum="10000" Increment="1" FormatString="0.0" /></StackPanel>
