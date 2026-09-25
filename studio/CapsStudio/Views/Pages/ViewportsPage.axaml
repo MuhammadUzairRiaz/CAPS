@@ -1,0 +1,48 @@
+<!-- CAPS Studio › Viewports (design/boards/FourViewports): top, front, left and perspective. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ViewportsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}" Focusable="True">
+  <Grid ColumnDefinitions="*,330">
+    <Canvas x:Name="Stage" Background="{DynamicResource Bg0B}" ClipToBounds="True" />
+    <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="small" Content="Back" Click="OnBack" VerticalAlignment="Center" />
+            <TextBlock Text="Viewports" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="10">
+                <TextBlock Text="LAYOUT" Classes="h3" />
+                <ListBox ItemsSource="{x:Static vm:MainViewModel.ViewportLayouts}" SelectedIndex="{Binding ViewportLayout}" Classes="seg">
+                  <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                </ListBox>
+                <CheckBox Classes="toggle" Content="Link zoom and pan across ortho views" IsChecked="{Binding ViewportLinkZoom}" />
+                <TextBlock Text="The selection is shared: an atom picked in one view is ringed in all." Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h3"><Run Text="ACTIVE: " /><Run Text="{Binding ViewportActiveName}" /></TextBlock>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Perspective view" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="drag orbits · wheel zooms" Classes="mono" FontSize="11.5" /></Grid>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Ortho views" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="drag pans · wheel zooms" Classes="mono" FontSize="11.5" /></Grid>
+                <CheckBox Classes="toggle" Content="Show cell" IsChecked="{Binding ShowCell}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="6">
+                <TextBlock Text="MAXIMISE" Classes="h3" />
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Active view" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="Enter" Classes="mono" FontSize="12" /></Grid>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Cycle views" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="Tab" Classes="mono" FontSize="12" /></Grid>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Make active" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="click its title" Classes="mono" FontSize="12" /></Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</p:PageBase>
