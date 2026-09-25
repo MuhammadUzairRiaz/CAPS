@@ -39,6 +39,9 @@
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
 #include "caps/provenance.hpp"
+#include "caps/recipe.hpp"
+#include "caps/yaml.hpp"
+#include <unistd.h>
 
 using namespace caps;
 
@@ -70,6 +73,8 @@ int usage() {
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
                "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
+               "  caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json]   build → type → grow → relax → md →\n"
+               "               equilibrate → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)\n"
                "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT]\n"
                "                                   a saved pipeline over many inputs: one row of attributes per input\n"
                "  caps crystal --group 'P 42/m n m' --cell a,b,c[,α,β,γ] --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' -o OUT\n"
@@ -167,7 +172,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--vacuum" || a == "--methods" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -223,6 +228,67 @@ ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& 
   if (!rep.missing.empty()) throw std::runtime_error(std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (caps ff apply lists them)");
   if (!quiet) std::printf("force field: %s\n", def.name.c_str());
   return ff;
+}
+
+// caps run RECIPE.yaml: every stage on one line as it runs ([k/n] stage · detail · state, a bar while it works), or one
+// JSON object per event with --json. Exit 0 done, 2 the recipe or an input is wrong, 3 missing parameters, 4 a run failed.
+int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std::string>& o) {
+  RecipeOptions ro;
+  ro.base_dir = std::filesystem::absolute(file).parent_path().string();
+  ro.out_dir = o.count("--out") ? o["--out"] : ".";
+  if (o.count("--seed")) ro.seed = std::stoll(o["--seed"]);
+  if (o.count("--threads")) ro.threads = std::stoi(o["--threads"]);
+  for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+    if (!root.empty() && std::filesystem::exists(root + "/data/forcefields/catalogue.json")) { ro.forcefield_dir = root + "/data/forcefields"; break; }
+  const bool json = o.count("--json") > 0, tty = isatty(fileno(stdout));
+  auto esc = [](const std::string& x) { return Json(x).dump(0); };
+  bool open_line = false;
+  ro.progress = [&](const RecipeEvent& e) {
+    if (json) {
+      std::printf("{\"stage\":%d,\"stages\":%d,\"name\":%s,\"status\":%s,\"fraction\":%.3f,\"detail\":%s}\n", e.stage, e.stages, esc(e.name).c_str(), esc(e.status).c_str(), e.fraction,
+                  esc(e.detail).c_str());
+      std::fflush(stdout);
+      return;
+    }
+    char head[64];
+    std::snprintf(head, sizeof head, "[%d/%d] %-12s", e.stage, e.stages, e.name.c_str());
+    if (e.status == "running") {
+      if (!tty) return;
+      const int w = 20, f = int(std::lround(std::clamp(e.fraction, 0.0, 1.0) * w));
+      std::string bar = std::string(size_t(f), '#') + std::string(size_t(w - f), '.');
+      std::printf("\r%s %s %3.0f%%  %-50.50s", head, bar.c_str(), 100 * e.fraction, e.detail.c_str());
+      std::fflush(stdout);
+      open_line = true;
+      return;
+    }
+    if (open_line) std::printf("\r%*s\r", 120, "");
+    open_line = false;
+    size_t cols = 0;   // display width (UTF-8 continuation bytes take no column)
+    for (unsigned char c : e.detail) cols += (c & 0xC0) != 0x80;
+    std::printf("%s %s%*s %s\n", head, e.detail.c_str(), int(cols < 64 ? 64 - cols : 0), "", e.status.c_str());
+    std::fflush(stdout);
+  };
+  try {
+    const auto res = run_recipe(r, ro);
+    if (json) {
+      Json out = Json::object();
+      out["status"] = Json("done");
+      Json files = Json::array();
+      for (const auto& f : res.files) files.push_back(Json(f));
+      out["files"] = files;
+      out["atoms"] = Json(double(res.system.atoms.size()));
+      std::printf("%s\n", out.dump(0).c_str());
+    } else {
+      for (const auto& p : res.properties)
+        if (std::isfinite(p.value)) std::printf("%s: %.6g%s%s\n", p.name.c_str(), p.value, p.unit.empty() ? "" : " ", p.unit.c_str());
+      for (const auto& f : res.files) std::printf("wrote %s\n", f.c_str());
+    }
+    return 0;
+  } catch (const RecipeError& e) {
+    if (json) std::printf("{\"status\":\"failed\",\"exit\":%d,\"error\":%s}\n", e.code, esc(e.what()).c_str());
+    else std::fprintf(stderr, "caps run: %s (exit %d)\n", e.what(), e.code);
+    return e.code;
+  }
 }
 
 // Prints properties; --json OUT and --csv DIR (one CSV per curve).
@@ -856,6 +922,17 @@ int main(int argc, char** argv) {
     std::ifstream pf(pos[0]);
     if (!pf) throw std::runtime_error("cannot read " + pos[0]);
     const std::string text((std::istreambuf_iterator<char>(pf)), std::istreambuf_iterator<char>());
+    if (text.find("caps_pipeline") == std::string::npos) {   // a recipe: caps run RECIPE.yaml [--seed N] [--threads N] [--out DIR] [--json]
+      Json r;
+      try {
+        const auto t0 = text.find_first_not_of(" \t\r\n");
+        r = t0 != std::string::npos && text[t0] == '{' ? Json::parse(text) : yaml_parse(text);
+      } catch (const std::exception& e) {
+        std::fprintf(stderr, "caps run: %s: %s\n", pos[0].c_str(), e.what());
+        return 2;
+      }
+      if (r.is_object() && (r.has("recipe") || r.has("build"))) return cli_recipe(r, pos[0], o);
+    }
     std::string name, file, topo;
     const Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
     const std::string pattern = o.count("--input") ? o["--input"] : file;
