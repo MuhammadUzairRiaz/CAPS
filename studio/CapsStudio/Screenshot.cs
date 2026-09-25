@@ -69,6 +69,11 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
+            if (kv[0] == "blend")
+            {
+                w.ViewModel.OpenBlend();
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "nanobuild")
             {
                 var t = w.ViewModel.BuildNano();

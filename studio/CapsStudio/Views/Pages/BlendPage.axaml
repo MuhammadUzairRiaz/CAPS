@@ -1,0 +1,143 @@
+<!-- CAPS Blend builder (design/boards/BlendBuilder.dc.html): polymer blends grown component after component into one cell. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.BlendPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.builder"><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="12,0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="12.5" /></Style>
+    <Style Selector="Button.builder.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="RadioButton.morph">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="B" CornerRadius="7" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg0B}" Padding="10">
+            <ContentPresenter Content="{TemplateBinding Content}" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.morph:checked /template/ Border#B"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+    <Style Selector="RadioButton.morph:disabled"><Setter Property="Opacity" Value="0.45" /></Style>
+  </p:PageBase.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="builder on" Content="Polymer" Click="OnPolymer" ToolTip.Tip="Repeat units and copolymers" />
+        <Button Classes="builder" Content="Crystal" IsEnabled="False" ToolTip.Tip="Crystals come from CIF files; the crystal builder comes with its board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Surface" Click="OnSurface" />
+        <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
+        <Button Classes="builder" Content="Biomolecule" IsEnabled="False" ToolTip.Tip="Comes with the Biomolecule board" ToolTip.ShowOnDisabled="True" />
+        <Button Classes="builder" Content="Solvation" Click="OnSolvation" />
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,420">
+      <Border Background="{DynamicResource Bg0B}">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" MaxWidth="520">
+          <v:Icon Kind="grow" Size="40" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding BlendSummary}" FontSize="14" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+          <TextBlock Classes="dim" TextWrapping="Wrap" TextAlignment="Center"
+                     Text="Components grow one after another, each around the chains already placed, at the growth density; compress in Relax and equilibrate afterwards. Miscibility (χ from CED) and interfacial profiles come from Analyze." />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0" VerticalAlignment="Center"><TextBlock Text="blend recipe" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+              <TextBlock Text="Blend builder" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel" Click="OnCancel" />
+              <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding BlendIdle}">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build blend" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="COMPONENTS" Classes="h3" />
+                  <Grid ColumnDefinitions="*,64,56,Auto" ColumnSpacing="6">
+                    <TextBlock Text="Component" Classes="label" /><TextBlock Grid.Column="1" Text="wt %" Classes="label" /><TextBlock Grid.Column="2" Text="DP" Classes="label" />
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding BlendRows}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:BlendRow">
+                        <StackPanel Spacing="3">
+                          <Grid ColumnDefinitions="Auto,*,64,56,Auto" ColumnSpacing="6">
+                            <Border Width="10" Height="10" CornerRadius="5" Background="{Binding Dot}" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendLibrary}" SelectedItem="{Binding Polymer}" HorizontalAlignment="Stretch">
+                              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <NumericUpDown Grid.Column="2" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
+                            <NumericUpDown Grid.Column="3" Value="{Binding Dp}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+                            <Button Grid.Column="4" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnRemove" Tag="{Binding}" ToolTip.Tip="Remove"><v:Icon Kind="close" Size="12" /></Button>
+                          </Grid>
+                          <TextBlock Text="{Binding ChainsText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" Margin="16,0,0,0" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="small" Click="OnAdd" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add component" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="COMPOSITION" Classes="h3" />
+                  <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+                    <TextBlock Text="Chains of the first component" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding BlendChains}" Minimum="1" Maximum="1000" Increment="1" FormatString="0" />
+                  </Grid>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="The other chain counts come from the weight shares and each chain's molar mass; whole chains round the shares." />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="INITIAL MORPHOLOGY" Classes="h3" />
+                  <UniformGrid Columns="3" ColumnSpacing="6">
+                    <RadioButton Classes="morph" GroupName="bm" IsChecked="{Binding BlendMixed}">
+                      <StackPanel Spacing="3"><TextBlock Text="Mixed" FontSize="12.5" /><TextBlock Text="random, homogeneous start" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="morph" GroupName="bm" IsChecked="{Binding BlendSlabs}">
+                      <StackPanel Spacing="3"><TextBlock Text="Two slabs" FontSize="12.5" /><TextBlock Text="pre-separated, for interfaces" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" /></StackPanel>
+                    </RadioButton>
+                    <RadioButton Classes="morph" GroupName="bm" IsEnabled="False" ToolTip.Tip="A spherical growth region comes later" ToolTip.ShowOnDisabled="True">
+                      <StackPanel Spacing="3"><TextBlock Text="Droplet" FontSize="12.5" /><TextBlock Text="minor phase as a sphere" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" /></StackPanel>
+                    </RadioButton>
+                  </UniformGrid>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="CELL" Classes="h3" />
+                  <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+                    <TextBlock Text="Growth density · g/cm³" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding BlendDensity}" Minimum="0.1" Maximum="1.5" Increment="0.05" FormatString="0.00" />
+                  </Grid>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Grown sparse (0.5 g/cm³ by default) with the contact scale lowered when crowded; Relax compresses to the working density." />
+                </StackPanel>
+              </Border>
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding BlendError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding BlendHasError}" />
+                  <TextBlock Text="{Binding BlendLog}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -384,6 +384,9 @@ caps_doc* caps_interface_build(const char* options_json, const char* spec_json, 
 caps_doc* caps_nano_build(const char* options_json, char* report, int32_t cap);
 caps_doc* caps_nano_embed(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
                           int32_t cap);
+/* Polymer blends (v17): options JSON {components: [{spec: {as caps_grow_chains}, weight, chains}], chains (of the first
+   component), density (growth), morphology: "mixed" | "slabs"}; grow options for seed and contact scale. */
+caps_doc* caps_grow_blend(const char* options_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap);
 /* Inserts `count` copies of a molecule (SMILES; hydrogens added, cleaned with UFF) into the free space of the current
    frame (the structure stays where it is), e.g. H–S–S–H sulfur donors for the sulfur_allylic cure. The document becomes
    that one frame; a Field assignment is cleared. 0 on success. */
