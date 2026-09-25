@@ -352,6 +352,16 @@ internal static class SelfTest
         vm.RelaxFtolD = 5;
         vm.Relax().GetAwaiter().GetResult();
         Check(vm.RelaxLog.Contains("UFF"), "interface relaxed with UFF, the surface held: " + vm.RelaxLog.Split('\n')[0]);
+        // Analyze › Interface: the film's profile above the held quartz, this frame and over the relaxation's frames
+        vm.OpenInterface();
+        vm.RunInterface().GetAwaiter().GetResult();
+        {
+            string Row(string q) => vm.IfRows.FirstOrDefault(r => r.Quantity == q)?.ThisFrame ?? "—";
+            Check(vm.IsInterfacePage && vm.IfRows.Count == 7 && Row("Surface top") != "—" && Row("Gap to the surface") != "—" && Row("Film plateau ρ") != "—" &&
+                  vm.IfSeries.Any(x => x.Label == "film") && vm.IfSeries.Any(x => x.Label == "surface Si") && vm.IfGapBand != null,
+                  $"interface page: {string.Join(" · ", vm.IfRows.Select(r => $"{r.Quantity} {r.ThisFrame}/{r.Trajectory}"))} · {vm.IfStatus}");
+        }
+        vm.SetModule(8);
 
         // Nanostructure builder: a (5,5) tube in a natural-rubber matrix
         vm.OpenNano();
@@ -599,6 +609,16 @@ internal static class SelfTest
             vm.HistoryOpen = false;
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
+        // Analyze › Diffusion: the MSD of the three-frame test trajectory; the Yeh–Hummer correction for water in a 3 nm box
+        {
+            var yh = MainViewModel.YehHummer(298, 0.89, 3.0);
+            vm.OpenDiffusion();
+            vm.RunDiffusion().GetAwaiter().GetResult();
+            Check(vm.IsDiffusion && Math.Abs(yh - 2.32e-10) < 0.01e-10 && vm.DfMsd.Length >= 2 && vm.DfL > 0 && vm.DfCorrectionText.EndsWith("m²/s"),
+                  $"diffusion: Yeh–Hummer {yh:0.000e0} m²/s · MSD {vm.DfMsd.Length} lags · L {vm.DfL} nm · {vm.DfStatus} {vm.DfWarning}");
+            vm.SetModule(8);
+        }
 
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
@@ -1172,6 +1192,21 @@ internal static class SelfTest
             var grownAtoms = vm.Document?.Summary().Atoms ?? 0;
             Check(grownAtoms == 3 * (4 * 16 + 2) && File.Exists(Path.Combine(rdir, "PS_3x4.data")) && vm.GrowPython().Contains("caps.polymer(\"*CC(*)c1ccccc1\", dp=4, chains=3"),
                   $"grow recipe: {grownAtoms} atoms · {vm.Status}");
+            // Analyze › Glass transition on that small cell: two replicas of a short cooling scan, pooled
+            {
+                var (gf0, gt0, gs0, gp0, ge0) = (vm.Analyze.TgFromD, vm.Analyze.TgToD, vm.Analyze.TgStepD, vm.Analyze.TgPsD, vm.Analyze.EqPsD);
+                vm.Analyze.TgFromD = 450; vm.Analyze.TgToD = 250; vm.Analyze.TgStepD = 50; vm.Analyze.TgPsD = 2; vm.Analyze.EqPsD = 1;
+                vm.GtReplicas = 2;
+                vm.OpenGlass();
+                var schedule = vm.GtSchedule.Length;
+                vm.RunGlass().GetAwaiter().GetResult();
+                Check(vm.IsGlass && schedule == 2 + 2 * 5 && vm.GtTemperaturesText == "5" && vm.GtPoints.Length == 5 && vm.GtErrors.Length == 5 &&
+                      vm.GtRateText == "2.5 × 10¹³ K/s" && vm.GlassRecipe("/tmp/x.data").Contains("properties: [tg]"),
+                      $"glass transition: {vm.GtPoints.Length} temperatures · Tg {vm.GtTg.Value} ({vm.GtTg.Caption}) · {vm.GtRateText} · {vm.GtStatus}");
+                (vm.Analyze.TgFromD, vm.Analyze.TgToD, vm.Analyze.TgStepD, vm.Analyze.TgPsD, vm.Analyze.EqPsD) = (gf0, gt0, gs0, gp0, ge0);
+                vm.GtReplicas = 1;
+                vm.SetModule(8);
+            }
             // a broken recipe says why, with its exit code
             File.WriteAllText(recipe, "build: {molecule: CCO}\nbogus: 1\n");
             vm.RunRecipeFile(recipe).GetAwaiter().GetResult();

@@ -125,6 +125,7 @@ std::vector<Property> cooling_properties(const CoolingResult& r) {
     tg.extra["expansion below Tg (1/K)"] = r.fit.alpha_low;
     tg.extra["expansion above Tg (1/K)"] = r.fit.alpha_high;
     tg.extra["specific volume at Tg (cm³/g)"] = r.fit.value_at_tg;
+    if (!r.points.empty()) tg.extra["fit residual rms (cm³/g)"] = std::sqrt(r.fit.rss / double(r.points.size()));
   }
   tg.notes = r.notes;
   Series v{"specific volume", "T (K)", "specific volume (cm³/g)", {}, {}}, fit{"two-line fit", "T (K)", "specific volume (cm³/g)", {}, {}};

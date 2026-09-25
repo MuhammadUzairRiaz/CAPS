@@ -262,6 +262,24 @@ internal static class Screenshot
                 vm.UndoEdit(false);
                 for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "analysis")   // analysis=glass|interface|diffusion[:run] — the focus page, optionally run (glass: a short scan)
+            {
+                var vm = w.ViewModel;
+                var parts = kv[1].Split(':');
+                System.Threading.Tasks.Task? t = null;
+                switch (parts[0])
+                {
+                    case "glass":
+                        vm.Analyze.TgFromD = 450; vm.Analyze.TgToD = 250; vm.Analyze.TgStepD = 25; vm.Analyze.TgPsD = 5; vm.Analyze.EqPsD = 2; vm.GtReplicas = 3;
+                        vm.OpenGlass();
+                        if (parts.Length > 1) t = vm.RunGlass();
+                        break;
+                    case "interface": vm.OpenInterface(); if (parts.Length > 1) t = vm.RunInterface(); break;
+                    case "diffusion": vm.OpenDiffusion(); if (parts.Length > 1) t = vm.RunDiffusion(); break;
+                }
+                while (t is { IsCompleted: false }) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "vision") w.ViewModel.OpenColourVision();                    // vision=1: Settings › Colour vision
             if (kv[0] == "cvd") w.ViewModel.VisionPreview = int.Parse(kv[1]);          // cvd=0..3: the view as seen with a deficiency
             if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested
