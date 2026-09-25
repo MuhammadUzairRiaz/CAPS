@@ -1,0 +1,116 @@
+<!-- CAPS Torsion scan (design/boards/TorsionScan.dc.html): the energy along a dihedral, rigid or with the rest relaxed,
+     the conformers it finds and the barrier. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.TorsionPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.row"><Setter Property="Padding" Value="8,0" /><Setter Property="Height" Value="30" /><Setter Property="MinHeight" Value="30" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="CornerRadius" Value="5" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Classes="small" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
+        <Border Classes="chip" Height="26" Padding="10,0" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="chart" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Torsion scan" VerticalAlignment="Center" /></StackPanel>
+        </Border>
+        <TextBlock Text="⇧ click four atoms in the Studio, then open the scan" Foreground="{DynamicResource DimB}" FontSize="12" VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="Scan uses CAPS Field (or UFF) + CAPS Relax" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding TorsionStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,640">
+      <DockPanel>
+        <Border DockPanel.Dock="Bottom" Padding="20,16" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" MinHeight="220">
+          <StackPanel Spacing="10">
+            <TextBlock Text="CONFORMERS FOUND" Classes="h3" />
+            <Grid ColumnDefinitions="0.1*,0.3*,0.28*,0.32*">
+              <TextBlock Text="#" Classes="label" /><TextBlock Grid.Column="1" Text="State" Classes="label" />
+              <TextBlock Grid.Column="2" Text="φ" Classes="label" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="ΔE (kcal/mol)" Classes="label" HorizontalAlignment="Right" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding TorsionRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TorsionRow">
+                  <Button Classes="row ghost" Click="OnRow" Tag="{Binding}" ToolTip.Tip="Show this conformer">
+                    <Grid ColumnDefinitions="0.1*,0.3*,0.28*,0.32*">
+                      <TextBlock Text="{Binding RankText}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding State}" FontSize="12.5" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding PhiText}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="3" Text="{Binding EnergyText}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="Energies from the force field named on the right; the gaps and the barrier are values of that model, not measurements." />
+          </StackPanel>
+        </Border>
+        <Panel>
+          <v:MolView x:Name="Preview" DrawStyle="0" ColourMode="0" />
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding TorsionHud}" FontSize="12" /></Border>
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding TorsionAtomsText}" Classes="mono" FontSize="12" Foreground="{DynamicResource SelB}" /></Border>
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="22" Padding="8,0" VerticalAlignment="Center" Background="#3A2C14"><TextBlock Text="{Binding TorsionBarrierText}" FontSize="11.5" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /></Border>
+              <TextBlock Text="Torsion scan" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Click="OnCsv"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="Export CSV" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Classes="primary" Click="OnRun" IsEnabled="{Binding TorsionIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="Run scan" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Padding="14,14" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <StackPanel Spacing="12">
+                  <v:LinePlot x:Name="Plot" Height="300" AutoRange="True" XLabel="dihedral φ (degrees)" YLabel="E (kcal/mol)" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Classes="chip" Height="22" Padding="8,0"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="potential" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel></Border>
+                    <Border Classes="chip" Height="22" Padding="8,0"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="{Binding TorsionStepChip}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel></Border>
+                    <Border Classes="chip" Height="22" Padding="8,0" Background="{DynamicResource Bg3B}" IsVisible="{Binding TorsionMinChip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"><TextBlock Text="{Binding TorsionMinChip}" Classes="mono" FontSize="11" VerticalAlignment="Center" /></Border>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SCAN SETUP" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Atoms (a b c d)" Classes="label" /><TextBox Text="{Binding TorsionAtomsText}" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Moving side" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.TorsionSides}" SelectedIndex="{Binding TorsionSide}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*,*,2*" ColumnSpacing="8">
+                    <StackPanel Spacing="6"><TextBlock Text="From · °" Classes="label" /><NumericUpDown Value="{Binding TorsionFrom}" Minimum="-180" Maximum="180" Increment="15" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="To · °" Classes="label" /><NumericUpDown Value="{Binding TorsionTo}" Minimum="-180" Maximum="180" Increment="15" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Step · °" Classes="label" /><NumericUpDown Value="{Binding TorsionStep}" Minimum="1" Maximum="90" Increment="5" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="3" Spacing="6"><TextBlock Text="At each step" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.TorsionModes}" SelectedIndex="{Binding TorsionMode}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding TorsionCite}" Classes="dim" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" />
+                  <TextBlock Text="From −180 to 180 is a full turn: 180° is the same geometry as −180°." Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding TorsionError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding TorsionHasError}" />
+                  <TextBlock Text="{Binding TorsionLog}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

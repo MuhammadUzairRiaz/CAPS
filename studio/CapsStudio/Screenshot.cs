@@ -203,6 +203,12 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
             }
             if (kv[0] == "frame") { w.ViewModel.Frame = int.Parse(kv[1]); for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
+            if (kv[0] == "torsion")   // torsion=1: the scan page with the default torsion; torsion=run also runs it
+            {
+                w.ViewModel.OpenTorsion();
+                if (kv[1] == "run") { var t = w.ViewModel.RunTorsionScan(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {
