@@ -45,6 +45,7 @@
 #include "caps/import.hpp"
 #include "caps/provenance.hpp"
 #include "caps/voids.hpp"
+#include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -4319,4 +4320,46 @@ extern "C" int32_t caps_methods_text(const char* manifest_json, const char* repl
     j["error"] = std::string(e.what());
   }
   return report_out(j.dump(0), json, cap);
+}
+
+// ---------------------------------------------------------------- coarse-grained melts (design/boards/CoarseGrained)
+namespace {
+caps::KgOptions kg_options(const char* options_json) {
+  const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+  caps::KgOptions o;
+  o.chains = int(j.num("chains", 50));
+  o.beads = int(j.num("beads", 100));
+  o.density = j.num("density", 0.85);
+  o.k_theta = j.num("k_theta", 0.0);
+  o.seed = uint64_t(j.num("seed", 1));
+  return o;
+}
+}  // namespace
+
+extern "C" caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap) {
+  try {
+    const caps::KgOptions o = kg_options(options_json);
+    caps::KgReport r;
+    const caps::System s = caps::kremer_grest(o, &r);
+    caps::Json j = caps::Json::object();
+    j["box"] = r.box;
+    j["closest"] = r.closest;
+    j["r2_per_bond"] = r.mean_r2;
+    report_out(j.dump(0), report, cap);
+    caps_doc* d = doc_of(s);
+    prov_step(d, "cg.kremer_grest", std::to_string(o.chains) + " × " + std::to_string(o.beads) + " bead-spring chains as random walks",
+              {{"chains", std::to_string(o.chains)}, {"beads", std::to_string(o.beads)}, {"density", g6(o.density) + " σ⁻³"}, {"k_theta", g6(o.k_theta) + " ε"},
+               {"box", g6(r.box) + " σ"}}, seeded(o.seed), {"kremer1990"});
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps) {
+  return guard([&] {
+    caps::write_kg_lammps(d->frame, kg_options(options_json), stem, pushoff_steps > 0 ? pushoff_steps : 20000, run_steps > 0 ? run_steps : 100000);
+    return 0;
+  });
 }

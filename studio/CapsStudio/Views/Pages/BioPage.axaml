@@ -36,6 +36,7 @@
         <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
         <Button Classes="builder on" Content="Biomolecule" />
         <Button Classes="builder" Content="Solvation" Click="OnSolvation" />
+        <Button Classes="builder" Content="Coarse-grained" Click="OnCg" />
       </StackPanel>
     </Border>
 

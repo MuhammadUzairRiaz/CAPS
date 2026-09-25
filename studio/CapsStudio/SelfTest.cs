@@ -808,6 +808,17 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Coarse-grained melt: 5 × 20 Kremer–Grest beads, the LAMMPS deck written
+        {
+            vm.CgChains = 5; vm.CgBeads = 20;
+            var (kg, rep) = CapsDocument.KgBuild(vm.CgOptions(), "KG");
+            var stem = Path.Combine(outDir, "caps-selftest-kg");
+            kg.KgLammps(vm.CgOptions(), stem, 1000, 1000);
+            var ok = File.Exists(stem + ".data") && File.ReadAllText(stem + ".in").Contains("bond_style fene") && kg.Summary().Atoms == 100 && kg.Summary().Bonds == 95;
+            kg.Dispose();
+            Check(ok, $"coarse-grained: 100 beads, 95 bonds, deck written · {rep}");
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

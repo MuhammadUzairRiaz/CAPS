@@ -50,4 +50,5 @@ public partial class CrystalPage : PageBase
         await Vm.ImportCrystalCif(c.File);
         box.SelectedItem = null;
     }
+    private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();
 }

@@ -58,4 +58,5 @@ public partial class BioPage : PageBase
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) Vm.ImportFasta(path);
     }
+    private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();
 }

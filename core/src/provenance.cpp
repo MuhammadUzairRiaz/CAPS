@@ -60,6 +60,7 @@ const Cite kCites[] = {
     {"lutsko1989", "@article{lutsko1989,\n  author = {Lutsko, J. F.},\n  title = {Generalized expressions for the calculation of elastic constants by computer simulation},\n  journal = {J. Appl. Phys.}, volume = {65}, pages = {2991--2997}, year = {1989}, doi = {10.1063/1.342716}\n}"},
     {"clavier2017", "@article{clavier2017,\n  author = {Clavier, G. and Desbiens, N. and Bourasseau, E. and Lachet, V. and Brusselle-Dupend, N. and Rousseau, B.},\n  title = {Computation of elastic constants of solids using molecular simulation: comparison of constant volume and constant pressure ensemble methods},\n  journal = {Mol. Simul.}, volume = {43}, pages = {1413--1422}, year = {2017}, doi = {10.1080/08927022.2017.1313418}\n}"},
     {"prince2004", "@book{prince2004,\n  editor = {Prince, E.},\n  title = {International Tables for Crystallography, Volume C: Mathematical, Physical and Chemical Tables},\n  edition = {3rd}, publisher = {Kluwer}, year = {2004}, note = {Table 6.1.1.4, Cromer--Mann coefficients}\n}"},
+    {"kremer1990", "@article{kremer1990,\n  author = {Kremer, K. and Grest, G. S.},\n  title = {Dynamics of entangled linear polymer melts: a molecular-dynamics simulation},\n  journal = {J. Chem. Phys.}, volume = {92}, pages = {5057--5086}, year = {1990}, doi = {10.1063/1.458541}\n}"},
     {"parsons2005", "@article{parsons2005,\n  author = {Parsons, J. and Holmes, J. B. and Rojas, J. M. and Tsai, J. and Strauss, C. E. M.},\n  title = {Practical conversion from torsion space to {C}artesian space for in silico protein synthesis},\n  journal = {J. Comput. Chem.}, volume = {26}, pages = {1063--1068}, year = {2005}, doi = {10.1002/jcc.20237}\n}"},
 };
 
@@ -337,6 +338,10 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       built = true;
     } else if (e == "edit.builder") {
       t = "The structure was edited by hand in the builder (" + param(s, "operations") + " operations).";
+    } else if (e == "cg.kremer_grest") {
+      t = param(s, "chains") + " Kremer–Grest bead-spring chains of " + param(s, "beads") + " beads" + cite({"kremer1990"}) + " were built as random walks at ρσ³ = " +
+          param(s, "density").substr(0, param(s, "density").find(' ')) + (param(s, "k_theta").rfind("0 ", 0) == 0 ? "" : " with a bending stiffness k_θ = " + param(s, "k_theta")) + ".";
+      built = true;
     } else if (e == "nano.build" || e == "surface.build") {
       t = std::string(e == "surface.build" ? "The surface slab" : "The nanostructure") + " was built with " + version + ".";
       built = true;
