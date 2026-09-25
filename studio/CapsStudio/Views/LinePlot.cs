@@ -24,6 +24,7 @@ public sealed class LinePlot : Control
         _data = data;
         _overlay = [];
         _second = [];
+        _fit = [];
         InvalidateVisual();
     }
 
@@ -37,8 +38,10 @@ public sealed class LinePlot : Control
         InvalidateVisual();
     }
     private (double X, double Y)[] _second = [];
-    private static IPen CurveA => new Pen(Tokens.Brush("SelB"), 2, lineJoin: PenLineJoin.Round);
-    private static IPen CurveB => new Pen(Tokens.Brush("AccB"), 2, new DashStyle([5, 3], 0), lineJoin: PenLineJoin.Round);
+    private IPen CurveA => new Pen(Tokens.Brush(AccentFirst ? "AccB" : "SelB"), 2, lineJoin: PenLineJoin.Round);
+    private IPen CurveB => new Pen(Tokens.Brush(AccentFirst ? "SelB" : "AccB"), 2, new DashStyle([5, 3], 0), lineJoin: PenLineJoin.Round);
+    /// <summary>SetCompare draws A solid in the accent and B dashed in selection blue (default: the other way round).</summary>
+    public bool AccentFirst { get; set; }
 
     /// <summary>Data as points with a line through them (a fit or a smoothed curve).</summary>
     public void SetData((double X, double Y)[] points, (double X, double Y)[] line)
@@ -50,6 +53,26 @@ public sealed class LinePlot : Control
     }
     private (double X, double Y)[] _overlay = [];
     public bool Markers { get; set; }
+
+    /// <summary>Draw the data as bars (a histogram: each point is a bin centre); the y axis starts at zero.</summary>
+    public bool Bars { get; set; }
+
+    /// <summary>A shaded x range (a fit window), drawn under the curves.</summary>
+    public (double From, double To)? Band { get; set; }
+    private (double X, double Y)[] _fit = [];
+    private (double X, double Y)[] _third = [];
+    /// <summary>A third curve (measured data), drawn dotted in the text colour; it takes part in the range.</summary>
+    public void SetThird((double X, double Y)[] data) { _third = data; InvalidateVisual(); }
+    /// <summary>A curve (accent) with a dashed fit line (selection blue) over it.</summary>
+    public void SetWithFit((double X, double Y)[] data, (double X, double Y)[] fit)
+    {
+        _data = data;
+        _fit = fit;
+        _overlay = [];
+        _second = [];
+        Markers = false;
+        InvalidateVisual();
+    }
 
     // design tokens of the current theme (plot in lib.py: grid Bg3, axis line, labels dim, series amber, points cyan)
     private static IBrush Grid => Tokens.Brush("Bg3B");
@@ -81,15 +104,16 @@ public sealed class LinePlot : Control
         double xmin = 0, xmax, ymin = 0, ymax;
         if (AutoRange)
         {
-            var all = _data.Concat(_overlay).Concat(_second).ToArray();
+            var all = _data.Concat(_overlay).Concat(_second).Concat(_third).ToArray();   // a fit line may run past the data: it does not set the range
             xmin = all.Min(p => p.X);
             xmax = all.Max(p => p.X);
             if (xmax - xmin < 1e-9) xmax = xmin + 1;
             ymin = all.Min(p => p.Y);
             ymax = all.Max(p => p.Y);
             if (RefY is double r) { ymin = Math.Min(ymin, r); ymax = Math.Max(ymax, r); }
+            if (Bars) { ymin = 0; var dx = _data.Length > 1 ? _data[1].X - _data[0].X : 1; xmin -= dx / 2; xmax += dx / 2; }
             var pad = Math.Max(Math.Max(1e-9, Math.Abs(ymax) * 1e-3), (ymax - ymin) * 0.08);   // a flat series still gets a readable axis
-            ymin -= pad;
+            if (!Bars) ymin -= pad;
             ymax += pad;
         }
         else
@@ -120,6 +144,12 @@ public sealed class LinePlot : Control
             for (var t = 0.0; t <= xmax + 1e-9; t += xmax > 8 ? 2 : 1)
                 if (X(t) < L + w - 40) Text(t.ToString("0", CultureInfo.InvariantCulture), X(t), T + h + 12, centre: true);
         }
+        if (Band is { } band)
+        {
+            var x0 = Math.Clamp(X(band.From), L, L + w);
+            var x1 = Math.Clamp(X(band.To), L, L + w);
+            if (x1 > x0) ctx.FillRectangle(new SolidColorBrush((Tokens.Brush("SelB") as ISolidColorBrush)?.Color ?? Colors.SteelBlue, 0.10), new Rect(x0, T, x1 - x0, h));
+        }
         ctx.DrawLine(new Pen(Axis, 1), new Point(L, T + h), new Point(L + w, T + h));
         if (RefY is double rv && rv >= ymin && rv <= ymax) ctx.DrawLine(RefPen, new Point(L, Y(rv)), new Point(L + w, Y(rv)));
 
@@ -132,7 +162,19 @@ public sealed class LinePlot : Control
             g.EndFigure(false);
             return geo;
         }
-        if (Markers)
+        if (Bars)
+        {
+            var dx = _data.Length > 1 ? _data[1].X - _data[0].X : 1;
+            var fill = Tokens.Brush("SelB");
+            foreach (var p in _data)
+            {
+                if (p.Y <= 0) continue;
+                var x0 = X(p.X - dx / 2) + 1;
+                var x1 = X(p.X + dx / 2) - 1;
+                if (x1 > x0) ctx.FillRectangle(fill, new Rect(x0, Y(p.Y), x1 - x0, Y(0) - Y(p.Y)), 2);
+            }
+        }
+        else if (Markers)
         {
             foreach (var p in _data) ctx.DrawEllipse(Dot, null, new Point(X(p.X), Y(p.Y)), 2.2, 2.2);
             if (_overlay.Length > 1) ctx.DrawGeometry(null, Curve, Line(_overlay));
@@ -145,6 +187,16 @@ public sealed class LinePlot : Control
         else
         {
             ctx.DrawGeometry(null, LineBrush != null ? new Pen(LineBrush, 1.6, lineJoin: PenLineJoin.Round) : Curve, Line(_data));
+        }
+        if (_third.Length > 1)
+        {
+            var clipped = _third.Where(p => p.X >= xmin && p.X <= xmax).ToArray();
+            if (clipped.Length > 1) ctx.DrawGeometry(null, new Pen(Tokens.Brush("MutedB"), 1.4, new DashStyle([1.5, 2.5], 0), lineCap: PenLineCap.Round), Line(clipped));
+        }
+        if (_fit.Length > 1)
+        {
+            var clipped = _fit.Where(p => p.Y >= ymin && p.Y <= ymax && p.X >= xmin && p.X <= xmax).ToArray();
+            if (clipped.Length > 1) ctx.DrawGeometry(null, new Pen(Tokens.Brush("SelB"), 2, new DashStyle([6, 4], 0)), Line(clipped));
         }
         if (CursorX is double cx && cx >= xmin && cx <= xmax)
             ctx.DrawLine(new Pen(Tokens.Brush("TextB"), 1, new DashStyle([3, 3], 0)), new Point(X(cx), T), new Point(X(cx), T + h));

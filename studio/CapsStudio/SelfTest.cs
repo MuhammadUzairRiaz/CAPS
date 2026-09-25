@@ -682,6 +682,30 @@ internal static class SelfTest
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
+        // Analyze focus pages: scattering with deuteration contrast, free volume with the voids drawn and cleared on leaving
+        {
+            vm.OpenScattering();
+            vm.IsotopePattern = 2;
+            vm.RunScattering().GetAwaiter().GetResult();
+            var neutron = vm.Analyze.Results.FirstOrDefault(r => r.Id == "neutron");
+            var deut = neutron?.Extra.FirstOrDefault(e => e.Key == "deuterated hydrogens").Value ?? 0;
+            Check(vm.IsScattering && vm.ScatterXrayCurve.Length > 10 && vm.ScatterNeutronCurve.Length > 10 && deut > 0 && vm.ScatterLengths.Any(r => r.Key == "²H (D)"),
+                  $"scattering: x-ray {vm.ScatterXrayCurve.Length} pts · neutron {vm.ScatterNeutronCurve.Length} pts · {deut} H deuterated · {vm.ScatterText[..Math.Min(60, vm.ScatterText.Length)]}");
+            vm.IsotopePattern = 0;
+            var exp = Path.Combine(outDir, "caps-selftest-self-overlay.csv");
+            File.WriteAllLines(exp, new[] { "q,I" }.Concat(vm.ScatterXrayCurve.Select(p => $"{p.X.ToString(System.Globalization.CultureInfo.InvariantCulture)},{p.Y.ToString(System.Globalization.CultureInfo.InvariantCulture)}")));
+            var why = vm.LoadExperiment(exp);
+            Check(why == null && vm.ScatterExperiment.Length == vm.ScatterXrayCurve.Length && vm.HasExperiment, $"scattering overlay: {vm.ExperimentName} {why}");
+            vm.ClearExperiment();
+            vm.OpenFreeVolume();
+            vm.RunFreeVolume().GetAwaiter().GetResult();
+            var hadVoids = vm.FvHasVoids;
+            vm.OpenMechanics();
+            Check(hadVoids && vm.FvFfv.HasValue && vm.FvAccessible.HasValue && vm.FvPsd.Length > 3 && !vm.FvHasVoids && vm.IsMechanics,
+                  $"free volume: FFV {vm.FvFfv.Value} · accessible {vm.FvAccessible.Value} · {vm.FvChip} · PSD {vm.FvPsd.Length} bins");
+            vm.SetModule(8);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

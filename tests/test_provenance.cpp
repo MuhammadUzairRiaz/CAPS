@@ -86,3 +86,68 @@ TEST(Provenance, BibtexForEveryCitedMethod) {
                         "martinez2009", "matsumoto1998", "parsons2005", "polak1969", "rappe1991", "rappe1992", "swope1982", "wang2004"})
     EXPECT_TRUE(known_citation(k)) << k;
 }
+
+// Neutron contrast by deuteration (design/boards/Scattering): PS has aliphatic backbone H and aromatic ring H.
+#include "caps/io.hpp"
+#include "caps/properties.hpp"
+
+TEST(Scattering, DeuterationPatternsSplitTheHydrogens) {
+  const Trajectory t = open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data");
+  size_t nh = 0;
+  for (const auto& a : t.topology.atoms) nh += a.element == 1;
+  auto count = [&](int p) { size_t n = 0; for (char c : deuterated_hydrogens(t.topology, p)) n += c; return n; };
+  EXPECT_EQ(count(1), nh);
+  EXPECT_EQ(count(2) + count(3), nh);   // every PS hydrogen is on an aliphatic or an aromatic carbon
+  EXPECT_EQ(count(3) % 5, 0u);          // five ring H on every phenyl
+  EXPECT_GT(count(3), count(2));        // C8H8: five ring H, three backbone H per unit (plus end groups)
+  EXPECT_EQ(count(4), 0u);
+
+  AnalyzeOptions o;
+  o.q_direct = 2.0;
+  o.qmax = 6.0;
+  const auto h = analyze(t, {"neutron"}, o);
+  o.deuterate = 1;
+  const auto d = analyze(t, {"neutron"}, o);
+  ASSERT_EQ(h.size(), 1u);
+  ASSERT_EQ(d.size(), 1u);
+  EXPECT_EQ(d[0].extra.at("deuterated hydrogens"), double(nh));
+  EXPECT_NE(d[0].notes.front().find("scatter as ²H"), std::string::npos);
+  // deuterium changes the contrast: the curves differ
+  ASSERT_FALSE(h[0].series.empty());
+  double diff = 0;
+  for (size_t k = 0; k < std::min(h[0].series[0].y.size(), d[0].series[0].y.size()); ++k) diff += std::fabs(h[0].series[0].y[k] - d[0].series[0].y[k]);
+  EXPECT_GT(diff, 1.0);
+}
+
+#include "caps/voids.hpp"
+
+TEST(Voids, OneAtomLeavesTheFarCornerEmpty) {
+  System s;
+  s.cell.a = {20, 0, 0};
+  s.cell.b = {0, 20, 0};
+  s.cell.c = {0, 0, 20};
+  Atom a;
+  a.element = 6;
+  s.atoms.push_back(a);
+  VoidOptions o;
+  o.grid = 0.5;
+  o.reach = 25;
+  o.max_count = 3;
+  const auto r = largest_voids(s, o);
+  ASSERT_FALSE(r.spheres.empty());
+  const double far = std::sqrt(300.0) - 1.7;   // the body centre, minus Bondi C
+  EXPECT_NEAR(r.largest, far, 0.5);
+  for (int k = 0; k < 3; ++k) EXPECT_NEAR(r.spheres[0].centre[k], 10.0, 0.6);
+  const double vdw = 4.0 / 3.0 * 3.14159265 * 1.7 * 1.7 * 1.7 / 8000.0;
+  EXPECT_NEAR(r.accessible_point, 1 - vdw, 2e-3);
+  EXPECT_LT(r.accessible_probe, r.accessible_point);
+  const Mesh m = void_mesh({r.spheres[0]}, 2);
+  EXPECT_EQ(m.vertices.size(), 162u);
+  EXPECT_EQ(m.triangles.size(), 320u);
+  const auto pdb = (std::filesystem::temp_directory_path() / "caps_voids.pdb").string();
+  write_voids_pdb(s, r.spheres, pdb);
+  std::ifstream f(pdb);
+  std::string all((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  EXPECT_NE(all.find("CRYST1   20.000   20.000   20.000  90.00  90.00  90.00"), std::string::npos);
+  EXPECT_NE(all.find("HETATM    1  VO  VOI"), std::string::npos);
+}

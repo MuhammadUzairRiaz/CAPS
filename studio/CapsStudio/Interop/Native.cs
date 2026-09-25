@@ -163,6 +163,7 @@ public struct CapsAnalyzeOpts
     public double Probe, Grid;
     public double Cutoff;
     public int Threads;
+    public int Deuterate;       // neutron contrast (ABI 20): 0 none, 1 all H, 2 aliphatic, 3 aromatic, 4 on O/N
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -224,6 +225,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_provenance_file")] public static extern int ProvenanceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_compare")] public static extern int ProvenanceCompare([MarshalAs(UnmanagedType.LPUTF8Str)] string a, [MarshalAs(UnmanagedType.LPUTF8Str)] string b, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_bibtex")] public static extern int ProvenanceBibtex([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_neutron_b")] public static extern double NeutronB(int z);
+    [DllImport(Lib, EntryPoint = "caps_voids")] public static extern int Voids(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_voids_pdb")] public static extern int VoidsPdb(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -939,6 +943,9 @@ public sealed class CapsDocument : IDisposable
         lock (_lock) { Alive(); var n = Native.ProjectAtoms(_h, cam, opt, buf, atoms); if (n < 0) throw new InvalidOperationException(Native.LastError()); }
         return buf;
     }
+    /// <summary>The largest empty spheres of the frame and the accessible shares (caps_voids), JSON; drawn when shown.</summary>
+    public string Voids(string options) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Voids(_h, options, b, c)); } }
+    public void VoidsPdb(string path) { lock (_lock) { Alive(); Check(Native.VoidsPdb(_h, path)); } }
     /// <summary>The steps that produced this structure (caps-manifest/1.0).</summary>
     public string Provenance() { lock (_lock) { Alive(); return Sized((b, c) => Native.Provenance(_h, b, c)); } }
     public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }

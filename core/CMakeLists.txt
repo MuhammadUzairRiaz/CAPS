@@ -34,6 +34,7 @@ add_library(caps_core STATIC
   src/solvate.cpp
   src/import.cpp
   src/provenance.cpp
+  src/voids.cpp
   src/appearance.cpp
   src/trajectory.cpp
   src/torsion.cpp

@@ -44,6 +44,7 @@
 #include "caps/interactions.hpp"
 #include "caps/import.hpp"
 #include "caps/provenance.hpp"
+#include "caps/voids.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -122,6 +123,8 @@ struct caps_doc {
   std::vector<Snapshot> undo, redo;                // caps_edit history
   std::vector<caps::Segment> checks;               // caps_interactions: H-bonds, contacts, clashes drawn in the view
   caps::Manifest prov;                             // provenance: the steps that produced this structure
+  std::vector<caps::VoidSphere> voids;             // caps_voids: the largest empty spheres of the frame
+  std::unique_ptr<caps::Mesh> void_mesh;           // … drawn translucent when shown
 };
 
 namespace {
@@ -300,6 +303,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
   }
   if (!d->pstate) { r.segments = d->overlay; r.segments.insert(r.segments.end(), d->checks.begin(), d->checks.end()); }
+  if (d->void_mesh) r.meshes.push_back({d->void_mesh.get(), 0x4FB3D9, 0.32f});
   if (!d->pstate && d->look.active) {
     const AppearanceState& L = d->look;
     if (L.style.size() == d->frame.atoms.size()) {
@@ -1640,6 +1644,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       if (p->qmax > 0) o.qmax = p->qmax;
       if (p->dq > 0) o.dq = p->dq;
       if (p->q_direct > 0) o.q_direct = p->q_direct;
+      o.deuterate = std::clamp(p->deuterate, 0, 4);
       if (p->fit_from > 0) o.fit_from = p->fit_from;
       if (p->fit_to > 0) o.fit_to = p->fit_to;
       if (p->probe > 0) o.probe = p->probe;
@@ -4168,4 +4173,60 @@ extern "C" int32_t caps_provenance_bibtex(const char* manifest_json, char* text,
     g_error = e.what();
     return -1;
   }
+}
+
+// Coherent neutron scattering length (fm) of an element (1001: ²H), NaN when CAPS has none.
+extern "C" double caps_neutron_b(int32_t z) {
+  try { return caps::neutron_b(z); } catch (...) { return std::numeric_limits<double>::quiet_NaN(); }
+}
+
+// ---------------------------------------------------------------- voids (design/boards/FreeVolume)
+extern "C" int32_t caps_voids(caps_doc* d, const char* options_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    const bool show = !o.has("show") || (o["show"].kind() == caps::Json::Bool ? o["show"].boolean() : o["show"].number() != 0);
+    if (o.has("clear") && o["clear"].kind() == caps::Json::Bool && o["clear"].boolean()) {
+      d->voids.clear();
+      d->void_mesh.reset();
+      j["ok"] = true;
+      return report_out(j.dump(0), json, cap);
+    }
+    caps::VoidOptions vo;
+    vo.grid = std::clamp(o.num("grid", 0.5), 0.2, 2.0);
+    vo.probe = std::max(0.0, o.num("probe", 1.4));
+    vo.max_count = std::clamp(int(o.num("count", 40)), 1, 2000);
+    vo.min_radius = std::max(0.2, o.num("min_radius", 1.0));
+    const auto r = caps::largest_voids(d->frame, vo);
+    d->voids = r.spheres;
+    if (show) d->void_mesh = std::make_unique<caps::Mesh>(caps::void_mesh(r.spheres, 2));
+    else d->void_mesh.reset();
+    j["ok"] = true;
+    j["accessible_point"] = r.accessible_point;
+    j["accessible_probe"] = r.accessible_probe;
+    j["largest"] = r.largest;
+    caps::Json g = caps::Json::array();
+    for (int k = 0; k < 3; ++k) g.push_back(r.grid[k]);
+    j["grid"] = std::move(g);
+    caps::Json sp = caps::Json::array();
+    for (const auto& v : r.spheres) {
+      caps::Json x = caps::Json::object();
+      x["x"] = v.centre[0]; x["y"] = v.centre[1]; x["z"] = v.centre[2]; x["r"] = v.radius;
+      sp.push_back(std::move(x));
+    }
+    j["spheres"] = std::move(sp);
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_voids_pdb(caps_doc* d, const char* path) {
+  return guard([&] {
+    if (d->voids.empty()) throw std::runtime_error("no voids computed yet");
+    caps::write_voids_pdb(d->frame, d->voids, path);
+    return 0;
+  });
 }

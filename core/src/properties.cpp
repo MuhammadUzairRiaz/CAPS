@@ -1,5 +1,6 @@
 // CAPS Analyze: properties from trajectories (see caps/properties.hpp).
 #include "caps/properties.hpp"
+#include "caps/typing.hpp"
 
 #include <algorithm>
 #include <array>
@@ -1264,6 +1265,7 @@ Property psd_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
 // ---------------------------------------------------------------- scattering data
 
 double neutron_b(int z) {
+  if (z == kDeuterium) return 6.671;
   // coherent scattering lengths, fm (NIST Center for Neutron Research, natural isotopic abundance)
   static const std::map<int, double> b = {{1, -3.739}, {2, 3.26}, {3, -1.90}, {5, 5.30}, {6, 6.646}, {7, 9.36}, {8, 5.803}, {9, 5.654},
                                           {11, 3.63}, {12, 5.375}, {13, 3.449}, {14, 4.1491}, {15, 5.13}, {16, 2.847}, {17, 9.577}, {19, 3.67},
@@ -1272,6 +1274,28 @@ double neutron_b(int z) {
   auto it = b.find(z);
   if (it == b.end()) throw std::invalid_argument(std::string("no neutron scattering length for ") + element(z).symbol);
   return it->second;
+}
+
+std::vector<char> deuterated_hydrogens(const System& s, int pattern) {
+  std::vector<char> mark(s.atoms.size(), 0);
+  if (pattern <= 0) return mark;
+  const auto nb = s.neighbours();
+  std::vector<bool> aromatic(s.atoms.size(), false);
+  if (pattern == 2 || pattern == 3) {
+    const Perception p = perceive(s);
+    for (size_t i = 0; i < s.atoms.size(); ++i) aromatic[i] = p.aromatic[i];
+  }
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    if (s.atoms[i].element != 1) continue;
+    if (pattern == 1) { mark[i] = 1; continue; }
+    if (nb[i].empty()) continue;
+    const uint32_t h = nb[i][0];
+    const int z = s.atoms[h].element;
+    if (pattern == 2) mark[i] = z == 6 && !aromatic[h];
+    else if (pattern == 3) mark[i] = z == 6 && aromatic[h];
+    else if (pattern == 4) mark[i] = z == 7 || z == 8;
+  }
+  return mark;
 }
 
 double xray_f(int z, double q) {
@@ -1421,8 +1445,26 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
   run([&] {
     if (want("density")) out.push_back(density_prop(t, fr, times, o));
     if (want("rdf")) out.push_back(rdf_prop(t, fr, o));
-    for (const char* k : {"sq", "xray", "neutron"})
-      if (want(k)) out.push_back(scattering_prop(t, fr, o, k));
+    for (const char* k : {"sq", "xray", "neutron"}) {
+      if (!want(k)) continue;
+      if (std::string(k) == "neutron" && o.deuterate > 0) {
+        // the chosen hydrogens scatter as deuterium: a relabelled copy of the topology
+        Trajectory td = t;
+        const auto mark = deuterated_hydrogens(t.topology, o.deuterate);
+        size_t nd = 0, nh = 0;
+        for (size_t i = 0; i < mark.size(); ++i) {
+          nh += td.topology.atoms[i].element == 1;
+          if (mark[i]) { td.topology.atoms[i].element = kDeuterium; ++nd; }
+        }
+        Property p = scattering_prop(td, fr, o, k);
+        static const char* what[] = {"", "every hydrogen", "hydrogens on aliphatic carbons", "hydrogens on aromatic carbons", "hydrogens on O and N"};
+        p.notes.insert(p.notes.begin(), "deuterated: " + std::to_string(nd) + " of " + std::to_string(nh) + " " + what[o.deuterate] + " scatter as ²H (b = 6.671 fm)");
+        p.extra["deuterated hydrogens"] = double(nd);
+        out.push_back(p);
+      } else {
+        out.push_back(scattering_prop(t, fr, o, k));
+      }
+    }
     if (want("rg")) out.push_back(rg_prop(t, fr, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {
       const ChainFrames c = chain_frames(t, fr);

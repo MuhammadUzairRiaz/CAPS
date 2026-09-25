@@ -59,6 +59,9 @@ struct AnalyzeOptions {
   double rdf_dr = 0.02;
   double qmax = 25.0, dq = 0.02;   // Å⁻¹
   double q_direct = 4.0;           // S(q) by the direct reciprocal-lattice sum up to here (Å⁻¹); 0: from g(r) only
+  // neutron contrast: which hydrogens scatter as deuterium (b = 6.671 fm) — 0 none, 1 every H, 2 H on aliphatic
+  // carbons (a deuterated backbone), 3 H on aromatic carbons (deuterated rings), 4 H on O and N (exchanged in D₂O)
+  int deuterate = 0;
   // dynamics
   double fit_from = 0.2, fit_to = 0.5;   // Einstein fit window, as fractions of the run
   // cohesive energy: the force field of the structure (atoms in trajectory order), and its energy settings
@@ -86,7 +89,10 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o);
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o);
 
 // Scattering data: neutron coherent scattering length (fm) and X-ray form factor f(q) (electrons; q in Å⁻¹).
-double neutron_b(int z);
+double neutron_b(int z);                // z = kDeuterium: ²H
+constexpr int kDeuterium = 1001;
+// The hydrogens a deuteration choice (AnalyzeOptions::deuterate) marks, by atom.
+std::vector<char> deuterated_hydrogens(const System& s, int pattern);
 double xray_f(int z, double q);
 
 // Results as JSON: [{id, name, value, error, unit, method, extra{...}, notes[...], series[{label, x_label, y_label, x[], y[]}]}]
