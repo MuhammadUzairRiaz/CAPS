@@ -70,7 +70,9 @@ public partial class MainWindow : Window
         {
             PipeTablePlot.XLabel = _vm.PipeTableXLabel;
             PipeTablePlot.YLabel = _vm.PipeTableYLabel;
-            PipeTablePlot.SetData(_vm.PipeTableX.Zip(_vm.PipeTableY).Where(p => double.IsFinite(p.Second)).ToArray());
+            var pts = _vm.PipeTableX.Zip(_vm.PipeTableY).Where(p => double.IsFinite(p.Second)).ToArray();
+            if (_vm.PipeTableScatter) { PipeTablePlot.RefY = null; PipeTablePlot.SetData(pts, []); }
+            else { PipeTablePlot.RefY = 1.0; PipeTablePlot.Markers = false; PipeTablePlot.SetData(pts); }
         };
         _vm.RenderOverlayChanged += () => RenderGuide.InvalidateVisual();
         _vm.PropertyChanged += (_, e) =>

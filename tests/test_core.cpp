@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
+#include <random>
 #include <fstream>
 #include <set>
 
@@ -673,6 +674,36 @@ TEST(Pipeline, GridFields) {
   open.cell = Cell{};
   const auto e = run_pipeline(open, pipeline_from_json(Json::parse(R"([{"type":"voids"}])")));
   EXPECT_EQ(e.steps[0].level, "error");
+}
+
+TEST(Pipeline, MsdRecoversDiffusionAndScatter) {
+  // each chain of the sample random-walks rigidly with D = 0.01 Å² per timestep for 400 frames
+  const Trajectory t0 = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  Trajectory t;
+  t.topology = t0.topology;
+  t.topology.unwrapped = true;
+  const double D = 0.01;
+  std::mt19937 rng(7);
+  std::normal_distribution<double> step(0.0, std::sqrt(2 * D));
+  const auto mol = t0.topology.molecules();
+  std::vector<Vec3> shift(10, Vec3{0, 0, 0});
+  for (int f = 0; f < 400; ++f) {
+    std::vector<Vec3> pos = t0.positions[0];
+    for (size_t i = 0; i < pos.size(); ++i) pos[i] = pos[i] + shift[size_t(mol[i])];
+    t.positions.push_back(pos);
+    t.cells.push_back(t0.cells[0]);
+    t.timesteps.push_back(f);
+    for (auto& s : shift) s = s + Vec3{step(rng), step(rng), step(rng)};
+  }
+  const auto st = run_pipeline(t.frame(0), pipeline_from_json(Json::parse(R"([{"type":"msd","timestep_fs":2}])")), 0, 0, &t);
+  EXPECT_NEAR(st.attribute("MSD.D_centres"), D, 0.35 * D);
+  EXPECT_NEAR(st.attribute("MSD.D_centres_cm2s"), st.attribute("MSD.D_centres") / 2 * 0.1, 1e-15);
+  // rigid motion: every atom moves with its chain, so the atom and centre curves agree
+  for (const auto& r : st.tables[0].rows) EXPECT_NEAR(r[1], r[2], 1e-6 * std::max(1.0, r[2]));
+  // scatter: a property against itself is perfectly correlated; the table is drawn as points
+  const auto sc = run_pipeline(t.frame(0), pipeline_from_json(Json::parse(R"([{"type":"scatter","x":"Position.X","y":"Position.X"}])")));
+  EXPECT_NEAR(sc.attribute("Scatter.pearson_r"), 1.0, 1e-9);
+  EXPECT_TRUE(sc.tables[0].points);
 }
 
 TEST(Io, FileWithoutAtomsIsAnError) {
