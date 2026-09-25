@@ -1,5 +1,6 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
+#include "caps/qeq.hpp"
 
 #include <filesystem>
 #include <tuple>
@@ -862,8 +863,12 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     for (size_t i = 0; i < n; ++i) arom[i] = FT[i]->description.find("aromatic") != std::string::npos;
     ff.charge = gasteiger_ch(s, arom);
     rep.notes.push_back("Gasteiger–Marsili charges (C/H parameters only)");
+  } else if (charges == "qeq") {
+    QEqReport qr;
+    ff.charge = qeq_charges(s, QEqOptions{}, &qr);
+    rep.notes.push_back(qr.notes.front());
   } else {
-    throw FFError("charges must be \"types\", \"keep\" or \"gasteiger\"");
+    throw FFError("charges must be \"types\", \"keep\", \"gasteiger\" or \"qeq\"");
   }
 
   const auto nb = s.neighbours();

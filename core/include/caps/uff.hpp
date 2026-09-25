@@ -28,6 +28,7 @@ namespace caps {
 
 struct UffOptions {
   bool keep_charges = false;          // use the system's charges (with Coulomb) instead of UFF's neutral atoms
+  bool qeq = false;                   // QEq charges (all elements) instead
   std::vector<std::string> labels;    // per atom: a UFF label set by hand ("" or missing: the typer's)
 };
 

@@ -79,7 +79,7 @@ public sealed class FieldViewModel : ObservableObject
     public int FfIndex { get => _ffIndex; set { if (Set(ref _ffIndex, value)) Raise(nameof(FfNote)); } }
     public FfEntry? Selected => _ffIndex >= 0 && _ffIndex < Library.Count ? Library[_ffIndex] : null;
     public string FfNote => Selected is { } e ? $"{e.Version} · {e.Status}" + (e.AutoTyping ? " · automatic typing" : " · types must be the atom names in the file") : "";
-    public static readonly string[] ChargeModes = ["From the force field", "Gasteiger–Marsili", "Keep the file's charges"];
+    public static readonly string[] ChargeModes = ["From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)"];
     private int _chargeMode;
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 

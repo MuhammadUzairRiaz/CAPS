@@ -140,7 +140,8 @@ ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& 
   if (is_uff(o["--ff"])) {
     UffOptions uo;
     uo.keep_charges = o.count("--charges") && o["--charges"] == "keep";
-    if (!quiet) std::printf("force field: UFF (every element; %s)\n", uo.keep_charges ? "charges from the file" : "no charges");
+    uo.qeq = o.count("--charges") && o["--charges"] == "qeq";
+    if (!quiet) std::printf("force field: UFF (every element; %s)\n", uo.qeq ? "QEq charges" : uo.keep_charges ? "charges from the file" : "no charges");
     return assign_uff(s0, uo);
   }
   FFDef def = load_forcefield(o["--ff"]);
@@ -666,6 +667,7 @@ int main(int argc, char** argv) {
         if (uff) {
           UffOptions uo;
           uo.keep_charges = o.count("--charges") && o["--charges"] == "keep";
+          uo.qeq = o.count("--charges") && o["--charges"] == "qeq";
           f = assign_uff(s, uo);
           for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
         } else {
