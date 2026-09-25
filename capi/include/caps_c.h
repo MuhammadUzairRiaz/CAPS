@@ -380,6 +380,22 @@ int32_t caps_periodic(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_set_images(caps_doc* d, int32_t na, int32_t nb, int32_t nc, double fade);
 int32_t caps_set_save_wrap(caps_doc* d, int32_t mode);
 int32_t caps_centre_on(caps_doc* d, const int32_t* idx, int32_t n);
+/* v20 one molecule (design/boards/MoleculeInspector), the one containing `atom`: {ok, molecule, atoms, bonds, rings,
+   formula, smiles (written from the perceived bonds, not canonical), mass, monoisotopic, dbe, inertia [3] (amu·Å²,
+   ascending), inertia_defect, rg, has_charges, net_charge, dipole (D; null without charges), rotatable}. */
+int32_t caps_molecule_info(caps_doc* d, int32_t atom, char* out, int32_t cap);
+/* v20 solvent-accessible surface area (design/boards/SurfaceArea), Shrake–Rupley with Bondi radii: {"probe": 1.4,
+   "points": 200, "convergence": false, "colour": false} → {ok, total, area[] (Å² per atom), groups [{name, area, share}],
+   convergence [{points, total, delta}]}; colour: true colours the view by exposure (area / full sphere).
+   caps_set_atom_values colours the view by any per-atom quantity on a ramp (0 viridis, 1 blue–orange, 2 red–white–blue;
+   n = 0 clears). */
+int32_t caps_sasa(caps_doc* d, const char* json, char* out, int32_t cap);
+int32_t caps_set_atom_values(caps_doc* d, const double* values, int32_t n, int32_t ramp);
+/* v20 cell editor (design/boards/CellEditor): caps_set_cell JSON {a, b, c, alpha, beta, gamma, scale: true} (a along x,
+   b in xy; scale keeps fractional coordinates, false leaves the atoms where they are); caps_supercell replicates the
+   frame na × nb × nc (atoms, bonds, molecules). Both undoable. */
+int32_t caps_set_cell(caps_doc* d, const char* json);
+int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t nc);
 /* v20 partial charges (design/boards/Charges): {"method": "gasteiger" | "qeq" | "forcefield" (the Field assignment) |
    "file" {path: .chg} | "keep", "apply": false} → {ok, error, method, q[], net, max_abs, groups: [{name, n, mean, lo, hi}],
    edges[], counts[], notes[]}. apply: true sets the charges on the structure (undoable, clears the Field assignment). */

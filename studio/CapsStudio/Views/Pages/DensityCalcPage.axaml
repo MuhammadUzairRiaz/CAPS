@@ -1,0 +1,96 @@
+<!-- CAPS Pack › Density calculator (design/boards/DensityCalc): molecule counts from a box and a target density, and back. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.DensityCalcPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Classes="primary" Click="OnSend"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="pack" Size="14" VerticalAlignment="Center" /><TextBlock Text="Send to Pack" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Pack · density calculator" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Molecule counts from box size and target density, and back" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding DcVolume}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </Border>
+    <ScrollViewer Margin="22,18">
+      <StackPanel Spacing="14" MaxWidth="1100" HorizontalAlignment="Left">
+        <Border Classes="pcard">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Box" FontSize="13.5" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Spacing="4" Width="110"><TextBlock Text="a · Å" Classes="label" /><NumericUpDown Value="{Binding DcA}" Minimum="1" Maximum="10000" Increment="1" FormatString="0.###" /></StackPanel>
+              <StackPanel Spacing="4" Width="110"><TextBlock Text="b · Å" Classes="label" /><NumericUpDown Value="{Binding DcB}" Minimum="1" Maximum="10000" Increment="1" FormatString="0.###" /></StackPanel>
+              <StackPanel Spacing="4" Width="110"><TextBlock Text="c · Å" Classes="label" /><NumericUpDown Value="{Binding DcC}" Minimum="1" Maximum="10000" Increment="1" FormatString="0.###" /></StackPanel>
+              <StackPanel Spacing="4" VerticalAlignment="Bottom"><TextBlock Text="Volume" Classes="label" /><TextBlock Text="{Binding DcVolume}" Classes="mono" FontSize="13" Margin="0,6,0,6" /></StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="pcard">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                <TextBox Text="{Binding DcNewSmiles}" Watermark="another molecule · SMILES" Width="220" Classes="mono" />
+                <Button Classes="small" Content="Add" Click="OnAdd" />
+              </StackPanel>
+              <TextBlock Text="How many molecules?" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+            <Grid ColumnDefinitions="*,100,110,90,90,100">
+              <TextBlock Text="MOLECULE" Classes="h3" /><TextBlock Grid.Column="1" Text="M (G/MOL)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="Ρ TARGET" Classes="h3" HorizontalAlignment="Right" />
+              <TextBlock Grid.Column="3" Text="N EXACT" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="N" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="5" Text="Ρ ACHIEVED" Classes="h3" HorizontalAlignment="Right" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding DcSpecies}">
+              <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SpeciesRow">
+                <Grid ColumnDefinitions="*,100,110,90,90,100" Height="32">
+                  <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding MassText}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="2" Value="{Binding Rho}" Minimum="0.01" Maximum="30" Increment="0.01" FormatString="0.#####" Width="96" HorizontalAlignment="Right" VerticalAlignment="Center" ShowButtonSpinner="False" />
+                  <TextBlock Grid.Column="3" Text="{Binding NExact}" Classes="mono dim" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="{Binding N}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="5" Text="{Binding Achieved}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding DcError}" Classes="err" TextWrapping="Wrap" />
+            <TextBlock Classes="dim" TextWrapping="Wrap" Text="N = ρ · V · N_A / M, rounded to an integer; ρ achieved uses the rounded N. The water, toluene and ethanol targets are literature densities at 25 °C, used only as inputs: packing at them is a starting point, and the equilibrated density comes from NPT." />
+          </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Polymer + solvent" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding DcPolymer}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="4"><TextBlock Text="Overall target · g/cm³" Classes="label" /><NumericUpDown Value="{Binding DcTarget}" Minimum="0.01" Maximum="30" Increment="0.01" FormatString="0.00#" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Solvent" Classes="label" /><ComboBox ItemsSource="{Binding DcSpeciesNames}" SelectedIndex="{Binding DcSolvent}" HorizontalAlignment="Stretch" /></StackPanel>
+              </Grid>
+              <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding DcSolventN}" Classes="mono" /><TextBlock Text="To add" Classes="muted" /></DockPanel>
+              <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding DcFraction}" Classes="mono" /><TextBlock Text="Polymer weight fraction" Classes="muted" /></DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="The polymer is the one set up in Grow (chains × chain mass)." />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Box for a given N" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="4"><TextBlock Text="Molecules" Classes="label" /><NumericUpDown Value="{Binding DcN}" Minimum="1" Maximum="1000000000" Increment="100" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Species" Classes="label" /><ComboBox ItemsSource="{Binding DcSpeciesNames}" SelectedIndex="{Binding DcBoxSpecies}" HorizontalAlignment="Stretch" /></StackPanel>
+              </Grid>
+              <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding DcEdge}" Classes="mono" FontSize="15" /><TextBlock Text="Cubic box edge" Classes="muted" VerticalAlignment="Center" /></DockPanel>
+              <TextBlock Classes="dim" Text="N_A = 6.02214076 × 10²³ mol⁻¹ (exact, SI 2019)" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>

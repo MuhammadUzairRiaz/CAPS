@@ -263,6 +263,8 @@ void finish_types(System& s) {
 
 }  // namespace
 
+Cell cell_parameters(double a, double b, double c, double alpha, double beta, double gamma) { return cell_from(a, b, c, alpha, beta, gamma); }
+
 // ---------------------------------------------------------------- operations
 
 SymOp parse_symop(std::string s) {

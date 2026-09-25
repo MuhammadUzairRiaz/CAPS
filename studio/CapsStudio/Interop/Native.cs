@@ -276,6 +276,11 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_images")] public static extern int SetImages(IntPtr doc, int na, int nb, int nc, double fade);
     [DllImport(Lib, EntryPoint = "caps_set_save_wrap")] public static extern int SetSaveWrap(IntPtr doc, int mode);
     [DllImport(Lib, EntryPoint = "caps_centre_on")] public static extern int CentreOn(IntPtr doc, int[] idx, int n);
+    [DllImport(Lib, EntryPoint = "caps_molecule_info")] public static extern int MoleculeInfo(IntPtr doc, int atom, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_sasa")] public static extern int Sasa(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_atom_values")] public static extern int SetAtomValues(IntPtr doc, double[]? values, int n, int ramp);
+    [DllImport(Lib, EntryPoint = "caps_set_cell")] public static extern int SetCell(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_supercell")] public static extern int Supercell(IntPtr doc, int na, int nb, int nc);
     [DllImport(Lib, EntryPoint = "caps_recipe_check")] public static extern int RecipeCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_yaml_to_json")] public static extern int YamlToJson([MarshalAs(UnmanagedType.LPUTF8Str)] string yaml, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_charges")] public static extern int Charges(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
@@ -1003,6 +1008,22 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { lock (_lock) { Alive(); return Native.Undo(_h, redo ? 1 : 0) == 0; } }
     public string History() { lock (_lock) return JsonCall((b, c) => Native.History(_h, b, c)); }
+    public string MoleculeInfo(int atom) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.MoleculeInfo(_h, atom, b, c)); } }
+    /// <summary>SASA: the buffer sized for the per-atom areas so the calculation runs once.</summary>
+    public string Sasa(string json)
+    {
+        lock (_lock)
+        {
+            Alive();
+            var buf = new byte[(int)Math.Min(int.MaxValue / 2, Summary().Atoms * 26 + (1 << 16))];
+            var n = Native.Sasa(_h, json, buf, buf.Length);
+            if (n > buf.Length) { buf = new byte[n]; Native.Sasa(_h, json, buf, buf.Length); }
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
+    public void SetAtomValues(double[]? values, int ramp = 0) { lock (_lock) { Alive(); Native.SetAtomValues(_h, values, values?.Length ?? 0, ramp); } }
+    public void SetCell(string json) { lock (_lock) { Alive(); Check(Native.SetCell(_h, json)); } }
+    public void Supercell(int na, int nb, int nc) { lock (_lock) { Alive(); Check(Native.Supercell(_h, na, nb, nc)); } }
     /// <summary>The periodic box: crossing molecules, pieces when wrapped, one molecule measured three ways.</summary>
     public string Periodic(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Periodic(_h, json, b, c)); } }
     public void SetImages(int na, int nb, int nc, double fade) { lock (_lock) { Alive(); Native.SetImages(_h, na, nb, nc, fade); } }
