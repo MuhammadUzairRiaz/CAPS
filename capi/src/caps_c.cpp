@@ -230,6 +230,7 @@ void field_run(caps_doc* d) {
   if (!untyped && uff) {
     caps::UffOptions uo;
     uo.keep_charges = F.charges == "keep";
+    uo.qeq = F.charges == "qeq";
     uo.labels = F.types;
     F.ff = std::make_shared<caps::ForceField>(caps::assign_uff(s, uo));
     for (const auto& note : F.ff->notes) F.rep.notes.push_back(note);
@@ -915,7 +916,7 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       F->base.typing.clear();
       caps::load_typing(F->base, rules_path);
     }
-    F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : "types";
+    F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : charges == 3 ? "qeq" : "types";
     // keep the file's types to restore them on clear (and the previous assignment's, if any)
     if (d->field) {
       F->file_types = d->field->file_types;

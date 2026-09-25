@@ -10,6 +10,7 @@
 #include <set>
 
 #include "caps/elements.hpp"
+#include "caps/qeq.hpp"
 #include "caps/typing.hpp"
 
 namespace caps {
@@ -18,7 +19,7 @@ namespace {
 
 struct UffParam {
   const char* label;
-  double r1, theta0, x1, D1, zeta, Z1, V1, U1, Xi;
+  double r1, theta0, x1, D1, zeta, Z1, V1, U1, Xi, hard, radius;
 };
 
 const UffParam kUff[] = {
@@ -261,6 +262,17 @@ FFDef uff_definition() {
   return d;
 }
 
+bool qeq_parameters(int z, double& chi, double& J, double& radius) {
+  for (const auto& q : kUff) {
+    if (element_from_symbol(label_symbol(q.label)) != z) continue;
+    chi = q.Xi;
+    J = 2 * q.hard;   // the table holds the hardness η = J / 2
+    radius = q.radius;
+    return true;
+  }
+  return false;
+}
+
 int uff_label_count() { return kUffCount; }
 bool uff_has_label(const std::string& l) { return by_label(l) != nullptr; }
 
@@ -488,7 +500,13 @@ ForceField assign_uff(const System& s, const UffOptions& o) {
   if (skipped_centres) ff.notes.push_back(std::to_string(skipped_centres) + " centres with more than six neighbours have no angle terms");
   ff.notes.push_back(std::to_string(ff.bonds.size()) + " bonds, " + std::to_string(ff.angles_x.size()) + " angles, " +
                      std::to_string(ff.dihedrals.size()) + " torsion terms, " + std::to_string(ff.inversions.size()) + " inversions");
-  ff.notes.push_back(o.keep_charges && s.has_charges ? "charges from the structure" : "no charges (UFF clean-up)");
+  if (o.qeq) {
+    QEqReport qr;
+    ff.charge = qeq_charges(s, QEqOptions{}, &qr);
+    ff.notes.push_back(qr.notes.front());
+  } else {
+    ff.notes.push_back(o.keep_charges && s.has_charges ? "charges from the structure" : "no charges (UFF clean-up)");
+  }
   for (const auto& note : p.notes) ff.notes.push_back(note);
   return ff;
 }
