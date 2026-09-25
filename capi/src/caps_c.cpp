@@ -1728,7 +1728,8 @@ extern "C" caps_doc* caps_grow_chains(const char* spec_json, const caps_grow_opt
     g.seed = o->seed;
     g.box = o->box;
     g.density = o->density;
-    g.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+    g.contact_scale = o->contact_scale > 0 ? o->contact_scale : o->contact_scale < 0 ? -o->contact_scale : 1.0;
+    g.auto_scale = o->contact_scale < 0;   // negative: start there and step down when crowded
     g.curve = o->curve != 0;
     if (progress) g.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
     caps::GrowReport rep;
