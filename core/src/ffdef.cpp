@@ -96,9 +96,14 @@ void load_typing(FFDef& ff, const std::string& path) {
   std::string unknown;
   for (const auto& r : rules)
     if (!known.count(r.type) && unknown.find(" " + r.type + ",") == std::string::npos) unknown += " " + r.type + ",";
-  if (!unknown.empty()) throw FFError(path + ": rules for types not in " + ff.name + ":" + unknown.substr(0, unknown.size() - 1));
+  // "unknown_types": "untyped" — rules shared with a larger version of the force field (antechamber's ordered GAFF table
+  // on moltemplate's GAFF): a rule for a type this file lacks stays in its place, so it still stops later, more general
+  // rules from taking those atoms, and the atoms it matches are reported untyped
+  if (!unknown.empty() && j.text("unknown_types") != "untyped")
+    throw FFError(path + ": rules for types not in " + ff.name + ":" + unknown.substr(0, unknown.size() - 1));
   ff.typing.insert(ff.typing.end(), rules.begin(), rules.end());
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
+  ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
   if (j.text("pair_mode") == "double_same") ff.typing_pairs_double_same = true;
   else if (!j.text("pair_mode").empty() && j.text("pair_mode") != "double_differs")
     throw FFError(path + ": pair_mode is double_differs (GAFF) or double_same (CGenFF)");
@@ -106,7 +111,7 @@ void load_typing(FFDef& ff, const std::string& path) {
     for (const auto& pr : j["pairs"].items()) {
       if (pr.size() != 2) throw FFError(path + ": each entry of \"pairs\" names two types");
       for (int k = 0; k < 2; ++k)
-        if (!known.count(pr[k].str())) throw FFError(path + ": pair type " + pr[k].str() + " not in " + ff.name);
+        if (!known.count(pr[k].str()) && j.text("unknown_types") != "untyped") throw FFError(path + ": pair type " + pr[k].str() + " not in " + ff.name);
       ff.typing_pairs.push_back({pr[0].str(), pr[1].str()});
     }
   ff.typing_source = path;
