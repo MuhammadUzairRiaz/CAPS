@@ -735,6 +735,19 @@ internal static class SelfTest
             Check(first == "Rail" && second == "Toolbar" && !vm.TourOpen && AppSettings.Load().TourDone, $"tour: {first} → {second} · done {AppSettings.Load().TourDone}");
         }
 
+        // Compact layout: drawers are exclusive, the project shows only as a drawer
+        {
+            vm.SetModule(8);
+            vm.Compact = true;
+            var inspector = vm.InspectorShown && !vm.ProjectPanelShown;
+            vm.ProjectDrawer = true;
+            var swapped = vm.ProjectPanelShown && !vm.InspectorShown;
+            vm.Compact = false;
+            Check(inspector && swapped && vm.ProjectPanelShown && vm.InspectorShown, $"compact: inspector drawer {inspector} · project drawer {swapped}");
+            vm.ProjectDrawer = false;
+            vm.InspectorDrawer = true;
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

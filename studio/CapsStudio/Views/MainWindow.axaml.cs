@@ -365,6 +365,10 @@ public partial class MainWindow : Window
             Enabled = () => _vm.HasDocument, Run = () => _ = Export("png") });
         _vm.AddCommand(new PaletteCommand { Title = "Export figure (SVG)…", Id = "export.svg", Icon = "download", Section = "File", Keywords = "vector image",
             Enabled = () => _vm.HasDocument, Run = () => _ = Export("svg") });
+        _vm.CompactChanged += ApplyCompact;
+        SizeChanged += (_, e) => _vm.Compact = e.NewSize.Width < 1440;
+        // a folded dock opens when one of its tabs is chosen
+        AnalysisTabs.AddHandler(PointerReleasedEvent, (_, _) => { if (_vm.Compact && !_vm.DockOpen) _vm.DockOpen = true; }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         _vm.TourChanged += UpdateTour;
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Document)) Dispatcher.UIThread.Post(_vm.MaybeStartTour, DispatcherPriority.Background); };
         _vm.OpenRequested += what =>
@@ -908,6 +912,35 @@ public partial class MainWindow : Window
 
     private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
     private void OnProvenancePage(object? s, RoutedEventArgs e) => _vm.OpenProvenance();
+
+    /// <summary>Compact layout: rail and toolbar icons only, the inspector and project as drawers, the dock folded.</summary>
+    private void ApplyCompact()
+    {
+        var c = _vm.Compact;
+        Rail.Classes.Set("compact", c);
+        ToolbarRight.Classes.Set("compact", c);
+        Body.ColumnDefinitions[0].Width = new GridLength(c ? 52 : 72);
+        Body.ColumnDefinitions[2].Width = new GridLength(c ? 40 : 330);
+        SideTabs.IsVisible = c;
+        // the inspector: its column, or a drawer over the right of the view
+        InspectorPanel.IsVisible = _vm.InspectorShown;
+        Grid.SetColumn(InspectorPanel, c ? 1 : 2);
+        InspectorPanel.Width = c ? 300 : double.NaN;
+        InspectorPanel.HorizontalAlignment = c ? Avalonia.Layout.HorizontalAlignment.Right : Avalonia.Layout.HorizontalAlignment.Stretch;
+        InspectorPanel.ZIndex = c ? 6 : 0;
+        InspectorPanel.BoxShadow = c ? Avalonia.Media.BoxShadows.Parse("-16 0 32 0 #70000000") : default;
+        // the project panel: a drawer over the left of the view
+        Grid.SetColumnSpan(ProjectPanel, c ? 2 : 1);
+        ProjectPanel.HorizontalAlignment = c ? Avalonia.Layout.HorizontalAlignment.Left : Avalonia.Layout.HorizontalAlignment.Stretch;
+        ProjectPanel.ZIndex = c ? 6 : 0;
+        ProjectPanel.BoxShadow = c ? Avalonia.Media.BoxShadows.Parse("16 0 32 0 #70000000") : default;
+        // the curves dock: its tabs only until opened
+        AnalysisDock.Height = !c || _vm.DockOpen ? 230 : 46;
+    }
+
+    private void OnInspectorDrawer(object? s, RoutedEventArgs e) => _vm.InspectorDrawer = !_vm.InspectorDrawer;
+    private void OnProjectDrawer(object? s, RoutedEventArgs e) => _vm.ProjectDrawer = !_vm.ProjectDrawer;
+    private void OnDockToggle(object? s, RoutedEventArgs e) => _vm.DockOpen = !_vm.DockOpen;
 
     /// <summary>Lights the tour step's region (the 3D view when that region is hidden).</summary>
     private void UpdateTour()
