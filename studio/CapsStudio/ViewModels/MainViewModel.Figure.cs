@@ -235,7 +235,7 @@ public sealed partial class MainViewModel
                 catch { return; }
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    if (gen != _figGen) return;
+                    if (gen != _figGen || !IsFigure) return;   // the page was left: drop the stale preview
                     tile.Height = th;
                     tile.Image = ToBitmap(rgba, tw, th);
                     tile.Overlay = FigureOverlayFor(tile.Background, tw, th, scale);
