@@ -1,0 +1,68 @@
+<!-- CAPS Save pipeline (design/boards/SavePipeline): plain text to diff, review and version; results record its hash. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SavePipelinePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Cancel" Click="OnBack" />
+          <Button Classes="primary" Click="OnSave">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save…" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Save pipeline" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Plain text you can diff, review and version; results record its hash" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,340" ColumnSpacing="16" Margin="22,16">
+      <Border Classes="card" CornerRadius="10">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center" ToolTip.Tip="{Binding PipelineYamlHash}">
+                <TextBlock Classes="mono" Foreground="{DynamicResource MutedB}"><Run Text="sha256 " /><Run Text="{Binding PipelineYamlShort}" /></TextBlock>
+              </Border>
+              <TextBlock Text="{Binding PipelineFileName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto"><SelectableTextBlock Text="{Binding PipelineYaml}" FontFamily="{DynamicResource Mono}" FontSize="12" LineHeight="19" Margin="16,10" /></ScrollViewer>
+        </DockPanel>
+      </Border>
+      <StackPanel Grid.Column="1" Spacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Steps in this pipeline" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{Binding PipelineStepsText}" FontSize="12" TextWrapping="Wrap" LineHeight="20" Margin="16,10" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Save" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,12" Spacing="10">
+              <StackPanel Spacing="4"><TextBlock Text="Name" Classes="label" /><TextBox Text="{Binding PipelineName}" /></StackPanel>
+              <CheckBox Classes="toggle" Content="Record the source file" IsChecked="{Binding PipelineWithSource}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Run it elsewhere" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,12" Spacing="8">
+              <Border Background="{DynamicResource Bg0B}" CornerRadius="6" Padding="10,8"><SelectableTextBlock Text="{Binding PipelineRunCommand}" FontFamily="{DynamicResource Mono}" FontSize="11.5" TextWrapping="Wrap" /></Border>
+              <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="One row of attributes per input; the Batch page does the same in the Studio. Load it again from Visualize › … › Load pipeline." />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

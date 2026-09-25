@@ -301,6 +301,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_export_preview")] public static extern int ExportPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string format, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, int lines, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bundle_preview")] public static extern int BundlePreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bundle_write")] public static extern int BundleWrite(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsCamera cam, in CapsRenderOpts opt);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_to_yaml")] public static extern int PipelineToYaml([MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string? name, [MarshalAs(UnmanagedType.LPUTF8Str)] string? file, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? yaml, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_from_yaml")] public static extern int PipelineFromYaml([MarshalAs(UnmanagedType.LPUTF8Str)] string yaml, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
@@ -455,6 +457,8 @@ public sealed class CapsDocument : IDisposable
     public string PipelineParticles(string filter, int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineParticles(_h, filter, offset, count, b, c)); }
     public string PipelineBonds(int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineBonds(_h, offset, count, b, c)); }
     public static string PipelineCatalogue() => Sized(Native.PipelineCatalogue);
+    public static string PipelineToYaml(string json, string? name, string? file, string? topology) => Sized((b, c) => Native.PipelineToYaml(json, name, file, topology, b, c));
+    public static string PipelineFromYaml(string yaml) => Sized((b, c) => Native.PipelineFromYaml(yaml, b, c));
     /// <summary>What a file holds before opening it (scans a dump for its frames: call off the UI thread).</summary>
     public static string InspectFile(string path, string? topology) => Sized((b, c) => Native.InspectFile(path, topology, b, c));
     /// <summary>The bundle's files with sizes and hashes (figures are made on write). Runs the pipeline twice: off the UI thread.</summary>
