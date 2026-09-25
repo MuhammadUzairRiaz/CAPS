@@ -926,10 +926,22 @@ void step_displacements(PipelineState& st, const Json& p, StepStatus& out) {
   dm.assign(n, 0); dx.assign(n, 0); dy.assign(n, 0); dz.assign(n, 0);
   // unwrapped displacements: whole molecules drift through the boundary, so follow each atom by minimum image
   // between the two frames only when they are consecutive; else compare the whole-molecule positions as they are
-  double msd = 0, mx = 0;
+  std::vector<Vec3> dv(n);
+  Vec3 drift{0, 0, 0};
+  double mtot = 0;
   for (size_t i = 0; i < n; ++i) {
     Vec3 d = r1[i] - r0[i];
     if (!st.system.unwrapped && st.system.cell.valid() && ref == "previous") d = st.system.cell.minimum_image(d);
+    dv[i] = d;
+    const double m = st.system.mass_of(st.system.atoms[i]);
+    drift = drift + d * m;
+    mtot += m;
+  }
+  drift = mtot > 0 ? drift * (1.0 / mtot) : drift;
+  const bool no_drift = flag(p, "subtract_drift", false);   // the system's centre-of-mass motion removed
+  double msd = 0, mx = 0;
+  for (size_t i = 0; i < n; ++i) {
+    const Vec3 d = no_drift ? dv[i] - drift : dv[i];
     dx[i] = d[0]; dy[i] = d[1]; dz[i] = d[2];
     dm[i] = norm(d);
     msd += dot(d, d);
@@ -938,6 +950,27 @@ void step_displacements(PipelineState& st, const Json& p, StepStatus& out) {
   msd = n ? msd / n : 0;
   st.set_attribute("Displacements.msd", msd);
   st.set_attribute("Displacements.max", mx);
+  st.set_attribute("Displacements.drift", norm(drift));
+  {   // per molecule: mean and largest atom displacement (heavy atoms), and the centre-of-mass shift
+    const auto mol = st.system.molecules();
+    std::map<int, std::array<double, 7>> acc;   // sum |d| heavy, n heavy, max, Σm d (3), Σm
+    for (size_t i = 0; i < n; ++i) {
+      auto& a = acc[mol[i]];
+      const Vec3 d = no_drift ? dv[i] - drift : dv[i];
+      const double m = st.system.mass_of(st.system.atoms[i]);
+      if (st.system.atoms[i].element != 1) a[0] += norm(d), a[1] += 1, a[2] = std::max(a[2], norm(d));
+      a[3] += m * d[0], a[4] += m * d[1], a[5] += m * d[2], a[6] += m;
+    }
+    DataTable t;
+    t.name = "displacements";
+    t.title = "Displacements per molecule";
+    t.columns = {"Molecule", "mean |d| (Å)", "max |d| (Å)", "COM shift (Å)"};
+    for (const auto& [m, a] : acc) {
+      const Vec3 c = a[6] > 0 ? Vec3{a[3], a[4], a[5]} * (1.0 / a[6]) : Vec3{0, 0, 0};
+      t.rows.push_back({double(m + 1), a[1] > 0 ? a[0] / a[1] : 0.0, a[2], norm(c)});
+    }
+    st.tables.push_back(std::move(t));
+  }
   out.summary = "vs frame " + std::to_string(rf) + " · MSD " + fmt("%.3g Å²", msd) + " · max " + fmt("%.2f Å", mx);
   if (!st.system.unwrapped && ref != "previous") { out.level = "warning"; out.summary += " · wrapped input: long runs need unwrapped coordinates"; }
 }
@@ -958,8 +991,36 @@ void step_smooth(PipelineState& st, const Json& p, StepStatus& out) {
     }
   }
   const double k = 1.0 / (f1 - f0 + 1);
-  for (size_t i = 0; i < n; ++i) st.system.atoms[i].pos = here[i] + sum[i] * k;
-  out.summary = "frames " + std::to_string(f0) + "–" + std::to_string(f1) + " averaged";
+  // what averaging does to geometry: C–C bond lengths stored and averaged, and how far the atoms moved
+  auto cc = [&](const std::function<Vec3(size_t)>& pos) {
+    double sm = 0, s2 = 0;
+    int c = 0;
+    for (const auto& b : st.system.bonds) {
+      if (st.system.atoms[b.i].element != 6 || st.system.atoms[b.j].element != 6) continue;
+      Vec3 d = pos(b.j) - pos(b.i);
+      if (st.system.cell.valid()) d = st.system.cell.minimum_image(d);
+      const double l = norm(d);
+      sm += l, s2 += l * l, ++c;
+    }
+    const double m = c ? sm / c : 0;
+    return std::pair{m, c ? std::sqrt(std::max(0.0, s2 / c - m * m)) : 0.0};
+  };
+  const auto before = cc([&](size_t i) { return here[i]; });
+  double rms = 0;
+  for (size_t i = 0; i < n; ++i) {
+    const Vec3 shift = sum[i] * k;
+    rms += dot(shift, shift);
+    st.system.atoms[i].pos = here[i] + shift;
+  }
+  rms = n ? std::sqrt(rms / n) : 0;
+  const auto after = cc([&](size_t i) { return st.system.atoms[i].pos; });
+  st.set_attribute("Smooth.window_frames", double(f1 - f0 + 1));
+  st.set_attribute("Smooth.cc_stored_mean", before.first), st.set_attribute("Smooth.cc_stored_sd", before.second);
+  st.set_attribute("Smooth.cc_averaged_mean", after.first), st.set_attribute("Smooth.cc_averaged_sd", after.second);
+  st.set_attribute("Smooth.rms_shift", rms);
+  st.set_attribute("Smoothed", 1);   // smoothed frames are labelled: bond and angle analysis should not read them unasked
+  out.summary = "frames " + std::to_string(f0) + "–" + std::to_string(f1) + " averaged · C–C " + fmt("%.3f", before.first) + " ± " + fmt("%.3f", before.second) + " → " +
+                fmt("%.3f", after.first) + " ± " + fmt("%.3f Å", after.second) + " · RMS shift " + fmt("%.3f Å", rms);
 }
 
 void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {
@@ -1067,6 +1128,8 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
   std::vector<Vec3> prev(tracks), path(tracks);
   bool first = true;
   size_t segs = 0;
+  std::vector<Vec3> start(tracks);
+  std::vector<double> travelled(tracks, 0.0);
   for (int f = from; f <= to; f += stride) {
     System fr = st.traj->frame(size_t(f));
     if (!fr.unwrapped && fr.cell.valid()) make_molecules_whole(fr);
@@ -1078,11 +1141,12 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
       for (size_t k = 0; k < tracks; ++k) now[k] = fr.atoms[size_t(picks[k])].pos;
     }
     for (size_t k = 0; k < tracks; ++k) {
-      if (first) { path[k] = now[k]; }
+      if (first) { path[k] = now[k]; start[k] = now[k]; }
       else {
         Vec3 d = now[k] - prev[k];
         if (fr.cell.valid() && !fr.unwrapped) d = fr.cell.minimum_image(d);   // follow across the boundary
         const Vec3 next = path[k] + d;
+        travelled[k] += norm(d);
         st.segments.push_back({path[k], next, kCat[(centres ? k : size_t(mol[size_t(std::max(0, picks[k]))])) % 10], radius, false});
         path[k] = next;
         ++segs;
@@ -1090,6 +1154,17 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
       prev[k] = now[k];
     }
     first = false;
+  }
+  {   // how far each path went, and how far it got: net / path near 0 means the walk turned back on itself
+    DataTable t;
+    t.name = "paths";
+    t.title = centres ? "Centre-of-mass paths" : "Particle paths";
+    t.columns = {centres ? "Molecule" : "Particle", "path length (Å)", "net shift (Å)", "net / path"};
+    for (size_t k = 0; k < tracks; ++k) {
+      const double net = norm(path[k] - start[k]);
+      t.rows.push_back({double(centres ? k + 1 : size_t(picks[k] + 1)), travelled[k], net, travelled[k] > 0 ? net / travelled[k] : 0.0});
+    }
+    st.tables.push_back(std::move(t));
   }
   out.summary = std::to_string(tracks) + (centres ? " molecule centres" : " particles") + " · frames " + std::to_string(from) + "–" + std::to_string(to) +
                 (stride > 1 ? " every " + std::to_string(stride) : "") + " · " + std::to_string(segs) + " segments";
@@ -1335,6 +1410,8 @@ void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
   const int nf = int(tr.frames());
   const int max_lag = std::clamp(int(p.num("max_lag", nf / 2)), 1, nf - 1);
   const bool heavy = flag(p, "heavy_only", true);
+  // the lags the diffusion fit uses (frames); default: the last three quarters
+  const int fit_lo = std::clamp(int(p.num("fit_from", std::max(1, max_lag / 4))), 1, max_lag), fit_hi = std::clamp(int(p.num("fit_to", max_lag)), fit_lo, max_lag);
   const int every = std::max(1, int(p.num("every", 1)));
   std::vector<uint32_t> atoms;
   for (uint32_t i = 0; i < tr.topology.atoms.size(); ++i)
@@ -1378,10 +1455,10 @@ void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
   for (int lag = 1; lag <= max_lag; ++lag) {
     const double a = msd(ra, lag), c = msd(rc, lag);
     t.rows.push_back({lag * dts, a, c, double(lag)});
-    if (lag >= max_lag / 4) { x.push_back(lag * dts); y.push_back(c); }
+    if (lag >= fit_lo && lag <= fit_hi) { x.push_back(lag * dts); y.push_back(c); }
   }
   st.tables.push_back(std::move(t));
-  // D from the centres of mass: MSD = 6 D τ over the last three quarters of the lags
+  // D from the centres of mass: MSD = 6 D τ over the fit lags
   double D = 0;
   if (x.size() >= 2) {
     double mx = 0, my = 0;
@@ -1393,6 +1470,7 @@ void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
   }
   const double fs = p.num("timestep_fs", 0);
   st.set_attribute("MSD.D_centres", D);
+  st.set_attribute("MSD.fit_from", double(fit_lo)), st.set_attribute("MSD.fit_to", double(fit_hi));
   if (fs > 0) st.set_attribute("MSD.D_centres_cm2s", D / fs * 0.1);   // Å²/fs = 0.1 cm²/s
   out.summary = std::to_string(atoms.size()) + " atoms, " + std::to_string(nm) + " centres · lags to " + std::to_string(max_lag) + " frames · D " +
                 (fs > 0 ? fmt("%.3g cm²/s", D / fs * 0.1) : fmt("%.3g Å²/timestep", D));

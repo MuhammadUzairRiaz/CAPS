@@ -172,7 +172,7 @@ public sealed partial class MainViewModel
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
             "molecule_shape" => "molecules", "wrap" => "outside", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
-            "msd" => "msd", "vectors" => "vectors", _ => null,
+            "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
         for (int k = 0; k < ts.Count; ++k)
@@ -468,13 +468,14 @@ public sealed partial class MainViewModel
                 Text("rmax", "g(r) out to r max (Å)", "number"); Text("bins", "Bins", "number"); Text("cutoff", "Coordination cutoff (Å)", "number");
                 Bool("average_frames", "Average g(r) over the frames"); Text("every", "Every n-th frame", "number"); Bool("only_selected", "Only selected"); break;
             case "topology": Text("bins", "Bins", "number"); Bool("colour_states", "Colour the backbone by dihedral state (t · g+ · g−)"); break;
-            case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
+            case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); Bool("subtract_drift", "Subtract system drift"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
             case "python":
                 Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "choose a Python file", Text = S("file") });
                 break;
             case "msd":
                 Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");
+                Text("fit_from", "Fit from lag (frames)", "number", "blank: a quarter of the lags"); Text("fit_to", "Fit to lag (frames)", "number", "blank: the longest");
                 Text("timestep_fs", "Timestep (fs) for D in cm²/s", "number"); break;
             case "scatter": Choice("x", "x", props); Choice("y", "y", props); Bool("only_selected", "Only selected"); break;
             case "voids": Text("probe", "Probe radius (Å)", "number"); Text("grid", "Grid (Å)", "number"); Bool("show", "Show void points, coloured by void"); break;
