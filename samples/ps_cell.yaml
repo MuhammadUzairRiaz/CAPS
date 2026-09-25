@@ -1,0 +1,15 @@
+# caps run samples/ps_cell.yaml --out runs/ps_cell     (the CommandLine board's recipe, sized for a laptop)
+recipe: 1
+name: ps_cell
+build:
+  polymer:
+    smiles: "*CC(*)c1ccccc1"
+    dp: 20
+    chains: 10
+    tacticity: atactic
+type: { forcefield: gaff2 }
+grow: { trials: 16, density: 0.50, seed: 20260923 }
+relax: { method: lbfgs, fmax: 0.5 }
+md: { ps: 1, temperature: 300, ensemble: nvt }
+analyze: { properties: [density, rg] }
+export: [lammps, gromacs]
