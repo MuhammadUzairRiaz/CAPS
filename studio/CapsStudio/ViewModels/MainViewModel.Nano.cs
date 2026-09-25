@@ -35,6 +35,29 @@ public sealed partial class MainViewModel
     public decimal TubeN { get => _tubeN; set { if (Set(ref _tubeN, Math.Clamp(Math.Round(value), 1, 60))) { if (_tubeM > _tubeN) { _tubeM = _tubeN; Raise(nameof(TubeM)); } RaiseNano(); NanoPreview(); } } }
     public decimal TubeM { get => _tubeM; set { if (Set(ref _tubeM, Math.Clamp(Math.Round(value), 0, _tubeN))) { RaiseNano(); NanoPreview(); } } }
     public decimal TubeLength { get => _tubeLength; set { if (Set(ref _tubeLength, Math.Clamp(value, 3, 500))) NanoPreview(); } }
+    // C–C bond length (sheets and tubes) and concentric walls (armchair or zigzag tubes)
+    private decimal _nanoCc = 1.42m, _tubeWalls = 1;
+    public decimal NanoCc { get => _nanoCc; set { if (Set(ref _nanoCc, Math.Clamp(value, 1.30m, 1.60m))) { RaiseNano(); NanoPreview(); } } }
+    public bool TubeMultiWalled
+    {
+        get => _tubeWalls > 1;
+        set { TubeWalls = value ? Math.Max(2, _tubeWalls) : 1; Raise(); }
+    }
+    public decimal TubeWalls { get => _tubeWalls; set { if (Set(ref _tubeWalls, Math.Clamp(Math.Round(value), 1, 6))) { Raise(nameof(TubeMultiWalled)); RaiseNano(); NanoPreview(); } } }
+    /// <summary>"(5,5)@(10,10)@(15,15) · outer d = 20.35 Å", the walls as the core steps them (about 3.4 Å apart).</summary>
+    private string TubeWallsTitle()
+    {
+        var a = Math.Sqrt(3) * (double)_nanoCc;
+        var arm = TubeKind == 0;
+        var dn = Math.Max(1, (int)Math.Round(2 * 3.4 * Math.PI / (arm ? a * Math.Sqrt(3) : a)));
+        var n = (int)_tubeN;
+        var names = Enumerable.Range(0, (int)_tubeWalls).Select(k => arm ? $"({n + k * dn},{n + k * dn})" : $"({n + k * dn},0)");
+        var nOut = n + ((int)_tubeWalls - 1) * dn;
+        var d = arm ? a * Math.Sqrt(3) * nOut / Math.PI : a * nOut / Math.PI;
+        return string.Join("@", names) + string.Format(CultureInfo.InvariantCulture, " · outer d = {0:F2} Å", d);
+    }
+    /// <summary>Concentric walls need armchair or zigzag tubes (their periods along the axis match).</summary>
+    public bool TubeWallsAllowed => TubeKind != 2;
     public bool NanoPeriodic { get => _nanoPeriodic; set { if (Set(ref _nanoPeriodic, value)) { Raise(nameof(NanoCap)); RaiseNano(); NanoPreview(); } } }
     public bool NanoCap { get => !_nanoPeriodic; set => NanoPeriodic = !value; }
     /// <summary>0 armchair (m = n), 1 zigzag (m = 0), 2 chiral.</summary>
@@ -53,7 +76,7 @@ public sealed partial class MainViewModel
     public bool TubeChiral { get => TubeKind == 2; set { if (value) TubeKind = 2; } }
     private double[] TubeGeometry()
     {
-        double n = (double)_tubeN, m = (double)_tubeM, a = Math.Sqrt(3) * 1.42;
+        double n = (double)_tubeN, m = (double)_tubeM, a = Math.Sqrt(3) * (double)_nanoCc;
         var ch = a * Math.Sqrt(n * n + n * m + m * m);
         var dr = Gcd((int)(2 * m + n), (int)(2 * n + m));
         return [ch / Math.PI, Math.Atan2(Math.Sqrt(3) * m, 2 * n + m) * 180 / Math.PI, Math.Sqrt(3) * ch / dr];
@@ -97,7 +120,8 @@ public sealed partial class MainViewModel
     {
         3 => PoreTitle,
         0 => $"Graphene · {_sheetLayers} layer{(_sheetLayers > 1 ? "s" : "")}",
-        1 => $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")} · d = {TubeGeometry()[0]:F2} Å",
+        1 => TubeWallsAllowed && _tubeWalls > 1 ? TubeWallsTitle()
+                                                : $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")} · d = {TubeGeometry()[0]:F2} Å",
         _ => $"{(_particleCrystal < Crystals.Count ? Crystals[_particleCrystal].Name : "crystal")} {ParticleShapes[_particleShape].ToLowerInvariant()} · r = {_particleRadius:0.#} Å",
     };
     public string NanoAxisText => _nanoKind == 3 ? (_poreType == 0 ? (_poreVacuum ? "vacuum above the walls" : "periodic in x, y, z") : "periodic in x, y, z") : _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake")
@@ -108,7 +132,7 @@ public sealed partial class MainViewModel
     private void RaiseNano()
     {
         foreach (var n in new[] { nameof(NanoIsSheet), nameof(NanoIsTube), nameof(NanoIsParticle), nameof(TubeKind), nameof(TubeArmchair), nameof(TubeZigzag), nameof(TubeChiral),
-                                  nameof(TubeAngleText), nameof(TubeDiameterText), nameof(TubeTText), nameof(NanoTitle), nameof(NanoAxisText), nameof(NanoBuildText), nameof(NanoBuildIcon) })
+                                  nameof(TubeAngleText), nameof(TubeDiameterText), nameof(TubeTText), nameof(NanoTitle), nameof(NanoAxisText), nameof(NanoBuildText), nameof(NanoBuildIcon), nameof(TubeWallsAllowed) })
             Raise(n);
     }
 
@@ -118,8 +142,11 @@ public sealed partial class MainViewModel
         var o = new JsonObject { ["kind"] = _nanoKind switch { 0 => "sheet", 1 => "tube", _ => "particle" }, ["periodic"] = _nanoPeriodic ? 1 : 0 };
         switch (_nanoKind)
         {
-            case 0: o["lx"] = (double)_sheetLx; o["ly"] = (double)_sheetLy; o["layers"] = (int)_sheetLayers; break;
-            case 1: o["n"] = (int)_tubeN; o["m"] = (int)_tubeM; o["length"] = (double)_tubeLength; break;
+            case 0: o["lx"] = (double)_sheetLx; o["ly"] = (double)_sheetLy; o["layers"] = (int)_sheetLayers; o["cc"] = (double)_nanoCc; break;
+            case 1:
+                o["n"] = (int)_tubeN; o["m"] = (int)_tubeM; o["length"] = (double)_tubeLength; o["cc"] = (double)_nanoCc;
+                o["walls"] = TubeWallsAllowed ? (int)_tubeWalls : 1;
+                break;
             default:
                 o["crystal"] = _particleCrystal < Crystals.Count ? Crystals[_particleCrystal].File : "";
                 o["shape"] = ParticleShapes[_particleShape].ToLowerInvariant();

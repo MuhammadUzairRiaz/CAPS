@@ -137,3 +137,21 @@ TEST(Nano, SilicaFibreInRubberAndPullOut) {
   EXPECT_EQ(r.interfaces, 1);
   EXPECT_GT(r.curve.size(), 3u);
 }
+
+// Multi-walled tubes: (5,5)@(10,10)@(15,15) has 20 + 40 + 60 atoms per period and walls 3.39 Å apart; zigzag walls
+// step by (9,0); chiral walls are refused (their periods along the axis differ)
+TEST(Nano, MultiWalledTubes) {
+  NanotubeOptions o;
+  o.n = 5, o.m = 5, o.walls = 3, o.length = 24.6;
+  NanoReport r;
+  const System s = nanotube(o, &r);
+  EXPECT_EQ(r.atoms_per_period, 120);
+  EXPECT_EQ(int(s.atoms.size()), 120 * 10);
+  EXPECT_NEAR(r.diameter, 2 * 15 * std::sqrt(3.0) * 1.42 * std::sqrt(3.0) / (2 * M_PI), 1e-6);
+  EXPECT_NE(r.notes.front().find("(5,5)@(10,10)@(15,15) 3-walled"), std::string::npos) << r.notes.front();
+  EXPECT_NE(r.notes.front().find("3.39 Å apart"), std::string::npos) << r.notes.front();
+  o.n = 9, o.m = 0, o.walls = 2;
+  EXPECT_EQ((nanotube(o, &r), r.atoms_per_period), 36 + 72);
+  o.n = 8, o.m = 4;
+  EXPECT_THROW(nanotube(o), std::invalid_argument);
+}
