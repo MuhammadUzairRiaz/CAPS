@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.Text.Json.Nodes;
 using System.Runtime.CompilerServices;
 using CapsStudio.Interop;
 
@@ -783,13 +784,14 @@ public sealed partial class MainViewModel : ObservableObject
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
             AfterGrowStatistics(doc);
+            var densityNote = SuggestRelaxDensity(spec == null ? "Polystyrene" : _growSpecName);
             GrownUnsaved = true;
             GrowDone = _growChains;
             // the last live snapshot can land after the run ends and is dropped: the finished cell gives the final numbers
             if (double.IsFinite(_growUnitsTotal)) { GrowUnitsText = $"{_growUnitsTotal:0} / {_growUnitsTotal:0}"; GrowUnitFraction = 1; }
             GrowDensityNowText = doc.Summary().Density.ToString("0.00", CultureInfo.InvariantCulture) + " g/cm³" + (_growShape > 0 ? " (cell)" : "");
             GrowElapsed = sw.Elapsed.TotalSeconds;
-            GrowLog = (failures.Count > 0 ? string.Join("\n", failures) + $"\nused seed {used} instead\n" : "") + report + $"\nbuilt in {sw.Elapsed.TotalSeconds:F2} s";
+            GrowLog = (failures.Count > 0 ? string.Join("\n", failures) + $"\nused seed {used} instead\n" : "") + report + $"\nbuilt in {sw.Elapsed.TotalSeconds:F2} s" + densityNote;
             Status = $"Grown {name} · save it as LAMMPS data, PDB or XYZ";
         }
         catch (Exception e)
@@ -836,6 +838,29 @@ public sealed partial class MainViewModel : ObservableObject
 
     public decimal? RelaxFtolD { get => (decimal)_relaxFtol; set { _relaxFtol = Math.Clamp((double)(value ?? 0.5m), 0.001, 100); Raise(); } }
     public decimal? RelaxIterationsD { get => _relaxIterations; set { _relaxIterations = Math.Clamp((int)(value ?? 5000), 10, 1000000); Raise(); } }
+    /// <summary>Relax compresses a grown cell towards a target density: when data/reference/polymers.json has the grown
+    /// polymer ("Polyethylene" → "Polyethylene, amorphous"), its measured density (mid-range, 0.01 g/cm³) becomes the
+    /// target, so a PE cell is not squeezed to polystyrene's 1.05. Returns a line for the Grow log, or "".</summary>
+    private string SuggestRelaxDensity(string polymer)
+    {
+        try
+        {
+            if (Paths.References is not { } f || string.IsNullOrWhiteSpace(polymer)) return "";
+            var mats = JsonNode.Parse(File.ReadAllText(f))?["materials"] as JsonArray;
+            var m = mats?.OfType<JsonObject>().FirstOrDefault(x =>
+            {
+                var n = (string?)x["name"] ?? "";
+                return n.Equals(polymer, StringComparison.OrdinalIgnoreCase) || n.StartsWith(polymer + ",", StringComparison.OrdinalIgnoreCase);
+            });
+            if (m?["values"]?["density"] is not JsonObject d || d["lo"] is null || d["hi"] is null) return "";
+            var mid = Math.Round(((double)d["lo"]! + (double)d["hi"]!) / 2, 2);
+            _relaxDensity = mid;
+            Raise(nameof(RelaxDensityD));
+            return string.Format(CultureInfo.InvariantCulture, "\nRelax target density set to {0:0.00} g/cm³ ({1}, {2})", mid, (string?)m["name"], (string?)d["source"]);
+        }
+        catch { return ""; }
+    }
+
     public decimal? RelaxDensityD { get => (decimal)_relaxDensity; set { _relaxDensity = Math.Clamp((double)(value ?? 1.05m), 0.05, 3); Raise(); } }
     public decimal? RelaxStepD { get => (decimal)_relaxStep; set { _relaxStep = Math.Clamp((double)(value ?? 0.06m), 0.005, 0.5); Raise(); } }
     public decimal? RelaxPressureD { get => (decimal)_relaxPressure; set { _relaxPressure = (double)(value ?? 1m); Raise(); } }
