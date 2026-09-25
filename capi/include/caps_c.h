@@ -581,6 +581,9 @@ void caps_set_held_molecule(caps_doc* d, int64_t mol);
 /* Distance restraints for caps_relax, as JSON: [{"i": 0, "j": 5, "r0": 3.0, "k": 10}, …] (atom indices from 0, Å,
    kcal/mol/Å²); "[]" or NULL clears them. Returns the number set, or -1 on a malformed list. */
 int32_t caps_set_restraints(caps_doc* d, const char* json);
+/* Add hydrogens by pH (v21): amino-acid residues protonated at `ph` (model pKa values) before the "add_h" edit and
+   in caps_hydrogen_plan; a negative pH goes back to neutral valences. "add_h" also takes {ph} for one edit. */
+void caps_set_ph(caps_doc* d, double ph);
 int64_t caps_held_molecule(const caps_doc* d);
 
 /* Crystals from space groups (v20, design/boards/CrystalBuilder). A spec is JSON {space_group (key "227:2", number or

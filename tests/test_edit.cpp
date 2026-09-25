@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include "caps/molecule.hpp"
+#include "caps/peptide.hpp"
 #include "caps/polymer.hpp"
 
 using namespace caps;
@@ -197,4 +198,33 @@ TEST(Edit, FuseBenzeneMakesNaphthalene) {
   for (const auto& bd : s.bonds)
     if (s.atoms[bd.i].element == 6 && s.atoms[bd.j].element == 6) EXPECT_NEAR(norm(s.atoms[bd.j].pos - s.atoms[bd.i].pos), 1.40, 0.06);
   EXPECT_THROW(fuse_benzene(s, 0, 17), EditError);
+}
+
+// Protonation by pH gives back the peptide builder's own hydrogens: a peptide built at pH 7 and at pH 2, stripped to
+// its heavy atoms and protonated again at the same pH, has the same number of hydrogens and the same net charge
+TEST(Edit, ProtonationByPhMatchesThePeptideBuilder) {
+  for (double ph : {7.0, 2.0, 11.0}) {
+    PeptideOptions p;
+    p.sequence = "KDEHRYCA";
+    p.ph = ph;
+    p.cleanup = false;
+    // the builder's terminal forms are set, not titrated: those of the model pKa values (8.0, 3.1) at this pH
+    p.n_term = ph < 8.0 ? "NH3+" : "NH2";
+    p.c_term = ph > 3.1 ? "COO-" : "COOH";
+    System s = build_peptide(p);
+    int h0 = 0;
+    double q0 = 0;
+    for (const auto& a : s.atoms) h0 += a.element == 1, q0 += a.charge;
+    // heavy atoms only, charges gone (as a PDB of heavy atoms reads)
+    std::vector<char> hyd(s.atoms.size(), 0);
+    for (size_t i = 0; i < s.atoms.size(); ++i) hyd[i] = s.atoms[i].element == 1;
+    delete_atoms(s, hyd);
+    for (auto& a : s.atoms) a.charge = 0;
+    std::vector<std::string> notes;
+    add_hydrogens_at_ph(s, ph, {}, &notes);
+    int h1 = 0, q1 = 0;
+    for (const auto& a : s.atoms) h1 += a.element == 1, q1 += int(std::lround(a.charge));
+    EXPECT_EQ(h1, h0) << "pH " << ph << " · " << notes.front();
+    EXPECT_NEAR(q1, std::lround(q0), 0.01) << "pH " << ph << " · " << notes.front();
+  }
 }
