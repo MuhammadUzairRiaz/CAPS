@@ -99490,5 +99490,6 @@
  ],
  "version": "GAFF 1.x",
  "status": "converted",
- "validation": "same forms as GAFF2 (validated). moltemplate uses lj/charmm/coul/long; CAPS evaluates plain LJ."
+ "validation": "same forms as GAFF2 (validated). moltemplate uses lj/charmm/coul/long; CAPS evaluates plain LJ.",
+ "typing": "../typing/gaff-moltemplate.typing.json"
 }

@@ -119,6 +119,7 @@ struct FFDef {
   std::vector<TypingRule> typing;
   std::vector<std::pair<std::string, std::string>> typing_pairs;   // conjugated pairs (GAFF cc/cd, ...), see typing.hpp
   bool typing_ordered = false;
+  bool typing_unknown_untyped = false;   // rules may name types this file lacks: their atoms end up untyped
   bool typing_pairs_double_same = false;   // pairs keep one type across a double bond (CGenFF CG2DC1/2), not GAFF's   // rules are an ordered list (antechamber): the first match is intended, not ambiguous
   std::string typing_source;
   std::vector<std::string> notes;
