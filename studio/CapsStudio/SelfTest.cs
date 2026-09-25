@@ -1061,6 +1061,25 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Colour vision: three palettes × four visions, pairs sorted, the view preview changes pixels and never exports
+        {
+            vm.OpenColourVision();
+            var sorted = vm.VisionPairs.Select(p => double.Parse(p.De, System.Globalization.CultureInfo.InvariantCulture)).ToList();
+            var ok = vm.IsColourVision && vm.VisionPalettes.Count == 3 && vm.VisionPalettes.All(p => p.Rows.Length == 4) &&
+                     vm.VisionPalettes[0].Rows[0].Swatches.Length == 8 && sorted.SequenceEqual(sorted.OrderBy(x => x));
+            var vopt = new CapsRenderOpts { Width = 160, Height = 120, Supersample = 1, Background = 0, Style = 0, ColourBy = 1, Outlines = 1, DepthCue = 1, ShowCell = 1,
+                                           Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1 };
+            var va = new byte[160 * 120 * 4];
+            var vb = new byte[160 * 120 * 4];
+            vm.Document!.Render(vm.Camera, vopt, va);
+            vm.VisionPreview = 1;
+            vm.Document.Render(vm.Camera, vopt, vb);
+            var differs = !va.SequenceEqual(vb);
+            vm.VisionPreview = 0;
+            Check(ok && differs, $"colour vision: {vm.VisionPalettes.Count} palettes · {vm.VisionSummary} · preview changes the view {differs}");
+            vm.SetModule(8);
+        }
+
         // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document
         {
             var rdir = Path.Combine(outDir, "caps-selftest-recipe");
