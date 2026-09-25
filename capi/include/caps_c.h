@@ -532,7 +532,8 @@ int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
    single-frame document, with undo. caps_edit JSON {op, …}: "element" {atoms: [i…] | "selection", element: "N"},
    "charge" {atoms, charge}, "add_atom" {to (−1: beside the structure), element, order, geometry (0 auto, 3 sp³, 2 sp²,
    1 sp), charge}, "bond" {i, j, order}, "unbond" {i, j}, "delete" {atoms}, "add_h" {atoms (absent: all)}, "invert"
-   {centre}, "tacticity" {to: "isotactic" | "syndiotactic", clean}, "clean" {atoms, ftol} → {ok, error, what, atoms,
+   {centre}, "tacticity" {to: "isotactic" | "syndiotactic", clean}, "clean" {atoms, ftol}, "attach" {target, smiles (with *
+   attachment points), which, clean, name}, "place" {smiles, name, resname} → {ok, error, what, atoms,
    added: [new atom indices]}. A Field assignment is cleared by any edit. caps_undo(d, 0) undoes, (d, 1) redoes;
    caps_history: {undo: [what…], redo: […]}.
    caps_select JSON {mode: "smarts" | "element" | "type" | "charge" {lo, hi} | "within" {distance} | "grow" {steps} |

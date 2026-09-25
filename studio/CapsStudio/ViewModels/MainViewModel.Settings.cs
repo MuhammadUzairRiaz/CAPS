@@ -49,6 +49,8 @@ public sealed partial class MainViewModel
         if (clean >= 0) _molClean = clean;
         ScaleChanged?.Invoke(_settings.Scale);
         LoadHosts();
+        _fragments = null;
+        LoadQuickFragments();
         Raise(nameof(JobTemplate));
         foreach (var n in new[] { nameof(SetTheme), nameof(SetScale), nameof(ScaleText), nameof(SetPalette), nameof(SetThreads), nameof(ThreadsText),
                                   nameof(SetBackground), nameof(SetOutlines), nameof(SetDepthCue), nameof(SetStyle), nameof(SetForceField),

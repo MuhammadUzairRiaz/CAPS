@@ -241,6 +241,13 @@ internal static class Screenshot
                 var t = w.ViewModel.TestHost();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
             }
+            if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
+            {
+                w.ViewModel.OpenFragments();
+                w.ViewModel.FragmentCategory = kv[1];
+                for (int k = 0; k < 120; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "fragment") { w.ViewModel.SelectedFragment = w.ViewModel.FragmentTiles.FirstOrDefault(f => f.Name == kv[1]); for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {

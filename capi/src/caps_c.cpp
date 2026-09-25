@@ -3384,6 +3384,52 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       const int k = caps::set_tacticity(s, iso);
       if (k > 0 && j.num("clean", 1) != 0) caps::clean_up(s);
       what = std::string("Make ") + (iso ? "isotactic" : "syndiotactic") + " (" + std::to_string(k) + " centres inverted)";
+    } else if (op == "attach") {
+      const uint32_t t = uint32_t(j.num("target", -1));
+      const auto at = caps::attach_fragment(s, t, j.text("smiles"), int(j.num("which", 0)), j.num("replace_h", 1) != 0);
+      for (uint32_t a : at) added.push_back(double(a));
+      if (j.num("clean", 1) != 0) {
+        std::vector<char> m(s.atoms.size(), 0);
+        for (uint32_t a : at) m[a] = 1;
+        caps::clean_up(s, m, 0.5);
+      }
+      what = "Attach " + j.text("name", "fragment") + " to atom " + std::to_string(t + 1);
+    } else if (op == "place") {
+      caps::BuildOptions bo;
+      bo.forcefield = "uff";
+      const caps::System m = caps::build_molecule(j.text("smiles"), bo).system;
+      // beside the structure: its extent's far side along x, 3 Å of space
+      caps::Vec3 hi{-1e300, -1e300, -1e300}, lo{1e300, 1e300, 1e300}, mlo{1e300, 1e300, 1e300}, mhi{-1e300, -1e300, -1e300};
+      for (const auto& a : s.atoms) for (int k = 0; k < 3; ++k) hi[k] = std::max(hi[k], a.pos[k]), lo[k] = std::min(lo[k], a.pos[k]);
+      for (const auto& a : m.atoms) for (int k = 0; k < 3; ++k) mhi[k] = std::max(mhi[k], a.pos[k]), mlo[k] = std::min(mlo[k], a.pos[k]);
+      const caps::Vec3 shift = s.atoms.empty() ? caps::Vec3{0, 0, 0}
+                                               : caps::Vec3{hi[0] + 3.0 - mlo[0], (lo[1] + hi[1]) * 0.5 - (mlo[1] + mhi[1]) * 0.5, (lo[2] + hi[2]) * 0.5 - (mlo[2] + mhi[2]) * 0.5};
+      int64_t mol = 0;
+      for (const auto& a : s.atoms) mol = std::max(mol, a.mol);
+      const uint32_t base = uint32_t(s.atoms.size());
+      for (const auto& a0 : m.atoms) {
+        caps::Atom a = a0;
+        a.pos = a0.pos + shift;
+        a.mol = mol + 1;
+        a.id = s.atoms.empty() ? 1 : s.atoms.back().id + 1;
+        a.resname = j.text("resname", "MOL").substr(0, 3);
+        const std::string sym = caps::element(a.element).symbol;
+        int type = 0;
+        for (const auto& t : s.types) if (t.label == sym) type = t.type;
+        if (type == 0) {
+          for (const auto& t : s.types) type = std::max(type, t.type);
+          ++type;
+          caps::TypeInfo ti;
+          ti.type = type, ti.mass = caps::element(a.element).mass, ti.label = sym;
+          s.types.push_back(ti);
+        }
+        a.type = type;
+        added.push_back(double(s.atoms.size()));
+        s.atoms.push_back(a);
+      }
+      for (const auto& b : m.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
+      s.has_mol = true;
+      what = "Place " + j.text("name", "molecule");
     } else if (op == "clean") {
       const auto at = atoms_of(d, j);
       std::vector<char> m;
