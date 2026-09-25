@@ -18,6 +18,12 @@
 //   replicate           nx, ny, nz, adjust_cell
 //   histogram           property, bins, start, end, only_selected                        → table histogram
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
+//   create_bonds        mode perceive|cutoff, cutoff, tolerance, only_selected, replace   (bonds between particles)
+//   unwrap              molecules made whole across the cell boundary
+//   molecule_shape      per molecule: Rg, κ², asphericity, mass → properties and table molecules
+//   topology            bond lengths, bond angles and dihedrals as histograms          → tables bonds, angles, dihedrals
+//   displacements       reference first|previous|frame, frame                              → Displacement(.X .Y .Z), MSD
+//   smooth              window (frames, centred): positions averaged over the trajectory
 //
 // Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
 // Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,
@@ -25,6 +31,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
@@ -69,6 +76,7 @@ struct PipelineState {
   bool has_legend = false;
   int frame = 0;
   int64_t timestep = 0;
+  const Trajectory* traj = nullptr;                    // the whole trajectory, for steps that read other frames
 
   double attribute(const std::string& name, double def = 0) const;
   void set_attribute(const std::string& name, double v);
@@ -92,7 +100,13 @@ Json pipeline_to_json(const Pipeline& p);
 std::vector<std::array<std::string, 3>> pipeline_step_catalogue();
 std::string step_title(const std::string& type);
 
-PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index = 0, int64_t timestep = 0);
+// traj (optional) lets displacements and smoothing read other frames; frame is traj's frame frame_index as shown.
+PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index = 0, int64_t timestep = 0, const Trajectory* traj = nullptr);
+
+// Time series (design/boards/TimeSeries): the pipeline on every stride-th frame, one row per frame with every numeric
+// global attribute (Frame, Timestep, then the attributes in order). progress(done, total) returns false to stop.
+DataTable pipeline_series(const Trajectory& traj, const Pipeline& p, int stride = 1, bool wrap = false,
+                          const std::function<bool(int, int)>& progress = {});
 
 // Per-particle property names available to expressions and colour coding.
 std::vector<std::string> property_names(const PipelineState& st);

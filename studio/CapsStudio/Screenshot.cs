@@ -70,6 +70,13 @@ internal static class Screenshot
             if (kv[0] == "inspector") { w.ViewModel.InspectorTab = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
             if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
+            if (kv[0] == "series")
+            {
+                var t = w.ViewModel.ComputeSeries();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                if (int.TryParse(kv[1], out var col)) w.ViewModel.PipeYColumn = col;
+            }
             if (kv[0] == "pipestep") w.ViewModel.PipeSelected = w.ViewModel.PipelineRows[int.Parse(kv[1])];
             if (kv[0] == "focus") w.ViewModel.FocusOn(int.Parse(kv[1]));   // focus=N: keyboard-walk focus on atom N
             if (kv[0] == "walk")   // walk=keys: d(own) u(p) b(ond) ](next molecule) s(elect) m(easure)

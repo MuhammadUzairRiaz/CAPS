@@ -70,7 +70,7 @@ public partial class MainWindow : Window
         {
             PipeTablePlot.XLabel = _vm.PipeTableXLabel;
             PipeTablePlot.YLabel = _vm.PipeTableYLabel;
-            PipeTablePlot.SetData(_vm.PipeTableX.Zip(_vm.PipeTableY).ToArray());
+            PipeTablePlot.SetData(_vm.PipeTableX.Zip(_vm.PipeTableY).Where(p => double.IsFinite(p.Second)).ToArray());
         };
         _vm.RenderOverlayChanged += () => RenderGuide.InvalidateVisual();
         _vm.PropertyChanged += (_, e) =>
@@ -719,6 +719,7 @@ public partial class MainWindow : Window
     private void OnStepUp(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, -1); }
     private void OnStepDown(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, 1); }
     private void OnStepRemove(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.RemoveStep(r); }
+    private async void OnSeries(object? s, RoutedEventArgs e) => await _vm.ComputeSeries();
     private void OnInspectorPrev(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(-1);
     private void OnInspectorNext(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(1);
 
