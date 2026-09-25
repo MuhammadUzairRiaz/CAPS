@@ -1542,6 +1542,10 @@
       <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Surface & interface builder (design/boards/SurfaceBuilder) -->
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
+      <!-- Analyze focus pages (design/boards/Mechanics, Scattering, FreeVolume) -->
+      <pages:MechanicsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMechanics}" />
+      <pages:ScatteringPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsScattering}" />
+      <pages:FreeVolumePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFreeVolume}" />
       <!-- Provenance (design/boards/Provenance) -->
       <pages:ProvenancePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsProvenance}" />
       <!-- Macro recorder (design/boards/MacroRecorder) -->

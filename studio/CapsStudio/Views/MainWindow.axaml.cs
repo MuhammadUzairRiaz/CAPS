@@ -376,7 +376,10 @@ public partial class MainWindow : Window
     private async void OnAnalyzeRun(object? s, RoutedEventArgs e) { if (_vm.Idle) await _vm.Analyze.Run(); }
     private void OnAnalyzeCancel(object? s, RoutedEventArgs e) => _vm.Analyze.Cancel();
 
-    private async void OnAnalyzeExport(object? s, RoutedEventArgs e)
+    private void OnAnalyzeExport(object? s, RoutedEventArgs e) => ExportAnalysis();
+
+    /// <summary>Asks for a folder and writes the Analyze results there (also from the focused Analyze pages).</summary>
+    public async void ExportAnalysis()
     {
         var dirs = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder for results.csv, results.tex and the curves", AllowMultiple = false });
         var dir = dirs.Count > 0 ? dirs[0].TryGetLocalPath() : null;

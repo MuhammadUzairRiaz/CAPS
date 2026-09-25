@@ -1,0 +1,54 @@
+<!-- The Analyze calculations list beside a focused page (design/boards Mechanics, Scattering, FreeVolume): the page's own
+     calculations lit; any other opens its page or the Analyze properties with it switched on. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels" x:Class="CapsStudio.Views.AnalyzeSide" x:DataType="vm:MainViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.calc"><Setter Property="Height" Value="26" /><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="9,0" />
+      <Setter Property="Margin" Value="0,0,5,5" /><Setter Property="CornerRadius" Value="5" /><Setter Property="FontSize" Value="12" />
+      <Setter Property="Background" Value="{DynamicResource Bg0B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="1" /></Style>
+    <Style Selector="Button.calc.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+  </UserControl.Styles>
+  <Border Width="280" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Height="44" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Classes="link" Content="All properties" FontSize="11.5" Click="OnAll" VerticalAlignment="Center" />
+          <TextBlock Text="Calculations" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </DockPanel>
+      </Border>
+      <Border DockPanel.Dock="Bottom" Classes="section" BorderThickness="0,1,0,0">
+        <StackPanel Spacing="6">
+          <TextBlock Text="SOURCE" Classes="h3" />
+          <TextBlock Text="{Binding Analyze.SourceText}" TextTrimming="CharacterEllipsis" FontSize="12.5" />
+          <TextBlock Text="{Binding Analyze.FramesText}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+            <Grid.Styles><Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style></Grid.Styles>
+            <TextBlock Text="First" Classes="dim" /><TextBlock Grid.Column="1" Text="Last" Classes="dim" /><TextBlock Grid.Column="2" Text="Every" Classes="dim" />
+            <NumericUpDown Grid.Row="1" Value="{Binding Analyze.FirstD}" Minimum="0" Increment="1" FormatString="0" />
+            <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.LastD}" Minimum="-1" Increment="1" FormatString="0" />
+            <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.StrideD}" Minimum="1" Increment="1" FormatString="0" />
+          </Grid>
+        </StackPanel>
+      </Border>
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Analyze.Groups}" Margin="14,14,14,4">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CalcGroup">
+              <StackPanel Spacing="6" Margin="0,0,0,10">
+                <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" />
+                <ItemsControl ItemsSource="{Binding Chips}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CalcChip">
+                      <Button Classes="calc" Classes.on="{Binding Active}" Content="{Binding Label}" IsEnabled="{Binding Available}" ToolTip.Tip="{Binding Tip}" Click="OnChip" Tag="{Binding}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>
