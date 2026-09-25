@@ -630,6 +630,14 @@ public partial class MainWindow : Window
 
     private void OnResetView(object? s, RoutedEventArgs e) => _vm.ResetView();
     private void OnFrameSelection(object? s, RoutedEventArgs e) => _vm.FrameSelection();
+    private void OnHistoryStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is HistoryRow r) _vm.JumpToStep(r.Step); }
+    private void OnTakeSnapshot(object? s, RoutedEventArgs e) => _vm.TakeSnapshot();
+    private void OnSnapshotCompare(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.CompareSnapshot(r); }
+    private void OnSnapshotMenu(object? s, RoutedEventArgs e) { }
+    private void OnSnapshotRestore(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.RestoreSnapshot(r); }
+    private void OnSnapshotDelete(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.DeleteSnapshot(r); }
+    private void OnBranchRestore(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BranchRow r) _vm.RestoreBranch(r); }
+    private void OnBranchDelete(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BranchRow r) _vm.DeleteBranch(r); }
     private void OnNoticeClose(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.DismissNotice(n); }
     private void OnNoticePrimary(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.NoticePrimary(n); }
     private void OnNoticeSecondary(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Notice n) _vm.NoticeSecondary(n); }

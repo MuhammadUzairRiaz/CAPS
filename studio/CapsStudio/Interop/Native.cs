@@ -272,6 +272,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_pore_build")] public static extern IntPtr PoreBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_vision_check")] public static extern int VisionCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string palettes, double threshold, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_vision")] public static extern int SetVision(IntPtr doc, int vision, double severity);
+    [DllImport(Lib, EntryPoint = "caps_snapshot")] public static extern int Snapshot(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
     [DllImport(Lib, EntryPoint = "caps_camera_focus")] public static extern int CameraFocus(IntPtr doc, in CapsCamera cam, int[] idx, int n, double fill, out CapsCamera focused);
     [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
@@ -983,6 +984,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { lock (_lock) { Alive(); return Native.Undo(_h, redo ? 1 : 0) == 0; } }
     public string History() { lock (_lock) return JsonCall((b, c) => Native.History(_h, b, c)); }
+    /// <summary>Snapshots and history branches (caps_snapshot): take, restore, delete, save, branch, drop_branch.</summary>
+    public void Snapshot(string json) { lock (_lock) { Alive(); Check(Native.Snapshot(_h, json)); } }
     /// <summary>Changes the selection (caps_select), JSON {ok, error, count, matched}.</summary>
     public string Select(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Select(_h, json, b, c)); } }
     public string SelectionJson() { lock (_lock) return JsonCallOnce((b, c) => Native.Selection(_h, b, c)); }

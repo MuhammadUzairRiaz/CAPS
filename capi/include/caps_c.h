@@ -635,6 +635,11 @@ int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
 int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_undo(caps_doc* d, int32_t redo);
 int32_t caps_history(caps_doc* d, char* json, int32_t cap);
+/* v20 history (design/boards/History): caps_history also gives {steps: [{what, atoms, state: done|current|undone}],
+   start_atoms, branches: [{steps: [what…], atoms}], snapshots: [{name, atoms, step, on_branch}]}; an edit after an undo
+   keeps the undone steps as a branch. caps_snapshot JSON {op: "take" {name} | "restore" {index} | "delete" {index} |
+   "save" {index, path} | "branch" {index} (make that branch the redo steps) | "drop_branch" {index}}. */
+int32_t caps_snapshot(caps_doc* d, const char* json);
 int32_t caps_select(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_selection(caps_doc* d, char* json, int32_t cap);
 int32_t caps_tacticity(caps_doc* d, char* json, int32_t cap);
