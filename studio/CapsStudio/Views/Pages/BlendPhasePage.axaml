@@ -1,0 +1,100 @@
+<!-- CAPS Analyze › Blend phase diagram (design/boards/BlendPhase): Flory–Huggins coexistence and stability for a binary blend. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.BlendPhasePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /></Style>
+    <Style Selector="Border.phead"><Setter Property="Padding" Value="16,11" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="0,0,0,1" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnExport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export CSV" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Classes="primary" IsEnabled="False" ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="Not built yet: fitting χ(T) needs χ from MD at three temperatures (mixing energies of the blend and of each melt)">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Fit χ(T) from MD" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Blend phase diagram" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Flory–Huggins coexistence and stability for a binary polymer blend" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="lattice reference volume = 1 segment" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding BpStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <ScrollViewer Margin="22,18">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+        <Border Classes="pcard" VerticalAlignment="Top">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Classes="phead">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip ok"><TextBlock Text="computed" /></Border>
+                <TextBlock Text="Phase diagram" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <StackPanel Margin="10,8,14,14" Spacing="8">
+              <v:XyChart x:Name="Diagram" Height="380" XLabel="φ_A (polymer A volume fraction)" YLabel="T (K)" XMin="0" XMax="1" />
+              <TextBlock Text="{Binding BpNote}" Classes="dim" TextWrapping="Wrap" Margin="6,0,0,0" />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="14">
+          <Border Classes="pcard">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip warn"><TextBlock Text="example inputs" /></Border>
+                  <TextBlock Text="Inputs" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <Grid Margin="16,12,16,14" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                <StackPanel Spacing="4"><TextBlock Text="N_A (segments)" Classes="label" /><NumericUpDown Value="{Binding BpNa}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="N_B (segments)" Classes="label" /><NumericUpDown Value="{Binding BpNb}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Row="1" Spacing="4"><TextBlock Text="A" Classes="label" /><NumericUpDown Value="{Binding BpA}" Minimum="-10" Maximum="10" Increment="0.005" FormatString="0.00###" /></StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Text="B · K" Classes="label" /><NumericUpDown Value="{Binding BpB}" Minimum="-100000" Maximum="100000" Increment="1" FormatString="0.0##" /></StackPanel>
+                <StackPanel Grid.Row="2" Spacing="4"><TextBlock Text="χ source" Classes="label" />
+                  <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
+                    <ComboBoxItem Content="entered: χ(T) = A + B/T" />
+                    <ComboBoxItem Content="fitted from MD at 3 temperatures (not built yet)" IsEnabled="False" />
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Text="Read out at T · K" Classes="label" /><NumericUpDown Value="{Binding BpT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" /></StackPanel>
+              </Grid>
+            </DockPanel>
+          </Border>
+          <Border Classes="pcard">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="phead"><TextBlock Text="Results" FontSize="13.5" FontWeight="SemiBold" /></Border>
+              <StackPanel Margin="16,8,16,12">
+                <Grid ColumnDefinitions="*,160" Height="26">
+                  <TextBlock Text="QUANTITY" Classes="h3" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="VALUE" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding BpResults}">
+                  <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResultRow">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+                      <Grid ColumnDefinitions="*,Auto" Height="30">
+                        <TextBlock Text="{Binding Quantity}" FontSize="12.5" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <TextBlock Classes="dim" TextWrapping="Wrap" Margin="4,0,0,0"
+                     Text="Binodal from equal chemical potentials (common tangent), solved numerically; spinodal from ∂²f/∂φ² = 0. The A and B filled in are example inputs, not values for a real blend. Flory 1942; Huggins 1942." />
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>

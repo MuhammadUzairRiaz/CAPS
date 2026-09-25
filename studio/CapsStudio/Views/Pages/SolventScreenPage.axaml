@@ -1,0 +1,118 @@
+<!-- CAPS Analyze › Solvent screen (design/boards/SolventScreen): Hildebrand χ against known behaviour, with its failures shown. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SolventScreenPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /></Style>
+    <Style Selector="Border.phead"><Setter Property="Padding" Value="16,11" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="0,0,0,1" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <StackPanel Spacing="3"><TextBlock Text="Polymer" Classes="label" /><ComboBox ItemsSource="{Binding SsPolymerNames}" SelectedIndex="{Binding SsPolymer}" MinWidth="170" /></StackPanel>
+          <Button Classes="primary" IsEnabled="False" VerticalAlignment="Bottom" ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="Not built yet: a direct χ needs mixing free energies from MD of polymer–solvent boxes; CAPS does not fake it with this estimate">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Compute χ by MD" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Solvent screen" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Flory–Huggins χ from solubility parameters, checked against known behaviour" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="χ ≈ V(Δδ)²/RT + 0.34" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SsStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <ScrollViewer Margin="22,18">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding SsChartNote}" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
+                  <TextBlock Text="{Binding SsChartTitle}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <v:HBarChart x:Name="Bars" Height="300" Margin="12,14,12,10" />
+            </DockPanel>
+          </Border>
+          <Border Classes="pcard">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="phead"><TextBlock Text="How χ is estimated" FontSize="13.5" FontWeight="SemiBold" /></Border>
+              <StackPanel Margin="16,12" Spacing="8">
+                <TextBlock Text="χ ≈ Vₛ (δₛ − δₚ)² / RT + 0.34" Classes="mono" FontSize="13" />
+                <TextBlock Text="{Binding SsExample}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                  <StackPanel Spacing="4"><TextBlock Text="δ of the polymer · MPa½" Classes="label" /><NumericUpDown Value="{Binding SsDelta}" Minimum="5" Maximum="60" Increment="0.1" FormatString="0.0" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="T · K" Classes="label" /><NumericUpDown Value="{Binding SsT}" Minimum="100" Maximum="700" Increment="5" FormatString="0.##" /></StackPanel>
+                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="The 0.34 is the empirical entropic term. χ &lt; 0.45 is called a solvent, 0.45–0.55 borderline (χ = ½ is the Θ condition for long chains), above that a non-solvent." />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="14">
+          <Border Classes="pcard">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip ok"><TextBlock Text="computed" /></Border>
+                  <TextBlock Text="Solvents ranked" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,8,16,10">
+                <Grid ColumnDefinitions="*,78,62,52,92,150,22" Height="28">
+                  <TextBlock Text="SOLVENT" Classes="h3" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="V (cm³/mol)" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="δ (MPa½)" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="χ" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="PREDICTED" Classes="h3" Margin="14,0,0,0" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="5" Text="{Binding SsKnownHeader}" Classes="h3" VerticalAlignment="Center" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SsRows}">
+                  <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SolventRow">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+                      <Grid ColumnDefinitions="*,78,62,52,92,150,22" Height="31">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding V}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Delta}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding Chi}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="{Binding Predicted}" FontSize="12" Margin="14,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="5" Text="{Binding Known}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Panel Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right">
+                          <v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" IsVisible="{Binding Agrees}" />
+                          <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource WarnB}" IsVisible="{Binding Mismatch}" />
+                        </Panel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <Border Classes="pcard">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip warn" IsVisible="{Binding SsHasMismatch}"><TextBlock Text="{Binding SsFailChip}" /></Border>
+                  <Border DockPanel.Dock="Right" Classes="chip ok" IsVisible="{Binding !SsHasMismatch}"><TextBlock Text="{Binding SsFailChip}" /></Border>
+                  <TextBlock Text="Where this estimate fails" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <TextBlock Margin="16,12" Text="{Binding SsFailText}" FontSize="12.5" TextWrapping="Wrap" LineHeight="19" />
+            </DockPanel>
+          </Border>
+          <TextBlock Text="{Binding SsInputs}" Classes="dim" TextWrapping="Wrap" Margin="4,0,0,0" />
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>

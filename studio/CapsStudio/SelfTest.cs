@@ -757,6 +757,45 @@ internal static class SelfTest
                   $"row 17: [{chains} {dens} {sasa} {cellOk} {units}] smiles {vm.MolInfoRows.FirstOrDefault(r => r.Key == "SMILES")?.Value} · vol {vm.DcVolume} edge {vm.DcEdge} · chains {vm.CsRee.Value}/{vm.CsRg.Value} ratio {vm.CsRatio.Value} · water N {water?.N} · SASA {vm.SaTotal} · cell {vol0} doubled {doubled} scaled {scaled} · units {units} · molecule {mol}");
         }
 
+        // Row 18: polydispersity, copolymer, solvent screen, tacticity, blend phase diagram, electrostatics
+        {
+            vm.OpenPolydispersity();
+            var pdRows = vm.PdRows.Count == 5 && vm.PdLengths.Length == vm.GrowChains && vm.PdK == "k = 1/(Đ − 1) = 10";
+            vm.UsePdLengths();
+            var pdUsed = vm.GrowPolydisperse && vm.GrowDispersityText.StartsWith("Đ 1.", StringComparison.Ordinal);
+            vm.ClearPdLengths();
+            // per-chain lengths reach the core: 3 styrene chains of 5, 7 and 9 units → 21 × 16 + 3 × 2 atoms
+            var (pdDoc, pdReport) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"styrene\",\"smiles\":\"[*]CC([*])C1=CC=CC=C1\"}],\"dp\":5,\"chain_dp\":[5,7,9]}",
+                new CapsGrowOpts { Chains = 3, Dp = 0, Seed = 3, Density = 0.1, ContactScale = 0.8, Curve = 1 }, null, "pd");
+            var pdAtoms = pdDoc.Summary().Atoms == 21 * 16 + 6 && pdDoc.AtomResidues().Max() == 9 && pdReport.Contains("5–9 units");
+            pdDoc.Dispose();
+            vm.OpenCopolymer();
+            vm.BuildCoChain().GetAwaiter().GetResult();
+            var coOk = vm.CoRows.Count == 4 && vm.CoRows[0].A == "0.510" && vm.CoAzeotrope is > 0.528 and < 0.53 && vm.CoSequence.Length == 80
+                       && vm.CoDoc != null && vm.CoDoc.AtomResidues().Max() == 80;
+            vm.CoM1 = 2; vm.CoM2 = 3;   // butadiene / acrylonitrile: NBR ratios filled in
+            var nbr = vm.CoR1 == 0.30m && vm.CoR2 == 0.02m && vm.CoPresetNote.Contains("NBR");
+            vm.CoM1 = 0; vm.CoM2 = 1;
+            vm.OpenSolventScreen();
+            var ssOk = vm.SsRows.Count == 8 && vm.SsRows.Count(r => r.Mismatch) == 1 && vm.SsRows.First(r => r.Mismatch).Name == "Acetone"
+                       && vm.SsPolymerNames.Length == 3 && vm.SsExample.EndsWith("0.347", StringComparison.Ordinal);
+            vm.OpenTacticityStats();
+            vm.TsBuild().GetAwaiter().GetResult();
+            var tsOk = vm.TsTriads.Count == 3 && vm.TsTriads[0].A == "0.250" && vm.TsDyads.Length == 198 && vm.TsModelPentads.Length == 10;
+            vm.TsMeasured = "0.2401, 0.2058, 0.0441, 0.0882, 0.2058, 0.0882, 0.0378, 0.0081, 0.0378, 0.0441";   // Bernoulli P_m = 0.7
+            vm.TsFitMeasured();
+            var fitOk = vm.TsFit.Contains("P_m = 0.700", StringComparison.Ordinal) && vm.TsFit.Contains("consistent", StringComparison.Ordinal) && vm.TsPm == 0.7m;
+            vm.TsBuild().GetAwaiter().GetResult();
+            vm.OpenBlendPhase();
+            var bpOk = vm.BpResults[0].Value == "0.01457" && vm.BpResults[2].Value == "433.9 K" && vm.BpResults[4].Value == "0.0385 · 0.9932" && vm.BpBinodal.Length > 100;
+            vm.OpenElectrostatics();
+            vm.EsMethod = 0; vm.EsCutoff = 12; vm.EsTolerance = 2; vm.EsSpacing = 1.2m;
+            var esOk = vm.EsBeta == "0.2603 Å⁻¹" && vm.EsTable.Count == 3 && vm.EsTable.Count(r => r.Current) == 1 && vm.EsMesh.Count == 3;
+            vm.SetModule(8);
+            Check(pdRows && pdUsed && pdAtoms && coOk && nbr && ssOk && tsOk && fitOk && bpOk && esOk,
+                  $"row 18: [{pdRows} {pdUsed} {pdAtoms} {coOk} {nbr} {ssOk} {tsOk} {fitOk} {bpOk} {esOk}] k {vm.PdK} · F1 {vm.CoRows.FirstOrDefault()?.A} · mismatches {vm.SsRows.Count(r => r.Mismatch)} · dyads {vm.TsDyads.Length} · fit {vm.TsFit} · χc {vm.BpResults.FirstOrDefault()?.Value} · β {vm.EsBeta} mesh {vm.EsMeshText}");
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

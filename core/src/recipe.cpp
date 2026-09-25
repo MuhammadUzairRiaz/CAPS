@@ -314,6 +314,18 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (P.has("weights") && P["weights"].is_array()) for (const auto& w : P["weights"].items()) spec.weights.push_back(w.number());
           spec.pattern = text(P, "pattern", "");
           if (P.has("pm")) spec.pm = P["pm"].number();
+          if (P.has("p_mr") && P.has("p_rm")) spec.p_mr = P["p_mr"].number(), spec.p_rm = P["p_rm"].number();   // Markov tacticity
+          if (P.has("r1")) spec.r1 = P["r1"].number();                                                        // terminal model
+          if (P.has("r2")) spec.r2 = P["r2"].number();
+          // per-chain lengths: given (chain_dp: [..]) or drawn (lengths: {distribution, nn, pdi, seed})
+          if (P.has("chain_dp") && P["chain_dp"].is_array()) {
+            for (const auto& x : P["chain_dp"].items()) spec.chain_dp.push_back(int(x.number()));
+          } else if (P.has("lengths") && P["lengths"].is_object()) {
+            const Json& L = P["lengths"];
+            try {
+              spec.chain_dp = draw_chain_lengths(text(L, "distribution", "schulz-zimm"), num(L, "nn", spec.dp), num(L, "pdi", 1.1), chains, uint64_t(num(L, "seed", 1)));
+            } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.lengths: ") + e.what()); }
+          }
           report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + " chains · unit " + info.formula + " · " + tac, "done", 1);
         } else if (J.has("molecule")) {
           BuildOptions bo;
@@ -368,8 +380,18 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         };
         GrowReport gr;
         try { s = grow_chains(spec, g, &gr); } catch (const std::exception& e) { throw RecipeError(4, std::string("grow: ") + e.what()); }
+        KeyValues gp = {{"chains", std::to_string(chains)}, {"DP", std::to_string(spec.dp)}, {"trials", std::to_string(g.trials)}, {"density", g6(g.density) + " g/cm³"}};
+        if (!spec.chain_dp.empty()) {   // the sample actually built, never the target as if achieved
+          double s1 = 0, s2 = 0;
+          for (int n : spec.chain_dp) s1 += n, s2 += double(n) * n;
+          const double nn = s1 / double(spec.chain_dp.size());
+          gp[1] = {"DP", "per chain, sample Nn " + g6(nn) + ", Đ " + g6(s2 / s1 / nn) + ", " + std::to_string(*std::min_element(spec.chain_dp.begin(), spec.chain_dp.end())) + "–" +
+                         std::to_string(*std::max_element(spec.chain_dp.begin(), spec.chain_dp.end()))};
+        }
+        if (spec.sequence == Sequence::Terminal) gp.push_back({"sequence", "terminal model, r1 " + g6(spec.r1) + ", r2 " + g6(spec.r2)});
+        if (spec.p_mr >= 0 && spec.p_rm >= 0) gp.push_back({"tacticity", "Markov, P(r|m) " + g6(spec.p_mr) + ", P(m|r) " + g6(spec.p_rm)});
         res.manifest.steps.push_back(step("grow.trials", std::to_string(chains) + " chains grown in a periodic cell, best-of-k trial placement by contact margin",
-                                          {{"chains", std::to_string(chains)}, {"DP", std::to_string(spec.dp)}, {"trials", std::to_string(g.trials)}, {"density", g6(g.density) + " g/cm³"}}, seeded(g.seed), {"parsons2005", "matsumoto1998"}));
+                                          std::move(gp), seeded(g.seed), {"parsons2005", "matsumoto1998"}));
         report(k, st, "best of " + std::to_string(g.trials) + " trials · " + std::to_string(chains) + " chains · " + std::to_string(s.atoms.size()) + " atoms · box " + g6(gr.box) + " Å", "done", 1);
       } else if (st == "relax" || st == "md" || st == "equilibrate") {
         if (!ff) type_now(s);

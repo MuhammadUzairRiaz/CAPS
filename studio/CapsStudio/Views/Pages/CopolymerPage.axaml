@@ -1,0 +1,102 @@
+<!-- CAPS Builders › Copolymer (design/boards/Copolymer): the terminal (Mayo–Lewis) model, its composition curve and a chain drawn from it. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.CopolymerPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+    <Style Selector="Border.hud"><Setter Property="Background" Value="{DynamicResource HudB}" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="10,5" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding CoFooter}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding CoStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+    <!-- right: the model's inputs and its composition curve -->
+    <Border DockPanel.Dock="Right" Width="380" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="18,13" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="terminal model" Foreground="{DynamicResource MutedB}" /></Border>
+            <TextBlock Text="Copolymer" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="18,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="Redraw" Click="OnRedraw" ToolTip.Tip="Another chain from the same model (next seed)" />
+            <Button Classes="primary" Content="{Binding CoBuildText}" Click="OnBuild" ToolTip.Tip="Grow builds its chains with this monomer pair and model, each chain its own sequence" />
+          </StackPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <StackPanel Margin="18,14" Spacing="10">
+              <TextBlock Text="MONOMERS" Classes="h3" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="4"><TextBlock Text="M₁" Classes="label" /><ComboBox ItemsSource="{Binding CoMonomerNames}" SelectedIndex="{Binding CoM1}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="M₂" Classes="label" /><ComboBox ItemsSource="{Binding CoMonomerNames}" SelectedIndex="{Binding CoM2}" HorizontalAlignment="Stretch" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="4"><TextBlock Text="r₁" Classes="label" /><NumericUpDown Value="{Binding CoR1}" Minimum="0" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="r₂" Classes="label" /><NumericUpDown Value="{Binding CoR2}" Minimum="0" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="f₁ feed" Classes="label" /><NumericUpDown Value="{Binding CoF1}" Minimum="0" Maximum="1" Increment="0.01" FormatString="0.00" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="4"><TextBlock Text="Units per chain" Classes="label" /><NumericUpDown Value="{Binding CoDp}" Minimum="4" Maximum="2000" Increment="10" FormatString="0" Width="110" HorizontalAlignment="Left" /></StackPanel>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                <TextBlock Grid.Column="1" Text="{Binding CoPresetNote}" Classes="dim" TextWrapping="Wrap" />
+              </Grid>
+              <TextBlock Text="{Binding CoError}" Classes="err" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="18,14">
+              <StackPanel Spacing="6">
+                <TextBlock Text="COMPOSITION" Classes="h3" />
+                <v:XyChart x:Name="Comp" Height="250" XLabel="f₁ (M₁ in feed)" YLabel="F₁ (M₁ in chain)" XMin="0" XMax="1" YMin="0" YMax="1" ShowLegend="False" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+    <!-- left: the chain, its sequence and the model beside it -->
+    <Grid RowDefinitions="*,Auto">
+      <Panel Background="{DynamicResource Bg0B}">
+        <v:MolView x:Name="View" />
+        <Border Classes="hud" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="14">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="{Binding CoTitle}" FontSize="12" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="8" Height="8" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="{Binding CoM1Name}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="8" Height="8" Fill="#2271DB" VerticalAlignment="Center" /><TextBlock Text="{Binding CoM2Name}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel>
+          </StackPanel>
+        </Border>
+        <TextBlock Text="Building the chain…" Classes="dim" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="14" IsVisible="{Binding CoBuilding}" />
+      </Panel>
+      <Border Grid.Row="1" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="20,12,20,14">
+        <StackPanel Spacing="10">
+          <TextBlock Text="SEQUENCE, HEAD → TAIL" Classes="h3" />
+          <v:SequenceStrip x:Name="Strip" Height="16" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+            <StackPanel Spacing="0">
+              <Grid ColumnDefinitions="*,80,100" Height="24">
+                <TextBlock Grid.Column="1" Text="MODEL" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="THIS CHAIN" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding CoRows}">
+                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ModelRow">
+                  <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+                    <Grid ColumnDefinitions="*,80,100" Height="27">
+                      <TextBlock Text="{Binding Label}" FontSize="12" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding A}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding B}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                  </Border>
+                </DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding CoNote}" Classes="dim" TextWrapping="Wrap" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

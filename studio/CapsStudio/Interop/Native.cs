@@ -285,6 +285,13 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_yaml_to_json")] public static extern int YamlToJson([MarshalAs(UnmanagedType.LPUTF8Str)] string yaml, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_charges")] public static extern int Charges(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_snapshot")] public static extern int Snapshot(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_chain_lengths")] public static extern int ChainLengths([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_copolymer")] public static extern int Copolymer([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_ewald_params")] public static extern int EwaldParams(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_atom_residues")] public static extern int AtomResidues(IntPtr doc, [Out] int[]? out_, int cap);
     [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
     [DllImport(Lib, EntryPoint = "caps_camera_focus")] public static extern int CameraFocus(IntPtr doc, in CapsCamera cam, int[] idx, int n, double fill, out CapsCamera focused);
     [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
@@ -525,6 +532,18 @@ public sealed class CapsDocument : IDisposable
         var n = f(buf, buf.Length);
         if (n > buf.Length) { buf = new byte[n]; f(buf, buf.Length); }
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+    }
+    /// <summary>Polymer statistics (caps_chain_lengths, caps_copolymer, caps_stereo, caps_blend_phase, caps_solvent_chi).</summary>
+    public static string ChainLengths(string json) => JsonCallOnce((b, c) => Native.ChainLengths(json, b, c));
+    public static string Copolymer(string json) => JsonCallOnce((b, c) => Native.Copolymer(json, b, c));
+    public static string Stereo(string json) => JsonCallOnce((b, c) => Native.Stereo(json, b, c));
+    public static string BlendPhase(string json) => JsonCallOnce((b, c) => Native.BlendPhase(json, b, c));
+    public static string SolventChi(string json) => JsonCallOnce((b, c) => Native.SolventChi(json, b, c));
+    /// <summary>Ewald β and the PME mesh for a cutoff and tolerance (caps_ewald_params); edges from doc's cell when not given.</summary>
+    public static string EwaldParams(CapsDocument? doc, string json)
+    {
+        if (doc == null) return JsonCallOnce((b, c) => Native.EwaldParams(IntPtr.Zero, json, b, c));
+        lock (doc._lock) { doc.Alive(); return JsonCallOnce((b, c) => Native.EwaldParams(doc._h, json, b, c)); }
     }
     /// <summary>What a peptide spec builds, without the clean-up (caps_peptide_info).</summary>
     public static string PeptideInfo(string options) => JsonCallOnce((b, c) => Native.PeptideInfo(options, b, c));
@@ -1008,6 +1027,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { lock (_lock) { Alive(); return Native.Undo(_h, redo ? 1 : 0) == 0; } }
     public string History() { lock (_lock) return JsonCall((b, c) => Native.History(_h, b, c)); }
+    /// <summary>Each atom's residue number (Grow: the repeat unit's position along its chain, from 1; 0 = none).</summary>
+    public int[] AtomResidues() { lock (_lock) { Alive(); var n = Native.AtomResidues(_h, null, 0); var r = new int[n]; Native.AtomResidues(_h, r, n); return r; } }
     public string MoleculeInfo(int atom) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.MoleculeInfo(_h, atom, b, c)); } }
     /// <summary>SASA: the buffer sized for the per-atom areas so the calculation runs once.</summary>
     public string Sasa(string json)
