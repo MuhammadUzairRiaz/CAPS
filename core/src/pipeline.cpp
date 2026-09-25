@@ -116,7 +116,16 @@ void step_select_expression(PipelineState& st, const Json& p, StepStatus& out) {
   const auto v = evaluate_expression(st, e);
   size_t k = 0;
   for (size_t i = 0; i < v.size(); ++i) { st.selected[i] = v[i] != 0 && std::isfinite(v[i]); k += st.selected[i]; }
-  out.summary = std::to_string(k) + " selected";
+  out.summary = std::to_string(k) + " of " + std::to_string(v.size()) + " selected";
+  // what the numeric types mean here, when the expression uses them (Type 2 → ca)
+  if (e.find("Type") != std::string::npos) {
+    std::map<int, std::string> names;
+    for (const auto& a : st.system.atoms) if (a.type > 0 && !a.name.empty() && !names.count(a.type)) names[a.type] = a.name;
+    for (const auto& t : st.system.types) if (!t.label.empty()) names[t.type] = t.label;
+    std::string legend;
+    for (const auto& [t, n] : names) legend += (legend.empty() ? "" : ", ") + std::to_string(t) + " " + n;
+    if (!legend.empty() && names.size() <= 12) out.summary += " · types " + legend;
+  }
   if (k == 0) out.level = "warning";
   st.set_attribute("ExpressionSelection.count", double(k));
 }

@@ -491,7 +491,7 @@ internal static class SelfTest
             vm.Document!.Render(vm.Camera, vm.ViewOptions(64, 64, 1), pixels);
             vm.SetModule(8);
             var cleared = vm.Document.PipelineResult() == "";
-            Check(vm.PipelineRows.Count == 2 && sel == "660 selected" && particles == "640" && note.StartsWith("Rows 1–200 of 640") && filtered.StartsWith("Rows 1–64 of 64")
+            Check(vm.PipelineRows.Count == 2 && sel == "660 of 1300 selected" && particles == "640" && note.StartsWith("Rows 1–200 of 640") && filtered.StartsWith("Rows 1–64 of 64")
                   && cleared && vm.PipelineJson().Contains("\"delete_selected\""),
                   $"visualize: {sel} · {particles} particles · {note} · {filtered} · cleared on leaving {cleared}");
             vm.InspectorFilter = "";
