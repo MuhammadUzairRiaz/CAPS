@@ -4296,3 +4296,27 @@ extern "C" caps_doc* caps_pore_build(const char* options_json, char* report, int
 extern "C" int32_t caps_citation_text(const char* key, char* text, int32_t cap) {
   return report_out(caps::citation_text(key ? key : ""), text, cap);
 }
+
+// A methods paragraph from a manifest (and manifests of replicas that differ only in their seeds): {text, refs[]}.
+extern "C" int32_t caps_methods_text(const char* manifest_json, const char* replicas_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const auto m = caps::manifest_from_json(caps::Json::parse(manifest_json && *manifest_json ? manifest_json : "{}"));
+    std::vector<caps::Manifest> reps;
+    if (replicas_json && *replicas_json) {
+      const caps::Json r = caps::Json::parse(replicas_json);
+      if (r.is_array()) for (const auto& x : r.items()) reps.push_back(caps::manifest_from_json(x));
+    }
+    std::vector<std::string> refs;
+    j["text"] = caps::methods_text(m, &refs, reps);
+    caps::Json rl = caps::Json::array();
+    for (const auto& x : refs) rl.push_back(x);
+    j["refs"] = std::move(rl);
+    j["ok"] = true;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}

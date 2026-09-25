@@ -16,7 +16,7 @@ per-particle properties, which CAPS shows in the data inspector and passes to th
         data.attributes["MeanZ"] = float(np.mean(pos[:, 2]))
 """
 from . import geometry, pipeline  # noqa: F401
-from .core import (CapsError, Document, abi_version, bibtex, build, compare_provenance, import_file, import_preview, library, open,  # noqa: F401
+from .core import (CapsError, Document, abi_version, bibtex, build, compare_provenance, import_file, import_preview, library, methods, open,  # noqa: F401
                    provenance_file, space_groups)
 
-__all__ = ["geometry", "pipeline", "Document", "open", "import_file", "import_preview", "build", "library", "abi_version", "space_groups", "provenance_file", "compare_provenance", "bibtex", "CapsError"]
+__all__ = ["geometry", "pipeline", "Document", "open", "import_file", "import_preview", "build", "library", "abi_version", "space_groups", "provenance_file", "compare_provenance", "bibtex", "methods", "CapsError"]

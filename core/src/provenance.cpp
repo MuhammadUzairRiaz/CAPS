@@ -229,8 +229,7 @@ std::string citation_text(const std::string& key) {
             static const std::map<std::string, std::string> acc = {{"'e", "é"}, {"'a", "á"}, {"'o", "ó"}, {"'i", "í"}, {"`e", "è"}, {"\"a", "ä"}, {"\"o", "ö"}, {"\"u", "ü"}, {"\"U", "Ü"}};
             if (auto it = acc.find(std::string{a, b}); it != acc.end()) {
               out += it->second;
-              i += e[i + 2] == '{' ? 4 : 2;
-              if (i + 1 < e.size() && e[i + 1] == '}') ++i;
+              i += e[i + 2] == '{' ? 4 : 2;   // a closing brace after it is counted by the loop
               continue;
             }
           }
@@ -249,11 +248,136 @@ std::string citation_text(const std::string& key) {
     if (!journal.empty()) t += ", " + journal + " " + field("volume") + ", " + field("pages");
     else t += ", " + field("publisher");
     t += " (" + field("year") + ")";
+    for (size_t p = t.find("--"); p != std::string::npos; p = t.find("--")) t.replace(p, 2, "–");
     const std::string doi = field("doi");
     if (!doi.empty()) t += ". doi:" + doi;
     return t;
   }
   return "";
+}
+
+namespace {
+std::string param(const ProvStep& s, const std::string& key) {
+  for (const auto& [k, v] : s.params) if (k == key) return v;
+  return "";
+}
+}  // namespace
+
+std::string methods_text(const Manifest& m, std::vector<std::string>* refs, const std::vector<Manifest>& replicas) {
+  std::vector<std::string> order;
+  auto cite = [&](const std::vector<std::string>& keys) {
+    std::string out;
+    for (const auto& k : keys) {
+      if (!known_citation(k) || k == "matsumoto1998") continue;   // the generator is named, not cited
+      auto it = std::find(order.begin(), order.end(), k);
+      if (it == order.end()) { order.push_back(k); it = order.end() - 1; }
+      out += (out.empty() ? "" : ", ") + std::to_string(it - order.begin() + 1);
+    }
+    return out.empty() ? std::string() : " [" + out + "]";
+  };
+  auto has = [](const ProvStep& s, const char* key) { return std::find(s.cites.begin(), s.cites.end(), std::string(key)) != s.cites.end(); };
+  auto only = [&](const ProvStep& s, std::initializer_list<const char*> keys) {
+    std::vector<std::string> v;
+    for (const char* k : keys) if (has(s, k)) v.push_back(k);
+    return v;
+  };
+  std::vector<std::string> sentences;
+  std::string version = m.generator.empty() ? "CAPS" : m.generator;
+  bool built = false;
+  for (const auto& s : m.steps) {
+    const std::string& e = s.engine;
+    std::string t;
+    if (e == "io.read" || e == "io.import") {
+      if (!built) t = "The starting structure (" + param(s, "atoms") + " atoms) was read from " + param(s, "file") +
+                      (e == "io.import" && param(s, "bonds").rfind("perceived", 0) == 0 ? ", with bonds perceived from covalent radii" + cite({"cordero2008"}) : std::string()) + ".";
+      built = true;
+    } else if (e == "chem.build") {
+      t = "The molecule " + param(s, "smiles") + " was built from its SMILES string with " + version + (param(s, "clean-up") == "UFF" ? " and cleaned up with UFF" + cite({"rappe1992"}) : std::string()) + ".";
+      built = true;
+    } else if (e == "grow.trials" || e == "grow.blend" || e == "interface.build" || e == "nano.embed") {
+      const std::string chains = param(s, "chains"), dp = param(s, "DP").empty() ? param(s, "dp") : param(s, "DP");
+      const std::string where = !param(s, "density").empty() ? " at an initial density of " + param(s, "density") : !param(s, "box").empty() ? " in a " + param(s, "box") + " cubic cell" : std::string();
+      t = (chains.empty() ? std::string("Polymer chains were") : chains + " chains" + (dp.empty() ? "" : " of " + dp + " repeat units") + " were") + " grown" +
+          (e == "interface.build" ? " against the surface" : e == "nano.embed" ? " around the filler" : e == "grow.blend" ? " as a blend" : " in a periodic cell") + where +
+          " with " + version + ", each unit placed from internal coordinates" + cite({"parsons2005"}) + " by choosing among trial torsions the one with the largest clearance from atoms already placed.";
+      built = true;
+    } else if (e == "field.assign") {
+      const std::string ff = param(s, "force field"), ch = param(s, "charges");
+      t = "Atom types were assigned from " + ff + cite(only(s, {"rappe1992", "wang2004"})) +
+          (ch == "from the force field" ? ", with the force field's charges" : ", with " + ch + " charges" + cite(only(s, {"rappe1991", "gasteiger1980"}))) + ".";
+    } else if (e.rfind("relax.", 0) == 0) {
+      t = "The structure was minimised with " + param(s, "minimiser") + cite(only(s, {"liu1989", "polak1969", "bitzek2006"})) + " to a largest atomic force of " + param(s, "|F|max") +
+          (param(s, "push-off") == "on" ? ", after capped-force push-off stages" + cite({"auhl2003"}) : std::string()) + ".";
+    } else if (e.rfind("dynamics.", 0) == 0) {
+      const bool npt = e == "dynamics.npt", nvt = e == "dynamics.nvt";
+      std::string th = param(s, "thermostat");
+      th = th.substr(0, th.find(" · "));
+      const std::string len = param(s, "length");
+      const size_t of = len.find(" of ");
+      const std::string duration = len.substr(0, len.find(" · ")), step = of == std::string::npos ? std::string() : len.substr(of + 4);
+      t = std::string(npt ? "NPT" : nvt ? "NVT" : "NVE") + " molecular dynamics (velocity Verlet" + cite({"swope1982"}) + (step.empty() ? "" : ", " + step + " time step") + ") was run for " + duration +
+          " at " + param(s, "temperature") +
+          (nvt || npt ? " with the " + th + " thermostat" + cite(only(s, {"bussi2007"})) : std::string()) +
+          (npt ? " and " + param(s, "barostat").substr(0, param(s, "barostat").find(" · ")) + " pressure control" + cite(only(s, {"bernetti2020", "berendsen1984"})) : std::string()) + ".";
+    } else if (e == "equilibrate.larsen21") {
+      t = "The cell was equilibrated with the 21-step compression–decompression protocol (P_max = " + param(s, "Pmax") + ")" + cite({"larsen2011"}) + ", " + param(s, "length") + " of dynamics in all.";
+    } else if (e == "equilibrate.protocol") {
+      t = "The cell was equilibrated with a " + param(s, "stages") + "-stage protocol, " + param(s, "length") + " of dynamics in all.";
+    } else if (e == "pack.lbfgs" || e == "pack.insert" || e == "solvate.pack") {
+      t = std::string(e == "solvate.pack" ? "Solvent" : e == "pack.insert" ? "Additional molecules" : "Molecules") + " were packed without overlaps by minimising a pair-penalty function" + cite({"martinez2009"}) + ".";
+      built = true;
+    } else if (e == "nano.pore") {
+      t = "The pore (" + s.summary + ") was built with " + version + cite(only(s, {"martinez2009"})) + "; its walls were held fixed.";
+      built = true;
+    } else if (e == "crystal.build") {
+      t = "The crystal was built from its space group" + cite({"hall1981"}) + " and asymmetric unit.";
+      built = true;
+    } else if (e == "bio.peptide") {
+      t = "The peptide " + param(s, "sequence") + " was built from its sequence with standard backbone geometry" + cite({"engh1991", "parsons2005"}) + ".";
+      built = true;
+    } else if (e == "edit.builder") {
+      t = "The structure was edited by hand in the builder (" + param(s, "operations") + " operations).";
+    } else if (e == "nano.build" || e == "surface.build") {
+      t = std::string(e == "surface.build" ? "The surface slab" : "The nanostructure") + " was built with " + version + ".";
+      built = true;
+    }
+    if (!t.empty()) sentences.push_back(t);
+  }
+  // approximations of the energy evaluations
+  const auto ap = approximations(m);
+  std::string vdw, elec;
+  for (const auto& [k, v] : ap) { if (k == "van der Waals") vdw = v; if (k == "Electrostatics") elec = v; }
+  if (!vdw.empty() || !elec.empty()) {
+    // "cut-off 12 Å + tail correction" → "were truncated at 12 Å with analytic tail corrections"
+    std::string t = "Van der Waals interactions";
+    const size_t cp = vdw.find("cut-off ");
+    if (cp != std::string::npos) {
+      const std::string rest = vdw.substr(cp + 8);
+      const size_t plus = rest.find(" + ");
+      t += " were truncated at " + rest.substr(0, plus) + (plus != std::string::npos ? " with analytic tail corrections" : "");
+    } else {
+      t += ": " + vdw;
+    }
+    if (!elec.empty()) {
+      const std::string sep = " · ";
+      const size_t dot = elec.find(sep);
+      const std::string detail = dot == std::string::npos ? std::string() : " (" + elec.substr(dot + sep.size()) + ")";
+      if (elec.rfind("SPME", 0) == 0) t += "; electrostatics used smooth particle-mesh Ewald summation" + cite({"essmann1995"}) + detail;
+      else if (elec.rfind("damped", 0) == 0) t += "; electrostatics used the damped shifted force method" + cite({"fennell2006"}) + detail;
+      else if (elec == "off") t += "; electrostatics were switched off";
+      else t += "; electrostatics: " + elec;
+    }
+    sentences.push_back(t + ".");
+  }
+  if (!replicas.empty())
+    sentences.push_back(std::to_string(replicas.size() + 1) + " independent replicas were prepared the same way with different random seeds.");
+  std::string out;
+  for (const auto& s : sentences) out += (out.empty() ? "" : " ") + s;
+  if (refs) {
+    refs->clear();
+    for (const auto& k : order) refs->push_back(citation_text(k));
+  }
+  return out;
 }
 
 std::vector<std::string> all_cites(const Manifest& m) {

@@ -59,6 +59,10 @@ ManifestDiff compare(const Manifest& a, const Manifest& b);
 std::string bibtex(const std::vector<std::string>& keys);
 std::vector<std::string> all_cites(const Manifest& m);
 bool known_citation(const std::string& key);
+// A methods paragraph for a paper, written from the steps: what was built, typed, minimised, simulated and equilibrated,
+// with the settings that matter and numbered references [n] in order of first use (their readable texts in refs).
+// `replicas` other manifests identical but for their seeds are mentioned as independent replicas.
+std::string methods_text(const Manifest& m, std::vector<std::string>* refs = nullptr, const std::vector<Manifest>& replicas = {});
 // A reference for reading: "Authors, "Title", Journal Volume, Pages (Year). doi:…" from the built-in entry ("" if unknown).
 std::string citation_text(const std::string& key);
 
