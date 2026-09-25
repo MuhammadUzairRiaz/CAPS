@@ -1,0 +1,169 @@
+<!-- CAPS Biomolecule builder (design/boards/BioBuilder.dc.html): a peptide from its sequence, a secondary structure per
+     residue (φ, ψ, ω), termini and protonation; all-atom with hydrogens, cleaned up with UFF. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.BioPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.builder"><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="12,0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="12.5" /></Style>
+    <Style Selector="Button.builder.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <!-- residue cells: helix coral, strand blue, PPII violet, coil grey; the selection outlined in the accent -->
+    <Style Selector="Button.res">
+      <Setter Property="MinHeight" Value="26" /><Setter Property="Height" Value="26" /><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,3,3" />
+      <Setter Property="CornerRadius" Value="3" /><Setter Property="BorderThickness" Value="1.5" /><Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="FontFamily" Value="{DynamicResource Mono}" /><Setter Property="FontSize" Value="11.5" /><Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    </Style>
+    <Style Selector="Button.res.helix"><Setter Property="Background" Value="#E07A5F" /><Setter Property="Foreground" Value="#1A0C08" /></Style>
+    <Style Selector="Button.res.strand"><Setter Property="Background" Value="#6FA8DC" /><Setter Property="Foreground" Value="#0A1520" /></Style>
+    <Style Selector="Button.res.ppii"><Setter Property="Background" Value="#9B7BD6" /><Setter Property="Foreground" Value="#140C22" /></Style>
+    <Style Selector="Button.res.helix:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#E8927A" /><Setter Property="Foreground" Value="#1A0C08" /></Style>
+    <Style Selector="Button.res.strand:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#86B7E3" /><Setter Property="Foreground" Value="#0A1520" /></Style>
+    <Style Selector="Button.res.ppii:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#AD91DE" /><Setter Property="Foreground" Value="#140C22" /></Style>
+    <Style Selector="Button.res.sel /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Button.res.sel"><Setter Property="BorderBrush" Value="{DynamicResource TextB}" /></Style>
+  </p:PageBase.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="builder" Content="Polymer" Click="OnPolymer" />
+        <Button Classes="builder" Content="Crystal" Click="OnCrystal" />
+        <Button Classes="builder" Content="Surface" Click="OnSurface" />
+        <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
+        <Button Classes="builder on" Content="Biomolecule" />
+        <Button Classes="builder" Content="Solvation" Click="OnSolvation" ToolTip.Tip="Pack molecules into regions (CAPS Pack)" />
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,420">
+      <DockPanel>
+        <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="Style: tube through CA · sticks without H" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding BioSummary}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </DockPanel>
+        </Border>
+        <Panel>
+          <v:MolView x:Name="Preview" DrawStyle="3" />
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding BioHudTitle}" FontSize="12" /></Border>
+            <ItemsControl ItemsSource="{Binding BioHudRuns}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:BioRun">
+                  <Border Classes="hud" Padding="10,4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Ellipse Width="7" Height="7" Fill="{Binding Colour}" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Text}" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Classes="hud" Padding="10,4" IsVisible="{Binding BioBuilding}"><TextBlock Text="cleaning up with UFF…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="Biomolecule builder" Classes="h2" VerticalAlignment="Center" />
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel" Click="OnCancel" />
+              <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding BioIdle}">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build peptide" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+          <Border DockPanel.Dock="Top" Padding="16,12,16,0">
+            <Border Classes="seg" HorizontalAlignment="Stretch">
+              <UniformGrid Columns="2">
+                <RadioButton Classes="seg" Content="Peptide" GroupName="biokind" IsChecked="True" HorizontalAlignment="Stretch" />
+                <RadioButton Classes="seg" Content="Nucleic acid" GroupName="biokind" IsEnabled="False" HorizontalAlignment="Stretch"
+                             ToolTip.Tip="DNA and RNA strands are not built in this version" ToolTip.ShowOnDisabled="True" />
+              </UniformGrid>
+            </Border>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <!-- sequence -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="SEQUENCE" Classes="h3" />
+                  <TextBox Text="{Binding BioSequence}" TextWrapping="Wrap" AcceptsReturn="False" FontFamily="{DynamicResource Mono}" FontSize="12.5" LetterSpacing="0.8"
+                           Watermark="One-letter codes, e.g. AEAAAKEAAAKA" MinHeight="36" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Classes="chip" Height="22" Padding="8,0"><TextBlock Text="{Binding BioCountText}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+                    <Border Classes="chip" Height="22" Padding="8,0"><TextBlock Text="one-letter codes" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+                    <Button Classes="link" Content="Import FASTA" Click="OnFasta" FontSize="11.5" MinHeight="22" Height="22" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
+              <!-- secondary structure -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SECONDARY STRUCTURE" Classes="h3" />
+                  <ItemsControl ItemsSource="{Binding BioCells}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ResidueCell">
+                        <Button Classes="res" Classes.helix="{Binding IsHelix}" Classes.strand="{Binding IsStrand}" Classes.ppii="{Binding IsPpii}" Classes.sel="{Binding Selected}"
+                                Content="{Binding Code}" ToolTip.Tip="{Binding Tip}" Tag="{Binding}" Click="OnResidue" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{Binding BioSelectionText}" Classes="dim" FontSize="11.5" />
+                  <Border Classes="seg" HorizontalAlignment="Stretch">
+                    <UniformGrid Columns="4">
+                      <RadioButton Classes="seg" Content="α-helix" GroupName="ss" IsChecked="{Binding BioHelix, Mode=OneWay}" Click="OnSs" Tag="0" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="β-strand" GroupName="ss" IsChecked="{Binding BioStrand, Mode=OneWay}" Click="OnSs" Tag="1" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="PPII" GroupName="ss" IsChecked="{Binding BioPpii, Mode=OneWay}" Click="OnSs" Tag="2" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="Coil" GroupName="ss" IsChecked="{Binding BioCoil, Mode=OneWay}" Click="OnSs" Tag="3" HorizontalAlignment="Stretch" />
+                    </UniformGrid>
+                  </Border>
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <StackPanel Spacing="6"><TextBlock Text="φ · °" Classes="label" /><NumericUpDown Value="{Binding BioPhi}" IsEnabled="{Binding BioTorsionsEditable}" Minimum="-180" Maximum="180" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="ψ · °" Classes="label" /><NumericUpDown Value="{Binding BioPsi}" IsEnabled="{Binding BioTorsionsEditable}" Minimum="-180" Maximum="180" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="ω · °" Classes="label" /><NumericUpDown Value="{Binding BioOmega}" IsEnabled="{Binding BioTorsionsEditable}" Minimum="-180" Maximum="180" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding BioCite}" Classes="dim" FontSize="11.5" FontStyle="Italic" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <!-- termini and state -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="TERMINI &amp; STATE" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="N-terminus" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.BioNTerms}" SelectedIndex="{Binding BioNTerm}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="C-terminus" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.BioCTerms}" SelectedIndex="{Binding BioCTerm}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Protonation" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.BioProtonations}" SelectedIndex="{Binding BioProtonation}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Clean-up" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.BioCleanups}" SelectedIndex="{Binding BioCleanup}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="Side chains take their charge at the pH (Asp, Glu, His, Lys, Arg, Cys, Tyr). Assign a force field for simulation in Field after building." />
+                </StackPanel>
+              </Border>
+
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding BioError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding BioHasError}" />
+                  <TextBlock Text="{Binding BioLog}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

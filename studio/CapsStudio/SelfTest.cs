@@ -393,6 +393,19 @@ internal static class SelfTest
         var xsum = vm.Document?.Summary();
         Check(xsum is { } xs && xs.Atoms == 72 && xs.Bonds == 144, $"crystal: rutile 2 × 2 × 3 → {xsum?.Atoms} atoms · {xsum?.Bonds} bonds · {vm.CrystalError} {vm.Status}");
 
+        // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
+        vm.OpenBio();
+        Check(vm.BioCells.Count == 30 && vm.BioSegments.Count == 2 && vm.BioSegments[0] == "α-helix 1–22", $"bio: {vm.BioCountText} · {vm.BioSegmentsText}");
+        vm.SelectResidue(vm.BioCells[24], false);
+        vm.SelectResidue(vm.BioCells[27], true);
+        vm.BioType = 1;
+        Check(vm.BioSegments.Count == 4 && vm.BioSegments[2] == "β-strand 25–28", "bio: strand on 25–28 → " + vm.BioSegmentsText);
+        vm.BioNTerm = 2;
+        vm.BioCTerm = 2;
+        vm.BuildPeptide().GetAwaiter().GetResult();
+        var psum = vm.Document?.Summary();
+        Check(psum is { } pepSum && pepSum.Atoms > 300 && vm.Status.Contains("30 residues") && !vm.BioHasError, $"bio: built {psum?.Atoms} atoms · {vm.Status} {vm.BioError}");
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");
