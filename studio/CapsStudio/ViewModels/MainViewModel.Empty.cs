@@ -4,7 +4,7 @@ namespace CapsStudio.ViewModels;
 public sealed partial class MainViewModel
 {
     public string EmptyHeading => "Open a structure or trajectory";
-    public bool ShowEmpty => _doc == null && _module == 1;
+    public bool ShowEmpty => _doc == null && _module is 1 or 20;
     private string _emptyError = "";
     public string EmptyError { get => _emptyError; set { if (Set(ref _emptyError, value)) Raise(nameof(EmptyHasError)); } }
     public bool EmptyHasError => _emptyError.Length > 0;

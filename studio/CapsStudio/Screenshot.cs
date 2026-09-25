@@ -61,6 +61,16 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
                 Console.WriteLine(t.IsFaulted ? "render failed: " + t.Exception?.InnerException?.Message : $"render: {t.Result} image(s)");
             }
+            if (kv[0] == "visualize")   // visualize=PIPELINE.json|1: Analyze › Visualize with those steps (1: the default)
+            {
+                if (kv[1] != "1") w.ViewModel.LoadPipeline(kv[1]);
+                w.ViewModel.OpenVisualize();
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "inspector") { w.ViewModel.InspectorTab = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+            if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
+            if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
+            if (kv[0] == "pipestep") w.ViewModel.PipeSelected = w.ViewModel.PipelineRows[int.Parse(kv[1])];
             if (kv[0] == "focus") w.ViewModel.FocusOn(int.Parse(kv[1]));   // focus=N: keyboard-walk focus on atom N
             if (kv[0] == "walk")   // walk=keys: d(own) u(p) b(ond) ](next molecule) s(elect) m(easure)
                 foreach (var c in kv[1])

@@ -333,8 +333,10 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     if (pmax - pmin < 1e-12) pmax = pmin + 1;
   }
   std::vector<RGB> colour(n);
+  const bool overrides = opt.colours.size() == n;
   for (size_t i = 0; i < n; ++i) {
     const Atom& a = s.atoms[i];
+    if (overrides && opt.colours[i] != 0xFFFFFFFFu) { colour[i] = rgb(opt.colours[i]); continue; }
     unsigned c = element_colour(a.element);
     switch (opt.colour_by) {
       case ColourBy::Element: break;

@@ -37,6 +37,7 @@ struct RenderOptions {
   std::vector<int> highlight;          // atom indices drawn with a selection ring
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
+  std::vector<unsigned> colours;       // per atom 0xRRGGBB overriding colour_by (a pipeline's colours); 0xFFFFFFFF keeps it
 };
 
 struct Image {

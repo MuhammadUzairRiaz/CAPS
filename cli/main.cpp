@@ -5,6 +5,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -19,6 +20,7 @@
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 #include "caps/checks.hpp"
+#include "caps/pipeline.hpp"
 #include "caps/crystal.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
@@ -57,6 +59,8 @@ int usage() {
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
+               "  caps pipeline FILE [--topology DATA] --steps STEPS.json|'[…]' [--frame N] [--table NAME] [--particles EXPR]\n"
+               "                                   visualize pipeline on one frame: step status, attributes, a table as CSV\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -1268,6 +1272,37 @@ int main(int argc, char** argv) {
       std::printf("%zu atoms, %d molecules, %s · smallest intermolecular distance %.4f Å · %d pairs closer than %.2f Å\n", s.atoms.size(), nm,
                   per ? "periodic (minimum image)" : "not periodic", dmin, close, tol);
       return close == 0 ? 0 : 1;
+    }
+    if (cmd == "pipeline") {   // visualize pipeline: steps from a JSON file (or --steps '[…]'), on one frame
+      const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      std::string text = o.count("--steps") ? o["--steps"] : "[]";
+      if (!text.empty() && text[0] != '[' && text[0] != '{') {
+        std::ifstream f(text);
+        if (!f) throw std::runtime_error("cannot read " + text);
+        text.assign(std::istreambuf_iterator<char>(f), {});
+      }
+      const int fr = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
+      if (fr < 0 || size_t(fr) >= t.frames()) throw std::runtime_error("frame out of range");
+      const System f0 = t.frame(size_t(fr));
+      const auto st = run_pipeline(f0, pipeline_from_json(Json::parse(text)), fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)]);
+      for (size_t k = st.steps.size(); k-- > 0;)
+        std::printf("%-8s %-22s %s\n", st.steps[k].level.c_str(), st.steps[k].title.c_str(), st.steps[k].summary.c_str());
+      for (const auto& [k, v] : st.attributes) std::printf("  %-34s %.6g\n", k.c_str(), v);
+      if (o.count("--table")) {
+        for (const auto& tb : st.tables) {
+          if (tb.name != o["--table"]) continue;
+          for (size_t c = 0; c < tb.columns.size(); ++c) std::printf("%s%s", c ? "," : "", tb.columns[c].c_str());
+          std::printf("\n");
+          for (const auto& r : tb.rows) {
+            for (size_t c = 0; c < r.size(); ++c) std::printf("%s%.6g", c ? "," : "", r[c]);
+            std::printf("\n");
+          }
+        }
+      }
+      if (o.count("--particles")) std::printf("%s\n", particles_json(st, o["--particles"], 0, 50).dump(2).c_str());
+      int errors = 0;
+      for (const auto& s2 : st.steps) errors += s2.level == "error";
+      return errors ? 2 : 0;
     }
     if (cmd == "check") {   // file checks: what was found, what was done, what to change
       const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");

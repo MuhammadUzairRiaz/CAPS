@@ -291,6 +291,11 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_rdf")] public static extern int Rdf(IntPtr doc, int ea, int eb, double rmax, double dr, int inter, [Out] double[] r, [Out] double[] g, int cap);
     [DllImport(Lib, EntryPoint = "caps_molecules")] public static extern int Molecules(IntPtr doc, [Out] CapsMolecule[] out_, int cap);
     [DllImport(Lib, EntryPoint = "caps_property_range")] public static extern int PropertyRange(IntPtr doc, out double lo, out double hi);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_set")] public static extern int PipelineSet(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? json);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_result")] public static extern int PipelineResult(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_particles")] public static extern int PipelineParticles(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? filter, int offset, int count, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_bonds")] public static extern int PipelineBonds(IntPtr doc, int offset, int count, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
     [DllImport(Lib, EntryPoint = "caps_molecule_index")] public static extern int MoleculeIndex(IntPtr doc, [Out] int[] mol, int cap);
@@ -429,6 +434,22 @@ public sealed class CapsDocument : IDisposable
     public long HeldMolecule() { lock (_lock) return Native.HeldMolecule(_h); }
 
     /// <summary>The file checks of this document as JSON (caps_file_checks).</summary>
+    private static string Sized(Func<byte[]?, int, int> call)
+    {
+        var n = call(null, 0);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        var buf = new byte[Math.Max(1, n)];
+        call(buf, buf.Length);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+
+    /// <summary>Sets the visualize pipeline (JSON steps; null or "" clears it) and runs it on the shown frame.</summary>
+    public void SetPipeline(string? json) { lock (_lock) { if (Native.PipelineSet(_h, json) != 0) throw new InvalidOperationException(Native.LastError()); } }
+    public string PipelineResult() { lock (_lock) return Sized((b, c) => Native.PipelineResult(_h, b, c)); }
+    public string PipelineParticles(string filter, int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineParticles(_h, filter, offset, count, b, c)); }
+    public string PipelineBonds(int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineBonds(_h, offset, count, b, c)); }
+    public static string PipelineCatalogue() => Sized(Native.PipelineCatalogue);
+
     public string FileChecks()
     {
         lock (_lock)

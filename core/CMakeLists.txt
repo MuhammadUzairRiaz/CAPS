@@ -33,6 +33,8 @@ add_library(caps_core STATIC
   src/nano.cpp
   src/qeq.cpp
   src/checks.cpp
+  src/pipeline.cpp
+  src/pipeline_expr.cpp
   src/embed.cpp
   src/bench.cpp
   src/polymer.cpp

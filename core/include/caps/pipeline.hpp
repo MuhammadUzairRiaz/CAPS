@@ -1,0 +1,110 @@
+// CAPS visualize pipeline (design/boards/VisPipeline, PipelineSteps, ColourBy, DataInspector): non-destructive steps
+// applied to one frame, bottom to top as they are listed. Each step reads and writes per-particle properties, the
+// selection and colours, adds global attributes and data tables, and may delete or replicate particles. The source
+// file is never changed; the result is what the view draws and the data inspector lists.
+//
+// Steps (type, parameters):
+//   select_expression   expression                       Type == 2 && Position.Z > 13 · Element == "O"
+//   invert_selection · clear_selection
+//   expand_selection    mode bonds|cutoff, iterations, cutoff
+//   delete_selected
+//   slice               normal [x,y,z], distance (default: through the cell centre), width, invert, select_only
+//   colour_coding       property, mode auto|categorical|continuous, map viridis|diverging, start, end, lighten_h, only_selected
+//   assign_colour       colour "#RRGGBB", keep_selection
+//   cluster             mode bonds|cutoff, cutoff, only_selected, sort_by_size, colour
+//   coordination        cutoff, bins, element_a, element_b (0: any), only_selected       → Coordination, table rdf
+//   compute_property    name, expression, only_selected (Position.X/Y/Z, Charge and Selection write through)
+//   wrap                positions folded into the cell
+//   replicate           nx, ny, nz, adjust_cell
+//   histogram           property, bins, start, end, only_selected                        → table histogram
+//   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
+//
+// Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
+// Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,
+// == != < <= > >=, && || ! (also and, or, not), abs sqrt exp log min max floor ceil round, parentheses.
+#pragma once
+#include <array>
+#include <cstdint>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "caps/json.hpp"
+#include "caps/system.hpp"
+
+namespace caps {
+
+constexpr unsigned kNoColour = 0xFFFFFFFFu;
+
+struct DataTable {
+  std::string name, title;
+  std::vector<std::string> columns;
+  std::vector<std::vector<double>> rows;
+};
+
+struct PipelineLegend {
+  std::string property;
+  bool continuous = false;
+  double lo = 0, hi = 0;
+  std::string map = "viridis";
+  std::vector<std::pair<std::string, unsigned>> entries;   // categorical: label, colour
+};
+
+struct StepStatus {
+  std::string type, title, summary;
+  std::string level = "ok";   // ok | warning | error | off
+};
+
+struct PipelineState {
+  System system;                                       // the particles after the steps
+  std::vector<int> origin;                             // index in the source frame of each particle
+  std::vector<char> selected;
+  std::vector<unsigned> colour;                        // 0xRRGGBB, or kNoColour for the view's own colouring
+  std::map<std::string, std::vector<double>> props;    // computed per-particle properties
+  std::vector<std::pair<std::string, double>> attributes;
+  std::vector<DataTable> tables;
+  std::vector<StepStatus> steps;                       // one per step, in the listed order
+  PipelineLegend legend;
+  bool has_legend = false;
+  int frame = 0;
+  int64_t timestep = 0;
+
+  double attribute(const std::string& name, double def = 0) const;
+  void set_attribute(const std::string& name, double v);
+  size_t selected_count() const;
+};
+
+struct PipelineStep {
+  std::string type;
+  bool enabled = true;
+  Json params = Json::object();
+};
+
+struct Pipeline {
+  std::vector<PipelineStep> steps;   // top first, as listed; evaluated bottom to top
+};
+
+// {"steps": [{"type": …, "enabled": …, <parameters>}]} or the bare array.
+Pipeline pipeline_from_json(const Json& j);
+Json pipeline_to_json(const Pipeline& p);
+// Types known to run_pipeline, with a title and a one-line description each.
+std::vector<std::array<std::string, 3>> pipeline_step_catalogue();
+std::string step_title(const std::string& type);
+
+PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index = 0, int64_t timestep = 0);
+
+// Per-particle property names available to expressions and colour coding.
+std::vector<std::string> property_names(const PipelineState& st);
+// Values of a named per-particle property; false if unknown.
+bool property_values(const PipelineState& st, const std::string& name, std::vector<double>& out);
+// One value per particle; throws std::invalid_argument with the position of a syntax error or an unknown name.
+std::vector<double> evaluate_expression(const PipelineState& st, const std::string& expr);
+
+// Result for the Studio: attributes, step status, tables, legend, property names, counts.
+Json pipeline_result_json(const PipelineState& st);
+// Particles matching filter (an expression; empty: all), rows offset … offset + count, with their columns.
+Json particles_json(const PipelineState& st, const std::string& filter, size_t offset, size_t count);
+Json bonds_json(const PipelineState& st, size_t offset, size_t count);
+
+}  // namespace caps
