@@ -1237,6 +1237,8 @@
       <pages:ComparePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCompare}" />
       <!-- Analyze › Batch (design/boards/BatchRun) -->
       <pages:BatchPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBatch}" />
+      <!-- Export › Figure bundle (design/boards/FigureBundle) -->
+      <pages:BundlePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBundle}" />
       <!-- Export › Data (design/boards/ExportData) -->
       <pages:ExportPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsExport}" />
       <!-- Export › Figure (design/boards/FigureBackground) -->

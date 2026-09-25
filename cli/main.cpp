@@ -21,6 +21,7 @@
 #include "caps/uff.hpp"
 #include "caps/checks.hpp"
 #include "caps/pipeline.hpp"
+#include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
@@ -61,6 +62,9 @@ int usage() {
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
                "  caps pipeline FILE [--topology DATA] --steps STEPS.json|'[…]' [--frame N] [--table NAME] [--particles EXPR]\n"
                "                                   visualize pipeline on one frame: step status, attributes, a table as CSV\n"
+               "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
+               "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
+               "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -110,7 +114,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -506,6 +510,13 @@ int main(int argc, char** argv) {
       std::fprintf(stderr, "caps surface: %s\n", e.what());
       return 1;
     }
+  }
+  if (cmd == "reproduce") {   // a figure bundle: rebuild its data from its input and pipeline, compare the hashes
+    std::vector<std::string> report;
+    const bool ok = reproduce_bundle(pos[0], report);
+    for (const auto& r : report) std::printf("%s\n", r.c_str());
+    std::printf("%s\n", ok ? "reproduced: every data file matches" : "not reproduced");
+    return ok ? 0 : 2;
   }
   if (cmd == "bench") {
     try {
@@ -1272,6 +1283,27 @@ int main(int argc, char** argv) {
       std::printf("%zu atoms, %d molecules, %s · smallest intermolecular distance %.4f Å · %d pairs closer than %.2f Å\n", s.atoms.size(), nm,
                   per ? "periodic (minimum image)" : "not periodic", dmin, close, tol);
       return close == 0 ? 0 : 1;
+    }
+    if (cmd == "bundle") {   // write a figure bundle: caps bundle FILE --steps S.json -o OUT.caps-bundle.zip [--include-input]
+      const std::string top = o.count("--topology") ? o["--topology"] : "";
+      const Trajectory t = open_file(pos[0], top);
+      std::string text = o.count("--steps") ? o["--steps"] : "[]";
+      if (!text.empty() && text[0] != '[' && text[0] != '{') {
+        std::ifstream f(text);
+        text.assign(std::istreambuf_iterator<char>(f), {});
+      }
+      BundleOptions bo;
+      bo.input = pos[0];
+      bo.topology = top;
+      bo.include_input = o.count("--include-input") > 0;
+      bo.frame = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
+      const std::string out = o.count("-o") ? o["-o"] : "figure.caps-bundle.zip";
+      bo.name = std::filesystem::path(out).stem().stem().string();
+      const auto files = bundle_files(t, pipeline_from_json(Json::parse(text)), bo, Camera{}, RenderOptions{});
+      write_bundle(out, files);
+      for (const auto& f : files) std::printf("%-40s %8zu bytes  %s\n", f.name.c_str(), f.bytes.size(), sha256_hex(f.bytes).substr(0, 12).c_str());
+      std::printf("wrote %s\n", out.c_str());
+      return 0;
     }
     if (cmd == "pipeline") {   // visualize pipeline: steps from a JSON file (or --steps '[…]'), on one frame
       const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");

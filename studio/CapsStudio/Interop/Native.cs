@@ -298,6 +298,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_pipeline_series")] public static extern int PipelineSeries(IntPtr doc, int stride, CapsAnalyzeProgress? progress, IntPtr user, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_export_data")] public static extern int ExportData(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string format, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
     [DllImport(Lib, EntryPoint = "caps_export_preview")] public static extern int ExportPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string format, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, int lines, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bundle_preview")] public static extern int BundlePreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bundle_write")] public static extern int BundleWrite(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
@@ -452,6 +454,17 @@ public sealed class CapsDocument : IDisposable
     public string PipelineParticles(string filter, int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineParticles(_h, filter, offset, count, b, c)); }
     public string PipelineBonds(int offset, int count) { lock (_lock) return Sized((b, c) => Native.PipelineBonds(_h, offset, count, b, c)); }
     public static string PipelineCatalogue() => Sized(Native.PipelineCatalogue);
+    /// <summary>The bundle's files with sizes and hashes (figures are made on write). Runs the pipeline twice: off the UI thread.</summary>
+    public string BundlePreview(string options) { lock (_lock) return Sized((b, c) => Native.BundlePreview(_h, options, b, c)); }
+    public int BundleWrite(string path, string options, in CapsCamera cam, in CapsRenderOpts opt)
+    {
+        lock (_lock)
+        {
+            var n = Native.BundleWrite(_h, path, options, cam, opt);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            return n;
+        }
+    }
     public void ExportData(string path, string format, string options) { lock (_lock) { if (Native.ExportData(_h, path, format, options) != 0) throw new InvalidOperationException(Native.LastError()); } }
     /// <summary>Writes the export to a scratch file and returns its first lines, size and section counts (JSON). Writes twice; call off the UI thread.</summary>
     public string ExportPreview(string format, string options, int lines)

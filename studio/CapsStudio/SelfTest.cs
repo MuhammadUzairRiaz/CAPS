@@ -565,6 +565,21 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Figure bundle (FigureBundle): figure, data, pipeline, input and provenance; caps reproduce rebuilds it
+        {
+            vm.ClearPipeline();
+            vm.AddStep("molecule_shape");
+            vm.OpenBundle();
+            vm.BundleInput = true;
+            var zip = Path.Combine(outDir, "caps-selftest.caps-bundle.zip");
+            var n = vm.ExportBundle(zip).GetAwaiter().GetResult();
+            var entries = System.IO.Compression.ZipFile.OpenRead(zip).Entries.Select(e => e.FullName).ToList();
+            Check(n >= 7 && entries.Contains("figure.png") && entries.Contains("data/molecules.csv") && entries.Contains("provenance.json") && entries.Any(x => x.StartsWith("input/")),
+                  $"bundle: {n} files · {string.Join(", ", entries)}");
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <random>
+#include <regex>
 #include <fstream>
 #include <set>
 
@@ -14,6 +15,7 @@
 #include "caps/io.hpp"
 #include "caps/render.hpp"
 #include "caps/pipeline.hpp"
+#include "caps/bundle.hpp"
 
 using namespace caps;
 
@@ -704,6 +706,48 @@ TEST(Pipeline, MsdRecoversDiffusionAndScatter) {
   const auto sc = run_pipeline(t.frame(0), pipeline_from_json(Json::parse(R"([{"type":"scatter","x":"Position.X","y":"Position.X"}])")));
   EXPECT_NEAR(sc.attribute("Scatter.pearson_r"), 1.0, 1e-9);
   EXPECT_TRUE(sc.tables[0].points);
+}
+
+TEST(Bundle, Sha256ZipAndReproduce) {
+  EXPECT_EQ(sha256_hex("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  EXPECT_EQ(sha256_hex(""), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+  EXPECT_EQ(sha256_hex(std::string(1000, 'a')), "41edece42d63e8d9bf515a9ba6932e1c20cbc9f5a5d134645adb5db1b9737ea3");
+  const auto dir = std::filesystem::temp_directory_path();
+  const std::string zip = (dir / "caps_test.zip").string();
+  write_zip(zip, {{"a.txt", "hello"}, {"data/b.csv", std::string(5000, 'x') + "end"}});
+  const auto back = read_zip(zip);
+  EXPECT_EQ(back.at("a.txt"), "hello");
+  EXPECT_EQ(back.at("data/b.csv").size(), 5003u);
+  // a bundle with its input and pipeline reproduces its data files
+  const std::string in = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", top = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
+  const Trajectory t = open_file(in, top);
+  const Pipeline p = pipeline_from_json(Json::parse(R"([{"type":"molecule_shape"},{"type":"coordination","cutoff":5,"bins":50}])"));
+  BundleOptions o;
+  o.name = "test";
+  o.input = in;
+  o.topology = top;
+  o.include_input = true;
+  o.width = 160;
+  o.height = 90;
+  const auto files = bundle_files(t, p, o, Camera{}, RenderOptions{});
+  std::vector<std::string> names;
+  for (const auto& f : files) names.push_back(f.name);
+  for (const char* want : {"figure.png", "figure.svg", "data/rdf.csv", "data/molecules.csv", "pipeline.json", "provenance.json", "README.txt"})
+    EXPECT_NE(std::find(names.begin(), names.end(), want), names.end()) << want;
+  const std::string bundle = (dir / "caps_test.caps-bundle.zip").string();
+  write_bundle(bundle, files);
+  std::vector<std::string> report;
+  EXPECT_TRUE(reproduce_bundle(bundle, report));
+  EXPECT_EQ(report.size(), 2u);
+  // tampering with a data file is caught
+  auto z = read_zip(bundle);
+  z["provenance.json"] = std::regex_replace(z["provenance.json"], std::regex("(\"data/rdf.csv\": \")[0-9a-f]"), "$1z");
+  std::vector<std::pair<std::string, std::string>> items(z.begin(), z.end());
+  write_zip(bundle, items);
+  report.clear();
+  EXPECT_FALSE(reproduce_bundle(bundle, report));
+  std::filesystem::remove(zip);
+  std::filesystem::remove(bundle);
 }
 
 TEST(Io, FileWithoutAtomsIsAnError) {
