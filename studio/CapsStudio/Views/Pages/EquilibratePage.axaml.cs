@@ -24,8 +24,9 @@ public partial class EquilibratePage : PageBase
                 e.SetData(vm.Thermo.Select(r => (r.TimePs, r.Potential)).ToArray());
             };
             vm.EqChecksChanged += () => rg.SetData(vm.EqRgBlocks);
-            vm.PropertyChanged += (_, a) => { if (a.PropertyName == nameof(vm.ChainCurve)) chain.SetData(vm.ChainCurve); };
-            chain.SetData(vm.ChainCurve);
+            void Draw() { if (vm.RisCurve.Length > 0) chain.SetCompare(vm.ChainCurve, vm.RisCurve); else chain.SetData(vm.ChainCurve); }
+            vm.PropertyChanged += (_, a) => { if (a.PropertyName == nameof(vm.ChainCurve)) Draw(); };
+            Draw();
         };
     }
 
