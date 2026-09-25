@@ -76,7 +76,7 @@ internal static class SelfTest
         Check(vm.PickedRows.Count == 4 && vm.NeighbourRows.Count == 4, $"inspector: {vm.PickedTitle}");
 
         // CAPS Field: assign GAFF2 from the library, override one atom, clear
-        var gaff = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25-dlfield");
+        var gaff = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
         Check(gaff >= 0, $"force-field library: {vm.Field.LibraryNote}");
         if (gaff >= 0)
         {
@@ -104,8 +104,8 @@ internal static class SelfTest
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
         }
-        // Automatic charges: DL_FIELD's OPLS-AA keeps charges on templates, not types; the default falls back to Gasteiger
-        var opls = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005-dlfield");
+        // Automatic charges: the library's OPLS-AA keeps charges on templates, not types; the default falls back to Gasteiger
+        var opls = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005");
         if (opls >= 0)
         {
             vm.Field.FfIndex = opls;

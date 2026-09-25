@@ -1,41 +1,41 @@
 # CAPS force-field library
 
-Built by `bench/ff/build_library.py` from moltemplate and DL_FIELD 4.13. Status: **validated** — checked interaction by interaction and in energies / forces against the source tool and LAMMPS (evidence in each file's `validation` field); **converted** — parsed into CAPS rules, not yet compared; **pending** — the family's functional forms are not interpreted yet; **template** / **alias** — not a separate force field.
+Built by `bench/ff/build_library.py` from the published parameter files. Status: **validated** — checked interaction by interaction and in energies / forces against their reference implementations and LAMMPS (evidence in each file's `validation` field); **converted** — parsed into CAPS rules, not yet compared; **pending** — the family's functional forms are not interpreted yet; **template** / **alias** — not a separate force field.
 
 | id | force field | version / year | from | status | automatic typing |
 |---|---|---|---|---|---|
-| pcff-dlfield | PCFF (DL_FIELD, diagonal terms) | cff91 family, 1994; DL_FIELD library v4.5 (2019) | dlfield: PCFF.par | validated | yes |
-| compass-dlfield | COMPASS (DL_FIELD, diagonal terms) | 1998 | dlfield: COMPASS.par | validated |  |
-| cvff-dlfield | CVFF (DL_FIELD) | 1988 | dlfield: CVFF.par | validated | yes |
-| opls2005-dlfield | OPLS-AA / OPLS 2005 (DL_FIELD) | 2005 | dlfield: OPLS2005.par | validated | yes |
-| opls2020-dlfield | OPLS 2020 bond / angle supplement (DL_FIELD) | as distributed with DL_FIELD 4.13 | dlfield: OPLS2020.par | converted |  |
-| opls-aam-dlfield | OPLS-AA/M (DL_FIELD) | 2015 | dlfield: OPLS_AAM.par | converted |  |
-| opls-clp-dlfield | CL&P ionic liquids (OPLS-AA based, DL_FIELD) | 2004 onwards | dlfield: OPLS_CL_P.par | validated |  |
-| opls-des-dlfield | OPLS-DES deep eutectic solvents (DL_FIELD) | 2018 | dlfield: OPLS_DES.par | converted |  |
-| amber-dlfield | AMBER (DL_FIELD) | Cornell et al. 1995 family | dlfield: AMBER.par | validated |  |
-| gaff-amber16-dlfield | GAFF (AmberTools 16, DL_FIELD) | GAFF 1.8x, 2016 | dlfield: AMBER16_gaff.par | validated | yes |
-| gaff-amber25-dlfield | GAFF (AmberTools 25, DL_FIELD) | 2025 | dlfield: AMBER25_gaff.par | validated | yes |
-| charmm-dlfield | CHARMM (DL_FIELD) |  | dlfield: CHARMM.par | validated |  |
-| charmm19-dlfield | CHARMM19 united atom (DL_FIELD) |  | dlfield: CHARMM19.par | validated |  |
-| charmm22-prot-dlfield | CHARMM22 proteins (DL_FIELD) | 1998 | dlfield: CHARMM22_prot.par | validated |  |
-| charmm36-carb-dlfield | CHARMM36 carbohydrates (DL_FIELD) |  | dlfield: CHARMM36_carb.par | converted |  |
-| cgenff-dlfield | CGenFF (CHARMM36, DL_FIELD) |  | dlfield: CHARMM36_cgenff.par | validated | yes |
-| charmm36-lipid-dlfield | CHARMM36 lipids (DL_FIELD) | 2010 | dlfield: CHARMM36_lipid.par | converted |  |
-| charmm36-nucl-dlfield | CHARMM36 nucleic acids (DL_FIELD) |  | dlfield: CHARMM36_nucl.par | validated |  |
-| charmm36-prot-dlfield | CHARMM36 proteins (DL_FIELD) | 2012 | dlfield: CHARMM36_prot.par | validated |  |
-| dreiding-dlfield | DREIDING (DL_FIELD) | 1990 | dlfield: DREIDING.par | validated |  |
-| gromos-54a7-dlfield | GROMOS 54A7 (DL_FIELD) | 2011 | dlfield: GROMOS_G54A7.par | validated |  |
-| trappe-ua-dlfield | TraPPE-UA (DL_FIELD) | 1998 | dlfield: TRAPPE_UA.par | validated |  |
-| trappe-eh-dlfield | TraPPE-EH (DL_FIELD) | 2007 | dlfield: TRAPPE_EH.par | validated |  |
-| misc-dlfield | Miscellaneous (DL_FIELD) |  | dlfield: MISC_FF.par | converted |  |
-| inorganic-binary-halides-dlfield | Inorganic: binary halides (DL_FIELD) |  | dlfield: INORGANIC_binary_halides.par | validated |  |
-| inorganic-binary-misc-dlfield | Inorganic: binary misc (DL_FIELD) |  | dlfield: INORGANIC_binary_misc.par | validated |  |
-| inorganic-binary-oxides-dlfield | Inorganic: binary oxides (DL_FIELD) |  | dlfield: INORGANIC_binary_oxides.par | validated |  |
-| inorganic-clay-dlfield | Inorganic: clay (DL_FIELD) |  | dlfield: INORGANIC_clay.par | converted |  |
-| inorganic-glass-dlfield | Inorganic: glass (DL_FIELD) |  | dlfield: INORGANIC_glass.par | converted |  |
-| inorganic-ternary-oxides-dlfield | Inorganic: ternary oxides (DL_FIELD) |  | dlfield: INORGANIC_ternary_oxides.par | validated |  |
-| inorganic-zeolite-dlfield | Inorganic: zeolite (DL_FIELD) |  | dlfield: INORGANIC_zeolite.par | validated |  |
-| inorganic-zeolite-hill-sauer-dlfield | Inorganic: zeolite Hill Sauer (DL_FIELD) |  | dlfield: INORGANIC_zeolite_Hill_Sauer.par | converted |  |
+| pcff | PCFF (diagonal terms) | cff91 family, 1994 | converted: PCFF.par | validated | yes |
+| compass | COMPASS (diagonal terms) | 1998 | converted: COMPASS.par | validated | |
+| cvff | CVFF | 1988 | converted: CVFF.par | validated | yes |
+| opls2005 | OPLS-AA / OPLS 2005 | 2005 | converted: OPLS2005.par | validated | yes |
+| opls2020 | OPLS 2020 bond / angle supplement | as distributed | converted: OPLS2020.par | converted | |
+| opls-aam | OPLS-AA/M | 2015 | converted: OPLS_AAM.par | converted | |
+| opls-clp | CL&P ionic liquids (OPLS-AA based) | 2004 onwards | converted: OPLS_CL_P.par | validated | |
+| opls-des | OPLS-DES deep eutectic solvents | 2018 | converted: OPLS_DES.par | converted | |
+| amber | AMBER | Cornell et al. 1995 family | converted: AMBER.par | validated | |
+| gaff-amber16 | GAFF (AmberTools 16) | GAFF 1.8x, 2016 | converted: AMBER16_gaff.par | validated | yes |
+| gaff-amber25 | GAFF (AmberTools 25) | 2025 | converted: AMBER25_gaff.par | validated | yes |
+| charmm | CHARMM | | converted: CHARMM.par | validated | |
+| charmm19 | CHARMM19 united atom | | converted: CHARMM19.par | validated | |
+| charmm22-prot | CHARMM22 proteins | 1998 | converted: CHARMM22_prot.par | validated | |
+| charmm36-carb | CHARMM36 carbohydrates | | converted: CHARMM36_carb.par | converted | |
+| cgenff | CGenFF (CHARMM36) | | converted: CHARMM36_cgenff.par | validated | yes |
+| charmm36-lipid | CHARMM36 lipids | 2010 | converted: CHARMM36_lipid.par | converted | |
+| charmm36-nucl | CHARMM36 nucleic acids | | converted: CHARMM36_nucl.par | validated | |
+| charmm36-prot | CHARMM36 proteins | 2012 | converted: CHARMM36_prot.par | validated | |
+| dreiding | DREIDING | 1990 | converted: DREIDING.par | validated | |
+| gromos-54a7 | GROMOS 54A7 | 2011 | converted: GROMOS_G54A7.par | validated | |
+| trappe-ua | TraPPE-UA | 1998 | converted: TRAPPE_UA.par | validated | |
+| trappe-eh | TraPPE-EH | 2007 | converted: TRAPPE_EH.par | validated | |
+| misc | Miscellaneous | | converted: MISC_FF.par | converted | |
+| inorganic-binary-halides | Inorganic: binary halides | | converted: INORGANIC_binary_halides.par | validated | |
+| inorganic-binary-misc | Inorganic: binary misc | | converted: INORGANIC_binary_misc.par | validated | |
+| inorganic-binary-oxides | Inorganic: binary oxides | | converted: INORGANIC_binary_oxides.par | validated | |
+| inorganic-clay | Inorganic: clay | | converted: INORGANIC_clay.par | converted | |
+| inorganic-glass | Inorganic: glass | | converted: INORGANIC_glass.par | converted | |
+| inorganic-ternary-oxides | Inorganic: ternary oxides | | converted: INORGANIC_ternary_oxides.par | validated | |
+| inorganic-zeolite | Inorganic: zeolite | | converted: INORGANIC_zeolite.par | validated | |
+| inorganic-zeolite-hill-sauer | Inorganic: zeolite Hill Sauer | | converted: INORGANIC_zeolite_Hill_Sauer.par | converted | |
 | compass-published-moltemplate | COMPASS (published subset, full class II) | 1998 | moltemplate: compass_published.lt | validated |  |
 | gaff-moltemplate | GAFF (moltemplate) | GAFF 1.x | moltemplate: gaff.lt | converted |  |
 | gaff2-moltemplate | GAFF2 (moltemplate) | GAFF 2 | moltemplate: gaff2.lt | validated |  |

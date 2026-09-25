@@ -173,8 +173,8 @@ TEST(Typing, PrecedenceOverridesAndTypeReferences) {
 
 TEST(Typing, ShippedRulesTypeCommonMolecules) {
   for (const char* lib : {"pcff", "cvff"}) {
-    FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + lib + "-dlfield.json");
-    load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/" + lib + "-dlfield.typing.json");
+    FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + lib + ".json");
+    load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/" + lib + ".typing.json");
     const TypingResult r = assign_types(benzene(), ff);
     EXPECT_EQ(r.types[0], "cp") << lib;
     EXPECT_EQ(r.untyped, 0) << lib;
@@ -215,7 +215,7 @@ TEST(Perception, CationsFoundBySearch) {
 
 TEST(Typing, GaffFollowsAntechamber) {
   // antechamber: furan os / cc cd cd cc / h4 on the carbons next to O, ha on the others; butadiene c2 ce ce c2
-  const TypingResult f = type_with("gaff-amber16-dlfield", furan());
+  const TypingResult f = type_with("gaff-amber16", furan());
   EXPECT_EQ(f.types[0], "os");
   EXPECT_EQ(f.types[1], "cc");
   EXPECT_EQ(f.types[2], "cd");
@@ -223,30 +223,30 @@ TEST(Typing, GaffFollowsAntechamber) {
   EXPECT_EQ(f.types[4], "cc");
   EXPECT_EQ(f.types[5], "h4");
   EXPECT_EQ(f.types[6], "ha");
-  const TypingResult b = type_with("gaff-amber16-dlfield", butadiene());
+  const TypingResult b = type_with("gaff-amber16", butadiene());
   EXPECT_EQ(b.types[0], "c2");
   EXPECT_EQ(b.types[1], "ce");
   EXPECT_EQ(b.types[2], "ce");
   EXPECT_EQ(b.types[3], "c2");
   // GAFF2 amine N by hydrogen count: methylamine n8
   const System ma = mol({"C", "N"}, {3, 2}, {{0, 1}});
-  EXPECT_EQ(type_with("gaff-amber25-dlfield", ma).types[1], "n8");
-  EXPECT_EQ(type_with("gaff-amber16-dlfield", ma).types[1], "n3");
+  EXPECT_EQ(type_with("gaff-amber25", ma).types[1], "n8");
+  EXPECT_EQ(type_with("gaff-amber16", ma).types[1], "n3");
 }
 
 TEST(Typing, CgenffAndOpls) {
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)
-  const TypingResult b = type_with("cgenff-dlfield", butadiene());
+  const TypingResult b = type_with("cgenff", butadiene());
   EXPECT_EQ(b.types[0], "CG2DC3");
   EXPECT_EQ(b.types[1], "CG2DC2");
   EXPECT_EQ(b.types[2], "CG2DC1");
   EXPECT_EQ(b.types[3], "CG2DC3");
-  const TypingResult f = type_with("cgenff-dlfield", furan());
+  const TypingResult f = type_with("cgenff", furan());
   EXPECT_EQ(f.types[0], "OG2R50");
   EXPECT_EQ(f.types[1], "CG2R51");
   // OPLS-AA (DL_FIELD names): methyl acetate CT CO4 O OES CT
   const System ma = mol({"C", "C", "O", "O", "C"}, {3, 0, 0, 0, 3}, {{0, 1}, {1, 2}, {1, 3}, {3, 4}});
-  const TypingResult o = type_with("opls2005-dlfield", ma);
+  const TypingResult o = type_with("opls2005", ma);
   EXPECT_EQ(o.types[0], "CT");
   EXPECT_EQ(o.types[1], "CO4");
   EXPECT_EQ(o.types[2], "O");

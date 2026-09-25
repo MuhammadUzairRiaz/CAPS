@@ -96,7 +96,7 @@ build/cli/caps rdf samples/ps_melt.data --pair C-C --inter
 Build a molecule and grow polymers (any repeat unit, `*` marks the head then the tail):
 
 ```bash
-build/cli/caps build "N[C@@H](C)C(=O)O" -o alanine.mol2 --conformers 5 --ff data/forcefields/gaff-amber25-dlfield.json
+build/cli/caps build "N[C@@H](C)C(=O)O" -o alanine.mol2 --conformers 5 --ff data/forcefields/gaff-amber25.json
 build/cli/caps grow --units '[*]C/C=C(C)\C[*]' --chains 10 --dp 30 --density 0.5 -o natural_rubber.data
 build/cli/caps grow --units '[*]C/C=C\C[*],*CC(*)c1ccccc1' --sequence random --weights 0.86,0.14 --chains 10 --dp 30 --density 0.5 -o sbr.data
 build/cli/caps grow --units '*CC(*)(C)C(=O)OC' --chains 10 --dp 20 --density 0.5 --auto-scale -o pmma.data  # crowded backbones: contacts lowered as needed, then relax
@@ -127,7 +127,7 @@ Particle-mesh Ewald instead of the damped shifted force (periodic cells):
 build/cli/caps md cell.data -o out.data --steps 20000 --pme                 # β from erfc(β rc) = 1e-5, 1 Å grid, order 5
 build/cli/caps md cell.data -o out.data --pme --ewald-rtol 1e-6 --pme-spacing 0.8 --pme-order 6
 python3 bench/ff/check_data_lammps.py --pme                                   # against LAMMPS's Ewald sum
-build/cli/caps ff apply cell.data --ff data/forcefields/gaff-amber25-dlfield.json --charges gasteiger --pme --gromacs cell   # cell.top, .gro, .mdp
+build/cli/caps ff apply cell.data --ff data/forcefields/gaff-amber25.json --charges gasteiger --pme --gromacs cell   # cell.top, .gro, .mdp
 python3 bench/ff/check_gromacs.py                                             # against GROMACS (gmx on PATH)
 ```
 
@@ -301,7 +301,7 @@ version / year, primary reference and status (validated, converted, pending, tem
 ```bash
 caps ff import-lt  ~/moltemplate/moltemplate/force_fields/gaff2.lt -o gaff2.json     # moltemplate
 caps ff import-dlf ~/dl_f_4.13/lib/PCFF.par -o pcff.json                              # DL_FIELD (.par + .sf + .bci)
-caps ff apply molecule.mol2 --ff data/forcefields/gaff-amber25-dlfield.json --list -o molecule.data
+caps ff apply molecule.mol2 --ff data/forcefields/gaff-amber25.json --list -o molecule.data
 ```
 
 mol2 is the preferred input: its bonds, bond orders, atom types and charges are used as given (xyz needs bonds guessed
@@ -337,10 +337,10 @@ Among the rules that match an atom, types another match `overrides` drop out, th
 may refer to other types (`[%oh]`, as in foyer), and typing repeats until nothing changes.
 
 ```bash
-caps ff type molecule.pdb --ff data/forcefields/pcff-dlfield.json --explain       # each atom's type and the rule behind it
-caps ff apply molecule.xyz --ff data/forcefields/pcff-dlfield.json                  # types automatically, then parameterises
-caps ff apply water.mol2 --ff data/forcefields/cvff-dlfield.json \
-    --typing data/typing/cvff-dlfield.typing.json,data/typing/cvff-dlfield-tip3p.typing.json   # rules on top: TIP3P water
+caps ff type molecule.pdb --ff data/forcefields/pcff.json --explain       # each atom's type and the rule behind it
+caps ff apply molecule.xyz --ff data/forcefields/pcff.json                  # types automatically, then parameterises
+caps ff apply water.mol2 --ff data/forcefields/cvff.json \
+    --typing data/typing/cvff.typing.json,data/typing/cvff-tip3p.typing.json   # rules on top: TIP3P water
 ```
 
 `--types FILE` still sets types by hand (all atoms, or `index type` lines for a few). A force field names its rules

@@ -616,7 +616,7 @@
      "½ and 1/1.2"
     ]
    ],
-   "when": "Organic polymers and additives. CAPS's built-in default for pure hydrocarbons; the library also holds GAFF2 and other force fields converted from moltemplate and DL_FIELD.",
+   "when": "Organic polymers and additives. CAPS's built-in default for pure hydrocarbons; the library also holds GAFF2 and the other published force fields, with CAPS typing rules.",
    "cites": [
     "wang2004"
    ],

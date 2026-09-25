@@ -490,7 +490,7 @@ void t12(BenchTable& t, const BenchOptions& o) {
     return dot(cross(p[size_t(CO)] - p[size_t(N)], p[size_t(CM)] - p[size_t(N)]), p[size_t(CA)] - p[size_t(H)]) > 0;
   };
   BuildOptions bo;
-  if (!o.forcefields.empty()) bo.forcefield = o.forcefields + "/gaff-amber25-dlfield.json";
+  if (!o.forcefields.empty()) bo.forcefield = o.forcefields + "/gaff-amber25.json";
   struct Case { const char* smiles; bool S; };
   const Case ala[] = {{"N[C@@H](C)C(=O)O", true}, {"C[C@@H](C(=O)O)N", true}, {"OC(=O)[C@@H](N)C", true}, {"N[C@H](C)C(=O)O", false},
                       {"C[C@H](C(=O)O)N", false}, {"[C@@H](N)(C)C(=O)O", false}};

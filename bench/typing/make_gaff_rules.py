@@ -123,8 +123,8 @@ def rules(v2):
 
 PAIRS = [["cc", "cd"], ["ce", "cf"], ["cp", "cq"], ["nc", "nd"], ["ne", "nf"], ["pc", "pd"], ["pe", "pf"]]
 out = sys.argv[1]
-for name, v2, ff, src in [("gaff-amber16-dlfield", False, "GAFF (AmberTools 16, DL_FIELD)", "ATOMTYPE_GFF.DEF"),
-                          ("gaff-amber25-dlfield", True, "GAFF2 (AmberTools 25, DL_FIELD)", "ATOMTYPE_GFF2.DEF")]:
+for name, v2, ff, src in [("gaff-amber16", False, "GAFF (AmberTools 16, DL_FIELD)", "ATOMTYPE_GFF.DEF"),
+                          ("gaff-amber25", True, "GAFF2 (AmberTools 25, DL_FIELD)", "ATOMTYPE_GFF2.DEF")]:
     json.dump({"format": "caps-typing", "version": 1, "forcefield": ff,
                "description": f"GAFF{'2' if v2 else ''} atom types following antechamber's {src} in order (first matching rule wins); "
                               "{AR1}..{AR5} are antechamber's ring classes, pairs its conjugation pattern.",

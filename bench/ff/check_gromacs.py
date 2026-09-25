@@ -41,18 +41,18 @@ PME = ["--pme", "--ewald-rtol", "1e-7", "--pme-spacing", "0.5", "--pme-order", "
 
 # (label, structure source, force field, charges, extra caps options)
 CASES = [
-    ("Polystyrene melt, GAFF2, PME (periodic, 1300 atoms)", ("file", PS), "gaff-amber25-dlfield", "gasteiger", PME),
-    ("Polystyrene melt, GAFF2, PME, shifted LJ (no tail)", ("file", PS), "gaff-amber25-dlfield", "gasteiger", PME + ["--no-tail"]),
-    ("Polystyrene melt, OPLS-AA, PME", ("file", PS), "opls2005-dlfield", "gasteiger", PME),
-    ("Polystyrene melt, CVFF, PME (cvff impropers)", ("file", PS), "cvff-dlfield", "types", PME),
-    ("Polystyrene melt, GAFF2, PME, triclinic cell (xy 0.5, xz 0.3, yz 0.2 Å)", ("tilt", PS), "gaff-amber25-dlfield", "gasteiger", PME),
+    ("Polystyrene melt, GAFF2, PME (periodic, 1300 atoms)", ("file", PS), "gaff-amber25", "gasteiger", PME),
+    ("Polystyrene melt, GAFF2, PME, shifted LJ (no tail)", ("file", PS), "gaff-amber25", "gasteiger", PME + ["--no-tail"]),
+    ("Polystyrene melt, OPLS-AA, PME", ("file", PS), "opls2005", "gasteiger", PME),
+    ("Polystyrene melt, CVFF, PME (cvff impropers)", ("file", PS), "cvff", "types", PME),
+    ("Polystyrene melt, GAFF2, PME, triclinic cell (xy 0.5, xz 0.3, yz 0.2 Å)", ("tilt", PS), "gaff-amber25", "gasteiger", PME),
     ("(6,6) nanotube, GAFF2, PME (bonds cross the cell: periodic-molecules)", ("nano", ["tube", "--n", "6", "--m", "6", "--length", "25"]),
-     "gaff-amber25-dlfield", "gasteiger", PME),
-    ("GAFF toluene (vacuum)", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16-dlfield", "gasteiger", []),
-    ("CVFF phenol (vacuum, cvff impropers)", ("template", "CVFF", "phenol"), "cvff-dlfield", "types", []),
-    ("OPLS-AA methyl vinyl ketone (vacuum)", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005-dlfield", "gasteiger", []),
-    ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff-dlfield", "gasteiger", []),
-    ("PCFF polystyrene (class II: refused)", ("file", PS), "pcff-dlfield", "types", []),
+     "gaff-amber25", "gasteiger", PME),
+    ("GAFF toluene (vacuum)", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16", "gasteiger", []),
+    ("CVFF phenol (vacuum, cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", []),
+    ("OPLS-AA methyl vinyl ketone (vacuum)", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", []),
+    ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
+    ("PCFF polystyrene (class II: refused)", ("file", PS), "pcff", "types", []),
     ("UFF polystyrene (inversions: refused)", ("file", PS), "uff", "types", []),
 ]
 
