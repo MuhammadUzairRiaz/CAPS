@@ -140,7 +140,7 @@
                                 IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
                   <ToggleButton Classes="chip" Content="Comb" Tag="3" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="A side chain on every n-th backbone unit"
                                 IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" />
-                  <ToggleButton Classes="chip" Content="Network" IsEnabled="False" Margin="0,0,6,6" ToolTip.Tip="Crosslink a grown cell in React" ToolTip.ShowOnDisabled="True" />
+                  <Button Classes="chip" Content="Network →" Click="OnNetwork" Margin="0,0,6,6" ToolTip.Tip="Networks are made by crosslinking a grown cell: React (C–C, sulfur or peroxide cures, epoxy–amine)" />
                 </WrapPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyIsStar}">
                   <StackPanel Spacing="6">

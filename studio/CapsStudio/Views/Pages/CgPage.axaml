@@ -103,7 +103,8 @@
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="8">
                   <TextBlock Text="BACKMAP TO ALL ATOMS" Classes="h3" />
-                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Not built yet. For an all-atom melt of a real polymer, grow it directly (Builders › Polymer, or Grow); the coarse-grained melt runs in LAMMPS." />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Kremer–Grest beads are generic (lengths in σ): there are no atoms behind them to go back to. For a multiscale route, coarse-grain an all-atom cell in Model resolution, run its beads in LAMMPS, then backmap them there onto the atoms." />
+                  <Button Classes="small ghost" Content="Model resolution › Backmap →" Click="OnModelResolution" HorizontalAlignment="Left" Foreground="{DynamicResource AccB}" />
                 </StackPanel>
               </Border>
               <TextBlock Text="{Binding CgError}" Foreground="{DynamicResource ErrB}" FontSize="12" Margin="16,8" TextWrapping="Wrap" />
