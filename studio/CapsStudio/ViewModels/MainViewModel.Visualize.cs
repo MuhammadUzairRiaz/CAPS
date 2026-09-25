@@ -27,10 +27,11 @@ public sealed class StepField : INotifyPropertyChanged
         get => Math.Max(0, Array.IndexOf(Choices, _text));
         set { if (value >= 0 && value < Choices.Length) Text = Choices[value]; Raise(nameof(ChoiceIndex)); }
     }
-    public bool IsText => Kind is "text" or "expression" or "number" or "vector";
+    public bool IsText => Kind is "text" or "expression" or "number" or "vector" or "file";
+    public bool IsFile => Kind == "file";
     public bool IsBool => Kind == "bool";
     public bool IsChoice => Kind == "choice";
-    public bool IsMono => Kind is "expression" or "number" or "vector";
+    public bool IsMono => Kind is "expression" or "number" or "vector" or "file";
 }
 
 /// <summary>A step in the pipeline list.</summary>
@@ -96,13 +97,14 @@ public sealed partial class MainViewModel
         new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
+        new("python", "Python step", "your script with an @step function (caps.pipeline API)", "Automate", "terminal"),
         new("voids", "Voids & pores", "accessible volume for a probe, voids by size", "Structure", "atom"),
         new("voronoi", "Voronoi volumes", "volume per atom (grid or radical)", "Structure", "hex"),
         new("density_field", "Density field", "smoothed mass density, profile, slice", "Structure", "layers"),
         new("vectors", "Vectors", "end-to-end, dipoles, displacements, velocities", "Visual", "move"),
         new("trajectory_lines", "Trajectory lines", "paths of chain centres or particles", "Visual", "history"),
     ];
-    public static readonly string[] StepGroups = ["Colour & style", "Select", "Modify", "Structure", "Measure", "Trajectory", "Visual"];
+    public static readonly string[] StepGroups = ["Colour & style", "Select", "Modify", "Structure", "Measure", "Trajectory", "Visual", "Automate"];
 
     private PipelineRow? _pipeSel;
     private bool _stepLibraryOpen, _pipeLegendVisible = true;
@@ -344,6 +346,7 @@ public sealed partial class MainViewModel
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
+        "python" => new JsonObject { ["file"] = "" },
         "msd" => new JsonObject { ["heavy_only"] = true, ["every"] = 1, ["timestep_fs"] = 1.0 },
         "scatter" => new JsonObject { ["x"] = "DistanceToCOM", ["y"] = "Charge", ["only_selected"] = false },
         "voids" => new JsonObject { ["probe"] = 1.4, ["grid"] = 0.5, ["show"] = true },
@@ -398,6 +401,9 @@ public sealed partial class MainViewModel
             case "topology": Text("bins", "Bins", "number"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
+            case "python":
+                Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "choose a Python file", Text = S("file") });
+                break;
             case "msd":
                 Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");
                 Text("timestep_fs", "Timestep (fs) for D in cm²/s", "number"); break;

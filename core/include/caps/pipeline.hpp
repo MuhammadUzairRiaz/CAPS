@@ -31,6 +31,9 @@
 //   density_field       grid, sigma, axis, position       Gaussian mass density: mean, empty share, profile, slice points
 //   msd                 heavy_only, every, max_lag, timestep_fs    MSD(τ) of atoms and chain centres, D from the centres
 //   scatter             x, y, only_selected                         → table scatter (points), Pearson r
+//   python              file (a script with an @step function), timeout   — run in a Python process through the caps
+//                       package in data/python ($CAPS_PYTHON_PATH; interpreter $CAPS_PYTHON, else python3): the frame's
+//                       particles, bonds and attributes go in; attributes, tables, properties and a selection come back
 //
 // Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
 // Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,

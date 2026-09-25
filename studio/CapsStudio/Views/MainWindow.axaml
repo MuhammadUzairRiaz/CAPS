@@ -1019,7 +1019,10 @@
                       <DataTemplate x:DataType="vm:StepField">
                         <StackPanel Spacing="4" Margin="0,0,0,10">
                           <TextBlock Text="{Binding Label}" Classes="label" IsVisible="{Binding !IsBool}" />
-                          <TextBox Text="{Binding Text}" IsVisible="{Binding IsText}" Classes.mono="{Binding IsMono}" Watermark="{Binding Hint}" AcceptsReturn="False" />
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" IsVisible="{Binding IsText}">
+                            <TextBox Text="{Binding Text}" Classes.mono="{Binding IsMono}" Watermark="{Binding Hint}" AcceptsReturn="False" />
+                            <Button Grid.Column="1" Classes="small" Content="Choose…" IsVisible="{Binding IsFile}" Click="OnStepFile" Tag="{Binding}" />
+                          </Grid>
                           <ComboBox ItemsSource="{Binding Choices}" SelectedIndex="{Binding ChoiceIndex}" IsVisible="{Binding IsChoice}" HorizontalAlignment="Stretch" />
                           <CheckBox Classes="toggle" Content="{Binding Label}" IsChecked="{Binding On}" IsVisible="{Binding IsBool}" />
                         </StackPanel>

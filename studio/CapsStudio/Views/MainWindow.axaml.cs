@@ -56,6 +56,7 @@ public partial class MainWindow : Window
         AddWindowCommands();
         _vm.InitProtocol();
         _vm.LoadReactionSet();
+        if (Paths.Python is { } py) CapsStudio.Interop.Native.SetPython(py, Environment.GetEnvironmentVariable("CAPS_PYTHON"));
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta), Command = OpenCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control), Command = OpenCommand });
         var recentCommand = new RelayCommand(() => { if (_vm.Idle) OpenMostRecent(); return Task.CompletedTask; });
@@ -739,6 +740,16 @@ public partial class MainWindow : Window
     private void OnStepDown(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, 1); }
     private void OnStepRemove(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.RemoveStep(r); }
     private async void OnSeries(object? s, RoutedEventArgs e) => await _vm.ComputeSeries();
+    private async void OnStepFile(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not StepField f) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = f.Label, AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("Python") { Patterns = ["*.py"] }],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) f.Text = p;
+    }
     private void OnInspectorPrev(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(-1);
     private void OnInspectorNext(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(1);
 
