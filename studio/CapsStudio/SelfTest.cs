@@ -476,6 +476,27 @@ internal static class SelfTest
             Check(vm.ViewOptions(100, 100, 1).AmbientOcclusion == 0, "the Studio view has no ambient occlusion");
         }
 
+        // Analyze › Visualize (VisPipeline, DataInspector): steps in the core, the inspector reads their result
+        {
+            vm.OpenVisualize();
+            vm.ClearPipeline();
+            vm.AddStep("select_expression");   // Element == "H"
+            vm.AddStep("delete_selected");     // above it, so it runs after
+            var sel = vm.PipelineRows.Last().Summary;
+            var particles = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Particles")?.Value;
+            var note = vm.InspectorNote;
+            vm.InspectorFilter = "Molecule == 2";
+            var filtered = vm.InspectorNote;
+            var pixels = new byte[64 * 64 * 4];
+            vm.Document!.Render(vm.Camera, vm.ViewOptions(64, 64, 1), pixels);
+            vm.SetModule(8);
+            var cleared = vm.Document.PipelineResult() == "";
+            Check(vm.PipelineRows.Count == 2 && sel == "660 selected" && particles == "640" && note.StartsWith("Rows 1–200 of 640") && filtered.StartsWith("Rows 1–64 of 64")
+                  && cleared && vm.PipelineJson().Contains("\"delete_selected\""),
+                  $"visualize: {sel} · {particles} particles · {note} · {filtered} · cleared on leaving {cleared}");
+            vm.InspectorFilter = "";
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

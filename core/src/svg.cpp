@@ -47,6 +47,7 @@ std::string render_svg(const System& s, const Camera& cam, const RenderOptions& 
     if (opt.colour_by == ColourBy::Molecule) c = a.element == 1 ? mixu(molecule_colour(mol[i]), 0xFFFFFF, 0.55) : molecule_colour(mol[i]);
     else if (opt.colour_by == ColourBy::Type) c = molecule_colour(a.type - 1);
     else if (opt.colour_by == ColourBy::Property && opt.property.size() == n) c = viridis((opt.property[i] - pmin) / (pmax - pmin));
+    if (opt.colours.size() == n && opt.colours[i] != 0xFFFFFFFFu) c = opt.colours[i];
     col[i] = c;
   }
   std::vector<char> show(n, 1);

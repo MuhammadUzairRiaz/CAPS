@@ -66,6 +66,12 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
         RenderGuide.Vm = _vm;
+        _vm.PipeTableChanged += () =>
+        {
+            PipeTablePlot.XLabel = _vm.PipeTableXLabel;
+            PipeTablePlot.YLabel = _vm.PipeTableYLabel;
+            PipeTablePlot.SetData(_vm.PipeTableX.Zip(_vm.PipeTableY).ToArray());
+        };
         _vm.RenderOverlayChanged += () => RenderGuide.InvalidateVisual();
         _vm.PropertyChanged += (_, e) =>
         {
@@ -703,6 +709,54 @@ public partial class MainWindow : Window
     private void OnChecks(object? s, RoutedEventArgs e) => ViewModel.OpenChecks();
     private async void OnExportPng(object? s, RoutedEventArgs e) => await Export("png");
     private async void OnExportSvg(object? s, RoutedEventArgs e) => await Export("svg");
+    // ---- Analyze › Visualize
+    private void OnOpenVisualize(object? s, RoutedEventArgs e) => _vm.OpenVisualize();
+    private void OnAddStep(object? s, RoutedEventArgs e) => _vm.StepLibraryOpen = true;
+    private void OnCloseStepLibrary(object? s, RoutedEventArgs e) => _vm.StepLibraryOpen = false;
+    private void OnPickStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is StepKind k) _vm.AddStep(k.Type); }
+    private void OnPipeStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is PipelineRow r) _vm.PipeSelected = r; }
+    private void OnPipeSource(object? s, RoutedEventArgs e) => _vm.PipeSelected = null;
+    private void OnStepUp(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, -1); }
+    private void OnStepDown(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.MoveStep(r, 1); }
+    private void OnStepRemove(object? s, RoutedEventArgs e) { if (_vm.PipeSelected is { } r) _vm.RemoveStep(r); }
+    private void OnInspectorPrev(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(-1);
+    private void OnInspectorNext(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(1);
+
+    private async void OnPipelineMenu(object? s, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu
+        {
+            ItemsSource = new[]
+            {
+                new MenuItem { Header = "Save pipeline…", Command = new RelayCommand(SavePipelineAsync) },
+                new MenuItem { Header = "Load pipeline…", Command = new RelayCommand(LoadPipelineAsync) },
+                new MenuItem { Header = "Clear all steps", Command = new RelayCommand(() => { _vm.ClearPipeline(); return Task.CompletedTask; }) },
+            },
+        };
+        menu.Open(s as Control);
+        await Task.CompletedTask;
+    }
+
+    private async Task SavePipelineAsync()
+    {
+        var f = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save pipeline", DefaultExtension = "json", SuggestedFileName = "pipeline.json",
+            FileTypeChoices = [new FilePickerFileType("CAPS pipeline (JSON)") { Patterns = ["*.json"] }],
+        });
+        if (f?.TryGetLocalPath() is { } path) _vm.SavePipeline(path);
+    }
+
+    private async Task LoadPipelineAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Load pipeline", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("CAPS pipeline (JSON)") { Patterns = ["*.json"] }],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) _vm.LoadPipeline(path);
+    }
+
     private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
     private void OnRenderBack(object? s, RoutedEventArgs e) => _vm.SetModule(8);
     private void OnRenderStop(object? s, RoutedEventArgs e) => _vm.StopRender();
