@@ -820,8 +820,8 @@ void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
         if (a == b.j || d == b.i || a == d) continue;
         const Vec3 b1 = sep(a, b.i), b2 = sep(b.i, b.j), b3 = sep(b.j, d);
         const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
-        const Vec3 m1 = cross(n1, b2 * (1.0 / std::max(1e-12, norm(b2))));
-        dih.push_back(std::atan2(dot(m1, n2), dot(n1, n2)) * 180 / M_PI);
+        // IUPAC sign: φ = atan2(b̂₂·(n₁×n₂), n₁·n₂)
+        dih.push_back(std::atan2(dot(cross(n1, n2), b2 * (1.0 / std::max(1e-12, norm(b2)))), dot(n1, n2)) * 180 / M_PI);
       }
   auto hist = [&](const std::vector<double>& v, const char* name, const char* title, const char* col, double lo, double hi) {
     DataTable t;
@@ -843,10 +843,59 @@ void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
   hist(len, "bonds", "Bond lengths", "Length (Å)", 0, 0);
   hist(ang, "angles", "Bond angles", "Angle (°)", 0, 180);
   hist(dih, "dihedrals", "Dihedral angles", "Dihedral (°)", -180, 180);
+  // ranges by kind of bond (C–C, C–H …) and of angle (C–C–C …)
+  std::map<std::string, std::pair<double, double>> brange, arange;
+  auto sym = [&](uint32_t i) { return std::string(element(s.atoms[i].element).symbol); };
+  auto widen = [](std::pair<double, double>& r, double v) { r.first = std::min(r.first, v), r.second = std::max(r.second, v); };
+  for (const auto& b : s.bonds) {
+    std::string a = sym(b.i), c = sym(b.j);
+    if (c < a || (a == "H" && c != "H")) std::swap(a, c);
+    if (c == "H" && a != "H") {}   // heavy first: C–H
+    auto [it, fresh] = brange.emplace(a + "–" + c, std::pair{1e300, -1e300});
+    widen(it->second, norm(sep(b.i, b.j)));
+  }
+  for (uint32_t j = 0; j < adj.size(); ++j)
+    for (size_t x = 0; x < adj[j].size(); ++x)
+      for (size_t y = x + 1; y < adj[j].size(); ++y) {
+        std::string a = sym(adj[j][x]), c = sym(adj[j][y]);
+        if (c < a) std::swap(a, c);
+        const Vec3 u = sep(j, adj[j][x]), v = sep(j, adj[j][y]);
+        auto [it, fresh] = arange.emplace(a + "–" + sym(j) + "–" + c, std::pair{1e300, -1e300});
+        widen(it->second, std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI);
+      }
+  DataTable rt;
+  rt.name = "ranges";
+  rt.title = "Ranges by kind";
+  rt.columns = {"#", "min", "max"};
+  rt.label_column = "Kind";
+  int kk = 0;
+  for (const auto& [k, r] : brange) rt.rows.push_back({double(++kk), r.first, r.second}), rt.labels.push_back(k + " (Å)");
+  for (const auto& [k, r] : arange) rt.rows.push_back({double(++kk), r.first, r.second}), rt.labels.push_back(k + " (°)");
+  st.tables.push_back(std::move(rt));
+  // backbone dihedrals: trans |φ| > 120°, gauche± otherwise; the backbone coloured by the state of each dihedral
+  int nt = 0, ngp = 0, ngm = 0;
+  const bool colour = flag(p, "colour_states", true);
+  for (const auto& path : backbones(s, 4))
+    for (size_t k = 0; k + 3 < path.size(); ++k) {
+      const Vec3 b1 = sep(path[k], path[k + 1]), b2 = sep(path[k + 1], path[k + 2]), b3 = sep(path[k + 2], path[k + 3]);
+      const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
+      const double phi = std::atan2(dot(cross(n1, n2), b2 * (1.0 / std::max(1e-12, norm(b2)))), dot(n1, n2)) * 180 / M_PI;
+      const int state = std::fabs(phi) > 120 ? 0 : phi > 0 ? 1 : 2;
+      (state == 0 ? nt : state == 1 ? ngp : ngm)++;
+      if (colour) {
+        const unsigned c = state == 0 ? 0xF0A83Cu : state == 1 ? 0x6CC4D8u : 0x9B7AD5u;
+        st.colour[path[k + 1]] = c, st.colour[path[k + 2]] = c;
+      }
+    }
+  st.set_attribute("Topology.backbone_trans", double(nt));
+  st.set_attribute("Topology.backbone_gauche_plus", double(ngp));
+  st.set_attribute("Topology.backbone_gauche_minus", double(ngm));
+  if (nt + ngp + ngm > 0) st.set_attribute("Topology.trans_fraction", double(nt) / double(nt + ngp + ngm));
   double ml = 0;
   for (double x : len) ml += x;
   st.set_attribute("Topology.mean_bond", len.empty() ? 0 : ml / len.size());
-  out.summary = std::to_string(len.size()) + " bonds · " + std::to_string(ang.size()) + " angles · " + std::to_string(dih.size()) + " dihedrals";
+  out.summary = std::to_string(len.size()) + " bonds · " + std::to_string(ang.size()) + " angles · " + std::to_string(dih.size()) + " dihedrals" +
+                (nt + ngp + ngm > 0 ? " · backbone t " + std::to_string(nt) + " · g+ " + std::to_string(ngp) + " · g− " + std::to_string(ngm) : "");
 }
 
 // Positions of trajectory frame k as the pipeline sees particles: by origin index, molecules whole.
@@ -932,17 +981,37 @@ void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {
   };
   if (what == "end_to_end") {
     t.title = "End-to-end vectors";
-    t.columns = {"Molecule", "|R| (Å)", "R.X", "R.Y", "R.Z"};
+    t.columns = {"Molecule", "|R| (Å)", "R.X", "R.Y", "R.Z", "angle to z (°)"};
+    const bool flip = flag(p, "flip", false);
+    double Q[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}, p2z = 0;
     for (const auto& bb : backbones(whole)) {
       if (bb.size() < 2) continue;
-      const Vec3 a = whole.atoms[bb.front()].pos, b = whole.atoms[bb.back()].pos, r = b - a;
+      Vec3 a = whole.atoms[bb.front()].pos, b = whole.atoms[bb.back()].pos;
+      if (flip) std::swap(a, b);
+      const Vec3 r = b - a;
       const int m = mol[bb.front()];
       add(a, b, kCat[m % 10]);
-      t.rows.push_back({double(m + 1), norm(r), r[0], r[1], r[2]});
+      const double len = norm(r);
+      const double cz = len > 0 ? r[2] / len : 0;
+      t.rows.push_back({double(m + 1), len, r[0], r[1], r[2], std::acos(std::fabs(cz)) * 180 / M_PI});
+      if (len > 0)   // the order tensor of the unit vectors (head–tail symmetric)
+        for (int x = 0; x < 3; ++x)
+          for (int y = 0; y < 3; ++y) Q[x][y] += 1.5 * r[size_t(x)] * r[size_t(y)] / (len * len) - (x == y ? 0.5 : 0);
+      p2z += 1.5 * cz * cz - 0.5;
     }
     st.set_attribute("Vectors.mean_ree", count ? sum / count : 0);
     st.set_attribute("Vectors.mean_ree2", count ? sum2 / count : 0);
-    out.summary = std::to_string(count) + " chains · mean |R| " + fmt("%.2f Å", count ? sum / count : 0) + " · ⟨R²⟩ " + fmt("%.1f Å²", count ? sum2 / count : 0);
+    std::string order;
+    if (count > 0) {
+      for (auto& row : Q) for (double& q : row) q /= double(count);
+      double w[3], V[3][3];
+      symmetric_eigen3(Q, w, V);
+      st.set_attribute("Vectors.order_S", w[2]);
+      st.set_attribute("Vectors.director_x", V[0][2]), st.set_attribute("Vectors.director_y", V[1][2]), st.set_attribute("Vectors.director_z", V[2][2]);
+      st.set_attribute("Vectors.P2_z", p2z / double(count));
+      order = " · S " + fmt("%.3f", w[2]) + " · P₂(z) " + fmt("%.3f", p2z / double(count));
+    }
+    out.summary = std::to_string(count) + " chains · mean |R| " + fmt("%.2f Å", count ? sum / count : 0) + " · ⟨R²⟩ " + fmt("%.1f Å²", count ? sum2 / count : 0) + order;
   } else if (what == "dipole") {
     t.title = "Molecular dipoles";
     t.columns = {"Molecule", "|μ| (D)", "μ.X (e·Å)", "μ.Y", "μ.Z"};

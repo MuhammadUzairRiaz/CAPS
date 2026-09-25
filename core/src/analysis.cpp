@@ -62,8 +62,8 @@ double measure(const System& s, const std::vector<uint32_t>& idx) {
   }
   const Vec3 b1 = p[1] - p[0], b2 = p[2] - p[1], b3 = p[3] - p[2];
   const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
-  const Vec3 m1 = cross(n1, b2 * (1.0 / norm(b2)));
-  return std::atan2(dot(m1, n2), dot(n1, n2)) * 180.0 / M_PI;
+  // IUPAC: positive when the near bond turns clockwise onto the far one, looking along b2
+  return std::atan2(dot(cross(n1, n2), b2 * (1.0 / norm(b2))), dot(n1, n2)) * 180.0 / M_PI;
 }
 
 std::vector<MoleculeShape> molecule_shapes(const System& s) {
