@@ -1,0 +1,116 @@
+<!-- CAPS coarse-grained melts (design/boards/CoarseGrained.dc.html): Kremer–Grest bead-spring chains, drawn, and written for
+     LAMMPS with the push-off and the FENE + WCA run. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.CgPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.builder"><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="12,0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="12.5" /></Style>
+    <Style Selector="Button.builder.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Ellipse.stage"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.stage.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Ellipse.stage.done"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.stage.failed"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="TextBlock.stage"><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="TextBlock.stage.running"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="TextBlock.stage.done"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="TextBlock.stage.failed"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="builder" Content="Polymer" Click="OnPolymer" />
+        <Button Classes="builder" Content="Crystal" Click="OnCrystal" />
+        <Button Classes="builder" Content="Surface" Click="OnSurface" />
+        <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
+        <Button Classes="builder" Content="Biomolecule" Click="OnBio" />
+        <Button Classes="builder" Content="Solvation" Click="OnSolvation" />
+        <Button Classes="builder on" Content="Coarse-grained" />
+      </StackPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,420">
+      <DockPanel>
+        <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="Box length from M·N/ρ · σ = 1 Å in CAPS files" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding CgFooter}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Panel>
+          <v:MolView x:Name="Preview" ShowCell="True" DrawStyle="2" ColourMode="1" />
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding CgHud}" FontSize="12" /></Border>
+          </StackPanel>
+          <TextBlock Text="{Binding CgInfo}" FontSize="11.5" Foreground="{DynamicResource MutedB}" Margin="14,10" VerticalAlignment="Bottom" TextWrapping="Wrap" />
+        </Panel>
+      </DockPanel>
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0" VerticalAlignment="Center"><TextBlock Text="Kremer–Grest" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+              <TextBlock Text="Coarse-grained model" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Click="OnExport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="LAMMPS deck…" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Classes="primary" Click="OnBuild"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build CG melt" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="CHAINS" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Chains M" Classes="label" /><NumericUpDown Value="{Binding CgChains}" Minimum="1" Maximum="20000" Increment="1" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Beads per chain N" Classes="label" /><NumericUpDown Value="{Binding CgBeads}" Minimum="2" Maximum="100000" Increment="10" FormatString="0" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Density ρσ³" Classes="label" /><NumericUpDown Value="{Binding CgDensity}" Minimum="0.06" Maximum="1.2" Increment="0.05" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Box L · σ" Classes="label" /><TextBox Text="{Binding CgBoxText, Mode=OneWay}" IsReadOnly="True" Classes="mono" /></StackPanel>
+                  </Grid>
+                  <StackPanel Spacing="6"><TextBlock Text="Seed" Classes="label" /><NumericUpDown Value="{Binding CgSeed}" Minimum="1" Increment="1" FormatString="0" /></StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="POTENTIAL" Classes="h3" />
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="FENE · K = 30 ε/σ², R₀ = 1.5 σ" Classes="mono" FontSize="12" /><TextBlock Text="Bonds" FontSize="12.5" Foreground="{DynamicResource MutedB}" /></DockPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="WCA · cut at 2^1/6 σ" Classes="mono" FontSize="12" /><TextBlock Text="Non-bonded" FontSize="12.5" Foreground="{DynamicResource MutedB}" /></DockPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Bending k_θ · ε" Classes="label" /><NumericUpDown Value="{Binding CgKTheta}" Minimum="0" Maximum="50" Increment="0.25" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Units" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Reduced (ε, σ, m)" /></ComboBox></StackPanel>
+                  </Grid>
+                  <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1">
+                    <TextBlock Text="Kremer &amp; Grest, J. Chem. Phys. 92, 5057 (1990)" FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
+                  </Border>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="LAMMPS RUN" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Push-off steps" Classes="label" /><NumericUpDown Value="{Binding CgPushSteps}" Minimum="100" Increment="1000" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Run steps (Δt 0.01 τ)" Classes="label" /><NumericUpDown Value="{Binding CgRunSteps}" Minimum="100" Increment="10000" FormatString="0" /></StackPanel>
+                  </Grid>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Soft repulsion ramped to 60 ε with displacements limited (Auhl et al. 2003), then FENE + WCA under a Langevin thermostat at T = 1. Checked in LAMMPS: P ≈ 5.0 at ρσ³ = 0.85." />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="BACKMAP TO ALL ATOMS" Classes="h3" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Not built yet. For an all-atom melt of a real polymer, grow it directly (Builders › Polymer, or Grow); the coarse-grained melt runs in LAMMPS." />
+                </StackPanel>
+              </Border>
+              <TextBlock Text="{Binding CgError}" Foreground="{DynamicResource ErrB}" FontSize="12" Margin="16,8" TextWrapping="Wrap" />
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

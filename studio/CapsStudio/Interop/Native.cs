@@ -263,6 +263,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_interface_build")] public static extern IntPtr InterfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pore_build")] public static extern IntPtr PoreBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_embed")] public static extern IntPtr NanoEmbed([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_blend")] public static extern IntPtr GrowBlend([MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
@@ -548,6 +550,17 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A graphene sheet, nanotube or nanoparticle (caps_nano_build).</summary>
+    /// <summary>A Kremer–Grest bead-spring melt (caps_kg_build); the report is JSON {box, closest, r2_per_bond}.</summary>
+    public static (CapsDocument Doc, string Report) KgBuild(string options, string label)
+    {
+        var report = new byte[1024];
+        var h = Native.KgBuild(options, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+    /// <summary>LAMMPS data and input deck of a Kremer–Grest melt (STEM.data, STEM.in).</summary>
+    public void KgLammps(string options, string stem, double pushoff, double run) { lock (_lock) { Alive(); Check(Native.KgLammps(_h, options, stem, pushoff, run)); } }
+
     public static (CapsDocument Doc, string Report) NanoBuild(string options, string label)
     {
         var report = new byte[4096];

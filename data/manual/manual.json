@@ -866,6 +866,52 @@
    "tested": "Mechanics.FluctuationConstantsOfColdCrystal · Mechanics.BornMatrixMatchesLatticeSum",
    "deviation": "none",
    "engines": []
+  },
+  {
+   "id": "kremer-grest",
+   "group": "Coarse-grained",
+   "title": "Kremer–Grest bead-spring melts",
+   "summary": "Each chain is a string of beads joined by FENE springs; all beads repel through the WCA potential (Lennard-Jones cut at its minimum and shifted). The model has no chemistry, only connectivity and excluded volume, so it shows the universal physics of polymer melts — entanglements, reptation — at a fraction of the cost. CAPS builds the melt as random walks and writes a LAMMPS deck that pushes the overlaps apart before the real potential starts.",
+   "equation": "U_FENE = −½ K R₀² ln[1 − (r/R₀)²],   U_WCA = 4ε[(σ/r)¹² − (σ/r)⁶] + ε  for r < 2^{1/6} σ",
+   "equation_note": "Kremer & Grest 1990",
+   "symbols": [
+    [
+     "K",
+     "FENE spring constant",
+     "30 ε/σ²"
+    ],
+    [
+     "R₀",
+     "maximum bond extension",
+     "1.5 σ"
+    ],
+    [
+     "ρσ³",
+     "bead density",
+     "0.85"
+    ],
+    [
+     "b",
+     "bond length of the built walks",
+     "0.97 σ"
+    ],
+    [
+     "k_θ",
+     "bending stiffness, U = k_θ(1 − cos θ)",
+     "0 (flexible) by default"
+    ]
+   ],
+   "when": "Entanglement and dynamics studies of generic melts and rubbers, and as a fast starting point. Runs in LAMMPS (reduced units); CAPS builds, draws and writes the deck. Backmapping to all atoms is not built yet.",
+   "cites": [
+    "kremer1990",
+    "auhl2003"
+   ],
+   "source": "core/src/kremer_grest.cpp",
+   "tested": "KremerGrest.ChainsBoxAndDeck · the deck run in LAMMPS (P ≈ 5.0 at T = 1, ρσ³ = 0.85)",
+   "deviation": "the push-off uses LAMMPS pair soft ramped to 60 ε with displacements limited, rather than the force-capped potentials of the paper",
+   "engines": [
+    "cg.kremer_grest"
+   ]
   }
  ]
 }

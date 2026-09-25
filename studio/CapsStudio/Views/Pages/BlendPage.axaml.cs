@@ -19,4 +19,5 @@ public partial class BlendPage : PageBase
     private void OnAdd(object? s, RoutedEventArgs e) => Vm.AddBlendRow();
     private void OnRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BlendRow r) Vm.RemoveBlendRow(r); }
     private async void OnBuild(object? s, RoutedEventArgs e) => await Vm.BuildBlend();
+    private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();
 }

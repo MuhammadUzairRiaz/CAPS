@@ -274,3 +274,37 @@ TEST(Provenance, MethodsTextNumbersItsReferences) {
   ASSERT_EQ(refs.size(), 6u);
   EXPECT_EQ(refs[0].rfind("Liu, D. C.", 0), 0u);
 }
+
+#include "caps/kremer_grest.hpp"
+
+TEST(KremerGrest, ChainsBoxAndDeck) {
+  KgOptions o;
+  o.chains = 10;
+  o.beads = 30;
+  o.k_theta = 1.5;
+  KgReport r;
+  const System s = kremer_grest(o, &r);
+  EXPECT_EQ(s.atoms.size(), 300u);
+  EXPECT_EQ(s.bonds.size(), 290u);
+  EXPECT_NEAR(r.box, std::cbrt(300 / 0.85), 1e-9);
+  for (const auto& b : s.bonds) {
+    const Vec3 d = s.atoms[b.j].pos - s.atoms[b.i].pos;
+    EXPECT_NEAR(std::sqrt(dot(d, d)), 0.97, 1e-9);
+  }
+  for (size_t i = 1; i + 1 < s.atoms.size(); ++i) {
+    if (s.atoms[i - 1].mol != s.atoms[i].mol || s.atoms[i + 1].mol != s.atoms[i].mol) continue;
+    const Vec3 a = s.atoms[i].pos - s.atoms[i - 1].pos, b = s.atoms[i + 1].pos - s.atoms[i].pos;
+    EXPECT_GE(dot(a, b) / (0.97 * 0.97), -0.5 - 1e-9);   // no folding back past 120° between bonds
+  }
+  EXPECT_GT(r.mean_r2, 1.0);   // stiffer than a freely jointed chain
+  const auto stem = (std::filesystem::temp_directory_path() / "caps_kg").string();
+  write_kg_lammps(s, o, stem, 100, 100);
+  std::ifstream in(stem + ".in");
+  const std::string deck((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+  for (const char* key : {"units lj", "bond_coeff 1 30.0 1.5 1.0 1.0", "special_bonds fene", "pair_style soft", "pair_modify shift yes", "angle_style cosine"})
+    EXPECT_NE(deck.find(key), std::string::npos) << key;
+  std::ifstream dat(stem + ".data");
+  const std::string data((std::istreambuf_iterator<char>(dat)), std::istreambuf_iterator<char>());
+  EXPECT_NE(data.find("300 atoms"), std::string::npos);
+  EXPECT_NE(data.find("280 angles"), std::string::npos);
+}
