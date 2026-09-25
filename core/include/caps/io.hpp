@@ -41,6 +41,22 @@ struct OpenProgress {
 };
 Trajectory open_file(const std::string& path, const std::string& topology_path, const OpenProgress& progress);
 
+// What a file holds before it is opened (design/boards/OpenLammps, OpenGromacs): format from content, first lines,
+// dump columns and what they map to, types with masses and elements (from the file or the topology), frames (counted
+// by scanning, without reading coordinates) and where bonds will come from.
+struct FileColumn { std::string name, maps_to, kind; bool used = true; };
+struct FileType { int type = 0; std::string label; double mass = 0; std::string element; };
+struct FileInspection {
+  std::string format, format_name;
+  std::vector<std::string> head;       // first lines
+  std::vector<FileColumn> columns;     // dump columns
+  std::vector<FileType> types;
+  size_t atoms = 0, frames = 0, bytes = 0;
+  std::string bonds_from, units;
+  std::vector<std::string> notes;
+};
+FileInspection inspect_file(const std::string& path, const std::string& topology_path = "", int head_lines = 40);
+
 void write_lammps_data(const System& s, const std::string& path);
 // All frames as a LAMMPS text dump with unwrapped coordinates (id mol type xu yu zu).
 void write_lammps_dump(const Trajectory& t, const std::string& path);

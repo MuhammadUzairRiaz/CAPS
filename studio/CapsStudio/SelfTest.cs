@@ -580,6 +580,15 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Open preview (OpenLammps, OpenGromacs): columns, types and frames before reading
+        {
+            var j = System.Text.Json.Nodes.JsonNode.Parse(CapsDocument.InspectFile(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data")))!;
+            var g = System.Text.Json.Nodes.JsonNode.Parse(CapsDocument.InspectFile(Path.Combine(dir, "ps_melt.gro"), null))!;
+            Check((string?)j["format"] == "lammps-dump" && (double?)j["frames"] == 3 && ((System.Text.Json.Nodes.JsonArray)j["columns"]!).Count == 7
+                  && ((System.Text.Json.Nodes.JsonArray)j["types"]!).Count == 4 && (string?)g["format"] == "gro" && (double?)g["atoms"] == 1300,
+                  $"open preview: {j["format"]} · {j["frames"]} frames · {g["format"]} {g["atoms"]} atoms");
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

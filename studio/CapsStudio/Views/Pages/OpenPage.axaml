@@ -1,0 +1,132 @@
+<!-- CAPS Open file (design/boards/OpenLammps, OpenGromacs): the format, first lines, columns, types and topology. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.OpenPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Cancel" Click="OnCancel" />
+          <Button Classes="primary" Click="OnOpen" IsEnabled="{Binding OpenIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding OpenButton}" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding OpenTitle}" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Format detected from the content, columns mapped to named properties, topology joined from the data file" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="16" Margin="22,16">
+      <Grid RowDefinitions="*,Auto" RowSpacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Foreground="{DynamicResource OkB}"><Run Text="detected: " /><Run Text="{Binding OpenFormat}" /></TextBlock></Border>
+                <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"><Run Text="{Binding OpenFileName}" /><Run Text=" · first lines" Foreground="{DynamicResource MutedB}" FontWeight="Normal" /></TextBlock>
+              </DockPanel>
+            </Border>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" Padding="0,6">
+              <ItemsControl ItemsSource="{Binding OpenHead}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PreviewLine">
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="10,0">
+                      <TextBlock Text="{Binding Number}" Width="24" TextAlignment="Right" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" />
+                      <TextBlock Text="{Binding Text}" Classes="mono" FontSize="11.5" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+        <Border Grid.Row="1" Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="write: the same list, except CIF" Foreground="{DynamicResource MutedB}" /></Border>
+                <TextBlock Text="Formats CAPS reads" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <ItemsControl ItemsSource="{x:Static vm:MainViewModel.FormatMatrix}" Margin="16,6">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:FormatRow">
+                  <Border Padding="0,4" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="150,*"><TextBlock Text="{Binding Name}" FontSize="12" /><TextBlock Grid.Column="1" Text="{Binding About}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" /></Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <StackPanel Grid.Column="1" Spacing="14">
+        <Border Classes="card" CornerRadius="10" IsVisible="{Binding OpenIsDump}">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding OpenMapped}" Foreground="{DynamicResource OkB}" /></Border>
+                <TextBlock Text="Column mapping" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <StackPanel Margin="16,8">
+              <Grid ColumnDefinitions="22*,56*,22*" Margin="0,0,0,4"><TextBlock Text="Column" Classes="label" /><TextBlock Grid.Column="1" Text="Maps to" Classes="label" /><TextBlock Grid.Column="2" Text="Kind" Classes="label" /></Grid>
+              <ItemsControl ItemsSource="{Binding OpenColumns}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ColumnRow">
+                    <Border Classes="trow" Height="26">
+                      <Grid ColumnDefinitions="22*,56*,22*">
+                        <TextBlock Text="{Binding Column}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding MapsTo}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Kind}" Classes="mono" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Types, masses, topology" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,8" Spacing="8">
+              <StackPanel>
+                <Grid ColumnDefinitions="16*,28*,28*,28*" Margin="0,0,0,4"><TextBlock Text="Type" Classes="label" /><TextBlock Grid.Column="1" Text="Name" Classes="label" />
+                  <TextBlock Grid.Column="2" Text="Mass" Classes="label" TextAlignment="Right" /><TextBlock Grid.Column="3" Text="Element" Classes="label" TextAlignment="Right" /></Grid>
+                <ItemsControl ItemsSource="{Binding OpenTypes}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TypeRow">
+                      <Border Classes="trow" Height="26">
+                        <Grid ColumnDefinitions="16*,28*,28*,28*">
+                          <TextBlock Text="{Binding Type}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Name}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="2" Text="{Binding Mass}" Classes="mono" FontSize="12" VerticalAlignment="Center" TextAlignment="Right" />
+                          <TextBlock Grid.Column="3" Text="{Binding Element}" Classes="mono" FontSize="12" VerticalAlignment="Center" TextAlignment="Right" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Atoms" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenAtoms}" Classes="mono" FontSize="12" TextAlignment="Right" /></Grid>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Frames" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenFrames}" Classes="mono" FontSize="12" TextAlignment="Right" /></Grid>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Bonds" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenBonds}" FontSize="12" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Units" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenUnits}" FontSize="12" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding OpenIsDump}">
+                <TextBox Text="{Binding OpenTopology, Mode=OneWay}" IsReadOnly="True" Classes="mono" FontSize="11.5" Watermark="no topology: bonds from distances" />
+                <Button Grid.Column="1" Classes="small" Content="Topology…" Click="OnTopology" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding OpenNotes}">
+                <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" Margin="0,2" /></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
