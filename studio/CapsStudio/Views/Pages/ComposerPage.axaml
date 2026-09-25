@@ -1,0 +1,102 @@
+<!-- CAPS Export › Figure composer (design/boards/FigureComposer): panels on a journal page, each the 3D view or a curve in
+     the project, checked at print size and exported as SVG, TIFF, PNG or PDF. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ComposerPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+    <Style Selector="Border.section"><Setter Property="Padding" Value="16,12" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="0,0,0,1" /></Style>
+    <Style Selector="Ellipse.ck"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.ck.warn"><Setter Property="Fill" Value="{DynamicResource WarnB}" /></Style>
+  </p:PageBase.Styles>
+  <Grid ColumnDefinitions="*,330">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Height="48" Padding="16,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+        <DockPanel>
+          <TextBlock x:Name="ScaleText" DockPanel.Dock="Right" Classes="mono dim" VerticalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <TextBlock Text="Layout" Classes="muted" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{x:Static vm:MainViewModel.ComposerLayouts}" SelectedIndex="{Binding ComposerLayout}" Width="100" />
+            <CheckBox Content="a b c d labels" IsChecked="{Binding ComposerLabels}" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+      <Border DockPanel.Dock="Bottom" Height="28" Padding="16,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+        <TextBlock Text="{Binding ComposerSummary}" Classes="mono dim" VerticalAlignment="Center" />
+      </Border>
+      <v:FigureCanvas x:Name="Canvas" />
+    </DockPanel>
+    <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="section">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding ComposerSummary}" MaxWidth="160" TextTrimming="CharacterEllipsis" /></Border>
+            <TextBlock Text="Figure" Classes="h2" VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="small" Content="SVG" Click="OnSvg" ToolTip.Tip="Plots as vectors, the 3D panel as an image" />
+            <Button Classes="small" Content="TIFF" Click="OnTiff" />
+            <Button Classes="small" Content="PNG" Click="OnPng" />
+            <Button Classes="small primary" Click="OnPdf" ToolTip.Tip="The page as an image at the chosen dpi"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export PDF" VerticalAlignment="Center" /></StackPanel></Button>
+          </StackPanel>
+        </Border>
+        <ScrollViewer>
+          <StackPanel>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="PAGE" Classes="h3" />
+                <TextBlock Text="Preset" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ComposerPresets}" SelectedIndex="{Binding ComposerPreset}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="4"><TextBlock Text="Width · in" Classes="label" /><NumericUpDown Value="{Binding ComposerWidth}" Minimum="1" Maximum="40" Increment="0.1" FormatString="0.0#" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Height · in" Classes="label" /><NumericUpDown Value="{Binding ComposerHeight}" Minimum="1" Maximum="40" Increment="0.1" FormatString="0.0#" /></StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="DPI" Classes="label" /><NumericUpDown Value="{Binding ComposerDpi}" Minimum="72" Maximum="1200" Increment="50" FormatString="0" /></StackPanel>
+                </Grid>
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding ComposerOutput}" Classes="mono" /><TextBlock Text="Output size" Classes="muted" /></DockPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding ComposerPanelTitle}" Classes="h3" />
+                <TextBlock Text="Source" Classes="label" />
+                <ComboBox ItemsSource="{Binding ComposerSources}" SelectedIndex="{Binding ComposerSource}" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="4"><TextBlock Text="Line · pt" Classes="label" /><NumericUpDown Value="{Binding ComposerLine}" Minimum="0.1" Maximum="6" Increment="0.25" FormatString="0.0#" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Colour" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ComposerColourNames}" SelectedIndex="{Binding ComposerColour}" HorizontalAlignment="Stretch" /></StackPanel>
+                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Click a panel on the page to set it up. Curves come from the last analysis and the dynamics log; the 3D view uses the current camera and style." />
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="8">
+                <TextBlock Text="TEXT" Classes="h3" />
+                <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+                  <StackPanel Spacing="4"><TextBlock Text="Font" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ComposerFonts}" SelectedIndex="{Binding ComposerFont}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Size · pt" Classes="label" /><NumericUpDown Value="{Binding ComposerFontPt}" Minimum="4" Maximum="24" Increment="0.5" FormatString="0.#" /></StackPanel>
+                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Panel labels bold, lower case; every panel uses the same axis font." />
+              </StackPanel>
+            </Border>
+            <Border Classes="section" BorderThickness="0">
+              <StackPanel Spacing="6">
+                <TextBlock Text="CHECKS" Classes="h3" />
+                <ItemsControl ItemsSource="{Binding ComposerChecks}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ComposerCheck">
+                      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,3">
+                        <Ellipse Classes="ck" Classes.warn="{Binding !Ok}" Width="8" Height="8" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Text}" FontSize="12" TextWrapping="Wrap" MaxWidth="260" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</p:PageBase>
