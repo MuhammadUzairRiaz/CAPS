@@ -53,6 +53,79 @@ public static class FigureDrawing
         }
     }
 
+    /// <summary>Render overlays (design/boards/RenderOverlays) in the image's own pixels: label box top left, vertical
+    /// legend top right, scale bar bottom left, axis tripod bottom right.</summary>
+    public static void DrawRender(DrawingContext ctx, RenderSpec o)
+    {
+        var u = o.Unit;
+        var ink = new SolidColorBrush(C(o.Ink));
+        var muted = new SolidColorBrush(o.Dark ? Color.Parse("#A5ABB1") : Color.Parse("#5A6168"));
+        if (o.Lines.Length > 0)
+        {
+            var head = Text(o.Lines[0], Sans, FontWeight.SemiBold, 15 * u, ink);
+            var sub = o.Lines.Length > 1 ? Text(o.Lines[1], Mono, FontWeight.Normal, 12 * u, muted) : null;
+            var bw = Math.Max(head.Width, sub?.Width ?? 0) + 16 * u;
+            var bh = head.Height + (sub?.Height ?? 0) + 12 * u;
+            ctx.DrawRectangle(new SolidColorBrush(o.Dark ? Color.Parse("#0B0D0F") : Colors.White, 0.8), null, new Rect(10 * u, 12 * u, bw, bh), 6 * u, 6 * u);
+            ctx.DrawText(head, new Point(18 * u, 17 * u));
+            if (sub != null) ctx.DrawText(sub, new Point(18 * u, 17 * u + head.Height + 2 * u));
+        }
+        if (o.Legend)
+        {
+            var x = o.Width - 46 * u;
+            var y = 24 * u;
+            var stops = new GradientStops();
+            for (int k = 0; k < Viridis.Length; ++k) stops.Add(new GradientStop(C(Viridis[Viridis.Length - 1 - k]), k / (double)(Viridis.Length - 1)));   // high at the top
+            ctx.DrawRectangle(new LinearGradientBrush { StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative), GradientStops = stops },
+                              new Pen(muted, Math.Max(1, u * 0.6)), new Rect(x, y, 14 * u, 160 * u));
+            var hi = Text(o.LegendHi, Mono, FontWeight.Normal, 11 * u, ink);
+            var lo = Text(o.LegendLo, Mono, FontWeight.Normal, 11 * u, ink);
+            var name = Text(o.LegendName, Sans, FontWeight.Normal, 11 * u, muted);
+            ctx.DrawText(hi, new Point(x - 6 * u - hi.Width, y));
+            ctx.DrawText(lo, new Point(x - 6 * u - lo.Width, y + 160 * u - lo.Height));
+            ctx.DrawText(name, new Point(x + 14 * u - name.Width, y + 166 * u));
+        }
+        if (o.BarPx > 0)
+        {
+            var y = o.Height - 24 * u;
+            ctx.DrawLine(new Pen(ink, 3 * u, lineCap: PenLineCap.Flat), new Point(20 * u, y), new Point(20 * u + o.BarPx, y));
+            var t = Text(o.BarLabel, Mono, FontWeight.Normal, 11 * u, ink);
+            ctx.DrawText(t, new Point(20 * u + o.BarPx / 2 - t.Width / 2, y - 6 * u - t.Height));
+        }
+        if (o.Tripod)
+        {
+            // the renderer's rotation (yaw about y, then pitch about x) applied to the x, y and z unit vectors
+            double cy = Math.Cos(o.Yaw), sy = Math.Sin(o.Yaw), cp = Math.Cos(o.Pitch), sp = Math.Sin(o.Pitch);
+            var cx = o.Width - 40 * u;
+            var cyy = o.Height - 40 * u;
+            var len = 22 * u;
+            var axes = new (string Name, double X, double Y, double Z, uint Col)[]
+            {
+                ("x", cy, sy * sp, -sy * cp, 0xE07A5F), ("y", 0, cp, sp, 0x7DC884), ("z", sy, -cy * sp, cy * cp, 0x5B8DEF),
+            };
+            foreach (var a in axes.OrderBy(a => a.Z))
+            {
+                var end = new Point(cx + a.X * len, cyy - a.Y * len);
+                ctx.DrawLine(new Pen(new SolidColorBrush(C(a.Col)), 2 * u, lineCap: PenLineCap.Round), new Point(cx, cyy), end);
+                var t = Text(a.Name, Mono, FontWeight.SemiBold, 10 * u, new SolidColorBrush(C(a.Col)));
+                ctx.DrawText(t, new Point(end.X + (a.X >= 0 ? 2 * u : -2 * u - t.Width), end.Y - t.Height / 2 - (a.Y >= 0 ? 3 * u : -3 * u)));
+            }
+        }
+    }
+
+    /// <summary>A rendered image with the render overlays, written as PNG.</summary>
+    public static void SaveRenderPng(byte[] rgba, int w, int h, RenderSpec o, string path)
+    {
+        using var img = MainViewModel.ToBitmap(rgba, w, h);
+        using var rtb = new RenderTargetBitmap(new PixelSize(w, h), new Vector(96, 96));
+        using (var ctx = rtb.CreateDrawingContext())
+        {
+            ctx.DrawImage(img, new Rect(0, 0, w, h));
+            DrawRender(ctx, o);
+        }
+        rtb.Save(path);
+    }
+
     /// <summary>The structure (straight-alpha RGBA) with the overlay, written as PNG with the dpi in a pHYs chunk.</summary>
     public static void SavePng(byte[] rgba, int w, int h, FigureOverlay o, double dpi, string path)
     {
@@ -164,6 +237,31 @@ public sealed class FigureOverlayView : Control
         var k = Math.Min(Bounds.Width / o.Width, Bounds.Height / o.Height);
         using (ctx.PushTransform(Matrix.CreateScale(k, k)))
             FigureDrawing.Draw(ctx, o);
+    }
+}
+
+/// <summary>The render-frame guide over the 3D view: outside dimmed, the frame dashed, the overlays drawn inside.</summary>
+public sealed class RenderGuideView : Control
+{
+    public MainViewModel? Vm { get; set; }
+
+    public override void Render(DrawingContext ctx)
+    {
+        if (Vm?.RenderGuide(Bounds.Width, Bounds.Height) is not { } g) return;
+        var dim = new SolidColorBrush(Colors.Black, 0.45);
+        var (x, y, w, h) = (g.X, g.Y, g.W, g.H);
+        ctx.FillRectangle(dim, new Rect(0, 0, Bounds.Width, Math.Max(0, y)));
+        ctx.FillRectangle(dim, new Rect(0, y + h, Bounds.Width, Math.Max(0, Bounds.Height - y - h)));
+        ctx.FillRectangle(dim, new Rect(0, y, Math.Max(0, x), h));
+        ctx.FillRectangle(dim, new Rect(x + w, y, Math.Max(0, Bounds.Width - x - w), h));
+        var acc = new SolidColorBrush(Color.Parse("#F5A524"));
+        ctx.DrawRectangle(null, new Pen(acc, 1, new DashStyle([6, 4], 0)), new Rect(x, y, w, h));
+        var cap = new FormattedText(Vm.RenderSizeText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(Tokens.Mono), 11, acc);
+        ctx.DrawText(cap, new Point(x, Math.Max(2, y - cap.Height - 4)));
+        var k = w / g.Spec.Width;
+        using (ctx.PushClip(new Rect(x, y, w, h)))
+        using (ctx.PushTransform(Matrix.CreateScale(k, k) * Matrix.CreateTranslation(x, y)))
+            FigureDrawing.DrawRender(ctx, g.Spec);
     }
 }
 

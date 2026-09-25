@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 18, "native ABI version 18");
+        Check(Native.AbiVersion() == 19, "native ABI version 19");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -459,6 +459,21 @@ internal static class SelfTest
                   $"figure: {what} · pHYs {phys}");
             vm.FigFormat = 0;
             vm.SetModule(8);
+        }
+
+        // Render (RenderOverlays): tokens, output scale bar, guide inside the view, ambient occlusion in the options
+        {
+            vm.OpenRender();
+            var label = vm.ResolveTokens("[Title] · frame [SourceFrame] · [Particles] atoms · ρ = [Density]", 0);
+            var guide = vm.RenderGuide(1000, 700);
+            var ropt = vm.RenderOptionsFor(1920, 1080, 1);
+            var spec = vm.RenderSpecFor(1920, 1080, vm.Document!.ViewScale(vm.Camera, ropt), true, 0);
+            Check(vm.IsRender && label.Contains("1,300 atoms") && label.Contains("0.386") && guide is { } gd && gd.W <= 1000 * 0.861 && gd.H <= 700 * 0.861
+                  && (Math.Abs(gd.W - 860) < 1 || Math.Abs(gd.H - 602) < 1) && ropt.AmbientOcclusion == 1 && vm.ViewOptions(100, 100, 1).AmbientOcclusion == 1
+                  && spec.BarPx > 0 && spec.Lines.Length == 2,
+                  $"render: \"{label}\" · guide {guide?.W:F0} × {guide?.H:F0} in 1000 × 700 · bar {spec.BarLabel}");
+            vm.SetModule(8);
+            Check(vm.ViewOptions(100, 100, 1).AmbientOcclusion == 0, "the Studio view has no ambient occlusion");
         }
 
         // Close goes back to Start

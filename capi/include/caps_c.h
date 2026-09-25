@@ -1,4 +1,4 @@
-/* CAPS C ABI v18 — the stable boundary used by the Studio (P/Invoke) and other languages.
+/* CAPS C ABI v19 — the stable boundary used by the Studio (P/Invoke) and other languages.
    Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 18  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus */
+#define CAPS_ABI_VERSION 19  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -26,6 +26,7 @@ typedef struct {
   int32_t outlines, depth_cue, show_cell;
   int32_t highlight[4];   /* up to four selected atom indices, -1 for unused */
   int32_t focus;          /* v18: atom index + 1 drawn with the keyboard-focus ring, 0 for none */
+  int32_t ambient_occlusion;   /* v19: darken atoms by the open sky they see */
 } caps_render_opts;
 
 typedef struct {
@@ -301,7 +302,7 @@ const char* caps_note(caps_doc* d, int32_t k);
 /* Renders into caller memory of width*height*4 bytes, RGBA with straight alpha. */
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba);
 int32_t caps_pick(caps_doc* d, int32_t x, int32_t y);   /* atom index under pixel of last render, -1 none */
-/* v18: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */
+/* v19: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */
 double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt);
 
 int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);

@@ -143,6 +143,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.show_cell = o->show_cell != 0;
   for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0) r.highlight.push_back(o->highlight[k]);
   r.focus = o->focus - 1;
+  r.ambient_occlusion = o->ambient_occlusion != 0;
   if (r.colour_by == caps::ColourBy::Property) r.property = d->dcom;
   return r;
 }
