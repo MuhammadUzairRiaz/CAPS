@@ -29,4 +29,6 @@ public partial class SolventScreenPage : PageBase
         base.OnPropertyChanged(change);
         if (change.Property == IsVisibleProperty && IsVisible && DataContext is MainViewModel vm) Update(vm);
     }
+    private async void OnContacts(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is ViewModels.MainViewModel vm) await vm.SsComputeContacts(); }
+    private void OnStopContacts(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is ViewModels.MainViewModel vm) vm.SsStopContacts(); }
 }

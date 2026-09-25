@@ -13,9 +13,9 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Click="OnExport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export CSV" VerticalAlignment="Center" /></StackPanel></Button>
-          <Button Classes="primary" IsEnabled="False" ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Not offered here: χ from MD mixing energies (caps.chi_by_md in Python) resolves only about ±1 at the sizes and times the Studio runs (natural rubber against itself: −1.2 ± 0.5 after 300 ps per cell), coarser than a χ(T) fit needs. Enter A and B from measurements or long runs.">
-            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Fit χ(T) from MD" VerticalAlignment="Center" /></StackPanel>
+          <Button Classes="primary" Click="OnFit" IsEnabled="{Binding BpCanFit}" ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="χ(T) = A + B/T for the two repeat units picked under Inputs, from pair contacts (Fan, Olafson, Blanco &amp; Hsu, Macromolecules 1992; GAFF2, Gasteiger charges), fitted over 250–400 K. A predictive screen: CAPS's checks get polyisoprene/polybutadiene and polystyrene/polyisoprene right and polystyrene/PVME wrong. χ from MD mixing energies stays in Python (caps.chi_by_md): at Studio sizes it resolves only about ±1.">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Fit χ(T) from pair contacts" VerticalAlignment="Center" /></StackPanel>
           </Button>
         </StackPanel>
         <StackPanel Spacing="3">
@@ -51,19 +51,22 @@
             <DockPanel>
               <Border DockPanel.Dock="Top" Classes="phead">
                 <DockPanel>
-                  <Border DockPanel.Dock="Right" Classes="chip warn"><TextBlock Text="example inputs" /></Border>
+                  <Border DockPanel.Dock="Right" Classes="chip warn"><TextBlock Text="{Binding BpInputsChip}" /></Border>
                   <TextBlock Text="Inputs" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>
-              <Grid Margin="16,12,16,14" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+              <Grid Margin="16,12,16,14" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                <StackPanel Grid.Row="3" Spacing="4"><TextBlock Text="Polymer A (for the fit)" Classes="label" /><ComboBox ItemsSource="{Binding BpUnitNames}" SelectedIndex="{Binding BpUnitA}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4"><TextBlock Text="Polymer B (for the fit)" Classes="label" /><ComboBox ItemsSource="{Binding BpUnitNames}" SelectedIndex="{Binding BpUnitB}" HorizontalAlignment="Stretch" /></StackPanel>
+                <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding BpFitNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding BpFitNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 <StackPanel Spacing="4"><TextBlock Text="N_A (segments)" Classes="label" /><NumericUpDown Value="{Binding BpNa}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="N_B (segments)" Classes="label" /><NumericUpDown Value="{Binding BpNb}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
                 <StackPanel Grid.Row="1" Spacing="4"><TextBlock Text="A" Classes="label" /><NumericUpDown Value="{Binding BpA}" Minimum="-10" Maximum="10" Increment="0.005" FormatString="0.00###" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Text="B · K" Classes="label" /><NumericUpDown Value="{Binding BpB}" Minimum="-100000" Maximum="100000" Increment="1" FormatString="0.0##" /></StackPanel>
                 <StackPanel Grid.Row="2" Spacing="4"><TextBlock Text="χ source" Classes="label" />
-                  <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
+                  <ComboBox SelectedIndex="{Binding BpSource}" HorizontalAlignment="Stretch">
                     <ComboBoxItem Content="entered: χ(T) = A + B/T" />
-                    <ComboBoxItem Content="fitted from MD at 3 temperatures (too coarse here: see the button)" IsEnabled="False" />
+                    <ComboBoxItem Content="fitted from pair contacts (the button)" IsEnabled="False" />
                   </ComboBox>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Text="Read out at T · K" Classes="label" /><NumericUpDown Value="{Binding BpT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" /></StackPanel>
@@ -92,7 +95,7 @@
             </DockPanel>
           </Border>
           <TextBlock Classes="dim" TextWrapping="Wrap" Margin="4,0,0,0"
-                     Text="Binodal from equal chemical potentials (common tangent), solved numerically; spinodal from ∂²f/∂φ² = 0. The A and B filled in are example inputs, not values for a real blend. Flory 1942; Huggins 1942." />
+                     Text="{Binding BpFootnote}" />
         </StackPanel>
       </Grid>
     </ScrollViewer>

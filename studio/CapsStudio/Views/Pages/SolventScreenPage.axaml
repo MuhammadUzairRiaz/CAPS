@@ -13,9 +13,12 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
           <StackPanel Spacing="3"><TextBlock Text="Polymer" Classes="label" /><ComboBox ItemsSource="{Binding SsPolymerNames}" SelectedIndex="{Binding SsPolymer}" MinWidth="170" /></StackPanel>
-          <Button Classes="primary" IsEnabled="False" VerticalAlignment="Bottom" ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Not offered here. CAPS computes χ from MD mixing energies (caps_chi_md, caps.chi_by_md in Python), but measured on natural rubber mixed with itself (χ must be 0) it gives −1.2 ± 0.5 after 300 ps per cell — too coarse for χ of 0.01–1 at the sizes and times the Studio runs. Use it from Python with nanosecond runs and the self-mixing control.">
-            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Compute χ by MD" VerticalAlignment="Center" /></StackPanel>
+          <Button Classes="primary" VerticalAlignment="Bottom" Click="OnContacts" IsEnabled="{Binding SsCanContact}" IsVisible="{Binding SsContactIdle}" ToolTip.ShowOnDisabled="True"
+                  ToolTip.Tip="χ(T) for this polymer's repeat unit (ends capped with H) against every solvent, from pair contacts (Fan, Olafson, Blanco &amp; Hsu, Macromolecules 1992): pair energies at van der Waals contact, Boltzmann-averaged, and coordination numbers from packing, GAFF2 with Gasteiger charges. Predictive (no measured input), seconds per solvent; shown beside the known behaviour. χ from MD mixing energies stays in Python (caps.chi_by_md): at Studio sizes it resolves only about ±1.">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Compute χ by pair contacts" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button VerticalAlignment="Bottom" Click="OnStopContacts" IsVisible="{Binding SsContactBusy}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="14" VerticalAlignment="Center" /><TextBlock Text="Stop" VerticalAlignment="Center" /></StackPanel>
           </Button>
         </StackPanel>
         <StackPanel Spacing="3">
@@ -27,7 +30,10 @@
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
         <TextBlock DockPanel.Dock="Right" Text="χ ≈ V(Δδ)²/RT + 0.34" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding SsStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <TextBlock Text="{Binding SsStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SsContactProgress}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+        </StackPanel>
       </DockPanel>
     </Border>
     <ScrollViewer Margin="22,18">
@@ -69,28 +75,34 @@
                 </DockPanel>
               </Border>
               <StackPanel Margin="16,8,16,10">
-                <Grid ColumnDefinitions="*,78,62,52,92,150,22" Height="28">
+                <Grid ColumnDefinitions="*,70,58,48,88,22,64,22,140" Height="28">
                   <TextBlock Text="SOLVENT" Classes="h3" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="V (cm³/mol)" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" Text="δ (MPa½)" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="3" Text="χ" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="4" Text="PREDICTED" Classes="h3" Margin="14,0,0,0" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="5" Text="{Binding SsKnownHeader}" Classes="h3" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="6" Text="χ CONTACT" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip.Tip="χ by pair contacts (GAFF2) at this temperature, from its χ(T) fit" />
+                  <TextBlock Grid.Column="8" Text="{Binding SsKnownHeader}" Classes="h3" Margin="10,0,0,0" VerticalAlignment="Center" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding SsRows}">
                   <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SolventRow">
                     <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-                      <Grid ColumnDefinitions="*,78,62,52,92,150,22" Height="31">
+                      <Grid ColumnDefinitions="*,70,58,48,88,22,64,22,140" Height="31">
                         <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Text="{Binding V}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{Binding Delta}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="3" Text="{Binding Chi}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="4" Text="{Binding Predicted}" FontSize="12" Margin="14,0,0,0" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="5" Text="{Binding Known}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                        <Panel Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <Panel Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center">
                           <v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" IsVisible="{Binding Agrees}" />
                           <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource WarnB}" IsVisible="{Binding Mismatch}" />
                         </Panel>
+                        <TextBlock Grid.Column="6" Text="{Binding ChiC}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip.Tip="{Binding PredictedC}" />
+                        <Panel Grid.Column="7" VerticalAlignment="Center" HorizontalAlignment="Center">
+                          <v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" IsVisible="{Binding AgreesC}" />
+                          <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource WarnB}" IsVisible="{Binding MismatchC}" />
+                        </Panel>
+                        <TextBlock Grid.Column="8" Text="{Binding Known}" FontSize="12" Margin="10,0,0,0" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Known}" />
                       </Grid>
                     </Border>
                   </DataTemplate></ItemsControl.ItemTemplate>

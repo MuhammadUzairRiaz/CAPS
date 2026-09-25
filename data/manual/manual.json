@@ -901,7 +901,7 @@
      "0 (flexible) by default"
     ]
    ],
-   "when": "Entanglement and dynamics studies of generic melts and rubbers, and as a fast starting point. Runs in LAMMPS (reduced units); CAPS builds, draws and writes the deck. Backmapping to all atoms is not built yet.",
+   "when": "Entanglement and dynamics studies of generic melts and rubbers, and as a fast starting point. Runs in LAMMPS (reduced units); CAPS builds, draws and writes the deck. Model resolution backmaps the beads onto an all-atom structure.",
    "cites": [
     "kremer1990",
     "auhl2003"
@@ -911,6 +911,52 @@
    "deviation": "the push-off uses LAMMPS pair soft ramped to 60 ε with displacements limited, rather than the force-capped potentials of the paper",
    "engines": [
     "cg.kremer_grest"
+   ]
+  },
+  {
+   "id": "chi-contacts",
+   "group": "Analysis",
+   "title": "χ from pair contacts",
+   "summary": "The Flory–Huggins χ(T) of two components from the energies of their molecules in contact. Each component is one rigid molecule (a solvent, or a repeat unit with its ends capped by hydrogen). Random relative orientations and directions are drawn; the second molecule slides in until the van der Waals surfaces touch, and the pair energy is recorded. The energies are Boltzmann-averaged at each temperature, the coordination numbers come from packing as many molecules as fit around one, and χ(T) is fitted to A + B/T.",
+   "equation": "ΔE_mix(T) = ½ [Z_AB ⟨E_AB⟩_T + Z_BA ⟨E_BA⟩_T − Z_AA ⟨E_AA⟩_T − Z_BB ⟨E_BB⟩_T],   ⟨E⟩_T = Σ E e^(−E/RT) / Σ e^(−E/RT),   χ(T) = ΔE_mix / RT",
+   "equation_note": "Fan, Olafson, Blanco & Hsu 1992",
+   "symbols": [
+    [
+     "Z_ij",
+     "j molecules packed around one i at contact, none overlapping",
+     "random sequential packing, 5000 shells"
+    ],
+    [
+     "⟨E_ij⟩_T",
+     "Boltzmann-averaged pair energy at contact",
+     "10⁶ contacts per pair of kinds"
+    ],
+    [
+     "contact",
+     "van der Waals surfaces touching",
+     "Bondi radii, solved exactly over every atom pair"
+    ],
+    [
+     "force field",
+     "Lennard-Jones and Coulomb (ε = 1)",
+     "GAFF2 with Gasteiger charges in the Studio"
+    ],
+    [
+     "A, B",
+     "χ(T) = A + B/T",
+     "least squares over 250–400 K"
+    ]
+   ],
+   "when": "A predictive screen of solvents and blend partners when no measured solubility parameters exist. In CAPS's check (bench/chi/check_contacts.py) it agrees with known behaviour for 11 of 16 polymer–solvent pairs (Hildebrand: 12 of 16) and fails where single strong contacts dominate: THF, toluene with natural rubber, and polystyrene/PVME (called immiscible; it is miscible). Self-mixing controls resolve χ to about ±0.15.",
+   "cites": [
+    "fan1992",
+    "blanco1991"
+   ],
+   "source": "core/src/chipair.cpp",
+   "tested": "ChiPair.ArgonPairsTouchAtTheBondiSumAndPackUnderTwelve · ChiPair.SelfMixingControlIsZeroWithinItsErrorAndWaterIsNot · bench/chi/check_contacts.py",
+   "deviation": "rigid molecules with one conformer each; one molecule per lattice site of either kind, with no correction for their different sizes; coordination numbers by random sequential packing",
+   "engines": [
+    "chi.contacts"
    ]
   }
  ]

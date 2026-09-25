@@ -208,6 +208,10 @@ public sealed partial class MainViewModel
     }
 
     private int _appTicket;
+    private readonly object _appLock = new();
+    private Task<(string Info, string? Error, bool Stale)>? _appTask;
+    /// <summary>Waits until the last appearance change has reached the core (tests, exports).</summary>
+    public void WaitAppearance() { try { _appTask?.Wait(); } catch { } }
     /// <summary>Sends the appearance to the core (surfaces are computed in the background) and redraws.</summary>
     public void ApplyAppearance()
     {
@@ -227,13 +231,20 @@ public sealed partial class MainViewModel
         }.ToJsonString();
         var ticket = ++_appTicket;
         AppInfo = _appSurface > 0 ? "Computing the surface…" : AppInfo;
-        Task.Run(() =>
+        // one apply at a time, and a stale one (a newer change was made meanwhile) is skipped inside the lock: without
+        // this, two quick changes could reach the core out of order and leave the older settings drawn
+        _appTask = Task.Run(() =>
         {
-            try { doc.SetAppearance(json); return (Info: doc.AppearanceInfo(), Error: (string?)null); }
-            catch (Exception e) { return (Info: "", Error: (string?)e.Message); }
-        }).ContinueWith(t => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            lock (_appLock)
+            {
+                if (ticket != Volatile.Read(ref _appTicket)) return (Info: "", Error: (string?)null, Stale: true);
+                try { doc.SetAppearance(json); return (Info: doc.AppearanceInfo(), Error: (string?)null, Stale: false); }
+                catch (Exception e) { return (Info: "", Error: (string?)e.Message, Stale: false); }
+            }
+        });
+        _appTask.ContinueWith(t => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (ticket != _appTicket) return;
+            if (ticket != _appTicket || t.Result.Stale) return;
             AppError = t.Result.Error ?? "";
             if (t.Result.Error == null) ShowAppearanceInfo(t.Result.Info);
             RenderRequested?.Invoke();

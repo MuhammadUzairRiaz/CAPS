@@ -137,4 +137,9 @@ with tempfile.TemporaryDirectory() as tmp:
     mdp = caps.open(os.path.join(samples, "ps_melt.data")).save_gromacs(stem)
     have = all(os.path.exists(stem + x) for x in (".top", ".gro", ".mdp"))
     check(have and "coulombtype              = PME" in mdp and "[ nonbond_params ]" in open(stem + ".top").read(), "save_gromacs: top, gro, mdp")
+# χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
+ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
+wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
+check(abs(ctl["chi"]) < 3 * ctl["chi_error"] + 0.05 and wat["chi"] > 2 and len(ctl["kinds"]) == 4,
+      f"chi_by_contacts: control {ctl['chi']:.3f} ± {ctl['chi_error']:.3f}, water {wat['chi']:.2f}")
 print("all python checks passed")

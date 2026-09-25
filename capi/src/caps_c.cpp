@@ -24,6 +24,7 @@
 #include "caps/bench.hpp"
 #include "caps/polymer.hpp"
 #include "caps/chimd.hpp"
+#include "caps/chipair.hpp"
 #include "caps/polystats.hpp"
 #include "caps/resolution.hpp"
 #include "caps/kspace.hpp"
@@ -5721,6 +5722,46 @@ extern "C" int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* u
       cells.push_back(std::move(e));
     }
     r["cells"] = std::move(cells);
+    caps::Json n = caps::Json::array();
+    for (const auto& x : c.notes) n.push_back(x);
+    r["notes"] = std::move(n);
+  } catch (const std::exception& e) {
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(), out, cap);
+}
+
+extern "C" int32_t caps_chi_contacts(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::ChiPairOptions o;
+    o.a_smiles = j.text("a"), o.b_smiles = j.text("b");
+    o.forcefield = j.text("forcefield");
+    o.samples = int(j.num("samples", o.samples));
+    o.pack_trials = int(j.num("pack_trials", o.pack_trials));
+    if (j.has("temperatures") && j["temperatures"].is_array()) {
+      o.temperatures.clear();
+      for (const auto& x : j["temperatures"].items()) o.temperatures.push_back(x.number());
+    }
+    o.report_temperature = j.num("t", o.report_temperature);
+    o.seed = uint64_t(j.num("seed", 1));
+    o.threads = int(j.num("threads", 0));
+    if (progress) o.progress = [&](const std::string& st, double f) { return progress(st.c_str(), f, user) == 0; };
+    const caps::ChiPairResult c = caps::chi_by_contacts(o);
+    r["ok"] = true;
+    r["chi"] = c.chi_report, r["chi_error"] = c.chi_report_error, r["fit_a"] = c.fit_a, r["fit_b"] = c.fit_b;
+    r["temperatures"] = num_array(c.temperatures), r["chi_t"] = num_array(c.chi), r["chi_t_error"] = num_array(c.chi_error);
+    caps::Json kinds = caps::Json::array();
+    for (const caps::ChiPairKind* k : {&c.aa, &c.ab, &c.ba, &c.bb}) {
+      caps::Json e = caps::Json::object();
+      e["name"] = k->name, e["z"] = k->z, e["z_error"] = k->z_error, e["e_min"] = k->e_min, e["e_mean"] = k->e_mean;
+      e["e_t"] = num_array(k->e_t), e["hist_e"] = num_array(k->hist_e), e["hist_p"] = num_array(k->hist_p);
+      kinds.push_back(std::move(e));
+    }
+    r["kinds"] = std::move(kinds);
+    r["forcefield"] = c.forcefield, r["a"] = c.a_name, r["b"] = c.b_name;
     caps::Json n = caps::Json::array();
     for (const auto& x : c.notes) n.push_back(x);
     r["notes"] = std::move(n);

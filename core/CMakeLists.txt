@@ -16,6 +16,7 @@ add_library(caps_core STATIC
   src/relax.cpp
   src/lammps_data.cpp
   src/gromacs.cpp
+  src/chipair.cpp
   src/dynamics.cpp
   src/equilibrate.cpp
   src/pack.cpp

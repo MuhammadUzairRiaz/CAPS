@@ -1,6 +1,6 @@
 // CAPS χ from molecular dynamics (design/boards/SolventScreen, BlendPhase): the Flory–Huggins interaction parameter from
-// the energy of mixing. Three cells are built and run with the same force field (the built-in typing: GAFF for C and H,
-// UFF otherwise) — component A alone, component B alone and a mixture — each relaxed, then NPT at the temperature; the
+// the energy of mixing. Three cells are built and run with the same force field (GAFF's built-in C and H subset when it
+// types both components, else UFF for all three cells) — component A alone, component B alone and a mixture — each relaxed, then NPT at the temperature; the
 // cohesive energy density (Σ E of each molecule alone − E of the cell, per volume, as Analyze's CED) is taken over ten
 // frames of the production run. With volume fractions φ from the pure components' volumes,
 //
