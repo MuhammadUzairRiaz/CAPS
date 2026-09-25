@@ -100,6 +100,7 @@ public sealed partial class MainViewModel
     public CapsRenderOpts RenderOptionsFor(int w, int h, int supersample)
     {
         var o = ViewOptions(w, h, supersample);
+        o.LodNear = o.LodFar = 0;   // renders in full detail
         o.Background = _renderBg;
         o.Highlight0 = o.Highlight1 = o.Highlight2 = o.Highlight3 = -1;
         o.Focus = 0;

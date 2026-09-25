@@ -830,6 +830,20 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Level of detail: tiers counted by the renderer, the memory estimate, exports stay in full detail
+        {
+            vm.LodOn = true;
+            vm.LodNear = 10; vm.LodFar = 20;
+            var lodBuf = new byte[400 * 300 * 4];
+            vm.Document!.Render(vm.Camera, vm.ViewOptions(400, 300, 1), lodBuf);
+            var (near, mid, far, _) = vm.Document.RenderStats();
+            var exportOpt = vm.ExportOptions(400, 300);
+            vm.RefreshLod();
+            Check(near > 0 && mid + far > 0 && exportOpt.LodNear == 0 && vm.LodMemory.Contains("B per atom"), $"level of detail: near {near} · mid {mid} · points {far} · {vm.LodMemory}");
+            vm.LodOn = false;
+            vm.LodNear = 40; vm.LodFar = 80;
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

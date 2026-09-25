@@ -428,12 +428,26 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     if (show[i]) { zmin = std::min(zmin, pz[i]); zmax = std::max(zmax, pz[i]); }
   }
 
+  // Level of detail: 0 full, 1 sphere without bonds, 2 point — by distance from the focus (screen centre, focal plane).
+  std::vector<uint8_t> tier(n, 0);
+  stats = RenderStats{};
+  if (opt.lod_near > 0) {
+    const double far = std::max(opt.lod_far, opt.lod_near), cx = v.w / 2, cy = v.h / 2;
+    for (size_t i = 0; i < n; ++i) {
+      if (!show[i]) continue;
+      const double dx = (px[i] - cx) / v.scale, dy = (py[i] - cy) / v.scale, d = std::sqrt(dx * dx + dy * dy + pz[i] * pz[i]);
+      tier[i] = d < opt.lod_near ? 0 : d < far ? 1 : 2;
+    }
+  }
+  for (size_t i = 0; i < n; ++i) if (show[i]) (tier[i] == 0 ? stats.near : tier[i] == 1 ? stats.mid : stats.far)++;
+
   // Bonds (two half-capsules, each in its atom's colour; wireframe as lines). Bonds longer than half the cell are not drawn.
   if (opt.style != Style::SpaceFilling || mixed) {
     double half_cell = 1e300;
     if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
     for (const auto& b : s.bonds) {
-      if (!show[b.i] || !show[b.j]) continue;
+      if (!show[b.i] || !show[b.j] || tier[b.i] || tier[b.j]) continue;
+      ++stats.bonds;
       const Style si = style_of(b.i), sj = style_of(b.j);
       if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
       if (norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half_cell) continue;
@@ -452,6 +466,20 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   for (size_t i = 0; i < n; ++i) {
     if (!show[i]) continue;
     const double r = radius(i);
+    if (tier[i] == 2) {   // a point: one flat disc about a pixel across
+      const double R = std::clamp(r * v.scale * pk[i], 0.7 * ss, 1.2 * ss);
+      const int x0 = std::max(0, int(px[i] - R)), x1 = std::min(B.w - 1, int(px[i] + R)), y0 = std::max(0, int(py[i] - R)), y1 = std::min(B.h - 1, int(py[i] + R));
+      const float z = static_cast<float>(pz[i]);
+      for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x) {
+          const size_t k = size_t(y) * B.w + x;
+          if (z <= B.z[k]) continue;
+          B.z[k] = z;
+          B.id[k] = int32_t(i);
+          B.col[k] = shade(colour[i], {0, 0, 1});
+        }
+      continue;
+    }
     if (r <= 0) continue;   // wireframe: bonds only
     sphere(B, px[i], py[i], pz[i], r * v.scale * pk[i], r, colour[i], int32_t(i));
   }
@@ -479,17 +507,21 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
 
   // Ambient occlusion: each atom's pixels (and its half-bonds) darkened by how little open sky the atom sees.
   if (opt.ambient_occlusion && n) {
-    double key = double(n) * 1e-3 + double(opt.style) * 7;
+    // with level of detail, only the near tier is shaded (and occludes): the rest is too small to show it
+    const bool lod = opt.lod_near > 0;
+    std::vector<char> ao_show = show;
+    if (lod) for (size_t i = 0; i < n; ++i) ao_show[i] = show[i] && tier[i] == 0;
+    double key = double(n) * 1e-3 + double(opt.style) * 7 + (lod ? opt.lod_near * 13 + double(stats.near) : 0);
     for (size_t i = 0; i < n; i += std::max<size_t>(1, n / 512)) key += s.atoms[i].pos[0] * 1.3 + s.atoms[i].pos[1] * 1.7 + s.atoms[i].pos[2] * 2.9;
     if (ao_.size() != n || ao_key_ != key) {
       std::vector<double> rad(n);
       for (size_t i = 0; i < n; ++i) rad[i] = radius(i);
-      ao_ = ambient_accessibility(s, rad, show);
+      ao_ = ambient_accessibility(s, rad, ao_show);
       ao_key_ = key;
     }
     for (size_t k = 0; k < B.col.size(); ++k) {
       const int32_t id = B.id[k];
-      if (id < 0 || size_t(id) >= n) continue;
+      if (id < 0 || size_t(id) >= n || !ao_show[size_t(id)]) continue;
       const float f = 0.3f + 0.7f * ao_[size_t(id)];
       B.col[k] = {B.col[k].r * f, B.col[k].g * f, B.col[k].b * f};
     }

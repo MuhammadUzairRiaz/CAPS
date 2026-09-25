@@ -113,6 +113,15 @@ std::vector<std::pair<double, double>> rdf(const System& s, int ea, int eb, doub
     if (!ea || s.atoms[i].element == ea) A.push_back(i);
     if (!eb || s.atoms[i].element == eb) B.push_back(i);
   }
+  // Large systems: an evenly strided subset of the centres (every neighbour still counts); the average over 20 000
+  // centres is already smooth, and the cost stays bounded for million-atom cells.
+  if (A.size() > kRdfMaxCentres) {
+    const double step = double(A.size()) / double(kRdfMaxCentres);
+    std::vector<uint32_t> sub;
+    sub.reserve(kRdfMaxCentres);
+    for (size_t k = 0; k < kRdfMaxCentres; ++k) sub.push_back(A[size_t(k * step)]);
+    A = std::move(sub);
+  }
   const auto mol = inter_only ? s.molecules() : std::vector<int>();
   std::vector<char> inB(s.atoms.size(), 0);
   for (uint32_t j : B) inB[j] = 1;

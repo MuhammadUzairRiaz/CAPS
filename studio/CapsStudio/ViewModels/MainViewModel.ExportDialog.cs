@@ -126,6 +126,7 @@ public sealed partial class MainViewModel
     public CapsRenderOpts ExportDialogOptions(int w, int h, bool final)
     {
         var o = ViewOptions(w, h, final ? _expSs + 1 : 2);
+        if (final) o.LodNear = o.LodFar = 0;   // exports in full detail
         o.Background = _expBg;
         if (!(_expLabels && _expTab == 0)) o.Highlight0 = o.Highlight1 = o.Highlight2 = o.Highlight3 = -1;
         o.Focus = 0;

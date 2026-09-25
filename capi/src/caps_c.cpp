@@ -300,6 +300,8 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0 && to_shown(o->highlight[k]) >= 0) r.highlight.push_back(to_shown(o->highlight[k]));
   r.focus = to_shown(o->focus - 1);
   r.ambient_occlusion = o->ambient_occlusion != 0;
+  r.lod_near = o->lod_near > 0 ? o->lod_near : 0;
+  r.lod_far = o->lod_far > 0 ? o->lod_far : 0;
   if (!d->pstate && d->selection.size() == d->frame.atoms.size()) {   // the selection ringed (up to 50 000 atoms)
     for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
   }
@@ -4404,5 +4406,33 @@ extern "C" int32_t caps_template_test(caps_doc* d, const char* text, char* json,
     j["ok"] = false;
     j["error"] = std::string(e.what());
   }
+  return report_out(j.dump(0), json, cap);
+}
+
+// ---------------------------------------------------------------- large systems (design/boards/MillionAtoms)
+extern "C" int32_t caps_render_stats(caps_doc* d, int64_t* near, int64_t* mid, int64_t* far, int64_t* bonds) {
+  const auto& st = d->renderer.stats;
+  if (near) *near = int64_t(st.near);
+  if (mid) *mid = int64_t(st.mid);
+  if (far) *far = int64_t(st.far);
+  if (bonds) *bonds = int64_t(st.bonds);
+  return 0;
+}
+
+extern "C" int32_t caps_memory(caps_doc* d, char* json, int32_t cap) {
+  const auto& t = d->traj;
+  size_t topo = sizeof(caps::System) + t.topology.atoms.capacity() * sizeof(caps::Atom) + t.topology.bonds.capacity() * sizeof(caps::Bond);
+  for (const auto& a : t.topology.atoms) topo += a.name.capacity() > 15 ? a.name.capacity() : 0;   // short strings live inside the atom
+  size_t frames = 0;
+  for (const auto& p : t.positions) frames += p.capacity() * sizeof(caps::Vec3);
+  frames += t.cells.capacity() * sizeof(caps::Cell);
+  const size_t shown = d->frame.atoms.capacity() * sizeof(caps::Atom);   // the current frame as a structure
+  caps::Json j = caps::Json::object();
+  j["atoms"] = double(t.topology.atoms.size());
+  j["frames"] = double(t.frames());
+  j["topology_bytes"] = double(topo + shown);
+  j["frame_bytes"] = double(frames);
+  j["per_atom_bytes"] = t.topology.atoms.empty() ? 0.0 : double(topo + shown + frames) / double(t.topology.atoms.size());
+  j["atom_struct_bytes"] = double(sizeof(caps::Atom));
   return report_out(j.dump(0), json, cap);
 }

@@ -29,7 +29,9 @@ struct MoleculeShape {
 };
 std::vector<MoleculeShape> molecule_shapes(const System& s);
 
-// Partial g(r) between element sets (0 = any). Pairs within one molecule are skipped when inter_only.
+// Partial g(r) between element sets (0 = any). Pairs within one molecule are skipped when inter_only. Above
+// kRdfMaxCentres centre atoms an evenly strided subset of them is used (all atoms still count as neighbours).
+constexpr size_t kRdfMaxCentres = 20000;
 std::vector<std::pair<double, double>> rdf(const System& s, int elem_a, int elem_b, double rmax, double dr, bool inter_only);
 
 // Distance (2 atoms, Å), angle (3, degrees) or dihedral (4, degrees, IUPAC sign), minimum image.

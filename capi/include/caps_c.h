@@ -27,6 +27,7 @@ typedef struct {
   int32_t highlight[4];   /* up to four selected atom indices, -1 for unused */
   int32_t focus;          /* v18: atom index + 1 drawn with the keyboard-focus ring, 0 for none */
   int32_t ambient_occlusion;   /* v19: darken atoms by the open sky they see */
+  double lod_near, lod_far;    /* v20 level of detail: full within lod_near Å of the focus, spheres to lod_far, points beyond; 0 off */
 } caps_render_opts;
 
 typedef struct {
@@ -318,6 +319,10 @@ int32_t caps_pick(caps_doc* d, int32_t x, int32_t y);   /* atom index under pixe
 /* v19: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */
 double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt);
 
+/* v20: atoms drawn in each level of detail by the last caps_render (near, mid, far) and bond halves drawn. */
+int32_t caps_render_stats(caps_doc* d, int64_t* near, int64_t* mid, int64_t* far, int64_t* bonds);
+/* v20: memory the document holds: {atoms, frames, topology_bytes, frame_bytes, per_atom_bytes} as JSON. */
+int32_t caps_memory(caps_doc* d, char* json, int32_t cap);
 int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);
 int32_t caps_export_svg(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);
 /* Progress for long series: (done, total, user) -> 0 to continue. */
