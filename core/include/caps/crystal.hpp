@@ -13,6 +13,7 @@
 //                        and with the dangling bonds passivated (O–H on oxygens, M–OH on cations bonded to oxygen, H on
 //                        others) up to the bulk coordination of each element.
 #pragma once
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -62,6 +63,15 @@ struct SlabReport {
 // The plane spacing d of (hkl) (reduced by their common divisor) and its terminations, fewest bonds cut first.
 std::vector<Termination> slab_terminations(const System& bulk, int h, int k, int l, double* d = nullptr);
 System cleave(const System& bulk, const SlabOptions& o, SlabReport* rep = nullptr);
+
+// Adds O–H to under-coordinated oxygens (S, Se), M–OH to cations bonded to oxygen in the bulk and H to under-coordinated
+// covalent network atoms (B, C, N, Si, P, Ge) of `s`, up to each element's coordination in `bulk`, pointing along
+// outward_of(position) where it can. Metals keep bare surfaces. Returns (H added, OH added).
+std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::function<Vec3(const Vec3&)>& outward_of);
+
+// The bonds of a periodic structure from covalent radii, counting every periodic image (no metal–metal bonds in
+// ionic crystals; nearest neighbours in metals).
+std::vector<Bond> crystal_bonds(const System& s);
 
 // Hill-order formula of a set of atoms ("SiO2", "C6H12").
 std::string formula_of(const System& s, const std::vector<size_t>& atoms);
