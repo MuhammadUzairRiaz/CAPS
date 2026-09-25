@@ -73,4 +73,7 @@ public partial class GrowPage : PageBase
     private void OnDispersity(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenPolydispersity();
     private void OnClearLengths(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ClearPdLengths();
     private void OnClearStereo(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ClearGrowStereo();
+    private void OnToggleSmall(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.GrowSmallOpen = !Vm.GrowSmallOpen;
+    private void OnAddSmall(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.AddGrowSmall();
+    private void OnRemoveSmall(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (s is Control { Tag: CapsStudio.ViewModels.GrowSmallRow r }) Vm.RemoveGrowSmall(r); }
 }

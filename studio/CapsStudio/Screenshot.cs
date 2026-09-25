@@ -570,6 +570,13 @@ internal static class Screenshot
             if (kv[0] == "growshape") w.ViewModel.GrowShape = int.Parse(kv[1]);   // before grow=: 1 slab, 2 cylinder, 3 around a cylinder
             if (kv[0] == "growchains") w.ViewModel.GrowChainsD = int.Parse(kv[1]);
             if (kv[0] == "growmethod") w.ViewModel.GrowMethod = int.Parse(kv[1]);
+            if (kv[0] == "growsmall")   // growsmall=I,COUNT: add the I-th solvent / gas choice to Grow's components
+            {
+                var ic = kv[1].Split(',');
+                w.ViewModel.GrowSmallPick = int.Parse(ic[0]);
+                w.ViewModel.AddGrowSmall();
+                w.ViewModel.GrowSmall[^1].CountD = int.Parse(ic[1]);
+            }
             if (kv[0] == "pin")   // pin=I,J[,K[,L]]: pick the atoms and pin their measurement
             {
                 var ij = kv[1].Split(',').Select(int.Parse).ToArray();
