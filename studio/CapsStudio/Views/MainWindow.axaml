@@ -401,6 +401,12 @@
               <Border Classes="chip" Background="{DynamicResource HudB}">
                 <TextBlock Text="{Binding HudInfo}" Foreground="{DynamicResource MutedB}" />
               </Border>
+              <Border Classes="chip" Background="{DynamicResource HudB}" IsVisible="{Binding LoadIndexing}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" VerticalAlignment="Center" />
+                  <TextBlock Text="frame 0 · ready" Foreground="{DynamicResource OkB}" />
+                </StackPanel>
+              </Border>
             </StackPanel>
             <Border Classes="hud" Width="230" Padding="12,10" Margin="14,12" HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding HasMeasure}">
               <StackPanel Spacing="6">
@@ -511,6 +517,21 @@
           </TabControl>
         </Border>
 
+        <!-- Reading the other frames (design/boards/VisLoading): how far the file has been read -->
+        <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,12" IsVisible="{Binding LoadIndexing}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Text="the timeline opens when the frames are read · orbit, pick and measure now" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+              <TextBlock Text="frame 0" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+            </DockPanel>
+            <ProgressBar Minimum="0" Maximum="100" Value="{Binding LoadPercent}" Height="10" MinHeight="10" CornerRadius="5" />
+            <Grid ColumnDefinitions="*,Auto,*">
+              <TextBlock Text="0" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" />
+              <TextBlock Grid.Column="1" Text="{Binding LoadFramesText}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" />
+              <TextBlock Grid.Column="2" Text="{Binding LoadEndText}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Right" />
+            </Grid>
+          </StackPanel>
+        </Border>
         <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,8" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
           <Grid ColumnDefinitions="Auto,Auto,*,Auto">
             <Button Content="{Binding PlayLabel}" Click="OnPlay" Width="64" Margin="0,0,12,0" ToolTip.Tip="Play / pause (Space) · ← → step frames" />
@@ -719,6 +740,46 @@
           <StackPanel>
           </StackPanel>
         </ScrollViewer>
+        <!-- Opening a large trajectory (design/boards/VisLoading): the stages, then the inspector again -->
+        <DockPanel Background="{DynamicResource Bg1B}" IsVisible="{Binding ShowLoadPanel}">
+          <Border DockPanel.Dock="Top" Height="48" Padding="18,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding LoadStep}" Foreground="{DynamicResource AccB}" /></Border>
+              <TextBlock Text="{Binding LoadTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+          </Border>
+          <StackPanel DockPanel.Dock="Bottom" Margin="18,12,18,16" Spacing="8">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="File size" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding LoadSize}" Classes="mono" FontSize="12.5" /></Grid>
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Time left" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding LoadTimeLeft}" Classes="mono" FontSize="12.5" /></Grid>
+            <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                       Text="Frame 0 is already usable: orbit, pick and measure work while the other frames are read. Cancel keeps the frames read so far." />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Cancel" Click="OnLoadCancel" />
+              <Button Click="OnLoadBackground">
+                <StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="jobs" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open in background" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding LoadStages}" Margin="18,4">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:LoadStage">
+                  <Border Padding="0,10" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="6">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <local:Icon Kind="{Binding Icon}" Size="15" Foreground="{Binding Colour}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding State}" Classes="mono" FontSize="11" Foreground="{Binding Colour}" VerticalAlignment="Center" />
+                      </Grid>
+                      <TextBlock Text="{Binding Detail}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" Margin="25,0,0,0" TextWrapping="Wrap" />
+                      <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent}" Margin="25,0,0,0" Height="6" MinHeight="6" IsVisible="{Binding IsRunning}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
         </Panel>
       </Border>
 
@@ -732,6 +793,8 @@
       <pages:NanoPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsNano}" />
       <!-- Blend builder (design/boards/BlendBuilder) -->
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
+      <!-- Nothing open (design/boards/VisEmpty): Analyze before a trajectory is open -->
+      <pages:EmptyPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding ShowEmpty}" ZIndex="1" />
       <!-- File checks (design/boards/VisProblems) -->
       <pages:ChecksPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsChecks}" />
       <!-- Bench (design/boards/Bench) -->

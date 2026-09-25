@@ -41,6 +41,11 @@ internal static class Screenshot
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
+            if (kv[0] == "waitload")   // waitload=F: until the progressive open has read F of the file (CAPS_PROGRESSIVE_BYTES, CAPS_LOAD_DELAY_MS)
+            {
+                var f = double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+                for (int k = 0; k < 2000 && w.ViewModel.IsLoading && w.ViewModel.LoadFraction < f; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); }
+            }
             if (kv[0] == "quick") w.ViewModel.QuickText = kv[1];
             if (kv[0] == "settab") { w.ViewModel.SetModule(10); w.ViewModel.SettingsTab = int.Parse(kv[1]); }
             if (kv[0] == "colours") w.ViewModel.SetPalette = int.Parse(kv[1]);

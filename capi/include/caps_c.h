@@ -57,6 +57,13 @@ int32_t caps_abi_version(void);
 const char* caps_last_error(void);
 
 caps_doc* caps_open(const char* path, const char* topology_path);   /* NULL on error */
+/* Staged open (Studio progressive open): stage 0 format detected, 1 frame 0 read, 2 topology joined, 3 frames read
+   (fraction of the file); return non-zero to stop — the frames read so far are kept. max_frames > 0 stops early. */
+typedef int32_t (*caps_open_progress_fn)(int32_t stage, double fraction, const char* detail, void* user);
+caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t max_frames, caps_open_progress_fn progress, void* user);
+/* Moves the frames of src (the same file read in full) into dst, keeping dst's selection, field and current frame.
+   Returns dst's frame count, or -1 when the atom counts differ. src is left empty. */
+int32_t caps_adopt_frames(caps_doc* dst, caps_doc* src);
 void caps_close(caps_doc* d);
 
 /* Grow polystyrene chains in a periodic cell; the result is a new document. NULL on error or cancel.
