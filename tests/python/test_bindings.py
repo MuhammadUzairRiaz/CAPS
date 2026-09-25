@@ -60,4 +60,32 @@ try:
     check(False, "a missing file raises")
 except caps.CapsError:
     check(True, "a missing file raises CapsError")
+# recipes, the notebook API (design/boards/CommandLine, JupyterNotebook)
+with tempfile.TemporaryDirectory() as tmp:
+    events = []
+    cell = caps.run({"recipe": 1, "name": "pe", "build": {"polymer": {"smiles": "*CC*", "dp": 4, "chains": 2}}, "type": {"forcefield": "default"},
+                     "grow": {"density": 0.5, "seed": 1}, "relax": {"fmax": 5}, "analyze": {"properties": ["density"]}, "export": ["pdb"]},
+                    out_dir=tmp, progress=lambda e: events.append((e["name"], e["status"])))
+    check(cell.atoms == 2 * 26 and os.path.exists(os.path.join(tmp, "pe.pdb")) and ("relax", "done") in events, "run: recipe with progress")
+    check(abs(cell.properties[0]["value"] - 0.5) < 0.05, "run: analysed density")
+    check([st["engine"] for st in cell.provenance()["steps"]][:2] == ["field.assign", "grow.trials"], "run: provenance")
+    try:
+        caps.run("build: {molecule: CCO}\nbogus: 1\n")
+        check(False, "a wrong recipe raises")
+    except caps.CapsError as e:
+        check(e.exit_code == 2, "a wrong recipe raises CapsError with exit code 2")
+    ps = caps.polymer("*CC(*)c1ccccc1", dp=6, tacticity="isotactic", seed=5)
+    check(ps.atoms == 6 * 16 + 2, f"polymer: {ps.atoms} atoms")
+    sc = ps.scene()
+    check(sc["shown"] == ps.atoms and len(sc["xyz"]) == 3 * ps.atoms and len(sc["bonds"]) == 2 * (ps.atoms - 1 + 6), "scene")
+    html = ps.view()._repr_html_()
+    check("<canvas" in html and "atoms shown" in html and len(ps.view()._repr_png_()) > 1000, "view: HTML and PNG")
+    bib = ps.provenance.citations(fmt="bibtex")
+    check(len(bib) >= 2 and all(b.startswith("@") for b in bib), "provenance.citations(bibtex)")
+    sw = caps.sweep.run("*CC*", tacticities=("atactic",), dps=(4,), seeds=(1, 2), chains=2, folder=os.path.join(tmp, "sw"))
+    res = caps.sweep.result("atactic", folder=str(sw.folder))
+    m, sd, n = res["density"]
+    check(n == 2 and abs(m - 0.5) < 0.05, "sweep: result pooled over seeds")
+    t = caps.table([res], ["density", "tg", "c_inf"])
+    check("—" in repr(t) and "<table" in t._repr_html_() and t.to_csv().startswith("condition,density"), "table")
 print("all python checks passed")
