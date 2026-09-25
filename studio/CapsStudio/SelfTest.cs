@@ -803,7 +803,8 @@ internal static class SelfTest
             vm.RunSweep().GetAwaiter().GetResult();
             var files = Directory.GetFiles(vm.SweepFolder, "*.data").Length;
             var sides = Directory.GetFiles(vm.SweepFolder, "*.provenance.json").Length;
-            Check(files == 4 && sides == 4 && vm.SweepResults.Count == 2 && vm.SweepResults.All(r => r.Seeds.StartsWith("2 / 2")) && (vm.SweepPolymer?.Name.StartsWith("Polystyrene") ?? false),
+            var results = File.Exists(Path.Combine(vm.SweepFolder, "results.json")) && File.ReadAllText(Path.Combine(vm.SweepFolder, "results.json")).Contains("caps-sweep/1");
+            Check(files == 4 && sides == 4 && results && vm.SweepResults.Count == 2 && vm.SweepResults.All(r => r.Seeds.StartsWith("2 / 2")) && (vm.SweepPolymer?.Name.StartsWith("Polystyrene") ?? false),
                   $"sweep: {files} cells · {sides} manifests · {string.Join(" | ", vm.SweepResults.Select(r => $"{r.Condition} Rg {r.Rg}"))} · {vm.SweepError}");
             vm.SetModule(8);
         }
@@ -1058,6 +1059,30 @@ internal static class SelfTest
             header.GroupFolded?.Invoke(header);
             vm.ClearPipeline();
             vm.SetModule(8);
+        }
+
+        // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document
+        {
+            var rdir = Path.Combine(outDir, "caps-selftest-recipe");
+            if (Directory.Exists(rdir)) Directory.Delete(rdir, true);
+            Directory.CreateDirectory(rdir);
+            var recipe = Path.Combine(rdir, "pe.yaml");
+            File.WriteAllText(recipe, "recipe: 1\nname: pe\nbuild:\n  polymer: { smiles: \"*CC*\", dp: 4, chains: 2 }\ntype: { forcefield: default }\n" +
+                                      "grow: { density: 0.5, seed: 1 }\nrelax: { fmax: 5 }\nexport: [lammps]\n");
+            vm.RunRecipeFile(recipe).GetAwaiter().GetResult();
+            var ok = File.Exists(Path.Combine(rdir, "pe.data")) && File.Exists(Path.Combine(rdir, "pe.data.provenance.json")) && vm.Document?.Summary().Atoms == 52;
+            Check(ok && vm.RecipeLog.Contains("[4/5] relax") && vm.Status.Contains("done"), $"recipe: {vm.Status} · {vm.RecipeLog.Replace('\n', '|')}");
+            // Grow › Save recipe runs as saved (a small PS cell)
+            vm.GrowChains = 3; vm.GrowDp = 4;
+            File.WriteAllText(recipe, vm.GrowRecipe());
+            vm.RunRecipeFile(recipe).GetAwaiter().GetResult();
+            var grownAtoms = vm.Document?.Summary().Atoms ?? 0;
+            Check(grownAtoms == 3 * (4 * 16 + 2) && File.Exists(Path.Combine(rdir, "PS_3x4.data")) && vm.GrowPython().Contains("caps.polymer(\"*CC(*)c1ccccc1\", dp=4, chains=3"),
+                  $"grow recipe: {grownAtoms} atoms · {vm.Status}");
+            // a broken recipe says why, with its exit code
+            File.WriteAllText(recipe, "build: {molecule: CCO}\nbogus: 1\n");
+            vm.RunRecipeFile(recipe).GetAwaiter().GetResult();
+            Check(vm.Status.Contains("exit 2") && vm.Status.Contains("bogus"), $"recipe error: {vm.Status}");
         }
 
         // Close goes back to Start

@@ -57,8 +57,7 @@ public partial class StartPage : PageBase
     private async void OnRecipe(object? s, RoutedEventArgs e)
     {
         if (Window == null) return;
-        Vm.SetModule(5);
-        await Window.PackOpenAsync();
+        await Window.RecipeOpenAsync();
     }
 
     private async void OnOpen(object? s, RoutedEventArgs e) { if (Window != null) await Window.OpenDialog(); }

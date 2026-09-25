@@ -80,7 +80,7 @@ public sealed partial class MainViewModel
         if (doc == null) return;
         var s = doc.Summary();
         var detail = string.Format(CultureInfo.InvariantCulture, "{0:N0} atoms{1}", s.Atoms, s.Frames > 1 ? $" · {s.Frames:N0} frames" : "");
-        var opt = new CapsRenderOpts { Width = 720, Height = 340, Supersample = 2, Background = 0, Style = 0, ColourBy = 0, Outlines = 1, DepthCue = 1, ShowCell = 1,
+        var opt = new CapsRenderOpts { Width = 720, Height = 340, Supersample = 2, Background = 2, Style = 0, ColourBy = 0, Outlines = 1, DepthCue = 1, ShowCell = 1,
                                        Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1 };
         var cam = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0 };
         Task.Run(() =>

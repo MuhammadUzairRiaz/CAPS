@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 
 namespace CapsStudio.Views.Pages;
 
@@ -21,6 +22,33 @@ public partial class GrowPage : PageBase
         if (clip != null) await clip.SetTextAsync(Vm.GrowCommand);
         Vm.Status = "Copied: " + Vm.GrowCommand;
     }
+    private async void OnCopyPython(object? s, RoutedEventArgs e)
+    {
+        var clip = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clip != null) await clip.SetTextAsync(Vm.GrowPython());
+        Vm.Status = "Copied the build as Python (import caps; caps.polymer(...))";
+    }
+
+    private async void OnSaveRecipe(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var file = await top.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Save the build as a recipe",
+            SuggestedFileName = "grow_recipe.yaml",
+            DefaultExtension = "yaml",
+            FileTypeChoices = [new Avalonia.Platform.Storage.FilePickerFileType("CAPS recipe") { Patterns = ["*.yaml", "*.yml"] }],
+        });
+        if (file?.TryGetLocalPath() is not string path) return;
+        try
+        {
+            System.IO.File.WriteAllText(path, Vm.GrowRecipe());
+            Vm.Status = $"Saved {System.IO.Path.GetFileName(path)} · run it with caps run {System.IO.Path.GetFileName(path)} or Start › From a recipe";
+        }
+        catch (System.Exception ex) { Vm.Status = "Could not save the recipe: " + ex.Message; }
+    }
+
     private void OnChoosePolymer(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.SetModule(13);
     private void OnUsePs(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.UsePolystyreneInGrow();
 }

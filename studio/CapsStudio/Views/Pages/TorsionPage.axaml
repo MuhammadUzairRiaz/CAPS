@@ -62,7 +62,7 @@
         <DockPanel>
           <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
             <DockPanel>
-              <Border DockPanel.Dock="Right" Classes="chip" Height="22" Padding="8,0" VerticalAlignment="Center" Background="#3A2C14"><TextBlock Text="{Binding TorsionBarrierText}" FontSize="11.5" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /></Border>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="22" Padding="8,0" VerticalAlignment="Center" Background="{DynamicResource WarnBgB}"><TextBlock Text="{Binding TorsionBarrierText}" FontSize="11.5" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /></Border>
               <TextBlock Text="Torsion scan" Classes="h2" VerticalAlignment="Center" />
             </DockPanel>
           </Border>

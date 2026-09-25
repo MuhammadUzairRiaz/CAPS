@@ -366,7 +366,7 @@ public partial class MainWindow : Window
         _vm.AddCommand(new PaletteCommand { Title = "Export figure (SVG)…", Id = "export.svg", Icon = "download", Section = "File", Keywords = "vector image",
             Enabled = () => _vm.HasDocument, Run = () => _ = Export("svg") });
         _vm.CompactChanged += ApplyCompact;
-        SizeChanged += (_, e) => _vm.Compact = e.NewSize.Width < 1440;
+        SizeChanged += (_, e) => { _vm.Compact = e.NewSize.Width < 1440; ToolbarRight.Classes.Set("narrow", e.NewSize.Width < 1700); };
         // a folded dock opens when one of its tabs is chosen
         AnalysisTabs.AddHandler(PointerReleasedEvent, (_, _) => { if (_vm.Compact && !_vm.DockOpen) _vm.DockOpen = true; }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         _vm.TourChanged += UpdateTour;
@@ -464,6 +464,25 @@ public partial class MainWindow : Window
     public void PackExample() { if (_samples != null) _vm.AddPackExample(_samples); }
     public Task PackAddAsync() => PackAdd();
     public Task PackOpenAsync() => PackOpen();
+
+    /// <summary>Start › From a recipe: a CAPS recipe (run, then opened) or a Packmol input (into Pack).</summary>
+    public async Task RecipeOpenAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Import a recipe",
+            FileTypeFilter = [new FilePickerFileType("CAPS recipe or Packmol input") { Patterns = ["*.yaml", "*.yml", "*.json", "*.inp"] }, new FilePickerFileType("All files") { Patterns = ["*"] }],
+        });
+        if (files.Count == 0 || files[0].TryGetLocalPath() is not string p) return;
+        if (p.EndsWith(".inp", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+        {
+            _vm.SetModule(5);
+            try { _vm.LoadPackInput(p); }
+            catch (Exception ex) { _vm.Status = "Could not open: " + ex.Message; }
+            return;
+        }
+        await _vm.RunRecipeFile(p);
+    }
     private async void OnPackRun(object? s, RoutedEventArgs e) => await _vm.RunPack();
     private void OnPackCancel(object? s, RoutedEventArgs e) => _vm.CancelPack();
 
