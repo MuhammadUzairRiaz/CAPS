@@ -22,7 +22,7 @@
         <Button Classes="builder on" Content="Surface" />
         <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
         <Button Classes="builder" Content="Biomolecule" Click="OnBio" />
-        <Button Classes="builder" Content="Solvation" Click="OnSolvation" ToolTip.Tip="Pack molecules into regions (CAPS Pack)" />
+        <Button Classes="builder" Content="Solvation" Click="OnSolvation" />
       </StackPanel>
     </Border>
 

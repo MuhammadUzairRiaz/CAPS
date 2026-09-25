@@ -27,7 +27,7 @@ public sealed partial class MainViewModel
         new("Crystal", "Space group, lattice, CIF import", "cube", 29, "A space group, a lattice and an asymmetric unit expanded into a cell; symmetry found from a CIF"),
         new("Amorphous cell", "Grow and pack a periodic cell", "pack", 0, "Grow chains into a periodic cell at a target density"),
         new("Surface or interface", "Cleave, stack, add vacuum", "layers", 14, "Cleave a crystal (CIF) along (hkl) and grow a polymer film on it: fibre–rubber interfaces"),
-        new("Solvated system", "Box, solvent model, ions", "flask", 5, "Pack molecules into regions of a box (Packmol input)"),
+        new("Solvated system", "Box, solvent model, ions", "flask", 31, "Water (TIP3P, SPC/E, TIP4P/2005) or a swelling solvent and salt around the open structure (CAPS Pack)"),
     ];
 
     /// <summary>Fibre–rubber composites, the builders and protocols in the order they are used.</summary>

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -472,6 +472,21 @@ int32_t caps_crystal_find_symmetry(const char* spec_json, const char* cif_path, 
 int32_t caps_peptide_info(const char* options_json, char* json, int32_t cap);
 caps_doc* caps_peptide_build(const char* options_json, char* report, int32_t cap);
 int32_t caps_fasta_sequence(const char* text, char* seq, int32_t cap);
+
+/* Solvation (v20, design/boards/SolvationBuilder). Options JSON {shape: 0 cubic | 1 rectangular | 2 solute plus padding,
+   edge, edges: [a, b, c], padding (Å), tolerance (Å), solvent (an id of caps_solvent_library), water_model: "TIP3P" |
+   "SPC/E" | "TIP4P/2005", density (g/cm³, 0: the solvent's), molecules (0: from the free volume), ion_mode: 0 none |
+   1 neutralise | 2 concentration | 3 custom, salt, concentration (mol/L), cations, anions, seed}. The solute is the
+   document's current frame (NULL: pure solvent), held at the centre.
+   caps_solvent_library: {solvents: [{id, name, smiles, density, use}], salts: [{id, cation, anion, zc, za}]}.
+   caps_solvate_plan: {ok, error, box: [a, b, c], box_volume, solute_volume, free_volume, solute_atoms, solute_charge,
+   solvent, cations, anions, solvent_name, cation, anion, solvent_mass, concentration, density, notes} without packing.
+   caps_solvate: the packed box as a new document; progress gets the stage (0 insertion, 1 optimisation, 2 verification),
+   the loop, the smallest distance so far and the molecules still too close; return non-zero to cancel. */
+typedef int32_t (*caps_stage_progress_fn)(int32_t stage, int32_t loop, int32_t loops, double dmin, int32_t bad, void* user);
+int32_t caps_solvent_library(char* json, int32_t cap);
+int32_t caps_solvate_plan(caps_doc* solute, const char* options_json, char* json, int32_t cap);
+caps_doc* caps_solvate(caps_doc* solute, const char* options_json, caps_stage_progress_fn progress, void* user, char* report, int32_t cap);
 
 #ifdef __cplusplus
 }

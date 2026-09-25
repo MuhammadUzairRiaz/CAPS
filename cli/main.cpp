@@ -25,6 +25,7 @@
 #include "caps/crystal.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
+#include "caps/solvate.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
@@ -76,6 +77,9 @@ int usage() {
                "  caps peptide SEQUENCE|FILE.fasta -o OUT.pdb|mol2|xyz|data [--helix | --strand | --ppii | --structure HHHHCCC]\n"
                "               [--n-term NH3+|NH2|ACE] [--c-term COO-|COOH|NME] [--ph 7] [--neutral] [--no-cleanup] [--seed 1]\n"
                "                                   an all-atom peptide: backbone from φ/ψ/ω, side chains at the pH, UFF clean-up\n"
+               "  caps solvate [SOLUTE] -o OUT [--edge 30 | --box a,b,c | --padding 10] [--solvent water|toluene|…] [--model TIP4P/2005]\n"
+               "               [--salt NaCl --conc 0.15 | --neutralise | --ions 3,6 | --no-ions] [--molecules N] [--tolerance 2] [--solvents]\n"
+               "                                   solvent and ions packed around a solute (CAPS Pack)\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -159,7 +163,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -328,6 +332,68 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "solvate") {   // before the generic open: the solute is optional
+    try {
+      if (o.count("--solvents")) {
+        for (const auto& sv : solvent_library()) std::printf("%-12s %-20s %6.3f g/cm³  %s\n", sv.id.c_str(), sv.name.c_str(), sv.density, sv.use.c_str());
+        std::printf("salts:");
+        for (const auto& sl : salt_library()) std::printf(" %s", sl.id.c_str());
+        std::printf("\n");
+        return 0;
+      }
+      if (!o.count("-o")) return usage();
+      SolvateOptions so;
+      if (o.count("--edge")) so.shape = 0, so.edge = std::stod(o["--edge"]);
+      if (o.count("--box")) {
+        std::vector<double> v;
+        std::stringstream ss(o["--box"]);
+        for (std::string x; std::getline(ss, x, ',');) v.push_back(std::stod(x));
+        if (v.size() != 3) throw std::invalid_argument("--box a,b,c");
+        so.shape = 1, so.edges = {v[0], v[1], v[2]};
+      }
+      if (o.count("--padding")) so.shape = 2, so.padding = std::stod(o["--padding"]);
+      if (o.count("--solvent")) so.solvent = o["--solvent"];
+      if (o.count("--model")) so.water_model = o["--model"];
+      if (o.count("--density")) so.density = std::stod(o["--density"]);
+      if (o.count("--molecules")) so.molecules = std::stoi(o["--molecules"]);
+      if (o.count("--salt")) so.salt = o["--salt"];
+      if (o.count("--conc")) so.concentration = std::stod(o["--conc"]);
+      if (o.count("--neutralise")) so.ion_mode = 1;
+      if (o.count("--no-ions")) so.ion_mode = 0;
+      if (o.count("--ions")) {
+        so.ion_mode = 3;
+        const auto c = o["--ions"].find(',');
+        if (c == std::string::npos) throw std::invalid_argument("--ions CATIONS,ANIONS");
+        so.cations = std::stoi(o["--ions"].substr(0, c)), so.anions = std::stoi(o["--ions"].substr(c + 1));
+      }
+      if (o.count("--tolerance")) so.tolerance = std::stod(o["--tolerance"]);
+      if (o.count("--seed")) so.seed = std::stoull(o["--seed"]);
+      System solute;
+      const bool has = !pos.empty();
+      if (has) solute = load(pos[0], o);
+      so.progress = [](const PackProgress& p) {
+        std::fprintf(stderr, "\r%-12s loop %d/%d  bad %d  dmin %.2f Å   ", p.stage.c_str(), p.loop, p.loops, p.bad, p.dmin);
+        return true;
+      };
+      SolvateReport rep;
+      const System s = solvate(has ? &solute : nullptr, so, &rep);
+      std::fprintf(stderr, "\n");
+      for (const auto& n : s.notes) std::printf("%s\n", n.c_str());
+      std::printf("free volume %.0f of %.0f Å³ · min. distance %.2f Å · %.1f s\n", rep.plan.free_volume, rep.plan.box_volume, rep.pack.dmin, rep.pack.seconds);
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".gro")) write_gro(s, out);
+      else write_lammps_data(s, out);
+      std::printf("%zu atoms · wrote %s\n", s.atoms.size(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps solvate: %s\n", e.what());
       return 1;
     }
   }

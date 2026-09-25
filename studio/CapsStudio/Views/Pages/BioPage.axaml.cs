@@ -24,7 +24,7 @@ public partial class BioPage : PageBase
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
-    private void OnSolvation(object? s, RoutedEventArgs e) => Vm.SetModule(5);
+    private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private async void OnBuild(object? s, RoutedEventArgs e) => await Vm.BuildPeptide();
 

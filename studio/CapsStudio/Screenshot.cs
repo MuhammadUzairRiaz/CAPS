@@ -176,6 +176,13 @@ internal static class Screenshot
                 w.ViewModel.BioType = int.Parse(parts[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "solvation")   // solvation=1: the Solvation builder around the open structure (or pure solvent); solvation=ID picks a solvent
+            {
+                w.ViewModel.OpenSolvation();
+                if (kv[1] != "1" && w.ViewModel.Solvents.FirstOrDefault(sv => sv.Id == kv[1]) is { } svi) w.ViewModel.SolvSolvent = svi;
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "solvpad") { w.ViewModel.SolvPadding = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture); for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {
