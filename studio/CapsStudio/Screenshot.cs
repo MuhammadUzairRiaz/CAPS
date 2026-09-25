@@ -279,6 +279,13 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "importff") { w.ViewModel.ImportForceField = int.Parse(kv[1]); Dispatcher.UIThread.RunJobs(); }
+            if (kv[0] == "importok")   // importok=1: confirm the import dialog opened by import=PATH
+            {
+                w.ViewModel.ImportChecks = false;
+                var t = w.ViewModel.ConfirmImport();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "exportdlg")   // exportdlg=image|movie: the export dialog
             {
                 w.ViewModel.OpenExportDialog(kv[1] == "movie" ? 1 : 0);

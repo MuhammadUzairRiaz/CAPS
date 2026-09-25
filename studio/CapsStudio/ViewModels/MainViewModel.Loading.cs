@@ -127,6 +127,13 @@ public sealed partial class MainViewModel
         _loadDoc = doc0;
         LoadIndexing = true;
         SetStage(3, "running", "reading · frame 0 is ready");
+        var s0 = doc0.Summary();
+        Notify(new Notice
+        {
+            Key = "load.stream", Severity = "info", Icon = "play", Title = "Opening a large trajectory",
+            Body = $"Streaming {name} · {s0.Atoms:N0} atoms. Frames are read from disk in the background; the first frame is ready now.",
+            Primary = "Cancel", OnPrimary = CancelLoad,
+        });
         Status = $"Opened frame 0 of {name} · reading the other frames";
 
         // 2. the other frames, read in full in the background and moved into the open document
@@ -149,6 +156,7 @@ public sealed partial class MainViewModel
         catch (Exception e) { error = e.Message; }
         var stopped = _loadStop;
         LoadIndexing = false;
+        Dismiss("load.stream");
         if (full != null && _doc == doc0 && _loadDoc == doc0)
         {
             var n = doc0.AdoptFrames(full);

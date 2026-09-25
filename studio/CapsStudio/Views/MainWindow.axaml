@@ -15,6 +15,14 @@
     <Style Selector="Border#Rail.compact Button.rail Panel"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact Button TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact ToggleButton TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Border.chip.sev TextBlock"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+    <Style Selector="Border.chip.sev.check"><Setter Property="Background" Value="{DynamicResource SelBgB}" /></Style>
+    <Style Selector="Border.chip.sev.check TextBlock"><Setter Property="Foreground" Value="{DynamicResource SelB}" /></Style>
+    <Style Selector="Border.chip.sev.warning"><Setter Property="Background" Value="{DynamicResource WarnBgB}" /></Style>
+    <Style Selector="Border.chip.sev.warning TextBlock"><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
+    <Style Selector="Border.chip.sev.blocks"><Setter Property="Background" Value="{DynamicResource ErrBgB}" /></Style>
+    <Style Selector="Border.chip.sev.blocks TextBlock"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="Border.notice"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.2" /></Transitions></Setter></Style>
     <!-- below ~1700 px the labels of the panel toggles and the style menu give way to their icons (tooltips stay) -->
     <Style Selector="StackPanel#ToolbarRight.narrow ToggleButton TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="StackPanel#ToolbarRight.narrow Button.short TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
@@ -606,6 +614,34 @@
             </Border>
             <!-- Render (design/boards/RenderOverlays): the output frame and its overlays -->
             <local:RenderGuideView x:Name="RenderGuide" IsVisible="{Binding IsRender}" IsHitTestVisible="False" />
+            <!-- System states (design/boards/SystemStates): what happened, what still works, one primary action -->
+            <ItemsControl ItemsSource="{Binding Notices}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,48,16,0" Width="380" ZIndex="8"
+                          IsVisible="{Binding HasNotices}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Notice">
+                  <Border Classes="notice" Padding="14,12" CornerRadius="10" BorderThickness="1" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}"
+                          BoxShadow="0 8 24 0 #40000000">
+                    <StackPanel Spacing="8">
+                      <DockPanel>
+                        <Button DockPanel.Dock="Right" Classes="tool" Width="22" Height="22" Padding="0" Click="OnNoticeClose" Tag="{Binding}" ToolTip.Tip="Dismiss"><local:Icon Kind="close" Size="12" /></Button>
+                        <Border DockPanel.Dock="Right" Classes="chip sev" Classes.check="{Binding IsCheck}" Classes.warning="{Binding IsWarning}" Classes.blocks="{Binding IsBlocks}"
+                                Margin="8,0,6,0" VerticalAlignment="Center"><TextBlock Text="{Binding SeverityText}" /></Border>
+                        <Border Width="26" Height="26" CornerRadius="6" Background="{DynamicResource Bg3B}" Margin="0,0,10,0">
+                          <local:Icon Kind="{Binding Icon}" Size="14" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                        </Border>
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      </DockPanel>
+                      <TextBlock Text="{Binding Body}" FontSize="12" LineHeight="18" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="primary small" Content="{Binding Primary}" IsVisible="{Binding HasPrimary}" Click="OnNoticePrimary" Tag="{Binding}" />
+                        <Button Classes="small" Content="{Binding Secondary}" IsVisible="{Binding HasSecondary}" Click="OnNoticeSecondary" Tag="{Binding}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <!-- Keyboard walk (design/boards/VisAccess): what a screen reader says, shown for sighted keyboard users -->
             <TextBlock Text="{Binding Announcement}" Opacity="0" IsHitTestVisible="False" Width="1" Height="1" HorizontalAlignment="Left" VerticalAlignment="Top"
                        AutomationProperties.LiveSetting="Polite" />
