@@ -608,6 +608,36 @@ TEST(Pipeline, TopologyShapeAndFrames) {
   EXPECT_LT(inter, 0.02);
 }
 
+TEST(Pipeline, VectorsAndPaths) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  System whole = t.frame(0);
+  if (!whole.unwrapped) make_molecules_whole(whole);
+  auto run = [&](const std::string& json) { return run_pipeline(t.frame(0), pipeline_from_json(Json::parse(json)), 0, 0, &t); };
+  // end-to-end arrows: one per chain, ⟨R²⟩ as the chain statistics give it
+  auto st = run(R"([{"type":"vectors","property":"end_to_end"}])");
+  EXPECT_EQ(st.segments.size(), 10u);
+  EXPECT_TRUE(st.segments[0].arrow);
+  EXPECT_NEAR(st.attribute("Vectors.mean_ree2"), internal_distances(whole).r2_end, 1e-6);
+  // displacement arrows need the displacements step below them
+  st = run(R"([{"type":"vectors","property":"displacement"}])");
+  EXPECT_EQ(st.steps[0].level, "error");
+  st = run(R"([{"type":"vectors","property":"displacement"},{"type":"displacements"}])");
+  EXPECT_EQ(st.steps[0].level, "ok");
+  // paths of the ten chain centres over the three frames: two segments each
+  st = run(R"([{"type":"trajectory_lines"}])");
+  EXPECT_EQ(st.segments.size(), 20u);
+  EXPECT_FALSE(st.segments[0].arrow);
+  // the renderer draws them
+  Renderer R;
+  RenderOptions o;
+  o.width = 160; o.height = 120; o.show_cell = false;
+  o.segments = run(R"([{"type":"vectors","property":"end_to_end","radius":0.6}])").segments;
+  const Image with = R.render(t.frame(0), Camera{}, o);
+  o.segments.clear();
+  const Image without = R.render(t.frame(0), Camera{}, o);
+  EXPECT_NE(with.rgba, without.rgba);
+}
+
 TEST(Io, FileWithoutAtomsIsAnError) {
   const std::string path = (std::filesystem::temp_directory_path() / "caps_test_garbage.data").string();
   { std::ofstream f(path); f << "garbage\n"; }

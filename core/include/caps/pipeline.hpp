@@ -24,6 +24,8 @@
 //   topology            bond lengths, bond angles and dihedrals as histograms          → tables bonds, angles, dihedrals
 //   displacements       reference first|previous|frame, frame                              → Displacement(.X .Y .Z), MSD
 //   smooth              window (frames, centred): positions averaged over the trajectory
+//   vectors             property end_to_end|dipole|displacement|velocity, scale, radius       → arrows, table vectors
+//   trajectory_lines    particles centres|selected, from, to, stride, radius                  → paths over the frames
 //
 // Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
 // Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,
@@ -38,6 +40,7 @@
 #include <vector>
 
 #include "caps/json.hpp"
+#include "caps/render.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -74,6 +77,7 @@ struct PipelineState {
   std::vector<StepStatus> steps;                       // one per step, in the listed order
   PipelineLegend legend;
   bool has_legend = false;
+  std::vector<Segment> segments;                       // arrows and paths the view draws with the particles
   int frame = 0;
   int64_t timestep = 0;
   const Trajectory* traj = nullptr;                    // the whole trajectory, for steps that read other frames

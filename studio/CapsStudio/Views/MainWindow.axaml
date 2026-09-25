@@ -561,8 +561,8 @@
               <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                   <TextBox Width="260" Classes="mono" Watermark="Filter: Molecule == 1" Text="{Binding InspectorFilter}" IsVisible="{Binding IsParticlesTab}" FontSize="12" />
-                  <ComboBox Width="240" ItemsSource="{Binding PipeTables}" SelectedIndex="{Binding PipeTable}" IsVisible="{Binding InspectorShowsTables}" />
-                  <ComboBox Width="200" ItemsSource="{Binding PipeYColumns}" SelectedIndex="{Binding PipeYColumn}" IsVisible="{Binding InspectorShowsTables}" ToolTip.Tip="Column plotted" />
+                  <ComboBox Width="240" ItemsSource="{Binding PipeTables}" SelectedItem="{Binding PipeTableName}" IsVisible="{Binding InspectorShowsTables}" />
+                  <ComboBox Width="200" ItemsSource="{Binding PipeYColumns}" SelectedItem="{Binding PipeYColumnName}" IsVisible="{Binding InspectorShowsTables}" ToolTip.Tip="Column plotted" />
                   <Button Classes="small" Click="OnSeries" IsEnabled="{Binding SeriesIdle}" IsVisible="{Binding InspectorShowsTables}"
                           ToolTip.Tip="Run the pipeline on every frame and tabulate its attributes (cluster count, MSD, density …)">
                     <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="13" VerticalAlignment="Center" /><TextBlock Text="Over all frames" VerticalAlignment="Center" /></StackPanel>
