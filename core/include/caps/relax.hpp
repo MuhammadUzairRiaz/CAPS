@@ -33,6 +33,10 @@ struct RelaxOptions {
   // Per atom: 1 = held in place during minimisation (a substrate under a film). Compression and box relaxation still
   // scale every atom.
   std::vector<char> fixed;
+  // Distance restraints: k (r − r0)² between atoms i and j (minimum image), added to the energy that is minimised
+  // (pull two groups to a contact distance, hold a hydrogen bond, close a gap). Reported at the end.
+  struct Restraint { uint32_t i = 0, j = 0; double r0 = 0, k = 10; };   // Å, kcal/mol/Å²
+  std::vector<Restraint> restraints;
 
   // Soft push-off before minimising (Auhl et al., J. Chem. Phys. 119, 12718 (2003)): LJ forces capped, the cap raised
   // stage by stage. Needed after Grow with a contact scale below 1, or for any structure with overlaps.

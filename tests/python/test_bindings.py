@@ -123,4 +123,9 @@ check(abs(film.summary()["cell_c"] - 50.0) < 1e-6 and film.atoms == 4 * 102, f"p
 rb = caps.polymer("*CC*", dp=20, chains=3, density=0.4, method="rosenbluth", seed=4)
 st = [x for x in rb.provenance()["steps"] if x["engine"] == "grow.rosenbluth"]
 check(len(st) == 1 and "ln W" in st[0]["params"]["method"], "polymer: Rosenbluth growth recorded in the provenance")
+pair = caps.polymer("*CC*", dp=6, chains=2, density=0.3, seed=3)
+pair.relax(ftol=1.0, restraints=[(0, 30, 4.5, 50)])
+check("restraint 1–31: target 4.500 Å" in pair.report, "relax: a distance restraint is applied and reported")
+pair.relax(ftol=1.0, restraints=[])
+check("restraint" not in pair.report, "relax: restraints=[] clears them")
 print("all python checks passed")

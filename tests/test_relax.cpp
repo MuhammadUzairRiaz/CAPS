@@ -272,3 +272,26 @@ TEST(LammpsData, MixedClassesBecomeHybridStylesWithSkipLines) {
   charmm.lj14_types.assign(charmm.type_names.size(), {0.05, 3.0});
   EXPECT_THROW(write_lammps_data_ff(s, charmm, EnergyOptions{}, path), FieldError);
 }
+
+// A distance restraint pulls two carbons of different chains to its target (4.0 Å at k 100 kcal/mol/Å²), is reported,
+// and changes nothing else about the minimisation
+TEST(Relax, DistanceRestraintPullsAtomsToTarget) {
+  System s = small_cell(3, 4, 0.4);
+  uint32_t a = 0, b = 0;
+  double far = 0;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i)
+    for (uint32_t j = 0; j < s.atoms.size(); ++j)
+      if (s.atoms[i].mol == 1 && s.atoms[j].mol == 2 && s.atoms[i].element == 6 && s.atoms[j].element == 6) {
+        const double d = norm(s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos));
+        if (d > far && d < 9) far = d, a = i, b = j;
+      }
+  ASSERT_GT(far, 6.0);
+  RelaxOptions o;
+  o.ftol = 0.2;
+  o.restraints.push_back({a, b, 4.0, 100.0});
+  RelaxReport r;
+  relax(s, o, &r);
+  const double d = norm(s.cell.minimum_image(s.atoms[b].pos - s.atoms[a].pos));
+  EXPECT_NEAR(d, 4.0, 0.1) << "from " << far;
+  EXPECT_TRUE(std::any_of(r.notes.begin(), r.notes.end(), [](const std::string& n) { return n.rfind("restraint ", 0) == 0 && n.find("target 4.000 Å") != std::string::npos; }));
+}
