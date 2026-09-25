@@ -265,6 +265,59 @@ public sealed class RenderGuideView : Control
     }
 }
 
+/// <summary>Timeline strip (design/boards/Timeline): an attribute's sparkline over the frames, markers where another
+/// attribute changes, the frames computed, and the current frame; a click moves to that frame.</summary>
+public sealed class TimelineView : Control
+{
+    public MainViewModel? Vm { get; set; }
+
+    public TimelineView()
+    {
+        PointerPressed += (_, e) =>
+        {
+            if (Vm == null || Vm.FrameMax <= 0) return;
+            var x = e.GetPosition(this).X;
+            Vm.Frame = (int)Math.Round(Math.Clamp((x - 4) / Math.Max(1, Bounds.Width - 8), 0, 1) * Vm.FrameMax);
+        };
+    }
+
+    public override void Render(DrawingContext ctx)
+    {
+        if (Vm == null) return;
+        var w = Bounds.Width - 8;
+        var h = Bounds.Height;
+        var n = Math.Max(1, Vm.FrameMax);
+        double X(double f) => 4 + f / n * w;
+        ctx.FillRectangle(Tokens.Brush("Bg0B"), new Rect(0, 0, Bounds.Width, h), 4);
+        // frames computed: small ticks along the bottom
+        var dim = new Pen(Tokens.Brush("LineB"), 1);
+        foreach (var f in Vm.SeriesFrames()) ctx.DrawLine(dim, new Point(X(f), h - 5), new Point(X(f), h - 2));
+        var pts = Vm.Sparkline();
+        if (pts.Length > 1)
+        {
+            var lo = pts.Min(p => p.Y);
+            var hi = pts.Max(p => p.Y);
+            if (hi - lo < 1e-12) { lo -= 1; hi += 1; }
+            double Y(double v) => h - 8 - (v - lo) / (hi - lo) * (h - 16);
+            var geo = new StreamGeometry();
+            using (var g = geo.Open())
+            {
+                g.BeginFigure(new Point(X(pts[0].X), Y(pts[0].Y)), false);
+                foreach (var p in pts.Skip(1)) g.LineTo(new Point(X(p.X), Y(p.Y)));
+                g.EndFigure(false);
+            }
+            ctx.DrawGeometry(null, new Pen(Tokens.Brush("SelB"), 1.4), geo);
+        }
+        if (Vm.ShowMarkers)
+        {
+            var warn = new Pen(Tokens.Brush("WarnB"), 1.4);
+            foreach (var f in Vm.MarkerFrames()) ctx.DrawLine(warn, new Point(X(f), 2), new Point(X(f), h - 2));
+        }
+        var acc = Tokens.Brush("AccB");
+        ctx.DrawLine(new Pen(acc, 2), new Point(X(Vm.Frame), 0), new Point(X(Vm.Frame), h));
+    }
+}
+
 /// <summary>The x, y, z axes as the camera sees them (the renderer's yaw then pitch).</summary>
 public sealed class TripodView : Control
 {
