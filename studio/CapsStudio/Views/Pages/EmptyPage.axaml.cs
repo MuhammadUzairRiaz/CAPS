@@ -19,7 +19,7 @@ public partial class EmptyPage : PageBase
         });
     }
 
-    private async void OnOpen(object? s, RoutedEventArgs e) { if (Window != null) await Window.OpenDialog(); }
+    private async void OnOpen(object? s, RoutedEventArgs e) { if (Window != null) await Window.OpenWithPreview(); }
     private void OnGrow(object? s, RoutedEventArgs e) => Vm.SetModule(0);
 
     private async void OnPaste(object? s, RoutedEventArgs e)
