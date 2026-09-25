@@ -553,6 +553,18 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Colour by (ColourBy): choosing a colouring sets the Visualize colour coding
+        {
+            vm.ClearPipeline();
+            var tile = vm.ColourTiles.First(t => t.Property == "Charge");
+            vm.ApplyColourTile(tile);
+            var cc = vm.PipelineRows.FirstOrDefault(r => r.Type == "colour_coding");
+            Check(vm.IsVisualize && cc != null && (string?)cc.Params["property"] == "Charge" && (string?)cc.Params["map"] == "diverging" && cc.Summary.Contains("diverging"),
+                  $"colour by: {cc?.Summary}");
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
