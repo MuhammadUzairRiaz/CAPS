@@ -658,6 +658,29 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Periodic box: the melt's crossing chains, pieces when wrapped, a crossing bond measured three ways, images, centring
+        {
+            vm.OpenPeriodic();
+            var bond = vm.PbRows.FirstOrDefault(r => r.What.Contains("crosses"));
+            var ok = vm.IsPeriodic && vm.PbChains == "10" && vm.PbCross == "7" && int.Parse(vm.PbPieces) > 10 && bond != null && bond.MinImage == bond.Whole &&
+                     double.Parse(bond.Wrapped, System.Globalization.CultureInfo.InvariantCulture) > 10;
+            vm.PbShow = 2;
+            var popt = new CapsRenderOpts { Width = 120, Height = 90, Supersample = 1, Background = 0, Style = 0, ColourBy = 1, Outlines = 1, DepthCue = 1, ShowCell = 1,
+                                           Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1 };
+            var withImages = new byte[120 * 90 * 4];
+            vm.Document!.Render(vm.Camera, popt, withImages);
+            vm.PbShow = 1;
+            var plain = new byte[120 * 90 * 4];
+            vm.Document!.Render(vm.Camera, popt, plain);
+            vm.Pick(0);
+            var x0 = vm.Document!.Atom(0).X;
+            vm.CentreOnSelection();
+            var moved = Math.Abs(vm.Document!.Atom(0).X - x0) > 1e-6;
+            vm.UndoEdit(false);
+            vm.SetModule(8);
+            Check(ok && !withImages.SequenceEqual(plain) && moved, $"periodic: {vm.PbChains} molecules · {vm.PbCross} cross · {vm.PbPieces} pieces · {bond?.What} {bond?.Wrapped}/{bond?.MinImage}/{bond?.Whole} · centred {moved}");
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

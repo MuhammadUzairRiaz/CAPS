@@ -369,6 +369,17 @@ int32_t caps_set_vision(caps_doc* d, int32_t vision, double severity);
 /* v20 motion (design/boards/Motion): the camera that frames atoms idx[0..n) — same yaw and pitch as cam, the pan that
    centres them and the zoom at which their extent fills `fill` (0.6) of the view (1 … 40); n = 0 frames everything. */
 int32_t caps_camera_focus(caps_doc* d, const caps_camera* cam, const int32_t* idx, int32_t n, double fill, caps_camera* out);
+/* v20 periodic box (design/boards/PeriodicBox). caps_periodic JSON {"molecule": k (1-based; 0: the first that crosses a
+   face)} → {ok, molecules, crossing (molecules that cross a face when whole), pieces (fragments when every atom is
+   wrapped into the cell), box: [a, b, c], cubic, molecule, bond: {i, j, wrapped, min_image, whole} (a bond of it that
+   crosses a face), ends: {i, j, wrapped, min_image, whole} (its first and last atom)}; distances in Å.
+   caps_set_images draws na × nb × nc copies around the cell, faded (1 1 1: off); caps_set_save_wrap(d, 0 as shown,
+   1 atoms into the cell, 2 molecule centres into the cell) applies to caps_save; caps_centre_on moves every atom so the
+   centre of atoms idx[0..n) sits at the cell centre (undoable). */
+int32_t caps_periodic(caps_doc* d, const char* json, char* out, int32_t cap);
+int32_t caps_set_images(caps_doc* d, int32_t na, int32_t nb, int32_t nc, double fade);
+int32_t caps_set_save_wrap(caps_doc* d, int32_t mode);
+int32_t caps_centre_on(caps_doc* d, const int32_t* idx, int32_t n);
 /* v20 partial charges (design/boards/Charges): {"method": "gasteiger" | "qeq" | "forcefield" (the Field assignment) |
    "file" {path: .chg} | "keep", "apply": false} → {ok, error, method, q[], net, max_abs, groups: [{name, n, mean, lo, hi}],
    edges[], counts[], notes[]}. apply: true sets the charges on the structure (undoable, clears the Field assignment). */

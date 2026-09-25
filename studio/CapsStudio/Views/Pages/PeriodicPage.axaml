@@ -1,0 +1,103 @@
+<!-- CAPS Studio › Periodic box (design/boards/PeriodicBox): wrapped or whole, images around the cell, molecules that
+     cross a face, one chain measured wrapped / minimum image / whole, wrap on save, centre on the selection. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.PeriodicPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnWhole" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Show every molecule whole, unwrapped with the image flags">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="link" Size="14" VerticalAlignment="Center" /><TextBlock Text="Make molecules whole" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Classes="primary" Click="OnCentre" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Move every atom so the selection sits at the centre of the cell (undoable)">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="14" VerticalAlignment="Center" /><TextBlock Text="Centre on selection" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Periodic box" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Wrapped, whole or with images · measuring across the boundary" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,440" ColumnSpacing="14" Margin="22,18">
+      <Border Classes="pcard" Padding="0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="12,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton Classes="seg" GroupName="pbshow" Content="Wrapped · as stored" IsChecked="{Binding PbShow, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+              <RadioButton Classes="seg" GroupName="pbshow" Content="Whole molecules" IsChecked="{Binding PbShow, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+              <RadioButton Classes="seg" GroupName="pbshow" Content="Images" IsChecked="{Binding PbShow, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+            </StackPanel>
+          </Border>
+          <Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="View" /></Panel>
+        </DockPanel>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                <StackPanel Spacing="2"><TextBlock Text="Molecules" Classes="label" /><TextBlock Text="{Binding PbChains}" Classes="mono" FontSize="18" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Cross a face" Classes="label" /><TextBlock Text="{Binding PbCross}" Classes="mono" FontSize="18" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2"><TextBlock Text="Pieces wrapped" Classes="label" /><TextBlock Text="{Binding PbPieces}" Classes="mono" FontSize="18" /></StackPanel>
+                <StackPanel Grid.Column="3" Spacing="2"><TextBlock Text="Box" Classes="label" /><TextBlock Text="{Binding PbBox}" Classes="mono" FontSize="12" TextWrapping="Wrap" /></StackPanel>
+              </Grid>
+              <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource ErrBgB}" IsVisible="{Binding PbHasError}">
+                <TextBlock Text="{Binding PbError}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource ErrB}" />
+              </Border>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Images" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                <StackPanel Spacing="6"><TextBlock Text="a" Classes="label" /><NumericUpDown Value="{Binding PbImagesA}" Minimum="1" Maximum="5" Increment="2" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="b" Classes="label" /><NumericUpDown Value="{Binding PbImagesB}" Minimum="1" Maximum="5" Increment="2" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="c" Classes="label" /><NumericUpDown Value="{Binding PbImagesC}" Minimum="1" Maximum="5" Increment="2" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="3" Spacing="6"><TextBlock Text="Shown at · %" Classes="label" /><NumericUpDown Value="{Binding PbFade}" Minimum="0" Maximum="90" Increment="10" FormatString="0" /></StackPanel>
+              </Grid>
+              <TextBlock Text="Wrap on save" Classes="label" />
+              <StackPanel Orientation="Horizontal">
+                <RadioButton Classes="seg" GroupName="pbsave" Content="Off" IsChecked="{Binding PbSaveWrap, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                <RadioButton Classes="seg" GroupName="pbsave" Content="Atoms" IsChecked="{Binding PbSaveWrap, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                <RadioButton Classes="seg" GroupName="pbsave" Content="Molecules" IsChecked="{Binding PbSaveWrap, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+              </StackPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Image flags are kept either way, so unwrapping is always exact. Molecules: each molecule's centre into the cell, the molecule kept whole." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6"><TextBlock Text="Molecule" Classes="label" VerticalAlignment="Center" /><NumericUpDown Value="{Binding PbChain}" Minimum="1" Maximum="1000000" Increment="1" FormatString="0" Width="80" /></StackPanel>
+                <TextBlock Text="Measuring across the boundary" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <Grid ColumnDefinitions="*,70,70,70">
+                <TextBlock Text="DISTANCE (Å)" Classes="h3" /><TextBlock Grid.Column="1" Text="WRAPPED" Classes="h3" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="2" Text="MIN. IMG" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="WHOLE" Classes="h3" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding PbRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PeriodicRow">
+                    <Grid ColumnDefinitions="*,70,70,70" Height="26">
+                      <TextBlock Text="{Binding What}" FontSize="12.5" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Wrapped}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="2" Text="{Binding MinImage}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="3" Text="{Binding Whole}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding PbNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

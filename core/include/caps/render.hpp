@@ -59,6 +59,8 @@ struct RenderOptions {
   bool depth_cue = true;
   bool show_cell = true;
   std::array<int, 3> cell_repeats{1, 1, 1};   // the cell is a supercell of these unit cells: its box dashed, one unit cell in the accent
+  std::vector<char> faded;             // per atom: drawn faded toward the background (periodic images)
+  float fade = 0.7f;                   // how far faded atoms move toward the background colour (0 … 1)
   std::vector<int> highlight;          // atom indices drawn with a selection ring
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
