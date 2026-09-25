@@ -9,6 +9,11 @@
 // (Flory–Huggins; V_ref the solvent's molecular volume, or for two polymers the geometric mean of the repeat units').
 // This is the enthalpic χ only: no entropic part, no contact statistics; short runs make it noisy (the standard error
 // comes from block averages of the three energies). A test of trends, not a replacement for measured χ.
+//
+// Measured resolution (natural rubber mixed with itself, where χ must be 0; 6 chains of 10 units per cell): χ = −5.0
+// after 4 ps of NPT per cell, −2.9 after 50 ps, −1.2 ± 0.5 after 300 ps (31 CPU-minutes). Real χ of interest are
+// 0.01–1, so the Studio does not offer this; use it from Python or C with long runs and larger cells, and run the
+// self-mixing control beside it.
 #pragma once
 #include <functional>
 #include <string>
