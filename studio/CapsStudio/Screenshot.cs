@@ -258,6 +258,13 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "import")   // import=PATH: the import dialog on that file
+            {
+                w.ViewModel.ShowImport(kv[1]);
+                w.ViewModel.WaitImport();
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "importff") { w.ViewModel.ImportForceField = int.Parse(kv[1]); Dispatcher.UIThread.RunJobs(); }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

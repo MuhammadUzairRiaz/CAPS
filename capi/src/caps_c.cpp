@@ -40,6 +40,7 @@
 #include "caps/torsion.hpp"
 #include "caps/edit.hpp"
 #include "caps/interactions.hpp"
+#include "caps/import.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -3646,3 +3647,77 @@ extern "C" int32_t caps_interactions(caps_doc* d, const char* options_json, char
 }
 
 extern "C" void caps_clear_checks(caps_doc* d) { d->checks.clear(); }
+
+// ---------------------------------------------------------------- import (design/boards/ImportDialog)
+namespace {
+caps::ImportOptions import_options(const char* options_json) {
+  const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+  auto flag = [&](const char* k, bool def) { return !o.has(k) ? def : o[k].kind() == caps::Json::Bool ? o[k].boolean() : o[k].number() != 0; };
+  caps::ImportOptions r;
+  const std::string b = o.text("bonds", "perceive");
+  r.bonds = b == "file" ? caps::ImportOptions::FromFile : b == "none" ? caps::ImportOptions::None : caps::ImportOptions::Perceive;
+  r.tolerance = o.num("tolerance", 0.45);
+  r.bond_orders = flag("bond_orders", true);
+  r.split = flag("split", true);
+  r.unwrap = flag("unwrap", true);
+  r.use_cell = flag("use_cell", true);
+  return r;
+}
+}  // namespace
+
+extern "C" caps_doc* caps_import(const char* path, const char* topology_path, const char* options_json) {
+  try {
+    auto* d = new caps_doc;
+    d->traj = caps::import_file(path, topology_path ? topology_path : "", import_options(options_json));
+    refresh(d);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
+
+extern "C" int32_t caps_import_preview(const char* path, const char* options_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const auto r = caps::import_preview(path, import_options(options_json));
+    j["ok"] = true;
+    j["format"] = r.file.format;
+    j["format_name"] = r.file.format_name;
+    j["units"] = r.file.units;
+    j["bytes"] = double(r.file.bytes);
+    caps::Json head = caps::Json::array();
+    for (const auto& l : r.file.head) head.push_back(l);
+    j["head"] = std::move(head);
+    j["atoms"] = double(r.atoms);
+    j["bonds_in_file"] = double(r.bonds_in_file);
+    j["bonds"] = double(r.bonds);
+    j["molecules"] = double(r.molecules);
+    j["single"] = r.single; j["double"] = r.dbl; j["triple"] = r.triple; j["aromatic"] = r.aromatic;
+    j["cell"] = r.cell;
+    j["fragment_heavy"] = r.fragment_heavy;
+    j["fragment_atoms"] = double(r.fragment.atoms.size());
+    j["fragment_bonds"] = double(r.fragment.bonds.size());
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : r.notes) notes.push_back(n);
+    j["notes"] = std::move(notes);
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" caps_doc* caps_import_fragment(const char* path, const char* options_json) {
+  try {
+    return doc_of(caps::import_preview(path, import_options(options_json)).fragment);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
