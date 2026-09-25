@@ -39,6 +39,11 @@ struct GrowOptions {
   std::array<double, 3> cell{0, 0, 0};   // edges x, y, z (Å), used when all three are > 0 (box and density are then ignored)
   double z_lo = 0, z_hi = 0;             // when z_hi > z_lo, every chain atom stays between these heights
   const System* substrate = nullptr;     // fixed atoms (a slab) the chains avoid; they come first in the result
+  // a spherical region (blend droplets): when sphere_radius > 0 every chain atom stays inside the sphere about
+  // sphere_centre, or outside it with sphere_outside (minimum image in the periodic cell)
+  double sphere_radius = 0;
+  std::array<double, 3> sphere_centre{0, 0, 0};
+  bool sphere_outside = false;
   // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
   // (quaternary backbones such as polyisobutylene and methacrylates, dense films); Relax with push-off afterwards
   bool auto_scale = false;

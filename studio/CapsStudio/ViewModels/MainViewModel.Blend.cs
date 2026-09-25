@@ -71,7 +71,8 @@ public sealed partial class MainViewModel
     public int BlendMorph { get => _blendMorph; set { if (Set(ref _blendMorph, value)) { Raise(nameof(BlendMorphText)); } } }
     public bool BlendMixed { get => _blendMorph == 0; set { if (value) BlendMorph = 0; } }
     public bool BlendSlabs { get => _blendMorph == 1; set { if (value) BlendMorph = 1; } }
-    public string BlendMorphText => _blendMorph == 1 ? "two-slab start" : "mixed start";
+    public bool BlendDroplet { get => _blendMorph == 2; set { if (value) BlendMorph = 2; } }
+    public string BlendMorphText => _blendMorph == 1 ? "two-slab start" : _blendMorph == 2 ? "droplet start" : "mixed start";
     private string _blendSummary = "", _blendLog = "", _blendError = "";
     public string BlendSummary { get => _blendSummary; private set => Set(ref _blendSummary, value); }
     public string BlendLog { get => _blendLog; private set => Set(ref _blendLog, value); }
@@ -131,7 +132,7 @@ public sealed partial class MainViewModel
             ["spec"] = JsonNode.Parse(SpecOf(r.Polymer!, (int)r.Dp)),
             ["weight"] = (double)r.Weight,
         }).ToArray());
-        var opts = new JsonObject { ["components"] = comps, ["chains"] = (int)_blendChains, ["density"] = (double)_blendDensity, ["morphology"] = _blendMorph == 1 ? "slabs" : "mixed" }.ToJsonString();
+        var opts = new JsonObject { ["components"] = comps, ["chains"] = (int)_blendChains, ["density"] = (double)_blendDensity, ["morphology"] = _blendMorph == 1 ? "slabs" : _blendMorph == 2 ? "droplet" : "mixed" }.ToJsonString();
         var name = string.Join(" / ", BlendRows.Select(r => r.Polymer!.Name.Split(" (")[0]));
         try
         {
