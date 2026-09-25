@@ -1237,6 +1237,8 @@
       <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Surface & interface builder (design/boards/SurfaceBuilder) -->
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
+      <!-- Solvation builder (design/boards/SolvationBuilder) -->
+      <pages:SolvationPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSolvation}" />
       <!-- Biomolecule builder (design/boards/BioBuilder) -->
       <pages:BioPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBio}" />
       <!-- Crystal builder (design/boards/CrystalBuilder) -->

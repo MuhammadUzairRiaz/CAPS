@@ -34,6 +34,7 @@
 #include "caps/crystal.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
+#include "caps/solvate.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -2781,4 +2782,112 @@ extern "C" caps_doc* caps_peptide_build(const char* options_json, char* report, 
 
 extern "C" int32_t caps_fasta_sequence(const char* text, char* seq, int32_t cap) {
   return report_out(caps::parse_fasta(text ? text : ""), seq, cap);
+}
+
+// ---------------------------------------------------------------- solvation (v20)
+
+namespace {
+
+caps::SolvateOptions solvate_options(const caps::Json& j) {
+  caps::SolvateOptions o;
+  o.shape = int(j.num("shape", 0));
+  o.edge = j.num("edge", 30);
+  if (j.has("edges") && j["edges"].is_array() && j["edges"].size() == 3) o.edges = {j["edges"][0].number(), j["edges"][1].number(), j["edges"][2].number()};
+  o.padding = j.num("padding", 10);
+  o.tolerance = j.num("tolerance", 2.0);
+  o.solvent = j.text("solvent", "water");
+  o.water_model = j.text("water_model", "TIP4P/2005");
+  o.density = j.num("density", 0);
+  o.molecules = int(j.num("molecules", 0));
+  o.ion_mode = int(j.num("ion_mode", 2));
+  o.salt = j.text("salt", "NaCl");
+  o.concentration = j.num("concentration", 0.15);
+  o.cations = int(j.num("cations", 0));
+  o.anions = int(j.num("anions", 0));
+  o.seed = uint64_t(j.num("seed", 1));
+  return o;
+}
+
+caps::System solute_of(caps_doc* d) {
+  caps::System s = d->frame;
+  if (s.cell.valid() && !s.unwrapped) caps::make_molecules_whole(s);
+  return s;
+}
+
+caps::Json plan_json(const caps::SolvatePlan& p) {
+  caps::Json j = caps::Json::object();
+  caps::Json box = caps::Json::array();
+  for (int k = 0; k < 3; ++k) box.push_back(p.box[k]);
+  j["box"] = box;
+  j["box_volume"] = p.box_volume, j["solute_volume"] = p.solute_volume, j["free_volume"] = p.free_volume;
+  j["solute_atoms"] = double(p.solute_atoms), j["solute_charge"] = p.solute_charge;
+  j["solvent"] = double(p.solvent), j["cations"] = double(p.cations), j["anions"] = double(p.anions);
+  j["solvent_name"] = p.solvent_name, j["cation"] = p.cation, j["anion"] = p.anion;
+  j["solvent_mass"] = p.solvent_mass, j["concentration"] = p.concentration, j["density"] = p.density;
+  caps::Json notes = caps::Json::array();
+  for (const auto& n : p.notes) notes.push_back(n);
+  j["notes"] = notes;
+  return j;
+}
+
+}  // namespace
+
+extern "C" int32_t caps_solvent_library(char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  caps::Json sv = caps::Json::array();
+  for (const auto& s : caps::solvent_library()) {
+    caps::Json x = caps::Json::object();
+    x["id"] = s.id, x["name"] = s.name, x["smiles"] = s.smiles, x["density"] = s.density, x["use"] = s.use;
+    sv.push_back(x);
+  }
+  j["solvents"] = sv;
+  caps::Json sl = caps::Json::array();
+  for (const auto& s : caps::salt_library()) {
+    caps::Json x = caps::Json::object();
+    x["id"] = s.id, x["cation"] = s.cation, x["anion"] = s.anion, x["zc"] = double(s.zc), x["za"] = double(s.za);
+    sl.push_back(x);
+  }
+  j["salts"] = sl;
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_solvate_plan(caps_doc* solute, const char* options_json, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::SolvateOptions o = solvate_options(caps::Json::parse(options_json && *options_json ? options_json : "{}"));
+    caps::System s;
+    if (solute) s = solute_of(solute);
+    j = plan_json(caps::solvate_plan(solute ? &s : nullptr, o));
+    j["ok"] = true;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" caps_doc* caps_solvate(caps_doc* solute, const char* options_json, caps_stage_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    caps::SolvateOptions o = solvate_options(caps::Json::parse(options_json && *options_json ? options_json : "{}"));
+    if (progress)
+      o.progress = [&](const caps::PackProgress& p) {
+        const int stage = p.stage == "insertion" ? 0 : p.stage == "optimisation" ? 1 : 2;
+        return progress(stage, p.loop, p.loops, p.dmin, p.bad, user) == 0;
+      };
+    caps::System s;
+    if (solute) s = solute_of(solute);
+    caps::SolvateReport rep;
+    const caps::System out = caps::solvate(solute ? &s : nullptr, o, &rep);
+    std::string notes;
+    for (const auto& n : out.notes) notes += n + "\n";
+    char b[160];
+    std::snprintf(b, sizeof b, "min. distance %.2f Å · %d molecules · %d atoms", rep.pack.dmin, rep.pack.molecules, rep.pack.atoms);
+    notes += b;
+    report_out(notes, report, cap);
+    return doc_of(out);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
 }

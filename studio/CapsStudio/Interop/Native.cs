@@ -192,6 +192,8 @@ public delegate int CapsReactProgress(in CapsReactCycle row, IntPtr user);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsPackProgress(int loop, int loops, double penalty, int bad, IntPtr user);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int CapsStageProgress(int stage, int loop, int loops, double dmin, int bad, IntPtr user);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsMdProgress(in CapsThermo row, long steps, IntPtr user);
@@ -252,6 +254,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
+    [DllImport(Lib, EntryPoint = "caps_solvent_library")] public static extern int SolventLibrary(byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_solvate_plan")] public static extern int SolvatePlan(IntPtr solute, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_solvate")] public static extern IntPtr Solvate(IntPtr solute, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsStageProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_space_groups")] public static extern int SpaceGroups(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_crystal_info")] public static extern int CrystalInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_crystal_build")] public static extern IntPtr CrystalBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, byte[] report, int cap);
@@ -432,6 +437,27 @@ public sealed class CapsDocument : IDisposable
     {
         var report = new byte[4096];
         var h = Native.PeptideBuild(options, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+    /// <summary>Solvents and salts for the solvation builder (caps_solvent_library).</summary>
+    public static string SolventLibrary() => JsonCall(Native.SolventLibrary);
+    /// <summary>The box and counts of a solvation, without packing (caps_solvate_plan); solute may be null.</summary>
+    public static string SolvatePlan(CapsDocument? solute, string options)
+    {
+        if (solute == null) return JsonCallOnce((b, c) => Native.SolvatePlan(IntPtr.Zero, options, b, c));
+        lock (solute._lock) return JsonCallOnce((b, c) => Native.SolvatePlan(solute._h, options, b, c));
+    }
+    /// <summary>Solvent and ions packed around the solute (caps_solvate): a new document.</summary>
+    public static (CapsDocument Doc, string Report) Solvate(CapsDocument? solute, string options, Func<int, int, int, double, int, bool>? progress, string label)
+    {
+        var report = new byte[4096];
+        CapsStageProgress? cb = progress == null ? null : (st, l, n, d, b, _) => progress(st, l, n, d, b) ? 0 : 1;
+        IntPtr h;
+        if (solute == null) h = Native.Solvate(IntPtr.Zero, options, cb, IntPtr.Zero, report, report.Length);
+        else lock (solute._lock) h = Native.Solvate(solute._h, options, cb, IntPtr.Zero, report, report.Length);
+        GC.KeepAlive(cb);
+        GC.KeepAlive(solute);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }

@@ -1,0 +1,174 @@
+<!-- CAPS Solvation builder (design/boards/SolvationBuilder.dc.html): the open structure held at the centre of a periodic
+     box, solvent and ions packed around it with CAPS Pack; a sparse sample of the solvent in the preview. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SolvationPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.builder"><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="12,0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="FontSize" Value="12.5" /></Style>
+    <Style Selector="Button.builder.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Ellipse.stage"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.stage.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Ellipse.stage.done"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.stage.failed"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="TextBlock.stage"><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="TextBlock.stage.running"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="TextBlock.stage.done"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="TextBlock.stage.failed"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+  </p:PageBase.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="BUILDERS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.9" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="builder" Content="Polymer" Click="OnPolymer" />
+        <Button Classes="builder" Content="Crystal" Click="OnCrystal" />
+        <Button Classes="builder" Content="Surface" Click="OnSurface" />
+        <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
+        <Button Classes="builder" Content="Biomolecule" Click="OnBio" />
+        <Button Classes="builder on" Content="Solvation" />
+      </StackPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,420">
+      <DockPanel>
+        <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="Packing: CAPS Pack (insertion → L-BFGS → verification)" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SolvBoxText}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+          </DockPanel>
+        </Border>
+        <Panel>
+          <v:MolView x:Name="Preview" ShowCell="True" />
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding SolvHud}" FontSize="12" /></Border>
+            <Border Classes="hud" Padding="10,4" IsVisible="{Binding SolvShowSalt}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="#9B7BD6" VerticalAlignment="Center" /><TextBlock Text="{Binding SolvCationLabel}" FontSize="12" Foreground="{DynamicResource MutedB}" /></StackPanel>
+            </Border>
+            <Border Classes="hud" Padding="10,4" IsVisible="{Binding SolvShowSalt}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="#57B26A" VerticalAlignment="Center" /><TextBlock Text="{Binding SolvAnionLabel}" FontSize="12" Foreground="{DynamicResource MutedB}" /></StackPanel>
+            </Border>
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0" VerticalAlignment="Center"><TextBlock Text="uses CAPS Pack" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+              <TextBlock Text="Solvation &amp; ions" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel" Click="OnCancel" />
+              <Button Classes="primary" Click="OnSolvate" IsEnabled="{Binding SolvIdle}">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="15" VerticalAlignment="Center" /><TextBlock Text="Solvate" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <!-- box -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="BOX" Classes="h3" />
+                  <CheckBox Classes="toggle" IsChecked="{Binding SolvUseSolute}" IsEnabled="{Binding SolvHasDocument}">
+                    <TextBlock Text="{Binding SolvSoluteText, StringFormat='Solute: {0} (held at the centre)'}" TextTrimming="CharacterEllipsis" />
+                  </CheckBox>
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <StackPanel Spacing="6"><TextBlock Text="Shape" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.SolvShapes}" SelectedIndex="{Binding SolvShape}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding SolvIsCubic}"><TextBlock Text="Edge · Å" Classes="label" /><NumericUpDown Value="{Binding SolvEdge}" Minimum="8" Maximum="300" Increment="1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding SolvIsPadding}"><TextBlock Text="Padding · Å" Classes="label" /><NumericUpDown Value="{Binding SolvPadding}" Minimum="2" Maximum="100" Increment="1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding SolvIsRect}"><TextBlock Text="a · Å" Classes="label" /><NumericUpDown Value="{Binding SolvA}" Minimum="8" Maximum="300" Increment="1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Min. distance · Å" Classes="label" /><NumericUpDown Value="{Binding SolvTolerance}" Minimum="1" Maximum="4" Increment="0.1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" IsVisible="{Binding SolvIsRect}">
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="b · Å" Classes="label" /><NumericUpDown Value="{Binding SolvB}" Minimum="8" Maximum="300" Increment="1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="c · Å" Classes="label" /><NumericUpDown Value="{Binding SolvC}" Minimum="8" Maximum="300" Increment="1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <!-- solvent -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SOLVENT" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Solvent" Classes="label" /><ComboBox ItemsSource="{Binding Solvents}" SelectedItem="{Binding SolvSolvent}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsEnabled="{Binding SolvIsWater}" ToolTip.Tip="Water models; other solvents are built from SMILES">
+                      <TextBlock Text="Model" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.WaterModels}" SelectedItem="{Binding SolvWaterModel}" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding SolvDensity}" Minimum="0.1" Maximum="3" Increment="0.01" FormatString="0.000" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Molecules" Classes="label" /><TextBox Text="{Binding SolvMolecules}" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding SolvSolventUse}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <!-- ions -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="IONS" Classes="h3" />
+                  <Border Classes="seg" HorizontalAlignment="Stretch">
+                    <UniformGrid Columns="4">
+                      <RadioButton Classes="seg" Content="None" GroupName="ions" IsChecked="{Binding SolvIonNone}" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="Neutralise" GroupName="ions" IsChecked="{Binding SolvIonNeutral}" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="Concentration" GroupName="ions" IsChecked="{Binding SolvIonConc}" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="Custom" GroupName="ions" IsChecked="{Binding SolvIonCustom}" HorizontalAlignment="Stretch" />
+                    </UniformGrid>
+                  </Border>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding SolvShowSalt}">
+                    <StackPanel Spacing="6"><TextBlock Text="Salt" Classes="label" /><ComboBox ItemsSource="{Binding Salts}" SelectedItem="{Binding SolvSalt}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding SolvIonConc}"><TextBlock Text="Concentration · mol/L" Classes="label" /><NumericUpDown Value="{Binding SolvConcentration}" Minimum="0" Maximum="5" Increment="0.05" FormatString="0.00" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding SolvIonCustom}">
+                    <StackPanel Spacing="6"><TextBlock Text="Cations" Classes="label" /><NumericUpDown Value="{Binding SolvCations}" Minimum="0" Maximum="5000" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Anions" Classes="label" /><NumericUpDown Value="{Binding SolvAnions}" Minimum="0" Maximum="5000" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding SolvCounts}" Classes="mono" FontSize="12" />
+                    <TextBlock Text="Counts (from free volume)" Foreground="{DynamicResource MutedB}" FontSize="12.5" />
+                  </DockPanel>
+                </StackPanel>
+              </Border>
+
+              <!-- packing progress -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="9">
+                  <DockPanel>
+                    <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0"><TextBlock Text="{Binding SolvStageChip}" FontSize="11" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /></Border>
+                    <TextBlock Text="PACKING PROGRESS" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <ItemsControl ItemsSource="{Binding SolvStages}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:SolvStage">
+                        <DockPanel Margin="0,0,0,8">
+                          <TextBlock DockPanel.Dock="Right" Text="{Binding StateText}" Classes="mono stage" Classes.running="{Binding IsRunning}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}" FontSize="11.5" />
+                          <Ellipse Width="9" Height="9" Classes="stage" Classes.running="{Binding IsRunning}" Classes.done="{Binding IsDone}" Classes.failed="{Binding IsFailed}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                          <TextBlock Text="{Binding Title}" FontSize="12.5" />
+                        </DockPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <ProgressBar Value="{Binding SolvProgress}" Minimum="0" Maximum="1" Height="6" MinHeight="6" CornerRadius="3" Foreground="{DynamicResource AccB}" Background="{DynamicResource Bg3B}" />
+                </StackPanel>
+              </Border>
+
+              <Border Padding="16,12">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding SolvError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding SolvHasError}" />
+                  <TextBlock Text="{Binding SolvLog}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

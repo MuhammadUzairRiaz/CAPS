@@ -406,6 +406,15 @@ internal static class SelfTest
         var psum = vm.Document?.Summary();
         Check(psum is { } pepSum && pepSum.Atoms > 300 && vm.Status.Contains("30 residues") && !vm.BioHasError, $"bio: built {psum?.Atoms} atoms · {vm.Status} {vm.BioError}");
 
+        // Solvation builder: the peptide just built in TIP3P water with 0.15 M NaCl, 6 Å padding
+        vm.OpenSolvation();
+        vm.SolvWaterModel = "TIP3P";
+        vm.SolvPadding = 6;
+        Check(vm.SolvUseSolute && vm.SolvShape == 2 && vm.SolvCounts.Contains("Na⁺") && !vm.SolvHasError, $"solvation: plan {vm.SolvCounts} · {vm.SolvBoxText} {vm.SolvError}");
+        vm.Solvate().GetAwaiter().GetResult();
+        var wsum = vm.Document?.Summary();
+        Check(wsum is { } solvSum && solvSum.Atoms > 2000 && vm.Title.Contains("water") && vm.SolvStages.All(st => st.IsDone), $"solvation: {vm.Title} · {wsum?.Atoms} atoms · {vm.SolvError} {vm.Status}");
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");

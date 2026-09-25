@@ -27,7 +27,7 @@ public partial class SurfacePage : PageBase
     }
 
     private void OnPolymer(object? s, RoutedEventArgs e) => Vm.SetModule(13);
-    private void OnSolvation(object? s, RoutedEventArgs e) => Vm.SetModule(5);
+    private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
     private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
