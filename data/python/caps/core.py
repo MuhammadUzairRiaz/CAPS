@@ -129,7 +129,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
-        "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I),
+        "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
         "caps_field_assign": ([P, S, S, I], I), "caps_field_report": ([P, B, I], I),
@@ -425,6 +425,18 @@ class Document:
         """Writes the current frame: .data (LAMMPS, with force-field sections when assigned), .pdb, .xyz, .mol2, .gro …"""
         if library().caps_save(self._h, _enc(str(path))) != 0:
             raise _error()
+
+    def save_gromacs(self, stem: str) -> str:
+        """Writes stem.top, stem.gro and stem.mdp for GROMACS with the same force field (a single-point run; energies and
+        forces checked against GROMACS by bench/ff/check_gromacs.py). Returns the .mdp non-bonded settings, with
+        "; note:" lines where GROMACS computes differently (DSF becomes PME; no cell)."""
+        need = library().caps_gromacs(self._h, None, None, 0)
+        if need < 0:
+            raise _error()
+        buf = C.create_string_buffer(need)
+        if library().caps_gromacs(self._h, _enc(str(stem)), buf, need) < 0:
+            raise _error()
+        return buf.value.decode()
 
     def save_trajectory(self, path: str) -> None:
         if library().caps_save_trajectory(self._h, _enc(str(path))) != 0:

@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 21, "native ABI version 21");
+        Check(Native.AbiVersion() == 22, "native ABI version 22");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1518,6 +1518,37 @@ internal static class SelfTest
             Check(canAdd && vm.RelaxLog.Contains("target 4.000 Å") && Math.Abs(after - 4) < 0.3,
                   $"relax restraint: {far:F2} → {after:F2} Å (target 4) · {vm.RelaxLog.Split('\n').FirstOrDefault(l => l.StartsWith("restraint"))}");
             vm.RemoveRestraint(vm.RelaxRestraints[0]);
+        }
+
+        // Dynamics › Export › GROMACS: the deck switches engine, the files are written and (when gmx is installed) grompp accepts them
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.SetModule(3);
+            vm.MdEnsemble = 2;
+            vm.MdRespa = 1;
+            vm.MdGromacs = true;
+            var deck = vm.MdDeck;
+            var gdir = Path.Combine(outDir, "gmx-selftest");
+            Directory.CreateDirectory(gdir);
+            vm.SaveGromacs(gdir);
+            var files = new[] { "system.top", "system.gro", "system.mdp" }.All(f => File.Exists(Path.Combine(gdir, f)));
+            var gmx = new[] { "/opt/homebrew/bin/gmx", "/usr/local/bin/gmx", "/usr/bin/gmx" }.FirstOrDefault(File.Exists);
+            var grompp = "gmx not installed: not run";
+            if (gmx != null)
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo(gmx, "-quiet grompp -f system.mdp -c system.gro -p system.top -o system.tpr -maxwarn 10")
+                    { WorkingDirectory = gdir, RedirectStandardOutput = true, RedirectStandardError = true };
+                using var pr = System.Diagnostics.Process.Start(psi)!;
+                var err = pr.StandardError.ReadToEnd();
+                pr.WaitForExit();
+                grompp = pr.ExitCode == 0 ? "grompp ok" : "grompp failed: " + err.Split('\n').LastOrDefault(l => l.Contains("ERROR") || l.Contains("rror")) ;
+            }
+            Check(deck.Contains("coulombtype") && deck.Contains("C-rescale") && deck.Contains("mts-level2-factor        = 2") && files && !grompp.StartsWith("grompp failed"),
+                  $"GROMACS export: deck {(deck.Contains("coulombtype") ? "ok" : deck.Split('\n')[0])}, files {files}, {grompp}");
+            vm.MdGromacs = false;
+            vm.MdRespa = 0;
+            vm.MdEnsemble = 1;
+            Check(vm.MdDeck.Contains("read_data"), "LAMMPS deck back");
         }
 
         // View tools: the view-plane fit behind Move, lasso selection, a move with undo, a pinned distance

@@ -13,7 +13,7 @@ def check(cond, what):
     print("ok  ", what)
 
 
-check(caps.abi_version() >= 20, f"ABI {caps.abi_version()}")
+check(caps.abi_version() >= 22, f"ABI {caps.abi_version()}")
 samples = os.environ["CAPS_SAMPLES"]
 melt = caps.open(os.path.join(samples, "ps_melt.data"))
 s = melt.summary()
@@ -131,4 +131,10 @@ check("restraint" not in pair.report, "relax: restraints=[] clears them")
 # χ by MD runs (a very short run: the call and the result's shape, not the number)
 chi = caps.chi_by_md("*CC*", polymer_b="*CC*", dp=4, chains=2, eq_ps=0.2, prod_ps=0.2)
 check(len(chi["cells"]) == 3 and "chi" in chi and chi["phi_a"] > 0.3, f"chi_by_md: χ {chi['chi']:.2f} ± {chi['chi_error']:.2f} (a smoke test)")
+# GROMACS export: three files and the non-bonded settings (PME for a periodic cell)
+with tempfile.TemporaryDirectory() as tmp:
+    stem = os.path.join(tmp, "melt")
+    mdp = caps.open(os.path.join(samples, "ps_melt.data")).save_gromacs(stem)
+    have = all(os.path.exists(stem + x) for x in (".top", ".gro", ".mdp"))
+    check(have and "coulombtype              = PME" in mdp and "[ nonbond_params ]" in open(stem + ".top").read(), "save_gromacs: top, gro, mdp")
 print("all python checks passed")

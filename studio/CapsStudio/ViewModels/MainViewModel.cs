@@ -1053,6 +1053,12 @@ public sealed partial class MainViewModel : ObservableObject
         var fails = MdPreflight.Count(r => r.State == "fail");
         var checks = MdPreflight.Count(r => r.State == "check");
         MdPreflightSummary = $"{MdPreflight.Count - fails - checks} / {MdPreflight.Count} ok";
+        if (_mdGromacs)
+        {
+            try { MdDeck = GromacsDeck(); }
+            catch (Exception e) { MdDeck = "; cannot write the GROMACS files: " + e.Message; }
+            return;
+        }
         // LAMMPS deck
         try
         {
