@@ -11,7 +11,7 @@ public sealed record StartBuilder(string Title, string Text, string Icon, int Mo
 }
 
 /// <summary>A guided start: opens the sample (when needed) and goes to a module.</summary>
-public sealed record StartGuide(string Title, string Where, int Module, bool Sample);
+public sealed record StartGuide(string Title, string Where, int Module, bool Sample, string Action = "");
 
 /// <summary>Start (design/boards/Start): the Studio with nothing open. A quick-start box that recognises a file
 /// path, a SMILES string or a module; the builders; recent work; guided starts; this machine.</summary>
@@ -29,6 +29,26 @@ public sealed partial class MainViewModel
         new("Surface or interface", "Cleave, stack, add vacuum", "layers", 14, "Cleave a crystal (CIF) along (hkl) and grow a polymer film on it: fibre–rubber interfaces"),
         new("Solvated system", "Box, solvent model, ions", "flask", 5, "Pack molecules into regions of a box (Packmol input)"),
     ];
+
+    /// <summary>Fibre–rubber composites, the builders and protocols in the order they are used.</summary>
+    public StartGuide[] RubberGuides { get; } =
+    [
+        new("Rubber film on a glass-fibre surface", "Surface", 14, false),
+        new("Silica, CNT or graphene filler in rubber", "Nano", 15, false),
+        new("Sulfur-cure a natural-rubber cell", "React", 6, false, "sulfur"),
+        new("Adhesion, orientation and pull-out", "Analyze", 1, false, "interface"),
+    ];
+
+    /// <summary>Runs a guided start: opens the module and sets it up for the task.</summary>
+    public void StartGuideAction(StartGuide g)
+    {
+        if (g.Module == 14) { OpenSurface(); return; }
+        if (g.Module == 15) { OpenNano(); return; }
+        SetModule(g.Module);
+        if (g.Action == "sulfur") RxSet = 2;
+        if (g.Action == "interface")
+            foreach (var c in Analyze.Groups.SelectMany(x => x.Chips)) c.IsOn = c.Id is "zprofile" or "adhesion" or "orientation" or "pull_shear";
+    }
 
     public StartGuide[] Guides { get; } =
     [

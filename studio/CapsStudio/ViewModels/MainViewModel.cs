@@ -56,7 +56,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private CapsDocument? _doc;
     private string _title = "No file open";
-    private string _status = "Open a LAMMPS data or dump file, a GROMACS .gro, a PDB or an XYZ file";
+    private string _status = "Open a LAMMPS data or dump file, a GROMACS .gro, a PDB, XYZ, mol2 or CIF file";
     private int _style;
     private int _colour = 1;
     private bool _outlines = true, _depthCue = true, _showCell = true, _perspective;
