@@ -107,7 +107,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S),
-        "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_import_preview": ([S, S, B, I], I),
+        "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
@@ -319,6 +319,10 @@ class Document:
                           None, None)
 
     # files
+    def provenance(self) -> dict:
+        """The steps that produced this structure (caps-manifest/1.0); saving writes it beside the file."""
+        return _json_call(library().caps_provenance, self._h)
+
     def save(self, path: str) -> None:
         """Writes the current frame: .data (LAMMPS, with force-field sections when assigned), .pdb, .xyz, .mol2, .gro …"""
         if library().caps_save(self._h, _enc(str(path))) != 0:
@@ -356,6 +360,30 @@ def import_file(path: str, bonds: str = "perceive", tolerance: float = 0.45, bon
 def import_preview(path: str, **options) -> dict:
     """What import_file would make of frame 0: counts, cell, bond orders and the first lines."""
     return _json_call(library().caps_import_preview, _enc(str(path)), _enc(json.dumps(options)))
+
+
+def provenance_file(path: str) -> dict:
+    """The provenance saved beside a file (<file>.provenance.json); {"ok": False, ...} without one."""
+    return _json_call(library().caps_provenance_file, _enc(str(path)))
+
+
+def compare_provenance(a: dict, b: dict) -> dict:
+    """Two manifests step by step: the parameters and seeds that differ."""
+    return _json_call(library().caps_provenance_compare, _enc(json.dumps(a)), _enc(json.dumps(b)))
+
+
+def bibtex(manifest: dict) -> str:
+    """BibTeX of every method a manifest cites."""
+    cap = 1 << 16
+    for _ in range(3):
+        buf = C.create_string_buffer(cap)
+        n = library().caps_provenance_bibtex(_enc(json.dumps(manifest)), buf, cap)
+        if n < 0:
+            raise _error()
+        if n <= cap:
+            return buf.value.decode()
+        cap = n + 1
+    raise CapsError("reply too large")
 
 
 # ---------------------------------------------------------------------------------------------------------------- builders

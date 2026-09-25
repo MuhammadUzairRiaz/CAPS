@@ -1269,6 +1269,9 @@
                     <Button Classes="small" Click="OnExportDialog" HorizontalAlignment="Left" ToolTip.Tip="4K, journal and poster sizes, 16-bit PNG, provenance in the file; movies of the frames or a turntable (⌘E)">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Image or movie…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
+                    <Button Classes="small" Click="OnProvenancePage" HorizontalAlignment="Left" ToolTip.Tip="Every step that produced this structure: parameters, seeds, citations, approximations; BibTeX">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="13" VerticalAlignment="Center" /><TextBlock Text="Provenance…" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <Button Classes="small" Click="OnViewportsPage" HorizontalAlignment="Left" ToolTip.Tip="Top, front, left and perspective views together">
                       <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="cube" Size="13" VerticalAlignment="Center" /><TextBlock Text="Four views…" VerticalAlignment="Center" /></StackPanel>
                     </Button>
@@ -1539,6 +1542,8 @@
       <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Surface & interface builder (design/boards/SurfaceBuilder) -->
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
+      <!-- Provenance (design/boards/Provenance) -->
+      <pages:ProvenancePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsProvenance}" />
       <!-- Macro recorder (design/boards/MacroRecorder) -->
       <pages:MacroPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMacro}" />
       <!-- Fragment library (design/boards/FragmentLibrary) -->

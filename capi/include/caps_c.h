@@ -319,6 +319,16 @@ int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_o
 int32_t caps_export_svg(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);
 /* Progress for long series: (done, total, user) -> 0 to continue. */
 typedef int32_t (*caps_series_progress_fn)(int32_t done, int32_t total, void* user);
+/* v20 provenance (design/boards/Provenance): the steps that produced the document — {schema "caps-manifest/1.0",
+   generator, deterministic, inputs [{name, sha256}], steps [{engine, summary, params{}, rng, cites[], approximations{},
+   time}], approximations{}}. caps_save writes it beside the file as <file>.provenance.json and opening a file reads it
+   back. caps_provenance_file reads a file's (ok false without one); caps_provenance_compare gives {same_inputs,
+   same_generator, steps_a, steps_b, differing_steps, rows [{step, engine, key, a, b}], notes[]}; caps_provenance_bibtex
+   the BibTeX of every method cited (-1 on error). */
+int32_t caps_provenance(caps_doc* d, char* json, int32_t cap);
+int32_t caps_provenance_file(const char* path, char* json, int32_t cap);
+int32_t caps_provenance_compare(const char* a_json, const char* b_json, char* json, int32_t cap);
+int32_t caps_provenance_bibtex(const char* manifest_json, char* text, int32_t cap);
 /* v20 export dialog (design/boards/ExportDialog). options: {"bits":8|16, "dpi":600, "colour_profile":"srgb"|"none",
    "provenance":true, "source":"<the structure's path, hashed into the manifest>"}. 16-bit keeps the supersampled
    average at full precision. The manifest (caps-image/1.0: generator, created, source + sha256, frame, atoms, camera,

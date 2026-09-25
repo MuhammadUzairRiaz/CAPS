@@ -220,6 +220,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_export_image")] public static extern int ExportImage(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? overlay);
     [DllImport(Lib, EntryPoint = "caps_png_text")] public static extern int PngText([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_export_movie")] public static extern int ExportMovie(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsSeriesProgress? progress, IntPtr user);
+    [DllImport(Lib, EntryPoint = "caps_provenance")] public static extern int Provenance(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_provenance_file")] public static extern int ProvenanceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_provenance_compare")] public static extern int ProvenanceCompare([MarshalAs(UnmanagedType.LPUTF8Str)] string a, [MarshalAs(UnmanagedType.LPUTF8Str)] string b, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_provenance_bibtex")] public static extern int ProvenanceBibtex([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -372,6 +376,10 @@ public sealed class CapsDocument : IDisposable
         return new CapsDocument(h, path);
     }
 
+    /// <summary>A file's saved provenance (its .provenance.json), JSON with ok.</summary>
+    public static string ProvenanceFile(string path) => Sized((b, c) => Native.ProvenanceFile(path, b, c));
+    public static string ProvenanceCompare(string a, string b) => Sized((x, c) => Native.ProvenanceCompare(a, b, x, c));
+    public static string ProvenanceBibtex(string manifest) => Sized((b, c) => Native.ProvenanceBibtex(manifest, b, c));
     /// <summary>The PNG's text chunks (a provenance manifest among them) as a JSON object.</summary>
     public static string PngText(string path) => Sized((b, c) => Native.PngText(path, b, c));
 
@@ -931,6 +939,8 @@ public sealed class CapsDocument : IDisposable
         lock (_lock) { Alive(); var n = Native.ProjectAtoms(_h, cam, opt, buf, atoms); if (n < 0) throw new InvalidOperationException(Native.LastError()); }
         return buf;
     }
+    /// <summary>The steps that produced this structure (caps-manifest/1.0).</summary>
+    public string Provenance() { lock (_lock) { Alive(); return Sized((b, c) => Native.Provenance(_h, b, c)); } }
     public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }
     /// <summary>PNG with 8 or 16 bits, dpi, colour profile and the provenance manifest (caps_export_image); overlay is
     /// a width × height straight-alpha RGBA layer (labels, measurements) or null.</summary>
