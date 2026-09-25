@@ -192,12 +192,17 @@ bool blend_spinodal(double na, double nb, double chi, double& lo, double& hi) {
 bool blend_binodal(double na, double nb, double chi, double& lo, double& hi, double glo, double ghi) {
   const auto crit = blend_critical(na, nb);
   if (chi <= crit.chi_c * (1 + 1e-9)) return false;
+  // Everything in the logit x = ln(φ/(1 − φ)): φ, 1 − φ, ln φ and ln(1 − φ) straight from x, so compositions within
+  // 1e-300 of 0 or 1 (strong segregation, χN ≫ 1) keep their precision.
+  struct Q { double p, q, lp, lq; };
+  auto at = [](double x) {
+    const double sp = x > 0 ? x + std::log1p(std::exp(-x)) : std::log1p(std::exp(x));   // softplus(x) = ln(1 + eˣ)
+    return Q{1 / (1 + std::exp(-x)), 1 / (1 + std::exp(x)), x - sp, -sp};
+  };
   // f'(φ) and the grand potential g = f − φ f'
-  auto fp = [&](double p) { return (std::log(p) + 1) / na - (std::log(1 - p) + 1) / nb + chi * (1 - 2 * p); };
-  auto fpp = [&](double p) { return 1 / (na * p) + 1 / (nb * (1 - p)) - 2 * chi; };
-  auto f = [&](double p) { return p / na * std::log(p) + (1 - p) / nb * std::log(1 - p) + chi * p * (1 - p); };
-  auto g = [&](double p) { return f(p) - p * fp(p); };
-  double x1, x2;   // logits of the two compositions keep them inside (0, 1)
+  auto fp = [&](const Q& s) { return (s.lp + 1) / na - (s.lq + 1) / nb + chi * (s.q - s.p); };
+  auto g = [&](const Q& s) { return s.p / na * s.lp + s.q / nb * s.lq + chi * s.p * s.q - s.p * fp(s); };
+  double x1, x2;   // logits of the two compositions
   if (glo > 0 && ghi < 1 && glo < ghi) x1 = std::log(glo / (1 - glo)), x2 = std::log(ghi / (1 - ghi));
   else {
     double s1, s2;
@@ -206,14 +211,13 @@ bool blend_binodal(double na, double nb, double chi, double& lo, double& hi, dou
     const double p2 = std::min(1 - 1e-12, crit.phi_c + std::sqrt(3.0) * (s2 - crit.phi_c));
     x1 = std::log(p1 / (1 - p1)), x2 = std::log(p2 / (1 - p2));
   }
-  auto sig = [](double x) { return 1 / (1 + std::exp(-x)); };
-  for (int it = 0; it < 200; ++it) {
-    const double p1 = sig(x1), p2 = sig(x2);
-    const double F1 = fp(p1) - fp(p2), F2 = g(p1) - g(p2);
+  for (int it = 0; it < 3000; ++it) {   // steps of at most 2 in x: χN of a few thousand is reached
+    const Q a = at(x1), b = at(x2);
+    const double F1 = fp(a) - fp(b), F2 = g(a) - g(b);
     if (std::fabs(F1) < 1e-13 && std::fabs(F2) < 1e-13) break;
-    // d/dx = dφ/dx · d/dφ with dφ/dx = φ(1 − φ); dg/dφ = −φ f''
-    const double d1 = p1 * (1 - p1), d2 = p2 * (1 - p2);
-    const double J11 = fpp(p1) * d1, J12 = -fpp(p2) * d2, J21 = -p1 * fpp(p1) * d1, J22 = p2 * fpp(p2) * d2;
+    // d/dx = dφ/dx · d/dφ with dφ/dx = φ(1 − φ); dg/dφ = −φ f''; f''·φ(1 − φ) formed without the huge factor
+    auto fd = [&](const Q& s) { return s.q / na + s.p / nb - 2 * chi * s.p * s.q; };   // f'' φ (1 − φ)
+    const double J11 = fd(a), J12 = -fd(b), J21 = -a.p * fd(a), J22 = b.p * fd(b);
     const double det = J11 * J22 - J12 * J21;
     if (std::fabs(det) < 1e-300) return false;
     double dx1 = (-F1 * J22 + F2 * J12) / det, dx2 = (-F2 * J11 + F1 * J21) / det;
@@ -221,9 +225,10 @@ bool blend_binodal(double na, double nb, double chi, double& lo, double& hi, dou
     if (big > 2) dx1 *= 2 / big, dx2 *= 2 / big;
     x1 += dx1, x2 += dx2;
   }
-  lo = sig(x1), hi = sig(x2);
-  if (lo > hi) std::swap(lo, hi);
-  return std::fabs(fp(lo) - fp(hi)) < 1e-9 && std::fabs(g(lo) - g(hi)) < 1e-9 && hi - lo > 1e-6;
+  if (x1 > x2) std::swap(x1, x2);
+  const Q a = at(x1), b = at(x2);
+  lo = a.p, hi = b.p;
+  return std::fabs(fp(a) - fp(b)) < 1e-9 && std::fabs(g(a) - g(b)) < 1e-9 && x2 - x1 > 1e-5;
 }
 
 // ---------------------------------------------------------------- solvents, Ewald

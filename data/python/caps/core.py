@@ -126,7 +126,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S), "caps_set_restraints": ([P, C.c_char_p], I),
-        "caps_chi_md": ([C.c_char_p, P, P, B, I], I),
+        "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I),
@@ -664,6 +664,23 @@ def chi_by_md(polymer, solvent: Optional[str] = None, polymer_b=None, dp: int = 
     r = json.loads(buf.value.decode())
     if not r.get("ok"):
         raise CapsError(r.get("error", "chi_by_md failed"))
+    return r
+
+
+def chi_by_contacts(a: str, b: str, forcefield: Optional[str] = "gaff2", samples: int = 1000000, pack_trials: int = 5000,
+                    temperatures=(250, 275, 300, 325, 350, 375, 400), t: float = 298.15, seed: int = 1) -> dict:
+    """Flory–Huggins χ(T) from pair contacts (Fan, Olafson, Blanco & Hsu, Macromolecules 1992; core chipair.hpp): pair
+    energies of rigid molecules at van der Waals contact, Boltzmann-averaged, and coordination numbers from packing;
+    χ = ½(Z_AB E_AB + Z_BA E_BA − Z_AA E_AA − Z_BB E_BB)/RT, fitted to A + B/T. a, b: SMILES of molecules or repeat
+    units (* ends capped with H). forcefield: a library id (gaff2 by default) or a path; None for the built-in GAFF
+    subset / UFF. A screen, measured on known cases in the README (wrong for PS/THF and PS/PVME). Seconds."""
+    o = {"a": a, "b": b, "forcefield": _forcefield_path(forcefield) if forcefield else "", "samples": samples,
+         "pack_trials": pack_trials, "temperatures": list(temperatures), "t": t, "seed": seed}
+    buf = C.create_string_buffer(1 << 18)
+    library().caps_chi_contacts(_enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "chi_by_contacts failed"))
     return r
 
 

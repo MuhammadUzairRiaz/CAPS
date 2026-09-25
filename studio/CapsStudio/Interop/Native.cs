@@ -306,6 +306,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_chi_contacts")] public static extern int ChiContacts([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ewald_params")] public static extern int EwaldParams(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_residues")] public static extern int AtomResidues(IntPtr doc, [Out] int[]? out_, int cap);
     [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
@@ -562,6 +563,15 @@ public sealed class CapsDocument : IDisposable
     public static string Stereo(string json) => JsonCallOnce((b, c) => Native.Stereo(json, b, c));
     public static string BlendPhase(string json) => JsonCallOnce((b, c) => Native.BlendPhase(json, b, c));
     public static string SolventChi(string json) => JsonCallOnce((b, c) => Native.SolventChi(json, b, c));
+    /// <summary>χ(T) from pair contacts (caps_chi_contacts): seconds per pair of small molecules; progress gets (stage, fraction), false cancels.</summary>
+    public static string ChiContacts(string json, Func<string, double, bool>? progress = null)
+    {
+        CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+        var buf = new byte[1 << 20];
+        var n = Native.ChiContacts(json, cb, IntPtr.Zero, buf, buf.Length);
+        GC.KeepAlive(cb);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+    }
     /// <summary>Ewald β and the PME mesh for a cutoff and tolerance (caps_ewald_params); edges from doc's cell when not given.</summary>
     public static string EwaldParams(CapsDocument? doc, string json)
     {

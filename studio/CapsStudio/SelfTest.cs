@@ -453,6 +453,7 @@ internal static class SelfTest
         vm.AppStyle = 3;
         vm.AppTarget = 0;
         Check(vm.ShowAppearance && !vm.ShowStudioTabs && vm.AppLayers.Count == 1 && vm.AppChip.Contains("Molecule == 1"), $"appearance: {vm.AppChip}");
+        vm.WaitAppearance();   // the page's own applies run in the background: let them land before setting one directly
         if (vm.Document is { } adoc)
         {
             adoc.SetAppearance("{\"layers\":[{\"expression\":\"Molecule == 1\",\"style\":\"space_filling\"}],\"colour\":\"charge\",\"surface\":{\"kind\":\"excluded\",\"expression\":\"Molecule == 1\"}}");
@@ -814,6 +815,30 @@ internal static class SelfTest
             vm.SetModule(8);
             Check(pdRows && pdUsed && pdAtoms && coOk && nbr && ssOk && tsOk && fitOk && bpOk && esOk,
                   $"row 18: [{pdRows} {pdUsed} {pdAtoms} {coOk} {nbr} {ssOk} {tsOk} {fitOk} {bpOk} {esOk}] k {vm.PdK} · F1 {vm.CoRows.FirstOrDefault()?.A} · mismatches {vm.SsRows.Count(r => r.Mismatch)} · dyads {vm.TsDyads.Length} · fit {vm.TsFit} · χc {vm.BpResults.FirstOrDefault()?.Value} · β {vm.EsBeta} mesh {vm.EsMeshText}");
+        }
+
+        // χ by pair contacts: polystyrene against the solvent file (every row gets a χ and a verdict), and a blend fit
+        {
+            vm.OpenSolventScreen();
+            vm.SsPolymer = 0;
+            vm.SsComputeContacts().GetAwaiter().GetResult();
+            var withC = vm.SsRows.Count(r => r.ChiC != "—");
+            var tol = vm.SsRows.FirstOrDefault(r => r.Name == "Toluene");
+            var water = vm.SsRows.FirstOrDefault(r => r.Name == "Water");
+            var ssC = withC == 8 && tol != null && tol.AgreesC && water != null && water.AgreesC && vm.SsFailText.Contains("Pair contacts", StringComparison.Ordinal);
+            vm.OpenBlendPhase();
+            var bpNames = vm.BpUnitNames;
+            vm.BpUnitA = Array.FindIndex(bpNames, n => n.Contains("styrene", StringComparison.OrdinalIgnoreCase));
+            vm.BpUnitB = Array.FindIndex(bpNames, n => n.Contains("isoprene", StringComparison.OrdinalIgnoreCase) || n.Contains("natural rubber", StringComparison.OrdinalIgnoreCase));
+            vm.BpFitContacts().GetAwaiter().GetResult();
+            // strongly segregated at 300 K: two phases, each within powers of ten of pure (the binodal in logits)
+            var coex = vm.BpResults[4].Value;
+            var bpC = vm.BpUnitA >= 0 && vm.BpUnitB >= 0 && vm.BpSource == 1 && vm.BpB > 0 && vm.BpFitNote.Contains("χ(T) =", StringComparison.Ordinal)
+                      && coex.Contains("E-", StringComparison.Ordinal) && vm.BpInputsChip.StartsWith("fitted", StringComparison.Ordinal);
+            vm.BpA = -0.02m; vm.BpB = 15;
+            var back = vm.BpSource == 0;
+            vm.SetModule(8);
+            Check(ssC && bpC && back, $"χ by pair contacts: {withC} solvents, toluene {tol?.ChiC} {tol?.PredictedC}, water {water?.ChiC}; blend {(vm.BpUnitA >= 0 ? bpNames[vm.BpUnitA] : "?")}/{(vm.BpUnitB >= 0 ? bpNames[vm.BpUnitB] : "?")} · {vm.BpFitNote.Split('·')[0]} · coexisting {coex}");
         }
 
         // Row 19: display styles, lens, add hydrogens, model resolution, live grow

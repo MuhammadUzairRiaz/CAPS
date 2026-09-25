@@ -38,6 +38,10 @@ ForceField assign_uff(const System& s, const UffOptions& o = {});
 // The UFF label for each atom of `s` (as assign_uff types them) and the reason for each.
 std::vector<std::string> uff_types(const System& s, std::vector<std::string>* why = nullptr);
 
+// UFF with partial charges, for energies between molecules (χ screens): Gasteiger–Marsili where it is defined (H C N O,
+// halogens, sp³ S), QEq otherwise. *method (optional) says which.
+ForceField uff_with_charges(const System& s, std::string* method = nullptr);
+
 // The force field used when none is given: CAPS's built-in GAFF for saturated and aromatic hydrocarbons, UFF for
 // anything else (double bonds, heteroatoms, metals).
 ForceField default_forcefield(const System& s);

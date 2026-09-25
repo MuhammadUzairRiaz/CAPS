@@ -11,7 +11,8 @@ namespace CapsStudio.ViewModels;
 
 public sealed record ModelRow(string Label, string A, string B, bool Strong = false);
 public sealed record MonomerChoice(string Name, string Short, string Smiles);
-public sealed record SolventRow(string Name, string V, string Delta, string Chi, string Predicted, string Known, bool Mismatch, bool Agrees, double Bar, bool Good, bool Bad)
+public sealed record SolventRow(string Name, string V, string Delta, string Chi, string Predicted, string Known, bool Mismatch, bool Agrees, double Bar, bool Good, bool Bad,
+    string ChiC = "—", string PredictedC = "", bool AgreesC = false, bool MismatchC = false)
 {
     public bool Unknown => !Mismatch && !Agrees;
 }
@@ -426,8 +427,9 @@ public partial class MainViewModel
             var knownBad = k.Contains("non-solvent", StringComparison.Ordinal);
             var mismatch = (pred == "solvent" && knownBad) || (pred == "non-solvent" && knownGood);
             var agrees = (pred == "solvent" && knownGood) || (pred == "non-solvent" && knownBad) || (pred == "borderline" && k.Contains('Θ'));
+            var (chiC, predC, agreesC, mismatchC) = SsContactFor(name, t, knownGood, knownBad, k);
             SsRows.Add(new(name, ((double)s["v"]!).ToString("0.0", Inv), ((double)s["delta"]!).ToString("0.0", Inv), chi.ToString("0.00", Inv), pred, k,
-                mismatch, agrees, Math.Clamp(chi / max, 0.02, 1), pred == "solvent", pred == "non-solvent"));
+                mismatch, agrees, Math.Clamp(chi / max, 0.02, 1), pred == "solvent", pred == "non-solvent", chiC, predC, agreesC, mismatchC));
         }
         SsHalfAt = 0.5 / max;
         var rt = (double?)r["rt"] ?? 8.314462618 * t;
@@ -448,6 +450,7 @@ public partial class MainViewModel
             : bad.Length == 0
                 ? $"Every prediction here agrees with the known behaviour of {polyName}, but Hildebrand parameters ignore polarity and hydrogen bonding; polar solvents can still be misjudged."
                 : $"Hildebrand parameters ignore polarity and hydrogen bonding. Here the estimate calls {string.Join(", ", bad.Select(b => b.Name + (b.Predicted == "solvent" ? " a solvent" : " a non-solvent")))}, against what is known for {polyName}. CAPS shows this check beside every screen; Hansen parameters or a direct χ from MD are the next step when polarity matters.";
+        SsFailText += SsContactSummary(known != null);
         SsInputs = $"Inputs: {solvents.Count} values from {(string?)_solventData["source"] ?? "the solvents file"}. δ({polyShort}) is an input ({(string?)poly?["range"] ?? "enter the value you cite"}).";
         SsStatus = $"{solvents.Count} solvents · {t:0.##} K";
         Raise(nameof(SsHasMismatch)); Raise(nameof(SsHalfAt));
@@ -594,13 +597,17 @@ public partial class MainViewModel
     private decimal _bpNa = 100, _bpNb = 200, _bpA = -0.02m, _bpB = 15, _bpT = 300;
     public decimal BpNa { get => _bpNa; set { if (Set(ref _bpNa, Math.Clamp(value, 1, 1e6m))) BpRecompute(); } }
     public decimal BpNb { get => _bpNb; set { if (Set(ref _bpNb, Math.Clamp(value, 1, 1e6m))) BpRecompute(); } }
-    public decimal BpA { get => _bpA; set { if (Set(ref _bpA, Math.Clamp(value, -10, 10))) BpRecompute(); } }
-    public decimal BpB { get => _bpB; set { if (Set(ref _bpB, Math.Clamp(value, -1e5m, 1e5m))) BpRecompute(); } }
+    public decimal BpA { get => _bpA; set { if (Set(ref _bpA, Math.Clamp(value, -10, 10))) { BpSource = 0; BpRecompute(); } } }   // typed: entered again
+    public decimal BpB { get => _bpB; set { if (Set(ref _bpB, Math.Clamp(value, -1e5m, 1e5m))) { BpSource = 0; BpRecompute(); } } }
     public decimal BpT { get => _bpT; set { if (Set(ref _bpT, Math.Clamp(value, 1, 5000))) BpRecompute(); } }
     public ObservableCollection<ResultRow> BpResults { get; } = new();
     private string _bpNote = "", _bpStatus = "";
     public string BpNote { get => _bpNote; private set => Set(ref _bpNote, value); }
     public string BpStatus { get => _bpStatus; private set => Set(ref _bpStatus, value); }
+    public string BpInputsChip => BpSource == 1 ? "fitted: pair contacts" : _bpA == -0.02m && _bpB == 15 ? "example inputs" : "entered";
+    public string BpFootnote => "Binodal from equal chemical potentials (common tangent), solved numerically; spinodal from ∂²f/∂φ² = 0. " +
+        (BpSource == 1 ? "A and B are fitted from pair contacts (a screen, see the note under Inputs). " : _bpA == -0.02m && _bpB == 15 ? "The A and B filled in are example inputs, not values for a real blend. " : "") +
+        "Flory 1942; Huggins 1942.";
     public (double X, double Y)[] BpBinodal { get; private set; } = [];
     public (double X, double Y)[] BpSpinodal { get; private set; } = [];
     public (double X, double Y)? BpCritical { get; private set; }
@@ -620,7 +627,9 @@ public partial class MainViewModel
             BpSpinodal = Curve(r["spinodal_curve"]);
             var tc = r["tc"] is JsonValue tv ? (double)tv : double.NaN;
             BpCritical = double.IsFinite(tc) ? (D(r, "phi_c"), tc) : null;
-            string Pair(JsonNode? a) => a is JsonArray p && p.Count == 2 ? $"{(double)p[0]!:0.0000} · {(double)p[1]!:0.0000}" : "one phase";
+            // strongly segregated blends put a phase within 1e-100 of pure: show those as powers of ten
+            string F(double v) => v < 1e-4 ? v.ToString("0.0E+0", Inv) : v > 1 - 1e-4 ? (1 - v > 0 ? "1 − " + (1 - v).ToString("0.0E+0", Inv) : "1 − <1E-16") : v.ToString("0.0000", Inv);
+            string Pair(JsonNode? a) => a is JsonArray p && p.Count == 2 ? $"{F((double)p[0]!)} · {F((double)p[1]!)}" : "one phase";
             BpResults.Clear();
             BpResults.Add(new("χ_c = ½ (1/√N_A + 1/√N_B)²", D(r, "chi_c").ToString("0.00000", Inv)));
             BpResults.Add(new("φ_c = √N_B / (√N_A + √N_B)", D(r, "phi_c").ToString("0.0000", Inv)));
@@ -634,6 +643,7 @@ public partial class MainViewModel
                 : kind == "lcst" ? "Two phases above the binodal. χ(T) = A + B/T with B < 0 gives a lower critical solution temperature."
                 : "B = 0: χ does not depend on temperature, so there is no critical temperature; the blend is one phase when χ < χ_c.";
             BpStatus = $"N_A = {_bpNa:0} · N_B = {_bpNb:0}";
+            Raise(nameof(BpInputsChip)); Raise(nameof(BpFootnote));
             BpChanged?.Invoke();
         }
         catch (Exception e) { BpNote = e.Message; }
