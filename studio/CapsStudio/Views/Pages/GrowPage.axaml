@@ -64,6 +64,23 @@
                   </Button>
                   <TextBlock Grid.Column="4" Text="{Binding GrowAtomsText}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" />
                 </Grid>
+                <ItemsControl ItemsSource="{Binding GrowSmall}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GrowSmallRow">
+                      <Grid ColumnDefinitions="*,86,86,110,80" ColumnSpacing="8" Margin="0,2">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
+                          <Ellipse Width="8" Height="8" Fill="{DynamicResource SelB}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <NumericUpDown Grid.Column="1" Value="{Binding CountD}" Minimum="1" Maximum="100000" Increment="1" FormatString="0" ShowButtonSpinner="False" TextAlignment="Right"
+                                       ToolTip.Tip="Molecules put into the free space after the chains" />
+                        <TextBlock Grid.Column="2" Text="{Binding Smiles}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="3" Text="after the chains" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                        <Button Grid.Column="4" Classes="ghost" Content="×" HorizontalAlignment="Right" Click="OnRemoveSmall" Tag="{Binding}" ToolTip.Tip="Remove" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
                 <DockPanel IsVisible="{Binding GrowPolydisperse}">
                   <Button DockPanel.Dock="Right" Classes="small ghost" Content="Monodisperse" Click="OnClearLengths" />
                   <TextBlock Text="{Binding GrowLengthsText}" Classes="dim" TextWrapping="Wrap" VerticalAlignment="Center" />
@@ -77,10 +94,14 @@
                     <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Choose polymer…" VerticalAlignment="Center" /></StackPanel>
                   </Button>
                   <Button Classes="small ghost" Click="OnUsePs" IsVisible="{Binding GrowHasSpec}" Content="Back to polystyrene" />
-                  <Button Classes="small" IsEnabled="False" ToolTip.Tip="Solvents and gases: use Pack for now" ToolTip.ShowOnDisabled="True">
+                  <Button Classes="small" Click="OnToggleSmall" ToolTip.Tip="Solvent or gas molecules put into the free space after the chains are grown (CAPS Pack)">
                     <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add solvent / gas" VerticalAlignment="Center" /></StackPanel>
                   </Button>
                 </StackPanel>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding GrowSmallOpen}">
+                  <ComboBox ItemsSource="{Binding GrowSmallChoices}" SelectedIndex="{Binding GrowSmallPick}" HorizontalAlignment="Stretch" />
+                  <Button Grid.Column="1" Classes="small primary" Content="Add" Click="OnAddSmall" />
+                </Grid>
               </StackPanel>
             </StackPanel>
           </Border>
