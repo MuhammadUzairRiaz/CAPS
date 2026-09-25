@@ -778,6 +778,132 @@ Property ced_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
   return p;
 }
 
+// ---------------------------------------------------------------- interfaces: density along z, adhesion
+
+Vec3 unitv3(const Vec3& v) { const double n = norm(v); return n > 0 ? v * (1 / n) : v; }
+
+// Heights in the cell (the fractional c coordinate × the cell height), wrapped into [0, Lz).
+double cell_height(const Cell& c, const Vec3& r) {
+  double f = c.to_fractional(r)[2];
+  f -= std::floor(f);
+  return f * std::fabs(dot(c.c, unitv3(cross(c.a, c.b))));
+}
+
+Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"zprofile", "Density profile along z", "g/cm³", "", NaN, NaN, {}, {}, {}};
+  const Cell& c0 = t.topology.cell;
+  if (!c0.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
+  const double area = norm(cross(c0.a, c0.b)), Lz = std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b))));
+  const double dz = o.zbin > 0 ? o.zbin : 0.5;
+  const int nb = std::max(1, int(std::ceil(Lz / dz)));
+  const auto& atoms = t.topology.atoms;
+  bool two = false;
+  for (const auto& a : atoms) two = two || a.mol != atoms.front().mol;
+  std::vector<double> all(size_t(nb), 0), sub(size_t(nb), 0), film(size_t(nb), 0);
+  for (size_t q = 0; q < fr.size(); ++q) {
+    if (cancelled(o, "density profile", double(q) / fr.size())) throw Cancel();
+    const System f = t.frame(fr[q]);
+    for (const auto& a : f.atoms) {
+      const int b = std::clamp(int(cell_height(f.cell, a.pos) / (Lz / nb)), 0, nb - 1);
+      const double m = f.mass_of(a);
+      all[size_t(b)] += m;
+      (two && a.mol == 1 ? sub : film)[size_t(b)] += m;
+    }
+  }
+  const double conv = 1.0 / (kNA * 1e-24) / (area * (Lz / nb) * double(fr.size()));   // g/mol per bin → g/cm³
+  Series sa{"all atoms", "z (Å)", "density (g/cm³)", {}, {}}, ss{"molecule 1 (surface)", "z (Å)", "density (g/cm³)", {}, {}},
+      sf{"other molecules (film)", "z (Å)", "density (g/cm³)", {}, {}};
+  for (int b = 0; b < nb; ++b) {
+    const double z = (b + 0.5) * Lz / nb;
+    sa.x.push_back(z), sa.y.push_back(all[size_t(b)] * conv);
+    ss.x.push_back(z), ss.y.push_back(sub[size_t(b)] * conv);
+    sf.x.push_back(z), sf.y.push_back(film[size_t(b)] * conv);
+  }
+  if (two) {
+    // the surface top, the film's first-layer peak and its density away from the surface
+    double top = -1;
+    for (int b = 0; b < nb; ++b) if (ss.y[size_t(b)] > 0) top = std::max(top, ss.x[size_t(b)]);
+    double fmax = 0, zpk = NaN;
+    std::vector<double> mid;
+    double flo = 1e300, fhi = -1e300;
+    for (int b = 0; b < nb; ++b) if (sf.y[size_t(b)] > 0.02) flo = std::min(flo, sf.x[size_t(b)]), fhi = std::max(fhi, sf.x[size_t(b)]);
+    for (int b = 0; b < nb; ++b) {
+      const double z = sf.x[size_t(b)];
+      if (top >= 0 && z > top && z < top + 6 && sf.y[size_t(b)] > fmax) fmax = sf.y[size_t(b)], zpk = z;
+      if (fhi > flo && z > flo + 0.25 * (fhi - flo) && z < fhi - 0.25 * (fhi - flo)) mid.push_back(sf.y[size_t(b)]);
+    }
+    if (!mid.empty()) p.value = std::accumulate(mid.begin(), mid.end(), 0.0) / mid.size();
+    if (top >= 0) p.extra["surface top (Å)"] = top;
+    if (std::isfinite(zpk)) {
+      p.extra["first-layer peak (g/cm³)"] = fmax;
+      p.extra["first-layer peak above the surface (Å)"] = zpk - top;
+    }
+    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell, averaged over " + std::to_string(fr.size()) +
+               " frames; value: the film's density over the middle half of its thickness";
+    p.series.push_back(std::move(sf));
+    p.series.push_back(std::move(ss));
+  } else {
+    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell, averaged over " + std::to_string(fr.size()) + " frames";
+    p.notes.push_back("one molecule id only: no surface / film split (an interface from the Surface builder has the surface as molecule 1)");
+  }
+  p.series.push_back(std::move(sa));
+  return p;
+}
+
+Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"adhesion", "Adhesion (surface–film interaction)", "mJ/m²", "", NaN, NaN, {}, {}, {}};
+  if (!o.ff) { p.notes.push_back("needs a force field (assign one in Field, or --ff)"); return p; }
+  const Cell& c0 = t.topology.cell;
+  if (!c0.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
+  std::vector<uint32_t> sub, film;
+  for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (t.topology.atoms[i].mol == 1 ? sub : film).push_back(i);
+  if (sub.empty() || film.empty()) { p.notes.push_back("needs the surface as molecule 1 and a film of other molecules"); return p; }
+  const ForceField& ff = *o.ff;
+  const ForceField fs = subset_forcefield(ff, sub), fl = subset_forcefield(ff, film);
+  EnergyOptions e = o.energy;
+  e.tail = false;   // the tail correction assumes a homogeneous fluid
+  Evaluator eall(ff, e), esub(fs, e), efilm(fl, e);
+  const double area = norm(cross(c0.a, c0.b)), Lz = std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b))));
+  std::vector<double> w, ev, ec;
+  Series s{"W", "time (ps)", "adhesion (mJ/m²)", {}, {}};
+  const auto times = frame_times(t, o);
+  int faces = 1;
+  for (size_t q = 0; q < fr.size(); ++q) {
+    if (cancelled(o, "adhesion", double(q) / fr.size())) throw Cancel();
+    const System f = t.frame(fr[q]);
+    std::vector<double> x, xs, xf, g;
+    for (const auto& a : f.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    for (uint32_t i : sub) xs.insert(xs.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
+    for (uint32_t i : film) xf.insert(xf.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
+    const EnergyTerms ta = eall.compute(x, f.cell, g), ts = esub.compute(xs, f.cell, g), tf = efilm.compute(xf, f.cell, g);
+    const double eint = ta.total() - ts.total() - tf.total();   // kcal/mol, negative when the film sticks
+    if (q == 0) {
+      // a film between the surface and the surface's periodic image touches it on both sides
+      double stop = -1e300, sbot = 1e300, ftop = -1e300;
+      for (uint32_t i : sub) { const double z = cell_height(f.cell, f.atoms[i].pos); stop = std::max(stop, z); sbot = std::min(sbot, z); }
+      for (uint32_t i : film) ftop = std::max(ftop, cell_height(f.cell, f.atoms[i].pos));
+      if (ftop > stop && Lz + sbot - ftop < 8.0) faces = 2;
+    }
+    const double wad = -eint / (faces * area) * 694.77;   // kcal/mol/Å² → mJ/m²
+    w.push_back(wad);
+    ev.push_back(ta.vdw - ts.vdw - tf.vdw);
+    ec.push_back(ta.coulomb - ts.coulomb - tf.coulomb);
+    s.x.push_back(times[fr[q]] - times[fr[0]]);
+    s.y.push_back(wad);
+  }
+  std::tie(p.value, p.error) = block_mean(w, o.blocks);
+  p.extra["interaction energy (kcal/mol)"] = -std::accumulate(w.begin(), w.end(), 0.0) / w.size() * faces * area / 694.77;
+  p.extra["van der Waals part (kcal/mol)"] = std::accumulate(ev.begin(), ev.end(), 0.0) / ev.size();
+  p.extra["Coulomb part (kcal/mol)"] = std::accumulate(ec.begin(), ec.end(), 0.0) / ec.size();
+  p.extra["interfaces"] = faces;
+  p.extra["surface area per interface (Å²)"] = area;
+  p.method = "W = −(E_all − E_surface − E_film) / (interfaces × A), each part in the same periodic cell with " + ff.name +
+             " (no tail correction), over " + std::to_string(fr.size()) + " frames";
+  if (faces == 2) p.notes.push_back("the film touches the surface and its periodic image: two interfaces share the energy");
+  p.series.push_back(std::move(s));
+  return p;
+}
+
 // ---------------------------------------------------------------- free volume
 
 struct FreeGrid {
@@ -1109,7 +1235,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
-                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct"};
+                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -1182,6 +1308,8 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
         for (auto& p : elastic_properties(fluctuation_elastic(t, fr, fo), "_fluct")) out.push_back(std::move(p));
       }
     }
+    if (want("zprofile")) out.push_back(zprofile_prop(t, fr, o));
+    if (want("adhesion")) out.push_back(adhesion_prop(t, fr, o));
     if (want("ffv")) out.push_back(ffv_prop(t, fr, o));
     if (want("psd")) out.push_back(psd_prop(t, fr, o));
   });

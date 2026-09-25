@@ -66,6 +66,8 @@ struct AnalyzeOptions {
   EnergyOptions energy;
   // elastic constants from stress fluctuations (cij_fluct): the temperature of the NVT run the frames come from
   double temperature = 0;       // K
+  // interfaces: bin width of the density profile along z (Å)
+  double zbin = 0.5;
   // free volume
   double probe = 0.0;           // probe radius, Å (0: points outside every van der Waals sphere)
   double grid = 0.4;            // Å

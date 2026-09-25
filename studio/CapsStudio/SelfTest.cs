@@ -322,6 +322,18 @@ internal static class SelfTest
             vm.SendPolymerToGrow();
             vm.Grow().GetAwaiter().GetResult();
             Check(vm.Document != null && vm.Document.Summary().Molecules == 4 && vm.GrowComponentName.StartsWith("ENR"), $"grown ENR-50 cell: {vm.Status}");
+            // sulfur cure of the rubber: H–S–S–H donors inserted, allylic C–S bonds formed
+            vm.RxSet = 2;
+            vm.RxInsertCount = 6;
+            vm.InsertCurative().GetAwaiter().GetResult();
+            Check(vm.Document!.Summary().Molecules == 4 + 6, $"sulfur donors inserted: {vm.Document.Summary().Molecules} molecules · {vm.RxLog.Split('\n')[0]}");
+            vm.RxRelax = false;
+            vm.RxCyclesD = 6;
+            vm.RunReact().GetAwaiter().GetResult();
+            var cured = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
+            Check(cured.Success && int.Parse(cured.Groups[1].Value) > 0, $"sulfur cure: {vm.RxLog.Split('\n')[0]}");
+            vm.RxRelax = true;
+            vm.RxSet = 0;
             vm.UsePolystyreneInGrow();
         }
 

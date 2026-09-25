@@ -868,4 +868,45 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
   return items;
 }
 
+System insert_molecules(const System& host, const System& guest, int count, const PackOptions& o0, PackReport* report) {
+  if (!host.cell.valid()) throw PackError("inserting molecules needs a periodic cell");
+  if (guest.atoms.empty() || count <= 0) return host;
+  PackItem h;
+  h.name = host.title.empty() ? "structure" : host.title;
+  h.molecule = host;
+  h.fixed = true;
+  PackItem g;
+  g.name = guest.title.empty() ? "guest" : guest.title;
+  g.molecule = guest;
+  g.count = count;
+  PackOptions o = o0;
+  o.cell = host.cell;
+  o.periodic = true;
+  System out = pack({h, g}, o, report);
+  // the host's own molecules, names, charges and bond orders; the guests numbered after them
+  int64_t top = 0;
+  for (const auto& a : host.atoms) top = std::max(top, a.mol);
+  const size_t nh = host.atoms.size(), ng = guest.atoms.size();
+  for (size_t i = 0; i < out.atoms.size(); ++i) {
+    if (i < nh) {
+      const Atom& src = host.atoms[i];
+      out.atoms[i].mol = src.mol;
+      out.atoms[i].name = src.name;
+      out.atoms[i].charge = src.charge;
+      out.atoms[i].element = src.element;
+    } else {
+      out.atoms[i].mol = top + 1 + int64_t((i - nh) / ng);
+    }
+  }
+  std::vector<Bond> bonds = host.bonds;
+  for (int k = 0; k < count; ++k)
+    for (const auto& b : guest.bonds) bonds.push_back({uint32_t(nh + size_t(k) * ng + b.i), uint32_t(nh + size_t(k) * ng + b.j), b.order});
+  out.bonds = std::move(bonds);
+  out.bonds_from_file = true;
+  out.title = host.title;
+  out.has_charges = host.has_charges;
+  if (report) report->notes.insert(report->notes.begin(), std::to_string(count) + " × " + g.name + " inserted among " + std::to_string(nh) + " atoms held in place");
+  return out;
+}
+
 }  // namespace caps

@@ -1,4 +1,5 @@
 // CAPS mechanics and thermal transitions (see mechanics.hpp for the methods and references).
+#include "caps/uff.hpp"
 #include "caps/mechanics.hpp"
 
 #include <algorithm>
@@ -234,7 +235,7 @@ ElasticResult static_elastic(const std::vector<System>& configs, const StaticEla
   for (size_t q = 0; q < configs.size(); ++q) {
     const System& s = configs[q];
     if (!s.cell.valid()) throw std::invalid_argument("elastic constants need a periodic cell");
-    const ForceField ff = o.field ? *o.field : assign_gaff(s);
+    const ForceField ff = o.field ? *o.field : default_forcefield(s);
     if (ff.atom_type.size() != s.atoms.size()) throw FieldError("the force field does not match the structure");
     Evaluator ev(ff, o.energy);
     std::vector<double> x = positions(s), f;
@@ -408,7 +409,7 @@ ElasticResult fluctuation_elastic(const Trajectory& t, const std::vector<size_t>
 ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o) {
   ElasticResult res;
   if (!s.cell.valid()) throw std::invalid_argument("elastic constants need a periodic cell");
-  const ForceField ff = o.field ? *o.field : assign_gaff(s);
+  const ForceField ff = o.field ? *o.field : default_forcefield(s);
   auto shared = std::make_shared<const ForceField>(ff);
   DynamicsOptions d;
   d.field = shared;

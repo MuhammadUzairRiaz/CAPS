@@ -120,6 +120,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Mechanics", [StrainChip, FluctChip, TensileChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation")]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
+            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion")]),
         ];
         LoadReferences();
     }
@@ -144,7 +145,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["ree"] = "Backbone end-to-end distance, √⟨R²⟩",
         ["cn"] = "Characteristic ratio C_n and C∞ extrapolated in 1/n",
         ["persistence"] = "Persistence length: Flory projection and bond-correlation decay",
-        ["ced"] = "Cohesive energy density (E isolated − E bulk)/V with the force field (Field, else GAFF of C and H)",
+        ["ced"] = "Cohesive energy density (E isolated − E bulk)/V with the force field (Field, else GAFF for C and H, UFF otherwise)",
         ["delta"] = "Hildebrand solubility parameter δ = √CED",
         ["cij_fluct"] = "Elastic constants from stress fluctuations of the saved frames of an NVT run",
         ["msd"] = "Mean-square displacement of atoms and molecule centres, all time origins, drift removed",
@@ -152,6 +153,8 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["relaxation"] = "End-to-end and segmental (P2) autocorrelations with KWW fits",
         ["ffv"] = "Free volume by probe insertion on a grid: accessible fraction and Bondi FFV",
         ["psd"] = "Pore size distribution: largest atom-free sphere containing each free point",
+        ["zprofile"] = "Mass density along z for the surface (molecule 1) and the film: first-layer peak and the film's own density",
+        ["adhesion"] = "Work of adhesion −(E all − E surface − E film)/area between the surface (molecule 1) and the film, with the force field",
     };
 
     public CalcGroup[] Groups { get; }

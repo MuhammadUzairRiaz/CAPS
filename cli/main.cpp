@@ -123,6 +123,11 @@ System load(const std::string& path, const std::map<std::string, std::string>& o
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
 ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
   if (!o.count("--ff")) {
+    const bool ch = std::all_of(s0.atoms.begin(), s0.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
+    if (!ch) {
+      if (!quiet) std::printf("force field: UFF (elements beyond C and H); give --ff for another\n");
+      return assign_uff(s0);
+    }
     if (!quiet) std::printf("force field: the built-in GAFF (C and H); give --ff for another\n");
     return assign_gaff(s0);
   }
@@ -1001,7 +1006,8 @@ int main(int argc, char** argv) {
       // cohesive energy and fluctuation elastic constants: the force field of the structure (frame 0, molecules whole)
       ForceField ff;
       auto has = [&](const char* k) { return std::find(ids.begin(), ids.end(), k) != ids.end(); };
-      if (has("ced") || has("delta") || has("cij_fluct")) {
+      if (o.count("--zbin")) ao.zbin = std::stod(o["--zbin"]);
+      if (has("ced") || has("delta") || has("cij_fluct") || has("adhesion")) {
         System s0 = t.frame(0);
         if (!s0.unwrapped) make_molecules_whole(s0);
         ff = cli_forcefield(s0, o);
@@ -1047,6 +1053,18 @@ int main(int argc, char** argv) {
       if (o.count("--seed")) r.seed = std::stoull(o["--seed"]);
       r.relax = !o.count("--no-relax");
       if (!o.count("-o")) return usage();
+      if (o.count("--insert")) {   // curatives first: e.g. --insert SS --count 40 (H–S–S–H sulfur donors for sulfur_allylic)
+        BuildOptions bo;
+        bo.forcefield = "uff";
+        const BuildResult br = build_molecule(o["--insert"], bo);
+        PackOptions po;
+        if (o.count("--tolerance")) po.tolerance = std::stod(o["--tolerance"]);
+        PackReport pr;
+        System guest = br.system;
+        guest.title = o["--insert"];
+        s = insert_molecules(s, guest, o.count("--count") ? std::stoi(o["--count"]) : 10, po, &pr);
+        for (const auto& n : pr.notes) std::printf("%s\n", n.c_str());
+      }
       const bool quiet = o.count("--quiet");
       if (!quiet) std::printf("%6s %6s %6s %11s %9s %11s %12s %13s\n", "cycle", "react", "total", "conversion", "clusters", "largest %", "reduced Mw", "E/kcal·mol⁻¹");
       r.progress = [&](const CycleRow& c) {
@@ -1062,7 +1080,7 @@ int main(int argc, char** argv) {
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
-      else if (r.relax) write_lammps_data_ff(s, assign_gaff(s), r.energy, out);
+      else if (r.relax) write_lammps_data_ff(s, default_forcefield(s), r.energy, out);
       else write_lammps_data(s, out);
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       if (o.count("--fa") && o.count("--fb")) {
@@ -1149,7 +1167,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (cmd == "field") {
-      const ForceField ff = assign_gaff(s);
+      const ForceField ff = default_forcefield(s);
       std::printf("force field %s\n", ff.name.c_str());
       for (const auto& n : ff.notes) std::printf("  %s\n", n.c_str());
       std::map<std::string, std::string> why;
@@ -1219,7 +1237,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
-      else write_lammps_data_ff(s, r.field ? *r.field : assign_gaff(s), r.energy, out);
+      else write_lammps_data_ff(s, r.field ? *r.field : default_forcefield(s), r.energy, out);
       std::printf("%s\n", rep.field.c_str());
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       for (const auto& st : rep.stages)
@@ -1280,7 +1298,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
-      else write_lammps_data_ff(s, d.field ? *d.field : assign_gaff(s), d.energy, out);
+      else write_lammps_data_ff(s, d.field ? *d.field : default_forcefield(s), d.energy, out);
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       if (o.count("--log")) {
         std::ofstream lg(o["--log"]);
@@ -1368,7 +1386,7 @@ int main(int argc, char** argv) {
       auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
-      else write_lammps_data_ff(s, assign_gaff(s), e.md.energy, out);
+      else write_lammps_data_ff(s, default_forcefield(s), e.md.energy, out);
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       if (o.count("--log")) {
         std::ofstream lg(o["--log"]);

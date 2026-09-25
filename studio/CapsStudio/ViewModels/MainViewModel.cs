@@ -1207,7 +1207,8 @@ public sealed partial class MainViewModel : ObservableObject
     public void CancelPack() => _packCancel?.Cancel();
 
     // ---------------------------------------------------------------- React
-    public static readonly string[] ReactionSets = ["C–C crosslink (saturated carbons, H₂ leaves)", "Epoxy–amine (primary + secondary)", "Custom (edit the text)"];
+    public static readonly string[] ReactionSets = ["C–C crosslink (saturated carbons, H₂ leaves)", "Epoxy–amine (primary + secondary)",
+        "Sulfur cure of diene rubber (H–S–S–H donors → C–S–S–C)", "Peroxide cure of diene rubber (allylic C–C)", "Custom (edit the text)"];
     private int _rxSet, _rxCycles = 50, _rxPerCycle = 5, _rxSeed = 1, _rxRelaxIt = 500;
     private double _rxTarget = 1.0, _rxCapture, _rxMdPs = 2, _rxTemp = 500, _rxFa = 2, _rxFb = 4, _rxRatio = 1;
     private bool _rxRelax = true, _reacting;
@@ -1219,7 +1220,30 @@ public sealed partial class MainViewModel : ObservableObject
     public void RaiseGel() => Raise(nameof(RxGelText));
     public IReadOnlyList<CapsReactCycle> ReactRows => _rxRows;
 
-    public int RxSet { get => _rxSet; set { if (Set(ref _rxSet, value)) LoadReactionSet(); } }
+    public int RxSet { get => _rxSet; set { if (Set(ref _rxSet, value)) { LoadReactionSet(); Raise(nameof(RxShowInsert)); } } }
+    // curatives inserted into the cell before a cure (sulfur donors)
+    public bool RxShowInsert => _rxSet == 2;
+    private string _rxInsertSmiles = "SS";
+    private decimal _rxInsertCount = 20;
+    public string RxInsertSmiles { get => _rxInsertSmiles; set => Set(ref _rxInsertSmiles, value); }
+    public decimal RxInsertCount { get => _rxInsertCount; set => Set(ref _rxInsertCount, Math.Clamp(Math.Round(value), 1, 100000)); }
+    public async Task InsertCurative()
+    {
+        if (_doc == null || !Idle) return;
+        var doc = _doc;
+        var smiles = _rxInsertSmiles;
+        var n = (int)_rxInsertCount;
+        try
+        {
+            Status = $"Inserting {n} × {smiles}…";
+            var rep = await Task.Run(() => doc.InsertMolecules(smiles, n, 2.0, (ulong)_rxSeed));
+            Field.Reset();
+            AfterRun(doc, $" · +{n} {smiles}");
+            RxLog = rep;
+            Status = $"{n} × {smiles} inserted · react with the sulfur cure";
+        }
+        catch (Exception e) { RxLog = "Could not insert: " + e.Message; Status = "Could not insert the curative"; }
+    }
     public string RxText { get => _rxText; set => Set(ref _rxText, value); }
     public string RxLog { get => _rxLog; private set => Set(ref _rxLog, value); }
     public bool RxRelax { get => _rxRelax; set => Set(ref _rxRelax, value); }
@@ -1274,6 +1298,8 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 0 => CapsDocument.ReactionTemplate("cc_crosslink"),
                 1 => CapsDocument.ReactionTemplate("epoxy_amine_primary") + "\n" + CapsDocument.ReactionTemplate("epoxy_amine_secondary"),
+                2 => CapsDocument.ReactionTemplate("sulfur_allylic"),
+                3 => CapsDocument.ReactionTemplate("peroxide_allylic"),
                 _ => _rxText,
             };
         }
