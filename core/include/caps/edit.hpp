@@ -73,6 +73,17 @@ std::vector<int> fragment_attach_atoms(const std::string& smiles);
 // bonds (i–j included) become aromatic. Returns the new atoms' indices (after the two hydrogens are removed).
 std::vector<uint32_t> fuse_benzene(System& s, uint32_t i, uint32_t j);
 
+// Protonation of amino-acid residues at a pH (the Add hydrogens tool, before add_hydrogens): formal charges on the
+// titratable atoms, found by residue name and chemistry (not atom names): Asp and Glu carboxylates −1 above pKa 3.9 and
+// 4.3, His +1 below 6.0, Cys (not in a disulfide) −1 above 8.3, Tyr −1 above 10.1, Lys +1 below 10.5, Arg +1 below
+// 12.5 (the peptide builder's values), the N-terminus +1 below 8.0 and the C-terminus −1 above 3.1 — model pKa
+// values, no shifts from the environment. Needs bond orders (orders_from_geometry for heavy-atom files). Returns the
+// charged sites; `notes` gets what was set.
+int protonate_residues(System& s, double ph, std::vector<std::string>* notes = nullptr);
+// protonate_residues, then add_hydrogens, then histidine's ring N–H that bond orders cannot tell (aromatic imidazole):
+// both ring nitrogens of His+, the one farther from the backbone (HIE) of neutral His. Returns the hydrogens added.
+int add_hydrogens_at_ph(System& s, double ph, const std::vector<char>& atoms = {}, std::vector<std::string>* notes = nullptr);
+
 // Minimises the flagged atoms (the rest held) with UFF; push-off first for overlaps.
 void clean_up(System& s, const std::vector<char>& atoms = {}, double ftol = 0.5);
 

@@ -703,4 +703,137 @@ std::vector<uint32_t> fuse_benzene(System& s, uint32_t i, uint32_t j) {
   return out;
 }
 
+int protonate_residues(System& s, double ph, std::vector<std::string>* notes) {
+  const size_t n = s.atoms.size();
+  const auto nb = neighbours(s);
+  auto order = [&](uint32_t a, uint32_t b) {
+    for (const auto& bd : s.bonds)
+      if ((bd.i == a && bd.j == b) || (bd.i == b && bd.j == a)) return bd.order;
+    return 0;
+  };
+  auto heavy_nb = [&](uint32_t a) {
+    std::vector<uint32_t> v;
+    for (uint32_t w : nb[a]) if (s.atoms[w].element != 1) v.push_back(w);
+    return v;
+  };
+  auto upper = [](std::string r) { for (auto& c : r) c = char(std::toupper(static_cast<unsigned char>(c))); return r.substr(0, 3); };
+  // the chains' first and last residues (termini), by molecule
+  std::map<int64_t, std::pair<int64_t, int64_t>> span;
+  for (const auto& a : s.atoms) {
+    if (a.resid == 0) continue;
+    auto it = span.find(a.mol);
+    if (it == span.end()) span[a.mol] = {a.resid, a.resid};
+    else it->second.first = std::min(it->second.first, a.resid), it->second.second = std::max(it->second.second, a.resid);
+  }
+  // what an earlier pH set on residue N, O and S atoms goes first
+  for (auto& a : s.atoms)
+    if (!a.resname.empty() && (a.element == 7 || a.element == 8 || a.element == 16) && std::fabs(a.charge - std::lround(a.charge)) < 1e-6) a.charge = 0;
+  std::map<std::string, int> count;
+  std::set<std::pair<int64_t, int64_t>> his_done;
+  int sites = 0;
+  auto set = [&](uint32_t a, int q, const std::string& what) {
+    s.atoms[a].charge = q;
+    ++count[what];
+    ++sites;
+  };
+  // a carboxylate: its single-bonded oxygen (the other is C=O); none when both are double or both single with H
+  auto carboxyl_o = [&](uint32_t c) -> int {
+    int single = -1, dbl = 0;
+    for (uint32_t w : heavy_nb(c))
+      if (s.atoms[w].element == 8 && heavy_nb(w).size() == 1) (order(c, w) == 2 ? dbl : single) = order(c, w) == 2 ? dbl + 1 : int(w);
+    return dbl == 1 ? single : -1;
+  };
+  for (uint32_t i = 0; i < n; ++i) {
+    const Atom& a = s.atoms[i];
+    if (a.element == 1 || a.resname.empty()) continue;
+    const std::string r = upper(a.resname);
+    const auto h = heavy_nb(i);
+    const bool first = span.count(a.mol) && a.resid == span[a.mol].first, last = span.count(a.mol) && a.resid == span[a.mol].second;
+    const bool backbone_n = a.element == 7 && (a.name == "N" || std::any_of(h.begin(), h.end(), [&](uint32_t w) { return s.atoms[w].name == "CA"; }));
+    if (a.element == 7 && backbone_n && h.size() == 1 && first) {   // N-terminus
+      if (ph < 8.0) set(i, 1, "N-terminus NH3+");
+      continue;
+    }
+    if (a.element == 6 && (a.name == "C" || last) && carboxyl_o(i) >= 0 && std::any_of(h.begin(), h.end(), [&](uint32_t w) { return s.atoms[w].name == "CA"; })) {
+      if (ph > 3.1) set(uint32_t(carboxyl_o(i)), -1, "C-terminus COO−");   // C-terminus
+      continue;
+    }
+    if (backbone_n || a.name == "C" || a.name == "O" || a.name == "CA") continue;
+    if ((r == "ASP" || r == "GLU") && a.element == 6 && carboxyl_o(i) >= 0) {
+      if (ph > (r == "ASP" ? 3.9 : 4.3)) set(uint32_t(carboxyl_o(i)), -1, r == "ASP" ? "Asp−" : "Glu−");
+    } else if (r == "LYS" && a.element == 7 && h.size() == 1) {
+      if (ph < 10.5) set(i, 1, "Lys+");
+    } else if (r == "ARG" && a.element == 7) {   // the guanidine N double-bonded to its central carbon
+      for (uint32_t w : h)
+        if (s.atoms[w].element == 6 && order(i, w) == 2 && std::count_if(nb[w].begin(), nb[w].end(), [&](uint32_t x) { return s.atoms[x].element == 7; }) == 3 && ph < 12.5)
+          set(i, 1, "Arg+");
+    } else if ((r == "HIS" || r == "HID" || r == "HIE" || r == "HIP") && a.element == 7 && h.size() == 2) {
+      // His+: the ring N without its hydrogen (a double or aromatic bond, no H yet) takes the charge, once per residue
+      const double sum = (order(i, h[0]) == 4 ? 1.5 : order(i, h[0])) + (order(i, h[1]) == 4 ? 1.5 : order(i, h[1]));
+      const bool has_h = nb[i].size() > h.size();
+      if (ph < 6.0 && sum >= 2.5 && !has_h && his_done.insert({a.mol, a.resid}).second) set(i, 1, "His+");
+    } else if (r == "CYS" && a.element == 16 && h.size() == 1) {
+      if (ph > 8.3) set(i, -1, "Cys−");
+    } else if (r == "TYR" && a.element == 8 && h.size() == 1 && s.atoms[h[0]].element == 6) {
+      bool aromatic = false;
+      for (const auto& bd : s.bonds) aromatic = aromatic || ((bd.i == h[0] || bd.j == h[0]) && bd.order == 4);
+      if (aromatic && ph > 10.1) set(i, -1, "Tyr−");
+    }
+  }
+  if (notes) {
+    std::string t;
+    int q = 0;
+    for (const auto& a : s.atoms) q += int(std::lround(a.charge));
+    for (const auto& [k, c] : count) t += (t.empty() ? "" : ", ") + std::to_string(c) + " " + k;
+    char b[96];
+    std::snprintf(b, sizeof b, "pH %.1f (model pKa values): ", ph);
+    notes->push_back(std::string(b) + (t.empty() ? "no charged residues" : t) + " · net formal charge " + std::to_string(q));
+  }
+  return sites;
+}
+
+int add_hydrogens_at_ph(System& s, double ph, const std::vector<char>& atoms, std::vector<std::string>* notes) {
+  protonate_residues(s, ph, notes);
+  int added = add_hydrogens(s, atoms);
+  // histidine rings: which N carries H
+  auto upper = [](std::string r) { for (auto& c : r) c = char(std::toupper(static_cast<unsigned char>(c))); return r.substr(0, 3); };
+  std::map<std::pair<int64_t, int64_t>, std::vector<uint32_t>> ring_n;
+  auto nb = neighbours(s);
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+    const auto& a = s.atoms[i];
+    if (a.element != 7 || a.resname.empty()) continue;
+    const std::string r = upper(a.resname);
+    if (r != "HIS" && r != "HID" && r != "HIE" && r != "HIP") continue;
+    int heavy = 0;
+    bool backbone = a.name == "N";
+    for (uint32_t w : nb[i]) heavy += s.atoms[w].element != 1, backbone = backbone || s.atoms[w].name == "CA" || s.atoms[w].name == "C";
+    if (heavy == 2 && !backbone && !(atoms.size() == s.atoms.size() && !atoms[i])) ring_n[{a.mol, a.resid}].push_back(i);
+  }
+  for (auto& [key, ns] : ring_n) {
+    if (ns.size() != 2) continue;
+    auto has_h = [&](uint32_t i) { return std::any_of(nb[i].begin(), nb[i].end(), [&](uint32_t w) { return s.atoms[w].element == 1; }); };
+    const bool charged = std::any_of(ns.begin(), ns.end(), [&](uint32_t i) { return s.atoms[i].charge > 0.5; });
+    std::vector<uint32_t> want;
+    if (charged) want = ns;
+    else if (!has_h(ns[0]) && !has_h(ns[1])) {
+      // HIE: the N farther (in bonds) from the residue's backbone CA, or from any non-ring heavy atom
+      auto dist_to_ca = [&](uint32_t from) {
+        std::map<uint32_t, int> d{{from, 0}};
+        std::vector<uint32_t> q{from};
+        for (size_t k = 0; k < q.size(); ++k)
+          for (uint32_t w : nb[q[k]])
+            if (d.emplace(w, d[q[k]] + 1).second) {
+              if (s.atoms[w].name == "CA" && s.atoms[w].resid == key.second) return d[w];
+              q.push_back(w);
+            }
+        return 0;
+      };
+      want.push_back(dist_to_ca(ns[0]) >= dist_to_ca(ns[1]) ? ns[0] : ns[1]);
+    }
+    for (uint32_t i : want)
+      if (!has_h(i)) { add_atom(s, int(i), 1); ++added; nb = neighbours(s); }
+  }
+  return added;
+}
+
 }  // namespace caps
