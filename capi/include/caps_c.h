@@ -341,6 +341,11 @@ int32_t caps_pipeline_catalogue(char* json, int32_t cap);
    "angles","dihedrals","atom_types","bond_types","angle_types","dihedral_types","notes":[…]}. */
 int32_t caps_export_data(caps_doc* d, const char* path, const char* format, const char* options);
 int32_t caps_export_preview(caps_doc* d, const char* format, const char* options, int32_t lines, char* json, int32_t cap);
+/* v19 figure bundles (design/boards/FigureBundle): options JSON {"name","input","topology","frame","width","height",
+   "include_input","include_pipeline","include_data","include_readme","pipeline":{"steps":[…]}}. The preview lists
+   the files (name, note, bytes, sha256; figures only on write) with provenance.json and the first data file. */
+int32_t caps_bundle_preview(caps_doc* d, const char* options, char* json, int32_t cap);
+int32_t caps_bundle_write(caps_doc* d, const char* path, const char* options, const caps_camera* cam, const caps_render_opts* opt);
 /* The pipeline's global attributes on every stride-th frame: {"columns":[…],"rows":[[…]]}. progress may be NULL. */
 int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyze_progress_fn progress, void* user, char* json, int32_t cap);
 /* Atoms bonded to atom index (up to cap written); returns the count. */

@@ -34,6 +34,7 @@ add_library(caps_core STATIC
   src/qeq.cpp
   src/checks.cpp
   src/pipeline.cpp
+  src/bundle.cpp
   src/pipeline_expr.cpp
   src/embed.cpp
   src/bench.cpp
@@ -44,6 +45,7 @@ add_library(caps_core STATIC
 )
 target_include_directories(caps_core PUBLIC include)
 target_link_libraries(caps_core PUBLIC ZLIB::ZLIB Threads::Threads)
+target_compile_definitions(caps_core PRIVATE CAPS_VERSION_STRING="${PROJECT_VERSION}")
 if(NOT MSVC)
   target_compile_options(caps_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
 endif()

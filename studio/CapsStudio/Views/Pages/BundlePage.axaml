@@ -1,0 +1,103 @@
+<!-- CAPS Export › Figure bundle (design/boards/FigureBundle): a figure that carries its data, pipeline and inputs. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.BundlePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Cancel" Click="OnBack" />
+          <Button Classes="primary" Click="OnExport" IsEnabled="{Binding BundleIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export bundle…" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Export · figure bundle" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="A figure that carries its data, pipeline and inputs" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid ColumnDefinitions="*,320" ColumnSpacing="16" Margin="22,16">
+      <Grid RowDefinitions="Auto,*" RowSpacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding BundleCount}" Foreground="{DynamicResource MutedB}" /></Border>
+                <TextBlock Text="{Binding BundleFileName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <StackPanel Margin="16,8" Spacing="0">
+              <Grid ColumnDefinitions="36*,30*,14*,20*" Margin="0,0,0,4">
+                <TextBlock Text="File" Classes="label" /><TextBlock Grid.Column="1" Text="Content" Classes="label" />
+                <TextBlock Grid.Column="2" Text="Size" Classes="label" TextAlignment="Right" /><TextBlock Grid.Column="3" Text="sha256" Classes="label" TextAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding BundleRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:BundleRow">
+                    <Border Classes="trow" Height="28">
+                      <Grid ColumnDefinitions="36*,30*,14*,20*">
+                        <TextBlock Text="{Binding File}" Classes="mono" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Content}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Size}" Classes="mono" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding Hash}" Classes="mono" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource DimB}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding BundleNote}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" Margin="0,8,0,0" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Grid Grid.Row="1" ColumnDefinitions="*,240" ColumnSpacing="14">
+          <Border Classes="card" CornerRadius="10">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="40" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <TextBlock Text="provenance.json" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </Border>
+              <ScrollViewer HorizontalScrollBarVisibility="Auto"><TextBlock Text="{Binding BundleProvenance}" Classes="mono" FontSize="11.5" Margin="16,10" /></ScrollViewer>
+            </DockPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="card" CornerRadius="10">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="40" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <TextBlock Text="{Binding BundleCsvName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </Border>
+              <ScrollViewer HorizontalScrollBarVisibility="Auto"><TextBlock Text="{Binding BundleCsv}" Classes="mono" FontSize="11.5" Margin="16,10" /></ScrollViewer>
+            </DockPanel>
+          </Border>
+        </Grid>
+      </Grid>
+      <StackPanel Grid.Column="1" Spacing="14">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Bundle" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,12" Spacing="10">
+              <StackPanel Spacing="4"><TextBlock Text="Name" Classes="label" /><TextBox Text="{Binding BundleName}" /></StackPanel>
+              <CheckBox Classes="toggle" Content="Include input structure" IsChecked="{Binding BundleInput}" IsEnabled="{Binding BundleInputAvailable}" />
+              <CheckBox Classes="toggle" Content="Include pipeline" IsChecked="{Binding BundlePipeline}" />
+              <CheckBox Classes="toggle" Content="Include data behind every plot" IsChecked="{Binding BundleData}" />
+              <CheckBox Classes="toggle" Content="Include README" IsChecked="{Binding BundleReadme}" />
+              <TextBlock Text="Figure size and background come from Export › Figure." Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Reproduce" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,12" Spacing="8">
+              <Border Background="{DynamicResource Bg0B}" CornerRadius="6" Padding="10,8"><TextBlock Text="{Binding BundleReproduce}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" /></Border>
+              <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                         Text="Rebuilds the data files from the bundled input and pipeline, then compares their sha256 with provenance.json. Needs the input included." />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
