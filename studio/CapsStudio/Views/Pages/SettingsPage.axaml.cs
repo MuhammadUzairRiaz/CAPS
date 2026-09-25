@@ -115,4 +115,5 @@ public partial class SettingsPage : PageBase
     private async void OnTestHost(object? s, RoutedEventArgs e) => await Vm.TestHost();
     private void OnResetTemplate(object? s, RoutedEventArgs e) => Vm.ResetJobTemplate();
     private void OnColourVision(object? s, RoutedEventArgs e) => Vm.OpenColourVision();
+    private async void OnCheckUpdates(object? s, RoutedEventArgs e) => await Vm.CheckForUpdates();
 }
