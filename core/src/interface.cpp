@@ -40,30 +40,10 @@ System build_interface(const System& slab, const ChainSpec& spec, const Interfac
     m /= 8;
     g.chains = std::max(1, int(std::lround(o.density * Lx * Ly * o.film * 0.602214076 / m)));
   }
-  // dense films between hard walls: step the contact scale down when a chain cannot be placed (Relax's push-off
-  // clears the closer contacts afterwards)
+  // dense films between hard walls: the contact scale steps down when a chain cannot be placed
+  g.auto_scale = o.auto_scale;
   GrowReport rep;
-  System s;
-  std::vector<double> scales = {g.contact_scale};
-  if (o.auto_scale)
-    for (double x : {0.85, 0.75, 0.7, 0.6})
-      if (x < g.contact_scale - 1e-9) scales.push_back(x);
-  for (size_t k = 0; k < scales.size(); ++k) {
-    GrowOptions gk = g;
-    gk.contact_scale = scales[k];
-    if (k + 1 < scales.size()) gk.max_restarts = std::min(g.max_restarts, 10);
-    try {
-      s = grow_chains(spec, gk, &rep);
-      if (k > 0) {
-        char n[160];
-        std::snprintf(n, sizeof n, "grown at contact scale %.2f (%.2f was too crowded at this density); relax with push-off before dynamics", scales[k], scales[0]);
-        rep.notes.push_back(n);
-      }
-      break;
-    } catch (const GrowError& e) {
-      if (k + 1 == scales.size() || std::string(e.what()) == "cancelled") throw;
-    }
-  }
+  System s = grow_chains(spec, g, &rep);
   s.title = "CAPS interface: " + (slab.title.empty() ? std::string("slab") : slab.title) + " + " + std::to_string(g.chains) + " chains";
   char b[200];
   std::snprintf(b, sizeof b, "interface: slab %.2f Å thick · film %.1f–%.1f Å (%.1f Å) · %s above · cell %.2f × %.2f × %.2f Å", top - 0.5, z_lo, z_hi, o.film,

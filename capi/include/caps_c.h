@@ -46,7 +46,7 @@ typedef struct {
   int32_t chains, dp, tacticity;   /* tacticity: 0 atactic, 1 isotactic, 2 syndiotactic */
   uint64_t seed;
   double box, density;             /* box edge in Å, or 0 to use density (g/cm^3) */
-  double contact_scale;            /* 1 = full contact limits */
+  double contact_scale;            /* 1 = full contact limits; negative (caps_grow_chains): start at |value| and lower it when crowded */
   int32_t curve;                   /* allow gauche backbone torsions */
 } caps_grow_opts;
 
