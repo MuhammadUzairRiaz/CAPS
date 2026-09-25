@@ -65,7 +65,16 @@ public sealed partial class MainViewModel
     public string SetTheme
     {
         get => _settings.Theme;
-        set { if (_settings.Theme == value) return; _settings.Theme = value; Tokens.UseTheme(value); Raise(); RenderRequested?.Invoke(); MolViewChanged?.Invoke(); Changed("Theme"); }
+        set
+        {
+            if (_settings.Theme == value) return;
+            // the view follows Paper (white) and Graphite (dark) when it still has the old theme's background
+            var wasLight = _settings.Theme == "light";
+            _settings.Theme = value;
+            Tokens.UseTheme(value);
+            if (value is "light" or "dark" && _settings.Background == (wasLight ? 1 : 0)) SetBackground = value == "light" ? 1 : 0;
+            Raise(); RenderRequested?.Invoke(); MolViewChanged?.Invoke(); Changed("Theme");
+        }
     }
     public bool ThemeDark { get => _settings.Theme == "dark"; set { if (value) { SetTheme = "dark"; RaiseTheme(); } } }
     public bool ThemeLight { get => _settings.Theme == "light"; set { if (value) { SetTheme = "light"; RaiseTheme(); } } }
