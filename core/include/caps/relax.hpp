@@ -102,4 +102,15 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
                         int64_t held_mol = 0);
 
+// GROMACS files with the force field: STEM.top (every term in the GROMACS function with the same energy; every
+// Lennard-Jones type pair and 1-4 pair written out, CAPS's exclusions listed), STEM.gro (nm, 8 decimals; molecules made
+// whole) and STEM.mdp (a single-point run with the matching cut-offs, tail and electrostatics). Returns notes where
+// GROMACS cannot compute exactly the same (DSF becomes PME; no cell). Throws FieldError for forms GROMACS lacks (class
+// II, inversions, 9-6 or Buckingham pairs).
+std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem);
+// The notes alone (nothing written); throws as write_gromacs does.
+std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, const EnergyOptions& e);
+// The .mdp non-bonded settings alone (cut-offs, modifiers, dispersion correction, electrostatics).
+std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptions& e);
+
 }  // namespace caps

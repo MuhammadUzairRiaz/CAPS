@@ -575,6 +575,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             } else {
               write_lammps_data(s, path);
             }
+          } else if (f == "gromacs" && ff) {   // topology, coordinates and a single-point .mdp with the same force field
+            write_gromacs(s, *ff, energy, stem);
+            res.files.push_back(stem + ".top");
+            res.files.push_back(stem + ".mdp");
+            path = stem + ".gro";
           } else if (f == "gromacs" || f == "gro") { path = stem + ".gro"; write_gro(s, path); }
           else if (f == "pdb") { path = stem + ".pdb"; write_pdb(s, path); }
           else if (f == "xyz") { path = stem + ".xyz"; write_xyz(s, path); }

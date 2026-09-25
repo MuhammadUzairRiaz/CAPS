@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 21  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints */
+#define CAPS_ABI_VERSION 22  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -306,6 +306,11 @@ int32_t caps_save(caps_doc* d, const char* path);
    complete, else GAFF of C and H): units, styles, special bonds, read_data <data_name>, neighbour settings, ending
    before any run command. Returns the length needed including the final NUL (text = NULL to size the buffer). */
 int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_t cap);
+/* GROMACS files with the same force field (ABI 22): when stem is non-empty, writes stem.top, stem.gro and stem.mdp (a
+   single-point run). Returns the .mdp non-bonded settings (cut-offs, modifiers, dispersion correction, electrostatics)
+   preceded by "; note: " lines where GROMACS cannot compute exactly what CAPS does. Fails for forms GROMACS lacks
+   (class II, inversions, 9-6 or Buckingham pairs). Returns the length needed including the final NUL. */
+int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap);
 
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);

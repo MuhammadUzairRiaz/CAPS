@@ -1016,6 +1016,27 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
   });
 }
 
+int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
+  return guard([&] {
+    caps::ForceField ff;
+    if (d->field && d->field->complete) ff = *d->field->ff;
+    else ff = default_ff(d->frame);
+    std::string out;
+    std::vector<std::string> notes;
+    notes = stem && *stem ? caps::write_gromacs(d->frame, ff, elec(), stem) : caps::gromacs_notes(d->frame, ff, elec());
+    if (d->held_mol > 0) notes.push_back("the held molecule is not frozen here: give it an index group and freezegrps / freezedim");
+    for (const auto& n : notes) out += "; note: " + n + "\n";
+    out += caps::gromacs_mdp(d->frame, ff, elec());
+    const int32_t need = int32_t(out.size() + 1);
+    if (text && cap > 0) {
+      const size_t m = std::min<size_t>(size_t(cap - 1), out.size());
+      std::memcpy(text, out.data(), m);
+      text[m] = 0;
+    }
+    return need;
+  });
+}
+
 int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn progress, void* user, char* report, int32_t cap) {
   return guard([&] {
     caps::RelaxOptions r;

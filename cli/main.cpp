@@ -125,7 +125,7 @@ int usage() {
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
-               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in]] [--overlay USER.json] [--types TYPES.txt] [--charges keep|types|gasteiger]\n"
+               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges keep|types|gasteiger]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
 }
@@ -1379,6 +1379,11 @@ int main(int argc, char** argv) {
             write_lammps_input(s, f, eo, o["-o"], o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0);
             std::printf("wrote %s\n", o["--lammps-input"].c_str());
           }
+        }
+        if (o.count("--gromacs")) {   // STEM.top, STEM.gro and STEM.mdp with the same force field
+          for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = f.charge[i];
+          for (const auto& n : write_gromacs(s, f, eo, o["--gromacs"])) std::printf("gromacs: %s\n", n.c_str());
+          std::printf("wrote %s.top, %s.gro and %s.mdp\n", o["--gromacs"].c_str(), o["--gromacs"].c_str(), o["--gromacs"].c_str());
         }
         return rep.missing.empty() ? 0 : 3;
       }
