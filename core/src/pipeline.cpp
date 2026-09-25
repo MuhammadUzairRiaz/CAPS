@@ -815,6 +815,240 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
                 (stride > 1 ? " every " + std::to_string(stride) : "") + " · " + std::to_string(segs) + " segments";
 }
 
+// A periodic grid over the cell: n[k] points along each edge, spacing about h.
+struct CellGrid {
+  Cell cell;
+  int n[3] = {1, 1, 1};
+  double voxel = 0;
+  CellGrid(const Cell& c, double h) : cell(c) {
+    for (int k = 0; k < 3; ++k) n[k] = std::clamp(int(std::ceil(norm(k == 0 ? c.a : k == 1 ? c.b : c.c) / h)), 4, 400);
+    voxel = c.volume() / (double(n[0]) * n[1] * n[2]);
+  }
+  size_t size() const { return size_t(n[0]) * n[1] * n[2]; }
+  size_t index(int i, int j, int k) const { return (size_t(i) * n[1] + j) * n[2] + k; }
+  Vec3 point(int i, int j, int k) const { return cell.origin + cell.a * ((i + 0.5) / n[0]) + cell.b * ((j + 0.5) / n[1]) + cell.c * ((k + 0.5) / n[2]); }
+  // every grid point within r of p (minimum image), with its separation vector
+  template <class F>
+  void around(const Vec3& p, double r, F&& f) const {
+    const Vec3 fr = cell.to_fractional(p);
+    const double v = cell.volume();
+    const double w[3] = {v / norm(cross(cell.b, cell.c)), v / norm(cross(cell.c, cell.a)), v / norm(cross(cell.a, cell.b))};
+    int lo[3], hi[3];
+    for (int k = 0; k < 3; ++k) {
+      const double span = r / w[k] * n[k];
+      lo[k] = int(std::floor(fr[k] * n[k] - 0.5 - span));
+      hi[k] = int(std::ceil(fr[k] * n[k] - 0.5 + span));
+      if (hi[k] - lo[k] >= n[k]) { lo[k] = 0; hi[k] = n[k] - 1; }
+    }
+    const double r2 = r * r;
+    for (int i = lo[0]; i <= hi[0]; ++i)
+      for (int j = lo[1]; j <= hi[1]; ++j)
+        for (int k = lo[2]; k <= hi[2]; ++k) {
+          const int ii = ((i % n[0]) + n[0]) % n[0], jj = ((j % n[1]) + n[1]) % n[1], kk = ((k % n[2]) + n[2]) % n[2];
+          const Vec3 d = cell.minimum_image(point(ii, jj, kk) - p);
+          const double d2 = dot(d, d);
+          if (d2 <= r2) f(index(ii, jj, kk), d2);
+        }
+  }
+};
+
+double vdw_radius(const Atom& a) { return element(a.element).vdw; }
+
+// Accessible grid points for a probe, and their connected voids (face neighbours, periodic), largest first.
+std::vector<char> accessible(const System& s, const CellGrid& g, double probe) {
+  std::vector<char> ok(g.size(), 1);
+  for (const auto& a : s.atoms) g.around(a.pos, vdw_radius(a) + probe, [&](size_t k, double) { ok[k] = 0; });
+  return ok;
+}
+std::vector<std::vector<size_t>> components(const CellGrid& g, const std::vector<char>& ok) {
+  std::vector<int> label(g.size(), -1);
+  std::vector<std::vector<size_t>> comps;
+  std::vector<size_t> stack;
+  for (size_t start = 0; start < g.size(); ++start) {
+    if (!ok[start] || label[start] >= 0) continue;
+    comps.emplace_back();
+    auto& c = comps.back();
+    label[start] = int(comps.size() - 1);
+    stack.assign(1, start);
+    while (!stack.empty()) {
+      const size_t q = stack.back();
+      stack.pop_back();
+      c.push_back(q);
+      const int i = int(q / (size_t(g.n[1]) * g.n[2])), j = int((q / g.n[2]) % g.n[1]), k = int(q % g.n[2]);
+      const int nb[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+      for (const auto& d : nb) {
+        const size_t r = g.index((i + d[0] + g.n[0]) % g.n[0], (j + d[1] + g.n[1]) % g.n[1], (k + d[2] + g.n[2]) % g.n[2]);
+        if (ok[r] && label[r] < 0) { label[r] = label[q]; stack.push_back(r); }
+      }
+    }
+  }
+  std::sort(comps.begin(), comps.end(), [](const auto& a, const auto& b) { return a.size() > b.size(); });
+  return comps;
+}
+
+void step_voids(PipelineState& st, const Json& p, StepStatus& out) {
+  const System& s = st.system;
+  if (!s.cell.valid()) throw std::invalid_argument("voids need a periodic cell");
+  const double probe = std::max(0.0, p.num("probe", 1.4));
+  const CellGrid g(s.cell, std::clamp(p.num("grid", 0.5), 0.2, 2.0));
+  const auto ok = accessible(s, g, probe);
+  const auto comps = components(g, ok);
+  size_t acc = 0;
+  for (char c : ok) acc += c;
+  const double share = double(acc) / g.size();
+  DataTable t;
+  t.name = "voids";
+  t.title = "Voids · probe " + fmt("%.2g Å", probe);
+  t.columns = {"Void", "Volume (Å³)", "Points"};
+  for (size_t c = 0; c < comps.size() && c < 500; ++c) t.rows.push_back({double(c + 1), comps[c].size() * g.voxel, double(comps[c].size())});
+  st.tables.push_back(std::move(t));
+  DataTable sw;   // how accessibility falls as the probe grows
+  sw.name = "probe_sweep";
+  sw.title = "Accessible volume against probe radius";
+  sw.columns = {"Probe (Å)", "Accessible (%)", "Voids", "Largest share (%)"};
+  for (double r : {0.0, 0.5, 1.0, 1.4, 2.0, 2.5}) {
+    const auto o2 = accessible(s, g, r);
+    const auto c2 = components(g, o2);
+    size_t a2 = 0;
+    for (char c : o2) a2 += c;
+    sw.rows.push_back({r, 100.0 * a2 / g.size(), double(c2.size()), a2 ? 100.0 * (c2.empty() ? 0 : c2.front().size()) / a2 : 0});
+  }
+  st.tables.push_back(std::move(sw));
+  st.set_attribute("Voids.accessible_fraction", share);
+  st.set_attribute("Voids.count", double(comps.size()));
+  st.set_attribute("Voids.largest_volume", comps.empty() ? 0 : comps.front().size() * g.voxel);
+  if (flag(p, "show", true)) {   // void points coloured by void, at most about 6 000
+    size_t total = 0;
+    for (const auto& c : comps) total += c.size();
+    const size_t every = std::max<size_t>(1, total / 6000);
+    for (size_t c = 0; c < comps.size(); ++c)
+      for (size_t q = 0; q < comps[c].size(); q += every) {
+        const size_t idx = comps[c][q];
+        const int i = int(idx / (size_t(g.n[1]) * g.n[2])), j = int((idx / g.n[2]) % g.n[1]), k = int(idx % g.n[2]);
+        const Vec3 r = g.point(i, j, k);
+        st.segments.push_back({r, r, kCat[c % 10], 0.14, false});
+      }
+  }
+  out.summary = fmt("%.1f %% accessible", 100 * share) + " · " + std::to_string(comps.size()) + " voids · probe " + fmt("%.2g Å", probe) + " · grid " +
+                std::to_string(g.n[0]) + "×" + std::to_string(g.n[1]) + "×" + std::to_string(g.n[2]);
+}
+
+void step_voronoi(PipelineState& st, const Json& p, StepStatus& out) {
+  const System& s = st.system;
+  if (!s.cell.valid()) throw std::invalid_argument("Voronoi volumes need a periodic cell");
+  const bool radical = p.text("method", "grid") == "radical";
+  const CellGrid g(s.cell, std::clamp(p.num("grid", 0.5), 0.15, 2.0));
+  const size_t n = s.atoms.size();
+  std::vector<double> best(g.size(), 1e300);
+  std::vector<int> owner(g.size(), -1);
+  // every atom claims the points within 6 Å; the few points farther from all atoms are settled one by one
+  for (size_t a = 0; a < n; ++a) {
+    const double w = radical ? vdw_radius(s.atoms[a]) : 0;
+    g.around(s.atoms[a].pos, 6.0, [&](size_t k, double d2) {
+      const double score = d2 - w * w;
+      if (score < best[k]) { best[k] = score; owner[k] = int(a); }
+    });
+  }
+  for (int i = 0; i < g.n[0]; ++i)
+    for (int j = 0; j < g.n[1]; ++j)
+      for (int k = 0; k < g.n[2]; ++k) {
+        const size_t q = g.index(i, j, k);
+        if (owner[q] >= 0) continue;
+        const Vec3 pt = g.point(i, j, k);
+        for (size_t a = 0; a < n; ++a) {
+          const Vec3 d = s.cell.minimum_image(s.atoms[a].pos - pt);
+          const double w = radical ? vdw_radius(s.atoms[a]) : 0;
+          const double score = dot(d, d) - w * w;
+          if (score < best[q]) { best[q] = score; owner[q] = int(a); }
+        }
+      }
+  auto& vol = st.props["AtomicVolume"];
+  vol.assign(n, 0);
+  for (size_t k = 0; k < g.size(); ++k) if (owner[k] >= 0) vol[size_t(owner[k])] += g.voxel;
+  std::map<std::string, std::vector<double>> by;
+  for (size_t a = 0; a < n; ++a) by[s.atoms[a].name.empty() ? element(s.atoms[a].element).symbol : s.atoms[a].name].push_back(vol[a]);
+  DataTable t;
+  t.name = "voronoi";
+  t.title = "Voronoi volume by type";
+  t.columns = {"Type #", "Atoms", "mean (Å³)", "median (Å³)", "max (Å³)"};
+  int k = 0;
+  std::string names;
+  for (auto& [name, v] : by) {
+    std::sort(v.begin(), v.end());
+    double m = 0;
+    for (double x : v) m += x;
+    t.rows.push_back({double(++k), double(v.size()), m / v.size(), v[v.size() / 2], v.back()});
+    names += (names.empty() ? "" : ", ") + std::to_string(k) + " " + name;
+  }
+  st.tables.push_back(std::move(t));
+  double sum = 0;
+  for (double x : vol) sum += x;
+  st.set_attribute("Voronoi.sum", sum);
+  st.set_attribute("Voronoi.mean", n ? sum / n : 0);
+  out.summary = std::string(radical ? "radical" : "nearest atom") + " · sum " + fmt("%.0f Å³", sum) + " of " + fmt("%.0f Å³", s.cell.volume()) + " · types " + names;
+}
+
+void step_density_field(PipelineState& st, const Json& p, StepStatus& out) {
+  const System& s = st.system;
+  if (!s.cell.valid()) throw std::invalid_argument("a density field needs a periodic cell");
+  const double sigma = std::clamp(p.num("sigma", 1.5), 0.3, 6.0);
+  const CellGrid g(s.cell, std::clamp(p.num("grid", 0.8), 0.2, 3.0));
+  std::vector<double> rho(g.size(), 0);
+  const double norm3 = 1.0 / std::pow(2 * M_PI * sigma * sigma, 1.5);
+  // each atom's Gaussian is normalised on the grid, so the field holds exactly the cell's mass
+  std::vector<std::pair<size_t, double>> kernel;
+  for (const auto& a : s.atoms) {
+    const double m = s.mass_of(a) * 1.66053906660;   // g/mol per Å³ → g/cm³
+    kernel.clear();
+    double sum = 0;
+    g.around(a.pos, 3 * sigma, [&](size_t k, double d2) { const double w = std::exp(-d2 / (2 * sigma * sigma)); kernel.push_back({k, w}); sum += w; });
+    if (sum <= 0) continue;
+    for (const auto& [k, w] : kernel) rho[k] += m * w / (sum * g.voxel);
+  }
+  (void)norm3;
+  double mean = 0, empty = 0;
+  for (double x : rho) { mean += x; empty += x < 0.05; }
+  mean /= g.size();
+  st.set_attribute("DensityField.mean", mean);
+  st.set_attribute("DensityField.empty_fraction", empty / g.size());
+  const int axis = std::clamp(int(p.num("axis", 2)), 0, 2);
+  DataTable prof;
+  prof.name = "density_profile";
+  const char* ax = axis == 0 ? "x" : axis == 1 ? "y" : "z";
+  prof.title = std::string("Density profile along ") + ax;
+  prof.columns = {std::string(ax) + " (fraction of the cell)", "Density (g/cm³)"};
+  const int na = g.n[axis];
+  std::vector<double> layer(size_t(na), 0);
+  for (int i = 0; i < g.n[0]; ++i)
+    for (int j = 0; j < g.n[1]; ++j)
+      for (int k = 0; k < g.n[2]; ++k) layer[size_t(axis == 0 ? i : axis == 1 ? j : k)] += rho[g.index(i, j, k)];
+  const double per = double(g.size()) / na;
+  for (int q = 0; q < na; ++q) prof.rows.push_back({(q + 0.5) / na, layer[size_t(q)] / per});
+  st.tables.push_back(std::move(prof));
+  // the slice at the chosen position, as points coloured by density
+  const double pos = std::clamp(p.num("position", 0.5), 0.0, 1.0);
+  const int q = std::clamp(int(pos * na), 0, na - 1);
+  double hi = 0;
+  for (double x : rho) hi = std::max(hi, x);
+  const double r = 0.45 * std::cbrt(g.voxel);
+  for (int i = 0; i < g.n[0]; ++i)
+    for (int j = 0; j < g.n[1]; ++j)
+      for (int k = 0; k < g.n[2]; ++k) {
+        if ((axis == 0 ? i : axis == 1 ? j : k) != q) continue;
+        const double x = rho[g.index(i, j, k)];
+        const Vec3 pt = g.point(i, j, k);
+        st.segments.push_back({pt, pt, ramp(kViridis, 9, hi > 0 ? x / hi : 0), r, false});
+      }
+  st.legend = PipelineLegend{};
+  st.legend.property = "Density (g/cm³)";
+  st.legend.continuous = true;
+  st.legend.lo = 0;
+  st.legend.hi = hi;
+  st.has_legend = true;
+  out.summary = "mean " + fmt("%.3f g/cm³", mean) + " (cell " + fmt("%.3f", s.density()) + ") · " + fmt("%.0f %%", 100 * empty / g.size()) + " below 0.05 · σ " +
+                fmt("%.2g Å", sigma);
+}
+
 struct StepDef {
   const char* type;
   const char* title;
@@ -852,6 +1086,9 @@ const StepDef kSteps[] = {
     {"smooth", "Smooth trajectory", "positions averaged over a window of frames", step_smooth},
     {"vectors", "Vectors", "end-to-end, dipoles, displacements, velocities as arrows", step_vectors},
     {"trajectory_lines", "Trajectory lines", "paths of molecule centres or particles", step_trajectory_lines},
+    {"voids", "Voids & pores", "accessible volume for a probe, voids by size", step_voids},
+    {"voronoi", "Voronoi volumes", "volume per atom on a grid", step_voronoi},
+    {"density_field", "Density field", "Gaussian-smoothed mass density, profile, slice", step_density_field},
 };
 
 }  // namespace

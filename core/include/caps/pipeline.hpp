@@ -26,6 +26,9 @@
 //   smooth              window (frames, centred): positions averaged over the trajectory
 //   vectors             property end_to_end|dipole|displacement|velocity, scale, radius       → arrows, table vectors
 //   trajectory_lines    particles centres|selected, from, to, stride, radius                  → paths over the frames
+//   voids               probe, grid, show (points)       accessible volume, voids by volume, probe sweep (needs a cell)
+//   voronoi             method grid|radical, grid        → AtomicVolume, table by type; cells sum to the box
+//   density_field       grid, sigma, axis, position       Gaussian mass density: mean, empty share, profile, slice points
 //
 // Expressions: numbers, "C" (an element, for Element comparisons), particle properties (Identifier, Index, Molecule,
 // Type, Element, Mass, Charge, Position.X/Y/Z, Selection, DistanceToCOM, any computed property), + - * / % ^,
