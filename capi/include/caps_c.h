@@ -234,6 +234,14 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
    viewer's colours; all types of the force field; notes; energy). Returns the length needed including the final NUL;
    call with json = NULL to size the buffer. Empty when nothing is assigned. */
 int32_t caps_field_report(caps_doc* d, char* json, int32_t cap);
+/* Which library force fields describe the current structure (ABI 22): dir is the library folder (catalogue.json).
+   Each force field's typing is tried, then its parameters: {ok, forcefields: [{id, name, status (complete | untyped atoms
+   | missing parameters | charges do not balance | no typing rules | error: …), untyped, untyped_groups: [{environment,
+   count, atoms[]}], missing[], missing_count, charges (types | gasteiger | none), net_charge, balanced, complete}]}.
+   balanced: the force field's own charges leave the structure at its formal charge. Seconds for a few thousand atoms;
+   progress gets (force field, fraction) and returns non-zero to stop. */
+typedef int32_t (*caps_stage_fn)(const char* stage, double fraction, void* user);
+int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* Sets atom `index` (0-based) to a type by hand; type "" or NULL removes the override. Returns as caps_field_assign. */
 int32_t caps_field_override(caps_doc* d, int32_t index, const char* type);
 /* Adds a parameter rule entered by hand: kind pair | bond | angle | dihedral | improper, the atom types (space-
@@ -595,7 +603,6 @@ void caps_set_ph(caps_doc* d, double ph);
    solvent_molecules, or polymer_b and chains_b, temperature, pressure, eq_ps, prod_ps, seed} → {ok, error, chi,
    chi_error, phi_a, v_ref, de_mix, cells: [{name, atoms, molecules, density, ced, ced_error}], notes}. Minutes of
    CPU: progress gets (stage, fraction) and returns non-zero to cancel. */
-typedef int32_t (*caps_stage_fn)(const char* stage, double fraction, void* user);
 int32_t caps_chi_md(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* χ(T) from pair contacts (v22; Fan, Olafson, Blanco & Hsu 1992): json {a, b (SMILES; * ends capped with H),
    forcefield (a caps-forcefield JSON with typing rules; empty: built-in GAFF subset or UFF), samples, pack_trials,

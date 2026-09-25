@@ -306,6 +306,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_field_coverage")] public static extern int FieldCoverage(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_chi_contacts")] public static extern int ChiContacts([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ewald_params")] public static extern int EwaldParams(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_residues")] public static extern int AtomResidues(IntPtr doc, [Out] int[]? out_, int cap);
@@ -1157,6 +1158,21 @@ public sealed class CapsDocument : IDisposable
     public string Charges(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Charges(_h, json, b, c)); } }
     /// <summary>Snapshots and history branches (caps_snapshot): take, restore, delete, save, branch, drop_branch.</summary>
     public void Snapshot(string json) { lock (_lock) { Alive(); Check(Native.Snapshot(_h, json)); } }
+    /// <summary>Which library force fields describe this structure (caps_field_coverage), JSON; progress gets (force field, fraction), false stops.</summary>
+    public string FieldCoverage(string dir, Func<string, double, bool>? progress = null)
+    {
+        lock (_lock)
+        {
+            Alive();
+            CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+            var buf = new byte[1 << 20];
+            var n = Native.FieldCoverage(_h, dir, cb, IntPtr.Zero, buf, buf.Length);
+            if (n > buf.Length) { buf = new byte[n]; n = Native.FieldCoverage(_h, dir, cb, IntPtr.Zero, buf, buf.Length); }
+            GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
+
     /// <summary>Changes the selection (caps_select), JSON {ok, error, count, matched}.</summary>
     public string Select(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Select(_h, json, b, c)); } }
     public string SelectionJson() { lock (_lock) return JsonCallOnce((b, c) => Native.Selection(_h, b, c)); }

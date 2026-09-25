@@ -61,6 +61,7 @@
 #include "caps/json.hpp"
 
 #include <map>
+#include <mutex>
 #include <memory>
 #include <set>
 #include <numeric>
@@ -583,6 +584,20 @@ void field_run(caps_doc* d) {
       }
     } else {
       F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
+    }
+  }
+  // the physics check: charges taken from the force field's own types must leave the structure at its formal charge
+  // (OPLS-AA's group charges balance group by group; bond increments always do). A mismatch means a group was typed
+  // only partly, so the assignment is incomplete, as a missing parameter would make it.
+  if (F.ff && F.charges == "types" && !uff) {
+    double net = 0;
+    for (double q : F.ff->charge) net += q;
+    int formal = 0;
+    for (int c : caps::perceive(s).charge) formal += c;
+    if (std::fabs(net - formal) > 1e-3) {
+      char b[240];
+      std::snprintf(b, sizeof b, "charges: the force field's charges add up to %+.3f e, not the formal charge %+d e (a group typed only partly)", net, formal);
+      F.rep.missing.push_back(b);
     }
   }
   F.complete = F.ff && F.rep.missing.empty();
@@ -1570,6 +1585,126 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
     }
     return d->field->complete ? 0 : 1;
   });
+}
+
+// Which library force fields can describe the current structure (caps_field_coverage): each one's typing tried, then
+// its parameters looked up, with the untyped atoms grouped by chemical environment and the net charge its own charges
+// give. Force-field definitions are cached (the library does not change while the Studio runs).
+namespace {
+std::string atom_env(const caps::System& s, const caps::Perception& p, uint32_t i) {
+  std::vector<std::string> nb;
+  for (size_t k = 0; k < p.nb[i].size(); ++k) {
+    const uint32_t j = p.nb[i][k];
+    const int o = p.order[i][k];
+    nb.push_back(std::string(o == 2 ? "=" : o == 3 ? "#" : "") + caps::element(s.atoms[j].element).symbol);
+  }
+  std::sort(nb.begin(), nb.end());
+  std::string r = caps::element(s.atoms[i].element).symbol;
+  if (p.aromatic[i]) r += " aromatic";
+  r += nb.empty() ? " (no bonds)" : " bonded to ";
+  for (size_t k = 0; k < nb.size(); ++k) r += (k ? " " : "") + nb[k];
+  return r;
+}
+}  // namespace
+
+extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    static std::mutex cache_lock;
+    static std::map<std::string, std::shared_ptr<caps::FFDef>> cache;
+    const caps::System& s = d->frame;
+    const std::string root = dir ? dir : "";
+    std::ifstream cf(std::filesystem::path(root) / "catalogue.json");
+    if (!cf) throw std::runtime_error("no force-field catalogue in " + root);
+    const caps::Json cat = caps::Json::parse(std::string((std::istreambuf_iterator<char>(cf)), std::istreambuf_iterator<char>()));
+    const caps::Perception per = caps::perceive(s);
+    struct Entry { std::string id, name, path; };
+    std::vector<Entry> entries{{"uff", "UFF (Rappé et al. 1992)", "uff"}};
+    for (const auto& e : cat["forcefields"].items())
+      if (!e.text("file").empty()) entries.push_back({e.text("id"), e.text("name"), (std::filesystem::path(root) / e.text("file")).string()});
+    caps::Json list = caps::Json::array();
+    int k = 0;
+    for (const auto& en : entries) {
+      if (progress && progress(en.name.c_str(), double(k++) / double(entries.size()), user) != 0) break;
+      caps::Json x = caps::Json::object();
+      x["id"] = en.id, x["name"] = en.name;
+      try {
+        caps::ForceField ff;
+        caps::ParamReport rep;
+        std::string charges = "types";
+        if (en.path == "uff") {
+          ff = caps::assign_uff(s);
+          charges = "none";
+          x["untyped"] = 0.0;
+        } else {
+          std::shared_ptr<caps::FFDef> def;
+          {
+            std::lock_guard<std::mutex> g(cache_lock);
+            auto it = cache.find(en.path);
+            if (it == cache.end()) it = cache.emplace(en.path, std::make_shared<caps::FFDef>(caps::load_forcefield(en.path))).first;
+            def = it->second;
+          }
+          if (def->typing.empty()) { x["status"] = "no typing rules"; list.push_back(std::move(x)); continue; }
+          const caps::TypingResult tr = caps::assign_types(s, *def);
+          x["untyped"] = double(tr.untyped);
+          if (tr.untyped) {
+            std::map<std::string, std::pair<int, std::vector<double>>> groups;
+            for (uint32_t i = 0; i < tr.types.size(); ++i)
+              if (tr.types[i].empty()) {
+                auto& g = groups[atom_env(s, per, i)];
+                ++g.first;
+                if (g.second.size() < 200) g.second.push_back(double(i));
+              }
+            caps::Json gl = caps::Json::array();
+            for (const auto& [env, g] : groups) {
+              caps::Json ge = caps::Json::object();
+              caps::Json at = caps::Json::array();
+              for (double a : g.second) at.push_back(a);
+              ge["environment"] = env, ge["count"] = double(g.first), ge["atoms"] = std::move(at);
+              gl.push_back(std::move(ge));
+            }
+            x["untyped_groups"] = std::move(gl);
+            x["status"] = "untyped atoms";
+            list.push_back(std::move(x));
+            continue;
+          }
+          try {
+            ff = caps::parameterize(s, *def, tr.types, "types", &rep, true);
+          } catch (const caps::FFError& e) {
+            if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
+            rep = caps::ParamReport{};
+            ff = caps::parameterize(s, *def, tr.types, "gasteiger", &rep, true);
+            charges = "gasteiger";
+          }
+        }
+        caps::Json miss = caps::Json::array();
+        for (size_t m = 0; m < rep.missing.size() && m < 8; ++m) miss.push_back(rep.missing[m]);
+        x["missing"] = std::move(miss);
+        x["missing_count"] = double(rep.missing.size());
+        x["charges"] = charges;
+        double net = 0;
+        for (double q : ff.charge) net += q;
+        x["net_charge"] = net;
+        // the physics check: a force field's own charges must leave every molecule neutral (the structure's formal
+        // charge aside); with Gasteiger or no charges this says nothing about the force field
+        int formal = 0;
+        for (int c : per.charge) formal += c;
+        const bool balanced = charges != "types" || std::fabs(net - formal) < 1e-3;
+        x["balanced"] = balanced;
+        x["complete"] = rep.missing.empty() && balanced;
+        x["status"] = !rep.missing.empty() ? "missing parameters" : !balanced ? "charges do not balance" : "complete";
+      } catch (const std::exception& e) {
+        x["status"] = std::string("error: ") + e.what();
+      }
+      list.push_back(std::move(x));
+    }
+    r["ok"] = true;
+    r["forcefields"] = std::move(list);
+  } catch (const std::exception& e) {
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(), out, cap);
 }
 
 int32_t caps_field_report(caps_doc* d, char* json, int32_t cap) {
