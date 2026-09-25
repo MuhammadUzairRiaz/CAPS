@@ -28,6 +28,8 @@ public sealed class AppSettings
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
     public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;
     public List<MyFragment> MyFragments { get; set; } = new();   // the fragment library's "My fragments"
+    /// <summary>The first-run tour was finished or skipped.</summary>
+    public bool TourDone { get; set; }
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>

@@ -365,6 +365,8 @@ public partial class MainWindow : Window
             Enabled = () => _vm.HasDocument, Run = () => _ = Export("png") });
         _vm.AddCommand(new PaletteCommand { Title = "Export figure (SVG)…", Id = "export.svg", Icon = "download", Section = "File", Keywords = "vector image",
             Enabled = () => _vm.HasDocument, Run = () => _ = Export("svg") });
+        _vm.TourChanged += UpdateTour;
+        _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Document)) Dispatcher.UIThread.Post(_vm.MaybeStartTour, DispatcherPriority.Background); };
         _vm.OpenRequested += what =>
         {
             var parts = what.Split('\n');
@@ -906,6 +908,20 @@ public partial class MainWindow : Window
 
     private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
     private void OnProvenancePage(object? s, RoutedEventArgs e) => _vm.OpenProvenance();
+
+    /// <summary>Lights the tour step's region (the 3D view when that region is hidden).</summary>
+    private void UpdateTour()
+    {
+        if (!_vm.TourOpen) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            var name = _vm.TourCurrent.Region;
+            Control? target = this.FindControl<Control>(name);
+            if (target == null || !target.IsEffectivelyVisible || target.Bounds.Width < 2) target = ViewHost;
+            var p = target.TranslatePoint(new Point(0, 0), Tour);
+            if (p is { } q) Tour.SetTarget(new Rect(q, target.Bounds.Size));
+        }, DispatcherPriority.Background);
+    }
     private void OnViewportsPage(object? s, RoutedEventArgs e) => _vm.OpenViewports();
     private void OnRenderBack(object? s, RoutedEventArgs e) => _vm.SetModule(8);
     private void OnRenderStop(object? s, RoutedEventArgs e) => _vm.StopRender();
