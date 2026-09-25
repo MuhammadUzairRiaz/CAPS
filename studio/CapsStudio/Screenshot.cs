@@ -340,6 +340,11 @@ internal static class Screenshot
                 w.ViewModel.OpenManual(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "project")   // project=FOLDER|-: the project home (- = the open structure's folder)
+            {
+                w.ViewModel.OpenProject(kv[1] == "-" ? null : kv[1]);
+                for (int k = 0; k < 120; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

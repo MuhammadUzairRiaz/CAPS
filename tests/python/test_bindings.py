@@ -34,6 +34,8 @@ pep.save(saved)
 side = caps.provenance_file(saved)
 reopened = caps.open(saved).provenance()
 check(side["ok"] and [st["engine"] for st in reopened["steps"]] == engines, "provenance saved beside the file and read back")
+md = caps.methods(prov)
+check("minimised with L-BFGS" in md["text"] and len(md["refs"]) >= 3, "methods text from provenance")
 check("@article{rappe1992," in caps.bibtex(prov) and "@article{engh1991," in caps.bibtex(prov), "bibtex of the cited methods")
 with tempfile.TemporaryDirectory() as tmp:
     out = os.path.join(tmp, "pep.data")
