@@ -32,6 +32,11 @@ public sealed class AppSettings
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
+    public int UnitSystem { get; set; }                    // Settings › Units: 0 CAPS, 1 SI-derived, 2 LAMMPS metal
+    public string UnitEnergy { get; set; } = "kcal/mol";
+    public string UnitLength { get; set; } = "Å";
+    public string UnitPressure { get; set; } = "atm";
+    public string UnitTime { get; set; } = "ps";
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>

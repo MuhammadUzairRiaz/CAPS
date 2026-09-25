@@ -163,6 +163,44 @@
             </StackPanel>
           </StackPanel>
 
+          <!-- Units (design/boards/Units) -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=5}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Units &amp; number formats" Classes="title" />
+              <TextBlock Text="How quantities are shown. Display only: files keep the units of their format, and every export states them." Classes="muted" />
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Unit system" Classes="h2" />
+              <ListBox ItemsSource="{Binding UnitSystems}" SelectedIndex="{Binding SetUnitSystem}" Background="Transparent" MaxWidth="560" HorizontalAlignment="Left" />
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Per quantity" Classes="h2" />
+              <Grid ColumnDefinitions="120,160" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+                <TextBlock Text="Energy" VerticalAlignment="Center" /><ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.EnergyUnits}" SelectedItem="{Binding SetUnitEnergy}" HorizontalAlignment="Stretch" />
+                <TextBlock Grid.Row="1" Text="Length" VerticalAlignment="Center" /><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.LengthUnits}" SelectedItem="{Binding SetUnitLength}" HorizontalAlignment="Stretch" />
+                <TextBlock Grid.Row="2" Text="Pressure" VerticalAlignment="Center" /><ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.PressureUnits}" SelectedItem="{Binding SetUnitPressure}" HorizontalAlignment="Stretch" />
+                <TextBlock Grid.Row="3" Text="Time" VerticalAlignment="Center" /><ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.TimeUnits}" SelectedItem="{Binding SetUnitTime}" HorizontalAlignment="Stretch" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left" Text="Applied to the Analyze results; the underlying values stay in CAPS units (Å, ps, kcal/mol, K, atm, g/cm³)." />
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Conversions used by CAPS" Classes="h2" />
+              <ItemsControl ItemsSource="{Binding UnitTable}" MaxWidth="700" HorizontalAlignment="Left">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:UnitRow">
+                    <Grid ColumnDefinitions="120,140,*" Margin="0,3">
+                      <TextBlock Text="{Binding Quantity}" Classes="muted" FontSize="12" />
+                      <TextBlock Grid.Column="1" Text="{Binding From}" Classes="mono" FontSize="12" />
+                      <StackPanel Grid.Column="2"><TextBlock Text="{Binding Value}" Classes="mono" FontSize="12" /><TextBlock Text="{Binding Basis}" Classes="dim" /></StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="dim" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
+                         Text="Number formats: thousands with a thin space (12 840 atoms), uncertainties as 1.041 ± 0.003 with no more digits than the error supports, exponents as 2.3 × 10⁻¹⁰ in the interface and e-notation in CSV, the minus sign U+2212 on screen and ASCII in files." />
+            </StackPanel>
+          </StackPanel>
+
           <!-- 3D view -->
           <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}">
             <StackPanel Spacing="6">

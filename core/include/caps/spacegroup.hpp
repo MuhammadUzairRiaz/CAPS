@@ -65,6 +65,8 @@ struct CrystalReport {
   std::vector<std::string> notes;
 };
 System build_crystal(const CrystalSpec& spec, CrystalReport* report = nullptr);
+// A cell from its parameters (Å, degrees): a along x, b in the xy plane.
+Cell cell_parameters(double a, double b, double c, double alpha, double beta, double gamma);
 // Sites moved onto their special positions: each site becomes the mean of its images that land within `snap` Å of it
 // (its site-symmetry group), so x = 0.333 in P 63 m c becomes 1/3. `moved` counts the sites that changed.
 CrystalSpec symmetrize_sites(const CrystalSpec& spec, double snap = 0.3, int* moved = nullptr);

@@ -632,6 +632,12 @@ public partial class MainWindow : Window
 
     private void OnResetView(object? s, RoutedEventArgs e) => _vm.ResetView();
     private void OnFrameSelection(object? s, RoutedEventArgs e) => _vm.FrameSelection();
+    private async void OnCopyMolTable(object? s, RoutedEventArgs e)
+    {
+        if (Clipboard != null) await Clipboard.SetTextAsync(_vm.MolInfoTable);
+        _vm.Status = "Copied the molecule's table";
+    }
+    private void OnAddMolLibrary(object? s, RoutedEventArgs e) => _vm.AddMoleculeToLibrary();
     private void OnHistoryStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is HistoryRow r) _vm.JumpToStep(r.Step); }
     private void OnTakeSnapshot(object? s, RoutedEventArgs e) => _vm.TakeSnapshot();
     private void OnSnapshotCompare(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.CompareSnapshot(r); }

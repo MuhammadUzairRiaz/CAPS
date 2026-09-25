@@ -49,9 +49,12 @@ public sealed class ResultCard
     private bool HasError => HasValue && !double.IsNaN(Error) && Error > 0;
     /// <summary>Decimals that show the error to two significant figures (the value is rounded to match).</summary>
     private int ErrorDecimals => Math.Clamp(1 - (int)Math.Floor(Math.Log10(Error)), 0, 8);
-    public string ValueText => !HasValue ? "—" : HasError ? Value.ToString("F" + ErrorDecimals, Inv) : Num(Value);
-    public string ErrorText => HasError ? "± " + Error.ToString("F" + ErrorDecimals, Inv) : "";
-    public string UnitText => Unit.Replace("^½", "½");
+    // shown in the display units chosen in Settings › Units (the stored value keeps CAPS's units)
+    private double F => DisplayUnits.For(Unit).Factor;
+    private int ShownDecimals => Math.Clamp(1 - (int)Math.Floor(Math.Log10(Error * F)), 0, 8);
+    public string ValueText => !HasValue ? "—" : HasError ? (Value * F).ToString("F" + ShownDecimals, Inv) : Num(Value * F);
+    public string ErrorText => HasError ? "± " + (Error * F).ToString("F" + ShownDecimals, Inv) : "";
+    public string UnitText => DisplayUnits.For(Unit).Unit.Replace("^½", "½");
     public string NotesText => string.Join("\n", Notes);
     public bool HasNotes => Notes.Length > 0;
     public string ExtraText => string.Join("\n", Extra.Select(e => $"{e.Key}: {Num(e.Value)}"));
@@ -335,6 +338,14 @@ public sealed class AnalyzeViewModel : ObservableObject
             ElemA = a, ElemB = b, InterOnly = _inter ? 1 : 0, FitFrom = _fitFrom, FitTo = _fitTo, Probe = _probe, Grid = _grid,
             Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate,
         };
+    }
+
+    /// <summary>The result cards again, so they show the display units chosen in Settings.</summary>
+    public void RefreshDisplayUnits()
+    {
+        var cards = Results.ToList();
+        Results.Clear();
+        foreach (var c in cards) Results.Add(c);
     }
 
     public async Task Run()

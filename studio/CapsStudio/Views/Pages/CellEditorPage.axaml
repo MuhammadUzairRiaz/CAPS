@@ -1,0 +1,81 @@
+<!-- CAPS Studio › Unit cell (design/boards/CellEditor): the cell edited as a, b, c, α, β, γ with its volume, density and vectors; presets; supercell. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.CellEditorPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnSupercell" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Repeat the cell na × nb × nc (undoable)"><TextBlock Text="{Binding CeSupA, StringFormat='Supercell…'}" /></Button>
+          <Button Classes="primary" Click="OnApply" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="check" Size="14" VerticalAlignment="Center" /><TextBlock Text="Apply" VerticalAlignment="Center" /></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Unit cell" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Parameters, derived volume and density, vectors, supercell" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding CeVolume}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </Border>
+    <Grid ColumnDefinitions="*,460" ColumnSpacing="14" Margin="22,18">
+      <Border Classes="pcard" Padding="0">
+        <Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="View" /></Panel>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Parameters" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding CeFormulaText}" Classes="dim" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                <StackPanel Spacing="4"><TextBlock Text="a · Å" Classes="label" /><NumericUpDown Value="{Binding CeA}" Minimum="0.5" Maximum="5000" Increment="0.1" FormatString="0.0###" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="b · Å" Classes="label" /><NumericUpDown Value="{Binding CeB}" Minimum="0.5" Maximum="5000" Increment="0.1" FormatString="0.0###" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="c · Å" Classes="label" /><NumericUpDown Value="{Binding CeC}" Minimum="0.5" Maximum="5000" Increment="0.1" FormatString="0.0###" /></StackPanel>
+                <StackPanel Grid.Row="1" Spacing="4"><TextBlock Text="α · °" Classes="label" /><NumericUpDown Value="{Binding CeAlpha}" Minimum="20" Maximum="160" Increment="0.5" FormatString="0.0##" /></StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Text="β · °" Classes="label" /><NumericUpDown Value="{Binding CeBeta}" Minimum="20" Maximum="160" Increment="0.5" FormatString="0.0##" /></StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4"><TextBlock Text="γ · °" Classes="label" /><NumericUpDown Value="{Binding CeGamma}" Minimum="20" Maximum="160" Increment="0.5" FormatString="0.0##" /></StackPanel>
+                <StackPanel Grid.Row="2" Spacing="4"><TextBlock Text="Z" Classes="label" /><NumericUpDown Value="{Binding CeZ}" Minimum="1" Maximum="1000" Increment="1" FormatString="0" /></StackPanel>
+              </Grid>
+              <CheckBox Content="Scale the atoms with the cell (keep fractional coordinates)" IsChecked="{Binding CeScale}" />
+              <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding CeVolume}" Classes="mono" /><TextBlock Text="Volume" Classes="muted" /></DockPanel>
+              <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding CeDensity}" Classes="mono" /><TextBlock Text="Density" Classes="muted" /></DockPanel>
+              <TextBlock Text="Cell vectors (Å, a along x, b in xy)" Classes="label" Margin="0,4,0,0" />
+              <TextBlock Text="{Binding CeVectors}" Classes="mono" FontSize="12" />
+              <TextBlock Text="{Binding CeError}" Classes="err" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Supercell" FontSize="13.5" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <NumericUpDown Value="{Binding CeSupA}" Minimum="1" Maximum="10" Increment="1" FormatString="0" Width="70" />
+                <TextBlock Text="×" VerticalAlignment="Center" /><NumericUpDown Value="{Binding CeSupB}" Minimum="1" Maximum="10" Increment="1" FormatString="0" Width="70" />
+                <TextBlock Text="×" VerticalAlignment="Center" /><NumericUpDown Value="{Binding CeSupC}" Minimum="1" Maximum="10" Increment="1" FormatString="0" Width="70" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Presets" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,80,40,70,60"><TextBlock Text="CELL" Classes="h3" /><TextBlock Grid.Column="1" Text="V (Å³)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="Z" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="Ρ CALC" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="Ρ LIT." Classes="h3" HorizontalAlignment="Right" /></Grid>
+              <ItemsControl ItemsSource="{Binding CellPresets}">
+                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:CellPresetRow">
+                  <Button Classes="histrow" Click="OnPreset" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="4,4">
+                    <Grid ColumnDefinitions="*,80,40,70,60"><TextBlock Text="{Binding Name}" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding Volume}" Classes="mono" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="{Binding Z}" Classes="mono" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="{Binding RhoCalc}" Classes="mono" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="{Binding RhoLit}" Classes="mono dim" HorizontalAlignment="Right" /></Grid>
+                  </Button>
+                </DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Presets set the parameters (and Z × formula mass for the density); Apply changes the open structure's cell." />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

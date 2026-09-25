@@ -1,3 +1,4 @@
+using System.Linq;
 using CapsStudio.Interop;
 
 namespace CapsStudio.ViewModels;
@@ -16,8 +17,8 @@ public sealed partial class MainViewModel
     /// <summary>The window scales the interface when this changes.</summary>
     public event Action<double>? ScaleChanged;
 
-    public static readonly string[] SettingsTabs = ["Appearance", "3D view", "Force fields", "Compute & remote", "Files"];
-    public static readonly string[] SettingsIcons = ["eye", "cube", "tag", "server", "folder"];
+    public static readonly string[] SettingsTabs = ["Appearance", "3D view", "Force fields", "Compute & remote", "Files", "Units"];
+    public static readonly string[] SettingsIcons = ["eye", "cube", "tag", "server", "folder", "sliders"];
     private int _settingsTab;
     public int SettingsTab { get => _settingsTab; set => Set(ref _settingsTab, value); }
 
@@ -39,6 +40,8 @@ public sealed partial class MainViewModel
     {
         Tokens.UseTheme(_settings.Theme);
         Motion.Mode = _settings.ReduceMotion;
+        (DisplayUnits.Energy, DisplayUnits.Length, DisplayUnits.Pressure, DisplayUnits.Time) = (_settings.UnitEnergy, _settings.UnitLength, _settings.UnitPressure, _settings.UnitTime);
+        DisplayUnits.Density = _settings.UnitSystem == 1 ? "kg/m³" : "g/cm³";
         try { Native.SetPalette(_settings.Palette); Native.SetThreads(_settings.Threads); ApplyElectrostatics(); } catch { /* an older core: defaults */ }
         _viewBackground = _settings.Background; Raise(nameof(ViewBackground)); Raise(nameof(ViewIsLight));
         _outlines = _settings.Outlines; Raise(nameof(Outlines));
@@ -65,6 +68,32 @@ public sealed partial class MainViewModel
     {
         _settings.Save();
         Status = $"{what} · saved to {AppSettings.DisplayPath}";
+    }
+
+    // ---------------------------------------------------------------- Settings › Units (design/boards/Units)
+    public static readonly string[] EnergyUnits = ["kcal/mol", "kJ/mol", "eV"], LengthUnits = ["Å", "nm"], PressureUnits = ["atm", "bar", "MPa", "GPa"], TimeUnits = ["fs", "ps", "ns"];
+    public string[] UnitSystems => DisplayUnits.Systems;
+    public int SetUnitSystem
+    {
+        get => _settings.UnitSystem;
+        set
+        {
+            if (_settings.UnitSystem == value || value < 0) return;
+            _settings.UnitSystem = value;
+            DisplayUnits.UseSystem(value);
+            (_settings.UnitEnergy, _settings.UnitLength, _settings.UnitPressure, _settings.UnitTime) = (DisplayUnits.Energy, DisplayUnits.Length, DisplayUnits.Pressure, DisplayUnits.Time);
+            RaiseUnits(); Changed("Units");
+        }
+    }
+    public string SetUnitEnergy { get => _settings.UnitEnergy; set { if (value == null) return; _settings.UnitEnergy = DisplayUnits.Energy = value; RaiseUnits(); Changed("Energy unit"); } }
+    public string SetUnitLength { get => _settings.UnitLength; set { if (value == null) return; _settings.UnitLength = DisplayUnits.Length = value; RaiseUnits(); Changed("Length unit"); } }
+    public string SetUnitPressure { get => _settings.UnitPressure; set { if (value == null) return; _settings.UnitPressure = DisplayUnits.Pressure = value; RaiseUnits(); Changed("Pressure unit"); } }
+    public string SetUnitTime { get => _settings.UnitTime; set { if (value == null) return; _settings.UnitTime = DisplayUnits.Time = value; RaiseUnits(); Changed("Time unit"); } }
+    public System.Collections.Generic.List<UnitRow> UnitTable => DisplayUnits.Table().Select(t => new UnitRow(t.Quantity, t.From, t.Value, t.Basis)).ToList();
+    private void RaiseUnits()
+    {
+        foreach (var n in new[] { nameof(SetUnitSystem), nameof(SetUnitEnergy), nameof(SetUnitLength), nameof(SetUnitPressure), nameof(SetUnitTime) }) Raise(n);
+        Analyze.RefreshDisplayUnits();
     }
 
     public string SetTheme
@@ -218,3 +247,5 @@ public sealed partial class MainViewModel
         Status = $"Settings imported from {Path.GetFileName(path)}";
     }
 }
+
+public sealed record UnitRow(string Quantity, string From, string Value, string Basis);

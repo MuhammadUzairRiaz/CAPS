@@ -48,6 +48,7 @@
 #include "caps/colourvision.hpp"
 #include "caps/query.hpp"
 #include "caps/charges.hpp"
+#include "caps/molinfo.hpp"
 #include "caps/yaml.hpp"
 #include "caps/voids.hpp"
 #include "caps/kremer_grest.hpp"
@@ -139,6 +140,8 @@ struct caps_doc {
   std::array<int, 3> images{1, 1, 1};              // caps_set_images: periodic images drawn around the cell (faded)
   float image_fade = 0.7f;
   int save_wrap = 0;                               // caps_set_save_wrap: 0 as shown, 1 atoms into the cell, 2 molecule centres
+  std::vector<double> atom_values;                 // caps_set_atom_values: a per-atom quantity coloured on a ramp (SASA …)
+  int atom_values_ramp = 0;
   int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
   double vision_severity = 1.0;
 };
@@ -340,6 +343,12 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     if (L.mesh) r.meshes.push_back({L.mesh.get(), 0x8FB8D8, L.opacity});
     if (L.poly) r.meshes.push_back({L.poly.get(), 0x8FB8D8, 0.45f});
     r.segments.insert(r.segments.end(), L.ribbon.begin(), L.ribbon.end());
+  }
+  if (!d->pstate && !d->atom_values.empty() && d->atom_values.size() == d->frame.atoms.size()) {
+    r.colour_by = caps::ColourBy::Property;
+    r.property = d->atom_values;
+    r.ramp = static_cast<caps::Ramp>(std::clamp(d->atom_values_ramp, 0, 2));
+    r.symmetric = false;
   }
   if (d->pstate) {
     const auto& st = *d->pstate;
@@ -3800,6 +3809,7 @@ extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
     to.push_back(std::move(now));
     d->traj.topology = from.back().topology;
     d->traj.positions[d->current] = from.back().positions;
+    if (d->current < d->traj.cells.size()) d->traj.cells[d->current] = d->traj.topology.cell;   // a cell edit comes back too
     from.pop_back();
     d->field.reset();
     d->selection.assign(d->traj.topology.atoms.size(), 0);
@@ -4649,6 +4659,12 @@ extern "C" int32_t caps_periodic(caps_doc* d, const char* json, char* out, int32
     for (const auto& v : {whole.cell.a, whole.cell.b, whole.cell.c}) box.push_back(caps::Json(caps::norm(v)));
     r["box"] = std::move(box);
     const double la = caps::norm(whole.cell.a), lb = caps::norm(whole.cell.b), lc = caps::norm(whole.cell.c);
+    auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 180 / M_PI; };
+    caps::Json angles = caps::Json::array();
+    angles.push_back(caps::Json(ang(whole.cell.b, whole.cell.c)));
+    angles.push_back(caps::Json(ang(whole.cell.a, whole.cell.c)));
+    angles.push_back(caps::Json(ang(whole.cell.a, whole.cell.b)));
+    r["angles"] = std::move(angles);
     r["cubic"] = std::fabs(la - lb) < 1e-3 && std::fabs(la - lc) < 1e-3 && std::fabs(caps::dot(whole.cell.a, whole.cell.b)) < 1e-6 && std::fabs(caps::dot(whole.cell.a, whole.cell.c)) < 1e-6;
     // one molecule, measured three ways
     long want = long(j.num("molecule", 0));
@@ -4711,6 +4727,165 @@ extern "C" int32_t caps_centre_on(caps_doc* d, const int32_t* idx, int32_t n) {
     refresh(d);
     return 0;
   });
+}
+
+// Cell editor (design/boards/CellEditor): new parameters, with the atoms scaled (fractional coordinates kept) or left
+// where they are; a supercell replicates atoms and bonds.
+extern "C" int32_t caps_set_cell(caps_doc* d, const char* json) {
+  return guard([&] {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::Cell nc = caps::cell_parameters(j.num("a", 10), j.num("b", 10), j.num("c", 10), j.num("alpha", 90), j.num("beta", 90), j.num("gamma", 90));
+    if (!(nc.volume() > 1e-6)) throw std::invalid_argument("these parameters give no volume");
+    const bool scale = !j.has("scale") || j["scale"].kind() != caps::Json::Bool || j["scale"].boolean();
+    const caps::Cell old = d->traj.topology.cell;
+    push_undo(d, "Cell " + g6(j.num("a", 10)) + " × " + g6(j.num("b", 10)) + " × " + g6(j.num("c", 10)) + (scale ? " (atoms scaled)" : ""));
+    caps::Cell c = nc;
+    c.origin = old.valid() ? old.origin : caps::Vec3{0, 0, 0};
+    if (scale && old.valid())
+      for (auto& p : d->traj.positions.at(d->current)) p = c.to_cartesian(old.to_fractional(p));
+    d->traj.topology.cell = c;
+    for (auto& cc : d->traj.cells) cc = c;
+    d->field.reset();
+    refresh(d);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t nc) {
+  return guard([&] {
+    if (na < 1 || nb < 1 || nc < 1 || na * nb * nc > 1000) throw std::invalid_argument("supercell: 1 … 1000 copies");
+    const caps::Cell cell = d->traj.topology.cell;
+    if (!cell.valid()) throw std::runtime_error("the structure has no cell to repeat");
+    push_undo(d, "Supercell " + std::to_string(na) + " × " + std::to_string(nb) + " × " + std::to_string(nc));
+    caps::System top = d->traj.topology;
+    const auto pos = d->traj.positions.at(d->current);
+    const size_t n = top.atoms.size();
+    int64_t maxmol = 0;
+    for (const auto& a : top.atoms) maxmol = std::max(maxmol, a.mol);
+    std::vector<caps::Vec3> out;
+    caps::System s = top;
+    s.atoms.clear();
+    s.bonds.clear();
+    int copy = 0;
+    for (int a = 0; a < na; ++a)
+      for (int b = 0; b < nb; ++b)
+        for (int c = 0; c < nc; ++c, ++copy) {
+          const caps::Vec3 t = cell.a * double(a) + cell.b * double(b) + cell.c * double(c);
+          const uint32_t off = uint32_t(copy * n);
+          for (size_t i = 0; i < n; ++i) {
+            caps::Atom at = top.atoms[i];
+            at.id = int64_t(off + i + 1);
+            if (at.mol > 0) at.mol += copy * maxmol;
+            s.atoms.push_back(at);
+            out.push_back(pos[i] + t);
+          }
+          for (const auto& bd : top.bonds) s.bonds.push_back({bd.i + off, bd.j + off, bd.order});
+        }
+    s.cell.a = cell.a * double(na);
+    s.cell.b = cell.b * double(nb);
+    s.cell.c = cell.c * double(nc);
+    d->traj.topology = s;
+    d->traj.positions = {out};
+    d->traj.cells = {s.cell};
+    d->traj.timesteps = {0};
+    d->current = 0;
+    d->field.reset();
+    refresh(d);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_set_atom_values(caps_doc* d, const double* values, int32_t n, int32_t ramp) {
+  if (!d) return -1;
+  d->atom_values.assign(values && n > 0 ? values : nullptr, values && n > 0 ? values + n : nullptr);
+  d->atom_values_ramp = ramp;
+  return 0;
+}
+
+extern "C" int32_t caps_molecule_info(caps_doc* d, int32_t atom, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const auto m = caps::molecule_info(d->frame, uint32_t(std::max(0, atom)));
+    auto num = [](double x) { return std::isfinite(x) ? caps::Json(x) : caps::Json(); };
+    r["ok"] = true;
+    r["molecule"] = double(m.molecule + 1);
+    r["atoms"] = double(m.atoms), r["bonds"] = double(m.bonds), r["rings"] = double(m.rings);
+    r["formula"] = m.formula, r["smiles"] = m.smiles;
+    r["mass"] = m.mass, r["monoisotopic"] = num(m.monoisotopic), r["dbe"] = m.dbe;
+    caps::Json in = caps::Json::array();
+    for (double x : m.inertia) in.push_back(caps::Json(x));
+    r["inertia"] = std::move(in);
+    r["inertia_defect"] = m.inertia_defect, r["rg"] = m.rg;
+    r["has_charges"] = m.has_charges, r["net_charge"] = m.net_charge, r["dipole"] = num(m.dipole);
+    r["rotatable"] = double(m.rotatable);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_sasa(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const double probe = j.num("probe", 1.4);
+    const int points = int(j.num("points", 200));
+    const caps::System& s = d->frame;
+    const auto res = caps::sasa(s, probe, points);
+    r["ok"] = true;
+    r["total"] = res.total;
+    caps::Json area = caps::Json::array();
+    for (double a : res.area) area.push_back(caps::Json(a));
+    r["area"] = std::move(area);
+    // groups: aromatic rings with their hydrogens, polar atoms (N O S) with theirs, everything else
+    const auto p = caps::perceive(s);
+    double ring = 0, polar = 0, rest = 0;
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      uint32_t host = uint32_t(i);
+      if (s.atoms[i].element == 1 && !p.nb[i].empty()) host = p.nb[i][0];
+      const int z = s.atoms[host].element;
+      if (p.aromatic[host]) ring += res.area[i];
+      else if (z == 7 || z == 8 || z == 16) polar += res.area[i];
+      else rest += res.area[i];
+    }
+    caps::Json groups = caps::Json::array();
+    auto group = [&](const char* name, double a) {
+      if (a <= 0) return;
+      caps::Json g = caps::Json::object();
+      g["name"] = std::string(name), g["area"] = a, g["share"] = res.total > 0 ? a / res.total : 0.0;
+      groups.push_back(std::move(g));
+    };
+    group("Aromatic rings (+ their H)", ring);
+    group("N, O and S (+ their H)", polar);
+    group(ring > 0 || polar > 0 ? "Everything else (+ its H)" : "All atoms", rest);
+    r["groups"] = std::move(groups);
+    if (j.has("convergence") && j["convergence"].kind() == caps::Json::Bool && j["convergence"].boolean()) {
+      caps::Json conv = caps::Json::array();
+      const double ref = caps::sasa(s, probe, 400).total;
+      for (int pts : {30, 60, 120, 200, 400}) {
+        const double t = pts == 400 ? ref : caps::sasa(s, probe, pts).total;
+        caps::Json c = caps::Json::object();
+        c["points"] = double(pts), c["total"] = t, c["delta"] = ref > 0 ? (t - ref) / ref : 0.0;
+        conv.push_back(std::move(c));
+      }
+      r["convergence"] = std::move(conv);
+    }
+    if (j.has("colour") && j["colour"].kind() == caps::Json::Bool && j["colour"].boolean()) {   // exposure: the area over the atom's full sphere
+      d->atom_values.assign(s.atoms.size(), 0.0);
+      for (size_t i = 0; i < s.atoms.size(); ++i) {
+        const double R = caps::element(s.atoms[i].element).vdw + probe;
+        d->atom_values[i] = res.area[i] / (4 * M_PI * R * R);
+      }
+      d->atom_values_ramp = 0;
+    }
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 extern "C" int32_t caps_charges(caps_doc* d, const char* json, char* out, int32_t cap) {

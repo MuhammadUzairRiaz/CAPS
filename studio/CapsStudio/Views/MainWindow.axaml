@@ -1493,6 +1493,27 @@
                     <TextBlock Text="{Binding MoleculeNote}" Classes="dim" TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
+                <!-- Molecule inspector (design/boards/MoleculeInspector) -->
+                <Border Classes="section" IsVisible="{Binding HasMolInfo}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding MolInspectorTitle}" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding MolInfoRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MolInfoRow">
+                          <Grid ColumnDefinitions="130,*" Margin="0,2">
+                            <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="From the drawn geometry; standard atomic weights (IUPAC), monoisotopic ¹²C and ¹H. SMILES written from the perceived bonds (not canonical)." />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="small" Content="Copy table" Click="OnCopyMolTable" />
+                      <Button Classes="small" Content="Add to library" Click="OnAddMolLibrary" ToolTip.Tip="The molecule's SMILES into the fragment library's My fragments" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </ScrollViewer>
           </TabItem>
@@ -1849,6 +1870,10 @@
       <pages:OrientationPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsOrientation}" />
       <pages:RecipesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsRecipes}" />
       <pages:ComposerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsComposer}" />
+      <pages:ChainStatsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsChainStats}" />
+      <pages:DensityCalcPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDensityCalc}" />
+      <pages:SurfaceAreaPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurfaceArea}" />
+      <pages:CellEditorPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCellEditor}" />
       <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
       <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->

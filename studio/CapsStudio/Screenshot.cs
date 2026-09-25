@@ -278,6 +278,10 @@ internal static class Screenshot
                     case "diffusion": vm.OpenDiffusion(); if (parts.Length > 1) t = vm.RunDiffusion(); break;
                     case "charges": vm.OpenCharges(); break;
                     case "recipes": vm.OpenRecipes(); break;
+                    case "chains": vm.OpenChainStats(); if (parts.Length > 1) t = vm.RunChainStats(); break;
+                    case "density": vm.OpenDensityCalc(); break;
+                    case "sasa": vm.OpenSurfaceArea(); if (parts.Length > 1) t = vm.RunSurfaceArea(); break;
+                    case "cell": vm.OpenCellEditor(); break;
                     case "composer":
                         if (parts.Length > 1) { var tc = vm.Analyze.Groups.SelectMany(g => g.Chips).ToList(); foreach (var c in tc) c.IsOn = c.Id is "rdf" or "density" or "rg"; t = vm.Analyze.Run(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } t = null; }
                         vm.OpenComposer();

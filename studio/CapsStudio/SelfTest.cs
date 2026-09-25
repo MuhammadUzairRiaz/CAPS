@@ -719,6 +719,44 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Row 17: chain statistics, the density calculator, SASA, the cell editor, display units, the molecule inspector
+        {
+            vm.OpenChainStats();
+            vm.RunChainStats().GetAwaiter().GetResult();
+            var chains = vm.CsRee.HasValue && vm.CsRg.HasValue && vm.CsRatio.HasValue && vm.CsCnCurve.Length > 3 && vm.CsReeHist.Length > 3;
+            vm.OpenDensityCalc();
+            var water = vm.DcSpecies.FirstOrDefault(sp => sp.Smiles == "O");
+            var dens = water != null && water.N == "2,133" && vm.DcVolume.StartsWith("64,000 Å³") && vm.DcEdge.EndsWith("Å");
+            vm.OpenSurfaceArea();
+            vm.SaPoints = 60;
+            vm.RunSurfaceArea().GetAwaiter().GetResult();
+            var sasa = vm.SaGroups.Count >= 2 && vm.SaGroups[0].Part == "Whole structure" && vm.SaConvergence.Count == 5 && vm.SaTotal.EndsWith("Å²");
+            vm.SetModule(8);
+            vm.OpenCellEditor();
+            var n0 = vm.Document!.Summary().Atoms;
+            var vol0 = vm.CeVolume;
+            vm.CeSupA = 2; vm.CeSupB = 1; vm.CeSupC = 1;
+            vm.MakeSupercell();
+            var doubled = vm.Document!.Summary().Atoms == 2 * n0 && Math.Abs(vm.Document!.Summary().CellA - 66) < 1e-6;
+            vm.UndoEdit(false);
+            vm.CeA = 34;
+            vm.ApplyCell();
+            var scaled = Math.Abs(vm.Document!.Summary().CellA - 34) < 1e-6;
+            vm.UndoEdit(false);
+            var cellOk = vol0 == "35937.00 Å³" && doubled && scaled && Math.Abs(vm.Document!.Summary().CellA - 33) < 1e-6;
+            vm.SetModule(8);
+            // units: a density result shown in kg/m³ under the SI-derived system, and back
+            var card = vm.Analyze.Results.FirstOrDefault(r => r.Unit == "g/cm³");
+            vm.SetUnitSystem = 1;
+            var si = card == null || card.UnitText == "kg/m³";
+            vm.SetUnitSystem = 0;
+            var units = si && (card == null || card.UnitText == "g/cm³") && vm.UnitTable.Count == 8;
+            vm.Pick(0);
+            var mol = vm.MolInfoRows.FirstOrDefault(r => r.Key == "Formula")?.Value;
+            Check(chains && dens && sasa && cellOk && units && mol == "C64H66" && vm.MolInfoRows.Any(r => r.Key == "SMILES" && r.Value.Length > 20 && r.Value.Contains("c")),
+                  $"row 17: [{chains} {dens} {sasa} {cellOk} {units}] smiles {vm.MolInfoRows.FirstOrDefault(r => r.Key == "SMILES")?.Value} · vol {vm.DcVolume} edge {vm.DcEdge} · chains {vm.CsRee.Value}/{vm.CsRg.Value} ratio {vm.CsRatio.Value} · water N {water?.N} · SASA {vm.SaTotal} · cell {vol0} doubled {doubled} scaled {scaled} · units {units} · molecule {mol}");
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();
