@@ -791,6 +791,23 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Parameter sweep: 2 tacticities × 1 DP × 2 seeds of a short polystyrene, each run saved with provenance
+        {
+            vm.SweepFolder = Path.Combine(outDir, "caps-selftest-sweep");
+            if (Directory.Exists(vm.SweepFolder)) Directory.Delete(vm.SweepFolder, true);
+            vm.OpenSweep();
+            vm.SweepSyn = false;
+            vm.SweepDps = "3";
+            vm.SweepSeeds = "1, 2";
+            vm.SweepChains = 2;
+            vm.RunSweep().GetAwaiter().GetResult();
+            var files = Directory.GetFiles(vm.SweepFolder, "*.data").Length;
+            var sides = Directory.GetFiles(vm.SweepFolder, "*.provenance.json").Length;
+            Check(files == 4 && sides == 4 && vm.SweepResults.Count == 2 && vm.SweepResults.All(r => r.Seeds.StartsWith("2 / 2")) && (vm.SweepPolymer?.Name.StartsWith("Polystyrene") ?? false),
+                  $"sweep: {files} cells · {sides} manifests · {string.Join(" | ", vm.SweepResults.Select(r => $"{r.Condition} Rg {r.Rg}"))} · {vm.SweepError}");
+            vm.SetModule(8);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);
