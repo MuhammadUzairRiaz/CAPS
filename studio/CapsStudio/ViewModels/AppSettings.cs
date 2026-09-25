@@ -25,6 +25,8 @@ public sealed class AppSettings
     public int ReaderVerbosity { get; set; } = 1;         // keyboard walk: 0 brief, 1 full
     public bool AnnounceFrames { get; set; }
     public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users
+    public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
+    public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>
@@ -70,4 +72,19 @@ public sealed class AppSettings
         if (Theme is not ("dark" or "light" or "system")) Theme = "dark";
         return this;
     }
+}
+
+/// <summary>A remote machine jobs can run on (design/boards/RemoteCompute): reached with SSH through the user's agent.</summary>
+public sealed class RemoteHost
+{
+    public string Name { get; set; } = "hpc-login";
+    public string Hostname { get; set; } = "";
+    public string User { get; set; } = "";
+    public int Port { get; set; } = 22;
+    public string Scheduler { get; set; } = "SLURM";      // SLURM | PBS | none
+    public string Partition { get; set; } = "";
+    public string WorkDir { get; set; } = "/scratch/$USER/caps";
+
+    public const string DefaultTemplate = "#!/bin/bash\n#SBATCH --job-name=caps-{job}\n#SBATCH --partition={partition}\n#SBATCH --cpus-per-task=8\n" +
+                                          "#SBATCH --time=24:00:00\n#SBATCH --output=caps-%j.log\ncd {workdir}/{job}\ncaps run {recipe}\n";
 }

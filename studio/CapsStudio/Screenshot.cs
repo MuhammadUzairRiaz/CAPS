@@ -230,6 +230,17 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "theme") { w.ViewModel.SetTheme = kv[1]; for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+            if (kv[0] == "settingstab") w.ViewModel.SettingsTab = int.Parse(kv[1]);
+            if (kv[0] == "host")   // host=NAME,HOSTNAME,USER: a remote host added and tested
+            {
+                var f = kv[1].Split(',');
+                w.ViewModel.AddHost();
+                w.ViewModel.HostName = f[0];
+                if (f.Length > 1) w.ViewModel.HostHostname = f[1];
+                if (f.Length > 2) w.ViewModel.HostUser = f[2];
+                var t = w.ViewModel.TestHost();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
+            }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {
