@@ -193,6 +193,8 @@ public delegate int CapsReactProgress(in CapsReactCycle row, IntPtr user);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsPackProgress(int loop, int loops, double penalty, int bad, IntPtr user);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int CapsSeriesProgress(int done, int total, IntPtr user);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsStageProgress(int stage, int loop, int loops, double dmin, int bad, IntPtr user);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -254,6 +256,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
+    [DllImport(Lib, EntryPoint = "caps_torsion_scan")] public static extern int TorsionScan(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsSeriesProgress? progress, IntPtr user, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_torsion_show")] public static extern int TorsionShow(IntPtr doc, int index);
+    [DllImport(Lib, EntryPoint = "caps_default_torsion")] public static extern int DefaultTorsion(IntPtr doc, int[] atoms);
     [DllImport(Lib, EntryPoint = "caps_trajectory_series")] public static extern int TrajectorySeries(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, IntPtr progress, IntPtr user, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_smoothing")] public static extern void SetSmoothing(IntPtr doc, int window);
     [DllImport(Lib, EntryPoint = "caps_set_appearance")] public static extern int SetAppearance(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
@@ -845,6 +850,18 @@ public sealed class CapsDocument : IDisposable
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
+    /// <summary>A torsion scan of the current frame (caps_torsion_scan), JSON; progress(done, total) → false stops.</summary>
+    public string TorsionScan(string options, Func<int, int, bool>? progress)
+    {
+        CapsSeriesProgress? cb = progress == null ? null : (d, t, _) => progress(d, t) ? 0 : 1;
+        string r;
+        lock (_lock) { Alive(); r = JsonCallOnce((b, c) => Native.TorsionScan(_h, options, cb, IntPtr.Zero, b, c)); }
+        GC.KeepAlive(cb);
+        return r;
+    }
+    /// <summary>Puts scan point k into the current frame (−1: the frame before the scan).</summary>
+    public void TorsionShow(int k) { lock (_lock) { Alive(); Check(Native.TorsionShow(_h, k)); } }
+    public int[]? DefaultTorsion() { var a = new int[4]; lock (_lock) { Alive(); return Native.DefaultTorsion(_h, a) == 0 ? a : null; } }
     /// <summary>Per-frame series for the trajectory player (caps_trajectory_series), JSON.</summary>
     public string TrajectorySeries(string options) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.TrajectorySeries(_h, options, IntPtr.Zero, IntPtr.Zero, b, c)); } }
     /// <summary>Positions shown averaged over `window` frames (1: off).</summary>

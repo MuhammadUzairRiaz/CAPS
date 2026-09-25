@@ -245,6 +245,7 @@
             </Button>
             <Rectangle Classes="vsep" />
             <Button Classes="tool" Classes.on="{Binding MeasureTool}" Click="OnToolMeasure" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Measure: click 2–4 atoms for a distance, angle or dihedral"><local:Icon Kind="ruler" Size="18" /></Button>
+            <Button Classes="tool" Click="OnTorsionScan" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Torsion scan: the energy along the dihedral of four picked atoms (⇧ click them first)"><local:Icon Kind="chart" Size="18" /></Button>
           <Button Classes="tool" ToolTip.Tip="Pin monitor — coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="pin" Size="18" /></Button>
           <Button Classes="tool" ToolTip.Tip="Mirror / invert — builder coming" ToolTip.ShowOnDisabled="True" IsEnabled="False"><local:Icon Kind="mirror" Size="18" /></Button>
             <Rectangle Classes="vsep" />
@@ -1377,6 +1378,8 @@
       <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Surface & interface builder (design/boards/SurfaceBuilder) -->
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
+      <!-- Torsion scan (design/boards/TorsionScan) -->
+      <pages:TorsionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTorsion}" />
       <!-- Trajectory player (design/boards/Trajectory) -->
       <pages:TrajectoryPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTrajectory}" />
       <!-- Solvation builder (design/boards/SolvationBuilder) -->

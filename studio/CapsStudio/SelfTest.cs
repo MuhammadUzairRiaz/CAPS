@@ -488,6 +488,17 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Torsion scan: n-butane from SMILES (UFF), relaxed: trans lowest, gauche± above it
+        using (var but = CapsDocument.BuildSmiles("CCCC", "uff", 1, 1, "butane").Doc)
+        {
+            var r = System.Text.Json.Nodes.JsonNode.Parse(but.TorsionScan("{\"atoms\":[0,1,2,3],\"step\":15,\"relax\":true}", null))!;
+            var conf = r["conformers"]?.AsArray().Select(c => c!["state"]!.GetValue<string>()).ToList() ?? [];
+            Check(r["ok"]?.GetValue<bool>() == true && conf.FirstOrDefault() == "trans" && conf.Contains("gauche+") && conf.Contains("gauche−"),
+                  $"torsion: {string.Join(", ", conf)} · barrier {r["barrier"]} · {r["forcefield"]} {r["error"]}");
+            but.TorsionShow(0);
+            but.TorsionShow(-1);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

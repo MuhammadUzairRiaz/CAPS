@@ -34,6 +34,7 @@ add_library(caps_core STATIC
   src/solvate.cpp
   src/appearance.cpp
   src/trajectory.cpp
+  src/torsion.cpp
   src/interface.cpp
   src/nano.cpp
   src/qeq.cpp

@@ -42,6 +42,8 @@ public sealed class MolView : Control
     public int LineA { get; set; } = -1;
     public int LineB { get; set; } = -1;
     public string LineLabel { get; set; } = "";
+    /// <summary>Atoms drawn with a selection ring (up to four).</summary>
+    public int[] Highlights { get; set; } = [];
     private Point? _pa, _pb;
 
     public void Reset()
@@ -79,7 +81,8 @@ public sealed class MolView : Control
                 var opt = new CapsRenderOpts
                 {
                     Width = w, Height = h, Supersample = scale >= 1.5 ? 1 : 2, Background = light ? 1 : 0, Style = DrawStyle, ColourBy = ColourMode,
-                    Outlines = 1, DepthCue = 1, ShowCell = ShowCell ? 1 : 0, Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1,
+                    Outlines = 1, DepthCue = 1, ShowCell = ShowCell ? 1 : 0, Highlight0 = Highlights.Length > 0 ? Highlights[0] : -1, Highlight1 = Highlights.Length > 1 ? Highlights[1] : -1,
+                    Highlight2 = Highlights.Length > 2 ? Highlights[2] : -1, Highlight3 = Highlights.Length > 3 ? Highlights[3] : -1,
                 };
                 var cam = _cam;
                 var buf = new byte[w * h * 4];
