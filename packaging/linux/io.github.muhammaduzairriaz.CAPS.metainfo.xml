@@ -4,7 +4,7 @@
   <name>CAPS Studio</name>
   <summary>Build, simulate and analyse amorphous polymer cells</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>BSD-3-Clause</project_license>
   <description>
     <p>CAPS (Chain Assembly and Packing Suite) grows and packs polymer cells, assigns force fields with explained
       typing, relaxes and equilibrates them, runs molecular dynamics and crosslinking, and analyses structure,
