@@ -836,4 +836,24 @@ int add_hydrogens_at_ph(System& s, double ph, const std::vector<char>& atoms, st
   return added;
 }
 
+int hydroxylate_phosphorus(System& s) {
+  int changed = 0;
+  const auto nb = neighbours(s);
+  std::vector<std::pair<uint32_t, uint32_t>> ph;   // (P, H)
+  for (uint32_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 15)
+      for (uint32_t w : nb[i]) if (s.atoms[w].element == 1) ph.push_back({i, w});
+  for (const auto& [p, h] : ph) {
+    const Vec3 d = unitv(rel(s, p, h));
+    Atom& o = s.atoms[h];
+    o.element = 8;
+    o.type = type_for(s, 8);
+    o.name = "O" + std::to_string(h + 1);
+    o.pos = s.atoms[p].pos + d * 1.61;
+    add_atom(s, int(h), 1);
+    ++changed;
+  }
+  return changed;
+}
+
 }  // namespace caps

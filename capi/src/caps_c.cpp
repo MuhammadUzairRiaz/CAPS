@@ -2359,6 +2359,7 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.arm_dp = int(j.num("arm_dp", 5));
   c.spacing = int(j.num("spacing", 4));
   c.branch_probability = j.num("branch_probability", 0.1);
+  c.keep_configuration = j.num("keep_configuration", 0) != 0 || (j.has("keep_configuration") && j["keep_configuration"].kind() == caps::Json::Bool && j["keep_configuration"].boolean());
   return c;
 }
 }  // namespace
@@ -3962,6 +3963,10 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
         caps::clean_up(s, m, 0.5);
       }
       what = "Attach " + j.text("name", "fragment") + " to atom " + std::to_string(t + 1);
+    } else if (op == "phosphate_ends") {   // P–H (a strand's 3′ cap) → P–OH
+      const int k = caps::hydroxylate_phosphorus(s);
+      if (k == 0) throw std::invalid_argument("no hydrogen on phosphorus");
+      what = "Phosphate ends: " + std::to_string(k) + " P–H to P–OH";
     } else if (op == "translate") {   // {atoms | "selection", by: [dx, dy, dz]} Å: the atoms moved rigidly
       const auto at = atoms_of(d, j);
       if (at.empty()) throw std::invalid_argument("pick or select the atoms to move");
