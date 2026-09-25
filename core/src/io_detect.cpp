@@ -120,6 +120,7 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
   } else {
     tr = read_xyz(path);
   }
+  if (tr.topology.atoms.empty()) throw ReadError(path + ": no atoms found (read as " + format_name(fmt) + ")");
   if (!told) tell(tr, fmt == "lammps-dump" && !topology_path.empty());
   report(3, 1, std::to_string(tr.frames()) + " frames");
   if (tr.topology.bonds.empty()) {

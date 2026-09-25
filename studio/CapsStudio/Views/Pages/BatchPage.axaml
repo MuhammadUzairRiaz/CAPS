@@ -1,0 +1,122 @@
+<!-- CAPS Analyze › Batch (design/boards/BatchRun): one pipeline, many inputs, one table out. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.BatchPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Stop" Click="OnStop" IsVisible="{Binding BatchRunning}" />
+          <Button Content="Open results" Click="OnOpenResults" IsEnabled="{Binding BatchIdle}" />
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding BatchIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run batch" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Batch over files" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="One pipeline, many inputs, one table out" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid RowDefinitions="*,Auto" Margin="22,16" RowSpacing="14">
+      <!-- inputs and results -->
+      <Border Classes="card" CornerRadius="10">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="44" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding BatchState}" Foreground="{DynamicResource AccB}" /></Border>
+              <TextBlock VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis">
+                <Run Text="Batch" FontWeight="SemiBold" /><Run Text=" · " Foreground="{DynamicResource DimB}" /><Run Text="{Binding BatchPipelineText}" Foreground="{DynamicResource MutedB}" />
+              </TextBlock>
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="16,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,160,160,Auto" ColumnSpacing="10">
+              <StackPanel Spacing="4"><TextBlock Text="Inputs (* and ? in any folder or file name)" Classes="label" />
+                <TextBox Text="{Binding BatchPattern}" Classes="mono" Watermark="cells/seed*/PS_melt.data" /></StackPanel>
+              <Button Grid.Column="1" Content="Add files…" Click="OnAddFiles" VerticalAlignment="Bottom" />
+              <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="Frame" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.BatchFrames}" SelectedIndex="{Binding BatchFrame}" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="3" Spacing="4"><TextBlock Text="Workers" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.BatchWorkerChoices}" SelectedIndex="{Binding BatchWorkers}" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="4" Spacing="4"><TextBlock Text="On error" Classes="label" /><TextBlock Text="skip and continue" Height="32" Padding="0,8" Foreground="{DynamicResource MutedB}" /></StackPanel>
+            </Grid>
+          </Border>
+          <TextBlock DockPanel.Dock="Bottom" Text="{Binding BatchErrors}" IsVisible="{Binding BatchHasErrors}" Foreground="{DynamicResource ErrB}" FontSize="12" TextWrapping="Wrap" Margin="16,6" />
+          <ScrollViewer HorizontalScrollBarVisibility="Auto">
+            <StackPanel Margin="16,8">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Input" Width="320" Classes="label" /><TextBlock Text="State" Width="80" Classes="label" /><TextBlock Text="Time" Width="70" Classes="label" TextAlignment="Right" Margin="0,0,14,0" />
+                <ItemsControl ItemsSource="{Binding BatchColumns}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Width="130" Classes="label" TextAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding}" /></DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding BatchInputs}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:BatchInput">
+                    <Border Classes="trow" Height="30">
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Shown}" Width="320" Classes="mono" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}" />
+                        <TextBlock Text="{Binding State}" Width="80" FontSize="12" Foreground="{Binding StateBrush}" VerticalAlignment="Center" ToolTip.Tip="{Binding Error}" />
+                        <TextBlock Text="{Binding Time}" Width="70" Classes="mono" FontSize="12" TextAlignment="Right" Margin="0,0,14,0" VerticalAlignment="Center" />
+                        <ItemsControl ItemsSource="{Binding Values}">
+                          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Width="130" Classes="mono" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+
+      <!-- across finished inputs -->
+      <Grid Grid.Row="1" ColumnDefinitions="*,420,320" ColumnSpacing="14" Height="230">
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Across finished inputs" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <ItemsControl ItemsSource="{Binding BatchSummary}" Margin="16,8">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Row">
+                  <Border Padding="0,4" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Key}" FontSize="12" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" /></Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="card" CornerRadius="10">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <ComboBox DockPanel.Dock="Right" Width="200" ItemsSource="{Binding BatchColumns}" SelectedItem="{Binding BatchMetricName}" VerticalAlignment="Center" />
+                <TextBlock Text="Per input" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <v:LinePlot x:Name="BatchPlot" Margin="10,6" XLabel="input #" AutoRange="True" />
+          </DockPanel>
+        </Border>
+        <Border Grid.Column="2" Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <TextBlock Text="Where results go" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Margin="16,10" Spacing="6">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><TextBlock Text="Table" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="batch/results.csv next to the inputs" Classes="mono" FontSize="11.5" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><TextBlock Text="Pipeline" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="batch/pipeline.json · sha256 per row" Classes="mono" FontSize="11.5" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
+              <TextBlock Text="{Binding BatchOut}" Classes="mono" FontSize="11" Foreground="{DynamicResource OkB}" TextWrapping="Wrap" />
+              <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="The steps are the ones in Analyze › Visualize; each input opens on its own, the file is never changed." />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
