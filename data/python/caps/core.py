@@ -126,6 +126,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S), "caps_set_restraints": ([P, C.c_char_p], I),
+        "caps_chi_md": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I),
@@ -627,6 +628,31 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     d = run(r)
     d.label = units[0] if len(units) == 1 else "copolymer"
     return d
+
+
+def chi_by_md(polymer, solvent: Optional[str] = None, polymer_b=None, dp: int = 10, chains: int = 6, temperature: float = 300.0,
+              eq_ps: float = 200.0, prod_ps: float = 300.0, seed: int = 1) -> dict:
+    """Flory–Huggins χ from the energy of mixing by MD (core chimd.hpp): A alone, B alone and a mixture, each relaxed
+    and run NPT, χ = V_ref (φ_A CED_A + φ_B CED_B − CED_mix) / (RT φ_A φ_B). Enthalpic only and noisy: natural rubber
+    against itself (χ must be 0) gives −1.2 ± 0.5 after 300 ps per cell, so run long, use larger cells and run the
+    self-mixing control (polymer_b = polymer) beside it. polymer / polymer_b: repeat-unit SMILES; solvent: SMILES.
+    Takes minutes to hours."""
+    spec = lambda s: {"units": [{"name": "A", "smiles": s}], "dp": dp}
+    o = {"polymer": spec(polymer), "chains": chains, "temperature": temperature, "eq_ps": eq_ps, "prod_ps": prod_ps, "seed": seed}
+    if polymer_b is not None:
+        o["polymer_b"] = spec(polymer_b)
+        o["chains_b"] = chains
+    elif solvent:
+        o["solvent"] = solvent
+    else:
+        raise CapsError("give a solvent SMILES or polymer_b")
+    lib = library()
+    buf = C.create_string_buffer(1 << 16)
+    lib.caps_chi_md(_enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "chi_by_md failed"))
+    return r
 
 
 # ---------------------------------------------------------------------------------------------------------------- builders

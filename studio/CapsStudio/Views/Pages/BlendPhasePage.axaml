@@ -14,7 +14,7 @@
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Click="OnExport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export CSV" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Classes="primary" IsEnabled="False" ToolTip.ShowOnDisabled="True"
-                  ToolTip.Tip="Not built yet: fitting χ(T) needs χ from MD at three temperatures (mixing energies of the blend and of each melt)">
+                  ToolTip.Tip="Not offered here: χ from MD mixing energies (caps.chi_by_md in Python) resolves only about ±1 at the sizes and times the Studio runs (natural rubber against itself: −1.2 ± 0.5 after 300 ps per cell), coarser than a χ(T) fit needs. Enter A and B from measurements or long runs.">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Fit χ(T) from MD" VerticalAlignment="Center" /></StackPanel>
           </Button>
         </StackPanel>
@@ -63,7 +63,7 @@
                 <StackPanel Grid.Row="2" Spacing="4"><TextBlock Text="χ source" Classes="label" />
                   <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
                     <ComboBoxItem Content="entered: χ(T) = A + B/T" />
-                    <ComboBoxItem Content="fitted from MD at 3 temperatures (not built yet)" IsEnabled="False" />
+                    <ComboBoxItem Content="fitted from MD at 3 temperatures (too coarse here: see the button)" IsEnabled="False" />
                   </ComboBox>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Text="Read out at T · K" Classes="label" /><NumericUpDown Value="{Binding BpT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" /></StackPanel>
