@@ -210,6 +210,10 @@
                           ToolTip.Tip="Selection &amp; stereo (design/boards/SelectionStereo): select by SMARTS, element, type, charge, distance; named sets; tacticity">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="search" Size="18" VerticalAlignment="Center" /><TextBlock Text="Select" VerticalAlignment="Center" /></StackPanel>
             </ToggleButton>
+            <ToggleButton Classes="tool" IsChecked="{Binding LodOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="Performance (design/boards/MillionAtoms): level of detail, frame time, memory">
+              <local:Icon Kind="gauge" Size="18" />
+            </ToggleButton>
             <ToggleButton Classes="tool" IsChecked="{Binding AppearanceOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Appearance (design/boards/Appearance): styles per selection, colour by charge, labels, surfaces">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="18" VerticalAlignment="Center" /><TextBlock Text="Appearance" VerticalAlignment="Center" /></StackPanel>
@@ -500,6 +504,17 @@
                 </MultiBinding>
               </TextBlock.IsVisible>
             </TextBlock>
+            <!-- Performance HUD (design/boards/MillionAtoms) -->
+            <Border Width="260" Padding="12,10" Margin="14,48,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="8" BorderThickness="1"
+                    BorderBrush="{DynamicResource LineB}" Background="{DynamicResource HudB}" IsVisible="{Binding PerfHud}" IsHitTestVisible="False">
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="5">
+                <Grid.Styles><Style Selector="TextBlock"><Setter Property="FontFamily" Value="{DynamicResource Mono}" /><Setter Property="FontSize" Value="11.5" /></Style></Grid.Styles>
+                <TextBlock Text="atoms" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Column="1" Text="{Binding PerfAtoms}" />
+                <TextBlock Grid.Row="1" Text="frame time" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FrameText}" />
+                <TextBlock Grid.Row="2" Text="target" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="60 fps · 16.7 ms" />
+                <TextBlock Grid.Row="3" Text="LOD" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LodHudText}" Foreground="{DynamicResource AccB}" />
+              </Grid>
+            </Border>
             <!-- HUD (Main board): selection and system chips, live monitors -->
             <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasDocument}">
               <Border Classes="chip" Background="{DynamicResource HudB}" IsVisible="{Binding HasSelection}">
@@ -1003,6 +1018,54 @@
               </Border>
               <Border Padding="16,12">
                 <TextBlock Text="{Binding SelectError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding SelectHasError}" />
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+        <!-- Performance (design/boards/MillionAtoms): level of detail, memory, quality -->
+        <DockPanel IsVisible="{Binding ShowLodPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="CPU renderer" Foreground="{DynamicResource MutedB}" /></Border>
+              <TextBlock Text="Level of detail" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Click="OnBenchmarkView"><StackPanel Orientation="Horizontal" Spacing="7"><local:Icon Kind="bench" Size="15" VerticalAlignment="Center" /><TextBlock Text="Benchmark this view" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <DockPanel><ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding LodOn}" OnContent="" OffContent="" /><TextBlock Text="TIERS" Classes="h3" VerticalAlignment="Center" /></DockPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsEnabled="{Binding LodOn}">
+                    <StackPanel Spacing="6"><TextBlock Text="Near · Å (full)" Classes="label" /><NumericUpDown Value="{Binding LodNear}" Minimum="5" Increment="5" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Mid to · Å (spheres)" Classes="label" /><NumericUpDown Value="{Binding LodFar}" Minimum="5" Increment="5" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="12" Text="Near the focus: atoms and bonds in full. Farther: spheres without bonds. Beyond: points. Distances from the centre of the view in its focal plane; exports always render in full." />
+                  <TextBlock Text="{Binding LodTiers}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="MEMORY" Classes="h3" />
+                  <TextBlock Text="{Binding LodMemory}" FontSize="12" TextWrapping="Wrap" />
+                  <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="Measured from the document's own arrays. Large trajectories open frame 0 first and read the rest in the background." />
+                </StackPanel>
+              </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="9">
+                  <TextBlock Text="QUALITY" Classes="h3" />
+                  <CheckBox Classes="toggle" Content="Ambient occlusion (near tier only)" IsChecked="{Binding LodAoNear}" />
+                  <CheckBox Classes="toggle" Content="Outlines" IsChecked="{Binding Outlines}" />
+                  <CheckBox Classes="toggle" Content="Adaptive: shrink the near tier to keep 60 fps" IsChecked="{Binding LodAdaptive}" />
+                  <CheckBox Classes="toggle" Content="Performance HUD in the view" IsChecked="{Binding PerfHud}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" BorderThickness="0">
+                <TextBlock Text="{Binding LodBench}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
               </Border>
             </StackPanel>
           </ScrollViewer>

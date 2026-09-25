@@ -44,6 +44,10 @@ struct RenderOptions {
   int width = 1280, height = 800;
   int supersample = 2;
   bool deep = false;                   // also keep 16-bit channels (Image::rgba16) from the supersampled average
+  // Level of detail (design/boards/MillionAtoms), by distance from the focus (the view centre in its focal plane): atoms
+  // nearer than lod_near are drawn in full with their bonds, those nearer than lod_far as spheres without bonds, the rest
+  // as points. 0 turns it off.
+  double lod_near = 0, lod_far = 0;   // Å
   Background background = Background::Dark;
   unsigned custom_rgb = 0x0F1113;
   ColourBy colour_by = ColourBy::Molecule;
@@ -73,7 +77,13 @@ struct Image {
   std::vector<uint16_t> rgba16;        // the same at 16 bits per channel when rendered with deep = true
 };
 
+struct RenderStats {
+  size_t near = 0, mid = 0, far = 0;   // atoms drawn in each level of detail (all near when LOD is off)
+  size_t bonds = 0;                    // bond halves drawn
+};
+
 struct Renderer {
+  RenderStats stats;                   // of the last render
   // Picks the atom under a pixel of the last render (-1 if none).
   int pick(int x, int y) const;
   Image render(const System& s, const Camera& cam, const RenderOptions& opt);
