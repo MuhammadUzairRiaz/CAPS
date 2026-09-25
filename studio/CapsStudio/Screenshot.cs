@@ -41,6 +41,19 @@ internal static class Screenshot
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
+            if (kv[0] == "figure")   // figure=BG: Export › Figure with that background selected
+            {
+                w.ViewModel.OpenFigure();
+                w.ViewModel.FigBackground = int.Parse(kv[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "figexport")   // figexport=PATH: export the figure (PNG or SVG by extension)
+            {
+                if (kv[1].EndsWith(".svg")) w.ViewModel.FigFormat = 1;
+                var t = w.ViewModel.ExportFigure(kv[1], CapsStudio.Views.FigureDrawing.SavePng, CapsStudio.Views.FigureDrawing.AddToSvg);
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                Console.WriteLine(t.IsFaulted ? "figure export failed: " + t.Exception?.InnerException?.Message : "figure: " + t.Result);
+            }
             if (kv[0] == "focus") w.ViewModel.FocusOn(int.Parse(kv[1]));   // focus=N: keyboard-walk focus on atom N
             if (kv[0] == "walk")   // walk=keys: d(own) u(p) b(ond) ](next molecule) s(elect) m(easure)
                 foreach (var c in kv[1])

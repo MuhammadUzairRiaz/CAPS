@@ -61,5 +61,7 @@ void write_png(const Image& img, const std::string& path);
 std::vector<uint8_t> encode_png(const Image& img);
 // Vector figure: painter-sorted spheres with shading gradients; no background shape when transparent.
 std::string render_svg(const System& s, const Camera& cam, const RenderOptions& opt);
+// Pixels per Å at the focal plane for an opt.width × opt.height image (exact in orthographic views): scale bars.
+double view_scale(const System& s, const Camera& cam, const RenderOptions& opt);
 
 }  // namespace caps

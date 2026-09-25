@@ -48,6 +48,38 @@ struct View {
   }
 };
 
+// Camera: centre on the cell (or the atoms), fit the rotated extent into W × H pixels.
+View fit_view(const System& s, const Camera& cam, const RenderOptions& opt, const std::vector<char>& show, int W, int H) {
+  const size_t n = s.atoms.size();
+  View v;
+  v.cy = std::cos(cam.yaw); v.sy = std::sin(cam.yaw); v.cp = std::cos(cam.pitch); v.sp = std::sin(cam.pitch);
+  std::vector<Vec3> corners;
+  if (s.cell.valid()) {
+    for (int i = 0; i < 2; ++i)
+      for (int j = 0; j < 2; ++j)
+        for (int k = 0; k < 2; ++k) corners.push_back(s.cell.origin + s.cell.a * i + s.cell.b * j + s.cell.c * k);
+    v.centre = s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5;
+  } else {
+    Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
+    for (const auto& a : s.atoms)
+      for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], a.pos[k]); hi[k] = std::max(hi[k], a.pos[k]); }
+    if (!n) lo = hi = {0, 0, 0};
+    v.centre = (lo + hi) * 0.5;
+  }
+  v.pan_x = cam.pan_x; v.pan_y = cam.pan_y; v.persp = false; v.scale = 1; v.w = W; v.h = H;
+  double ex = 1e-6, ey = 1e-6, ez = 1e-6;
+  auto extend = [&](const Vec3& p) { const Vec3 r = v.rot(p); ex = std::max(ex, std::fabs(r[0] - v.pan_x)); ey = std::max(ey, std::fabs(r[1] - v.pan_y)); ez = std::max(ez, std::fabs(r[2])); };
+  for (const auto& c : corners) extend(c);
+  for (size_t i = 0; i < n; ++i) if (show[i]) extend(s.atoms[i].pos);
+  // the atoms' own size, and a smallest frame so a small molecule is not blown up to fill the view
+  const double pad = opt.style == Style::SpaceFilling ? 2.0 : 1.0;
+  ex = std::max(ex + pad, 2.5); ey = std::max(ey + pad, 2.5);
+  v.scale = std::min(W * 0.45 / ex, H * 0.45 / ey) * cam.zoom;
+  v.persp = cam.perspective;
+  v.dist = ez / std::tan(cam.fov_deg * M_PI / 360.0) + ez;
+  return v;
+}
+
 const Vec3 kLight = [] { Vec3 l{-0.45, 0.6, 1.0}; return l * (1.0 / norm(l)); }();
 const Vec3 kHalf = [] { Vec3 h = kLight + Vec3{0, 0, 1}; return h * (1.0 / norm(h)); }();
 
@@ -198,6 +230,13 @@ unsigned background_rgb(Background b, unsigned custom) {
   return 0x0F1113;
 }
 
+double view_scale(const System& s, const Camera& cam, const RenderOptions& opt) {
+  std::vector<char> show(s.atoms.size(), 1);
+  if (opt.style == Style::NoHydrogens || opt.style == Style::Backbone)
+    for (size_t i = 0; i < s.atoms.size(); ++i) show[i] = s.atoms[i].element != 1;
+  return fit_view(s, cam, opt, show, opt.width, opt.height).scale;
+}
+
 int Renderer::pick(int x, int y) const {
   if (x < 0 || y < 0 || x >= id_w_ || y >= id_h_) return -1;
   const int v = id_buffer_[size_t(y) * id_w_ + x];
@@ -247,32 +286,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   }
 
   // Camera: centre on the cell (or the atoms), fit the rotated extent.
-  View v;
-  v.cy = std::cos(cam.yaw); v.sy = std::sin(cam.yaw); v.cp = std::cos(cam.pitch); v.sp = std::sin(cam.pitch);
-  std::vector<Vec3> corners;
-  if (s.cell.valid()) {
-    for (int i = 0; i < 2; ++i)
-      for (int j = 0; j < 2; ++j)
-        for (int k = 0; k < 2; ++k) corners.push_back(s.cell.origin + s.cell.a * i + s.cell.b * j + s.cell.c * k);
-    v.centre = s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5;
-  } else {
-    Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
-    for (const auto& a : s.atoms)
-      for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], a.pos[k]); hi[k] = std::max(hi[k], a.pos[k]); }
-    if (!n) lo = hi = {0, 0, 0};
-    v.centre = (lo + hi) * 0.5;
-  }
-  v.pan_x = cam.pan_x; v.pan_y = cam.pan_y; v.persp = false; v.scale = 1; v.w = W; v.h = H;
-  double ex = 1e-6, ey = 1e-6, ez = 1e-6;
-  auto extend = [&](const Vec3& p) { const Vec3 r = v.rot(p); ex = std::max(ex, std::fabs(r[0] - v.pan_x)); ey = std::max(ey, std::fabs(r[1] - v.pan_y)); ez = std::max(ez, std::fabs(r[2])); };
-  for (const auto& c : corners) extend(c);
-  for (size_t i = 0; i < n; ++i) if (show[i]) extend(s.atoms[i].pos);
-  // the atoms' own size, and a smallest frame so a small molecule is not blown up to fill the view
-  const double pad = opt.style == Style::SpaceFilling ? 2.0 : 1.0;
-  ex = std::max(ex + pad, 2.5); ey = std::max(ey + pad, 2.5);
-  v.scale = std::min(W * 0.45 / ex, H * 0.45 / ey) * cam.zoom;
-  v.persp = cam.perspective;
-  v.dist = ez / std::tan(cam.fov_deg * M_PI / 360.0) + ez;
+  const View v = fit_view(s, cam, opt, show, W, H);
 
   // Radii.
   auto radius = [&](size_t i) {
@@ -317,7 +331,8 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     const RGB ec = dark_bg ? rgb(0xA5ABB1) : rgb(0x6B7178);
     const int E[12][2] = {{0, 1}, {0, 2}, {0, 4}, {1, 3}, {1, 5}, {2, 3}, {2, 6}, {3, 7}, {4, 5}, {4, 6}, {5, 7}, {6, 7}};
     double cx[8], cyy[8], cz[8], ck[8];
-    for (int k = 0; k < 8; ++k) v.project(corners[k], cx[k], cyy[k], cz[k], ck[k]);
+    for (int k = 0; k < 8; ++k)
+      v.project(s.cell.origin + s.cell.a * (k >> 2) + s.cell.b * ((k >> 1) & 1) + s.cell.c * (k & 1), cx[k], cyy[k], cz[k], ck[k]);
     for (auto& e : E) line(B, cx[e[0]], cyy[e[0]], cz[e[0]], cx[e[1]], cyy[e[1]], cz[e[1]], std::max(1.0, 1.1 * ss), ec);
   }
 

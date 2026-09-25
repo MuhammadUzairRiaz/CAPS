@@ -446,6 +446,20 @@ TEST(Grow, RejectsImpossibleRequestsClearly) {
   EXPECT_NEAR(box_for_density([] { GrowOptions g; g.chains = 10; g.dp = 8; g.density = 0.386; return g; }()), 33.0, 0.01);
 }
 
+TEST(Render, ViewScaleForScaleBars) {
+  System s;
+  s.cell.a = {20, 0, 0}; s.cell.b = {0, 20, 0}; s.cell.c = {0, 0, 20};
+  Atom a; a.element = 6; a.pos = {10, 10, 10};
+  s.atoms.push_back(a);
+  Camera cam; cam.yaw = 0; cam.pitch = 0; cam.zoom = 1; cam.perspective = false;
+  RenderOptions o; o.width = 800; o.height = 800;
+  EXPECT_NEAR(view_scale(s, cam, o), 800 * 0.45 / 11.0, 1e-9);   // half the cell + 1 Å pad
+  RenderOptions big = o; big.width = 1600; big.height = 1600;
+  EXPECT_NEAR(view_scale(s, cam, big), 2 * view_scale(s, cam, o), 1e-9);
+  cam.zoom = 1.5;
+  EXPECT_NEAR(view_scale(s, cam, o), 1.5 * 800 * 0.45 / 11.0, 1e-9);
+}
+
 TEST(Io, StagedOpen) {
   const std::string dump = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", data = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
   const Trajectory full = open_file(dump, data);

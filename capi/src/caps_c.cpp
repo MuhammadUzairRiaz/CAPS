@@ -1464,6 +1464,14 @@ int32_t caps_neighbours(caps_doc* d, int32_t i, int32_t k, int32_t* idx, double*
   });
 }
 
+double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt) {
+  try {
+    return caps::view_scale(d->frame, cam_of(cam), opts_of(d, opt));
+  } catch (...) {
+    return 0;
+  }
+}
+
 int32_t caps_bonded(caps_doc* d, int32_t i, int32_t* idx, int32_t cap) {
   return guard([&] {
     const auto& s = d->frame;
