@@ -65,6 +65,7 @@ public sealed partial class MainViewModel
             return null;
         }
         EditError = "";
+        RecordEdit(json);
         AfterEdit(r["what"]?.GetValue<string>() ?? "Edit");
         return r;
     }
@@ -143,6 +144,7 @@ public sealed partial class MainViewModel
         var text = await Task.Run(() => doc.Edit(atoms == null ? "{\"op\":\"clean\"}" : System.Text.Json.JsonSerializer.Serialize(new { op = "clean", atoms })));
         var r = JsonNode.Parse(text)!;
         if (r["ok"]?.GetValue<bool>() != true) { EditError = r["error"]?.GetValue<string>() ?? "clean-up failed"; Status = EditError; return; }
+        Record(atoms == null ? "doc.edit(op=\"clean\")" : $"doc.edit(op=\"clean\", atoms=[{string.Join(", ", atoms)}])");
         AfterEdit(r["what"]!.GetValue<string>());
     }
 

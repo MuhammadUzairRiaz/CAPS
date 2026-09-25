@@ -10,3 +10,11 @@ target_link_libraries(caps_tests PRIVATE caps_core GTest::gtest_main)
 target_compile_definitions(caps_tests PRIVATE CAPS_SAMPLES="${PROJECT_SOURCE_DIR}/samples" CAPS_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 include(GoogleTest)
 gtest_discover_tests(caps_tests)
+
+# The Python bindings against the built library (skipped without python3)
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_FOUND)
+  add_test(NAME python_bindings COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/python/test_bindings.py)
+  set_tests_properties(python_bindings PROPERTIES ENVIRONMENT
+    "PYTHONPATH=${PROJECT_SOURCE_DIR}/data/python;CAPS_LIB=$<TARGET_FILE:caps_c>;CAPS_SAMPLES=${PROJECT_SOURCE_DIR}/samples")
+endif()

@@ -241,6 +241,23 @@ internal static class Screenshot
                 var t = w.ViewModel.TestHost();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
             }
+            if (kv[0] == "macro")   // macro=1: a recorded session (open, place, field, relax, save), a parameter, the run
+            {
+                var vm = w.ViewModel;
+                CapsStudio.ViewModels.MainViewModel.MacroFolderOverride = Path.Combine(Path.GetTempPath(), "caps-shot-macros");
+                if (Directory.Exists(CapsStudio.ViewModels.MainViewModel.MacroFolderOverride)) Directory.Delete(CapsStudio.ViewModels.MainViewModel.MacroFolderOverride, true);
+                vm.OpenMacro();
+                vm.Recording = true;
+                if (vm.Document?.Path is { } path) vm.RecordOpen(path, null);
+                vm.RecordEdit("{\"op\":\"place\",\"smiles\":\"CO\",\"name\":\"Methanol\",\"resname\":\"MOH\"}");
+                vm.Record("doc.field.assign(\"uff\", charges=\"qeq\")");
+                vm.Record("doc.relax(ftol=0.5, method=\"lbfgs\", max_iterations=5000)");
+                vm.Record("print(\"atoms\", doc.atoms, \"·\", doc.summary()[\"density\"], \"g/cm3\")");
+                vm.PromoteToParameter("0.5", "ftol");
+                var t = vm.RunMacro();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(50); }
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

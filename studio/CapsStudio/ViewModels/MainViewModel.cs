@@ -93,6 +93,7 @@ public sealed partial class MainViewModel : ObservableObject
         });
         Analyze = new AnalyzeViewModel(() => _doc, s => Status = s, running => { _analyzing = running; RaiseBusy(); });
         Field.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(FieldViewModel.RunLine)) Raise(nameof(ForceFieldLine)); };
+        Field.Recorder = Record;
     }
 
     /// <summary>Which force field Relax, Dynamics and Equilibrate will use.</summary>
@@ -306,7 +307,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (OpensProgressively(path)) { _ = OpenProgressive(path, topology); return; }
         Show(CapsDocument.Open(path, topology), System.IO.Path.GetFileName(path));
-        if (_doc?.Path == path) Remember(path, topology);
+        if (_doc?.Path == path) { Remember(path, topology); RecordOpen(path, topology); }
     }
 
     // ---------------------------------------------------------------- modules
@@ -322,7 +323,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -375,6 +376,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsTorsion));
         Raise(nameof(IsSplit));
         Raise(nameof(IsFragments));
+        Raise(nameof(IsMacro));
         RaiseAppearanceVisibility();
         Raise(nameof(IsAnalyzeRail));
         Raise(nameof(ShowPipeLegend));
@@ -695,6 +697,7 @@ public sealed partial class MainViewModel : ObservableObject
             });
             sw.Stop();
             finished = true;
+            Record(string.Format(inv, "doc.relax(ftol={0}, method=\"{1}\", max_iterations={2})", _relaxFtol, _relaxMethod switch { 0 => "sd", 1 => "cg", 3 => "fire", _ => "lbfgs" }, _relaxIterations));
             RelaxLog = report + string.Format(inv, "\nfinished in {0:F1} s{1}", sw.Elapsed.TotalSeconds, converged ? "" : " · force tolerance not reached");
             AfterRun(doc, " · relaxed");
             Status = converged ? $"Relaxed · {Frames} frames (start, each stage, final) · save it as LAMMPS data with the force field"
@@ -1447,6 +1450,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (_doc == null) return;
         _doc.Save(path);
+        Record($"doc.save({PyStr(path)})");
         GrownUnsaved = false;
         Title = System.IO.Path.GetFileName(path);
         Status = $"Saved {path}";

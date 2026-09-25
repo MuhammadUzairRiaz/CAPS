@@ -310,10 +310,14 @@ public sealed class FieldViewModel : ObservableObject
         finally { Working = false; }
     }
 
+    /// <summary>The macro recorder's hook: each assignment as a line of Python.</summary>
+    public Action<string>? Recorder { get; set; }
+
     public Task Assign()
     {
         if (Selected is not { } e) { Log = "Choose a force field."; return Task.CompletedTask; }
         var mode = _chargeMode;
+        Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "gasteiger", 2 => "keep", 3 => "qeq", _ => "forcefield" })}\")");
         return Do("Assigned", d => d.FieldAssign(e.File, null, mode));
     }
 
