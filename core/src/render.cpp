@@ -9,6 +9,7 @@
 #include <cmath>
 #include <limits>
 
+#include "caps/appearance.hpp"
 #include "caps/elements.hpp"
 
 namespace caps {
@@ -137,7 +138,7 @@ void capsule(Buffers& B, double ax, double ay, double az, double bx, double by, 
     }
 }
 
-void line(Buffers& B, double ax, double ay, double az, double bx, double by, double bz, double width, RGB c) {
+void line(Buffers& B, double ax, double ay, double az, double bx, double by, double bz, double width, RGB c, int32_t id = -2) {
   const double len = std::hypot(bx - ax, by - ay);
   const int n = std::max(1, int(len));
   const int hw = std::max(0, int(width / 2));
@@ -152,7 +153,7 @@ void line(Buffers& B, double ax, double ay, double az, double bx, double by, dou
         const size_t k = size_t(yy) * B.w + xx;
         if (z <= B.z[k]) continue;
         B.z[k] = z;
-        B.id[k] = -2;
+        B.id[k] = id;
         B.col[k] = c;
       }
   }
@@ -218,6 +219,19 @@ unsigned viridis(double t) {
   const int i = std::min(7, int(t));
   const RGB c = mixc(rgb(kViridis[i]), rgb(kViridis[i + 1]), float(t - i));
   return (unsigned(c.r * 255 + .5) << 16) | (unsigned(c.g * 255 + .5) << 8) | unsigned(c.b * 255 + .5);
+}
+
+unsigned ramp_colour(Ramp r, double t) {
+  t = std::clamp(t, 0.0, 1.0);
+  auto blend = [&](unsigned a, unsigned m, unsigned b) {
+    const RGB c = t < 0.5 ? mixc(rgb(a), rgb(m), float(t * 2)) : mixc(rgb(m), rgb(b), float((t - 0.5) * 2));
+    return (unsigned(c.r * 255 + .5) << 16) | (unsigned(c.g * 255 + .5) << 8) | unsigned(c.b * 255 + .5);
+  };
+  switch (r) {
+    case Ramp::BlueOrange: return blend(0x3B7DD8, 0xD9DCDF, 0xE8893A);   // colour-blind safe diverging (the Appearance board)
+    case Ramp::RedWhiteBlue: return blend(0xD6604D, 0xF4F4F4, 0x4393C3);
+    default: return viridis(t);
+  }
 }
 
 unsigned background_rgb(Background b, unsigned custom) {
@@ -303,6 +317,32 @@ double view_scale(const System& s, const Camera& cam, const RenderOptions& opt) 
   return fit_view(s, cam, opt, show, opt.width, opt.height).scale;
 }
 
+std::vector<float> Renderer::project(const System& s, const Camera& cam, const RenderOptions& opt) const {
+  const size_t n = s.atoms.size();
+  std::vector<char> show(n, 1);
+  const bool mixed = opt.atom_style.size() == n;
+  for (size_t i = 0; i < n; ++i) {
+    const Style st = mixed ? Style(opt.atom_style[i]) : opt.style;
+    if (st == Style::Ribbon || st == Style::Hidden) show[i] = 0;
+    else if (st == Style::NoHydrogens || st == Style::Backbone) show[i] = s.atoms[i].element != 1;
+  }
+  const int ss = std::clamp(opt.supersample, 1, 4);
+  const View v = fit_view(s, cam, opt, show, opt.width * ss, opt.height * ss);
+  std::vector<float> out(3 * n, 0.f);
+  for (size_t i = 0; i < n; ++i) {
+    double x, y, z, k;
+    v.project(s.atoms[i].pos, x, y, z, k);
+    out[3 * i] = float(x / ss), out[3 * i + 1] = float(y / ss);
+    if (!show[i]) continue;
+    const int px = int(x / ss), py = int(y / ss);
+    bool seen = false;
+    for (int dy = -1; dy <= 1 && !seen; ++dy)
+      for (int dx = -1; dx <= 1 && !seen; ++dx) seen = pick(px + dx, py + dy) == int(i);
+    out[3 * i + 2] = seen ? 1.f : 0.f;
+  }
+  return out;
+}
+
 int Renderer::pick(int x, int y) const {
   if (x < 0 || y < 0 || x >= id_w_ || y >= id_h_) return -1;
   const int v = id_buffer_[size_t(y) * id_w_ + x];
@@ -317,11 +357,20 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
                        (opt.background == Background::Custom && (((opt.custom_rgb >> 16) & 255) + ((opt.custom_rgb >> 8) & 255) + (opt.custom_rgb & 255)) < 384);
   const RGB bg = rgb(background_rgb(opt.background, opt.custom_rgb));
 
-  // Which atoms are drawn.
+  // Which atoms are drawn, and each one's style (mixed styles override the global one).
   const size_t n = s.atoms.size();
   std::vector<char> show(n, 1);
   if (opt.style == Style::NoHydrogens || opt.style == Style::Backbone)
     for (size_t i = 0; i < n; ++i) show[i] = s.atoms[i].element != 1;
+  const bool mixed = opt.atom_style.size() == n;
+  auto style_of = [&](size_t i) { return mixed ? Style(opt.atom_style[i]) : opt.style; };
+  if (mixed)
+    for (size_t i = 0; i < n; ++i) {
+      const Style st = style_of(i);
+      if (st == Style::Ribbon || st == Style::Hidden) show[i] = 0;
+      else if (st == Style::NoHydrogens || st == Style::Backbone) show[i] = s.atoms[i].element != 1;
+      else show[i] = 1;
+    }
 
   // Colours.
   int nmol = 0;
@@ -330,6 +379,8 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   if (opt.colour_by == ColourBy::Property && opt.property.size() == n && n) {
     pmin = *std::min_element(opt.property.begin(), opt.property.end());
     pmax = *std::max_element(opt.property.begin(), opt.property.end());
+    if (opt.symmetric) { const double m = std::max(std::fabs(pmin), std::fabs(pmax)); pmin = -m, pmax = m; }
+    if (opt.range_max > opt.range_min) pmin = opt.range_min, pmax = opt.range_max;
     if (pmax - pmin < 1e-12) pmax = pmin + 1;
   }
   std::vector<RGB> colour(n);
@@ -347,7 +398,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       }
       case ColourBy::Type: c = molecule_colour(a.type - 1); break;
       case ColourBy::Property:
-        if (opt.property.size() == n) c = viridis((opt.property[i] - pmin) / (pmax - pmin));
+        if (opt.property.size() == n) c = ramp_colour(opt.ramp, (opt.property[i] - pmin) / (pmax - pmin));
         break;
     }
     colour[i] = rgb(c);
@@ -359,14 +410,16 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   // Radii.
   auto radius = [&](size_t i) {
     const double vdw = element(s.atoms[i].element).vdw;
-    switch (opt.style) {
+    switch (style_of(i)) {
       case Style::SpaceFilling: return vdw;
       case Style::Sticks: return opt.bond_radius;
       case Style::Backbone: return opt.bond_radius * 2.2;
+      case Style::Wireframe: return 0.0;
+      case Style::Polyhedra: return std::max(opt.bond_radius * 1.1, vdw * opt.atom_scale * 0.7);
       default: return std::max(opt.bond_radius * 1.25, vdw * opt.atom_scale);
     }
   };
-  const double bond_r = opt.style == Style::Backbone ? opt.bond_radius * 2.2 : opt.bond_radius;
+  const double bond_r = opt.style == Style::Backbone && !mixed ? opt.bond_radius * 2.2 : opt.bond_radius;
 
   std::vector<double> px(n), py(n), pz(n), pk(n);
   double zmin = 1e300, zmax = -1e300;
@@ -375,14 +428,21 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     if (show[i]) { zmin = std::min(zmin, pz[i]); zmax = std::max(zmax, pz[i]); }
   }
 
-  // Bonds (two half-capsules, each in its atom's colour). Bonds longer than half the cell are not drawn.
-  if (opt.style != Style::SpaceFilling) {
+  // Bonds (two half-capsules, each in its atom's colour; wireframe as lines). Bonds longer than half the cell are not drawn.
+  if (opt.style != Style::SpaceFilling || mixed) {
     double half_cell = 1e300;
     if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
     for (const auto& b : s.bonds) {
       if (!show[b.i] || !show[b.j]) continue;
+      const Style si = style_of(b.i), sj = style_of(b.j);
+      if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
       if (norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half_cell) continue;
       const double mx = (px[b.i] + px[b.j]) / 2, my = (py[b.i] + py[b.j]) / 2, mz = (pz[b.i] + pz[b.j]) / 2;
+      if (si == Style::Wireframe || sj == Style::Wireframe) {
+        line(B, px[b.i], py[b.i], pz[b.i], mx, my, mz, std::max(1.0, 1.4 * ss), colour[b.i], int32_t(b.i));
+        line(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], std::max(1.0, 1.4 * ss), colour[b.j], int32_t(b.j));
+        continue;
+      }
       const double R = bond_r * v.scale * (pk[b.i] + pk[b.j]) / 2;
       capsule(B, px[b.i], py[b.i], pz[b.i], mx, my, mz, R, bond_r, colour[b.i], int32_t(b.i));
       capsule(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], R, bond_r, colour[b.j], int32_t(b.j));
@@ -392,6 +452,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   for (size_t i = 0; i < n; ++i) {
     if (!show[i]) continue;
     const double r = radius(i);
+    if (r <= 0) continue;   // wireframe: bonds only
     sphere(B, px[i], py[i], pz[i], r * v.scale * pk[i], r, colour[i], int32_t(i));
   }
   // Segments: tubes, and arrows whose last part is a stepped cone (not pickable).
@@ -433,6 +494,66 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       B.col[k] = {B.col[k].r * f, B.col[k].g * f, B.col[k].b * f};
     }
   }
+  // Meshes (surfaces, polyhedra): the nearest surface fragment of each pixel, blended over what it covers.
+  if (!opt.meshes.empty()) {
+    std::vector<float> sz(B.col.size(), -std::numeric_limits<float>::infinity());
+    std::vector<RGB> scol(B.col.size());
+    std::vector<float> salpha(B.col.size(), 0.f);
+    const Vec3 origin_rot = v.rot(v.centre);
+    auto rotn = [&](const Vec3& nrm) { const Vec3 r = v.rot(v.centre + nrm); return Vec3{r[0] - origin_rot[0], r[1] - origin_rot[1], r[2] - origin_rot[2]}; };
+    for (const auto& md : opt.meshes) {
+      if (!md.mesh) continue;
+      const Mesh& M = *md.mesh;
+      const size_t nv = M.vertices.size();
+      std::vector<double> vx(nv), vy(nv), vz(nv), vk(nv);
+      std::vector<Vec3> vn(nv);
+      std::vector<RGB> vc(nv);
+      const bool per_vertex = M.colours.size() == nv;
+      for (size_t q = 0; q < nv; ++q) {
+        v.project(M.vertices[q], vx[q], vy[q], vz[q], vk[q]);
+        vn[q] = q < M.normals.size() ? rotn(M.normals[q]) : Vec3{0, 0, 1};
+        vc[q] = rgb(per_vertex ? M.colours[q] : md.rgb);
+      }
+      for (const auto& t : M.triangles) {
+        const size_t a = t[0], b = t[1], c = t[2];
+        const double x0 = std::min({vx[a], vx[b], vx[c]}), x1 = std::max({vx[a], vx[b], vx[c]});
+        const double y0 = std::min({vy[a], vy[b], vy[c]}), y1 = std::max({vy[a], vy[b], vy[c]});
+        const int ix0 = std::max(0, int(std::floor(x0))), ix1 = std::min(W - 1, int(std::ceil(x1)));
+        const int iy0 = std::max(0, int(std::floor(y0))), iy1 = std::min(H - 1, int(std::ceil(y1)));
+        if (ix0 > ix1 || iy0 > iy1) continue;
+        const double den = (vy[b] - vy[c]) * (vx[a] - vx[c]) + (vx[c] - vx[b]) * (vy[a] - vy[c]);
+        if (std::fabs(den) < 1e-12) continue;
+        for (int y = iy0; y <= iy1; ++y)
+          for (int x = ix0; x <= ix1; ++x) {
+            const double X = x + 0.5, Y = y + 0.5;
+            const double wa = ((vy[b] - vy[c]) * (X - vx[c]) + (vx[c] - vx[b]) * (Y - vy[c])) / den;
+            const double wb = ((vy[c] - vy[a]) * (X - vx[c]) + (vx[a] - vx[c]) * (Y - vy[c])) / den;
+            const double wc = 1 - wa - wb;
+            if (wa < -1e-9 || wb < -1e-9 || wc < -1e-9) continue;
+            const float z = static_cast<float>(wa * vz[a] + wb * vz[b] + wc * vz[c]);
+            const size_t k = size_t(y) * W + x;
+            if (z <= sz[k]) continue;
+            Vec3 nrm = vn[a] * wa + vn[b] * wb + vn[c] * wc;
+            const double ln = norm(nrm);
+            nrm = ln > 1e-12 ? nrm * (1.0 / ln) : Vec3{0, 0, 1};
+            if (nrm[2] < 0) nrm = nrm * -1.0;   // two-sided
+            const RGB base{float(vc[a].r * wa + vc[b].r * wb + vc[c].r * wc), float(vc[a].g * wa + vc[b].g * wb + vc[c].g * wc),
+                           float(vc[a].b * wa + vc[b].b * wb + vc[c].b * wc)};
+            sz[k] = z;
+            scol[k] = shade(base, nrm);
+            salpha[k] = md.opacity;
+          }
+      }
+    }
+    for (size_t k = 0; k < B.col.size(); ++k) {
+      if (!(sz[k] > -std::numeric_limits<float>::infinity())) continue;
+      if (B.id[k] != -1 && sz[k] < B.z[k]) continue;   // behind an atom
+      const RGB under = B.id[k] == -1 ? bg : B.col[k];
+      B.col[k] = mixc(under, scol[k], salpha[k]);
+      if (B.id[k] == -1) { B.id[k] = -4; B.z[k] = sz[k]; }
+    }
+  }
+
   // Cell edges.
   if (opt.show_cell && s.cell.valid()) {
     const RGB ec = dark_bg ? rgb(0xA5ABB1) : rgb(0x6B7178);

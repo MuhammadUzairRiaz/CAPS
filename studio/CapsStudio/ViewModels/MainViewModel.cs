@@ -107,6 +107,10 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (Set(ref _doc, value))
             {
+                // styles, surfaces and labels belong to a document: a new one starts plain
+                AppLayers.Clear(); _appColour = -1; _appSurface = 0; _labelTexts = null;
+                foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
+                RaiseAppearanceVisibility();
                 Raise(nameof(HasDocument));
                 Raise(nameof(NoDocument));
                 Raise(nameof(ShowEmpty));
@@ -126,7 +130,7 @@ public sealed partial class MainViewModel : ObservableObject
     public int StyleIndex { get => _style; set { if (Set(ref _style, value)) { Raise(nameof(StyleText)); RenderRequested?.Invoke(); } } }
     // toolbar texts (Main board: "Ball & stick", "Colour: element", "Perspective")
     public string StyleText => Styles[Math.Clamp(_style, 0, Styles.Length - 1)];
-    public string ColourText => "Colour: " + ColourModes[Math.Clamp(ColourIndex, 0, ColourModes.Length - 1)].ToLowerInvariant();
+    public string ColourText => "Colour: " + (_appColour == 4 ? "partial charge" : ColourModes[Math.Clamp(ColourIndex, 0, ColourModes.Length - 1)].ToLowerInvariant());
     public string ProjectionText => _perspective ? "Perspective" : "Orthographic";
     private bool _measureTool;
     /// <summary>Measure tool: clicks add atoms to the measurement (as ⇧ click does).</summary>
@@ -363,6 +367,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsCrystal));
         Raise(nameof(IsBio));
         Raise(nameof(IsSolvation));
+        RaiseAppearanceVisibility();
         Raise(nameof(IsAnalyzeRail));
         Raise(nameof(ShowPipeLegend));
         Raise(nameof(ShowAnalysisPanel));
@@ -1618,7 +1623,7 @@ public sealed partial class MainViewModel : ObservableObject
         Highlight2 = _selection.Count > 2 ? _selection[2] : -1,
         Highlight3 = _selection.Count > 3 ? _selection[3] : -1,
         Focus = _focusAtom >= 0 ? _focusAtom + 1 : 0,
-        AmbientOcclusion = _module == 19 && _renderAo ? 1 : 0,
+        AmbientOcclusion = _module == 19 ? (_renderAo ? 1 : 0) : (_viewAo ? 1 : 0),
         DepthCue = _module == 19 ? (_renderDepth ? 1 : 0) : (_depthCue ? 1 : 0),
     };
 
