@@ -193,18 +193,30 @@ public sealed partial class MainViewModel
     public int SetElectrostatics
     {
         get => _settings.Electrostatics;
-        set { if (_settings.Electrostatics == value) return; _settings.Electrostatics = value; ApplyElectrostatics(); Raise(); Raise(nameof(PmeOn)); Changed("Electrostatics"); }
+        set
+        {
+            if (_settings.Electrostatics == value) return;
+            _settings.Electrostatics = value;
+            ApplyElectrostatics();
+            Raise(); Raise(nameof(PmeOn)); Raise(nameof(ElecParamLabel)); Raise(nameof(ElecParamText));
+            Changed("Electrostatics");
+        }
     }
     public bool PmeOn => _settings.Electrostatics == 1;
+    /// <summary>The Dynamics page's third electrostatics field: DSF's damping, or PME's tolerance and grid.</summary>
+    public string ElecParamLabel => PmeOn ? "Ewald tolerance · grid" : "Damping α (Å⁻¹)";
+    public string ElecParamText => PmeOn
+        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, "1e{0} · ≤ {1:F2} Å", SetEwaldExponent, _settings.PmeSpacing)
+        : "0.2";
     public int SetEwaldExponent
     {
         get => (int)Math.Round(Math.Log10(_settings.EwaldRtol));
-        set { var v = Math.Pow(10, Math.Clamp(value, -10, -3)); if (Math.Abs(v - _settings.EwaldRtol) < 1e-15) return; _settings.EwaldRtol = v; ApplyElectrostatics(); Raise(); Changed("Ewald tolerance"); }
+        set { var v = Math.Pow(10, Math.Clamp(value, -10, -3)); if (Math.Abs(v - _settings.EwaldRtol) < 1e-15) return; _settings.EwaldRtol = v; ApplyElectrostatics(); Raise(); Raise(nameof(ElecParamText)); Changed("Ewald tolerance"); }
     }
     public decimal SetPmeSpacing
     {
         get => (decimal)_settings.PmeSpacing;
-        set { var v = Math.Clamp((double)value, 0.3, 3.0); if (Math.Abs(v - _settings.PmeSpacing) < 1e-9) return; _settings.PmeSpacing = v; ApplyElectrostatics(); Raise(); Changed("PME grid spacing"); }
+        set { var v = Math.Clamp((double)value, 0.3, 3.0); if (Math.Abs(v - _settings.PmeSpacing) < 1e-9) return; _settings.PmeSpacing = v; ApplyElectrostatics(); Raise(); Raise(nameof(ElecParamText)); Changed("PME grid spacing"); }
     }
     public decimal SetPmeOrder
     {

@@ -36,7 +36,8 @@
                     <RadioButton Classes="seg" GroupName="ens" Content="NVE" IsChecked="{Binding MdEnsemble, Converter={StaticResource Eq}, ConverterParameter=0}" />
                     <RadioButton Classes="seg" GroupName="ens" Content="NVT" IsChecked="{Binding MdEnsemble, Converter={StaticResource Eq}, ConverterParameter=1}" />
                     <RadioButton Classes="seg" GroupName="ens" Content="NPT" IsChecked="{Binding MdEnsemble, Converter={StaticResource Eq}, ConverterParameter=2}" />
-                    <RadioButton Classes="seg" GroupName="ens" Content="NPH" IsEnabled="False" ToolTip.Tip="coming" ToolTip.ShowOnDisabled="True" />
+                    <RadioButton Classes="seg" GroupName="ens" Content="NPH" IsChecked="{Binding MdEnsemble, Converter={StaticResource Eq}, ConverterParameter=3}"
+                                 ToolTip.Tip="Constant pressure and enthalpy: the Berendsen barostat, no thermostat" />
                   </UniformGrid>
                 </Border>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
@@ -53,13 +54,14 @@
                 </Grid>
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasBarostat}">
                   <TextBlock Text="Barostat" Classes="label" /><TextBlock Grid.Column="1" Text="P (atm)" Classes="label" /><TextBlock Grid.Column="2" Text="τ_P (fs)" Classes="label" />
-                  <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.Barostats}" SelectedIndex="{Binding MdBarostat}" HorizontalAlignment="Stretch" />
+                  <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.Barostats}" SelectedIndex="{Binding MdBarostat}" HorizontalAlignment="Stretch"
+                            IsEnabled="{Binding MdCanChooseBarostat}" ToolTip.Tip="NPH uses the Berendsen barostat: stochastic cell rescaling needs a thermostat" ToolTip.ShowOnDisabled="True" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdPressureD}" Increment="1" FormatString="0.##" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding MdTauPD}" Minimum="10" Increment="100" FormatString="0" />
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
-                  <TextBlock Text="Bussi et al., J. Chem. Phys. 126, 014101 (2007); Bernetti &amp; Bussi, J. Chem. Phys. 153, 114107 (2020)" Classes="dim" TextWrapping="Wrap" MaxWidth="520" />
+                  <TextBlock Text="{Binding MdCitation}" Classes="dim" TextWrapping="Wrap" MaxWidth="520" />
                 </StackPanel>
               </StackPanel>
             </StackPanel>
@@ -69,10 +71,13 @@
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Interactions" Classes="h2" VerticalAlignment="Center" /></Border>
               <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
-                <TextBlock Text="Electrostatics" Classes="label" /><TextBlock Grid.Column="1" Text="r_c (Å)" Classes="label" /><TextBlock Grid.Column="2" Text="Damping α (Å⁻¹)" Classes="label" />
-                <ComboBox Grid.Row="1" SelectedIndex="0" HorizontalAlignment="Stretch" ToolTip.Tip="PME: coming"><ComboBoxItem Content="Damped shifted force" /></ComboBox>
+                <TextBlock Text="Electrostatics" Classes="label" /><TextBlock Grid.Column="1" Text="r_c (Å)" Classes="label" /><TextBlock Grid.Column="2" Text="{Binding ElecParamLabel}" Classes="label" />
+                <ComboBox Grid.Row="1" SelectedIndex="{Binding SetElectrostatics}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="The same choice as Settings › Force fields and Dynamics › Electrostatics: it applies to Relax, Dynamics, Equilibrate and Analyze">
+                  <ComboBoxItem Content="Damped shifted force" /><ComboBoxItem Content="Particle-mesh Ewald" />
+                </ComboBox>
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxCutoffD}" Minimum="4" Maximum="30" Increment="0.5" FormatString="0.0" />
-                <TextBox Grid.Row="1" Grid.Column="2" Text="0.2" IsReadOnly="True" Classes="mono" />
+                <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding ElecParamText, Mode=OneWay}" IsReadOnly="True" Classes="mono" />
                 <TextBlock Grid.Row="2" Text="van der Waals" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Mixing" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Precision" Classes="label" Margin="0,8,0,0" />
                 <TextBox Grid.Row="3" Text="Cut-off + tail correction" IsReadOnly="True" />
                 <TextBox Grid.Row="3" Grid.Column="1" Text="Force-field default" IsReadOnly="True" />

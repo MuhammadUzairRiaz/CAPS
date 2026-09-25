@@ -817,7 +817,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void CancelRelax() => _relaxCancel?.Cancel();
 
     // ---------------------------------------------------------------- Dynamics
-    public static readonly string[] Ensembles = ["NVE (no thermostat)", "NVT", "NPT (isotropic)"];
+    public static readonly string[] Ensembles = ["NVE (no thermostat)", "NVT", "NPT (isotropic)", "NPH (Berendsen, no thermostat)"];
     public static readonly string[] Thermostats = ["Bussi velocity rescaling", "Langevin (BAOAB)"];
     public static readonly string[] Barostats = ["Stochastic cell rescaling", "Berendsen (early relaxation only)"];
     private int _mdEnsemble = 1, _mdThermostat, _mdBarostat, _mdSeed = 1;
@@ -830,11 +830,30 @@ public sealed partial class MainViewModel : ObservableObject
     private CancellationTokenSource? _mdCancel;
     private readonly List<CapsThermo> _thermo = new();
 
-    public int MdEnsemble { get => _mdEnsemble; set { if (Set(ref _mdEnsemble, value)) { Raise(nameof(MdHasThermostat)); Raise(nameof(MdHasBarostat)); } } }
-    public bool MdHasThermostat => _mdEnsemble >= 1;
-    public bool MdHasBarostat => _mdEnsemble == 2;
-    public int MdThermostat { get => _mdThermostat; set => Set(ref _mdThermostat, value); }
-    public int MdBarostat { get => _mdBarostat; set => Set(ref _mdBarostat, value); }
+    public int MdEnsemble
+    {
+        get => _mdEnsemble;
+        set
+        {
+            if (!Set(ref _mdEnsemble, value)) return;
+            if (value == 3) MdBarostat = 1;   // NPH shows the barostat it runs
+            Raise(nameof(MdHasThermostat)); Raise(nameof(MdHasBarostat)); Raise(nameof(MdCanChooseBarostat)); Raise(nameof(MdCitation));
+            RefreshPreflight();
+        }
+    }
+    /// <summary>The papers behind the chosen thermostat and barostat.</summary>
+    public string MdCitation => string.Join("; ", new[]
+    {
+        MdHasThermostat ? (_mdThermostat == 1 ? "Leimkuhler & Matthews, Appl. Math. Res. Express 2013, 34 (BAOAB)" : "Bussi et al., J. Chem. Phys. 126, 014101 (2007)") : null,
+        MdHasBarostat ? (_mdEnsemble == 3 || _mdBarostat == 1 ? "Berendsen et al., J. Chem. Phys. 81, 3684 (1984)" : "Bernetti & Bussi, J. Chem. Phys. 153, 114107 (2020)") : null,
+        _mdEnsemble == 0 ? "Swope et al., J. Chem. Phys. 76, 637 (1982)" : null,
+    }.Where(x => x != null));
+    public bool MdHasThermostat => _mdEnsemble is 1 or 2;
+    public bool MdHasBarostat => _mdEnsemble is 2 or 3;
+    /// <summary>NPH runs the Berendsen barostat: stochastic cell rescaling needs a thermostat.</summary>
+    public bool MdCanChooseBarostat => _mdEnsemble == 2;
+    public int MdThermostat { get => _mdThermostat; set { if (Set(ref _mdThermostat, value)) Raise(nameof(MdCitation)); } }
+    public int MdBarostat { get => _mdBarostat; set { if (Set(ref _mdBarostat, value)) Raise(nameof(MdCitation)); } }
     public bool MdNewVelocities { get => _mdNewVelocities; set => Set(ref _mdNewVelocities, value); }
     public bool MdRunning { get => _mdRunning; private set { if (Set(ref _mdRunning, value)) RaiseBusy(); } }
     public bool CanRun => _doc != null && Idle;
@@ -885,7 +904,9 @@ public sealed partial class MainViewModel : ObservableObject
             MdPreflight.Add(new CheckRow(string.Format(inv, "Box {0:F1} Å ≥ 2 r_c ({1:F0} Å) in every direction", w, 2 * _relaxCutoff), w >= 2 * _relaxCutoff ? "ok" : "check"));
         }
         else MdPreflight.Add(new CheckRow("No periodic cell: the run is in vacuum", "check"));
-        if (_mdEnsemble == 2 && s.CellValid == 0) MdPreflight.Add(new CheckRow("NPT needs a periodic cell", "fail"));
+        if (_mdEnsemble >= 2 && s.CellValid == 0) MdPreflight.Add(new CheckRow((_mdEnsemble == 2 ? "NPT" : "NPH") + " needs a periodic cell", "fail"));
+        if (_mdEnsemble == 3)
+            MdPreflight.Add(new CheckRow("NPH: Berendsen barostat without a thermostat; Berendsen scaling does not conserve the enthalpy exactly, so watch the drift", "check"));
         // time step
         MdPreflight.Add(new CheckRow(string.Format(inv, "Δt {0:0.##} fs with hydrogens, no bond constraints", _mdDt), _mdDt <= 1.0 ? "ok" : _mdDt <= 2.0 ? "check" : "fail"));
         // velocities
@@ -903,6 +924,7 @@ public sealed partial class MainViewModel : ObservableObject
                 0 => "fix 1 all nve",
                 1 => _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
                                          : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1),
+                3 => string.Format(inv, "fix 1 all nve\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),
                 _ => string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}\nfix 3 all press/berendsen iso {3:0.##} {3:0.##} {4:0.##} modulus 22222",
                     _mdTemp, _mdTauT, _mdSeed + 1, _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
             };
@@ -928,8 +950,8 @@ public sealed partial class MainViewModel : ObservableObject
         var o = new CapsMdOpts
         {
             Dt = _mdDt, Steps = _mdSteps, Temperature = _mdTemp,
-            Thermostat = _mdEnsemble == 0 ? 0 : _mdThermostat + 1, TauT = _mdTauT,
-            Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : 0, Pressure = _mdPressure, TauP = _mdTauP,
+            Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,
+            Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
             NewVelocities = _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
             ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = 1,
