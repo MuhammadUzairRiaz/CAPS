@@ -36,6 +36,7 @@
 #include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
 #include "caps/appearance.hpp"
+#include "caps/trajectory.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -106,6 +107,7 @@ struct caps_doc {
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
   std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
   AppearanceState look;                            // caps_set_appearance
+  int smooth_window = 1;                           // caps_set_smoothing: frames averaged for display
 };
 
 namespace {
@@ -236,6 +238,10 @@ void prepare_appearance(caps_doc* d) {
 
 void refresh(caps_doc* d) {
   d->frame = d->traj.frame(d->current);
+  if (d->smooth_window > 1 && d->traj.frames() > 1) {
+    const auto p = caps::smoothed_positions(d->traj, d->current, d->smooth_window);
+    for (size_t i = 0; i < d->frame.atoms.size() && i < p.size(); ++i) d->frame.atoms[i].pos = p[i];
+  }
   if (d->current + 1 != d->traj.frames()) d->frame.velocities.clear();   // velocities belong to the last frame
   if (!d->frame.unwrapped) caps::make_molecules_whole(d->frame);
   const auto shapes = caps::molecule_shapes(d->frame);   // always from whole molecules
@@ -3113,4 +3119,64 @@ extern "C" int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const
     std::memcpy(xyv, p.data(), n * 3 * sizeof(float));
     return int32_t(n);
   });
+}
+
+// ---------------------------------------------------------------- trajectory player (v20)
+
+extern "C" int32_t caps_trajectory_series(caps_doc* d, const char* options_json, caps_series_progress_fn progress, void* user, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::TrajectorySeriesOptions so;
+    so.molecule = int(o.num("molecule", 0));
+    so.dt_fs = o.num("dt_fs", 1.0);
+    so.stride = int(o.num("stride", 1));
+    caps::ThermoLog log;
+    const std::string log_path = o.text("log");
+    if (!log_path.empty()) { log = caps::read_lammps_log(log_path); so.log = &log; }
+    if (progress) so.progress = [&](int done, int total) { return progress(done, total, user) == 0; };
+    const caps::DataTable T = caps::trajectory_series(d->traj, so);
+    caps::System first = d->traj.frame(0);
+    if (!first.unwrapped) caps::make_molecules_whole(first);
+    const caps::ChainEnds e = caps::chain_ends(first, so.molecule);
+    j["ok"] = true;
+    caps::Json cols = caps::Json::array();
+    for (const auto& c : T.columns) cols.push_back(c);
+    j["columns"] = cols;
+    caps::Json rows = caps::Json::array();
+    for (const auto& r : T.rows) {
+      caps::Json row = caps::Json::array();
+      for (double v : r) row.push_back(std::isnan(v) ? caps::Json() : caps::Json(v));
+      rows.push_back(row);
+    }
+    j["rows"] = rows;
+    j["molecule"] = double(e.molecule);
+    caps::Json ends = caps::Json::array();
+    ends.push_back(double(e.first)), ends.push_back(double(e.last));
+    j["ends"] = ends;
+    // the frame nearest each run's first printed step (checkpoint markers on the timeline)
+    caps::Json runs = caps::Json::array();
+    if (so.log)
+      for (size_t r : log.run_starts) {
+        if (r >= log.rows.size()) continue;
+        const double step = log.rows[r][0];
+        size_t best = 0;
+        double gap = 1e300;
+        for (size_t k = 0; k < d->traj.timesteps.size(); ++k)
+          if (std::fabs(double(d->traj.timesteps[k]) - step) < gap) gap = std::fabs(double(d->traj.timesteps[k]) - step), best = k;
+        runs.push_back(double(best));
+      }
+    j["run_frames"] = runs;
+    j["log_rows"] = double(so.log ? log.rows.size() : 0);
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" void caps_set_smoothing(caps_doc* d, int32_t window) {
+  d->smooth_window = std::clamp(int(window), 1, 101);
+  refresh(d);
 }

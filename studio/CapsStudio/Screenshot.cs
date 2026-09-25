@@ -197,6 +197,12 @@ internal static class Screenshot
                 w.ViewModel.LabelType = ks.Contains("type"); w.ViewModel.LabelCharge = ks.Contains("charge");
             }
             if (kv[0] == "appwait") for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
+            if (kv[0] == "player")   // player=1: the trajectory player (a log beside the file is picked up)
+            {
+                w.ViewModel.OpenTrajectory();
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
+            }
+            if (kv[0] == "frame") { w.ViewModel.Frame = int.Parse(kv[1]); for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {

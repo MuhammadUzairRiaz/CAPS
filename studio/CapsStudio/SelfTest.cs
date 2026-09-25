@@ -472,6 +472,22 @@ internal static class SelfTest
         Check(!vm.ShowEmpty, "Studio shows Start, not the empty state");
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
+        // Trajectory player: per-frame series of the melt, a chain's ends, smoothing
+        if (vm.Document is { } tdoc)
+        {
+            var ts = System.Text.Json.Nodes.JsonNode.Parse(tdoc.TrajectorySeries("{\"dt_fs\":2}"))!;
+            var cols = ts["columns"]?.AsArray().Select(x => x!.GetValue<string>()).ToList() ?? [];
+            var nrows = ts["rows"]?.AsArray().Count ?? 0;
+            var ends = ts["ends"]?.AsArray().Select(x => (int)x!.GetValue<double>()).ToArray() ?? [];
+            Check(ts["ok"]?.GetValue<bool>() == true && nrows == vm.FrameMax + 1 && cols.Contains("Density (g/cm³)") && cols.Contains("Ree (Å)") && ends.Length == 2 && ends[0] != ends[1],
+                  $"trajectory: {nrows} frames · {string.Join(", ", cols)} · ends {string.Join("–", ends)} {ts["error"]}");
+            tdoc.SetSmoothing(3);
+            tdoc.SetSmoothing(1);
+            vm.OpenTrajectory();
+            Check(vm.IsTrajectory && vm.TrajFrameText.StartsWith("frame 0"), "trajectory player opens: " + vm.TrajFrameText);
+            vm.SetModule(8);
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

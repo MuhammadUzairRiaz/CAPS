@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -505,6 +505,16 @@ int32_t caps_set_appearance(caps_doc* d, const char* json);
 int32_t caps_appearance_info(caps_doc* d, char* json, int32_t cap);
 int32_t caps_atom_labels(caps_doc* d, const char* kind, char* json, int32_t cap);
 int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, float* xyv, int32_t count);
+
+/* Trajectory player (v20, design/boards/Trajectory). caps_trajectory_series: options JSON {molecule (0: the largest),
+   dt_fs (fs per timestep), stride, log (a LAMMPS log path, optional)} → {ok, error, columns: [Frame, Timestep,
+   Time (ps), Density, Volume, Rg (Å), Ree (Å), the log's thermo columns …], rows (null where a value is missing),
+   molecule, ends: [first, last] (the chain's backbone ends), run_frames (the frame nearest each run's start),
+   log_rows}. progress(done, total) returns non-zero to stop. caps_set_smoothing: positions shown averaged over
+   `window` frames (1: off). */
+typedef int32_t (*caps_series_progress_fn)(int32_t done, int32_t total, void* user);
+int32_t caps_trajectory_series(caps_doc* d, const char* options_json, caps_series_progress_fn progress, void* user, char* json, int32_t cap);
+void caps_set_smoothing(caps_doc* d, int32_t window);
 
 #ifdef __cplusplus
 }

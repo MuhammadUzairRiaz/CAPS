@@ -33,6 +33,7 @@ add_library(caps_core STATIC
   src/peptide.cpp
   src/solvate.cpp
   src/appearance.cpp
+  src/trajectory.cpp
   src/interface.cpp
   src/nano.cpp
   src/qeq.cpp
