@@ -100,7 +100,7 @@
           <Button Classes="ghost" BorderThickness="0" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Normal" Click="OnOpen">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <v:Icon Kind="download" Size="16" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
-              <TextBlock Text="Drop or open LAMMPS data and dump, GROMACS .gro, PDB, XYZ or mol2" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
+              <TextBlock Text="Drop or open LAMMPS data and dump, GROMACS .gro, PDB, XYZ, mol2 or CIF" Classes="muted" FontSize="12.5" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </Panel>
@@ -123,6 +123,27 @@
                 <Button Classes="row" Click="OnGuide" Tag="{Binding}">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                     <v:Icon Kind="play" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding Where}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" CornerRadius="10">
+        <StackPanel>
+          <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="Fibre–rubber composites" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </Border>
+          <ItemsControl ItemsSource="{Binding RubberGuides}" Margin="12,8,12,10">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StartGuide">
+                <Button Classes="row" Click="OnGuide" Tag="{Binding}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <v:Icon Kind="layers" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="2" Text="{Binding Where}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
                   </Grid>

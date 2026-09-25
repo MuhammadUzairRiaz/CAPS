@@ -179,7 +179,7 @@ public partial class MainWindow : Window
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.gro", "*.pdb", "*.ent", "*.xyz", "*.extxyz"] },
+                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.gro", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.cif"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });

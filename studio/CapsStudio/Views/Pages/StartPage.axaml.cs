@@ -49,7 +49,7 @@ public partial class StartPage : PageBase
     {
         if ((s as Control)?.Tag is not StartGuide g) return;
         if (g.Sample && !Vm.HasDocument) Window?.OnOpenSample(s, e);
-        Vm.SetModule(g.Module);
+        Vm.StartGuideAction(g);
     }
 
     private async void OnRecipe(object? s, RoutedEventArgs e)
