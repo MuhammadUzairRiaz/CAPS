@@ -412,7 +412,21 @@
                 <ItemsControl ItemsSource="{Binding PipelineRows}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:PipelineRow">
-                      <Button Classes="pipestep" Classes.sel="{Binding Selected}" Click="OnPipeStep" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,3">
+                      <StackPanel>
+                      <Border IsVisible="{Binding GroupHeader}" Padding="6,6,10,4" Margin="0,4,0,2" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
+                          <Button Classes="ghost" Padding="2" BorderThickness="0" Background="Transparent" Click="OnGroupFold" Tag="{Binding}" ToolTip.Tip="Fold or unfold the group">
+                            <local:Icon Kind="{Binding GroupChevron}" Size="12" Foreground="{DynamicResource MutedB}" />
+                          </Button>
+                          <local:Icon Grid.Column="1" Kind="layers" Size="13" Foreground="{DynamicResource SelB}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding Group}" /><Run Text="  " /><Run Text="{Binding GroupLabel}" FontWeight="Normal" Foreground="{DynamicResource DimB}" FontSize="11" />
+                          </TextBlock>
+                          <CheckBox Grid.Column="3" Classes="toggle" IsChecked="{Binding GroupOn}" ToolTip.Tip="Every step of the group on or off" />
+                        </Grid>
+                      </Border>
+                      <Button Classes="pipestep" Classes.sel="{Binding Selected}" Click="OnPipeStep" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Margin="0,0,0,3" IsVisible="{Binding RowVisible}">
                         <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
                           <CheckBox IsChecked="{Binding Enabled}" VerticalAlignment="Center" MinWidth="0" Padding="0" />
                           <local:Icon Grid.Column="1" Kind="{Binding Icon}" Size="14" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
@@ -422,6 +436,7 @@
                           </StackPanel>
                         </Grid>
                       </Button>
+                      </StackPanel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
