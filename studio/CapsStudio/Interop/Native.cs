@@ -256,6 +256,18 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
+    [DllImport(Lib, EntryPoint = "caps_element_number")] public static extern int ElementNumber([MarshalAs(UnmanagedType.LPUTF8Str)] string symbol);
+    [DllImport(Lib, EntryPoint = "caps_element_info")] private static extern int ElementInfo(int z, out double mass, out double covalent, out double vdw, out uint rgb);
+    public static double ElementMass(int z) => ElementInfo(z, out var m, out _, out _, out _) == 0 ? m : 0;
+    public static double ElementCovalent(int z) => ElementInfo(z, out _, out var c, out _, out _) == 0 ? c : 0;
+    public static double ElementVdw(int z) => ElementInfo(z, out _, out _, out var v, out _) == 0 ? v : 0;
+    public static uint ElementColour(int z) => ElementInfo(z, out _, out _, out _, out var c) == 0 ? c : 0x9AA1A8;
+    [DllImport(Lib, EntryPoint = "caps_edit")] public static extern int Edit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
+    [DllImport(Lib, EntryPoint = "caps_undo")] public static extern int Undo(IntPtr doc, int redo);
+    [DllImport(Lib, EntryPoint = "caps_history")] public static extern int History(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_select")] public static extern int Select(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
+    [DllImport(Lib, EntryPoint = "caps_selection")] public static extern int Selection(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_tacticity")] public static extern int Tacticity(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_torsion_scan")] public static extern int TorsionScan(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsSeriesProgress? progress, IntPtr user, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_torsion_show")] public static extern int TorsionShow(IntPtr doc, int index);
     [DllImport(Lib, EntryPoint = "caps_default_torsion")] public static extern int DefaultTorsion(IntPtr doc, int[] atoms);
@@ -850,6 +862,15 @@ public sealed class CapsDocument : IDisposable
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
+    /// <summary>One structure edit (caps_edit), JSON {ok, error, what, atoms, added}.</summary>
+    public string Edit(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Edit(_h, json, b, c)); } }
+    /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
+    public bool Undo(bool redo) { lock (_lock) { Alive(); return Native.Undo(_h, redo ? 1 : 0) == 0; } }
+    public string History() { lock (_lock) return JsonCall((b, c) => Native.History(_h, b, c)); }
+    /// <summary>Changes the selection (caps_select), JSON {ok, error, count, matched}.</summary>
+    public string Select(string json) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Select(_h, json, b, c)); } }
+    public string SelectionJson() { lock (_lock) return JsonCallOnce((b, c) => Native.Selection(_h, b, c)); }
+    public string Tacticity() { lock (_lock) return JsonCallOnce((b, c) => Native.Tacticity(_h, b, c)); }
     /// <summary>A torsion scan of the current frame (caps_torsion_scan), JSON; progress(done, total) → false stops.</summary>
     public string TorsionScan(string options, Func<int, int, bool>? progress)
     {

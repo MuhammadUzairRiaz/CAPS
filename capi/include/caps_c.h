@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan */
+#define CAPS_ABI_VERSION 20  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -527,6 +527,29 @@ int32_t caps_torsion_show(caps_doc* d, int32_t index);
 /* A torsion to scan when none is picked: four heavy atoms around the middle bond of the longest backbone (not in a
    ring); −1 when there is none. */
 int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
+
+/* Structure editing (v20, the Studio's builder tools, design/boards/ElementPicker, SelectionStereo, AddHydrogens) of a
+   single-frame document, with undo. caps_edit JSON {op, …}: "element" {atoms: [i…] | "selection", element: "N"},
+   "charge" {atoms, charge}, "add_atom" {to (−1: beside the structure), element, order, geometry (0 auto, 3 sp³, 2 sp²,
+   1 sp), charge}, "bond" {i, j, order}, "unbond" {i, j}, "delete" {atoms}, "add_h" {atoms (absent: all)}, "invert"
+   {centre}, "tacticity" {to: "isotactic" | "syndiotactic", clean}, "clean" {atoms, ftol} → {ok, error, what, atoms,
+   added: [new atom indices]}. A Field assignment is cleared by any edit. caps_undo(d, 0) undoes, (d, 1) redoes;
+   caps_history: {undo: [what…], redo: […]}.
+   caps_select JSON {mode: "smarts" | "element" | "type" | "charge" {lo, hi} | "within" {distance} | "grow" {steps} |
+   "molecule" {atoms} | "indices" {atoms} | "expression" | "all" | "none", pattern, op: "replace" | "add" | "subtract" |
+   "intersect" | "invert"} → {ok, error, count, matched}; the selection is ringed in the view. caps_selection:
+   {count, indices}. caps_tacticity: {label, m, r, mm, mr, rr, centres, chains: [{centres, dyads}]}. */
+int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t cap);
+int32_t caps_undo(caps_doc* d, int32_t redo);
+int32_t caps_history(caps_doc* d, char* json, int32_t cap);
+int32_t caps_select(caps_doc* d, const char* json, char* out, int32_t cap);
+int32_t caps_selection(caps_doc* d, char* json, int32_t cap);
+int32_t caps_tacticity(caps_doc* d, char* json, int32_t cap);
+
+/* Elements (v20): the atomic number of a symbol (0 unknown); mass (g/mol), covalent radius (Cordero 2008), van der
+   Waals radius (Bondi 1964) and display colour of an element; −1 for an unknown number. */
+int32_t caps_element_number(const char* symbol);
+int32_t caps_element_info(int32_t z, double* mass, double* covalent, double* vdw, uint32_t* rgb);
 
 #ifdef __cplusplus
 }

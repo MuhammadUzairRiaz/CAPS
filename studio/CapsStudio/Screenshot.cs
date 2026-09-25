@@ -209,6 +209,15 @@ internal static class Screenshot
                 if (kv[1] == "run") { var t = w.ViewModel.RunTorsionScan(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "element") w.ViewModel.BuildElement = kv[1];
+            if (kv[0] == "picker") { w.ViewModel.ElementPickerOpen = kv[1] == "1"; Dispatcher.UIThread.RunJobs(); w.MarkChosenForTest(); }
+            if (kv[0] == "edit")   // edit=add_h | clean | tool=N
+            {
+                if (kv[1] == "add_h") w.ViewModel.AddHydrogensAll();
+                else if (kv[1] == "clean") { var t = w.ViewModel.AutoClean(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+                else if (kv[1].StartsWith("tool")) w.ViewModel.EditTool = int.Parse(kv[1][4..]);
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "nanomatrix") w.ViewModel.NanoMatrix = kv[1] == "1";
             if (kv[0] == "blend")
             {
