@@ -82,7 +82,13 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   const std::vector<double>& m = ff.mass;
   double mtot = 0;
   for (double x : m) mtot += x;
-  const double ndof = 3.0 * n - 3.0;
+  std::vector<char> held(n, 0);
+  size_t nheld = 0;
+  for (size_t i = 0; i < n && i < o.fixed.size(); ++i) nheld += (held[i] = o.fixed[i] ? 1 : 0);
+  if (nheld + 1 >= n) throw std::invalid_argument("dynamics needs at least two atoms that move");
+  // with held atoms momentum is not conserved: every free coordinate counts
+  const double ndof = nheld ? 3.0 * double(n - nheld) : 3.0 * n - 3.0;
+  if (nheld) rep.notes.push_back(std::to_string(nheld) + " atoms held in place");
 
   Cell cell = s.cell;
   std::vector<double> x(3 * n), v(3 * n, 0.0), f;
@@ -102,11 +108,14 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       const double sd = std::sqrt(kB * o.temperature * kAcc / m[i]);
       for (int k = 0; k < 3; ++k) v[3 * i + k] = sd * gauss(rng);
     }
-    double p[3] = {0, 0, 0};
+    double p[3] = {0, 0, 0}, mfree = 0;
     for (size_t i = 0; i < n; ++i)
-      for (int k = 0; k < 3; ++k) p[k] += m[i] * v[3 * i + k];
+      if (!held[i]) {
+        mfree += m[i];
+        for (int k = 0; k < 3; ++k) p[k] += m[i] * v[3 * i + k];
+      }
     for (size_t i = 0; i < n; ++i)
-      for (int k = 0; k < 3; ++k) v[3 * i + k] -= p[k] / mtot;
+      for (int k = 0; k < 3; ++k) v[3 * i + k] = held[i] ? 0.0 : v[3 * i + k] - p[k] / mfree;
     const double t0 = 2 * kinetic_energy(v, m) / (ndof * kB);
     if (t0 > 0)
       for (auto& q : v) q *= std::sqrt(o.temperature / t0);
@@ -115,7 +124,18 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     rep.notes.push_back(b);
   }
 
-  EnergyTerms et = ev.compute(x, cell, f);
+  if (nheld)
+    for (size_t i = 0; i < n; ++i)
+      if (held[i]) v[3 * i] = v[3 * i + 1] = v[3 * i + 2] = 0;
+  // forces, with none on held atoms
+  auto compute = [&] {
+    EnergyTerms t = ev.compute(x, cell, f);
+    if (nheld)
+      for (size_t i = 0; i < n; ++i)
+        if (held[i]) f[3 * i] = f[3 * i + 1] = f[3 * i + 2] = 0;
+    return t;
+  };
+  EnergyTerms et = compute();
   double bath = 0;   // energy taken out of the system by the thermostat and barostat, kcal/mol
 
   auto density = [&] { return cell.valid() ? mtot / kNA / (cell.volume() * 1e-24) : 0.0; };
@@ -223,17 +243,17 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       drift(0.5 * dt);
       const double k0 = kinetic_energy(v, m);
       for (size_t i = 0; i < n; ++i)
-        for (int k = 0; k < 3; ++k) v[3 * i + k] = c1 * v[3 * i + k] + c2 * sdv[i] * gauss(rng);
+        for (int k = 0; k < 3; ++k) v[3 * i + k] = held[i] ? 0.0 : c1 * v[3 * i + k] + c2 * sdv[i] * gauss(rng);
       bath -= kinetic_energy(v, m) - k0;
       drift(0.5 * dt);
       deform(step);
-      et = ev.compute(x, cell, f);
+      et = compute();
       kick(0.5 * dt);
     } else {
       kick(0.5 * dt);
       drift(dt);
       deform(step);
-      et = ev.compute(x, cell, f);
+      et = compute();
       kick(0.5 * dt);
       if (o.thermostat == Thermostat::Bussi) bussi(dt);
     }
@@ -247,7 +267,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
         const double deps = std::clamp(-o.compressibility / o.tau_p * (o.pressure - r.p[k]) * hp / 3, -0.0033, 0.0033);
         scale_axis(k, std::exp(deps));
       }
-      et = ev.compute(x, cell, f);
+      et = compute();
     } else if (o.barostat != Barostat::None && step % std::max(1, o.barostat_every) == 0) {
       const double hp = dt * std::max(1, o.barostat_every);
       const double k = kinetic_energy(v, m);
@@ -263,7 +283,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
         for (auto& q : v) q /= mu;
         bath -= kinetic_energy(v, m) - k;
       }
-      et = ev.compute(x, cell, f);
+      et = compute();
     }
 
     if (o.each_step) o.each_step(et, x, cell, step + o.step_offset);

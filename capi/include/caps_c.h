@@ -376,8 +376,10 @@ int32_t caps_surface_terminations(const char* cif_path, int32_t h, int32_t k, in
 caps_doc* caps_surface_build(const char* cif_path, const char* options_json, char* report, int32_t cap);
 caps_doc* caps_interface_build(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
                                int32_t cap);
-/* Holds every atom of molecule `mol` in place in caps_relax (0: none), e.g. the substrate of an interface. */
+/* Holds every atom of molecule `mol` in place in caps_relax, caps_md and caps_equilibrate (0: none), e.g. the substrate of
+   an interface. A document from caps_interface_build holds molecule 1. */
 void caps_set_held_molecule(caps_doc* d, int64_t mol);
+int64_t caps_held_molecule(const caps_doc* d);
 
 #ifdef __cplusplus
 }

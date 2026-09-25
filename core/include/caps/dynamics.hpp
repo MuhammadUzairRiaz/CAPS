@@ -56,6 +56,8 @@ struct DynamicsOptions {
   int deform_axis = -1;
   double deform_rate = 0.0;         // 1/ps
   bool new_velocities = false;      // draw Maxwell–Boltzmann velocities even when the system has some
+  // Per atom: 1 = held in place (a substrate under a film): no velocity, no force, not counted in the temperature.
+  std::vector<char> fixed;
   uint64_t seed = 1;
   int thermo_every = 100;           // steps between thermo rows
   int64_t step_offset = 0;          // added to reported steps and times (runs chained into a protocol)

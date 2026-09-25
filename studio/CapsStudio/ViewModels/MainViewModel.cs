@@ -723,7 +723,8 @@ public sealed partial class MainViewModel : ObservableObject
             string ff;
             try { ff = _doc.FieldInfo(); } catch (Exception e) { ff = "error: " + e.Message; }
             var ok = !ff.StartsWith("error", StringComparison.Ordinal) && !ff.Contains("Cannot", StringComparison.Ordinal);
-            MdPreflight.Add(new CheckRow(ok ? "All atoms typed with the built-in GAFF (C and H)" : "Built-in GAFF cannot type this structure: assign a force field in Field", ok ? "ok" : "fail"));
+            var name = ok ? ff.Split('\n')[0] : "";
+            MdPreflight.Add(new CheckRow(ok ? $"All atoms typed with {name} (none assigned in Field)" : "The built-in force fields cannot type this structure: assign one in Field", ok ? "ok" : "fail"));
         }
         // charge
         var q = s.HasCharges != 0 ? s.TotalCharge : 0;
@@ -1385,6 +1386,7 @@ public sealed partial class MainViewModel : ObservableObject
         Document = doc;
         Field.Reset();
         Analyze.Load("");
+        SyncHeld();
         Title = title;
         FieldInfoText = "";
         GrownUnsaved = false;

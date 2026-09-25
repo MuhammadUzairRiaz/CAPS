@@ -104,9 +104,16 @@
       <Border Grid.Row="1" Grid.Column="1" Classes="card">
         <Grid RowDefinitions="38,Auto,*">
           <Border Classes="phead"><TextBlock Text="Constraints &amp; restraints" Classes="h2" VerticalAlignment="Center" /></Border>
-          <StackPanel Grid.Row="1" Margin="16,12,16,8" Spacing="8" IsEnabled="False" ToolTip.Tip="Fixed atoms and restraints arrive with Relax 2" ToolTip.ShowOnDisabled="True">
-            <Border Classes="choice"><StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="pin" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Fixed atoms" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="coming" Classes="dim" VerticalAlignment="Center" /></StackPanel></Border>
-            <Border Classes="choice"><StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Distance restraint" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="coming" Classes="dim" VerticalAlignment="Center" /></StackPanel></Border>
+          <StackPanel Grid.Row="1" Margin="16,12,16,8" Spacing="8">
+            <Border Classes="choice" IsEnabled="{Binding !Relaxing}">
+              <Grid ColumnDefinitions="Auto,*,Auto,70" ColumnSpacing="8">
+                <v:Icon Kind="pin" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                <CheckBox Grid.Column="1" Content="Hold a molecule in place" IsChecked="{Binding HoldOn}" FontWeight="SemiBold" ToolTip.Tip="Its atoms feel no force and do not move (an interface's surface is molecule 1)" />
+                <TextBlock Grid.Column="2" Text="molecule" Classes="dim" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="3" Value="{Binding HoldPick}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+              </Grid>
+            </Border>
+            <Border Classes="choice" IsEnabled="False" ToolTip.Tip="Distance restraints arrive with Relax 2" ToolTip.ShowOnDisabled="True"><StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Distance restraint" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="coming" Classes="dim" VerticalAlignment="Center" /></StackPanel></Border>
           </StackPanel>
           <ScrollViewer Grid.Row="2" Margin="16,4,16,12">
             <TextBlock Text="{Binding RelaxLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />

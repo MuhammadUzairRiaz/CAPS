@@ -1247,6 +1247,12 @@ int main(int argc, char** argv) {
       d.energy.coulomb = !o.count("--no-coulomb");
       electrostatics(d.energy, o);
       d.new_velocities = o.count("--new-velocities");
+      if (o.count("--ff")) d.field = std::make_shared<ForceField>(cli_forcefield(s, o));
+      if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
+        const int64_t mm = std::stoll(o["--fix-mol"]);
+        d.fixed.assign(s.atoms.size(), 0);
+        for (size_t i = 0; i < s.atoms.size(); ++i) d.fixed[i] = s.atoms[i].mol == mm;
+      }
       const bool quiet = o.count("--quiet");
       Trajectory traj;
       traj.topology = s;
@@ -1273,7 +1279,8 @@ int main(int argc, char** argv) {
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
-      else write_lammps_data_ff(s, assign_gaff(s), d.energy, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data_ff(s, d.field ? *d.field : assign_gaff(s), d.energy, out);
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       if (o.count("--log")) {
         std::ofstream lg(o["--log"]);
