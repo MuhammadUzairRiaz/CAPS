@@ -499,6 +499,31 @@ internal static class SelfTest
             but.TorsionShow(-1);
         }
 
+        // Editing (builder tools, Element picker): place, bond, delete, hydrogens, undo and redo on the single-frame melt
+        vm.Open(Path.Combine(dir, "ps_melt.data"));
+        {
+            var n0 = vm.Document?.Summary().Atoms ?? 0;
+            vm.BuildElement = "N";
+            vm.EditTool = 1;
+            vm.ToolClick(0);
+            var n1 = vm.Document?.Summary().Atoms ?? 0;
+            vm.EditTool = 3;
+            vm.ToolClick((int)n1 - 1);
+            var n2 = vm.Document?.Summary().Atoms ?? 0;
+            vm.EditTool = 0;
+            vm.UndoEdit(false);
+            var n3 = vm.Document?.Summary().Atoms ?? 0;
+            vm.UndoEdit(true);
+            Check(n1 == n0 + 1 && n2 == n0 && n3 == n0 + 1 && vm.EditHistory.Count >= 1, $"edit: place N {n0}→{n1}, delete →{n2}, undo →{n3} · {string.Join(" / ", vm.EditHistory)} {vm.EditError}");
+            vm.UndoEdit(false);
+            vm.UndoEdit(false);
+            var sel = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Select("{\"mode\":\"smarts\",\"pattern\":\"c1ccccc1\"}"))!;
+            var tac = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Tacticity())!;
+            Check(sel["count"]?.GetValue<double>() > 100 && tac["centres"]?.GetValue<double>() > 10, $"select: {sel["count"]} ring atoms · tacticity {tac["label"]} m {tac["m"]} r {tac["r"]}");
+            vm.Document!.Select("{\"mode\":\"none\"}");
+        }
+        vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

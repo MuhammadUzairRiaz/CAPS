@@ -38,6 +38,7 @@
 #include "caps/appearance.hpp"
 #include "caps/trajectory.hpp"
 #include "caps/torsion.hpp"
+#include "caps/edit.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 
@@ -111,6 +112,9 @@ struct caps_doc {
   int smooth_window = 1;                           // caps_set_smoothing: frames averaged for display
   std::vector<std::vector<caps::Vec3>> scan_frames; // caps_torsion_scan: the geometry of each point
   std::vector<caps::Vec3> scan_original;           // the frame before a scan point was shown
+  std::vector<char> selection;                     // caps_select: the Studio's selection over the frame's atoms
+  struct Snapshot { caps::System topology; std::vector<caps::Vec3> positions; std::string what; };
+  std::vector<Snapshot> undo, redo;                // caps_edit history
 };
 
 namespace {
@@ -285,6 +289,9 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   for (int k = 0; k < 4; ++k) if (o->highlight[k] >= 0 && to_shown(o->highlight[k]) >= 0) r.highlight.push_back(to_shown(o->highlight[k]));
   r.focus = to_shown(o->focus - 1);
   r.ambient_occlusion = o->ambient_occlusion != 0;
+  if (!d->pstate && d->selection.size() == d->frame.atoms.size()) {   // the selection ringed (up to 50 000 atoms)
+    for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
+  }
   if (!d->pstate) r.segments = d->overlay;
   if (!d->pstate && d->look.active) {
     const AppearanceState& L = d->look;
@@ -3257,4 +3264,267 @@ extern "C" int32_t caps_default_torsion(caps_doc* d, int32_t* atoms) {
   const auto t = caps::default_torsion(d->frame);
   for (int k = 0; k < 4; ++k) atoms[k] = t[size_t(k)];
   return t[0] >= 0 ? 0 : -1;
+}
+
+// ---------------------------------------------------------------- editing, selection, tacticity (v20)
+
+namespace {
+
+std::vector<uint32_t> atoms_of(caps_doc* d, const caps::Json& j) {
+  std::vector<uint32_t> out;
+  const size_t n = d->frame.atoms.size();
+  if (j.has("atoms") && j["atoms"].is_array()) {
+    for (const auto& x : j["atoms"].items()) {
+      const long v = long(x.number());
+      if (v < 0 || size_t(v) >= n) throw std::out_of_range("atom " + std::to_string(v + 1) + " is not in the structure");
+      out.push_back(uint32_t(v));
+    }
+  } else if (j.text("atoms") == "selection") {
+    for (size_t i = 0; i < d->selection.size() && i < n; ++i) if (d->selection[i]) out.push_back(uint32_t(i));
+  }
+  return out;
+}
+
+void push_undo(caps_doc* d, const std::string& what) {
+  caps_doc::Snapshot sn;
+  sn.topology = d->traj.topology;
+  sn.positions = d->traj.positions.at(d->current);
+  sn.what = what;
+  d->undo.push_back(std::move(sn));
+  if (d->undo.size() > 100) d->undo.erase(d->undo.begin());
+  d->redo.clear();
+}
+
+void store(caps_doc* d, const caps::System& s) {
+  d->traj.topology = s;
+  std::vector<caps::Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  d->traj.positions[d->current] = std::move(p);
+  if (d->current < d->traj.cells.size()) d->traj.cells[d->current] = s.cell;
+  d->field.reset();   // the typing no longer matches
+  d->scan_frames.clear();
+  if (d->selection.size() != s.atoms.size()) d->selection.assign(s.atoms.size(), 0);
+  refresh(d);
+}
+
+}  // namespace
+
+extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (d->traj.frames() != 1) throw std::runtime_error("editing works on a single structure: this file has " + std::to_string(d->traj.frames()) +
+                                                        " frames (save the frame you want as its own file)");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string op = j.text("op");
+    caps::System s = d->traj.frame(d->current);
+    std::string what;
+    caps::Json added = caps::Json::array();
+    auto element_of = [&](const std::string& sym) {
+      const int z = caps::element_from_symbol(sym);
+      if (z <= 0) throw std::invalid_argument("unknown element '" + sym + "'");
+      return z;
+    };
+    if (op == "element") {
+      const auto at = atoms_of(d, j);
+      if (at.empty()) throw std::invalid_argument("pick the atoms to change");
+      const int z = element_of(j.text("element"));
+      for (uint32_t a : at) caps::set_element(s, a, z);
+      what = "Change " + std::to_string(at.size()) + " atom(s) to " + caps::element(z).symbol;
+    } else if (op == "charge") {
+      const auto at = atoms_of(d, j);
+      for (uint32_t a : at) s.atoms[a].charge = j.num("charge", 0);
+      s.has_charges = true;
+      what = "Set the charge of " + std::to_string(at.size()) + " atom(s)";
+    } else if (op == "add_atom") {
+      const int to = int(j.num("to", -1));
+      const int z = element_of(j.text("element", "C"));
+      caps::Vec3 at{0, 0, 0};
+      if (to < 0 && !s.atoms.empty()) {   // an isolated atom beside the structure
+        caps::Vec3 hi{-1e300, -1e300, -1e300};
+        for (const auto& a : s.atoms) for (int k = 0; k < 3; ++k) hi[k] = std::max(hi[k], a.pos[k]);
+        at = {hi[0] + 2.5, hi[1], hi[2]};
+      }
+      const uint32_t id = caps::add_atom(s, to, z, int(j.num("order", 1)), int(j.num("geometry", 0)), at);
+      if (j.has("charge")) s.atoms[id].charge = j.num("charge", 0);
+      added.push_back(double(id));
+      what = std::string("Place ") + caps::element(z).symbol + (to >= 0 ? " on atom " + std::to_string(to + 1) : "");
+    } else if (op == "bond") {
+      const uint32_t a = uint32_t(j.num("i", -1)), b = uint32_t(j.num("j", -1));
+      caps::add_bond(s, a, b, int(j.num("order", 1)));
+      what = "Bond " + std::to_string(a + 1) + "–" + std::to_string(b + 1);
+    } else if (op == "unbond") {
+      const uint32_t a = uint32_t(j.num("i", -1)), b = uint32_t(j.num("j", -1));
+      if (!caps::remove_bond(s, a, b)) throw std::invalid_argument("those atoms are not bonded");
+      what = "Break bond " + std::to_string(a + 1) + "–" + std::to_string(b + 1);
+    } else if (op == "delete") {
+      const auto at = atoms_of(d, j);
+      if (at.empty()) throw std::invalid_argument("pick the atoms to delete");
+      std::vector<char> m(s.atoms.size(), 0);
+      for (uint32_t a : at) m[a] = 1;
+      caps::delete_atoms(s, m);
+      d->selection.assign(s.atoms.size(), 0);
+      what = "Delete " + std::to_string(at.size()) + " atom(s)";
+    } else if (op == "add_h") {
+      const auto at = atoms_of(d, j);
+      std::vector<char> m;
+      if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
+      const size_t before = s.atoms.size();
+      const int k = caps::add_hydrogens(s, m);
+      if (k == 0) throw std::invalid_argument("no atom lacks hydrogens");
+      for (size_t i = before; i < s.atoms.size(); ++i) added.push_back(double(i));
+      what = "Add " + std::to_string(k) + " hydrogens";
+    } else if (op == "invert") {
+      const uint32_t c = uint32_t(j.num("centre", -1));
+      caps::invert_centre(s, c);
+      what = "Invert centre " + std::to_string(c + 1);
+    } else if (op == "tacticity") {
+      const bool iso = j.text("to", "isotactic") == "isotactic";
+      const int k = caps::set_tacticity(s, iso);
+      if (k > 0 && j.num("clean", 1) != 0) caps::clean_up(s);
+      what = std::string("Make ") + (iso ? "isotactic" : "syndiotactic") + " (" + std::to_string(k) + " centres inverted)";
+    } else if (op == "clean") {
+      const auto at = atoms_of(d, j);
+      std::vector<char> m;
+      if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
+      caps::clean_up(s, m, j.num("ftol", 0.5));
+      what = "Clean up with UFF" + (at.empty() ? std::string() : " (" + std::to_string(at.size()) + " atoms)");
+    } else {
+      throw std::invalid_argument("unknown edit '" + op + "'");
+    }
+    push_undo(d, what);
+    store(d, s);
+    r["ok"] = true;
+    r["what"] = what;
+    r["atoms"] = double(s.atoms.size());
+    r["added"] = added;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
+  return guard([&] {
+    auto& from = redo ? d->redo : d->undo;
+    auto& to = redo ? d->undo : d->redo;
+    if (from.empty()) throw std::runtime_error(redo ? "nothing to redo" : "nothing to undo");
+    caps_doc::Snapshot now;
+    now.topology = d->traj.topology;
+    now.positions = d->traj.positions.at(d->current);
+    now.what = from.back().what;
+    to.push_back(std::move(now));
+    d->traj.topology = from.back().topology;
+    d->traj.positions[d->current] = from.back().positions;
+    from.pop_back();
+    d->field.reset();
+    d->selection.assign(d->traj.topology.atoms.size(), 0);
+    refresh(d);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_history(caps_doc* d, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  caps::Json u = caps::Json::array(), r = caps::Json::array();
+  for (const auto& x : d->undo) u.push_back(x.what);
+  for (const auto& x : d->redo) r.push_back(x.what);
+  j["undo"] = u, j["redo"] = r;
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_select(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System& s = d->frame;
+    const size_t n = s.atoms.size();
+    if (d->selection.size() != n) d->selection.assign(n, 0);
+    const std::string mode = j.text("mode");
+    std::vector<char> m(n, 0);
+    if (mode == "smarts") m = caps::select_smarts(s, j.text("pattern"));
+    else if (mode == "element") m = caps::select_element(s, j.text("pattern"));
+    else if (mode == "type") m = caps::select_type(s, j.text("pattern"));
+    else if (mode == "charge") m = caps::select_charge(s, j.num("lo", -1e9), j.num("hi", 1e9));
+    else if (mode == "within") m = caps::select_within(s, d->selection, j.num("distance", 3.0));
+    else if (mode == "grow") m = caps::select_grow(s, d->selection, int(j.num("steps", 1)));
+    else if (mode == "all") m.assign(n, 1);
+    else if (mode == "none") {}
+    else if (mode == "molecule") {
+      const auto mol = s.molecules();
+      std::set<int> want;
+      for (uint32_t a : atoms_of(d, j)) want.insert(mol[a]);
+      for (size_t i = 0; i < n; ++i) m[i] = want.count(mol[i]) ? 1 : 0;
+    } else if (mode == "indices") {
+      for (uint32_t a : atoms_of(d, j)) m[a] = 1;
+    } else if (mode == "expression") {
+      const caps::PipelineState st = caps::run_pipeline(s, caps::Pipeline{});
+      const auto v = caps::evaluate_expression(st, j.text("pattern"));
+      for (size_t i = 0; i < n && i < v.size(); ++i) m[i] = v[i] != 0;
+    } else {
+      throw std::invalid_argument("unknown selection mode '" + mode + "'");
+    }
+    const std::string op = j.text("op", "replace");
+    auto& sel = d->selection;
+    for (size_t i = 0; i < n; ++i) {
+      if (op == "replace" || mode == "within" || mode == "grow") sel[i] = m[i];
+      else if (op == "add") sel[i] = sel[i] || m[i];
+      else if (op == "subtract") sel[i] = sel[i] && !m[i];
+      else if (op == "intersect") sel[i] = sel[i] && m[i];
+      else if (op == "invert") sel[i] = !sel[i];
+    }
+    r["ok"] = true;
+    r["count"] = double(std::count(sel.begin(), sel.end(), 1));
+    r["matched"] = double(std::count(m.begin(), m.end(), 1));
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_selection(caps_doc* d, char* json, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  caps::Json idx = caps::Json::array();
+  size_t count = 0;
+  for (size_t i = 0; i < d->selection.size(); ++i)
+    if (d->selection[i]) { ++count; if (idx.size() < 200000) idx.push_back(double(i)); }
+  r["count"] = double(count);
+  r["indices"] = idx;
+  return report_out(r.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_tacticity(caps_doc* d, char* json, int32_t cap) {
+  const auto T = caps::tacticity(d->frame);
+  caps::Json r = caps::Json::object();
+  r["label"] = T.label;
+  r["m"] = double(T.m), r["r"] = double(T.r), r["mm"] = double(T.mm), r["mr"] = double(T.mr), r["rr"] = double(T.rr);
+  caps::Json chains = caps::Json::array();
+  size_t centres = 0;
+  for (const auto& c : T.chains) {
+    caps::Json x = caps::Json::object();
+    caps::Json cs = caps::Json::array();
+    for (uint32_t a : c.centres) cs.push_back(double(a));
+    x["centres"] = cs;
+    x["dyads"] = c.dyads;
+    chains.push_back(x);
+    centres += c.centres.size();
+  }
+  r["chains"] = chains;
+  r["centres"] = double(centres);
+  return report_out(r.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_element_number(const char* symbol) { return symbol ? caps::element_from_symbol(symbol) : 0; }
+
+extern "C" int32_t caps_element_info(int32_t z, double* mass, double* covalent, double* vdw, uint32_t* rgb) {
+  if (z <= 0 || z > caps::max_element()) return -1;
+  const auto& e = caps::element(z);
+  if (mass) *mass = e.mass;
+  if (covalent) *covalent = e.covalent;
+  if (vdw) *vdw = e.vdw;
+  if (rgb) *rgb = caps::element_colour(z);
+  return 0;
 }
