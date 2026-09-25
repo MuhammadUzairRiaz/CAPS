@@ -332,6 +332,8 @@ int32_t caps_provenance(caps_doc* d, char* json, int32_t cap);
 int32_t caps_provenance_file(const char* path, char* json, int32_t cap);
 int32_t caps_provenance_compare(const char* a_json, const char* b_json, char* json, int32_t cap);
 int32_t caps_provenance_bibtex(const char* manifest_json, char* text, int32_t cap);
+/* A readable reference ("Authors, \"Title\", Journal Volume, Pages (Year). doi:…") for a citation key; "" if unknown. */
+int32_t caps_citation_text(const char* key, char* text, int32_t cap);
 /* v20 voids (design/boards/FreeVolume) of the current frame: options {"grid":0.5, "probe":1.4, "count":40, "min_radius":1.0,
    "show":true (drawn as translucent spheres), "clear":true (remove them)} → {ok, accessible_point, accessible_probe,
    largest, grid[3], spheres [{x, y, z, r}]} — the largest non-overlapping empty spheres (radius to the nearest Bondi
