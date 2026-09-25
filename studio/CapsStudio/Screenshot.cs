@@ -635,7 +635,7 @@ internal static class Screenshot
             if (kv[0] == "scroll")   // scroll=end: every scroll viewer of the page to its end (cards at the bottom)
             {
                 for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
-                foreach (var sv in w.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > 1200))
+                foreach (var sv in w.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 1))
                     sv.Offset = new Avalonia.Vector(0, kv[1] == "end" ? sv.Extent.Height : double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture));
             }
             if (kv[0] == "md")
