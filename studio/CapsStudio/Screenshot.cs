@@ -265,6 +265,14 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "importff") { w.ViewModel.ImportForceField = int.Parse(kv[1]); Dispatcher.UIThread.RunJobs(); }
+            if (kv[0] == "exportdlg")   // exportdlg=image|movie: the export dialog
+            {
+                w.ViewModel.OpenExportDialog(kv[1] == "movie" ? 1 : 0);
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Avalonia.Controls.ControlExtensions.FindControl<CapsStudio.Views.Pages.ExportDialog>(w, "ExportDlg")?.RefreshPreview();
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "exportbg") w.ViewModel.ExportDlgBackground = int.Parse(kv[1]);
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

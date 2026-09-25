@@ -1,0 +1,124 @@
+<!-- CAPS Export image / movie (design/boards/ExportDialog): the view re-rendered at full resolution with the same camera,
+     styles and labels; size presets, PNG 8/16-bit, background, supersampling, colour profile, provenance in the metadata;
+     movies as animated PNG, PNG sequence or MP4 (ffmpeg). -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ExportDialog" x:DataType="vm:MainViewModel">
+  <p:PageBase.Styles>
+    <Style Selector="Button.preset"><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="10,8" /><Setter Property="Background" Value="{DynamicResource Bg0B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /></Style>
+    <Style Selector="Button.preset.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
+  </p:PageBase.Styles>
+  <Panel>
+    <Border Background="#B307080A" PointerPressed="OnBackdrop" />
+    <Border Width="1040" Height="640" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="52" Padding="20,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="tool" Click="OnClose" ToolTip.Tip="Close (Esc)"><v:Icon Kind="close" Size="16" /></Button>
+            <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+              <TextBlock Text="Export" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TabStrip Classes="small" SelectedIndex="{Binding ExportTab}" VerticalAlignment="Center">
+                <TabStripItem Content="Image" />
+                <TabStripItem Content="Movie" />
+              </TabStrip>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="20,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+              <Button Content="Stop" Click="OnStop" IsVisible="{Binding ExportDlgBusy}" />
+              <Button Click="OnCopy" IsVisible="{Binding ExportIsImage}" IsEnabled="{Binding ExportDlgIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="15" VerticalAlignment="Center" /><TextBlock Text="Copy to clipboard" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Classes="primary" Click="OnExport" IsEnabled="{Binding ExportDlgIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding ExportButton}" VerticalAlignment="Center" /></StackPanel></Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+              <TextBlock Text="{Binding ExportProgress}" Classes="mono" FontSize="12" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ExportResult}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="520" />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Grid ColumnDefinitions="*,400">
+          <Border Padding="20,18" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
+            <StackPanel Spacing="10">
+              <Border x:Name="PreviewFrame" Height="340" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource LineB}" ClipToBounds="True">
+                <Panel>
+                  <Border x:Name="CheckerLayer" />
+                  <Image x:Name="Preview" Stretch="Uniform" />
+                </Panel>
+              </Border>
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding ExportSizeChip}" Classes="mono" /></Border>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Classes="chip"><TextBlock Text="{Binding ExportBgChip}" /></Border>
+                  <Border Classes="chip"><TextBlock Text="{Binding ExportAspectChip}" /></Border>
+                </StackPanel>
+              </DockPanel>
+              <TextBlock FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" LineHeight="18"
+                         Text="Exports re-render at full resolution with the same camera, styles and labels. Measurement pills and labels are optional overlays." />
+              <TextBlock FontSize="12" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" IsVisible="{Binding ExportIsMovie}" Text="{Binding MovieFramesText}" />
+            </StackPanel>
+          </Border>
+          <ScrollViewer Grid.Column="1">
+            <StackPanel>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SIZE" Classes="h3" />
+                  <ItemsControl ItemsSource="{x:Static vm:MainViewModel.ExportPresets}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ExportPreset">
+                        <Button Classes="preset" Margin="0,0,6,6" Click="OnPreset" Tag="{Binding Name}">
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Name}" FontSize="12.5" />
+                            <TextBlock Text="{Binding Detail}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Width · px" Classes="label" /><NumericUpDown Value="{Binding ExportWidth}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Height · px" Classes="label" /><NumericUpDown Value="{Binding ExportHeight}" Minimum="16" Maximum="16384" Increment="10" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding ExportIsMovie}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="MOVIE" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Source" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportMovieSources}" SelectedIndex="{Binding MovieSource}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Format" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportMovieFormats}" SelectedIndex="{Binding MovieFormat}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Frame rate · fps" Classes="label" /><NumericUpDown Value="{Binding MovieFps}" Minimum="1" Maximum="120" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding !MovieIsTurntable}"><TextBlock Text="Every nth frame" Classes="label" /><NumericUpDown Value="{Binding MovieStep}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding MovieIsTurntable}"><TextBlock Text="Frames in a turn" Classes="label" /><NumericUpDown Value="{Binding MovieTurnFrames}" Minimum="12" Maximum="1440" Increment="12" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" BorderThickness="0">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="OUTPUT" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding ExportIsImage}">
+                    <StackPanel Spacing="6"><TextBlock Text="Format" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportImageFormats}" SelectedIndex="{Binding ExportFormat}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Background" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportBackgrounds}" SelectedIndex="{Binding ExportDlgBackground}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Supersampling" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportSupersampling}" SelectedIndex="{Binding ExportSupersample}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Colour profile" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportProfiles}" SelectedIndex="{Binding ExportProfile}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding ExportIsMovie}">
+                    <StackPanel Spacing="6"><TextBlock Text="Background" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportBackgrounds}" SelectedIndex="{Binding ExportDlgBackground}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Include labels and measurements" IsChecked="{Binding ExportLabels}" IsEnabled="{Binding ExportLabelsAvailable}" />
+                  <CheckBox Classes="toggle" Content="Embed provenance manifest in metadata" IsChecked="{Binding ExportProvenance}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </DockPanel>
+    </Border>
+  </Panel>
+</p:PageBase>

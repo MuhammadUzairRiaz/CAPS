@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -3720,4 +3721,146 @@ extern "C" caps_doc* caps_import_fragment(const char* path, const char* options_
     g_error = "unknown error";
   }
   return nullptr;
+}
+
+// ---------------------------------------------------------------- export image / movie (design/boards/ExportDialog)
+namespace {
+std::string iso_now() {
+  const std::time_t t = std::time(nullptr);
+  char buf[32];
+  std::strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%SZ", std::gmtime(&t));
+  return buf;
+}
+
+// The provenance manifest embedded in exported images: what was shown, from which file (and its sha256), how.
+std::string image_manifest(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const caps::Json& o) {
+  caps::Json m = caps::Json::object();
+  m["schema"] = "caps-image/1.0";
+  m["generator"] = std::string("CAPS 0.1.0");
+  m["created"] = iso_now();
+  const std::string src = o.text("source");
+  if (!src.empty()) {
+    m["source"] = std::filesystem::path(src).filename().string();
+    std::ifstream f(src, std::ios::binary);
+    if (f) {
+      std::string bytes((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+      m["source_sha256"] = caps::sha256_hex(bytes);
+    }
+  }
+  m["frame"] = double(d->current);
+  m["frames"] = double(d->traj.frames());
+  m["atoms"] = double(shown(d).atoms.size());
+  caps::Json c = caps::Json::object();
+  c["yaw"] = cam->yaw; c["pitch"] = cam->pitch; c["zoom"] = cam->zoom; c["pan_x"] = cam->pan_x; c["pan_y"] = cam->pan_y; c["perspective"] = cam->perspective != 0;
+  m["camera"] = std::move(c);
+  caps::Json r = caps::Json::object();
+  r["width"] = opt->width; r["height"] = opt->height; r["supersample"] = opt->supersample;
+  r["style"] = opt->style; r["colour_by"] = opt->colour_by; r["background"] = opt->background;
+  m["render"] = std::move(r);
+  return m.dump(0);
+}
+}  // namespace
+
+extern "C" int32_t caps_export_image(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path, const char* options_json,
+                                     const uint8_t* overlay) {
+  return guard([&] {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    auto flag = [&](const char* k, bool def) { return !o.has(k) ? def : o[k].kind() == caps::Json::Bool ? o[k].boolean() : o[k].number() != 0; };
+    caps::PngOptions p;
+    p.sixteen = o.num("bits", 8) >= 16;
+    p.dpi = o.num("dpi", 0);
+    p.srgb = o.text("colour_profile", "srgb") != "none";
+    if (flag("provenance", true)) p.text.push_back({"caps:provenance", image_manifest(d, cam, opt, o)});
+    caps::RenderOptions ro = opts_of(d, opt);
+    ro.deep = p.sixteen;
+    caps::Renderer r;
+    caps::Image img = r.render(shown(d), cam_of(cam), ro);
+    if (overlay) {
+      // labels and measurements drawn by the caller (straight alpha), laid over the image at full precision
+      for (size_t k = 0; k < size_t(img.width) * img.height; ++k) {
+        const uint8_t* o8 = overlay + 4 * k;
+        if (o8[3] == 0) continue;
+        const float a = o8[3] / 255.f;
+        uint8_t* p8 = &img.rgba[4 * k];
+        const float da = p8[3] / 255.f, oa = a + da * (1 - a);
+        for (int c = 0; c < 3; ++c) {
+          const float v = oa > 0 ? (o8[c] / 255.f * a + p8[c] / 255.f * da * (1 - a)) / oa : 0;
+          p8[c] = uint8_t(std::clamp(v, 0.f, 1.f) * 255 + .5f);
+          if (!img.rgba16.empty()) {
+            const float d16 = img.rgba16[4 * k + c] / 65535.f;
+            const float v16 = oa > 0 ? (o8[c] / 255.f * a + d16 * da * (1 - a)) / oa : 0;
+            img.rgba16[4 * k + c] = uint16_t(std::clamp(v16, 0.f, 1.f) * 65535 + .5f);
+          }
+        }
+        p8[3] = uint8_t(oa * 255 + .5f);
+        if (!img.rgba16.empty()) img.rgba16[4 * k + 3] = uint16_t(oa * 65535 + .5f);
+      }
+    }
+    caps::write_png(img, path, p);
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_png_text(const char* path, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    for (const auto& [k, v] : caps::read_png_text(path)) j[k] = v;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_export_movie(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path, const char* options_json,
+                                     caps_series_progress_fn progress, void* user) {
+  return guard([&] {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    const std::string format = o.text("format", "apng");
+    const int nf = int(d->traj.frames());
+    const int from = std::clamp(int(o.num("from", 0)), 0, nf - 1);
+    const int to = std::clamp(int(o.num("to", nf - 1)), from, nf - 1);
+    const int step = std::max(1, int(o.num("step", 1)));
+    const double turn = o.num("turntable", 0);   // degrees of yaw over the whole movie
+    const bool turntable = turn != 0;   // the current frame turned about the vertical
+    int count = turntable ? std::max(2, int(o.num("turntable_frames", 120))) : (to - from) / step + 1;
+    const int fps = std::clamp(int(o.num("fps", 24)), 1, 120);
+    caps::PngOptions p;
+    p.srgb = o.text("colour_profile", "srgb") != "none";
+    caps::Json manifest_opts = o;
+    std::unique_ptr<caps::ApngWriter> apng;
+    if (format == "apng") {
+      if (o.text("provenance", "1") != "0") p.text.push_back({"caps:provenance", image_manifest(d, cam, opt, o)});
+      apng = std::make_unique<caps::ApngWriter>(path, fps, int(o.num("loops", 0)), p);
+    } else {
+      std::filesystem::create_directories(path);
+    }
+    const size_t keep = d->current;
+    caps::Renderer r;
+    const caps::RenderOptions ro = opts_of(d, opt);
+    int written = 0;
+    try {
+      for (int k = 0; k < count; ++k) {
+        const int f = turntable ? int(keep) : from + k * step;
+        if (size_t(f) != d->current) { d->current = size_t(f); refresh(d); }
+        caps::Camera c = cam_of(cam);
+        if (turn != 0) c.yaw += turn * M_PI / 180.0 * double(k) / double(count);
+        caps::Image img = r.render(shown(d), c, ro);
+        if (apng) apng->add(img);
+        else {
+          char name[32];
+          std::snprintf(name, sizeof name, "frame_%05d.png", k + 1);
+          caps::write_png(img, (std::filesystem::path(path) / name).string(), p);
+        }
+        ++written;
+        if (progress && progress(written, count, user) != 0) break;
+      }
+    } catch (...) {
+      if (d->current != keep) { d->current = keep; refresh(d); }
+      throw;
+    }
+    if (apng) apng->close();
+    if (d->current != keep) { d->current = keep; refresh(d); }
+    return written;
+  });
 }

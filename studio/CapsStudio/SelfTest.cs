@@ -629,6 +629,36 @@ internal static class SelfTest
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
+        // Export dialog: a 16-bit PNG with the provenance manifest and a measurement overlay; an animated PNG of the three
+        // frames; a turntable of one frame as a PNG sequence
+        {
+            vm.OpenExportDialog();
+            vm.ExportWidth = 320; vm.ExportHeight = 180;
+            vm.ExportFormat = 1;
+            var png = Path.Combine(outDir, "caps-selftest-export16.png");
+            var wrote = vm.ExportDialogImage(png, (w, h) => { var l = new byte[w * h * 4]; for (int k = 3; k < 40 * 4; k += 4) { l[k - 3] = 255; l[k] = 255; } return l; }).GetAwaiter().GetResult();
+            var meta = System.Text.Json.Nodes.JsonNode.Parse(CapsDocument.PngText(png))!;
+            var man = System.Text.Json.Nodes.JsonNode.Parse(meta["caps:provenance"]!.GetValue<string>())!;
+            var bytes = File.ReadAllBytes(png);
+            Check(wrote != null && bytes[24] == 16 && man["schema"]?.GetValue<string>() == "caps-image/1.0" && man["source_sha256"]?.GetValue<string>().Length == 64 && man["frames"]?.GetValue<double>() == 3,
+                  $"export image: {vm.ExportResult} · manifest {man["source"]} {man["source_sha256"]?.GetValue<string>()[..12]}…");
+            vm.ExportTab = 1;
+            var apng = Path.Combine(outDir, "caps-selftest-movie.png");
+            vm.ExportDialogMovie(apng).GetAwaiter().GetResult();
+            var ab = File.ReadAllBytes(apng);
+            var actl = System.Text.Encoding.ASCII.GetString(ab).IndexOf("acTL", StringComparison.Ordinal);
+            var frames = actl > 0 ? ab[actl + 4] << 24 | ab[actl + 5] << 16 | ab[actl + 6] << 8 | ab[actl + 7] : 0;
+            vm.MovieSource = 1; vm.MovieTurnFrames = 12; vm.MovieFormat = 1;
+            var seq = Path.Combine(outDir, "caps-selftest-turntable");
+            if (Directory.Exists(seq)) Directory.Delete(seq, true);
+            vm.Frame = 1;
+            vm.ExportDialogMovie(seq).GetAwaiter().GetResult();
+            var seqFiles = Directory.Exists(seq) ? Directory.GetFiles(seq, "frame_*.png").Length : 0;
+            Check(frames == 3 && seqFiles == 12 && vm.Frame == 1, $"export movie: animated PNG {frames} frames · turntable {seqFiles} PNGs · {vm.ExportResult}");
+            vm.ExportDialogOpen = false;
+            vm.Frame = 0;
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

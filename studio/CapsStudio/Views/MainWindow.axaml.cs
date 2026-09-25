@@ -559,6 +559,8 @@ public partial class MainWindow : Window
             if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasPicked) { _vm.DeletePicked(); e.Handled = true; return; }
         }
         if (_vm.ImportOpen && e.Key == Key.Escape) { _vm.CloseImport(); e.Handled = true; return; }
+        if (_vm.ExportDialogOpen && e.Key == Key.Escape) { _vm.CancelExport(); _vm.ExportDialogOpen = false; e.Handled = true; return; }
+        if (e.Key == Key.E && e.KeyModifiers == (OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) && _vm.HasDocument) { _vm.OpenExportDialog(); e.Handled = true; return; }
         // Keyboard walk (design/boards/VisAccess): in the 3D view, or anywhere once an atom has the focus ring
         var focused = FocusManager?.GetFocusedElement();
         var walk = _vm.IsStudio && (focused == ViewHost || (_vm.HasFocusAtom && focused is not (ListBox or Slider or TreeView or TabItem)));
@@ -831,6 +833,7 @@ public partial class MainWindow : Window
 
     private void OnChecks(object? s, RoutedEventArgs e) => ViewModel.OpenChecks();
     private async void OnExportPng(object? s, RoutedEventArgs e) => await Export("png");
+    private void OnExportDialog(object? s, RoutedEventArgs e) => _vm.OpenExportDialog();
     private async void OnExportSvg(object? s, RoutedEventArgs e) => await Export("svg");
     // ---- Analyze › Visualize
     private void OnOpenVisualize(object? s, RoutedEventArgs e) => _vm.OpenVisualize();
