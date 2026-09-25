@@ -542,14 +542,19 @@ def run(recipe, out_dir: str = ".", seed: Optional[int] = None, threads: int = 0
 
 
 def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", seed: int = 1, density: Optional[float] = None,
-            forcefield: Optional[str] = None, relax: bool = False, sequence: str = "homopolymer", trials: int = 120) -> Document:
-    """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers) grown in a periodic cell:
+            forcefield: Optional[str] = None, relax: bool = False, sequence: str = "homopolymer", trials: int = 120,
+            blocks: Optional[list] = None, weights: Optional[list] = None, pattern: str = "") -> Document:
+    """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
+    with blocks=[…], random with weights=[…], gradient, pattern="AAB") grown in a periodic cell:
     one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. forcefield types it (default: the
     built-in GAFF for C and H, else UFF); relax=True minimises."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
          "grow": {"density": density if density is not None else (0.1 if chains == 1 else 0.5), "seed": seed, "trials": trials}}
+    for k, v in (("blocks", blocks), ("weights", weights), ("pattern", pattern)):
+        if v:
+            r["build"]["polymer"][k] = v
     if forcefield or relax:
         r["type"] = {"forcefield": forcefield or "default"}
     if relax:

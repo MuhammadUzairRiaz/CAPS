@@ -33,7 +33,16 @@ public static class RecentFiles
     public static string ThumbPath(string path)
     {
         var h = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(path)))[..16].ToLowerInvariant();
-        return System.IO.Path.Combine(Root, "thumbs", h + ".png");
+        return System.IO.Path.Combine(Root, "thumbs", h + ".t.png");   // transparent: sits on either theme's card
+    }
+
+    /// <summary>The thumbnail to show: the transparent one, else one from before (drawn on the dark view background).</summary>
+    private static string? ShownThumb(string path)
+    {
+        var t = ThumbPath(path);
+        if (File.Exists(t)) return t;
+        var old = t[..^6] + ".png";
+        return File.Exists(old) ? old : null;
     }
 
     public static List<RecentItem> Load()
@@ -46,8 +55,8 @@ public static class RecentFiles
             list = list.Where(x => File.Exists(x.Path)).Take(Max).ToList();
             foreach (var x in list)
             {
-                var t = ThumbPath(x.Path);
-                if (File.Exists(t)) try { x.Thumb = new Bitmap(t); } catch { /* a broken thumbnail is left out */ }
+                var t = ShownThumb(x.Path);
+                if (t != null) try { x.Thumb = new Bitmap(t); } catch { /* a broken thumbnail is left out */ }
             }
             return list;
         }

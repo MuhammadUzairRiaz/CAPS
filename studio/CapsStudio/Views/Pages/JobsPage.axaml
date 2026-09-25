@@ -203,9 +203,9 @@
               <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
                 <DockPanel>
                   <Button DockPanel.Dock="Right" Classes="small" Content="Copy JSON" Click="OnCopyJson" VerticalAlignment="Center" />
-                  <Button DockPanel.Dock="Right" Classes="small" Content="Document provenance" Click="OnFullProvenance" VerticalAlignment="Center" Margin="0,0,6,0"
-                          ToolTip.Tip="Every step that produced the open structure, with seeds, citations and approximations" />
-                  <TextBlock Text="Provenance manifest" Classes="h2" VerticalAlignment="Center" />
+                  <Button DockPanel.Dock="Right" Classes="small" Content="All steps" Click="OnFullProvenance" VerticalAlignment="Center" Margin="0,0,6,0"
+                          ToolTip.Tip="The document's provenance: every step that produced the open structure, with seeds, citations and approximations" />
+                  <TextBlock Text="Provenance manifest" Classes="h2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
               </Border>
               <ItemsControl ItemsSource="{Binding Provenance}" Margin="16,10,16,14">

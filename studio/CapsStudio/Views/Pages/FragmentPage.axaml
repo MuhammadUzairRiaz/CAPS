@@ -68,7 +68,7 @@
         <DockPanel>
           <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
             <DockPanel>
-              <Border DockPanel.Dock="Right" Classes="chip" Background="#3A2C14" VerticalAlignment="Center"><TextBlock Text="{Binding FragmentPointsChip}" Foreground="{DynamicResource AccB}" /></Border>
+              <Border DockPanel.Dock="Right" Classes="chip" Background="{DynamicResource WarnBgB}" VerticalAlignment="Center"><TextBlock Text="{Binding FragmentPointsChip}" Foreground="{DynamicResource AccB}" /></Border>
               <TextBlock Text="{Binding SelectedFragment.Name, FallbackValue=''}" Classes="h2" VerticalAlignment="Center" />
             </DockPanel>
           </Border>

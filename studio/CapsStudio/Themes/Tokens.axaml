@@ -20,6 +20,7 @@
       <Color x:Key="WarnBgC">#3A2C14</Color>
       <Color x:Key="OkBgC">#16261A</Color>
       <Color x:Key="ErrBgC">#3A1A18</Color>
+      <Color x:Key="SelBgC">#12303A</Color>
       <Color x:Key="HudC">#E616191C</Color>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Light">
@@ -41,6 +42,7 @@
       <Color x:Key="WarnBgC">#F7E6CC</Color>
       <Color x:Key="OkBgC">#DDEFE0</Color>
       <Color x:Key="ErrBgC">#F8DEDB</Color>
+      <Color x:Key="SelBgC">#DCEFF3</Color>
       <Color x:Key="HudC">#E6FFFFFF</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
@@ -62,6 +64,7 @@
   <SolidColorBrush x:Key="WarnBgB" Color="{DynamicResource WarnBgC}" />
   <SolidColorBrush x:Key="OkBgB" Color="{DynamicResource OkBgC}" />
   <SolidColorBrush x:Key="ErrBgB" Color="{DynamicResource ErrBgC}" />
+  <SolidColorBrush x:Key="SelBgB" Color="{DynamicResource SelBgC}" />
   <SolidColorBrush x:Key="HudB" Color="{DynamicResource HudC}" />
   <FontFamily x:Key="Sans">avares://CapsStudio/Assets/Fonts#IBM Plex Sans</FontFamily>
   <FontFamily x:Key="Mono">avares://CapsStudio/Assets/Fonts#IBM Plex Mono</FontFamily>

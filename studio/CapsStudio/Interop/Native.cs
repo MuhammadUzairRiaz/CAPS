@@ -196,6 +196,8 @@ public delegate int CapsReactProgress(in CapsReactCycle row, IntPtr user);
 public delegate int CapsPackProgress(int loop, int loops, double penalty, int bad, IntPtr user);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsSeriesProgress(int done, int total, IntPtr user);
+/// <summary>caps_recipe_run: one call per stage event; return 0 to cancel.</summary>
+public delegate int CapsRecipeProgress(int stage, int stages, IntPtr name, IntPtr status, IntPtr detail, double fraction, IntPtr user);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsStageProgress(int stage, int loop, int loops, double dmin, int bad, IntPtr user);
 
@@ -268,6 +270,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_interface_build")] public static extern IntPtr InterfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pore_build")] public static extern IntPtr PoreBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
+                                                                          CapsRecipeProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -556,6 +560,20 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A graphene sheet, nanotube or nanoparticle (caps_nano_build).</summary>
+    /// <summary>Runs a recipe (YAML or JSON text; caps_recipe_run). progress(stage, stages, name, status, detail, fraction) runs
+    /// on the calling thread; return false to cancel. The report is JSON {exit, error, files, properties, forcefield}; a
+    /// failed recipe returns a null document with the report.</summary>
+    public static (CapsDocument? Doc, string Report) RunRecipe(string recipe, string options, string label, Func<int, int, string, string, string, double, bool>? progress)
+    {
+        var report = new byte[1 << 16];
+        CapsRecipeProgress? cb = progress == null ? null : (k, n, name, st, det, f, _) =>
+            progress(k, n, Marshal.PtrToStringUTF8(name) ?? "", Marshal.PtrToStringUTF8(st) ?? "", Marshal.PtrToStringUTF8(det) ?? "", f) ? 1 : 0;
+        var h = Native.RecipeRun(recipe, options, cb, IntPtr.Zero, report, report.Length);
+        GC.KeepAlive(cb);
+        var rep = System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
+        return (h == IntPtr.Zero ? null : new CapsDocument(h, label), rep);
+    }
+
     /// <summary>A Kremer–Grest bead-spring melt (caps_kg_build); the report is JSON {box, closest, r2_per_bond}.</summary>
     public static (CapsDocument Doc, string Report) KgBuild(string options, string label)
     {
