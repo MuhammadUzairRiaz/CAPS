@@ -33,6 +33,7 @@ cp "$ROOT/packaging/icon/caps.icns" "$APP/Contents/Resources/"
 mkdir -p "$APP/Contents/Resources/data"
 cp -R "$ROOT/data/forcefields" "$ROOT/data/typing" "$ROOT/data/reference" "$ROOT/data/polymers" "$ROOT/data/crystals" "$ROOT/data/fragments" "$ROOT/data/manual" "$ROOT/data/python" "$APP/Contents/Resources/data/"
 cp -R "$ROOT/licenses" "$APP/Contents/Resources/licenses"
+cp "$ROOT/LICENSE" "$APP/Contents/Resources/LICENSE"
 cp -R "$ROOT/samples" "$APP/Contents/Resources/"
 sed "s/@VERSION@/$VERSION/g" "$ROOT/packaging/macos/Info.plist.in" > "$APP/Contents/Info.plist"
 # debug symbols are not shipped

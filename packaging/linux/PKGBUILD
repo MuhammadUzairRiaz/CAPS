@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc="CAPS Studio: build, simulate and analyse amorphous polymer cells"
 arch=('x86_64' 'aarch64')
 url="https://github.com/MuhammadUzairRiaz/CAPS"
-license=('LicenseRef-proprietary')
+license=('BSD-3-Clause')
 depends=('zlib' 'fontconfig' 'libice' 'libsm' 'libx11' 'icu' 'gcc-libs')
 makedepends=('cmake' 'gcc-fortran' 'dotnet-sdk>=10' 'git')
 options=('!strip' '!debug')
@@ -30,6 +30,7 @@ package() {
   install -Dm755 build/cli/caps "$pkgdir/opt/caps/caps"
   install -d "$pkgdir/opt/caps/data"
   cp -R data/forcefields data/typing data/reference data/polymers data/crystals data/fragments data/manual data/python "$pkgdir/opt/caps/data/"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 licenses/RDKit-UFF-parameters.txt "$pkgdir/usr/share/licenses/$pkgname/RDKit-UFF-parameters.txt"
   cp -R samples "$pkgdir/opt/caps/"
   ln -s /opt/caps/CapsStudio "$pkgdir/usr/bin/caps-studio"
