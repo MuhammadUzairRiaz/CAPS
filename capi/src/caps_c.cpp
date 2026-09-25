@@ -1212,7 +1212,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       std::string cur;
       for (const char* c = props ? props : ""; ; ++c) {
         if (*c == ',' || *c == 0) {
-          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "tensile" || cur == "tg" ? protocols : ids).push_back(cur);
+          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
           cur.clear();
           if (*c == 0) break;
         } else if (*c != ' ') cur += *c;
@@ -1318,6 +1318,25 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
           return !cancelled(b, q.strain / to.max_strain);
         };
         for (auto& q : caps::tensile_properties(caps::run_tensile(s, to))) res.push_back(std::move(q));
+      } else if (id == "pull_shear" || id == "pull_normal") {
+        caps::System s = frame_copy();
+        caps::PullOptions po;
+        po.field = ff;
+        po.energy = o.energy;
+        po.normal = id == "pull_normal";
+        po.surface_mol = d->held_mol > 0 ? d->held_mol : 1;
+        if (mo.temperature > 0) po.temperature = mo.temperature;
+        if (mo.dt > 0) po.dt = mo.dt;
+        if (mo.seed) po.seed = mo.seed;
+        if (mo.equilibrate_ps != 0) po.equilibrate_ps = std::max(0.0, mo.equilibrate_ps);
+        if (mo.max_strain > 0) po.distance = mo.max_strain;     // Å for the pull test
+        if (mo.rate > 0) po.rate = mo.rate;                     // Å/ps for the pull test
+        po.progress = [&](const caps::PullPoint& q) {
+          char b[96];
+          std::snprintf(b, sizeof b, "pull: %.2f Å, force %.2f kcal/mol/Å", q.displacement, q.force);
+          return !cancelled(b, std::min(1.0, q.time_ps * po.rate / po.distance));
+        };
+        for (auto& q : caps::pull_properties(caps::run_pull(s, po), po.normal)) res.push_back(std::move(q));
       } else if (id == "tg") {
         caps::System s = frame_copy();
         caps::CoolingOptions co;

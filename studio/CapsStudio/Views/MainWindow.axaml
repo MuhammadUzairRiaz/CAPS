@@ -890,6 +890,18 @@
                     <NumericUpDown Value="{Binding Analyze.EqPsD}" Minimum="0" Increment="10" FormatString="0" />
                     <CheckBox Content="Lateral faces fixed (uniaxial strain)" IsChecked="{Binding Analyze.TensFixed}" />
                   </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.PullOn}">
+                    <TextBlock Text="PULL TEST (interface)" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                      <TextBlock Text="Distance (Å)" Classes="dim" /><TextBlock Grid.Column="1" Text="Rate (Å/ps)" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.PullDistD}" Minimum="0.5" Maximum="200" Increment="1" FormatString="0.0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.PullRateD}" Minimum="0.01" Maximum="100" Increment="0.5" FormatString="0.##" />
+                      <TextBlock Grid.Row="2" Text="Temperature (K)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="NVT first (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.PullTD}" Minimum="1" Increment="10" FormatString="0" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.PullEqD}" Minimum="0" Increment="1" FormatString="0.#" />
+                    </Grid>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="The surface (molecule 1) is held; a spring (10 kcal/mol/Å²) drags the film's centre. Steered-MD forces grow with the rate: compare systems at one rate." />
+                  </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.StrainChip.IsOn}">
                     <TextBlock Text="STATIC ELASTIC CONSTANTS" Classes="h3" Margin="0,6,0,0" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">

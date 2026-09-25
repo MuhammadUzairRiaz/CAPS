@@ -128,12 +128,33 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (nheld)
     for (size_t i = 0; i < n; ++i)
       if (held[i]) v[3 * i] = v[3 * i + 1] = v[3 * i + 2] = 0;
-  // forces, with none on held atoms
+  // steered pulling: the group, its mass, and where its centre starts along the pull direction
+  std::vector<uint32_t> pulled;
+  double mpull = 0, com0 = 0, pull_f = 0, pull_x = 0;
+  int64_t cur_step = 0;
+  const double plen = norm(o.pull_dir);
+  const Vec3 pdir = plen > 0 ? o.pull_dir * (1 / plen) : Vec3{1, 0, 0};
+  auto pull_com = [&] {
+    double c = 0;
+    for (uint32_t i : pulled) c += m[i] * (x[3 * i] * pdir[0] + x[3 * i + 1] * pdir[1] + x[3 * i + 2] * pdir[2]);
+    return c / mpull;
+  };
+  for (size_t i = 0; i < n && i < o.pull_group.size(); ++i)
+    if (o.pull_group[i] && !held[i]) pulled.push_back(uint32_t(i)), mpull += m[i];
+  if (!pulled.empty()) com0 = pull_com();
+  // forces, with none on held atoms and the pulling spring on the group
   auto compute = [&] {
     EnergyTerms t = ev.compute(x, cell, f);
     if (nheld)
       for (size_t i = 0; i < n; ++i)
         if (held[i]) f[3 * i] = f[3 * i + 1] = f[3 * i + 2] = 0;
+    if (!pulled.empty()) {
+      pull_x = pull_com() - com0;
+      const double anchor = o.pull_rate * double(cur_step) * o.dt * 1e-3;
+      pull_f = o.pull_k * (anchor - pull_x);
+      for (uint32_t i : pulled)
+        for (int k = 0; k < 3; ++k) f[3 * i + k] += pdir[k] * pull_f * m[i] / mpull;
+    }
     return t;
   };
   EnergyTerms et = compute();
@@ -167,6 +188,8 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       r.lz = norm(cell.c);
     }
     r.conserved = r.total + bath + (o.barostat != Barostat::None ? o.pressure * r.volume / kAtm : 0.0);
+    r.pull_force = pull_f;
+    r.pull_disp = pull_x;
     return r;
   };
   auto emit = [&](int64_t step) {
@@ -234,6 +257,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.frame && o.frame_every > 0) o.frame(x, cell, o.step_offset);
 
   for (int64_t step = 1; step <= o.steps; ++step) {
+    cur_step = step;
     if (ramp) {
       t_now = target_t(step);
       kt_target = 0.5 * ndof * kB * t_now;

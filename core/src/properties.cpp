@@ -900,6 +900,7 @@ Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   p.method = "W = −(E_all − E_surface − E_film) / (interfaces × A), each part in the same periodic cell with " + ff.name +
              " (no tail correction), over " + std::to_string(fr.size()) + " frames";
   if (faces == 2) p.notes.push_back("the film touches the surface and its periodic image: two interfaces share the energy");
+  if (p.value < 0) p.notes.push_back("negative: the film is pressed into the surface (close contacts); relax it, the surface held, before measuring adhesion");
   p.series.push_back(std::move(s));
   return p;
 }
