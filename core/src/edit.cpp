@@ -643,4 +643,64 @@ std::vector<char> select_grow(const System& s, const std::vector<char>& from, in
   return out;
 }
 
+std::vector<uint32_t> fuse_benzene(System& s, uint32_t i, uint32_t j) {
+  if (i >= s.atoms.size() || j >= s.atoms.size() || i == j) throw EditError("pick the two atoms of a bond");
+  if (!std::any_of(s.bonds.begin(), s.bonds.end(), [&](const Bond& b) { return (b.i == i && b.j == j) || (b.i == j && b.j == i); }))
+    throw EditError("the two picked atoms are not bonded");
+  const auto nb = neighbours(s);
+  // the hydrogens of i and j that point to the same side
+  int hi = -1, hj = -1;
+  double best = -2;
+  for (uint32_t a : nb[i]) {
+    if (s.atoms[a].element != 1) continue;
+    for (uint32_t b : nb[j]) {
+      if (s.atoms[b].element != 1) continue;
+      const double c = dot(unitv(rel(s, i, a)), unitv(rel(s, j, b)));
+      if (c > best) best = c, hi = int(a), hj = int(b);
+    }
+  }
+  if (hi < 0) throw EditError("both atoms need a hydrogen for the ring to replace");
+  const Vec3 bv = rel(s, i, j);
+  const double L = norm(bv);
+  const Vec3 e1 = unitv(bv);
+  Vec3 u = rel(s, i, uint32_t(hi)) * (1 / norm(rel(s, i, uint32_t(hi)))) + rel(s, j, uint32_t(hj)) * (1 / norm(rel(s, j, uint32_t(hj))));
+  u = u - e1 * dot(u, e1);
+  if (norm(u) < 1e-3) throw EditError("the hydrogens point along the bond: no side to fuse the ring on");
+  u = unitv(u);
+  const double h = std::sqrt(3.0) / 2 * L;
+  const Vec3 o = s.atoms[i].pos;
+  const Vec3 ring[4] = {o + e1 * (1.5 * L) + u * h, o + e1 * L + u * (2 * h), o + u * (2 * h), o + e1 * (-0.5 * L) + u * h};
+  const Vec3 centre = o + e1 * (0.5 * L) + u * h;
+  const uint32_t first = uint32_t(s.atoms.size());
+  auto put = [&](int z, const Vec3& p) {
+    Atom a;
+    a.element = z;
+    a.id = s.atoms.back().id + 1;
+    a.type = type_for(s, z);
+    a.name = std::string(element(z).symbol) + std::to_string(s.atoms.size() + 1);
+    a.pos = p;
+    a.mol = s.atoms[i].mol, a.resname = s.atoms[i].resname, a.resid = s.atoms[i].resid;
+    s.atoms.push_back(a);
+    return uint32_t(s.atoms.size() - 1);
+  };
+  uint32_t c[4];
+  for (int k = 0; k < 4; ++k) c[k] = put(6, ring[k]);
+  for (int k = 0; k < 4; ++k) {
+    const uint32_t hh = put(1, ring[k] + unitv(ring[k] - centre) * 1.08);
+    s.bonds.push_back({c[k], hh, 1});
+  }
+  s.bonds.push_back({j, c[0], 4});
+  for (int k = 0; k < 3; ++k) s.bonds.push_back({c[k], c[k + 1], 4});
+  s.bonds.push_back({c[3], i, 4});
+  for (auto& b : s.bonds)
+    if ((b.i == i && b.j == j) || (b.i == j && b.j == i)) b.order = 4;
+  std::vector<char> gone(s.atoms.size(), 0);
+  gone[size_t(hi)] = gone[size_t(hj)] = 1;
+  delete_atoms(s, gone);
+  // the new atoms moved down by the removed hydrogens that came before them (both did)
+  std::vector<uint32_t> out;
+  for (uint32_t k = first; k < first + 8; ++k) out.push_back(k - 2);
+  return out;
+}
+
 }  // namespace caps

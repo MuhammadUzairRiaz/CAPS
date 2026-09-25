@@ -68,6 +68,11 @@ std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::str
 // Attachment points of a fragment's SMILES: for each *, the index (among the written atoms) of the atom it hangs on.
 std::vector<int> fragment_attach_atoms(const std::string& smiles);
 
+// Fuses a benzene ring onto the bond i–j: a hydrogen of each atom on the same side goes, four carbons (with a hydrogen
+// each) complete a regular hexagon on that side, in the plane of the bond and the two hydrogens, and the ring's six
+// bonds (i–j included) become aromatic. Returns the new atoms' indices (after the two hydrogens are removed).
+std::vector<uint32_t> fuse_benzene(System& s, uint32_t i, uint32_t j);
+
 // Minimises the flagged atoms (the rest held) with UFF; push-off first for overlaps.
 void clean_up(System& s, const std::vector<char>& atoms = {}, double ftol = 0.5);
 
