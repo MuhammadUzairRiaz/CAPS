@@ -45,6 +45,7 @@
 #include "caps/import.hpp"
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
+#include "caps/colourvision.hpp"
 #include "caps/yaml.hpp"
 #include "caps/voids.hpp"
 #include "caps/kremer_grest.hpp"
@@ -128,6 +129,8 @@ struct caps_doc {
   caps::Manifest prov;                             // provenance: the steps that produced this structure
   std::vector<caps::VoidSphere> voids;             // caps_voids: the largest empty spheres of the frame
   std::unique_ptr<caps::Mesh> void_mesh;           // … drawn translucent when shown
+  int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
+  double vision_severity = 1.0;
 };
 
 namespace {
@@ -1572,7 +1575,8 @@ const char* caps_note(caps_doc* d, int32_t k) { return (k >= 0 && size_t(k) < d-
 
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba) {
   return guard([&] {
-    const auto img = d->renderer.render(shown(d), cam_of(cam), opts_of(d, opt));
+    auto img = d->renderer.render(shown(d), cam_of(cam), opts_of(d, opt));
+    if (d->vision) caps::simulate_vision(img, caps::Vision(d->vision), d->vision_severity);
     std::memcpy(rgba, img.rgba.data(), img.rgba.size());
     return 0;
   });
@@ -4366,6 +4370,63 @@ extern "C" int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const c
     caps::write_kg_lammps(d->frame, kg_options(options_json), stem, pushoff_steps > 0 ? pushoff_steps : 20000, run_steps > 0 ? run_steps : 100000);
     return 0;
   });
+}
+
+// ---------------------------------------------------------------- colour vision (design/boards/ColourVision)
+extern "C" int32_t caps_vision_check(const char* palettes_json, double threshold, char* json, int32_t cap) {
+  return guard([&] {
+    const caps::Json in = caps::Json::parse(palettes_json ? palettes_json : "{}");
+    std::vector<caps::NamedPalette> pals;
+    for (const auto& [name, p] : in.members()) {
+      caps::NamedPalette np;
+      np.name = name;
+      for (const auto& c : p["colours"].items()) {
+        std::string h = c.str();
+        if (!h.empty() && h[0] == '#') h = h.substr(1);
+        np.colours.push_back(unsigned(std::stoul(h.substr(0, 6), nullptr, 16)));
+      }
+      if (p.has("labels")) for (const auto& l : p["labels"].items()) np.labels.push_back(l.str());
+      while (np.labels.size() < np.colours.size()) np.labels.push_back(std::to_string(np.labels.size() + 1));
+      pals.push_back(std::move(np));
+    }
+    auto hex = [](unsigned c) { char b[8]; std::snprintf(b, sizeof b, "#%06X", c & 0xFFFFFF); return std::string(b); };
+    caps::Json out = caps::Json::object(), pa = caps::Json::array();
+    for (const auto& p : pals) {
+      caps::Json j = caps::Json::object(), labels = caps::Json::array();
+      j["name"] = p.name;
+      for (const auto& l : p.labels) labels.push_back(caps::Json(l));
+      j["labels"] = std::move(labels);
+      for (caps::Vision v : {caps::Vision::Normal, caps::Vision::Protan, caps::Vision::Deutan, caps::Vision::Tritan}) {
+        caps::Json cs = caps::Json::array();
+        for (unsigned c : p.colours) cs.push_back(caps::Json(hex(caps::simulate_vision(c, v))));
+        j[caps::to_string(v)] = std::move(cs);
+      }
+      pa.push_back(std::move(j));
+    }
+    out["palettes"] = std::move(pa);
+    caps::Json pairs = caps::Json::array();
+    for (const auto& q : caps::confusable_pairs(pals, threshold > 0 ? threshold : 12.0)) {
+      caps::Json j = caps::Json::object();
+      const auto& p = *std::find_if(pals.begin(), pals.end(), [&](const caps::NamedPalette& x) { return x.name == q.palette; });
+      j["palette"] = q.palette;
+      j["vision"] = std::string(caps::to_string(q.vision));
+      j["a"] = p.labels[size_t(q.a)];
+      j["b"] = p.labels[size_t(q.b)];
+      j["de"] = std::round(q.de * 10) / 10;
+      pairs.push_back(std::move(j));
+    }
+    out["pairs"] = std::move(pairs);
+    return report_out(out.dump(0), json, cap);
+  });
+}
+
+extern "C" uint32_t caps_category_colour(int32_t k) { return caps::category_colour(k); }
+
+extern "C" int32_t caps_set_vision(caps_doc* d, int32_t vision, double severity) {
+  if (!d || vision < 0 || vision > 3) return -1;
+  d->vision = vision;
+  d->vision_severity = severity > 0 ? std::min(severity, 1.0) : 1.0;
+  return 0;
 }
 
 // ---------------------------------------------------------------- recipes (design/boards/CommandLine, JupyterNotebook)

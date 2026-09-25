@@ -270,6 +270,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_surface_build")] public static extern IntPtr SurfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string cif, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_interface_build")] public static extern IntPtr InterfaceBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pore_build")] public static extern IntPtr PoreBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_vision_check")] public static extern int VisionCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string palettes, double threshold, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_vision")] public static extern int SetVision(IntPtr doc, int vision, double severity);
+    [DllImport(Lib, EntryPoint = "caps_category_colour")] public static extern uint CategoryColour(int k);
     [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
                                                                           CapsRecipeProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -560,6 +563,18 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A graphene sheet, nanotube or nanoparticle (caps_nano_build).</summary>
+    /// <summary>Palettes as seen with protanopia, deuteranopia and tritanopia and the pairs closer than threshold ΔE*ab.</summary>
+    public static string VisionCheck(string palettes, double threshold)
+    {
+        var n = Native.VisionCheck(palettes, threshold, null, 0);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        var buf = new byte[n];
+        Native.VisionCheck(palettes, threshold, buf, n);
+        return System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0');
+    }
+    /// <summary>The view as seen with a colour-vision deficiency (0 normal … 3 tritanopia); exports are never simulated.</summary>
+    public void SetVision(int vision) { lock (_lock) { Alive(); Native.SetVision(_h, vision, 1.0); } }
+
     /// <summary>Runs a recipe (YAML or JSON text; caps_recipe_run). progress(stage, stages, name, status, detail, fraction) runs
     /// on the calling thread; return false to cancel. The report is JSON {exit, error, files, properties, forcefield}; a
     /// failed recipe returns a null document with the report.</summary>

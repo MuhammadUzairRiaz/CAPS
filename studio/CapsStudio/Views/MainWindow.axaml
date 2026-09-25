@@ -1651,6 +1651,7 @@
       <pages:FreeVolumePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFreeVolume}" />
       <!-- Reaction template editor (design/boards/ReactionTemplate) -->
       <pages:TemplatePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTemplate}" />
+      <pages:ColourVisionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsColourVision}" />
       <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
       <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->

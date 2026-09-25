@@ -359,6 +359,15 @@ caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
    20 000 and 100 000). */
 caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap);
 int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps);
+/* v20 colour vision (design/boards/ColourVision): palettes {"Elements": {"labels": [...], "colours": ["#909090", ...]}, ...}
+   → {"palettes": [{name, labels, normal[], protanopia[], deuteranopia[], tritanopia[]}], "pairs": [{palette, vision,
+   a, b, de}]} with every pair closer than threshold ΔE*ab (12) under a deficiency, closest first (Machado et al. 2009,
+   severity 1). caps_set_vision previews the view as seen with one (0 normal, 1 protanopia, 2 deuteranopia,
+   3 tritanopia); exports are never simulated. */
+int32_t caps_vision_check(const char* palettes_json, double threshold, char* json, int32_t cap);
+int32_t caps_set_vision(caps_doc* d, int32_t vision, double severity);
+/* v20 the k-th molecule / chain colour of the current palette (0xRRGGBB). */
+uint32_t caps_category_colour(int32_t k);
 /* v20 recipes (design/boards/CommandLine, JupyterNotebook): runs a recipe (YAML or JSON text, see recipe.hpp) — build,
    type, grow, relax, md, equilibrate, analyze, export — and returns the structure with its force field and provenance.
    options: {"base_dir", "out_dir", "forcefield_dir", "seed": -1 (≥ 0 overrides), "threads": 0}. progress (may be NULL)

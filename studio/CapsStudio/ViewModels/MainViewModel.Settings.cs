@@ -78,6 +78,7 @@ public sealed partial class MainViewModel
             Tokens.UseTheme(value);
             if (value is "light" or "dark" && _settings.Background == (wasLight ? 1 : 0)) SetBackground = value == "light" ? 1 : 0;
             Raise(); RenderRequested?.Invoke(); MolViewChanged?.Invoke(); Changed("Theme");
+            if (IsColourVision) Avalonia.Threading.Dispatcher.UIThread.Post(CheckVision);   // status colours follow the theme
         }
     }
     public bool ThemeDark { get => _settings.Theme == "dark"; set { if (value) { SetTheme = "dark"; RaiseTheme(); } } }
@@ -111,6 +112,7 @@ public sealed partial class MainViewModel
             try { Native.SetPalette(value); } catch { }
             Raise();
             RefreshLegend();
+            if (IsColourVision) CheckVision();
             RenderRequested?.Invoke();
             MolViewChanged?.Invoke();
             Changed("Colour palette");
