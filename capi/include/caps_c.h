@@ -338,6 +338,12 @@ int32_t caps_provenance_bibtex(const char* manifest_json, char* text, int32_t ca
    surface), biggest first. caps_voids_pdb writes them as HETATM VOI records with the radius as the B-factor. */
 int32_t caps_voids(caps_doc* d, const char* options_json, char* json, int32_t cap);
 int32_t caps_voids_pdb(caps_doc* d, const char* path);
+/* v20 pores (design/boards/SlitPore): {"kind":"slit"|"cylinder"|"framework", "width":10 (slit H, C–C centres, or channel
+   diameter), "layers":1, "lx":26, "ly":22, "vacuum":false, "vacuum_gap":20, "cif":"<crystal for cylinder/framework>",
+   "wall":6, "length":20, "repeat":[2,2,2], "passivate":false, "fluid":"<SMILES>", "fluid_name", "count", "tolerance":2,
+   "seed":1}. The walls are molecule 1; the fluid is packed inside the pore. Report JSON {wall_atoms, fluid_molecules,
+   width, pore_volume, fluid_density, dmin, notes[]}. NULL on error. */
+caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
 /* v20 export dialog (design/boards/ExportDialog). options: {"bits":8|16, "dpi":600, "colour_profile":"srgb"|"none",
    "provenance":true, "source":"<the structure's path, hashed into the manifest>"}. 16-bit keeps the supersampled
    average at full precision. The manifest (caps-image/1.0: generator, created, source + sha256, frame, atoms, camera,

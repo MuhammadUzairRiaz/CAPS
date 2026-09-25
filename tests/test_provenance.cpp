@@ -151,3 +151,60 @@ TEST(Voids, OneAtomLeavesTheFarCornerEmpty) {
   EXPECT_NE(all.find("CRYST1   20.000   20.000   20.000  90.00  90.00  90.00"), std::string::npos);
   EXPECT_NE(all.find("HETATM    1  VO  VOI"), std::string::npos);
 }
+
+#include "caps/crystal.hpp"
+#include "caps/molecule.hpp"
+#include "caps/nano.hpp"
+
+TEST(Pore, SlitKeepsTheFluidBetweenTheWalls) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  System methane = build_molecule("C", bo).system;
+  methane.title = "methane";
+  PoreOptions o;
+  o.width = 10.0;
+  o.fluid = &methane;
+  o.count = 12;
+  PoreReport r;
+  const System s = build_pore(o, &r);
+  ASSERT_GT(r.wall_atoms, 100);
+  EXPECT_EQ(int(s.atoms.size()), r.wall_atoms + 12 * 5);
+  EXPECT_NEAR(s.cell.c[2], 10.0 + 3.35, 1e-9);   // one sheet per wall: the walls meet through the boundary
+  for (size_t i = size_t(r.wall_atoms); i < s.atoms.size(); ++i) {
+    EXPECT_GT(s.atoms[i].pos[2], 0.5);
+    EXPECT_LT(s.atoms[i].pos[2], 9.5);
+    EXPECT_GT(s.atoms[i].mol, 1);
+  }
+  for (int i = 0; i < r.wall_atoms; ++i) EXPECT_EQ(s.atoms[size_t(i)].mol, 1);
+  EXPECT_GE(r.dmin, 1.9);
+  EXPECT_GT(r.fluid_density, 0);
+}
+
+TEST(Pore, ChannelInQuartzIsEmptyAlongItsAxis) {
+  const System quartz = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/alpha-quartz.cif");
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  System water = build_molecule("O", bo).system;
+  PoreOptions o;
+  o.kind = PoreKind::Cylinder;
+  o.crystal = &quartz;
+  o.width = 14.0;
+  o.wall = 5.0;
+  o.length = 15.0;
+  o.fluid = &water;
+  o.count = 8;
+  PoreReport r;
+  const System s = build_pore(o, &r);
+  const Vec3 axis = s.cell.origin + (s.cell.a + s.cell.b) * 0.5;
+  for (int i = 0; i < r.wall_atoms; ++i) {
+    Vec3 d = s.cell.minimum_image(s.atoms[size_t(i)].pos - axis);
+    d[2] = 0;
+    EXPECT_GE(norm(d), 7.0 - 1e-6);
+  }
+  for (size_t i = size_t(r.wall_atoms); i < s.atoms.size(); ++i) {
+    Vec3 d = s.cell.minimum_image(s.atoms[i].pos - axis);
+    d[2] = 0;
+    EXPECT_LT(norm(d), 7.0);
+  }
+  EXPECT_EQ(int(s.atoms.size()), r.wall_atoms + 8 * 3);
+}

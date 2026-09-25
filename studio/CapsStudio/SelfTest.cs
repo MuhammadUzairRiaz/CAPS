@@ -706,6 +706,24 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Pores: a graphite slit with methane packed between the walls, built into the Studio with the walls held
+        {
+            vm.OpenNano();
+            vm.NanoKind = 3;
+            vm.PoreType = 0;
+            vm.PoreFluidIndex = 0;
+            vm.PoreCount = 10;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var sp = vm.Document!.Summary();
+            var prov = System.Text.Json.Nodes.JsonNode.Parse(vm.Document.Provenance())!;
+            var last = ((System.Text.Json.Nodes.JsonArray)prov["steps"]!).Last()!["engine"]!.GetValue<string>();
+            Check(vm.IsStudio && sp.Atoms == 440 + 10 * 5 && vm.HoldOn && vm.NanoLog.Contains("packed inside the pore") && last == "nano.pore",
+                  $"pore: {sp.Atoms} atoms · held {vm.HoldOn} · {last} · {vm.PoreChip}");
+            vm.HoldOn = false;
+            vm.NanoKind = 1;
+        }
+        vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

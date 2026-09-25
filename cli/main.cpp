@@ -89,6 +89,8 @@ int usage() {
                "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
                "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|fibre --radius 12 --length 20 --passivate]\n"
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
+               "  caps pore    slit [--width 10 --layers 1 --lx 26 --ly 22 --vacuum] | cylinder CRYSTAL.cif [--width 14 --wall 6 --length 20 --passivate] |\n"
+               "               framework CRYSTAL.cif [--supercell 2,2,2]   [--fluid SMILES --count N --tolerance 2 --seed 1] -o OUT   a fluid in a pore\n"
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
@@ -165,7 +167,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--vacuum" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -564,6 +566,57 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps crystal: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "pore") {
+    try {
+      if (pos.empty() || !o.count("-o")) return usage();
+      PoreOptions po;
+      const std::string kind = pos[0];
+      po.kind = kind == "cylinder" ? PoreKind::Cylinder : kind == "framework" ? PoreKind::Framework : PoreKind::Slit;
+      System crystal, fluid;
+      if (po.kind != PoreKind::Slit) {
+        if (pos.size() < 2) { std::fprintf(stderr, "caps pore: %s needs a crystal (CIF)\n", kind.c_str()); return 1; }
+        crystal = read_cif(pos[1]);
+        po.crystal = &crystal;
+      }
+      if (o.count("--width")) po.width = std::stod(o["--width"]);
+      if (o.count("--layers")) po.layers = std::stoi(o["--layers"]);
+      if (o.count("--lx")) po.lx = std::stod(o["--lx"]);
+      if (o.count("--ly")) po.ly = std::stod(o["--ly"]);
+      po.vacuum = o.count("--vacuum") > 0;
+      if (o.count("--wall")) po.wall = std::stod(o["--wall"]);
+      if (o.count("--length")) po.length = std::stod(o["--length"]);
+      po.passivate = o.count("--passivate") > 0;
+      if (o.count("--supercell")) {
+        std::stringstream ss(o["--supercell"]);
+        std::string part;
+        for (int k = 0; k < 3 && std::getline(ss, part, ','); ++k) po.repeat[k] = std::stoi(part);
+      }
+      if (o.count("--tolerance")) po.tolerance = std::stod(o["--tolerance"]);
+      if (o.count("--seed")) po.seed = std::stoull(o["--seed"]);
+      if (o.count("--fluid") && o.count("--count")) {
+        BuildOptions bo;
+        bo.forcefield = "uff";
+        fluid = build_molecule(o["--fluid"], bo).system;
+        fluid.title = o["--fluid"];
+        po.fluid = &fluid;
+        po.count = std::stoi(o["--count"]);
+      }
+      PoreReport r;
+      const System s = build_pore(po, &r);
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { const std::string x = e; return out.size() >= x.size() && out.compare(out.size() - x.size(), x.size(), x) == 0; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else write_lammps_data(s, out);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("wrote %s · %zu atoms · walls are molecule 1 (hold them: --fix-mol 1)\n", out.c_str(), s.atoms.size());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps pore: %s\n", e.what());
       return 1;
     }
   }

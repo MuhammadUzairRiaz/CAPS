@@ -43,6 +43,7 @@
         <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
           <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding NanoTitle}" FontSize="12" /></Border>
           <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding NanoSummary}" FontSize="12" Foreground="{DynamicResource MutedB}" /></Border>
+          <Border Classes="hud" Padding="10,4" IsVisible="{Binding NanoIsPore}"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="{Binding PoreChip}" FontSize="12" Foreground="{DynamicResource MutedB}" /></StackPanel></Border>
           <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding NanoAxisText}" FontSize="12" Foreground="{DynamicResource SelB}" /></Border>
           <Border Classes="hud" Padding="10,4" IsVisible="{Binding NanoBuilding}"><TextBlock Text="growing the matrix…" FontSize="12" Foreground="{DynamicResource AccB}" /></Border>
         </StackPanel>
@@ -76,7 +77,7 @@
                     <RadioButton Classes="tile" GroupName="nk" IsChecked="{Binding NanoKind, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}">
                       <StackPanel Spacing="6" HorizontalAlignment="Center"><v:Icon Kind="atom" Size="20" HorizontalAlignment="Center" /><TextBlock Text="Particle" FontSize="12" HorizontalAlignment="Center" /></StackPanel>
                     </RadioButton>
-                    <RadioButton Classes="tile" GroupName="nk" IsEnabled="False" ToolTip.Tip="Slit pores come with the Slit pore board" ToolTip.ShowOnDisabled="True">
+                    <RadioButton Classes="tile" GroupName="nk" IsChecked="{Binding NanoKind, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}">
                       <StackPanel Spacing="6" HorizontalAlignment="Center"><v:Icon Kind="ring" Size="20" HorizontalAlignment="Center" /><TextBlock Text="Pore" FontSize="12" HorizontalAlignment="Center" /></StackPanel>
                     </RadioButton>
                   </UniformGrid>
@@ -157,8 +158,57 @@
                 </StackPanel>
               </Border>
 
+              <!-- pore (design/boards/SlitPore) -->
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsPore}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="PORE" Classes="h3" />
+                  <Border Classes="seg" HorizontalAlignment="Stretch">
+                    <UniformGrid Columns="3">
+                      <RadioButton Classes="seg" Content="Slit" GroupName="pk" IsChecked="{Binding PoreType, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="Cylinder" GroupName="pk" IsChecked="{Binding PoreType, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" HorizontalAlignment="Stretch" />
+                      <RadioButton Classes="seg" Content="From CIF" GroupName="pk" IsChecked="{Binding PoreType, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" HorizontalAlignment="Stretch" ToolTip.Tip="A zeolite or MOF: the crystal's supercell, the fluid in its free space" />
+                    </UniformGrid>
+                  </Border>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding !PoreIsFramework}">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding PoreWidthLabel}" Classes="label" />
+                      <NumericUpDown Value="{Binding PoreWidth}" Minimum="3.4" Maximum="200" Increment="0.5" FormatString="0.0" />
+                      <TextBlock Text="{Binding PoreWidthNote}" FontSize="11" Foreground="{DynamicResource DimB}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PoreIsSlit}"><TextBlock Text="Walls" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.PoreWallChoices}" SelectedIndex="{Binding PoreWalls}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PoreIsCylinder}"><TextBlock Text="Wall around it · Å" Classes="label" /><NumericUpDown Value="{Binding PoreWall}" Minimum="2" Maximum="50" Increment="1" FormatString="0.0" /></StackPanel>
+                  </Grid>
+                  <StackPanel Spacing="6" IsVisible="{Binding PoreNeedsCrystal}"><TextBlock Text="Material" Classes="label" /><ComboBox ItemsSource="{Binding Crystals}" SelectedItem="{Binding PoreCrystalItem}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding PoreIsCylinder}">
+                    <StackPanel Spacing="6"><TextBlock Text="Length · Å" Classes="label" /><NumericUpDown Value="{Binding PoreLength}" Minimum="3" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
+                    <CheckBox Grid.Column="1" Classes="toggle" Content="Passivate (OH)" ToolTip.Tip="Silanols and hydroxyls on the carved surface, pointing into the pore" IsChecked="{Binding PorePassivate}" VerticalAlignment="Bottom" />
+                  </Grid>
+                  <StackPanel Spacing="6" IsVisible="{Binding PoreIsFramework}"><TextBlock Text="Supercell (each axis)" Classes="label" /><NumericUpDown Value="{Binding PoreRepeat}" Minimum="1" Maximum="8" Increment="1" FormatString="0" /></StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding PoreIsSlit}">
+                <StackPanel Spacing="10" IsVisible="{Binding NanoIsPore}">
+                  <TextBlock Text="PERIODIC CELL" Classes="h3" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <StackPanel Spacing="6"><TextBlock Text="x · Å" Classes="label" /><NumericUpDown Value="{Binding PoreLx}" Minimum="5" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="y · Å" Classes="label" /><NumericUpDown Value="{Binding PoreLy}" Minimum="5" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Vacuum above walls (non-periodic in z)" IsChecked="{Binding PoreVacuum}" />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsPore}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="FLUID" Classes="h3" />
+                  <Grid ColumnDefinitions="*,90" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Molecule" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.PoreFluids}" SelectedIndex="{Binding PoreFluidIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsEnabled="{Binding PoreHasFluid}"><TextBlock Text="Count" Classes="label" /><NumericUpDown Value="{Binding PoreCount}" Minimum="0" Maximum="5000" Increment="1" FormatString="0" /></StackPanel>
+                  </Grid>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Filled by CAPS Pack inside the pore region only, 2 Å from the walls; the walls are molecule 1 and stay held in Relax and Dynamics." />
+                </StackPanel>
+              </Border>
+
               <!-- matrix -->
-              <Border Classes="section" Padding="16,14">
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding !NanoIsPore}">
                 <StackPanel Spacing="10">
                   <DockPanel>
                     <ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding NanoMatrix}" OnContent="" OffContent="" />
