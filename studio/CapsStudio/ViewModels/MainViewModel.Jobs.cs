@@ -241,6 +241,8 @@ public sealed partial class MainViewModel
             else if (all.Contains("not reached") || all.Contains("did not pass")) job.Status = "stopped";
             else job.Status = "done";
             if (job.Status == "done") job.Progress = 1;
+            // the reader hears it once, politely (AccessibilityMap: "Growth finished, 20 chains, no close contacts")
+            Announcement = $"{job.Title} {(job.Status == "done" ? "finished" : job.Status)}" + (last.Length > 0 ? ". " + last : ".");
             if (_doc != null && job.Atoms == 0) job.Provenance.Add(new JobFact("result", $"{_doc.Summary().Atoms:N0} atoms"));
             SaveJobs();
         }
