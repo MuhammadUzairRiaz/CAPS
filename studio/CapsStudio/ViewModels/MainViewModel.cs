@@ -309,7 +309,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -338,6 +338,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsSurface));
         Raise(nameof(IsNano));
         Raise(nameof(IsBlend));
+        Raise(nameof(IsChecks));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));
         RenderRequested?.Invoke();   // the Field page has its own view
@@ -1396,6 +1397,7 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshMolecules();
         Notes.Clear();
         foreach (var n in doc.Notes()) Notes.Add(n);
+        LoadFileChecks();
         FieldInfoText = "";
         RenderRequested?.Invoke();
     }
@@ -1438,7 +1440,9 @@ public sealed partial class MainViewModel : ObservableObject
         IsPlaying = false;
         Notes.Clear();
         foreach (var n in doc.Notes()) Notes.Add(n);
-        Status = $"Opened {Title} · {s.Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · {s.Format}";
+        LoadFileChecks();
+        var look = FileChecks.Count(c => c.NeedsLook);
+        Status = $"Opened {Title} · {s.Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · {s.Format}" + (look > 0 ? $" · {look} file check{(look == 1 ? "" : "s")} need a look" : "");
         RenderRequested?.Invoke();
     }
 

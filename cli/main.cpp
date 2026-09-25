@@ -18,6 +18,7 @@
 #include "caps/ffdef.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
+#include "caps/checks.hpp"
 #include "caps/crystal.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
@@ -55,6 +56,7 @@ int usage() {
                "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
+               "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
                "  caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]\n"
                "               [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)\n"
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
@@ -1266,6 +1268,21 @@ int main(int argc, char** argv) {
       std::printf("%zu atoms, %d molecules, %s · smallest intermolecular distance %.4f Å · %d pairs closer than %.2f Å\n", s.atoms.size(), nm,
                   per ? "periodic (minimum image)" : "not periodic", dmin, close, tol);
       return close == 0 ? 0 : 1;
+    }
+    if (cmd == "check") {   // file checks: what was found, what was done, what to change
+      const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      const auto checks = file_checks(t);
+      int bad = 0;
+      for (const auto& c : checks) {
+        std::printf("%-5s  %s\n       %s\n", c.level.c_str(), c.title.c_str(), c.detail.c_str());
+        bad += c.level == "error";
+      }
+      if (o.count("--report")) {
+        std::ofstream f(o["--report"]);
+        f << file_checks_text(checks, pos[0]);
+        std::printf("wrote %s\n", o["--report"].c_str());
+      }
+      return bad ? 2 : 0;
     }
     if (cmd == "info") {
       int nm = 0;
