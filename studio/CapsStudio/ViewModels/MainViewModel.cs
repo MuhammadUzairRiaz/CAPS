@@ -683,7 +683,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task Relax()
     {
-        if (_doc == null || !Idle) return;
+        if (_doc == null || !Idle || BlockedByField("Relax")) return;
         var doc = _doc;
         Relaxing = true;
         IsPlaying = false;
@@ -874,7 +874,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task RunMd()
     {
-        if (_doc == null || !Idle) return;
+        if (_doc == null || !Idle || BlockedByField("Dynamics")) return;
         var doc = _doc;
         MdRunning = true;
         IsPlaying = false;
@@ -1027,7 +1027,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task RunEquilibrate()
     {
-        if (_doc == null || !Idle) return;
+        if (_doc == null || !Idle || BlockedByField("Equilibrate")) return;
         var doc = _doc;
         EqRunning = true;
         IsPlaying = false;

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
@@ -312,6 +313,15 @@ public sealed class FieldViewModel : ObservableObject
 
     /// <summary>The macro recorder's hook: each assignment as a line of Python.</summary>
     public Action<string>? Recorder { get; set; }
+
+    /// <summary>UFF for every element (the fallback a blocked run offers).</summary>
+    public async void UseUff()
+    {
+        var k = Library.ToList().FindIndex(e => e.Id == "uff");
+        if (k < 0) return;
+        FfIndex = k;
+        await Assign();
+    }
 
     public Task Assign()
     {
