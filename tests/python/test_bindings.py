@@ -114,4 +114,8 @@ r = eic.resolution()
 check(r["all_atom"]["sites"] == 62 and r["united_atom"]["sites"] == 20 and r["coarse_grained"]["sites"] == 4
       and abs(r["coarse_grained"]["mass"] - 282.556) < 1e-3, "resolution: 62 / 20 / 4 sites, mass conserved")
 check(eic.convert("coarse-grained").atoms == 4 and eic.atoms == 62, "convert: a new document, the original kept")
+# branched molecules: a 4-arm polybutadiene star (star BR, as coupled on silicon) is one molecule of 4 × 8 units
+star = caps.polymer("*CC=CC*", dp=8, chains=2, density=0.3, architecture="star", arms=4, seed=3)
+arch = [st for st in star.provenance()["steps"] if st["engine"] == "grow.trials"][0]["params"]["architecture"]
+check(star.summary()["molecules"] == 2 and star.atoms == 2 * (4 * 8 * 10 + 4 - 2) and arch.startswith("star, 4 arms"), f"polymer: star BR, {star.atoms} atoms")
 print("all python checks passed")

@@ -2340,6 +2340,11 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.forcefield = j.text("forcefield");
   const std::string tac = j.text("tacticity", "atactic");
   c.tacticity = caps::tacticity_from_string(tac);
+  c.architecture = caps::architecture_from_string(j.text("architecture", "linear"));
+  c.arms = int(j.num("arms", 4));
+  c.arm_dp = int(j.num("arm_dp", 5));
+  c.spacing = int(j.num("spacing", 4));
+  c.branch_probability = j.num("branch_probability", 0.1);
   return c;
 }
 }  // namespace
@@ -2378,6 +2383,25 @@ extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char
     j["mass"] = m.mass;
     j["atoms"] = double(m.atoms);
     j["smiles"] = g.smiles;
+    // a branched molecule: its arms (expected count for random branches), atoms and mass; each arm replaces a
+    // hydrogen of the molecule and loses its own head cap
+    if (c.architecture != caps::Architecture::Linear) {
+      double arms = 0;
+      caps::ChainSpec a = c;
+      a.architecture = caps::Architecture::Linear;
+      if (c.architecture == caps::Architecture::Star) arms = c.arms - 1;
+      else {
+        a.dp = std::max(1, c.arm_dp);
+        arms = c.architecture == caps::Architecture::Comb ? double(c.dp / std::max(1, c.spacing)) : c.branch_probability * std::max(0, c.dp - 2);
+      }
+      const caps::MolInfo am = caps::molecule_info(caps::chain_graph(a, caps::chain_sequence(a, seed + 1)));
+      caps::Json mo = caps::Json::object();
+      mo["architecture"] = std::string(caps::to_string(c.architecture));
+      mo["arms"] = arms;
+      mo["atoms"] = double(m.atoms) + arms * (am.atoms - 2);
+      mo["mass"] = m.mass + arms * (am.mass - 2 * 1.008);
+      j["molecule"] = mo;
+    }
   } catch (const std::exception& e) {
     j["ok"] = false;
     j["error"] = std::string(e.what());
