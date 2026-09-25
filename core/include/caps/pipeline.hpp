@@ -18,7 +18,7 @@
 //   compute_property    name, expression, only_selected (Position.X/Y/Z, Charge and Selection write through)
 //   wrap                positions folded into the cell
 //   replicate           nx, ny, nz, adjust_cell
-//   histogram           property, bins, start, end, only_selected                        → table histogram
+//   histogram           property, bins, start, end, only_selected, stack_by (Type, Element …) → table histogram
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
 //   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
 //                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace

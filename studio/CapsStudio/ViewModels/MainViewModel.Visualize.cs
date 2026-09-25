@@ -171,7 +171,7 @@ public sealed partial class MainViewModel
         var name = type switch
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
-            "molecule_shape" => "molecules", "topology" => "bonds", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "molecule_shape" => "molecules", "wrap" => "outside", "topology" => "bonds", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
@@ -408,7 +408,8 @@ public sealed partial class MainViewModel
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
-        "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["only_selected"] = false },
+        "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["stack_by"] = "none", ["only_selected"] = false },
+        "molecule_shape" => new JsonObject { ["glyphs"] = true },
         "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density" },
         "topology" => new JsonObject { ["bins"] = 60 },
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
@@ -493,7 +494,8 @@ public sealed partial class MainViewModel
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
             case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); break;
-            case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Bool("only_selected", "Only selected"); break;
+            case "molecule_shape": Bool("glyphs", "Principal-axis glyphs (±√(3λ))"); break;
+            case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Choice("stack_by", "Stack by", ["none", "Type", "Element", "Molecule"]); Bool("only_selected", "Only selected"); break;
             case "binning": Choice("property", "Property", props); Choice("axis", "Along", ["0", "1", "2"]); Text("bins", "Bins", "number"); Choice("reduction", "Reduction", ["density", "mean", "sum"]); break;
         }
     }
@@ -789,6 +791,28 @@ public sealed partial class MainViewModel
             Status = $"Made real: {n:N0} atoms with unique identifiers · the original file is unchanged";
         }
         catch (Exception e) { Status = "Make real: " + e.Message; }
+    }
+
+    /// <summary>A box dragged on a plot of the data inspector (a scatter's two properties, or one property against the
+    /// histogram's bins) selects what lies in it: a "Brush" expression step at the top of the pipeline.</summary>
+    public void ApplyBrush(double x0, double x1, double y0, double y1)
+    {
+        var brush = PipelineRows.FirstOrDefault(r => r.Type == "select_expression" && (bool?)r.Params["brush"] == true);
+        if (double.IsNaN(x0)) { if (brush != null) { PipelineRows.Remove(brush); ApplyPipeline(); Status = "Brush cleared"; } return; }
+        var xn = PipeTableXLabel;
+        var yn = PipeTableYLabel;
+        if (!PipeTableScatter || xn.Length == 0 || yn.Length == 0 || xn.Contains(' ') || yn.Contains(' ')) { Status = "Brush: drag on a scatter plot of two properties"; return; }
+        var inv = CultureInfo.InvariantCulture;
+        var expr = string.Format(inv, "{0} >= {1:G6} && {0} <= {2:G6} && {3} >= {4:G6} && {3} <= {5:G6}", xn, x0, x1, yn, y0, y1);
+        if (brush == null)
+        {
+            brush = new PipelineRow { Type = "select_expression", Title = "Brush", Icon = "filter", Params = new JsonObject { ["expression"] = expr, ["brush"] = true } };
+            WireRow(brush);
+            PipelineRows.Insert(0, brush);
+        }
+        else brush.Params["expression"] = expr;
+        ApplyPipeline();
+        Status = string.Format(inv, "Brushed: {0} from {1:G3} to {2:G3}, {3} from {4:G3} to {5:G3} · the viewport shows them selected", xn, x0, x1, yn, y0, y1);
     }
 }
 
