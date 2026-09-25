@@ -46,6 +46,14 @@ public sealed class MolView : Control
     public int[] Highlights { get; set; } = [];
     private Point? _pa, _pb;
 
+    /// <summary>The view's camera (the split view keeps two views on one camera).</summary>
+    public CapsCamera Camera { get => _cam; set { _cam = value; Refresh(); } }
+    /// <summary>Raised when a drag or the wheel moves the camera.</summary>
+    public event Action<CapsCamera>? CameraChanged;
+    /// <summary>A click (not a drag) on an atom: its index, −1 for none.</summary>
+    public event Action<int>? AtomClicked;
+    private bool _moved;
+
     public void Reset()
     {
         _cam = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0 };
@@ -148,13 +156,22 @@ public sealed class MolView : Control
         _cam.Yaw += (p.X - _last.X) * 0.01;
         _cam.Pitch = Math.Clamp(_cam.Pitch + (p.Y - _last.Y) * 0.01, -1.5, 1.5);
         _last = p;
+        _moved = true;
         Refresh();
+        CameraChanged?.Invoke(_cam);
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        if (_drag && !_moved && _doc != null && AtomClicked != null)
+        {
+            var pt = e.GetPosition(this);
+            var scale = VisualRoot?.RenderScaling ?? 1;
+            try { AtomClicked(_doc.Pick((int)(pt.X * scale), (int)(pt.Y * scale))); } catch { }
+        }
         _drag = false;
+        _moved = false;
         e.Pointer.Capture(null);
     }
 
@@ -163,5 +180,6 @@ public sealed class MolView : Control
         base.OnPointerWheelChanged(e);
         _cam.Zoom = Math.Clamp(_cam.Zoom * Math.Pow(1.12, e.Delta.Y), 0.3, 6);
         Refresh();
+        CameraChanged?.Invoke(_cam);
     }
 }

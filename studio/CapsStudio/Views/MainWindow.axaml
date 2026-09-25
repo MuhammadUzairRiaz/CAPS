@@ -187,6 +187,7 @@
       <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+            <Button Classes="tool" Click="OnSplit" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Split view: this document beside another, cameras synced (design/boards/LightSplit)"><local:Icon Kind="layers" Size="18" /></Button>
             <ToggleButton Classes="tool" IsChecked="{Binding InteractionsOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Interactions &amp; checks (design/boards/Interactions): H-bonds, contacts, clashes and fixes">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="link" Size="18" VerticalAlignment="Center" /><TextBlock Text="Checks" VerticalAlignment="Center" /></StackPanel>
@@ -1581,6 +1582,8 @@
       <pages:PolymerPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPolymer}" />
       <!-- Surface & interface builder (design/boards/SurfaceBuilder) -->
       <pages:SurfacePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSurface}" />
+      <!-- Split view (design/boards/LightSplit) -->
+      <pages:SplitPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSplit}" />
       <!-- Torsion scan (design/boards/TorsionScan) -->
       <pages:TorsionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTorsion}" />
       <!-- Trajectory player (design/boards/Trajectory) -->
