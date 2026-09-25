@@ -745,6 +745,12 @@ public sealed partial class MainViewModel : ObservableObject
             if (result == null) throw new InvalidOperationException(string.Join("\n", failures) + "\nLower the density, the chain length or the contact scale.");
             var (doc, report) = result.Value;
             var used = seed - 1;
+            if (GrowSmall.Count > 0)   // solvents and gases into the free space the chains left
+            {
+                GrowLog = "Inserting " + string.Join(", ", GrowSmall.Select(r => $"{r.CountD:0} {r.Name}")) + "…";
+                try { report += "\n" + await Task.Run(() => InsertGrowSmall(doc, (ulong)used)); }
+                catch (Exception e) { report += "\nsmall molecules not inserted: " + e.Message; }
+            }
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
             AfterGrowStatistics(doc);

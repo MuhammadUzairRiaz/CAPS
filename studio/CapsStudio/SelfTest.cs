@@ -1569,6 +1569,21 @@ internal static class SelfTest
             vm.RxDuringMd = false;
         }
 
+        // Grow › Add solvent / gas: toluene into the free space of a small polystyrene cell
+        {
+            vm.UsePolystyreneInGrow();
+            vm.GrowChainsD = 3;
+            vm.GrowDpD = 6;
+            vm.GrowDensityD = 0.3m;
+            vm.GrowSmallPick = vm.GrowSmallChoices.FindIndex(c => c.Name == "Toluene");
+            vm.AddGrowSmall();
+            vm.GrowSmall[0].CountD = 5;
+            vm.Grow().GetAwaiter().GetResult();
+            var mols = vm.Document?.Summary().Molecules ?? 0;
+            Check(mols == 3 + 5 && vm.GrowLog.Contains("5 × Toluene"), $"grow with solvent: {mols} molecules · {vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("Toluene"))}");
+            vm.RemoveGrowSmall(vm.GrowSmall[0]);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
