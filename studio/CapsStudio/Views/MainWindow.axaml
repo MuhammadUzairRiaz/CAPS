@@ -15,6 +15,12 @@
     <Style Selector="Border#Rail.compact Button.rail Panel"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact Button TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact ToggleButton TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Button.histrow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Padding" Value="8,6" /><Setter Property="CornerRadius" Value="7" /><Setter Property="Margin" Value="0,0,0,2" /></Style>
+    <Style Selector="Button.histrow.current /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+    <Style Selector="Button.histrow.undone"><Setter Property="Opacity" Value="0.55" /></Style>
+    <Style Selector="Button.histrow TextBlock.note"><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Button.histrow.current TextBlock.note"><Setter Property="Foreground" Value="{DynamicResource AccB}" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
     <Style Selector="Border.chip.sev TextBlock"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
     <Style Selector="Border.chip.sev.check"><Setter Property="Background" Value="{DynamicResource SelBgB}" /></Style>
     <Style Selector="Border.chip.sev.check TextBlock"><Setter Property="Foreground" Value="{DynamicResource SelB}" /></Style>
@@ -220,6 +226,10 @@
             <ToggleButton Classes="tool" IsChecked="{Binding SelectionOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Selection &amp; stereo (design/boards/SelectionStereo): select by SMARTS, element, type, charge, distance; named sets; tacticity">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="search" Size="18" VerticalAlignment="Center" /><TextBlock Text="Select" VerticalAlignment="Center" /></StackPanel>
+            </ToggleButton>
+            <ToggleButton Classes="tool" IsChecked="{Binding HistoryOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="History &amp; snapshots (design/boards/History): every edit, undone branches, named snapshots to compare">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="18" VerticalAlignment="Center" /><TextBlock Text="History" VerticalAlignment="Center" /></StackPanel>
             </ToggleButton>
             <ToggleButton Classes="tool" IsChecked="{Binding LodOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="Performance (design/boards/MillionAtoms): level of detail, frame time, memory">
@@ -1058,6 +1068,99 @@
               <Border Padding="16,12">
                 <TextBlock Text="{Binding SelectError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding SelectHasError}" />
               </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+        <!-- History & snapshots (design/boards/History) -->
+        <DockPanel IsVisible="{Binding ShowHistoryPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                <Button Classes="tool" Click="OnUndo" IsEnabled="{Binding CanUndo}" ToolTip.Tip="Undo (⌘Z)"><local:Icon Kind="undo" Size="16" /></Button>
+                <Button Classes="tool" Click="OnRedo" IsEnabled="{Binding CanRedo}" ToolTip.Tip="Redo (⇧⌘Z)"><local:Icon Kind="redo" Size="16" /></Button>
+              </StackPanel>
+              <TextBlock Text="History" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding HistorySummary}" Classes="dim" />
+          </Border>
+          <ScrollViewer>
+            <StackPanel Margin="10,10,10,14" Spacing="4">
+              <ItemsControl ItemsSource="{Binding HistoryRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:HistoryRow">
+                    <Button Classes="histrow" Classes.current="{Binding IsCurrent}" Classes.undone="{Binding IsUndone}" Click="OnHistoryStep" Tag="{Binding}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="Go back or forward to this step">
+                      <Grid ColumnDefinitions="22,*,Auto">
+                        <TextBlock Text="{Binding Number}" Classes="mono dim" VerticalAlignment="Top" Margin="0,1,0,0" />
+                        <StackPanel Grid.Column="1" Spacing="1">
+                          <TextBlock Text="{Binding What}" FontSize="12.5" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Atoms}" Classes="mono dim" FontSize="11" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding Note}" Classes="note" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Margin="4,6,4,0"
+                         Text="Editing after an undo keeps the undone steps as a branch; nothing is lost until you delete it." />
+              <ItemsControl ItemsSource="{Binding HistoryBranches}" IsVisible="{Binding HasBranches}" Margin="0,6,0,0">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:BranchRow">
+                    <Border Classes="card" CornerRadius="8" Padding="10,8" Margin="0,0,0,6">
+                      <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                          <Button Classes="small" Content="Restore" Click="OnBranchRestore" Tag="{Binding}" ToolTip.Tip="Make these the redo steps" />
+                          <Button Classes="tool" Click="OnBranchDelete" Tag="{Binding}" ToolTip.Tip="Delete the branch"><local:Icon Kind="close" Size="12" /></Button>
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Detail}" Classes="dim" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </DockPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <DockPanel Margin="4,14,0,6">
+                <Button DockPanel.Dock="Right" Classes="small" Click="OnTakeSnapshot" ToolTip.Tip="Keep the structure as it is now, under a name">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="plus" Size="12" VerticalAlignment="Center" /><TextBlock Text="Take snapshot" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <TextBlock Text="SNAPSHOTS" Classes="h3" VerticalAlignment="Center" />
+              </DockPanel>
+              <ItemsControl ItemsSource="{Binding Snapshots}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SnapshotRow">
+                    <Border Classes="card" CornerRadius="8" Padding="8" Margin="0,0,0,6">
+                      <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                          <Button Classes="small" Content="Compare" Click="OnSnapshotCompare" Tag="{Binding}" ToolTip.Tip="Compare the structure now with this snapshot" />
+                          <Button Classes="tool" Click="OnSnapshotMenu" Tag="{Binding}" ToolTip.Tip="Restore or delete">
+                            <local:Icon Kind="dots" Size="14" />
+                            <Button.Flyout>
+                              <MenuFlyout>
+                                <MenuItem Header="Restore this snapshot" Click="OnSnapshotRestore" Tag="{Binding}" />
+                                <MenuItem Header="Delete" Click="OnSnapshotDelete" Tag="{Binding}" />
+                              </MenuFlyout>
+                            </Button.Flyout>
+                          </Button>
+                        </StackPanel>
+                        <Border Width="64" Height="44" CornerRadius="5" Background="{DynamicResource Bg0B}" ClipToBounds="True" Margin="0,0,10,0">
+                          <Image Source="{Binding Thumb}" Stretch="UniformToFill" />
+                        </Border>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                          <TextBlock Text="{Binding Detail}" Classes="dim" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </DockPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="No snapshots yet: take one before a risky edit to come back to it or compare." Classes="dim" TextWrapping="Wrap" Margin="4,0"
+                         IsVisible="{Binding !HasSnapshots}" />
             </StackPanel>
           </ScrollViewer>
         </DockPanel>

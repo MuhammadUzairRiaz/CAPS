@@ -575,6 +575,28 @@ internal static class SelfTest
             vm.UndoEdit(false);
             vm.UndoEdit(false);
             vm.SetModule(8);
+            // History & snapshots: a snapshot, two edits, an undo, an edit that branches, the snapshot back, a jump
+            vm.HistoryOpen = true;
+            var h0 = vm.Document!.Summary().Atoms;
+            var b0 = vm.HistoryBranches.Count;
+            vm.TakeSnapshot("as opened");
+            vm.BuildElement = "O"; vm.EditTool = 1;
+            vm.ToolClick(-1);
+            vm.ToolClick(-1);
+            b0 = vm.HistoryBranches.Count;   // the earlier tests' undone steps became a branch on the first edit
+            vm.UndoEdit(false);
+            var undone = vm.HistoryRows.Count(r => r.IsUndone);
+            vm.ToolClick(-1);   // an edit after the undo: the undone step becomes a branch
+            vm.EditTool = 0;
+            var branches = vm.HistoryBranches.Count;
+            var current = vm.HistoryRows.LastOrDefault()?.IsCurrent == true;
+            vm.RestoreSnapshot(vm.Snapshots[0]);
+            var back = vm.Document!.Summary().Atoms == h0;
+            vm.JumpToStep(vm.HistoryRows.First(r => r.What.StartsWith("Restore")).Step - 1);
+            var jumped = vm.Document!.Summary().Atoms == h0 + 2;
+            Check(vm.ShowHistoryPanel && undone >= 1 && branches == b0 + 1 && current && back && jumped && vm.Snapshots.Count == 1,
+                  $"history: {undone} undone · {b0}→{branches} branches · current {current} · snaps {vm.Snapshots.Count} thumb {vm.Snapshots.FirstOrDefault()?.Thumb != null} · {vm.EditError} · snapshot back {back} · jump {jumped} · {vm.HistorySummary}");
+            vm.HistoryOpen = false;
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
