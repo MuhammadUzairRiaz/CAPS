@@ -1,0 +1,74 @@
+<!-- CAPS Analyze › Visualize › Colour by (design/boards/ColourBy): one cell, six colourings. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ColourByPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,16" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Content="Back" Click="OnBack" VerticalAlignment="Center" />
+        <StackPanel Spacing="3">
+          <TextBlock Text="Colour by" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="One cell, six colourings · any per-atom property can drive the colour; pick one to use it in Visualize" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <ScrollViewer Padding="22,14">
+      <ItemsControl ItemsSource="{Binding ColourTiles}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ColourTile">
+            <StackPanel Spacing="6" Margin="8,6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Bottom" />
+                <TextBlock Text="{Binding Sub}" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Bottom" />
+              </StackPanel>
+              <Button Classes="tile" Padding="0" Click="OnTile" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="8" ClipToBounds="True"
+                      ToolTip.Tip="Use this colouring in Visualize">
+                <Viewbox Stretch="Uniform">
+                  <Panel Width="432" Height="250" Background="{DynamicResource Bg0B}">
+                    <Image Source="{Binding Image}" Stretch="Fill" />
+                  </Panel>
+                </Viewbox>
+              </Button>
+              <Panel MinHeight="18">
+                <ItemsControl ItemsSource="{Binding Entries}" IsVisible="{Binding Categorical}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LegendSwatch">
+                      <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,1,10,1">
+                        <Border Width="10" Height="10" CornerRadius="2" Background="{Binding Brush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" IsVisible="{Binding Continuous}">
+                  <TextBlock Text="{Binding Lo}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  <Panel Grid.Column="1" Height="8" VerticalAlignment="Center">
+                    <Rectangle RadiusX="4" RadiusY="4" IsVisible="{Binding Viridis}">
+                      <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                          <GradientStop Offset="0" Color="#440154" /><GradientStop Offset="0.25" Color="#3B528B" /><GradientStop Offset="0.5" Color="#21918C" />
+                          <GradientStop Offset="0.75" Color="#5EC962" /><GradientStop Offset="1" Color="#FDE725" />
+                        </LinearGradientBrush>
+                      </Rectangle.Fill>
+                    </Rectangle>
+                    <Rectangle RadiusX="4" RadiusY="4" IsVisible="{Binding Diverging}">
+                      <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                          <GradientStop Offset="0" Color="#2166AC" /><GradientStop Offset="0.25" Color="#92C5DE" /><GradientStop Offset="0.5" Color="#F7F7F7" />
+                          <GradientStop Offset="0.75" Color="#F4A582" /><GradientStop Offset="1" Color="#B2182B" />
+                        </LinearGradientBrush>
+                      </Rectangle.Fill>
+                    </Rectangle>
+                  </Panel>
+                  <TextBlock Grid.Column="2" Text="{Binding Hi}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                </Grid>
+              </Panel>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>

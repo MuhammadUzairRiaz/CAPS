@@ -1226,6 +1226,8 @@
       </Border>
       <!-- Nothing open (design/boards/VisEmpty): Analyze before a trajectory is open -->
       <pages:EmptyPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding ShowEmpty}" ZIndex="1" />
+      <!-- Analyze › Visualize › Colour by (design/boards/ColourBy) -->
+      <pages:ColourByPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsColourBy}" />
       <!-- Analyze › Compare (design/boards/CompareCells) -->
       <pages:ComparePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCompare}" />
       <!-- Analyze › Batch (design/boards/BatchRun) -->

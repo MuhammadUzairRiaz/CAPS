@@ -200,7 +200,7 @@ void step_colour_coding(PipelineState& st, const Json& p, StepStatus& out) {
   if (mode == "categorical") {
     std::map<double, unsigned> col;
     int k = 0;
-    for (double x : distinct) col[x] = kCat[k++ % 10];
+    for (double x : distinct) col[x] = prop == "Element" ? element(int(x)).rgb : kCat[k++ % 10];   // elements keep their own colours
     for (size_t i = 0; i < n; ++i) {
       if (only_sel && !st.selected[i]) continue;
       unsigned c = col[v[i]];
