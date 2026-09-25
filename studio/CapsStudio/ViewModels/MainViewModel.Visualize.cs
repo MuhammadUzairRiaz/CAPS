@@ -402,7 +402,7 @@ public sealed partial class MainViewModel
         "slice" => new JsonObject { ["normal"] = new JsonArray(0, 0, 1), ["width"] = 12.0, ["invert"] = false, ["select_only"] = false },
         "colour_coding" => new JsonObject { ["property"] = "Molecule", ["mode"] = "auto", ["map"] = "viridis", ["lighten_h"] = true, ["only_selected"] = false },
         "assign_colour" => new JsonObject { ["colour"] = "#E5484D", ["keep_selection"] = false },
-        "cluster" => new JsonObject { ["mode"] = "bonds", ["cutoff"] = 3.2, ["sort_by_size"] = true, ["only_selected"] = false, ["colour"] = false },
+        "cluster" => new JsonObject { ["mode"] = "cutoff", ["cutoff"] = 3.3, ["heavy_only"] = true, ["unit"] = "molecules", ["sort_by_size"] = true, ["only_selected"] = false, ["colour"] = true, ["sweep"] = true },
         "coordination" => new JsonObject { ["cutoff"] = 3.2, ["bins"] = 200, ["element_a"] = 0, ["element_b"] = 0, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
@@ -460,7 +460,7 @@ public sealed partial class MainViewModel
             case "assign_colour": Text("colour", "Colour (#RRGGBB)", "text"); Bool("keep_selection", "Keep selection"); break;
             case "cluster":
                 Choice("mode", "Neighbours", ["bonds", "cutoff"]); Text("cutoff", "Cutoff (Å)", "number"); Choice("unit", "Unit", ["atoms", "molecules"]);
-                Bool("heavy_only", "Cutoff between heavy atoms"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour clusters"); Bool("only_selected", "Only selected"); break;
+                Bool("heavy_only", "Cutoff between heavy atoms"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour by cluster"); Bool("sweep", "Cutoff sweep (cutoff mode)"); Bool("only_selected", "Only selected"); break;
             case "coordination":
                 Text("cutoff", "Cutoff (Å)", "number"); Text("bins", "Bins", "number"); Text("element_a", "Central element (0: any)", "number"); Text("element_b", "Neighbour element (0: any)", "number");
                 Bool("inter_only", "Only different molecules"); Bool("only_selected", "Only selected"); break;
@@ -666,12 +666,24 @@ public sealed partial class MainViewModel
             PipeTableScatter = (bool?)t["points"] ?? false;
             if (_inspectorTab == 3)
             {
+                // a text column (the molecules a cluster holds …) goes after the first
+                var labels = t["labels"] as JsonArray;
                 InspectorColumns.Clear();
-                foreach (var c in cols) InspectorColumns.Add((string?)c ?? "");
+                for (var c = 0; c < cols.Count; ++c)
+                {
+                    InspectorColumns.Add((string?)cols[c] ?? "");
+                    if (c == 0 && labels != null) InspectorColumns.Add((string?)t["label_column"] ?? "");
+                }
                 InspectorRows.Clear();
                 var inv = CultureInfo.InvariantCulture;
+                var ri = 0;
                 foreach (var r in rows.Take(InspectorPage))
-                    InspectorRows.Add(new TableRow(((JsonArray)r!).Select(x => x is null ? "–" : ((double?)x ?? 0).ToString("G5", inv)).ToArray(), false));
+                {
+                    var cells = ((JsonArray)r!).Select(x => x is null ? "–" : ((double?)x ?? 0).ToString("G5", inv)).ToList();
+                    if (labels != null) cells.Insert(1, (string?)labels[ri] ?? "");
+                    InspectorRows.Add(new TableRow(cells.ToArray(), false));
+                    ++ri;
+                }
                 InspectorNote = $"{rows.Count} rows · {t["title"]}";
             }
         }
