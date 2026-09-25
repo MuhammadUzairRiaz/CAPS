@@ -26,5 +26,7 @@ public partial class RelaxPage : PageBase
 
     private async void OnRelax(object? s, RoutedEventArgs e) => await Vm.Relax();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelRelax();
+    private void OnAddRestraint(object? s, RoutedEventArgs e) => Vm.AddMeasuredRestraint();
+    private void OnRemoveRestraint(object? s, RoutedEventArgs e) { if (s is Control { Tag: CapsStudio.ViewModels.RestraintRow r }) Vm.RemoveRestraint(r); }
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
 }

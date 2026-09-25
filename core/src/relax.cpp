@@ -66,7 +66,17 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
   int nev = 0;
   auto eval = [&](const std::vector<double>& p, std::vector<double>& out) {
     ++nev;
-    const double en = ev.compute(p, cell, out).total();
+    double en = ev.compute(p, cell, out).total();
+    for (const auto& rs : o.restraints) {   // k (r − r0)²
+      if (3 * size_t(std::max(rs.i, rs.j)) + 2 >= p.size()) continue;
+      Vec3 dv{p[3 * rs.j] - p[3 * rs.i], p[3 * rs.j + 1] - p[3 * rs.i + 1], p[3 * rs.j + 2] - p[3 * rs.i + 2]};
+      if (cell.valid()) dv = cell.minimum_image(dv);
+      const double r = norm(dv);
+      if (r < 1e-9) continue;
+      en += rs.k * (r - rs.r0) * (r - rs.r0);
+      const double g = 2 * rs.k * (r - rs.r0) / r;   // −dE/dx_j = −g d
+      for (int c = 0; c < 3; ++c) out[3 * rs.j + c] -= g * dv[c], out[3 * rs.i + c] += g * dv[c];
+    }
     for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < out.size(); ++i)
       if (o.fixed[i]) out[3 * i] = out[3 * i + 1] = out[3 * i + 2] = 0;   // held atoms feel no force and do not move
     return en;
@@ -401,6 +411,16 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   rep.list_builds = ev.list_builds();
   rep.converged = last.stopped_by == "force" || last.stopped_by == "energy";
   if (!rep.converged) rep.notes.push_back("the final minimisation stopped by " + last.stopped_by + " before the force tolerance");
+  for (size_t k = 0; k < o.restraints.size() && k < 8; ++k) {   // where each restrained pair ended up
+    const auto& rs = o.restraints[k];
+    if (3 * size_t(std::max(rs.i, rs.j)) + 2 >= x.size()) continue;
+    Vec3 dv{x[3 * rs.j] - x[3 * rs.i], x[3 * rs.j + 1] - x[3 * rs.i + 1], x[3 * rs.j + 2] - x[3 * rs.i + 2]};
+    if (cell.valid()) dv = cell.minimum_image(dv);
+    char b[160];
+    std::snprintf(b, sizeof b, "restraint %u–%u: target %.3f Å, k %.1f kcal/mol/Å², final %.3f Å", rs.i + 1, rs.j + 1, rs.r0, rs.k, norm(dv));
+    rep.notes.push_back(b);
+  }
+  if (o.restraints.size() > 8) rep.notes.push_back(std::to_string(o.restraints.size() - 8) + " more restraints");
 
   for (size_t i = 0; i < s.atoms.size(); ++i) {
     for (int k = 0; k < 3; ++k) s.atoms[i].pos[k] = x[3 * i + k];

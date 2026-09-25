@@ -113,7 +113,36 @@
                 <NumericUpDown Grid.Column="3" Value="{Binding HoldPick}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" />
               </Grid>
             </Border>
-            <Border Classes="choice" IsEnabled="False" ToolTip.Tip="Distance restraints arrive with Relax 2" ToolTip.ShowOnDisabled="True"><StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Distance restraint" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="coming" Classes="dim" VerticalAlignment="Center" /></StackPanel></Border>
+            <Border Classes="choice" IsEnabled="{Binding !Relaxing}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                  <v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="Distance restraints" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="k (r − r₀)², added to the energy that is minimised" />
+                  <Button Grid.Column="2" Classes="small" Content="Add measured pair" Click="OnAddRestraint" IsEnabled="{Binding CanAddRestraint}"
+                          ToolTip.Tip="Shift-click two atoms in the view, then add: the pair is pulled to the target while minimising" ToolTip.ShowOnDisabled="True" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding RelaxRestraints}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:RestraintRow">
+                      <Grid ColumnDefinitions="*,Auto,80,Auto,70,Auto" ColumnSpacing="6" Margin="0,2">
+                        <StackPanel VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Atoms}" Classes="mono" FontSize="11.5" />
+                          <TextBlock Text="{Binding MeasuredText}" Classes="dim" FontSize="10.5" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="r₀ Å" Classes="dim" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="2" Value="{Binding R0D}" Minimum="0" Maximum="100" Increment="0.1" FormatString="0.00" ShowButtonSpinner="False" />
+                        <TextBlock Grid.Column="3" Text="k" Classes="dim" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="4" Value="{Binding KD}" Minimum="0" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False"
+                                       ToolTip.Tip="kcal/mol/Å²" />
+                        <Button Grid.Column="5" Classes="ghost" Content="×" Click="OnRemoveRestraint" Tag="{Binding}" ToolTip.Tip="Remove" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding !HasRestraints}"
+                           Text="Shift-click two atoms in the view to measure them, then add the pair: it is pulled to r₀ while minimising (contact, hydrogen bond, gap closing)." />
+              </StackPanel>
+            </Border>
           </StackPanel>
           <ScrollViewer Grid.Row="2" Margin="16,4,16,12">
             <TextBlock Text="{Binding RelaxLog}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />

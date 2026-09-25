@@ -570,6 +570,13 @@ internal static class Screenshot
             if (kv[0] == "growshape") w.ViewModel.GrowShape = int.Parse(kv[1]);   // before grow=: 1 slab, 2 cylinder, 3 around a cylinder
             if (kv[0] == "growchains") w.ViewModel.GrowChainsD = int.Parse(kv[1]);
             if (kv[0] == "growmethod") w.ViewModel.GrowMethod = int.Parse(kv[1]);
+            if (kv[0] == "restraint")   // restraint=I,J: pick two atoms (indices from 0) and add their distance as a restraint
+            {
+                var ij = kv[1].Split(',');
+                w.ViewModel.Pick(int.Parse(ij[0]));
+                w.ViewModel.Pick(int.Parse(ij[1]), true);
+                w.ViewModel.AddMeasuredRestraint();
+            }
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);

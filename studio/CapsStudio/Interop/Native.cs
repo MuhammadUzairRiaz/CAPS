@@ -317,6 +317,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_file_checks")] public static extern int FileChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_insert_molecules")] public static extern int InsertMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, int count, double tolerance, ulong seed, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
+    [DllImport(Lib, EntryPoint = "caps_set_restraints")] public static extern int SetRestraints(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -708,6 +709,8 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>Holds molecule `mol` in place in Relax (0: none).</summary>
     public void SetHeldMolecule(long mol) { lock (_lock) Native.SetHeldMolecule(_h, mol); }
+    /// <summary>Distance restraints for Relax (JSON [{i, j, r0, k}], indices from 0); "[]" clears them.</summary>
+    public int SetRestraints(string json) { lock (_lock) { var n = Native.SetRestraints(_h, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { lock (_lock) return Native.HeldMolecule(_h); }
 
     /// <summary>The file checks of this document as JSON (caps_file_checks).</summary>

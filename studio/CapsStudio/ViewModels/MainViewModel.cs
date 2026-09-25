@@ -171,6 +171,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void ClearSelection()
     {
         _selection.Clear();
+        Raise(nameof(CanAddRestraint));
         RefreshSelection();
         RenderRequested?.Invoke();
     }
@@ -816,6 +817,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (_doc == null || !Idle || BlockedByField("Relax")) return;
         var doc = _doc;
+        ApplyRestraints();
         Relaxing = true;
         IsPlaying = false;
         _relaxCancel = new CancellationTokenSource();
@@ -1657,6 +1659,7 @@ public sealed partial class MainViewModel : ObservableObject
         Title = (t.EndsWith(suffix) ? t : t + suffix) + " (unsaved)";
         GrownUnsaved = true;
         _selection.Clear();
+        Raise(nameof(CanAddRestraint));
         RefreshSelection();
         RefreshSummary();
         RefreshRdf();
@@ -1686,6 +1689,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_wrap) doc.SetWrap(true);
         Document?.Dispose();
         Document = doc;
+        RestraintsFollow(doc);
         ClearFocus();
         if (IsVisualize) Avalonia.Threading.Dispatcher.UIThread.Post(ApplyPipeline);
         Field.Reset();
@@ -1702,6 +1706,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(FrameLabel));
         Camera = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0, Perspective = _perspective ? 1 : 0 };
         _selection.Clear();
+        Raise(nameof(CanAddRestraint));
         RefreshSelection();
         RefreshSummary();
         RefreshRdf();
@@ -1750,6 +1755,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void Pick(int index, bool add = false)
     {
         if (!add) _selection.Clear();
+        Raise(nameof(CanAddRestraint));
         if (index >= 0)
         {
             if (add && _selection.Contains(index)) _selection.Remove(index);
@@ -1823,6 +1829,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var v = _doc.Measure(_selection.ToArray());
             var ids = string.Join("–", _selection.Select(i => _doc.Atom(i).Id));
+            Raise(nameof(CanAddRestraint));
             MeasureText = _selection.Count switch
             {
                 2 => string.Format(inv, "Distance {0}: {1:F3} Å", ids, v),
@@ -1834,6 +1841,7 @@ public sealed partial class MainViewModel : ObservableObject
         else
         {
             MeasureText = "";
+            Raise(nameof(CanAddRestraint));
             Status = $"Picked atom {a.Id} ({a.ElementSymbol}) in molecule {a.Mol} · Shift-click more atoms to measure";
         }
     }

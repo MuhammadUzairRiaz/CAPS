@@ -1492,6 +1492,34 @@ internal static class SelfTest
             Check(vm.Status.Contains("exit 2") && vm.Status.Contains("bogus"), $"recipe error: {vm.Status}");
         }
 
+        // Relax › distance restraints: two picked carbons of different chains pulled to 4 Å
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            var n = vm.Document!.Summary().Atoms;
+            int ra = -1, rb = -1;
+            double far = 0;
+            for (int i = 0; i < 40; ++i)
+                for (int j = 200; j < n; j += 7)
+                {
+                    var ai = vm.Document.Atom(i); var aj = vm.Document.Atom(j);
+                    if (ai.ElementSymbol != "C" || aj.ElementSymbol != "C" || ai.Mol == aj.Mol) continue;
+                    var d = vm.Document.Measure([i, j]);
+                    if (d > far && d < 8) (far, ra, rb) = (d, i, j);
+                }
+            vm.Pick(ra);
+            vm.Pick(rb, true);
+            var canAdd = vm.CanAddRestraint;
+            vm.AddMeasuredRestraint();
+            vm.RelaxRestraints[0].R0D = 4;
+            vm.RelaxRestraints[0].KD = 50;
+            vm.RelaxFtolD = 2;
+            vm.Relax().GetAwaiter().GetResult();
+            var after = vm.Document!.Measure([ra, rb]);
+            Check(canAdd && vm.RelaxLog.Contains("target 4.000 Å") && Math.Abs(after - 4) < 0.3,
+                  $"relax restraint: {far:F2} → {after:F2} Å (target 4) · {vm.RelaxLog.Split('\n').FirstOrDefault(l => l.StartsWith("restraint"))}");
+            vm.RemoveRestraint(vm.RelaxRestraints[0]);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
