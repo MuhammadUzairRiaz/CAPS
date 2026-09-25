@@ -568,6 +568,46 @@ TEST(Pipeline, StepsOnPolystyrene) {
   EXPECT_EQ(pipeline_to_json(pipeline_from_json(Json::parse(R"([{"type":"wrap","enabled":false}])")))["steps"][size_t(0)]["enabled"].boolean(), false);
 }
 
+TEST(Pipeline, TopologyShapeAndFrames) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  auto run = [&](const std::string& json, int fr) { return run_pipeline(t.frame(size_t(fr)), pipeline_from_json(Json::parse(json)), fr, 0, &t); };
+  // bonds perceived from distances match the data file's; every angle and dihedral is counted once
+  auto st = run(R"([{"type":"topology"},{"type":"create_bonds","mode":"perceive","replace":true}])", 0);
+  EXPECT_EQ(st.system.bonds.size(), t.topology.bonds.size());
+  size_t angles = 0;
+  for (const auto& nb : t.topology.neighbours()) angles += nb.size() * (nb.size() - 1) / 2;
+  double counted = 0;
+  for (const auto& r : st.tables[1].rows) counted += r[1];
+  EXPECT_EQ(st.tables[1].name, "angles");
+  EXPECT_EQ(counted, double(angles));
+  EXPECT_NEAR(st.attribute("Topology.mean_bond"), 1.26, 0.05);
+  // molecule shape: one row per chain, the per-atom Rg equals its chain's
+  st = run(R"([{"type":"molecule_shape"}])", 0);
+  ASSERT_EQ(st.tables[0].rows.size(), 10u);
+  EXPECT_NEAR(st.props.at("MoleculeRg")[0], st.tables[0].rows[0][3], 1e-12);
+  // displacements: nothing moves against itself; the sample's frames are shifted rigidly
+  st = run(R"([{"type":"displacements","reference":"frame","frame":1}])", 1);
+  EXPECT_NEAR(st.attribute("Displacements.msd"), 0.0, 1e-18);
+  st = run(R"([{"type":"displacements","reference":"first"}])", 2);
+  EXPECT_GT(st.attribute("Displacements.msd"), 0.0);
+  EXPECT_EQ(st.props.at("Displacement").size(), t.topology.atoms.size());
+  // smoothing over all three frames puts atom 0 at its mean position
+  st = run(R"([{"type":"smooth","window":5}])", 1);
+  Vec3 mean{0, 0, 0};
+  for (size_t k = 0; k < 3; ++k) mean = mean + t.positions[k][0];
+  mean = mean * (1.0 / 3);
+  EXPECT_NEAR(norm(st.system.atoms[0].pos - mean), 0.0, 1e-9);
+  // clusters of whole molecules joined through heavy atoms within 6 Å: the melt percolates
+  st = run(R"([{"type":"cluster","mode":"cutoff","cutoff":6,"heavy_only":true,"unit":"molecules"}])", 0);
+  EXPECT_EQ(st.attribute("ClusterAnalysis.cluster_count"), 1.0);
+  // intermolecular coordination leaves out the bonded neighbours: within 1.8 Å only a few close contacts remain
+  st = run(R"([{"type":"coordination","cutoff":1.8,"inter_only":true}])", 0);
+  const double inter = st.attribute("CoordinationAnalysis.mean");
+  st = run(R"([{"type":"coordination","cutoff":1.8}])", 0);
+  EXPECT_GT(st.attribute("CoordinationAnalysis.mean"), 2.0);
+  EXPECT_LT(inter, 0.02);
+}
+
 TEST(Io, StagedOpen) {
   const std::string dump = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", data = std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data";
   const Trajectory full = open_file(dump, data);

@@ -263,8 +263,21 @@ void step_cluster(PipelineState& st, const Json& p, StepStatus& out) {
     a = find(a); b = find(b);
     if (a != b) parent[std::max(a, b)] = std::min(a, b);
   };
-  if (mode == "cutoff") for_pairs(s, rc, [&](uint32_t i, uint32_t j, double, const Vec3&) { unite(i, j); });
+  const bool heavy = flag(p, "heavy_only", false);
+  if (mode == "cutoff")
+    for_pairs(s, rc, [&](uint32_t i, uint32_t j, double, const Vec3&) {
+      if (!heavy || (s.atoms[i].element != 1 && s.atoms[j].element != 1)) unite(i, j);
+    });
   else for (const auto& b : s.bonds) unite(b.i, b.j);
+  if (p.text("unit", "atoms") == "molecules") {   // whole molecules: every atom joins its molecule's cluster
+    const auto mol = s.molecules();
+    std::map<int, uint32_t> first;
+    for (uint32_t i = 0; i < n; ++i) {
+      if (only_sel && !st.selected[i]) continue;
+      auto [it, fresh] = first.emplace(mol[i], i);
+      if (!fresh) unite(it->second, i);
+    }
+  }
   std::map<uint32_t, std::vector<uint32_t>> groups;
   for (uint32_t i = 0; i < n; ++i)
     if (!only_sel || st.selected[i]) groups[find(i)].push_back(i);
@@ -323,7 +336,10 @@ void step_coordination(PipelineState& st, const Json& p, StepStatus& out) {
   cn.assign(n, 0);
   std::vector<double> hist(size_t(bins), 0);
   const double dr = rc / bins;
+  const bool inter = flag(p, "inter_only", false);
+  const auto mol = inter ? s.molecules() : std::vector<int>{};
   for_pairs(s, rc, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
+    if (inter && mol[i] == mol[j]) return;
     const bool ab = is_a(i) && is_b(j), ba = is_a(j) && is_b(i);
     if (ab) cn[i] += 1;
     if (ba) cn[j] += 1;
@@ -504,6 +520,188 @@ void step_binning(PipelineState& st, const Json& p, StepStatus& out) {
   if (red == "density" && area <= 0) { out.level = "warning"; out.summary += " · no cell: density not normalised"; }
 }
 
+void step_create_bonds(PipelineState& st, const Json& p, StepStatus& out) {
+  System& s = st.system;
+  const size_t before = s.bonds.size();
+  const bool only_sel = flag(p, "only_selected", false);
+  std::vector<Bond> made;
+  if (p.text("mode", "perceive") == "cutoff") {
+    const double rc = p.num("cutoff", 1.6);
+    for_pairs(s, rc, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
+      if (r < 0.4 || (only_sel && (!st.selected[i] || !st.selected[j]))) return;
+      made.push_back({i, j, 0});
+    });
+  } else {
+    BondOptions o;
+    o.tolerance = p.num("tolerance", 0.45);
+    for (const auto& b : perceive_bonds(s, o))
+      if (!only_sel || (st.selected[b.i] && st.selected[b.j])) made.push_back(b);
+  }
+  if (flag(p, "replace", false)) s.bonds.clear();
+  std::set<std::pair<uint32_t, uint32_t>> have;
+  for (const auto& b : s.bonds) have.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+  for (const auto& b : made)
+    if (have.insert({std::min(b.i, b.j), std::max(b.i, b.j)}).second) s.bonds.push_back(b);
+  out.summary = std::to_string(s.bonds.size()) + " bonds (" + (s.bonds.size() >= before ? "+" : "") + std::to_string(long(s.bonds.size()) - long(before)) + ")";
+}
+
+void step_unwrap(PipelineState& st, const Json&, StepStatus& out) {
+  if (!st.system.cell.valid()) { out.level = "warning"; out.summary = "no cell: nothing to unwrap"; return; }
+  const auto before = st.system.atoms;
+  make_molecules_whole(st.system);
+  st.system.unwrapped = true;
+  size_t k = 0;
+  for (size_t i = 0; i < before.size(); ++i) k += norm(before[i].pos - st.system.atoms[i].pos) > 1e-6;
+  out.summary = std::to_string(k) + " moved · molecules whole";
+}
+
+void step_molecule_shape(PipelineState& st, const Json&, StepStatus& out) {
+  System whole = st.system;
+  if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
+  const auto shapes = molecule_shapes(whole);
+  const auto mol = whole.molecules();
+  const size_t n = whole.atoms.size();
+  auto& rg = st.props["MoleculeRg"];
+  auto& k2 = st.props["MoleculeKappa2"];
+  auto& as = st.props["MoleculeAsphericity"];
+  rg.assign(n, 0); k2.assign(n, 0); as.assign(n, 0);
+  DataTable t;
+  t.name = "molecules";
+  t.title = "Molecule shape";
+  t.columns = {"Molecule", "Atoms", "Mass (g/mol)", "Rg (Å)", "κ²", "Asphericity (Å²)", "COM.X", "COM.Y", "COM.Z"};
+  double mrg = 0, mk2 = 0;
+  for (size_t m = 0; m < shapes.size(); ++m) {
+    const auto& sh = shapes[m];
+    const double b = sh.lambda[2] - 0.5 * (sh.lambda[0] + sh.lambda[1]);
+    t.rows.push_back({double(m + 1), double(sh.atoms), sh.mass, sh.rg, sh.kappa2, b, sh.com[0], sh.com[1], sh.com[2]});
+    mrg += sh.rg;
+    mk2 += sh.kappa2;
+  }
+  for (size_t i = 0; i < n; ++i) {
+    const auto& sh = shapes[size_t(mol[i])];
+    rg[i] = sh.rg;
+    k2[i] = sh.kappa2;
+    as[i] = sh.lambda[2] - 0.5 * (sh.lambda[0] + sh.lambda[1]);
+  }
+  st.tables.push_back(std::move(t));
+  const double nm = std::max<size_t>(1, shapes.size());
+  st.set_attribute("MoleculeShape.mean_rg", mrg / nm);
+  st.set_attribute("MoleculeShape.mean_kappa2", mk2 / nm);
+  out.summary = std::to_string(shapes.size()) + " molecules · mean Rg " + fmt("%.2f Å", mrg / nm) + " · κ² " + fmt("%.3f", mk2 / nm);
+}
+
+void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
+  const System& s = st.system;
+  const int bins = std::clamp(int(p.num("bins", 60)), 5, 2000);
+  const auto adj = adjacency(s);
+  auto sep = [&](uint32_t a, uint32_t b) { const Vec3 d = s.atoms[b].pos - s.atoms[a].pos; return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+  std::vector<double> len, ang, dih;
+  for (const auto& b : s.bonds) len.push_back(norm(sep(b.i, b.j)));
+  for (uint32_t j = 0; j < adj.size(); ++j)
+    for (size_t x = 0; x < adj[j].size(); ++x)
+      for (size_t y = x + 1; y < adj[j].size(); ++y) {
+        const Vec3 u = sep(j, adj[j][x]), v = sep(j, adj[j][y]);
+        ang.push_back(std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI);
+      }
+  for (const auto& b : s.bonds)
+    for (uint32_t a : adj[b.i])
+      for (uint32_t d : adj[b.j]) {
+        if (a == b.j || d == b.i || a == d) continue;
+        const Vec3 b1 = sep(a, b.i), b2 = sep(b.i, b.j), b3 = sep(b.j, d);
+        const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
+        const Vec3 m1 = cross(n1, b2 * (1.0 / std::max(1e-12, norm(b2))));
+        dih.push_back(std::atan2(dot(m1, n2), dot(n1, n2)) * 180 / M_PI);
+      }
+  auto hist = [&](const std::vector<double>& v, const char* name, const char* title, const char* col, double lo, double hi) {
+    DataTable t;
+    t.name = name;
+    t.title = title;
+    t.columns = {col, "Count"};
+    if (v.empty()) { st.tables.push_back(std::move(t)); return; }
+    if (lo >= hi) {
+      lo = *std::min_element(v.begin(), v.end());
+      hi = *std::max_element(v.begin(), v.end());
+      if (hi - lo < 1e-9) { lo -= 0.05; hi += 0.05; }
+    }
+    std::vector<double> h(size_t(bins), 0);
+    const double w = (hi - lo) / bins;
+    for (double x : v) h[size_t(std::clamp(int((x - lo) / w), 0, bins - 1))] += 1;
+    for (int k = 0; k < bins; ++k) t.rows.push_back({lo + (k + 0.5) * w, h[size_t(k)]});
+    st.tables.push_back(std::move(t));
+  };
+  hist(len, "bonds", "Bond lengths", "Length (Å)", 0, 0);
+  hist(ang, "angles", "Bond angles", "Angle (°)", 0, 180);
+  hist(dih, "dihedrals", "Dihedral angles", "Dihedral (°)", -180, 180);
+  double ml = 0;
+  for (double x : len) ml += x;
+  st.set_attribute("Topology.mean_bond", len.empty() ? 0 : ml / len.size());
+  out.summary = std::to_string(len.size()) + " bonds · " + std::to_string(ang.size()) + " angles · " + std::to_string(dih.size()) + " dihedrals";
+}
+
+// Positions of trajectory frame k as the pipeline sees particles: by origin index, molecules whole.
+std::vector<Vec3> frame_positions(const PipelineState& st, size_t k) {
+  System f = st.traj->frame(k);
+  if (!f.unwrapped && f.cell.valid()) make_molecules_whole(f);
+  std::vector<Vec3> out(st.origin.size());
+  for (size_t i = 0; i < out.size(); ++i) {
+    const int o = st.origin[i];
+    out[i] = o >= 0 && size_t(o) < f.atoms.size() ? f.atoms[size_t(o)].pos : st.system.atoms[i].pos;
+  }
+  return out;
+}
+
+void step_displacements(PipelineState& st, const Json& p, StepStatus& out) {
+  if (!st.traj || st.traj->frames() < 2) { out.level = "warning"; out.summary = "one frame: no displacements"; return; }
+  const std::string ref = p.text("reference", "first");
+  size_t rf = 0;
+  if (ref == "previous") rf = st.frame > 0 ? size_t(st.frame - 1) : 0;
+  else if (ref == "frame") rf = size_t(std::clamp(int(p.num("frame", 0)), 0, int(st.traj->frames()) - 1));
+  const auto r0 = frame_positions(st, rf);
+  const auto r1 = frame_positions(st, size_t(st.frame));
+  const size_t n = st.system.atoms.size();
+  auto& dm = st.props["Displacement"];
+  auto& dx = st.props["Displacement.X"];
+  auto& dy = st.props["Displacement.Y"];
+  auto& dz = st.props["Displacement.Z"];
+  dm.assign(n, 0); dx.assign(n, 0); dy.assign(n, 0); dz.assign(n, 0);
+  // unwrapped displacements: whole molecules drift through the boundary, so follow each atom by minimum image
+  // between the two frames only when they are consecutive; else compare the whole-molecule positions as they are
+  double msd = 0, mx = 0;
+  for (size_t i = 0; i < n; ++i) {
+    Vec3 d = r1[i] - r0[i];
+    if (!st.system.unwrapped && st.system.cell.valid() && ref == "previous") d = st.system.cell.minimum_image(d);
+    dx[i] = d[0]; dy[i] = d[1]; dz[i] = d[2];
+    dm[i] = norm(d);
+    msd += dot(d, d);
+    mx = std::max(mx, dm[i]);
+  }
+  msd = n ? msd / n : 0;
+  st.set_attribute("Displacements.msd", msd);
+  st.set_attribute("Displacements.max", mx);
+  out.summary = "vs frame " + std::to_string(rf) + " · MSD " + fmt("%.3g Å²", msd) + " · max " + fmt("%.2f Å", mx);
+  if (!st.system.unwrapped && ref != "previous") { out.level = "warning"; out.summary += " · wrapped input: long runs need unwrapped coordinates"; }
+}
+
+void step_smooth(PipelineState& st, const Json& p, StepStatus& out) {
+  if (!st.traj || st.traj->frames() < 2) { out.level = "warning"; out.summary = "one frame: nothing to average"; return; }
+  const int w = std::clamp(int(p.num("window", 5)), 1, 1001);
+  const int f0 = std::max(0, st.frame - w / 2), f1 = std::min(int(st.traj->frames()) - 1, st.frame + w / 2);
+  const size_t n = st.system.atoms.size();
+  std::vector<Vec3> sum(n, Vec3{0, 0, 0});
+  const auto here = frame_positions(st, size_t(st.frame));
+  for (int f = f0; f <= f1; ++f) {
+    const auto r = frame_positions(st, size_t(f));
+    for (size_t i = 0; i < n; ++i) {
+      Vec3 d = r[i] - here[i];
+      if (st.system.cell.valid() && !st.system.unwrapped) d = st.system.cell.minimum_image(d);
+      sum[i] = sum[i] + d;
+    }
+  }
+  const double k = 1.0 / (f1 - f0 + 1);
+  for (size_t i = 0; i < n; ++i) st.system.atoms[i].pos = here[i] + sum[i] * k;
+  out.summary = "frames " + std::to_string(f0) + "–" + std::to_string(f1) + " averaged";
+}
+
 struct StepDef {
   const char* type;
   const char* title;
@@ -533,6 +731,12 @@ const StepDef kSteps[] = {
     {"replicate", "Replicate", "periodic images", step_replicate},
     {"histogram", "Histogram", "distribution of a property", step_histogram},
     {"binning", "Spatial binning", "1-D profile along an axis", step_binning},
+    {"create_bonds", "Create bonds", "perceived from distances, or by cutoff", step_create_bonds},
+    {"unwrap", "Unwrap", "molecules made whole across the boundary", step_unwrap},
+    {"molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", step_molecule_shape},
+    {"topology", "Topology distributions", "bond lengths, angles, dihedrals", step_topology},
+    {"displacements", "Displacements", "vs a reference frame, MSD", step_displacements},
+    {"smooth", "Smooth trajectory", "positions averaged over a window of frames", step_smooth},
 };
 
 }  // namespace
@@ -591,8 +795,9 @@ Json pipeline_to_json(const Pipeline& p) {
   return j;
 }
 
-PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index, int64_t timestep) {
+PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index, int64_t timestep, const Trajectory* traj) {
   PipelineState st;
+  st.traj = traj;
   st.system = frame;
   const size_t n = frame.atoms.size();
   st.origin.resize(n);
@@ -631,6 +836,30 @@ PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_ind
   base.insert(base.end(), st.attributes.begin(), st.attributes.end());
   st.attributes = std::move(base);
   return st;
+}
+
+DataTable pipeline_series(const Trajectory& traj, const Pipeline& p, int stride, bool wrap, const std::function<bool(int, int)>& progress) {
+  DataTable t;
+  t.name = "series";
+  t.title = "Time series";
+  stride = std::max(1, stride);
+  const int n = int(traj.frames());
+  int done = 0, total = (n + stride - 1) / stride;
+  for (int f = 0; f < n; f += stride) {
+    System s = traj.frame(size_t(f));
+    if (!s.unwrapped && s.cell.valid()) make_molecules_whole(s);
+    if (wrap && s.cell.valid()) for (auto& a : s.atoms) a.pos = s.cell.wrap(a.pos);
+    const auto st = run_pipeline(s, p, f, f < int(traj.timesteps.size()) ? traj.timesteps[size_t(f)] : 0, &traj);
+    if (t.columns.empty()) {
+      t.columns = {"Frame"};
+      for (const auto& [k, v] : st.attributes) if (k != "SourceFrame") t.columns.push_back(k);
+    }
+    std::vector<double> row = {double(f)};
+    for (size_t c = 1; c < t.columns.size(); ++c) row.push_back(st.attribute(t.columns[c], std::nan("")));
+    t.rows.push_back(std::move(row));
+    if (progress && !progress(++done, total)) break;
+  }
+  return t;
 }
 
 // ---------------------------------------------------------------- properties

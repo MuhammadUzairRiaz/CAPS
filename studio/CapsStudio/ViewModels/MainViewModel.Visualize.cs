@@ -88,8 +88,14 @@ public sealed partial class MainViewModel
         new("cluster", "Cluster analysis", "by bonds or cutoff, sizes, Rg", "Measure", "layers"),
         new("histogram", "Histogram", "distribution of a property", "Measure", "chart"),
         new("binning", "Spatial binning", "1-D profile along an axis", "Measure", "chart"),
+        new("molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", "Structure", "atom"),
+        new("topology", "Topology distributions", "bond lengths, angles, dihedrals", "Structure", "bond"),
+        new("displacements", "Displacements", "vs a reference frame · MSD", "Trajectory", "move"),
+        new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
+        new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
+        new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
     ];
-    public static readonly string[] StepGroups = ["Colour & style", "Select", "Modify", "Measure"];
+    public static readonly string[] StepGroups = ["Colour & style", "Select", "Modify", "Structure", "Measure", "Trajectory", "Visual"];
 
     private PipelineRow? _pipeSel;
     private bool _stepLibraryOpen, _pipeLegendVisible = true;
@@ -163,7 +169,39 @@ public sealed partial class MainViewModel
     public bool IsParticlesTab => _inspectorTab == 0;
     public bool InspectorShowsAttributes => _inspectorTab == 2;
     public bool InspectorShowsTables => _inspectorTab == 3;
-    public int PipeTable { get => _pipeTable; set { if (value >= 0 && Set(ref _pipeTable, value)) LoadPipeTable(); } }
+    public int PipeTable { get => _pipeTable; set { if (value >= 0 && Set(ref _pipeTable, value)) { _pipeYCol = 1; Raise(nameof(PipeYColumn)); LoadPipeTable(); } } }
+    public ObservableCollection<string> PipeYColumns { get; } = new();
+    private int _pipeYCol = 1;
+    /// <summary>Which column the plot shows against the first (index into PipeYColumns + 1).</summary>
+    public int PipeYColumn { get => _pipeYCol - 1; set { if (value >= 0 && value + 1 != _pipeYCol) { _pipeYCol = value + 1; Raise(); LoadPipeTable(); } } }
+    private JsonObject? _series;
+    private bool _seriesRunning;
+    public bool SeriesRunning { get => _seriesRunning; private set { if (Set(ref _seriesRunning, value)) Raise(nameof(SeriesIdle)); } }
+    public bool SeriesIdle => !_seriesRunning;
+
+    /// <summary>Runs the pipeline on every frame (or every stride-th) and adds the attributes as the Time series table.</summary>
+    public async Task ComputeSeries()
+    {
+        if (_doc == null || SeriesRunning) return;
+        var doc = _doc;
+        var stride = Math.Max(1, _frames / 500);
+        SeriesRunning = true;
+        try
+        {
+            var text = await Task.Run(() => doc.PipelineSeries(stride, f =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Time series · {f * 100:0} % of the frames");
+                return true;
+            }));
+            _series = JsonNode.Parse(text) as JsonObject;
+            RefreshPipeline();
+            var idx = PipeTables.Count - 1;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { PipeTable = idx; InspectorTab = 3; });
+            Status = $"Time series over {((JsonArray?)_series?["rows"])?.Count ?? 0} frames" + (stride > 1 ? $" (every {stride}th)" : "");
+        }
+        catch (Exception e) { Status = "Time series failed: " + e.Message; }
+        finally { SeriesRunning = false; }
+    }
     public bool HasPipeTables => PipeTables.Count > 0;
     public double[] PipeTableX { get; private set; } = [];
     public double[] PipeTableY { get; private set; } = [];
@@ -263,6 +301,10 @@ public sealed partial class MainViewModel
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
         "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["only_selected"] = false },
         "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density" },
+        "topology" => new JsonObject { ["bins"] = 60 },
+        "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
+        "smooth" => new JsonObject { ["window"] = 5 },
+        "create_bonds" => new JsonObject { ["mode"] = "perceive", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["replace"] = false, ["only_selected"] = false },
         _ => new JsonObject(),
     };
 
@@ -282,7 +324,12 @@ public sealed partial class MainViewModel
         }
         void Text(string key, string label, string kind = "text", string hint = "") => Add(new StepField { Key = key, Label = label, Kind = kind, Hint = hint, Text = S(key) });
         void Bool(string key, string label) => Add(new StepField { Key = key, Label = label, Kind = "bool", On = B(key) });
-        void Choice(string key, string label, string[] choices) => Add(new StepField { Key = key, Label = label, Kind = "choice", Choices = choices, Text = S(key, choices[0]) });
+        void Choice(string key, string label, string[] choices)
+        {
+            var value = S(key, choices[0]);
+            if (!choices.Contains(value)) choices = [.. choices, value];   // a property made by a step, before its first run
+            Add(new StepField { Key = key, Label = label, Kind = "choice", Choices = choices, Text = value });
+        }
         switch (_pipeSel.Type)
         {
             case "select_expression": Text("expression", "Expression", "expression", "Type == 2 && Position.Z > 13 · Element == \"O\""); break;
@@ -296,8 +343,18 @@ public sealed partial class MainViewModel
                 Text("start", "Start", "number", "blank: minimum"); Text("end", "End", "number", "blank: maximum");
                 Bool("lighten_h", "Lighten hydrogens"); Bool("only_selected", "Only selected"); break;
             case "assign_colour": Text("colour", "Colour (#RRGGBB)", "text"); Bool("keep_selection", "Keep selection"); break;
-            case "cluster": Choice("mode", "Neighbours", ["bonds", "cutoff"]); Text("cutoff", "Cutoff (Å)", "number"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour clusters"); Bool("only_selected", "Only selected"); break;
-            case "coordination": Text("cutoff", "Cutoff (Å)", "number"); Text("bins", "Bins", "number"); Text("element_a", "Central element (0: any)", "number"); Text("element_b", "Neighbour element (0: any)", "number"); Bool("only_selected", "Only selected"); break;
+            case "cluster":
+                Choice("mode", "Neighbours", ["bonds", "cutoff"]); Text("cutoff", "Cutoff (Å)", "number"); Choice("unit", "Unit", ["atoms", "molecules"]);
+                Bool("heavy_only", "Cutoff between heavy atoms"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour clusters"); Bool("only_selected", "Only selected"); break;
+            case "coordination":
+                Text("cutoff", "Cutoff (Å)", "number"); Text("bins", "Bins", "number"); Text("element_a", "Central element (0: any)", "number"); Text("element_b", "Neighbour element (0: any)", "number");
+                Bool("inter_only", "Only different molecules"); Bool("only_selected", "Only selected"); break;
+            case "topology": Text("bins", "Bins", "number"); break;
+            case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); break;
+            case "smooth": Text("window", "Window (frames, centred)", "number"); break;
+            case "create_bonds":
+                Choice("mode", "Mode", ["perceive", "cutoff"]); Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "Cutoff (Å)", "number");
+                Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
             case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); break;
             case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Bool("only_selected", "Only selected"); break;
@@ -307,7 +364,8 @@ public sealed partial class MainViewModel
 
     private string[] PipeProperties()
     {
-        var list = new List<string> { "Molecule", "Type", "Element", "Charge", "Mass", "Position.X", "Position.Y", "Position.Z", "DistanceToCOM", "Identifier", "Selection" };
+        var list = new List<string> { "Molecule", "Type", "Element", "Charge", "Mass", "Position.X", "Position.Y", "Position.Z", "DistanceToCOM", "Identifier", "Selection",
+                                      "Cluster", "Coordination", "Displacement", "MoleculeRg", "MoleculeKappa2" };
         if (_pipeResult?["properties"] is JsonArray a)
             foreach (var x in a) if (x?.GetValue<string>() is { } s && !list.Contains(s)) list.Add(s);
         return list.ToArray();
@@ -421,6 +479,7 @@ public sealed partial class MainViewModel
         // tables
         // the titles are rebuilt only when they change, so the picker keeps its choice
         var titles = _pipeResult?["tables"] is JsonArray tables ? tables.Select(t => (string?)t?["title"] ?? "").ToList() : new List<string>();
+        if (_series?["rows"] is JsonArray sr) titles.Add($"Time series · {sr.Count} frames");
         if (!titles.SequenceEqual(PipeTables))
         {
             var keep = _pipeTable;
@@ -440,13 +499,23 @@ public sealed partial class MainViewModel
     private void LoadPipeTable()
     {
         PipeTableX = []; PipeTableY = [];
-        if (_pipeResult?["tables"] is JsonArray tables && _pipeTable < tables.Count && tables[_pipeTable] is JsonObject t
-            && t["rows"] is JsonArray rows && t["columns"] is JsonArray cols && cols.Count >= 2)
+        var coreTables = _pipeResult?["tables"] as JsonArray;
+        var ncore = coreTables?.Count ?? 0;
+        var t = _pipeTable < ncore ? coreTables![_pipeTable] as JsonObject : _pipeTable == ncore ? _series : null;
+        if (t != null && t["rows"] is JsonArray rows && t["columns"] is JsonArray cols && cols.Count >= 2)
         {
+            var ys = cols.Skip(1).Select(c => (string?)c ?? "").ToList();
+            if (!ys.SequenceEqual(PipeYColumns))
+            {
+                PipeYColumns.Clear();
+                foreach (var y in ys) PipeYColumns.Add(y);
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => Raise(nameof(PipeYColumn)));
+            }
+            var yc = Math.Clamp(_pipeYCol, 1, cols.Count - 1);
             PipeTableX = rows.Select(r => (double?)r?[0] ?? 0).ToArray();
-            PipeTableY = rows.Select(r => (double?)r?[1] ?? 0).ToArray();
+            PipeTableY = rows.Select(r => (double?)r?[yc] ?? double.NaN).ToArray();
             PipeTableXLabel = (string?)cols[0] ?? "";
-            PipeTableYLabel = (string?)cols[1] ?? "";
+            PipeTableYLabel = (string?)cols[yc] ?? "";
             if (_inspectorTab == 3)
             {
                 InspectorColumns.Clear();
@@ -454,7 +523,7 @@ public sealed partial class MainViewModel
                 InspectorRows.Clear();
                 var inv = CultureInfo.InvariantCulture;
                 foreach (var r in rows.Take(InspectorPage))
-                    InspectorRows.Add(new TableRow(((JsonArray)r!).Select(x => ((double?)x ?? 0).ToString("G5", inv)).ToArray(), false));
+                    InspectorRows.Add(new TableRow(((JsonArray)r!).Select(x => x is null ? "–" : ((double?)x ?? 0).ToString("G5", inv)).ToArray(), false));
                 InspectorNote = $"{rows.Count} rows · {t["title"]}";
             }
         }

@@ -335,6 +335,8 @@ int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap);
 int32_t caps_pipeline_particles(caps_doc* d, const char* filter, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_bonds(caps_doc* d, int32_t offset, int32_t count, char* json, int32_t cap);
 int32_t caps_pipeline_catalogue(char* json, int32_t cap);
+/* The pipeline's global attributes on every stride-th frame: {"columns":[…],"rows":[[…]]}. progress may be NULL. */
+int32_t caps_pipeline_series(caps_doc* d, int32_t stride, caps_analyze_progress_fn progress, void* user, char* json, int32_t cap);
 /* Atoms bonded to atom index (up to cap written); returns the count. */
 int32_t caps_bonded(caps_doc* d, int32_t index, int32_t* idx, int32_t cap);
 /* The molecule (connected by bonds, 0-based) of every atom, up to cap written; returns the number of molecules. */
