@@ -276,6 +276,7 @@ internal static class Screenshot
                         break;
                     case "interface": vm.OpenInterface(); if (parts.Length > 1) t = vm.RunInterface(); break;
                     case "diffusion": vm.OpenDiffusion(); if (parts.Length > 1) t = vm.RunDiffusion(); break;
+                    case "charges": vm.OpenCharges(); break;
                 }
                 while (t is { IsCompleted: false }) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }

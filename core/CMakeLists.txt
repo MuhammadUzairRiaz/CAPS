@@ -41,6 +41,7 @@ add_library(caps_core STATIC
   src/recipe.cpp
   src/colourvision.cpp
   src/query.cpp
+  src/charges.cpp
   src/appearance.cpp
   src/trajectory.cpp
   src/torsion.cpp
