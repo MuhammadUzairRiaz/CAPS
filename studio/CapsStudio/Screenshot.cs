@@ -70,6 +70,15 @@ internal static class Screenshot
             if (kv[0] == "inspector") { w.ViewModel.InspectorTab = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
             if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
+            if (kv[0] == "batch")   // batch=PATTERN: run the current pipeline over the matching files
+            {
+                w.ViewModel.OpenBatch();
+                w.ViewModel.BatchPattern = kv[1];
+                var t = w.ViewModel.RunBatch();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                Console.WriteLine("batch: " + w.ViewModel.BatchState + " · " + w.ViewModel.BatchOut);
+            }
             if (kv[0] == "export")   // export=FORMATINDEX: Export › Data with that format, after the preview is written
             {
                 w.ViewModel.OpenExport();

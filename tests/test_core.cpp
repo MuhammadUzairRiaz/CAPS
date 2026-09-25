@@ -608,6 +608,13 @@ TEST(Pipeline, TopologyShapeAndFrames) {
   EXPECT_LT(inter, 0.02);
 }
 
+TEST(Io, FileWithoutAtomsIsAnError) {
+  const std::string path = (std::filesystem::temp_directory_path() / "caps_test_garbage.data").string();
+  { std::ofstream f(path); f << "garbage\n"; }
+  EXPECT_THROW(open_file(path), ReadError);
+  std::filesystem::remove(path);
+}
+
 TEST(Io, GroWriterRoundTrip) {
   const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
   const System s = t.frame(0);

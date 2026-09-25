@@ -518,6 +518,27 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Analyze › Batch (BatchRun): the pipeline on several inputs, a failure kept as a row, results.csv written
+        {
+            vm.ClearPipeline();
+            vm.AddStep("molecule_shape");
+            vm.OpenBatch();
+            var bad = Path.Combine(outDir, "caps-selftest-bad.data");
+            File.WriteAllText(bad, "garbage\n");
+            vm.BatchInputs.Clear();
+            vm.AddBatchFiles([Path.Combine(dir, "ps_melt.data"), Path.Combine(dir, "water.pdb"), bad]);
+            var outBatch = Path.Combine(outDir, "caps-selftest-batch");
+            vm.BatchWorkers = 0;   // one worker: with no UI thread nothing serialises the row updates
+            vm.RunBatch(outBatch).GetAwaiter().GetResult();
+            var states = string.Join(",", vm.BatchInputs.Select(b => b.State));
+            var csv = File.Exists(Path.Combine(outBatch, "results.csv")) ? File.ReadAllLines(Path.Combine(outBatch, "results.csv")) : [];
+            Check(states == "done,done,failed" && csv.Length == 4 && csv[0].Contains("MoleculeShape.mean_rg") && vm.BatchInputs[0].Attributes["Particles"] == 1300,
+                  $"batch: {states} · {csv.Length - 1} rows · {vm.BatchErrors}");
+            File.Delete(bad);
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
