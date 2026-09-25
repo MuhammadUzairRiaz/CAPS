@@ -7051,5 +7051,6 @@
  ],
  "version": "1998",
  "status": "validated",
- "validation": "validated term by term for propylbenzene and a siloxane; the original and CAPS both find no c4-c4-c3' angle for the ester. No cross terms."
+ "validation": "validated term by term for propylbenzene and a siloxane; the original and CAPS both find no c4-c4-c3' angle for the ester. No cross terms.",
+ "typing": "../typing/compass.typing.json"
 }

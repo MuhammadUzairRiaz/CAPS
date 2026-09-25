@@ -46,6 +46,10 @@
     "angles": 95,
     "dihedrals": 97,
     "impropers": 19
+   },
+   "typing": {
+    "rules": "typing/compass.typing.json",
+    "evidence": "CAPS COMPASS rules from the published type definitions (bench/typing/make_compass_rules.py)"
    }
   },
   {
@@ -698,6 +702,10 @@
     "angles": 113,
     "dihedrals": 382,
     "impropers": 40
+   },
+   "typing": {
+    "rules": "typing/compass-published-moltemplate.typing.json",
+    "evidence": "CAPS COMPASS rules from the published type definitions (bench/typing/make_compass_rules.py)"
    }
   },
   {
