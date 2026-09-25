@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
+#include <filesystem>
+#include <cstdlib>
 #include <functional>
 #include <numeric>
 #include <set>
@@ -1149,6 +1152,156 @@ void step_scatter(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = std::to_string(used) + " points · Pearson r " + fmt("%.3f", r);
 }
 
+// ---------------------------------------------------------------- Python steps
+
+std::string python_package_dir(const Json& p) {
+  if (p.has("path") && p["path"].is_string() && !p["path"].str().empty()) return p["path"].str();
+  if (const char* e = std::getenv("CAPS_PYTHON_PATH"); e && *e) return e;
+  for (const char* c : {"data/python", "../data/python", "../../data/python", "../share/caps/data/python"})
+    if (std::filesystem::exists(std::filesystem::path(c) / "caps" / "runner.py")) return std::filesystem::absolute(c).string();
+  return "";
+}
+
+void step_python(PipelineState& st, const Json& p, StepStatus& out) {
+  const std::string script = p.text("file", "");
+  if (script.empty()) throw std::invalid_argument("choose a Python file with an @step function");
+  if (!std::filesystem::exists(script)) throw std::invalid_argument("no file " + script);
+  const std::string pkg = python_package_dir(p);
+  if (pkg.empty()) throw std::runtime_error("the caps Python package was not found (set CAPS_PYTHON_PATH to data/python)");
+  const char* py_env = std::getenv("CAPS_PYTHON");
+#ifdef _WIN32
+  const std::string python = py_env && *py_env ? py_env : "python";
+#else
+  const std::string python = py_env && *py_env ? py_env : "python3";
+#endif
+  // the frame, molecules whole, as the script sees it
+  System whole = st.system;
+  if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
+  const size_t n = whole.atoms.size();
+  std::vector<double> backbone(n, 0);
+  for (const auto& bb : backbones(whole)) for (uint32_t i : bb) backbone[i] = 1;
+  std::vector<double> mol;
+  property_values(st, "Molecule", mol);
+  Json parts = Json::object();
+  auto column = [&](const std::string& name, auto&& f) {
+    Json a = Json::array();
+    for (size_t i = 0; i < n; ++i) a.push_back(f(i));
+    parts[name] = std::move(a);
+  };
+  column("Particle Identifier", [&](size_t i) { return Json(double(whole.atoms[i].id)); });
+  column("Molecule Identifier", [&](size_t i) { return Json(mol[i]); });
+  column("Particle Type", [&](size_t i) { return Json(double(whole.atoms[i].type)); });
+  column("Element", [&](size_t i) { return Json(std::string(element(whole.atoms[i].element).symbol)); });
+  column("Charge", [&](size_t i) { return Json(whole.atoms[i].charge); });
+  column("Selection", [&](size_t i) { return Json(double(st.selected[i])); });
+  column("Backbone", [&](size_t i) { return Json(backbone[i]); });
+  column("Position", [&](size_t i) {
+    Json r = Json::array();
+    for (int k = 0; k < 3; ++k) r.push_back(whole.atoms[i].pos[k]);
+    return r;
+  });
+  for (const auto& [name, v] : st.props) column(name, [&](size_t i) { return Json(v[i]); });
+  Json in = Json::object();
+  in["count"] = double(n);
+  in["frame"] = double(st.frame);
+  in["particles"] = std::move(parts);
+  Json bonds = Json::array();
+  for (const auto& b : whole.bonds) { Json pr = Json::array(); pr.push_back(double(b.i)); pr.push_back(double(b.j)); bonds.push_back(std::move(pr)); }
+  in["bonds"] = std::move(bonds);
+  if (whole.cell.valid()) {
+    Json c = Json::array();
+    for (const Vec3& e : {whole.cell.a, whole.cell.b, whole.cell.c}) { Json r = Json::array(); for (int k = 0; k < 3; ++k) r.push_back(e[k]); c.push_back(std::move(r)); }
+    in["cell"] = std::move(c);
+  }
+  Json attrs = Json::object();
+  for (const auto& [k, v] : st.attributes) attrs[k] = v;
+  in["attributes"] = std::move(attrs);
+  const auto dir = std::filesystem::temp_directory_path();
+  const auto tag = std::to_string(reinterpret_cast<uintptr_t>(&st)) + "_" + std::to_string(st.frame);
+  const auto fin = dir / ("caps_step_in_" + tag + ".json"), fout = dir / ("caps_step_out_" + tag + ".json");
+  { std::ofstream f(fin); f << in.dump(0); }
+  std::filesystem::remove(fout);
+  // run it with the package on PYTHONPATH (the child inherits the environment)
+  std::string old = std::getenv("PYTHONPATH") ? std::getenv("PYTHONPATH") : "";
+#ifdef _WIN32
+  _putenv_s("PYTHONPATH", (pkg + (old.empty() ? "" : ";" + old)).c_str());
+  const std::string cmd = "\"\"" + python + "\" -m caps.runner \"" + script + "\" \"" + fin.string() + "\" \"" + fout.string() + "\" 2>&1\"";
+  FILE* pipe = _popen(cmd.c_str(), "r");
+#else
+  setenv("PYTHONPATH", (pkg + (old.empty() ? "" : ":" + old)).c_str(), 1);
+  const std::string cmd = "'" + python + "' -m caps.runner '" + script + "' '" + fin.string() + "' '" + fout.string() + "' 2>&1";
+  FILE* pipe = popen(cmd.c_str(), "r");
+#endif
+  std::string log;
+  if (pipe) {
+    char buf[512];
+    while (std::fgets(buf, sizeof buf, pipe)) log += buf;
+#ifdef _WIN32
+    _pclose(pipe);
+#else
+    pclose(pipe);
+#endif
+  }
+#ifdef _WIN32
+  _putenv_s("PYTHONPATH", old.c_str());
+#else
+  if (old.empty()) unsetenv("PYTHONPATH"); else setenv("PYTHONPATH", old.c_str(), 1);
+#endif
+  std::filesystem::remove(fin);
+  if (!std::filesystem::exists(fout)) {   // Python itself failed: say which error (the traceback's last line)
+    std::string last = log;
+    while (!last.empty() && (last.back() == '\n' || last.back() == '\r')) last.pop_back();
+    if (const auto nl = last.rfind('\n'); nl != std::string::npos) last = last.substr(nl + 1);
+    throw std::runtime_error("Python did not run" + (log.empty() ? std::string(" (is ") + python + " installed?)" : ": " + last.substr(0, 300)));
+  }
+  Json res;
+  { std::ifstream f(fout); res = Json::parse(std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>())); }
+  std::filesystem::remove(fout);
+  if (!res.has("ok") || !res["ok"].boolean()) {
+    std::string where;
+    if (res.has("trace")) {   // the script's own line
+      const std::string& tr = res["trace"].str();
+      const auto at = tr.rfind(std::filesystem::path(script).filename().string());
+      if (at != std::string::npos) where = " · " + tr.substr(at, tr.find('\n', at) - at);
+    }
+    throw std::runtime_error(res.text("error", "the step failed") + where);
+  }
+  size_t na = 0, np = 0, nt = 0;
+  if (res.has("attributes"))
+    for (const auto& [k, v] : res["attributes"].members())
+      if (v.is_number()) {   // new or changed ones (values that went through JSON unchanged are not counted)
+        const double before = st.attribute(k, std::nan(""));
+        if (!(std::fabs(before - v.number()) <= 1e-9 * std::max(1.0, std::fabs(before)))) { st.set_attribute(k, v.number()); ++na; }
+      }
+  if (res.has("properties"))
+    for (const auto& [k, v] : res["properties"].members()) {
+      if (!v.is_array() || v.size() != n) continue;
+      auto& dst = st.props[k];
+      dst.resize(n);
+      for (size_t i = 0; i < n; ++i) dst[i] = v[i].number();
+      ++np;
+    }
+  if (res.has("tables"))
+    for (const auto& t : res["tables"].items()) {
+      DataTable d;
+      d.name = t.text("name", "python");
+      d.title = res.text("name", "Python") + " · " + d.name;
+      for (const auto& c : t["columns"].items()) d.columns.push_back(c.str());
+      for (const auto& r : t["rows"].items()) {
+        std::vector<double> row;
+        for (const auto& x : r.items()) row.push_back(x.number());
+        d.rows.push_back(std::move(row));
+      }
+      st.tables.push_back(std::move(d));
+      ++nt;
+    }
+  if (res.has("selection") && res["selection"].size() == n)
+    for (size_t i = 0; i < n; ++i) st.selected[i] = res["selection"][i].number() != 0;
+  out.title = res.text("name", "Python step");
+  out.summary = std::to_string(na) + " attribute" + (na == 1 ? "" : "s") + ", " + std::to_string(np) + " propert" + (np == 1 ? "y" : "ies") + ", " +
+                std::to_string(nt) + " table" + (nt == 1 ? "" : "s") + (log.empty() ? "" : " · printed " + std::to_string(std::count(log.begin(), log.end(), '\n')) + " lines");
+}
+
 struct StepDef {
   const char* type;
   const char* title;
@@ -1191,6 +1344,7 @@ const StepDef kSteps[] = {
     {"density_field", "Density field", "Gaussian-smoothed mass density, profile, slice", step_density_field},
     {"msd", "Mean-square displacement", "MSD(τ) of atoms and chain centres, diffusion", step_msd},
     {"scatter", "Scatter plot", "one property against another", step_scatter},
+    {"python", "Python step", "a script with an @step function, run in Python", step_python},
 };
 
 }  // namespace

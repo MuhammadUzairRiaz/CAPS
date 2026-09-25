@@ -787,6 +787,51 @@ TEST(Pipeline, YamlRoundTrip) {
   EXPECT_THROW(pipeline_from_yaml("caps_pipeline: 1\nsteps:\n  - wrap: {a: [1, 2}\n"), std::invalid_argument);
 }
 
+TEST(Pipeline, PythonStep) {
+#ifdef _WIN32
+  const char* python = "python";
+#else
+  const char* python = "python3";
+#endif
+  if (std::system((std::string(python) + " --version > " + (std::filesystem::temp_directory_path() / "caps_py.txt").string() + " 2>&1").c_str()) != 0)
+    GTEST_SKIP() << "no Python";
+  const auto dir = std::filesystem::temp_directory_path();
+  const std::string script = (dir / "caps_test_step.py").string();
+  {
+    std::ofstream f(script);
+    f << "from caps.pipeline import step\n\n"
+         "@step(name=\"Heavy atoms\")\n"
+         "def modify(frame, data):\n"
+         "    el = data.particles[\"Element\"]\n"
+         "    heavy = [1 if e != \"H\" else 0 for e in el]\n"
+         "    data.attributes[\"HeavyCount\"] = sum(heavy)\n"
+         "    data.particles[\"Heavy\"] = heavy\n"
+         "    data.tables[\"per_molecule\"] = {1: 64, 2: 64}\n"
+         "    data.selection = heavy\n";
+  }
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  Json step = Json::object();
+  step["type"] = "python";
+  step["file"] = script;
+  step["path"] = std::string(CAPS_SOURCE_DIR) + "/data/python";
+  Json arr = Json::array();
+  arr.push_back(step);
+  const auto st = run_pipeline(t.frame(0), pipeline_from_json(arr), 0, 0, &t);
+  ASSERT_EQ(st.steps[0].level, "ok") << st.steps[0].summary;
+  EXPECT_EQ(st.steps[0].title, "Heavy atoms");
+  EXPECT_EQ(st.attribute("HeavyCount"), 640.0);
+  EXPECT_EQ(st.props.at("Heavy")[0], 1.0);
+  EXPECT_EQ(st.selected_count(), 640u);
+  ASSERT_EQ(st.tables.size(), 1u);
+  EXPECT_EQ(st.tables[0].rows.size(), 2u);
+  // a failing script reports its error on the step
+  { std::ofstream f(script); f << "from caps.pipeline import step\n@step()\ndef modify(frame, data):\n    raise ValueError('bad input')\n"; }
+  const auto e = run_pipeline(t.frame(0), pipeline_from_json(arr), 0, 0, &t);
+  EXPECT_EQ(e.steps[0].level, "error");
+  EXPECT_NE(e.steps[0].summary.find("ValueError: bad input"), std::string::npos) << e.steps[0].summary;
+  std::filesystem::remove(script);
+}
+
 TEST(Io, FileWithoutAtomsIsAnError) {
   const std::string path = (std::filesystem::temp_directory_path() / "caps_test_garbage.data").string();
   { std::ofstream f(path); f << "garbage\n"; }

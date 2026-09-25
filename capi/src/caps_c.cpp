@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -2444,6 +2445,16 @@ extern "C" int32_t caps_pipeline_from_yaml(const char* yaml, char* json, int32_t
     g_error = e.what();
     return -1;
   }
+}
+
+extern "C" void caps_set_python(const char* package_dir, const char* interpreter) {
+#ifdef _WIN32
+  if (package_dir && *package_dir) _putenv_s("CAPS_PYTHON_PATH", package_dir);
+  if (interpreter && *interpreter) _putenv_s("CAPS_PYTHON", interpreter);
+#else
+  if (package_dir && *package_dir) setenv("CAPS_PYTHON_PATH", package_dir, 1);
+  if (interpreter && *interpreter) setenv("CAPS_PYTHON", interpreter, 1);
+#endif
 }
 
 extern "C" int32_t caps_pipeline_catalogue(char* json, int32_t cap) {

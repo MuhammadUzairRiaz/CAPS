@@ -399,6 +399,30 @@ caps pipeline samples/ps_melt.lammpstrj --topology samples/ps_melt.data \
   --steps '[{"type":"coordination","cutoff":1.25,"element_a":6,"element_b":1},{"type":"cluster"}]' --table clusters
 ```
 
+### Python steps
+
+A pipeline step can be a Python script: a function decorated with `@step` from the small `caps` package in
+data/python reads `data.particles` (identifier, molecule, type, element, charge, selection, backbone flag, whole-molecule
+positions and every property earlier steps made) and writes `data.attributes`, `data.tables`, new particle properties
+and a selection, which the next steps and the data inspector see. CAPS runs it in a separate Python process
+(`$CAPS_PYTHON`, else python3); numpy is used when the script imports it.
+
+```python
+import numpy as np
+import caps
+from caps.pipeline import step
+
+@step(name="Backbone conformation")
+def modify(frame, data):
+    mol, bb = data.particles["Molecule Identifier"], data.particles["Backbone"]
+    pos = data.particles.positions_unwrapped
+    trans = []
+    for m in np.unique(mol):
+        idx = np.flatnonzero((mol == m) & (bb == 1))
+        trans += list(np.abs(caps.geometry.dihedrals(pos[idx])) > 120)
+    data.attributes["TransFraction"] = np.mean(trans)
+```
+
 ### Figure bundles
 
 `caps bundle FILE --steps STEPS.json --include-input -o NAME.caps-bundle.zip` writes a figure with the data behind it:

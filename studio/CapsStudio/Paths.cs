@@ -41,4 +41,6 @@ public static class Paths
     public static string? Crystals => Find(Path.Combine("data", "crystals"), "catalogue.json");
     /// <summary>The samples directory, or null.</summary>
     public static string? Samples => Find("samples", "ps_melt.data");
+    /// <summary>The caps Python package that Python pipeline steps import (data/python/caps).</summary>
+    public static string? Python => Find(Path.Combine("data", "python"), Path.Combine("caps", "runner.py"));
 }

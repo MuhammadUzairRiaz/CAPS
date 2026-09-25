@@ -303,6 +303,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_bundle_write")] public static extern int BundleWrite(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_pipeline_to_yaml")] public static extern int PipelineToYaml([MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string? name, [MarshalAs(UnmanagedType.LPUTF8Str)] string? file, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? yaml, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_from_yaml")] public static extern int PipelineFromYaml([MarshalAs(UnmanagedType.LPUTF8Str)] string yaml, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_python")] public static extern void SetPython([MarshalAs(UnmanagedType.LPUTF8Str)] string? packageDir, [MarshalAs(UnmanagedType.LPUTF8Str)] string? interpreter);
     [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
