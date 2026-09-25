@@ -27,6 +27,7 @@ public sealed class AppSettings
     public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
     public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;
+    public List<MyFragment> MyFragments { get; set; } = new();   // the fragment library's "My fragments"
 
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".caps");
     /// <summary>Tests and screenshots point elsewhere so they never change the user's file.</summary>
@@ -87,4 +88,11 @@ public sealed class RemoteHost
 
     public const string DefaultTemplate = "#!/bin/bash\n#SBATCH --job-name=caps-{job}\n#SBATCH --partition={partition}\n#SBATCH --cpus-per-task=8\n" +
                                           "#SBATCH --time=24:00:00\n#SBATCH --output=caps-%j.log\ncd {workdir}/{job}\ncaps run {recipe}\n";
+}
+
+/// <summary>A fragment the user saved: a name and SMILES with * attachment points.</summary>
+public sealed class MyFragment
+{
+    public string Name { get; set; } = "";
+    public string Smiles { get; set; } = "";
 }

@@ -54,6 +54,14 @@ TacticityReport tacticity(const System& s);
 // Makes every chain isotactic (iso = true) or syndiotactic; returns the centres inverted.
 int set_tacticity(System& s, bool iso);
 
+// Attaches a fragment written as SMILES with * attachment points ("*C(=O)O*"): its `which`-th attachment point goes on
+// the target (replacing one of the target's hydrogens when it has one, else in its free direction); the fragment is
+// rolled about the new bond to keep clear of the structure; other attachment points become hydrogens. Returns the
+// fragment's atoms in the structure.
+std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which = 0, bool replace_h = true);
+// Attachment points of a fragment's SMILES: for each *, the index (among the written atoms) of the atom it hangs on.
+std::vector<int> fragment_attach_atoms(const std::string& smiles);
+
 // Minimises the flagged atoms (the rest held) with UFF; push-off first for overlaps.
 void clean_up(System& s, const std::vector<char>& atoms = {}, double ftol = 0.5);
 

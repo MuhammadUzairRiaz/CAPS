@@ -5,6 +5,9 @@
 #include "caps/appearance.hpp"
 #include "caps/edit.hpp"
 #include "caps/elements.hpp"
+#include "caps/json.hpp"
+#include <fstream>
+#include <sstream>
 #include "caps/molecule.hpp"
 #include "caps/polymer.hpp"
 
@@ -117,4 +120,58 @@ TEST(Edit, Selections) {
   const auto near = select_within(tol, ring, 1.2);
   EXPECT_EQ(std::count(near.begin(), near.end(), 1), 6 + 5);          // ring H within 1.2 Å, the methyl C (1.5 Å) not
   EXPECT_THROW(select_element(tol, "Xx"), EditError);
+}
+
+TEST(Edit, AttachingFragments) {
+  System s = molecule("C");   // methane
+  const auto added = attach_fragment(s, 0, "[CH3]*");
+  EXPECT_EQ(s.atoms.size(), 8u);   // ethane
+  EXPECT_EQ(added.size(), 4u);     // C and three H (the target's H replaced)
+  int cc = 0;
+  for (const auto& b : s.bonds)
+    if (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 6) { ++cc; EXPECT_NEAR(norm(s.atoms[b.i].pos - s.atoms[b.j].pos), 1.52, 0.05); }
+  EXPECT_EQ(cc, 1);
+  System bz = molecule("c1ccccc1");
+  attach_fragment(bz, 0, "*C(=O)O*");   // benzoic acid: the second point becomes the acid H
+  EXPECT_EQ(bz.atoms.size(), 15u);
+  int o = 0;
+  for (const auto& a : bz.atoms) o += a.element == 8;
+  EXPECT_EQ(o, 2);
+  // nothing too close outside bonds
+  for (size_t i = 0; i < bz.atoms.size(); ++i)
+    for (size_t j = i + 1; j < bz.atoms.size(); ++j) {
+      bool bonded = false;
+      for (const auto& b : bz.bonds) bonded |= (b.i == i && b.j == j) || (b.i == j && b.j == i);
+      if (!bonded) EXPECT_GT(norm(bz.atoms[i].pos - bz.atoms[j].pos), 0.9) << i << " " << j;
+    }
+  EXPECT_EQ(fragment_attach_atoms("*C(=O)O*").size(), 2u);
+  EXPECT_THROW(attach_fragment(bz, 0, "CCO"), EditError);   // no attachment point
+}
+
+TEST(Edit, EveryLibraryFragmentBuilds) {
+  // data/fragments/catalogue.json: each fragment embeds (with its * points as hydrogens) and, when it has * points,
+  // reports the atoms they hang on
+  std::ifstream in(std::string(CAPS_SOURCE_DIR) + "/data/fragments/catalogue.json");
+  ASSERT_TRUE(in.good());
+  std::stringstream ss;
+  ss << in.rdbuf();
+  const Json cat = Json::parse(ss.str());
+  int n = 0, failed = 0;
+  for (const auto& f : cat["fragments"].items()) {
+    const std::string smi = f.text("smiles");
+    try {
+      if (smi.find('*') != std::string::npos) EXPECT_FALSE(fragment_attach_atoms(smi).empty()) << smi;
+      else {
+        BuildOptions o;
+        o.forcefield = "uff";
+        EXPECT_GT(build_molecule(smi, o).system.atoms.size(), 0u) << smi;
+      }
+    } catch (const std::exception& e) {
+      ADD_FAILURE() << f.text("name") << " " << smi << ": " << e.what();
+      ++failed;
+    }
+    ++n;
+  }
+  EXPECT_GE(n, 100);
+  EXPECT_EQ(failed, 0);
 }

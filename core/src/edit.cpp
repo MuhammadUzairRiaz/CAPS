@@ -9,6 +9,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
+#include "caps/molecule.hpp"
 #include "caps/relax.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
@@ -367,6 +368,146 @@ int set_tacticity(System& s, bool iso) {
     }
   }
   return inverted;
+}
+
+namespace {
+
+// "*" → a hydrogen stand-in (a written atom, so the attachment points keep their place in the atom order).
+std::string star_as_hydrogen(const std::string& smiles) {
+  std::string out;
+  for (size_t k = 0; k < smiles.size(); ++k) {
+    if (smiles[k] != '*') { out += smiles[k]; continue; }
+    out += k > 0 && smiles[k - 1] == '[' ? "H" : "[H]";
+  }
+  return out;
+}
+
+struct Fragment3D {
+  System s;
+  std::vector<uint32_t> dummy, root;   // each attachment point and the atom it hangs on
+};
+
+const Fragment3D& fragment_3d(const std::string& smiles) {
+  static std::map<std::string, Fragment3D> cache;
+  auto it = cache.find(smiles);
+  if (it != cache.end()) return it->second;
+  const MolGraph g = parse_smiles(smiles);
+  std::vector<uint32_t> stars;
+  for (int i = 0; i < g.heavy; ++i) if (g.atoms[size_t(i)].element == 0) stars.push_back(uint32_t(i));
+  if (stars.empty()) throw EditError("a fragment needs at least one * attachment point");
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  bo.seed = 5;
+  Fragment3D f;
+  f.s = build_molecule(star_as_hydrogen(smiles), bo).system;
+  for (uint32_t d : stars) {
+    int root = -1;
+    for (const auto& b : f.s.bonds) {
+      if (b.i == d) root = int(b.j);
+      if (b.j == d) root = int(b.i);
+    }
+    if (root < 0) throw EditError("an attachment point must be bonded to one atom");
+    f.dummy.push_back(d);
+    f.root.push_back(uint32_t(root));
+  }
+  return cache.emplace(smiles, std::move(f)).first->second;
+}
+
+}  // namespace
+
+std::vector<int> fragment_attach_atoms(const std::string& smiles) {
+  const auto& f = fragment_3d(smiles);
+  std::vector<int> out;
+  for (uint32_t r : f.root) out.push_back(int(r));
+  return out;
+}
+
+std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which, bool replace_h) {
+  if (target >= s.atoms.size()) throw EditError("pick the atom to attach to");
+  const auto& F = fragment_3d(smiles);
+  if (which < 0 || size_t(which) >= F.dummy.size()) which = 0;
+  const uint32_t D = F.dummy[size_t(which)], X = F.root[size_t(which)];
+  const auto nb = neighbours(s);
+  // where the fragment's attaching atom goes: in place of one of the target's hydrogens, or in its free direction
+  int h = -1;
+  if (replace_h)
+    for (uint32_t q : nb[target]) if (s.atoms[q].element == 1) { h = int(q); break; }
+  Vec3 dir;
+  if (h >= 0) dir = unitv(rel(s, target, uint32_t(h)));
+  else {
+    std::vector<Vec3> dirs;
+    for (uint32_t q : nb[target]) dirs.push_back(unitv(rel(s, target, q)));
+    const auto cand = ideal_directions(dirs, std::max(4, int(dirs.size()) + 1), dirs.empty() ? Vec3{0, 0, 1} : perpendicular(dirs[0]));
+    dir = cand.empty() ? Vec3{1, 0, 0} : cand[0];
+  }
+  const Vec3 T = s.atoms[target].pos;
+  const double len = element(F.s.atoms[X].element).covalent + element(s.atoms[target].element).covalent;
+  const Vec3 P = T + dir * len;
+  // rotate the fragment so its attachment point (the dummy) points back at the target
+  const Vec3 v = unitv(F.s.atoms[D].pos - F.s.atoms[X].pos), w = unitv(T - P);
+  auto rotate = [](const Vec3& p, const Vec3& axis, double c, double sn) { return p * c + cross(axis, p) * sn + axis * (dot(axis, p) * (1 - c)); };
+  const Vec3 axis0 = cross(v, w);
+  const double s0 = norm(axis0), c0 = dot(v, w);
+  auto align = [&](const Vec3& p) {
+    if (s0 < 1e-9) return c0 > 0 ? p : rotate(p, perpendicular(v), -1, 0);
+    return rotate(p, axis0 * (1.0 / s0), c0, s0);
+  };
+  // roll about the new bond: the orientation farthest from the structure
+  double best = -1;
+  std::vector<Vec3> placed;
+  for (int k = 0; k < 24; ++k) {
+    const double ang = 2 * 3.14159265358979323846 * k / 24;
+    std::vector<Vec3> trial(F.s.atoms.size());
+    double dmin = 1e300;
+    for (size_t i = 0; i < F.s.atoms.size(); ++i) {
+      const Vec3 local = align(F.s.atoms[i].pos - F.s.atoms[X].pos);
+      trial[i] = P + rotate(local, w, std::cos(ang), std::sin(ang));
+      if (i == D) continue;
+      for (size_t j = 0; j < s.atoms.size(); ++j) {
+        if (j == target || int(j) == h) continue;
+        Vec3 d = trial[i] - s.atoms[j].pos;
+        if (s.cell.valid()) d = s.cell.minimum_image(d);
+        dmin = std::min(dmin, norm(d));
+      }
+    }
+    if (dmin > best) best = dmin, placed = trial;
+  }
+  // into the structure: the fragment's atoms (not the dummy), the bond, the other attachment points as hydrogens
+  std::vector<int64_t> map(F.s.atoms.size(), -1);
+  std::vector<uint32_t> added;
+  for (size_t i = 0; i < F.s.atoms.size(); ++i) {
+    if (i == D) continue;
+    Atom a = F.s.atoms[i];
+    const bool other_dummy = std::find(F.dummy.begin(), F.dummy.end(), uint32_t(i)) != F.dummy.end();
+    a.element = other_dummy ? 1 : a.element;
+    a.pos = placed[i];
+    if (other_dummy) {
+      // a hydrogen at its own length along the dummy's bond
+      uint32_t r = 0;
+      for (const auto& b : F.s.bonds) { if (b.i == i) r = b.j; if (b.j == i) r = b.i; }
+      a.pos = placed[r] + unitv(placed[i] - placed[r]) * h_length(F.s.atoms[r].element);
+    }
+    a.type = type_for(s, a.element);
+    a.mol = s.atoms[target].mol;
+    a.resname = s.atoms[target].resname;
+    a.resid = s.atoms[target].resid;
+    a.id = s.atoms.back().id + 1;
+    a.charge = 0;
+    a.name = std::string(element(a.element).symbol) + std::to_string(s.atoms.size() + 1);
+    map[i] = int64_t(s.atoms.size());
+    added.push_back(uint32_t(s.atoms.size()));
+    s.atoms.push_back(a);
+  }
+  for (const auto& b : F.s.bonds)
+    if (map[b.i] >= 0 && map[b.j] >= 0) s.bonds.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+  s.bonds.push_back({target, uint32_t(map[X]), 1});
+  if (h >= 0) {
+    std::vector<char> del(s.atoms.size(), 0);
+    del[size_t(h)] = 1;
+    delete_atoms(s, del);
+    for (auto& a : added) if (a > uint32_t(h)) --a;
+  }
+  return added;
 }
 
 void clean_up(System& s, const std::vector<char>& atoms, double ftol) {
