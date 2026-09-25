@@ -156,7 +156,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private bool _playing;
-    public bool IsPlaying { get => _playing; set { if (Set(ref _playing, value)) Raise(nameof(PlayLabel)); } }
+    public bool IsPlaying { get => _playing; set { if (Set(ref _playing, value)) { Raise(nameof(PlayLabel)); Raise(nameof(PlayIcon)); } } }
     public string PlayLabel => _playing ? "Pause" : "Play";
 
     public void StepFrame(int d)
@@ -217,6 +217,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (_doc == null || !Set(ref _frame, Math.Clamp(value, 0, FrameMax))) return;
             _doc.SetFrame(_frame);
             Raise(nameof(FrameLabel));
+            if (_module == 32) { TrajUpdateValues(); TrajectoryChanged?.Invoke(); }
             RefreshSummary();
             RefreshSelection();
             RefreshRdf();
@@ -318,7 +319,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation"];
+        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -367,6 +368,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsCrystal));
         Raise(nameof(IsBio));
         Raise(nameof(IsSolvation));
+        Raise(nameof(IsTrajectory));
         RaiseAppearanceVisibility();
         Raise(nameof(IsAnalyzeRail));
         Raise(nameof(ShowPipeLegend));

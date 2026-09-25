@@ -254,6 +254,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
+    [DllImport(Lib, EntryPoint = "caps_trajectory_series")] public static extern int TrajectorySeries(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, IntPtr progress, IntPtr user, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_smoothing")] public static extern void SetSmoothing(IntPtr doc, int window);
     [DllImport(Lib, EntryPoint = "caps_set_appearance")] public static extern int SetAppearance(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_appearance_info")] public static extern int AppearanceInfo(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_labels")] public static extern int AtomLabels(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, byte[]? json, int cap);
@@ -843,6 +845,10 @@ public sealed class CapsDocument : IDisposable
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
+    /// <summary>Per-frame series for the trajectory player (caps_trajectory_series), JSON.</summary>
+    public string TrajectorySeries(string options) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.TrajectorySeries(_h, options, IntPtr.Zero, IntPtr.Zero, b, c)); } }
+    /// <summary>Positions shown averaged over `window` frames (1: off).</summary>
+    public void SetSmoothing(int window) { lock (_lock) { Alive(); Native.SetSmoothing(_h, window); } }
     /// <summary>Styles, colours, surfaces and polyhedra of the view (caps_set_appearance).</summary>
     public void SetAppearance(string json) { lock (_lock) { Alive(); if (Native.SetAppearance(_h, json) != 0) throw new InvalidOperationException(Native.LastError()); } }
     public string AppearanceInfo() { lock (_lock) return JsonCall((b, c) => Native.AppearanceInfo(_h, b, c)); }

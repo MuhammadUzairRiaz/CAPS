@@ -1,0 +1,122 @@
+<!-- CAPS Trajectory player (design/boards/Trajectory.dc.html): playback with speed, loop and smoothing, run starts on
+     the timeline, a chain's end-to-end vector in the view, and plots linked to the frame. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.TrajectoryPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Button.play"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /><Setter Property="MinHeight" Value="40" /><Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccInkB}" /><Setter Property="HorizontalContentAlignment" Value="Center" /></Style>
+    <Style Selector="ToggleButton.small"><Setter Property="MinHeight" Value="30" /><Setter Property="Height" Value="30" /><Setter Property="Padding" Value="10,0" /><Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="6" /><Setter Property="BorderThickness" Value="1" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="VerticalContentAlignment" Value="Center" /></Style>
+    <Style Selector="ToggleButton.small:checked /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  </p:PageBase.Styles>
+
+  <DockPanel>
+    <!-- toolbar -->
+    <Border DockPanel.Dock="Top" Height="48" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel VerticalAlignment="Center">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Chain" Foreground="{DynamicResource DimB}" FontSize="12" VerticalAlignment="Center" />
+          <NumericUpDown Value="{Binding TrajMolecule}" Minimum="0" Maximum="100000" Increment="1" FormatString="0" Width="90" ToolTip.Tip="Molecule id for Rg, Ree and the end-to-end line (0: the largest)" />
+          <TextBlock Text="dt · fs" Foreground="{DynamicResource DimB}" FontSize="12" VerticalAlignment="Center" />
+          <NumericUpDown Value="{Binding TrajDt}" Minimum="0.01" Maximum="100" Increment="0.5" FormatString="0.##" Width="80" ShowButtonSpinner="False" ToolTip.Tip="Femtoseconds per timestep, for the time axis" />
+          <Button Classes="small" Click="OnLog" ToolTip.Tip="A LAMMPS log: its thermo columns become plots, matched to the frames by timestep">
+            <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="file" Size="13" VerticalAlignment="Center" /><TextBlock Text="{Binding TrajLogText}" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Classes="small" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
+          <ToggleButton Classes="small" Content="Wrap molecules" IsChecked="{Binding Wrap}" ToolTip.Tip="Fold atoms into the cell (off: whole molecules)" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding TrajNote}" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding TrajStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      </DockPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,400">
+      <DockPanel>
+        <!-- timeline -->
+        <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Spacing="10">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                <Border Classes="seg">
+                  <StackPanel Orientation="Horizontal">
+                    <RadioButton Classes="seg" Content="0.5×" GroupName="speed" IsChecked="{Binding TrajSpeed, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                    <RadioButton Classes="seg" Content="1×" GroupName="speed" IsChecked="{Binding TrajSpeed, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                    <RadioButton Classes="seg" Content="2×" GroupName="speed" IsChecked="{Binding TrajSpeed, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                    <RadioButton Classes="seg" Content="4×" GroupName="speed" IsChecked="{Binding TrajSpeed, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" />
+                  </StackPanel>
+                </Border>
+                <ToggleButton Classes="small" Content="Loop" IsChecked="{Binding PlaybackLoop}" />
+                <ToggleButton Classes="small" Content="Smooth" IsChecked="{Binding TrajSmooth}" ToolTip.Tip="Positions averaged over 5 frames" />
+                <Button Classes="small" Click="OnMovie">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export movie" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="tool" Click="OnPrev" ToolTip.Tip="Previous frame (←)"><v:Icon Kind="undo" Size="18" /></Button>
+                <Button Classes="play" Click="OnPlay" ToolTip.Tip="Play / pause (Space)"><v:Icon Kind="{Binding PlayIcon}" Size="18" /></Button>
+                <Button Classes="tool" Click="OnNext" ToolTip.Tip="Next frame (→)"><v:Icon Kind="redo" Size="18" /></Button>
+                <TextBlock Text="{Binding TrajFrameText}" Classes="mono" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <TextBlock Text="{Binding TrajTimeText}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DockPanel>
+            <Panel>
+              <Slider Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" />
+              <v:MarkerStrip x:Name="Markers" Height="8" VerticalAlignment="Bottom" IsHitTestVisible="False" Margin="10,0" />
+            </Panel>
+          </StackPanel>
+        </Border>
+        <Panel>
+          <v:MolView x:Name="Preview" ShowCell="True" DrawStyle="4" ColourMode="1" />
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding TrajHudTitle}" FontSize="12" /></Border>
+            <Border Classes="hud" Padding="10,4"><TextBlock Text="backbone · colour: molecule" FontSize="12" Foreground="{DynamicResource MutedB}" /></Border>
+            <Border Classes="hud" Padding="10,4" IsVisible="{Binding TrajSmooth}"><TextBlock Text="smoothed over 5 frames" FontSize="12" Foreground="{DynamicResource SelB}" /></Border>
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+
+      <!-- linked plots -->
+      <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0" VerticalAlignment="Center"><TextBlock Text="cursor follows frame" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+              <TextBlock Text="Linked plots" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,10">
+            <TextBlock Text="{Binding TrajError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding TrajHasError}" />
+          </Border>
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding TrajPlots}" x:Name="Plots">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:LinkedPlot">
+                  <Border Classes="section" Padding="12,10">
+                    <StackPanel Spacing="6">
+                      <DockPanel>
+                        <Border DockPanel.Dock="Right" Classes="chip" Height="22" Padding="8,0" Background="{DynamicResource Bg2B}">
+                          <TextBlock Text="{Binding Value}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                        </Border>
+                        <ComboBox ItemsSource="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).TrajSeriesNames}" SelectedItem="{Binding Series}" MinWidth="200" FontSize="12" />
+                      </DockPanel>
+                      <v:LinePlot Height="150" AutoRange="True" XLabel="t (ps)" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

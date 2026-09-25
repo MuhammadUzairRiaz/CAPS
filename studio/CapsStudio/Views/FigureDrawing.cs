@@ -357,3 +357,15 @@ public sealed class CheckerView : Control
                 ctx.FillRectangle(grey, new Rect(x, y, Math.Min(s, Bounds.Width - x), Math.Min(s, Bounds.Height - y)));
     }
 }
+
+/// <summary>Markers along a timeline (design/boards/Trajectory: checkpoints): small dots at fractions of its width.</summary>
+public sealed class MarkerStrip : Control
+{
+    private IReadOnlyList<double> _at = [];
+    public void SetMarkers(IReadOnlyList<double> fractions) { _at = fractions; InvalidateVisual(); }
+    public override void Render(DrawingContext ctx)
+    {
+        var brush = Tokens.Brush("SelB");
+        foreach (var f in _at) ctx.DrawEllipse(brush, null, new Point(Math.Clamp(f, 0, 1) * Bounds.Width, Bounds.Height / 2), 3, 3);
+    }
+}

@@ -263,6 +263,7 @@ public partial class MainWindow : Window
     }
 
     private void OnPlay(object? s, RoutedEventArgs e) => TogglePlay();
+    private void OnTrajectoryPlayer(object? s, RoutedEventArgs e) => _vm.OpenTrajectory();
     private void OnLoadCancel(object? s, RoutedEventArgs e) => _vm.CancelLoad();
     private void OnLoadBackground(object? s, RoutedEventArgs e) => _vm.LoadToBackground();
 
@@ -519,6 +520,9 @@ public partial class MainWindow : Window
         try { _vm.SaveDocument(path); }
         catch (Exception ex) { _vm.Status = "Save failed: " + ex.Message; }
     }
+
+    /// <summary>Play or pause the frames (the Studio's frame bar and the trajectory player).</summary>
+    public void TogglePlayback() => TogglePlay();
 
     private void TogglePlay()
     {
