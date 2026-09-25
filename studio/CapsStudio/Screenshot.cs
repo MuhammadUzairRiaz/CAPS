@@ -327,6 +327,12 @@ internal static class Screenshot
                 if (kv[1] == "cylinder") { vm.PoreCrystal = Math.Max(0, vm.Crystals.ToList().FindIndex(c => c.Name.Contains("quartz", StringComparison.OrdinalIgnoreCase))); vm.PoreWidth = 14; vm.PoreFluidIndex = 2; vm.PoreCount = 20; }
                 for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "tour")   // tour=STEP (1-based): the first-run tour on that step
+            {
+                w.ViewModel.StartTour();
+                for (int k = 1; k < int.Parse(kv[1]); ++k) w.ViewModel.TourNext();
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "fragments")   // fragments=CATEGORY: the library on that category
             {
                 w.ViewModel.OpenFragments();

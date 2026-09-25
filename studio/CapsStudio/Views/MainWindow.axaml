@@ -72,7 +72,7 @@
     <Grid Grid.Row="1" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
 
       <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
-      <Border Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
+      <Border x:Name="Rail" Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
         <DockPanel>
           <Button x:Name="SettingsButton" DockPanel.Dock="Bottom" Classes="rail" Classes.on="{Binding IsSettings}" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center"
                   ToolTip.Tip="Settings" Click="OnSettingsRail">
@@ -184,7 +184,7 @@
 
       <!-- Centre: toolbar, viewport, frame bar -->
       <!-- Toolbar (Main board): tools, builder tools, view options on the right -->
-      <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
+      <Border x:Name="Toolbar" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <DockPanel VerticalAlignment="Center">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
             <Button Classes="tool" Click="OnExportDialog" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Export image or movie (⌘E)"><local:Icon Kind="download" Size="18" /></Button>
@@ -271,7 +271,7 @@
       <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="0,*,Auto,Auto">
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
         <!-- Project (Main board): documents and what is in them; fragments for the builder -->
-        <Border Grid.Column="0" Width="260" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsStudio}">
+        <Border x:Name="ProjectPanel" Grid.Column="0" Width="260" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsStudio}">
           <DockPanel>
             <Border DockPanel.Dock="Top" Classes="phead">
               <DockPanel>
@@ -676,7 +676,7 @@
             </Panel>
           </DockPanel>
         </Border>
-        <Border Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,10" Height="230">
+        <Border x:Name="AnalysisDock" Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,10" Height="230">
           <Border.IsVisible>
             <MultiBinding Converter="{x:Static BoolConverters.And}">
               <Binding Path="HasDocument" />
@@ -821,7 +821,7 @@
       </Grid>
 
       <!-- Inspector -->
-      <Border Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <Border x:Name="InspectorPanel" Grid.Row="1" Grid.Column="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
         <Panel>
         <!-- Interactions & checks (design/boards/Interactions) -->
         <DockPanel IsVisible="{Binding ShowInteractionsPanel}">
@@ -2301,6 +2301,8 @@
         </DockPanel>
       </Border>
     </Panel>
+    <!-- First-run tour (design/boards/FirstRunTour) -->
+    <local:TourOverlay x:Name="Tour" Grid.RowSpan="3" ZIndex="40" IsVisible="{Binding TourOpen}" />
   </Grid>
   </LayoutTransformControl>
 </Window>

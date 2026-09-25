@@ -724,6 +724,17 @@ internal static class SelfTest
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
+        // First-run tour: starts once with the first structure (not in self-tests), steps, remembers it was done
+        {
+            vm.StartTour();
+            var first = vm.TourCurrent.Region;
+            vm.TourNext(); vm.TourNext(); vm.TourBack();
+            var second = vm.TourCurrent.Region;
+            for (int k = 0; k < 10 && vm.TourOpen; k++) vm.TourNext();
+            vm.MaybeStartTour();
+            Check(first == "Rail" && second == "Toolbar" && !vm.TourOpen && AppSettings.Load().TourDone, $"tour: {first} → {second} · done {AppSettings.Load().TourDone}");
+        }
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);
