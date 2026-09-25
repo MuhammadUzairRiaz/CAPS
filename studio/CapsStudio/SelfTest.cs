@@ -608,6 +608,27 @@ internal static class SelfTest
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
+        // Import: the melt as extended XYZ (no bonds): bonds perceived with orders, molecules and the cell; None drops the
+        // bonds; the whole file imported as a new document
+        {
+            var xyz = Path.Combine(dir, "ps_melt.xyz");
+            vm.PreviewOpen(xyz);
+            vm.WaitImport();
+            var perceived = vm.ImportSummary;
+            var fragOk = vm.ImportFragmentDoc?.Summary().Atoms > 10;
+            vm.ImportBondMode = 2;
+            vm.WaitImport();
+            var none = vm.ImportSummary;
+            vm.ImportBondMode = 0;
+            vm.WaitImport();
+            vm.ImportChecks = false;
+            vm.ConfirmImport().GetAwaiter().GetResult();
+            var si = vm.Document!.Summary();
+            Check(perceived == "1,370 bonds · 10 molecules · 480 aromatic" && none.StartsWith("0 bonds") && fragOk && !vm.ImportOpen && si.Bonds == 1370 && si.Molecules == 10 && si.CellValid != 0,
+                  $"import: {perceived} · none: {none} · document {si.Atoms} atoms {si.Bonds} bonds {si.Molecules} molecules {vm.ImportError}");
+        }
+        vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+
         // Keyboard walk (VisAccess): atoms, bonds and molecules, announced
         {
             vm.FocusOn(40);

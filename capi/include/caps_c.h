@@ -65,6 +65,14 @@ int32_t caps_inspect_file(const char* path, const char* topology_path, char* jso
    (fraction of the file); return non-zero to stop — the frames read so far are kept. max_frames > 0 stops early. */
 typedef int32_t (*caps_open_progress_fn)(int32_t stage, double fraction, const char* detail, void* user);
 caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t max_frames, caps_open_progress_fn progress, void* user);
+/* v20 import (design/boards/ImportDialog). options: {"bonds":"perceive"|"file"|"none","tolerance":0.45,"bond_orders":true,
+   "split":true,"unwrap":true,"use_cell":true}. caps_import_preview reads frame 0 only and returns {ok, format, format_name,
+   units, bytes, head[], atoms, bonds_in_file, bonds, molecules, single, double, triple, aromatic, cell, fragment_heavy,
+   fragment_atoms, fragment_bonds, notes[]}; caps_import_fragment is that preview's fragment (the first ten connected
+   heavy atoms, carbons first, with their hydrogens) as a document. */
+caps_doc* caps_import(const char* path, const char* topology_path, const char* options_json);
+int32_t caps_import_preview(const char* path, const char* options_json, char* json, int32_t cap);
+caps_doc* caps_import_fragment(const char* path, const char* options_json);
 /* Moves the frames of src (the same file read in full) into dst, keeping dst's selection, field and current frame.
    Returns dst's frame count, or -1 when the atom counts differ. src is left empty. */
 int32_t caps_adopt_frames(caps_doc* dst, caps_doc* src);

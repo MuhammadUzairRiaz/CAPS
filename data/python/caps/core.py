@@ -107,7 +107,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S),
-        "caps_open": ([S, S], P), "caps_close": ([P], None),
+        "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
@@ -343,6 +343,19 @@ class Document:
 def open(path: str, topology: Optional[str] = None) -> Document:  # noqa: A001 (the natural name)
     """Opens a structure or trajectory (LAMMPS data/dump, GROMACS .gro, PDB, XYZ, mol2, CIF …)."""
     return Document(library().caps_open(_enc(str(path)), _enc(topology)), str(path))
+
+
+def import_file(path: str, bonds: str = "perceive", tolerance: float = 0.45, bond_orders: bool = True, split: bool = True,
+                unwrap: bool = True, use_cell: bool = True, topology: Optional[str] = None) -> Document:
+    """Opens a file that has no topology (XYZ, PDB, CIF …) with the Import choices: bonds "perceive" (covalent radii +
+    tolerance Å), "file" or "none"; bond orders and aromaticity; molecules by connectivity; unwrapping; the cell."""
+    opts = json.dumps({"bonds": bonds, "tolerance": tolerance, "bond_orders": bond_orders, "split": split, "unwrap": unwrap, "use_cell": use_cell})
+    return Document(library().caps_import(_enc(str(path)), _enc(topology), _enc(opts)), str(path))
+
+
+def import_preview(path: str, **options) -> dict:
+    """What import_file would make of frame 0: counts, cell, bond orders and the first lines."""
+    return _json_call(library().caps_import_preview, _enc(str(path)), _enc(json.dumps(options)))
 
 
 # ---------------------------------------------------------------------------------------------------------------- builders

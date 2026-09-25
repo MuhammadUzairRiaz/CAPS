@@ -214,6 +214,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_inspect_file")] public static extern int InspectFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open_staged")] public static extern IntPtr OpenStaged([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, int maxFrames, CapsOpenProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_adopt_frames")] public static extern int AdoptFrames(IntPtr dst, IntPtr src);
+    [DllImport(Lib, EntryPoint = "caps_import")] public static extern IntPtr Import([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
+    [DllImport(Lib, EntryPoint = "caps_import_preview")] public static extern int ImportPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_import_fragment")] public static extern IntPtr ImportFragment([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -362,6 +365,24 @@ public sealed class CapsDocument : IDisposable
     public static CapsDocument Open(string path, string? topology = null)
     {
         var h = Native.Open(path, topology);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return new CapsDocument(h, path);
+    }
+
+    /// <summary>Opens with the import choices (caps_import): bonds perceived / from the file / none, tolerance, bond orders,
+    /// molecules, unwrap, cell.</summary>
+    public static CapsDocument Import(string path, string? topology, string options)
+    {
+        var h = Native.Import(path, topology, options);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return new CapsDocument(h, path);
+    }
+    /// <summary>The import choices applied to frame 0 (counts, cell, first lines) as JSON.</summary>
+    public static string ImportPreview(string path, string options) => Sized((b, c) => Native.ImportPreview(path, options, b, c));
+    /// <summary>The preview's fragment (ten connected heavy atoms with their hydrogens) as a document.</summary>
+    public static CapsDocument ImportFragment(string path, string options)
+    {
+        var h = Native.ImportFragment(path, options);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return new CapsDocument(h, path);
     }
