@@ -30,6 +30,8 @@ struct ThermoRow {
   double volume = 0, density = 0;
   double p[6] = {0, 0, 0, 0, 0, 0};   // pressure tensor, atm (kinetic + virial): xx yy zz xy xz yz; stress = −p
   double lx = 0, ly = 0, lz = 0;      // cell edge lengths, Å
+  double pull_force = 0;              // spring force along the pull direction, kcal/mol/Å
+  double pull_disp = 0;               // displacement of the pulled group's centre along it, Å
 };
 
 struct DynamicsOptions {
@@ -58,6 +60,13 @@ struct DynamicsOptions {
   bool new_velocities = false;      // draw Maxwell–Boltzmann velocities even when the system has some
   // Per atom: 1 = held in place (a substrate under a film): no velocity, no force, not counted in the temperature.
   std::vector<char> fixed;
+  // Steered pulling (pull-out, debonding): a spring of stiffness pull_k on the centre of mass of the atoms in pull_group,
+  // its anchor moving along pull_dir at pull_rate from where the centre starts; the spring force is shared over the
+  // group by mass. The force and the centre's displacement along pull_dir go into each thermo row.
+  std::vector<char> pull_group;
+  Vec3 pull_dir{1, 0, 0};
+  double pull_k = 10.0;             // kcal/mol/Å²
+  double pull_rate = 0.0;           // Å/ps
   uint64_t seed = 1;
   int thermo_every = 100;           // steps between thermo rows
   int64_t step_offset = 0;          // added to reported steps and times (runs chained into a protocol)

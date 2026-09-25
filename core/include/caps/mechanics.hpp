@@ -122,6 +122,42 @@ struct TensileResult {
   std::vector<std::string> notes;
 };
 TensileResult run_tensile(System& s, const TensileOptions& o);
+
+// Pull-out / debonding of a film from a surface (fibre–rubber interfaces): the surface (molecule `surface_mol`) held,
+// the rest pulled by a spring on its centre of mass whose anchor moves at `rate` along x (shear: interfacial sliding)
+// or +z (normal: separation), after a short NVT equilibration. The curve is spring force against the film's
+// displacement; interfacial shear strength (shear) or peak normal stress = peak force / (interfaces × area), work = ∫F dx / (interfaces × area).
+struct PullPoint {
+  double time_ps = 0, displacement = 0, force = 0;   // Å, kcal/mol/Å
+  double temperature = 0;
+};
+struct PullOptions {
+  std::shared_ptr<const ForceField> field;
+  EnergyOptions energy;
+  int64_t surface_mol = 1;
+  bool normal = false;           // false: shear along x; true: separation along +z
+  double distance = 10.0;        // Å the anchor travels
+  double rate = 5.0;             // Å/ps (steered MD pulls fast; the force is rate dependent)
+  double spring = 10.0;          // kcal/mol/Å²
+  double temperature = 300.0, dt = 1.0, tau_t = 100.0;
+  double equilibrate_ps = 5.0;
+  bool relax_first = true;       // push-off and minimise the film (surface held) before the dynamics
+  int sample_every = 20;
+  uint64_t seed = 1;
+  std::function<bool(const PullPoint&)> progress;   // return false to cancel
+};
+struct PullResult {
+  std::vector<PullPoint> curve;
+  std::vector<double> smooth;    // force averaged over ±0.5 Å of displacement
+  double area = 0;               // Å²
+  double peak_force = 0, peak_displacement = 0;   // kcal/mol/Å (smoothed), Å
+  double strength = 0;           // MPa: peak force / area
+  double work = 0;               // mJ/m²: ∫ F dx / area up to the end of the pull
+  int interfaces = 1;            // 2 when the film spans the gap between the surface and its periodic image
+  std::string method;
+  std::vector<std::string> notes;
+};
+PullResult run_pull(System& s, const PullOptions& o);
 // The analysis part (modulus, Poisson ratio, yield, peak) of a curve.
 void analyse_tensile(TensileResult& r, double fit_strain, bool lateral);
 
@@ -170,6 +206,9 @@ CoolingResult run_cooling(System& s, const CoolingOptions& o);
 //   cooling: tg (with expansion coefficients; specific volume and density against T, and the two-line fit)
 std::vector<Property> elastic_properties(const ElasticResult& r, const std::string& suffix);
 std::vector<Property> tensile_properties(const TensileResult& r);
+// The pull test as properties: id pull_shear (interfacial shear strength) or pull_normal (peak normal stress), with the
+// work of separation and the force–displacement curves.
+std::vector<Property> pull_properties(const PullResult& r, bool normal);
 std::vector<Property> cooling_properties(const CoolingResult& r);
 
 }  // namespace caps

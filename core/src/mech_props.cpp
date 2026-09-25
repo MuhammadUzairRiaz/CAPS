@@ -99,6 +99,25 @@ std::vector<Property> tensile_properties(const TensileResult& r) {
   return out;
 }
 
+std::vector<Property> pull_properties(const PullResult& r, bool normal) {
+  Property p = prop(normal ? "pull_normal" : "pull_shear", normal ? "Peak normal stress (debonding)" : "Interfacial shear strength", "MPa", r.method, r.strength);
+  p.extra["peak force (kcal/mol/Å)"] = r.peak_force;
+  p.extra["displacement at peak (Å)"] = r.peak_displacement;
+  p.extra["work (mJ/m²)"] = r.work;
+  p.extra["interfaces"] = r.interfaces;
+  p.extra["area per interface (Å²)"] = r.area;
+  p.notes = r.notes;
+  Series sm{"force, smoothed ±0.5 Å", "displacement (Å)", "force (kcal/mol/Å)", {}, {}}, raw{"force", "displacement (Å)", "force (kcal/mol/Å)", {}, {}};
+  for (size_t i = 0; i < r.curve.size(); ++i) {
+    raw.x.push_back(r.curve[i].displacement);
+    raw.y.push_back(r.curve[i].force);
+    sm.x.push_back(r.curve[i].displacement);
+    sm.y.push_back(i < r.smooth.size() ? r.smooth[i] : r.curve[i].force);
+  }
+  p.series = {sm, raw};
+  return {p};
+}
+
 std::vector<Property> cooling_properties(const CoolingResult& r) {
   std::vector<Property> out;
   Property tg = prop("tg", "Glass transition Tg", "K", r.method, r.fit.ok ? r.fit.tg : NaN, r.fit.ok ? r.fit.tg_err : NaN);

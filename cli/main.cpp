@@ -62,6 +62,8 @@ int usage() {
                "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
                "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron --radius 12 --passivate]\n"
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
+               "  caps pull    FILE [--normal] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
+               "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
@@ -101,7 +103,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" ||
+                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -959,6 +961,40 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tensile: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "pull") {
+    // caps pull FILE [--normal] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--eq-ps 5] [--surface 1] [--ff FF] [--csv OUT.csv]
+    try {
+      if (pos.empty()) return usage();
+      System s = open_file(pos[0], o.count("--topology") ? o["--topology"] : "").frame(0);
+      PullOptions po;
+      po.normal = o.count("--normal");
+      if (o.count("--distance")) po.distance = std::stod(o["--distance"]);
+      if (o.count("--rate")) po.rate = std::stod(o["--rate"]);
+      if (o.count("--spring")) po.spring = std::stod(o["--spring"]);
+      if (o.count("--temp")) po.temperature = std::stod(o["--temp"]);
+      if (o.count("--eq-ps")) po.equilibrate_ps = std::stod(o["--eq-ps"]);
+      if (o.count("--surface")) po.surface_mol = std::stoll(o["--surface"]);
+      if (o.count("--seed")) po.seed = std::stoull(o["--seed"]);
+      po.field = std::make_shared<ForceField>(cli_forcefield(s, o));
+      electrostatics(po.energy, o);
+      const PullResult r = run_pull(s, po);
+      std::printf("%s\n", r.method.c_str());
+      std::printf("peak force %.3f kcal/mol/Å at %.2f Å · %s %.3f MPa · work %.2f mJ/m²\n", r.peak_force, r.peak_displacement,
+                  po.normal ? "peak normal stress" : "interfacial shear strength", r.strength, r.work);
+      for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "time_ps,displacement_A,force_kcal_mol_A,force_smoothed,temperature_K\n";
+        for (size_t i = 0; i < r.curve.size(); ++i)
+          f << r.curve[i].time_ps << "," << r.curve[i].displacement << "," << r.curve[i].force << "," << r.smooth[i] << "," << r.curve[i].temperature << "\n";
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps pull: %s\n", e.what());
       return 1;
     }
   }

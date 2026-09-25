@@ -6,6 +6,7 @@
 
 #include "caps/crystal.hpp"
 #include "caps/dynamics.hpp"
+#include "caps/mechanics.hpp"
 #include "caps/properties.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
@@ -205,4 +206,33 @@ TEST(Crystal, InterfaceProfileAndAdhesion) {
   EXPECT_GT(props[1].value, 5.0);           // the film sticks: positive work of adhesion, mJ/m²
   EXPECT_LT(props[1].value, 500.0);
   EXPECT_EQ(props[1].extra.at("interfaces"), 1.0);
+}
+
+TEST(Crystal, PullOutFromTheSurface) {
+  SlabOptions so;
+  so.layers = 1;
+  so.na = 3, so.nb = 2;
+  so.passivate = true;
+  const System slab = cleave(read_cif(kCrystals + "alpha-quartz.cif"), so);
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "*C/C=C(/C)C*"}};
+  spec.dp = 6;
+  InterfaceOptions io;
+  io.film = 12;
+  io.density = 0.6;
+  System s = build_interface(slab, spec, io);
+  const System s0 = s;
+  PullOptions po;
+  po.distance = 2.0;
+  po.rate = 10.0;
+  po.equilibrate_ps = 0.1;
+  po.dt = 0.5;
+  po.sample_every = 10;
+  const PullResult r = run_pull(s, po);
+  ASSERT_GT(r.curve.size(), 5u);
+  EXPECT_GT(r.peak_force, 0.0);
+  EXPECT_GT(r.curve.back().displacement, 0.0);   // the film moved along +x
+  EXPECT_EQ(r.interfaces, 2);
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].mol == 1) EXPECT_EQ(norm(s.atoms[i].pos - s0.atoms[i].pos), 0.0);
 }
