@@ -10,6 +10,7 @@
 #include <functional>
 #include <numeric>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 
 #include "caps/analysis.hpp"
@@ -385,6 +386,7 @@ void step_coordination(PipelineState& st, const Json& p, StepStatus& out) {
   const System& s = st.system;
   const size_t n = s.atoms.size();
   const double rc = std::max(0.5, p.num("cutoff", 3.2));
+  const double rmax = std::max(rc, p.num("rmax", rc));   // g(r) out to rmax; coordination counted within the cutoff
   const int bins = std::clamp(int(p.num("bins", 200)), 10, 5000);
   const int ea = int(p.num("element_a", 0)), eb = int(p.num("element_b", 0));
   const bool only_sel = flag(p, "only_selected", false);
@@ -393,17 +395,39 @@ void step_coordination(PipelineState& st, const Json& p, StepStatus& out) {
   auto& cn = st.props["Coordination"];
   cn.assign(n, 0);
   std::vector<double> hist(size_t(bins), 0);
-  const double dr = rc / bins;
+  const double dr = rmax / bins;
   const bool inter = flag(p, "inter_only", false);
   const auto mol = inter ? s.molecules() : std::vector<int>{};
-  for_pairs(s, rc, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
+  for_pairs(s, rmax, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
     if (inter && mol[i] == mol[j]) return;
     const bool ab = is_a(i) && is_b(j), ba = is_a(j) && is_b(i);
-    if (ab) cn[i] += 1;
-    if (ba) cn[j] += 1;
+    if (r <= rc) {
+      if (ab) cn[i] += 1;
+      if (ba) cn[j] += 1;
+    }
     const int k = std::min(bins - 1, int(r / dr));
     hist[size_t(k)] += (ab ? 1 : 0) + (ba ? 1 : 0);
   });
+  // averaged over the trajectory (every `every`-th frame; this frame's selection filter does not apply to the others)
+  int frames = 1;
+  if (flag(p, "average_frames", false) && st.traj && st.traj->frames() > 1) {
+    const int every = std::max(1, int(p.num("every", 1)));
+    for (size_t f = 0; f < st.traj->frames(); f += size_t(every)) {
+      if (int(f) == st.frame) continue;
+      System o = st.traj->frame(f);
+      if (o.atoms.size() != n) continue;
+      auto oa = [&](uint32_t i) { return ea == 0 || o.atoms[i].element == ea; };
+      auto ob = [&](uint32_t i) { return eb == 0 || o.atoms[i].element == eb; };
+      for_pairs(o, rmax, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
+        if (inter && mol[i] == mol[j]) return;
+        const int k = std::min(bins - 1, int(r / dr));
+        hist[size_t(k)] += (oa(i) && ob(j) ? 1 : 0) + (oa(j) && ob(i) ? 1 : 0);
+      });
+      ++frames;
+    }
+    for (auto& h : hist) h /= frames;
+  }
+  st.set_attribute("CoordinationAnalysis.frames", double(frames));
   size_t na = 0, nb = 0;
   for (uint32_t i = 0; i < n; ++i) { na += is_a(i); nb += is_b(i); }
   DataTable t;
@@ -422,7 +446,11 @@ void step_coordination(PipelineState& st, const Json& p, StepStatus& out) {
   for (uint32_t i = 0; i < n; ++i) if (is_a(i)) mean += cn[i];
   mean = na ? mean / na : 0;
   st.set_attribute("CoordinationAnalysis.mean", mean);
-  out.summary = fmt("mean %.2f", mean) + " within " + fmt("%.2f Å", rc) + " · g(r) " + std::to_string(bins) + " bins";
+  double mx = 0;
+  for (uint32_t i = 0; i < n; ++i) if (is_a(i)) mx = std::max(mx, cn[i]);
+  st.set_attribute("CoordinationAnalysis.max", mx);
+  out.summary = fmt("mean %.2f", mean) + fmt(" · max %.0f", mx) + " within " + fmt("%.2f Å", rc) + " · g(r) to " + fmt("%.3g Å", rmax) +
+                (frames > 1 ? " over " + std::to_string(frames) + " frames" : "");
   if (vol <= 0) { out.level = "warning"; out.summary += " · no cell: g(r) not normalised"; }
 }
 
@@ -581,25 +609,89 @@ void step_binning(PipelineState& st, const Json& p, StepStatus& out) {
 void step_create_bonds(PipelineState& st, const Json& p, StepStatus& out) {
   System& s = st.system;
   const size_t before = s.bonds.size();
-  const bool only_sel = flag(p, "only_selected", false);
+  const bool only_sel = flag(p, "only_selected", false), inter = flag(p, "inter_only", false);
+  const auto mol = inter ? s.molecules() : std::vector<int>{};
   std::vector<Bond> made;
-  if (p.text("mode", "perceive") == "cutoff") {
-    const double rc = p.num("cutoff", 1.6);
-    for_pairs(s, rc, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
-      if (r < 0.4 || (only_sel && (!st.selected[i] || !st.selected[j]))) return;
-      made.push_back({i, j, 0});
-    });
+  const std::string mode = p.text("mode", "perceive");
+  if (mode == "cutoff" || mode == "pairs") {
+    // one cutoff, or a cutoff per element pair ("C-C": 1.70, "C-H": 1.25; 0 or absent: never bonded)
+    std::map<std::pair<int, int>, double> pair_rc;
+    double rmax = p.num("cutoff", 1.6);
+    auto add_pair = [&](const std::string& k, double v) {
+      const auto dash = k.find_first_of("-–");
+      if (dash == std::string::npos || v <= 0) return;
+      const size_t skip = k.compare(dash, 3, "–") == 0 ? 3 : 1;
+      const int a = element_from_symbol(k.substr(0, dash)), b = element_from_symbol(k.substr(dash + skip));
+      if (!a || !b) return;
+      pair_rc[{std::min(a, b), std::max(a, b)}] = v;
+    };
+    if (mode == "pairs" && p.has("pairs")) {
+      if (p["pairs"].is_object()) {
+        for (const auto& [k, v] : p["pairs"].members()) if (v.is_number()) add_pair(k, v.number());
+      } else if (p["pairs"].is_string()) {   // "C-C 1.70, C-H 1.25"
+        std::string t = p["pairs"].str();
+        for (char& c : t) if (c == ',' || c == ';' || c == ':' || c == '=') c = ' ';
+        std::istringstream in(t);
+        std::string k;
+        double v;
+        while (in >> k >> v) add_pair(k, v);
+      }
+      rmax = 0;
+      for (const auto& [k, v] : pair_rc) rmax = std::max(rmax, v);
+    }
+    if (rmax > 0)
+      for_pairs(s, rmax, [&](uint32_t i, uint32_t j, double r, const Vec3&) {
+        if (r < 0.4 || (only_sel && (!st.selected[i] || !st.selected[j])) || (inter && mol[i] == mol[j])) return;
+        if (mode == "pairs") {
+          const int a = s.atoms[i].element, b = s.atoms[j].element;
+          auto it = pair_rc.find({std::min(a, b), std::max(a, b)});
+          if (it == pair_rc.end() || r > it->second) return;
+        }
+        made.push_back({i, j, 0});
+      });
   } else {
     BondOptions o;
     o.tolerance = p.num("tolerance", 0.45);
     for (const auto& b : perceive_bonds(s, o))
-      if (!only_sel || (st.selected[b.i] && st.selected[b.j])) made.push_back(b);
+      if ((!only_sel || (st.selected[b.i] && st.selected[b.j])) && (!inter || mol[b.i] != mol[b.j])) made.push_back(b);
+  }
+  auto key = [](const Bond& b) { return std::pair{std::min(b.i, b.j), std::max(b.i, b.j)}; };
+  // a file with bonds keeps them: the new bonds are a check against them, listed, never silently merged
+  const bool keep = flag(p, "keep_file", true) && before > 0 && !flag(p, "replace", false);
+  if (keep) {
+    std::set<std::pair<uint32_t, uint32_t>> file, cut;
+    for (const auto& b : s.bonds) file.insert(key(b));
+    for (const auto& b : made) cut.insert(key(b));
+    size_t both = 0, cut_only = 0, file_only = 0;
+    for (const auto& k : cut) (file.count(k) ? both : cut_only)++;
+    for (const auto& k : file) file_only += cut.count(k) ? 0 : 1;
+    double lo = 1e300, hi = 0;
+    for (const auto& b : s.bonds) {
+      Vec3 d = s.atoms[b.j].pos - s.atoms[b.i].pos;
+      if (s.cell.valid()) d = s.cell.minimum_image(d);
+      lo = std::min(lo, norm(d)), hi = std::max(hi, norm(d));
+    }
+    for (const auto& k : cut)   // spurious cutoff bonds in red
+      if (!file.count(k)) {
+        Vec3 d = s.atoms[k.second].pos - s.atoms[k.first].pos;
+        if (s.cell.valid()) d = s.cell.minimum_image(d);
+        st.segments.push_back({s.atoms[k.first].pos, s.atoms[k.first].pos + d, 0xE5484D, 0.12, false});
+      }
+    st.set_attribute("CreateBonds.in_both", double(both));
+    st.set_attribute("CreateBonds.cutoff_only", double(cut_only));
+    st.set_attribute("CreateBonds.topology_only", double(file_only));
+    st.set_attribute("CreateBonds.topology_bonds", double(file.size()));
+    if (!s.bonds.empty()) st.set_attribute("CreateBonds.length_min", lo), st.set_attribute("CreateBonds.length_max", hi);
+    out.summary = std::to_string(cut.size()) + " bonds by " + mode + " · " + std::to_string(file.size()) + " in the file · " + std::to_string(cut_only) + " extra · " +
+                  std::to_string(file_only) + " missing";
+    if (cut_only || file_only) out.level = "warning";
+    return;
   }
   if (flag(p, "replace", false)) s.bonds.clear();
   std::set<std::pair<uint32_t, uint32_t>> have;
-  for (const auto& b : s.bonds) have.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+  for (const auto& b : s.bonds) have.insert(key(b));
   for (const auto& b : made)
-    if (have.insert({std::min(b.i, b.j), std::max(b.i, b.j)}).second) s.bonds.push_back(b);
+    if (have.insert(key(b)).second) s.bonds.push_back(b);
   out.summary = std::to_string(s.bonds.size()) + " bonds (" + (s.bonds.size() >= before ? "+" : "") + std::to_string(long(s.bonds.size()) - long(before)) + ")";
 }
 
@@ -1529,7 +1621,7 @@ DataTable pipeline_series(const Trajectory& traj, const Pipeline& p, int stride,
 
 std::vector<std::string> property_names(const PipelineState& st) {
   std::vector<std::string> names = {"Identifier", "Index", "Molecule", "Type", "Element", "Mass", "Charge", "Position.X", "Position.Y", "Position.Z",
-                                    "Selection", "DistanceToCOM"};
+                                    "Selection", "DistanceToCOM", "Monomer", "MoleculeCOM.X", "MoleculeCOM.Y", "MoleculeCOM.Z"};
   for (const auto& [k, v] : st.props) names.push_back(k);
   return names;
 }
@@ -1555,6 +1647,16 @@ bool property_values(const PipelineState& st, const std::string& name, std::vect
   if (name == "Position.Y") return each([&](size_t i) { return s.atoms[i].pos[1]; });
   if (name == "Position.Z") return each([&](size_t i) { return s.atoms[i].pos[2]; });
   if (name == "Selection") return each([&](size_t i) { return st.selected.size() == n ? double(st.selected[i]) : 0.0; });
+  if (name == "Monomer" || name == "Residue") return each([&](size_t i) { return double(s.atoms[i].resid); });   // Grow numbers units from 1
+  if (name == "MoleculeCOM.X" || name == "MoleculeCOM.Y" || name == "MoleculeCOM.Z") {
+    // the molecule's centre of mass placed by the particle's own image: Position − MoleculeCOM is its minimum-image offset
+    const int c = name.back() - 'X';
+    System whole = s;
+    if (!whole.unwrapped) make_molecules_whole(whole);
+    const auto shapes = molecule_shapes(whole);
+    const auto mol = whole.molecules();
+    return each([&](size_t i) { return s.atoms[i].pos[size_t(c)] + shapes[size_t(mol[i])].com[size_t(c)] - whole.atoms[i].pos[size_t(c)]; });
+  }
   if (name == "DistanceToCOM") {
     System whole = s;
     if (!whole.unwrapped) make_molecules_whole(whole);

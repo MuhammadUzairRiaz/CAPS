@@ -829,6 +829,24 @@ internal static class SelfTest
                   $"row 19: [{dsOk} {bbStatus} {lensOk} {ahOk} {mOk} {liveOk}] backbone '{vm.DsBackboneCaption}' · lens {vm.LensInsideCount} · H plan {plan["add"]} · UA sites {res["united_atom"]!["sites"]} · live snapshots {snaps}");
         }
 
+        // Row 21 steps: expression counts, vector expressions, bonds against the file, replicas made real
+        {
+            var ec = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.ExpressionCount("Type == 2 && Position.Z > 13"))!;
+            var exprOk = (double?)ec["count"] == 278 && (string?)ec["types"]?["2"] == "ca";
+            vm.Document!.SetPipeline("{\"steps\":[{\"type\":\"compute_property\",\"name\":\"D\",\"expression\":\"norm(Position − MoleculeCOM(MoleculeIdentifier)) - DistanceToCOM\"},{\"type\":\"create_bonds\",\"mode\":\"pairs\",\"pairs\":\"C-C 1.70, C-H 1.25\"}]}");
+            var pr = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.PipelineResult())!;
+            double A(string k) => (pr["attributes"] as System.Text.Json.Nodes.JsonArray ?? []).Where(a => (string?)a?["name"] == k).Select(a => (double?)a?["value"] ?? double.NaN).DefaultIfEmpty(double.NaN).First();
+            var bondsOk = A("CreateBonds.in_both") == 1370 && A("CreateBonds.cutoff_only") == 0 && A("CreateBonds.topology_only") == 0;
+            var vecOk = ((string?)pr["steps"]?[0]?["summary"] ?? "").Contains("e-1", StringComparison.Ordinal) || ((string?)pr["steps"]?[0]?["summary"] ?? "").Contains(" 0 … 0", StringComparison.Ordinal);
+            vm.Document!.SetPipeline("{\"steps\":[{\"type\":\"replicate\",\"nx\":2,\"ny\":2,\"nz\":2}]}");
+            vm.Document!.PipelineResult();
+            var real = vm.Document!.MaterializePipeline("real");
+            var realOk = real.Summary().Atoms == 10400 && real.Summary().Molecules == 80;
+            real.Dispose();
+            vm.Document!.SetPipeline(null);
+            Check(exprOk && bondsOk && vecOk && realOk, $"row 21 steps: [{exprOk} {bondsOk} {vecOk} {realOk}] {pr["steps"]?[0]?["summary"]} · {pr["steps"]?[1]?["summary"]}");
+        }
+
         // Split view: the melt beside its GROMACS copy, compared row by row
         vm.OpenSplit();
         vm.SetSplitB(Path.Combine(dir, "ps_melt.gro")).GetAwaiter().GetResult();

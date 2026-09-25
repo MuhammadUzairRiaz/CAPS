@@ -19,6 +19,9 @@ public sealed class AppSettings
     public long AutoNoH { get; set; } = 20_000;           // above this many atoms: No H
     public long AutoBackbone { get; set; } = 200_000;     // above: Backbone (with a 30 Å all-atom lens)
     public long AutoLodAtoms { get; set; } = 2_000_000;   // above: Backbone + level of detail
+    /// <summary>Saved pipeline expressions (design/boards/ExpressionSelect), counted on every frame shown.</summary>
+    public List<string> PipelineExpressions { get; set; } =
+        ["Type == 2", "Type == 2 && Position.Z > 13", "Charge < -0.05", "MoleculeIdentifier == 3", "Element == \"H\" && Position.X < 10", "Monomer <= 2 || Monomer >= 7"];
     public string ForceField { get; set; } = "gaff-amber25-dlfield";
     public int Electrostatics { get; set; }               // 0 damped shifted force, 1 particle-mesh Ewald
     public double EwaldRtol { get; set; } = 1e-5;

@@ -1719,6 +1719,30 @@
                   </ItemsControl>
                 </StackPanel>
               </Border>
+              <Border Classes="section" IsVisible="{Binding PipeIsExpression}">
+                <StackPanel Spacing="8">
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="small ghost" Content="Save this one" Click="OnSaveExpression" />
+                    <TextBlock Text="SAVED EXPRESSIONS" Classes="h3" VerticalAlignment="Center" ToolTip.Tip="Counts on this frame" />
+                  </DockPanel>
+                  <TextBlock Text="{Binding ExprMeaning}" FontSize="12" Foreground="{DynamicResource AccB}" IsVisible="{Binding ExprMeaning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <ItemsControl ItemsSource="{Binding SavedExpressions}">
+                    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ExpressionRow">
+                      <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="4,5" Click="OnUseExpression" Tag="{Binding Expression}">
+                        <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding Count}" Classes="mono" /><TextBlock Text="{Binding Expression}" Classes="mono" FontSize="11.5" TextTrimming="CharacterEllipsis" /></DockPanel>
+                      </Button>
+                    </DataTemplate></ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="Position.X · .Y · .Z, Type, Element, Charge, MoleculeIdentifier, Monomer, ParticleIdentifier, Selection, any imported column. Operators: == != &lt; &gt; &amp;&amp; || ! and math functions; vectors with norm(…) and dot(…). Re-evaluated on every frame." />
+                </StackPanel>
+              </Border>
+              <Border Classes="section" IsVisible="{Binding PipeCanMakeReal}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="MAKE REAL" Classes="h3" />
+                  <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap" Text="Replicas and deletions are views in the pipeline until you choose Make real, which opens a new document with unique atom and molecule IDs. The file is not changed." />
+                  <Button Content="Make real" Click="OnMakeReal" HorizontalAlignment="Left" />
+                </StackPanel>
+              </Border>
               <Border Classes="section" IsVisible="{Binding HasPipeSelected}">
                 <StackPanel Spacing="6">
                   <TextBlock Text="RESULT" Classes="h3" />
