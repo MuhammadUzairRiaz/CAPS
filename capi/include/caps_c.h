@@ -317,6 +317,21 @@ double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_op
 
 int32_t caps_export_png(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);
 int32_t caps_export_svg(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path);
+/* Progress for long series: (done, total, user) -> 0 to continue. */
+typedef int32_t (*caps_series_progress_fn)(int32_t done, int32_t total, void* user);
+/* v20 export dialog (design/boards/ExportDialog). options: {"bits":8|16, "dpi":600, "colour_profile":"srgb"|"none",
+   "provenance":true, "source":"<the structure's path, hashed into the manifest>"}. 16-bit keeps the supersampled
+   average at full precision. The manifest (caps-image/1.0: generator, created, source + sha256, frame, atoms, camera,
+   render) goes into an iTXt chunk "caps:provenance"; caps_png_text reads a PNG's text chunks back as a JSON object. */
+int32_t caps_export_image(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path, const char* options_json,
+                          const uint8_t* overlay);   /* overlay: width*height*4 straight-alpha RGBA laid over the image, or NULL */
+int32_t caps_png_text(const char* path, char* json, int32_t cap);
+/* Movie: {"format":"apng"|"png_sequence", "from", "to", "step", "fps":24, "loops":0, "turntable":<degrees of yaw over the
+   movie, 0 none: the current frame turned, "turntable_frames":120 of it>, "colour_profile", "provenance", "source"}.
+   png_sequence writes path/frame_00001.png …; returns the frames written (progress may stop it early), -1 on error.
+   The document's current frame is restored. */
+int32_t caps_export_movie(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path, const char* options_json,
+                          caps_series_progress_fn progress, void* user);
 
 /* Geometry of 2–4 atoms with minimum-image separations: distance (Å), angle (deg) or dihedral (deg). */
 int32_t caps_measure(caps_doc* d, const int32_t* idx, int32_t n, double* value);
@@ -520,7 +535,6 @@ int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_rende
    molecule, ends: [first, last] (the chain's backbone ends), run_frames (the frame nearest each run's start),
    log_rows}. progress(done, total) returns non-zero to stop. caps_set_smoothing: positions shown averaged over
    `window` frames (1: off). */
-typedef int32_t (*caps_series_progress_fn)(int32_t done, int32_t total, void* user);
 int32_t caps_trajectory_series(caps_doc* d, const char* options_json, caps_series_progress_fn progress, void* user, char* json, int32_t cap);
 void caps_set_smoothing(caps_doc* d, int32_t window);
 

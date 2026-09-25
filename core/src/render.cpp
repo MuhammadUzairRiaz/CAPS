@@ -658,6 +658,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   img.width = opt.width;
   img.height = opt.height;
   img.rgba.resize(size_t(img.width) * img.height * 4);
+  if (opt.deep) img.rgba16.resize(img.rgba.size());
   id_w_ = img.width; id_h_ = img.height;
   id_buffer_.assign(size_t(id_w_) * id_h_, -1);
   const float inv = 1.f / (ss * ss);
@@ -677,6 +678,13 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
         R_ = a > 0 ? r / a : 0; G_ = a > 0 ? g / a : 0; Bc = a > 0 ? b / a : 0;
       } else {
         R_ = r + (1 - a) * bg.r; G_ = g + (1 - a) * bg.g; Bc = b + (1 - a) * bg.b; A_ = 1;
+      }
+      if (opt.deep) {
+        uint16_t* q = &img.rgba16[(size_t(y) * img.width + x) * 4];
+        q[0] = uint16_t(std::clamp(R_, 0.f, 1.f) * 65535 + .5f);
+        q[1] = uint16_t(std::clamp(G_, 0.f, 1.f) * 65535 + .5f);
+        q[2] = uint16_t(std::clamp(Bc, 0.f, 1.f) * 65535 + .5f);
+        q[3] = uint16_t(std::clamp(A_, 0.f, 1.f) * 65535 + .5f);
       }
       uint8_t* p = &img.rgba[(size_t(y) * img.width + x) * 4];
       p[0] = uint8_t(std::clamp(R_, 0.f, 1.f) * 255 + .5f);

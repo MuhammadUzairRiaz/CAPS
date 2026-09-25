@@ -217,6 +217,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_import")] public static extern IntPtr Import([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
     [DllImport(Lib, EntryPoint = "caps_import_preview")] public static extern int ImportPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_import_fragment")] public static extern IntPtr ImportFragment([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
+    [DllImport(Lib, EntryPoint = "caps_export_image")] public static extern int ExportImage(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? overlay);
+    [DllImport(Lib, EntryPoint = "caps_png_text")] public static extern int PngText([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_export_movie")] public static extern int ExportMovie(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsSeriesProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -368,6 +371,9 @@ public sealed class CapsDocument : IDisposable
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return new CapsDocument(h, path);
     }
+
+    /// <summary>The PNG's text chunks (a provenance manifest among them) as a JSON object.</summary>
+    public static string PngText(string path) => Sized((b, c) => Native.PngText(path, b, c));
 
     /// <summary>Opens with the import choices (caps_import): bonds perceived / from the file / none, tolerance, bond orders,
     /// molecules, unwrap, cell.</summary>
@@ -926,6 +932,23 @@ public sealed class CapsDocument : IDisposable
         return buf;
     }
     public void ExportPng(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) { Alive(); Check(Native.ExportPng(_h, cam, opt, path)); } }
+    /// <summary>PNG with 8 or 16 bits, dpi, colour profile and the provenance manifest (caps_export_image); overlay is
+    /// a width × height straight-alpha RGBA layer (labels, measurements) or null.</summary>
+    public void ExportImage(in CapsCamera cam, in CapsRenderOpts opt, string path, string options, byte[]? overlay)
+    {
+        lock (_lock) { Alive(); Check(Native.ExportImage(_h, cam, opt, path, options, overlay)); }
+    }
+    /// <summary>An animated PNG or a PNG sequence of the frames, or a turntable (caps_export_movie); returns the frames
+    /// written. progress(done, total) → false stops.</summary>
+    public int ExportMovie(in CapsCamera cam, in CapsRenderOpts opt, string path, string options, Func<int, int, bool>? progress)
+    {
+        CapsSeriesProgress? cb = progress == null ? null : (d, t, _) => progress(d, t) ? 0 : 1;
+        int n;
+        lock (_lock) { Alive(); n = Native.ExportMovie(_h, cam, opt, path, options, cb, IntPtr.Zero); }
+        GC.KeepAlive(cb);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        return n;
+    }
     /// <summary>Throws once the document is closed (a view may still hold it while a newer one replaces it).</summary>
     private void Alive() { if (_h == IntPtr.Zero) throw new ObjectDisposedException(nameof(CapsDocument)); }
     public void ExportSvg(in CapsCamera cam, in CapsRenderOpts opt, string path) { lock (_lock) Check(Native.ExportSvg(_h, cam, opt, path)); }
