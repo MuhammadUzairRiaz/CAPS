@@ -22,6 +22,15 @@
     </Style>
     <Style Selector="Button.nav.on"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
     <Style Selector="Border.swatch"><Setter Property="Width" Value="14" /><Setter Property="Height" Value="14" /><Setter Property="CornerRadius" Value="3" /></Style>
+    <Style Selector="Ellipse.state"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.state.ok"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.state.bad"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="TextBlock.state"><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="TextBlock.state.ok"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="TextBlock.state.bad"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+    <Style Selector="ListBox.hosts ListBoxItem"><Setter Property="Padding" Value="14,0" /><Setter Property="Margin" Value="0,0,0,6" /><Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="Background" Value="{DynamicResource Bg0B}" /></Style>
+    <Style Selector="ListBox.hosts ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
   </p:PageBase.Styles>
 
   <Grid RowDefinitions="*,32">
@@ -205,22 +214,85 @@
             </Grid>
           </StackPanel>
 
-          <!-- Compute -->
+          <!-- Compute & remote (design/boards/RemoteCompute) -->
           <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}">
             <StackPanel Spacing="6">
-              <TextBlock Text="Compute" Classes="title" />
-              <TextBlock Text="Where calculations run. Every CAPS engine runs on this machine's CPU." Classes="muted" />
+              <TextBlock Text="Compute &amp; remote" Classes="title" />
+              <TextBlock Text="Jobs run here, or on a remote host reached with SSH: the job's files go with it and the results come back with their provenance." Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
-            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="18" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
               <TextBlock Text="Worker threads" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                 <NumericUpDown Value="{Binding SetThreadsD}" Minimum="0" Maximum="64" Increment="1" FormatString="0" Width="110" />
                 <TextBlock Text="{Binding ThreadsText}" Classes="muted" VerticalAlignment="Center" />
               </StackPanel>
-              <TextBlock Grid.Row="1" Text="Results" VerticalAlignment="Top" />
-              <TextBlock Grid.Row="1" Grid.Column="1" Classes="muted" TextWrapping="Wrap"
+              <TextBlock Grid.Row="1" Grid.Column="1" Classes="muted" TextWrapping="Wrap" FontSize="12"
                          Text="0 uses one thread per core, up to 16. Each worker owns a fixed share of the work, so a run gives the same numbers for the same thread count." />
             </Grid>
+            <StackPanel Spacing="10">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Click="OnAddHost"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add host" VerticalAlignment="Center" /></StackPanel></Button>
+                <TextBlock Text="Hosts" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+              <ListBox ItemsSource="{Binding Hosts}" SelectedItem="{Binding SelectedHost}" Classes="hosts" Background="Transparent" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:HostRow">
+                    <DockPanel Height="44">
+                      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Ellipse Width="7" Height="7" Classes="state" Classes.ok="{Binding IsOk}" Classes.bad="{Binding IsError}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding State}" Classes="mono state" Classes.ok="{Binding IsOk}" Classes.bad="{Binding IsError}" FontSize="11.5" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <v:Icon Kind="server" Size="18" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                      <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium" />
+                        <TextBlock Text="{Binding Detail}" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                      </StackPanel>
+                    </DockPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+            <StackPanel Spacing="12" IsVisible="{Binding HostEditable}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small ghost" Content="Remove host" Click="OnRemoveHost" />
+                <TextBlock Text="{Binding HostTitle}" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+              <Grid ColumnDefinitions="*,*,90" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Name" Classes="label" /><TextBox Text="{Binding HostName}" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Hostname" Classes="label" /><TextBox Text="{Binding HostHostname}" FontFamily="{DynamicResource Mono}" Watermark="hpc-login2.example.edu" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Port" Classes="label" /><NumericUpDown Value="{Binding HostPort}" Minimum="1" Maximum="65535" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="User" Classes="label" /><TextBox Text="{Binding HostUser}" Watermark="username" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Scheduler" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.Schedulers}" SelectedItem="{Binding HostScheduler}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Default partition" Classes="label" /><TextBox Text="{Binding HostPartition}" Watermark="gpu" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Remote work directory" Classes="label" /><TextBox Text="{Binding HostWorkDir}" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Authentication" Classes="label" /><TextBox Text="SSH agent (no passwords stored)" IsReadOnly="True" Foreground="{DynamicResource MutedB}" /></StackPanel>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Classes="small" Click="OnTestHost" IsEnabled="{Binding HostIdle}"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="link" Size="13" VerticalAlignment="Center" /><TextBlock Text="Test connection" VerticalAlignment="Center" /></StackPanel></Button>
+                <TextBlock Text="{Binding HostTestText}" Classes="muted" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" />
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small ghost" Content="Reset" Click="OnResetTemplate" />
+                <Border DockPanel.Dock="Right" Classes="chip" Margin="0,0,8,0" VerticalAlignment="Center"><TextBlock Text="editable" Foreground="{DynamicResource MutedB}" /></Border>
+                <TextBlock Text="Job template" Classes="h2" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBox Text="{Binding JobTemplate}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="{DynamicResource Mono}" FontSize="11.5" MinHeight="170" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Text="{}{job}, {partition}, {workdir} and {recipe} are filled for each job." />
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Transfers" Classes="h2" />
+              <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
+                <TextBlock Text="Upload" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Column="1" Text="inputs + recipe, hashed (sha256)" Classes="mono" FontSize="12" />
+                <TextBlock Grid.Row="1" Text="Download" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="outputs + provenance manifest" Classes="mono" FontSize="12" />
+                <TextBlock Grid.Row="2" Text="Large trajectories" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="stay remote until opened" Classes="mono" FontSize="12" />
+              </Grid>
+            </StackPanel>
           </StackPanel>
 
           <!-- Files -->

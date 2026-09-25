@@ -450,6 +450,19 @@ internal static class SelfTest
             }
         }
 
+        // Compute & remote: a host added, edited and removed (saved in the test settings file)
+        {
+            var hostsBefore = vm.Hosts.Count;
+            vm.AddHost();
+            vm.HostHostname = "hpc-login2.example.edu";
+            vm.HostUser = "someone";
+            var detail = vm.SelectedHost?.Detail ?? "";
+            var added = vm.Hosts.Count;
+            vm.RemoveHost();
+            Check(added == hostsBefore + 1 && detail.Contains("someone@hpc-login2.example.edu") && vm.Hosts.Count == hostsBefore && vm.JobTemplate.Contains("#SBATCH"),
+                  $"remote: {hostsBefore} → {added} → {vm.Hosts.Count} hosts · {detail}");
+        }
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");

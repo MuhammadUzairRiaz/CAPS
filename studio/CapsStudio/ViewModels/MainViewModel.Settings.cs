@@ -16,8 +16,8 @@ public sealed partial class MainViewModel
     /// <summary>The window scales the interface when this changes.</summary>
     public event Action<double>? ScaleChanged;
 
-    public static readonly string[] SettingsTabs = ["Appearance", "3D view", "Force fields", "Compute", "Files"];
-    public static readonly string[] SettingsIcons = ["eye", "cube", "tag", "cpu", "folder"];
+    public static readonly string[] SettingsTabs = ["Appearance", "3D view", "Force fields", "Compute & remote", "Files"];
+    public static readonly string[] SettingsIcons = ["eye", "cube", "tag", "server", "folder"];
     private int _settingsTab;
     public int SettingsTab { get => _settingsTab; set => Set(ref _settingsTab, value); }
 
@@ -48,6 +48,8 @@ public sealed partial class MainViewModel
         var clean = CleanChoices.ToList().FindIndex(c => c.File != null && Path.GetFileNameWithoutExtension(c.File) == _settings.ForceField);
         if (clean >= 0) _molClean = clean;
         ScaleChanged?.Invoke(_settings.Scale);
+        LoadHosts();
+        Raise(nameof(JobTemplate));
         foreach (var n in new[] { nameof(SetTheme), nameof(SetScale), nameof(ScaleText), nameof(SetPalette), nameof(SetThreads), nameof(ThreadsText),
                                   nameof(SetBackground), nameof(SetOutlines), nameof(SetDepthCue), nameof(SetStyle), nameof(SetForceField),
                                   nameof(SetElectrostatics), nameof(PmeOn), nameof(SetEwaldExponent), nameof(SetPmeSpacing), nameof(SetPmeOrder) })
