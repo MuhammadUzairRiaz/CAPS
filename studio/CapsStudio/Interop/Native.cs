@@ -146,6 +146,7 @@ public struct CapsReactOpts
     public int Relax, RelaxIterations;
     public double MdPs, Temperature, Cutoff;
     public int Coulomb;
+    public int DuringMd;          // REACTER-style: continuous NVT, reactions checked every MdPs
 }
 
 [StructLayout(LayoutKind.Sequential)]

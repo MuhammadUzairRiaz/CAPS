@@ -1555,6 +1555,20 @@ internal static class SelfTest
                   $"view tools: [{fitOk} {lassoOk} {moved:F2} {back:F2} {pinOk}] move {dw[0]:F3} {dw[1]:F3} {dw[2]:F3} Å");
         }
 
+        // React › REACTER-style: C–C crosslinks checked during one NVT run on the polystyrene melt
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.RxSet = 0;
+            vm.RxDuringMd = true;
+            vm.RxMdPsD = 0.05m;
+            vm.RxCyclesD = 2;
+            vm.RxPerCycleD = 2;
+            vm.RxTempD = 400;
+            vm.RunReact().GetAwaiter().GetResult();
+            Check(vm.RxLog.Contains("REACTER-style") && vm.Document!.Summary().Atoms < 1300, $"react during MD: {vm.RxLog.Split('\n')[0]} · {vm.Document!.Summary().Atoms} atoms");
+            vm.RxDuringMd = false;
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();

@@ -50,16 +50,16 @@
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Protocol" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,12,16,16" Spacing="10">
-                <RadioButton Classes="choice" GroupName="rxp" IsChecked="True">
+                <RadioButton Classes="choice" GroupName="rxp" IsChecked="{Binding RxPolymatic}">
                   <StackPanel Spacing="2">
                     <TextBlock Text="Polymatic cycle" FontWeight="SemiBold" />
                     <TextBlock Text="Abbott, Hart &amp; Colina, Theor. Chem. Acc. 132, 1334 (2013): react → retype → minimise → optional MD" Classes="dim" TextWrapping="Wrap" />
                   </StackPanel>
                 </RadioButton>
-                <RadioButton Classes="choice" GroupName="rxp" IsEnabled="False" ToolTip.Tip="coming" ToolTip.ShowOnDisabled="True">
+                <RadioButton Classes="choice" GroupName="rxp" IsChecked="{Binding RxDuringMd}">
                   <StackPanel Spacing="2">
                     <TextBlock Text="REACTER-style during MD" FontWeight="SemiBold" />
-                    <TextBlock Text="Gissinger, Jensen &amp; Wise, Polymer 128, 211 (2017) · coming" Classes="dim" TextWrapping="Wrap" />
+                    <TextBlock Text="One continuous NVT run, reactions checked at intervals, each reacted site settled locally with the rest held · after Gissinger, Jensen &amp; Wise, Polymer 128, 211 (2017)" Classes="dim" TextWrapping="Wrap" />
                   </StackPanel>
                 </RadioButton>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
@@ -67,10 +67,10 @@
                   <NumericUpDown Grid.Row="1" Value="{Binding RxCaptureD}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.##" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxTargetD}" Minimum="0.001" Maximum="1" Increment="0.05" FormatString="0.###" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxCyclesD}" Minimum="1" Increment="10" FormatString="0" />
-                  <TextBlock Grid.Row="2" Text="Reactions per cycle" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="MD per cycle (ps)" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="T (K)" Classes="label" Margin="0,8,0,0" />
+                  <TextBlock Grid.Row="2" Text="Reactions per cycle" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RxMdLabel}" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="T (K)" Classes="label" Margin="0,8,0,0" />
                   <NumericUpDown Grid.Row="3" Value="{Binding RxPerCycleD}" Minimum="1" Increment="1" FormatString="0" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding RxMdPsD}" Minimum="0" Increment="1" FormatString="0.#" IsEnabled="{Binding RxRelax}" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding RxTempD}" Minimum="1" Increment="10" FormatString="0" IsEnabled="{Binding RxRelax}" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding RxMdPsD}" Minimum="0" Increment="0.1" FormatString="0.##" IsEnabled="{Binding RxMdEnabled}" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding RxTempD}" Minimum="1" Increment="10" FormatString="0" IsEnabled="{Binding RxMdEnabled}" />
                 </Grid>
                 <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
                   <CheckBox Classes="toggle" Content="Relax after each cycle" IsChecked="{Binding RxRelax}" />

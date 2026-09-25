@@ -1522,7 +1522,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
     public string RxText { get => _rxText; set => Set(ref _rxText, value); }
     public string RxLog { get => _rxLog; private set => Set(ref _rxLog, value); }
-    public bool RxRelax { get => _rxRelax; set => Set(ref _rxRelax, value); }
+    public bool RxRelax { get => _rxRelax; set { if (Set(ref _rxRelax, value)) Raise(nameof(RxMdEnabled)); } }
     public bool Reacting { get => _reacting; private set { if (Set(ref _reacting, value)) RaiseBusy(); } }
     public bool CanReact => _doc != null && Idle;
     public decimal? RxCyclesD { get => _rxCycles; set { _rxCycles = Math.Clamp((int)(value ?? 50), 1, 100000); Raise(); } }
@@ -1531,6 +1531,21 @@ public sealed partial class MainViewModel : ObservableObject
     public decimal? RxTargetD { get => (decimal)_rxTarget; set { _rxTarget = Math.Clamp((double)(value ?? 1m), 0.001, 1); Raise(); } }
     public decimal? RxCaptureD { get => (decimal)_rxCapture; set { _rxCapture = Math.Clamp((double)(value ?? 0m), 0, 20); Raise(); } }
     public decimal? RxMdPsD { get => (decimal)_rxMdPs; set { _rxMdPs = Math.Clamp((double)(value ?? 0m), 0, 10000); Raise(); } }
+    // protocol: Polymatic cycles (react → relax → optional MD) or REACTER-style checks during one continuous NVT run
+    private bool _rxDuringMd;
+    public bool RxDuringMd
+    {
+        get => _rxDuringMd;
+        set
+        {
+            if (!Set(ref _rxDuringMd, value)) return;
+            if (value && _rxMdPs > 1) RxMdPsD = 0.1m;   // checks every 0.1 ps, as bond/react's Nevery
+            Raise(nameof(RxPolymatic)); Raise(nameof(RxMdEnabled)); Raise(nameof(RxMdLabel));
+        }
+    }
+    public bool RxPolymatic { get => !_rxDuringMd; set { if (value) RxDuringMd = false; } }
+    public bool RxMdEnabled => _rxRelax || _rxDuringMd;
+    public string RxMdLabel => _rxDuringMd ? "Check every (ps)" : "MD per cycle (ps)";
     public decimal? RxTempD { get => (decimal)_rxTemp; set { _rxTemp = Math.Clamp((double)(value ?? 300m), 1, 5000); Raise(); } }
     public decimal? RxFaD { get => (decimal)_rxFa; set { _rxFa = Math.Max(1, (double)(value ?? 2m)); Raise(); Raise(nameof(FloryText)); Raise(nameof(RxAlphaC)); } }
     public decimal? RxFbD { get => (decimal)_rxFb; set { _rxFb = Math.Max(1, (double)(value ?? 4m)); Raise(); Raise(nameof(FloryText)); Raise(nameof(RxAlphaC)); } }
@@ -1593,7 +1608,8 @@ public sealed partial class MainViewModel : ObservableObject
         var o = new CapsReactOpts
         {
             Seed = (ulong)_rxSeed, MaxCycles = _rxCycles, MaxPerCycle = _rxPerCycle, TargetConversion = _rxTarget, Capture = _rxCapture,
-            Relax = _rxRelax ? 1 : 0, RelaxIterations = _rxRelaxIt, MdPs = _rxRelax ? _rxMdPs : 0, Temperature = _rxTemp, Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
+            Relax = _rxRelax ? 1 : 0, RelaxIterations = _rxRelaxIt, MdPs = _rxRelax || _rxDuringMd ? _rxMdPs : 0, Temperature = _rxTemp, Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
+            DuringMd = _rxDuringMd ? 1 : 0,
         };
         _rxRows.Clear();
         ReactChanged?.Invoke();
