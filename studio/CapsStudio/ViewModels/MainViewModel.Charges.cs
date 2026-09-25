@@ -19,7 +19,8 @@ public partial class MainViewModel
     private int _chgMethod;
     private string _chgFile = "", _chgNet = "—", _chgMax = "—", _chgStatus = "", _chgNote = "", _chgError = "";
     public int ChargeMethod { get => _chgMethod; set { if (Set(ref _chgMethod, Math.Clamp(value, 0, 3)) && (value != 3 || _chgFile.Length > 0)) ComputeCharges(); } }
-    public string ChargeFile { get => _chgFile; private set => Set(ref _chgFile, value); }
+    public string ChargeFile { get => _chgFile; private set { if (Set(ref _chgFile, value)) Raise(nameof(HasChargeFile)); } }
+    public bool HasChargeFile => _chgFile.Length > 0;
     public string ChargeNet { get => _chgNet; private set => Set(ref _chgNet, value); }
     public string ChargeMax { get => _chgMax; private set => Set(ref _chgMax, value); }
     public string ChargeStatus { get => _chgStatus; private set => Set(ref _chgStatus, value); }

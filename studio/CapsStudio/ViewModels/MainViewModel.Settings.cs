@@ -203,6 +203,14 @@ public sealed partial class MainViewModel
         }
     }
     public bool PmeOn => _settings.Electrostatics == 1;
+    /// <summary>0: LJ cut-off with the homogeneous tail correction to energy and pressure; 1: cut-off only.</summary>
+    public int LjTailChoice
+    {
+        get => _settings.LjTail ? 0 : 1;
+        set { var t = value == 0; if (t == _settings.LjTail) return; _settings.LjTail = t; Raise(); Raise(nameof(LjTailText)); Changed("LJ tail correction"); }
+    }
+    public string LjTailText => _settings.LjTail ? "Cut-off + tail correction" : "Cut-off only (no tail)";
+    private int TailFlag => _settings.LjTail ? 1 : 0;
     /// <summary>The Dynamics page's third electrostatics field: DSF's damping, or PME's tolerance and grid.</summary>
     public string ElecParamLabel => PmeOn ? "Ewald tolerance · grid" : "Damping α (Å⁻¹)";
     public string ElecParamText => PmeOn
