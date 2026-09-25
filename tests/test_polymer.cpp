@@ -6,7 +6,9 @@
 #include <vector>
 
 #include "caps/analysis.hpp"
+#include "caps/edit.hpp"
 #include "caps/polymer.hpp"
+#include "caps/query.hpp"
 
 using namespace caps;
 
@@ -327,4 +329,30 @@ TEST(Polymer, RosenbluthGrowthIsLessStretched) {
     EXPECT_LT(trans[m], trans[0] - 0.08) << "method " << m;
     EXPECT_GT(trans[m], 0.40) << "method " << m;
   }
+}
+
+// A DNA strand from nucleotide units (head on O5′, tail on P): every sugar keeps its D configuration (C4′ R, C1′ R, C3′ S)
+// when configurations are kept; the 3′ P–H cap becomes a phosphate P–OH
+TEST(Polymer, DnaStrandKeepsDSugars) {
+  const char* bases[4] = {"n2cnc3c(N)ncnc32", "N2C=CC(N)=NC2=O", "N2C=NC3=C2N=C(N)NC3=O", "N2C=C(C)C(=O)NC2=O"};
+  ChainSpec c;
+  for (int b = 0; b < 4; ++b)
+    c.units.push_back({std::string(1, "ACGT"[b]), std::string("*OC[C@H]1O[C@@H](") + bases[b] + ")C[C@@H]1OP(=O)([O-])*"});
+  c.sequence = Sequence::Pattern;
+  c.pattern = "ACGTTGCA";
+  c.dp = 8;
+  c.keep_configuration = true;
+  GrowOptions o;
+  o.chains = 1;
+  o.density = 0.02;
+  o.seed = 4;
+  o.auto_scale = true;
+  System s = grow_chains(c, o);
+  EXPECT_EQ(hydroxylate_phosphorus(s), 1);
+  const auto cip = cip_labels(s);
+  int r = 0, sl = 0;
+  for (size_t i = 0; i < cip.size(); ++i)   // the sugar carbons (phosphorus reads as a centre too: its =O and O− differ)
+    if (s.atoms[i].element == 6) r += cip[i] == 'R', sl += cip[i] == 'S';
+  EXPECT_EQ(r, 16);   // C4′ and C1′ of eight sugars
+  EXPECT_EQ(sl, 8);   // C3′
 }

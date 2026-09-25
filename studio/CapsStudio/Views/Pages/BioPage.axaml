@@ -44,13 +44,21 @@
       <DockPanel>
         <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <DockPanel>
-            <TextBlock DockPanel.Dock="Right" Text="Style: tube through CA · sticks without H" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding BioSummary}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock DockPanel.Dock="Right" Text="Style: tube through CA · sticks without H" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" IsVisible="{Binding BioPeptide}" />
+            <TextBlock DockPanel.Dock="Right" Text="Style: ball and stick" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" IsVisible="{Binding BioNucleic}" />
+            <Panel>
+              <TextBlock Text="{Binding BioSummary}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsVisible="{Binding BioPeptide}" />
+              <TextBlock Text="{Binding NaInfo}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsVisible="{Binding BioNucleic}" />
+            </Panel>
           </DockPanel>
         </Border>
         <Panel>
-          <v:MolView x:Name="Preview" DrawStyle="3" />
-          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
+          <v:MolView x:Name="Preview" DrawStyle="3" IsVisible="{Binding BioPeptide}" />
+          <v:MolView x:Name="NaPreview" DrawStyle="0" IsVisible="{Binding BioNucleic}" />
+          <Border Classes="hud" Padding="10,4" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding BioNucleic}">
+            <TextBlock Text="{Binding NaHud}" FontSize="12" />
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding BioPeptide}">
             <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding BioHudTitle}" FontSize="12" /></Border>
             <ItemsControl ItemsSource="{Binding BioHudRuns}">
               <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -79,20 +87,40 @@
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
               <Button Content="Cancel" Click="OnCancel" />
               <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding BioIdle}">
-                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build peptide" VerticalAlignment="Center" /></StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding BioBuildText}" VerticalAlignment="Center" /></StackPanel>
               </Button>
             </StackPanel>
           </Border>
           <Border DockPanel.Dock="Top" Padding="16,12,16,0">
             <Border Classes="seg" HorizontalAlignment="Stretch">
               <UniformGrid Columns="2">
-                <RadioButton Classes="seg" Content="Peptide" GroupName="biokind" IsChecked="True" HorizontalAlignment="Stretch" />
-                <RadioButton Classes="seg" Content="Nucleic acid" GroupName="biokind" IsEnabled="False" HorizontalAlignment="Stretch"
-                             ToolTip.Tip="DNA and RNA strands are not built in this version" ToolTip.ShowOnDisabled="True" />
+                <RadioButton Classes="seg" Content="Peptide" GroupName="biokind" IsChecked="{Binding BioPeptide}" HorizontalAlignment="Stretch" />
+                <RadioButton Classes="seg" Content="Nucleic acid" GroupName="biokind" IsChecked="{Binding BioNucleic}" HorizontalAlignment="Stretch"
+                             ToolTip.Tip="A single DNA or RNA strand, grown as a coil (no double helix)" />
               </UniformGrid>
             </Border>
           </Border>
-          <ScrollViewer>
+          <ScrollViewer IsVisible="{Binding BioNucleic}">
+            <StackPanel>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="STRAND" Classes="h3" />
+                  <Border Classes="seg" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="seg" Content="DNA" GroupName="nakind" IsChecked="{Binding NaDna}" />
+                      <RadioButton Classes="seg" Content="RNA" GroupName="nakind" IsChecked="{Binding NaRna}" />
+                    </StackPanel>
+                  </Border>
+                  <TextBlock Text="Sequence, 5′ → 3′" Classes="label" />
+                  <TextBox Text="{Binding NaSequence}" Classes="mono" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" Watermark="ACGTACGT" />
+                  <TextBlock Text="{Binding NaInfo}" Classes="dim" TextWrapping="Wrap" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap"
+                             Text="One strand, grown nucleotide by nucleotide as a coil with the D-sugars of DNA (2′-deoxyribose) or RNA (ribose) kept; phosphodiester links with a charge on each phosphate, 5′-OH and 3′-phosphate ends. Double helices need fibre coordinates (Arnott) that CAPS does not ship." />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+          <ScrollViewer IsVisible="{Binding BioPeptide}">
             <StackPanel>
               <!-- sequence -->
               <Border Classes="section" Padding="16,14">

@@ -585,6 +585,16 @@ internal static class Screenshot
                 w.ViewModel.PinMeasurement();
             }
             if (kv[0] == "tool") w.ViewModel.EditTool = int.Parse(kv[1]);
+            if (kv[0] == "nucleic")   // nucleic=SEQ: the Biomolecule builder's nucleic-acid panel with a strand built
+            {
+                w.ViewModel.OpenBio();
+                w.ViewModel.BioNucleic = true;
+                w.ViewModel.NaSequence = kv[1];
+                var t = w.ViewModel.BuildNucleic();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                w.ViewModel.OpenBio();
+                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "restraint")   // restraint=I,J: pick two atoms (indices from 0) and add their distance as a restraint
             {
                 var ij = kv[1].Split(',');

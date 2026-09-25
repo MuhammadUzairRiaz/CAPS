@@ -1626,6 +1626,26 @@ internal static class SelfTest
             Check(risOk && vm.RisCurve.Length == 0, $"RIS reference: {vm.RisCurve.Length} on PS · alkane note ok {risOk}");
         }
 
+        // Biomolecule › nucleic acid: a DNA strand of 6 nt (D-sugars kept, 3′ phosphate), then RNA
+        {
+            vm.OpenBio();
+            vm.BioNucleic = true;
+            vm.NaSequence = "ACGTTA";
+            vm.BuildNucleic().GetAwaiter().GetResult();
+            var dna = vm.Document!.Summary();
+            int Oxygens() { var n = 0; for (var i = 0; i < vm.Document!.Summary().Atoms; ++i) n += vm.Document!.Atom(i).Element == 8 ? 1 : 0; return n; }
+            var oDna = Oxygens();
+            vm.NaRna = true;   // T becomes U
+            var rnaSeq = vm.NaSequence;
+            vm.BuildNucleic().GetAwaiter().GetResult();
+            var rna = vm.Document!.Summary();
+            var oRna = Oxygens();   // one 2′-OH per nucleotide
+            Check(dna.Molecules == 1 && dna.Atoms > 150 && rnaSeq == "ACGUUA" && oRna == oDna + 6 && vm.Title.StartsWith("RNA"),
+                  $"nucleic acid: DNA {dna.Atoms} atoms ({oDna} O), RNA {rnaSeq} {rna.Atoms} atoms ({oRna} O) · {vm.Status}");
+            vm.BioNucleic = false;
+            vm.NaRna = false;
+        }
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseDocument();
