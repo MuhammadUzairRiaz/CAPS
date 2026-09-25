@@ -229,6 +229,7 @@ public sealed partial class MainViewModel
             SolvStageChip = "done";
             SolvLog = rep;
             Show(doc, title);
+            Record($"doc = caps.build.solvate({(solute != null ? "doc" : "None")}, **{opts})");
             GrownUnsaved = true;
             Status = "Solvated · " + (rep.Split('\n').FirstOrDefault() ?? "");
             SetModule(8);

@@ -176,6 +176,7 @@ public sealed partial class MainViewModel
         var r = JsonNode.Parse(text)!;
         if (r["ok"]?.GetValue<bool>() != true) { FragmentError = r["error"]?.GetValue<string>() ?? "cannot attach"; Status = FragmentError; return; }
         FragmentError = "";
+        RecordEdit(json);
         AfterEdit(r["what"]!.GetValue<string>());
         if (back && IsFragments) SetModule(8);
     }
