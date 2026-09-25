@@ -1,0 +1,47 @@
+<!-- First-run tour (design/boards/FirstRunTour): the region lit, a callout beside it, the steps in the corner. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels" xmlns:local="using:CapsStudio.Views"
+             x:Class="CapsStudio.Views.TourOverlay" x:DataType="vm:MainViewModel">
+  <Canvas x:Name="Stage">
+    <Path x:Name="Dim" Fill="#C007080A" />
+    <Border x:Name="Spot" BorderBrush="{DynamicResource AccB}" BorderThickness="2" CornerRadius="8" IsHitTestVisible="False" />
+    <Border x:Name="Callout" Width="420" Padding="18" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource AccB}" BorderThickness="1" CornerRadius="12"
+            BoxShadow="0 20 50 0 #A0000000">
+      <StackPanel Spacing="12">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Border Classes="chip acc"><TextBlock Text="{Binding TourCount}" Classes="mono" /></Border>
+          <TextBlock Text="{Binding TourCurrent.Title}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="300" />
+        </StackPanel>
+        <TextBlock Text="{Binding TourCurrent.Body}" FontSize="13" LineHeight="20" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding TourCurrent.Keys}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="0,0,8,0">
+                <TextBlock Text="{Binding}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+            <Button Classes="small" Content="Skip tour" Click="OnSkip" IsVisible="{Binding !TourLast}" />
+            <Button Classes="small" Content="Back" Click="OnBack" IsEnabled="{Binding !TourFirst}" />
+            <Button Classes="small primary" Content="{Binding TourNextText}" Click="OnNext" />
+          </StackPanel>
+          <ItemsControl x:Name="Dots" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          </ItemsControl>
+        </DockPanel>
+      </StackPanel>
+    </Border>
+    <Border x:Name="Outline" Width="290" Padding="16" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="12">
+      <StackPanel Spacing="12">
+        <TextBlock Text="STUDIO TOUR · 2 MIN" Classes="h3" />
+        <ItemsControl x:Name="Steps">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </Canvas>
+</UserControl>
