@@ -103,6 +103,11 @@ struct ReactOptions {
   double relax_ftol = 2.0;
   double md_ps = 0;             // NVT after each cycle, ps (0: none)
   double temperature = 300;
+  // REACTER-style (after Gissinger, Jensen & Wise, Polymer 128, 211 (2017)): one continuous NVT run, reactions checked
+  // every md_ps; each reacted site (its atoms, those within two bonds and all atoms within 5 Å) is stabilised by a local minimisation
+  // with capped forces while the rest of the cell is held and keeps its velocities — in place of LAMMPS's nve/limit
+  // stabilisation. No global minimisation between checks. Stops at the cycle limit or the target conversion.
+  bool during_md = false;
   EnergyOptions energy;
   std::function<bool(const CycleRow&)> progress;   // return false to cancel
   std::function<void(const System&, int cycle)> frame;

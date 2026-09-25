@@ -588,6 +588,56 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].name = ff.atom_type[i];
   };
 
+  if (o.during_md && o.md_ps <= 0) throw ReactError("reactions during MD need the check interval (md_ps > 0)");
+  if (o.during_md) {
+    char b[240];
+    std::snprintf(b, sizeof b, "REACTER-style (Gissinger et al. 2017): continuous NVT at %.0f K, reactions checked every %.3g ps; reacted sites "
+                  "stabilised by a local capped-force minimisation (the rest held), no global minimisation", o.temperature, o.md_ps);
+    rep.notes.push_back(b);
+  }
+  // REACTER-style: the reacted sites (atom ids, the atoms within two bonds and within 5 Å of those) settle by a local
+  // minimisation, everything else held
+  auto stabilise = [&](const std::set<int64_t>& ids, CycleRow& row) {
+    std::vector<char> site(s.atoms.size(), 0);
+    for (size_t i = 0; i < s.atoms.size(); ++i) site[i] = ids.count(s.atoms[i].id) ? 1 : 0;
+    const auto nb = s.neighbours();
+    for (int ring = 0; ring < 2; ++ring) {   // and the atoms within two bonds
+      std::vector<char> grow = site;
+      for (size_t i = 0; i < s.atoms.size(); ++i)
+        if (site[i]) for (uint32_t w : nb[i]) grow[w] = 1;
+      site = grow;
+    }
+    {   // and every atom within 5 Å of those, whose contacts the new geometry changes
+      std::vector<Vec3> core;
+      for (size_t i = 0; i < s.atoms.size(); ++i) if (site[i]) core.push_back(s.atoms[i].pos);
+      for (size_t i = 0; i < s.atoms.size(); ++i) {
+        if (site[i]) continue;
+        for (const auto& c : core)
+          if (norm(s.cell.valid() ? s.cell.minimum_image(s.atoms[i].pos - c) : s.atoms[i].pos - c) < 5.0) { site[i] = 2; break; }
+      }
+      for (auto& x : site) x = x ? 1 : 0;
+    }
+    RelaxOptions r;
+    r.pushoff = true;   // new bonds start stretched: capped forces first
+    r.ftol = std::min(o.relax_ftol, 1.0);   // tight: dynamics goes on from here
+    r.max_iterations = std::max(o.relax_iterations, 3000);
+    r.energy = o.energy;
+    r.fixed.assign(s.atoms.size(), 1);
+    for (size_t i = 0; i < s.atoms.size(); ++i) r.fixed[i] = site[i] ? 0 : 1;
+    const auto v = s.velocities;
+    RelaxReport rr;
+    try {
+      relax(s, r, &rr);
+    } catch (const FieldError& e) {
+      throw ReactError(std::string("cannot stabilise the reacted sites: ") + e.what());
+    }
+    if (v.size() == s.atoms.size()) {   // the held atoms keep their velocities; the site starts from rest
+      s.velocities = v;
+      for (size_t i = 0; i < s.atoms.size(); ++i) if (site[i]) s.velocities[i] = {0, 0, 0};
+    }
+    row.energy = rr.final.total();
+  };
+
   int stall = 0;
   for (int cycle = 1; cycle <= o.max_cycles; ++cycle) {
     std::vector<Match> all;
@@ -608,6 +658,9 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       for (uint32_t a : m.atoms) busy.insert(a);
       chosen.push_back(m);
     }
+    std::set<int64_t> site_ids;
+    for (const auto& m : chosen)
+      for (uint32_t a : m.atoms) site_ids.insert(s.atoms[a].id);
     const int applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen);
     CycleRow row;
     row.cycle = cycle;
@@ -617,11 +670,12 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     row.conversion = double(rep.reactions) / rep.initial_sites;
     if (applied > 0) {
       stall = 0;
-      relax_now(row);
+      if (o.during_md) stabilise(site_ids, row);
+      else relax_now(row);
     } else {
       ++stall;
     }
-    if (o.md_ps > 0 && (applied > 0 || stall <= o.stall_cycles)) {
+    if (o.md_ps > 0 && (o.during_md || applied > 0 || stall <= o.stall_cycles)) {
       DynamicsOptions d;
       d.steps = std::max<int64_t>(1, std::llround(o.md_ps * 1000));
       d.temperature = o.temperature;
@@ -647,7 +701,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       rep.notes.push_back("target conversion reached");
       break;
     }
-    if (applied == 0 && (o.md_ps <= 0 || stall > o.stall_cycles)) {
+    if (applied == 0 && !o.during_md && (o.md_ps <= 0 || stall > o.stall_cycles)) {
       rep.notes.push_back(o.md_ps > 0 ? "no reactive pairs within the capture distance after dynamics; stopped"
                                       : "no more reactive pairs within the capture distance; stopped (enable dynamics between cycles to let "
                                         "groups diffuse)");

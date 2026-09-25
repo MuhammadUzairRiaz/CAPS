@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 21  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa) */
+#define CAPS_ABI_VERSION 21  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -204,6 +204,7 @@ typedef struct {
   double md_ps, temperature;       /* NVT between cycles */
   double cutoff;
   int32_t coulomb;
+  int32_t during_md;               /* REACTER-style: continuous NVT, reactions checked every md_ps, sites stabilised locally */
 } caps_react_opts;
 
 typedef struct {

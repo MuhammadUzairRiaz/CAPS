@@ -222,3 +222,36 @@ TEST(React, SulfurCureOfNaturalRubber) {
   EXPECT_EQ(int(props[0].extra.at("sulfur bridges")), bridges);
   EXPECT_GT(props[0].value, 0.0);
 }
+
+// REACTER-style: one continuous NVT run with reaction checks every 0.05 ps; reacted sites settle locally, the run goes on
+// through checks without reactions (no stall stop), and the cell keeps its velocities
+TEST(React, DuringMdChecksAtIntervals) {
+  GrowOptions g;
+  g.chains = 4;
+  g.dp = 5;
+  g.density = 0.4;
+  g.seed = 3;
+  System s = grow(g);
+  RelaxOptions rl;
+  rl.target_density = 0.95;
+  rl.ftol = 1.0;
+  relax(s, rl);
+  const size_t atoms = s.atoms.size();
+  ReactOptions o;
+  o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.max_per_cycle = 2;
+  o.max_cycles = 5;
+  o.during_md = true;
+  o.md_ps = 0.05;
+  o.temperature = 400;
+  ReactReport r;
+  react(s, o, &r);
+  EXPECT_EQ(r.cycles.size(), 5u);   // every check runs, reacting or not
+  ASSERT_GT(r.reactions, 0);
+  EXPECT_EQ(s.atoms.size(), atoms - 2 * r.reactions);
+  EXPECT_EQ(s.velocities.size(), s.atoms.size());
+  for (const auto& c : r.cycles) EXPECT_TRUE(std::isfinite(c.energy));
+  EXPECT_TRUE(std::any_of(r.notes.begin(), r.notes.end(), [](const std::string& n) { return n.find("REACTER-style") != std::string::npos; }));
+  o.md_ps = 0;
+  EXPECT_THROW(react(s, o), ReactError);
+}

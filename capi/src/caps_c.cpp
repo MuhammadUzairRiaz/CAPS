@@ -1418,6 +1418,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     r.relax = o->relax != 0;
     if (o->relax_iterations > 0) r.relax_iterations = o->relax_iterations;
     r.md_ps = o->md_ps;
+    r.during_md = o->during_md != 0;
     if (o->temperature > 0) r.temperature = o->temperature;
     if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
     r.energy.coulomb = o->coulomb != 0;
