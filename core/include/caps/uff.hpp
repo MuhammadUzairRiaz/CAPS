@@ -51,6 +51,9 @@ FFDef uff_definition();
 
 // Number of UFF atom labels in the table (127) and whether a label is one of them.
 int uff_label_count();
+// UFF's van der Waals distance x (Å) and well depth D (kcal/mol) of an element (the same for all its labels); false
+// when the table has no label for it.
+bool uff_vdw(int element, double& x, double& d);
 bool uff_has_label(const std::string& label);
 
 }  // namespace caps

@@ -387,7 +387,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         }
         g.curve = flag(J, "curve", true);
         const std::string method = text(J, "method", "trials");
-        if (method != "trials") throw RecipeError(2, "grow.method: trials (best-of-k torsion trials); configurational-bias Monte Carlo is not built");
+        if (method != "trials" && method != "rosenbluth" && method != "rosenbluth_lj")
+          throw RecipeError(2, "grow.method: trials (best of k by contact margin), rosenbluth (soft spheres) or rosenbluth_lj (UFF Lennard-Jones); "
+                               "configurational-bias Monte Carlo with acceptance is not built");
+        g.method = method == "rosenbluth" ? 1 : method == "rosenbluth_lj" ? 2 : 0;
+        g.method_temperature = num(J, "temperature", 450);
         if (J.has("trials")) g.trials = int(J["trials"].number());
         g.progress = [&](int done, int total, int restarts) {
           report(k, st, "chain " + std::to_string(done) + "/" + std::to_string(total) + (restarts ? " · " + std::to_string(restarts) + " restarts" : ""), "running", total ? double(done) / total : 0);
@@ -411,8 +415,14 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         else if (spec.architecture == Architecture::Branched)
           gp.push_back({"architecture", "branched, side chains of " + std::to_string(spec.arm_dp) + " units with probability " + g6(spec.branch_probability) + " per backbone unit"});
         if (!gr.notes.empty()) gp.push_back({"built", gr.notes.front()});
-        res.manifest.steps.push_back(step("grow.trials", std::to_string(chains) + " chains grown in a periodic cell, best-of-k trial placement by contact margin",
-                                          std::move(gp), seeded(g.seed), {"parsons2005", "matsumoto1998"}));
+        if (g.method > 0) gp.push_back({"method", (g.method == 1 ? "Rosenbluth, soft spheres" : "Rosenbluth, UFF Lennard-Jones") + std::string(" at ") + g6(g.method_temperature) +
+                                               " K; ln W per chain " + g6(gr.ln_rosenbluth)});
+        res.manifest.steps.push_back(g.method == 0 ? step("grow.trials", std::to_string(chains) + " chains grown in a periodic cell, best-of-k trial placement by contact margin",
+                                                          std::move(gp), seeded(g.seed), {"parsons2005", "matsumoto1998"})
+                                                   : step("grow.rosenbluth", std::to_string(chains) + " chains grown in a periodic cell, trials drawn by Rosenbluth weight",
+                                                          std::move(gp), seeded(g.seed),
+                                                          g.method == 1 ? std::vector<std::string>{"rosenbluth1955", "theodorou1985", "jorgensen1984"}
+                                                                        : std::vector<std::string>{"rosenbluth1955", "siepmann1992", "rappe1992", "jorgensen1984"}));
         report(k, st, "best of " + std::to_string(g.trials) + " trials · " + std::to_string(chains) + " chains · " + std::to_string(s.atoms.size()) + " atoms · box " + g6(gr.box) + " Å", "done", 1);
       } else if (st == "relax" || st == "md" || st == "equilibrate") {
         if (!ff) type_now(s);

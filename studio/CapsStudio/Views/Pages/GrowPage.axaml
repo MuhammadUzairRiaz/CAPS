@@ -131,33 +131,37 @@
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Growth method" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,12,16,16" Spacing="8">
-                <Border Classes="choice on">
+                <Border Classes="choice" Classes.on="{Binding GrowMethodIs0}" Tag="0" Tapped="OnMethod" Cursor="Hand">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Border Classes="radio on" VerticalAlignment="Center"><Ellipse /></Border>
+                    <Border Classes="radio" Classes.on="{Binding GrowMethodIs0}" VerticalAlignment="Center"><Ellipse /></Border>
                     <StackPanel Grid.Column="1" Spacing="2">
-                      <TextBlock Text="Self-avoiding growth, exact geometry" FontWeight="SemiBold" />
-                      <TextBlock Text="All chains grown together, periodic contact checks against every placed atom, back-tracking and restarts" Classes="dim" TextWrapping="Wrap" />
+                      <TextBlock Text="Self-avoiding growth, the roomiest trial" FontWeight="SemiBold" />
+                      <TextBlock Text="All chains grown together, periodic contact checks against every placed atom, back-tracking and restarts; keeping the roomiest trial stretches chains (trans-rich)" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
                 </Border>
-                <Border Classes="choice" IsEnabled="False" ToolTip.Tip="Coming" ToolTip.ShowOnDisabled="True">
+                <Border Classes="choice" Classes.on="{Binding GrowMethodIs1}" Tag="1" Tapped="OnMethod" Cursor="Hand">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Border Classes="radio" VerticalAlignment="Center"><Ellipse /></Border>
+                    <Border Classes="radio" Classes.on="{Binding GrowMethodIs1}" VerticalAlignment="Center"><Ellipse /></Border>
                     <StackPanel Grid.Column="1" Spacing="2">
-                      <TextBlock Text="Theodorou–Suter + RIS" FontWeight="SemiBold" />
-                      <TextBlock Text="Rosenbluth-weighted, soft-sphere excluded volume · Macromolecules 1985 · coming" Classes="dim" TextWrapping="Wrap" />
+                      <TextBlock Text="Rosenbluth, soft spheres (Theodorou–Suter)" FontWeight="SemiBold" />
+                      <TextBlock Text="A trial drawn by its Boltzmann weight: soft-sphere overlaps and Jorgensen's butane torsions · Macromolecules 18, 1467 (1985)" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
                 </Border>
-                <Border Classes="choice" IsEnabled="False" ToolTip.Tip="Coming" ToolTip.ShowOnDisabled="True">
+                <Border Classes="choice" Classes.on="{Binding GrowMethodIs2}" Tag="2" Tapped="OnMethod" Cursor="Hand">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Border Classes="radio" VerticalAlignment="Center"><Ellipse /></Border>
+                    <Border Classes="radio" Classes.on="{Binding GrowMethodIs2}" VerticalAlignment="Center"><Ellipse /></Border>
                     <StackPanel Grid.Column="1" Spacing="2">
-                      <TextBlock Text="Configurational-bias, real force field" FontWeight="SemiBold" />
-                      <TextBlock Text="Siepmann &amp; Frenkel 1992 · trial energies from CAPS Field · coming" Classes="dim" TextWrapping="Wrap" />
+                      <TextBlock Text="Configurational-bias growth, Lennard-Jones" FontWeight="SemiBold" />
+                      <TextBlock Text="Siepmann &amp; Frenkel's trial selection with UFF Lennard-Jones by element (not the Field assignment) · no Monte Carlo acceptance · Mol. Phys. 75, 59 (1992)" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
                 </Border>
+                <Grid ColumnDefinitions="Auto,120" ColumnSpacing="10" IsVisible="{Binding !GrowMethodIs0}">
+                  <TextBlock Text="Temperature of the Boltzmann weights (K)" Classes="label" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding GrowMethodTempD}" Minimum="100" Maximum="2000" Increment="25" FormatString="0" />
+                </Grid>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" Margin="0,4,0,0">
                   <StackPanel Spacing="4" ToolTip.Tip="Torsion and ring trials per growth step; the roomiest is kept">
                     <TextBlock Text="Trial directions k" Classes="label" /><NumericUpDown Value="{Binding GrowTrialsD}" Minimum="4" Maximum="5000" Increment="20" FormatString="0" />

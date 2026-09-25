@@ -563,6 +563,7 @@ internal static class Screenshot
             }
             if (kv[0] == "growshape") w.ViewModel.GrowShape = int.Parse(kv[1]);   // before grow=: 1 slab, 2 cylinder, 3 around a cylinder
             if (kv[0] == "growchains") w.ViewModel.GrowChainsD = int.Parse(kv[1]);
+            if (kv[0] == "growmethod") w.ViewModel.GrowMethod = int.Parse(kv[1]);
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);
