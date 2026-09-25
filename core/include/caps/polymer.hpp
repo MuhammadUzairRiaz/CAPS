@@ -86,4 +86,27 @@ struct InterfaceOptions {
 };
 System build_interface(const System& slab, const ChainSpec& spec, const InterfaceOptions& o, GrowReport* report = nullptr);
 
+// Polymer blends (tyre compounds: NR/BR, SBR/BR …): components grown one after another, each around the chains already
+// placed, in one periodic cell. Chain counts come from the weight fractions and each component's chain mass, scaled
+// so the first component has `chains` chains (or give a component's chains directly).
+enum class BlendMorphology { Mixed, Slabs };
+struct BlendComponent {
+  ChainSpec spec;
+  double weight = 1.0;       // weight fraction (any scale; normalised)
+  int chains = 0;            // > 0: exactly this many
+};
+struct BlendOptions {
+  int chains = 8;            // chains of the first component when its count is not given
+  double density = 0.5;      // growth density, g/cm³ (compress in Relax afterwards)
+  BlendMorphology morphology = BlendMorphology::Mixed;   // Slabs: component 1 in the lower half along z, 2 in the upper
+  GrowOptions grow;          // seed, contact scale, progress …; auto_scale is on
+};
+struct BlendReport {
+  std::vector<int> chains;             // per component
+  std::vector<double> weight_fraction; // achieved, per component
+  std::vector<std::pair<int64_t, int64_t>> molecules;   // first and last molecule id per component
+  std::vector<std::string> notes;
+};
+System grow_blend(const std::vector<BlendComponent>& components, const BlendOptions& o, BlendReport* report = nullptr);
+
 }  // namespace caps

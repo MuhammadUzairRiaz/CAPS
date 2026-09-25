@@ -367,6 +367,14 @@ internal static class SelfTest
         var comp = vm.Document?.Summary();
         Check(comp is { } csum && csum.Molecules == 5 && vm.HoldOn, $"nanotube composite: {vm.Title} · {comp?.Atoms} atoms · {vm.NanoError} {vm.Status}");
 
+        // Blend builder: NR / BR 70 : 30
+        vm.OpenBlend();
+        vm.BlendChains = 4;
+        foreach (var r in vm.BlendRows) r.Dp = 8;
+        vm.BuildBlend().GetAwaiter().GetResult();
+        var bsum = vm.Document?.Summary();
+        Check(vm.BlendRows.Count == 2 && bsum is { } blendSum && blendSum.Molecules >= 5 && vm.Title.Contains("blend"), $"blend: {vm.Title} · {bsum?.Molecules} chains · {vm.BlendError}");
+
         // Jobs: the runs above were recorded with their log and provenance
         Check(vm.Jobs.Any(j => j.Kind == "Analyze" && j.IsDone && j.Log.Count > 1 && j.Provenance.Any(f => f.Key == "sha256")) && File.Exists(MainViewModel.JobsFile),
               $"jobs: {vm.Jobs.Count} recorded ({string.Join(", ", vm.Jobs.Select(j => j.Id + " " + j.Status))})");

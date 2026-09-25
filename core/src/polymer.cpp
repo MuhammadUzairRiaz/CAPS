@@ -873,11 +873,15 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     s.atoms.push_back(a);
     return uint32_t(s.atoms.size() - 1);
   };
-  // the substrate first, as molecule 1
-  const int mol0 = o.substrate ? 1 : 0;
+  // the substrate first, keeping its molecule ids (a slab or filler is molecule 1; an earlier blend component keeps its
+  // chains); the new chains are numbered after them
+  int mol0 = 0;
   if (o.substrate) {
-    for (const auto& a : o.substrate->atoms) add(a.element, a.pos, 1);
+    int64_t top = 0;
+    for (const auto& a : o.substrate->atoms) top = std::max(top, a.mol);
+    for (const auto& a : o.substrate->atoms) add(a.element, a.pos, top > 0 ? int(a.mol) : 1);
     for (const auto& b : o.substrate->bonds) s.bonds.push_back(b);
+    mol0 = int(std::max<int64_t>(top, 1));
   }
   for (int c = 0; c < nchains; ++c) {
     auto& ch = C[size_t(c)];
