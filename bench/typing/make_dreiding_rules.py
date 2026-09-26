@@ -97,6 +97,8 @@ if __name__ == "__main__":
         json.dump(ff, open(ff_p, "w"), ensure_ascii=False, indent=1)
         for e in cat["forcefields"]:
             if e["id"] == target:
-                e["typing"] = {"rules": f"typing/{target}.typing.json", "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py)"}
+                e["typing"] = {"rules": f"typing/{target}.typing.json", "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py)"
+                               + ("" if target == "dreiding-moltemplate" else "; this file lists torsions for common neighbourhoods with the barrier already divided, "
+                                  "so some sp3–sp2 torsions (e.g. next to Cl on an sp2 carbon) are missing: DREIDING (moltemplate) applies the paper's rule to every bond")}
         print(f"{out}: {len(rules)} rules; absent from {target}: {', '.join(absent) or 'none'}")
     json.dump(cat, open(cat_p, "w"), ensure_ascii=False, indent=1)

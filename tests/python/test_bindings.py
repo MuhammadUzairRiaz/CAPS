@@ -153,6 +153,12 @@ with tempfile.TemporaryDirectory() as tmp:
           and "pair_coeff" in deck and "fix             integrate all npt" in deck and "Pair Coeffs" not in open(os.path.join(tmp, "system.data")).read()
           and "pcoupl                   = C-rescale" in open(os.path.join(tmp, "system.mdp")).read() and pkg["checks"]["missing"] == 0,
           "export_engines: refused before a force field; LAMMPS data + in and GROMACS top/itp/gro/mdp with the NPT protocol")
+# parameters by analogy (parmchk2's approach): GAFF2 lacks torsions through a cyclopropyl carbon (cx); they are taken
+# from c3 and listed as estimated, never filled silently
+cp = caps.build.smiles("C1CC1CCO", forcefield="uff")
+rep = cp.field.assign("gaff2")
+check(rep["complete"] and rep["estimated"] > 0 and all(" as " in x for x in rep["by_analogy"]) and not rep["missing"],
+      f"field: {rep['estimated']:.0f} terms by analogy, e.g. {rep['by_analogy'][0] if rep['by_analogy'] else '-'}")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
