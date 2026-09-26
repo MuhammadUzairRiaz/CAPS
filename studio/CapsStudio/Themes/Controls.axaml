@@ -200,6 +200,16 @@
   <Style Selector="Button.rail.on Border.bar"><Setter Property="IsVisible" Value="True" /></Style>
 
   <!-- document tabs in the top bar -->
+  <!-- project explorer rows: one per structure, the active one filled -->
+  <Style Selector="Button.projrow /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.projrow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+  </Style>
+  <Style Selector="Button.projrow.on /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+  </Style>
   <Style Selector="Button.doctab">
     <Setter Property="Height" Value="34" />
     <Setter Property="MinHeight" Value="34" />

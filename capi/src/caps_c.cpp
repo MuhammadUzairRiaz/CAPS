@@ -6344,7 +6344,11 @@ caps_doc* doc_of_system(caps::System sys, const caps_doc* from, const std::strin
 
 extern "C" caps_doc* caps_doc_copy(caps_doc* src) {
   try {
-    return doc_of_system(src->frame, src, "doc.copy", "a copy of the structure", {{"atoms", std::to_string(src->frame.atoms.size())}});
+    caps_doc* d = doc_of_system(src->frame, src, "doc.copy", "a copy of the structure", {{"atoms", std::to_string(src->frame.atoms.size())}});
+    // the same atoms: the force-field assignment (types set by hand, entered parameters, charges) holds for the copy
+    if (src->field) d->field = std::make_unique<FieldState>(*src->field);
+    d->held_mol = src->held_mol;
+    return d;
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;

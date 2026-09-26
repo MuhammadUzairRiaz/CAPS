@@ -760,6 +760,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.BundleWrite(_h, path, options, cam, opt);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
             return n;
@@ -771,6 +772,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var buf = new byte[1 << 16];
             var n = Native.ExportPreview(_h, format, options, lines, buf, buf.Length);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
@@ -784,6 +786,7 @@ public sealed class CapsDocument : IDisposable
         CapsAnalyzeProgress? cb = progress == null ? null : (_, f, _) => progress(f) ? 0 : 1;
         lock (_lock)
         {
+            Alive();
             // one run fills a generous buffer; a second only if it was too small
             var buf = new byte[1 << 20];
             var n = Native.PipelineSeries(_h, stride, cb, IntPtr.Zero, buf, buf.Length);
@@ -798,6 +801,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.FileChecks(_h, null, 0);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
             var buf = new byte[Math.Max(1, n)];
@@ -883,6 +887,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var report = new byte[8192];
             CapsRelaxProgress? cb = progress == null ? null : (st, n, it, e, f, d, _) => progress(st, n, it, e, f, d) ? 0 : 1;
             var rc = Native.Relax(_h, o, cb, IntPtr.Zero, report, report.Length);
@@ -898,6 +903,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var report = new byte[8192];
             CapsMdProgress? cb = progress == null ? null : (in CapsThermo r, long n, IntPtr _) => progress(r, n) ? 0 : 1;
             var rc = Native.Md(_h, o, cb, IntPtr.Zero, report, report.Length);
@@ -921,6 +927,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var report = new byte[16384];
             var text = System.Text.Encoding.UTF8.GetBytes(protocol + "\0");
             CapsEquilProgress? cb = progress == null ? null
@@ -936,6 +943,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = new int[20000];
             var r = new double[20000];
             var m = Native.InternalDistances(_h, n, r, n.Length, out var chains, out var b2);
@@ -956,6 +964,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var report = new byte[8192];
             CapsReactProgress? cb = progress == null ? null : (in CapsReactCycle r, IntPtr _) => progress(r) ? 0 : 1;
             var rc = Native.React(_h, System.Text.Encoding.UTF8.GetBytes(templates + "\0"), o, cb, IntPtr.Zero, report, report.Length);
@@ -972,6 +981,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var text = new byte[4096];
             Check(Native.FieldInfo(_h, text, text.Length));
             return System.Text.Encoding.UTF8.GetString(text).TrimEnd('\0').Trim();
@@ -994,6 +1004,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.FieldReport(_h, null, 0);
             if (n <= 1) return "";
             var buf = new byte[n];
@@ -1012,6 +1023,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 1 : 0;
             var rc = Native.AnalyzeEx(_h, props, o, m, cb, IntPtr.Zero);
             GC.KeepAlive(cb);
@@ -1029,6 +1041,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.EquilibrateChecks(_h, null, 0);
             if (n <= 1) return "";
             var buf = new byte[n];
@@ -1042,6 +1055,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.LammpsInput(_h, dataName, null, 0);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
             var buf = new byte[n];
@@ -1056,6 +1070,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             // size without a stem (the same text, nothing written), then write once
             var n = Native.Gromacs(_h, null, null, 0);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
@@ -1079,6 +1094,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.NoteCount(_h);
             var list = new List<string>(n);
             for (var k = 0; k < n; k++) list.Add(Native.Note(_h, k));
@@ -1277,6 +1293,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var n = Native.Molecules(_h, [], 0);
             Check(n);
             var arr = new CapsMolecule[n];
@@ -1299,6 +1316,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var cap = (int)(rmax / dr) + 1;
             var r = new double[cap];
             var g = new double[cap];
@@ -1316,6 +1334,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var buf = new int[16];
             var n = Native.Bonded(_h, i, buf, buf.Length);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
@@ -1329,6 +1348,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var m = new int[atoms];
             var n = Native.MoleculeIndex(_h, m, atoms);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
@@ -1340,6 +1360,7 @@ public sealed class CapsDocument : IDisposable
     {
         lock (_lock)
         {
+            Alive();
             var idx = new int[k];
             var d = new double[k];
             var n = Native.Neighbours(_h, i, k, idx, d);
@@ -1347,6 +1368,8 @@ public sealed class CapsDocument : IDisposable
             return Enumerable.Range(0, n).Select(q => (idx[q], d[q])).ToArray();
         }
     }
+
+    public bool IsDisposed { get { lock (_lock) return _h == IntPtr.Zero; } }
 
     public void Dispose()
     {

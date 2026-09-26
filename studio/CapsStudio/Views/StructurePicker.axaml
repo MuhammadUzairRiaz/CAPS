@@ -1,0 +1,26 @@
+<!-- Which structure of the project a module works on (Materials Studio style): pick any of them here; run modules can
+     keep the original and put their result in a new structure. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views"
+             x:Class="CapsStudio.Views.StructurePicker" x:DataType="vm:MainViewModel">
+  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasDocument}">
+    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+      <v:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+      <TextBlock Text="Structure" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+    </StackPanel>
+    <ComboBox ItemsSource="{Binding ProjectItems}" SelectedItem="{Binding ActiveItem}" MinWidth="360" MaxWidth="520" IsEnabled="{Binding Idle}"
+              ToolTip.Tip="The structure this module works on: any structure of the project">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:ProjectItem">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <v:Icon Kind="{Binding IconKind}" Size="13" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Name}" FontSize="12.5" MaxWidth="240" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <CheckBox x:Name="ResultBox" Content="Keep the original: result in a new structure" IsChecked="{Binding ResultAsNew}" VerticalAlignment="Center"
+              ToolTip.Tip="The run works on a copy (force field kept) that joins the project; the structure you started from is left as it is" />
+  </StackPanel>
+</UserControl>

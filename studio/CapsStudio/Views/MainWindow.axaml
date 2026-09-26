@@ -78,16 +78,24 @@
               <TextBlock Text="Start" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <Button Classes="doctab on" IsVisible="{Binding HasDocument}" ToolTip.Tip="{Binding Title}" Click="OnModuleStudio">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <local:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Title}" MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-              <Button Classes="tool" Width="18" MinWidth="18" Height="18" MinHeight="18" Padding="0" Click="OnCloseDocument" IsEnabled="{Binding Idle}"
-                      ToolTip.Tip="Close (⌘W)" VerticalAlignment="Center">
-                <local:Icon Kind="close" Size="12" />
-              </Button>
-            </StackPanel>
-          </Button>
+          <!-- one tab per structure of the project; the active one is what every module works on -->
+          <ItemsControl ItemsSource="{Binding ProjectItems}" IsVisible="{Binding HasDocument}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProjectItem">
+                <Button Classes="doctab" Classes.on="{Binding Active}" ToolTip.Tip="{Binding Name}" Click="OnProjectTab" Tag="{Binding}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <local:Icon Kind="{Binding IconKind}" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Name}" MaxWidth="220" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <Button Classes="tool" Width="18" MinWidth="18" Height="18" MinHeight="18" Padding="0" Click="OnCloseProjectTab" Tag="{Binding}"
+                            IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}" ToolTip.Tip="Close this structure (⌘W closes the active one)" VerticalAlignment="Center">
+                      <local:Icon Kind="close" Size="12" />
+                    </Button>
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
           <Button Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Margin="4,0,0,3" Command="{Binding $parent[local:MainWindow].OpenCommand}"
                   ToolTip.Tip="Open a structure or trajectory (⌘O)" IsEnabled="{Binding Idle}">
             <local:Icon Kind="plus" Size="15" />
@@ -186,12 +194,12 @@
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Grow amorphous polymer cells (the force field is assigned when growing finishes)">
+          <Button Classes="rail" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Polymer cell (Grow): builds polymer chains monomer by monomer inside a periodic cell, at the density you set — an amorphous polymer, from repeat units">
             <Panel Width="60" Height="48">
               <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <local:Icon Kind="grow" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Grow" HorizontalAlignment="Center" FontSize="10" />
+                <TextBlock Text="Polymer cell" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
@@ -204,21 +212,21 @@
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsPack}" Click="OnModulePack" ToolTip.Tip="Pack molecules into regions (packmol input accepted)">
+          <Button Classes="rail" Classes.on="{Binding IsPack}" Click="OnModulePack" ToolTip.Tip="Packing (Pack): places copies of molecules you already have (solvents, additives, fillers, crosslinkers, pre-built chains) into a box or region without overlaps — packmol input accepted">
             <Panel Width="60" Height="48">
               <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <local:Icon Kind="pack" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Pack" HorizontalAlignment="Center" FontSize="10" />
+                <TextBlock Text="Packing" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Energy minimisation, push-off and compression">
+          <Button Classes="rail" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Minimise: energy minimisation of the active structure (push-off, compression, cell relaxation)">
             <Panel Width="60" Height="48">
               <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <local:Icon Kind="relax" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Relax" HorizontalAlignment="Center" FontSize="10" />
+                <TextBlock Text="Minimise" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
@@ -231,7 +239,7 @@
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Molecular dynamics: NVE, NVT, NPT">
+          <Button Classes="rail" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Dynamics: molecular dynamics (NVE, NVT, NPT) of the active structure">
             <Panel Width="60" Height="48">
               <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -434,20 +442,41 @@
                   <StackPanel Orientation="Horizontal" Spacing="7">
                     <local:Icon Kind="chev" Size="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
                     <local:Icon Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                    <TextBlock Text="Open documents" Foreground="{DynamicResource MutedB}" FontSize="12.5" VerticalAlignment="Center" />
+                    <TextBlock Text="Structures" Foreground="{DynamicResource MutedB}" FontSize="12.5" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ProjectCountText}" Foreground="{DynamicResource DimB}" FontSize="11" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
                   </StackPanel>
                 </Border>
-                <Border Height="26" Padding="24,0,8,0" CornerRadius="5" Background="{DynamicResource Bg3B}" IsVisible="{Binding HasDocument}">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <local:Icon Kind="chevr" Size="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                    <local:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="180" />
-                  </StackPanel>
-                </Border>
+                <!-- every structure of the project: pick one to work on it in any module -->
+                <ItemsControl ItemsSource="{Binding ProjectItems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ProjectItem">
+                      <Button Classes="projrow" Classes.on="{Binding Active}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="18,5,8,5"
+                              Background="Transparent" BorderThickness="0" CornerRadius="5" Click="OnProjectTab" Tag="{Binding}" ToolTip.Tip="Work on this structure">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                          <Border Width="3" CornerRadius="2" Background="{DynamicResource AccB}" IsVisible="{Binding Active}" Margin="-12,0,0,0" />
+                          <StackPanel Grid.Column="1" Spacing="1">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                              <local:Icon Kind="{Binding IconKind}" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                              <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="190" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" Margin="21,0,0,0" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding ForceField}" FontSize="11" Foreground="{DynamicResource SelB}" Margin="21,0,0,0" IsVisible="{Binding HasForceField}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding History}" FontSize="11" Foreground="{DynamicResource OkB}" Margin="21,0,0,0" IsVisible="{Binding HasHistory}" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="small ghost" HorizontalAlignment="Left" Margin="18,4,0,6" Click="OnDuplicateStructure" IsVisible="{Binding HasDocument}"
+                        ToolTip.Tip="A copy of the active structure, force field kept: try another protocol on it and keep the original">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy structure" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <TextBlock Text="MOLECULES OF THE ACTIVE STRUCTURE" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="18,6,0,2" IsVisible="{Binding HasDocument}" />
                 <ItemsControl ItemsSource="{Binding MoleculeRows}" IsVisible="{Binding HasDocument}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:MoleculeRow">
-                      <Border Height="26" Padding="38,0,8,0">
+                      <Border Height="24" Padding="18,0,8,0">
                         <StackPanel Orientation="Horizontal" Spacing="7">
                           <local:Icon Kind="hex" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
                           <TextBlock FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center">
@@ -458,12 +487,6 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Border Height="26" Padding="38,0,8,0" IsVisible="{Binding Field.Assigned}">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <local:Icon Kind="tag" Size="14" Foreground="{DynamicResource SelB}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Field.ForceFieldName}" FontSize="12.5" Foreground="{DynamicResource SelB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="180" />
-                  </StackPanel>
-                </Border>
               </StackPanel>
             </ScrollViewer>
           </DockPanel>
@@ -2498,6 +2521,7 @@
             <StackPanel Spacing="3">
               <TextBlock Text="Force field · typing report" FontSize="20" FontWeight="SemiBold" />
               <TextBlock Classes="muted" Text="Explain every type, override with provenance, and block runs with missing parameters" />
+              <local:StructurePicker Margin="0,8,0,0" HorizontalAlignment="Left" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" IsEnabled="{Binding Field.NotWorking}">
               <StackPanel Spacing="3">

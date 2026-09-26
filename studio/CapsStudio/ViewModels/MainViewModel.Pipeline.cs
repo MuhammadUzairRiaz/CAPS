@@ -14,7 +14,7 @@ public sealed record PipelineStep(int Number, string Name, string Detail, string
     public bool IsOptional => State == "optional" && !Current;
     public bool IsNext => State == "next" && !Current;
     public bool IsTodo => State == "todo" && !Current;
-    public bool ShowNumber => !IsDone && !IsWarn;
+    public bool ShowNumber => Number > 0 && !IsDone && !IsWarn;
     public bool HasDetail => Detail.Length > 0;
 }
 
@@ -44,6 +44,7 @@ public sealed partial class MainViewModel
     {
         _pipeDone.Add(step);
         if (buildDetail != null) _pipeBuild = buildDetail;
+        if (_activeItem != null && step is "Grow" or "Pack") _activeItem.Origin = step == "Grow" ? "Polymer cell" : "Packing";
         RefreshSteps();
     }
 
@@ -58,27 +59,20 @@ public sealed partial class MainViewModel
         var ff = Field.Assigned ? Field.ForceFieldName : "";
         var ffState = !Field.Assigned ? "todo" : Field.Complete ? "done" : "warn";
         var ffDetail = !Field.Assigned ? "not assigned" : Field.Complete ? ShortFf(ff) + (_pipeAutoFf ? " · auto" : "") : "incomplete";
+        // the active structure's state, no order imposed: each module works on whichever structure is active
+        string Did(string step, string done) => _pipeDone.Contains(step) ? done : "not yet";
+        var made = _activeItem?.Origin is { Length: > 0 } o ? o : "";
         var rows = new List<(string Name, string Detail, string State, int Module, bool Current)>
         {
-            ("Build", Shorten(_pipeBuild, 22), "done", 13, IsBuildRail),
-            ("Grow", _pipeDone.Contains("Grow") ? atoms.ToString("N0", inv) + " atoms" : "optional", _pipeDone.Contains("Grow") ? "done" : "optional", 0, _module == 0),
+            ("Structure", Shorten(Title.Replace(" (unsaved)", ""), 26), "done", -1, false),
+            ("Made by", made.Length > 0 ? made : Shorten(_pipeBuild, 22), "done", made == "Polymer cell" ? 0 : made == "Packing" ? 5 : 13, false),
             ("Force field", ffDetail, ffState, 7, _module == 7),
-            ("Pack", _pipeDone.Contains("Pack") ? "packed" : "optional", _pipeDone.Contains("Pack") ? "done" : "optional", 5, _module == 5),
-            ("Relax", _pipeDone.Contains("Relax") ? "relaxed" : "", _pipeDone.Contains("Relax") ? "done" : "todo", 2, _module == 2),
-            ("Equilibrate", _pipeDone.Contains("Equilibrate") ? "equilibrated" : "", _pipeDone.Contains("Equilibrate") ? "done" : "todo", 4, _module == 4),
-            ("Dynamics", _pipeDone.Contains("Dynamics") ? "run" : "", _pipeDone.Contains("Dynamics") ? "done" : "todo", 3, _module == 3),
-            ("Analyze", "", "todo", 1, IsAnalyzeRail),
+            ("Minimise", Did("Relax", "minimised"), _pipeDone.Contains("Relax") ? "done" : "todo", 2, _module == 2),
+            ("Equilibrate", Did("Equilibrate", "equilibrated"), _pipeDone.Contains("Equilibrate") ? "done" : "todo", 4, _module == 4),
+            ("Dynamics", Did("Dynamics", "run"), _pipeDone.Contains("Dynamics") ? "done" : "todo", 3, _module == 3),
         };
-        // the next step: the first one still to do after the last done (a force field comes before any run)
-        var lastDone = rows.FindLastIndex(r => r.State == "done");
-        var next = ffState != "done" ? 2 : rows.FindIndex(lastDone + 1, r => r.State == "todo");
-        for (var k = 0; k < rows.Count; k++)
-        {
-            var r = rows[k];
-            var state = k == next && r.State is "todo" or "warn" ? (r.State == "warn" ? "warn" : "next") : r.State;
-            if (k == next && state == "next" && r.Detail.Length == 0) r.Detail = "next";
-            PipelineSteps.Add(new PipelineStep(k + 1, r.Name, r.Detail, state, r.Module, r.Current));
-        }
+        foreach (var r in rows) PipelineSteps.Add(new PipelineStep(0, r.Name, r.Detail, r.State, r.Module, r.Current));
+        if (_activeItem != null) UpdateItemInfo(_activeItem);
         Raise(nameof(PipelineNextLabel));
         Raise(nameof(HasPipelineNext));
     }
@@ -86,7 +80,8 @@ public sealed partial class MainViewModel
     private static string ShortFf(string name) => Shorten(name, 22);
     private static string Shorten(string s, int n) => s.Length <= n ? s : s[..(n - 1)] + "…";
 
-    public string PipelineNextLabel => PipelineSteps.FirstOrDefault(s => s.State is "next" or "warn") is { Current: false } s ? "Next: " + s.Name : "";
+    // no "next step": modules are independent (kept for the command palette and older callers)
+    public string PipelineNextLabel => "";
     public bool HasPipelineNext => PipelineNextLabel.Length > 0;
     public void GoPipelineNext()
     {
@@ -94,6 +89,7 @@ public sealed partial class MainViewModel
     }
     public void GoPipelineStep(PipelineStep s)
     {
+        if (s.Module < 0) return;
         if (s.Module == 13) { SetModule(13); return; }
         SetModule(s.Module);
     }

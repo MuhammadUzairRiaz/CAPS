@@ -791,7 +791,7 @@ int32_t caps_atom_residues(caps_doc* d, int32_t* out, int32_t cap);
    caps_display_counts → {atoms, h, heavy, polar_h, chains, backbone_atoms, lens_atoms, lens_h}.
    caps_hydrogen_plan → {rows: [{label, atoms, hydrogens}], heavy, h, add, net_charge, aromatic_bonds, selection}: what
      the "add_h" edit would add (the selection when there is one).
-   caps_doc_copy: a new document holding the current frame (its provenance carried over).
+   caps_doc_copy: a new document holding the current frame and its force-field assignment (its provenance carried over).
    caps_resolution_summary {per_bead} → {all_atom, united_atom, coarse_grained: {sites, hydrogens, mass}}.
    caps_resolution_convert {to: united-atom | coarse-grained, per_bead} → a new document (NULL on error). */
 int32_t caps_set_display(caps_doc* d, const char* json);

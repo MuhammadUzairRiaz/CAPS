@@ -7,7 +7,8 @@
     <StackPanel DockPanel.Dock="Top" Spacing="3" Margin="0,0,0,12">
       <TextBlock Text="Export" FontSize="19" FontWeight="SemiBold" />
       <TextBlock Text="The structure as it is now, with its force field, for LAMMPS or GROMACS; structures and figures from the other export pages" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
-    </StackPanel>
+      <v:StructurePicker ShowResultOption="False" Margin="0,8,0,0" HorizontalAlignment="Left" />
+      </StackPanel>
     <Border DockPanel.Dock="Top" Classes="card" CornerRadius="10" Padding="14,10" Margin="0,0,0,12" IsVisible="{Binding EngineHasError}" BorderBrush="{DynamicResource WarnB}">
       <DockPanel>
         <Button DockPanel.Dock="Right" Classes="small" Content="Open the Force field step" Click="OnForceField" VerticalAlignment="Center" />
