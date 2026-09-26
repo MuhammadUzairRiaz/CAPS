@@ -1127,13 +1127,19 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     ls.cutoff = o.num("cutoff", 0);
     if (o.has("tail") && o["tail"].kind() == caps::Json::Bool) ls.tail = o["tail"].boolean() ? 1 : 0;
     if (ls.kspace_accuracy <= 0 || ls.cutoff < 0) throw std::runtime_error("the k-space accuracy and the cut-off must be positive");
-    if (lammps) {
+    // a force field LAMMPS cannot express (GROMOS's reaction field …) refuses the LAMMPS files only: the GROMACS files
+    // are still written, and the reason goes back as lammps_error
+    std::string lammps_error;
+    if (lammps) try {
       std::vector<std::string> lnotes;
       caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
       written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
+    } catch (const std::exception& ex) {
+      lammps_error = ex.what();   // refused before its files (prepare checks the force field first)
+      if (!gromacs) throw;
     }
     // a force field GROMACS cannot express (class II's 9-6 Lennard-Jones and cross terms …) refuses the GROMACS files
     // only: the LAMMPS files are still written, and the reason goes back as gromacs_error
@@ -1193,6 +1199,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
         written.push_back({stem + "_em.mdp", "minimisation first (gmx grompp -f " + stem + "_em.mdp)"});
     } catch (const std::exception& ex) {
       gromacs_error = ex.what();   // refused before any GROMACS file is written (write_gromacs checks first)
+      if (!lammps_error.empty()) throw std::runtime_error("LAMMPS: " + lammps_error + "; GROMACS: " + gromacs_error);
       if (!lammps) throw;
     }
     if (d->field->rep.estimated_terms) {
@@ -1237,6 +1244,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     checks["density"] = s.density();
     r["ok"] = true;
     if (!gromacs_error.empty()) r["gromacs_error"] = gromacs_error;
+    if (!lammps_error.empty()) r["lammps_error"] = lammps_error;
     r["files"] = std::move(files);
     r["notes"] = std::move(notes);
     r["checks"] = std::move(checks);
