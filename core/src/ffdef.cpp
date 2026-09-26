@@ -928,6 +928,16 @@ int sdk_form(const std::string& st) {
   return 0;
 }
 
+std::string untyped_message(const FFDef& ff, const System& s, int untyped) {
+  const bool atoms = std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; });
+  if ((!ff.bead_rules.empty() || !ff.bead_groups.empty()) && atoms)
+    return std::to_string(untyped) + " atoms are in molecules " + ff.name + "'s bead fragments cannot cover exactly (each heavy atom in one bead; " +
+           "chain ends and groups without a bead type stay atoms)";
+  if (ff.coarse_grained && atoms)
+    return std::to_string(untyped) + " sites are atoms, not beads: " + ff.name + " types bead structures (build them from its templates or bead SMILES)";
+  return std::to_string(untyped) + " atoms match no typing rule of " + ff.name;
+}
+
 System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t seed) {
   auto it = ff.bead_templates.find(text);
   const std::string smiles = it != ff.bead_templates.end() ? it->second : text;

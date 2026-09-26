@@ -33,7 +33,7 @@ WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_matrix_")
 
 # not meant for organic polymers: the reason is printed
 NOT_POLYMER = [(r"^(spce|tip3p|tip5p|mw)", "water model"), (r"^inorganic", "inorganic crystals"),
-               (r"^(martini|drymartini|sdk|cooke-deserno)", "coarse-grained beads"), (r"^graphene", "carbon sheets only (no H)"),
+               (r"^(martini|drymartini|cooke-deserno)", "coarse-grained beads only (its sources give no atomistic mapping)"), (r"^graphene", "carbon sheets only (no H)"),
                (r"^(spc_|tip3p_|tip5p_)", "water model on OPLS-AA")]
 
 
