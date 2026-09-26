@@ -37,10 +37,25 @@
     <Style Selector="Button.sidetab.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="Button.sidetab TextBlock"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
     <Style Selector="Button.sidetab.on TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <!-- pipeline strip -->
+    <Style Selector="Button.pipestep"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="8,6" /><Setter Property="CornerRadius" Value="7" /></Style>
+    <Style Selector="Button.pipestep.current /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+    <Style Selector="Border.mark"><Setter Property="BorderBrush" Value="{DynamicResource DimB}" /><Setter Property="BorderThickness" Value="1.5" /></Style>
+    <Style Selector="Border.mark.next"><Setter Property="BorderBrush" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Border.mark.optional"><Setter Property="Opacity" Value="0.55" /></Style>
+    <Style Selector="Border.mark.done"><Setter Property="Background" Value="{DynamicResource OkB}" /><Setter Property="BorderThickness" Value="0" /></Style>
+    <Style Selector="Border.mark.warn"><Setter Property="Background" Value="{DynamicResource WarnB}" /><Setter Property="BorderThickness" Value="0" /></Style>
+    <Style Selector="Border.mark.cur"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="BorderThickness" Value="2" /></Style>
+    <Style Selector="local|Icon.onmark"><Setter Property="Foreground" Value="{DynamicResource Bg0B}" /></Style>
+    <Style Selector="TextBlock.marknum"><Setter Property="FontSize" Value="11" /><Setter Property="FontFamily" Value="{DynamicResource Mono}" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+    <Style Selector="TextBlock.marknum.cur"><Setter Property="Foreground" Value="{DynamicResource AccB}" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.stepname"><Setter Property="FontSize" Value="12.5" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.stepdetail"><Setter Property="FontSize" Value="11" /><Setter Property="Foreground" Value="{DynamicResource DimB}" /><Setter Property="MaxWidth" Value="150" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /></Style>
+    <Style Selector="TextBlock.stepdetail.ok"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
   </Window.Styles>
 
   <LayoutTransformControl x:Name="ScaleRoot">
-  <Grid RowDefinitions="44,*,26">
+  <Grid RowDefinitions="44,Auto,*,26">
 
     <!-- Top bar (design/generator/lib.py topbar): logo, document tabs, command palette, compute -->
     <Border Grid.Row="0" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -99,7 +114,49 @@
       </Grid>
     </Border>
 
-    <Grid x:Name="Body" Grid.Row="1" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
+    <!-- Pipeline strip (design/boards/PipelineGrow): where the project is, each step one click away; Export at every step -->
+    <Border Grid.Row="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Height="56" IsVisible="{Binding ShowPipelineStrip}">
+      <Grid ColumnDefinitions="72,*,Auto">
+        <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" />
+        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding PipelineSteps}" Margin="8,0" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="0" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PipelineStep">
+                <StackPanel Orientation="Horizontal" Spacing="0">
+                  <Button Classes="pipestep" Classes.current="{Binding Current}" Click="OnPipelineStep" ToolTip.Tip="{Binding Name}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Panel Width="22" Height="22" VerticalAlignment="Center">
+                        <Border Classes="mark" Classes.done="{Binding IsDone}" Classes.warn="{Binding IsWarn}" Classes.optional="{Binding IsOptional}"
+                                Classes.next="{Binding IsNext}" Classes.cur="{Binding Current}" CornerRadius="11" />
+                        <local:Icon Kind="check" Size="13" Classes="onmark" IsVisible="{Binding IsDone}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <local:Icon Kind="alert" Size="13" Classes="onmark" IsVisible="{Binding IsWarn}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Classes="marknum" Classes.cur="{Binding Current}" Text="{Binding Mark}" IsVisible="{Binding ShowNumber}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Panel>
+                      <StackPanel VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Classes="stepname" Text="{Binding Name}" />
+                        <TextBlock Classes="stepdetail" Classes.ok="{Binding IsDone}" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Button>
+                  <Border Width="10" Height="1" Background="{DynamicResource LineB}" VerticalAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="12,0" VerticalAlignment="Center">
+          <Button Classes="primary small" Click="OnPipelineNext" IsVisible="{Binding HasPipelineNext}" ToolTip.Tip="The next step of the pipeline">
+            <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="{Binding PipelineNextLabel}" VerticalAlignment="Center" /><local:Icon Kind="chevr" Size="14" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Classes="small" Click="OnExportCenter" ToolTip.Tip="LAMMPS and GROMACS files of the structure as it is now">
+            <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export now" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid x:Name="Body" Grid.Row="2" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
 
       <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
       <Border x:Name="Rail" Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
@@ -108,103 +165,124 @@
                   ToolTip.Tip="Settings" Click="OnSettingsRail">
             <local:Icon Kind="gear" Size="19" />
           </Button>
-          <StackPanel Spacing="2" Margin="0,8,0,0" HorizontalAlignment="Center">
+          <StackPanel Spacing="1" Margin="0,6,0,0" HorizontalAlignment="Center">
+          <!-- the pipeline in order (design/boards/PipelineGrow), then the cross-cutting areas -->
           <Button Classes="rail" Classes.on="{Binding IsStudioRail}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="hex" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Studio" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="hex" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Studio" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Grow amorphous polymer cells">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+          <Border Width="36" Height="1" Background="{DynamicResource LineB}" Margin="0,3" HorizontalAlignment="Center" />
+          <Button Classes="rail" Classes.on="{Binding IsBuildRail}" Click="OnModuleBuild" ToolTip.Tip="Build molecules, polymers, crystals, surfaces and biomolecules">
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="grow" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Grow" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="flask" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Build" HorizontalAlignment="Center" FontSize="10" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Grow amorphous polymer cells (the force field is assigned when growing finishes)">
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="grow" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Grow" HorizontalAlignment="Center" FontSize="10" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsField}" Click="OnModuleField" ToolTip.Tip="Force fields: which fit this structure, typing, charges and parameters, explained">
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="tag" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Force field" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
           <Button Classes="rail" Classes.on="{Binding IsPack}" Click="OnModulePack" ToolTip.Tip="Pack molecules into regions (packmol input accepted)">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="pack" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Pack" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="pack" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Pack" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
           <Button Classes="rail" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Energy minimisation, push-off and compression">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="relax" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Relax" HorizontalAlignment="Center" FontSize="10.5" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Molecular dynamics: NVE, NVT, NPT">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="dyn" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Dynamics" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="relax" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Relax" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
           <Button Classes="rail" Classes.on="{Binding IsEquilibrate}" Click="OnModuleEquilibrate" ToolTip.Tip="Published equilibration protocols with convergence checks">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="equil" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Equilibrate" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="equil" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Equilibrate" HorizontalAlignment="Center" FontSize="10" />
+              </StackPanel>
+            </Panel>
+          </Button>
+          <Button Classes="rail" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Molecular dynamics: NVE, NVT, NPT">
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <local:Icon Kind="dyn" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Dynamics" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
           <Button Classes="rail" Classes.on="{Binding IsReact}" Click="OnModuleReact" ToolTip.Tip="Crosslinking and reactions from atom-mapped templates">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="react" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="React" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="react" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="React" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
           <Button Classes="rail" Classes.on="{Binding IsAnalyzeRail}" Click="OnModuleAnalyze" ToolTip.Tip="Properties with errors, compared with experiment">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="chart" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Analyze" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="chart" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Analyze" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
-          <Button Classes="rail" Classes.on="{Binding IsField}" Click="OnModuleField" ToolTip.Tip="Force fields: typing, charges and parameters, explained">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+          <Button Classes="rail" Classes.on="{Binding IsExportRail}" Click="OnExportCenter" ToolTip.Tip="Export center: LAMMPS and GROMACS files, structures and figures">
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="tag" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Field" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="download" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Export" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
+          <Border Width="36" Height="1" Background="{DynamicResource LineB}" Margin="0,3" HorizontalAlignment="Center" />
           <Button Classes="rail" Classes.on="{Binding IsJobs}" Click="OnModuleJobs" ToolTip.Tip="Every run with its progress, curves, log and provenance">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="jobs" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Jobs" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="jobs" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Jobs" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
           <Button Classes="rail" Classes.on="{Binding IsBench}" Click="OnModuleBench" ToolTip.Tip="The validation suite that regenerates the paper tables">
-            <Panel Width="60" Height="52">
-              <Border Classes="bar" Width="3" Height="30" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+            <Panel Width="60" Height="48">
+              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
               <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="bench" Size="19" HorizontalAlignment="Center" />
-                <TextBlock Text="Bench" HorizontalAlignment="Center" FontSize="10.5" />
+                <local:Icon Kind="bench" Size="18" HorizontalAlignment="Center" />
+                <TextBlock Text="Bench" HorizontalAlignment="Center" FontSize="10" />
               </StackPanel>
             </Panel>
           </Button>
@@ -2152,6 +2230,7 @@
       <pages:BundlePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBundle}" />
       <!-- Export › Data (design/boards/ExportData) -->
       <pages:ExportPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsExport}" />
+      <pages:ExportCenterPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsExportCenter}" />
       <!-- Export › Figure (design/boards/FigureBackground) -->
       <pages:FigurePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsFigure}" />
       <!-- File checks (design/boards/VisProblems) -->
@@ -2590,7 +2669,8 @@
                   </Border>
                 </Grid>
               </Border>
-              <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}">
+              <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" MaxHeight="430">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                   <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="16,9">
                     <Grid ColumnDefinitions="*,Auto">
@@ -2689,6 +2769,7 @@
                     </ItemsControl>
                   </StackPanel>
                 </StackPanel>
+                </ScrollViewer>
               </Border>
             </Grid>
           </Grid>
@@ -2705,7 +2786,7 @@
     </Grid>
 
     <!-- Status bar (lib.py statusbar): counts on the left, what the mouse does and the renderer on the right -->
-    <Border Grid.Row="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,0">
+    <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,0">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
           <TextBlock Text="{Binding StatusCounts}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
@@ -2723,7 +2804,7 @@
       </Grid>
     </Border>
     <!-- Command palette (design/boards/CommandPalette): ⌘K -->
-    <Panel Grid.RowSpan="3" IsVisible="{Binding PaletteOpen}">
+    <Panel Grid.RowSpan="4" IsVisible="{Binding PaletteOpen}">
       <Border Background="#8C000000" PointerPressed="OnPaletteBackdrop" />
       <Border Width="680" Margin="0,64,0,0" HorizontalAlignment="Center" VerticalAlignment="Top" Background="{DynamicResource Bg1B}"
               BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="12" BoxShadow="0 18 48 0 #66000000" ClipToBounds="True">
@@ -2778,7 +2859,7 @@
       </Border>
     </Panel>
     <!-- First-run tour (design/boards/FirstRunTour) -->
-    <local:TourOverlay x:Name="Tour" Grid.RowSpan="3" ZIndex="40" IsVisible="{Binding TourOpen}" />
+    <local:TourOverlay x:Name="Tour" Grid.RowSpan="4" ZIndex="40" IsVisible="{Binding TourOpen}" />
   </Grid>
   </LayoutTransformControl>
 </Window>

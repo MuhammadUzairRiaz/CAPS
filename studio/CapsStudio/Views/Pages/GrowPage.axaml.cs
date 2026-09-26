@@ -76,4 +76,10 @@ public partial class GrowPage : PageBase
     private void OnToggleSmall(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.GrowSmallOpen = !Vm.GrowSmallOpen;
     private void OnAddSmall(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.AddGrowSmall();
     private void OnRemoveSmall(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (s is Control { Tag: CapsStudio.ViewModels.GrowSmallRow r }) Vm.RemoveGrowSmall(r); }
+    private async void OnAssignField(object? s, Avalonia.Interactivity.RoutedEventArgs e) => await Vm.Field.Assign();
+    private async void OnCompareFields(object? s, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Vm.SetModule(7);
+        await Vm.Field.CheckCoverage(auto: false);
+    }
 }

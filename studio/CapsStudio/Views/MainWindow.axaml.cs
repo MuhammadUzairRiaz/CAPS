@@ -307,6 +307,10 @@ public partial class MainWindow : Window
     private void OnModuleReact(object? s, RoutedEventArgs e) => _vm.SetModule(6);
     private void OnModuleField(object? s, RoutedEventArgs e) => _vm.SetModule(7);
     private void OnModuleStudio(object? s, RoutedEventArgs e) => _vm.SetModule(8);
+    private void OnModuleBuild(object? s, RoutedEventArgs e) => _vm.SetModule(13);
+    private void OnExportCenter(object? s, RoutedEventArgs e) => _vm.OpenExportCenter();
+    private void OnPipelineNext(object? s, RoutedEventArgs e) => _vm.GoPipelineNext();
+    private void OnPipelineStep(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is ViewModels.PipelineStep st) _vm.GoPipelineStep(st); }
 
     private readonly Panel _viewHome;
     private void PlaceViewport()

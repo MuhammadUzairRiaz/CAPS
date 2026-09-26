@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 22, "native ABI version 22");
+        Check(Native.AbiVersion() == 23, "native ABI version 23");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1663,6 +1663,39 @@ internal static class SelfTest
             var mols = vm.Document?.Summary().Molecules ?? 0;
             Check(mols == 3 + 5 && vm.GrowLog.Contains("5 × Toluene"), $"grow with solvent: {mols} molecules · {vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("Toluene"))}");
             vm.RemoveGrowSmall(vm.GrowSmall[0]);
+        }
+
+        // The pipeline in order (design/boards/PipelineGrow, ExportCenter): the force field chosen in Grow is assigned when
+        // growing finishes, the strip says where the project is, and the Export center writes LAMMPS and GROMACS files
+        {
+            vm.UsePolystyreneInGrow();
+            vm.GrowChainsD = 3;
+            vm.GrowDpD = 6;
+            vm.GrowDensityD = 0.3m;
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");
+            vm.Field.ChargeMode = 0;
+            vm.GrowAssignField = true;
+            vm.Grow().GetAwaiter().GetResult();
+            var steps = string.Join(" · ", vm.PipelineSteps.Select(s => $"{s.Name} {s.State}"));
+            Check(vm.Field.Assigned && vm.Field.Complete && vm.PipelineSteps.Count == 8 && vm.PipelineSteps[1].State == "done"
+                  && vm.PipelineSteps[2].State == "done" && vm.PipelineSteps[2].Detail.StartsWith("GAFF") && vm.PipelineNextLabel == "Next: Relax",
+                  $"pipeline: force field assigned after Grow · {steps}");
+            vm.OpenExportCenter();
+            vm.RefreshEnginesNow();
+            Check(vm.IsExportCenter && vm.IsExportRail && !vm.EngineHasError && vm.EngineLammpsFiles.Count == 2 && vm.EngineGromacsFiles.Count >= 4
+                  && vm.EnginePreviewLines.Count > 10 && vm.EngineChecks.Count >= 4, $"export center: {vm.EngineSummary} {vm.EngineError}");
+            var pkg = Path.Combine(outDir, "caps-selftest-engines");
+            if (Directory.Exists(pkg)) Directory.Delete(pkg, true);
+            vm.EngineFolder = pkg;
+            vm.WriteEngines().GetAwaiter().GetResult();
+            var deck = File.Exists(Path.Combine(pkg, "system.in")) ? File.ReadAllText(Path.Combine(pkg, "system.in")) : "";
+            Check(deck.Contains("pair_coeff") && deck.Contains("all npt") && File.Exists(Path.Combine(pkg, "system.itp")) && File.Exists(Path.Combine(pkg, "system_em.mdp")),
+                  $"export center: wrote {Directory.GetFiles(pkg).Length} files · {vm.Status}");
+            // incomplete force field: the Export center refuses and says where to go
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.RefreshEnginesNow();
+            Check(vm.EngineHasError && vm.EngineError.Contains("force field") && vm.PipelineSteps[2].State == "next", $"export center without a force field: {vm.EngineError}");
+            vm.SetModule(8);
         }
 
         // Add hydrogens by pH: a peptide built at pH 7, stripped of its hydrogens, gets them back at pH 7

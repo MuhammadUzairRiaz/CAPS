@@ -137,6 +137,22 @@ with tempfile.TemporaryDirectory() as tmp:
     mdp = caps.open(os.path.join(samples, "ps_melt.data")).save_gromacs(stem)
     have = all(os.path.exists(stem + x) for x in (".top", ".gro", ".mdp"))
     check(have and "coulombtype              = PME" in mdp and "[ nonbond_params ]" in open(stem + ".top").read(), "save_gromacs: top, gro, mdp")
+# Export center: refused without a complete force field; with one, LAMMPS and GROMACS files and the run protocol
+with tempfile.TemporaryDirectory() as tmp:
+    melt = caps.open(os.path.join(samples, "ps_melt.data"))
+    try:
+        melt.export_engines(tmp)
+        refused = False
+    except caps.CapsError as e:
+        refused = "force field" in str(e)
+    melt.field.assign("gaff2")
+    pkg = melt.export_engines(tmp, run="npt", steps=1000)
+    names = {f["name"] for f in pkg["files"]}
+    deck = open(os.path.join(tmp, "system.in")).read()
+    check(refused and {"system.data", "system.in", "system.top", "system.itp", "system.gro", "system.mdp", "system_em.mdp"} <= names
+          and "pair_coeff" in deck and "fix             integrate all npt" in deck and "Pair Coeffs" not in open(os.path.join(tmp, "system.data")).read()
+          and "pcoupl                   = C-rescale" in open(os.path.join(tmp, "system.mdp")).read() and pkg["checks"]["missing"] == 0,
+          "export_engines: refused before a force field; LAMMPS data + in and GROMACS top/itp/gro/mdp with the NPT protocol")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)

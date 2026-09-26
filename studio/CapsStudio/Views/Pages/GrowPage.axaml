@@ -106,6 +106,41 @@
             </StackPanel>
           </Border>
 
+          <!-- Force field (design/boards/PipelineGrow): chosen here, assigned when growing finishes -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding GrowAssignField}"><TextBlock Text="assigned after growing" Foreground="{DynamicResource OkB}" /></Border>
+                  <StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="tag" Size="15" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="Force field" Classes="h2" VerticalAlignment="Center" /></StackPanel>
+                </DockPanel>
+              </Border>
+              <StackPanel Margin="16,12" Spacing="10">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="Force field" Classes="muted" FontSize="11.5" />
+                    <ComboBox ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding Field.FfIndex}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="Charges" Classes="muted" FontSize="11.5" />
+                    <ComboBox ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                </Grid>
+                <CheckBox Classes="toggle" Content="Assign when Grow or Pack finishes" IsChecked="{Binding GrowAssignField}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <v:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" IsVisible="{Binding GrowFieldOk}" VerticalAlignment="Top" />
+                  <v:Icon Kind="alert" Size="15" Foreground="{DynamicResource WarnB}" IsVisible="{Binding GrowFieldWarn}" VerticalAlignment="Top" />
+                  <TextBlock Text="{Binding GrowFieldLine}" FontSize="12" TextWrapping="Wrap" MaxWidth="470" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="small" Content="Assign now" Click="OnAssignField" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Type the structure in the viewer with this force field" />
+                  <Button Classes="small" Content="Compare all force fields" Click="OnCompareFields" IsEnabled="{Binding HasDocument}"
+                          ToolTip.Tip="Which library force fields describe this structure, and what the others lack (Force field step)" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
           <!-- Cell -->
           <Border Classes="card">
             <StackPanel>

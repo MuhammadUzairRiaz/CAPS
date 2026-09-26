@@ -129,7 +129,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
-        "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I),
+        "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
         "caps_field_assign": ([P, S, S, I], I), "caps_field_report": ([P, B, I], I),
@@ -439,6 +439,17 @@ class Document:
         if library().caps_gromacs(self._h, _enc(str(stem)), buf, need) < 0:
             raise _error()
         return buf.value.decode()
+
+    def export_engines(self, folder: str, stem: str = "system", lammps: bool = True, gromacs: bool = True, run: str = "check", **opts) -> dict:
+        """The simulation files for LAMMPS (stem.data, stem.in with every pair_coeff and the run) and GROMACS (stem.top,
+        stem.itp, stem.gro, stem.mdp; stem_em.mdp when a run minimises first) from the assigned force field, which must be
+        complete. run: check | none | minimize | nvt | npt; opts: minimize_first, temperature (K), pressure (atm), dt (fs),
+        steps, thermo_every, dump_every, seed. Returns {folder, files, notes, checks}; raises CapsError when refused."""
+        o = dict(opts, stem=stem, lammps=lammps, gromacs=gromacs, run=run)
+        r = _json_call(library().caps_export_engines, self._h, _enc(str(folder)), _enc(json.dumps(o)))
+        if not r.get("ok"):
+            raise CapsError(r.get("error", "export failed"))
+        return r
 
     def save_trajectory(self, path: str) -> None:
         if library().caps_save_trajectory(self._h, _enc(str(path))) != 0:

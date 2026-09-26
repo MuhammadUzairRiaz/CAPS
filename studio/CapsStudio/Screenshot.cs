@@ -603,6 +603,22 @@ internal static class Screenshot
                 w.ViewModel.Pick(int.Parse(ij[1]), true);
                 w.ViewModel.AddMeasuredRestraint();
             }
+            if (kv[0] == "pipeline")   // pipeline=POLYMER_ID:FF_ID[:export] — grow a library polymer with that force field chosen in Grow
+            {
+                var vm = w.ViewModel;
+                var parts = kv[1].Split(':');
+                if (vm.PolymerLibrary.FirstOrDefault(e => e.Id == parts[0]) is { } poly) { vm.UseLibrary(poly, null); vm.SendPolymerToGrow(); }
+                vm.GrowChainsD = 10; vm.GrowDpD = 30; vm.GrowDensityD = 0.6m; vm.GrowSeedD = 3;
+                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == parts[1]);
+                vm.Field.ChargeMode = 0;
+                vm.SetModule(0);
+                var t = vm.Grow();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 200 && vm.Field.Working; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+                if (parts.Length > 2 && parts[2] == "export") { vm.OpenExportCenter(); vm.RefreshEnginesNow(); }
+                if (parts.Length > 2 && parts[2] == "field") { vm.SetModule(7); var c = vm.Field.CheckCoverage(auto: false); while (!c.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "grow")
             {
                 w.ViewModel.SetModule(0);
