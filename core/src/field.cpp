@@ -1084,6 +1084,66 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     for (int c = 0; c < 6; ++c) e.w[c] += acc[t][7 + c];
   }
   if (!nonb) return e;   // r-RESPA inner step: bonded terms only
+  if (ff_.sw.on) {   // Stillinger–Weber: pairs and triplets within aσ, from the pair list (its shifts carry the images)
+    const auto& S = ff_.sw;
+    const double rcs = S.a * S.sigma, rcs2 = rcs * rcs;
+    struct Nb { uint32_t j; Vec3 d; double r; };
+    std::vector<std::vector<Nb>> nbs(n);
+    double esw = 0;
+    auto push = [&](uint32_t i, const Vec3& fv) { f[3 * i] += fv[0]; f[3 * i + 1] += fv[1]; f[3 * i + 2] += fv[2]; };
+    auto vir = [&](const Vec3& d, const Vec3& fv) {
+      e.virial += dot(d, fv);
+      e.w[0] += d[0] * fv[0]; e.w[1] += d[1] * fv[1]; e.w[2] += d[2] * fv[2];
+      e.w[3] += 0.5 * (d[0] * fv[1] + d[1] * fv[0]); e.w[4] += 0.5 * (d[0] * fv[2] + d[2] * fv[0]); e.w[5] += 0.5 * (d[1] * fv[2] + d[2] * fv[1]);
+    };
+    for (size_t k = 0; k < pi_.size(); ++k) {
+      const uint32_t i = pi_[k], j = pj_[k];
+      if (!S.atom[i] || !S.atom[j]) continue;
+      const Vec3 d = pos(j) - pos(i) + Vec3{shift_[3 * k], shift_[3 * k + 1], shift_[3 * k + 2]};
+      const double r2 = dot(d, d);
+      if (r2 >= rcs2) continue;
+      const double r = std::sqrt(r2);
+      nbs[i].push_back({j, d, r});
+      nbs[j].push_back({i, d * -1.0, r});
+      // two-body
+      const double sr = S.sigma / r, srp = std::pow(sr, S.p), srq = std::pow(sr, S.q), ex = std::exp(S.sigma / (r - rcs));
+      const double u = S.B * srp - srq;
+      esw += S.A * S.eps * u * ex;
+      const double dudr = (-S.p * S.B * srp + S.q * srq) / r;
+      const double dEdr = S.A * S.eps * ex * (dudr - u * S.sigma / ((r - rcs) * (r - rcs)));
+      const Vec3 fj = d * (-dEdr / r);
+      push(j, fj);
+      push(i, fj * -1.0);
+      vir(d, fj);
+    }
+    // three-body: every pair of neighbours j, k of a vertex i
+    for (uint32_t i = 0; i < n; ++i) {
+      const auto& L = nbs[i];
+      for (size_t a1 = 0; a1 < L.size(); ++a1)
+        for (size_t a2 = a1 + 1; a2 < L.size(); ++a2) {
+          const Nb& J = L[a1];
+          const Nb& K = L[a2];
+          const double c = dot(J.d, K.d) / (J.r * K.r), dc = c - S.cos0;
+          const double ej = std::exp(S.gamma * S.sigma / (J.r - rcs)), ek = std::exp(S.gamma * S.sigma / (K.r - rcs));
+          const double E3 = S.lambda * S.eps * dc * dc * ej * ek;
+          esw += E3;
+          const double dEdc = 2 * S.lambda * S.eps * dc * ej * ek;
+          const double dEdrj = -E3 * S.gamma * S.sigma / ((J.r - rcs) * (J.r - rcs));
+          const double dEdrk = -E3 * S.gamma * S.sigma / ((K.r - rcs) * (K.r - rcs));
+          // ∂cos/∂d_j = d_k/(r_j r_k) − cos d_j / r_j²
+          const Vec3 gj = K.d * (1 / (J.r * K.r)) - J.d * (c / (J.r * J.r));
+          const Vec3 gk = J.d * (1 / (J.r * K.r)) - K.d * (c / (K.r * K.r));
+          const Vec3 fj = (J.d * (dEdrj / J.r) + gj * dEdc) * -1.0;
+          const Vec3 fk = (K.d * (dEdrk / K.r) + gk * dEdc) * -1.0;
+          push(J.j, fj);
+          push(K.j, fk);
+          push(i, (fj + fk) * -1.0);
+          vir(J.d, fj);
+          vir(K.d, fk);
+        }
+    }
+    e.vdw += esw;
+  }
   if (pme) {
     // reciprocal part (Fortran), self energy −β/√π Σq², and the neutralising background −π Q²/(2Vβ²) for a net charge
     const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);

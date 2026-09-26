@@ -580,11 +580,16 @@
    "id": "misc",
    "name": "Miscellaneous",
    "version": "",
-   "references": [],
+   "references": [
+    "A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)",
+    "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)",
+    "N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005)",
+    "R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009)"
+   ],
    "origin": "converted",
    "source_file": "MISC_FF.par",
    "status": "converted",
-   "notes": "converted; the original distribution cannot write this scheme for LAMMPS and has no buildable examples.",
+   "notes": "alkanes (silicalite), methanol and chloroform (faujasite) and HFA-134a: molecule-specific sets, typed per molecule",
    "file": "misc.json",
    "counts": {
     "atom_types": 15,
@@ -593,6 +598,10 @@
     "angles": 13,
     "dihedrals": 3,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/misc.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_misc_rules.py): 16 rules"
    }
   },
   {
@@ -1195,7 +1204,7 @@
    "origin": "moltemplate",
    "source_file": "watmw.lt",
    "status": "converted",
-   "notes": "Stillinger–Weber three-body form not evaluated by CAPS.",
+   "notes": "one-site water with the Stillinger–Weber three-body potential (evaluated by CAPS; LAMMPS pair sw)",
    "file": "mw-moltemplate.json",
    "counts": {
     "atom_types": 1,
@@ -1204,6 +1213,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/mw-moltemplate.typing.json",
+    "evidence": "one site per water (hydrogens folded into the oxygen); Stillinger–Weber evaluated by CAPS"
    }
   },
   {

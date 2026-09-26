@@ -303,6 +303,51 @@ TEST(FieldForms, ForcesMatchFiniteDifferences) {
   for (int v = 0; v < 6; ++v) EXPECT_NEAR(et.w[v], d[v], 2e-4 * std::max(1.0, std::fabs(w))) << "virial component " << v;
 }
 
+// mW water: the Stillinger–Weber two- and three-body forces and the virial are the energy's derivatives (sites on a
+// jittered lattice at liquid density, pairs and triplets across the periodic faces)
+TEST(FieldForms, StillingerWeberForcesMatchFiniteDifferences) {
+  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/mw-moltemplate.json");
+  System s;
+  const int n = 4;
+  const double a = 3.1;   // 64 sites in 12.4 Å: 1.00 g/cm³
+  s.cell.a = {n * a, 0, 0};
+  s.cell.b = {0, n * a, 0};
+  s.cell.c = {0, 0, n * a};
+  std::mt19937_64 rng(7);
+  std::normal_distribution<double> nd(0, 0.35);
+  for (int i = 0; i < n; ++i)
+    for (int j = 0; j < n; ++j)
+      for (int k = 0; k < n; ++k) {
+        Atom at;
+        at.element = 8;
+        at.name = "MW";
+        at.pos = {i * a + nd(rng), j * a + nd(rng), k * a + nd(rng)};
+        s.atoms.push_back(at);
+      }
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, std::vector<std::string>(s.atoms.size(), "MW"), "types", &rep, false);
+  ASSERT_TRUE(ff.sw.on);
+  EnergyOptions o;
+  o.coulomb = false;
+  o.tail = false;
+  Evaluator ev(ff, o);
+  std::vector<double> x = flat(s), f, g;
+  const EnergyTerms et = ev.compute(x, s.cell, f);
+  EXPECT_LT(et.vdw, -100.0);   // bound: about −6 kcal/mol per site
+  const double h = 1e-5;
+  double worst = 0;
+  for (size_t k = 0; k < x.size(); ++k) {
+    std::vector<double> xp = x, xm = x;
+    xp[k] += h;
+    xm[k] -= h;
+    const double fd = -(ev.compute(xp, s.cell, g).total() - ev.compute(xm, s.cell, g).total()) / (2 * h);
+    worst = std::max(worst, std::fabs(fd - f[k]) / std::max(1.0, std::fabs(f[k])));
+  }
+  EXPECT_LT(worst, 1e-5);
+  const auto d = strain_derivative(ev, x, s.cell);
+  for (int v = 0; v < 6; ++v) EXPECT_NEAR(et.w[v], d[v], 1e-5 * std::max(1.0, std::fabs(et.virial))) << "virial component " << v;
+}
+
 // CHARMM libraries keep their separate 1-4 van der Waals and Urey–Bradley terms through save / load.
 TEST(FFDef, DlfieldCharmmKeepsOneFourAndUreyBradley) {
   const std::string par = "~/project/dl_f_4.13/lib/CHARMM36_cgenff.par";

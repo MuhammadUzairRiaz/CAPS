@@ -5,14 +5,14 @@ For each case: CAPS assigns the force field (caps ff apply), writes the data fil
 (-o, --lammps-input) and its own forces; LAMMPS runs that input (run 0); every energy term and every atomic force are
 compared, and the six components of the virial tensor (LAMMPS compute pressure NULL virial). The cases cover class I (CVFF, OPLS-AA, GAFF), class II with class I torsions in one file (DL_FIELD's PCFF
 and COMPASS: hybrid styles with skip lines in the class II sections), DREIDING (umbrella inversions), ionic crystals
-(Buckingham pairs, periodic; QEq charges, as DL_FIELD keeps ionic charges in its templates and Gasteiger–Marsili has no parameters for the metals), a periodic polymer melt (tail corrections), and CHARMM-type force fields, whose separate
+(Buckingham pairs, periodic; QEq charges, as DL_FIELD keeps ionic charges in its templates and Gasteiger–Marsili has no parameters for the metals), a periodic polymer melt (tail corrections), mW water (Stillinger–Weber three-body term, pair_style sw), and CHARMM-type force fields, whose separate
 1-4 Lennard-Jones parameters LAMMPS cannot reproduce without switching (the writer refuses them; reported as such).
 
 With --pme, CAPS uses particle-mesh Ewald on a fine grid (β from ewald-rtol 1e-7, spacing 0.5 Å, order 6) and LAMMPS
 its Ewald sum (kspace_style ewald): both converge to the same electrostatics; only periodic cases are run.
 
 usage: check_data_lammps.py [--only substring] [--keep DIR] [--pme]
-Needs LMP (default ~/lammps/build-class2/lmp) with CLASS2, MOLECULE, EXTRA-MOLECULE, EXTRA-PAIR and MOFFF.
+Needs LMP (default ~/lammps/build-class2/lmp) with CLASS2, MOLECULE, EXTRA-MOLECULE, EXTRA-PAIR, MANYBODY and MOFFF.
 """
 import math, os, re, subprocess, sys, tempfile
 
@@ -59,6 +59,9 @@ CASES = [
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
                                                "FP(F)(F)(F)F.C[Si](C)(C)O[Si](C)(C)C.CSSC"), "uff", "types", "rules"),
     ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
+    ("Miscellaneous set: HFA-134a, methanol, chloroform, isopentane", ("smiles", "FCC(F)(F)F.CO.ClC(Cl)Cl.CCC(C)C"), "misc", "types", "rules"),
+    # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
+    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-moltemplate", "types", "rules"),
 ]
 
 
@@ -81,6 +84,21 @@ def structure(src, base):
     kind = src[0]
     if kind == "file":
         return src[1], None
+    if kind == "water-box":   # N waters packed 2 Å apart (and 2 Å from the cell faces), in a periodic cube of edge L
+        n, edge = src[1], src[2]
+        w, box = os.path.join(work, base + ".w.xyz"), os.path.join(work, base + ".xyz")
+        with open(w, "w") as f:
+            f.write("3\nwater\nO 0 0 0\nH 0.757 0 0.586\nH -0.757 0 0.586\n")
+        inp = os.path.join(work, base + ".inp")
+        with open(inp, "w") as f:
+            f.write(f"tolerance 2.0\nfiletype xyz\noutput {box}\nstructure {w}\n  number {n}\n  inside box 1. 1. 1. {edge - 1} {edge - 1} {edge - 1}\n"
+                    "end structure\n")
+        subprocess.run([CAPS, "pack", inp, "--quiet"], capture_output=True, check=True)
+        lines = open(box).read().splitlines()
+        lines[1] = f'Lattice="{edge} 0 0 0 {edge} 0 0 0 {edge}" Properties=species:S:1:pos:R:3'
+        with open(box, "w") as f:
+            f.write("\n".join(lines) + "\n")
+        return box, None
     if kind == "smiles":   # built and cleaned up by CAPS with UFF
         m = os.path.join(work, base + ".mol2")
         subprocess.run([CAPS, "build", src[1], "--ff", "uff", "-o", m], capture_output=True, check=True)

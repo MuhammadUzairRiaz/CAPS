@@ -132,6 +132,7 @@ struct FFDef {
   // United-atom force field (typing file "united_atom": true; GROMOS, TraPPE-UA, CHARMM19): hydrogens on carbon are
   // part of their carbon's site, so an all-atom structure is converted before typing (prepare_for_forcefield)
   bool united_atom = false;
+  std::vector<int> united_atom_hosts{6};   // elements whose hydrogens fold in ("united_atom_hosts"; O for mW water)
   // Shell models (typing file "shells": core type → shell type): each core gets a shell particle on it, bonded by the
   // file's core-shell spring and named for its shell type (prepare_for_forcefield)
   std::map<std::string, std::string> shells;

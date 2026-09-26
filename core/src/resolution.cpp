@@ -40,12 +40,13 @@ ResolutionReport all_atom_summary(const System& s) {
   return r;
 }
 
-System united_atom(const System& s, ResolutionReport* rep) {
+System united_atom(const System& s, ResolutionReport* rep, const std::vector<int>& hosts) {
   const size_t n = s.atoms.size();
   const auto nb = adjacency(s);
   std::vector<int> host(n, -1);   // the carbon a hydrogen folds into
   for (size_t i = 0; i < n; ++i)
-    if (s.atoms[i].element == 1 && nb[i].size() == 1 && s.atoms[nb[i][0]].element == 6) host[i] = int(nb[i][0]);
+    if (s.atoms[i].element == 1 && nb[i].size() == 1 &&
+        std::find(hosts.begin(), hosts.end(), s.atoms[nb[i][0]].element) != hosts.end()) host[i] = int(nb[i][0]);
   System out;
   out.title = s.title.empty() ? "united-atom" : s.title + " (united-atom)";
   out.cell = s.cell;
@@ -66,7 +67,7 @@ System united_atom(const System& s, ResolutionReport* rep) {
     const int h = hcount[i];
     const double mass = element(a.element).mass + h * element(1).mass;
     std::string label = element(a.element).symbol;
-    if (a.element == 6 && h > 0) label = h == 1 ? "CH" : "CH" + std::to_string(h);
+    if (h > 0) label += h == 1 ? "H" : "H" + std::to_string(h);   // CH, CH2, CH3; OH2 for a one-site water
     a.name = label;
     a.charge += hcharge[i];
     a.type = type_of(out, types, label, mass);
@@ -84,7 +85,8 @@ System united_atom(const System& s, ResolutionReport* rep) {
   r.sites = int(out.atoms.size());
   int folded = 0;
   for (size_t i = 0; i < n; ++i) folded += host[i] >= 0 ? 1 : 0;
-  r.notes.push_back(std::to_string(folded) + " hydrogens on carbon folded into their carbons; " + std::to_string(r.hydrogens) + " polar hydrogens kept");
+  r.notes.push_back(std::to_string(folded) + " hydrogens folded into their " + (hosts.size() == 1 && hosts[0] == 6 ? std::string("carbons") : std::string("host atoms")) + "; " +
+                    std::to_string(r.hydrogens) + " other hydrogens kept");
   if (rep) *rep = std::move(r);
   return out;
 }
