@@ -25,6 +25,8 @@ interaction, and every CAPS energy form is checked against LAMMPS.
 | `check_martini3.py` | Martini 3 boxes against GROMACS (reaction field, virtual sites, restricted bending) |
 | `convert_vermouth_martini3.py` | Martini 3 proteins from vermouth-martinize (martini3001 force field and mappings) |
 | `check_martini3_protein.py` | Martini 3 proteins against martinize2, term by term |
+| `convert_vermouth_martini3_small.py` | Martini 3 small molecules: vermouth's blocks and mappings, the CHARMM residues they are written for |
+| `check_martini3_small.py` | every Martini 3 small molecule built all-atom, recognised by graph and mapped |
 | `convert_emc_martini.py` | MARTINI overlays (polymers, solvents, surfactants, sugars) from the EMC parameter files of the moltemplate distribution |
 
 LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (lj/sdk, angle sdk) is built at
@@ -64,6 +66,7 @@ recognised again, exported with `caps ff apply --gromacs` and run with `gmx mdru
 | Ubiquitin 1UBQ, all-atom mapped to Martini 3 (restricted-bending backbone, side-chain fix dihedrals) | energy 2.3e-6 |
 | Lysozyme 3LZT, all-atom mapped to Martini 3 (tryptophan virtual sites, exclusions, impropers) | energy 6.1e-6 |
 | Lysozyme as martinize2 wrote it: its cg.pdb and topol.top read by CAPS (`--topology`), elastic network 500 | energy 1.7e-5 |
+| All 43 Martini 3 small molecules, all-atom (built by CAPS) mapped by graph | energy 1.1e-6 |
 
 Forces on beads held by constraints (stiff bonds in CAPS, 1e6 kJ/mol/nm²) carry the single-precision position error of
 GROMACS (~0.012 kcal/mol/Å per stiff bond in a 9 nm box); a mapped protein that is not relaxed has beads under
@@ -84,6 +87,29 @@ constraint, angle, dihedral, improper, virtual site and exclusion, bead position
 
 The model is data (`data/martini/martini3-protein.json`, from vermouth's martini3001 files by
 `convert_vermouth_martini3.py`): blocks, modifications, the 66 links with vermouth's matching rules, the mappings.
+
+### Martini 3 small molecules (`check_martini3_small.py`)
+
+`data/martini/martini3-small-molecules.json` (`convert_vermouth_martini3_small.py`) holds vermouth's 43 Martini 3
+small-molecule blocks, their mappings and the CHARMM residues the mappings name atoms of. CAPS matches an all-atom
+molecule to a residue by graph (elements, bonds, hydrogen counts), so any atom names do. Two things in the sources:
+
+* vermouth's `25-small_molecule_martini3.ff` numbers the atoms of its blocks' terms from 0 while vermouth's reader
+  counts from 1 (so "0" is taken for the last atom and every term is shifted by one atom); CAPS reads those blocks from
+  0 (and puts MIND's virtual-site function after `--`). Read so, the 8 molecules also in cgmartini's
+  `martini_v3.0.0_small_molecules_v1.itp` are identical to it (bead types, charges, bonds, constraints, angles,
+  dihedrals, virtual sites, up to bead order); read vermouth's way, TOLU, FURA and MIND are not.
+* the beads go at the geometric centre of their mapped atoms, hydrogens included (vermouth weighs by mass;
+  `caps martini --martini 3 --centre mass` does that). Every molecule built all-atom by CAPS from a SMILES written
+  from its residue's graph, then mapped:
+
+| Centre | Result |
+|---|---|
+| geometric (default) | 43 of 43 recognised and mapped; mapped bond lengths 0.32 Å rms from the model's on average, most aromatic molecules within 0.1 Å (INDO 0.04, NAFT 0.06, PYRM 0.05); saturated two-bead rings (THP, CHXE, DIOX, THF) about 1 Å (their model bond is longer than the mapped distance with either centre) |
+| mass (vermouth's) | 43 of 43; 0.80 Å rms on average |
+
+In GROMACS (`check_martini3.py`) the 43 mapped molecules together agree to 1.1e-6, anthracene's virtual sites built on
+a virtual site included (exported as `virtual_sites2` / `virtual_sites3`).
 
 The SDK beads for PEG and SDS come from LAMMPS's own SDK / SPICA examples (`examples/PACKAGES/cgspica`); their CM, CT,
 CT2 and W terms are checked equal to the library's before they are added (`bench/typing/make_cg_rules.py`).

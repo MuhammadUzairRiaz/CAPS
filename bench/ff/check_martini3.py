@@ -100,7 +100,23 @@ def stiff_bonds(d, edge_nm):
 
 
 order, charge = [], [0.0]
+# every Martini 3 small molecule built all-atom by CAPS and mapped by graph (check_martini3_small.py's SMILES), a box
+sys.path.insert(0, HERE)
+import check_martini3_small as small
+SMALL = ("All 43 Martini 3 small molecules, all-atom -> Martini 3 by graph (linear virtual sites, impropers, constraints)", 60)
+
 rows, fails = [], 0
+if not only or only.lower() in SMALL[0].lower():
+    d = os.path.join(work, "small_molecules")
+    os.makedirs(d, exist_ok=True)
+    inp = ["tolerance 3.0", "output box.data", f"pbc 0 0 0 {SMALL[1]} {SMALL[1]} {SMALL[1]}", "seed 7"]
+    for name, mol in sorted(small.DATA.items()):
+        smi = small.smiles_of(mol)
+        subprocess.run([CAPS, "build", smi, "-o", os.path.join(d, name + ".pdb"), "--seed", "1"], capture_output=True, text=True, check=True)
+        inp += [f"structure {name}.pdb", "  number 1", f"  inside box 0 0 0 {SMALL[1]} {SMALL[1]} {SMALL[1]}", "end structure"]
+    open(os.path.join(d, "box.inp"), "w").write("\n".join(inp) + "\n")
+    subprocess.run([CAPS, "pack", "box.inp", "-o", "box.data", "--quiet"], cwd=d, capture_output=True, text=True, check=True)
+    CASES.append((SMALL[0], None, os.path.join(d, "box.data")))
 for label, pdb in PROTEINS:
     if (only and only.lower() not in label.lower()) or not os.path.exists(pdb if isinstance(pdb, str) else pdb[0]):
         continue
@@ -145,7 +161,7 @@ for label, edge, content in CASES:
         rows.append((label, "CAPS failed: " + (r.stderr.strip() or r.stdout.strip())[-200:], ""))
         fails += 1
         continue
-    recog = re.search(r"(\d+) molecules recognised", r.stdout) or re.search(r"onto (\d+) Martini 3 protein beads", r.stdout)
+    recog = re.search(r"(\d+) molecules recognised", r.stdout) or re.search(r"onto (\d+) Martini 3", r.stdout)
     ce = dict(zip(["bond", "angle", "dihedral", "improper", "vdw", "coulomb"], map(float, m.groups())))
     cf = [tuple(map(float, w[1:4])) for w in (l.split() for l in open(os.path.join(d, "caps_f.txt"))) if len(w) == 4]
     try:

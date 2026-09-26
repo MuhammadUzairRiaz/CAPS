@@ -118,6 +118,10 @@ MolGraph parse_smiles(const std::string& text) {
       if (it == rings.end()) {
         rings[num] = {prev, pending, pdir, int(g.atoms[prev].order.size()), at};
         g.atoms[prev].order.push_back(-1);
+        // a bond symbol before the digit ("C=1CCCCC1") belongs to the ring bond, not to the next atom
+        pending = 0;
+        pdir = 0;
+        expect_atom = false;
       } else {
         Ring r = it->second;
         rings.erase(it);
@@ -132,6 +136,7 @@ MolGraph parse_smiles(const std::string& text) {
         g.atoms[prev].order.push_back(r.atom);
         pending = 0;
         pdir = 0;
+        expect_atom = false;
       }
     } else if (c == '[') {
       const size_t end = s.find(']', i);

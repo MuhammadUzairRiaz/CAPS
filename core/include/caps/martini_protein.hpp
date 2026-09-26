@@ -59,10 +59,28 @@ struct Martini3Options {
   int ermd = -1;                   // minimum residue separation (−1: vermouth's default, 2)
   std::string eunit = "molecule";  // molecule, chain or all
   double constraint_kj = 1e6;      // constraints as stiff bonds (kJ/mol/nm², Martini 3's own stiff_fc)
+  // small molecules' beads at the geometric centre of their mapped atoms, hydrogens included: the mapping Martini 3's
+  // small-molecule parameters reproduce (bench/ff/check_martini3_small.py); false: mass-weighted, as vermouth centres
+  bool small_geometric = true;
+  // molecules that are neither amino acids, Martini 3 small molecules, water nor ions: refused (typing must not drop
+  // part of a structure); false: left out with a note (caps martini)
+  bool refuse_unmatched = true;
 };
 System martini3_protein(const System& aa, const Martini3Options& o, const std::string& data_path, MartiniProteinReport* rep = nullptr);
 // The topology as a GROMACS .itp (stiff bonds from constraints written back as constraints), for comparison with martinize2
 std::string martini3_itp(const System& beads, double constraint_kj = 1e6);
+// Martini 3 small molecules (data/martini/martini3-small-molecules.json: vermouth's martini3001 blocks and mappings,
+// the CHARMM residues they are written for; bench/ff/convert_vermouth_martini3_small.py): every molecule of an
+// all-atom structure whose heavy atoms and bonds (and hydrogen counts, when it has hydrogens) are one of those residues,
+// whatever its atom names, becomes that molecule's beads (mass-weighted centres of the mapped atoms, virtual sites
+// placed) with its explicit topology. Molecules that match none are listed in `unmatched` (formulas) and left out.
+System martini3_small_molecules(const System& aa, const std::string& data_path, double constraint_kj = 1e6,
+                                std::vector<std::string>* unmatched = nullptr, std::vector<std::string>* notes = nullptr, bool geometric = false);
+// An all-atom structure in Martini 3: its amino acids as martini3_protein, its other molecules as small molecules;
+// water and ions are left out (noted).
+System martini3_all_atom(const System& aa, const Martini3Options& o, const std::string& protein_path, const std::string& small_path,
+                         MartiniProteinReport* rep = nullptr);
+
 // Whether a model file is a vermouth model (Martini 3) rather than the Martini 2.2 tables
 bool is_martini3_model(const std::string& path);
 
