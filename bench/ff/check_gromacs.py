@@ -54,6 +54,14 @@ CASES = [
     ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
     # GROMOS in its own settings: reaction field (ε_rf 61) at 1.4 nm, no dispersion correction, C6/C12 (comb-rule 1)
     ("SPC/E water box, GROMOS 54A7 (reaction field, periodic)", ("solvate", "40", "SPC/E", "1200"), "gromos-54a7", "keep", []),
+    # ClayFF (LAMMPS's ClayFF test structure, its types and charges): the M-O-H bends are angles without an M-O bond, so
+    # GROMACS keeps M and H interacting as CAPS does. IFF 1.5 (CVFF) montmorillonite from IFF's own model database. Both
+    # cells are thinner than 2 x 10 A: compared at 8 and 9 A cut-offs.
+    ("ClayFF pyrophyllite (M-O-H bends by contact; PME)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
+     "inorganic-clay", "keep", PME + ["--cutoff", "8", "--no-tail", "--names"]),
+    ("IFF 1.5 (CVFF) Na-montmorillonite (bonded clay layers, cvff impropers; PME)",
+     ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
+     "iff-cvff", "keep", PME + ["--cutoff", "9", "--no-tail"]),
     ("PCFF polystyrene (class II: refused)", ("file", PS), "pcff", "types", []),
     ("UFF polystyrene (inversions: refused)", ("file", PS), "uff", "types", []),
 ]
@@ -68,7 +76,7 @@ def ff_file(fid):
 
 def structure(src, base):
     if src[0] == "file":
-        return src[1]
+        return src[1] if os.path.exists(src[1]) else None
     if src[0] == "tilt":   # the same melt in a sheared cell (positions kept, so bonds are recomputed images)
         out = os.path.join(work, base + ".data")
         xy, xz, yz = 0.5, 0.3, 0.2
