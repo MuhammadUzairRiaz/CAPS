@@ -15,6 +15,7 @@
 #include "caps/molecule.hpp"
 #include "caps/resolution.hpp"
 #include "caps/typing.hpp"
+#include "caps/uff.hpp"
 
 using namespace caps;
 
@@ -461,6 +462,35 @@ TEST(CoarseGrained, SdkMapsAllAtomStructures) {
   // the LAMMPS SDK examples' own topologies: C12E8 (OA, 8 EO, 3 CM, CT2) and SDS (SO4, 3 CM, CT)
   EXPECT_EQ(map("CCCCCCCCCCCCOCCOCCOCCOCCOCCOCCOCCOCCO"), (std::map<std::string, int>{{"CM", 3}, {"CT2", 1}, {"EO", 8}, {"OA", 1}}));
   EXPECT_EQ(map("CCCCCCCCCCCCOS(=O)(=O)[O-]"), (std::map<std::string, int>{{"CM", 3}, {"CT", 1}, {"SO4", 1}}));
+}
+
+// A structure in vacuum sees every pair within the cut-off, however wide it is (the neighbour bins are half the list
+// radius wide, so partners can sit two bins apart): the same energy as in a periodic box too large for images
+TEST(FieldForms, VacuumPairsMatchALargePeriodicBox) {
+  System s;
+  for (int k = 0; k < 30; ++k) {
+    Atom a;
+    a.element = 18;
+    a.name = "Ar";
+    a.pos = {4.5 * k, 0.3 * (k % 3), 0};
+    s.atoms.push_back(a);
+  }
+  const ForceField ff = assign_uff(s);
+  EnergyOptions o;
+  o.tail = false;
+  o.coulomb = false;
+  std::vector<double> x = flat(s), f, g;
+  Evaluator vac(ff, o);
+  const double ev = vac.compute(x, Cell{}, f).total();
+  Cell big;
+  big.origin = {-100, -100, -100};
+  big.a = {400, 0, 0};
+  big.b = {0, 400, 0};
+  big.c = {0, 0, 400};
+  Evaluator per(ff, o);
+  const double ep = per.compute(x, big, g).total();
+  EXPECT_NEAR(ev, ep, 1e-9 * std::max(1.0, std::fabs(ep)));
+  for (size_t k = 0; k < f.size(); ++k) EXPECT_NEAR(f[k], g[k], 1e-9) << k;
 }
 
 // CHARMM libraries keep their separate 1-4 van der Waals and Urey–Bradley terms through save / load.

@@ -584,7 +584,8 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
   for (int k = 0; k < 3; ++k) {
     // bins of about half the list radius: a 5×5×5 stencil scans 15.6 (rc + skin)³ instead of 27 (rc + skin)³
     nb[k] = std::max(1, std::min(512, static_cast<int>(2 * w[k] / rcs)));
-    reach[k] = cell.periodic[k] ? static_cast<int>(std::ceil(rcs / (w[k] / nb[k]))) : 1;
+    // bins are at least half the list radius wide: a pair up to rcs apart can be two bins away, periodic or not
+    reach[k] = static_cast<int>(std::ceil(rcs / (w[k] / nb[k])));
   }
   std::vector<Vec3> fr(n);
   std::vector<std::array<int, 3>> bin(n);
