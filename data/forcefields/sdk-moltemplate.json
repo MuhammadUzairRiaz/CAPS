@@ -25,7 +25,7 @@
   0,
   0
  ],
- "cutoff": 12,
+ "cutoff": 15.0,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "atom_types": [
@@ -33,139 +33,166 @@
    "name": "C2T_bC2T_aC2T_dC2T_iC2T",
    "element": "",
    "mass": 43.09,
-   "description": "moltemplate @atom:C2T · C2T"
+   "description": "moltemplate @atom:C2T · C2T",
+   "charge": 0.0
   },
   {
    "name": "CM_bCM_aCM_dCM_iCM",
    "element": "",
    "mass": 42.0804,
-   "description": "moltemplate @atom:CM · CM"
+   "description": "moltemplate @atom:CM · CM",
+   "charge": 0.0
   },
   {
    "name": "CM2_bCM2_aCM2_dCM2_iCM2",
-   "element": "Si",
+   "element": "",
    "mass": 28.05,
-   "description": "moltemplate @atom:CM2 · CM2"
+   "description": "moltemplate @atom:CM2 · CM2",
+   "charge": 0.0
   },
   {
    "name": "CM2R_bCM2R_aCM2R_dCM2R_iCM2R",
-   "element": "Si",
+   "element": "",
    "mass": 28.05,
-   "description": "moltemplate @atom:CM2R · CM2R"
+   "description": "moltemplate @atom:CM2R · CM2R",
+   "charge": 0.0
   },
   {
    "name": "CMB_bCMB_aCMB_dCMB_iCMB",
-   "element": "Ca",
+   "element": "",
    "mass": 40.06,
-   "description": "moltemplate @atom:CMB · CMB"
+   "description": "moltemplate @atom:CMB · CMB",
+   "charge": 0.0
   },
   {
    "name": "CMD2_bCMD2_aCMD2_dCMD2_iCMD2",
    "element": "",
    "mass": 26.0378,
-   "description": "moltemplate @atom:CMD2 · CMD2"
+   "description": "moltemplate @atom:CMD2 · CMD2",
+   "charge": 0.0
   },
   {
    "name": "CMDB_bCMDB_aCMDB_dCMDB_iCMDB",
-   "element": "K",
+   "element": "",
    "mass": 39.06,
-   "description": "moltemplate @atom:CMDB · CMDB"
+   "description": "moltemplate @atom:CMDB · CMDB",
+   "charge": 0.0
   },
   {
    "name": "CMR_bCMR_aCMR_dCMR_iCMR",
    "element": "",
    "mass": 41.07,
-   "description": "moltemplate @atom:CMR · CMR"
+   "description": "moltemplate @atom:CMR · CMR",
+   "charge": 0.0
   },
   {
    "name": "CMR5_bCMR5_aCMR5_dCMR5_iCMR5",
    "element": "",
    "mass": 41.07,
-   "description": "moltemplate @atom:CMR5 · CMR5"
+   "description": "moltemplate @atom:CMR5 · CMR5",
+   "charge": 0.0
   },
   {
    "name": "CT_bCT_aCT_dCT_iCT",
    "element": "",
    "mass": 43.0883,
-   "description": "moltemplate @atom:CT · CT"
+   "description": "moltemplate @atom:CT · CT",
+   "charge": 0.0
   },
   {
    "name": "CT2_bCT2_aCT2_dCT2_iCT2",
    "element": "",
    "mass": 29.0615,
-   "description": "moltemplate @atom:CT2 · CT2"
+   "description": "moltemplate @atom:CT2 · CT2",
+   "charge": 0.0
   },
   {
    "name": "CTB_bCTB_aCTB_dCTB_iCTB",
    "element": "",
    "mass": 42.08,
-   "description": "moltemplate @atom:CTB · CTB"
+   "description": "moltemplate @atom:CTB · CTB",
+   "charge": 0.0
   },
   {
    "name": "CTBA_bCTBA_aCTBA_dCTBA_iCTBA",
-   "element": "Al",
+   "element": "",
    "mass": 27.05,
-   "description": "moltemplate @atom:CTBA · CTBA"
+   "description": "moltemplate @atom:CTBA · CTBA",
+   "charge": 0.0
   },
   {
    "name": "CTBB_bCTBB_aCTBB_dCTBB_iCTBB",
-   "element": "Al",
+   "element": "",
    "mass": 27.05,
-   "description": "moltemplate @atom:CTBB · CTBB"
+   "description": "moltemplate @atom:CTBB · CTBB",
+   "charge": 0.0
   },
   {
    "name": "EST1_bEST1_aEST1_dEST1_iEST1",
    "element": "",
    "mass": 58.0366,
-   "description": "moltemplate @atom:EST1 · EST1"
+   "description": "moltemplate @atom:EST1 · EST1",
+   "charge": 0.0
   },
   {
    "name": "EST2_bEST2_aEST2_dEST2_iEST2",
    "element": "",
    "mass": 58.0366,
-   "description": "moltemplate @atom:EST2 · EST2"
+   "description": "moltemplate @atom:EST2 · EST2",
+   "charge": 0.0
   },
   {
    "name": "GL_bGL_aGL_dGL_iGL",
    "element": "",
    "mass": 41.0725,
-   "description": "moltemplate @atom:GL · GL"
+   "description": "moltemplate @atom:GL · GL",
+   "charge": 0.0
   },
   {
    "name": "NC_bNC_aNC_dNC_iNC",
    "element": "",
    "mass": 87.1644,
-   "description": "moltemplate @atom:NC · NC"
+   "description": "moltemplate @atom:NC · NC",
+   "charge": 1.0
   },
   {
    "name": "NH_bNH_aNH_dNH_iNH",
    "element": "",
    "mass": 44.0761,
-   "description": "moltemplate @atom:NH · NH"
+   "description": "moltemplate @atom:NH · NH",
+   "charge": 1.0
   },
   {
    "name": "OAB_bOAB_aOAB_dOAB_iOAB",
    "element": "",
    "mass": 30.03,
-   "description": "moltemplate @atom:OAB · OAB"
+   "description": "moltemplate @atom:OAB · OAB",
+   "charge": 0.0
   },
   {
    "name": "PH_bPH_aPH_dPH_iPH",
    "element": "",
    "mass": 94.9716,
-   "description": "moltemplate @atom:PH · PH"
+   "description": "moltemplate @atom:PH · PH",
+   "charge": -1.0,
+   "equivalence": {
+    "bond": "PHE_bPHE_aPHE_dPHE_iPHE",
+    "angle": "PHE_bPHE_aPHE_dPHE_iPHE"
+   }
   },
   {
    "name": "PHE_bPHE_aPHE_dPHE_iPHE",
    "element": "",
    "mass": 94.9716,
-   "description": "moltemplate @atom:PHE · PHE"
+   "description": "moltemplate @atom:PHE · PHE",
+   "charge": -1.0
   },
   {
    "name": "W_bW_aW_dW_iW",
    "element": "",
    "mass": 54.0456,
-   "description": "moltemplate @atom:W · W"
+   "description": "moltemplate @atom:W · W",
+   "charge": 0.0
   }
  ],
  "pairs": [
@@ -3295,9 +3322,19 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "CAPS correction: beads have no element (the converter guessed Al, Ca, K, Si from bead masses)",
+  "cut-off 15 A, the model's (LAMMPS SDK / SPICA examples: lj/sdk 15.0); the source file's 12 A leaves W water at 0.85 g/cm3",
+  "bead charges from the source's parameter file (sdk_lipids.prm: NC, NH +1; PH, PHE -1; others 0)",
+  "CAPS extension: PH takes PHE's bond and angle terms (the source gives the phosphate's bonded terms under PHE only, including the PC head's NC-PHE bond and GL-PHE-NC angle); PH keeps its own non-bonded pairs"
  ],
  "version": "2007 / 2010",
  "status": "converted",
- "validation": "lj/sdk 9-6 / 12-4 forms are not evaluated by CAPS yet."
+ "validation": "lj/sdk 9-6 / 12-4 forms are not evaluated by CAPS yet.",
+ "torsion_terms": "if_defined",
+ "angle_terms": "if_defined",
+ "pair_settings": {
+  "model_cutoff": true
+ },
+ "typing": "../typing/sdk-moltemplate.typing.json"
 }

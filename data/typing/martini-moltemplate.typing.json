@@ -1,0 +1,850 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "MARTINI 2.0",
+ "coarse_grained": true,
+ "unknown_types": "untyped",
+ "description": "CAPS rules for MARTINI (bench/typing/make_cg_rules.py): bead structures typed by site name (bead templates, or files naming their sites by bead type). The sources give no atomistic mapping.",
+ "rules": [
+  {
+   "type": "BP4",
+   "smarts": "*",
+   "atom_name": "BP4",
+   "priority": 0,
+   "description": "a MARTINI bead named BP4"
+  },
+  {
+   "type": "BP4",
+   "smarts": "*",
+   "atom_name": "BP4_bBP4_aBP4_dBP4_iBP4",
+   "priority": 0,
+   "description": "a MARTINI bead named BP4_bBP4_aBP4_dBP4_iBP4"
+  },
+  {
+   "type": "C1",
+   "smarts": "*",
+   "atom_name": "C1",
+   "priority": 0,
+   "description": "a MARTINI bead named C1"
+  },
+  {
+   "type": "C1",
+   "smarts": "*",
+   "atom_name": "C1_bC1_aC1_dC1_iC1",
+   "priority": 0,
+   "description": "a MARTINI bead named C1_bC1_aC1_dC1_iC1"
+  },
+  {
+   "type": "C2",
+   "smarts": "*",
+   "atom_name": "C2",
+   "priority": 0,
+   "description": "a MARTINI bead named C2"
+  },
+  {
+   "type": "C2",
+   "smarts": "*",
+   "atom_name": "C2_bC2_aC2_dC2_iC2",
+   "priority": 0,
+   "description": "a MARTINI bead named C2_bC2_aC2_dC2_iC2"
+  },
+  {
+   "type": "C3",
+   "smarts": "*",
+   "atom_name": "C3",
+   "priority": 0,
+   "description": "a MARTINI bead named C3"
+  },
+  {
+   "type": "C3",
+   "smarts": "*",
+   "atom_name": "C3_bC3_aC3_dC3_iC3",
+   "priority": 0,
+   "description": "a MARTINI bead named C3_bC3_aC3_dC3_iC3"
+  },
+  {
+   "type": "C4",
+   "smarts": "*",
+   "atom_name": "C4",
+   "priority": 0,
+   "description": "a MARTINI bead named C4"
+  },
+  {
+   "type": "C4",
+   "smarts": "*",
+   "atom_name": "C4_bC4_aC4_dC4_iC4",
+   "priority": 0,
+   "description": "a MARTINI bead named C4_bC4_aC4_dC4_iC4"
+  },
+  {
+   "type": "C41",
+   "smarts": "*",
+   "atom_name": "C41",
+   "priority": 0,
+   "description": "a MARTINI bead named C41"
+  },
+  {
+   "type": "C41",
+   "smarts": "*",
+   "atom_name": "C41_bC4_aC41_dC41_iC41",
+   "priority": 0,
+   "description": "a MARTINI bead named C41_bC4_aC41_dC41_iC41"
+  },
+  {
+   "type": "C42",
+   "smarts": "*",
+   "atom_name": "C42",
+   "priority": 0,
+   "description": "a MARTINI bead named C42"
+  },
+  {
+   "type": "C42",
+   "smarts": "*",
+   "atom_name": "C42_bC4_aC42_dC42_iC42",
+   "priority": 0,
+   "description": "a MARTINI bead named C42_bC4_aC42_dC42_iC42"
+  },
+  {
+   "type": "C5",
+   "smarts": "*",
+   "atom_name": "C5",
+   "priority": 0,
+   "description": "a MARTINI bead named C5"
+  },
+  {
+   "type": "C5",
+   "smarts": "*",
+   "atom_name": "C5_bC5_aC5_dC5_iC5",
+   "priority": 0,
+   "description": "a MARTINI bead named C5_bC5_aC5_dC5_iC5"
+  },
+  {
+   "type": "N0",
+   "smarts": "*",
+   "atom_name": "N0",
+   "priority": 0,
+   "description": "a MARTINI bead named N0"
+  },
+  {
+   "type": "N0",
+   "smarts": "*",
+   "atom_name": "N0_bN0_aN0_dN0_iN0",
+   "priority": 0,
+   "description": "a MARTINI bead named N0_bN0_aN0_dN0_iN0"
+  },
+  {
+   "type": "Na",
+   "smarts": "*",
+   "atom_name": "Na",
+   "priority": 0,
+   "description": "a MARTINI bead named Na"
+  },
+  {
+   "type": "Na",
+   "smarts": "*",
+   "atom_name": "Na_bNa_aNa_dNa_iNa",
+   "priority": 0,
+   "description": "a MARTINI bead named Na_bNa_aNa_dNa_iNa"
+  },
+  {
+   "type": "Na1",
+   "smarts": "*",
+   "atom_name": "Na1",
+   "priority": 0,
+   "description": "a MARTINI bead named Na1"
+  },
+  {
+   "type": "Na1",
+   "smarts": "*",
+   "atom_name": "Na1_bNa1_aNa1_dNa1_iNa1",
+   "priority": 0,
+   "description": "a MARTINI bead named Na1_bNa1_aNa1_dNa1_iNa1"
+  },
+  {
+   "type": "Na2",
+   "smarts": "*",
+   "atom_name": "Na2",
+   "priority": 0,
+   "description": "a MARTINI bead named Na2"
+  },
+  {
+   "type": "Na2",
+   "smarts": "*",
+   "atom_name": "Na2_bNa2_aNa2_dNa2_iNa2",
+   "priority": 0,
+   "description": "a MARTINI bead named Na2_bNa2_aNa2_dNa2_iNa2"
+  },
+  {
+   "type": "Nd",
+   "smarts": "*",
+   "atom_name": "Nd",
+   "priority": 0,
+   "description": "a MARTINI bead named Nd"
+  },
+  {
+   "type": "Nd",
+   "smarts": "*",
+   "atom_name": "Nd_bNd_aNd_dNd_iNd",
+   "priority": 0,
+   "description": "a MARTINI bead named Nd_bNd_aNd_dNd_iNd"
+  },
+  {
+   "type": "Nda",
+   "smarts": "*",
+   "atom_name": "Nda",
+   "priority": 0,
+   "description": "a MARTINI bead named Nda"
+  },
+  {
+   "type": "Nda",
+   "smarts": "*",
+   "atom_name": "Nda_bNda_aNda_dNda_iNda",
+   "priority": 0,
+   "description": "a MARTINI bead named Nda_bNda_aNda_dNda_iNda"
+  },
+  {
+   "type": "P1",
+   "smarts": "*",
+   "atom_name": "P1",
+   "priority": 0,
+   "description": "a MARTINI bead named P1"
+  },
+  {
+   "type": "P1",
+   "smarts": "*",
+   "atom_name": "P1_bP1_aP1_dP1_iP1",
+   "priority": 0,
+   "description": "a MARTINI bead named P1_bP1_aP1_dP1_iP1"
+  },
+  {
+   "type": "P2",
+   "smarts": "*",
+   "atom_name": "P2",
+   "priority": 0,
+   "description": "a MARTINI bead named P2"
+  },
+  {
+   "type": "P2",
+   "smarts": "*",
+   "atom_name": "P2_bP2_aP2_dP2_iP2",
+   "priority": 0,
+   "description": "a MARTINI bead named P2_bP2_aP2_dP2_iP2"
+  },
+  {
+   "type": "P3",
+   "smarts": "*",
+   "atom_name": "P3",
+   "priority": 0,
+   "description": "a MARTINI bead named P3"
+  },
+  {
+   "type": "P3",
+   "smarts": "*",
+   "atom_name": "P3_bP3_aP3_dP3_iP3",
+   "priority": 0,
+   "description": "a MARTINI bead named P3_bP3_aP3_dP3_iP3"
+  },
+  {
+   "type": "P4",
+   "smarts": "*",
+   "atom_name": "P4",
+   "priority": 0,
+   "description": "a MARTINI bead named P4"
+  },
+  {
+   "type": "P4",
+   "smarts": "*",
+   "atom_name": "P4_bP4_aP4_dP4_iP4",
+   "priority": 0,
+   "description": "a MARTINI bead named P4_bP4_aP4_dP4_iP4"
+  },
+  {
+   "type": "P5",
+   "smarts": "*",
+   "atom_name": "P5",
+   "priority": 0,
+   "description": "a MARTINI bead named P5"
+  },
+  {
+   "type": "P5",
+   "smarts": "*",
+   "atom_name": "P5_bP5_aP5_dP5_iP5",
+   "priority": 0,
+   "description": "a MARTINI bead named P5_bP5_aP5_dP5_iP5"
+  },
+  {
+   "type": "Q0",
+   "smarts": "*",
+   "atom_name": "Q0",
+   "priority": 0,
+   "description": "a MARTINI bead named Q0"
+  },
+  {
+   "type": "Q0",
+   "smarts": "*",
+   "atom_name": "Q0_bQ0_aQ0_dQ0_iQ0",
+   "priority": 0,
+   "description": "a MARTINI bead named Q0_bQ0_aQ0_dQ0_iQ0"
+  },
+  {
+   "type": "Qa",
+   "smarts": "*",
+   "atom_name": "Qa",
+   "priority": 0,
+   "description": "a MARTINI bead named Qa"
+  },
+  {
+   "type": "Qa",
+   "smarts": "*",
+   "atom_name": "Qa_bQa_aQa_dQa_iQa",
+   "priority": 0,
+   "description": "a MARTINI bead named Qa_bQa_aQa_dQa_iQa"
+  },
+  {
+   "type": "Qa1",
+   "smarts": "*",
+   "atom_name": "Qa1",
+   "priority": 0,
+   "description": "a MARTINI bead named Qa1"
+  },
+  {
+   "type": "Qa1",
+   "smarts": "*",
+   "atom_name": "Qa1_bQa1_aQa1_dQa1_iQa1",
+   "priority": 0,
+   "description": "a MARTINI bead named Qa1_bQa1_aQa1_dQa1_iQa1"
+  },
+  {
+   "type": "Qa2",
+   "smarts": "*",
+   "atom_name": "Qa2",
+   "priority": 0,
+   "description": "a MARTINI bead named Qa2"
+  },
+  {
+   "type": "Qa2",
+   "smarts": "*",
+   "atom_name": "Qa2_bQa2_aQa2_dQa2_iQa2",
+   "priority": 0,
+   "description": "a MARTINI bead named Qa2_bQa2_aQa2_dQa2_iQa2"
+  },
+  {
+   "type": "Qd",
+   "smarts": "*",
+   "atom_name": "Qd",
+   "priority": 0,
+   "description": "a MARTINI bead named Qd"
+  },
+  {
+   "type": "Qd",
+   "smarts": "*",
+   "atom_name": "Qd_bQd_aQd_dQd_iQd",
+   "priority": 0,
+   "description": "a MARTINI bead named Qd_bQd_aQd_dQd_iQd"
+  },
+  {
+   "type": "Qda",
+   "smarts": "*",
+   "atom_name": "Qda",
+   "priority": 0,
+   "description": "a MARTINI bead named Qda"
+  },
+  {
+   "type": "Qda",
+   "smarts": "*",
+   "atom_name": "Qda_bQda_aQda_dQda_iQda",
+   "priority": 0,
+   "description": "a MARTINI bead named Qda_bQda_aQda_dQda_iQda"
+  },
+  {
+   "type": "SC1",
+   "smarts": "*",
+   "atom_name": "SC1",
+   "priority": 0,
+   "description": "a MARTINI bead named SC1"
+  },
+  {
+   "type": "SC1",
+   "smarts": "*",
+   "atom_name": "SC1_bSC1_aSC1_dSC1_iSC1",
+   "priority": 0,
+   "description": "a MARTINI bead named SC1_bSC1_aSC1_dSC1_iSC1"
+  },
+  {
+   "type": "SC11",
+   "smarts": "*",
+   "atom_name": "SC11",
+   "priority": 0,
+   "description": "a MARTINI bead named SC11"
+  },
+  {
+   "type": "SC11",
+   "smarts": "*",
+   "atom_name": "SC11_bSC11_aSC11_dSC11_iSC11",
+   "priority": 0,
+   "description": "a MARTINI bead named SC11_bSC11_aSC11_dSC11_iSC11"
+  },
+  {
+   "type": "SC110",
+   "smarts": "*",
+   "atom_name": "SC110",
+   "priority": 0,
+   "description": "a MARTINI bead named SC110"
+  },
+  {
+   "type": "SC110",
+   "smarts": "*",
+   "atom_name": "SC110_bSC110_aSC110_dSC110_iSC110",
+   "priority": 0,
+   "description": "a MARTINI bead named SC110_bSC110_aSC110_dSC110_iSC110"
+  },
+  {
+   "type": "SC111",
+   "smarts": "*",
+   "atom_name": "SC111",
+   "priority": 0,
+   "description": "a MARTINI bead named SC111"
+  },
+  {
+   "type": "SC111",
+   "smarts": "*",
+   "atom_name": "SC111_bSC111_aSC111_dSC111_iSC111",
+   "priority": 0,
+   "description": "a MARTINI bead named SC111_bSC111_aSC111_dSC111_iSC111"
+  },
+  {
+   "type": "SC112",
+   "smarts": "*",
+   "atom_name": "SC112",
+   "priority": 0,
+   "description": "a MARTINI bead named SC112"
+  },
+  {
+   "type": "SC112",
+   "smarts": "*",
+   "atom_name": "SC112_bSC112_aSC112_dSC112_iSC112",
+   "priority": 0,
+   "description": "a MARTINI bead named SC112_bSC112_aSC112_dSC112_iSC112"
+  },
+  {
+   "type": "SC12",
+   "smarts": "*",
+   "atom_name": "SC12",
+   "priority": 0,
+   "description": "a MARTINI bead named SC12"
+  },
+  {
+   "type": "SC12",
+   "smarts": "*",
+   "atom_name": "SC12_bSC12_aSC12_dSC12_iSC12",
+   "priority": 0,
+   "description": "a MARTINI bead named SC12_bSC12_aSC12_dSC12_iSC12"
+  },
+  {
+   "type": "SC13",
+   "smarts": "*",
+   "atom_name": "SC13",
+   "priority": 0,
+   "description": "a MARTINI bead named SC13"
+  },
+  {
+   "type": "SC13",
+   "smarts": "*",
+   "atom_name": "SC13_bSC13_aSC13_dSC13_iSC13",
+   "priority": 0,
+   "description": "a MARTINI bead named SC13_bSC13_aSC13_dSC13_iSC13"
+  },
+  {
+   "type": "SC14",
+   "smarts": "*",
+   "atom_name": "SC14",
+   "priority": 0,
+   "description": "a MARTINI bead named SC14"
+  },
+  {
+   "type": "SC14",
+   "smarts": "*",
+   "atom_name": "SC14_bSC14_aSC14_dSC14_iSC14",
+   "priority": 0,
+   "description": "a MARTINI bead named SC14_bSC14_aSC14_dSC14_iSC14"
+  },
+  {
+   "type": "SC15",
+   "smarts": "*",
+   "atom_name": "SC15",
+   "priority": 0,
+   "description": "a MARTINI bead named SC15"
+  },
+  {
+   "type": "SC15",
+   "smarts": "*",
+   "atom_name": "SC15_bSC15_aSC15_dSC15_iSC15",
+   "priority": 0,
+   "description": "a MARTINI bead named SC15_bSC15_aSC15_dSC15_iSC15"
+  },
+  {
+   "type": "SC16",
+   "smarts": "*",
+   "atom_name": "SC16",
+   "priority": 0,
+   "description": "a MARTINI bead named SC16"
+  },
+  {
+   "type": "SC16",
+   "smarts": "*",
+   "atom_name": "SC16_bSC16_aSC16_dSC16_iSC16",
+   "priority": 0,
+   "description": "a MARTINI bead named SC16_bSC16_aSC16_dSC16_iSC16"
+  },
+  {
+   "type": "SC17",
+   "smarts": "*",
+   "atom_name": "SC17",
+   "priority": 0,
+   "description": "a MARTINI bead named SC17"
+  },
+  {
+   "type": "SC17",
+   "smarts": "*",
+   "atom_name": "SC17_bSC17_aSC17_dSC17_iSC17",
+   "priority": 0,
+   "description": "a MARTINI bead named SC17_bSC17_aSC17_dSC17_iSC17"
+  },
+  {
+   "type": "SC18",
+   "smarts": "*",
+   "atom_name": "SC18",
+   "priority": 0,
+   "description": "a MARTINI bead named SC18"
+  },
+  {
+   "type": "SC18",
+   "smarts": "*",
+   "atom_name": "SC18_bSC18_aSC18_dSC18_iSC18",
+   "priority": 0,
+   "description": "a MARTINI bead named SC18_bSC18_aSC18_dSC18_iSC18"
+  },
+  {
+   "type": "SC19",
+   "smarts": "*",
+   "atom_name": "SC19",
+   "priority": 0,
+   "description": "a MARTINI bead named SC19"
+  },
+  {
+   "type": "SC19",
+   "smarts": "*",
+   "atom_name": "SC19_bSC19_aSC19_dSC19_iSC19",
+   "priority": 0,
+   "description": "a MARTINI bead named SC19_bSC19_aSC19_dSC19_iSC19"
+  },
+  {
+   "type": "SC2",
+   "smarts": "*",
+   "atom_name": "SC2",
+   "priority": 0,
+   "description": "a MARTINI bead named SC2"
+  },
+  {
+   "type": "SC2",
+   "smarts": "*",
+   "atom_name": "SC2_bSC2_aSC2_dSC2_iSC2",
+   "priority": 0,
+   "description": "a MARTINI bead named SC2_bSC2_aSC2_dSC2_iSC2"
+  },
+  {
+   "type": "SC3",
+   "smarts": "*",
+   "atom_name": "SC3",
+   "priority": 0,
+   "description": "a MARTINI bead named SC3"
+  },
+  {
+   "type": "SC3",
+   "smarts": "*",
+   "atom_name": "SC3_bSC3_aSC3_dSC3_iSC3",
+   "priority": 0,
+   "description": "a MARTINI bead named SC3_bSC3_aSC3_dSC3_iSC3"
+  },
+  {
+   "type": "SC31",
+   "smarts": "*",
+   "atom_name": "SC31",
+   "priority": 0,
+   "description": "a MARTINI bead named SC31"
+  },
+  {
+   "type": "SC31",
+   "smarts": "*",
+   "atom_name": "SC31_bSC31_aSC31_dSC31_iSC31",
+   "priority": 0,
+   "description": "a MARTINI bead named SC31_bSC31_aSC31_dSC31_iSC31"
+  },
+  {
+   "type": "SC32",
+   "smarts": "*",
+   "atom_name": "SC32",
+   "priority": 0,
+   "description": "a MARTINI bead named SC32"
+  },
+  {
+   "type": "SC32",
+   "smarts": "*",
+   "atom_name": "SC32_bSC32_aSC32_dSC32_iSC32",
+   "priority": 0,
+   "description": "a MARTINI bead named SC32_bSC32_aSC32_dSC32_iSC32"
+  },
+  {
+   "type": "SC33",
+   "smarts": "*",
+   "atom_name": "SC33",
+   "priority": 0,
+   "description": "a MARTINI bead named SC33"
+  },
+  {
+   "type": "SC33",
+   "smarts": "*",
+   "atom_name": "SC33_bSC33_aSC33_dSC33_iSC33",
+   "priority": 0,
+   "description": "a MARTINI bead named SC33_bSC33_aSC33_dSC33_iSC33"
+  },
+  {
+   "type": "SC4",
+   "smarts": "*",
+   "atom_name": "SC4",
+   "priority": 0,
+   "description": "a MARTINI bead named SC4"
+  },
+  {
+   "type": "SC4",
+   "smarts": "*",
+   "atom_name": "SC4_bSC4_aSC4_dSC4_iSC4",
+   "priority": 0,
+   "description": "a MARTINI bead named SC4_bSC4_aSC4_dSC4_iSC4"
+  },
+  {
+   "type": "SC5",
+   "smarts": "*",
+   "atom_name": "SC5",
+   "priority": 0,
+   "description": "a MARTINI bead named SC5"
+  },
+  {
+   "type": "SC5",
+   "smarts": "*",
+   "atom_name": "SC5_bSC5_aSC5_dSC5_iSC5",
+   "priority": 0,
+   "description": "a MARTINI bead named SC5_bSC5_aSC5_dSC5_iSC5"
+  },
+  {
+   "type": "SN0",
+   "smarts": "*",
+   "atom_name": "SN0",
+   "priority": 0,
+   "description": "a MARTINI bead named SN0"
+  },
+  {
+   "type": "SN0",
+   "smarts": "*",
+   "atom_name": "SN0_bSN0_aSN0_dSN0_iSN0",
+   "priority": 0,
+   "description": "a MARTINI bead named SN0_bSN0_aSN0_dSN0_iSN0"
+  },
+  {
+   "type": "SNa",
+   "smarts": "*",
+   "atom_name": "SNa",
+   "priority": 0,
+   "description": "a MARTINI bead named SNa"
+  },
+  {
+   "type": "SNa",
+   "smarts": "*",
+   "atom_name": "SNa_bSNa_aSNa_dSNa_iSNa",
+   "priority": 0,
+   "description": "a MARTINI bead named SNa_bSNa_aSNa_dSNa_iSNa"
+  },
+  {
+   "type": "SNd",
+   "smarts": "*",
+   "atom_name": "SNd",
+   "priority": 0,
+   "description": "a MARTINI bead named SNd"
+  },
+  {
+   "type": "SNd",
+   "smarts": "*",
+   "atom_name": "SNd_bSNd_aSNd_dSNd_iSNd",
+   "priority": 0,
+   "description": "a MARTINI bead named SNd_bSNd_aSNd_dSNd_iSNd"
+  },
+  {
+   "type": "SNda",
+   "smarts": "*",
+   "atom_name": "SNda",
+   "priority": 0,
+   "description": "a MARTINI bead named SNda"
+  },
+  {
+   "type": "SNda",
+   "smarts": "*",
+   "atom_name": "SNda_bSNda_aSNda_dSNda_iSNda",
+   "priority": 0,
+   "description": "a MARTINI bead named SNda_bSNda_aSNda_dSNda_iSNda"
+  },
+  {
+   "type": "SP1",
+   "smarts": "*",
+   "atom_name": "SP1",
+   "priority": 0,
+   "description": "a MARTINI bead named SP1"
+  },
+  {
+   "type": "SP1",
+   "smarts": "*",
+   "atom_name": "SP1_bSP1_aSP1_dSP1_iSP1",
+   "priority": 0,
+   "description": "a MARTINI bead named SP1_bSP1_aSP1_dSP1_iSP1"
+  },
+  {
+   "type": "SP11",
+   "smarts": "*",
+   "atom_name": "SP11",
+   "priority": 0,
+   "description": "a MARTINI bead named SP11"
+  },
+  {
+   "type": "SP11",
+   "smarts": "*",
+   "atom_name": "SP11_bSP11_aSP11_dSP11_iSP11",
+   "priority": 0,
+   "description": "a MARTINI bead named SP11_bSP11_aSP11_dSP11_iSP11"
+  },
+  {
+   "type": "SP12",
+   "smarts": "*",
+   "atom_name": "SP12",
+   "priority": 0,
+   "description": "a MARTINI bead named SP12"
+  },
+  {
+   "type": "SP12",
+   "smarts": "*",
+   "atom_name": "SP12_bSP12_aSP12_dSP12_iSP12",
+   "priority": 0,
+   "description": "a MARTINI bead named SP12_bSP12_aSP12_dSP12_iSP12"
+  },
+  {
+   "type": "SP2",
+   "smarts": "*",
+   "atom_name": "SP2",
+   "priority": 0,
+   "description": "a MARTINI bead named SP2"
+  },
+  {
+   "type": "SP2",
+   "smarts": "*",
+   "atom_name": "SP2_bSP2_aSP2_dSP2_iSP2",
+   "priority": 0,
+   "description": "a MARTINI bead named SP2_bSP2_aSP2_dSP2_iSP2"
+  },
+  {
+   "type": "SP3",
+   "smarts": "*",
+   "atom_name": "SP3",
+   "priority": 0,
+   "description": "a MARTINI bead named SP3"
+  },
+  {
+   "type": "SP3",
+   "smarts": "*",
+   "atom_name": "SP3_bSP3_aSP3_dSP3_iSP3",
+   "priority": 0,
+   "description": "a MARTINI bead named SP3_bSP3_aSP3_dSP3_iSP3"
+  },
+  {
+   "type": "SP4",
+   "smarts": "*",
+   "atom_name": "SP4",
+   "priority": 0,
+   "description": "a MARTINI bead named SP4"
+  },
+  {
+   "type": "SP4",
+   "smarts": "*",
+   "atom_name": "SP4_bSP4_aSP4_dSP4_iSP4",
+   "priority": 0,
+   "description": "a MARTINI bead named SP4_bSP4_aSP4_dSP4_iSP4"
+  },
+  {
+   "type": "SP5",
+   "smarts": "*",
+   "atom_name": "SP5",
+   "priority": 0,
+   "description": "a MARTINI bead named SP5"
+  },
+  {
+   "type": "SP5",
+   "smarts": "*",
+   "atom_name": "SP5_bSP5_aSP5_dSP5_iSP5",
+   "priority": 0,
+   "description": "a MARTINI bead named SP5_bSP5_aSP5_dSP5_iSP5"
+  },
+  {
+   "type": "SQ0",
+   "smarts": "*",
+   "atom_name": "SQ0",
+   "priority": 0,
+   "description": "a MARTINI bead named SQ0"
+  },
+  {
+   "type": "SQ0",
+   "smarts": "*",
+   "atom_name": "SQ0_bSQ0_aSQ0_dSQ0_iSQ0",
+   "priority": 0,
+   "description": "a MARTINI bead named SQ0_bSQ0_aSQ0_dSQ0_iSQ0"
+  },
+  {
+   "type": "SQa",
+   "smarts": "*",
+   "atom_name": "SQa",
+   "priority": 0,
+   "description": "a MARTINI bead named SQa"
+  },
+  {
+   "type": "SQa",
+   "smarts": "*",
+   "atom_name": "SQa_bSQa_aSQa_dSQa_iSQa",
+   "priority": 0,
+   "description": "a MARTINI bead named SQa_bSQa_aSQa_dSQa_iSQa"
+  },
+  {
+   "type": "SQd",
+   "smarts": "*",
+   "atom_name": "SQd",
+   "priority": 0,
+   "description": "a MARTINI bead named SQd"
+  },
+  {
+   "type": "SQd",
+   "smarts": "*",
+   "atom_name": "SQd_bSQd_aSQd_dSQd_iSQd",
+   "priority": 0,
+   "description": "a MARTINI bead named SQd_bSQd_aSQd_dSQd_iSQd"
+  },
+  {
+   "type": "SQda",
+   "smarts": "*",
+   "atom_name": "SQda",
+   "priority": 0,
+   "description": "a MARTINI bead named SQda"
+  },
+  {
+   "type": "SQda",
+   "smarts": "*",
+   "atom_name": "SQda_bSQda_aSQda_dSQda_iSQda",
+   "priority": 0,
+   "description": "a MARTINI bead named SQda_bSQda_aSQda_dSQda_iSQda"
+  }
+ ]
+}

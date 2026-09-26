@@ -25,6 +25,7 @@ public sealed partial class MainViewModel
     {
         SetModule(9);
         if (smiles != null) MolSmiles = smiles;
+        if (!_cgLoaded) LoadCgTemplates();
     }
 
     // ---------------------------------------------------------------- SMILES and what it says
@@ -215,6 +216,80 @@ public sealed partial class MainViewModel
             _molConf = -1;
             MolConf = 0;
             Status = $"Built {MolFormula} · {MolConformers.Count} conformer{(MolConformers.Count == 1 ? "" : "s")} · {MolMethodUsed}";
+        }
+        catch (Exception ex)
+        {
+            if (ticket == _buildTicket) { MolNotes = ex.Message; Status = "Could not build: " + ex.Message; }
+        }
+        finally
+        {
+            if (ticket == _buildTicket) MolBuilding = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- coarse-grained molecules (beads)
+    /// <summary>Coarse-grained force fields with bead structures: MARTINI (templates from its sources), Dry MARTINI and
+    /// SDK (bead SMILES; SDK also maps all-atom structures in the Force field step).</summary>
+    public static readonly (string Name, string File)[] CgForceFields =
+        [("MARTINI 2.0", "martini-moltemplate.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json")];
+    public string[] CgFfNames => CgForceFields.Select(f => f.Name).ToArray();
+    private int _cgFf;
+    private string _cgBeadText = "", _cgTemplate = "";
+    public ObservableCollection<string> CgTemplates { get; } = new();
+    private Dictionary<string, string> _cgTemplateText = new();
+    private string? CgFfPath => Paths.ForceFields is { } dir ? System.IO.Path.Combine(dir, CgForceFields[_cgFf].File) : null;
+    public int CgFf
+    {
+        get => _cgFf;
+        set
+        {
+            if (Set(ref _cgFf, value)) LoadCgTemplates();
+        }
+    }
+    private bool _cgLoaded;
+    private void LoadCgTemplates()
+    {
+        _cgLoaded = true;
+        CgTemplates.Clear();
+        _cgTemplateText = new();
+        try { if (CgFfPath is { } p) _cgTemplateText = CapsDocument.BeadTemplates(p); } catch (Exception) { }
+        foreach (var k in _cgTemplateText.Keys.OrderBy(k => k)) CgTemplates.Add(k);
+        Raise(nameof(CgHasTemplates));
+    }
+    public bool CgHasTemplates => CgTemplates.Count > 0;
+    public string CgTemplate
+    {
+        get => _cgTemplate;
+        set { if (Set(ref _cgTemplate, value ?? "") && _cgTemplateText.TryGetValue(_cgTemplate, out var t)) CgBeadText = t; }
+    }
+    public string CgBeadText { get => _cgBeadText; set => Set(ref _cgBeadText, value ?? ""); }
+
+    /// <summary>Builds the bead SMILES (or the chosen template) into the preview; Open in Studio takes it from there.</summary>
+    public async Task BuildBeadsMolecule()
+    {
+        if (!_cgLoaded) LoadCgTemplates();
+        var text = _cgBeadText.Trim();
+        if (text.Length == 0) { MolNotes = "Choose a template or type bead SMILES, e.g. [Q0+1][Qa-1][Na]([Na][C1][C1])[C1][C1]"; return; }
+        if (_cgTemplateText.TryGetValue(_cgTemplate, out var t) && t == text) text = _cgTemplate;
+        var ff = CgFfPath;
+        var ticket = ++_buildTicket;
+        MolBuilding = true;
+        try
+        {
+            var (doc, report) = await Task.Run(() => CapsDocument.BuildBeads(text, ff, 1, "beads"));
+            if (ticket != _buildTicket) { doc.Dispose(); return; }
+            var old = _molDoc;
+            MolDoc = doc;
+            old?.Dispose();
+            using var js = JsonDocument.Parse(report);
+            var r = js.RootElement;
+            var beads = r.GetProperty("beads").GetDouble();
+            var q = r.GetProperty("charge").GetDouble();
+            MolConformers.Clear();
+            MolFormula = r.GetProperty("template").GetString() is { Length: > 0 } tn ? tn : "beads";
+            MolAtoms = beads.ToString("0", Inv) + " beads";
+            MolNotes = $"{beads:0} beads, {r.GetProperty("bonds").GetDouble():0} bonds, charge {q:+0;−0;0} e · {CgForceFields[_cgFf].Name}: bond lengths from the force field; relax it with the force field before a run";
+            Status = $"Built {MolFormula} · {beads:0} beads ({CgForceFields[_cgFf].Name})";
         }
         catch (Exception ex)
         {

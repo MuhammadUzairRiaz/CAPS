@@ -1,0 +1,521 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Dry MARTINI",
+ "coarse_grained": true,
+ "unknown_types": "untyped",
+ "description": "CAPS rules for Dry MARTINI (bench/typing/make_cg_rules.py): bead structures typed by site name (bead templates, or files naming their sites by bead type). The sources give no atomistic mapping.",
+ "rules": [
+  {
+   "type": "C1",
+   "smarts": "*",
+   "atom_name": "C1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C1"
+  },
+  {
+   "type": "C1",
+   "smarts": "*",
+   "atom_name": "C1_bC1_aC1_dC1_iC1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C1_bC1_aC1_dC1_iC1"
+  },
+  {
+   "type": "C2",
+   "smarts": "*",
+   "atom_name": "C2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C2"
+  },
+  {
+   "type": "C2",
+   "smarts": "*",
+   "atom_name": "C2_bC2_aC2_dC2_iC2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C2_bC2_aC2_dC2_iC2"
+  },
+  {
+   "type": "C3",
+   "smarts": "*",
+   "atom_name": "C3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C3"
+  },
+  {
+   "type": "C3",
+   "smarts": "*",
+   "atom_name": "C3_bC3_aC3_dC3_iC3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C3_bC3_aC3_dC3_iC3"
+  },
+  {
+   "type": "C4",
+   "smarts": "*",
+   "atom_name": "C4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C4"
+  },
+  {
+   "type": "C4",
+   "smarts": "*",
+   "atom_name": "C4_bC4_aC4_dC4_iC4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C4_bC4_aC4_dC4_iC4"
+  },
+  {
+   "type": "C5",
+   "smarts": "*",
+   "atom_name": "C5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C5"
+  },
+  {
+   "type": "C5",
+   "smarts": "*",
+   "atom_name": "C5_bC5_aC5_dC5_iC5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named C5_bC5_aC5_dC5_iC5"
+  },
+  {
+   "type": "N0",
+   "smarts": "*",
+   "atom_name": "N0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named N0"
+  },
+  {
+   "type": "N0",
+   "smarts": "*",
+   "atom_name": "N0_bN0_aN0_dN0_iN0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named N0_bN0_aN0_dN0_iN0"
+  },
+  {
+   "type": "Na",
+   "smarts": "*",
+   "atom_name": "Na",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Na"
+  },
+  {
+   "type": "Na",
+   "smarts": "*",
+   "atom_name": "Na_bNa_aNa_dNa_iNa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Na_bNa_aNa_dNa_iNa"
+  },
+  {
+   "type": "Nd",
+   "smarts": "*",
+   "atom_name": "Nd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Nd"
+  },
+  {
+   "type": "Nd",
+   "smarts": "*",
+   "atom_name": "Nd_bNd_aNd_dNd_iNd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Nd_bNd_aNd_dNd_iNd"
+  },
+  {
+   "type": "Nda",
+   "smarts": "*",
+   "atom_name": "Nda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Nda"
+  },
+  {
+   "type": "Nda",
+   "smarts": "*",
+   "atom_name": "Nda_bNda_aNda_dNda_iNda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Nda_bNda_aNda_dNda_iNda"
+  },
+  {
+   "type": "P1",
+   "smarts": "*",
+   "atom_name": "P1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P1"
+  },
+  {
+   "type": "P1",
+   "smarts": "*",
+   "atom_name": "P1_bP1_aP1_dP1_iP1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P1_bP1_aP1_dP1_iP1"
+  },
+  {
+   "type": "P2",
+   "smarts": "*",
+   "atom_name": "P2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P2"
+  },
+  {
+   "type": "P2",
+   "smarts": "*",
+   "atom_name": "P2_bP2_aP2_dP2_iP2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P2_bP2_aP2_dP2_iP2"
+  },
+  {
+   "type": "P3",
+   "smarts": "*",
+   "atom_name": "P3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P3"
+  },
+  {
+   "type": "P3",
+   "smarts": "*",
+   "atom_name": "P3_bP3_aP3_dP3_iP3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P3_bP3_aP3_dP3_iP3"
+  },
+  {
+   "type": "P4",
+   "smarts": "*",
+   "atom_name": "P4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P4"
+  },
+  {
+   "type": "P4",
+   "smarts": "*",
+   "atom_name": "P4_bP4_aP4_dP4_iP4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P4_bP4_aP4_dP4_iP4"
+  },
+  {
+   "type": "P5",
+   "smarts": "*",
+   "atom_name": "P5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P5"
+  },
+  {
+   "type": "P5",
+   "smarts": "*",
+   "atom_name": "P5_bP5_aP5_dP5_iP5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named P5_bP5_aP5_dP5_iP5"
+  },
+  {
+   "type": "Q0",
+   "smarts": "*",
+   "atom_name": "Q0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Q0"
+  },
+  {
+   "type": "Q0",
+   "smarts": "*",
+   "atom_name": "Q0_bQ0_aQ0_dQ0_iQ0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Q0_bQ0_aQ0_dQ0_iQ0"
+  },
+  {
+   "type": "Qa",
+   "smarts": "*",
+   "atom_name": "Qa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Qa"
+  },
+  {
+   "type": "Qa",
+   "smarts": "*",
+   "atom_name": "Qa_bQa_aQa_dQa_iQa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Qa_bQa_aQa_dQa_iQa"
+  },
+  {
+   "type": "Qd",
+   "smarts": "*",
+   "atom_name": "Qd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Qd"
+  },
+  {
+   "type": "Qd",
+   "smarts": "*",
+   "atom_name": "Qd_bQd_aQd_dQd_iQd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Qd_bQd_aQd_dQd_iQd"
+  },
+  {
+   "type": "Qda",
+   "smarts": "*",
+   "atom_name": "Qda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Qda"
+  },
+  {
+   "type": "Qda",
+   "smarts": "*",
+   "atom_name": "Qda_bQda_aQda_dQda_iQda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named Qda_bQda_aQda_dQda_iQda"
+  },
+  {
+   "type": "SC1",
+   "smarts": "*",
+   "atom_name": "SC1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC1"
+  },
+  {
+   "type": "SC1",
+   "smarts": "*",
+   "atom_name": "SC1_bC1_aC1_dC1_iC1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC1_bC1_aC1_dC1_iC1"
+  },
+  {
+   "type": "SC2",
+   "smarts": "*",
+   "atom_name": "SC2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC2"
+  },
+  {
+   "type": "SC2",
+   "smarts": "*",
+   "atom_name": "SC2_bC2_aC2_dC2_iC2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC2_bC2_aC2_dC2_iC2"
+  },
+  {
+   "type": "SC3",
+   "smarts": "*",
+   "atom_name": "SC3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC3"
+  },
+  {
+   "type": "SC3",
+   "smarts": "*",
+   "atom_name": "SC3_bC3_aC3_dC3_iC3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC3_bC3_aC3_dC3_iC3"
+  },
+  {
+   "type": "SC4",
+   "smarts": "*",
+   "atom_name": "SC4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC4"
+  },
+  {
+   "type": "SC4",
+   "smarts": "*",
+   "atom_name": "SC4_bC4_aC4_dC4_iC4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC4_bC4_aC4_dC4_iC4"
+  },
+  {
+   "type": "SC5",
+   "smarts": "*",
+   "atom_name": "SC5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC5"
+  },
+  {
+   "type": "SC5",
+   "smarts": "*",
+   "atom_name": "SC5_bC5_aC5_dC5_iC5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SC5_bC5_aC5_dC5_iC5"
+  },
+  {
+   "type": "SN0",
+   "smarts": "*",
+   "atom_name": "SN0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SN0"
+  },
+  {
+   "type": "SN0",
+   "smarts": "*",
+   "atom_name": "SN0_bN0_aN0_dN0_iN0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SN0_bN0_aN0_dN0_iN0"
+  },
+  {
+   "type": "SNa",
+   "smarts": "*",
+   "atom_name": "SNa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SNa"
+  },
+  {
+   "type": "SNa",
+   "smarts": "*",
+   "atom_name": "SNa_bNa_aNa_dNa_iNa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SNa_bNa_aNa_dNa_iNa"
+  },
+  {
+   "type": "SNd",
+   "smarts": "*",
+   "atom_name": "SNd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SNd"
+  },
+  {
+   "type": "SNd",
+   "smarts": "*",
+   "atom_name": "SNd_bNd_aNd_dNd_iNd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SNd_bNd_aNd_dNd_iNd"
+  },
+  {
+   "type": "SNda",
+   "smarts": "*",
+   "atom_name": "SNda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SNda"
+  },
+  {
+   "type": "SNda",
+   "smarts": "*",
+   "atom_name": "SNda_bNda_aNda_dNda_iNda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SNda_bNda_aNda_dNda_iNda"
+  },
+  {
+   "type": "SP1",
+   "smarts": "*",
+   "atom_name": "SP1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP1"
+  },
+  {
+   "type": "SP1",
+   "smarts": "*",
+   "atom_name": "SP1_bP1_aP1_dP1_iP1",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP1_bP1_aP1_dP1_iP1"
+  },
+  {
+   "type": "SP1c",
+   "smarts": "*",
+   "atom_name": "SP1c",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP1c"
+  },
+  {
+   "type": "SP2",
+   "smarts": "*",
+   "atom_name": "SP2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP2"
+  },
+  {
+   "type": "SP2",
+   "smarts": "*",
+   "atom_name": "SP2_bP2_aP2_dP2_iP2",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP2_bP2_aP2_dP2_iP2"
+  },
+  {
+   "type": "SP3",
+   "smarts": "*",
+   "atom_name": "SP3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP3"
+  },
+  {
+   "type": "SP3",
+   "smarts": "*",
+   "atom_name": "SP3_bP3_aP3_dP3_iP3",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP3_bP3_aP3_dP3_iP3"
+  },
+  {
+   "type": "SP4",
+   "smarts": "*",
+   "atom_name": "SP4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP4"
+  },
+  {
+   "type": "SP4",
+   "smarts": "*",
+   "atom_name": "SP4_bP4_aP4_dP4_iP4",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP4_bP4_aP4_dP4_iP4"
+  },
+  {
+   "type": "SP5",
+   "smarts": "*",
+   "atom_name": "SP5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP5"
+  },
+  {
+   "type": "SP5",
+   "smarts": "*",
+   "atom_name": "SP5_bP5_aP5_dP5_iP5",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SP5_bP5_aP5_dP5_iP5"
+  },
+  {
+   "type": "SQ0",
+   "smarts": "*",
+   "atom_name": "SQ0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQ0"
+  },
+  {
+   "type": "SQ0",
+   "smarts": "*",
+   "atom_name": "SQ0_bQ0_aQ0_dQ0_iQ0",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQ0_bQ0_aQ0_dQ0_iQ0"
+  },
+  {
+   "type": "SQa",
+   "smarts": "*",
+   "atom_name": "SQa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQa"
+  },
+  {
+   "type": "SQa",
+   "smarts": "*",
+   "atom_name": "SQa_bQa_aQa_dQa_iQa",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQa_bQa_aQa_dQa_iQa"
+  },
+  {
+   "type": "SQd",
+   "smarts": "*",
+   "atom_name": "SQd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQd"
+  },
+  {
+   "type": "SQd",
+   "smarts": "*",
+   "atom_name": "SQd_bQd_aQd_dQd_iQd",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQd_bQd_aQd_dQd_iQd"
+  },
+  {
+   "type": "SQda",
+   "smarts": "*",
+   "atom_name": "SQda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQda"
+  },
+  {
+   "type": "SQda",
+   "smarts": "*",
+   "atom_name": "SQda_bQda_aQda_dQda_iQda",
+   "priority": 0,
+   "description": "a Dry MARTINI bead named SQda_bQda_aQda_dQda_iQda"
+  }
+ ]
+}

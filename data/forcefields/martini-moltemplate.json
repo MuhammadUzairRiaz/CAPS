@@ -25,7 +25,7 @@
   1,
   1
  ],
- "cutoff": 12,
+ "cutoff": 12.0,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "atom_types": [
@@ -23753,9 +23753,51 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "pair settings from the source (In Init): lj/gromacs 9 to 12 A, coul/gromacs 1e-6 to 12 A, dielectric 15; special_bonds 0 1 1"
  ],
  "version": "2007",
  "status": "converted",
- "validation": "lj/gromacs shifted forms are not evaluated by CAPS yet."
+ "validation": "lj/gromacs shifted forms are not evaluated by CAPS yet.",
+ "pair_settings": {
+  "lj_inner": 9.0,
+  "coul_inner": 1e-06,
+  "dielectric": 15.0,
+  "model_cutoff": true
+ },
+ "torsion_terms": "if_defined",
+ "angle_terms": "if_defined",
+ "bead_templates": {
+  "BOLA": "[Q0+1][Qa-1][Na]1[Na][C1][C1][C1][C1][C1][C1][C1][C1][Na][Na]([Qa-1][Q0+1])[C1][C1][C1][C1][C1][C1][C1][C1]1",
+  "BOLB": "[Q0+1][Qa-1][Na]([Na][C1][C1][C1][C1])[C1][C1][C1][C1][C1][C1][C1][C1][Na]([Qa-1][Q0+1])[Na][C1][C1][C1][C1]",
+  "CA+": "[Qd+2]",
+  "CHOA": "[SP1]57[SC110]6[SC33]47[SP11]1356[SP12]24[SC112]3[SC111]12[Qa-1]",
+  "CHOL": "[SP1]57[SC1]6[SC31]47[SC11]1356[SC14]24[SC13]3[SC12]12[C1]",
+  "CL-": "[Qa-1]",
+  "CO": "[SC19]57([SC15]6[SC32]47[SC16]1356[SC1]24[SC18]3[SC17]12[C1])[Na][C1][C3][C1][C1]",
+  "DAPC": "[Q0+1][Qa-1][Na]([Na][C4][C4][C4][C4][C2])[C4][C4][C4][C4][C2]",
+  "DHPC": "[Q0+1][Qa-1][Na]([Na][C1][C1])[C1][C1]",
+  "DHPE": "[Qd+1][Qa-1][Na]([Na][C1][C1])[C1][C1]",
+  "DLPC": "[Q0+1][Qa-1][Na]([Na][C1][C1][C1])[C1][C1][C1]",
+  "DLPE": "[Qd+1][Qa-1][Na]([Na][C1][C1][C1])[C1][C1][C1]",
+  "DOPC": "[Q0+1][Qa-1][Na]([Na][C1][C1][C3][C1][C1])[C1][C1][C3][C1][C1]",
+  "DOPE": "[Qd+1][Qa-1][Na]([Na][C1][C1][C3][C1][C1])[C1][C1][C3][C1][C1]",
+  "DOPG": "[P4][Qa-1][Na1]([Na][C1][C1][C3][C1][C1])[C1][C1][C3][C1][C1]",
+  "DOPS": "[P5][Qa1-1][Na]([Na][C1][C1][C3][C1][C1])[C1][C1][C3][C1][C1]",
+  "DPPC": "[Q0+1][Qa-1][Na]([Na][C1][C1][C1][C1])[C1][C1][C1][C1]",
+  "DPPE": "[Qd+1][Qa-1][Na]([Na][C1][C1][C1][C1])[C1][C1][C1][C1]",
+  "DSPC": "[Q0+1][Qa-1][Na]([Na][C1][C1][C1][C1][C1])[C1][C1][C1][C1][C1]",
+  "DSPE": "[Qd+1][Qa-1][Na]([Na][C1][C1][C1][C1][C1])[C1][C1][C1][C1][C1]",
+  "DUPC": "[Q0+1][Qa-1][Na]([Na][C1][C42][C4][C1])[C1][C41][C4][C1]",
+  "NA+": "[Qd+1]",
+  "NC3+": "[Q0+1]",
+  "POPC": "[Q0+1][Qa-1][Na]([Na][C1][C1][C1][C1])[C1][C1][C3][C1][C1]",
+  "POPE": "[Qd+1][Qa-1][Na]([Na][C1][C1][C1][C1])[C1][C1][C3][C1][C1]",
+  "POPG": "[P4][Qa-1][Na2]([Na][C1][C1][C1][C1])[C1][C1][C3][C1][C1]",
+  "POPS": "[P5][Qa2-1][Na]([Na][C1][C1][C1][C1])[C1][C1][C3][C1][C1]",
+  "PPCS": "[Q0+1][Qa-1][P5]([P1][C3][C1][C1][C1])[C1][C1][C1][C1]",
+  "W": "[P4]",
+  "WF": "[BP4]"
+ },
+ "typing": "../typing/martini-moltemplate.typing.json"
 }

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 23  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines) */
+#define CAPS_ABI_VERSION 24  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -534,6 +534,14 @@ int32_t caps_smiles_depict(const char* smiles, char* json, int32_t cap);
    needed including the final NUL, or -1 when the graph is not valid (caps_last_error explains). */
 int32_t caps_smiles_write(const char* graph_json, char* smiles, int32_t cap);
 caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_build_opts* o, char* report, int32_t cap);
+
+/* Coarse-grained molecules (v24). caps_build_beads: `text` is a bead template of the force field at ff_path (its
+   "bead_templates", e.g. MARTINI's DPPC) or bead SMILES ([TYPE] and [TYPE±q] beads, branches, ring closures); one site per
+   bead named by its type (element 0), bond lengths and masses from the force field when ff_path is given; a start for a
+   relax. Report (JSON): {beads, bonds, charge, template, forcefield}. caps_bead_templates writes {"NAME": "bead SMILES",
+   …} for ff_path; returns the size needed including the final NUL (json = NULL to size), or −1 on error. */
+caps_doc* caps_build_beads(const char* text, const char* ff_path, uint64_t seed, char* report, int32_t cap);
+int32_t caps_bead_templates(const char* ff_path, char* json, int32_t cap);
 
 /* Settings (ABI 13), process-wide: the colour palette of elements and molecules/chains (0 CAPS, 1 Okabe–Ito, 2
    monochrome) and the worker threads of the parallel loops (0 = one per hardware thread, at most 16). */

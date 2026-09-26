@@ -12,6 +12,9 @@
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
+#include "caps/molecule.hpp"
+#include "caps/resolution.hpp"
+#include "caps/typing.hpp"
 
 using namespace caps;
 
@@ -346,6 +349,113 @@ TEST(FieldForms, StillingerWeberForcesMatchFiniteDifferences) {
   EXPECT_LT(worst, 1e-5);
   const auto d = strain_derivative(ev, x, s.cell);
   for (int v = 0; v < 6; ++v) EXPECT_NEAR(et.w[v], d[v], 1e-5 * std::max(1.0, std::fabs(et.virial))) << "virial component " << v;
+}
+
+// Coarse-grained forms: MARTINI (lj/gromacs, coul/gromacs with εr 15, cosine/squared angles, 1-3 pairs kept) and SDK
+// (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion): forces and virial are the energy's derivatives, for bead
+// molecules and water beads in a periodic cell
+namespace {
+System cg_box(const FFDef& def, const std::vector<std::pair<std::string, int>>& parts, double edge, uint64_t seed) {
+  System box;
+  box.cell.a = {edge, 0, 0};
+  box.cell.b = {0, edge, 0};
+  box.cell.c = {0, 0, edge};
+  std::mt19937_64 rng(seed);
+  std::uniform_real_distribution<double> u(0, edge);
+  for (const auto& [text, count] : parts)
+    for (int c = 0; c < count; ++c) {
+      const System m = build_bead_molecule(text, def, seed + c);
+      Vec3 t{0, 0, 0};
+      for (int tr = 0; tr < 5000; ++tr) {   // a place 4 Å clear of every bead already in the box
+        t = {u(rng), u(rng), u(rng)};
+        bool clear = true;
+        for (const auto& a : m.atoms)
+          for (const auto& b : box.atoms)
+            clear = clear && norm(box.cell.minimum_image(a.pos + t - b.pos)) > 4.0;
+        if (clear) break;
+      }
+      const uint32_t off = uint32_t(box.atoms.size());
+      for (auto a : m.atoms) {
+        a.pos = a.pos + t;
+        box.atoms.push_back(a);
+      }
+      for (auto b : m.bonds) box.bonds.push_back({b.i + off, b.j + off, 1});
+    }
+  box.bonds_from_file = true;
+  return box;
+}
+
+void check_cg_forces(const FFDef& def, System s, const std::string& charges) {
+  std::string ch = charges;
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+  EnergyOptions o;
+  o.tail = false;
+  Evaluator ev(ff, o);
+  std::vector<double> x, f, g;
+  for (const auto& a : s.atoms) x.insert(x.end(), {a.pos[0], a.pos[1], a.pos[2]});
+  const EnergyTerms et = ev.compute(x, s.cell, f);
+  EXPECT_TRUE(std::isfinite(et.total()));
+  double worst = 0;
+  for (size_t k = 0; k < x.size(); ++k) {
+    std::vector<double> xp = x, xm = x;
+    xp[k] += 1e-5;
+    xm[k] -= 1e-5;
+    const double fd = -(ev.compute(xp, s.cell, g).total() - ev.compute(xm, s.cell, g).total()) / 2e-5;
+    const double err = std::fabs(fd - f[k]) / std::max(1.0, std::fabs(f[k]));
+    if (err > 1e-4) std::printf("  %s atom %zu (%s) comp %zu: fd %.8g f %.8g\n", def.name.c_str(), k / 3, s.atoms[k / 3].name.c_str(), k % 3, fd, f[k]);
+    worst = std::max(worst, err);
+  }
+  EXPECT_LT(worst, 1e-4) << def.name;
+  const auto d = strain_derivative(ev, x, s.cell);
+  for (int v = 0; v < 6; ++v) EXPECT_NEAR(et.w[v], d[v], 1e-4 * std::max(1.0, std::fabs(et.virial))) << def.name << " virial " << v;
+}
+}  // namespace
+
+TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
+  const FFDef martini = load_forcefield(dir + "martini-moltemplate.json");
+  check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
+  const FFDef sdk = load_forcefield(dir + "sdk-moltemplate.json");
+  check_cg_forces(sdk, cg_box(sdk, {{"[NC][PH][GL]([EST1][CM][CM][CT2])[EST2][CM][CM][CT2]", 3}, {"[W]", 30}}, 32.0, 5), "types");
+}
+
+TEST(CoarseGrained, BeadSmilesParse) {
+  const BeadMolecule m = parse_bead_smiles("[Q0+1][Qa-1][Na]([Na][C1])[C1].[SC4]1[SC4][SC4]1[Qa1-1]");
+  ASSERT_EQ(m.type.size(), 10u);
+  EXPECT_EQ(m.type[0], "Q0");
+  EXPECT_EQ(m.charge[0], 1.0);
+  EXPECT_EQ(m.type[1], "Qa");
+  EXPECT_EQ(m.charge[1], -1.0);
+  EXPECT_EQ(m.type[9], "Qa1");
+  EXPECT_EQ(m.charge[9], -1.0);
+  EXPECT_EQ(m.bonds.size(), 9u);   // 5 in the lipid fragment, 3 in the ring, 1 to Qa1 ('.' separates)
+  EXPECT_THROW(parse_bead_smiles("[C1]1[C1]"), std::invalid_argument);
+  const System s = build_beads("[C1][C1][C1][C1]");
+  ASSERT_EQ(s.atoms.size(), 4u);
+  for (const auto& b : s.bonds) EXPECT_NEAR(norm(s.atoms[b.j].pos - s.atoms[b.i].pos), 4.7, 0.05);
+}
+
+// SDK: all-atom alkanes tile into CT / CT2 ends and CM between for every chain length; DMPC maps onto Shinoda's
+// thirteen beads with the esters told apart by their GL bond lengths
+TEST(CoarseGrained, SdkMapsAllAtomStructures) {
+  const FFDef sdk = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/sdk-moltemplate.json");
+  auto map = [&](const std::string& smiles) {
+    System s = build_molecule(smiles, {}).system;
+    std::string ch = "auto";
+    prepare_for_forcefield(s, sdk, ch);
+    std::map<std::string, int> n;
+    for (const auto& a : s.atoms) n[a.name]++;
+    return n;
+  };
+  EXPECT_EQ(map(std::string(12, 'C')), (std::map<std::string, int>{{"CM", 2}, {"CT", 2}}));
+  EXPECT_EQ(map(std::string(13, 'C')), (std::map<std::string, int>{{"CM", 3}, {"CT2", 2}}));
+  EXPECT_EQ(map(std::string(14, 'C')), (std::map<std::string, int>{{"CM", 3}, {"CT", 1}, {"CT2", 1}}));
+  EXPECT_EQ(map("CCCCCCCCCCCCCC(=O)OCC(COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCC"),
+            (std::map<std::string, int>{{"CM", 6}, {"CT", 2}, {"EST1", 1}, {"EST2", 1}, {"GL", 1}, {"NC", 1}, {"PH", 1}}));
 }
 
 // CHARMM libraries keep their separate 1-4 van der Waals and Urey–Bradley terms through save / load.

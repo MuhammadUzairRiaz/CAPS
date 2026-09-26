@@ -134,6 +134,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
         "caps_field_assign": ([P, S, S, I], I), "caps_field_report": ([P, B, I], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
+        "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
         "caps_solvate": ([P, S, P, P, B, I], P),
         "caps_edit": ([P, S, B, I], I), "caps_undo": ([P, I], I), "caps_select": ([P, S, B, I], I), "caps_selection": ([P, B, I], I),
@@ -712,6 +713,16 @@ class build:
         return d
 
     @staticmethod
+    def beads(text: str, forcefield: Optional[str] = None, seed: int = 1) -> Document:
+        """A coarse-grained molecule: a bead template of the force field (MARTINI's DPPC, W, NA+ …; bead_templates()) or
+        bead SMILES ("[Q0+1][Qa-1][Na]…"); one site per bead named by its type, bonds at the force field's lengths."""
+        rep = _report()
+        ff = _forcefield_path(forcefield) if forcefield else None
+        d = Document(library().caps_build_beads(_enc(text), _enc(ff), seed, rep, len(rep)), text)
+        d.report = rep.value.decode()
+        return d
+
+    @staticmethod
     def peptide(sequence: str, structure: str = "", n_term: str = "NH3+", c_term: str = "COO-", ph: float = 7.0, cleanup: bool = True) -> Document:
         rep = _report()
         spec = {"sequence": sequence, "structure": structure, "n_term": n_term, "c_term": c_term, "ph": ph, "cleanup": cleanup}
@@ -751,6 +762,11 @@ class build:
 
 
 # ---------------------------------------------------------------------------------------------------------------- polymer statistics
+
+def bead_templates(forcefield: str) -> dict:
+    """{name: bead SMILES} for a coarse-grained force field (its sources' molecule templates)."""
+    return _json_call(library().caps_bead_templates, _enc(_forcefield_path(forcefield)))
+
 
 def chain_lengths(distribution: str = "schulz-zimm", nn: float = 40, pdi: float = 1.1, count: int = 20, seed: int = 2026,
                   m0: float = 104.15, best_of: int = 1) -> dict:
