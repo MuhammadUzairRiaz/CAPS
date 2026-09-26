@@ -49,6 +49,10 @@ CASES = [
     ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16", "gasteiger", "rules"),
     ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff-amber25", "gasteiger", "rules"),
     ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding", "gasteiger", "keys"),
+    # DREIDING's own torsion rules (Mayo 1990, cases a-j) where the file lists none: C=C double and conjugated single
+    # bonds (polybutadiene, butadiene), sp3 next to sp2 (b / j), biphenyl's ring link (f), the aromatic ring (d)
+    ("Polystyrene melt, DREIDING (periodic; sp3-aromatic torsions by DREIDING's rules)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "dreiding", "gasteiger", "rules"),
+    ("DREIDING rules: cis-polybutadiene fragment, butadiene, biphenyl, methyl acetate", ("smiles", "C/C=C\\CC/C=C\\CC/C=C\\C.C=CC=C.c1ccccc1-c1ccccc1.CC(=O)OC"), "dreiding", "gasteiger", "rules"),
     ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides", "qeq", "keys"),
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
     ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25", "gasteiger", "rules"),

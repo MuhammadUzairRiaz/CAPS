@@ -130,6 +130,7 @@ struct ForceField {
   // evaluator may compute the same terms in another equivalent form, e.g. OPLS torsions as Fourier sums)
   std::string native_pair, native_dihedral, native_improper;
   double native_cutoff = 0;
+  std::string native_special;               // the special_bonds keyword of the force field ("amber", "dreiding")
   double native_timestep = 0;              // fs; 0: none declared (engine inputs use 0.5 fs)
   std::map<std::pair<int, int>, PairType> pair_override;   // explicit coefficients for type-index pairs (a ≤ b)
   std::vector<std::array<uint32_t, 2>> pairs14;

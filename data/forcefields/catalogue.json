@@ -574,7 +574,7 @@
    },
    "typing": {
     "rules": "typing/dreiding.typing.json",
-    "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py); this file lists torsions for common neighbourhoods with the barrier already divided, so some sp3–sp2 torsions (e.g. next to Cl on an sp2 carbon) are missing: DREIDING (moltemplate) applies the paper's rule to every bond"
+    "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py); this file lists torsions for common neighbourhoods with the barrier already divided; a torsion it does not list takes DREIDING's own rule by the hybridisation of its central atoms (Mayo, Olafson, Goddard 1990, cases a–j), its barrier divided over the torsions about the bond"
    }
   },
   {

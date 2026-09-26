@@ -735,3 +735,30 @@ TEST(FFDef, FrcConversionsParameteriseFully) {
     }
   }
 }
+
+// DREIDING's torsion rules (Mayo, Olafson, Goddard 1990) where DREIDING.par lists none: polystyrene's backbone CH–ring
+// carbon torsions are case (b), V = 1 kcal/mol, n = 6, φ0 = 0, over the 2 × 3 torsions about the bond; the export keeps
+// DREIDING's own LAMMPS styles and special_bonds keyword.
+TEST(FFDef, DreidingTorsionRulesFillWhatTheFileLacks) {
+  System s = read_lammps_data(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/dreiding.json");
+  EXPECT_EQ(def.torsion_rules, "dreiding1990");
+  std::string ch = "gasteiger";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+  EXPECT_TRUE(rep.missing.empty());
+  EXPECT_GT(rep.used["dihedral DREIDING rule (b)"], 0);
+  bool found = false;
+  for (const auto& d : ff.dihedrals)
+    if (ff.atom_type[d.j] == "C_3" && ff.atom_type[d.k] == "C_R" && d.n == 6) {
+      EXPECT_NEAR(d.v, 0.5 / 6, 1e-12);
+      EXPECT_NEAR(d.delta, M_PI, 1e-12);   // ½V[1 − cos 6φ] = ½V[1 + cos(6φ − 180°)]
+      found = true;
+    }
+  EXPECT_TRUE(found);
+  EXPECT_EQ(ff.native_dihedral, "charmm");
+  EXPECT_EQ(ff.native_special, "dreiding");
+}

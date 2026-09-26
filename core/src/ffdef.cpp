@@ -7,6 +7,7 @@
 #include "caps/qeq.hpp"
 
 #include <filesystem>
+#include <memory>
 #include <tuple>
 #include <algorithm>
 #include <cmath>
@@ -310,6 +311,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   st["angle"] = ff.angle_style;
   st["dihedral"] = ff.dihedral_style;
   st["improper"] = ff.improper_style;
+  if (!ff.special_style.empty()) st["special"] = ff.special_style;
   j["styles"] = st;
   j["mixing"] = ff.mixing;
   Json sl = Json::array(), sc = Json::array();
@@ -344,6 +346,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.improper_all_explicit) j["improper_all_explicit"] = true;
   if (ff.improper_max_neighbours) j["improper_max_neighbours"] = ff.improper_max_neighbours;
   if (ff.wildcard_torsion_scaling != "none") j["wildcard_torsion_scaling"] = ff.wildcard_torsion_scaling;
+  if (!ff.torsion_rules.empty()) j["torsion_rules"] = ff.torsion_rules;
   Json types = Json::array();
   for (const auto& t : ff.types) {
     Json o = Json::object();
@@ -432,6 +435,7 @@ FFDef load_forcefield(const std::string& path) {
     ff.angle_style = st.text("angle", ff.angle_style);
     ff.dihedral_style = st.text("dihedral", ff.dihedral_style);
     ff.improper_style = st.text("improper", ff.improper_style);
+    ff.special_style = st.text("special", ff.special_style);
   }
   ff.mixing = j.text("mixing", ff.mixing);
   if (j.has("special_lj"))
@@ -478,6 +482,7 @@ FFDef load_forcefield(const std::string& path) {
   ff.improper_all_explicit = j.has("improper_all_explicit") && j["improper_all_explicit"].boolean();
   ff.improper_max_neighbours = int(j.num("improper_max_neighbours", 0));
   ff.wildcard_torsion_scaling = j.text("wildcard_torsion_scaling", ff.wildcard_torsion_scaling);
+  ff.torsion_rules = j.text("torsion_rules");
   for (const auto& o : j["atom_types"].items()) {
     FFType t;
     t.name = o["name"].str();
@@ -533,6 +538,7 @@ FFDef load_forcefield(const std::string& path) {
     if (j.has("improper_matched_order")) base.improper_matched_order = ff.improper_matched_order;
     if (j.has("improper_max_neighbours")) base.improper_max_neighbours = ff.improper_max_neighbours;
     if (j.has("timestep")) base.timestep = ff.timestep;
+    if (j.has("torsion_rules")) base.torsion_rules = ff.torsion_rules;
     base.name = ff.name;
     base.version = ff.version;
     base.source = ff.source + " on " + base.source;
@@ -1193,6 +1199,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.native_improper = def.improper_style;
   ff.native_cutoff = def.cutoff;
   ff.native_timestep = def.timestep;
+  ff.native_special = def.special_style;
   ff.lj14 = def.special_lj[2];
   ff.coul14 = def.special_coul[2];
   // 1-3 pairs: excluded (0) or in full (1, both LJ and Coulomb: MARTINI's special_bonds 0 1 1)
@@ -1682,6 +1689,49 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
         rep.used["angle " + r->name]++;
       }
+  // DREIDING's torsion rules (Mayo, Olafson, Goddard, J. Phys. Chem. 94, 8897 (1990)): E = ½V[1 − cos(n(φ − φ0))] by the
+  // hybridisation of the central atoms j, k (the character after "_" in the type: 1, 2, 3, R), V then divided over the
+  // (nj − 1)(nk − 1) torsions about the bond. Bond orders, aromatic bonds from the structure's perception.
+  std::unique_ptr<Perception> dper;
+  auto dreiding_rule = [&](uint32_t i, uint32_t j, uint32_t k, uint32_t l, double& V, int& nn, double& phi0) -> char {
+    auto hyb = [&](uint32_t a) -> char {
+      const auto u = T[a].find('_');
+      if (u == std::string::npos) return '3';   // NH4, SO …: sp3 centres
+      const char c = u + 1 < T[a].size() ? T[a][u + 1] : '\0';
+      return c == '1' || c == '2' || c == '3' || c == 'R' ? c : '\0';   // H_, H__HB: monovalent
+    };
+    auto g16 = [&](uint32_t a) {
+      const std::string e = T[a].substr(0, T[a].find('_'));
+      return e == "O" || e == "S" || e == "Se" || e == "Te";
+    };
+    auto sp2 = [](char h) { return h == '2' || h == 'R'; };
+    const char hj = hyb(j), hk = hyb(k);
+    if (!hj || !hk || hj == '1' || hk == '1') { V = 0; nn = 1; phi0 = 0; return 'g'; }   // (g) sp or monovalent centre
+    if (hj == '3' && hk == '3') {
+      if (g16(j) && g16(k)) { V = 2; nn = 2; phi0 = 90; return 'h'; }   // (h) two group-16 sp3 atoms
+      V = 2; nn = 3; phi0 = 180; return 'a';                               // (a) sp3–sp3
+    }
+    if (hj == '3' || hk == '3') {
+      const uint32_t x = hj == '3' ? j : k, y = hj == '3' ? k : j, outer = y == j ? i : l;
+      (void)y;
+      if (g16(x)) { V = 2; nn = 2; phi0 = 180; return 'i'; }             // (i) group-16 sp3 on an sp2 atom
+      if (!sp2(hyb(outer))) { V = 2; nn = 3; phi0 = 180; return 'j'; }   // (j) the sp2 atom's other neighbour not sp2
+      V = 1; nn = 6; phi0 = 0; return 'b';                                 // (b) sp3–sp2
+    }
+    if (!dper) dper = std::make_unique<Perception>(perceive(s));
+    const auto& P = *dper;
+    int order = 1;
+    bool arom = false;
+    for (size_t q = 0; q < P.nb[j].size(); ++q)
+      if (P.nb[j][q] == k) { order = P.order[j][q]; arom = P.arom_bond[j][q]; }
+    if (hj == 'R' && hk == 'R') {
+      if (!arom && P.aromatic[j] && P.aromatic[k]) { V = 10; nn = 2; phi0 = 180; return 'f'; }   // (f) between two aromatic rings
+      V = 25; nn = 2; phi0 = 180; return 'd';                                                     // (d) resonant bond
+    }
+    if (order == 2) { V = 45; nn = 2; phi0 = 180; return 'c'; }   // (c) double bond
+    V = 5; nn = 2; phi0 = 180; return 'e';                          // (e) single bond between sp2 atoms
+  };
+  int n_dreiding = 0;
   // dihedrals (one per i-j-k-l with i < l, as moltemplate's canonical order)
   std::set<std::pair<uint32_t, uint32_t>> p14;
   for (const auto& b : rule_bonds)
@@ -1697,6 +1747,17 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           const FFRule* r = lookup12(def.dihedrals, Nd, Nd2, {i, j, k, l}, &rev);
           if (!r) r = auto_lookup(def.auto_dihedrals, {&Ate[i], &Atc[j], &Atc[k], &Ate[l]}, &rev);
           if (std::string u; !r && (r = analog(def.dihedrals, Nd, {i, j, k, l}, &rev, &u))) estimated("dihedral " + shown(Nd, {i, j, k, l}) + " as " + u);
+          if (!r && def.torsion_rules == "dreiding1990") {
+            double V = 0, phi0 = 0;
+            int nn = 1;
+            const char rule = dreiding_rule(i, j, k, l, V, nn, phi0);
+            const double mult = double(std::max<size_t>(1, (nb[j].size() - 1) * (nb[k].size() - 1)));
+            // ½V[1 − cos(n(φ − φ0))] = ½V[1 + cos(nφ − (nφ0 + 180°))]
+            if (V != 0) ff.dihedrals.push_back({i, j, k, l, 0.5 * V / mult, nn, std::fmod(nn * phi0 + 180.0, 360.0) * kDeg});
+            rep.used[std::string("dihedral DREIDING rule (") + rule + ")"]++;
+            ++n_dreiding;
+            continue;
+          }
           if (!r) {
             if (!def.torsions_if_defined) missing("dihedral " + shown(Nd, {i, j, k, l}));
             continue;
@@ -1773,6 +1834,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
       }
     }
+  if (n_dreiding) rep.notes.push_back(std::to_string(n_dreiding) + " torsions by DREIDING's hybridisation rules (none listed for them)");
   if (only12) p14.clear();
   for (const auto& q : p14) ff.pairs14.push_back({q.first, q.second});
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all
@@ -2017,6 +2079,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.notes.push_back(def.name + ": " + std::to_string(ff.type_names.size()) + " types, " + std::to_string(ff.bonds.size()) + " bonds, " +
                      std::to_string(ff.angles.size() + ff.angles_x.size()) + " angles, " + std::to_string(ff.dihedrals.size()) + " torsion terms, " +
                      std::to_string(ff.impropers.size() + ff.impropers_harmonic.size()) + " impropers" +
+                     (ff.inversions.empty() ? "" : ", " + std::to_string(ff.inversions.size()) + " inversions") +
                      (ff.bonds2.size() + ff.angles2.size() + ff.dihedrals2.size() + ff.impropers2.size()
                           ? "; class II: " + std::to_string(ff.bonds2.size()) + " bonds, " + std::to_string(ff.angles2.size()) + " angles, " +
                                 std::to_string(ff.dihedrals2.size()) + " dihedrals, " + std::to_string(ff.impropers2.size()) + " impropers"
