@@ -11,7 +11,7 @@
   "pair": "lj/cut/coul/long",
   "bond": "harmonic",
   "angle": "harmonic",
-  "dihedral": "fourier",
+  "dihedral": "harmonic",
   "improper": "cvff"
  },
  "mixing": "geometric",

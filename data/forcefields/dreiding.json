@@ -1002,6 +1002,48 @@
    ]
   }
  ],
+ "hbonds": {
+  "style": "dreiding/lj",
+  "power": 4,
+  "inner": 6.0,
+  "outer": 6.5,
+  "angle": 90,
+  "source": "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990): E_hb = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, D_hb 4.0 kcal/mol and R_hb 2.75 A with atomic charges; LAMMPS hbond/dreiding/lj 4 6 6.5 90 as moltemplate's DREIDING",
+  "terms": [
+   {
+    "donor": "N_*",
+    "acceptor": "N_*",
+    "hydrogen": "H__HB",
+    "eps": 4.0,
+    "sigma": 2.75,
+    "n": 4
+   },
+   {
+    "donor": "N_*",
+    "acceptor": "O_*",
+    "hydrogen": "H__HB",
+    "eps": 4.0,
+    "sigma": 2.75,
+    "n": 4
+   },
+   {
+    "donor": "O_*",
+    "acceptor": "N_*",
+    "hydrogen": "H__HB",
+    "eps": 4.0,
+    "sigma": 2.75,
+    "n": 4
+   },
+   {
+    "donor": "O_*",
+    "acceptor": "O_*",
+    "hydrogen": "H__HB",
+    "eps": 4.0,
+    "sigma": 2.75,
+    "n": 4
+   }
+  ]
+ },
  "bonds": [
   {
    "name": "S_3-H__HB",
@@ -3440,8 +3482,8 @@
  ],
  "notes": [
   "the original distribution also places inversions where its molecule templates ask (e.g. amide N typed N_3); CAPS applies DREIDING's rule: planar (_2, _R) centres only",
-  "DREIDING hydrogen-bond terms are not converted; Morse bonds and cosine angles are kept as alternatives in each rule",
-  "converted by CAPS (DREIDING, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (DREIDING, unit kcal/mol); equivalences replace the type name for each kind of parameter",
+  "DREIDING's hydrogen bond (the paper's 12-10 form with cos^4 at the hydrogen, D_hb 4.0 kcal/mol, R_hb 2.75 A for charged systems) between N_ / O_ donors carrying H__HB and N_ / O_ acceptors, as LAMMPS hbond/dreiding/lj"
  ],
  "version": "1990",
  "status": "validated",
