@@ -10,8 +10,8 @@
  "styles": {
   "pair": "lj/class2/coul/long",
   "bond": "class2",
-  "angle": "quartic",
-  "dihedral": "fourier",
+  "angle": "class2",
+  "dihedral": "class2",
   "improper": "inversion"
  },
  "mixing": "sixthpower",

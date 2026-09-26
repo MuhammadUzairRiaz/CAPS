@@ -123,6 +123,16 @@ struct FFDef {
   std::string special_style;
   // GROMACS topology form of the van der Waals parameters: "" σ/ε (comb-rule 2), "c6c12" C6/C12 (GROMOS, comb-rule 1)
   std::string gromacs_lj;
+  // DREIDING's hydrogen bond (JSON "hbonds"; LAMMPS hbond/dreiding/lj): E = S(r) ε [5 (σ/r)¹² − 6 (σ/r)¹⁰] cos^n θ between a
+  // donor D and an acceptor A (r = D–A), θ the D–H···A angle at a hydrogen H bonded to D, only for θ > the angle cut-off;
+  // S switches from inner to outer. After typing, N/O/F atoms take their "_hd" variant when they carry a hydrogen (which
+  // becomes the hydrogen type), else their "_ha" variant, where the force field has one.
+  struct HBondDef {
+    int power = 4;
+    double inner = 6.0, outer = 6.5, angle = 90;
+    struct Term { std::string donor, acceptor, hydrogen; double eps = 0, sigma = 0; int n = 4; };
+    std::vector<Term> terms;
+  } hbonds;
   // Parameters by analogy for terms the file lacks (the typing file's "analogies", as AmberTools' parmchk2 fills
   // missing GAFF terms): type → types whose parameters stand in, most similar first. Every term found this way is
   // listed in ParamReport::estimated; nothing is filled silently.

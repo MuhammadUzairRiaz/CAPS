@@ -797,3 +797,51 @@ TEST(FieldForms, CharmmForceSwitch) {
     EXPECT_NEAR(f, -dedr, 1e-7 * std::max(1.0, std::fabs(dedr))) << r;
   }
 }
+
+// DREIDING's hydrogen bond (hbond/dreiding/lj): donor O, its hydrogen, an acceptor O; ε 4, σ 2.75, cos⁴θ, switched from 6
+// to 6.5 Å, only past 90°. Forces and virial are the exact derivatives, inside and in the switching region; no term
+// below 90°.
+TEST(FieldForms, DreidingHydrogenBond) {
+  ForceField ff;
+  ff.type_names = {"O_3_hd", "H_HB", "O_2_ha"};
+  ff.type_index = {0, 1, 2};
+  ff.lj = {{0, 0}, {0, 0}, {0, 0}};
+  ff.mass = {16, 1, 16};
+  ff.charge = {0, 0, 0};
+  ff.bonds.push_back({0, 1, 0, 0.97});   // no bond energy: only the hydrogen's link to its donor
+  ff.excluded.assign(3, {});
+  ff.excluded[0] = {1};
+  ff.excluded[1] = {0};
+  ff.hbond.hyd = {{1}, {}, {}};
+  ff.hbond.acceptor = {0, 0, 1};
+  ff.hbond.param[{0, 2}] = {4.0, 2.75, 4};
+  ff.hbond.htype[{0, 2}] = 1;
+  ff.hbond.cos_cut = 0;
+  EnergyOptions o;
+  o.coulomb = false;
+  o.tail = false;
+  Cell none;
+  Evaluator ev(ff, o);
+  auto energy = [&](const std::vector<double>& x, std::vector<double>* f = nullptr) {
+    std::vector<double> g;
+    const double e = ev.compute(x, none, g).total();
+    if (f) *f = g;
+    return e;
+  };
+  // D at the origin, H along +x bent a little, A along +x at r
+  for (double r : {2.8, 3.5, 6.2, 6.4}) {
+    const std::vector<double> x = {0, 0, 0, 0.97, 0.12, 0.05, r, -0.3, 0.2};
+    std::vector<double> f;
+    const double e = energy(x, &f);
+    EXPECT_LT(e, r < 6 ? -0.0 : 1.0) << r;
+    for (size_t k = 0; k < 9; ++k) {
+      auto xp = x, xm = x;
+      const double h = 1e-6;
+      xp[k] += h;
+      xm[k] -= h;
+      EXPECT_NEAR(f[k], -(energy(xp) - energy(xm)) / (2 * h), 1e-6 * std::max(1.0, std::fabs(f[k]))) << r << " " << k;
+    }
+  }
+  // the hydrogen on the far side (D–H···A below 90°): no term
+  EXPECT_NEAR(energy({0, 0, 0, -0.97, 0, 0, 2.9, 0, 0}), 0, 1e-12);
+}

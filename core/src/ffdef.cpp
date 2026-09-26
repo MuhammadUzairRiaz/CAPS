@@ -349,6 +349,17 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.improper_max_neighbours) j["improper_max_neighbours"] = ff.improper_max_neighbours;
   if (ff.wildcard_torsion_scaling != "none") j["wildcard_torsion_scaling"] = ff.wildcard_torsion_scaling;
   if (!ff.torsion_rules.empty()) j["torsion_rules"] = ff.torsion_rules;
+  if (!ff.hbonds.terms.empty()) {
+    Json h = Json::object(), ts = Json::array();
+    h["power"] = double(ff.hbonds.power), h["inner"] = ff.hbonds.inner, h["outer"] = ff.hbonds.outer, h["angle"] = ff.hbonds.angle;
+    for (const auto& t : ff.hbonds.terms) {
+      Json o = Json::object();
+      o["donor"] = t.donor, o["acceptor"] = t.acceptor, o["hydrogen"] = t.hydrogen, o["eps"] = t.eps, o["sigma"] = t.sigma, o["n"] = double(t.n);
+      ts.push_back(o);
+    }
+    h["terms"] = ts;
+    j["hbonds"] = h;
+  }
   Json types = Json::array();
   for (const auto& t : ff.types) {
     Json o = Json::object();
@@ -487,6 +498,15 @@ FFDef load_forcefield(const std::string& path) {
   ff.improper_max_neighbours = int(j.num("improper_max_neighbours", 0));
   ff.wildcard_torsion_scaling = j.text("wildcard_torsion_scaling", ff.wildcard_torsion_scaling);
   ff.torsion_rules = j.text("torsion_rules");
+  if (j.has("hbonds")) {
+    const Json& h = j["hbonds"];
+    ff.hbonds.power = int(h.num("power", 4));
+    ff.hbonds.inner = h.num("inner", 6.0);
+    ff.hbonds.outer = h.num("outer", 6.5);
+    ff.hbonds.angle = h.num("angle", 90);
+    for (const auto& t : h["terms"].items())
+      ff.hbonds.terms.push_back({t.text("donor"), t.text("acceptor"), t.text("hydrogen"), t.num("eps", 0), t.num("sigma", 0), int(t.num("n", 4))});
+  }
   for (const auto& o : j["atom_types"].items()) {
     FFType t;
     t.name = o["name"].str();
@@ -543,6 +563,7 @@ FFDef load_forcefield(const std::string& path) {
     if (j.has("improper_max_neighbours")) base.improper_max_neighbours = ff.improper_max_neighbours;
     if (j.has("timestep")) base.timestep = ff.timestep;
     if (j.has("torsion_rules")) base.torsion_rules = ff.torsion_rules;
+    if (j.has("hbonds")) base.hbonds = ff.hbonds;
     base.name = ff.name;
     base.version = ff.version;
     base.source = ff.source + " on " + base.source;
@@ -1844,6 +1865,46 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       }
     }
   if (n_dreiding) rep.notes.push_back(std::to_string(n_dreiding) + " torsions by DREIDING's hybridisation rules (none listed for them)");
+  // DREIDING hydrogen bonds: donors (with their hydrogen-bond hydrogens) and acceptors by type, the first matching term
+  // per (donor type, acceptor type)
+  if (!def.hbonds.terms.empty()) {
+    auto& H = ff.hbond;
+    H.power = def.hbonds.power;
+    H.inner = def.hbonds.inner;
+    H.outer = def.hbonds.outer;
+    H.angle_deg = def.hbonds.angle;
+    H.cos_cut = std::cos(def.hbonds.angle * kDeg);
+    H.hyd.assign(n, {});
+    H.acceptor.assign(n, 0);
+    int nd = 0, na = 0;
+    for (uint32_t a = 0; a < n; ++a) {
+      for (const auto& t : def.hbonds.terms) {
+        if (glob_match(t.acceptor, T[a])) H.acceptor[a] = 1;
+        if (glob_match(t.donor, T[a]))
+          for (uint32_t b : nb[a])
+            if (glob_match(t.hydrogen, T[b]) && std::find(H.hyd[a].begin(), H.hyd[a].end(), b) == H.hyd[a].end()) H.hyd[a].push_back(b);
+      }
+      nd += !H.hyd[a].empty();
+      na += H.acceptor[a];
+    }
+    std::map<int, uint32_t> acc_type;   // one atom of each acceptor type
+    for (uint32_t c = 0; c < n; ++c)
+      if (H.acceptor[c]) acc_type.emplace(ff.type_index[c], c);
+    for (uint32_t a = 0; a < n; ++a) {
+      if (H.hyd[a].empty()) continue;
+      for (const auto& [ct, c] : acc_type) {
+        const std::pair<int, int> key{ff.type_index[a], ct};
+        if (H.param.count(key)) continue;
+        for (const auto& t : def.hbonds.terms)
+          if (glob_match(t.donor, T[a]) && glob_match(t.acceptor, T[c]) && glob_match(t.hydrogen, T[H.hyd[a][0]])) {
+            H.param[key] = {t.eps, t.sigma, double(t.n)};
+            H.htype[key] = ff.type_index[H.hyd[a][0]];
+            break;
+          }
+      }
+    }
+    if (H.on()) rep.notes.push_back("DREIDING hydrogen bonds: " + std::to_string(nd) + " donors, " + std::to_string(na) + " acceptors");
+  }
   if (only12) p14.clear();
   for (const auto& q : p14) ff.pairs14.push_back({q.first, q.second});
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all

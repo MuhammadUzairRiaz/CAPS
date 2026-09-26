@@ -1238,6 +1238,35 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
     if (conflicts) r.notes.push_back(std::to_string(conflicts / 2) + " conjugated bonds could not follow the cc/cd pattern (odd ring)");
   }
   refine_bond_order_variants(s, p, ff, r.types, r.why);
+  // DREIDING hydrogen bonds: an N, O or F carrying a hydrogen takes its donor variant (T_hd) and that hydrogen the
+  // hydrogen-bond type; one without takes its acceptor variant (T_ha), where the force field has them
+  if (!ff.hbonds.terms.empty()) {
+    std::set<std::string> names;
+    for (const auto& t : ff.types) names.insert(t.name);
+    const std::string hb = ff.hbonds.terms.front().hydrogen;
+    int nd = 0, na = 0;
+    for (size_t a = 0; a < s.atoms.size(); ++a) {
+      const int z = s.atoms[a].element;
+      if ((z != 7 && z != 8 && z != 9) || r.types[a].empty()) continue;
+      std::vector<uint32_t> hs;
+      for (uint32_t b : p.nb[a])
+        if (s.atoms[b].element == 1 && r.types[b] == "H") hs.push_back(b);
+      if (!hs.empty() && names.count(r.types[a] + "_hd") && names.count(hb)) {
+        r.types[a] += "_hd";
+        r.why[a] += "  (hydrogen-bond donor)";
+        for (uint32_t b : hs) {
+          r.types[b] = hb;
+          r.why[b] += "  (on a hydrogen-bond donor)";
+        }
+        ++nd;
+      } else if (names.count(r.types[a] + "_ha")) {
+        r.types[a] += "_ha";
+        r.why[a] += "  (hydrogen-bond acceptor)";
+        ++na;
+      }
+    }
+    if (nd + na) r.notes.push_back(std::to_string(nd) + " hydrogen-bond donors, " + std::to_string(na) + " acceptors");
+  }
   return r;
 }
 

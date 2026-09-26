@@ -153,6 +153,18 @@ struct ForceField {
   // CHARMM's force switch for Lennard-Jones (Steinbach & Brooks 1994, CHARMM vfswitch; LAMMPS lj/charmmfsw) from
   // lj_inner to the cut-off: every LJ pair, and the constant energy offset below lj_inner on the 1-4 pairs too
   bool lj_fsw = false;
+  // DREIDING hydrogen bonds (LAMMPS hbond/dreiding/lj): per atom its hydrogen-bond hydrogens (non-empty: a donor), whether it
+  // accepts; per (donor type, acceptor type) ε, σ, n and the hydrogen type; the power of cos θ is each term's n
+  struct HBond {
+    double inner = 6.0, outer = 6.5, cos_cut = 0;   // cos of the angle cut-off: a term needs cos θ < cos_cut
+    int power = 4;
+    double angle_deg = 90;
+    std::vector<std::vector<uint32_t>> hyd;
+    std::vector<char> acceptor;
+    std::map<std::pair<int, int>, std::array<double, 3>> param;
+    std::map<std::pair<int, int>, int> htype;
+    bool on() const { return !param.empty(); }
+  } hbond;
   std::vector<VirtualSite> vsites;
   std::vector<std::string> notes;
 };
