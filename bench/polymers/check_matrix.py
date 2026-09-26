@@ -3,7 +3,7 @@
 
 For each repeat unit (and copolymer) of data/polymers/library.json and each force field of data/forcefields/catalogue.json
 (plus the built-in UFF), a recipe builds 3 chains of DP 10, types them (charges automatic: the force field's own, else
-Gasteiger–Marsili), grows them at 0.3 g/cm³, relaxes them (L-BFGS to |F|max 1 kcal/mol/Å) and writes LAMMPS files.
+Gasteiger–Marsili, else QEq), grows them at 0.3 g/cm³, relaxes them (L-BFGS to |F|max 1 kcal/mol/Å) and writes LAMMPS files.
 Then the cell is checked, independently of CAPS:
 
   · bonds: every bond within 0.25 Å of its force field's equilibrium length r0 (from the Bond Coeffs of the data file);
@@ -12,7 +12,8 @@ Then the cell is checked, independently of CAPS:
     per atom (a relaxed cell has a small or negative potential energy per atom).
 
 Force fields that cannot describe an organic polymer by design (water models, inorganic crystals, coarse-grained
-bead models) are listed and skipped with the reason. Failures print CAPS's own reason (untyped atoms, missing
+bead models), library entries without a parameter file (aliases, templates) and force fields CAPS has no typing rules
+for yet are listed and skipped with the reason. Failures print CAPS's own reason (untyped atoms, missing
 parameters) so each can be traced to a typing rule or a parameter the library lacks.
 
 usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--jobs 8] [--keep DIR] [--json OUT]
@@ -40,6 +41,10 @@ def forcefields():
     out = [("uff", "UFF (built in)", None)]
     for e in cat["forcefields"]:
         skip = next((why for pat, why in NOT_POLYMER if re.search(pat, e["id"])), None)
+        if not skip and not isinstance(e.get("file"), str):
+            skip = f"no parameter file ({e.get('status', '')}: {e.get('notes', '')})"
+        if not skip and not isinstance(e.get("typing"), dict):
+            skip = "no CAPS typing rules yet (types by hand only)"
         out.append((e["id"], e.get("name", e["id"]), skip))
     return out
 

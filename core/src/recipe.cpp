@@ -222,6 +222,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
               for (const auto& e : cat["forcefields"].items())
                 if (e.text("id").rfind(name + "-", 0) == 0) { hit = &e; break; }
             auto rules = [](const Json& e) { return e.has("typing") && e["typing"].is_object() && e["typing"].has("rules") ? e["typing"]["rules"].str() : std::string(); };
+            if (hit && !(hit->has("file") && (*hit)["file"].is_string()))   // an alias or a template: no parameter file of its own
+              throw RecipeError(2, "'" + name + "' has no parameter file in the library: " + hit->text("notes", hit->text("status", "")));
             if (hit && hit->has("file")) {
               path = (std::filesystem::path(o.forcefield_dir) / (*hit)["file"].str()).string();
               std::string rel = rules(*hit);
@@ -258,7 +260,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           for (const auto& a : sys.atoms) types.push_back(a.name);
         }
         ParamReport rep;
-        if (charges == "auto") {   // the force field's charges, the file's, or (GAFF-like fields have none per type) Gasteiger
+        const bool auto_charges = charges == "auto";
+        if (charges == "auto") {   // the force field's charges, the file's, or (GAFF-like fields have none per type) Gasteiger, else QEq
           charges = sys.has_charges && !polymer ? "keep" : "types";
           try {
             ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
@@ -268,7 +271,15 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             rep = ParamReport{};
           }
         }
-        if (!ff || charges == "gasteiger") ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
+        if (!ff && charges == "gasteiger" && auto_charges) {
+          try {
+            ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
+          } catch (const std::exception&) {   // Gasteiger–Marsili has no parameters here (S=O, Si, metals): QEq covers every element
+            charges = "qeq";
+            rep = ParamReport{};
+          }
+        }
+        if (!ff) ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
         if (!rep.missing.empty()) throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")");
         ffname = def.name;
       }
@@ -364,6 +375,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           g.chains = 1;
           g.seed = uint64_t(seed0);
           g.density = 0.05;
+          g.auto_scale = true;   // quaternary backbones (methacrylates, polyisobutylene) need a lower contact scale
           probe = grow_chains(spec, g, nullptr);
         }
         type_now(probe);
