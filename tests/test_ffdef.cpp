@@ -762,3 +762,38 @@ TEST(FFDef, DreidingTorsionRulesFillWhatTheFileLacks) {
   EXPECT_EQ(ff.native_dihedral, "charmm");
   EXPECT_EQ(ff.native_special, "dreiding");
 }
+
+// CHARMM's force switch (lj/charmmfsw): two Lennard-Jones atoms, ε 0.1, σ 3.5, switched from 10 to 12 Å. Below 10 Å the
+// plain 12-6 plus LAMMPS's constant, continuous at 10 Å, zero at 12 Å, and the force the exact derivative throughout.
+TEST(FieldForms, CharmmForceSwitch) {
+  ForceField ff;
+  ff.type_names = {"X"};
+  ff.type_index = {0, 0};
+  ff.lj = {{0.1, 3.5}};
+  ff.mass = {12, 12};
+  ff.charge = {0, 0};
+  ff.excluded.assign(2, {});
+  ff.lj_fsw = true;
+  ff.lj_inner = 10;
+  ff.cutoff = 12;
+  EnergyOptions o;
+  o.coulomb = false;
+  Cell none;
+  Evaluator ev(ff, o);
+  auto energy = [&](double r, double* force = nullptr) {
+    std::vector<double> x = {0, 0, 0, r, 0, 0}, g;
+    const double e = ev.compute(x, none, g).total();
+    if (force) *force = g[3];
+    return e;
+  };
+  const double A = 4 * 0.1 * std::pow(3.5, 12), B = 4 * 0.1 * std::pow(3.5, 6);
+  EXPECT_NEAR(energy(5), A * (std::pow(5, -12) - std::pow(120, -6)) - B * (std::pow(5, -6) - std::pow(120, -3)), 1e-12);   // LAMMPS's form
+  EXPECT_NEAR(energy(10 - 1e-7), energy(10 + 1e-7), 1e-9);
+  EXPECT_NEAR(energy(12 - 1e-6), 0, 1e-12);
+  for (double r : {4.0, 9.5, 10.5, 11.0, 11.9}) {
+    double f = 0;
+    energy(r, &f);
+    const double h = 1e-5, dedr = (energy(r + h) - energy(r - h)) / (2 * h);
+    EXPECT_NEAR(f, -dedr, 1e-7 * std::max(1.0, std::fabs(dedr))) << r;
+  }
+}

@@ -8,11 +8,12 @@
  ],
  "units": "real",
  "styles": {
-  "pair": "lj/charmm/coul/long",
+  "pair": "lj/charmmfsw/coul/long",
   "bond": "harmonic",
   "angle": "charmm",
-  "dihedral": "fourier",
-  "improper": "harmonic"
+  "dihedral": "charmmfsw",
+  "improper": "harmonic",
+  "special": "charmm"
  },
  "mixing": "arithmetic",
  "special_lj": [
@@ -25,7 +26,8 @@
   0,
   1
  ],
- "cutoff": 10,
+ "cutoff": 12,
+ "pair_settings": {"lj_inner": 10, "model_cutoff": true, "lj_modifier": "charmm-force-switch"},
  "improper_order": "center1_sorted",
  "equivalence": "replace",
  "improper_matched_order": true,

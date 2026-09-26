@@ -81,6 +81,7 @@ struct Layout {
   bool sdk = false;                        // SDK / SPICA pairs (lj/sdk): no tail correction in LAMMPS
   bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
   bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
+  bool charmm = false;                     // CHARMM (native): lj/charmmfsw, 1-4 pairs through dihedral charmmfsw weights
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
   // how the files are written (exact CAPS styles, or the force field's native ones)
   bool native = false, force_hybrid = false;
@@ -117,11 +118,18 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
                              "LAMMPS form; export to GROMACS instead");
         }
   }
-  if (!ff.lj14_types.empty())
-    throw FieldError(ff.name + ": separate 1-4 Lennard-Jones parameters (CHARMM, GROMOS) have no exact LAMMPS form without switching "
-                     "(lj/charmm/coul/*); LAMMPS data for them is not written");
+  // CHARMM in its own styles: lj/charmmfsw with the 1-4 pairs (their own ε14, σ14) computed by dihedral charmmfsw
+  const bool charmm = ff.lj_fsw && st.native;
+  if (ff.lj_fsw && !st.native)
+    throw FieldError(ff.name + ": CHARMM's force-switched Lennard-Jones and 1-4 terms are written in CHARMM's own LAMMPS styles only "
+                     "(lj/charmmfsw, dihedral charmmfsw): choose the force field's own styles");
+  if (charmm && (ff.lj14 != 1 || ff.coul14 != 1 || ff.keep13))
+    throw FieldError(ff.name + ": dihedral charmmfsw computes 1-4 pairs in full; other 1-4 scaling has no LAMMPS form with lj/charmmfsw");
+  if (!ff.lj14_types.empty() && !charmm)
+    throw FieldError(ff.name + ": separate 1-4 Lennard-Jones parameters (GROMOS) have no exact LAMMPS form; export to GROMACS instead");
   Layout L;
   L.native = st.native;
+  L.charmm = charmm;
   L.force_hybrid = st.hybrid;
   for (Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) k->force_hybrid = st.hybrid;
   const auto& T = ff.atom_type;
@@ -209,6 +217,49 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
   };
   size_t fourier_left = 0;
   std::vector<std::pair<std::array<uint32_t, 4>, std::string>> native_lines;   // (quadruple, style|coef)
+  if (L.charmm) {
+    // CHARMM: every 1-4 pair through its torsions' weights (special_bonds charmm leaves them out of the pair list): the
+    // first line of each quadruple carries 1 / (quadruples sharing its end atoms), so a pair two torsions reach (a
+    // six-membered ring's) counts once; a 1-4 pair with no torsion term gets a zero one to carry it
+    std::set<std::pair<uint32_t, uint32_t>> p14;
+    for (const auto& p : ff.pairs14) p14.insert({std::min(p[0], p[1]), std::max(p[0], p[1])});
+    std::map<std::pair<uint32_t, uint32_t>, int> reach;
+    for (const auto& k : order) ++reach[{std::min(k[0], k[3]), std::max(k[0], k[3])}];
+    std::vector<std::vector<uint32_t>> nbl(s.atoms.size());
+    for (const auto& bd : s.bonds) { nbl[bd.i].push_back(bd.j); nbl[bd.j].push_back(bd.i); }
+    static const TorsionTerm kZero{0, 0, 0, 0, 0.0, 1, 0.0};
+    for (const auto& pr : p14) {
+      if (reach.count(pr)) continue;
+      bool placed = false;   // a path i-j-k-l for the pair
+      for (uint32_t j : nbl[pr.first]) {
+        for (uint32_t k : nbl[j])
+          if (k != pr.first && std::find(nbl[k].begin(), nbl[k].end(), pr.second) != nbl[k].end() && k != pr.second && j != pr.second) {
+            const std::array<uint32_t, 4> q{pr.first, j, k, pr.second};
+            order.push_back(q);
+            quad[q].push_back(&kZero);
+            ++reach[pr];
+            placed = true;
+            break;
+          }
+        if (placed) break;
+      }
+      if (!placed) throw FieldError(ff.name + ": a 1-4 pair with no bonded path for its torsion (charmmfsw needs one)");
+    }
+    for (const auto& k : order) {
+      const auto pr = std::make_pair(std::min(k[0], k[3]), std::max(k[0], k[3]));
+      const double w = p14.count(pr) ? 1.0 / reach[pr] : 0.0;
+      bool first = true;
+      for (const auto* t : quad[k]) {
+        const double dd = t->delta * R2D;
+        if (t->n < 0 || std::fabs(dd - std::round(dd)) > 1e-9)
+          throw FieldError(ff.name + ": a torsion with a non-integer phase or negative multiplicity has no dihedral charmmfsw form");
+        L.dihedrals.add("charmmfsw", num({t->v}) + " " + std::to_string(t->n) + " " + std::to_string(((std::lround(dd) % 360) + 360) % 360) + num({first ? w : 0.0}),
+                        {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+        first = false;
+      }
+    }
+    order.clear();
+  }
   for (const auto& k : order) {
     const auto& v = quad[k];
     std::string c;
@@ -324,6 +375,13 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
   L.coul = c == "pppm" || c == "ewald" ? "long" : c;
   if (L.coul == "long") L.kspace = c;
   L.kspace_accuracy = st.kspace_accuracy;
+  if (L.charmm) {   // CHARMM: the force-switched LJ with its long-range sum, else CHARMM's force-shifted Coulomb
+    L.pair_combined = std::string("lj/charmmfsw/coul/") + (L.coul == "long" ? "long" : "charmmfsh");
+    if (L.coul == "dsf" || L.coul == "cut") L.notes.push_back("Coulomb: CHARMM's force shift (coul/charmmfsh), not " + c);
+    L.pair_styles = {L.pair_combined};
+    L.pair_hybrid = st.hybrid;
+    return;
+  }
   // one style for all pairs: lj/cut or lj/class2 with its Coulomb (lj/class2 has no DSF form)
   if (ff.pair_func.empty() && L.sw_types.empty() && !L.gromacs && !(L.pair_base == "lj/class2" && L.coul == "dsf")) {
     L.pair_combined = L.pair_base + (L.coul == "none" ? "" : "/coul/" + L.coul);
@@ -367,9 +425,10 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   char b[400];
   if (L.native && !L.pair_combined.empty()) {
     // the force field's own form: one pair style (hybrid when asked), its long-range sum by PPPM or Ewald
-    const std::string args = L.coul == "dsf" ? fmt_args({e.dsf_alpha, e.cutoff}) : fmt_args({e.cutoff});
+    const std::string args = L.charmm ? fmt_args({ff.lj_inner, e.cutoff}) : L.coul == "dsf" ? fmt_args({e.dsf_alpha, e.cutoff}) : fmt_args({e.cutoff});
     r.push_back("pair_style " + std::string(L.pair_hybrid ? "hybrid " : "") + L.pair_combined + args);
-    if (e.tail && L.periodic) r.push_back("pair_modify tail yes");
+    if (L.charmm) {}   // switched to zero at the cut-off: no tail, no shift
+    else if (e.tail && L.periodic) r.push_back("pair_modify tail yes");
     else if (!e.tail) r.push_back("pair_modify shift yes");
     if (ff.dielectric != 1) {
       std::snprintf(b, sizeof b, "dielectric %.10g", ff.dielectric);
@@ -382,7 +441,9 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       r.push_back(nm + "_style " + k->style_line());
     }
     // LAMMPS's own keyword where the force field has one: amber (lj 0 0 0.5, coul 0 0 5/6 exactly), dreiding (0 0 1)
-    if (ff.native_special == "amber" && !ff.keep13 && ff.lj14 == 0.5 && std::fabs(ff.coul14 - 5.0 / 6.0) < 1e-9)
+    if (L.charmm)   // 1-2, 1-3, 1-4 all out of the pair list: dihedral charmmfsw adds the 1-4 pairs
+      r.push_back("special_bonds charmm");
+    else if (ff.native_special == "amber" && !ff.keep13 && ff.lj14 == 0.5 && std::fabs(ff.coul14 - 5.0 / 6.0) < 1e-9)
       r.push_back("special_bonds amber");
     else if (ff.native_special == "dreiding" && !ff.keep13 && ff.lj14 == 1 && ff.coul14 == 1)
       r.push_back("special_bonds dreiding");
@@ -471,6 +532,16 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
       } else if (it != ff.pair_func.end()) {
         style = it->second.form == 1 ? "buck" : "morse";
         coef = num({it->second.a, it->second.b, it->second.c});
+      } else if (L.charmm) {   // ε σ ε14 σ14, both pairs mixed by the force field's rule
+        const PairType pt = mixed_pair(ff, int(a2), int(b2));
+        PairType p14 = pt;
+        if (!ff.lj14_types.empty()) {
+          ForceField f14;
+          f14.mixing = ff.mixing;
+          f14.lj = ff.lj14_types;
+          p14 = mixed_pair(f14, int(a2), int(b2));
+        }
+        coef = num({pt.eps, pt.sigma, p14.eps, p14.sigma});
       } else {
         const PairType pt = mixed_pair(ff, int(a2), int(b2));
         coef = num({pt.eps, pt.sigma});
@@ -543,7 +614,7 @@ Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const La
   const bool charged = !std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; });
   // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
   if (!charged) e.coulomb = false;
-  if (ff.lj_shift) e.tail = false;   // Martini 3: shifted at the cut-off
+  if (ff.lj_shift || ff.lj_fsw) e.tail = false;   // Martini 3: shifted at the cut-off; CHARMM: switched
   if (ff.coul_rf && e.coulomb)
     throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
   Layout L = build(s, ff, st);
