@@ -64,7 +64,7 @@ int usage() {
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
-               "  caps convert FILE OUT.data|OUT.xyz|OUT.pdb [--topology DATA]\n"
+               "  caps convert FILE OUT.data|OUT.xyz|OUT.pdb|OUT.mol2|OUT.car [--topology DATA]   (.car: with its .mdf, Materials Studio)\n"
                "  caps provenance FILE [--json | --bibtex | --methods] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)\n"
                "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
@@ -542,6 +542,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else if (ends(".gro")) write_gro(s, out);
       else write_lammps_data(s, out);
       std::printf("%zu atoms · wrote %s\n", s.atoms.size(), out.c_str());
@@ -623,6 +624,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else write_lammps_data(s, out);
       std::printf("wrote %s\n", out.c_str());
       return 0;
@@ -717,6 +719,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else write_lammps_data(s, out);
       std::printf("%zu atoms · %zu bonds · %.4f g/cm³ · wrote %s\n", s.atoms.size(), s.bonds.size(), s.density(), out.c_str());
       return 0;
@@ -767,6 +770,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else write_lammps_data(s, out);
       for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
       std::printf("wrote %s · %zu atoms · walls are molecule 1 (hold them: --fix-mol 1)\n", out.c_str(), s.atoms.size());
@@ -835,6 +839,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else write_lammps_data(s, out);
       std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
       return 0;
@@ -878,6 +883,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else write_lammps_data(s, out);
       std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
       return 0;
@@ -943,6 +949,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else write_lammps_data(s, out);
       std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
       return 0;
@@ -993,6 +1000,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(slab, out);
       else if (ends(".xyz")) write_xyz(slab, out);
       else if (ends("mol2")) write_mol2(slab, out);
+      else if (ends(".car")) write_car(slab, out);
       else write_lammps_data(slab, out);
       std::printf("wrote %s\n", out.c_str());
       return 0;
@@ -2227,6 +2235,7 @@ int main(int argc, char** argv) {
       else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, r.field ? *r.field : default_forcefield(s), r.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       std::printf("%s\n", rep.field.c_str());
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
@@ -2289,6 +2298,7 @@ int main(int argc, char** argv) {
       else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, d.field ? *d.field : default_forcefield(s), d.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       if (o.count("--log")) {
@@ -2421,6 +2431,7 @@ int main(int argc, char** argv) {
       if (out.size() > 4 && out.substr(out.size() - 4) == ".xyz") write_xyz(s, out);
       else if (out.size() > 4 && out.substr(out.size() - 4) == ".pdb") write_pdb(s, out);
       else if (out.size() > 5 && out.substr(out.size() - 5) == ".mol2") write_mol2(s, out);
+      else if (out.size() > 4 && out.substr(out.size() - 4) == ".car") write_car(s, out);   // with its .mdf
       else write_lammps_data(s, out);
       std::printf("wrote %s\n", out.c_str());
       return 0;

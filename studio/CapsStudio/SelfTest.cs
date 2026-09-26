@@ -589,6 +589,31 @@ internal static class SelfTest
             vm.GrowAssignField = true;
         }
 
+        // Materials Studio .car/.mdf: a typed, charged structure keeps its types under a force field that has them
+        // (ClayFF's SPC water o*, h*), exports complete, saves as .car and reopens with the same atoms and bonds
+        {
+            var car = Path.GetFullPath(Path.Combine(dir, "..", "tests", "data", "car", "water_pbc.car"));
+            if (File.Exists(car))
+            {
+                var ffBack = vm.Field.FfIndex;
+                var chBack = vm.Field.ChargeMode;
+                vm.Open(car);
+                var carAtoms = vm.Document!.Summary().Atoms;
+                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "inorganic-clay");
+                vm.Field.ChargeMode = 3;   // keep the file's charges
+                vm.Field.Assign().GetAwaiter().GetResult();
+                Check(vm.Field.Assigned && vm.Field.Complete, $"ClayFF on a .car with its types: {(vm.Field.Complete ? "complete" : "incomplete")} · {vm.Field.FooterTyper}");
+                var carOut = Path.Combine(outDir, "caps-selftest-water.car");
+                vm.SaveDocument(carOut);
+                vm.Open(carOut);
+                var back = vm.Document!.Summary();
+                Check(carAtoms == 6 && back.Atoms == 6 && back.Bonds == 4 && File.Exists(Path.ChangeExtension(carOut, ".mdf")),
+                      $"Materials Studio .car/.mdf: {carAtoms} atoms typed by the file (o*, h*) under ClayFF, saved and reopened: {back.Atoms} atoms, {back.Bonds} bonds");
+                vm.Field.FfIndex = ffBack;
+                vm.Field.ChargeMode = chBack;
+            }
+        }
+
         // Coarse-grained: the builder's MARTINI DPPC template (12 beads, bond lengths from the force field)
         {
             var cgBack = vm.Module;

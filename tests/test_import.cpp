@@ -121,3 +121,22 @@ TEST(Import, MaterialsStudioCarMdf) {
   for (const auto& x : s.bonds) b.insert({x.i, x.j});
   EXPECT_TRUE(b.count({0, 1}) && b.count({0, 2}) && b.count({3, 4}) && b.count({3, 5}));
 }
+
+// .car/.mdf written back: the same atoms (types, charges), bonds and cell lengths and angles; atoms inside the cell
+TEST(Import, MaterialsStudioCarRoundTrip) {
+  const System a = open_file(std::string(CAPS_SOURCE_DIR) + "/tests/data/car/water_pbc.car").topology;
+  const std::string out = (std::filesystem::temp_directory_path() / "caps_roundtrip.car").string();
+  write_car(a, out);
+  EXPECT_TRUE(std::filesystem::exists((std::filesystem::temp_directory_path() / "caps_roundtrip.mdf")));
+  const System b = open_file(out).topology;
+  ASSERT_EQ(b.atoms.size(), a.atoms.size());
+  for (size_t i = 0; i < a.atoms.size(); ++i) {
+    EXPECT_EQ(b.atoms[i].name, a.atoms[i].name);
+    EXPECT_NEAR(b.atoms[i].charge, a.atoms[i].charge, 1e-4);
+    const Vec3 f = b.cell.to_fractional(b.atoms[i].pos);
+    for (int k = 0; k < 3; ++k) EXPECT_TRUE(f[k] >= -1e-9 && f[k] < 1 + 1e-9);
+  }
+  EXPECT_EQ(b.bonds.size(), a.bonds.size());
+  EXPECT_NEAR(norm(b.cell.b), norm(a.cell.b), 1e-6);
+  EXPECT_NEAR(dot(b.cell.a, b.cell.b), dot(a.cell.a, a.cell.b), 1e-4);
+}
