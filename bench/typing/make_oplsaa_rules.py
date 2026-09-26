@@ -6,7 +6,7 @@ chemical environment its own type number, each with its partial charge; the char
 carbons and hydrogens around it add up to zero (a CH2 of an ether carries +0.20 against the oxygen's -0.40, an alkoxy
 CH2 of an ester +0.25 against the ester's -0.25 ...). The bonded parameters come from each number's class (CT, CA, OS ...).
 So the rules below name numbers, group by group, each with the carbons and hydrogens that go with it; nothing is
-typed where the table has no number for the environment (a siloxane, an aryl carbonate, a CCl2 or R-CCl= carbon): CAPS
+typed where the table has no number for the environment (a siloxane, an aryl carbonate, a CCl2 carbon): CAPS
 then reports those atoms instead of guessing charges that would not balance.
 
 Priorities: 0 the plain element and hybridisation (alkane, alkene, benzene C and H); higher values for functional groups
@@ -169,8 +169,14 @@ add(719, 6, "[F]c", "aryl fluoride F")
 add(718, 6, "c[F]", "aryl fluoride C")
 add(730, 6, "[Br]c", "aryl bromide Br")
 add(729, 6, "c[Br]", "aryl bromide C")
-add(226, 6, "[Cl][CX3H1]=[CX3]", "chloroalkene Cl (ClHC=)")
+add(226, 6, "[Cl][CX3;!$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl, one Cl on the C (ClHC=, R-CCl=)")
 add(227, 6, "[CX3H1]([Cl])=[CX3]", "chloroalkene C (ClHC=)")
+# R-CCl= (chloroprene): an alkyl in place of 227's H. On an alkene C that swap adds +0.115 e (RHC= 86 against H2C= 87,
+# with the H's +0.115 gone), so 227's +0.005 becomes +0.12, balancing the Cl's -0.12; the table's CM number with that
+# charge is 399, so its number is used (same class, same bonded and LJ terms as 227)
+add(399, 7, "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]", "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e")
+add(398, 7, "[Cl][CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl (Cl2C=)")
+add(399, 7, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2C=)")
 
 # ---------------------------------------------------------------- sulfur
 add(493, 6, "[SX4](=[OX1])(=[OX1])([#6])[#6]", "sulfone S")
@@ -259,7 +265,7 @@ if __name__ == "__main__":
         doc = {"format": "caps-typing", "version": 1, "forcefield": label,
                "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's "
                               "charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no "
-                              "number for (siloxanes, aryl carbonates, CCl2 / R-CCl= carbons, ureas, imides, carbamates) are left untyped and reported. "
+                              "number for (siloxanes, aryl carbonates, CCl2 carbons, ureas, imides, carbamates) are left untyped and reported. "
                               "Among matching rules the highest priority wins.",
                "rules": rules}
         p = os.path.join(out, ff + ".typing.json")
