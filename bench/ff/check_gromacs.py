@@ -52,6 +52,8 @@ CASES = [
     ("CVFF phenol (vacuum, cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", []),
     ("OPLS-AA methyl vinyl ketone (vacuum)", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", []),
     ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
+    # GROMOS in its own settings: reaction field (ε_rf 61) at 1.4 nm, no dispersion correction, C6/C12 (comb-rule 1)
+    ("SPC/E water box, GROMOS 54A7 (reaction field, periodic)", ("solvate", "40", "SPC/E", "1200"), "gromos-54a7", "keep", []),
     ("PCFF polystyrene (class II: refused)", ("file", PS), "pcff", "types", []),
     ("UFF polystyrene (inversions: refused)", ("file", PS), "uff", "types", []),
 ]
@@ -92,6 +94,12 @@ def structure(src, base):
                 w[4:7] = [f"{x + xy * fy + xz * fz:.8f}", f"{y + yz * fz:.8f}", f"{z:.8f}"]
                 lines[k] = " ".join(w[:7])
         open(out, "w").write("\n".join(lines))
+        return out
+    if src[0] == "solvate":   # a box of water from CAPS's solvent packing, the model's charges kept
+        out = os.path.join(work, base + ".mol2")
+        subprocess.run([CAPS, "solvate", "-o", out, "--edge", src[1], "--solvent", "water", "--model", src[2], "--no-ions",
+                        "--molecules", src[3], "--tolerance", "2.6"],
+                       capture_output=True, check=True)
         return out
     if src[0] == "nano":
         out = os.path.join(work, base + ".data")
@@ -278,10 +286,13 @@ for label, src, fid, charges, extra in CASES:
         fails += 1
         continue
     G = lambda *k: sum(ge.get(x, 0.0) for x in k) / KJ
-    periodic = "Disper. corr." in ge or "Coul. recip." in ge
+    # a real reaction field (GROMOS's ε_rf 61), not the plain cut-off GROMACS writes as Reaction-Field with ε_rf 1 (vacuum)
+    mdp = {l.split("=")[0].strip(): l.split("=")[1].split(";")[0].strip() for l in open(os.path.join(d, "case.mdp")) if "=" in l}
+    rf = mdp.get("coulombtype") == "Reaction-Field" and float(mdp.get("epsilon-rf", "1")) != 1
+    periodic = "Disper. corr." in ge or "Coul. recip." in ge or rf
     # the cut-off both sides used: the .mdp's rvdw (the force field's own, e.g. OPLS 12 Å)
     rc = next((float(l.split("=")[1].split(";")[0]) * 10 for l in open(os.path.join(d, "case.mdp")) if l.split("=")[0].strip() == "rvdw"), 10.0)
-    tail_caps = top_tail(d, "case", rc) if ("--no-tail" not in extra and periodic) else 0.0
+    tail_caps = top_tail(d, "case", rc) if ("--no-tail" not in extra and "Disper. corr." in ge) else 0.0
     gm = {"bond": G("Bond", "Morse", "Quartic Bonds"),
           "angle": G("Angle", "G96Angle", "U B"), "dihedral": G("Proper Dih."), "improper": G("Per. Imp. Dih.", "Improper Dih."),
           "vdw": G("LJ 14", "LJ (SR)"), "coulomb": G("Coulomb 14", "Coulomb (SR)", "Coul. recip.")}
@@ -297,7 +308,20 @@ for label, src, fid, charges, extra in CASES:
     # mixed precision: energies to 5e-5 relative (single-precision PME); positions are stored in single precision
     # (3.6e-7 nm at 3 nm), which on a C–H bond (2.8e5 kJ/mol/nm²) is 0.1 kJ/mol/nm = 2.4e-3 kcal/mol/Å of force
     dt = abs(G("Disper. corr.") - gmx_tail(d, "case", rc)) / max(1.0, abs(G("Disper. corr."))) if tail_caps else 0.0
-    ok = de < 5e-5 and dt < 5e-5 and (df < 5e-3 or not periodic)
+    # the force tolerance from that single-precision position error on the stiffest bond of the case: 2 K δx, K the largest
+    # harmonic constant (kJ/mol/nm², the .itp's function 1) and δx = 6e-8 of the box edge (SPC water's 4500 kcal/mol/Å²
+    # bonds in a 4 nm box: 0.02 kcal/mol/Å)
+    kmax = 0.0
+    for l in open(os.path.join(d, "case.itp")) if os.path.exists(os.path.join(d, "case.itp")) else []:
+        w = l.split(";")[0].split()
+        if len(w) == 5 and w[2] == "1":
+            try:
+                kmax = max(kmax, float(w[4]))
+            except ValueError:
+                pass
+    box = max(float(x) for x in open(os.path.join(d, "case.gro")).read().strip().splitlines()[-1].split()[:3])
+    ftol = max(5e-3, 2 * kmax * 6e-8 * box / 41.84 * 2)
+    ok = de < 5e-5 and dt < 5e-5 and (df < ftol or not periodic)
     fails += 0 if ok else 1
     extra_txt = []
     if periodic and tail_caps:

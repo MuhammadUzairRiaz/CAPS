@@ -12,7 +12,8 @@
   "bond": "gromos",
   "angle": "cosine/squared",
   "dihedral": "fourier",
-  "improper": "harmonic"
+  "improper": "harmonic",
+  "gromacs_lj": "c6c12"
  },
  "mixing": "geometric",
  "special_lj": [
@@ -25,7 +26,8 @@
   0,
   1
  ],
- "cutoff": 10,
+ "cutoff": 14,
+ "pair_settings": {"coulomb": "reaction-field", "eps_rf": 61, "model_cutoff": true, "lj_modifier": "potential-shift"},
  "improper_order": "center1_sorted",
  "equivalence": "replace",
  "improper_matched_order": true,

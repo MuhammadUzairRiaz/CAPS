@@ -138,7 +138,7 @@ public sealed partial class MainViewModel
     public ObservableCollection<string> EngineNotes { get; } = new();
     private readonly Dictionary<string, List<string>> _engHeads = new();
 
-    public bool EngineLammps { get => _engLammps; set { if (Set(ref _engLammps, value)) RefreshEngines(); } }
+    public bool EngineLammps { get => _engLammps; set { if (Set(ref _engLammps, value)) { Raise(nameof(EngineLammpsRefused)); RefreshEngines(); } } }
     public bool EngineGromacs { get => _engGromacs; set { if (Set(ref _engGromacs, value)) { Raise(nameof(EngineGromacsRefused)); RefreshEngines(); } } }
     public int EngineRun { get => _engRun; set { if (Set(ref _engRun, Math.Clamp(value, 0, 3))) { Raise(nameof(EngineIsMd)); RefreshEngines(); } } }
     public bool EngineIsMd => _engRun >= 2;
@@ -153,6 +153,10 @@ public sealed partial class MainViewModel
     public decimal? EngineStepsD { get => _engSteps; set => EngineSteps = (long)Math.Clamp(value ?? 100000m, 0m, 1_000_000_000m); }
     public string EngineFolder { get => _engFolder; set { if (Set(ref _engFolder, value)) Raise(nameof(EngineCanWrite)); } }
     public string EngineStem { get => _engStem; set { if (Set(ref _engStem, value)) RefreshEngines(); } }
+    private string _engLammpsError = "";
+    /// <summary>Why LAMMPS cannot take this force field (GROMOS's reaction field …): shown in the LAMMPS card; GROMACS still exports.</summary>
+    public string EngineLammpsError { get => _engLammpsError; private set { if (Set(ref _engLammpsError, value)) Raise(nameof(EngineLammpsRefused)); } }
+    public bool EngineLammpsRefused => _engLammpsError.Length > 0 && _engLammps;
     private string _engGromacsError = "";
     /// <summary>Why GROMACS cannot take this force field (class II …): shown in the GROMACS card; LAMMPS still exports.</summary>
     public string EngineGromacsError { get => _engGromacsError; private set { if (Set(ref _engGromacsError, value)) Raise(nameof(EngineGromacsRefused)); } }
@@ -252,6 +256,7 @@ public sealed partial class MainViewModel
         }
         EngineError = "";
         EngineGromacsError = (string?)j["gromacs_error"] ?? "";
+        EngineLammpsError = (string?)j["lammps_error"] ?? "";
         long total = 0;
         var names = new List<string>();
         foreach (var f in (JsonArray)j["files"]!)
