@@ -15,6 +15,9 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <mutex>
+#include <unordered_map>
+#include <zlib.h>
 
 #include "caps/elements.hpp"
 #include "caps/grow.hpp"
@@ -312,13 +315,22 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   j["cutoff"] = ff.cutoff;
   if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
   if (ff.angles_if_defined) j["angle_terms"] = "if_defined";
-  if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff) {
+  if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff || ff.coul_rf || ff.lj_shift) {
     Json ps = Json::object();
     if (ff.lj_inner > 0) ps["lj_inner"] = ff.lj_inner;
     if (ff.coul_inner > 0) ps["coul_inner"] = ff.coul_inner;
     if (ff.dielectric != 1) ps["dielectric"] = ff.dielectric;
     if (ff.model_cutoff) ps["model_cutoff"] = true;
+    if (ff.coul_rf) ps["coulomb"] = "reaction-field", ps["eps_rf"] = ff.eps_rf;
+    if (ff.lj_shift) ps["lj_modifier"] = "potential-shift";
     j["pair_settings"] = ps;
+  }
+  {
+    const std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(path)).parent_path();
+    auto rel = [&](const std::string& f) { return std::filesystem::path(f).lexically_proximate(dir).generic_string(); };
+    if (!ff.pair_table.empty()) j["pair_table"] = rel(ff.pair_table);
+    if (!ff.molecule_templates_path.empty()) j["molecule_templates"] = rel(ff.molecule_templates_path);
+    if (ff.constraint_kj != 1e6) j["constraint_k"] = ff.constraint_kj;
   }
   j["improper_order"] = ff.improper_order;
   j["equivalence"] = ff.equivalence;
@@ -430,6 +442,28 @@ FFDef load_forcefield(const std::string& path) {
     ff.coul_inner = ps.num("coul_inner", 0);
     ff.dielectric = ps.num("dielectric", 1);
     ff.model_cutoff = ps.has("model_cutoff") && ps["model_cutoff"].boolean();
+    ff.coul_rf = ps.text("coulomb") == "reaction-field";
+    ff.eps_rf = ps.num("eps_rf", 0);
+    ff.lj_shift = ps.text("lj_modifier") == "potential-shift";
+  }
+  {
+    auto rel = [&](const std::string& f) {
+      const std::filesystem::path p(f);
+      return std::filesystem::absolute(p.is_absolute() ? p : std::filesystem::path(path).parent_path() / p).lexically_normal().string();
+    };
+    if (j.has("pair_table")) ff.pair_table = rel(j["pair_table"].str());
+    ff.constraint_kj = j.num("constraint_k", ff.constraint_kj);
+    if (j.has("molecule_templates")) {
+      ff.molecule_templates_path = rel(j["molecule_templates"].str());
+      std::ifstream mf(ff.molecule_templates_path);
+      if (!mf) throw FFError(path + ": cannot open its molecule templates " + ff.molecule_templates_path);
+      std::stringstream ms;
+      ms << mf.rdbuf();
+      Json mj;
+      try { mj = Json::parse(ms.str()); } catch (const JsonError& e) { throw FFError(ff.molecule_templates_path + ": " + e.what()); }
+      if (mj.text("format") != "caps-martini-molecules" || !mj.has("molecules")) throw FFError(ff.molecule_templates_path + ": not a CAPS molecule-template file");
+      ff.molecule_templates = std::make_shared<const Json>(mj["molecules"]);
+    }
   }
   ff.improper_order = j.text("improper_order", ff.improper_order);
   ff.equivalence = j.text("equivalence", ff.equivalence);
@@ -485,6 +519,8 @@ FFDef load_forcefield(const std::string& path) {
     // an overlay's own bead templates replace the base's: its bead names may shadow the base's (each MARTINI source file
     // numbers its own C11, Na1 ... with its own terms)
     if (!ff.bead_templates.empty()) base.bead_templates = ff.bead_templates;
+    if (!ff.pair_table.empty()) base.pair_table = ff.pair_table;
+    if (ff.molecule_templates) base.molecule_templates = ff.molecule_templates, base.molecule_templates_path = ff.molecule_templates_path;
     merge_forcefield(base, ff);
     // how impropers are formed, when the overlay says (MARTINI's amino acids: GROMACS type-2 order, centre second)
     if (j.has("improper_order")) base.improper_order = ff.improper_order;
@@ -950,7 +986,163 @@ std::string untyped_message(const FFDef& ff, const System& s, int untyped) {
   return std::to_string(untyped) + " atoms match no typing rule of " + ff.name;
 }
 
+namespace {
+
+// A pair table (FFDef::pair_table), read once per file: σ in Å, ε in kcal/mol
+struct PairTable {
+  std::unordered_map<std::string, int> index;
+  std::unordered_map<uint64_t, PairType> pair;   // key min(a,b) << 32 | max(a,b)
+  const PairType* find(int a, int b) const {
+    auto it = pair.find(uint64_t(std::min(a, b)) << 32 | uint64_t(std::max(a, b)));
+    return it == pair.end() ? nullptr : &it->second;
+  }
+};
+
+std::shared_ptr<const PairTable> load_pair_table(const std::string& path) {
+  static std::mutex mu;
+  static std::map<std::string, std::shared_ptr<const PairTable>> cache;
+  std::lock_guard<std::mutex> lock(mu);
+  if (auto it = cache.find(path); it != cache.end()) return it->second;
+  gzFile f = gzopen(path.c_str(), "rb");
+  if (!f) throw FFError("cannot open the pair table " + path);
+  auto t = std::make_shared<PairTable>();
+  std::vector<char> buf(1 << 16);
+  int line = 0;
+  while (gzgets(f, buf.data(), int(buf.size()))) {
+    ++line;
+    std::istringstream ls(buf.data());
+    std::string tag;
+    if (!(ls >> tag) || tag[0] == '#') continue;
+    if (tag == "T") {
+      std::string name;
+      ls >> name;
+      t->index.emplace(name, int(t->index.size()));
+    } else if (tag == "P") {
+      std::string a, b;
+      double sig = 0, eps = 0;
+      if (!(ls >> a >> b >> sig >> eps) || !t->index.count(a) || !t->index.count(b)) {
+        gzclose(f);
+        throw FFError(path + ":" + std::to_string(line) + ": bad pair line");
+      }
+      const int ia = t->index.at(a), ib = t->index.at(b);
+      t->pair[uint64_t(std::min(ia, ib)) << 32 | uint64_t(std::max(ia, ib))] = {eps / 4.184, sig * 10};
+    }
+  }
+  gzclose(f);
+  cache[path] = t;
+  return t;
+}
+
+// A molecule template as beads with its explicit topology (Martini 3 molecules)
+System template_molecule(const std::string& name, const Json& mol, const FFDef& ff, uint64_t seed) {
+  auto mass = [&](const std::string& b) {
+    const FFType* t = find_type(ff, b);
+    return t && !std::isnan(t->mass) ? t->mass : 0.0;
+  };
+  for (const auto& a : mol["atoms"].items())
+    if (!find_type(ff, a["type"].str())) throw FFError(name + ": bead type " + a["type"].str() + " is not in " + ff.name);
+  System s = gromacs_molecule(mol, mass, ff.constraint_kj, seed);
+  const auto& atoms = mol["atoms"].items();
+  for (size_t k = 0; k < s.atoms.size(); ++k) s.atoms[k].resname = name, s.atoms[k].resid = 1;
+  (void)atoms;
+  s.has_charges = true;
+  s.title = name + " (" + ff.name + " molecule)";
+  return s;
+}
+
+}  // namespace
+
+std::map<std::string, std::string> bead_template_list(const FFDef& ff) {
+  std::map<std::string, std::string> out = ff.bead_templates;
+  if (ff.molecule_templates)
+    for (const auto& [k, v] : ff.molecule_templates->members()) {
+      const size_t nb = v["atoms"].items().size();
+      out.emplace(k, std::to_string(nb) + (nb == 1 ? " bead" : " beads") + (v.has("source") ? ", " + v["source"].str() : std::string()));
+    }
+  return out;
+}
+
+bool has_bead_template(const FFDef& ff, const std::string& name) {
+  return ff.bead_templates.count(name) || (ff.molecule_templates && ff.molecule_templates->has(name));
+}
+
+int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::string>* unmatched) {
+  if (!ff.molecule_templates || s.topology || s.atoms.empty()) return 0;
+  // templates by their bead-type sequence
+  std::map<std::vector<std::string>, std::vector<std::string>> by_types;
+  for (const auto& [k, v] : ff.molecule_templates->members()) {
+    std::vector<std::string> ty;
+    for (const auto& a : v["atoms"].items()) ty.push_back(a["type"].str());
+    by_types[ty].push_back(k);
+  }
+  int nm = 0;
+  const std::vector<int> mol = s.molecules(&nm);
+  std::vector<std::vector<uint32_t>> members(nm);
+  for (size_t i = 0; i < s.atoms.size(); ++i) members[mol[i]].push_back(uint32_t(i));
+  std::vector<std::vector<std::pair<uint32_t, uint32_t>>> mbonds(nm);
+  for (const auto& b : s.bonds) mbonds[mol[b.i]].push_back({std::min(b.i, b.j), std::max(b.i, b.j)});
+  auto topo = std::make_shared<ExplicitTopology>();
+  topo->natoms = s.atoms.size();
+  topo->masses.assign(s.atoms.size(), std::nan(""));
+  bool any_mass = false;
+  std::map<std::string, System> built;
+  int found = 0;
+  for (int m = 0; m < nm; ++m) {
+    const auto& at = members[m];
+    std::vector<std::string> ty;
+    for (uint32_t i : at) ty.push_back(s.atoms[i].name);
+    std::map<uint32_t, uint32_t> local;
+    for (size_t k = 0; k < at.size(); ++k) local[at[k]] = uint32_t(k);
+    std::set<std::pair<uint32_t, uint32_t>> sb;
+    for (const auto& [i, j] : mbonds[m]) sb.insert({local[i], local[j]});
+    const ExplicitTopology* hit = nullptr;
+    if (auto it = by_types.find(ty); it != by_types.end())
+      for (const auto& name : it->second) {
+        auto it2 = built.find(name);
+        if (it2 == built.end()) it2 = built.emplace(name, template_molecule(name, (*ff.molecule_templates)[name], ff, 1)).first;
+        const System& t = it2->second;
+        std::set<std::pair<uint32_t, uint32_t>> tb;
+        for (const auto& b : t.topology->bonds) tb.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+        // same beads and bonds: the charges tell templates apart when the structure has them (Martini 3's Na+ and
+        // Cl- are both TQ5)
+        bool same_q = true;
+        for (size_t k = 0; k < at.size() && s.has_charges; ++k) same_q = same_q && std::fabs(s.atoms[at[k]].charge - t.atoms[k].charge) < 1e-4;
+        if (tb == sb && same_q) {
+          hit = t.topology.get();
+          for (size_t k = 0; k < at.size(); ++k) s.atoms[at[k]].charge = t.atoms[k].charge, s.atoms[at[k]].resname = name;
+          break;
+        }
+      }
+    if (!hit) {
+      if (unmatched && ty.size()) unmatched->push_back(ty.front() + (ty.size() > 1 ? " +" + std::to_string(ty.size() - 1) : std::string()));
+      continue;
+    }
+    ++found;
+    auto g = [&](uint32_t k) { return at[k]; };
+    for (const auto& b : hit->bonds) topo->bonds.push_back({g(b.i), g(b.j), b.k, b.r0, b.group});
+    for (const auto& a : hit->angles) topo->angles.push_back({g(a.i), g(a.j), g(a.k), a.form, a.kt, a.theta0, a.group});
+    for (const auto& d : hit->dihedrals) topo->dihedrals.push_back({g(d.i), g(d.j), g(d.k), g(d.l), d.form, d.kd, d.phi0, d.n, d.group});
+    for (const auto& e : hit->exclusions) topo->exclusions.push_back({g(e.first), g(e.second)});
+    for (const auto& v : hit->vsites) {
+      ExplicitTopology::VSite w{g(v.site), {}, v.w};
+      for (uint32_t a : v.from) w.from.push_back(g(a));
+      topo->vsites.push_back(w);
+    }
+    for (size_t k = 0; k < hit->masses.size(); ++k)
+      if (!std::isnan(hit->masses[k])) topo->masses[at[k]] = hit->masses[k], any_mass = true;
+  }
+  if (!any_mass) topo->masses.clear();
+  if (found) s.has_charges = true;
+  if (found == nm) {
+    topo->source = ff.name + " molecules";
+    s.topology = topo;
+  }
+  return found;
+}
+
 System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t seed) {
+  if (ff.molecule_templates && ff.molecule_templates->has(text) && !ff.bead_templates.count(text))
+    return template_molecule(text, (*ff.molecule_templates)[text], ff, seed);
   auto it = ff.bead_templates.find(text);
   const std::string smiles = it != ff.bead_templates.end() ? it->second : text;
   auto full = [&](const std::string& bead) -> const FFType* { return find_type(ff, bead); };
@@ -999,6 +1191,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   const bool only12 = ff.keep13 && ff.lj14 == 1 && ff.coul14 == 1;
   const bool gromacs = def.pair_style.find("gromacs") != std::string::npos;
   ff.dielectric = def.dielectric;
+  ff.coul_rf = def.coul_rf;
+  ff.eps_rf = def.eps_rf;
+  ff.lj_shift = def.lj_shift;
   if (gromacs) {
     ff.lj_inner = def.lj_inner;
     ff.coul_gromacs = def.pair_style.find("coul/gromacs") != std::string::npos;
@@ -1156,7 +1351,27 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   std::vector<PairType> lj14;
   bool any14 = false;
   std::set<int> sw_types;
-  for (size_t ti = 0; ti < ff.type_names.size(); ++ti) {
+  std::shared_ptr<const PairTable> table = def.pair_table.empty() ? nullptr : load_pair_table(def.pair_table);
+  if (table) {
+    // every pair from the table, none mixed; a pair it lacks (Martini 3's U) has no LJ
+    std::vector<int> ix;
+    for (const auto& tn : vdw_name) {
+      auto it = table->index.find(tn);
+      ix.push_back(it == table->index.end() ? -1 : it->second);
+    }
+    int none = 0;
+    for (size_t a = 0; a < ix.size(); ++a)
+      for (size_t b = a; b < ix.size(); ++b) {
+        const PairType* p = ix[a] >= 0 && ix[b] >= 0 ? table->find(ix[a], ix[b]) : nullptr;
+        const PairType v = p ? *p : PairType{0, 0};
+        none += !p;
+        if (a == b) ff.lj.push_back(v), lj14.push_back(v);
+        else ff.pair_override[{int(a), int(b)}] = v;
+      }
+    for (const auto& tn : ff.type_names) rep.used["pair " + tn]++;
+    if (none) rep.notes.push_back(std::to_string(none) + " type pairs are not in the pair table: no Lennard-Jones between them");
+  }
+  for (size_t ti = 0; ti < (table ? 0 : ff.type_names.size()); ++ti) {
     const std::string& tn = ff.type_names[ti];
     const FFRule* r = nullptr;
     for (auto it = def.pairs.rbegin(); it != def.pairs.rend() && !r; ++it)
@@ -1344,12 +1559,14 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   if (use_topo) {
     for (const auto& b : s.topology->bonds) ff.bonds.push_back({b.i, b.j, b.k, b.r0});
     for (const auto& a : s.topology->angles) {
-      if (a.form != 1) throw FFError("explicit angle form " + std::to_string(a.form) + " is not supported");
-      ff.angles_x.push_back({a.i, a.j, a.k, 1, a.kt, a.theta0});
+      if (a.form == 0) ff.angles.push_back({a.i, a.j, a.k, a.kt, a.theta0});
+      else if (a.form == 1 || a.form == 5) ff.angles_x.push_back({a.i, a.j, a.k, a.form, a.kt, a.theta0});
+      else throw FFError("explicit angle form " + std::to_string(a.form) + " is not supported");
     }
     for (const auto& d : s.topology->dihedrals) {
       if (d.form == 1) ff.dihedrals.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});
       else if (d.form == 2) ff.impropers_harmonic.push_back({d.i, d.j, d.k, d.l, d.kd, d.phi0});
+      else if (d.form == 4) ff.impropers.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});
       else throw FFError("explicit dihedral form " + std::to_string(d.form) + " is not supported");
     }
     rep.notes.push_back(std::to_string(s.topology->bonds.size()) + " bonds, " + std::to_string(s.topology->angles.size()) + " angles and " +
@@ -1715,6 +1932,23 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.excluded.assign(n, {});
   auto add_ex = [&](uint32_t a, uint32_t b) { ff.excluded[a].push_back(b); ff.excluded[b].push_back(a); };
   for (const auto& p : ex12) add_ex(p.first, p.second);
+  if (use_topo) {
+    for (const auto& p : s.topology->exclusions) add_ex(p.first, p.second);
+    // virtual sites at the centre of mass of their atoms: massless themselves
+    const auto& tm = s.topology->masses;
+    for (size_t i = 0; i < tm.size() && i < ff.mass.size(); ++i)
+      if (!std::isnan(tm[i])) ff.mass[i] = tm[i];
+    for (const auto& v : s.topology->vsites) {
+      VirtualSite vs{v.site, v.from, v.w};
+      if (vs.w.empty()) {   // the centre of mass
+        double mt = 0;
+        for (uint32_t a : v.from) mt += ff.mass[a];
+        for (uint32_t a : v.from) vs.w.push_back(mt > 0 ? ff.mass[a] / mt : 1.0 / double(v.from.size()));
+      }
+      ff.mass[v.site] = 0;
+      ff.vsites.push_back(vs);
+    }
+  }
   if (!ff.keep13)
     for (const auto& p : ex13) if (!ex12.count(p)) add_ex(p.first, p.second);
   for (const auto& p : p14) add_ex(p.first, p.second);
@@ -1723,7 +1957,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     e.erase(std::unique(e.begin(), e.end()), e.end());
   }
   ff.notes.push_back(def.name + ": " + std::to_string(ff.type_names.size()) + " types, " + std::to_string(ff.bonds.size()) + " bonds, " +
-                     std::to_string(ff.angles.size()) + " angles, " + std::to_string(ff.dihedrals.size()) + " torsion terms, " +
+                     std::to_string(ff.angles.size() + ff.angles_x.size()) + " angles, " + std::to_string(ff.dihedrals.size()) + " torsion terms, " +
                      std::to_string(ff.impropers.size() + ff.impropers_harmonic.size()) + " impropers" +
                      (ff.bonds2.size() + ff.angles2.size() + ff.dihedrals2.size() + ff.impropers2.size()
                           ? "; class II: " + std::to_string(ff.bonds2.size()) + " bonds, " + std::to_string(ff.angles2.size()) + " angles, " +
@@ -1769,6 +2003,23 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
         s.bonds.clear();
       }
     }
+  }
+  if (ff.molecule_templates && !s.atoms.empty() && std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 0; })) {
+    // beads: their molecules' topology from the force field's molecule templates (a structure built from them has it)
+    if (!s.topology) {
+      std::vector<std::string> un;
+      const int k = recognise_molecule_templates(s, ff, &un);
+      if (s.topology) {
+        note = std::to_string(k) + " molecules recognised as " + ff.name + " molecule templates (their topology and charges)";
+      } else if (k || !un.empty()) {
+        std::string l;
+        for (size_t q = 0; q < un.size() && q < 5; ++q) l += (q ? ", " : "") + un[q];
+        note = std::to_string(un.size()) + " molecules match no " + ff.name + " molecule template (" + l + (un.size() > 5 ? ", …" : "") +
+               "): bonded terms looked up by type";
+      }
+    }
+    if (s.topology) charges = "keep";
+    return note;
   }
   if (!ff.martini_protein.empty() && std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; })) {
     // an all-atom protein: Martini beads with the model's explicit topology, DSSP for the secondary structure

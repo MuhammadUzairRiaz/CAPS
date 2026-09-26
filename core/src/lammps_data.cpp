@@ -13,6 +13,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/io.hpp"
 #include "caps/relax.hpp"
 
 namespace caps {
@@ -83,6 +84,27 @@ struct Layout {
 };
 
 Layout build(const System& s, const ForceField& ff) {
+  if (!ff.vsites.empty())
+    throw FieldError(ff.name + ": virtual sites (Martini 3's tryptophan, ...) have no LAMMPS form; export to GROMACS instead");
+  {   // exclusions LAMMPS can make: bonded 1-2 pairs, and 1-3 / 1-4 pairs when their scaling is 0
+    const auto nb = s.neighbours();
+    std::set<std::pair<uint32_t, uint32_t>> can;
+    for (const auto& b : s.bonds) can.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+    if (!ff.keep13)
+      for (uint32_t j = 0; j < nb.size(); ++j)
+        for (uint32_t i : nb[j])
+          for (uint32_t k : nb[j])
+            if (i < k) can.insert({i, k});
+    for (uint32_t i = 0; i < ff.excluded.size(); ++i)
+      for (uint32_t j : ff.excluded[i])
+        if (i < j && !can.count({i, j})) {
+          bool is14 = false;
+          for (const auto& p : ff.pairs14) is14 = is14 || (std::min(p[0], p[1]) == i && std::max(p[0], p[1]) == j);
+          if (!is14)
+            throw FieldError(ff.name + ": explicit exclusions between atoms that are not bonded (Martini 3's aromatic side chains, ...) have no "
+                             "LAMMPS form; export to GROMACS instead");
+        }
+  }
   if (!ff.lj14_types.empty())
     throw FieldError(ff.name + ": separate 1-4 Lennard-Jones parameters (CHARMM, GROMOS) have no exact LAMMPS form without switching "
                      "(lj/charmm/coul/*); LAMMPS data for them is not written");
@@ -132,6 +154,7 @@ Layout build(const System& s, const ForceField& ff) {
   for (const auto& a : ff.angles_x) {
     if (a.form == 1) L.angles.add("cosine/squared", num({a.a, a.b * R2D}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     else if (a.form == 4) L.angles.add("sdk", num({a.a, a.b * R2D}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
+    else if (a.form == 5) L.angles.add("cosine/squared/restricted", num({a.a, a.b * R2D}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     else if (a.form == 2) L.angles.add("cosine", num({a.a}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     else if (a.form == 3) {
       const double s0 = std::sin(a.b), c0 = std::cos(a.b);
@@ -377,11 +400,24 @@ std::string export_title(std::string t, const std::string& ffname) {
   return t.empty() ? "structure" : t;
 }
 
+std::string write_lammps_data_or_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path) {
+  try {
+    write_lammps_data_ff(s, ff, e, path);
+    return "";
+  } catch (const FieldError& x) {
+    write_lammps_data(s, path);
+    return std::string("structure only, no coefficients (") + x.what() + ")";
+  }
+}
+
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& path, bool pair_coeffs) {
   EnergyOptions e = e0;
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
   // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
   if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;
+  if (ff.lj_shift) e.tail = false;   // Martini 3: shifted at the cut-off
+  if (ff.coul_rf && e.coulomb)
+    throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
@@ -476,6 +512,9 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
   // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
   if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;
+  if (ff.lj_shift) e.tail = false;   // Martini 3: shifted at the cut-off
+  if (ff.coul_rf && e.coulomb)
+    throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);

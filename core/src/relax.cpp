@@ -424,6 +424,7 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   }
   if (o.restraints.size() > 8) rep.notes.push_back(std::to_string(o.restraints.size() - 8) + " more restraints");
 
+  place_virtual_sites(ff, x, s.cell);
   for (size_t i = 0; i < s.atoms.size(); ++i) {
     for (int k = 0; k < 3; ++k) s.atoms[i].pos[k] = x[3 * i + k];
     s.atoms[i].charge = ff.charge[i];

@@ -1118,6 +1118,31 @@
    }
   },
   {
+   "id": "martini3",
+   "name": "Martini 3",
+   "version": "3.0.0",
+   "references": [
+    "P. C. T. Souza et al., Nat. Methods 18, 382 (2021)"
+   ],
+   "origin": "cgmartini.nl",
+   "source_file": "martini_v3.0.0.itp",
+   "status": "converted",
+   "notes": "Martini 3: 844 bead types, the full pair table, 217 molecule templates; reaction field (GROMACS export)",
+   "file": "martini3.json",
+   "counts": {
+    "atom_types": 844,
+    "pairs": 355746,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini3.typing.json",
+    "evidence": "beads typed by name; molecules from the Martini 3 parameter files"
+   }
+  },
+  {
    "id": "martini-sugars",
    "name": "MARTINI 2.0 · sugars",
    "version": "2.0",
