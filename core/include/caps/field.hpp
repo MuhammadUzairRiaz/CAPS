@@ -199,7 +199,6 @@ class Evaluator {
   std::vector<uint8_t> form_;        // per type pair: 0 LJ, else the PairFunc form
   std::vector<double> gsw_;          // per type pair, 5 each: lj/gromacs switch coefficients
   std::vector<double> rmin2_, emin_; // per type pair: SDK minimum (r², energy), for the angle's 1-3 repulsion
-  double excl_r2_ = 36.0;            // bonded partners closer than this (Å²) are the bonded image
   std::vector<char> skip_type_;      // per type pair: excluded by the force field (never in the pair list)
   std::vector<double> qeff_;         // charges / √εr: what every Coulomb term uses
   std::vector<double> pa_, pb_, pc_;

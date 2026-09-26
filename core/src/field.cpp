@@ -242,10 +242,6 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
   qeff_ = ff.charge;
   if (ff.dielectric != 1)
     for (auto& c : qeff_) c /= std::sqrt(ff.dielectric);
-  // coarse-grained bonds (several Å): bonded partners are recognised at their bonded image out to three bonds' length
-  double r0max = 0;
-  for (const auto& b : ff.bonds) r0max = std::max(r0max, b.r0);
-  if (r0max > 2.5) excl_r2_ = (3 * r0max + 2) * (3 * r0max + 2);
   std::set<std::pair<uint32_t, uint32_t>> p14;
   for (const auto& p : ff.pairs14) p14.insert({p[0], p[1]});
   for (uint32_t i = 0; i < ff.excluded.size(); ++i)
@@ -639,8 +635,15 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
               const Vec3 df = fr[j] + Vec3{double(q[0]), double(q[1]), double(q[2])} - fr[i];
               const Vec3 d = cell.a * df[0] + cell.b * df[1] + cell.c * df[2];
               if (dot(d, d) >= rcs2) continue;
-              // 1-2, 1-3 and 1-4 partners are excluded at their bonded (nearest) image only; further images interact
-              if (j != i && dot(d, d) < excl_r2_ && std::binary_search(ex.begin(), ex.end(), j)) continue;
+              // 1-2, 1-3 and 1-4 partners are excluded at their nearest image only (the bonded one, whatever the bond
+              // length: coarse-grained bonds are several Å); further images interact, as LAMMPS's minimum-image check
+              if (j != i && std::binary_search(ex.begin(), ex.end(), j)) {
+                Vec3 m = fr[j] - fr[i];
+                for (int k = 0; k < 3; ++k)
+                  if (cell.periodic[k]) m[k] -= std::round(m[k]);
+                const Vec3 dm = cell.a * m[0] + cell.b * m[1] + cell.c * m[2];
+                if (dot(d, d) <= dot(dm, dm) + 1e-6) continue;
+              }
               if (skipping && skip_type_[size_t(ff_.type_index[i]) * ntypes + ff_.type_index[j]]) continue;
               PI.push_back(static_cast<uint32_t>(i));
               PJ.push_back(j);
