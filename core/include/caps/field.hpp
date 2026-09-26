@@ -2,6 +2,7 @@
 #pragma once
 #include <array>
 #include <map>
+#include <set>
 #include <memory>
 #include <cstdint>
 #include <stdexcept>
@@ -118,6 +119,7 @@ struct ForceField {
   StillingerWeber sw;                         // many-body term (mW water); counted in the vdW energy
   double lj14 = 0.5, coul14 = 1.0 / 1.2;
   bool keep13 = false;                        // 1-3 pairs interact in full (MARTINI: special_bonds 0 1 1)
+  std::set<std::pair<int, int>> excluded_type_pairs;   // type-index pairs (a ≤ b) that never interact (a held graphene sheet)
   // Coarse-grained electrostatics and cut-offs: dielectric (εr) divides every Coulomb term (MARTINI 15, SDK 80);
   // coul_gromacs: GROMACS's force switch from coul_inner to the cut-off instead of DSF / PME (MARTINI); lj_inner starts
   // the lj/gromacs switch; cutoff > 0 is the model's own cut-off (used whatever EnergyOptions says).
@@ -198,6 +200,7 @@ class Evaluator {
   std::vector<double> gsw_;          // per type pair, 5 each: lj/gromacs switch coefficients
   std::vector<double> rmin2_, emin_; // per type pair: SDK minimum (r², energy), for the angle's 1-3 repulsion
   double excl_r2_ = 36.0;            // bonded partners closer than this (Å²) are the bonded image
+  std::vector<char> skip_type_;      // per type pair: excluded by the force field (never in the pair list)
   std::vector<double> qeff_;         // charges / √εr: what every Coulomb term uses
   std::vector<double> pa_, pb_, pc_;
   std::vector<double> eps14_, s614_;  // separate 1-4 LJ, when the force field has them
