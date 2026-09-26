@@ -12,6 +12,8 @@ then reports those atoms instead of guessing charges that would not balance.
 Priorities: 0 the plain element and hybridisation (alkane, alkene, benzene C and H); higher values for functional groups
 and the atoms next to them; among matching rules the highest wins.
 
+Only for the 2024 table: the 2008 (BOSS 4.8) table numbers the same chemistry differently.
+
 usage: make_oplsaa_rules.py OUTDIR
 """
 import json, os, sys
@@ -250,7 +252,9 @@ def rules_for(ff_json):
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "data/typing"
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    for ff, label in (("oplsaa2024-moltemplate", "OPLS-AA (2024 parameter file)"), ("oplsaa2008-moltemplate", "OPLS-AA (BOSS 4.8, 2008)")):
+    # the 2024 table's numbers only: BOSS 4.8's 2008 table numbers the same chemistry differently (its 135 is an acetal
+    # carbon, 2024's an alkane CH3), so these rules would type it wrongly; it needs rules of its own
+    for ff, label in (("oplsaa2024-moltemplate", "OPLS-AA (2024 parameter file)"),):
         rules, missing = rules_for(os.path.join(root, "data", "forcefields", ff + ".json"))
         doc = {"format": "caps-typing", "version": 1, "forcefield": label,
                "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's "
