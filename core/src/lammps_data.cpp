@@ -255,18 +255,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   return r;
 }
 
-// A title read back from a CAPS file carries the old header line: keep the description only.
-std::string clean_title(std::string t, const std::string& ffname) {
-  auto erase_all = [&](const std::string& x) {
-    if (x.empty()) return;
-    for (size_t k; (k = t.find(x)) != std::string::npos;) t.erase(k, x.size());
-  };
-  for (const char* junk : {"CAPS 0.1 · ", "CAPS · ", " · atom_style full", " · units real"}) erase_all(junk);
-  erase_all(" · " + ffname);
-  while (!t.empty() && (t.back() == ' ' || t.back() == '\n' || t.back() == '\r')) t.pop_back();
-  while (!t.empty() && t.front() == ' ') t.erase(t.begin());
-  return t.empty() ? "structure" : t;
-}
+std::string clean_title(const std::string& t, const std::string& ffname) { return export_title(t, ffname); }
 
 // Every i-j pair, mixed by the force field's rule (and its explicit pairs): "i j [style] coefficients  # A B".
 std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
@@ -296,6 +285,19 @@ std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e) {
 }
 
 }  // namespace
+
+// A title read back from a CAPS file carries the old header line: keep the description only.
+std::string export_title(std::string t, const std::string& ffname) {
+  auto erase_all = [&](const std::string& x) {
+    if (x.empty()) return;
+    for (size_t k; (k = t.find(x)) != std::string::npos;) t.erase(k, x.size());
+  };
+  for (const char* junk : {"CAPS 0.1 · ", "CAPS · ", " · atom_style full", " · units real"}) erase_all(junk);
+  erase_all(" · " + ffname);
+  while (!t.empty() && (t.back() == ' ' || t.back() == '\n' || t.back() == '\r')) t.pop_back();
+  while (!t.empty() && t.front() == ' ') t.erase(t.begin());
+  return t.empty() ? "structure" : t;
+}
 
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs) {
   const Layout L = build(s, ff);
