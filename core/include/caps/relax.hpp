@@ -98,6 +98,10 @@ double max_force(const std::vector<double>& f);
 // FieldError for terms LAMMPS cannot reproduce exactly (separate 1-4 LJ parameters, non-planar cvff impropers).
 // pair_coeffs false: the pair coefficients go in the input script instead (write_lammps_input with pair_coeffs), and
 // the data file holds the structure, masses and bonded coefficients only.
+// The description a CAPS file's title line is written with: an old CAPS header line read back loses its program,
+// style and force-field parts ("structure" when nothing is left).
+std::string export_title(std::string title, const std::string& ffname);
+
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true);
 
 // How a LAMMPS input ends. Check: a single point with every energy term printed (the parity benches). Otherwise a
