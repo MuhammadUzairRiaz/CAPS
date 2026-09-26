@@ -1562,6 +1562,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   }
   if (use_topo) {
     for (const auto& b : s.topology->bonds) ff.bonds.push_back({b.i, b.j, b.k, b.r0});
+    for (const auto& p : s.topology->pairs) ff.lj_pairs.push_back({p.i, p.j, p.eps, p.sigma});
     for (const auto& a : s.topology->angles) {
       if (a.form == 0) ff.angles.push_back({a.i, a.j, a.k, a.kt, a.theta0});
       else if (a.form == 1 || a.form == 5) ff.angles_x.push_back({a.i, a.j, a.k, a.form, a.kt, a.theta0});
@@ -1571,6 +1572,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       if (d.form == 1 || d.form == 9) ff.dihedrals.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});   // GROMACS 1 and 9: k (1 + cos(nφ − φ0))
       else if (d.form == 2) ff.impropers_harmonic.push_back({d.i, d.j, d.k, d.l, d.kd, d.phi0});
       else if (d.form == 4) ff.impropers.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});
+      else if (d.form == 11) ff.cbt.push_back({d.i, d.j, d.k, d.l, {d.c[0], d.c[1], d.c[2], d.c[3], d.c[4]}});
       else throw FFError("explicit dihedral form " + std::to_string(d.form) + " is not supported");
     }
     rep.notes.push_back(std::to_string(s.topology->bonds.size()) + " bonds, " + std::to_string(s.topology->angles.size()) + " angles and " +
