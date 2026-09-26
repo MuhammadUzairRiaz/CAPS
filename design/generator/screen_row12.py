@@ -27,7 +27,7 @@ def blend():
                   ["44%", "16%", "22%", "18%"], mono_cols=(1, 2, 3), align_right=(1, 2, 3), fs=12)
     morph = [("Mixed", "random, homogeneous start"), ("Two slabs", "pre-separated, for interfaces"), ("Droplet", "minor phase as a sphere")]
     mg = "".join(f'<button style="display: flex; flex-direction: column; gap: 3px; padding: 10px; text-align: left; border-radius: 7px; border: 1px solid {ACC if n == "Mixed" else LINE}; background: {BG3 if n == "Mixed" else BG0}; cursor: pointer"><span style="font-size: 12.5px; color: {TEXT}">{n}</span><span style="font-size: 11px; color: {DIM}">{d}</span></button>' for n, d in morph)
-    panel = (panel_head("Blend builder", chip("blend recipe"))
+    panel = (panel_head("Blend builder", chip("components by weight"))
              + section("Components", col(comps, row(btn("Add component", ic="plus", small=True), btn("From library", ic="search", small=True), gap=6), gap=10))
              + section("Composition", col(seg(["Weight %", "Volume %", "Chain count"], "Weight %", True), f'<div style="font-size: 11.5px; color: {MUTED}">PMMA chain count is computed from the weight fraction and each chain\'s molar mass.</div>', gap=8))
              + section("Initial morphology", f'<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">{mg}</div>')
