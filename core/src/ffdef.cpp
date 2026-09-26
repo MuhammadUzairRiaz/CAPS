@@ -1776,12 +1776,8 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
     const size_t before = s.atoms.size();
     s = martini22_protein(s, "", ff.martini_protein, &rep);
     charges = "keep";   // the beads' charges are the model's (termini and charged side chains)
-    int unparam = 0;
-    for (const auto& a : s.atoms) unparam += a.name == "AC1" || a.name == "AC2";
     note = std::to_string(before) + " atoms of " + std::to_string(rep.residues) + " residues mapped onto " + std::to_string(rep.beads) +
            " Martini 2.2 protein beads with martinize's topology (secondary structure by DSSP: " + rep.cg_ss + ")";
-    if (unparam)
-      note += "; " + std::to_string(unparam) + " AC1 / AC2 beads (VAL, LEU, ILE) have no non-bonded parameters in this library (martini_v2.2.itp gives them)";
     return note;
   }
   if (!ff.bead_rules.empty() || !ff.bead_groups.empty()) {

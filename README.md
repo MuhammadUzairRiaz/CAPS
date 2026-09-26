@@ -367,8 +367,8 @@ secondary structure and writes the explicit topology — backbone bonds and cons
 dihedrals, elastic bonds in extended regions, side chains, termini, disulfides. `caps dssp FILE` prints the secondary
 structure; `caps martini FILE -o cg.data --itp cg.itp [--ss …]` writes the beads and a GROMACS topology. On vermouth's
 own martini22 test protein the topology and bead positions are martinize2's, term by term
-(`bench/ff/check_martini_protein.py`). VAL, LEU and ILE side chains are AC1 / AC2 beads, which have no non-bonded
-parameters in the library (they are in martini_v2.2.itp). Two additions beyond SMARTS serve GAFF and CGenFF: `{AR1}`..`{AR5}`, antechamber's ring
+(`bench/ff/check_martini_protein.py`). Bead types, masses and every pair are Martini 2.2's own (martini_v2.2.itp from
+cgmartini.nl; the 703 pairs it shares with the library's MARTINI 2.0 file are equal). Two additions beyond SMARTS serve GAFF and CGenFF: `{AR1}`..`{AR5}`, antechamber's ring
 classes, and conjugated type pairs (`"pairs"`: GAFF's cc/cd, ce/cf, nc/nd ... alternate across double bonds; CGenFF's
 CG2DC1/CG2DC2 with `"pair_mode": "double_same"`). A rules file marked `"ordered"` takes the first matching rule, as
 antechamber does.
