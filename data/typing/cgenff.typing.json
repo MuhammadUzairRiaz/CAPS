@@ -140,7 +140,7 @@
    "type": "HGPAM1",
    "smarts": "[H]C#C",
    "priority": 2,
-   "description": "alkyne H (as the original CGenFF)"
+   "description": "alkyne H"
   },
   {
    "type": "HGP1",
@@ -960,7 +960,7 @@
   {
    "type": "IGR1",
    "smarts": "[I]",
-   "description": "iodine (types CGenFF uses IGR1 for all I)"
+   "description": "iodine (IGR1 for every I)"
   },
   {
    "type": "SOD",
@@ -977,5 +977,235 @@
    "smarts": "[Cl-;X0]",
    "priority": 2
   }
- ]
+ ],
+ "analogies": {
+  "CG331": [
+   "CG321",
+   "CG311"
+  ],
+  "CG321": [
+   "CG311",
+   "CG331",
+   "CG301"
+  ],
+  "CG311": [
+   "CG321",
+   "CG301",
+   "CG331"
+  ],
+  "CG301": [
+   "CG311",
+   "CG321"
+  ],
+  "CG3C52": [
+   "CG321"
+  ],
+  "CG3C51": [
+   "CG311"
+  ],
+  "CG3C50": [
+   "CG301"
+  ],
+  "CG3C53": [
+   "CG321"
+  ],
+  "CG3C54": [
+   "CG321"
+  ],
+  "CG3C41": [
+   "CG311",
+   "CG321"
+  ],
+  "CG3C31": [
+   "CG311",
+   "CG321"
+  ],
+  "CG3RC1": [
+   "CG311"
+  ],
+  "CG322": [
+   "CG321"
+  ],
+  "CG312": [
+   "CG311"
+  ],
+  "CG302": [
+   "CG301"
+  ],
+  "CG334": [
+   "CG331"
+  ],
+  "CG324": [
+   "CG321"
+  ],
+  "CG314": [
+   "CG311"
+  ],
+  "CG323": [
+   "CG321"
+  ],
+  "CG3AM2": [
+   "CG331"
+  ],
+  "CG3AM1": [
+   "CG331"
+  ],
+  "CG3AM0": [
+   "CG331"
+  ],
+  "CG2D1": [
+   "CG2D2",
+   "CG2DC1"
+  ],
+  "CG2D2": [
+   "CG2D1",
+   "CG2DC3"
+  ],
+  "CG2DC1": [
+   "CG2D1"
+  ],
+  "CG2DC2": [
+   "CG2D1"
+  ],
+  "CG2DC3": [
+   "CG2D2"
+  ],
+  "CG2D1O": [
+   "CG2D1"
+  ],
+  "CG2D2O": [
+   "CG2D2"
+  ],
+  "CG25C1": [
+   "CG2DC1",
+   "CG2D1"
+  ],
+  "CG25C2": [
+   "CG2DC3",
+   "CG2D2"
+  ],
+  "CG251O": [
+   "CG2D1"
+  ],
+  "CG252O": [
+   "CG2D2"
+  ],
+  "CG2R62": [
+   "CG2R61"
+  ],
+  "CG2R63": [
+   "CG2R61"
+  ],
+  "CG2R64": [
+   "CG2R61"
+  ],
+  "CG2R66": [
+   "CG2R61"
+  ],
+  "CG2R67": [
+   "CG2R61"
+  ],
+  "CG2R71": [
+   "CG2R61"
+  ],
+  "CG2RC0": [
+   "CG2R61"
+  ],
+  "CG2R52": [
+   "CG2R51"
+  ],
+  "CG2R53": [
+   "CG2R51"
+  ],
+  "CG2R57": [
+   "CG2R51"
+  ],
+  "CG2O4": [
+   "CG2O5"
+  ],
+  "CG2O5": [
+   "CG2O4"
+  ],
+  "CG2O6": [
+   "CG2O2"
+  ],
+  "OG3C51": [
+   "OG301"
+  ],
+  "OG3C61": [
+   "OG301"
+  ],
+  "OG3R60": [
+   "OG301"
+  ],
+  "OG3C31": [
+   "OG301"
+  ],
+  "OG303": [
+   "OG301"
+  ],
+  "OG304": [
+   "OG301"
+  ],
+  "OG302": [
+   "OG301"
+  ],
+  "NG321": [
+   "NG311",
+   "NG331"
+  ],
+  "NG311": [
+   "NG321",
+   "NG301"
+  ],
+  "NG301": [
+   "NG311"
+  ],
+  "NG331": [
+   "NG321"
+  ],
+  "NG2S2": [
+   "NG2S1"
+  ],
+  "NG2S0": [
+   "NG2S1"
+  ],
+  "NG2S3": [
+   "NG2S1"
+  ],
+  "HGA1": [
+   "HGA2",
+   "HGA3"
+  ],
+  "HGA2": [
+   "HGA1",
+   "HGA3"
+  ],
+  "HGA3": [
+   "HGA2",
+   "HGA1"
+  ],
+  "HGA6": [
+   "HGA2"
+  ],
+  "HGA7": [
+   "HGA1"
+  ],
+  "HGR62": [
+   "HGR61"
+  ],
+  "HGR63": [
+   "HGR61"
+  ],
+  "HGR52": [
+   "HGR51"
+  ],
+  "HGR53": [
+   "HGR51"
+  ],
+  "HGR71": [
+   "HGR61"
+  ]
+ },
+ "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent (the CGenFF program assigns missing bonded parameters by analogy with penalties; this table is CAPS's simpler version)"
 }

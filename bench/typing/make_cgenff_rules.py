@@ -50,7 +50,7 @@ add("HGR63", 3, f"[H][c;{A6};$(c:[n+]),$(c:a:[n+]),$(c:a:a:[n+])]", d="H on a py
 add("HGR51", 2, "[H][#6X3;r5]", d="H on sp2 C in a 5-ring")
 add("HGR52", 3, "[H][#6X3;r5;$(*~[#7,#8,#16])]", "[H][CX3]=O", "[H][CX3]=[#7]", d="H on 5-ring C next to a heteroatom; aldehyde / formamide / imine H")
 add("HGR53", 4, f"[H][#6X3;r5;$(*(~[#7])~[#7]);$(*~{POSN})]", d="H on C2 of imidazolium")
-add("HGPAM1", 2, "[H]C#C", d="alkyne H (as DL_FIELD's CGenFF)")
+add("HGPAM1", 2, "[H]C#C", d="alkyne H")
 add("HGP1", 0, "[H][#7]", "[H][#8]", d="polar H")
 add("HGP2", 2, f"[H]{POSN}", f"[H][#7;$(*~[#6X3](~[#7X3])~[#7X3]),$(n1a[n+]aa1)]", d="polar H on N+ (ammonium, iminium, amidinium, guanidinium, imidazolium)")
 add("HGP3", 1, "[H][#16]", d="thiol H")
@@ -183,13 +183,40 @@ add("CLGR1", 1, "[Cl]c", d="aromatic Cl")
 for n in (1, 2, 3):
     add(f"BRGA{n}", 1 if n == 1 else 2, f"[Br][CX4;{count(n, 'Br')}]", d=f"aliphatic Br ({n} on the C)")
 add("BRGR1", 1, "[Br]c", d="aromatic Br")
-add("IGR1", 0, "[I]", d="iodine (DL_FIELD's CGenFF uses IGR1 for all I)")
+add("IGR1", 0, "[I]", d="iodine (IGR1 for every I)")
 add("SOD", 2, "[Na]"); add("POT", 2, "[K]"); add("CLA", 2, "[Cl-;X0]")
 
+# Bonded terms CGenFF's file lacks, by analogy (Vanommeslaeghe & MacKerell, J. Chem. Inf. Model. 52, 3155 (2012) assign
+# them by analogy with penalties): stand-ins of the same element and hybridisation, nearest first. Every term found this
+# way is listed as estimated.
+ANALOGIES = {
+    # sp3 carbon by hydrogen count; ring, fluorinated, charged-neighbour and amine-side variants to the plain type
+    "CG331": ["CG321", "CG311"], "CG321": ["CG311", "CG331", "CG301"], "CG311": ["CG321", "CG301", "CG331"], "CG301": ["CG311", "CG321"],
+    "CG3C52": ["CG321"], "CG3C51": ["CG311"], "CG3C50": ["CG301"], "CG3C53": ["CG321"], "CG3C54": ["CG321"], "CG3C41": ["CG311", "CG321"],
+    "CG3C31": ["CG311", "CG321"], "CG3RC1": ["CG311"], "CG322": ["CG321"], "CG312": ["CG311"], "CG302": ["CG301"],
+    "CG334": ["CG331"], "CG324": ["CG321"], "CG314": ["CG311"], "CG323": ["CG321"], "CG3AM2": ["CG331"], "CG3AM1": ["CG331"], "CG3AM0": ["CG331"],
+    # sp2 carbon: alkenes, conjugated alkenes, aromatic ring members, carbonyl carbons of the same group
+    "CG2D1": ["CG2D2", "CG2DC1"], "CG2D2": ["CG2D1", "CG2DC3"], "CG2DC1": ["CG2D1"], "CG2DC2": ["CG2D1"], "CG2DC3": ["CG2D2"],
+    "CG2D1O": ["CG2D1"], "CG2D2O": ["CG2D2"], "CG25C1": ["CG2DC1", "CG2D1"], "CG25C2": ["CG2DC3", "CG2D2"], "CG251O": ["CG2D1"], "CG252O": ["CG2D2"],
+    "CG2R62": ["CG2R61"], "CG2R63": ["CG2R61"], "CG2R64": ["CG2R61"], "CG2R66": ["CG2R61"], "CG2R67": ["CG2R61"], "CG2R71": ["CG2R61"],
+    "CG2RC0": ["CG2R61"], "CG2R52": ["CG2R51"], "CG2R53": ["CG2R51"], "CG2R57": ["CG2R51"],
+    "CG2O4": ["CG2O5"], "CG2O5": ["CG2O4"], "CG2O6": ["CG2O2"],
+    # oxygen: ring and other ethers to the plain ether; nitrogen: amines by hydrogen count, amides by hydrogen count
+    "OG3C51": ["OG301"], "OG3C61": ["OG301"], "OG3R60": ["OG301"], "OG3C31": ["OG301"], "OG303": ["OG301"], "OG304": ["OG301"], "OG302": ["OG301"],
+    "NG321": ["NG311", "NG331"], "NG311": ["NG321", "NG301"], "NG301": ["NG311"], "NG331": ["NG321"],
+    "NG2S2": ["NG2S1"], "NG2S0": ["NG2S1"], "NG2S3": ["NG2S1"],
+    # aliphatic and aromatic hydrogens by the carbon's hydrogen count
+    "HGA1": ["HGA2", "HGA3"], "HGA2": ["HGA1", "HGA3"], "HGA3": ["HGA2", "HGA1"], "HGA6": ["HGA2"], "HGA7": ["HGA1"],
+    "HGR62": ["HGR61"], "HGR63": ["HGR61"], "HGR52": ["HGR51"], "HGR53": ["HGR51"], "HGR71": ["HGR61"],
+}
+
 out = sys.argv[1]
-json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF (CHARMM36, DL_FIELD)",
+json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF (CHARMM36)",
            "description": "CGenFF atom types from CGenFF's own definitions (top_all36_cgenff.rtf); conjugated alkenes pair "
                           "CG2DC1 / CG2DC2 (same type across a double bond); water is TIP3P (OT / H3P).",
-           "pair_mode": "double_same", "pairs": [["CG2DC2", "CG2DC1"]], "rules": R},
+           "pair_mode": "double_same", "pairs": [["CG2DC2", "CG2DC1"]], "rules": R,
+           "analogies": ANALOGIES,
+           "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent (the CGenFF program "
+                             "assigns missing bonded parameters by analogy with penalties; this table is CAPS's simpler version)"},
           open(os.path.join(out, "cgenff.typing.json"), "w"), indent=1)
 print(len(R), "rules")
