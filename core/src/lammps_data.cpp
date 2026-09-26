@@ -76,6 +76,8 @@ struct Layout {
   bool pair_hybrid = false;                // hybrid/overlay (9-6 LJ, or Buckingham / Morse pairs)
   std::set<std::string> pair_styles;       // sub-styles used in PairIJ lines
   bool periodic = true;                    // a cell: tail corrections apply (CAPS adds none without a volume)
+  bool sdk = false;                        // SDK / SPICA pairs (lj/sdk): no tail correction in LAMMPS
+  bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
 };
 
@@ -127,6 +129,7 @@ Layout build(const System& s, const ForceField& ff) {
                  {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
   for (const auto& a : ff.angles_x) {
     if (a.form == 1) L.angles.add("cosine/squared", num({a.a, a.b * R2D}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
+    else if (a.form == 4) L.angles.add("sdk", num({a.a, a.b * R2D}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     else if (a.form == 2) L.angles.add("cosine", num({a.a}), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     else if (a.form == 3) {
       const double s0 = std::sin(a.b), c0 = std::cos(a.b);
@@ -201,10 +204,18 @@ Layout build(const System& s, const ForceField& ff) {
   for (int a2 = 0; a2 < nt; ++a2)
     for (int b2 = a2; b2 < nt; ++b2) {
       auto it = ff.pair_func.find({a2, b2});
-      L.pair_styles.insert(it == ff.pair_func.end() ? L.pair_base : it->second.form == 1 ? "buck" : it->second.form == 2 ? "morse" : "?");
+      const int f = it == ff.pair_func.end() ? 0 : it->second.form;
+      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : "?");
     }
   if (L.pair_styles.count("?")) throw FieldError("a pair form has no LAMMPS style");
   L.pair_hybrid = ff.pair_form == "lj9-6" || !ff.pair_func.empty();
+  L.sdk = L.pair_styles.count("lj/sdk") > 0;
+  if (L.pair_styles.count("lj/gromacs")) {
+    if (L.pair_styles.size() > 1) throw FieldError("lj/gromacs with other pair forms has no LAMMPS style");
+    L.gromacs = true;
+    L.pair_hybrid = false;
+    L.pair_base = "lj/gromacs";
+  }
   if (ff.sw.on) {   // Stillinger–Weber overlays the pair terms (its types' Lennard-Jones is zero)
     L.sw_types.assign(size_t(nt), "NULL");
     for (size_t i = 0; i < ff.type_index.size(); ++i)
@@ -216,13 +227,19 @@ Layout build(const System& s, const ForceField& ff) {
 }
 
 // PME is used (and written) only for periodic cells, as the evaluator does.
-bool pme(const EnergyOptions& e, const Layout& L) { return e.electrostatics == EnergyOptions::Electrostatics::PME && L.periodic; }
+bool pme(const EnergyOptions& e, const Layout& L) { return e.electrostatics == EnergyOptions::Electrostatics::PME && L.periodic && !L.gromacs; }
 
 // The LAMMPS commands (after units / atom_style) that reproduce CAPS's energy with the data file.
 std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, const EnergyOptions& e) {
   std::vector<std::string> r;
   char b[400];
-  if (!L.pair_hybrid) {
+  if (L.gromacs) {   // MARTINI: the GROMACS switch for LJ (and Coulomb), inner and outer radii
+    if (e.coulomb && ff.coul_gromacs)
+      std::snprintf(b, sizeof b, "pair_style lj/gromacs/coul/gromacs %.6g %.6g %.6g %.6g", ff.lj_inner, e.cutoff, std::max(ff.coul_inner, 1e-6), e.cutoff);
+    else if (e.coulomb) throw FieldError("lj/gromacs needs the GROMACS Coulomb form");
+    else std::snprintf(b, sizeof b, "pair_style lj/gromacs %.6g %.6g", ff.lj_inner, e.cutoff);
+    r.push_back(b);
+  } else if (!L.pair_hybrid) {
     if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/long %.6g", e.cutoff);
     else if (e.coulomb) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
     else std::snprintf(b, sizeof b, "pair_style lj/cut %.6g", e.cutoff);
@@ -245,15 +262,23 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   }
   // CAPS: with tail corrections the potentials are truncated at the cut-off (plus the tail when there is a cell);
   // without, they are shifted to zero there
-  if (!e.tail) r.push_back("pair_modify shift yes");
-  else if (L.periodic) r.push_back("pair_modify tail yes");
+  // lj/gromacs is zero at the cut-off by itself; lj/sdk has no tail correction (CAPS adds none for it either)
+  if (L.gromacs) {
+  } else if (!e.tail) r.push_back("pair_modify shift yes");
+  else if (L.periodic && L.sdk) {
+    if (L.pair_styles.size() > 1) throw FieldError("SDK pairs with other Lennard-Jones pairs and tail corrections have no LAMMPS form (lj/sdk has no tail)");
+  } else if (L.periodic) r.push_back("pair_modify tail yes");
+  if (ff.dielectric != 1) {
+    std::snprintf(b, sizeof b, "dielectric %.10g", ff.dielectric);
+    r.push_back(b);
+  }
   for (const Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) {
     if (k->types.empty()) continue;
     std::string nm = k->name;
     for (auto& c : nm) c = char(std::tolower(static_cast<unsigned char>(c)));
     r.push_back(nm + "_style " + k->style_line());
   }
-  std::snprintf(b, sizeof b, "special_bonds lj 0 0 %.10g coul 0 0 %.10g", ff.lj14, ff.coul14);
+  std::snprintf(b, sizeof b, "special_bonds lj 0 %d %.10g coul 0 %d %.10g", ff.keep13 ? 1 : 0, ff.lj14, ff.keep13 ? 1 : 0, ff.coul14);
   r.push_back(b);
   if (e.coulomb && pme(e, L)) {
     // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
@@ -272,7 +297,14 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
     for (size_t b2 = a2; b2 < ff.type_names.size(); ++b2) {
       auto it = ff.pair_func.find({int(a2), int(b2)});
       std::string coef, style = L.pair_base;
-      if (it != ff.pair_func.end()) {
+      const int f = it != ff.pair_func.end() ? it->second.form : 0;
+      if (f >= kPairSdk96 && f <= kPairSdk125) {
+        static const char* nm[] = {"lj9_6", "lj12_4", "lj12_6", "lj12_5"};
+        style = "lj/sdk";
+        coef = std::string(" ") + nm[f - kPairSdk96] + num({it->second.a, it->second.b});
+      } else if (f == kPairGromacs) {
+        coef = num({it->second.a, it->second.b});
+      } else if (it != ff.pair_func.end()) {
         style = it->second.form == 1 ? "buck" : "morse";
         coef = num({it->second.a, it->second.b, it->second.c});
       } else {
@@ -337,7 +369,9 @@ std::string export_title(std::string t, const std::string& ffname) {
   return t.empty() ? "structure" : t;
 }
 
-void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs) {
+void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& path, bool pair_coeffs) {
+  EnergyOptions e = e0;
+  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
@@ -376,7 +410,8 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   }
   // every i-j pair, mixed by the force field's rule (and its explicit pairs): nothing is left to LAMMPS's mixing
   if (pair_coeffs) {
-    out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
+    out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : L.gromacs ? std::string(e.coulomb ? "lj/gromacs/coul/gromacs" : "lj/gromacs")
+                                      : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
     for (const auto& l : pair_lines(L, ff)) out << l << "\n";
   }
   for (const Kind* k : kinds) {
@@ -425,8 +460,10 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   }
 }
 
-void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
+void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run) {
+  EnergyOptions e = e0;
+  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);

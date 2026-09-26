@@ -60,6 +60,15 @@ CASES = [
                                                "FP(F)(F)(F)F.C[Si](C)(C)O[Si](C)(C)C.CSSC"), "uff", "types", "rules"),
     ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
     ("Miscellaneous set: HFA-134a, methanol, chloroform, isopentane", ("smiles", "FCC(F)(F)F.CO.ClC(Cl)Cl.CCC(C)C"), "misc", "types", "rules"),
+    # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
+    # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
+    ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),
+                                                   ("template", "NA+", 5), ("template", "CL-", 5), ("template", "W", 150)], 42.0),
+     "martini-moltemplate", "keep", "rules"),
+    ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
+                                                                     ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
+                                                                     ("beads", "[W]", 120)], 36.0),
+     "sdk-moltemplate", "types", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
     ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-moltemplate", "types", "rules"),
 ]
@@ -99,6 +108,67 @@ def structure(src, base):
         with open(box, "w") as f:
             f.write("\n".join(lines) + "\n")
         return box, None
+    if kind == "cg-box":   # copies of bead molecules (CAPS's builder), random orientations and places, periodic
+        import random
+        rng = random.Random(7)
+        ffj, parts, edge = ff_file(src[1]), src[2], src[3]
+        atoms, bonds, labels = [], [], {}
+        for how, text, count in parts:
+            tmp = os.path.join(work, base + ".one.data")
+            subprocess.run([CAPS, "build", "--" + how, text, "--ff", ffj, "-o", tmp], capture_output=True, check=True)
+            lines = open(tmp).read().splitlines()
+            sec, mass, mol_at, mol_b = None, {}, [], []
+            for l in lines:
+                w = l.split()
+                if l.strip() in ("Masses", "Atoms  # full", "Bonds"):
+                    sec = l.split()[0]
+                    continue
+                if not w or len(w) < 2:
+                    continue
+                if sec == "Masses":
+                    mass[int(w[0])] = (float(w[1]), w[3])
+                elif sec == "Atoms" and len(w) >= 7:
+                    mol_at.append((mass[int(w[2])], float(w[3]), float(w[4]), float(w[5]), float(w[6])))
+                elif sec == "Bonds" and len(w) >= 4:
+                    mol_b.append((int(w[2]) - 1, int(w[3]) - 1))
+            cx = [sum(a[k] for a in mol_at) / len(mol_at) for k in (2, 3, 4)]
+            for c in range(count):
+                for _ in range(2000):
+                    # a random rotation (QR of a Gaussian matrix) and place, kept 3.5 A from the others
+                    import math
+                    q = [rng.gauss(0, 1) for _ in range(4)]
+                    nq = math.sqrt(sum(x * x for x in q))
+                    a_, b_, c_, d_ = (x / nq for x in q)
+                    R = [[a_*a_+b_*b_-c_*c_-d_*d_, 2*(b_*c_-a_*d_), 2*(b_*d_+a_*c_)], [2*(b_*c_+a_*d_), a_*a_-b_*b_+c_*c_-d_*d_, 2*(c_*d_-a_*b_)],
+                         [2*(b_*d_-a_*c_), 2*(c_*d_+a_*b_), a_*a_-b_*b_-c_*c_+d_*d_]]
+                    t = [rng.uniform(0, edge) for _ in range(3)]
+                    new = []
+                    for (m, lab), qq, x, y, z in mol_at:
+                        d = (x - cx[0], y - cx[1], z - cx[2])
+                        new.append(((m, lab), qq, *[t[k] + sum(R[k][j] * d[j] for j in range(3)) for k in range(3)]))
+                    def close(p1, p2):
+                        return math.sqrt(sum(((p1[k] - p2[k] + edge / 2) % edge - edge / 2) ** 2 for k in range(3))) < 3.5
+                    if all(not close(n1[2:], a2[2:]) for n1 in new for a2 in atoms):
+                        break
+                off = len(atoms)
+                atoms.extend(new)
+                bonds.extend((i + off, j + off) for i, j in mol_b)
+        types = sorted({a[0] for a in atoms}, key=lambda t: t[1])
+        tid = {t: k + 1 for k, t in enumerate(types)}
+        out = os.path.join(work, base + ".data")
+        with open(out, "w") as f:
+            f.write(f"CAPS · {base}\n\n{len(atoms)} atoms\n{len(bonds)} bonds\n\n{len(types)} atom types\n1 bond types\n\n"
+                    f"0 {edge} xlo xhi\n0 {edge} ylo yhi\n0 {edge} zlo zhi\n\nMasses\n\n")
+            for t in types:
+                f.write(f"{tid[t]} {t[0]}  # {t[1]}\n")
+            f.write("\nAtoms  # full\n\n")
+            mols = 0
+            for k, a in enumerate(atoms):
+                f.write(f"{k + 1} 1 {tid[a[0]]} {a[1]} {a[2] % edge:.6f} {a[3] % edge:.6f} {a[4] % edge:.6f}\n")
+            f.write("\nBonds\n\n")
+            for k, (i, j) in enumerate(bonds):
+                f.write(f"{k + 1} 1 {i + 1} {j + 1}\n")
+        return out, None
     if kind == "smiles":   # built and cleaned up by CAPS with UFF
         m = os.path.join(work, base + ".mol2")
         subprocess.run([CAPS, "build", src[1], "--ff", "uff", "-o", m], capture_output=True, check=True)
@@ -191,7 +261,7 @@ for label, src, fid, charges, typing in CASES:
     if typing == "keys" and tfile:
         cmd += ["--types", tfile]
     if PME:
-        if src[0] not in ("file", "ionic-first"):
+        if src[0] not in ("file", "ionic-first", "cg-box"):
             continue
         cmd += ["--pme", "--ewald-rtol", "1e-7", "--pme-spacing", "0.5", "--pme-order", "6"]
     if src[0] == "compass-ps":

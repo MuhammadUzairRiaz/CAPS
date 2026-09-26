@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "caps/field.hpp"
+#include "caps/resolution.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -78,6 +79,14 @@ struct FFDef {
   double special_lj[3] = {0, 0, 0.5};  // 1-2, 1-3, 1-4 scaling
   double special_coul[3] = {0, 0, 0.8333333333};
   double cutoff = 10.0;
+  // Coarse-grained pair settings (JSON "pair_settings"): lj/gromacs inner radius, coul/gromacs inner radius and
+  // relative permittivity (MARTINI 9 Å, 1e-6 Å, 15); model_cutoff: the cut-off belongs to the model (MARTINI 12 Å)
+  double lj_inner = 0, coul_inner = 0, dielectric = 1;
+  bool model_cutoff = false;
+  // Torsions only where the file defines them ("torsion_terms": "if_defined"; MARTINI, SDK: TORSION IGNORE in their
+  // sources): a dihedral with no term is not missing
+  bool torsions_if_defined = false;
+  bool angles_if_defined = false;   // "angle_terms": "if_defined" (MARTINI's ANGLE WARN): a missing angle is a note, not an error
   // How improper quadruples are formed and ordered (moltemplate symmetry plugins):
   //   "center3_sorted"  centre in position 3, the others sorted by atom index (AMBER / GAFF, gaff_imp.py)
   //   "center1_sorted"  centre in position 1, the others sorted by atom index (OPLS, cenIsortJKL.py)
@@ -139,6 +148,13 @@ struct FFDef {
   // Ionic solids (typing file "bonds": "defined"): the builder's neighbour bonds are not bonds of the model; after
   // typing, only bonds the force field has a term for stay (core-shell springs, O-H of water and hydroxyls)
   bool keep_defined_bonds = false;
+  // Coarse-grained force fields (typing file "coarse_grained": true): sites are beads, typed by name. "beads" and
+  // "bead_groups" map an all-atom structure onto beads first (map_to_beads; SDK). bead_templates: named bead SMILES
+  // from the force field's sources (force-field file "bead_templates"), for build_beads.
+  bool coarse_grained = false;
+  std::vector<BeadRule> bead_rules;
+  std::vector<BeadGroup> bead_groups;
+  std::map<std::string, std::string> bead_templates;
   // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
   // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
   // each conjugated system takes the variants that make every bond's constant equal bond_k_per_order x its bond order
@@ -192,7 +208,14 @@ struct ParamReport {
 // when it converted, "" otherwise.
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
 // Does the force field change the structure before typing (united atom, shells, ionic bonds)?
-inline bool needs_prepare(const FFDef& ff) { return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds; }
+inline bool needs_prepare(const FFDef& ff) {
+  return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty();
+}
+
+// A bead structure for a coarse-grained force field: `text` is one of its bead templates by name, or bead SMILES.
+// Bond lengths come from the force field's bond terms (typed by bead name), masses from its types; the result is a
+// start for a relax.
+System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t seed = 1);
 
 // Build the evaluator force field for a structure whose atoms carry force-field type names (one per atom).
 // Charges: `charges` = "types" (from the force field: type charges and / or bond increments; error if neither

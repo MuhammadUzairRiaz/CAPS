@@ -1024,7 +1024,7 @@
    "origin": "moltemplate",
    "source_file": "sdk.lt",
    "status": "converted",
-   "notes": "lj/sdk 9-6 / 12-4 forms are not evaluated by CAPS yet.",
+   "notes": "SDK: lj/sdk 9-6 / 12-4 and the sdk angle's 1-3 repulsion evaluated by CAPS; all-atom lipids, alkanes and water mapped onto beads",
    "file": "sdk-moltemplate.json",
    "counts": {
     "atom_types": 23,
@@ -1033,6 +1033,10 @@
     "angles": 52,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/sdk-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_cg_rules.py): 23 bead names, 10 fragments, water triplets"
    }
   },
   {
@@ -1045,7 +1049,7 @@
    "origin": "moltemplate",
    "source_file": "martini.lt",
    "status": "converted",
-   "notes": "lj/gromacs shifted forms are not evaluated by CAPS yet.",
+   "notes": "MARTINI: lj/gromacs and coul/gromacs (dielectric 15, 12 A cut-off) evaluated by CAPS; bead structures typed by name; 30 bead templates",
    "file": "martini-moltemplate.json",
    "counts": {
     "atom_types": 60,
@@ -1054,6 +1058,10 @@
     "angles": 37,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_cg_rules.py): 120 bead names"
    }
   },
   {
@@ -1066,7 +1074,7 @@
    "origin": "moltemplate",
    "source_file": "drymartini.lt",
    "status": "converted",
-   "notes": "as MARTINI.",
+   "notes": "Dry MARTINI: lj/gromacs and coul/gromacs (dielectric 15, 12 A cut-off) evaluated by CAPS; bead structures typed by name",
    "file": "drymartini-moltemplate.json",
    "counts": {
     "atom_types": 37,
@@ -1075,6 +1083,10 @@
     "angles": 19,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/drymartini-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_cg_rules.py): 73 bead names"
    }
   },
   {

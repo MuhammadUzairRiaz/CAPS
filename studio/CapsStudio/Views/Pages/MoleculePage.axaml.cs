@@ -100,7 +100,8 @@ public partial class MoleculePage : PageBase
         catch (Exception ex) { Vm.Status = "Could not save: " + ex.Message; }
     }
 
-    private void OnOpenInStudio(object? s, RoutedEventArgs e)
+    private async void OnBuildBeads(object? sender, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is MainViewModel vm) await vm.BuildBeadsMolecule(); }
+    void OnOpenInStudio(object? s, RoutedEventArgs e)
     {
         _preview.Document = null;
         Vm.OpenMoleculeInStudio();

@@ -2509,6 +2509,50 @@ extern "C" int32_t caps_smiles_info(const char* smiles, char* json, int32_t cap)
   return report_out(j.dump(), json, cap);
 }
 
+extern "C" caps_doc* caps_build_beads(const char* text, const char* ff_path, uint64_t seed, char* report, int32_t cap) {
+  try {
+    caps::FFDef def;
+    if (ff_path && *ff_path) def = caps::load_forcefield(ff_path);
+    const std::string t = text ? text : "";
+    const bool tpl = def.bead_templates.count(t) > 0;
+    const caps::System s = caps::build_bead_molecule(t, def, seed ? seed : 1);
+    auto* d = new caps_doc;
+    d->traj.topology = s;
+    d->traj.positions.push_back({});
+    for (const auto& a : s.atoms) d->traj.positions.back().push_back(a.pos);
+    d->traj.cells.push_back(s.cell);
+    d->traj.timesteps.push_back(0);
+    refresh(d);
+    prov_step(d, "cg.build", tpl ? "coarse-grained molecule from the " + def.name + " template " + t : "coarse-grained molecule from bead SMILES",
+              {{"beads", tpl ? def.bead_templates.at(t) : t}, {"forcefield", def.name.empty() ? "none (4.7 Å bonds)" : def.name}}, seeded(seed ? seed : 1), {});
+    double q = 0;
+    for (const auto& a : s.atoms) q += a.charge;
+    caps::Json j = caps::Json::object();
+    j["beads"] = double(s.atoms.size());
+    j["bonds"] = double(s.bonds.size());
+    j["charge"] = q;
+    j["template"] = tpl ? t : std::string();
+    j["forcefield"] = def.name;
+    report_out(j.dump(), report, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_bead_templates(const char* ff_path, char* json, int32_t cap) {
+  try {
+    const caps::FFDef def = caps::load_forcefield(ff_path ? ff_path : "");
+    caps::Json j = caps::Json::object();
+    for (const auto& [k, v] : def.bead_templates) j[k] = v;
+    return report_out(j.dump(), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, const caps_build_opts* o, char* report, int32_t cap) {
   try {
     caps::BuildOptions b;

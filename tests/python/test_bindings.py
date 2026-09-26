@@ -201,6 +201,15 @@ nw = wb.summary()["molecules"]
 rw = wb.field.assign("mw-moltemplate")
 check(rw["complete"] and wb.atoms == nw and {a["type"] for a in rw["atoms"]} == {"MW"} and wb.relax(ftol=1.0) in (0, 1),
       f"field: mW water ({nw} molecules -> {wb.atoms} Stillinger-Weber sites), relaxed")
+# coarse-grained: MARTINI's DPPC template (typed by bead name, charges kept); SDK maps all-atom DMPC onto its beads
+tpl = caps.bead_templates("martini-moltemplate")
+dppc = caps.build.beads("DPPC", forcefield="martini-moltemplate")
+rd = dppc.field.assign("martini-moltemplate", charges="keep")
+dmpc = caps.build.smiles("CCCCCCCCCCCCCC(=O)OCC(COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCC", forcefield="")
+rs = dmpc.field.assign("sdk-moltemplate", charges="forcefield")
+check("DPPC" in tpl and dppc.atoms == 12 and rd["complete"] and {a["type"].split("_b")[0] for a in rd["atoms"]} == {"Q0", "Qa", "Na", "C1"}
+      and rs["complete"] and dmpc.atoms == 13 and abs(sum(a["q"] for a in rs["atoms"])) < 1e-9,
+      f"coarse-grained: MARTINI DPPC template ({len(tpl)} templates), SDK DMPC mapped ({dmpc.atoms} beads)")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)

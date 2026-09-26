@@ -366,6 +366,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_smiles_depict")] public static extern int SmilesDepict([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_smiles_write")] public static extern int SmilesWrite([MarshalAs(UnmanagedType.LPUTF8Str)] string graph, byte[]? smiles, int cap);
+    [DllImport(Lib, EntryPoint = "caps_build_beads")] public static extern IntPtr BuildBeads([MarshalAs(UnmanagedType.LPUTF8Str)] string text, [MarshalAs(UnmanagedType.LPUTF8Str)] string? ff, ulong seed, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bead_templates")] public static extern int BeadTemplates([MarshalAs(UnmanagedType.LPUTF8Str)] string ff, byte[] json, int cap);
     [DllImport(Lib, EntryPoint = "caps_build_smiles")] public static extern IntPtr BuildSmiles([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, [MarshalAs(UnmanagedType.LPUTF8Str)] string? ff, in CapsBuildOpts o, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pack")] public static extern IntPtr Pack(byte[] text, [MarshalAs(UnmanagedType.LPUTF8Str)] string baseDir, int threads, CapsPackProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_template")] public static extern int ReactionTemplate([MarshalAs(UnmanagedType.LPUTF8Str)] string name, byte[] text, int cap);
@@ -839,6 +841,26 @@ public sealed class CapsDocument : IDisposable
         var h = Native.BuildSmiles(smiles, ff, new CapsBuildOpts { Conformers = conformers, Seed = seed }, report, report.Length);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0'));
+    }
+
+    /// <summary>A coarse-grained molecule: a bead template of the force field ff (a caps-forcefield JSON), or bead SMILES.</summary>
+    public static (CapsDocument Doc, string Report) BuildBeads(string text, string? ff, ulong seed, string label)
+    {
+        var report = new byte[4096];
+        var h = Native.BuildBeads(text, ff, seed, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0'));
+    }
+
+    /// <summary>The bead templates {name: bead SMILES} a coarse-grained force field's sources give.</summary>
+    public static Dictionary<string, string> BeadTemplates(string ff)
+    {
+        var buf = new byte[1 << 16];
+        var n = Native.BeadTemplates(ff, buf, buf.Length);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        if (n > buf.Length) { buf = new byte[n]; Native.BeadTemplates(ff, buf, buf.Length); }
+        var text = System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(text) ?? new();
     }
 
     public void Save(string path) { lock (_lock) Check(Native.Save(_h, path)); }
