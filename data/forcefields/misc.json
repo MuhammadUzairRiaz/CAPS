@@ -3,7 +3,12 @@
  "format_version": 1,
  "name": "Miscellaneous",
  "source": "MISC_FF.par",
- "references": [],
+ "references": [
+  "A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)",
+  "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)",
+  "N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005)",
+  "R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009)"
+ ],
  "units": "real",
  "styles": {
   "pair": "buck/coul/long",
@@ -35,7 +40,8 @@
    "mass": 12.0115,
    "aliases": [
     "C_alkane#1"
-   ]
+   ],
+   "charge": 0.0
   },
   {
    "name": "Cp1",
@@ -44,11 +50,13 @@
    "equivalence": {
     "angle": "C1",
     "bond": "C1",
-    "vdw": "C1"
+    "vdw": "C1",
+    "dihedral": "C1"
    },
    "aliases": [
     "Cp_alkane#1"
-   ]
+   ],
+   "charge": -0.3
   },
   {
    "name": "Cs1",
@@ -57,11 +65,13 @@
    "equivalence": {
     "angle": "C1",
     "bond": "C1",
-    "vdw": "C1"
+    "vdw": "C1",
+    "dihedral": "C1"
    },
    "aliases": [
     "Cs_alkane#1"
-   ]
+   ],
+   "charge": -0.2
   },
   {
    "name": "Ct1",
@@ -70,11 +80,13 @@
    "equivalence": {
     "angle": "C1",
     "bond": "C1",
-    "vdw": "C1"
+    "vdw": "C1",
+    "dihedral": "C1"
    },
    "aliases": [
     "Ct_alkane#1"
-   ]
+   ],
+   "charge": -0.1
   },
   {
    "name": "H1",
@@ -82,7 +94,8 @@
    "mass": 1.00797,
    "aliases": [
     "HC_alkane#1"
-   ]
+   ],
+   "charge": 0.1
   },
   {
    "name": "C2",
@@ -90,7 +103,8 @@
    "mass": 12.0115,
    "aliases": [
     "Cp_alkane#2"
-   ]
+   ],
+   "charge": -0.093
   },
   {
    "name": "H2",
@@ -98,7 +112,8 @@
    "mass": 1.00797,
    "aliases": [
     "HC_alkane#2"
-   ]
+   ],
+   "charge": 0.1
   },
   {
    "name": "O2",
@@ -106,7 +121,8 @@
    "mass": 15.9994,
    "aliases": [
     "O_alcohol#2"
-   ]
+   ],
+   "charge": -0.432
   },
   {
    "name": "HO2",
@@ -114,7 +130,8 @@
    "mass": 1.00797,
    "aliases": [
     "HO_alcohol#2"
-   ]
+   ],
+   "charge": 0.225
   },
   {
    "name": "C3",
@@ -122,7 +139,8 @@
    "mass": 12.0115,
    "aliases": [
     "C_trihaloalkane#3"
-   ]
+   ],
+   "charge": -0.102
   },
   {
    "name": "H3",
@@ -130,7 +148,8 @@
    "mass": 1.00797,
    "aliases": [
     "HC_trihaloalkane#3"
-   ]
+   ],
+   "charge": 0.18
   },
   {
    "name": "Cl3",
@@ -138,7 +157,8 @@
    "mass": 35.453,
    "aliases": [
     "ClC_trihaloalkane#3"
-   ]
+   ],
+   "charge": -0.026
   },
   {
    "name": "CT",
@@ -156,7 +176,8 @@
    "aliases": [
     "FC_monohaloalkane",
     "FC_trihaloalkane"
-   ]
+   ],
+   "charge": -0.1915
   },
   {
    "name": "HC",
@@ -164,7 +185,34 @@
    "mass": 1.00797,
    "aliases": [
     "HC_monohaloalkane"
-   ]
+   ],
+   "charge": 0.115
+  },
+  {
+   "name": "CTf3",
+   "element": "C",
+   "mass": 12.0115,
+   "charge": 0.534,
+   "description": "HFA-134a CF3 carbon: CT's parameters, its template charge",
+   "equivalence": {
+    "vdw": "CT",
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT"
+   }
+  },
+  {
+   "name": "CTf1",
+   "element": "C",
+   "mass": 12.0115,
+   "charge": 0.002,
+   "description": "HFA-134a CH2F carbon: CT's parameters, its template charge",
+   "equivalence": {
+    "vdw": "CT",
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT"
+   }
   }
  ],
  "pairs": [
@@ -742,13 +790,70 @@
     3,
     0
    ]
+  },
+  {
+   "name": "C1-C1-C1-C1",
+   "match": [
+    "C1",
+    "C1",
+    "C1",
+    "C1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    3,
+    0.0
+   ],
+   "comment": "CAPS extension: zero (the source's alkane template has DIHEDRAL OFF)"
+  },
+  {
+   "name": "H1-C1-C1-C1",
+   "match": [
+    "H1",
+    "C1",
+    "C1",
+    "C1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    3,
+    0.0
+   ],
+   "comment": "CAPS extension: zero (the source's alkane template has DIHEDRAL OFF)"
+  },
+  {
+   "name": "H1-C1-C1-H1",
+   "match": [
+    "H1",
+    "C1",
+    "C1",
+    "H1"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    3,
+    0.0
+   ],
+   "comment": "CAPS extension: zero (the source's alkane template has DIHEDRAL OFF)"
   }
  ],
  "impropers": [],
  "notes": [
-  "converted by CAPS (misc_ff, unit kJ/mol); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (misc_ff, unit kJ/mol); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: CTf3 / CTf1 are HFA-134a's CF3 and CH2F carbons (charges 0.534 / 0.002 in the source's template, which gives both the type CT), with CT's parameters",
+  "CAPS extension: C1 (a quaternary alkane carbon) has charge 0, the alkane template's -0.1 e per hydrogen that keeps each CHn group neutral",
+  "CAPS extension: type charges from the force field's molecule templates",
+  "CAPS extension: zero alkane torsions (the source's alkane template switches torsions off)",
+  "1-4 pairs: the source scales HFA-134a's by 0.5 (OPLS-AA) and methanol's by 1.0; CAPS applies one factor per force-field file, 1.0 here, so HFA-134a's F...F and F...H 1-4 pairs count in full"
  ],
  "version": "",
  "status": "converted",
- "validation": "converted; the original distribution cannot write this scheme for LAMMPS and has no buildable examples."
+ "validation": "converted; the original distribution cannot write this scheme for LAMMPS and has no buildable examples.",
+ "typing": "../typing/misc.typing.json"
 }

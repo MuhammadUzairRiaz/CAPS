@@ -1,0 +1,105 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Miscellaneous",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for the miscellaneous set (bench/typing/make_misc_rules.py): alkanes (hydrocarbon sp3 carbons), methanol, chloroform and HFA-134a, each only where its template charges add up; other atoms are untyped.",
+ "rules": [
+  {
+   "type": "Cp1",
+   "smarts": "[CX4H3;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane CH3 carbon (O'Malley & Catlow)"
+  },
+  {
+   "type": "Cs1",
+   "smarts": "[CX4H2;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane CH2 carbon"
+  },
+  {
+   "type": "Ct1",
+   "smarts": "[CX4H1;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane CH carbon"
+  },
+  {
+   "type": "C1",
+   "smarts": "[CX4H0;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane quaternary carbon (generic C1)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[#1][CX4;H1,H2,H3;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "H on an alkane carbon"
+  },
+  {
+   "type": "C2",
+   "smarts": "[CX4H3]-[OX2H1]",
+   "priority": 0,
+   "description": "methanol carbon (Plant, Maurin & Bell)"
+  },
+  {
+   "type": "H2",
+   "smarts": "[#1][CX4H3]-[OX2H1]",
+   "priority": 0,
+   "description": "methanol methyl H"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX2H1]-[CX4H3]",
+   "priority": 0,
+   "description": "methanol oxygen"
+  },
+  {
+   "type": "HO2",
+   "smarts": "[#1][OX2H1]-[CX4H3]",
+   "priority": 0,
+   "description": "methanol hydroxyl H"
+  },
+  {
+   "type": "C3",
+   "smarts": "[CX4H1](-[#17])(-[#17])-[#17]",
+   "priority": 0,
+   "description": "chloroform carbon (Ramsahye & Bell)"
+  },
+  {
+   "type": "H3",
+   "smarts": "[#1][CX4H1](-[#17])(-[#17])-[#17]",
+   "priority": 0,
+   "description": "chloroform H"
+  },
+  {
+   "type": "Cl3",
+   "smarts": "[#17]-[CX4H1](-[#17])-[#17]",
+   "priority": 0,
+   "description": "chloroform Cl"
+  },
+  {
+   "type": "CTf3",
+   "smarts": "[CX4](-[#9])(-[#9])(-[#9])-[CX4H2]-[#9]",
+   "priority": 0,
+   "description": "HFA-134a CF3 carbon (Peguin et al., force field 2)"
+  },
+  {
+   "type": "CTf1",
+   "smarts": "[CX4H2](-[#9])-[CX4](-[#9])(-[#9])-[#9]",
+   "priority": 0,
+   "description": "HFA-134a CH2F carbon"
+  },
+  {
+   "type": "F",
+   "smarts": "[#9;$([#9]-[CX4](-[#9])(-[#9])-[CX4H2]-[#9]),$([#9]-[CX4H2]-[CX4](-[#9])(-[#9])-[#9])]",
+   "priority": 0,
+   "description": "HFA-134a F"
+  },
+  {
+   "type": "HC",
+   "smarts": "[#1][CX4H2](-[#9])-[CX4](-[#9])(-[#9])-[#9]",
+   "priority": 0,
+   "description": "HFA-134a H"
+  }
+ ]
+}

@@ -25,7 +25,7 @@ Cell lammps_cell(double xlo, double xhi, double ylo, double yhi, double zlo, dou
 }
 
 void assign_elements(System& s) {
-  int guessed = 0;
+  int guessed = 0, sites = 0;
   for (auto& at : s.atoms) {
     if (at.element) continue;
     for (const auto& t : s.types)
@@ -33,6 +33,9 @@ void assign_elements(System& s) {
         // A label such as "c3" or "CT" names the element first; the mass decides when it does not.
         int z = element_from_mass(t.mass);
         if (!z && !t.label.empty()) z = element_from_name(t.label);
+        // a united-atom site (mW water's 18.02, a CH2's 14.03 under another label): its heavy atom plus hydrogens
+        for (int nh = 1; !z && nh <= 4 && t.mass > 1.5 + nh * 1.008; ++nh)
+          if ((z = element_from_mass(t.mass - nh * 1.008, 0.02))) ++sites;
         at.element = z;
         if (!at.name.size() && !t.label.empty()) at.name = t.label;
         break;
@@ -40,6 +43,7 @@ void assign_elements(System& s) {
     if (at.element) ++guessed;
   }
   if (guessed) s.notes.push_back("elements guessed from type masses for " + std::to_string(guessed) + " atoms");
+  if (sites) s.notes.push_back(std::to_string(sites) + " united-atom sites: element from the mass less its hydrogens");
   // Bead-spring models (Kremer–Grest, reduced units) give beads mass 1, which reads as hydrogen. A type whose atoms
   // bond to two or more others is beads, not hydrogens: they are drawn as carbon, as CAPS's own bead-spring melts are.
   std::vector<int> nbond(s.atoms.size(), 0);

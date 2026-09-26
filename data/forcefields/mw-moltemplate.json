@@ -31,18 +31,33 @@
  "atom_types": [
   {
    "name": "MW",
-   "element": "",
-   "mass": 18.02
+   "element": "O",
+   "mass": 18.02,
+   "charge": 0.0,
+   "description": "mW water: one site per molecule (Molinero & Moore 2009)"
   }
  ],
  "pairs": [
   {
+   "name": "MW",
    "match": [
-    "*"
+    "MW"
    ],
    "style": "sw",
-   "params": [],
-   "comment": "SEE COMMENT ABOVE"
+   "params": [
+    6.189,
+    2.3925,
+    1.8,
+    23.15,
+    1.2,
+    -0.333333333,
+    7.049556277,
+    0.602224558,
+    4,
+    0,
+    0
+   ],
+   "comment": "Stillinger–Weber parameters of moltemplate's watmw.lt (system.in.sw): ε σ a λ γ cosθ0 A B p q tol"
   }
  ],
  "bonds": [],
@@ -50,9 +65,11 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "CAPS extension: the Stillinger–Weber parameters of watmw.lt as the pair entry; charge 0"
  ],
  "version": "2009",
  "status": "converted",
- "validation": "Stillinger–Weber three-body form not evaluated by CAPS."
+ "validation": "Stillinger–Weber evaluated by CAPS; each water's hydrogens fold into its oxygen (one site per molecule).",
+ "typing": "../typing/mw-moltemplate.typing.json"
 }

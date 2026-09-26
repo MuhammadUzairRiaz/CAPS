@@ -116,6 +116,7 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   if (ff.atom_type.size() != n) throw FieldError("the force field does not cover every atom");
   if (ff.pair_form != "lj12-6") throw FieldError(ff.name + ": the 9-6 Lennard-Jones form (class II) has no GROMACS function");
   if (!ff.pair_func.empty()) throw FieldError(ff.name + ": Buckingham and Morse pairs have no GROMACS form in the Verlet scheme");
+  if (ff.sw.on) throw FieldError(ff.name + ": the Stillinger–Weber three-body term (mW water) has no GROMACS form");
   if (!ff.bonds2.empty() || !ff.angles2.empty() || !ff.dihedrals2.empty() || !ff.impropers2.empty())
     throw FieldError(ff.name + ": class II terms (COMPASS, PCFF) have no GROMACS functions; export to LAMMPS instead");
   if (!ff.inversions.empty()) throw FieldError(ff.name + ": inversion (umbrella) terms (DREIDING, UFF) have no GROMACS function; export to LAMMPS instead");

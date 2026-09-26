@@ -1,6 +1,7 @@
 // GROMACS .gro (fixed columns, nm) and XYZ / extended XYZ readers.
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 
 #include "caps/elements.hpp"
@@ -90,6 +91,16 @@ Trajectory read_xyz(const std::string& path) {
     System s;
     s.source_format = "xyz";
     s.title = trim(comment);
+    // extended XYZ keys are not a title: Lattice="…", Properties=…, pbc="…" come out of it
+    for (const char* key : {"Lattice=", "Properties=", "pbc="}) {
+      auto k = s.title.find(key);
+      if (k == std::string::npos) continue;
+      size_t e = k + std::strlen(key);
+      if (e < s.title.size() && s.title[e] == '"') e = s.title.find('"', e + 1);
+      else e = s.title.find(' ', e);
+      s.title.erase(k, e == std::string::npos ? std::string::npos : e + 1 - k);
+      s.title = trim(s.title);
+    }
     // extended XYZ: Lattice="ax ay az bx by bz cx cy cz"
     if (auto p = comment.find("Lattice=\""); p != std::string::npos) {
       auto q = comment.find('"', p + 9);

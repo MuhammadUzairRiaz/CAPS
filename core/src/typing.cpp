@@ -136,6 +136,7 @@ std::vector<std::vector<uint32_t>> sssr(const std::vector<std::vector<uint32_t>>
 
 int united_atom_hydrogens(const std::string& name, int element) {
   if (element == 16) return name == "SH1E" || name == "SH" ? 1 : -1;
+  if (element == 8) return name == "OH2" ? 2 : name == "OH" ? 1 : -1;   // a one-site water (mW) or hydroxyl site
   if (element != 6 || name.size() < 2 || name[0] != 'C') return -1;
   std::string x = name;
   if (x.size() > 2 && (x.back() == 'E' || x.back() == 'p')) x.pop_back();   // CHARMM19 CH2E, GROMOS CH3p
@@ -173,9 +174,14 @@ Perception perceive(const System& s) {
   {
     bool ch = false, named = false;
     for (const auto& e : edges) ch = ch || (z[e.i] == 6 && z[e.j] == 1) || (z[e.j] == 6 && z[e.i] == 1);
+    std::vector<char> has_h(n, 0);   // an atom with an explicit hydrogen never gets implicit ones (an all-atom water "OH2")
+    for (const auto& e : edges) {
+      if (z[e.j] == 1) has_h[e.i] = 1;
+      if (z[e.i] == 1) has_h[e.j] = 1;
+    }
     if (!ch)
       for (size_t i = 0; i < n; ++i) {
-        const int h = united_atom_hydrogens(s.atoms[i].name, z[i]);
+        const int h = has_h[i] ? -1 : united_atom_hydrogens(s.atoms[i].name, z[i]);
         if (h >= 0) p.implicit_h[i] = h, named = true;
       }
     p.united_atom = named;

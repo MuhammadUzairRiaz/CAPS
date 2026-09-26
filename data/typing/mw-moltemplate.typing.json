@@ -1,0 +1,26 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "mW water",
+ "united_atom": true,
+ "united_atom_hosts": [
+  "O"
+ ],
+ "unknown_types": "untyped",
+ "description": "CAPS rules for mW water (Molinero & Moore, J. Phys. Chem. B 113, 4008 (2009)): each water becomes one site at its oxygen.",
+ "rules": [
+  {
+   "type": "MW",
+   "smarts": "[O;H2;X2]",
+   "priority": 0,
+   "description": "a water molecule (its oxygen with both hydrogens folded in)"
+  },
+  {
+   "type": "MW",
+   "smarts": "[O;X0]",
+   "atom_name": "MW",
+   "priority": 0,
+   "description": "an mW site read back (a site named MW, e.g. from a CAPS data file)"
+  }
+ ]
+}

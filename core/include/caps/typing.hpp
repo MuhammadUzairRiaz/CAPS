@@ -45,7 +45,7 @@ struct Perception {
 
 // Bond orders come from the file when it gives them (mol2), otherwise from valences. Hydrogens are explicit, except in
 // a united-atom structure (no hydrogen bonded to any carbon): there a carbon or sulfur site named for the hydrogens it
-// carries (CH, CH0-CH4, CH1E-CH3E, CR1, CR1E, SH1E; as united_atom() and united-atom force fields name them) has them
+// carries (CH, CH0-CH4, CH1E-CH3E, CR1, CR1E, SH1E, OH2 for a one-site water; as united_atom() and united-atom force fields name them) has them
 // as implicit hydrogens, counted by SMARTS H and X and in the valences.
 Perception perceive(const System& s);
 // Hydrogens a site named like a united atom carries (-1: not such a name).

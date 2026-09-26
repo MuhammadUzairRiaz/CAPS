@@ -1503,6 +1503,11 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
     s.charge.push_back(ff.charge[a]);
     s.mass.push_back(ff.mass[a]);
   }
+  if (ff.sw.on) {
+    s.sw = ff.sw;
+    s.sw.atom.clear();
+    for (uint32_t a : atoms) s.sw.atom.push_back(a < ff.sw.atom.size() ? ff.sw.atom[a] : 0);
+  }
   for (const auto& t : ff.bonds) if (in({t.i, t.j})) s.bonds.push_back({m(t.i), m(t.j), t.k, t.r0});
   for (const auto& t : ff.angles) if (in({t.i, t.j, t.k})) s.angles.push_back({m(t.i), m(t.j), m(t.k), t.kt, t.theta0});
   for (const auto& t : ff.dihedrals) if (in({t.i, t.j, t.k, t.l})) s.dihedrals.push_back({m(t.i), m(t.j), m(t.k), m(t.l), t.v, t.n, t.delta});
