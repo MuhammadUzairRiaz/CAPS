@@ -60,7 +60,8 @@ struct Kind {
     term_type.push_back(it->second);
     term_atoms.push_back(std::move(atoms));
   }
-  bool hybrid() const { return styles.size() > 1; }
+  bool force_hybrid = false;               // the user asked for hybrid styles
+  bool hybrid() const { return force_hybrid || styles.size() > 1; }
   bool has(const std::string& s) const { return std::find(styles.begin(), styles.end(), s) != styles.end(); }
   std::string style_line() const {
     std::string r = hybrid() ? "hybrid" : "";
@@ -81,9 +82,16 @@ struct Layout {
   bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
   bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
+  // how the files are written (exact CAPS styles, or the force field's native ones)
+  bool native = false, force_hybrid = false;
+  std::string coul = "none";               // resolved Coulomb: none, dsf, long (with kspace), cut
+  std::string kspace;                      // pppm or ewald when coul == long
+  double kspace_accuracy = 1e-4;
+  std::string pair_combined;               // native, one pair style for every pair: lj/cut/coul/long …
+  std::vector<std::string> notes;
 };
 
-Layout build(const System& s, const ForceField& ff) {
+Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) {
   if (!ff.vsites.empty())
     throw FieldError(ff.name + ": virtual sites (Martini 3's tryptophan, ...) have no LAMMPS form; export to GROMACS instead");
   if (!ff.cbt.empty())
@@ -113,6 +121,9 @@ Layout build(const System& s, const ForceField& ff) {
     throw FieldError(ff.name + ": separate 1-4 Lennard-Jones parameters (CHARMM, GROMOS) have no exact LAMMPS form without switching "
                      "(lj/charmm/coul/*); LAMMPS data for them is not written");
   Layout L;
+  L.native = st.native;
+  L.force_hybrid = st.hybrid;
+  for (Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) k->force_hybrid = st.hybrid;
   const auto& T = ff.atom_type;
   auto lab = [&](std::initializer_list<uint32_t> a) {
     std::string r;
@@ -181,14 +192,50 @@ Layout build(const System& s, const ForceField& ff) {
     if (v.empty()) order.push_back(k);
     v.push_back(&t);
   }
-  for (const auto& k : order) {
-    std::string c = " " + std::to_string(quad[k].size());
-    for (const auto* t : quad[k]) {
-      if (t->n < 0) throw FieldError("a torsion with multiplicity < 0 has no LAMMPS fourier form");
-      c += num({t->v}) + " " + std::to_string(t->n) + num({t->delta * R2D});
+  // native styles: OPLS (½K1(1+cos φ) + ½K2(1−cos 2φ) + ½K3(1+cos 3φ) + ½K4(1−cos 4φ): a term v(1+cos(nφ−δ)) is
+  // K_n = 2v with δ 0 for odd n, 180° for even n) and CHARMM (one dihedral line per term, K n d with d a whole degree,
+  // weight 0: the 1-4 pairs come from special_bonds); a quadruple that does not fit stays a Fourier sum
+  const std::string nd = st.native ? ff.native_dihedral : "";
+  auto opls_of = [&](const std::vector<const TorsionTerm*>& v, std::string& coef) {
+    double K[4] = {0, 0, 0, 0};
+    for (const auto* t : v) {
+      if (t->n < 1 || t->n > 4) return false;
+      const double want = (t->n % 2) ? 0.0 : 180.0, d = std::fmod(std::fabs(t->delta * R2D), 360.0);
+      if (std::fabs(d - want) > 1e-6 && std::fabs(d - want - 360) > 1e-6) return false;
+      K[t->n - 1] += 2 * t->v;
     }
-    L.dihedrals.add("fourier", c, {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+    coef = num({K[0], K[1], K[2], K[3]});
+    return true;
+  };
+  size_t fourier_left = 0;
+  std::vector<std::pair<std::array<uint32_t, 4>, std::string>> native_lines;   // (quadruple, style|coef)
+  for (const auto& k : order) {
+    const auto& v = quad[k];
+    std::string c;
+    if (nd == "opls" && opls_of(v, c)) {
+      L.dihedrals.add("opls", c, {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+      continue;
+    }
+    if (nd == "charmm") {
+      bool ok = true;
+      for (const auto* t : v) ok = ok && t->n >= 0 && std::fabs(t->delta * R2D - std::round(t->delta * R2D)) < 1e-9;
+      if (ok) {
+        for (const auto* t : v)
+          L.dihedrals.add("charmm", num({t->v}) + " " + std::to_string(t->n) + " " + std::to_string(long(std::lround(t->delta * R2D))) + " 0.0", {},
+                          {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+        continue;
+      }
+    }
+    std::string f = " " + std::to_string(v.size());
+    for (const auto* t : v) {
+      if (t->n < 0) throw FieldError("a torsion with multiplicity < 0 has no LAMMPS fourier form");
+      f += num({t->v}) + " " + std::to_string(t->n) + num({t->delta * R2D});
+    }
+    L.dihedrals.add("fourier", f, {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+    ++fourier_left;
   }
+  if (!nd.empty() && nd != "fourier" && fourier_left)
+    L.notes.push_back(std::to_string(fourier_left) + " dihedral types have terms the " + nd + " style cannot hold: written as fourier (a hybrid dihedral style)");
   for (const auto& d : ff.dihedrals2)
     L.dihedrals.add("class2", num({d.k1, d.phi1 * R2D, d.k2, d.phi2 * R2D, d.k3, d.phi3 * R2D}),
                     {num({d.mbt[0], d.mbt[1], d.mbt[2], d.mbt_r2}),
@@ -253,7 +300,39 @@ Layout build(const System& s, const ForceField& ff) {
     L.pair_hybrid = true;
   }
   L.periodic = s.cell.valid();
+  if (st.hybrid && !L.gromacs) L.pair_hybrid = true;
   return L;
+}
+
+// The native layout's Coulomb and pair style: the force field's long-range sum (PPPM unless asked otherwise) when it is
+// long-range, charged and periodic; otherwise what the user chose. One pair style for every pair when it can be.
+void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool charged) {
+  const bool ff_long = ff.native_pair.find("long") != std::string::npos || ff.native_pair.find("coul") == std::string::npos;
+  std::string c = st.coulomb;
+  if (!charged) c = "none";
+  else if (c == "auto") c = ff_long && L.periodic ? "pppm" : L.periodic ? "dsf" : "cut";
+  if ((c == "pppm" || c == "ewald") && !L.periodic) {
+    L.notes.push_back("no periodic cell: Coulomb cut off, not " + c);
+    c = "cut";
+  }
+  L.coul = c == "pppm" || c == "ewald" ? "long" : c;
+  if (L.coul == "long") L.kspace = c;
+  L.kspace_accuracy = st.kspace_accuracy;
+  // one style for all pairs: lj/cut or lj/class2 with its Coulomb (lj/class2 has no DSF form)
+  if (ff.pair_func.empty() && L.sw_types.empty() && !L.gromacs && !(L.pair_base == "lj/class2" && L.coul == "dsf")) {
+    L.pair_combined = L.pair_base + (L.coul == "none" ? "" : "/coul/" + L.coul);
+    L.pair_styles = {L.pair_combined};
+  }
+}
+
+std::string fmt_args(std::initializer_list<double> v) {
+  std::string r;
+  char b[40];
+  for (double x : v) {
+    std::snprintf(b, sizeof b, " %.6g", x);
+    r += b;
+  }
+  return r;
 }
 
 // PME is used (and written) only for periodic cells, as the evaluator does.
@@ -263,6 +342,30 @@ bool pme(const EnergyOptions& e, const Layout& L) { return e.electrostatics == E
 std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, const EnergyOptions& e) {
   std::vector<std::string> r;
   char b[400];
+  if (L.native && !L.pair_combined.empty()) {
+    // the force field's own form: one pair style (hybrid when asked), its long-range sum by PPPM or Ewald
+    const std::string args = L.coul == "dsf" ? fmt_args({e.dsf_alpha, e.cutoff}) : fmt_args({e.cutoff});
+    r.push_back("pair_style " + std::string(L.pair_hybrid ? "hybrid " : "") + L.pair_combined + args);
+    if (e.tail && L.periodic) r.push_back("pair_modify tail yes");
+    else if (!e.tail) r.push_back("pair_modify shift yes");
+    if (ff.dielectric != 1) {
+      std::snprintf(b, sizeof b, "dielectric %.10g", ff.dielectric);
+      r.push_back(b);
+    }
+    for (const Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) {
+      if (k->types.empty()) continue;
+      std::string nm = k->name;
+      for (auto& c : nm) c = char(std::tolower(static_cast<unsigned char>(c)));
+      r.push_back(nm + "_style " + k->style_line());
+    }
+    std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
+    r.push_back(b);
+    if (L.coul == "long") {
+      std::snprintf(b, sizeof b, "kspace_style %s %.3g", L.kspace.c_str(), L.kspace_accuracy);
+      r.push_back(b);
+    }
+    return r;
+  }
   if (L.gromacs) {   // MARTINI: the GROMACS switch for LJ (and Coulomb), inner and outer radii
     if (e.coulomb && ff.coul_gromacs)
       std::snprintf(b, sizeof b, "pair_style lj/gromacs/coul/gromacs %.6g %.6g %.6g %.6g", ff.lj_inner, e.cutoff, std::max(ff.coul_inner, 1e-6), e.cutoff);
@@ -312,7 +415,8 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   r.push_back(b);
   if (e.coulomb && pme(e, L)) {
     // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
-    std::snprintf(b, sizeof b, "kspace_style ewald %.3g", std::max(1e-12, e.ewald_rtol * 0.01));
+    if (L.native) std::snprintf(b, sizeof b, "kspace_style %s %.3g", L.kspace.c_str(), L.kspace_accuracy);
+    else std::snprintf(b, sizeof b, "kspace_style ewald %.3g", std::max(1e-12, e.ewald_rtol * 0.01));
     r.push_back(b);
   }
   return r;
@@ -326,7 +430,7 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
   for (size_t a2 = 0; a2 < ff.type_names.size(); ++a2)
     for (size_t b2 = a2; b2 < ff.type_names.size(); ++b2) {
       auto it = ff.pair_func.find({int(a2), int(b2)});
-      std::string coef, style = L.pair_base;
+      std::string coef, style = L.pair_combined.empty() ? L.pair_base : L.pair_combined;
       const int f = it != ff.pair_func.end() ? it->second.form : 0;
       if (f >= kPairSdk96 && f <= kPairSdk125) {
         static const char* nm[] = {"lj9_6", "lj12_4", "lj12_6", "lj12_5"};
@@ -360,7 +464,7 @@ std::string sw_path(const std::string& data_path) {
 std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path,
                                     const std::set<std::pair<int, int>>& ff_excl = {}) {
   std::vector<std::string> r;
-  if (L.pair_hybrid && e.coulomb) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
+  if (L.pair_hybrid && e.coulomb && L.pair_combined.empty()) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
   for (const auto& [a, b] : ff_excl) r.push_back("neigh_modify exclude type " + std::to_string(a + 1) + " " + std::to_string(b + 1));
   if (!L.sw_types.empty()) {
     std::string l = "pair_coeff * * sw " + sw_path(data_path);
@@ -389,9 +493,9 @@ void write_sw_file(const Layout& L, const ForceField& ff, const std::string& pat
       }
 }
 
+// A title read back from a CAPS file carries the old header line: keep the description only.
 }  // namespace
 
-// A title read back from a CAPS file carries the old header line: keep the description only.
 std::string export_title(std::string t, const std::string& ffname) {
   auto erase_all = [&](const std::string& x) {
     if (x.empty()) return;
@@ -404,6 +508,37 @@ std::string export_title(std::string t, const std::string& ffname) {
   return t.empty() ? "structure" : t;
 }
 
+namespace {
+
+// The energy options and layout a pair of LAMMPS files is written with (the same for the data file and the input).
+Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const LammpsStyle& st) {
+  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
+  const bool charged = !std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; });
+  // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
+  if (!charged) e.coulomb = false;
+  if (ff.lj_shift) e.tail = false;   // Martini 3: shifted at the cut-off
+  if (ff.coul_rf && e.coulomb)
+    throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
+  Layout L = build(s, ff, st);
+  if (st.native) {
+    // a coarse-grained model's own cut-off belongs to the model (MARTINI 12 Å, SDK 15 Å); otherwise the user's, else the
+    // force field file's
+    if (ff.cutoff > 0) {
+      if (st.cutoff > 0 && std::fabs(st.cutoff - ff.cutoff) > 1e-9)
+        L.notes.push_back(ff.name + "'s cut-off is part of the model: " + std::to_string(ff.cutoff) + " Å kept");
+    } else if (st.cutoff > 0) e.cutoff = st.cutoff;
+    else if (ff.native_cutoff > 0) e.cutoff = ff.native_cutoff;
+    if (st.tail >= 0) e.tail = st.tail == 1;
+    resolve_native(L, ff, st, charged && e.coulomb);
+    e.coulomb = L.coul != "none";
+    if (L.coul == "long") e.electrostatics = EnergyOptions::Electrostatics::PME;
+    else if (L.coul == "dsf") e.electrostatics = EnergyOptions::Electrostatics::DSF;
+  }
+  return L;
+}
+
+}  // namespace
+
 std::string write_lammps_data_or_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path) {
   try {
     write_lammps_data_ff(s, ff, e, path);
@@ -414,15 +549,10 @@ std::string write_lammps_data_or_structure(const System& s, const ForceField& ff
   }
 }
 
-void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& path, bool pair_coeffs) {
+void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
+                          const LammpsStyle& st) {
   EnergyOptions e = e0;
-  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
-  // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
-  if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;
-  if (ff.lj_shift) e.tail = false;   // Martini 3: shifted at the cut-off
-  if (ff.coul_rf && e.coulomb)
-    throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
-  const Layout L = build(s, ff);
+  const Layout L = prepare(s, ff, e, st);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   if (!L.sw_types.empty()) write_sw_file(L, ff, sw_path(path));
@@ -460,7 +590,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   }
   // every i-j pair, mixed by the force field's rule (and its explicit pairs): nothing is left to LAMMPS's mixing
   if (pair_coeffs) {
-    out << "\nPairIJ Coeffs  # " << (L.pair_hybrid ? std::string("hybrid/overlay") : L.gromacs ? std::string(e.coulomb ? "lj/gromacs/coul/gromacs" : "lj/gromacs")
+    out << "\nPairIJ Coeffs  # " << (!L.pair_combined.empty() ? (L.pair_hybrid ? "hybrid" : L.pair_combined) : L.pair_hybrid ? std::string("hybrid/overlay") : L.gromacs ? std::string(e.coulomb ? "lj/gromacs/coul/gromacs" : "lj/gromacs")
                                       : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
     for (const auto& l : pair_lines(L, ff)) out << l << "\n";
   }
@@ -511,20 +641,18 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
 }
 
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
-                        int64_t held_mol, bool pair_coeffs, const LammpsRun& run) {
+                        int64_t held_mol, bool pair_coeffs, const LammpsRun& run, const LammpsStyle& st, std::vector<std::string>* notes) {
   EnergyOptions e = e0;
-  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
-  // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
-  if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;
-  if (ff.lj_shift) e.tail = false;   // Martini 3: shifted at the cut-off
-  if (ff.coul_rf && e.coulomb)
-    throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
-  const Layout L = build(s, ff);
+  const Layout L = prepare(s, ff, e, st);
+  if (notes) notes->insert(notes->end(), L.notes.begin(), L.notes.end());
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   char b[400];
   out << "# LAMMPS input written by CAPS: " << clean_title(s.title, ff.name) << " · " << ff.name << "\n";
-  out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n\n";
+  if (st.native)
+    out << "# " << ff.name << " in its own LAMMPS styles" << (st.hybrid ? " (hybrid form)" : "") << "\n\n";
+  else
+    out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n\n";
   // a structure without a cell sits in a 100 Å box (as in the data file): periodic, but too large for images to interact
   out << "units           real\natom_style      full\nboundary        p p p\n\n";
   auto aligned = [](const std::string& l) {   // "keyword       arguments", as the rest of the script

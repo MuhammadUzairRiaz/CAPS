@@ -1494,6 +1494,10 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   s.pair_override = ff.pair_override;
   s.pair_form = ff.pair_form;
   s.mixing = ff.mixing;
+  s.native_pair = ff.native_pair;
+  s.native_dihedral = ff.native_dihedral;
+  s.native_improper = ff.native_improper;
+  s.native_cutoff = ff.native_cutoff;
   s.lj14 = ff.lj14;
   s.coul14 = ff.coul14;
   s.keep13 = ff.keep13;

@@ -28,6 +28,11 @@ FF = os.path.join(ROOT, "data", "forcefields")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")
 PME = "--pme" in sys.argv
+# --native: the force field's own LAMMPS styles (OPLS dihedrals, long-range Coulomb by PPPM ...), as exports write them;
+# --hybrid with it: every style hybrid. The bonded and van der Waals terms must equal CAPS's; Coulomb is PPPM there,
+# CAPS's damped shifted force here (different methods), so it and the forces are not compared.
+NATIVE = "--native" in sys.argv
+HYBRID = "--hybrid" in sys.argv
 work = arg("--keep", "") or tempfile.mkdtemp()
 os.makedirs(work, exist_ok=True)
 
@@ -283,6 +288,9 @@ for label, src, fid, charges, typing in CASES:
     os.makedirs(d, exist_ok=True)
     cmd = [CAPS, "ff", "apply", s, "--ff", ffj, "--charges", charges, "-o", os.path.join(d, "case.data"),
            "--lammps-input", os.path.join(d, "case.in"), "--forces", os.path.join(d, "caps_f.txt")]
+    cmd += ["--lammps-style", "native", "--lammps-cutoff", "10"] if NATIVE else ["--lammps-style", "exact"]
+    if HYBRID:
+        cmd += ["--hybrid"]
     if typing == "keys" and tfile:
         cmd += ["--types", tfile]
     if PME:
@@ -322,6 +330,14 @@ for label, src, fid, charges, typing in CASES:
     dw = max(abs(a - b) for a, b in zip(cw, lw)) / scale
     df = max(math.dist(cf[i], lf[i]) for i in cf)
     styles = " · ".join(l.strip() for l in open(os.path.join(d, "case.in")) if re.match(r"(bond|angle|dihedral|improper|pair)_style", l))
+    if NATIVE:   # Coulomb by another method: the other terms only
+        de = max(abs(ce[k] - lm[k]) / max(1.0, abs(ce[k])) for k in ce if k != "coulomb")
+        ok = de < 1e-5
+        rows.append((label, f"{'ok' if ok else 'DIFFERS'} · bonded and van der Waals terms {de:.1e} (relative); Coulomb CAPS DSF {ce['coulomb']:.3f} / LAMMPS "
+                     f"{lm['coulomb']:.3f} kcal/mol", " · ".join(l.strip() for l in open(os.path.join(d, "case.in")) if re.match(r"(bond|angle|dihedral|improper|pair|kspace)_style", l)),
+                     " ".join(f"{k} {ce[k]:.4f}/{lm[k]:.4f}" for k in ce if abs(ce[k]) > 0 or abs(lm[k]) > 0)))
+        fails += 0 if ok else 1
+        continue
     ok = de < 1e-5 and df < 1e-3 and dw < 1e-5
     fails += 0 if ok else 1
     rows.append((label, f"{'ok' if ok else 'DIFFERS'} · energy terms {de:.1e} (relative) · forces {df:.1e} kcal/mol/Å · virial tensor {dw:.1e} (relative)", styles,
