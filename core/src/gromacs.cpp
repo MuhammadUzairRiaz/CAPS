@@ -15,6 +15,7 @@
 // plain cut-off Coulomb (reaction field, ε_rf = 1).
 //
 // Checked against CAPS with gmx grompp, mdrun -rerun and gmx energy (bench/ff/check_gromacs.py).
+#include <cctype>
 #include <cstdio>
 #include <algorithm>
 #include <array>
@@ -49,6 +50,29 @@ std::string clean(std::string s) {
     if (c == ' ' || c == ';' || c == '[' || c == ']') c = '_';
   if (s.empty()) s = "X";
   return s.substr(0, 16);
+}
+
+// A type name as GROMACS writes it: moltemplate's OPLS-AA names carry their bonded classes (135_bCT_aCT_dCT_iCT), which
+// the itp's bonded lines never need, so the number is kept, spelt as GROMACS's own oplsaa.ff does (opls_135); a name
+// starting with a digit gets a letter in front, as grompp reads such a name as a number.
+std::string type_label(const std::string& full) {
+  std::string s = full;
+  const size_t k = s.find("_b");
+  if (k != std::string::npos && k > 0 && s.find("_a", k) != std::string::npos && s.find("_d", k) != std::string::npos) s = s.substr(0, k);
+  s = clean(s);
+  if (!s.empty() && std::isdigit(static_cast<unsigned char>(s[0]))) s = (s.size() <= 11 ? "opls_" : "t") + s;
+  return clean(s);
+}
+
+// An atom name for the itp and gro (5 characters): the structure's own name when it is one (a PDB name such as CA or
+// HB2), otherwise the element with its count in the molecule (C1, H14; C* past 9999)
+std::string atom_label(const Atom& a, std::map<int, int>& count) {
+  const std::string sym = element(a.element).symbol;
+  const std::string& nm = a.name;
+  if (!nm.empty() && nm.size() <= 5 && nm.find('_') == std::string::npos && std::isalpha(static_cast<unsigned char>(nm[0]))) return clean(nm);
+  const int k = ++count[a.element];
+  const std::string num = std::to_string(k);
+  return sym.size() + num.size() <= 5 ? sym + num : sym + "*";
 }
 
 bool periodic_bonds(const System& s, std::vector<Vec3>& pos) {
@@ -159,7 +183,8 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   std::ofstream top(stem + ".top");
   if (!top) throw std::runtime_error("cannot write " + stem + ".top");
   char b[512];
-  top << "; CAPS 0.1 · " << (s.title.empty() ? "structure" : s.title) << " · " << ff.name << "\n";
+  const std::string title = export_title(s.title, ff.name);
+  top << "; CAPS 0.1 · " << title << " · " << ff.name << "\n";
   top << "; kJ/mol and nm; every Lennard-Jones pair written with " << ff.mixing << " mixing applied, 1-4 pairs with their scaled σ, ε\n\n";
   top << "[ defaults ]\n; nbfunc  comb-rule  gen-pairs  fudgeLJ  fudgeQQ\n";
   std::snprintf(b, sizeof b, "  1        2          no         1.0      %.10g\n\n", ff.coul14);
@@ -172,7 +197,8 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   std::vector<std::string> tname(static_cast<size_t>(nt));
   std::set<std::string> used;
   for (int t = 0; t < nt; ++t) {
-    std::string nm = clean(ff.type_names[size_t(t)]);
+    std::string nm = type_label(ff.type_names[size_t(t)]);
+    if (used.count(nm)) nm = clean(ff.type_names[size_t(t)]);
     for (int k = 2; used.count(nm); ++k) nm = clean(ff.type_names[size_t(t)]).substr(0, 12) + "_" + std::to_string(k);
     used.insert(nm);
     tname[size_t(t)] = nm;
@@ -324,6 +350,15 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   std::vector<std::vector<const Line*>> by_mol(static_cast<size_t>(nmol));
   for (const auto& l : lines) by_mol[size_t(mol_of[l.atoms[0]])].push_back(&l);
+  // atom names numbered within each molecule type, the same in the itp and the gro
+  std::vector<std::string> aname(n);
+  {
+    std::map<int, int> per_element;
+    for (uint32_t i = 0; i < n; ++i) {
+      if (i == 0 || mol_of[i] != mol_of[i - 1]) per_element.clear();
+      aname[i] = atom_label(s.atoms[i], per_element);
+    }
+  }
   // each molecule's sections with local numbering; identical text is one molecule type
   auto body_of = [&](int m) {
     const uint32_t s0 = start[size_t(m)];
@@ -336,7 +371,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
       long res = a.resid > 0 ? long(a.resid) : 1;
       if (res0 < 0) res0 = res;
       const std::string rn = clean(a.resname.empty() ? "MOL" : a.resname).substr(0, 5);
-      const std::string an = clean(a.name.empty() ? element(a.element).symbol : a.name).substr(0, 5);
+      const std::string& an = aname[i];
       std::snprintf(b, sizeof b, "%7u %-16s %6ld %-5s %-5s %7u %14.10f %12.6f\n", i - s0 + 1, tname[size_t(ff.type_index[i])].c_str(), res - res0 + 1, rn.c_str(),
                     an.c_str(), i - s0 + 1, ff.charge[i], ff.mass[i]);
       o << b;
@@ -365,7 +400,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   const std::string itp_name = std::filesystem::path(stem + ".itp").filename().string();
   std::ofstream itp(stem + ".itp");
   if (!itp) throw std::runtime_error("cannot write " + stem + ".itp");
-  itp << "; CAPS 0.1 · molecule types of " << (s.title.empty() ? "structure" : s.title) << " · " << ff.name << " · kJ/mol and nm\n";
+  itp << "; CAPS 0.1 · molecule types of " << title << " · " << ff.name << " · kJ/mol and nm\n";
   std::vector<std::string> kname(kinds.size());
   for (size_t k = 0; k < kinds.size(); ++k) {
     kname[k] = contiguous ? (kinds.size() == 1 ? std::string("MOL") : "MOL" + std::to_string(k + 1)) : std::string("SYSTEM");
@@ -376,14 +411,14 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   itp.close();
   top << "\n#include \"" << itp_name << "\"\n";
-  top << "\n[ system ]\n" << clean(s.title.empty() ? "CAPS" : s.title) << "\n\n[ molecules ]\n; name  count\n";
+  top << "\n[ system ]\n" << title << "\n\n[ molecules ]\n; name  count\n";
   for (const auto& r : runs) top << kname[size_t(r.first)] << "  " << r.second << "\n";
   top.close();
 
   // coordinates: nm, 8 decimals (GROMACS reads the precision from the first line)
   std::ofstream gro(stem + ".gro");
   if (!gro) throw std::runtime_error("cannot write " + stem + ".gro");
-  gro << (s.title.empty() ? "CAPS structure" : s.title) << "\n" << n << "\n";
+  gro << title << "\n" << n << "\n";
   Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
   for (const auto& p : pos)
     for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], p[k]); hi[k] = std::max(hi[k], p[k]); }
@@ -404,7 +439,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     const Atom& a = s.atoms[i];
     const long res = (a.resid > 0 ? long(a.resid) : s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1)) % 100000;
     const std::string rn = clean(a.resname.empty() ? "MOL" : a.resname).substr(0, 5);
-    const std::string an = clean(a.name.empty() ? element(a.element).symbol : a.name).substr(0, 5);
+    const std::string& an = aname[i];
     const Vec3 p = pos[i] + shift;
     std::snprintf(b, sizeof b, "%5ld%-5s%5s%5ld%13.8f%13.8f%13.8f\n", res, rn.c_str(), an.c_str(), long((i + 1) % 100000), p[0] / 10, p[1] / 10, p[2] / 10);
     gro << b;
