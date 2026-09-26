@@ -26,7 +26,7 @@
   0,
   0.8333333333
  ],
- "cutoff": 10,
+ "cutoff": 12,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "atom_types": [

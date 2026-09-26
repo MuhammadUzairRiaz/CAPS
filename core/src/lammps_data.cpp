@@ -325,14 +325,30 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
   }
 }
 
+// Pair-style arguments as force-field input files write them: "12.000000" (fixed, six decimals, as the dsf α too)
 std::string fmt_args(std::initializer_list<double> v) {
   std::string r;
   char b[40];
   for (double x : v) {
-    std::snprintf(b, sizeof b, " %.6g", x);
+    std::snprintf(b, sizeof b, " %.6f", x);
     r += b;
   }
   return r;
+}
+
+// A k-space accuracy as "1.0e-4": one decimal, the exponent without its leading zero
+std::string fmt_accuracy(double x) {
+  char b[40];
+  std::snprintf(b, sizeof b, "%.1e", x);
+  std::string s = b;
+  const auto e = s.find('e');
+  if (e != std::string::npos) {
+    std::size_t k = e + 1;
+    if (k < s.size() && (s[k] == '-' || s[k] == '+')) ++k;
+    while (k + 1 < s.size() && s[k] == '0') s.erase(k, 1);
+    if (s[e + 1] == '+') s.erase(e + 1, 1);
+  }
+  return s;
 }
 
 // PME is used (and written) only for periodic cells, as the evaluator does.
@@ -360,10 +376,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     }
     std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
     r.push_back(b);
-    if (L.coul == "long") {
-      std::snprintf(b, sizeof b, "kspace_style %s %.3g", L.kspace.c_str(), L.kspace_accuracy);
-      r.push_back(b);
-    }
+    if (L.coul == "long") r.push_back("kspace_style " + L.kspace + " " + fmt_accuracy(L.kspace_accuracy));
     return r;
   }
   if (L.gromacs) {   // MARTINI: the GROMACS switch for LJ (and Coulomb), inner and outer radii
@@ -415,7 +428,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   r.push_back(b);
   if (e.coulomb && pme(e, L)) {
     // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
-    if (L.native) std::snprintf(b, sizeof b, "kspace_style %s %.3g", L.kspace.c_str(), L.kspace_accuracy);
+    if (L.native) std::snprintf(b, sizeof b, "kspace_style %s %s", L.kspace.c_str(), fmt_accuracy(L.kspace_accuracy).c_str());
     else std::snprintf(b, sizeof b, "kspace_style ewald %.3g", std::max(1e-12, e.ewald_rtol * 0.01));
     r.push_back(b);
   }
