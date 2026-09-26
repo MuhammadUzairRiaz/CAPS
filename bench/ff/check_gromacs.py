@@ -279,14 +279,16 @@ for label, src, fid, charges, extra in CASES:
         continue
     G = lambda *k: sum(ge.get(x, 0.0) for x in k) / KJ
     periodic = "Disper. corr." in ge or "Coul. recip." in ge
-    tail_caps = top_tail(d, "case", 10.0) if ("--no-tail" not in extra and periodic) else 0.0
+    # the cut-off both sides used: the .mdp's rvdw (the force field's own, e.g. OPLS 12 Å)
+    rc = next((float(l.split("=")[1].split(";")[0]) * 10 for l in open(os.path.join(d, "case.mdp")) if l.split("=")[0].strip() == "rvdw"), 10.0)
+    tail_caps = top_tail(d, "case", rc) if ("--no-tail" not in extra and periodic) else 0.0
     gm = {"bond": G("Bond", "Morse", "Quartic Bonds"),
           "angle": G("Angle", "G96Angle", "U B"), "dihedral": G("Proper Dih."), "improper": G("Per. Imp. Dih.", "Improper Dih."),
           "vdw": G("LJ 14", "LJ (SR)"), "coulomb": G("Coulomb 14", "Coulomb (SR)", "Coul. recip.")}
     # GROMACS books a periodic improper (function 4) as "Per. Imp. Dih."; CAPS may count function-9 impropers as torsions
     cm = dict(ce)
     cm["vdw"] = ce["vdw"] - tail_caps
-    shift14 = pair14_shift(d, "case", 10.0) if "--no-tail" in extra else 0.0
+    shift14 = pair14_shift(d, "case", rc) if "--no-tail" in extra else 0.0
     cm["vdw"] += shift14
     keys = ["bond", "angle", "dihedral", "improper", "vdw"] + (["coulomb"] if periodic else [])
     de = max(abs(cm[k] - gm[k]) / max(1.0, abs(cm[k])) for k in keys)
@@ -294,7 +296,7 @@ for label, src, fid, charges, extra in CASES:
     # forces include the tail (none: it is a constant) and, without a cell, Coulomb of different methods: compare only with a cell
     # mixed precision: energies to 5e-5 relative (single-precision PME); positions are stored in single precision
     # (3.6e-7 nm at 3 nm), which on a C–H bond (2.8e5 kJ/mol/nm²) is 0.1 kJ/mol/nm = 2.4e-3 kcal/mol/Å of force
-    dt = abs(G("Disper. corr.") - gmx_tail(d, "case", 10.0)) / max(1.0, abs(G("Disper. corr."))) if tail_caps else 0.0
+    dt = abs(G("Disper. corr.") - gmx_tail(d, "case", rc)) / max(1.0, abs(G("Disper. corr."))) if tail_caps else 0.0
     ok = de < 5e-5 and dt < 5e-5 and (df < 5e-3 or not periodic)
     fails += 0 if ok else 1
     extra_txt = []

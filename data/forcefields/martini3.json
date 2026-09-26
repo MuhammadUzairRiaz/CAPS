@@ -27,6 +27,7 @@
   1
  ],
  "cutoff": 11.0,
+ "timestep": 20,
  "pair_settings": {
   "coulomb": "reaction-field",
   "eps_rf": 0,

@@ -127,7 +127,7 @@ public sealed partial class MainViewModel
     private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt"];
     private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy;
     private int _engRun = 3;
-    private double _engTemp = 300, _engPress = 1, _engDt = 0.5;
+    private double _engTemp = 300, _engPress = 1, _engDt = 0;
     private long _engSteps = 100000;
     private string _engFolder = "", _engStem = "system", _engError = "", _engPreviewName = "";
     public ObservableCollection<EngineFile> EngineLammpsFiles { get; } = new();
@@ -149,7 +149,7 @@ public sealed partial class MainViewModel
     public long EngineSteps { get => _engSteps; set { if (Set(ref _engSteps, value)) RefreshEngines(); } }
     public decimal? EngineTemperatureD { get => (decimal)_engTemp; set => EngineTemperature = Math.Clamp((double)(value ?? 300m), 1, 5000); }
     public decimal? EnginePressureD { get => (decimal)_engPress; set => EnginePressure = Math.Clamp((double)(value ?? 1m), 0, 1e5); }
-    public decimal? EngineDtD { get => (decimal)_engDt; set => EngineDt = Math.Clamp((double)(value ?? 0.5m), 0.1, 5); }
+    public decimal? EngineDtD { get => (decimal)_engDt; set => EngineDt = Math.Clamp((double)(value ?? 0m), 0, 50); }
     public decimal? EngineStepsD { get => _engSteps; set => EngineSteps = (long)Math.Clamp(value ?? 100000m, 0m, 1_000_000_000m); }
     public string EngineFolder { get => _engFolder; set { if (Set(ref _engFolder, value)) Raise(nameof(EngineCanWrite)); } }
     public string EngineStem { get => _engStem; set { if (Set(ref _engStem, value)) RefreshEngines(); } }

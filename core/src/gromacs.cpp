@@ -524,7 +524,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   std::ofstream mdp(stem + ".mdp");
   if (!mdp) throw std::runtime_error("cannot write " + stem + ".mdp");
   mdp << "; GROMACS run parameters written by CAPS: " << ff.name << "\n";
-  mdp << "integrator               = md\nnsteps                   = 0\ndt                       = 0.001\n";
+  mdp << "integrator               = md\nnsteps                   = 0\ndt                       = " << (ff.native_timestep > 0 ? ff.native_timestep : 0.5) / 1000 << "\n";
   mdp << "nstcalcenergy            = 1\nnstenergy                = 1\n";
   mdp << gromacs_mdp(s, ff, e);
   if (periodic_mol) mdp << "periodic-molecules       = yes         ; bonds cross the cell: an infinite network\n";

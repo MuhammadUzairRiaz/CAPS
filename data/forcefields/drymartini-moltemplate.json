@@ -26,6 +26,7 @@
   1
  ],
  "cutoff": 12.0,
+ "timestep": 20,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "atom_types": [

@@ -129,12 +129,15 @@ struct LammpsRun {
   enum class Kind { Check, None, Minimize, NVT, NPT } kind = Kind::Check;
   bool minimize_first = true;
   double temperature = 300, pressure = 1.0;   // K, atm
-  double dt = 0.5;                             // fs
+  double dt = 0;                               // fs; 0: the force field's own (lammps_timestep)
   int64_t steps = 100000;
   double tdamp = 100, pdamp = 1000;            // fs
   int thermo_every = 1000, dump_every = 5000;
   uint64_t seed = 4928459;
 };
+// The time step engine inputs are written with: the run's when set, else the force field's own (Martini 20 fs), else 0.5 fs.
+double lammps_timestep(const LammpsRun& run, const ForceField& ff);
+
 // A LAMMPS input script for that data file: units, styles, special_bonds, read_data (as data_path is given), the pair
 // coefficients when pair_coeffs (every i-j pair written out: nothing left to LAMMPS's mixing), neighbour settings, then
 // the run section. held_mol > 0: that molecule is held in place (group, zero velocity, fix setforce), as CAPS holds an

@@ -670,7 +670,7 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   out << "units           real\natom_style      full\nboundary        p p p\n";
   {
     char t[64];   // in fs, with the other settings at the top, as force-field input files give it
-    std::snprintf(t, sizeof t, "timestep        %.6g\n\n", run.dt);
+    std::snprintf(t, sizeof t, "timestep        %.6g\n\n", lammps_timestep(run, ff));
     out << t;
   }
   auto aligned = [](const std::string& l) {   // "keyword       arguments", as the rest of the script
@@ -729,6 +729,11 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
                 std::max(1, run.dump_every), static_cast<long long>(run.steps));
   out << b;
   out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
+}
+
+double lammps_timestep(const LammpsRun& run, const ForceField& ff) {
+  if (run.dt > 0) return run.dt;
+  return ff.native_timestep > 0 ? ff.native_timestep : 0.5;
 }
 
 }  // namespace caps

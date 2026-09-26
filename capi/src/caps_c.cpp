@@ -1104,12 +1104,12 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     run.minimize_first = flag("minimize_first", true);
     run.temperature = o.num("temperature", 300);
     run.pressure = o.num("pressure", 1.0);
-    run.dt = o.num("dt", 0.5);
+    run.dt = o.num("dt", 0);   // 0: the force field's own
     run.steps = int64_t(o.num("steps", 100000));
     run.thermo_every = int(o.num("thermo_every", 1000));
     run.dump_every = int(o.num("dump_every", 5000));
     run.seed = uint64_t(o.num("seed", 4928459));
-    if (run.temperature <= 0 || run.dt <= 0 || run.steps < 0) throw std::runtime_error("temperature and time step must be positive");
+    if (run.temperature <= 0 || run.dt < 0 || run.steps < 0) throw std::runtime_error("temperature and time step must be positive");
     namespace fs = std::filesystem;
     const fs::path folder = preview ? fs::temp_directory_path() / ("caps_export_" + std::to_string(reinterpret_cast<uintptr_t>(d))) : fs::path(dir ? dir : "");
     if (folder.empty()) throw std::runtime_error("choose a folder");
@@ -1159,7 +1159,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
           head += b;
         } else {
           std::snprintf(b, sizeof b, "integrator               = md\ndt                       = %.6g\nnsteps                   = %lld\nnstxout-compressed       = %d\nnstenergy                = %d\nnstlog                   = %d\n",
-                        run.dt / 1000, static_cast<long long>(run.steps), run.dump_every, run.thermo_every, run.thermo_every);
+                        caps::lammps_timestep(run, ff) / 1000, static_cast<long long>(run.steps), run.dump_every, run.thermo_every, run.thermo_every);
           head += b;
         }
         std::string tail;
