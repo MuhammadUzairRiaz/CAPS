@@ -105,7 +105,14 @@ def rule(e, params, style=None, name=None):
     return r
 
 
-def convert(frc, cls, name, version, references, typing, out_name, src=None):
+# typing rules the .frc family needs beyond CAPS's own rules for the older library files: Materials Studio's PCFF
+# templates (pcff_templates.dat) type sulfone S as sf, a child of s' in their hierarchy; pcff.frc parameterises s'
+# (o= s' bond, ver 2.1 ref 8), so a sulfone S takes s'
+PCFF_EXTRA = [{"type": "s'", "smarts": "[SX4](=O)(=O)", "priority": 2,
+               "description": "sulfone S: sf in PCFF's templates, a child of s' (pcff.frc parameterises s')"}]
+
+
+def convert(frc, cls, name, version, references, typing, out_name, src=None, extra_rules=None):
     secs = sections(os.path.join(src or SRC, frc))
     auto = "_auto"
     atoms = entries(first(secs, "#atom_types"), 1, 0)
@@ -213,6 +220,8 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None):
     # the typing rules of the CAPS file for this force field, less those for types the .frc file does not have
     tj = json.load(open(os.path.normpath(os.path.join(ROOT, "data", "forcefields", typing))))
     have = {t["name"] for t in types}
+    added = [r for r in (extra_rules or []) if r["type"] in have]
+    tj["rules"] = tj["rules"] + added
     # moltemplate spells the characters its names cannot hold: c3prime is c3', o1=star is o1=*
     renamed = 0
     for r in tj["rules"]:
@@ -221,7 +230,7 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None):
             r["type"] = t
             renamed += 1
     dropped = sorted({r["type"] for r in tj["rules"] if r["type"] not in have})
-    if dropped or renamed:
+    if dropped or renamed or added:
         tj["rules"] = [r for r in tj["rules"] if r["type"] in have]
         tj["forcefield"] = name
         tj["description"] = tj.get("description", "") + f" (for {frc}: rules for {', '.join(dropped)}, which it does not define, left out)"
@@ -239,13 +248,14 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None):
 
 convert("pcff.frc", 2, "PCFF (pcff.frc, full class II)", "cff91 / pcff.frc 4.0",
         ["H. Sun, S. J. Mumby, J. R. Maple, A. T. Hagler, J. Am. Chem. Soc. 116, 2978 (1994)",
-         "H. Sun, Macromolecules 28, 701 (1995)"], "../typing/pcff.typing.json", "pcff-frc.json")
+         "H. Sun, Macromolecules 28, 701 (1995)"], "../typing/pcff.typing.json", "pcff-frc.json", None, PCFF_EXTRA)
 convert("cvff.frc", 1, "CVFF (cvff.frc)", "cvff.frc 2.4",
         ["P. Dauber-Osguthorpe et al., Proteins 4, 31 (1988)"], "../typing/cvff.typing.json", "cvff-frc.json")
 IFF = os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/FORCE_FIELDS")
 if os.path.isdir(IFF):   # the INTERFACE force field: PCFF and CVFF with the inorganic phases (clays, silica, metals, cement …)
     convert("pcff_interface_v1_5.frc", 2, "INTERFACE (IFF 1.5, PCFF)", "IFF 1.5 on pcff.frc",
-            ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/pcff.typing.json", "iff-pcff.json", IFF)
+            ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/pcff.typing.json", "iff-pcff.json", IFF,
+            PCFF_EXTRA)
     convert("cvff_interface_v1_5.frc", 1, "INTERFACE (IFF 1.5, CVFF)", "IFF 1.5 on cvff.frc",
             ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/cvff.typing.json", "iff-cvff.json", IFF)
 convert("compass_published.frc", 2, "COMPASS (compass_published.frc, full class II)", "compass_published.frc 1.1",
