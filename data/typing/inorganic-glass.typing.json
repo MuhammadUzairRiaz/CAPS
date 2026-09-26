@@ -1,0 +1,416 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Inorganic: glass",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "Li1",
+   "smarts": "[Li]",
+   "priority": 2,
+   "description": "Li in lithium phosphate1",
+   "requires": [
+    "O",
+    "P"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "La",
+    "Lu",
+    "Na",
+    "Sc",
+    "Si",
+    "Y"
+   ]
+  },
+  {
+   "type": "O3",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lithium phosphate1",
+   "requires": [
+    "Li",
+    "P"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "La",
+    "Lu",
+    "Na",
+    "Sc",
+    "Si",
+    "Y"
+   ]
+  },
+  {
+   "type": "P1",
+   "smarts": "[P]",
+   "priority": 2,
+   "description": "P in lithium phosphate1",
+   "requires": [
+    "Li",
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "La",
+    "Lu",
+    "Na",
+    "Sc",
+    "Si",
+    "Y"
+   ]
+  },
+  {
+   "type": "Ca1",
+   "smarts": "[Ca]",
+   "priority": 3,
+   "description": "Ca in soda-lime silicate1",
+   "requires": [
+    "Na",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Al",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "Na2",
+   "smarts": "[Na]",
+   "priority": 3,
+   "description": "Na in soda-lime silicate1",
+   "requires": [
+    "Ca",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Al",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "O3c",
+   "smarts": "[O]",
+   "priority": 3,
+   "description": "O in soda-lime silicate1",
+   "requires": [
+    "Ca",
+    "Na",
+    "Si"
+   ],
+   "excludes": [
+    "Al",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "Si3",
+   "smarts": "[Si]",
+   "priority": 3,
+   "description": "Si in soda-lime silicate1",
+   "requires": [
+    "Ca",
+    "Na",
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "O3s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O3c",
+   "atom_name": "O3s"
+  },
+  {
+   "type": "Na1",
+   "smarts": "[Na]",
+   "priority": 2,
+   "description": "Na in alkali silicate",
+   "requires": [
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "O2",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in alkali silicate",
+   "requires": [
+    "Na",
+    "Si"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "Si2",
+   "smarts": "[Si]",
+   "priority": 2,
+   "description": "Si in alkali silicate",
+   "requires": [
+    "Na",
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "P",
+    "Sc",
+    "Y"
+   ]
+  },
+  {
+   "type": "Al1",
+   "smarts": "[Al]",
+   "priority": 2,
+   "description": "Al in rare-earth aluminosilicate1",
+   "requires": [
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "La1",
+   "smarts": "[La]",
+   "priority": 3,
+   "description": "La in rare-earth aluminosilicate1",
+   "requires": [
+    "Al",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "Lu1",
+   "smarts": "[Lu]",
+   "priority": 3,
+   "description": "Lu in rare-earth aluminosilicate1",
+   "requires": [
+    "Al",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "O1",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in rare-earth aluminosilicate1",
+   "requires": [
+    "Al",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "Sc1",
+   "smarts": "[Sc]",
+   "priority": 3,
+   "description": "Sc in rare-earth aluminosilicate1",
+   "requires": [
+    "Al",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "Si1",
+   "smarts": "[Si]",
+   "priority": 2,
+   "description": "Si in rare-earth aluminosilicate1",
+   "requires": [
+    "Al",
+    "O"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "Y1",
+   "smarts": "[Y]",
+   "priority": 3,
+   "description": "Y in rare-earth aluminosilicate1",
+   "requires": [
+    "Al",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "Li",
+    "Na",
+    "P"
+   ]
+  },
+  {
+   "type": "Al1",
+   "smarts": "[Al]",
+   "priority": 3,
+   "description": "Al in yttrium aluminosilicate1",
+   "requires": [
+    "O",
+    "Si",
+    "Y"
+   ],
+   "excludes": [
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "Na",
+    "P",
+    "Sc"
+   ]
+  },
+  {
+   "type": "O1",
+   "smarts": "[O]",
+   "priority": 3,
+   "description": "O in yttrium aluminosilicate1",
+   "requires": [
+    "Al",
+    "Si",
+    "Y"
+   ],
+   "excludes": [
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "Na",
+    "P",
+    "Sc"
+   ]
+  },
+  {
+   "type": "Si1",
+   "smarts": "[Si]",
+   "priority": 3,
+   "description": "Si in yttrium aluminosilicate1",
+   "requires": [
+    "Al",
+    "O",
+    "Y"
+   ],
+   "excludes": [
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "Na",
+    "P",
+    "Sc"
+   ]
+  },
+  {
+   "type": "Y2",
+   "smarts": "[Y]",
+   "priority": 3,
+   "description": "Y in yttrium aluminosilicate1",
+   "requires": [
+    "Al",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Ca",
+    "La",
+    "Li",
+    "Lu",
+    "Na",
+    "P",
+    "Sc"
+   ]
+  }
+ ],
+ "bonds": "defined",
+ "description": "CAPS rules for Inorganic: glass (bench/typing/make_inorganic_rules.py). Compound potential sets by composition (the first reference set of each; others by hand). Shell model: a shell is added on each core.",
+ "shells": {
+  "O3c": "O3s"
+ }
+}

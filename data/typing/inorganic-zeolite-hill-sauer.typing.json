@@ -1,0 +1,69 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Hill-Sauer zeolite field",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "Si",
+   "smarts": "[Si]",
+   "priority": 0,
+   "description": "silicon"
+  },
+  {
+   "type": "Al",
+   "smarts": "[Al]",
+   "priority": 0,
+   "description": "aluminium"
+  },
+  {
+   "type": "O_SS",
+   "smarts": "[O;$(*(~[Si])~[Si])]",
+   "priority": 1,
+   "description": "Si-O-Si oxygen"
+  },
+  {
+   "type": "O_AS",
+   "smarts": "[O;H0;$(*(~[Si])~[Al])]",
+   "priority": 1,
+   "description": "Si-O-Al oxygen"
+  },
+  {
+   "type": "Ob",
+   "smarts": "[O;$(*(~[Si])~[Al]);$(*[H])]",
+   "priority": 2,
+   "description": "bridging hydroxyl oxygen Si-O(H)-Al"
+  },
+  {
+   "type": "O_SH",
+   "smarts": "[O;H1;$(*[Si]);!$(*[Al])]",
+   "priority": 1,
+   "description": "silanol oxygen"
+  },
+  {
+   "type": "O_AH",
+   "smarts": "[O;H1;$(*[Al]);!$(*[Si])]",
+   "priority": 1,
+   "description": "aluminol oxygen"
+  },
+  {
+   "type": "Hb",
+   "smarts": "[H][O;$(*~[Si]);$(*~[Al])]",
+   "priority": 2,
+   "description": "bridging hydroxyl hydrogen"
+  },
+  {
+   "type": "H_OS",
+   "smarts": "[H][O;$(*[Si]);!$(*[Al])]",
+   "priority": 1,
+   "description": "silanol hydrogen"
+  },
+  {
+   "type": "H_OA",
+   "smarts": "[H][O;$(*[Al]);!$(*[Si])]",
+   "priority": 1,
+   "description": "aluminol hydrogen"
+  }
+ ],
+ "description": "CAPS rules for Hill-Sauer zeolite field (bench/typing/make_inorganic_rules.py)."
+}

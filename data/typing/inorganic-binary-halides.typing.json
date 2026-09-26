@@ -1,0 +1,554 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Inorganic: binary halides",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "F4",
+   "smarts": "[F]",
+   "priority": 1,
+   "description": "F in lithium fluoride1",
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Li1",
+   "smarts": "[Li]",
+   "priority": 1,
+   "description": "Li in lithium fluoride1",
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Cl4",
+   "smarts": "[Cl]",
+   "priority": 1,
+   "description": "Cl in lithium chloride1",
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Li2",
+   "smarts": "[Li]",
+   "priority": 1,
+   "description": "Li in lithium chloride1",
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Br4",
+   "smarts": "[Br]",
+   "priority": 1,
+   "description": "Br in lithium bromide1",
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Li3",
+   "smarts": "[Li]",
+   "priority": 1,
+   "description": "Li in lithium bromide1",
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "I4",
+   "smarts": "[I]",
+   "priority": 1,
+   "description": "I in lithium iodide1",
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Li4",
+   "smarts": "[Li]",
+   "priority": 1,
+   "description": "Li in lithium iodide1",
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "K",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Cl1",
+   "smarts": "[Cl]",
+   "priority": 1,
+   "description": "Cl in sodium chloride1",
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Na1",
+   "smarts": "[Na]",
+   "priority": 1,
+   "description": "Na in sodium chloride1",
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "F1",
+   "smarts": "[F]",
+   "priority": 1,
+   "description": "F in sodium fluoride1",
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Na2",
+   "smarts": "[Na]",
+   "priority": 1,
+   "description": "Na in sodium fluoride1",
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Br1",
+   "smarts": "[Br]",
+   "priority": 1,
+   "description": "Br in sodium bromide1",
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Na3",
+   "smarts": "[Na]",
+   "priority": 1,
+   "description": "Na in sodium bromide1",
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "I1",
+   "smarts": "[I]",
+   "priority": 1,
+   "description": "I in sodium iodide1",
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Na4",
+   "smarts": "[Na]",
+   "priority": 1,
+   "description": "Na in sodium iodide1",
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "K",
+    "Li",
+    "Rb"
+   ]
+  },
+  {
+   "type": "F2",
+   "smarts": "[F]",
+   "priority": 1,
+   "description": "F in potassium fluoride1",
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "K1",
+   "smarts": "[K]",
+   "priority": 1,
+   "description": "K in potassium fluoride1",
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Cl2",
+   "smarts": "[Cl]",
+   "priority": 1,
+   "description": "Cl in potassium chloride1",
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "K2",
+   "smarts": "[K]",
+   "priority": 1,
+   "description": "K in potassium chloride1",
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "Br2",
+   "smarts": "[Br]",
+   "priority": 1,
+   "description": "Br in potassium bromide1",
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "K3",
+   "smarts": "[K]",
+   "priority": 1,
+   "description": "K in potassium bromide1",
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "I2",
+   "smarts": "[I]",
+   "priority": 1,
+   "description": "I in potassium iodide1",
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "K4",
+   "smarts": "[K]",
+   "priority": 1,
+   "description": "K in potassium iodide1",
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "Li",
+    "Na",
+    "Rb"
+   ]
+  },
+  {
+   "type": "F3",
+   "smarts": "[F]",
+   "priority": 1,
+   "description": "F in rubidium fluoride1",
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "Rb1",
+   "smarts": "[Rb]",
+   "priority": 1,
+   "description": "Rb in rubidium fluoride1",
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "I",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "Cl3",
+   "smarts": "[Cl]",
+   "priority": 1,
+   "description": "Cl in rubidium chloride1",
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "Rb2",
+   "smarts": "[Rb]",
+   "priority": 1,
+   "description": "Rb in rubidium chloride1",
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Br",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "Br3",
+   "smarts": "[Br]",
+   "priority": 1,
+   "description": "Br in rubidium bromide1",
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "Rb3",
+   "smarts": "[Rb]",
+   "priority": 1,
+   "description": "Rb in rubidium bromide1",
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Cl",
+    "F",
+    "I",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "I3",
+   "smarts": "[I]",
+   "priority": 1,
+   "description": "I in rubidium iodide1",
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "K",
+    "Li",
+    "Na"
+   ]
+  },
+  {
+   "type": "Rb4",
+   "smarts": "[Rb]",
+   "priority": 1,
+   "description": "Rb in rubidium iodide1",
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Br",
+    "Cl",
+    "F",
+    "K",
+    "Li",
+    "Na"
+   ]
+  }
+ ],
+ "bonds": "defined",
+ "description": "CAPS rules for Inorganic: binary halides (bench/typing/make_inorganic_rules.py). Compound potential sets by composition (the first reference set of each; others by hand)."
+}

@@ -1,0 +1,1303 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Inorganic: ternary oxides",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "C1",
+   "smarts": "[C]",
+   "priority": 2,
+   "description": "C in calcium carbonate1",
+   "requires": [
+    "Ca",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ca1",
+   "smarts": "[Ca]",
+   "priority": 2,
+   "description": "Ca in calcium carbonate1",
+   "requires": [
+    "C",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O1",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in calcium carbonate1",
+   "requires": [
+    "C",
+    "Ca"
+   ],
+   "excludes": [
+    "Ba",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ba1c",
+   "smarts": "[Ba]",
+   "priority": 2,
+   "description": "Ba in barium titanate1",
+   "requires": [
+    "O",
+    "Ti"
+   ],
+   "excludes": [
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O2c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in barium titanate1",
+   "requires": [
+    "Ba",
+    "Ti"
+   ],
+   "excludes": [
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ti1c",
+   "smarts": "[Ti]",
+   "priority": 2,
+   "description": "Ti in barium titanate1",
+   "requires": [
+    "Ba",
+    "O"
+   ],
+   "excludes": [
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ba1s",
+   "smarts": "[Ba]",
+   "priority": 99,
+   "description": "shell of Ba1c",
+   "atom_name": "Ba1s"
+  },
+  {
+   "type": "Ti1s",
+   "smarts": "[Ti]",
+   "priority": 99,
+   "description": "shell of Ti1c",
+   "atom_name": "Ti1s"
+  },
+  {
+   "type": "O2s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O2c",
+   "atom_name": "O2s"
+  },
+  {
+   "type": "O2c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in strontium titanate1",
+   "requires": [
+    "Sr",
+    "Ti"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Sr1c",
+   "smarts": "[Sr]",
+   "priority": 2,
+   "description": "Sr in strontium titanate1",
+   "requires": [
+    "O",
+    "Ti"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ti1c",
+   "smarts": "[Ti]",
+   "priority": 2,
+   "description": "Ti in strontium titanate1",
+   "requires": [
+    "O",
+    "Sr"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ti1s",
+   "smarts": "[Ti]",
+   "priority": 99,
+   "description": "shell of Ti1c",
+   "atom_name": "Ti1s"
+  },
+  {
+   "type": "O2s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O2c",
+   "atom_name": "O2s"
+  },
+  {
+   "type": "Sr1s",
+   "smarts": "[Sr]",
+   "priority": 99,
+   "description": "shell of Sr1c",
+   "atom_name": "Sr1s"
+  },
+  {
+   "type": "O3c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lead titanate1",
+   "requires": [
+    "Pb",
+    "Ti"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Pb1c",
+   "smarts": "[Pb]",
+   "priority": 2,
+   "description": "Pb in lead titanate1",
+   "requires": [
+    "O",
+    "Ti"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ti2c",
+   "smarts": "[Ti]",
+   "priority": 2,
+   "description": "Ti in lead titanate1",
+   "requires": [
+    "O",
+    "Pb"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Pb1s",
+   "smarts": "[Pb]",
+   "priority": 99,
+   "description": "shell of Pb1c",
+   "atom_name": "Pb1s"
+  },
+  {
+   "type": "Ti2s",
+   "smarts": "[Ti]",
+   "priority": 99,
+   "description": "shell of Ti2c",
+   "atom_name": "Ti2s"
+  },
+  {
+   "type": "O3s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O3c",
+   "atom_name": "O3s"
+  },
+  {
+   "type": "K1c",
+   "smarts": "[K]",
+   "priority": 2,
+   "description": "K in potassium tantalate1",
+   "requires": [
+    "O",
+    "Ta"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O4c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in potassium tantalate1",
+   "requires": [
+    "K",
+    "Ta"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ta1c",
+   "smarts": "[Ta]",
+   "priority": 2,
+   "description": "Ta in potassium tantalate1",
+   "requires": [
+    "K",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "K1s",
+   "smarts": "[K]",
+   "priority": 99,
+   "description": "shell of K1c",
+   "atom_name": "K1s"
+  },
+  {
+   "type": "Ta1s",
+   "smarts": "[Ta]",
+   "priority": 99,
+   "description": "shell of Ta1c",
+   "atom_name": "Ta1s"
+  },
+  {
+   "type": "O4s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O4c",
+   "atom_name": "O4s"
+  },
+  {
+   "type": "K1c",
+   "smarts": "[K]",
+   "priority": 2,
+   "description": "K in potassium niobate1",
+   "requires": [
+    "Nb",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "La",
+    "Mn",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Nb1c",
+   "smarts": "[Nb]",
+   "priority": 2,
+   "description": "Nb in potassium niobate1",
+   "requires": [
+    "K",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "La",
+    "Mn",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O4c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in potassium niobate1",
+   "requires": [
+    "K",
+    "Nb"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "La",
+    "Mn",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "K1s",
+   "smarts": "[K]",
+   "priority": 99,
+   "description": "shell of K1c",
+   "atom_name": "K1s"
+  },
+  {
+   "type": "O4s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O4c",
+   "atom_name": "O4s"
+  },
+  {
+   "type": "Nb1s",
+   "smarts": "[Nb]",
+   "priority": 99,
+   "description": "shell of Nb1c",
+   "atom_name": "Nb1s"
+  },
+  {
+   "type": "Cr1c",
+   "smarts": "[Cr]",
+   "priority": 2,
+   "description": "Cr in lanthanum chromite1",
+   "requires": [
+    "La",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1c",
+   "smarts": "[La]",
+   "priority": 2,
+   "description": "La in lanthanum chromite1",
+   "requires": [
+    "Cr",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O6c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lanthanum chromite1",
+   "requires": [
+    "Cr",
+    "La"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1s",
+   "smarts": "[La]",
+   "priority": 99,
+   "description": "shell of La1c",
+   "atom_name": "La1s"
+  },
+  {
+   "type": "Cr1s",
+   "smarts": "[Cr]",
+   "priority": 99,
+   "description": "shell of Cr1c",
+   "atom_name": "Cr1s"
+  },
+  {
+   "type": "O6s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O6c",
+   "atom_name": "O6s"
+  },
+  {
+   "type": "La1c",
+   "smarts": "[La]",
+   "priority": 2,
+   "description": "La in lanthanum manganite1",
+   "requires": [
+    "Mn",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Mn1c",
+   "smarts": "[Mn]",
+   "priority": 2,
+   "description": "Mn in lanthanum manganite1",
+   "requires": [
+    "La",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O6c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lanthanum manganite1",
+   "requires": [
+    "La",
+    "Mn"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1s",
+   "smarts": "[La]",
+   "priority": 99,
+   "description": "shell of La1c",
+   "atom_name": "La1s"
+  },
+  {
+   "type": "O6s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O6c",
+   "atom_name": "O6s"
+  },
+  {
+   "type": "Mn1s",
+   "smarts": "[Mn]",
+   "priority": 99,
+   "description": "shell of Mn1c",
+   "atom_name": "Mn1s"
+  },
+  {
+   "type": "Fe1c",
+   "smarts": "[Fe]",
+   "priority": 2,
+   "description": "Fe in lanthanum orthoferrite1",
+   "requires": [
+    "La",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1c",
+   "smarts": "[La]",
+   "priority": 2,
+   "description": "La in lanthanum orthoferrite1",
+   "requires": [
+    "Fe",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O6c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lanthanum orthoferrite1",
+   "requires": [
+    "Fe",
+    "La"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1s",
+   "smarts": "[La]",
+   "priority": 99,
+   "description": "shell of La1c",
+   "atom_name": "La1s"
+  },
+  {
+   "type": "O6s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O6c",
+   "atom_name": "O6s"
+  },
+  {
+   "type": "Fe1s",
+   "smarts": "[Fe]",
+   "priority": 99,
+   "description": "shell of Fe1c",
+   "atom_name": "Fe1s"
+  },
+  {
+   "type": "Co1c",
+   "smarts": "[Co]",
+   "priority": 2,
+   "description": "Co in lanthanum cobaltite1",
+   "requires": [
+    "La",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1c",
+   "smarts": "[La]",
+   "priority": 2,
+   "description": "La in lanthanum cobaltite1",
+   "requires": [
+    "Co",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O6c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lanthanum cobaltite1",
+   "requires": [
+    "Co",
+    "La"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1s",
+   "smarts": "[La]",
+   "priority": 99,
+   "description": "shell of La1c",
+   "atom_name": "La1s"
+  },
+  {
+   "type": "O6s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O6c",
+   "atom_name": "O6s"
+  },
+  {
+   "type": "Co1s",
+   "smarts": "[Co]",
+   "priority": 99,
+   "description": "shell of Co1c",
+   "atom_name": "Co1s"
+  },
+  {
+   "type": "La1c",
+   "smarts": "[La]",
+   "priority": 2,
+   "description": "La in lanthanum nickel oxide1",
+   "requires": [
+    "Ni",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ni1",
+   "smarts": "[Ni]",
+   "priority": 2,
+   "description": "Ni in lanthanum nickel oxide1",
+   "requires": [
+    "La",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O6c",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in lanthanum nickel oxide1",
+   "requires": [
+    "La",
+    "Ni"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Gd",
+    "K",
+    "Mn",
+    "Nb",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti",
+    "Zr"
+   ]
+  },
+  {
+   "type": "La1s",
+   "smarts": "[La]",
+   "priority": 99,
+   "description": "shell of La1c",
+   "atom_name": "La1s"
+  },
+  {
+   "type": "O6s",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O6c",
+   "atom_name": "O6s"
+  },
+  {
+   "type": "Gd1",
+   "smarts": "[Gd]",
+   "priority": 2,
+   "description": "Gd in gadolinium titanium oxide1",
+   "requires": [
+    "O",
+    "Ti"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "O5",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in gadolinium titanium oxide1",
+   "requires": [
+    "Gd",
+    "Ti"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Ti3",
+   "smarts": "[Ti]",
+   "priority": 2,
+   "description": "Ti in gadolinium titanium oxide1",
+   "requires": [
+    "Gd",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Zr"
+   ]
+  },
+  {
+   "type": "Gd1",
+   "smarts": "[Gd]",
+   "priority": 2,
+   "description": "Gd in gadolinium zirconium oxide1",
+   "requires": [
+    "O",
+    "Zr"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti"
+   ]
+  },
+  {
+   "type": "O5",
+   "smarts": "[O]",
+   "priority": 2,
+   "description": "O in gadolinium zirconium oxide1",
+   "requires": [
+    "Gd",
+    "Zr"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti"
+   ]
+  },
+  {
+   "type": "Zr1",
+   "smarts": "[Zr]",
+   "priority": 2,
+   "description": "Zr in gadolinium zirconium oxide1",
+   "requires": [
+    "Gd",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "C",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "K",
+    "La",
+    "Mn",
+    "Nb",
+    "Ni",
+    "Pb",
+    "Sr",
+    "Ta",
+    "Ti"
+   ]
+  },
+  {
+   "type": "O6cN",
+   "smarts": "[O]",
+   "priority": 5,
+   "description": "O core in LaNiO3",
+   "requires": [
+    "La",
+    "Ni"
+   ]
+  },
+  {
+   "type": "O6sN",
+   "smarts": "[O]",
+   "priority": 99,
+   "description": "shell of O6cN",
+   "atom_name": "O6sN"
+  }
+ ],
+ "bonds": "defined",
+ "description": "CAPS rules for Inorganic: ternary oxides (bench/typing/make_inorganic_rules.py). Compound potential sets by composition (the first reference set of each; others by hand). Shell model: a shell is added on each core.",
+ "shells": {
+  "Ba1c": "Ba1s",
+  "Ti1c": "Ti1s",
+  "O2c": "O2s",
+  "Sr1c": "Sr1s",
+  "Pb1c": "Pb1s",
+  "Ti2c": "Ti2s",
+  "O3c": "O3s",
+  "K1c": "K1s",
+  "Ta1c": "Ta1s",
+  "O4c": "O4s",
+  "Nb1c": "Nb1s",
+  "La1c": "La1s",
+  "Cr1c": "Cr1s",
+  "O6c": "O6s",
+  "Mn1c": "Mn1s",
+  "Fe1c": "Fe1s",
+  "Co1c": "Co1s",
+  "O6cN": "O6sN"
+ }
+}

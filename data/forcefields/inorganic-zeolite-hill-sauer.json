@@ -2010,9 +2010,123 @@
   }
  ],
  "notes": [
-  "converted by CAPS (inorganic_zeolite_HS, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_zeolite_HS, unit kcal/mol); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: bond increments (the force field's charges) from its .bci file"
  ],
  "version": "",
  "status": "converted",
- "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example."
+ "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+ "bond_increments": [
+  {
+   "name": "Si-O_SH",
+   "match": [
+    "Si",
+    "O_SH"
+   ],
+   "params": [
+    0.1303,
+    -0.1303
+   ]
+  },
+  {
+   "name": "H_OS-O_SH",
+   "match": [
+    "H_OS",
+    "O_SH"
+   ],
+   "params": [
+    0.0641,
+    -0.0641
+   ]
+  },
+  {
+   "name": "Al-O_AH",
+   "match": [
+    "Al",
+    "O_AH"
+   ],
+   "params": [
+    0.3013,
+    -0.3013
+   ]
+  },
+  {
+   "name": "H_OA-O_AH",
+   "match": [
+    "H_OA",
+    "O_AH"
+   ],
+   "params": [
+    0.0575,
+    -0.0575
+   ]
+  },
+  {
+   "name": "Si-Ob",
+   "match": [
+    "Si",
+    "Ob"
+   ],
+   "params": [
+    0.1392,
+    -0.1392
+   ]
+  },
+  {
+   "name": "Al-Ob",
+   "match": [
+    "Al",
+    "Ob"
+   ],
+   "params": [
+    0.0284,
+    -0.0284
+   ]
+  },
+  {
+   "name": "Hb-Ob",
+   "match": [
+    "Hb",
+    "Ob"
+   ],
+   "params": [
+    0.0839,
+    -0.0839
+   ]
+  },
+  {
+   "name": "Si-O_SS",
+   "match": [
+    "Si",
+    "O_SS"
+   ],
+   "params": [
+    0.1309,
+    -0.1309
+   ]
+  },
+  {
+   "name": "Si-O_AS",
+   "match": [
+    "Si",
+    "O_AS"
+   ],
+   "params": [
+    0.1265,
+    -0.1265
+   ]
+  },
+  {
+   "name": "Al-O_AS",
+   "match": [
+    "Al",
+    "O_AS"
+   ],
+   "params": [
+    0.1694,
+    -0.1694
+   ]
+  }
+ ],
+ "typing": "../typing/inorganic-zeolite-hill-sauer.typing.json"
 }

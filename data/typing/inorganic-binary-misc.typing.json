@@ -1,0 +1,28 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Inorganic: binary misc",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "Ga1",
+   "smarts": "[Ga]",
+   "priority": 1,
+   "description": "Ga in gallium nitride1",
+   "requires": [
+    "N"
+   ]
+  },
+  {
+   "type": "N1",
+   "smarts": "[N]",
+   "priority": 1,
+   "description": "N in gallium nitride1",
+   "requires": [
+    "Ga"
+   ]
+  }
+ ],
+ "bonds": "defined",
+ "description": "CAPS rules for Inorganic: binary misc (bench/typing/make_inorganic_rules.py). Compound potential sets by composition (the first reference set of each; others by hand)."
+}

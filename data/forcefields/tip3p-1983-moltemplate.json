@@ -32,12 +32,14 @@
   {
    "name": "H",
    "element": "H",
-   "mass": 1.008
+   "mass": 1.008,
+   "charge": 0.417
   },
   {
    "name": "O",
    "element": "O",
-   "mass": 15.9994
+   "mass": 15.9994,
+   "charge": -0.834
   }
  ],
  "pairs": [
@@ -70,14 +72,45 @@
    ]
   }
  ],
- "bonds": [],
- "angles": [],
+ "bonds": [
+  {
+   "name": "O-H",
+   "match": [
+    "O",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    0.9572
+   ],
+   "comment": "moltemplate's OH bond (rigid there, by SHAKE)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "H-O-H",
+   "match": [
+    "H",
+    "O",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    104.52
+   ],
+   "comment": "moltemplate's HOH angle (rigid there, by SHAKE)"
+  }
+ ],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "CAPS extension: charges and the O-H / H-O-H terms of the moltemplate file; the model is rigid (SHAKE) there, CAPS has no constraints and runs it flexible with these terms"
  ],
  "version": "1983",
  "status": "converted",
- "validation": "rigid model: needs SHAKE / RATTLE."
+ "validation": "rigid model: needs SHAKE / RATTLE.",
+ "typing": "../typing/tip3p-1983-moltemplate.typing.json"
 }

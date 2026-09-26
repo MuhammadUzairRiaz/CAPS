@@ -36,7 +36,8 @@
    "description": "Ref. 1 CaCO3 aragonite, calcite",
    "aliases": [
     "Ca2+#3_ternary_oxide1"
-   ]
+   ],
+   "charge": 1.668
   },
   {
    "name": "C1",
@@ -45,7 +46,8 @@
    "description": "Ref. 1 CaCO3 aragonite, calcite",
    "aliases": [
     "C4+#3_ternary_oxide1"
-   ]
+   ],
+   "charge": 0.999
   },
   {
    "name": "O1",
@@ -54,99 +56,110 @@
    "description": "Ref. 1 CaCO3 aragonite, calcite",
    "aliases": [
     "O2-#2_ternary_oxide1"
-   ]
+   ],
+   "charge": -0.889
   },
   {
    "name": "Ba1c",
    "element": "Ba",
-   "mass": 137.327,
+   "mass": 123.5943,
    "description": "Ref. 3 Barium titanate",
    "aliases": [
     "Ba2+#12c_perovskite1"
-   ]
+   ],
+   "charge": 5.62
   },
   {
    "name": "Ba1s",
    "element": "Ba",
-   "mass": 0,
+   "mass": 13.7327,
    "description": "Ref. 3 Ba shell",
    "aliases": [
     "Ba2+#12s_perovskite1"
-   ]
+   ],
+   "charge": -3.76
   },
   {
    "name": "Sr1c",
    "element": "Sr",
-   "mass": 87.62,
+   "mass": 78.858,
    "description": "Ref. 3 Strontium titanate",
    "aliases": [
     "Sr2+#12c_perovskite1"
-   ]
+   ],
+   "charge": 5.62
   },
   {
    "name": "Sr1s",
    "element": "Sr",
-   "mass": 0,
+   "mass": 8.762,
    "description": "Ref. 3 Sr shell",
    "aliases": [
     "Sr2+#12s_perovskite1"
-   ]
+   ],
+   "charge": -3.76
   },
   {
    "name": "Pb1c",
    "element": "Pb",
-   "mass": 207.2,
+   "mass": 186.48,
    "description": "Ref. 3 lead titanate",
    "aliases": [
     "Pb2+#12c_perovskite2"
-   ]
+   ],
+   "charge": 4.958
   },
   {
    "name": "Pb1s",
    "element": "Pb",
-   "mass": 0,
+   "mass": 20.72,
    "description": "Ref. 3 Pb shell",
    "aliases": [
     "Pb2+#12s_perovskite2"
-   ]
+   ],
+   "charge": -2.785
   },
   {
    "name": "K1c",
    "element": "K",
-   "mass": 39.098,
+   "mass": 35.1882,
    "description": "Ref. 3 K in K(Nb,Ta)O3.",
    "aliases": [
     "K+#12c_perovskite3"
-   ]
+   ],
+   "charge": 1.2394
   },
   {
    "name": "K1s",
    "element": "K",
-   "mass": 0,
+   "mass": 3.9098,
    "description": "Ref. 3 K shell",
    "aliases": [
     "K+#12s_perovskite3"
-   ]
+   ],
+   "charge": -0.4189
   },
   {
    "name": "La1c",
    "element": "La",
-   "mass": 138.90547,
+   "mass": 125.0145,
    "description": "Ref. 5 La core in LaBO3",
    "aliases": [
     "La3+#12c_perovskite4",
     "La3+#9c_ternary_oxide2"
-   ]
+   ],
+   "charge": 3.25
   },
   {
    "name": "La1s",
    "element": "La",
-   "mass": 0,
+   "mass": 13.8905,
    "description": "Ref. 5 La shell",
    "aliases": [
     "La3+#12s_perovskite4",
     "La3+#9s_ternary_oxide2"
-   ]
+   ],
+   "charge": -0.25
   },
   {
    "name": "Ni1",
@@ -155,151 +168,168 @@
    "description": "Ref. 6 Ni ion",
    "aliases": [
     "Ni2+#6_ternary_oxide2"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Ti1c",
    "element": "Ti",
-   "mass": 47.867,
+   "mass": 43.0803,
    "description": "Ref. 3 Barium titanate",
    "aliases": [
     "Ti4+#6c_perovskite1"
-   ]
+   ],
+   "charge": 4.76
   },
   {
    "name": "Ti1s",
    "element": "Ti",
-   "mass": 0,
+   "mass": 4.7867,
    "description": "Ref. 3 Ti shell",
    "aliases": [
     "Ti4+#6s_perovskite1"
-   ]
+   ],
+   "charge": -1.58
   },
   {
    "name": "Ti2c",
    "element": "Ti",
-   "mass": 47.867,
+   "mass": 43.0803,
    "description": "Ref. 3 Lead titanate",
    "aliases": [
     "Ti4+#6c_perovskite2"
-   ]
+   ],
+   "charge": 8.82
   },
   {
    "name": "Ti2s",
    "element": "Ti",
-   "mass": 0,
+   "mass": 4.7867,
    "description": "Ref. 3 Ti shell",
    "aliases": [
     "Ti4+#6s_perovskite2"
-   ]
+   ],
+   "charge": -5.158
   },
   {
    "name": "Ta1c",
    "element": "Ta",
-   "mass": 180.948,
+   "mass": 162.8532,
    "description": "Ref. 3 Tantalum",
    "aliases": [
     "Ta5+#6c_perovskite3"
-   ]
+   ],
+   "charge": -2.9878
   },
   {
    "name": "Ta1s",
    "element": "Ta",
-   "mass": 0,
+   "mass": 18.0948,
    "description": "Ref. 3 Ta shell",
    "aliases": [
     "Ta5+#6s_perovskite3"
-   ]
+   ],
+   "charge": 7.8265
   },
   {
    "name": "Nb1c",
    "element": "Nb",
-   "mass": 92.906,
+   "mass": 83.6154,
    "description": "Ref. 3 Nb core",
    "aliases": [
     "Nb5+#6c_perovskite3"
-   ]
+   ],
+   "charge": -2.9878
   },
   {
    "name": "Nb1s",
    "element": "Nb",
-   "mass": 0,
+   "mass": 9.2906,
    "description": "Ref. 3 Nb shell",
    "aliases": [
     "Nb5+#6s_perovskite3"
-   ]
+   ],
+   "charge": 7.8265
   },
   {
    "name": "Cr1c",
    "element": "Cr",
-   "mass": 51.996,
+   "mass": 46.7964,
    "description": "Ref. 5 Cr in LaBO3 perovskite",
    "aliases": [
     "Cr3+#6c_perovskite4"
-   ]
+   ],
+   "charge": 2.03
   },
   {
    "name": "Cr1s",
    "element": "Cr",
-   "mass": 0,
+   "mass": 5.1996,
    "description": "Ref. 5 Cr shell",
    "aliases": [
     "Cr3+#6s_perovskite4"
-   ]
+   ],
+   "charge": 0.97
   },
   {
    "name": "Mn1c",
    "element": "Mn",
-   "mass": 54.93804,
+   "mass": 49.4442,
    "description": "Ref. 5 Mn in LaBO3 perovskite",
    "aliases": [
     "Mn3+#6c_perovskite4"
-   ]
+   ],
+   "charge": 0.0
   },
   {
    "name": "Mn1s",
    "element": "Mn",
-   "mass": 0,
+   "mass": 5.4938,
    "description": "Ref. 5 Mn shell",
    "aliases": [
     "Mn3+#6s_perovskite4"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "Fe1c",
    "element": "Fe",
-   "mass": 55.845,
+   "mass": 50.2605,
    "description": "Ref. 5 Fe in LaBO3 perovskite",
    "aliases": [
     "Fe3+#6c_perovskite4"
-   ]
+   ],
+   "charge": -1.97
   },
   {
    "name": "Fe1s",
    "element": "Fe",
-   "mass": 0,
+   "mass": 5.5845,
    "description": "Ref. 5 Fe shell",
    "aliases": [
     "Fe3+#6s_perovskite4"
-   ]
+   ],
+   "charge": 4.97
   },
   {
    "name": "Co1c",
    "element": "Co",
-   "mass": 58.9332,
+   "mass": 53.0397,
    "description": "Ref. 5 Co in LaBO3 perovskite",
    "aliases": [
     "Co3+#6c_perovskite4"
-   ]
+   ],
+   "charge": 0.96
   },
   {
    "name": "Co1s",
    "element": "Co",
-   "mass": 0,
+   "mass": 5.8933,
    "description": "Ref. 5 Co in shell",
    "aliases": [
     "Co3+#6s_perovskite4"
-   ]
+   ],
+   "charge": 2.04
   },
   {
    "name": "Gd1",
@@ -308,7 +338,8 @@
    "description": "Ref. 4 Pyrochlore [Gd2](Zrx Ti2-x)O7, x = 0",
    "aliases": [
     "Gd3+#8_pyrochlore1"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "Ti3",
@@ -317,7 +348,8 @@
    "description": "Ref. 4 Pyrochlore Gd2(Zrx [Ti2-x])O7, x = 0",
    "aliases": [
     "Ti4+#6_pyrochlore1"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "Zr1",
@@ -326,81 +358,90 @@
    "description": "Ref. 4 Pyrochlore [Gd2](Zrx Ti2-x)O7, x = 2",
    "aliases": [
     "Zr4+#6_pyrochlore1"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "O2c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 3 Barium titanate",
    "aliases": [
     "O2-#6c_perovskite1"
-   ]
+   ],
+   "charge": 0.91
   },
   {
    "name": "O2s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 3 O shell",
    "aliases": [
     "O2-#6s_perovskite1"
-   ]
+   ],
+   "charge": -2.59
   },
   {
    "name": "O3c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 3 O of PbTiO3",
    "aliases": [
     "O2-#6c_perovskite2"
-   ]
+   ],
+   "charge": 0.563
   },
   {
    "name": "O3s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 3 O shell",
    "aliases": [
     "O2-#6s_perovskite2"
-   ]
+   ],
+   "charge": -2.508
   },
   {
    "name": "O4c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 3 O of K(Nb,Ta)O3",
    "aliases": [
     "O2-#6c_perovskite3"
-   ]
+   ],
+   "charge": 1.1236
   },
   {
    "name": "O4s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 3 O shell",
    "aliases": [
     "O2-#6s_perovskite3"
-   ]
+   ],
+   "charge": -3.01
   },
   {
    "name": "O6c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 5 O of LaBO3",
    "aliases": [
     "O2-#6c_perovskite4",
     "O2-#6c_ternary_oxide2"
-   ]
+   ],
+   "charge": 0.24
   },
   {
    "name": "O6s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 5 O shell",
    "aliases": [
     "O2-#6s_perovskite4",
     "O2-#6s_ternary_oxide2"
-   ]
+   ],
+   "charge": -2.24
   },
   {
    "name": "O5",
@@ -409,7 +450,8 @@
    "description": "Ref. 4 Pyrochlore [Gd2](Zrx Ti2-x)O7, x = 0",
    "aliases": [
     "O2-#4_pyrochlore1"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "OSPC",
@@ -418,7 +460,8 @@
    "description": "SPC oxygen",
    "aliases": [
     "O2-#2l_water_spc"
-   ]
+   ],
+   "charge": -0.82
   },
   {
    "name": "HSPC",
@@ -427,7 +470,40 @@
    "description": "SPC hydrogen",
    "aliases": [
     "H+#1l_water_spc"
-   ]
+   ],
+   "charge": 0.41
+  },
+  {
+   "name": "O6cN",
+   "element": "O",
+   "mass": 15.9994,
+   "description": "Ref. 5 O of LaBO3 (LaNiO3's charge split)",
+   "aliases": [
+    "O2-#6c_perovskite4",
+    "O2-#6c_ternary_oxide2"
+   ],
+   "charge": 0.389,
+   "equivalence": {
+    "vdw": "O6c",
+    "bond": "O6c",
+    "angle": "O6c"
+   }
+  },
+  {
+   "name": "O6sN",
+   "element": "O",
+   "mass": 0,
+   "description": "Ref. 5 O shell (LaNiO3's charge split)",
+   "aliases": [
+    "O2-#6s_perovskite4",
+    "O2-#6s_ternary_oxide2"
+   ],
+   "charge": -2.389,
+   "equivalence": {
+    "vdw": "O6s",
+    "bond": "O6s",
+    "angle": "O6s"
+   }
   }
  ],
  "pairs": [
@@ -908,6 +984,193 @@
     0,
     0
    ]
+  },
+  {
+   "name": "Ba1c",
+   "match": [
+    "Ba1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Sr1c",
+   "match": [
+    "Sr1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Pb1c",
+   "match": [
+    "Pb1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "K1c",
+   "match": [
+    "K1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "La1c",
+   "match": [
+    "La1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ti1c",
+   "match": [
+    "Ti1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ti2c",
+   "match": [
+    "Ti2c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ta1c",
+   "match": [
+    "Ta1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Nb1c",
+   "match": [
+    "Nb1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Cr1c",
+   "match": [
+    "Cr1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Mn1c",
+   "match": [
+    "Mn1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Fe1c",
+   "match": [
+    "Fe1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Co1c",
+   "match": [
+    "Co1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O2c",
+   "match": [
+    "O2c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O3c",
+   "match": [
+    "O3c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O4c",
+   "match": [
+    "O4c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O6c",
+   "match": [
+    "O6c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
   }
  ],
  "bonds": [
@@ -1232,9 +1495,14 @@
  ],
  "notes": [
   "not converted: bond coulomb (DL_POLY form not available in CAPS)",
-  "converted by CAPS (inorganic_ternary_oxide, unit eV); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_ternary_oxide, unit eV); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: O6cN / O6sN are LaNiO3's oxygen core and shell (charges 0.389 / -2.389), with O6c / O6s's parameters",
+  "CAPS extension: cores get a zero self pair (charge only; the short-range potential acts on the shell)",
+  "CAPS extension: shells carry 10 % of the ion's mass (adiabatic core-shell, as LAMMPS's core/shell examples); the source's shells are massless",
+  "CAPS extension: type charges from the force field's compound templates"
  ],
  "version": "",
  "status": "validated",
- "validation": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (the reference FIELD file runs large spring constants together)."
+ "validation": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (the reference FIELD file runs large spring constants together).",
+ "typing": "../typing/inorganic-ternary-oxides.typing.json"
 }

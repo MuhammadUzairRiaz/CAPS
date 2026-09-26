@@ -36,7 +36,8 @@
    "description": "Ref. 1 standard CLAYFF oh (clay2, to differentiate from the rest)",
    "aliases": [
     "O2-H#2_clay2"
-   ]
+   ],
+   "charge": -0.95
   },
   {
    "name": "ho",
@@ -45,7 +46,8 @@
    "description": "Ref. 1 hydroxyl hydrogen for CLAYFF",
    "aliases": [
     "H-O#1_clay1"
-   ]
+   ],
+   "charge": 0.425
   },
   {
    "name": "o2h",
@@ -59,7 +61,8 @@
    },
    "aliases": [
     "O2-H#2_clay1"
-   ]
+   ],
+   "charge": -0.95
   },
   {
    "name": "o3h",
@@ -73,7 +76,8 @@
    },
    "aliases": [
     "O2-H#3_clay1"
-   ]
+   ],
+   "charge": -0.95
   },
   {
    "name": "ohs",
@@ -82,7 +86,8 @@
    "description": "Ref. 1 hydroxyl O with substitution.",
    "aliases": [
     "O2-HM#3_clay1"
-   ]
+   ],
+   "charge": -1.0808
   },
   {
    "name": "ob",
@@ -91,7 +96,8 @@
    "description": "Ref. 1 bridging oxygen for CLAYFF -Si-[O]-Si-",
    "aliases": [
     "O2-Si#2_clay1"
-   ]
+   ],
+   "charge": -1.05
   },
   {
    "name": "obb",
@@ -100,7 +106,8 @@
    "description": "Ref. 1 bridging O with two Al (oct) and one Si (tet)",
    "aliases": [
     "O2-#3_clay1"
-   ]
+   ],
+   "charge": -1.05
   },
   {
    "name": "obc",
@@ -112,7 +119,8 @@
    },
    "aliases": [
     "O2-Al3#3_clay1"
-   ]
+   ],
+   "charge": -1.1688
   },
   {
    "name": "obo",
@@ -121,7 +129,8 @@
    "description": "Ref. 1 bridging O with oct substitution CLAYFF",
    "aliases": [
     "O2-M#3_clay1"
-   ]
+   ],
+   "charge": -1.1808
   },
   {
    "name": "obt",
@@ -130,7 +139,8 @@
    "description": "Ref. 1 bridging O with tet substitution: Si sub. with Al (obts)",
    "aliases": [
     "O2-SiM#2_clay1"
-   ]
+   ],
+   "charge": -1.1688
   },
   {
    "name": "obs",
@@ -139,7 +149,8 @@
    "description": "Ref. 1 bridging O with double substitution CLAYFF (obss)",
    "aliases": [
     "O2-MM#3_clay1"
-   ]
+   ],
+   "charge": -1.2996
   },
   {
    "name": "st",
@@ -148,7 +159,8 @@
    "description": "Ref. 1 tetrahedral silicone CLAYFF.",
    "aliases": [
     "Si4+#4_clay1"
-   ]
+   ],
+   "charge": 2.1
   },
   {
    "name": "ao",
@@ -157,7 +169,8 @@
    "description": "Ref. 1 octahedral aluminium CLAYFF.",
    "aliases": [
     "Al3+#6_clay1"
-   ]
+   ],
+   "charge": 1.575
   },
   {
    "name": "at",
@@ -166,7 +179,8 @@
    "description": "Ref. 1 tetrahedral aluminium CLAYFF.",
    "aliases": [
     "Al3+#4_clay1"
-   ]
+   ],
+   "charge": 1.575
   },
   {
    "name": "mgo",
@@ -175,7 +189,8 @@
    "description": "Ref. 1 octahedral Mg CLAYFF.",
    "aliases": [
     "Mg2+#6_clay1"
-   ]
+   ],
+   "charge": 1.36
   },
   {
    "name": "mgh",
@@ -184,7 +199,8 @@
    "description": "Ref. 1 hydroxide Mg CLAYFF.",
    "aliases": [
     "Mg2+O#6_clay1"
-   ]
+   ],
+   "charge": 1.05
   },
   {
    "name": "cao",
@@ -193,7 +209,8 @@
    "description": "Ref. 1 octahedral Ca CLAYFF.",
    "aliases": [
     "Ca2+#6_clay1"
-   ]
+   ],
+   "charge": 1.36
   },
   {
    "name": "cah",
@@ -202,7 +219,8 @@
    "description": "Ref. 1 hydroxide Ca CLAYFF.",
    "aliases": [
     "Ca2+O#6_clay1"
-   ]
+   ],
+   "charge": 1.05
   },
   {
    "name": "feo",
@@ -211,7 +229,8 @@
    "description": "Ref. 1 octahedral iron CLAYFF.",
    "aliases": [
     "Fe3+#6_clay1"
-   ]
+   ],
+   "charge": 1.575
   },
   {
    "name": "lio",
@@ -220,7 +239,8 @@
    "description": "Ref. 1 octahedral Li CLAYFF.",
    "aliases": [
     "Li+#6_clay1"
-   ]
+   ],
+   "charge": 0.525
   },
   {
    "name": "Na",
@@ -229,7 +249,8 @@
    "description": "Ref. 1 aqueous sodium ion CLAYFF.",
    "aliases": [
     "Na+#l_clay1"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "K",
@@ -238,7 +259,8 @@
    "description": "Ref. 1 aqueous potassium ion CLAYFF.",
    "aliases": [
     "K+#l_clay1"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "Cs",
@@ -247,7 +269,8 @@
    "description": "Ref. 1 aqueous ceasium ion CLAYFF.",
    "aliases": [
     "Cs+#l_clay1"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "Ca",
@@ -256,7 +279,8 @@
    "description": "Ref. 1 aqueous calcium ion CLAYFF.",
    "aliases": [
     "Ca2+#l_clay1"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Ba",
@@ -265,7 +289,8 @@
    "description": "Ref. 1 aqueous barium ion CLAYFF.",
    "aliases": [
     "Ba2+#l_clay1"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Cl",
@@ -274,7 +299,8 @@
    "description": "Ref. 1 aqueous chloride ion CLAYFF.",
    "aliases": [
     "Cl-#l_clay1"
-   ]
+   ],
+   "charge": -1.0
   },
   {
    "name": "o*",
@@ -283,7 +309,8 @@
    "description": "SPC oxygen",
    "aliases": [
     "O2-#2l_water_spc"
-   ]
+   ],
+   "charge": -0.82
   },
   {
    "name": "h*",
@@ -292,7 +319,8 @@
    "description": "SPC hydrogen",
    "aliases": [
     "H+#1l_water_spc"
-   ]
+   ],
+   "charge": 0.41
   }
  ],
  "pairs": [
@@ -859,9 +887,11 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted by CAPS (inorganic_clay, unit kcal/mol); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_clay, unit kcal/mol); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: type charges from the force field's compound templates"
  ],
  "version": "",
  "status": "converted",
- "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example."
+ "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+ "typing": "../typing/inorganic-clay.typing.json"
 }

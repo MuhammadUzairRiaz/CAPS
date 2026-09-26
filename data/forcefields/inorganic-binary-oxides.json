@@ -36,7 +36,8 @@
    "description": "Ref. 1",
    "aliases": [
     "Li+#4_binary_oxide1"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "Na1",
@@ -45,7 +46,8 @@
    "description": "Ref. 1",
    "aliases": [
     "Na+#4_binary_oxide1"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "K1",
@@ -54,25 +56,28 @@
    "description": "Ref. 1",
    "aliases": [
     "K+#4_binary_oxide1"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "Mg1c",
    "element": "Mg",
-   "mass": 24.305,
+   "mass": 21.8745,
    "description": "Ref. 1 Mg core",
    "aliases": [
     "Mg2+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 1.58
   },
   {
    "name": "Mg1s",
    "element": "Mg",
-   "mass": 0,
+   "mass": 2.4305,
    "description": "Ref. 1 Mg shell",
    "aliases": [
     "Mg2+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 0.42
   },
   {
    "name": "Mg2",
@@ -81,7 +86,8 @@
    "description": "Ref. 2 second set, Table 3",
    "aliases": [
     "Mg2+#6_binary_oxide2"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Mg3",
@@ -90,7 +96,8 @@
    "description": "Ref. 7 Mg rigid ion",
    "aliases": [
     "Mg2+#6_binary_oxide1"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Mg4",
@@ -99,25 +106,28 @@
    "description": "Ref. 11 Mg rigid ion",
    "aliases": [
     "Mg2+#6_binary_oxide3"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Ca1c",
    "element": "Ca",
-   "mass": 40.078,
+   "mass": 36.0702,
    "description": "Ref. 1 Ca core",
    "aliases": [
     "Ca2+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.719
   },
   {
    "name": "Ca1s",
    "element": "Ca",
-   "mass": 0,
+   "mass": 4.0078,
    "description": "Ref. 1 Ca shell",
    "aliases": [
     "Ca2+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.281
   },
   {
    "name": "Ca2",
@@ -126,25 +136,28 @@
    "description": "Ref. 11 Ca rigid ion",
    "aliases": [
     "Ca2+#6_binary_oxide2"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Sr1c",
    "element": "Sr",
-   "mass": 87.62,
+   "mass": 78.858,
    "description": "Ref. 1 Sr core",
    "aliases": [
     "Sr2+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.719
   },
   {
    "name": "Sr1s",
    "element": "Sr",
-   "mass": 0,
+   "mass": 8.762,
    "description": "Ref. 1 Sr shell",
    "aliases": [
     "Sr2+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.281
   },
   {
    "name": "Sr2",
@@ -153,25 +166,28 @@
    "description": "Ref. 11 Sr rigid ion",
    "aliases": [
     "Sr2+#6_binary_oxide2"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Ba1c",
    "element": "Ba",
-   "mass": 137.327,
+   "mass": 123.5943,
    "description": "Ref. 1 Ba core",
    "aliases": [
     "Ba2+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.719
   },
   {
    "name": "Ba1s",
    "element": "Ba",
-   "mass": 0,
+   "mass": 13.7327,
    "description": "Ref. 1 Ba shell",
    "aliases": [
     "Ba2+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.281
   },
   {
    "name": "Ba2",
@@ -180,25 +196,28 @@
    "description": "Ref. 11 Ba rigid ion",
    "aliases": [
     "Ba2+#6_binary_oxide2"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "Al1c",
    "element": "Al",
-   "mass": 26.9815,
+   "mass": 24.2838,
    "description": "Ref. 1 Al core",
    "aliases": [
     "Al3+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.043
   },
   {
    "name": "Al1s",
    "element": "Al",
-   "mass": 0,
+   "mass": 2.6982,
    "description": "Ref. 1 Al shell",
    "aliases": [
     "Al3+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 2.957
   },
   {
    "name": "Fe1c",
@@ -207,7 +226,8 @@
    "description": "Ref. 1 Fe core",
    "aliases": [
     "Fe3+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 1.971
   },
   {
    "name": "Fe1s",
@@ -216,7 +236,8 @@
    "description": "Ref. 1 Fe shell",
    "aliases": [
     "Fe3+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.029
   },
   {
    "name": "Ga1",
@@ -226,7 +247,8 @@
    "aliases": [
     "Ga3+#4_binary_oxide1",
     "Ga3+#6_binary_oxide1"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "Bi1",
@@ -234,7 +256,8 @@
    "mass": 65.39,
    "aliases": [
     "Bi3+#2_binary_oxide1"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "Y1",
@@ -243,169 +266,188 @@
    "description": "Ref. 1 Yttrium in Y2O3",
    "aliases": [
     "Y3+#6_binary_oxide1"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "La1c",
    "element": "La",
-   "mass": 138.9055,
+   "mass": 125.0145,
    "description": "Ref. 1 Lanthanum core in La2O3",
    "aliases": [
     "La3+#7c_binary_oxide1"
-   ]
+   ],
+   "charge": 5.149
   },
   {
    "name": "La1s",
    "element": "La",
-   "mass": 0,
+   "mass": 13.8905,
    "description": "Ref. 1 Lanthanum shell",
    "aliases": [
     "La3+#7s_binary_oxide1"
-   ]
+   ],
+   "charge": -2.149
   },
   {
    "name": "Pr1c",
    "element": "Pr",
-   "mass": 140.9077,
+   "mass": 126.8172,
    "description": "Ref. 1 Praseodymium core in Pr2O3",
    "aliases": [
     "Pr3+#7c_binary_oxide1"
-   ]
+   ],
+   "charge": 1.678
   },
   {
    "name": "Pr1s",
    "element": "Pr",
-   "mass": 0,
+   "mass": 14.0908,
    "description": "Ref. 1 Praseodymium shell",
    "aliases": [
     "Pr3+#7s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.322
   },
   {
    "name": "Nd1c",
    "element": "Nd",
-   "mass": 144.242,
+   "mass": 129.8178,
    "description": "Ref. 1 Neodymium core in Nd2O3",
    "aliases": [
     "Nd3+#7c_binary_oxide1"
-   ]
+   ],
+   "charge": 1.678
   },
   {
    "name": "Nd1s",
    "element": "Nd",
-   "mass": 0,
+   "mass": 14.4242,
    "description": "Ref. 1 Neodymium shell",
    "aliases": [
     "Nd3+#7s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.322
   },
   {
    "name": "Gd1c",
    "element": "Gd",
-   "mass": 157.253,
+   "mass": 141.525,
    "description": "Ref. 1 Gd core for Ga2O3 cubic",
    "aliases": [
     "Gd3+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": -0.973
   },
   {
    "name": "Gd1s",
    "element": "Gd",
-   "mass": 0,
+   "mass": 15.725,
    "description": "Ref. 1 Gd shell",
    "aliases": [
     "Gd3+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 3.973
   },
   {
    "name": "Eu1c",
    "element": "Eu",
-   "mass": 151.964,
+   "mass": 136.7676,
    "description": "Ref. 1 Eu core for Eu2O3 cubic",
    "aliases": [
     "Eu3+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": -0.991
   },
   {
    "name": "Eu1s",
    "element": "Eu",
-   "mass": 0,
+   "mass": 15.1964,
    "description": "Ref. 1 Eu shell",
    "aliases": [
     "Eu3+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 3.991
   },
   {
    "name": "Tb1c",
    "element": "Tb",
-   "mass": 158.9254,
+   "mass": 143.0325,
    "description": "Ref. 1 Tb core for Tb2O3 cubic",
    "aliases": [
     "Tb3+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": -0.972
   },
   {
    "name": "Tb1s",
    "element": "Tb",
-   "mass": 0,
+   "mass": 15.8925,
    "description": "Ref. 1 Tb shell",
    "aliases": [
     "Tb3+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 3.972
   },
   {
    "name": "Yb1c",
    "element": "Yb",
-   "mass": 173.045,
+   "mass": 155.7405,
    "description": "Ref. 1 Yb core for Yb2O3",
    "aliases": [
     "Yb3+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": -0.278
   },
   {
    "name": "Yb1s",
    "element": "Yb",
-   "mass": 0,
+   "mass": 17.3045,
    "description": "Ref. 1 Yb shell",
    "aliases": [
     "Yb3+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 3.278
   },
   {
    "name": "Ti1c",
    "element": "Ti",
-   "mass": 47.867,
+   "mass": 43.0803,
    "description": "Ref. 1 Ti core for anatase",
    "aliases": [
     "Ti4+#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 2.332
   },
   {
    "name": "Ti1s",
    "element": "Ti",
-   "mass": 0,
+   "mass": 4.7867,
    "description": "Ref. 1 Ti shell",
    "aliases": [
     "Ti4+#6s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.678
   },
   {
    "name": "Ti2c",
    "element": "Ti",
-   "mass": 47.867,
+   "mass": 43.0803,
    "description": "Ref. 4 Ti core for rutile",
    "aliases": [
     "Ti4+#6c_binary_oxide2"
-   ]
+   ],
+   "charge": 1.11
   },
   {
    "name": "Ti2s",
    "element": "Ti",
-   "mass": 0,
+   "mass": 4.7867,
    "description": "Ref. 4 Ti shell",
    "aliases": [
     "Ti4+#6s_binary_oxide2"
-   ]
+   ],
+   "charge": 2.89
   },
   {
    "name": "Ti1",
@@ -414,7 +456,8 @@
    "description": "Ref. 3 Ti rigid ion model",
    "aliases": [
     "Ti4+#6_binary_oxide1"
-   ]
+   ],
+   "charge": 2.196
   },
   {
    "name": "Ti2",
@@ -432,43 +475,48 @@
    "description": "Ref. 4, Ref. 5 Si",
    "aliases": [
     "Si4+#4_binary_oxide1"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "U1c",
    "element": "U",
-   "mass": 238.029,
+   "mass": 214.2261,
    "description": "Ref. 6, Potential 1",
    "aliases": [
     "U4+#8c_binary_oxide1"
-   ]
+   ],
+   "charge": -2.54
   },
   {
    "name": "U1s",
    "element": "U",
-   "mass": 0,
+   "mass": 23.8029,
    "description": "Ref. 6, Potential 1",
    "aliases": [
     "U4+#8s_binary_oxide1"
-   ]
+   ],
+   "charge": 6.54
   },
   {
    "name": "U2c",
    "element": "U",
-   "mass": 238.029,
+   "mass": 214.2261,
    "description": "Ref. 6, Potential 2",
    "aliases": [
     "U4+#8c_binary_oxide2"
-   ]
+   ],
+   "charge": -4.1
   },
   {
    "name": "U2s",
    "element": "U",
-   "mass": 0,
+   "mass": 23.8029,
    "description": "Ref. 6, Potential 2",
    "aliases": [
     "U4+#8s_binary_oxide2"
-   ]
+   ],
+   "charge": 7.94
   },
   {
    "name": "Zr1c",
@@ -477,7 +525,8 @@
    "description": "Ref. 10",
    "aliases": [
     "Zr4+#8c_binary_oxide1"
-   ]
+   ],
+   "charge": 2.65
   },
   {
    "name": "Zr1s",
@@ -486,25 +535,28 @@
    "description": "Ref. 10",
    "aliases": [
     "Zr4+#8s_binary_oxide1"
-   ]
+   ],
+   "charge": 1.35
   },
   {
    "name": "O7c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 4, Ref. 5 O core",
    "aliases": [
     "O2-#2c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.8482
   },
   {
    "name": "O7s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 4, Ref. 5 O shell",
    "aliases": [
     "O2-#2s_binary_oxide1"
-   ]
+   ],
+   "charge": -2.8482
   },
   {
    "name": "O11",
@@ -513,7 +565,8 @@
    "description": "Ref. 9, bismuth(iii) oxide",
    "aliases": [
     "O2-#2_binary_oxide1"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "O12",
@@ -534,7 +587,8 @@
    "description": "Ref. 3 O rigid ion model",
    "aliases": [
     "O2-#3_binary_oxide1"
-   ]
+   ],
+   "charge": -1.098
   },
   {
    "name": "O2",
@@ -561,133 +615,148 @@
    "description": "Ref. 8 H at surface Ti-O[H]",
    "aliases": [
     "H-#1_binary_oxide1"
-   ]
+   ],
+   "charge": 0.4238
   },
   {
    "name": "O4c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 1 O core on TiO2 anatase (not for rutile)",
    "aliases": [
     "O2-#3c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.513
   },
   {
    "name": "O4s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 1 O shell on TiO2 anatase (not rutile)",
    "aliases": [
     "O2-#3s_binary_oxide1"
-   ]
+   ],
+   "charge": -2.513
   },
   {
    "name": "O6c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 4 O core for rutile",
    "aliases": [
     "O2-#3c_binary_oxide2"
-   ]
+   ],
+   "charge": 0.53
   },
   {
    "name": "O6s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 4 O shell for rutile",
    "aliases": [
     "O2-#3s_binary_oxide2"
-   ]
+   ],
+   "charge": -2.53
   },
   {
    "name": "O3c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 1 O core on Al2O3, Cr2O3. Ga2O3",
    "aliases": [
     "O2-#4c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.513
   },
   {
    "name": "O3s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 1 O shell on Al2O3, Cr2O3 Ga2O3",
    "aliases": [
     "O2-#4s_binary_oxide1"
-   ]
+   ],
+   "charge": -2.513
   },
   {
    "name": "O8c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 6, Potential 1",
    "aliases": [
     "O2-#4c_binary_oxide2"
-   ]
+   ],
+   "charge": 2.4
   },
   {
    "name": "O8s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 6, Potential 1",
    "aliases": [
     "O2-#4s_binary_oxide2"
-   ]
+   ],
+   "charge": -4.4
   },
   {
    "name": "O9c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 6, Potential 2",
    "aliases": [
     "O2-#4c_binary_oxide3"
-   ]
+   ],
+   "charge": 1.14
   },
   {
    "name": "O9s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 6, Potential 2",
    "aliases": [
     "O2-#4s_binary_oxide3"
-   ]
+   ],
+   "charge": -3.06
   },
   {
    "name": "O2c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 1 O core, on Li2O, Na2O etc",
    "aliases": [
     "O2-#6c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.513
   },
   {
    "name": "O2s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 1 O shell on Li2O, Na2O etc",
    "aliases": [
     "O2-#6s_binary_oxide1"
-   ]
+   ],
+   "charge": -2.513
   },
   {
    "name": "O5c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 2 O for Mg2",
    "aliases": [
     "O2-#6c_binary_oxide2"
-   ]
+   ],
+   "charge": 0.0
   },
   {
    "name": "O5s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 2 O shell for Mg2",
    "aliases": [
     "O2-#6s_binary_oxide2"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "O10",
@@ -696,7 +765,8 @@
    "description": "Ref. 7 O rigid ion for MgO",
    "aliases": [
     "O2-#6_binary_oxide1"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "O13",
@@ -705,43 +775,48 @@
    "description": "Ref. 11 O rigid ion for metal oxide",
    "aliases": [
     "O2-#6_binary_oxide3"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "O1c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 1 O core, on Li2O, Na2O etc",
    "aliases": [
     "O2-#8c_binary_oxide1"
-   ]
+   ],
+   "charge": 0.513
   },
   {
    "name": "O1s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 1 O shell on Li2O, Na2O etc",
    "aliases": [
     "O2-#8s_binary_oxide1"
-   ]
+   ],
+   "charge": -2.513
   },
   {
    "name": "O10c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 10 O core, on ZrO2",
    "aliases": [
     "O2-#8c_binary_oxide2"
-   ]
+   ],
+   "charge": 0.077
   },
   {
    "name": "O10s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 10 O shell, on ZrO2",
    "aliases": [
     "O2-#8s_binary_oxide2"
-   ]
+   ],
+   "charge": -2.077
   },
   {
    "name": "OSPC",
@@ -1400,6 +1475,303 @@
     0,
     0
    ]
+  },
+  {
+   "name": "Mg1c",
+   "match": [
+    "Mg1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ca1c",
+   "match": [
+    "Ca1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Sr1c",
+   "match": [
+    "Sr1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ba1c",
+   "match": [
+    "Ba1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Al1c",
+   "match": [
+    "Al1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "La1c",
+   "match": [
+    "La1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Pr1c",
+   "match": [
+    "Pr1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Nd1c",
+   "match": [
+    "Nd1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Gd1c",
+   "match": [
+    "Gd1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Eu1c",
+   "match": [
+    "Eu1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Tb1c",
+   "match": [
+    "Tb1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Yb1c",
+   "match": [
+    "Yb1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ti1c",
+   "match": [
+    "Ti1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Ti2c",
+   "match": [
+    "Ti2c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "U1c",
+   "match": [
+    "U1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "U2c",
+   "match": [
+    "U2c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "Zr1c",
+   "match": [
+    "Zr1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O7c",
+   "match": [
+    "O7c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O4c",
+   "match": [
+    "O4c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O6c",
+   "match": [
+    "O6c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O3c",
+   "match": [
+    "O3c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O8c",
+   "match": [
+    "O8c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O9c",
+   "match": [
+    "O9c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O2c",
+   "match": [
+    "O2c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O5c",
+   "match": [
+    "O5c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O1c",
+   "match": [
+    "O1c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O10c",
+   "match": [
+    "O10c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
   }
  ],
  "bonds": [
@@ -1814,9 +2186,13 @@
  "impropers": [],
  "notes": [
   "form name 'buckinghsm' read as buckingham (first four characters, as in the original)",
-  "converted by CAPS (inorganic_binary_oxide, unit eV); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_binary_oxide, unit eV); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: cores get a zero self pair (charge only; the short-range potential acts on the shell)",
+  "CAPS extension: shells carry 10 % of the ion's mass (adiabatic core-shell, as LAMMPS's core/shell examples); the source's shells are massless",
+  "CAPS extension: type charges from the force field's compound templates"
  ],
  "version": "",
  "status": "validated",
- "validation": "17 of 17 buildable templates plus the alpha-Al2O3 and MgO shell-model examples: Buckingham pairs and core-shell springs identical."
+ "validation": "17 of 17 buildable templates plus the alpha-Al2O3 and MgO shell-model examples: Buckingham pairs and core-shell springs identical.",
+ "typing": "../typing/inorganic-binary-oxides.typing.json"
 }

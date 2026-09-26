@@ -42,6 +42,10 @@ struct TypingRule {
   std::string type, smarts, description;
   std::vector<std::string> overrides;
   int priority = 0;
+  // Conditions on the whole structure (compound-specific potential sets of ionic solids: NaCl's Na is not NaF's Na):
+  // every element of `requires` present, none of `excludes`. `atom_name`: only atoms of that name (the shells CAPS adds).
+  std::vector<int> needs_elements, no_elements;
+  std::string atom_name;
 };
 
 // One parameter rule: glob patterns on type names (2 for bonds, 3 angles, 4 dihedrals / impropers), a style and its
@@ -128,6 +132,12 @@ struct FFDef {
   // United-atom force field (typing file "united_atom": true; GROMOS, TraPPE-UA, CHARMM19): hydrogens on carbon are
   // part of their carbon's site, so an all-atom structure is converted before typing (prepare_for_forcefield)
   bool united_atom = false;
+  // Shell models (typing file "shells": core type → shell type): each core gets a shell particle on it, bonded by the
+  // file's core-shell spring and named for its shell type (prepare_for_forcefield)
+  std::map<std::string, std::string> shells;
+  // Ionic solids (typing file "bonds": "defined"): the builder's neighbour bonds are not bonds of the model; after
+  // typing, only bonds the force field has a term for stay (core-shell springs, O-H of water and hydroxyls)
+  bool keep_defined_bonds = false;
   // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
   // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
   // each conjugated system takes the variants that make every bond's constant equal bond_k_per_order x its bond order
@@ -173,12 +183,15 @@ struct ParamReport {
   bool complete() const { return missing.empty(); }
 };
 
-// A structure as the force field describes it. For a united-atom force field an all-atom structure (hydrogens on
+// A structure as the force field describes it. A shell-model force field gets a shell on every core it types (at the
+// core's place, bonded to it, named for the shell type so its rule types it). For a united-atom force field an all-atom structure (hydrogens on
 // carbon) becomes united-atom: each such hydrogen folds into its carbon (CH, CH2, CH3 sites, polar hydrogens kept,
 // resolution.hpp united_atom). Charges "auto" or "gasteiger" are computed on the all-atom structure first (Gasteiger,
 // else QEq) and summed into the sites, so the caller then uses charges "keep" (charges is updated). Returns a note
 // when it converted, "" otherwise.
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
+// Does the force field change the structure before typing (united atom, shells, ionic bonds)?
+inline bool needs_prepare(const FFDef& ff) { return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds; }
 
 // Build the evaluator force field for a structure whose atoms carry force-field type names (one per atom).
 // Charges: `charges` = "types" (from the force field: type charges and / or bond increments; error if neither

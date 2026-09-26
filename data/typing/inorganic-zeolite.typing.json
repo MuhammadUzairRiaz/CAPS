@@ -1,0 +1,143 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Inorganic: zeolite",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "O1",
+   "smarts": "[O]",
+   "priority": 1,
+   "description": "O in silicalite1",
+   "requires": [
+    "Si"
+   ],
+   "excludes": [
+    "Al",
+    "Na"
+   ]
+  },
+  {
+   "type": "Si1",
+   "smarts": "[Si]",
+   "priority": 1,
+   "description": "Si in silicalite1",
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Na"
+   ]
+  },
+  {
+   "type": "Al2",
+   "smarts": "[Al]",
+   "priority": 3,
+   "description": "Al in faujasite2",
+   "requires": [
+    "H",
+    "O",
+    "Si"
+   ],
+   "excludes": [
+    "Na"
+   ]
+  },
+  {
+   "type": "O2",
+   "smarts": "[O]",
+   "priority": 3,
+   "description": "O in faujasite2",
+   "requires": [
+    "Al",
+    "H",
+    "Si"
+   ],
+   "excludes": [
+    "Na"
+   ]
+  },
+  {
+   "type": "Si2",
+   "smarts": "[Si]",
+   "priority": 3,
+   "description": "Si in faujasite2",
+   "requires": [
+    "Al",
+    "H",
+    "O"
+   ],
+   "excludes": [
+    "Na"
+   ]
+  },
+  {
+   "type": "Al3",
+   "smarts": "[Al]",
+   "priority": 3,
+   "description": "Al in faujasite3",
+   "requires": [
+    "Na",
+    "O",
+    "Si"
+   ]
+  },
+  {
+   "type": "Na3",
+   "smarts": "[Na]",
+   "priority": 3,
+   "description": "Na in faujasite3",
+   "requires": [
+    "Al",
+    "O",
+    "Si"
+   ]
+  },
+  {
+   "type": "O3",
+   "smarts": "[O]",
+   "priority": 3,
+   "description": "O in faujasite3",
+   "requires": [
+    "Al",
+    "Na",
+    "Si"
+   ]
+  },
+  {
+   "type": "Si3",
+   "smarts": "[Si]",
+   "priority": 3,
+   "description": "Si in faujasite3",
+   "requires": [
+    "Al",
+    "Na",
+    "O"
+   ]
+  },
+  {
+   "type": "Ob2",
+   "smarts": "[O;$(*[H])]",
+   "priority": 5,
+   "description": "bridging hydroxyl O of an acid zeolite",
+   "requires": [
+    "Al",
+    "Si",
+    "H"
+   ]
+  },
+  {
+   "type": "Hb2",
+   "smarts": "[H][O]",
+   "priority": 5,
+   "description": "bridging hydroxyl H of an acid zeolite",
+   "requires": [
+    "Al",
+    "Si"
+   ]
+  }
+ ],
+ "bonds": "defined",
+ "description": "CAPS rules for Inorganic: zeolite (bench/typing/make_inorganic_rules.py). Compound potential sets by composition (the first reference set of each; others by hand)."
+}

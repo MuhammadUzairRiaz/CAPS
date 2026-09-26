@@ -1,0 +1,21 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TIP3P water (2004)",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "O",
+   "smarts": "[OX2H2]",
+   "priority": 0,
+   "description": "water oxygen"
+  },
+  {
+   "type": "H",
+   "smarts": "[H][OX2H2]",
+   "priority": 0,
+   "description": "water hydrogen"
+  }
+ ],
+ "description": "CAPS rules for TIP3P water (2004) (bench/typing/make_inorganic_rules.py)."
+}

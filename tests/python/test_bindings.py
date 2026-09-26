@@ -176,6 +176,18 @@ check(reline["complete"] and il["complete"] and lopls["complete"] and {"54L", "5
 o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")
 r20 = o20.field.assign("opls2020", charges="gasteiger")
 check(r20["complete"] and "2020" in r20.get("forcefield", r20.get("name", "OPLS 2020")), f"field: OPLS 2020 on benzyl acetate · {r20.get('forcefield', r20.get('name'))}")
+# inorganic and water: NaCl typed as NaCl's potential set (neighbour bonds dropped, the set's charges); MgO's shell
+# model gets a shell on every core; SPC/E water its charges
+nacl = caps.build.crystal("F m -3 m", 5.64, 5.64, 5.64, [("Na1", "Na", 0, 0, 0), ("Cl1", "Cl", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
+rn = nacl.field.assign("inorganic-binary-halides", charges="forcefield")
+mgo = caps.build.crystal("F m -3 m", 4.212, 4.212, 4.212, [("Mg1", "Mg", 0, 0, 0), ("O1", "O", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
+rm = mgo.field.assign("inorganic-binary-oxides", charges="forcefield")
+mtypes = sorted({a["type"] for a in rm["atoms"]})
+w = caps.build.smiles("O", forcefield="uff").field.assign("spce-moltemplate", charges="forcefield")
+check(rn["complete"] and {a["type"] for a in rn["atoms"]} == {"Na1", "Cl1"} and abs(rn["atoms"][0]["q"]) == 0.988
+      and rm["complete"] and mtypes == ["Mg1c", "Mg1s", "O2c", "O2s"] and len(rm["atoms"]) == 128
+      and w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9,
+      f"field: NaCl potential set, MgO shell model ({len(rm['atoms'])} sites: {mtypes}), SPC/E water")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)

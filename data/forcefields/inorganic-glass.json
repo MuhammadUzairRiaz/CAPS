@@ -36,7 +36,8 @@
    "description": "Ref. 5 Lithium phosphate glass",
    "aliases": [
     "Li+#a_glass1"
-   ]
+   ],
+   "charge": 0.6
   },
   {
    "name": "Na1",
@@ -45,7 +46,8 @@
    "description": "Ref. 3",
    "aliases": [
     "Na+#a_glass1"
-   ]
+   ],
+   "charge": 0.6
   },
   {
    "name": "Na2",
@@ -54,7 +56,8 @@
    "description": "Ref. 4",
    "aliases": [
     "Na+#a_glass2"
-   ]
+   ],
+   "charge": 1.0
   },
   {
    "name": "Al1",
@@ -63,7 +66,8 @@
    "description": "Ref. 1 Al in rare earth aluminosilicate",
    "aliases": [
     "Al3+#a_glass1"
-   ]
+   ],
+   "charge": 1.8
   },
   {
    "name": "Ca1",
@@ -72,7 +76,8 @@
    "description": "Ref. 4",
    "aliases": [
     "Ca2+#a_glass1"
-   ]
+   ],
+   "charge": 2.0
   },
   {
    "name": "P1",
@@ -81,7 +86,8 @@
    "description": "Ref. 5 Lithium phosphate glass",
    "aliases": [
     "P5+#a_glass1"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "Sc1",
@@ -90,7 +96,8 @@
    "description": "Ref. 1 Sc in rare earth aluminosilicate",
    "aliases": [
     "Sc3+#a_glass1"
-   ]
+   ],
+   "charge": 1.8
   },
   {
    "name": "Y1",
@@ -99,7 +106,8 @@
    "description": "Ref. 1 Yttrium in rare earth aluminosilicate",
    "aliases": [
     "Y3+#a_glass1"
-   ]
+   ],
+   "charge": 1.8
   },
   {
    "name": "Y2",
@@ -108,7 +116,8 @@
    "description": "Ref. 2",
    "aliases": [
     "Y3+#a_glass2"
-   ]
+   ],
+   "charge": 1.8
   },
   {
    "name": "Lu1",
@@ -117,7 +126,8 @@
    "description": "Ref. 1 Lutetium in rare earth aluminosilicate",
    "aliases": [
     "Lu3+#a_glass1"
-   ]
+   ],
+   "charge": 1.8
   },
   {
    "name": "La1",
@@ -126,7 +136,8 @@
    "description": "Ref. 1 Lanthanum in rare earth aluminosilicate",
    "aliases": [
     "La3+#a_glass1"
-   ]
+   ],
+   "charge": 1.8
   },
   {
    "name": "Si1",
@@ -135,7 +146,8 @@
    "description": "Ref. 1 Si in rare earth aluminosilicate",
    "aliases": [
     "Si4+#a_glass1"
-   ]
+   ],
+   "charge": 2.4
   },
   {
    "name": "Si3",
@@ -144,7 +156,8 @@
    "description": "Ref. 4",
    "aliases": [
     "Si4+#a_glass2"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "Si2",
@@ -153,7 +166,8 @@
    "description": "Ref. 3",
    "aliases": [
     "Si4+#4a_glass1"
-   ]
+   ],
+   "charge": 2.4
   },
   {
    "name": "O2",
@@ -162,7 +176,8 @@
    "description": "Ref. 3",
    "aliases": [
     "O2-#2a_glass1"
-   ]
+   ],
+   "charge": -1.2
   },
   {
    "name": "O1",
@@ -171,7 +186,8 @@
    "description": "Ref. 1 O in rare-earth aluminosilicate",
    "aliases": [
     "O2-#a_glass1"
-   ]
+   ],
+   "charge": -1.2
   },
   {
    "name": "O3",
@@ -180,25 +196,28 @@
    "description": "Ref. 5 O in lithium phosphate glass",
    "aliases": [
     "O2-#a_glass2"
-   ]
+   ],
+   "charge": -1.2
   },
   {
    "name": "O3c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "description": "Ref. 4 O core",
    "aliases": [
     "O2-#ac_glass2"
-   ]
+   ],
+   "charge": 0.8482
   },
   {
    "name": "O3s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "description": "Ref. 4 O shell",
    "aliases": [
     "O2-#as_glass2"
-   ]
+   ],
+   "charge": -2.8482
   }
  ],
  "pairs": [
@@ -474,6 +493,17 @@
     0.244357,
     0
    ]
+  },
+  {
+   "name": "O3c",
+   "match": [
+    "O3c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
   }
  ],
  "bonds": [
@@ -497,9 +527,13 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted by CAPS (inorganic_glass, unit eV); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_glass, unit eV); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: cores get a zero self pair (charge only; the short-range potential acts on the shell)",
+  "CAPS extension: shells carry 10 % of the ion's mass (adiabatic core-shell, as LAMMPS's core/shell examples); the source's shells are massless",
+  "CAPS extension: type charges from the force field's compound templates"
  ],
  "version": "",
  "status": "converted",
- "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example."
+ "validation": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+ "typing": "../typing/inorganic-glass.typing.json"
 }

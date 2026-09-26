@@ -36,7 +36,8 @@
    "description": "Ref. 1",
    "aliases": [
     "Ga3+#4_binary_misc1"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "N1",
@@ -45,7 +46,8 @@
    "description": "Ref. 1",
    "aliases": [
     "N3-#4_binary_misc1"
-   ]
+   ],
+   "charge": -3.0
   },
   {
    "name": "Ga3+1",
@@ -109,9 +111,11 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted by CAPS (inorganic_binary_misc, unit eV); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_binary_misc, unit eV); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: type charges from the force field's compound templates"
  ],
  "version": "",
  "status": "validated",
- "validation": "GaN: Buckingham pairs identical to the reference FIELD file."
+ "validation": "GaN: Buckingham pairs identical to the reference FIELD file.",
+ "typing": "../typing/inorganic-binary-misc.typing.json"
 }

@@ -36,7 +36,8 @@
    "description": "Ref. 1, potential set 1 [Li_1]F-_4",
    "aliases": [
     "Li+#6_binary_halide1"
-   ]
+   ],
+   "charge": 0.981
   },
   {
    "name": "Li2",
@@ -45,7 +46,8 @@
    "description": "Ref. 1, potential set 1 [Li_2]Cl-_4",
    "aliases": [
     "Li+#6_binary_halide2"
-   ]
+   ],
+   "charge": 0.995
   },
   {
    "name": "Li3",
@@ -54,7 +56,8 @@
    "description": "Ref. 1, potential set 1 [Li_3]Br-_4",
    "aliases": [
     "Li+#6_binary_halide3"
-   ]
+   ],
+   "charge": 0.992
   },
   {
    "name": "Li4",
@@ -63,7 +66,8 @@
    "description": "Ref. 1, potential set 1 [Li_4]I-_4",
    "aliases": [
     "Li+#6_binary_halide4"
-   ]
+   ],
+   "charge": 0.979
   },
   {
    "name": "Na1",
@@ -72,7 +76,8 @@
    "description": "Ref. 1, potential set 1 [Na_1]Cl_1",
    "aliases": [
     "Na+#6_binary_halide1"
-   ]
+   ],
+   "charge": 0.988
   },
   {
    "name": "Na2",
@@ -81,7 +86,8 @@
    "description": "Ref. 1, potential set 1 [Na_2]F_1",
    "aliases": [
     "Na+#6_binary_halide2"
-   ]
+   ],
+   "charge": 0.981
   },
   {
    "name": "Na3",
@@ -90,7 +96,8 @@
    "description": "Ref. 1, potential set 1 [Na_3]Br_1",
    "aliases": [
     "Na+#6_binary_halide3"
-   ]
+   ],
+   "charge": 0.988
   },
   {
    "name": "Na4",
@@ -99,7 +106,8 @@
    "description": "Ref. 1, potential set 1 [Na_4]I_1",
    "aliases": [
     "Na+#6_binary_halide4"
-   ]
+   ],
+   "charge": 0.988
   },
   {
    "name": "K1",
@@ -108,7 +116,8 @@
    "description": "Ref. 1, potential set 1 [K_1]F_2",
    "aliases": [
     "K+#6_binary_halide1"
-   ]
+   ],
+   "charge": 0.969
   },
   {
    "name": "K2",
@@ -117,7 +126,8 @@
    "description": "Ref. 1, potential set 1 [K_2]Cl_2",
    "aliases": [
     "K+#6_binary_halide2"
-   ]
+   ],
+   "charge": 0.994
   },
   {
    "name": "K3",
@@ -126,7 +136,8 @@
    "description": "Ref. 1, potential set 1 [K_3]Br-_2",
    "aliases": [
     "K+#6_binary_halide3"
-   ]
+   ],
+   "charge": 0.988
   },
   {
    "name": "K4",
@@ -135,7 +146,8 @@
    "description": "Ref. 1, potential set 1 [K_4]I_2",
    "aliases": [
     "K+#6_binary_halide4"
-   ]
+   ],
+   "charge": 0.994
   },
   {
    "name": "Rb1",
@@ -144,7 +156,8 @@
    "description": "Ref. 1, potential set 1 [Rb_1]F_3",
    "aliases": [
     "Rb+#6_binary_halide1"
-   ]
+   ],
+   "charge": 0.96
   },
   {
    "name": "Rb2",
@@ -153,7 +166,8 @@
    "description": "Ref. 1, potential set 1 [Rb_2]Cl-_3",
    "aliases": [
     "Rb+#6_binary_halide2"
-   ]
+   ],
+   "charge": 0.991
   },
   {
    "name": "Rb3",
@@ -162,7 +176,8 @@
    "description": "Ref. 1, potential set 1 [Rb_3]Br-_3",
    "aliases": [
     "Rb+#6_binary_halide3"
-   ]
+   ],
+   "charge": 0.998
   },
   {
    "name": "Rb4",
@@ -171,7 +186,8 @@
    "description": "Ref. 1, potential set 1 [Rb_4]I-_3",
    "aliases": [
     "Rb+#6_binary_halide4"
-   ]
+   ],
+   "charge": 0.999
   },
   {
    "name": "Br1",
@@ -180,7 +196,8 @@
    "description": "Ref. 1, potential set 1 Na_3[Br_1]",
    "aliases": [
     "Br-#6_binary_halide1"
-   ]
+   ],
+   "charge": -0.988
   },
   {
    "name": "Br2",
@@ -189,7 +206,8 @@
    "description": "Ref. 1, potential set 1 K_3[Br_2]",
    "aliases": [
     "Br-#6_binary_halide2"
-   ]
+   ],
+   "charge": -0.988
   },
   {
    "name": "Br3",
@@ -198,7 +216,8 @@
    "description": "Ref. 1, potential set 1 Rb_3[Br_3]",
    "aliases": [
     "Br-#6_binary_halide3"
-   ]
+   ],
+   "charge": -0.998
   },
   {
    "name": "Br4",
@@ -207,7 +226,8 @@
    "description": "Ref. 1, potential set 1 Li_3[Br_4]",
    "aliases": [
     "Br-#6_binary_halide4"
-   ]
+   ],
+   "charge": -0.992
   },
   {
    "name": "Cl1",
@@ -216,7 +236,8 @@
    "description": "Ref. 1, potential set 1 Na_1[Cl_1]",
    "aliases": [
     "Cl-#6_binary_halide1"
-   ]
+   ],
+   "charge": -0.988
   },
   {
    "name": "Cl2",
@@ -225,7 +246,8 @@
    "description": "Ref. 1, potential set 1 K_2[Cl_2]",
    "aliases": [
     "Cl-#6_binary_halide2"
-   ]
+   ],
+   "charge": -0.994
   },
   {
    "name": "Cl3",
@@ -234,7 +256,8 @@
    "description": "Ref. 1, potential set 1 Rb_2[Cl_3]",
    "aliases": [
     "Cl-#6_binary_halide3"
-   ]
+   ],
+   "charge": -0.991
   },
   {
    "name": "Cl4",
@@ -243,7 +266,8 @@
    "description": "Ref. 1, potential set 1 Li_2[Cl_4]",
    "aliases": [
     "Cl-#6_binary_halide4"
-   ]
+   ],
+   "charge": -0.995
   },
   {
    "name": "F1",
@@ -252,7 +276,8 @@
    "description": "Ref. 1, potential set 1 Na_2[F_1]",
    "aliases": [
     "F-#6_binary_halide1"
-   ]
+   ],
+   "charge": -0.981
   },
   {
    "name": "F2",
@@ -261,7 +286,8 @@
    "description": "Ref. 1, potential set 1 K_1[F_2]",
    "aliases": [
     "F-#6_binary_halide2"
-   ]
+   ],
+   "charge": -0.969
   },
   {
    "name": "F3",
@@ -270,7 +296,8 @@
    "description": "Ref. 1, potential set 1 Rb_1[F_3]",
    "aliases": [
     "F-#6_binary_halide3"
-   ]
+   ],
+   "charge": -0.96
   },
   {
    "name": "F4",
@@ -279,7 +306,8 @@
    "description": "Ref. 1, potential set 1 Li_1[F_4]",
    "aliases": [
     "F-#6_binary_halide4"
-   ]
+   ],
+   "charge": -0.981
   },
   {
    "name": "I1",
@@ -288,7 +316,8 @@
    "description": "Ref. 1, potential set 1, Na_4[I_1]",
    "aliases": [
     "I-#6_binary_halide1"
-   ]
+   ],
+   "charge": -0.988
   },
   {
    "name": "I2",
@@ -297,7 +326,8 @@
    "description": "Ref. 1, potential set 1, K_4[I_2]",
    "aliases": [
     "I-#6_binary_halide2"
-   ]
+   ],
+   "charge": -0.994
   },
   {
    "name": "I3",
@@ -306,7 +336,8 @@
    "description": "Ref. 1, potential set 1, Rb_4[I_3]",
    "aliases": [
     "I-#6_binary_halide3"
-   ]
+   ],
+   "charge": -0.999
   },
   {
    "name": "I4",
@@ -315,7 +346,8 @@
    "description": "Ref. 1, potential set 1, Li_4[I_4]",
    "aliases": [
     "I-#6_binary_halide4"
-   ]
+   ],
+   "charge": -0.979
   }
  ],
  "pairs": [
@@ -827,17 +859,18 @@
    ]
   },
   {
-   "name": "Cl3-Cl3",
+   "name": "Cl4-Cl4",
    "match": [
-    "Cl3",
-    "Cl3"
+    "Cl4",
+    "Cl4"
    ],
    "style": "buck",
    "params": [
     28299.90451,
     0.3214,
     7.84058632
-   ]
+   ],
+   "comment": "CAPS correction: the source labels LiCl's Cl---Cl pair Cl3 (RbCl's type); LiCl's chlorine is Cl4"
   },
   {
    "name": "Br1-Br1",
@@ -949,9 +982,12 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted by CAPS (inorganic_binary_halide, unit eV); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_binary_halide, unit eV); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: type charges from the force field's compound templates",
+  "CAPS correction: LiCl's Cl---Cl Buckingham pair belongs to Cl4 (the source writes Cl3, RbCl's type, and RbCl's pair was overwritten)"
  ],
  "version": "",
  "status": "validated",
- "validation": "14 of 14 ionic templates: every Buckingham pair identical to the reference FIELD file."
+ "validation": "14 of 14 ionic templates: every Buckingham pair identical to the reference FIELD file.",
+ "typing": "../typing/inorganic-binary-halides.typing.json"
 }

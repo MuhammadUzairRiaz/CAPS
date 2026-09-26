@@ -1,0 +1,166 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CLAYFF (metal-O-H bends need metal-oxygen bonds, which are not kept: left out)",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "st",
+   "smarts": "[Si]",
+   "priority": 0,
+   "description": "tetrahedral silicon"
+  },
+  {
+   "type": "ao",
+   "smarts": "[Al]",
+   "priority": 0,
+   "description": "octahedral aluminium"
+  },
+  {
+   "type": "at",
+   "smarts": "[Al;X4]",
+   "priority": 1,
+   "description": "tetrahedral aluminium"
+  },
+  {
+   "type": "mgo",
+   "smarts": "[Mg;!X0]",
+   "priority": 0,
+   "description": "octahedral magnesium"
+  },
+  {
+   "type": "mgh",
+   "smarts": "[Mg;!X0;!$(*~[O;H0])]",
+   "priority": 1,
+   "description": "magnesium of a hydroxide (all O are OH)"
+  },
+  {
+   "type": "cao",
+   "smarts": "[Ca;!X0]",
+   "priority": 0,
+   "description": "octahedral calcium"
+  },
+  {
+   "type": "cah",
+   "smarts": "[Ca;!X0;!$(*~[O;H0])]",
+   "priority": 1,
+   "description": "calcium of a hydroxide"
+  },
+  {
+   "type": "feo",
+   "smarts": "[Fe]",
+   "priority": 0,
+   "description": "octahedral iron"
+  },
+  {
+   "type": "lio",
+   "smarts": "[Li]",
+   "priority": 0,
+   "description": "octahedral lithium"
+  },
+  {
+   "type": "Na",
+   "smarts": "[Na;X0]",
+   "priority": 2,
+   "description": "aqueous Na ion"
+  },
+  {
+   "type": "K",
+   "smarts": "[K;X0]",
+   "priority": 2,
+   "description": "aqueous K ion"
+  },
+  {
+   "type": "Cs",
+   "smarts": "[Cs;X0]",
+   "priority": 2,
+   "description": "aqueous Cs ion"
+  },
+  {
+   "type": "Ca",
+   "smarts": "[Ca;X0]",
+   "priority": 2,
+   "description": "aqueous Ca ion"
+  },
+  {
+   "type": "Ba",
+   "smarts": "[Ba;X0]",
+   "priority": 2,
+   "description": "aqueous Ba ion"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl;X0]",
+   "priority": 2,
+   "description": "aqueous Cl ion"
+  },
+  {
+   "type": "ob",
+   "smarts": "[O;H0]",
+   "priority": 0,
+   "description": "bridging oxygen"
+  },
+  {
+   "type": "obb",
+   "smarts": "[O;H0;$(*(~[Al;!X4])~[Al;!X4]);$(*~[Si])]",
+   "priority": 1,
+   "description": "bridging O with two octahedral Al and one Si"
+  },
+  {
+   "type": "obt",
+   "smarts": "[O;H0;$(*~[Al;X4])]",
+   "priority": 2,
+   "description": "bridging O with tetrahedral substitution (Al for Si)"
+  },
+  {
+   "type": "obc",
+   "smarts": "[O;H0;$(*~[Al;X4]);$(*(~[Al;!X4])~[Al;!X4])]",
+   "priority": 3,
+   "description": "bridging O with two octahedral Al and a tetrahedral Al"
+  },
+  {
+   "type": "obo",
+   "smarts": "[O;H0;$(*~[Mg,Fe,Li]);$(*~[Si,Al])]",
+   "priority": 2,
+   "description": "bridging O with octahedral substitution"
+  },
+  {
+   "type": "obs",
+   "smarts": "[O;H0;$(*~[Al;X4]);$(*~[Mg,Fe,Li])]",
+   "priority": 4,
+   "description": "bridging O with double substitution"
+  },
+  {
+   "type": "oh",
+   "smarts": "[O;H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "ohs",
+   "smarts": "[O;H1;$(*~[Mg,Fe,Li]);$(*~[Al,Si])]",
+   "priority": 2,
+   "description": "hydroxyl O with substitution"
+  },
+  {
+   "type": "ho",
+   "smarts": "[H][O;H1]",
+   "priority": 1,
+   "description": "hydroxyl hydrogen"
+  },
+  {
+   "type": "o*",
+   "smarts": "[OX2H2]",
+   "priority": 5,
+   "description": "SPC water O"
+  },
+  {
+   "type": "h*",
+   "smarts": "[H][OX2H2]",
+   "priority": 5,
+   "description": "SPC water H"
+  }
+ ],
+ "bonds": "defined",
+ "description": "CAPS rules for CLAYFF (metal-O-H bends need metal-oxygen bonds, which are not kept: left out) (bench/typing/make_inorganic_rules.py)."
+}

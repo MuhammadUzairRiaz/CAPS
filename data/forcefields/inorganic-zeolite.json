@@ -35,7 +35,8 @@
    "mass": 28.0855,
    "aliases": [
     "Si4+#4_zeolite_silicalite1"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "O1",
@@ -43,7 +44,8 @@
    "mass": 15.9994,
    "aliases": [
     "O2-#2_zeolite_silicalite1"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "Si4",
@@ -51,7 +53,8 @@
    "mass": 28.0855,
    "aliases": [
     "Si4+#4_zeolite_silicalite4"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "O4",
@@ -59,23 +62,26 @@
    "mass": 15.9994,
    "aliases": [
     "O2-#2_zeolite_silicalite4"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "O4c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "aliases": [
     "O2-#2c_zeolite_silicalite4"
-   ]
+   ],
+   "charge": 0.8482
   },
   {
    "name": "O4s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "aliases": [
     "O2-#2s_zeolite_silicalite4"
-   ]
+   ],
+   "charge": -2.8482
   },
   {
    "name": "Si2",
@@ -83,12 +89,13 @@
    "mass": 28.0855,
    "aliases": [
     "Si4+#4_zeolite_faujasite2"
-   ]
+   ],
+   "charge": 4.0
   },
   {
    "name": "O2c",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 14.3991,
    "aliases": [
     "O2-#2c_zeolite_faujasite2"
    ]
@@ -96,7 +103,7 @@
   {
    "name": "O2s",
    "element": "O",
-   "mass": 0,
+   "mass": 1.5999,
    "aliases": [
     "O2-#2s_zeolite_faujasite2"
    ]
@@ -107,7 +114,8 @@
    "mass": 15.9994,
    "aliases": [
     "O2-#2_zeolite_faujasite2"
-   ]
+   ],
+   "charge": -2.0
   },
   {
    "name": "Ob2",
@@ -115,7 +123,8 @@
    "mass": 15.9994,
    "aliases": [
     "O2-H#3_zeolite_faujasite2"
-   ]
+   ],
+   "charge": -1.426
   },
   {
    "name": "Hb2",
@@ -123,7 +132,8 @@
    "mass": 1.00797,
    "aliases": [
     "H-O#1_zeolite_faujasite2"
-   ]
+   ],
+   "charge": 0.426
   },
   {
    "name": "Al2",
@@ -131,7 +141,8 @@
    "mass": 26.9815,
    "aliases": [
     "Al3+#4_zeolite_faujasite2"
-   ]
+   ],
+   "charge": 3.0
   },
   {
    "name": "Si3",
@@ -139,7 +150,8 @@
    "mass": 28.0855,
    "aliases": [
     "Si4+#4_zeolite_faujasite3"
-   ]
+   ],
+   "charge": 2.4
   },
   {
    "name": "Al3",
@@ -147,7 +159,8 @@
    "mass": 26.9815,
    "aliases": [
     "Al3+#4_zeolite_faujasite3"
-   ]
+   ],
+   "charge": 1.4
   },
   {
    "name": "O3",
@@ -155,7 +168,8 @@
    "mass": 15.9994,
    "aliases": [
     "O2-#2_zeolite_faujasite3"
-   ]
+   ],
+   "charge": -1.2
   },
   {
    "name": "Na3",
@@ -163,7 +177,8 @@
    "mass": 22.9898,
    "aliases": [
     "Na+#0_zeolite_faujasite3"
-   ]
+   ],
+   "charge": 1.0
   }
  ],
  "pairs": [
@@ -517,6 +532,28 @@
     0.218,
     272.1144664
    ]
+  },
+  {
+   "name": "O4c",
+   "match": [
+    "O4c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
+  },
+  {
+   "name": "O2c",
+   "match": [
+    "O2c"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: a core has no short-range potential (it acts on the shell)"
   }
  ],
  "bonds": [
@@ -569,9 +606,13 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted by CAPS (inorganic_zeolite, unit eV); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (inorganic_zeolite, unit eV); equivalences replace the type name for each kind of parameter",
+  "CAPS extension: cores get a zero self pair (charge only; the short-range potential acts on the shell)",
+  "CAPS extension: shells carry 10 % of the ion's mass (adiabatic core-shell, as LAMMPS's core/shell examples); the source's shells are massless",
+  "CAPS extension: type charges from the force field's compound templates"
  ],
  "version": "",
  "status": "validated",
- "validation": "4 of 4 silicalite / faujasite templates identical."
+ "validation": "4 of 4 silicalite / faujasite templates identical.",
+ "typing": "../typing/inorganic-zeolite.typing.json"
 }
