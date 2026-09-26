@@ -26,7 +26,8 @@ struct ResolutionReport {
 
 // All-atom mass and counts of a structure (by element, standard atomic weights).
 ResolutionReport all_atom_summary(const System& s);
-System united_atom(const System& s, ResolutionReport* rep = nullptr);
+// hosts: the elements whose hydrogens fold in (carbon by default; oxygen for a one-site water such as mW, site "OH2")
+System united_atom(const System& s, ResolutionReport* rep = nullptr, const std::vector<int>& hosts = {6});
 System coarse_grain(const System& s, int per_bead = 5, ResolutionReport* rep = nullptr);
 
 // Backmapping (multiscale equilibration: coarse-grain here, run the beads elsewhere, come back): the beads of

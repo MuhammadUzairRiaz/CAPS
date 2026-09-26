@@ -76,6 +76,7 @@ struct Layout {
   bool pair_hybrid = false;                // hybrid/overlay (9-6 LJ, or Buckingham / Morse pairs)
   std::set<std::string> pair_styles;       // sub-styles used in PairIJ lines
   bool periodic = true;                    // a cell: tail corrections apply (CAPS adds none without a volume)
+  std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
 };
 
 Layout build(const System& s, const ForceField& ff) {
@@ -204,6 +205,12 @@ Layout build(const System& s, const ForceField& ff) {
     }
   if (L.pair_styles.count("?")) throw FieldError("a pair form has no LAMMPS style");
   L.pair_hybrid = ff.pair_form == "lj9-6" || !ff.pair_func.empty();
+  if (ff.sw.on) {   // Stillinger–Weber overlays the pair terms (its types' Lennard-Jones is zero)
+    L.sw_types.assign(size_t(nt), "NULL");
+    for (size_t i = 0; i < ff.type_index.size(); ++i)
+      if (i < ff.sw.atom.size() && ff.sw.atom[i]) L.sw_types[size_t(ff.type_index[i])] = ff.type_names[size_t(ff.type_index[i])];
+    L.pair_hybrid = true;
+  }
   L.periodic = s.cell.valid();
   return L;
 }
@@ -233,6 +240,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       std::snprintf(b, sizeof b, " coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
       p += b;
     }
+    if (!L.sw_types.empty()) p += " sw";
     r.push_back(p);
   }
   // CAPS: with tail corrections the potentials are truncated at the cut-off (plus the tail when there is a cell);
@@ -277,11 +285,41 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
   return r;
 }
 
+// The Stillinger–Weber parameter file next to a data file: STEM.sw.
+std::string sw_path(const std::string& data_path) {
+  const size_t slash = data_path.find_last_of('/'), dot = data_path.find_last_of('.');
+  return (dot != std::string::npos && (slash == std::string::npos || dot > slash) ? data_path.substr(0, dot) : data_path) + ".sw";
+}
+
 // Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
-std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e) {
+std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path) {
   std::vector<std::string> r;
   if (L.pair_hybrid && e.coulomb) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
+  if (!L.sw_types.empty()) {
+    std::string l = "pair_coeff * * sw " + sw_path(data_path);
+    for (const auto& t : L.sw_types) l += " " + t;
+    r.push_back(l);
+  }
   return r;
+}
+
+// LAMMPS's Stillinger–Weber file: one entry per element triplet, CAPS's single parameter set in each.
+void write_sw_file(const Layout& L, const ForceField& ff, const std::string& path) {
+  std::set<std::string> el(L.sw_types.begin(), L.sw_types.end());
+  el.erase("NULL");
+  std::ofstream out(path);
+  if (!out) throw std::runtime_error("cannot write " + path);
+  out << "# Stillinger-Weber parameters written by CAPS for " << ff.name << " (units real: kcal/mol, A)\n"
+      << "# el1 el2 el3  epsilon sigma a lambda gamma costheta0 A B p q tol\n";
+  const auto& S = ff.sw;
+  char b[400];
+  for (const auto& i : el)
+    for (const auto& j : el)
+      for (const auto& k : el) {
+        std::snprintf(b, sizeof b, "%s %s %s  %.10g %.10g %.10g %.10g %.10g %.10g %.10g %.10g %.10g %.10g 0.0\n", i.c_str(), j.c_str(), k.c_str(), S.eps,
+                      S.sigma, S.a, S.lambda, S.gamma, S.cos0, S.A, S.B, S.p, S.q);
+        out << b;
+      }
 }
 
 }  // namespace
@@ -303,6 +341,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
+  if (!L.sw_types.empty()) write_sw_file(L, ff, sw_path(path));
   char buf[512];
   const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
 
@@ -407,7 +446,7 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
     out << "\n# pair coefficients: every type pair, " << ff.mixing << " mixing applied by CAPS (nothing left to LAMMPS's mixing)\n";
     for (const auto& l : pair_lines(L, ff)) out << "pair_coeff      " << l << "\n";
   }
-  for (const auto& l : after_read(L, e)) out << aligned(l) << "\n";
+  for (const auto& l : after_read(L, e, data_path)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (held_mol > 0)

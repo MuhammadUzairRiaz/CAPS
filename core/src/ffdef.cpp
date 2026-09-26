@@ -122,6 +122,10 @@ void load_typing(FFDef& ff, const std::string& path) {
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
   ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
   ff.united_atom = ff.united_atom || (j.has("united_atom") && j["united_atom"].boolean());
+  if (j.has("united_atom_hosts")) {
+    ff.united_atom_hosts.clear();
+    for (const auto& x : j["united_atom_hosts"].items()) ff.united_atom_hosts.push_back(element_from_symbol(x.str()));
+  }
   ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
   if (j.has("shells") && j["shells"].is_object())
     for (const auto& [core, shell] : j["shells"].members()) ff.shells[core] = shell.str();
@@ -1015,6 +1019,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   }
   std::vector<PairType> lj14;
   bool any14 = false;
+  std::set<int> sw_types;
   for (size_t ti = 0; ti < ff.type_names.size(); ++ti) {
     const std::string& tn = ff.type_names[ti];
     const FFRule* r = nullptr;
@@ -1030,6 +1035,18 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       lj14.push_back({0, 0});
       continue;
     }
+    if (r->style == "sw") {   // Stillinger–Weber (mW): ε σ a λ γ cosθ0 A B p q [tol], the many-body term, no LJ
+      if (r->params.size() < 10) throw FFError("pair " + r->name + ": sw needs ε σ a λ γ cosθ0 A B p q");
+      const auto& q = r->params;
+      ff.sw.on = true;
+      ff.sw.eps = q[0], ff.sw.sigma = q[1], ff.sw.a = q[2], ff.sw.lambda = q[3], ff.sw.gamma = q[4], ff.sw.cos0 = q[5];
+      ff.sw.A = q[6], ff.sw.B = q[7], ff.sw.p = q[8], ff.sw.q = q[9];
+      sw_types.insert(int(ti));
+      ff.lj.push_back({0, 0});
+      lj14.push_back({0, 0});
+      rep.used["pair " + tn]++;
+      continue;
+    }
     // any Lennard-Jones variant (lj/cut, lj/charmm/coul/long, ... as moltemplate names hybrid sub-styles) mixes
     if (!r->style.empty() && r->style.rfind("lj", 0) != 0)
       throw FFError("pair style '" + r->style + "' on a single type (" + r->name + ") has no mixing rule; give it per pair");
@@ -1043,6 +1060,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     rep.used["pair " + tn]++;
   }
   if (any14) ff.lj14_types = lj14;
+  if (ff.sw.on) {
+    ff.sw.atom.assign(n, 0);
+    for (size_t i = 0; i < n; ++i) ff.sw.atom[i] = sw_types.count(ff.type_index[i]) ? 1 : 0;
+  }
   for (const auto& r : def.pairs) {
     if (r.match.size() != 2 || r.params.size() < 2) continue;
     for (size_t a = 0; a < ff.type_names.size(); ++a)
@@ -1558,10 +1579,11 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
     }
   }
   if (!ff.united_atom) return note;
+  auto host = [&](int z) { return std::find(ff.united_atom_hosts.begin(), ff.united_atom_hosts.end(), z) != ff.united_atom_hosts.end(); };
   bool ch = false;
   for (const auto& b : s.bonds)
-    ch = ch || (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 1) || (s.atoms[b.j].element == 6 && s.atoms[b.i].element == 1);
-  if (!ch) return "";
+    ch = ch || (host(s.atoms[b.i].element) && s.atoms[b.j].element == 1) || (host(s.atoms[b.j].element) && s.atoms[b.i].element == 1);
+  if (!ch) return note;
   std::string how;
   if (charges == "auto" || charges == "gasteiger") {   // on the all-atom structure, where the method is defined
     ChargeReport q;
@@ -1578,8 +1600,9 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
   }
   ResolutionReport rep;
   const size_t before = s.atoms.size();
-  s = united_atom(s, &rep);
-  return ff.name + " is united-atom: " + std::to_string(before - s.atoms.size()) + " hydrogens on carbon folded into their carbons (" +
+  s = united_atom(s, &rep, ff.united_atom_hosts);
+  return ff.name + " is united-atom: " + std::to_string(before - s.atoms.size()) + " hydrogens folded into their " +
+         (ff.united_atom_hosts == std::vector<int>{6} ? std::string("carbons") : std::string("host atoms")) + " (" +
          std::to_string(s.atoms.size()) + " sites)" + (how.empty() ? "" : "; " + how + " charges computed on the all-atom structure and summed into each site");
 }
 

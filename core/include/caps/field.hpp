@@ -68,6 +68,15 @@ struct Class2Improper {                                                     // j
   double m1, m2, m3, theta1, theta2, theta3;                               // M1 Δθ_ijk Δθ_kjl + M2 Δθ_ijk Δθ_ijl + M3 Δθ_ijl Δθ_kjl
 };
 
+// Stillinger–Weber (LAMMPS pair sw, one element: mW water, Molinero & Moore 2009): for r < aσ
+//   φ2 = A ε [B (σ/r)^p − (σ/r)^q] exp(σ / (r − aσ))
+//   φ3 = λ ε (cos θ_jik − cos θ0)² exp(γσ / (r_ij − aσ)) exp(γσ / (r_ik − aσ))   (each triplet j-i-k, i the vertex)
+struct StillingerWeber {
+  bool on = false;
+  double eps = 0, sigma = 0, a = 0, lambda = 0, gamma = 0, cos0 = 0, A = 0, B = 0, p = 4, q = 0;
+  std::vector<char> atom;   // per atom: takes part
+};
+
 struct ForceField {
   std::string name;                        // "GAFF 1.81 (hydrocarbon subset)"
   std::vector<std::string> atom_type;      // per atom: c3, ca, hc, ha
@@ -99,6 +108,7 @@ struct ForceField {
   std::map<std::pair<int, int>, PairType> pair_override;   // explicit coefficients for type-index pairs (a ≤ b)
   std::vector<std::array<uint32_t, 2>> pairs14;
   std::vector<std::vector<uint32_t>> excluded;   // per atom, sorted: 1-2, 1-3 and 1-4 partners, left out of the pair list
+  StillingerWeber sw;                         // many-body term (mW water); counted in the vdW energy
   double lj14 = 0.5, coul14 = 1.0 / 1.2;
   std::vector<std::string> notes;
 };

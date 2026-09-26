@@ -188,6 +188,19 @@ check(rn["complete"] and {a["type"] for a in rn["atoms"]} == {"Na1", "Cl1"} and 
       and rm["complete"] and mtypes == ["Mg1c", "Mg1s", "O2c", "O2s"] and len(rm["atoms"]) == 128
       and w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9,
       f"field: NaCl potential set, MgO shell model ({len(rm['atoms'])} sites: {mtypes}), SPC/E water")
+# miscellaneous set: each molecule-specific set where its charges add up (HFA-134a's two carbons split by charge)
+hfa = caps.build.smiles("FCC(F)(F)F", forcefield="uff").field.assign("misc", charges="forcefield")
+ipn = caps.build.smiles("CCC(C)(C)C", forcefield="uff").field.assign("misc", charges="forcefield")
+check(hfa["complete"] and ipn["complete"] and {a["type"] for a in hfa["atoms"]} == {"CTf3", "CTf1", "F", "HC"}
+      and {a["type"] for a in ipn["atoms"]} == {"Cp1", "Cs1", "C1", "H1"}
+      and abs(sum(a["q"] for a in hfa["atoms"])) < 1e-9 and abs(sum(a["q"] for a in ipn["atoms"])) < 1e-9,
+      "field: misc (HFA-134a, 2,2-dimethylbutane)")
+# mW: a water box becomes one Stillinger–Weber site per molecule (the document converted, undoable), which relaxes
+wb = caps.build.solvate(None, shape="cube", edge=20, water_model="SPC/E", ion_mode=0)
+nw = wb.summary()["molecules"]
+rw = wb.field.assign("mw-moltemplate")
+check(rw["complete"] and wb.atoms == nw and {a["type"] for a in rw["atoms"]} == {"MW"} and wb.relax(ftol=1.0) in (0, 1),
+      f"field: mW water ({nw} molecules -> {wb.atoms} Stillinger-Weber sites), relaxed")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
