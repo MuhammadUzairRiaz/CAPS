@@ -78,6 +78,7 @@ struct Layout {
   bool periodic = true;                    // a cell: tail corrections apply (CAPS adds none without a volume)
   bool sdk = false;                        // SDK / SPICA pairs (lj/sdk): no tail correction in LAMMPS
   bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
+  bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
 };
 
@@ -100,6 +101,7 @@ Layout build(const System& s, const ForceField& ff) {
   for (const auto& b : ff.bonds_x) {
     if (b.form == 1) L.bonds.add("morse", num({b.a, b.b, b.c}), {}, {b.i, b.j}, lab({b.i, b.j}));
     else if (b.form == 2) L.bonds.add("gromos", num({b.a, b.b}), {}, {b.i, b.j}, lab({b.i, b.j}));
+    else if (b.form == 3) L.bonds.add("fene", num({b.a, b.b, b.c, b.d}), {}, {b.i, b.j}, lab({b.i, b.j}));
     else throw FieldError("bond form " + std::to_string(b.form) + " has no LAMMPS style");
     mark(b.i, b.j);
   }
@@ -205,11 +207,12 @@ Layout build(const System& s, const ForceField& ff) {
     for (int b2 = a2; b2 < nt; ++b2) {
       auto it = ff.pair_func.find({a2, b2});
       const int f = it == ff.pair_func.end() ? 0 : it->second.form;
-      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : "?");
+      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : f == kPairCos2 || f == kPairCos2Wca ? "cosine/squared" : "?");
     }
   if (L.pair_styles.count("?")) throw FieldError("a pair form has no LAMMPS style");
   L.pair_hybrid = ff.pair_form == "lj9-6" || !ff.pair_func.empty();
   L.sdk = L.pair_styles.count("lj/sdk") > 0;
+  L.cos2 = L.pair_styles.count("cosine/squared") > 0;
   if (L.pair_styles.count("lj/gromacs")) {
     if (L.pair_styles.size() > 1) throw FieldError("lj/gromacs with other pair forms has no LAMMPS style");
     L.gromacs = true;
@@ -263,7 +266,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   // CAPS: with tail corrections the potentials are truncated at the cut-off (plus the tail when there is a cell);
   // without, they are shifted to zero there
   // lj/gromacs is zero at the cut-off by itself; lj/sdk has no tail correction (CAPS adds none for it either)
-  if (L.gromacs) {
+  if (L.gromacs || (L.cos2 && L.pair_styles.size() == 1)) {
   } else if (!e.tail) r.push_back("pair_modify shift yes");
   else if (L.periodic && L.sdk) {
     if (L.pair_styles.size() > 1) throw FieldError("SDK pairs with other Lennard-Jones pairs and tail corrections have no LAMMPS form (lj/sdk has no tail)");
@@ -304,6 +307,9 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
         coef = std::string(" ") + nm[f - kPairSdk96] + num({it->second.a, it->second.b});
       } else if (f == kPairGromacs) {
         coef = num({it->second.a, it->second.b});
+      } else if (f == kPairCos2 || f == kPairCos2Wca) {
+        style = "cosine/squared";
+        coef = num({it->second.a, it->second.b, it->second.c}) + (f == kPairCos2Wca ? " wca" : "");
       } else if (it != ff.pair_func.end()) {
         style = it->second.form == 1 ? "buck" : "morse";
         coef = num({it->second.a, it->second.b, it->second.c});
