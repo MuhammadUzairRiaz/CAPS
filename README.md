@@ -48,6 +48,7 @@ The product and engineering specification is `REDESIGN_PROMPT.md`. The screen de
 | Particle-mesh Ewald: smooth PME (Essmann et al. 1995) — reciprocal part in Fortran 2018 (B-spline spreading, mixed-radix FFT, influence function, forces, virial tensor; the plain Ewald sum as a reference), run on the evaluator's threads; real space, self and exclusion terms in C++; agrees with LAMMPS's Ewald sum | `core/fortran/caps_kspace.f90`, `core/src/kspace.cpp` | working, tested against LAMMPS |
 | Relax: steepest descent, Polak–Ribière CG, L-BFGS (m = 10) and FIRE; capped-force push-off; affine compression to a target density; isotropic box relaxation to a pressure; a molecule held in place; distance restraints k (r − r₀)² from pairs measured in the view (`relax(restraints=[(i, j, r0, k)])` in Python); one frame recorded per stage | `core/src/relax.cpp` | working, tested |
 | LAMMPS data export with the force field (coefficients, angles, dihedrals, impropers, velocities and the matching styles); LAMMPS dump export of whole trajectories | `core/src/relax.cpp`, `io_lammps.cpp` | working, tested |
+| Materials Studio / Discover `.car` + `.mdf`: read (cell from a b c α β γ, force-field types kept where the force field has them — IFF's and ClayFF's inorganic types —, charges, molecules, bonds across the cell) and written (cell in Materials Studio's orientation, atoms inside it, the assigned types and charges, bond images in the `.mdf`); msi2lmp builds the same LAMMPS model from a CAPS-written file as from the original | `core/src/io_car.cpp` | working, tested against msi2lmp |
 | Dynamics: velocity Verlet; NVE, NVT (Bussi velocity rescaling, Langevin BAOAB), isotropic NPT (stochastic cell rescaling, Berendsen) and NPH (Berendsen, no thermostat); r-RESPA (Tuckerman, Berne & Martyna 1992: bonded forces 2 or 4 times per step, e.g. 2 fs steps with C–H at 0.5 fs — the NVE energy band of 0.5 fs steps at 2.6× their speed on the polystyrene sample; `run_style respa` in the LAMMPS deck); LJ tail corrections; velocities carried between runs; thermo log; multithreaded | `core/src/dynamics.cpp` | working, tested against LAMMPS |
 | Equilibrate: the Larsen et al. 21-step compression / decompression protocol, simulated annealing cycles, MD push-off with capped LJ forces, custom plain-text protocols (NVT / NPT / NVE stages, temperature ramps, force caps); production blocks until density, energy and Rg converge; internal distances C_n against the rotational isomeric state model (Flory's generator matrices; polyethylene C∞ 6.9 at 413 K) for alkane chains | `core/src/equilibrate.cpp`, `core/src/polystats.cpp` | working, tested |
 | Chain statistics: backbone detection (non-ring heavy-atom path), mean-square internal distances ⟨R²(n)⟩/(n⟨b²⟩), end-to-end distance | `core/src/analysis.cpp` | working, tested |
@@ -325,7 +326,25 @@ library entries carry wrong masses (HC_benzyl 12.0115 in PCFF, C_benzene 1.00797
 reports and does not use. DL_FIELD's LAMMPS export leaves out CHARMM 1-4 van der Waals and DREIDING inversions and cannot write GROMOS, so those
 families are checked against its DL_POLY FIELD file; its GROMOS bonds are a harmonic approximation (CAPS keeps the
 quartic form); its TraPPE-UA C-C-O-H torsion takes terms from the O-C-C-O entry (CAPS uses the published alcohol
-torsion). Pending: full PCFF / CVFF with class II cross terms from Accelrys `.frc` files.
+torsion).
+
+CVFF, PCFF and COMPASS in full come from their BIOVIA `.frc` files (`bench/ff/convert_frc.py`: `cvff-frc`, `pcff-frc`,
+`compass-frc`), read as LAMMPS's msi2lmp reads them — the first section of each kind, higher versions replacing, a
+missing right-hand half repeated, own types before equivalences, exact entries before wildcards, every class II cross
+term looked up on its own with references from the assigned bonds and angles, Wilson out-of-plane and angle-angle terms
+as msi2lmp builds them — with Materials Studio's automatic parameters as the fallback. The INTERFACE force field (IFF 1.5,
+Heinz et al., Langmuir 29, 1754 (2013): clays, silica, metals, hydroxyapatite, cement minerals on PCFF and CVFF;
+`iff-pcff`, `iff-cvff`) is converted the same way from the Heinz group's distribution. ClayFF (Cygan, Liang, Kalinichev
+2004) mixes Lorentz–Berthelot and forms its metal–O–H bends with the metal in contact (≤ 2.6 Å), no M–O bond, so M and H
+keep their non-bonded terms. DREIDING (DREIDING.par) takes the paper's torsion rules (Mayo, Olafson, Goddard 1990, cases
+a–j) where the file lists no torsion, and both DREIDING files carry DREIDING's hydrogen bond (D_hb 4.0 kcal/mol, R_hb
+2.75 Å, cos⁴θ; LAMMPS hbond/dreiding/lj). CHARMM files use CHARMM's force switch (10–12 Å), GROMOS 54A7 its reaction
+field (ε_rf 61, 1.4 nm).
+
+| Check | Result |
+|---|---|
+| msi2lmp (built from LAMMPS's `tools/msi2lmp`) on LAMMPS's own test structures (`bench/ff/check_msi2lmp.py`): CVFF, COMPASS, PCFF | 23 of 23 term by term in LAMMPS; the differences are msi2lmp's own shortcuts, reported (cp-only bond-bond-1-3, `.mdf` neighbour order of CVFF out-of-plane atoms, wildcard torsions counted by type) |
+| msi2lmp on IFF's model database: pyrophyllite, kaolinite, mica, Na-montmorillonite, cristobalite, hydroxylated silica, Au(111), Al(100), hydroxyapatite, gypsum, a hydrated C3A surface, PEO — PCFF and CVFF versions | 22 of 22 term by term |
 
 ### Automatic atom typing
 
@@ -400,15 +419,35 @@ pairs and FENE bonds (Cooke-Deserno), Stillinger-Weber (mW; the `.sw` file is wr
 pairs a force field excludes (neigh_modify exclude). A kind that mixes forms becomes a
 hybrid style (DL_FIELD's PCFF: class II bonds and angles with Fourier torsions), and the class II cross-term sections get
 `skip` lines for the other sub-styles' types. Pair coefficients are written for every i-j pair, so LAMMPS does no mixing.
-The data file's header and the input script hold the matching LAMMPS commands. Separate 1-4 Lennard-Jones parameters
-(CHARMM, GROMOS) have no exact LAMMPS form without switching; the writer refuses them rather than approximate.
+The data file's header and the input script hold the matching LAMMPS commands.
+
+The input is written in the force field's own LAMMPS styles by default (`--lammps-style native`, the Export center's
+"Force field's own styles"; `exact` writes CAPS's equivalent forms for verification), hybrid only when asked
+(`--hybrid`), the cut-off, long-range sum and accuracy, and the time step as the user sets them (0 = the force field's):
+
+| Force field | Styles written |
+|---|---|
+| OPLS-AA (every OPLS file) | lj/cut/coul/long 12, harmonic, harmonic, opls, cvff; special_bonds lj 0 0 0.5 coul 0 0 0.5 |
+| GAFF, GAFF2, AMBER | lj/cut/coul/long, harmonic, harmonic, fourier, cvff; special_bonds amber |
+| CHARMM36, CHARMM22/19, CGenFF | lj/charmmfsw/coul/long 10 12 (coul/charmmfsh without a cell) with ε14 σ14 per pair, harmonic, charmm, charmmfsw with 1-4 weights, harmonic; special_bonds charmm |
+| PCFF, COMPASS (and IFF on PCFF) | lj/class2/coul/long, class2 bonds, angles, dihedrals and impropers |
+| CVFF (and IFF on CVFF) | lj/cut/coul/long, harmonic, harmonic, harmonic, cvff |
+| DREIDING | hybrid/overlay hbond/dreiding/lj 4 6 6.5 90 with lj/cut/coul/long, harmonic, harmonic, charmm, umbrella; special_bonds dreiding |
+| UFF | lj/cut(/coul/long), harmonic, fourier + cosine/periodic, harmonic, fourier |
+| TraPPE (UA, EH) | lj/cut 14 with the tail, harmonic, harmonic, opls (c0 left out and reported) |
+| ClayFF | lj/cut/coul/long (Lorentz–Berthelot), harmonic O–H, harmonic M–O–H without M–O bonds |
+| MARTINI 2 | lj/gromacs/coul/gromacs 9 12, dielectric 15, harmonic, cosine/squared, charmm (weight 0); 20 fs |
+| SDK | lj/sdk/coul/long 15, harmonic, sdk; 10 fs |
+| Shell models (oxides, halides) | buck/coul/long/cs (CORESHELL; compute temp/cs for MD) |
+
+GROMOS (reaction field) and Martini 3 (reaction field, virtual sites) have no LAMMPS form and go to GROMACS.
 
 | Check (`bench/ff/check_data_lammps.py`, LAMMPS `run 0` on the written files) | Result |
 |---|---|
 | PCFF and COMPASS from DL_FIELD (class II + Fourier, hybrid), CVFF, OPLS-AA, GAFF, GAFF2, DREIDING (umbrella), ionic crystals (Buckingham, periodic), a periodic polystyrene melt with GAFF2 and with PCFF, COMPASS with a class I overlay (hybrid in every kind, skip lines in every class II section) | 16 of 16: every energy term to ≤ 6 × 10⁻⁷ (relative), every force to ≤ 1.4 × 10⁻⁶ kcal/mol/Å |
 | UFF: a mixed molecule set (P, S, Si, Pt, F, Cl; Fourier and cosine/periodic angles, umbrella and fourier impropers) and a periodic polystyrene melt | 2 of 2: energy terms ≤ 2 × 10⁻⁷ (relative), forces ≤ 2.8 × 10⁻⁶ kcal/mol/Å |
 | Coarse-grained and many-body: MARTINI (DPPC / POPE / ions / water, PEO with torsions, sugars), SDK (DMPC / DMPE, C12E8, SDS with ions at relative permittivity 80), Cooke-Deserno lipids, mW water; the ionic crystals with QEq charges; the miscellaneous set | 10 more cases, all agree: energies to ≤ 1.2 × 10⁻⁷ (relative), forces to ≤ 2 × 10⁻⁶ kcal/mol/Å (DSF and PME) |
-| CGenFF (separate 1-4 LJ) | refused with the reason |
+| The same cases and more in the force field's own styles (`--native`, with and without `--hybrid`): CVFF / PCFF / COMPASS from their `.frc` files, CGenFF with lj/charmmfsw, DREIDING with its torsion rules and hydrogen bonds (water, ethanol), TraPPE, ClayFF (LAMMPS's own ClayFF test, triclinic), an SrTiO₃ shell model (CORESHELL) | 48 of 48; CHARMM is refused in the exact styles (CHARMM's switch exists only in CHARMM's own) |
 
 GROMACS gets the same force field as a topology (`caps ff apply FILE --ff FF --gromacs STEM`, Python
 `Document.save_gromacs`, the Dynamics page's GROMACS engine): `STEM.top` with every term in the GROMACS function of the
@@ -425,6 +464,7 @@ stepping (`mts`, non-bonded forces on the slow level).
 |---|---|
 | Polystyrene melt (1300 atoms, PME) with GAFF2 (with the tail, and shifted without), OPLS-AA, CVFF; the melt in a triclinic cell; a periodic (6,6) nanotube (bonds cross the cell) | 6 of 6: bonded terms, Lennard-Jones and PME Coulomb to ≤ 2.2 × 10⁻⁵ (relative, single-precision PME); forces ≤ 4.4 × 10⁻³ kcal/mol/Å (single-precision positions: 3.6 × 10⁻⁷ nm on a C–H bond is 0.1 kJ/mol/nm) |
 | GAFF toluene, CVFF phenol, OPLS-AA methyl vinyl ketone, CGenFF toluene (separate 1-4 LJ, Urey–Bradley, harmonic impropers), in vacuum | 4 of 4: bonded terms and Lennard-Jones to ≤ 1.3 × 10⁻⁵ (Coulomb methods differ without a cell: shown, not compared) |
+| ClayFF pyrophyllite (M–O–H bends without M–O bonds), IFF 1.5 (CVFF) Na-montmorillonite, an SPC/E water box with GROMOS 54A7's reaction field and C6/C12 topology | 3 of 3 (8 and 9 Å cut-offs where the cells are thin) |
 | PCFF, UFF | refused with the reason |
 
 Two differences are by definition. The tail: CAPS (as LAMMPS) sums it over all type pairs; GROMACS averages C6 and C12
