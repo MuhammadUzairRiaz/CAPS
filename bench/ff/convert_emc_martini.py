@@ -9,8 +9,9 @@ Units: nm and kJ/mol in the source. Bonds ½k(r − l0)² → K = k / 2 / 4.184 
 cosine-harmonic, as the library file) ½k(cos θ − cos θ0)² → K = k / 2 / 4.184; torsions Σ k [1 + cos(nφ − δ)] → fourier
 with K = k / 4.184; impropers ½k(ξ − ξ0)² → harmonic K = k / 2 / 4.184. A new type's non-bonded parameters are its
 "pair" equivalent's (a MARTINI 2.0 type). Bead templates: the file's TEMPLATES whose beads all have parameters (the
-polymer file's PS gives STY / SCY bonds and angles but no masses or pairs: left out). amino acids are not converted:
-their impropers need an atom order the file does not state.
+polymer file's PS gives STY / SCY bonds and angles but no masses or pairs: left out). Amino acids: their impropers are read as GROMACS type 2 with the centre second, as every row
+names it (the bead bonded to the other three); ILE, LEU, PRO and VAL use AC1 / AC2 beads that no source file gives
+masses or pairs for, and are left out.
 
 usage: convert_emc_martini.py [MARTINI_ORIGINAL_FORMAT_DIR]
 """
@@ -22,7 +23,8 @@ TY = os.path.join(ROOT, "data", "typing")
 SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/moltemplate/moltemplate/force_fields/martini_original_format")
 KJ = 4.184
 SETS = {"polymers": "PEO and a PEGylated lipid", "solvents": "solvents (alkanes, alcohols, benzene, chloroform ...)",
-        "surfactants": "surfactants (SDS, DPC, EO5 ...)", "sugars": "sugars (glucose, sucrose, maltose ...)"}
+        "surfactants": "surfactants (SDS, DPC, EO5 ...)", "sugars": "sugars (glucose, sucrose, maltose ...)",
+        "aminoacids": "amino acids (single residues)"}
 
 
 def sections(path):
@@ -132,6 +134,9 @@ if __name__ == "__main__":
                "extends": "martini-moltemplate.json", "typing": f"../typing/{fid}.typing.json",
                "atom_types": types, "pairs": [], "bonds": bonds, "angles": angles, "dihedrals": dihedrals, "impropers": impropers,
                "bead_templates": templates,
+               # impropers as GROMACS type 2 (the angle between planes i-j-k and j-k-l): every row names the centre second, its
+               # three neighbours around it (HIS: P5 SC4 SP1 SP1, the ring bead bonded to the backbone bead first)
+               **({"improper_order": "center2_sorted", "improper_matched_order": True, "improper_max_neighbours": 3} if impropers else {}),
                "notes": [f"converted by CAPS from {key}.prm (bench/ff/convert_emc_martini.py): nm, kJ/mol → Å, kcal/mol; bonds and impropers "
                          "½k → K; angles cosine-harmonic as MARTINI 2.0; new bead types take their pair equivalent's non-bonded terms"]
                + ([f"templates left out (beads without parameters in the file): {', '.join(left_out)}"] if left_out else [])

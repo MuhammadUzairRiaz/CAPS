@@ -215,6 +215,10 @@ peo = caps.build.beads("PEO", forcefield="martini-polymers")
 suc = caps.build.beads("SUCR", forcefield="martini-sugars")
 rp, ru = peo.field.assign("martini-polymers", charges="keep"), suc.field.assign("martini-sugars", charges="keep")
 check(rp["complete"] and ru["complete"] and peo.atoms == 37, f"MARTINI overlays: PEO {peo.atoms} beads, sucrose {suc.atoms} beads")
+trp = caps.build.beads("TRP", forcefield="martini-aminoacids")
+rt = trp.field.assign("martini-aminoacids", charges="keep")
+check(rt["complete"] and trp.atoms == 5 and "ILE" not in caps.bead_templates("martini-aminoacids"),
+      f"MARTINI amino acids: TRP {trp.atoms} beads with its impropers; ILE / LEU / PRO / VAL left out (no AC1 / AC2 parameters)")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
