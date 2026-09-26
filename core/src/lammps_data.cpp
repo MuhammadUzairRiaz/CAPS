@@ -372,6 +372,8 @@ std::string export_title(std::string t, const std::string& ffname) {
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& path, bool pair_coeffs) {
   EnergyOptions e = e0;
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
+  // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
+  if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
@@ -464,6 +466,8 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run) {
   EnergyOptions e = e0;
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off (MARTINI)
+  // no charges, no Coulomb term (LAMMPS refuses an Ewald sum on an uncharged system; the energy is the same)
+  if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;
   const Layout L = build(s, ff);
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);

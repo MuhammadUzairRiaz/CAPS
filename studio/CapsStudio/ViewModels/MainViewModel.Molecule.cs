@@ -231,7 +231,9 @@ public sealed partial class MainViewModel
     /// <summary>Coarse-grained force fields with bead structures: MARTINI (templates from its sources), Dry MARTINI and
     /// SDK (bead SMILES; SDK also maps all-atom structures in the Force field step).</summary>
     public static readonly (string Name, string File)[] CgForceFields =
-        [("MARTINI 2.0", "martini-moltemplate.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json")];
+        [("MARTINI 2.0 · lipids, ions, cholesterol", "martini-moltemplate.json"), ("MARTINI 2.0 · polymers (PEO)", "martini-polymers.json"),
+         ("MARTINI 2.0 · solvents", "martini-solvents.json"), ("MARTINI 2.0 · surfactants", "martini-surfactants.json"),
+         ("MARTINI 2.0 · sugars", "martini-sugars.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json")];
     public string[] CgFfNames => CgForceFields.Select(f => f.Name).ToArray();
     private int _cgFf;
     private string _cgBeadText = "", _cgTemplate = "";

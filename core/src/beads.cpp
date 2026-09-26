@@ -193,7 +193,7 @@ System build_beads(const std::string& text, const BeadBuildOptions& o) {
   }
   for (const auto& [a, b] : m.bonds) s.bonds.push_back({uint32_t(a), uint32_t(b), 1});
   s.bonds_from_file = true;
-  s.has_charges = std::any_of(m.charge.begin(), m.charge.end(), [](double q) { return q != 0; });
+  s.has_charges = true;   // the bead SMILES gives every bead's charge (zero where it writes none)
   s.has_mol = true;
   return s;
 }
