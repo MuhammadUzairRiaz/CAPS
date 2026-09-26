@@ -541,6 +541,12 @@
    "type": "ca+",
    "smarts": "[Ca]",
    "description": "calcium ion"
+  },
+  {
+   "type": "s'",
+   "smarts": "[SX4](=O)(=O)",
+   "priority": 2,
+   "description": "sulfone S: sf in PCFF's templates, a child of s' (pcff.frc parameterises s')"
   }
  ]
 }
