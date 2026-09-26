@@ -307,6 +307,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_coverage")] public static extern int FieldCoverage(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_export_engines")] public static extern int ExportEngines(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_chi_contacts")] public static extern int ChiContacts([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ewald_params")] public static extern int EwaldParams(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_residues")] public static extern int AtomResidues(IntPtr doc, [Out] int[]? out_, int cap);
@@ -958,13 +959,13 @@ public sealed class CapsDocument : IDisposable
     // ---- CAPS Field: each call returns true when the assignment is complete (every atom typed, every parameter found)
 
     /// <summary>Types and parameterises the structure with a library force field. charges: 0 force field, 1 Gasteiger, 2 file.</summary>
-    public bool FieldAssign(string ffPath, string? rulesPath, int charges) { lock (_lock) return CheckField(Native.FieldAssign(_h, ffPath, rulesPath, charges)); }
-    public bool FieldOverride(int index, string? type) { lock (_lock) return CheckField(Native.FieldOverride(_h, index, type)); }
-    public bool FieldAddRule(string kind, string types, string style, string pars) { lock (_lock) return CheckField(Native.FieldAddRule(_h, kind, types, style, pars)); }
-    public bool FieldImport(string path) { lock (_lock) return CheckField(Native.FieldImport(_h, path)); }
-    public bool FieldRemoveRules() { lock (_lock) return CheckField(Native.FieldRemoveRules(_h)); }
-    public void FieldClear() { lock (_lock) Check(Native.FieldClear(_h)); }
-    public void FieldTypesFile(string path) { lock (_lock) Check(Native.FieldTypesFile(_h, path)); }
+    public bool FieldAssign(string ffPath, string? rulesPath, int charges) { lock (_lock) { Alive(); return CheckField(Native.FieldAssign(_h, ffPath, rulesPath, charges)); } }
+    public bool FieldOverride(int index, string? type) { lock (_lock) { Alive(); return CheckField(Native.FieldOverride(_h, index, type)); } }
+    public bool FieldAddRule(string kind, string types, string style, string pars) { lock (_lock) { Alive(); return CheckField(Native.FieldAddRule(_h, kind, types, style, pars)); } }
+    public bool FieldImport(string path) { lock (_lock) { Alive(); return CheckField(Native.FieldImport(_h, path)); } }
+    public bool FieldRemoveRules() { lock (_lock) { Alive(); return CheckField(Native.FieldRemoveRules(_h)); } }
+    public void FieldClear() { lock (_lock) { Alive(); Check(Native.FieldClear(_h)); } }
+    public void FieldTypesFile(string path) { lock (_lock) { Alive(); Check(Native.FieldTypesFile(_h, path)); } }
 
     /// <summary>The assignment as JSON, or "" when there is none.</summary>
     public string FieldReport()
@@ -1047,10 +1048,10 @@ public sealed class CapsDocument : IDisposable
 
     private static void Check(int rc) { if (rc < 0) throw new InvalidOperationException(Native.LastError()); }
 
-    public CapsSummary Summary() { lock (_lock) { Check(Native.Summary(_h, out var s)); return s; } }
+    public CapsSummary Summary() { lock (_lock) { Alive(); Check(Native.Summary(_h, out var s)); return s; } }
     public void SetFrame(long f) { lock (_lock) { Alive(); Check(Native.SetFrame(_h, f)); } }
-    public void SetWrap(bool wrap) { lock (_lock) Check(Native.SetWrap(_h, wrap ? 1 : 0)); }
-    public CapsAtomInfo Atom(int i) { lock (_lock) { Check(Native.Atom(_h, i, out var a)); return a; } }
+    public void SetWrap(bool wrap) { lock (_lock) { Alive(); Check(Native.SetWrap(_h, wrap ? 1 : 0)); } }
+    public CapsAtomInfo Atom(int i) { lock (_lock) { Alive(); Check(Native.Atom(_h, i, out var a)); return a; } }
 
     public IReadOnlyList<string> Notes()
     {
@@ -1169,6 +1170,18 @@ public sealed class CapsDocument : IDisposable
             var n = Native.FieldCoverage(_h, dir, cb, IntPtr.Zero, buf, buf.Length);
             if (n > buf.Length) { buf = new byte[n]; n = Native.FieldCoverage(_h, dir, cb, IntPtr.Zero, buf, buf.Length); }
             GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
+
+    /// <summary>Export center (caps_export_engines): LAMMPS and GROMACS files from the complete force field, JSON {ok, error, folder, files, notes, checks}.</summary>
+    public string ExportEngines(string dir, string json)
+    {
+        lock (_lock)
+        {
+            Alive();
+            var buf = new byte[1 << 20];   // large enough that the files are written once
+            var n = Native.ExportEngines(_h, dir, json, buf, buf.Length);
             return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
         }
     }

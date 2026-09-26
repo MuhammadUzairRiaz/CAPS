@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 22  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts) */
+#define CAPS_ABI_VERSION 23  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -321,6 +321,14 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
    (class II, inversions, 9-6 or Buckingham pairs). Returns the length needed including the final NUL. */
 int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap);
 
+/* Export center (ABI 23): LAMMPS (STEM.data without pair coefficients, STEM.in with every pair_coeff and the run) and
+   GROMACS (STEM.top, STEM.itp, STEM.gro, STEM.mdp; STEM_em.mdp when a run minimises first) written into dir from the
+   complete Field assignment (refused otherwise). options {lammps: true, gromacs: true, stem: "system", run: "check" |
+   "none" | "minimize" | "nvt" | "npt", minimize_first, temperature (K), pressure (atm), dt (fs), steps, thermo_every,
+   dump_every, seed, head_lines: N (each file's first N lines in the reply), preview: true (written to a scratch folder,
+   read and removed)} → {ok, error, folder, files: [{name, what, bytes, head[]}], notes[], checks: {atoms, typed, types,
+   type_pairs, bonds, angles, dihedrals, impropers, missing, net_charge, charges, forcefield, density}}. */
+int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);
 /* 1: fold atoms into the cell (bonds across faces are hidden); 0: keep molecules whole (default). */

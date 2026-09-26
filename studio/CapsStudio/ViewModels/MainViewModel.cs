@@ -91,6 +91,8 @@ public sealed partial class MainViewModel : ObservableObject
             RefreshLegend();
             FieldInfoText = "";
             RenderRequested?.Invoke();
+            RaiseGrowField();
+            RefreshSteps();
         });
         Analyze = new AnalyzeViewModel(() => _doc, s => Status = s, running => { _analyzing = running; RaiseBusy(); });
         Field.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(FieldViewModel.RunLine)) Raise(nameof(ForceFieldLine)); };
@@ -357,7 +359,7 @@ public sealed partial class MainViewModel : ObservableObject
     private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
         "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Pack › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
         "Grow › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
-        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution"];
+        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -451,6 +453,9 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(ShowLegend));
         Raise(nameof(Crumb));
         Raise(nameof(IsProperties));
+        Raise(nameof(IsExportCenter)); Raise(nameof(IsBuildRail)); Raise(nameof(IsExportRail));
+        if (m == 68) RefreshEngines();
+        RefreshSteps();
         RenderRequested?.Invoke();   // the Field page has its own view
     }
     public int Module => _module;
@@ -724,6 +729,7 @@ public sealed partial class MainViewModel : ObservableObject
         GrowElapsed = 0;
         Status = $"Growing {_growChains} chains of {(spec == null ? "polystyrene" : _growSpecName)}, DP {_growDp}…";
         var sw = System.Diagnostics.Stopwatch.StartNew();
+        var grown = false;
         try
         {
             var lastUi = 0L;
@@ -783,6 +789,8 @@ public sealed partial class MainViewModel : ObservableObject
             }
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
+            MarkPipeline("Grow", spec == null ? "polystyrene" : _growSpecName);
+            grown = true;
             AfterGrowStatistics(doc);
             var densityNote = SuggestRelaxDensity(spec == null ? "Polystyrene" : _growSpecName);
             GrownUnsaved = true;
@@ -807,6 +815,7 @@ public sealed partial class MainViewModel : ObservableObject
             GrowLiveDoc = null;   // the finished cell is the document now
             old?.Dispose();
         }
+        if (grown) await AutoAssignAfterBuild();
     }
 
     public void CancelGrow() => _growCancel?.Cancel();
@@ -1485,6 +1494,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (!Idle || _packText.Trim().Length == 0) return;
         Packing = true;
+        var packed = false;
         _packCancel = new CancellationTokenSource();
         var token = _packCancel.Token;
         var text = _packText;
@@ -1532,6 +1542,8 @@ public sealed partial class MainViewModel : ObservableObject
             var m = System.Text.RegularExpressions.Regex.Match(report, @"smallest distance between molecules ([0-9.]+) Å");
             if (m.Success) PackDmin = m.Groups[1].Value + " Å";
             Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms) · save it, or relax and run dynamics";
+            MarkPipeline("Pack");
+            packed = true;
         }
         catch (Exception e)
         {
@@ -1544,6 +1556,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Packing = false;
         }
+        if (packed) await AutoAssignAfterBuild();
     }
 
     public void CancelPack() => _packCancel?.Cancel();
@@ -1751,6 +1764,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var n in doc.Notes()) Notes.Add(n);
         LoadFileChecks();
         FieldInfoText = "";
+        MarkPipeline(suffix.Contains("relaxed") ? "Relax" : suffix.Contains("equilibrated") ? "Equilibrate" : suffix.Contains("MD") ? "Dynamics" : "Run");
         RenderRequested?.Invoke();
     }
 
@@ -1775,9 +1789,11 @@ public sealed partial class MainViewModel : ObservableObject
         ClearFocus();
         if (IsVisualize) Avalonia.Threading.Dispatcher.UIThread.Post(ApplyPipeline);
         Field.Reset();
+        _pipeAutoFf = false;
         Analyze.Load("");
         SyncHeld();
         Title = title;
+        PipelineNewDocument(title);
         FieldInfoText = "";
         GrownUnsaved = false;
         var s = doc.Summary();
