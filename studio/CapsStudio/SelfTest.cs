@@ -571,6 +571,24 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // A united-atom force field (TraPPE-UA): assigning it folds the hydrogens on carbon into their carbons (undoable)
+        {
+            vm.UsePolystyreneInGrow();
+            vm.GrowChainsD = 2; vm.GrowDpD = 6; vm.GrowDensityD = 0.3m;
+            vm.GrowAssignField = false;
+            vm.Grow().GetAwaiter().GetResult();
+            var uaBefore = vm.Document!.Summary().Atoms;
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "trappe-ua");
+            vm.Field.ChargeMode = 0;
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var uaAfter = vm.Document!.Summary().Atoms;
+            Check(vm.Field.Assigned && uaAfter < uaBefore && vm.Field.Notes.Any(n => n.Contains("united-atom")),
+                  $"united-atom force field: {uaBefore} atoms → {uaAfter} sites · {vm.Field.Notes.FirstOrDefault(n => n.Contains("united-atom"))}");
+            vm.UndoEdit(false);
+            Check(vm.Document!.Summary().Atoms == uaBefore, $"united-atom conversion undone: {vm.Document!.Summary().Atoms} atoms");
+            vm.GrowAssignField = true;
+        }
+
         // Torsion scan: n-butane from SMILES (UFF), relaxed: trans lowest, gauche± above it
         using (var but = CapsDocument.BuildSmiles("CCCC", "uff", 1, 1, "butane").Doc)
         {

@@ -159,6 +159,12 @@ cp = caps.build.smiles("C1CC1CCO", forcefield="uff")
 rep = cp.field.assign("gaff2")
 check(rep["complete"] and rep["estimated"] > 0 and all(" as " in x for x in rep["by_analogy"]) and not rep["missing"],
       f"field: {rep['estimated']:.0f} terms by analogy, e.g. {rep['by_analogy'][0] if rep['by_analogy'] else '-'}")
+# united-atom force fields: TraPPE-UA folds the hydrogens on carbon into their carbons, then types CH3 / CH2 sites
+pe = caps.polymer("*CC*", dp=6, chains=1, density=0.3, seed=3)
+ua = pe.field.assign("trappe-ua")
+types = {a["type"] for a in ua["atoms"]}
+check(ua["complete"] and types <= {"CH2", "CH3"} and any("united-atom" in n for n in ua["notes"]),
+      f"field: TraPPE-UA on polyethylene · {len(ua['atoms'])} sites, types {sorted(types)}")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)

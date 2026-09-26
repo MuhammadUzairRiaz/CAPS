@@ -30,7 +30,9 @@ struct Perception {
   std::vector<std::vector<bool>> arom_bond;  // aromatic bond to each neighbour
   std::vector<bool> aromatic;
   std::vector<int> charge;                   // formal charge
-  std::vector<int> hcount;                   // attached hydrogens
+  std::vector<int> hcount;                   // attached hydrogens (explicit, plus implicit)
+  std::vector<int> implicit_h;               // hydrogens a united-atom site carries (CH2, CH3, CR1 ...), 0 otherwise
+  bool united_atom = false;                  // no hydrogen on any carbon, and carbon sites named for their hydrogens
   std::vector<int> ring_count;               // number of SSSR rings containing the atom (SMARTS R)
   std::vector<int> smallest_ring;            // size of the smallest ring (SMARTS r), 0 if acyclic
   std::vector<int> ring_bonds;               // ring bonds at the atom (SMARTS x)
@@ -41,8 +43,13 @@ struct Perception {
   int bond_order(uint32_t a, uint32_t b) const;
 };
 
-// Bond orders come from the file when it gives them (mol2), otherwise from valences (all hydrogens explicit).
+// Bond orders come from the file when it gives them (mol2), otherwise from valences. Hydrogens are explicit, except in
+// a united-atom structure (no hydrogen bonded to any carbon): there a carbon or sulfur site named for the hydrogens it
+// carries (CH, CH0-CH4, CH1E-CH3E, CR1, CR1E, SH1E; as united_atom() and united-atom force fields name them) has them
+// as implicit hydrogens, counted by SMARTS H and X and in the valences.
 Perception perceive(const System& s);
+// Hydrogens a site named like a united atom carries (-1: not such a name).
+int united_atom_hydrogens(const std::string& name, int element);
 
 // A compiled SMARTS pattern.
 class Smarts {

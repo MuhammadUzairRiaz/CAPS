@@ -125,6 +125,9 @@ struct FFDef {
   std::vector<std::pair<std::string, std::string>> typing_pairs;   // conjugated pairs (GAFF cc/cd, ...), see typing.hpp
   bool typing_ordered = false;
   bool typing_unknown_untyped = false;   // rules may name types this file lacks: their atoms end up untyped
+  // United-atom force field (typing file "united_atom": true; GROMOS, TraPPE-UA, CHARMM19): hydrogens on carbon are
+  // part of their carbon's site, so an all-atom structure is converted before typing (prepare_for_forcefield)
+  bool united_atom = false;
   // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
   // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
   // each conjugated system takes the variants that make every bond's constant equal bond_k_per_order x its bond order
@@ -168,6 +171,13 @@ struct ParamReport {
   std::vector<std::string> notes;
   bool complete() const { return missing.empty(); }
 };
+
+// A structure as the force field describes it. For a united-atom force field an all-atom structure (hydrogens on
+// carbon) becomes united-atom: each such hydrogen folds into its carbon (CH, CH2, CH3 sites, polar hydrogens kept,
+// resolution.hpp united_atom). Charges "auto" or "gasteiger" are computed on the all-atom structure first (Gasteiger,
+// else QEq) and summed into the sites, so the caller then uses charges "keep" (charges is updated). Returns a note
+// when it converted, "" otherwise.
+std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
 
 // Build the evaluator force field for a structure whose atoms carry force-field type names (one per atom).
 // Charges: `charges` = "types" (from the force field: type charges and / or bond increments; error if neither

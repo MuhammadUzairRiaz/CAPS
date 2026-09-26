@@ -204,6 +204,10 @@
     "angles": 309,
     "dihedrals": 355,
     "impropers": 39
+   },
+   "typing": {
+    "rules": "typing/amber.typing.json",
+    "evidence": "CAPS rules from AMBER (Cornell et al. 1995 family)'s type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -275,6 +279,10 @@
     "angles": 651,
     "dihedrals": 796,
     "impropers": 42
+   },
+   "typing": {
+    "rules": "typing/charmm.typing.json",
+    "evidence": "CAPS rules from CHARMM (library set)'s type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -296,6 +304,10 @@
     "angles": 182,
     "dihedrals": 38,
     "impropers": 42
+   },
+   "typing": {
+    "rules": "typing/charmm19.typing.json",
+    "evidence": "CAPS rules from CHARMM19 united atom's type definitions (bench/typing/make_biomolecular_rules.py); united atom"
    }
   },
   {
@@ -317,6 +329,10 @@
     "angles": 335,
     "dihedrals": 393,
     "impropers": 35
+   },
+   "typing": {
+    "rules": "typing/charmm22-prot.typing.json",
+    "evidence": "CAPS rules from CHARMM22 proteins's type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -338,6 +354,10 @@
     "angles": 438,
     "dihedrals": 840,
     "impropers": 14
+   },
+   "typing": {
+    "rules": "typing/charmm36-carb.typing.json",
+    "evidence": "CAPS rules from CHARMM36 carbohydrates's type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -384,6 +404,10 @@
     "angles": 138,
     "dihedrals": 104,
     "impropers": 4
+   },
+   "typing": {
+    "rules": "typing/charmm36-lipid.typing.json",
+    "evidence": "CAPS rules from CHARMM36 lipids's type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -405,6 +429,10 @@
     "angles": 229,
     "dihedrals": 394,
     "impropers": 15
+   },
+   "typing": {
+    "rules": "typing/charmm36-nucl.typing.json",
+    "evidence": "CAPS rules from CHARMM36 nucleic acids's type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -426,6 +454,10 @@
     "angles": 434,
     "dihedrals": 599,
     "impropers": 53
+   },
+   "typing": {
+    "rules": "typing/charmm36-prot.typing.json",
+    "evidence": "CAPS rules from CHARMM36 proteins's type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -472,6 +504,10 @@
     "angles": 38,
     "dihedrals": 22,
     "impropers": 6
+   },
+   "typing": {
+    "rules": "typing/gromos-54a7.typing.json",
+    "evidence": "CAPS rules from GROMOS 54A7 (united atom)'s type definitions (bench/typing/make_biomolecular_rules.py); united atom"
    }
   },
   {
@@ -493,6 +529,10 @@
     "angles": 67,
     "dihedrals": 58,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/trappe-ua.typing.json",
+    "evidence": "CAPS rules from TraPPE-UA's type definitions (bench/typing/make_biomolecular_rules.py); united atom"
    }
   },
   {
@@ -514,6 +554,10 @@
     "angles": 119,
     "dihedrals": 25,
     "impropers": 16
+   },
+   "typing": {
+    "rules": "typing/trappe-eh.typing.json",
+    "evidence": "CAPS rules from TraPPE-EH (explicit-hydrogen aromatics)'s type definitions (bench/typing/make_biomolecular_rules.py)"
    }
   },
   {
@@ -895,6 +939,10 @@
     "angles": 1,
     "dihedrals": 1,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/trappe1998-moltemplate.typing.json",
+    "evidence": "CAPS rules from TraPPE-UA alkanes's type definitions (bench/typing/make_biomolecular_rules.py); united atom"
    }
   },
   {

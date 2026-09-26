@@ -87,6 +87,7 @@ struct FieldState {
   caps::ParamReport rep;
   std::shared_ptr<const caps::ForceField> ff;   // null while atoms are untyped
   bool complete = false;
+  std::vector<std::string> prep_notes;       // what was done to the structure for the force field (united-atom sites)
   std::string report;                        // JSON, see caps_field_report
   // the file's own types, restored by caps_field_clear
   std::vector<std::pair<int, std::string>> file_types;
@@ -756,6 +757,7 @@ void field_run(caps_doc* d) {
   style["improper"] = def.improper_style;
   r["styles"] = style;
   caps::Json notes = caps::Json::array();
+  for (const auto& x : F.prep_notes) notes.push_back(x);
   for (const auto& x : F.typing.notes) notes.push_back(x);
   for (const auto& x : F.rep.notes) notes.push_back(x);
   r["notes"] = notes;
@@ -1691,6 +1693,8 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
   });
 }
 
+namespace { void push_undo(caps_doc* d, const std::string& what); }   // below, with the edits
+
 int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_path, int32_t charges) {
   return guard([&] {
     auto F = std::make_unique<FieldState>();
@@ -1716,6 +1720,31 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       }
       F->file_type_table = d->traj.topology.types;
       F->file_has_charges = d->traj.topology.has_charges;
+    }
+    // a united-atom force field: the structure's hydrogens on carbon fold into their carbons first (undoable)
+    if (F->base.united_atom) {
+      caps::System s = d->frame;
+      std::string ch = F->auto_charges ? "auto" : F->charges;
+      const std::string note = caps::prepare_for_forcefield(s, F->base, ch);
+      if (!note.empty()) {
+        push_undo(d, "United-atom for " + F->base.name);
+        std::vector<caps::Vec3> pos;
+        for (const auto& at : s.atoms) pos.push_back(at.pos);
+        s.has_charges = true;
+        d->traj.topology = s;
+        d->traj.positions = {pos};
+        d->traj.cells = {s.cell};
+        d->traj.timesteps = {0};
+        d->current = 0;
+        refresh(d);
+        if (ch == "keep") F->charges = "keep", F->auto_charges = false;
+        F->file_types.clear();
+        F->file_charges.clear();
+        for (const auto& at : s.atoms) F->file_types.push_back({at.type, at.name}), F->file_charges.push_back(at.charge);
+        F->file_type_table = s.types;
+        F->file_has_charges = true;
+        F->prep_notes.push_back(note);
+      }
     }
     if (F->charges == "keep" && !d->traj.topology.has_charges && !F->file_has_charges)
       throw caps::FFError("the structure has no charges to keep; use the force field's or Gasteiger charges");
@@ -1772,7 +1801,7 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
     std::ifstream cf(std::filesystem::path(root) / "catalogue.json");
     if (!cf) throw std::runtime_error("no force-field catalogue in " + root);
     const caps::Json cat = caps::Json::parse(std::string((std::istreambuf_iterator<char>(cf)), std::istreambuf_iterator<char>()));
-    const caps::Perception per = caps::perceive(s);
+    const caps::Perception per_all = caps::perceive(s);
     struct Entry { std::string id, name, path; };
     std::vector<Entry> entries{{"uff", "UFF (Rappé et al. 1992)", "uff"}};
     for (const auto& e : cat["forcefields"].items())
@@ -1800,6 +1829,18 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
             def = it->second;
           }
           if (def->typing.empty()) { x["status"] = "no typing rules"; list.push_back(std::move(x)); continue; }
+          // a united-atom force field sees the structure with its hydrogens on carbon folded in (charges summed)
+          caps::System su;
+          caps::Perception pu;
+          std::string ua_charges = "auto";
+          if (def->united_atom) {
+            su = s;
+            const std::string note = caps::prepare_for_forcefield(su, *def, ua_charges);
+            if (!note.empty()) x["united_atom"] = note;
+            pu = caps::perceive(su);
+          }
+          const caps::System& s = def->united_atom ? su : d->frame;   // NOLINT: shadows the all-atom structure on purpose
+          const caps::Perception& per = def->united_atom ? pu : per_all;
           caps::TypingResult tr = caps::assign_types(s, *def);
           {   // a rule may give a type this file lacks (rules shared with a larger version): untyped, as in field_run
             std::set<std::string> known;
@@ -1830,7 +1871,10 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
             list.push_back(std::move(x));
             continue;
           }
-          try {
+          if (ua_charges == "keep") {   // united-atom: the all-atom charges, summed into each site
+            ff = caps::parameterize(s, *def, tr.types, "keep", &rep, true);
+            charges = "gasteiger";
+          } else try {
             ff = caps::parameterize(s, *def, tr.types, "types", &rep, true);
           } catch (const caps::FFError& e) {
             if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
@@ -1857,7 +1901,7 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
         // the physics check: a force field's own charges must leave every molecule neutral (the structure's formal
         // charge aside); with Gasteiger or no charges this says nothing about the force field
         int formal = 0;
-        for (int c : per.charge) formal += c;
+        for (int c : per_all.charge) formal += c;
         const bool balanced = charges != "types" || std::fabs(net - formal) < 1e-3;
         x["balanced"] = balanced;
         x["complete"] = rep.missing.empty() && balanced;
