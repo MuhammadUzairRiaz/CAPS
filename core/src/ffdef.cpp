@@ -1185,6 +1185,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ForceField ff;
   ff.name = def.name;
   ff.mixing = def.mixing;
+  ff.native_pair = def.pair_style;
+  ff.native_dihedral = def.dihedral_style;
+  ff.native_improper = def.improper_style;
+  ff.native_cutoff = def.cutoff;
   ff.lj14 = def.special_lj[2];
   ff.coul14 = def.special_coul[2];
   // 1-3 pairs: excluded (0) or in full (1, both LJ and Coulomb: MARTINI's special_bonds 0 1 1)

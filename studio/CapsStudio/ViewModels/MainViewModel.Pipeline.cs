@@ -185,10 +185,28 @@ public sealed partial class MainViewModel
         RefreshEngines();
     }
 
+    // LAMMPS styles: the force field's own (its dihedral style, long-range Coulomb by PPPM …) or CAPS-exact (the energy
+    // CAPS computes, for checking); hybrid; the long-range sum; the cut-off (0: the force field's) and k-space accuracy
+    public static readonly string[] EngineStyleModes = ["Force field's own styles", "CAPS-exact (verification)"];
+    public static readonly string[] EngineCoulombModes = ["Automatic", "PPPM", "Ewald", "Damped shifted force", "Plain cut-off"];
+    private static readonly string[] EngineCoulombIds = ["auto", "pppm", "ewald", "dsf", "cut"];
+    private int _engStyle, _engCoulomb;
+    private bool _engHybrid;
+    private double _engCutoff, _engKspace = 1e-4;
+    public int EngineStyle { get => _engStyle; set { if (Set(ref _engStyle, Math.Clamp(value, 0, 1))) { Raise(nameof(EngineNative)); RefreshEngines(); } } }
+    public bool EngineNative => _engStyle == 0;
+    public bool EngineHybrid { get => _engHybrid; set { if (Set(ref _engHybrid, value)) RefreshEngines(); } }
+    public int EngineCoulomb { get => _engCoulomb; set { if (Set(ref _engCoulomb, Math.Clamp(value, 0, 4))) { Raise(nameof(EngineKspaceVisible)); RefreshEngines(); } } }
+    public bool EngineKspaceVisible => _engStyle == 0 && _engCoulomb <= 2;
+    public decimal? EngineCutoffD { get => (decimal)_engCutoff; set { var v = Math.Clamp((double)(value ?? 0m), 0, 50); if (Math.Abs(v - _engCutoff) > 1e-12) { _engCutoff = v; Raise(); RefreshEngines(); } } }
+    public string EngineKspaceText { get => _engKspace.ToString("0.##E+0", CultureInfo.InvariantCulture); set { if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && v > 0 && v < 1) { _engKspace = v; Raise(); RefreshEngines(); } } }
+
     private string EngineOptions(bool preview) => new JsonObject
     {
         ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
         ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps,
+        ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
+        ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace,
         ["preview"] = preview, ["head_lines"] = preview ? 60 : 0,
     }.ToJsonString();
 

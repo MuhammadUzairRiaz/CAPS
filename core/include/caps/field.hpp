@@ -126,6 +126,10 @@ struct ForceField {
   std::vector<Class2Improper> impropers2;
   std::string pair_form = "lj12-6";        // lj12-6: 4ε[(σ/r)¹² − (σ/r)⁶]; lj9-6: ε[2(σ/r)⁹ − 3(σ/r)⁶] (class II)
   std::string mixing = "arithmetic";       // arithmetic, geometric or sixthpower
+  // the force field's own LAMMPS styles and cut-off, as its file declares them (for exports in its native form; CAPS's
+  // evaluator may compute the same terms in another equivalent form, e.g. OPLS torsions as Fourier sums)
+  std::string native_pair, native_dihedral, native_improper;
+  double native_cutoff = 0;
   std::map<std::pair<int, int>, PairType> pair_override;   // explicit coefficients for type-index pairs (a ≤ b)
   std::vector<std::array<uint32_t, 2>> pairs14;
   std::vector<std::vector<uint32_t>> excluded;   // per atom, sorted: 1-2, 1-3 and 1-4 partners, left out of the pair list

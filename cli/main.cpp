@@ -132,6 +132,7 @@ int usage() {
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
                "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --steps N]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
+               "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
 }
@@ -184,23 +185,23 @@ const std::set<std::string>& known_options() {
     "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
     "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
     "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl",
-    "--hold", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations", "--itp",
-    "--json", "--lammps-input", "--lammps-run", "--last", "--layers", "--length", "--list", "--list-templates",
-    "--log", "--lx", "--ly", "--m", "--martini", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods",
-    "--model", "--molecule-size", "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise",
-    "--new-velocities", "--no-cell", "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc",
-    "--no-pushoff", "--no-relax", "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding",
-    "--pair", "--particles", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph",
-    "--pitch", "--pmax", "--pme", "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive",
-    "--print-protocol", "--probe", "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet",
-    "--radius", "--ramp", "--rate", "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale",
-    "--seed", "--sequence", "--sf", "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents",
-    "--spring", "--ss", "--step", "--steps", "--strain", "--strand", "--stride", "--structure", "--style",
-    "--supercell", "--surface", "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp",
-    "--template", "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs",
-    "--tlow", "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing",
-    "--units", "--until-converged", "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin",
-    "--zoom"};
+    "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
+    "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--lammps-input", "--lammps-run",
+    "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
+    "--martini", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
+    "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
+    "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
+    "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
+    "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
+    "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
+    "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
+    "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--ss", "--step",
+    "--steps", "--strain", "--strand", "--stride", "--structure", "--style", "--supercell", "--surface",
+    "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
+    "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow",
+    "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
+    "--until-converged", "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -238,7 +239,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
                         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
-                        a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" ||
+                        a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" || a == "--hybrid" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -1599,7 +1600,15 @@ int main(int argc, char** argv) {
           s.has_charges = true;
           // with an input script beside it, the pair coefficients go in the script and the data file stays plain
           const bool with_in = o.count("--lammps-input") > 0;
-          write_lammps_data_ff(s, f, eo, o["-o"], !with_in);
+          // the force field's own LAMMPS styles (default), or exactly CAPS's energy (--lammps-style exact: the parity
+          // benches); --hybrid writes every style as hybrid; --kspace pppm|ewald|dsf|cut; --lammps-cutoff Å
+          LammpsStyle ls;
+          ls.native = !(o.count("--lammps-style") && o["--lammps-style"] == "exact");
+          ls.hybrid = o.count("--hybrid") > 0;
+          if (o.count("--kspace")) ls.coulomb = o["--kspace"];
+          if (o.count("--kspace-accuracy")) ls.kspace_accuracy = std::stod(o["--kspace-accuracy"]);
+          if (o.count("--lammps-cutoff")) ls.cutoff = std::stod(o["--lammps-cutoff"]);
+          write_lammps_data_ff(s, f, eo, o["-o"], !with_in, ls);
           std::printf("wrote %s\n", o["-o"].c_str());
           if (with_in) {   // the LAMMPS commands that reproduce this energy with the data file
             namespace fs = std::filesystem;
@@ -1614,8 +1623,10 @@ int main(int argc, char** argv) {
             if (o.count("--press")) run.pressure = std::stod(o["--press"]);
             if (o.count("--steps")) run.steps = std::stoll(o["--steps"]);
             if (o.count("--dt")) run.dt = std::stod(o["--dt"]);
-            write_lammps_input(s, f, eo, rel, o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0, true, run);
-            std::printf("wrote %s\n", o["--lammps-input"].c_str());
+            std::vector<std::string> lnotes;
+            write_lammps_input(s, f, eo, rel, o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0, true, run, ls, &lnotes);
+            for (const auto& n : lnotes) std::printf("lammps: %s\n", n.c_str());
+            std::printf("wrote %s (%s)\n", o["--lammps-input"].c_str(), ls.native ? (ls.hybrid ? "the force field's own styles, hybrid" : "the force field's own styles") : "CAPS-exact styles");
           }
         }
         if (o.count("--gromacs")) {   // STEM.top, STEM.gro and STEM.mdp with the same force field
