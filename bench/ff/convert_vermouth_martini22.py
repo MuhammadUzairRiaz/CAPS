@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Martini 2.2 proteins for CAPS, from vermouth-martinize (github.com/marrink-lab/vermouth-martinize, Apache-2.0):
+"""Martini 2.2 proteins for CAPS, from vermouth-martinize (github.com/marrink-lab/vermouth-martinize, Apache-2.0) and
+martini_v2.2.itp (cgmartini.nl: bead types, masses, every pair; in SRC/cgmartini):
 vermouth/data/force_fields/martini22/05-aminoacids.ff (residue beads, types, charges, side-chain bonds, constraints,
 angles and dihedrals; the backbone "links") and vermouth/data/mappings/*.charmm36.map (which atoms make each bead).
 
@@ -185,20 +186,56 @@ if __name__ == "__main__":
     out = os.path.join(ROOT, "data", "martini", "martini22-protein.json")
     json.dump(doc, open(out, "w"), ensure_ascii=False, indent=1)
     print(f"{out}: {len(residues)} residues ({', '.join(residues)})")
-    # the force field: MARTINI 2.0's beads and pairs, typing that maps a protein and names the beads by type
+    # the force field: Martini 2.2's own bead types and pairs (cgmartini.nl, martini_v2.2.itp: masses, GROMACS C6 / C12 for
+    # every type pair), typing that maps a protein and names the beads by type
     FFD = os.path.join(ROOT, "data", "forcefields")
     fid = "martini22-proteins"
+    itp = os.path.join(SRC, "cgmartini", "martini_v2.2.itp")
+    sec, types, pairs = None, [], {}
+    for raw in open(itp):
+        l = raw.split(";")[0].strip()
+        m = re.match(r"\[\s*(\S+)\s*\]", l)
+        if m:
+            sec = m.group(1)
+            continue
+        w = l.split()
+        if sec == "atomtypes" and len(w) >= 2:
+            types.append({"name": w[0], "element": "", "mass": float(w[1]), "description": f"Martini 2.2 bead {w[0]} (martini_v2.2.itp)"})
+        elif sec == "nonbond_params" and len(w) >= 5 and w[2] == "1":
+            c6, c12 = float(w[3]), float(w[4])   # kJ/mol nm^6, nm^12
+            eps, sig = (c6 * c6 / (4 * c12), (c12 / c6) ** (1 / 6)) if c6 > 0 else (0.0, 0.0)
+            pairs[tuple(sorted((w[0], w[1])))] = [round(eps / 4.184, 8), round(sig * 10, 6)]
+    names = [t["name"] for t in types]
+    missing = [(a, b) for i, a in enumerate(names) for b in names[i:] if tuple(sorted((a, b))) not in pairs]
+    if missing:
+        raise SystemExit(f"martini_v2.2.itp lacks {len(missing)} pairs, e.g. {missing[:5]}")
+    # cross-check against the library's MARTINI 2.0 (moltemplate) pairs for the types they share
+    base = json.load(open(os.path.join(FFD, "martini-moltemplate.json")))
+    short = {t["name"]: re.match(r"moltemplate @atom:(\S+)", t.get("description", "")).group(1) for t in base["atom_types"]}
+    same = diff = 0
+    for r in base["pairs"]:
+        key = tuple(sorted(short.get(x, x) for x in (r["match"] * 2)[:2]))
+        if key in pairs:
+            ok = abs(pairs[key][0] - r["params"][0]) < 2e-4 and abs(pairs[key][1] - r["params"][1]) < 2e-3
+            same += ok
+            diff += not ok
+    print(f"martini_v2.2.itp: {len(types)} bead types, {len(pairs)} pairs; against the library's MARTINI 2.0: {same} pairs equal, {diff} differ")
+    pair_rules = [{"name": f"{a}-{b}", "match": [a] if a == b else [a, b], "style": "lj/gromacs/coul/gromacs", "params": v} for (a, b), v in sorted(pairs.items())]
     ff = {"format": "caps-forcefield", "format_version": 1, "name": "Martini 2.2 proteins", "version": "2.2",
-          "source": "vermouth-martinize martini22 (05-aminoacids.ff, mappings) on the library's MARTINI 2.0", "references": doc["references"],
-          "extends": "martini-moltemplate.json", "typing": f"../typing/{fid}.typing.json", "atom_types": [], "pairs": [], "bonds": [],
-          "angles": [], "dihedrals": [], "impropers": [],
+          "source": "martini_v2.2.itp (cgmartini.nl) with vermouth-martinize's martini22 proteins", "references": doc["references"],
+          "units": "real", "styles": {"pair": "lj/gromacs/coul/gromacs", "bond": "harmonic", "angle": "cosine/squared", "dihedral": "fourier", "improper": "harmonic"},
+          "mixing": "arithmetic", "special_lj": [0, 1, 1], "special_coul": [0, 1, 1], "cutoff": 12.0,
+          "pair_settings": {"lj_inner": 9.0, "coul_inner": 1e-6, "dielectric": 15.0, "model_cutoff": True},
+          "torsion_terms": "if_defined", "angle_terms": "if_defined",
+          "typing": f"../typing/{fid}.typing.json", "atom_types": types, "pairs": pair_rules, "bonds": [], "angles": [], "dihedrals": [], "impropers": [],
           "notes": ["an all-atom protein is mapped onto Martini 2.2 beads with martinize's explicit topology (data/martini/martini22-protein.json; "
-                    "DSSP for the secondary structure); non-bonded terms are MARTINI 2.0's (the library's martini.lt)",
-                    "constraints are stiff bonds (20000 kJ/mol/nm2): CAPS has no constraints",
-                    "AC1 / AC2 (VAL, LEU, ILE side chains) have no non-bonded parameters in the library (martini_v2.2.itp gives them)",
-                    "ring (S) beads weigh 54 in the library's MARTINI file (EMC); Martini 2.2's itp gives 45: masses change dynamics, not energies"]}
+                    "DSSP for the secondary structure)",
+                    "bead types, masses and every pair from martini_v2.2.itp (C6 / C12 as epsilon = C6^2 / 4 C12, sigma = (C12 / C6)^(1/6))",
+                    "run settings as MARTINI 2 in the library: lj/gromacs 9 to 12 A, coul/gromacs 1e-6 to 12 A, relative permittivity 15, "
+                    "special_bonds 0 1 1",
+                    "constraints are stiff bonds (20000 kJ/mol/nm2): CAPS has no constraints"]}
     json.dump(ff, open(os.path.join(FFD, fid + ".json"), "w"), ensure_ascii=False, indent=1)
-    base_rules = json.load(open(os.path.join(ROOT, "data", "typing", "martini-moltemplate.typing.json")))["rules"]
+    base_rules = [{"type": n, "smarts": "*", "atom_name": n, "priority": 0, "description": f"a Martini 2.2 bead named {n}"} for n in names]
     tdoc = {"format": "caps-typing", "version": 1, "forcefield": ff["name"], "coarse_grained": True, "unknown_types": "untyped",
             "martini_protein": "../martini/martini22-protein.json",
             "description": "Martini 2.2 proteins (bench/ff/convert_vermouth_martini22.py): an all-atom protein becomes beads named by their "
@@ -209,8 +246,8 @@ if __name__ == "__main__":
     cat = json.load(open(cat_p))
     entry = {"id": fid, "name": ff["name"], "version": "2.2", "references": doc["references"], "origin": "vermouth-martinize",
              "source_file": "force_fields/martini22/05-aminoacids.ff", "status": "converted",
-             "notes": "proteins mapped as martinize2 does (term by term identical on vermouth's martini22 test), DSSP included; VAL / LEU / ILE lack AC1 / AC2 pairs",
-             "file": fid + ".json", "counts": {"atom_types": 0, "pairs": 0, "bonds": 0, "angles": 0, "dihedrals": 0, "impropers": 0},
+             "notes": "proteins mapped as martinize2 does (term by term identical on vermouth's martini22 test), DSSP included; Martini 2.2's bead types and pairs (martini_v2.2.itp)",
+             "file": fid + ".json", "counts": {"atom_types": len(types), "pairs": len(pair_rules), "bonds": 0, "angles": 0, "dihedrals": 0, "impropers": 0},
              "typing": {"rules": f"typing/{fid}.typing.json", "evidence": "bench/ff/check_martini_protein.py: identical to martinize2 (types, charges, every term, positions)"}}
     ids = [e["id"] for e in cat["forcefields"]]
     if fid in ids:

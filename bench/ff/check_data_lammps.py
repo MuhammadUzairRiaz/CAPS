@@ -77,6 +77,8 @@ CASES = [
      "martini22-proteins", "keep", "rules"),
     ("Martini 2.2 protein: aromatic helix (W, Y, F, H ring constraints and impropers, charged termini)", ("peptide", "AEAWAKEAYAKEAFAKHA", "--helix"),
      "martini22-proteins", "keep", "rules"),
+    ("Martini 2.2 protein: 1ICO beta-hairpin (VAL, ILE as AC1 / AC2; elastic bonds, disulfide)", ("file", os.path.join(ROOT, "tests", "data", "vermouth", "1ico_aa.pdb")),
+     "martini22-proteins", "keep", "rules"),
     ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
                                                                      ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
                                                                      ("beads", "[W]", 120)], 36.0),

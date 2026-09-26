@@ -3,25 +3,9609 @@
  "format_version": 1,
  "name": "Martini 2.2 proteins",
  "version": "2.2",
- "source": "vermouth-martinize martini22 (05-aminoacids.ff, mappings) on the library's MARTINI 2.0",
+ "source": "martini_v2.2.itp (cgmartini.nl) with vermouth-martinize's martini22 proteins",
  "references": [
   "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)",
   "L. Monticelli et al., J. Chem. Theory Comput. 4, 819 (2008)",
   "D. H. de Jong et al., J. Chem. Theory Comput. 9, 687 (2013)",
   "P. C. Kroon et al., Martinize2 and Vermouth, eLife 12, RP90627 (2023)"
  ],
- "extends": "martini-moltemplate.json",
+ "units": "real",
+ "styles": {
+  "pair": "lj/gromacs/coul/gromacs",
+  "bond": "harmonic",
+  "angle": "cosine/squared",
+  "dihedral": "fourier",
+  "improper": "harmonic"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  1,
+  1
+ ],
+ "special_coul": [
+  0,
+  1,
+  1
+ ],
+ "cutoff": 12.0,
+ "pair_settings": {
+  "lj_inner": 9.0,
+  "coul_inner": 1e-06,
+  "dielectric": 15.0,
+  "model_cutoff": true
+ },
+ "torsion_terms": "if_defined",
+ "angle_terms": "if_defined",
  "typing": "../typing/martini22-proteins.typing.json",
- "atom_types": [],
- "pairs": [],
+ "atom_types": [
+  {
+   "name": "P5",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead P5 (martini_v2.2.itp)"
+  },
+  {
+   "name": "P4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead P4 (martini_v2.2.itp)"
+  },
+  {
+   "name": "P3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead P3 (martini_v2.2.itp)"
+  },
+  {
+   "name": "P2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead P2 (martini_v2.2.itp)"
+  },
+  {
+   "name": "P1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead P1 (martini_v2.2.itp)"
+  },
+  {
+   "name": "Nda",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Nda (martini_v2.2.itp)"
+  },
+  {
+   "name": "Nd",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Nd (martini_v2.2.itp)"
+  },
+  {
+   "name": "Na",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Na (martini_v2.2.itp)"
+  },
+  {
+   "name": "N0",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead N0 (martini_v2.2.itp)"
+  },
+  {
+   "name": "C5",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead C5 (martini_v2.2.itp)"
+  },
+  {
+   "name": "C4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead C4 (martini_v2.2.itp)"
+  },
+  {
+   "name": "C3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead C3 (martini_v2.2.itp)"
+  },
+  {
+   "name": "C2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead C2 (martini_v2.2.itp)"
+  },
+  {
+   "name": "C1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead C1 (martini_v2.2.itp)"
+  },
+  {
+   "name": "Qda",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Qda (martini_v2.2.itp)"
+  },
+  {
+   "name": "Qd",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Qd (martini_v2.2.itp)"
+  },
+  {
+   "name": "Qa",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Qa (martini_v2.2.itp)"
+  },
+  {
+   "name": "Q0",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead Q0 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SP5",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SP5 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SP4",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SP4 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SP3",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SP3 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SP2",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SP2 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SP1",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SP1 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SNda",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SNda (martini_v2.2.itp)"
+  },
+  {
+   "name": "SNd",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SNd (martini_v2.2.itp)"
+  },
+  {
+   "name": "SNa",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SNa (martini_v2.2.itp)"
+  },
+  {
+   "name": "SN0",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SN0 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SC5",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SC5 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SC4",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SC4 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SC3",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SC3 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SC2",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SC2 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SC1",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SC1 (martini_v2.2.itp)"
+  },
+  {
+   "name": "SQda",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SQda (martini_v2.2.itp)"
+  },
+  {
+   "name": "SQd",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SQd (martini_v2.2.itp)"
+  },
+  {
+   "name": "SQa",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SQa (martini_v2.2.itp)"
+  },
+  {
+   "name": "SQ0",
+   "element": "",
+   "mass": 45.0,
+   "description": "Martini 2.2 bead SQ0 (martini_v2.2.itp)"
+  },
+  {
+   "name": "AC2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead AC2 (martini_v2.2.itp)"
+  },
+  {
+   "name": "AC1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead AC1 (martini_v2.2.itp)"
+  },
+  {
+   "name": "BP4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 2.2 bead BP4 (martini_v2.2.itp)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "AC1-AC1",
+   "match": [
+    "AC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-AC2",
+   "match": [
+    "AC1",
+    "AC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-BP4",
+   "match": [
+    "AC1",
+    "BP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-C1",
+   "match": [
+    "AC1",
+    "C1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-C2",
+   "match": [
+    "AC1",
+    "C2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-C3",
+   "match": [
+    "AC1",
+    "C3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-C4",
+   "match": [
+    "AC1",
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC1-C5",
+   "match": [
+    "AC1",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC1-N0",
+   "match": [
+    "AC1",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-Na",
+   "match": [
+    "AC1",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-Nd",
+   "match": [
+    "AC1",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-Nda",
+   "match": [
+    "AC1",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-P1",
+   "match": [
+    "AC1",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-P2",
+   "match": [
+    "AC1",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC1-P3",
+   "match": [
+    "AC1",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC1-P4",
+   "match": [
+    "AC1",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-P5",
+   "match": [
+    "AC1",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-Q0",
+   "match": [
+    "AC1",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-Qa",
+   "match": [
+    "AC1",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-Qd",
+   "match": [
+    "AC1",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-Qda",
+   "match": [
+    "AC1",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-SC1",
+   "match": [
+    "AC1",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-SC2",
+   "match": [
+    "AC1",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-SC3",
+   "match": [
+    "AC1",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC1-SC4",
+   "match": [
+    "AC1",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC1-SC5",
+   "match": [
+    "AC1",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC1-SN0",
+   "match": [
+    "AC1",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-SNa",
+   "match": [
+    "AC1",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-SNd",
+   "match": [
+    "AC1",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-SNda",
+   "match": [
+    "AC1",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-SP1",
+   "match": [
+    "AC1",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC1-SP2",
+   "match": [
+    "AC1",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC1-SP3",
+   "match": [
+    "AC1",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC1-SP4",
+   "match": [
+    "AC1",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-SP5",
+   "match": [
+    "AC1",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-SQ0",
+   "match": [
+    "AC1",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-SQa",
+   "match": [
+    "AC1",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-SQd",
+   "match": [
+    "AC1",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC1-SQda",
+   "match": [
+    "AC1",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-AC2",
+   "match": [
+    "AC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-BP4",
+   "match": [
+    "AC2",
+    "BP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC2-C1",
+   "match": [
+    "AC2",
+    "C1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-C2",
+   "match": [
+    "AC2",
+    "C2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-C3",
+   "match": [
+    "AC2",
+    "C3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-C4",
+   "match": [
+    "AC2",
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-C5",
+   "match": [
+    "AC2",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-N0",
+   "match": [
+    "AC2",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-Na",
+   "match": [
+    "AC2",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-Nd",
+   "match": [
+    "AC2",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-Nda",
+   "match": [
+    "AC2",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-P1",
+   "match": [
+    "AC2",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-P2",
+   "match": [
+    "AC2",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-P3",
+   "match": [
+    "AC2",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-P4",
+   "match": [
+    "AC2",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC2-P5",
+   "match": [
+    "AC2",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC2-Q0",
+   "match": [
+    "AC2",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-Qa",
+   "match": [
+    "AC2",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-Qd",
+   "match": [
+    "AC2",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-Qda",
+   "match": [
+    "AC2",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-SC1",
+   "match": [
+    "AC2",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-SC2",
+   "match": [
+    "AC2",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-SC3",
+   "match": [
+    "AC2",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "AC2-SC4",
+   "match": [
+    "AC2",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-SC5",
+   "match": [
+    "AC2",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-SN0",
+   "match": [
+    "AC2",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-SNa",
+   "match": [
+    "AC2",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-SNd",
+   "match": [
+    "AC2",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-SNda",
+   "match": [
+    "AC2",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-SP1",
+   "match": [
+    "AC2",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "AC2-SP2",
+   "match": [
+    "AC2",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-SP3",
+   "match": [
+    "AC2",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "AC2-SP4",
+   "match": [
+    "AC2",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC2-SP5",
+   "match": [
+    "AC2",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "AC2-SQ0",
+   "match": [
+    "AC2",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-SQa",
+   "match": [
+    "AC2",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-SQd",
+   "match": [
+    "AC2",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "AC2-SQda",
+   "match": [
+    "AC2",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "BP4-BP4",
+   "match": [
+    "BP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-C1",
+   "match": [
+    "BP4",
+    "C1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "BP4-C2",
+   "match": [
+    "BP4",
+    "C2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "BP4-C3",
+   "match": [
+    "BP4",
+    "C3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "BP4-C4",
+   "match": [
+    "BP4",
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "BP4-C5",
+   "match": [
+    "BP4",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "BP4-N0",
+   "match": [
+    "BP4",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "BP4-Na",
+   "match": [
+    "BP4",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "BP4-Nd",
+   "match": [
+    "BP4",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "BP4-Nda",
+   "match": [
+    "BP4",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "BP4-P1",
+   "match": [
+    "BP4",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-P2",
+   "match": [
+    "BP4",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-P3",
+   "match": [
+    "BP4",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-P4",
+   "match": [
+    "BP4",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33842645,
+    5.700004
+   ]
+  },
+  {
+   "name": "BP4-P5",
+   "match": [
+    "BP4",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-Q0",
+   "match": [
+    "BP4",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-Qa",
+   "match": [
+    "BP4",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-Qd",
+   "match": [
+    "BP4",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-Qda",
+   "match": [
+    "BP4",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-SC1",
+   "match": [
+    "BP4",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "BP4-SC2",
+   "match": [
+    "BP4",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "BP4-SC3",
+   "match": [
+    "BP4",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "BP4-SC4",
+   "match": [
+    "BP4",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "BP4-SC5",
+   "match": [
+    "BP4",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "BP4-SN0",
+   "match": [
+    "BP4",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "BP4-SNa",
+   "match": [
+    "BP4",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "BP4-SNd",
+   "match": [
+    "BP4",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "BP4-SNda",
+   "match": [
+    "BP4",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "BP4-SP1",
+   "match": [
+    "BP4",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-SP2",
+   "match": [
+    "BP4",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-SP3",
+   "match": [
+    "BP4",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-SP4",
+   "match": [
+    "BP4",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "BP4-SP5",
+   "match": [
+    "BP4",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-SQ0",
+   "match": [
+    "BP4",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-SQa",
+   "match": [
+    "BP4",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-SQd",
+   "match": [
+    "BP4",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "BP4-SQda",
+   "match": [
+    "BP4",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "C1-C1",
+   "match": [
+    "C1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C1-C2",
+   "match": [
+    "C1",
+    "C2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C1-C3",
+   "match": [
+    "C1",
+    "C3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C1-C4",
+   "match": [
+    "C1",
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C1-C5",
+   "match": [
+    "C1",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C1-N0",
+   "match": [
+    "C1",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-Na",
+   "match": [
+    "C1",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-Nd",
+   "match": [
+    "C1",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-Nda",
+   "match": [
+    "C1",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-P1",
+   "match": [
+    "C1",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-P2",
+   "match": [
+    "C1",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C1-P3",
+   "match": [
+    "C1",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C1-P4",
+   "match": [
+    "C1",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "C1-P5",
+   "match": [
+    "C1",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "C1-Q0",
+   "match": [
+    "C1",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-Qa",
+   "match": [
+    "C1",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-Qd",
+   "match": [
+    "C1",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-Qda",
+   "match": [
+    "C1",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-SC1",
+   "match": [
+    "C1",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C1-SC2",
+   "match": [
+    "C1",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C1-SC3",
+   "match": [
+    "C1",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C1-SC4",
+   "match": [
+    "C1",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C1-SC5",
+   "match": [
+    "C1",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C1-SN0",
+   "match": [
+    "C1",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-SNa",
+   "match": [
+    "C1",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-SNd",
+   "match": [
+    "C1",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-SNda",
+   "match": [
+    "C1",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-SP1",
+   "match": [
+    "C1",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C1-SP2",
+   "match": [
+    "C1",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C1-SP3",
+   "match": [
+    "C1",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C1-SP4",
+   "match": [
+    "C1",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "C1-SP5",
+   "match": [
+    "C1",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "C1-SQ0",
+   "match": [
+    "C1",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-SQa",
+   "match": [
+    "C1",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-SQd",
+   "match": [
+    "C1",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C1-SQda",
+   "match": [
+    "C1",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-C2",
+   "match": [
+    "C2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C2-C3",
+   "match": [
+    "C2",
+    "C3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C2-C4",
+   "match": [
+    "C2",
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-C5",
+   "match": [
+    "C2",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-N0",
+   "match": [
+    "C2",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-Na",
+   "match": [
+    "C2",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-Nd",
+   "match": [
+    "C2",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-Nda",
+   "match": [
+    "C2",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-P1",
+   "match": [
+    "C2",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-P2",
+   "match": [
+    "C2",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-P3",
+   "match": [
+    "C2",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-P4",
+   "match": [
+    "C2",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C2-P5",
+   "match": [
+    "C2",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C2-Q0",
+   "match": [
+    "C2",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-Qa",
+   "match": [
+    "C2",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-Qd",
+   "match": [
+    "C2",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-Qda",
+   "match": [
+    "C2",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-SC1",
+   "match": [
+    "C2",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C2-SC2",
+   "match": [
+    "C2",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C2-SC3",
+   "match": [
+    "C2",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C2-SC4",
+   "match": [
+    "C2",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-SC5",
+   "match": [
+    "C2",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-SN0",
+   "match": [
+    "C2",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-SNa",
+   "match": [
+    "C2",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-SNd",
+   "match": [
+    "C2",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-SNda",
+   "match": [
+    "C2",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-SP1",
+   "match": [
+    "C2",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C2-SP2",
+   "match": [
+    "C2",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-SP3",
+   "match": [
+    "C2",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C2-SP4",
+   "match": [
+    "C2",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C2-SP5",
+   "match": [
+    "C2",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C2-SQ0",
+   "match": [
+    "C2",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-SQa",
+   "match": [
+    "C2",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-SQd",
+   "match": [
+    "C2",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C2-SQda",
+   "match": [
+    "C2",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "C3-C3",
+   "match": [
+    "C3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-C4",
+   "match": [
+    "C3",
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-C5",
+   "match": [
+    "C3",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-N0",
+   "match": [
+    "C3",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-Na",
+   "match": [
+    "C3",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-Nd",
+   "match": [
+    "C3",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-Nda",
+   "match": [
+    "C3",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-P1",
+   "match": [
+    "C3",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-P2",
+   "match": [
+    "C3",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C3-P3",
+   "match": [
+    "C3",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C3-P4",
+   "match": [
+    "C3",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-P5",
+   "match": [
+    "C3",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-Q0",
+   "match": [
+    "C3",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-Qa",
+   "match": [
+    "C3",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-Qd",
+   "match": [
+    "C3",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-Qda",
+   "match": [
+    "C3",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-SC1",
+   "match": [
+    "C3",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SC2",
+   "match": [
+    "C3",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SC3",
+   "match": [
+    "C3",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SC4",
+   "match": [
+    "C3",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SC5",
+   "match": [
+    "C3",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SN0",
+   "match": [
+    "C3",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SNa",
+   "match": [
+    "C3",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-SNd",
+   "match": [
+    "C3",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-SNda",
+   "match": [
+    "C3",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-SP1",
+   "match": [
+    "C3",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C3-SP2",
+   "match": [
+    "C3",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C3-SP3",
+   "match": [
+    "C3",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C3-SP4",
+   "match": [
+    "C3",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-SP5",
+   "match": [
+    "C3",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C3-SQ0",
+   "match": [
+    "C3",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-SQa",
+   "match": [
+    "C3",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-SQd",
+   "match": [
+    "C3",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C3-SQda",
+   "match": [
+    "C3",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "C4-C4",
+   "match": [
+    "C4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-C5",
+   "match": [
+    "C4",
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-N0",
+   "match": [
+    "C4",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-Na",
+   "match": [
+    "C4",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-Nd",
+   "match": [
+    "C4",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-Nda",
+   "match": [
+    "C4",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-P1",
+   "match": [
+    "C4",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-P2",
+   "match": [
+    "C4",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-P3",
+   "match": [
+    "C4",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-P4",
+   "match": [
+    "C4",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-P5",
+   "match": [
+    "C4",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-Q0",
+   "match": [
+    "C4",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-Qa",
+   "match": [
+    "C4",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-Qd",
+   "match": [
+    "C4",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-Qda",
+   "match": [
+    "C4",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-SC1",
+   "match": [
+    "C4",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-SC2",
+   "match": [
+    "C4",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-SC3",
+   "match": [
+    "C4",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-SC4",
+   "match": [
+    "C4",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-SC5",
+   "match": [
+    "C4",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-SN0",
+   "match": [
+    "C4",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-SNa",
+   "match": [
+    "C4",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-SNd",
+   "match": [
+    "C4",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-SNda",
+   "match": [
+    "C4",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-SP1",
+   "match": [
+    "C4",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-SP2",
+   "match": [
+    "C4",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C4-SP3",
+   "match": [
+    "C4",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C4-SP4",
+   "match": [
+    "C4",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-SP5",
+   "match": [
+    "C4",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-SQ0",
+   "match": [
+    "C4",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-SQa",
+   "match": [
+    "C4",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-SQd",
+   "match": [
+    "C4",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C4-SQda",
+   "match": [
+    "C4",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "C5-C5",
+   "match": [
+    "C5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-N0",
+   "match": [
+    "C5",
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-Na",
+   "match": [
+    "C5",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-Nd",
+   "match": [
+    "C5",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-Nda",
+   "match": [
+    "C5",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-P1",
+   "match": [
+    "C5",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-P2",
+   "match": [
+    "C5",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-P3",
+   "match": [
+    "C5",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-P4",
+   "match": [
+    "C5",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-P5",
+   "match": [
+    "C5",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-Q0",
+   "match": [
+    "C5",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-Qa",
+   "match": [
+    "C5",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-Qd",
+   "match": [
+    "C5",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-Qda",
+   "match": [
+    "C5",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SC1",
+   "match": [
+    "C5",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SC2",
+   "match": [
+    "C5",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SC3",
+   "match": [
+    "C5",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SC4",
+   "match": [
+    "C5",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SC5",
+   "match": [
+    "C5",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SN0",
+   "match": [
+    "C5",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SNa",
+   "match": [
+    "C5",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SNd",
+   "match": [
+    "C5",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SNda",
+   "match": [
+    "C5",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SP1",
+   "match": [
+    "C5",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SP2",
+   "match": [
+    "C5",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SP3",
+   "match": [
+    "C5",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "C5-SP4",
+   "match": [
+    "C5",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SP5",
+   "match": [
+    "C5",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SQ0",
+   "match": [
+    "C5",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SQa",
+   "match": [
+    "C5",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SQd",
+   "match": [
+    "C5",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "C5-SQda",
+   "match": [
+    "C5",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "N0-N0",
+   "match": [
+    "N0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Na",
+   "match": [
+    "N0",
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Nd",
+   "match": [
+    "N0",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Nda",
+   "match": [
+    "N0",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-P1",
+   "match": [
+    "N0",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "N0-P2",
+   "match": [
+    "N0",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "N0-P3",
+   "match": [
+    "N0",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-P4",
+   "match": [
+    "N0",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-P5",
+   "match": [
+    "N0",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Q0",
+   "match": [
+    "N0",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Qa",
+   "match": [
+    "N0",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Qd",
+   "match": [
+    "N0",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-Qda",
+   "match": [
+    "N0",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SC1",
+   "match": [
+    "N0",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "N0-SC2",
+   "match": [
+    "N0",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "N0-SC3",
+   "match": [
+    "N0",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SC4",
+   "match": [
+    "N0",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SC5",
+   "match": [
+    "N0",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SN0",
+   "match": [
+    "N0",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SNa",
+   "match": [
+    "N0",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SNd",
+   "match": [
+    "N0",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SNda",
+   "match": [
+    "N0",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SP1",
+   "match": [
+    "N0",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "N0-SP2",
+   "match": [
+    "N0",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "N0-SP3",
+   "match": [
+    "N0",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SP4",
+   "match": [
+    "N0",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SP5",
+   "match": [
+    "N0",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SQ0",
+   "match": [
+    "N0",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SQa",
+   "match": [
+    "N0",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SQd",
+   "match": [
+    "N0",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "N0-SQda",
+   "match": [
+    "N0",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Na-Na",
+   "match": [
+    "Na"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-Nd",
+   "match": [
+    "Na",
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-Nda",
+   "match": [
+    "Na",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-P1",
+   "match": [
+    "Na",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-P2",
+   "match": [
+    "Na",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-P3",
+   "match": [
+    "Na",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-P4",
+   "match": [
+    "Na",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-P5",
+   "match": [
+    "Na",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-Q0",
+   "match": [
+    "Na",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-Qa",
+   "match": [
+    "Na",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-Qd",
+   "match": [
+    "Na",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-Qda",
+   "match": [
+    "Na",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SC1",
+   "match": [
+    "Na",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Na-SC2",
+   "match": [
+    "Na",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Na-SC3",
+   "match": [
+    "Na",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Na-SC4",
+   "match": [
+    "Na",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Na-SC5",
+   "match": [
+    "Na",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Na-SN0",
+   "match": [
+    "Na",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Na-SNa",
+   "match": [
+    "Na",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-SNd",
+   "match": [
+    "Na",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SNda",
+   "match": [
+    "Na",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SP1",
+   "match": [
+    "Na",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SP2",
+   "match": [
+    "Na",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SP3",
+   "match": [
+    "Na",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SP4",
+   "match": [
+    "Na",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-SP5",
+   "match": [
+    "Na",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SQ0",
+   "match": [
+    "Na",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-SQa",
+   "match": [
+    "Na",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Na-SQd",
+   "match": [
+    "Na",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Na-SQda",
+   "match": [
+    "Na",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-Nd",
+   "match": [
+    "Nd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-Nda",
+   "match": [
+    "Nd",
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-P1",
+   "match": [
+    "Nd",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-P2",
+   "match": [
+    "Nd",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-P3",
+   "match": [
+    "Nd",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-P4",
+   "match": [
+    "Nd",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-P5",
+   "match": [
+    "Nd",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-Q0",
+   "match": [
+    "Nd",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-Qa",
+   "match": [
+    "Nd",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-Qd",
+   "match": [
+    "Nd",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-Qda",
+   "match": [
+    "Nd",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SC1",
+   "match": [
+    "Nd",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Nd-SC2",
+   "match": [
+    "Nd",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Nd-SC3",
+   "match": [
+    "Nd",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Nd-SC4",
+   "match": [
+    "Nd",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Nd-SC5",
+   "match": [
+    "Nd",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Nd-SN0",
+   "match": [
+    "Nd",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Nd-SNa",
+   "match": [
+    "Nd",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SNd",
+   "match": [
+    "Nd",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-SNda",
+   "match": [
+    "Nd",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SP1",
+   "match": [
+    "Nd",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SP2",
+   "match": [
+    "Nd",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SP3",
+   "match": [
+    "Nd",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SP4",
+   "match": [
+    "Nd",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-SP5",
+   "match": [
+    "Nd",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SQ0",
+   "match": [
+    "Nd",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-SQa",
+   "match": [
+    "Nd",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nd-SQd",
+   "match": [
+    "Nd",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nd-SQda",
+   "match": [
+    "Nd",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-Nda",
+   "match": [
+    "Nda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-P1",
+   "match": [
+    "Nda",
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-P2",
+   "match": [
+    "Nda",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-P3",
+   "match": [
+    "Nda",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-P4",
+   "match": [
+    "Nda",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nda-P5",
+   "match": [
+    "Nda",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-Q0",
+   "match": [
+    "Nda",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nda-Qa",
+   "match": [
+    "Nda",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-Qd",
+   "match": [
+    "Nda",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-Qda",
+   "match": [
+    "Nda",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SC1",
+   "match": [
+    "Nda",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Nda-SC2",
+   "match": [
+    "Nda",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Nda-SC3",
+   "match": [
+    "Nda",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Nda-SC4",
+   "match": [
+    "Nda",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Nda-SC5",
+   "match": [
+    "Nda",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Nda-SN0",
+   "match": [
+    "Nda",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Nda-SNa",
+   "match": [
+    "Nda",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SNd",
+   "match": [
+    "Nda",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SNda",
+   "match": [
+    "Nda",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SP1",
+   "match": [
+    "Nda",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SP2",
+   "match": [
+    "Nda",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SP3",
+   "match": [
+    "Nda",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SP4",
+   "match": [
+    "Nda",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nda-SP5",
+   "match": [
+    "Nda",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SQ0",
+   "match": [
+    "Nda",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Nda-SQa",
+   "match": [
+    "Nda",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SQd",
+   "match": [
+    "Nda",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Nda-SQda",
+   "match": [
+    "Nda",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-P1",
+   "match": [
+    "P1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-P2",
+   "match": [
+    "P1",
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-P3",
+   "match": [
+    "P1",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-P4",
+   "match": [
+    "P1",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-P5",
+   "match": [
+    "P1",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P1-Q0",
+   "match": [
+    "P1",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P1-Qa",
+   "match": [
+    "P1",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-Qd",
+   "match": [
+    "P1",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-Qda",
+   "match": [
+    "P1",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SC1",
+   "match": [
+    "P1",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P1-SC2",
+   "match": [
+    "P1",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "P1-SC3",
+   "match": [
+    "P1",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P1-SC4",
+   "match": [
+    "P1",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P1-SC5",
+   "match": [
+    "P1",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P1-SN0",
+   "match": [
+    "P1",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P1-SNa",
+   "match": [
+    "P1",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SNd",
+   "match": [
+    "P1",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SNda",
+   "match": [
+    "P1",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SP1",
+   "match": [
+    "P1",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SP2",
+   "match": [
+    "P1",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SP3",
+   "match": [
+    "P1",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SP4",
+   "match": [
+    "P1",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SP5",
+   "match": [
+    "P1",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P1-SQ0",
+   "match": [
+    "P1",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P1-SQa",
+   "match": [
+    "P1",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SQd",
+   "match": [
+    "P1",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P1-SQda",
+   "match": [
+    "P1",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-P2",
+   "match": [
+    "P2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-P3",
+   "match": [
+    "P2",
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-P4",
+   "match": [
+    "P2",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-P5",
+   "match": [
+    "P2",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P2-Q0",
+   "match": [
+    "P2",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-Qa",
+   "match": [
+    "P2",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-Qd",
+   "match": [
+    "P2",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-Qda",
+   "match": [
+    "P2",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SC1",
+   "match": [
+    "P2",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "P2-SC2",
+   "match": [
+    "P2",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P2-SC3",
+   "match": [
+    "P2",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "P2-SC4",
+   "match": [
+    "P2",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P2-SC5",
+   "match": [
+    "P2",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P2-SN0",
+   "match": [
+    "P2",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P2-SNa",
+   "match": [
+    "P2",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SNd",
+   "match": [
+    "P2",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SNda",
+   "match": [
+    "P2",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SP1",
+   "match": [
+    "P2",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SP2",
+   "match": [
+    "P2",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SP3",
+   "match": [
+    "P2",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SP4",
+   "match": [
+    "P2",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SP5",
+   "match": [
+    "P2",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P2-SQ0",
+   "match": [
+    "P2",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SQa",
+   "match": [
+    "P2",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SQd",
+   "match": [
+    "P2",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P2-SQda",
+   "match": [
+    "P2",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-P3",
+   "match": [
+    "P3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-P4",
+   "match": [
+    "P3",
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-P5",
+   "match": [
+    "P3",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-Q0",
+   "match": [
+    "P3",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-Qa",
+   "match": [
+    "P3",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-Qd",
+   "match": [
+    "P3",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-Qda",
+   "match": [
+    "P3",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-SC1",
+   "match": [
+    "P3",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "P3-SC2",
+   "match": [
+    "P3",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P3-SC3",
+   "match": [
+    "P3",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "P3-SC4",
+   "match": [
+    "P3",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "P3-SC5",
+   "match": [
+    "P3",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P3-SN0",
+   "match": [
+    "P3",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P3-SNa",
+   "match": [
+    "P3",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SNd",
+   "match": [
+    "P3",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SNda",
+   "match": [
+    "P3",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SP1",
+   "match": [
+    "P3",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SP2",
+   "match": [
+    "P3",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SP3",
+   "match": [
+    "P3",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SP4",
+   "match": [
+    "P3",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SP5",
+   "match": [
+    "P3",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-SQ0",
+   "match": [
+    "P3",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P3-SQa",
+   "match": [
+    "P3",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-SQd",
+   "match": [
+    "P3",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P3-SQda",
+   "match": [
+    "P3",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-P4",
+   "match": [
+    "P4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P4-P5",
+   "match": [
+    "P4",
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-Q0",
+   "match": [
+    "P4",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-Qa",
+   "match": [
+    "P4",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-Qd",
+   "match": [
+    "P4",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-Qda",
+   "match": [
+    "P4",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-SC1",
+   "match": [
+    "P4",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "P4-SC2",
+   "match": [
+    "P4",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "P4-SC3",
+   "match": [
+    "P4",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P4-SC4",
+   "match": [
+    "P4",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P4-SC5",
+   "match": [
+    "P4",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "P4-SN0",
+   "match": [
+    "P4",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P4-SNa",
+   "match": [
+    "P4",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P4-SNd",
+   "match": [
+    "P4",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P4-SNda",
+   "match": [
+    "P4",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "P4-SP1",
+   "match": [
+    "P4",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P4-SP2",
+   "match": [
+    "P4",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "P4-SP3",
+   "match": [
+    "P4",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P4-SP4",
+   "match": [
+    "P4",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P4-SP5",
+   "match": [
+    "P4",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-SQ0",
+   "match": [
+    "P4",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-SQa",
+   "match": [
+    "P4",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-SQd",
+   "match": [
+    "P4",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P4-SQda",
+   "match": [
+    "P4",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-P5",
+   "match": [
+    "P5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-Q0",
+   "match": [
+    "P5",
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P5-Qa",
+   "match": [
+    "P5",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-Qd",
+   "match": [
+    "P5",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-Qda",
+   "match": [
+    "P5",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SC1",
+   "match": [
+    "P5",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800442,
+    4.700005
+   ]
+  },
+  {
+   "name": "P5-SC2",
+   "match": [
+    "P5",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "P5-SC3",
+   "match": [
+    "P5",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P5-SC4",
+   "match": [
+    "P5",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "P5-SC5",
+   "match": [
+    "P5",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "P5-SN0",
+   "match": [
+    "P5",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "P5-SNa",
+   "match": [
+    "P5",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P5-SNd",
+   "match": [
+    "P5",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P5-SNda",
+   "match": [
+    "P5",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P5-SP1",
+   "match": [
+    "P5",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SP2",
+   "match": [
+    "P5",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SP3",
+   "match": [
+    "P5",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SP4",
+   "match": [
+    "P5",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SP5",
+   "match": [
+    "P5",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SQ0",
+   "match": [
+    "P5",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "P5-SQa",
+   "match": [
+    "P5",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SQd",
+   "match": [
+    "P5",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "P5-SQda",
+   "match": [
+    "P5",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Q0-Q0",
+   "match": [
+    "Q0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Q0-Qa",
+   "match": [
+    "Q0",
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-Qd",
+   "match": [
+    "Q0",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-Qda",
+   "match": [
+    "Q0",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-SC1",
+   "match": [
+    "Q0",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Q0-SC2",
+   "match": [
+    "Q0",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Q0-SC3",
+   "match": [
+    "Q0",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "Q0-SC4",
+   "match": [
+    "Q0",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Q0-SC5",
+   "match": [
+    "Q0",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Q0-SN0",
+   "match": [
+    "Q0",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Q0-SNa",
+   "match": [
+    "Q0",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Q0-SNd",
+   "match": [
+    "Q0",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Q0-SNda",
+   "match": [
+    "Q0",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Q0-SP1",
+   "match": [
+    "Q0",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Q0-SP2",
+   "match": [
+    "Q0",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-SP3",
+   "match": [
+    "Q0",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-SP4",
+   "match": [
+    "Q0",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Q0-SP5",
+   "match": [
+    "Q0",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-SQ0",
+   "match": [
+    "Q0",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Q0-SQa",
+   "match": [
+    "Q0",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-SQd",
+   "match": [
+    "Q0",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Q0-SQda",
+   "match": [
+    "Q0",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-Qa",
+   "match": [
+    "Qa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-Qd",
+   "match": [
+    "Qa",
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qa-Qda",
+   "match": [
+    "Qa",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qa-SC1",
+   "match": [
+    "Qa",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Qa-SC2",
+   "match": [
+    "Qa",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Qa-SC3",
+   "match": [
+    "Qa",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "Qa-SC4",
+   "match": [
+    "Qa",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Qa-SC5",
+   "match": [
+    "Qa",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Qa-SN0",
+   "match": [
+    "Qa",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Qa-SNa",
+   "match": [
+    "Qa",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Qa-SNd",
+   "match": [
+    "Qa",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-SNda",
+   "match": [
+    "Qa",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-SP1",
+   "match": [
+    "Qa",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-SP2",
+   "match": [
+    "Qa",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-SP3",
+   "match": [
+    "Qa",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qa-SP4",
+   "match": [
+    "Qa",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qa-SP5",
+   "match": [
+    "Qa",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qa-SQ0",
+   "match": [
+    "Qa",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-SQa",
+   "match": [
+    "Qa",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qa-SQd",
+   "match": [
+    "Qa",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qa-SQda",
+   "match": [
+    "Qa",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qd-Qd",
+   "match": [
+    "Qd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-Qda",
+   "match": [
+    "Qd",
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qd-SC1",
+   "match": [
+    "Qd",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Qd-SC2",
+   "match": [
+    "Qd",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Qd-SC3",
+   "match": [
+    "Qd",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "Qd-SC4",
+   "match": [
+    "Qd",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Qd-SC5",
+   "match": [
+    "Qd",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Qd-SN0",
+   "match": [
+    "Qd",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Qd-SNa",
+   "match": [
+    "Qd",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-SNd",
+   "match": [
+    "Qd",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.95597318,
+    4.700007
+   ]
+  },
+  {
+   "name": "Qd-SNda",
+   "match": [
+    "Qd",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-SP1",
+   "match": [
+    "Qd",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-SP2",
+   "match": [
+    "Qd",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-SP3",
+   "match": [
+    "Qd",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qd-SP4",
+   "match": [
+    "Qd",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qd-SP5",
+   "match": [
+    "Qd",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qd-SQ0",
+   "match": [
+    "Qd",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-SQa",
+   "match": [
+    "Qd",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qd-SQd",
+   "match": [
+    "Qd",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qd-SQda",
+   "match": [
+    "Qd",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-Qda",
+   "match": [
+    "Qda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-SC1",
+   "match": [
+    "Qda",
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Qda-SC2",
+   "match": [
+    "Qda",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "Qda-SC3",
+   "match": [
+    "Qda",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.54967373,
+    4.700042
+   ]
+  },
+  {
+   "name": "Qda-SC4",
+   "match": [
+    "Qda",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.64534865,
+    4.69999
+   ]
+  },
+  {
+   "name": "Qda-SC5",
+   "match": [
+    "Qda",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.74087945,
+    4.700027
+   ]
+  },
+  {
+   "name": "Qda-SN0",
+   "match": [
+    "Qda",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.83652111,
+    4.700004
+   ]
+  },
+  {
+   "name": "Qda-SNa",
+   "match": [
+    "Qda",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qda-SNd",
+   "match": [
+    "Qda",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qda-SNda",
+   "match": [
+    "Qda",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qda-SP1",
+   "match": [
+    "Qda",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qda-SP2",
+   "match": [
+    "Qda",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.19499619,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qda-SP3",
+   "match": [
+    "Qda",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-SP4",
+   "match": [
+    "Qda",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-SP5",
+   "match": [
+    "Qda",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-SQ0",
+   "match": [
+    "Qda",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.07548468,
+    4.700006
+   ]
+  },
+  {
+   "name": "Qda-SQa",
+   "match": [
+    "Qda",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-SQd",
+   "match": [
+    "Qda",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "Qda-SQda",
+   "match": [
+    "Qda",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.33837754,
+    4.700018
+   ]
+  },
+  {
+   "name": "SC1-SC1",
+   "match": [
+    "SC1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC1-SC2",
+   "match": [
+    "SC1",
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC1-SC3",
+   "match": [
+    "SC1",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC1-SC4",
+   "match": [
+    "SC1",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC1-SC5",
+   "match": [
+    "SC1",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC1-SN0",
+   "match": [
+    "SC1",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC1-SNa",
+   "match": [
+    "SC1",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC1-SNd",
+   "match": [
+    "SC1",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC1-SNda",
+   "match": [
+    "SC1",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC1-SP1",
+   "match": [
+    "SC1",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC1-SP2",
+   "match": [
+    "SC1",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC1-SP3",
+   "match": [
+    "SC1",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC1-SP4",
+   "match": [
+    "SC1",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.35850192,
+    4.30001
+   ]
+  },
+  {
+   "name": "SC1-SP5",
+   "match": [
+    "SC1",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.35850192,
+    4.30001
+   ]
+  },
+  {
+   "name": "SC1-SQ0",
+   "match": [
+    "SC1",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC1-SQa",
+   "match": [
+    "SC1",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC1-SQd",
+   "match": [
+    "SC1",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC1-SQda",
+   "match": [
+    "SC1",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC2-SC2",
+   "match": [
+    "SC2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC2-SC3",
+   "match": [
+    "SC2",
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC2-SC4",
+   "match": [
+    "SC2",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC2-SC5",
+   "match": [
+    "SC2",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC2-SN0",
+   "match": [
+    "SC2",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC2-SNa",
+   "match": [
+    "SC2",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC2-SNd",
+   "match": [
+    "SC2",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC2-SNda",
+   "match": [
+    "SC2",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC2-SP1",
+   "match": [
+    "SC2",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC2-SP2",
+   "match": [
+    "SC2",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC2-SP3",
+   "match": [
+    "SC2",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC2-SP4",
+   "match": [
+    "SC2",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC2-SP5",
+   "match": [
+    "SC2",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC2-SQ0",
+   "match": [
+    "SC2",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC2-SQa",
+   "match": [
+    "SC2",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC2-SQd",
+   "match": [
+    "SC2",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC2-SQda",
+   "match": [
+    "SC2",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.47800999,
+    6.199999
+   ]
+  },
+  {
+   "name": "SC3-SC3",
+   "match": [
+    "SC3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC3-SC4",
+   "match": [
+    "SC3",
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC3-SC5",
+   "match": [
+    "SC3",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC3-SN0",
+   "match": [
+    "SC3",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC3-SNa",
+   "match": [
+    "SC3",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC3-SNd",
+   "match": [
+    "SC3",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC3-SNda",
+   "match": [
+    "SC3",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC3-SP1",
+   "match": [
+    "SC3",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC3-SP2",
+   "match": [
+    "SC3",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC3-SP3",
+   "match": [
+    "SC3",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC3-SP4",
+   "match": [
+    "SC3",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC3-SP5",
+   "match": [
+    "SC3",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC3-SQ0",
+   "match": [
+    "SC3",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC3-SQa",
+   "match": [
+    "SC3",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC3-SQd",
+   "match": [
+    "SC3",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC3-SQda",
+   "match": [
+    "SC3",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.41227941,
+    4.300003
+   ]
+  },
+  {
+   "name": "SC4-SC4",
+   "match": [
+    "SC4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC4-SC5",
+   "match": [
+    "SC4",
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC4-SN0",
+   "match": [
+    "SC4",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC4-SNa",
+   "match": [
+    "SC4",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC4-SNd",
+   "match": [
+    "SC4",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC4-SNda",
+   "match": [
+    "SC4",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC4-SP1",
+   "match": [
+    "SC4",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC4-SP2",
+   "match": [
+    "SC4",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC4-SP3",
+   "match": [
+    "SC4",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC4-SP4",
+   "match": [
+    "SC4",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC4-SP5",
+   "match": [
+    "SC4",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC4-SQ0",
+   "match": [
+    "SC4",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC4-SQa",
+   "match": [
+    "SC4",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC4-SQd",
+   "match": [
+    "SC4",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC4-SQda",
+   "match": [
+    "SC4",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.48399035,
+    4.299994
+   ]
+  },
+  {
+   "name": "SC5-SC5",
+   "match": [
+    "SC5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SN0",
+   "match": [
+    "SC5",
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SNa",
+   "match": [
+    "SC5",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SNd",
+   "match": [
+    "SC5",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SNda",
+   "match": [
+    "SC5",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SP1",
+   "match": [
+    "SC5",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SP2",
+   "match": [
+    "SC5",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SP3",
+   "match": [
+    "SC5",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SC5-SP4",
+   "match": [
+    "SC5",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC5-SP5",
+   "match": [
+    "SC5",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC5-SQ0",
+   "match": [
+    "SC5",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC5-SQa",
+   "match": [
+    "SC5",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC5-SQd",
+   "match": [
+    "SC5",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SC5-SQda",
+   "match": [
+    "SC5",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.55570128,
+    4.299987
+   ]
+  },
+  {
+   "name": "SN0-SN0",
+   "match": [
+    "SN0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SNa",
+   "match": [
+    "SN0",
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SNd",
+   "match": [
+    "SN0",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SNda",
+   "match": [
+    "SN0",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SP1",
+   "match": [
+    "SN0",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SN0-SP2",
+   "match": [
+    "SN0",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SN0-SP3",
+   "match": [
+    "SN0",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SP4",
+   "match": [
+    "SN0",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SP5",
+   "match": [
+    "SN0",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SQ0",
+   "match": [
+    "SN0",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SQa",
+   "match": [
+    "SN0",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SQd",
+   "match": [
+    "SN0",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SN0-SQda",
+   "match": [
+    "SN0",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SNa-SNa",
+   "match": [
+    "SNa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SNd",
+   "match": [
+    "SNa",
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SNda",
+   "match": [
+    "SNa",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SP1",
+   "match": [
+    "SNa",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SP2",
+   "match": [
+    "SNa",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SP3",
+   "match": [
+    "SNa",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SP4",
+   "match": [
+    "SNa",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SP5",
+   "match": [
+    "SNa",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNa-SQ0",
+   "match": [
+    "SNa",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SQa",
+   "match": [
+    "SNa",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNa-SQd",
+   "match": [
+    "SNa",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNa-SQda",
+   "match": [
+    "SNa",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNd-SNd",
+   "match": [
+    "SNd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SNda",
+   "match": [
+    "SNd",
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SP1",
+   "match": [
+    "SNd",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SP2",
+   "match": [
+    "SNd",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SP3",
+   "match": [
+    "SNd",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SP4",
+   "match": [
+    "SNd",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SP5",
+   "match": [
+    "SNd",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNd-SQ0",
+   "match": [
+    "SNd",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SQa",
+   "match": [
+    "SNd",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNd-SQd",
+   "match": [
+    "SNd",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNd-SQda",
+   "match": [
+    "SNd",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNda-SNda",
+   "match": [
+    "SNda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNda-SP1",
+   "match": [
+    "SNda",
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNda-SP2",
+   "match": [
+    "SNda",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNda-SP3",
+   "match": [
+    "SNda",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNda-SP4",
+   "match": [
+    "SNda",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNda-SP5",
+   "match": [
+    "SNda",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNda-SQ0",
+   "match": [
+    "SNda",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SNda-SQa",
+   "match": [
+    "SNda",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNda-SQd",
+   "match": [
+    "SNda",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SNda-SQda",
+   "match": [
+    "SNda",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP1-SP1",
+   "match": [
+    "SP1"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP1-SP2",
+   "match": [
+    "SP1",
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP1-SP3",
+   "match": [
+    "SP1",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP1-SP4",
+   "match": [
+    "SP1",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP1-SP5",
+   "match": [
+    "SP1",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP1-SQ0",
+   "match": [
+    "SP1",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.71700384,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP1-SQa",
+   "match": [
+    "SP1",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP1-SQd",
+   "match": [
+    "SP1",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP1-SQda",
+   "match": [
+    "SP1",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP2-SP2",
+   "match": [
+    "SP2"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP2-SP3",
+   "match": [
+    "SP2",
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP2-SP4",
+   "match": [
+    "SP2",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP2-SP5",
+   "match": [
+    "SP2",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP2-SQ0",
+   "match": [
+    "SP2",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SP2-SQa",
+   "match": [
+    "SP2",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP2-SQd",
+   "match": [
+    "SP2",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP2-SQda",
+   "match": [
+    "SP2",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP3-SP3",
+   "match": [
+    "SP3"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP3-SP4",
+   "match": [
+    "SP3",
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP3-SP5",
+   "match": [
+    "SP3",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP3-SQ0",
+   "match": [
+    "SP3",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP3-SQa",
+   "match": [
+    "SP3",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP3-SQd",
+   "match": [
+    "SP3",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP3-SQda",
+   "match": [
+    "SP3",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP4-SP4",
+   "match": [
+    "SP4"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP4-SP5",
+   "match": [
+    "SP4",
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP4-SQ0",
+   "match": [
+    "SP4",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP4-SQa",
+   "match": [
+    "SP4",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP4-SQd",
+   "match": [
+    "SP4",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP4-SQda",
+   "match": [
+    "SP4",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP5-SP5",
+   "match": [
+    "SP5"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP5-SQ0",
+   "match": [
+    "SP5",
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SP5-SQa",
+   "match": [
+    "SP5",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP5-SQd",
+   "match": [
+    "SP5",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SP5-SQda",
+   "match": [
+    "SP5",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SQ0-SQ0",
+   "match": [
+    "SQ0"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.62741222,
+    4.299982
+   ]
+  },
+  {
+   "name": "SQ0-SQa",
+   "match": [
+    "SQ0",
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SQ0-SQd",
+   "match": [
+    "SQ0",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SQ0-SQda",
+   "match": [
+    "SQ0",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.80662932,
+    4.30001
+   ]
+  },
+  {
+   "name": "SQa-SQa",
+   "match": [
+    "SQa"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SQa-SQd",
+   "match": [
+    "SQa",
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SQa-SQda",
+   "match": [
+    "SQa",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SQd-SQd",
+   "match": [
+    "SQd"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    0.89626976,
+    4.299998
+   ]
+  },
+  {
+   "name": "SQd-SQda",
+   "match": [
+    "SQd",
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  },
+  {
+   "name": "SQda-SQda",
+   "match": [
+    "SQda"
+   ],
+   "style": "lj/gromacs/coul/gromacs",
+   "params": [
+    1.00384759,
+    4.299991
+   ]
+  }
+ ],
  "bonds": [],
  "angles": [],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "an all-atom protein is mapped onto Martini 2.2 beads with martinize's explicit topology (data/martini/martini22-protein.json; DSSP for the secondary structure); non-bonded terms are MARTINI 2.0's (the library's martini.lt)",
-  "constraints are stiff bonds (20000 kJ/mol/nm2): CAPS has no constraints",
-  "AC1 / AC2 (VAL, LEU, ILE side chains) have no non-bonded parameters in the library (martini_v2.2.itp gives them)",
-  "ring (S) beads weigh 54 in the library's MARTINI file (EMC); Martini 2.2's itp gives 45: masses change dynamics, not energies"
+  "an all-atom protein is mapped onto Martini 2.2 beads with martinize's explicit topology (data/martini/martini22-protein.json; DSSP for the secondary structure)",
+  "bead types, masses and every pair from martini_v2.2.itp (C6 / C12 as epsilon = C6^2 / 4 C12, sigma = (C12 / C6)^(1/6))",
+  "run settings as MARTINI 2 in the library: lj/gromacs 9 to 12 A, coul/gromacs 1e-6 to 12 A, relative permittivity 15, special_bonds 0 1 1",
+  "constraints are stiff bonds (20000 kJ/mol/nm2): CAPS has no constraints"
  ]
 }

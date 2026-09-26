@@ -33,7 +33,7 @@ LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (
 | MARTINI 2.0: DPPC, POPE, ions, water (lj/gromacs/coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept) | energy 1e-7, forces 8e-9 kcal/mol/Å |
 | MARTINI overlays: PEO with its torsions; sucrose, maltose, glucose | energy ≤ 4e-9, forces 8e-9 |
 | MARTINI amino acids: HIS, PHE, TYR, TRP (harmonic impropers, GROMACS type-2 order), ARG, ASP, LYS, water | energy 1.3e-7, forces 7.8e-9 |
-| Martini 2.2 proteins: AK helix (helix constraints, 96° / 700 angles, −120° / 400 dihedrals); an aromatic helix (W, Y, F, H rings, charged termini) | energy ≤ 1.4e-7, forces ≤ 2.2e-8 |
+| Martini 2.2 proteins: AK helix (helix constraints, 96° / 700 angles, −120° / 400 dihedrals); an aromatic helix (W, Y, F, H rings, charged termini); 1ICO (VAL / ILE as AC1 / AC2, elastic bonds, disulfide) | energy ≤ 1.4e-7, forces ≤ 2.5e-8 |
 
 `check_martini_protein.py`: CAPS's Martini 2.2 protein of 1ICO (vermouth's martini22 integration test, `-dssp -cys auto`)
 against martinize2 — 67 beads with identical types and charges, 67 bonds, 21 constraints, 65 angles, 4 dihedrals
