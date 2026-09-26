@@ -172,6 +172,10 @@ lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("
 ltypes = {a["type"].split("_")[0] for a in lopls["atoms"]}
 check(reline["complete"] and il["complete"] and lopls["complete"] and {"54L", "57L", "60LCH2"} <= ltypes,
       f"field: OPLS-DES reline, CL&P [C4mim][NTf2], L-OPLS polyethylene ({sorted(ltypes)})")
+# OPLS 2020: the bond / angle supplement on OPLS 2005, typed with OPLS 2005's rules; the 2020 values replace 2005's
+o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")
+r20 = o20.field.assign("opls2020", charges="gasteiger")
+check(r20["complete"] and "2020" in r20.get("forcefield", r20.get("name", "OPLS 2020")), f"field: OPLS 2020 on benzyl acetate · {r20.get('forcefield', r20.get('name'))}")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)

@@ -1,7 +1,7 @@
 {
  "format": "caps-forcefield",
  "format_version": 1,
- "name": "OPLS 2020 bond / angle supplement",
+ "name": "OPLS 2005 with the OPLS 2020 bonds and angles",
  "source": "OPLS2020.par",
  "references": [],
  "units": "real",
@@ -46390,5 +46390,7 @@
  ],
  "version": "as distributed",
  "status": "converted",
- "validation": "bonds and angles only; used together with OPLS 2005."
+ "validation": "the OPLS 2020 bond and angle supplement on OPLS 2005, loaded as one force field (\"extends\"); where both give a term, the 2020 value is used. Typed with OPLS 2005's CAPS rules.",
+ "extends": "opls2005.json",
+ "typing": "../typing/opls2005.typing.json"
 }
