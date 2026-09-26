@@ -114,6 +114,9 @@ CASES = [
      "sdk-moltemplate", "types", "rules"),
     ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno-moltemplate", [("template", "lipid", 60)], 16.0),
      "cooke-deserno-moltemplate", "types", "rules"),
+    # DREIDING's hydrogen bond (hbond/dreiding/lj, moltemplate's DREIDING): water typed O_3_hd / H_HB, every O-H···O within
+    # 6.5 Å and past 90°, switched from 6 Å
+    ("DREIDING (moltemplate) water: hydrogen bonds (periodic, 480 molecules)", ("water-box", 480, 24.84), "dreiding-moltemplate", "gasteiger", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
     ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-moltemplate", "types", "rules"),
 ]
@@ -272,6 +275,79 @@ def structure(src, base):
     return pdb, tfile
 
 
+
+def lammps_hbond_offset(d):
+    """LAMMPS's hbond/dreiding/lj force in its switching region (r_in < r < r_out) takes the switch's derivative without
+    cos^n(theta) (pair_hbond_dreiding_lj.cpp: force_switch = eng_lj*switch2/rsq), so its forces are not the derivative of
+    its energy there; CAPS's are. This gives, per atom, LAMMPS's force minus the exact one, and the virial of it (kcal/mol),
+    from the files CAPS wrote: -(1 - cos^n) U(r) S'(r) along D-A on the donor, the opposite on the acceptor."""
+    inp = open(os.path.join(d, "case.in")).read()
+    m = re.search(r"hbond/dreiding/lj (\d+) (\S+) (\S+) (\S+)", inp)
+    if not m:
+        return {}, [0.0] * 6
+    rin, rout, cut = float(m.group(2)), float(m.group(3)), math.cos(math.radians(float(m.group(4))))
+    terms = {}
+    for w in re.findall(r"^pair_coeff\s+(\d+) (\d+) hbond/dreiding/lj (\d+) ([ij]) (\S+) (\S+) (\d+)", inp, re.M):
+        i, j, h, flag, eps, sig, n = int(w[0]), int(w[1]), int(w[2]), w[3], float(w[4]), float(w[5]), int(w[6])
+        dt, at = (i, j) if flag == "i" else (j, i)
+        terms[(dt, at)] = (h, eps, sig, n)
+    txt = open(os.path.join(d, "case.data")).read()
+    box = []
+    for ax in "xyz":
+        mm = re.search(r"(\S+)\s+(\S+)\s+" + ax + "lo " + ax + "hi", txt)
+        box.append(float(mm.group(2)) - float(mm.group(1)))
+    at = {}
+    for l in txt.split("Atoms", 1)[1].split("\n\n", 2)[1].splitlines():
+        w = l.split()
+        if len(w) >= 7:
+            at[int(w[0])] = (int(w[2]), tuple(map(float, w[4:7])))
+    nb = {}
+    for l in txt.split("\nBonds", 1)[1].split("\n\n", 2)[1].splitlines() if "\nBonds" in txt else []:
+        w = l.split()
+        if len(w) >= 4:
+            a, b = int(w[2]), int(w[3])
+            nb.setdefault(a, []).append(b)
+            nb.setdefault(b, []).append(a)
+    mi = lambda u, v: [(u[k] - v[k]) - box[k] * round((u[k] - v[k]) / box[k]) for k in range(3)]
+    donors = {t for t, _ in terms}
+    accs = {a for _, a in terms}
+    off, wv = {}, [0.0] * 6
+    ro2, ri2 = rout * rout, rin * rin
+    den = (ro2 - ri2) ** 3
+    ids = sorted(at)
+    for D in ids:
+        tD = at[D][0]
+        if tD not in donors:
+            continue
+        for A in ids:
+            if A == D or (tD, at[A][0]) not in terms:
+                continue
+            h, eps, sig, n = terms[(tD, at[A][0])]
+            dA = mi(at[A][1], at[D][1])   # A - D
+            r2 = sum(x * x for x in dA)
+            if not (ri2 < r2 < ro2):
+                continue
+            r = math.sqrt(r2)
+            U = eps * (5 * (sig / r) ** 12 - 6 * (sig / r) ** 10)
+            dS = -12 * r * (ro2 - r2) * (r2 - ri2) / den
+            for H in nb.get(D, []):
+                if at[H][0] != h:
+                    continue
+                d1 = mi(at[D][1], at[H][1])
+                d2 = [dA[k] + d1[k] for k in range(3)]
+                c = sum(d1[k] * d2[k] for k in range(3)) / math.sqrt(sum(x * x for x in d1) * sum(x * x for x in d2))
+                if not c < cut:
+                    continue
+                g = -(1 - c ** n) * U * dS / r   # along D - A = -dA, on the donor
+                fD = [-g * dA[k] for k in range(3)]
+                for k in range(3):
+                    off.setdefault(D, [0.0] * 3)[k] += fD[k]
+                    off.setdefault(A, [0.0] * 3)[k] -= fD[k]
+                dm = [-x for x in dA]   # D - A
+                wv[0] += dm[0] * fD[0]; wv[1] += dm[1] * fD[1]; wv[2] += dm[2] * fD[2]
+                wv[3] += dm[0] * fD[1]; wv[4] += dm[0] * fD[2]; wv[5] += dm[1] * fD[2]
+    return off, wv
+
 def lammps(infile, dump):
     txt = open(infile).read().replace("run 0", f"run 0\nwrite_dump all custom {dump} id fx fy fz modify sort id format float %.10f")
     # virial pressure tensor (no kinetic part) and the volume, for the virial tensor W = P V / nktv2p
@@ -349,6 +425,11 @@ for label, src, fid, charges, typing in CASES:
     de = max(abs(ce[k] - lm[k]) / (max(1.0, abs(ce[k])) if not (PME and k == "coulomb") else 100.0) for k in ce)
     mw = re.search(r"virial tensor \(kcal/mol\): xx (\S+)  yy (\S+)  zz (\S+)  xy (\S+)  xz (\S+)  yz (\S+)", r.stdout)
     cw = list(map(float, mw.groups()))
+    # DREIDING hydrogen bonds: LAMMPS's own (inexact) force in the switching region, rebuilt, added to CAPS's exact one
+    hoff, hw = lammps_hbond_offset(d)
+    for a, v in hoff.items():
+        cf[a] = tuple(cf[a][k] + v[k] for k in range(3))
+    cw = [cw[k] + hw[k] for k in range(6)]
     lw = [le[f"c_pv[{k}]"] * le["Volume"] / 68568.415 for k in range(1, 7)]
     scale = max(1.0, max(abs(w) for w in cw))
     dw = max(abs(a - b) for a, b in zip(cw, lw)) / scale

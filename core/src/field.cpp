@@ -913,6 +913,43 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     return 4 * eps_[tp] * (q * q - q);
   };
 
+  // DREIDING hydrogen bond for a donor D, acceptor A and hydrogen H: d1 = D − H, d2 = A − H (minimum images).
+  // E = S(r) ε [5 (σ/r)¹² − 6 (σ/r)¹⁰] cosⁿθ (r = |A − D|, θ the D–H···A angle), only for cos θ < cos of the cut-off; S the
+  // switch from the inner to the outer radius (LAMMPS hbond/dreiding/lj). Forces are the exact derivatives.
+  struct HbOut { double e; Vec3 fd, fa, fh; };
+  const bool hbon = ff_.hbond.on() && nonb;
+  const double hro2 = ff_.hbond.outer * ff_.hbond.outer;
+  auto hb_one = [&](const std::array<double, 3>& pr, const Vec3& d1, const Vec3& d2, HbOut& o) -> bool {
+    const auto& Hb = ff_.hbond;
+    const Vec3 dA = d2 - d1;   // A − D
+    const double r2 = dot(dA, dA);
+    if (r2 >= hro2) return false;
+    const double l1 = std::sqrt(dot(d1, d1)), l2 = std::sqrt(dot(d2, d2));
+    if (l1 < 1e-12 || l2 < 1e-12) return false;
+    const double c = std::clamp(dot(d1, d2) / (l1 * l2), -1.0, 1.0);
+    if (!(c < Hb.cos_cut)) return false;
+    const double eps = pr[0], sg = pr[1];
+    const int nn = int(pr[2]);
+    const double r = std::sqrt(r2), sr2 = sg * sg / r2, s10 = sr2 * sr2 * sr2 * sr2 * sr2, s12 = s10 * sr2;
+    const double U = eps * (5 * s12 - 6 * s10), dU = eps * (-60 * s12 + 60 * s10) / r;
+    double S = 1, dS = 0;
+    const double ri2 = Hb.inner * Hb.inner;
+    if (r2 > ri2) {
+      const double den = (hro2 - ri2) * (hro2 - ri2) * (hro2 - ri2);
+      S = (hro2 - r2) * (hro2 - r2) * (hro2 + 2 * r2 - 3 * ri2) / den;
+      dS = -12 * r * (hro2 - r2) * (r2 - ri2) / den;
+    }
+    double cn = 1, cn1 = 0;
+    for (int k = 0; k < nn; ++k) { cn1 = cn; cn *= c; }
+    const double dEdr = (dS * U + S * dU) * cn, dEdc = S * U * nn * cn1;
+    const Vec3 g1 = d2 * (1 / (l1 * l2)) - d1 * (c / (l1 * l1)), g2 = d1 * (1 / (l1 * l2)) - d2 * (c / (l2 * l2)), u = dA * (1 / r);
+    o.e = S * U * cn;
+    o.fd = u * dEdr - g1 * dEdc;      // x_D moves d1 (+) and r (along −u)
+    o.fa = u * (-dEdr) - g2 * dEdc;   // x_A moves d2 (+) and r (along +u)
+    o.fh = (g1 + g2) * dEdc;          // x_H moves d1 and d2 (−)
+    return true;
+  };
+
   const double* q = qeff_.data();
   const int nth = pool_->size();
   tf_.resize(nth);
@@ -963,6 +1000,26 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
           fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
         }
+      }
+      if (hbon && i != j && r2 < hro2) {   // hydrogen bonds, either atom the donor
+        auto run = [&](uint32_t D, uint32_t Aa, const Vec3& dDA) {
+          const auto it = ff_.hbond.param.find({ff_.type_index[D], ff_.type_index[Aa]});
+          if (it == ff_.hbond.param.end()) return;
+          for (uint32_t h : ff_.hbond.hyd[D]) {
+            const Vec3 d1 = mi(pos(D) - pos(h)), d2 = dDA + d1;
+            HbOut o;
+            if (!hb_one(it->second, d1, d2, o)) continue;
+            evdw += o.e;
+            for (int c = 0; c < 3; ++c) { ft[3 * D + c] += o.fd[c]; ft[3 * Aa + c] += o.fa[c]; ft[3 * h + c] += o.fh[c]; }
+            vir += dot(d1, o.fd) + dot(d2, o.fa);
+            wv[0] += d1[0] * o.fd[0] + d2[0] * o.fa[0]; wv[1] += d1[1] * o.fd[1] + d2[1] * o.fa[1]; wv[2] += d1[2] * o.fd[2] + d2[2] * o.fa[2];
+            wv[3] += 0.5 * (d1[0] * o.fd[1] + d1[1] * o.fd[0] + d2[0] * o.fa[1] + d2[1] * o.fa[0]);
+            wv[4] += 0.5 * (d1[0] * o.fd[2] + d1[2] * o.fd[0] + d2[0] * o.fa[2] + d2[2] * o.fa[0]);
+            wv[5] += 0.5 * (d1[1] * o.fd[2] + d1[2] * o.fd[1] + d2[1] * o.fa[2] + d2[2] * o.fa[1]);
+          }
+        };
+        if (!ff_.hbond.hyd[i].empty() && ff_.hbond.acceptor[j]) run(i, j, Vec3{dx, dy, dz});
+        if (!ff_.hbond.hyd[j].empty() && ff_.hbond.acceptor[i]) run(j, i, Vec3{-dx, -dy, -dz});
       }
       fr *= w;
       const double fx = fr * dx, fy = fr * dy, fz = fr * dz;
@@ -1133,6 +1190,22 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         add(j, fj);
         add(i, fj * -1.0);
         V(d, fj);
+        if (hbon && dot(d, d) < hro2) {   // a hydrogen bond between 1-4 partners (DREIDING counts 1-4 pairs in full)
+          auto run = [&](uint32_t D, uint32_t Aa, const Vec3& dDA) {
+            const auto it = ff_.hbond.param.find({ff_.type_index[D], ff_.type_index[Aa]});
+            if (it == ff_.hbond.param.end()) return;
+            for (uint32_t h : ff_.hbond.hyd[D]) {
+              const Vec3 d1 = mi(pos(D) - pos(h)), d2 = dDA + d1;
+              HbOut o;
+              if (!hb_one(it->second, d1, d2, o)) continue;
+              A[4] += ff_.lj14 * o.e;
+              add(D, o.fd * ff_.lj14); add(Aa, o.fa * ff_.lj14); add(h, o.fh * ff_.lj14);
+              V(d1, o.fd * ff_.lj14); V(d2, o.fa * ff_.lj14);
+            }
+          };
+          if (!ff_.hbond.hyd[i].empty() && ff_.hbond.acceptor[j]) run(i, j, d);
+          if (!ff_.hbond.hyd[j].empty() && ff_.hbond.acceptor[i]) run(j, i, d * -1.0);
+        }
       } else if (k >= o7) {
         // Class II terms: energy as a function of internal coordinates, forces by the chain rule.
         Class2Out o;

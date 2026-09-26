@@ -120,6 +120,7 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   if (!ff.bonds2.empty() || !ff.angles2.empty() || !ff.dihedrals2.empty() || !ff.impropers2.empty())
     throw FieldError(ff.name + ": class II terms (COMPASS, PCFF) have no GROMACS functions; export to LAMMPS instead");
   if (!ff.inversions.empty()) throw FieldError(ff.name + ": inversion (umbrella) terms (DREIDING, UFF) have no GROMACS function; export to LAMMPS instead");
+  if (ff.hbond.on()) throw FieldError(ff.name + ": DREIDING's hydrogen-bond term (hbond/dreiding/lj) has no GROMACS function; export to LAMMPS instead");
   if (ff.lj_fsw)
     notes.push_back("Lennard-Jones with GROMACS's force switch from " + std::to_string(ff.lj_inner / 10).substr(0, 4) + " nm (CHARMM36's GROMACS setting); "
                     "its polynomial differs slightly from CHARMM's own switch (CAPS, LAMMPS lj/charmmfsw), and GROMACS's 1-4 pairs carry "
