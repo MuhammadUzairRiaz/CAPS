@@ -105,8 +105,8 @@ def rule(e, params, style=None, name=None):
     return r
 
 
-def convert(frc, cls, name, version, references, typing, out_name):
-    secs = sections(os.path.join(SRC, frc))
+def convert(frc, cls, name, version, references, typing, out_name, src=None):
+    secs = sections(os.path.join(src or SRC, frc))
     auto = "_auto"
     atoms = entries(first(secs, "#atom_types"), 1, 0)
     # atom types: mass, element (columns after the type)
@@ -134,7 +134,8 @@ def convert(frc, cls, name, version, references, typing, out_name):
         types.append({"name": t, "element": el if el not in ("*", "") else "", "mass": mass, "description": comment,
                       "equivalence": {k: v for k, v in q.items() if v != t}})
     ff = {"format": "caps-forcefield", "format_version": 1, "name": name, "version": version,
-          "source": f"{frc} (BIOVIA / Accelrys, as distributed with LAMMPS's msi2lmp tool)", "references": references,
+          "source": f"{frc} (BIOVIA / Accelrys, as distributed with LAMMPS's msi2lmp tool)" if src is None else
+                    f"{frc} (INTERFACE force field 1.5, Heinz group, bionanostructures.com)", "references": references,
           "units": "real", "mixing": "sixthpower" if cls == 2 else "geometric",
           "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 12,
           "equivalence": "fallback"}
@@ -241,12 +242,23 @@ convert("pcff.frc", 2, "PCFF (pcff.frc, full class II)", "cff91 / pcff.frc 4.0",
          "H. Sun, Macromolecules 28, 701 (1995)"], "../typing/pcff.typing.json", "pcff-frc.json")
 convert("cvff.frc", 1, "CVFF (cvff.frc)", "cvff.frc 2.4",
         ["P. Dauber-Osguthorpe et al., Proteins 4, 31 (1988)"], "../typing/cvff.typing.json", "cvff-frc.json")
+IFF = os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/FORCE_FIELDS")
+if os.path.isdir(IFF):   # the INTERFACE force field: PCFF and CVFF with the inorganic phases (clays, silica, metals, cement …)
+    convert("pcff_interface_v1_5.frc", 2, "INTERFACE (IFF 1.5, PCFF)", "IFF 1.5 on pcff.frc",
+            ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/pcff.typing.json", "iff-pcff.json", IFF)
+    convert("cvff_interface_v1_5.frc", 1, "INTERFACE (IFF 1.5, CVFF)", "IFF 1.5 on cvff.frc",
+            ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/cvff.typing.json", "iff-cvff.json", IFF)
 convert("compass_published.frc", 2, "COMPASS (compass_published.frc, full class II)", "compass_published.frc 1.1",
         ["H. Sun, J. Phys. Chem. B 102, 7338 (1998)"], "../typing/compass-published-moltemplate.typing.json", "compass-frc.json")
 
 
 # the library catalogue: the .frc conversions listed before the other CVFF / PCFF / COMPASS files
 CHECKED = {
+    "iff-pcff": "the parameters msi2lmp assigns from pcff_interface_v1_5.frc for models of IFF's own database (pyrophyllite, "
+                "kaolinite, mica, montmorillonite, cristobalite and hydroxylated silica, gold and aluminium surfaces, "
+                "hydroxyapatite, gypsum, a hydrated C3A surface, PEO), energies term by term in LAMMPS (bench/ff/check_msi2lmp.py)",
+    "iff-cvff": "the parameters msi2lmp assigns from cvff_interface_v1_5.frc for models of IFF's own database (clays, silica, "
+                "metals, hydroxyapatite, PEO), energies term by term in LAMMPS (bench/ff/check_msi2lmp.py)",
     "pcff-frc": "the parameters msi2lmp assigns from pcff.frc for LAMMPS's msi2lmp test structures (water, ethane, benzene, "
                 "naphthalene, a carbon nanotube, hydroxyapatite), energies term by term in LAMMPS; CAPS's own energies and "
                 "forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py)",
@@ -262,13 +274,18 @@ cat = json.load(open(cat_p))
 fs = [e for e in cat["forcefields"] if e["id"] not in CHECKED]
 at = next((k for k, e in enumerate(fs) if e["id"] in ("pcff", "compass", "cvff")), len(fs))
 new = []
-for fid in ("pcff-frc", "cvff-frc", "compass-frc"):
+for fid in ("pcff-frc", "cvff-frc", "compass-frc", "iff-pcff", "iff-cvff"):
+    if not os.path.exists(os.path.join(ROOT, "data", "forcefields", fid + ".json")):
+        continue
     ff = json.load(open(os.path.join(ROOT, "data", "forcefields", fid + ".json")))
-    new.append({"id": fid, "name": ff["name"], "version": ff["version"], "references": ff["references"], "origin": "BIOVIA .frc",
+    new.append({"id": fid, "name": ff["name"], "version": ff["version"], "references": ff["references"],
+                "origin": "INTERFACE .frc" if fid.startswith("iff") else "BIOVIA .frc",
                 "source_file": ff["source"].split(" ")[0], "status": "validated", "notes": "validated against " + CHECKED[fid],
                 "file": fid + ".json",
                 "typing": {"rules": ff["typing"].replace("../", ""),
-                           "evidence": "the typing rules of CAPS's " + ff["name"].split(" ")[0] + " library, for the types the .frc file defines"},
+                           "evidence": ("the typing rules of CAPS's PCFF / CVFF library for organic atoms; inorganic types from the "
+                                        "model's .car file (IFF's model database)") if fid.startswith("iff") else
+                                       "the typing rules of CAPS's " + ff["name"].split(" ")[0] + " library, for the types the .frc file defines"},
                 "counts": {k: len(ff[k]) for k in ("atom_types", "pairs", "bonds", "angles", "dihedrals", "impropers")}})
 cat["forcefields"] = fs[:at] + new + fs[at:]
 json.dump(cat, open(cat_p, "w"), indent=1, ensure_ascii=False)

@@ -97,3 +97,27 @@ TEST(Import, PreviewHasAFragmentAndCounts) {
   EXPECT_EQ(p.fragment.bonds.size(), 12u);
   EXPECT_FALSE(p.file.head.empty());
 }
+
+// Materials Studio .car/.mdf: coordinates, the cell from a b c α β γ (a along x, b in the xy plane), the force-field type
+// as each atom's name, its charge; bonds from the .mdf, one across the cell (%100) and one with an order (/1.0), each once.
+TEST(Import, MaterialsStudioCarMdf) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/tests/data/car/water_pbc.car");
+  const System& s = t.topology;
+  ASSERT_EQ(s.atoms.size(), 6u);
+  EXPECT_EQ(s.source_format, "car");
+  EXPECT_EQ(s.title, "Two SPC waters, one across the cell");
+  EXPECT_EQ(s.atoms[0].name, "o*");
+  EXPECT_EQ(s.atoms[1].name, "h*");
+  EXPECT_EQ(s.atoms[0].element, 8);
+  EXPECT_NEAR(s.atoms[3].charge, -0.82, 1e-12);
+  EXPECT_TRUE(s.has_charges);
+  EXPECT_NEAR(s.cell.a[0], 10.0, 1e-9);
+  EXPECT_NEAR(s.cell.b[0], 12.0 * std::cos(120.0 * M_PI / 180), 1e-9);
+  EXPECT_NEAR(s.cell.b[1], 12.0 * std::sin(120.0 * M_PI / 180), 1e-9);
+  EXPECT_NEAR(s.cell.c[2], 14.0, 1e-9);
+  ASSERT_EQ(s.bonds.size(), 4u);   // O-H twice per water, listed from both ends in the .mdf
+  EXPECT_TRUE(s.bonds_from_file);
+  std::set<std::pair<uint32_t, uint32_t>> b;
+  for (const auto& x : s.bonds) b.insert({x.i, x.j});
+  EXPECT_TRUE(b.count({0, 1}) && b.count({0, 2}) && b.count({3, 4}) && b.count({3, 5}));
+}

@@ -5,6 +5,7 @@ add_library(caps_core STATIC
   src/io_gro.cpp
   src/io_pdb.cpp
   src/io_mol2.cpp
+  src/io_car.cpp
   src/io_detect.cpp
   src/bonds.cpp
   src/analysis.cpp

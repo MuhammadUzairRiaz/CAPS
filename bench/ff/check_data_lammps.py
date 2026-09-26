@@ -78,6 +78,11 @@ CASES = [
     # bipyramid), sp2 and pyramidal-P inversions (improper fourier), group-16 torsions, full 1-4 van der Waals
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
                                                "FP(F)(F)(F)F.C[Si](C)(C)O[Si](C)(C)C.CSSC"), "uff", "types", "rules"),
+    # ClayFF (Cygan 2004) on LAMMPS's own ClayFF test structure (msi2lmp's pyrophyllite, its types and charges): O-H
+    # bonds, the M-O-H bends by contact, Lorentz-Berthelot mixing. Ewald: this LAMMPS build's PPPM fails on that cell
+    # (its own in.PyAC_bulk-clayff as well).
+    ("ClayFF pyrophyllite (LAMMPS's ClayFF test, triclinic, M-O-H bends)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
+     "inorganic-clay", "keep", "names", ["--kspace", "ewald"]),
     ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
     # TraPPE in its own styles: the c1-c3 torsions as dihedral opls, 14 Å with TraPPE's 1-4 exclusions (united atom;
     # explicit-hydrogen aromatics)
@@ -375,7 +380,9 @@ def lammps(infile, dump):
 
 
 rows, fails = [], 0
-for label, src, fid, charges, typing in CASES:
+for case in CASES:
+    label, src, fid, charges, typing = case[:5]
+    case_extra = case[5] if len(case) > 5 else []   # options of this case only (e.g. Ewald where LAMMPS's PPPM fails)
     if only and only.lower() not in label.lower():
         continue
     base = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")[:40]
@@ -391,6 +398,9 @@ for label, src, fid, charges, typing in CASES:
     cmd += ["--lammps-style", "native"] if NATIVE else ["--lammps-style", "exact"]   # native: the force field's own cut-off, as CAPS evaluates
     if HYBRID:
         cmd += ["--hybrid"]
+    if typing == "names":   # the file's own force-field types (a Materials Studio .car)
+        cmd += ["--names"]
+    cmd += case_extra
     if typing == "keys" and tfile:
         cmd += ["--types", tfile]
     if PME:

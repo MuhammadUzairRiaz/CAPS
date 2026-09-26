@@ -79,6 +79,56 @@
    }
   },
   {
+   "id": "iff-pcff",
+   "name": "INTERFACE (IFF 1.5, PCFF)",
+   "version": "IFF 1.5 on pcff.frc",
+   "references": [
+    "H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"
+   ],
+   "origin": "INTERFACE .frc",
+   "source_file": "pcff_interface_v1_5.frc",
+   "status": "validated",
+   "notes": "validated against the parameters msi2lmp assigns from pcff_interface_v1_5.frc for models of IFF's own database (pyrophyllite, kaolinite, mica, montmorillonite, cristobalite and hydroxylated silica, gold and aluminium surfaces, hydroxyapatite, gypsum, a hydrated C3A surface, PEO), energies term by term in LAMMPS (bench/ff/check_msi2lmp.py)",
+   "file": "iff-pcff.json",
+   "typing": {
+    "rules": "typing/iff-pcff.typing.json",
+    "evidence": "the typing rules of CAPS's PCFF / CVFF library for organic atoms; inorganic types from the model's .car file (IFF's model database)"
+   },
+   "counts": {
+    "atom_types": 214,
+    "pairs": 145,
+    "bonds": 203,
+    "angles": 541,
+    "dihedrals": 586,
+    "impropers": 70
+   }
+  },
+  {
+   "id": "iff-cvff",
+   "name": "INTERFACE (IFF 1.5, CVFF)",
+   "version": "IFF 1.5 on cvff.frc",
+   "references": [
+    "H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"
+   ],
+   "origin": "INTERFACE .frc",
+   "source_file": "cvff_interface_v1_5.frc",
+   "status": "validated",
+   "notes": "validated against the parameters msi2lmp assigns from cvff_interface_v1_5.frc for models of IFF's own database (clays, silica, metals, hydroxyapatite, PEO), energies term by term in LAMMPS (bench/ff/check_msi2lmp.py)",
+   "file": "iff-cvff.json",
+   "typing": {
+    "rules": "typing/cvff.typing.json",
+    "evidence": "the typing rules of CAPS's PCFF / CVFF library for organic atoms; inorganic types from the model's .car file (IFF's model database)"
+   },
+   "counts": {
+    "atom_types": 177,
+    "pairs": 81,
+    "bonds": 195,
+    "angles": 362,
+    "dihedrals": 118,
+    "impropers": 36
+   }
+  },
+  {
    "id": "pcff",
    "name": "PCFF (diagonal terms)",
    "version": "cff91 family, 1994",
@@ -751,13 +801,15 @@
   },
   {
    "id": "inorganic-clay",
-   "name": "Inorganic: clay",
+   "name": "ClayFF (Cygan, Liang, Kalinichev 2004)",
    "version": "",
-   "references": [],
+   "references": [
+    "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
+   ],
    "origin": "converted",
    "source_file": "INORGANIC_clay.par",
    "status": "converted",
-   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
+   "notes": "Lorentz–Berthelot mixing and ClayFF's M–O–H bends by contact; energies, forces and virial equal LAMMPS for LAMMPS's own ClayFF test structure (pyrophyllite)",
    "file": "inorganic-clay.json",
    "counts": {
     "atom_types": 28,

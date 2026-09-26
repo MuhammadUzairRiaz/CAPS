@@ -23,6 +23,7 @@ std::string detect_format(const std::string& path) {
   {
     const std::string e = lower(std::filesystem::path(path).extension().string());
     if (e == ".cif") return "cif";
+    if (e == ".car") return "car";
   }
   for (const auto* l : {&l1, &l2, &l3})
     if (l->find("@<TRIPOS>") != std::string::npos) return "mol2";
@@ -51,7 +52,7 @@ std::string detect_format(const std::string& path) {
     auto t = split(line);
     if (t.size() >= 2 && t[1] == "atoms") return "lammps-data";
   }
-  throw ReadError(path + ": format not recognised (supported: LAMMPS data and dump, GROMACS .gro, PDB, mol2, XYZ, CIF)");
+  throw ReadError(path + ": format not recognised (supported: LAMMPS data and dump, GROMACS .gro, PDB, mol2, XYZ, CIF, Materials Studio .car/.mdf)");
 }
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) { return open_file(path, topology_path, OpenProgress{}); }
@@ -64,6 +65,7 @@ const char* format_name(const std::string& f) {
   if (f == "pdb") return "PDB";
   if (f == "mol2") return "Tripos mol2";
   if (f == "cif") return "CIF";
+  if (f == "car") return "Materials Studio .car";
   return "XYZ";
 }
 }  // namespace
@@ -109,6 +111,13 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr.positions.push_back(std::move(p));
     tr.cells.push_back(tr.topology.cell);
     tr.timesteps.push_back(0);
+  } else if (fmt == "car") {
+    tr.topology = read_car(path);
+    std::vector<Vec3> p;
+    for (const auto& a : tr.topology.atoms) p.push_back(a.pos);
+    tr.positions.push_back(std::move(p));
+    tr.cells.push_back(tr.topology.cell);
+    tr.timesteps.push_back(0);
   } else if (fmt == "cif") {
     tr.topology = read_cif(path);
     std::vector<Vec3> p;
@@ -147,7 +156,7 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
   }
   if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top) && !topology_path.empty());
   report(3, 1, std::to_string(tr.frames()) + " frames");
-  if (tr.topology.bonds.empty()) {
+  if (tr.topology.bonds.empty() && !tr.topology.bonds_from_file) {   // a file that declares its bonds (0 too) keeps them
     System f0 = tr.frame(0);
     tr.topology.bonds = perceive_bonds(f0);
     tr.topology.notes.push_back(std::to_string(tr.topology.bonds.size()) + " bonds perceived from distances (none in file)");

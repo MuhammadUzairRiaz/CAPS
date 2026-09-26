@@ -1433,8 +1433,22 @@ int main(int argc, char** argv) {
           // without --types, atoms are typed by the force field's rules when it has them (else the file's atom names)
           const bool auto_type = !ff.typing.empty() && !o.count("--types") && !o.count("--names");
           if (auto_type) {
-            const TypingResult r = assign_types(s, ff);
+            TypingResult r = assign_types(s, ff);
             for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
+            // a Materials Studio .car carries its force-field types: kept where the force field has them (IFF's inorganic
+            // types, which no rule assigns), the rules type the rest
+            if (s.source_format == "car") {
+              std::set<std::string> ffnames;
+              for (const auto& t : ff.types) ffnames.insert(t.name);
+              int kept = 0;
+              for (size_t i = 0; i < s.atoms.size() && i < r.types.size(); ++i)
+                if (ffnames.count(s.atoms[i].name)) {
+                  if (r.types[i].empty()) --r.untyped;
+                  r.types[i] = s.atoms[i].name;
+                  ++kept;
+                }
+              std::printf("note: %d atoms keep their type from the .car file\n", kept);
+            }
             if (r.untyped) {
               std::string l;
               for (size_t i = 0; i < s.atoms.size(); ++i)

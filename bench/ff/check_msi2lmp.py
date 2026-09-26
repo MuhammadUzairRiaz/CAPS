@@ -11,6 +11,12 @@ Known msi2lmp behaviour CAPS does not copy (reported, not counted as differences
   · bond-bond_1_3 terms only for dihedrals with a type named cp… (COMPASS's aromatic c3a gets none from msi2lmp);
   · angle-angle terms of three-connected centres looked up by equivalence only when msi2lmp runs with -p 3.
 
+The INTERFACE force field (IFF 1.5, data/forcefields/iff-pcff.json and iff-cvff.json) the same way: msi2lmp (built from
+LAMMPS's tools/msi2lmp/src, ~/lammps/tools/msi2lmp/msi2lmp-bin) writes the reference data for models of IFF's own model
+database (clays, silica, metals, hydroxyapatite, cement minerals) with pcff_interface_v1_5.frc (class 2) and
+cvff_interface_v1_5.frc (class 1), -ignore as IFF's documentation runs it (a missing parameter is zero: CAPS
+--allow-missing).
+
 usage: check_msi2lmp.py [--only NAME] [--keep DIR]
 """
 import os, re, subprocess, sys, tempfile
@@ -23,6 +29,16 @@ arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")
 work = arg("--keep", "") or tempfile.mkdtemp()
 FF = {"class1": "cvff-frc.json", "class2a": "compass-frc.json", "class2b": "pcff-frc.json"}
+MSI2LMP = os.path.expanduser("~/lammps/tools/msi2lmp/msi2lmp-bin")
+IFF = os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5")
+# (model, the IFF versions compared): gypsum's types are in the PCFF version only; msi2lmp writes nan into a CVFF
+# torsion of the C3A surface; IFF's c3s_unit_cell.car and .mdf name their atoms differently (msi2lmp stops), so it is left out
+IFF_MODELS = [("CLAY_MINERALS/pyrophyllite_unit_cell", "21"), ("CLAY_MINERALS/kaolinite_unit_cell", "21"), ("CLAY_MINERALS/mica1_cell", "21"),
+              ("CLAY_MINERALS/mont0_333_Na_15_cell", "21"), ("SILICA/a_cristobalite_20m2_cell", "21"), ("SILICA/silica_Q3_4_7OH_14pct_ion", "21"),
+              ("METALS/au_cell_P1_111", "21"), ("METALS/al_cell_P1_100", "21"), ("HYDROXYAPATITE/hap_001_pH10_HPO4", "21"),
+              ("CA_SULFATE/gypsum_unit_cell", "2"), ("CEMENT_MINERALS/c3a_010_surface_hydrated_small", "2"), ("PEO/peo_cell_pcff", "21")]
+STYLES = {"class1": ["bond_style harmonic", "angle_style harmonic", "dihedral_style harmonic", "improper_style cvff"],
+          "class2": ["bond_style class2", "angle_style class2", "dihedral_style class2", "improper_style class2"]}
 TERMS = ["ebond", "eangle", "edihed", "eimp", "evdwl", "ecoul"]
 
 
@@ -115,35 +131,74 @@ FOOT = ("thermo_style custom step pe ebond eangle edihed eimp evdwl ecoul\nrun 0
         "print \"$(ebond:%.10f) $(eangle:%.10f) $(edihed:%.10f) $(eimp:%.10f) $(evdwl:%.10f) $(ecoul:%.10f)\" file thermo.txt\n")
 
 
-def main():
-    rows, fails = [], 0
+def cases():
+    """(label, msi2lmp's data file, the .car it read, class1|class2*, CAPS force field, boundary, style lines, extra CAPS options)"""
+    out = []
     for fn in sorted(os.listdir(os.path.join(TEST, "reference"))):
         m = re.match(r"(.*)-(class1|class2a|class2b)\.data$", fn)
-        if not m or (only and only not in fn):
+        if not m:
             continue
         name, cls = m.groups()
-        ref = os.path.join(TEST, "reference", fn)
-        d = os.path.join(work, name + "-" + cls)
+        refin = open(os.path.join(TEST, "in." + name + "-" + cls)).read()
+        bnd = re.search(r"^boundary.*$", refin, re.M)
+        styles = [l for l in refin.splitlines() if re.match(r"(bond|angle|dihedral|improper)_style", l)]
+        out.append((fn, os.path.join(TEST, "reference", fn), os.path.join(TEST, name + "-" + cls + ".car"), cls, FF[cls],
+                    bnd.group(0) if bnd else "boundary p p p", styles, []))
+    if os.path.isdir(IFF) and os.path.exists(MSI2LMP):
+        for model, versions in IFF_MODELS:
+            car = os.path.join(IFF, "MODEL_DATABASE", model + ".car")
+            if not os.path.exists(car):
+                continue
+            base = os.path.basename(model)
+            for c, frc, ff in (("2", "pcff_interface_v1_5", "iff-pcff.json"), ("1", "cvff_interface_v1_5", "iff-cvff.json")):
+                if c not in versions:
+                    continue
+                label = f"IFF {base} (class {c})"
+                if only and only not in label:
+                    continue
+                d = os.path.join(work, f"iff-{base}-{c}")
+                os.makedirs(d, exist_ok=True)
+                for ext in (".car", ".mdf"):
+                    with open(os.path.join(IFF, "MODEL_DATABASE", model + ext), "rb") as f, open(os.path.join(d, base + ext), "wb") as g:
+                        g.write(f.read())
+                r = subprocess.run([MSI2LMP, base, "-c", c, "-p", "1", "-i", "-f", frc], cwd=d, capture_output=True, text=True,
+                                   env=dict(os.environ, MSI2LMP_LIBRARY=os.path.join(IFF, "FORCE_FIELDS")))
+                data = os.path.join(d, base + ".data")
+                if not os.path.exists(data):
+                    out.append((label, None, (r.stdout + r.stderr).strip().splitlines()[-1] if (r.stdout + r.stderr).strip() else "msi2lmp failed",
+                                "", "", "", [], []))
+                    continue
+                out.append((label, data, os.path.join(d, base + ".car"), "class" + c, ff, "boundary p p p", STYLES["class" + c], ["--allow-missing"]))
+    return out
+
+
+def main():
+    rows, fails = [], 0
+    for fn, ref, car, cls, ffname, boundary, styles, extra in cases():
+        if only and only not in fn:
+            continue
+        if ref is None:
+            rows.append((fn, "msi2lmp failed: " + car[:200], ""))
+            fails += 1
+            continue
+        name = re.sub(r"[^A-Za-z0-9_.-]+", "_", fn)
+        d = os.path.join(work, name)
         os.makedirs(d, exist_ok=True)
         text = open(ref).read()
-        # types by the Masses comments, atoms in id order
         # the types Materials Studio assigned, from the .car file msi2lmp read (atoms in the same order)
         atoms = []
-        for line in open(os.path.join(TEST, name + "-" + cls + ".car")).read().splitlines()[4:]:
+        for line in open(car).read().splitlines()[4:]:
             w = line.split()
             if len(w) >= 9 and w[0] != "end":
                 atoms.append((len(atoms) + 1, w[6][:4]))
         open(os.path.join(d, "types.txt"), "w").write("\n".join(t for _, t in sorted(atoms)) + "\n")
-        refin = open(os.path.join(TEST, "in." + name + "-" + cls)).read()
-        boundary = (re.search(r"^boundary.*$", refin, re.M) or [None])[0] if re.search(r"^boundary.*$", refin, re.M) else "boundary p p p"
-        styles = [l for l in refin.splitlines() if re.match(r"(bond|angle|dihedral|improper)_style", l)]
         pair = "lj/class2/coul/cut 15.0" if cls != "class1" else "lj/cut/coul/cut 15.0"
         open(os.path.join(d, "ref.in"), "w").write(
             f"units real\n{boundary}\natom_style full\npair_style {pair}\n" + "\n".join(styles) +
             f"\nspecial_bonds lj/coul 0.0 0.0 1.0\nread_data {ref}\n" + FOOT)
-        r = subprocess.run([CAPS, "ff", "apply", ref, "--ff", os.path.join(ROOT, "data", "forcefields", FF[cls]), "--types",
+        r = subprocess.run([CAPS, "ff", "apply", ref, "--ff", os.path.join(ROOT, "data", "forcefields", ffname), "--types",
                             os.path.join(d, "types.txt"), "--charges", "keep", "-o", os.path.join(d, "caps.data"),
-                            "--lammps-input", os.path.join(d, "caps.in"), "--kspace", "cut", "--lammps-cutoff", "15"],
+                            "--lammps-input", os.path.join(d, "caps.in"), "--kspace", "cut", "--lammps-cutoff", "15"] + extra,
                            capture_output=True, text=True)
         if r.returncode:
             rows.append((fn, "CAPS failed: " + (r.stderr.strip().splitlines() or ["?"])[-1][:200], ""))

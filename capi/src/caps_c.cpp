@@ -552,6 +552,18 @@ void field_run(caps_doc* d) {
     for (size_t i = 0; i < n; ++i) F.typing.types[i] = s.atoms[i].name;
   }
   F.types = F.typing.types;
+  // a Materials Studio .car carries its force-field types (IFF's inorganic ones, ClayFF's …): where they are types of this
+  // force field they are kept, the rules type the rest
+  if (!uff && d->traj.topology.source_format == "car" && F.file_types.size() == n) {
+    std::set<std::string> ffnames;
+    for (const auto& t : def.types) ffnames.insert(t.name);
+    for (size_t i = 0; i < n; ++i)
+      if (ffnames.count(F.file_types[i].second)) {
+        F.types[i] = F.file_types[i].second;
+        if (i < F.typing.why.size()) F.typing.why[i] = "type from the .car file";
+        if (i < F.typing.types.size()) F.typing.types[i] = F.types[i];
+      }
+  }
   for (const auto& [i, t] : F.overrides)
     if (i >= 0 && size_t(i) < n) F.types[i] = t;
   std::set<std::string> known;
