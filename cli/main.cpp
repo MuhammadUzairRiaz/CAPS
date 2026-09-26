@@ -215,6 +215,12 @@ ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& 
   }
   FFDef def = load_forcefield(o["--ff"]);
   if (o.count("--typing")) load_typing(def, o["--typing"]);
+  if (def.united_atom) {
+    std::string ch = "types";
+    System probe = s0;
+    if (!prepare_for_forcefield(probe, def, ch).empty())
+      throw std::runtime_error(def.name + " is united-atom: make the structure united-atom first (caps ff apply FILE --ff ... -o UA.data)");
+  }
   std::vector<std::string> types;
   if (!def.typing.empty()) {
     const TypingResult tr = assign_types(s0, def);
@@ -1177,6 +1183,10 @@ int main(int argc, char** argv) {
             std::getline(ts, f, ',');
             if (!f.empty()) load_typing(ff, f);
           }
+        {
+          std::string ch = "types";   // typing only: no charges
+          if (const std::string ua = prepare_for_forcefield(s, ff, ch); !ua.empty()) std::printf("note: %s\n", ua.c_str());
+        }
         const TypingResult r = assign_types(s, ff);
         for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
         const bool explain = o.count("--explain");
@@ -1222,6 +1232,13 @@ int main(int argc, char** argv) {
               std::getline(ts, f, ',');
               if (!f.empty()) load_typing(ff, f);
             }
+          {   // a united-atom force field: hydrogens on carbon fold into their carbons (charges computed first, then summed)
+            std::string ch = o.count("--charges") ? o["--charges"] : "auto";
+            if (const std::string ua = prepare_for_forcefield(s, ff, ch); !ua.empty()) {
+              std::printf("%s\n", ua.c_str());
+              if (ch == "keep") o["--charges"] = "keep";
+            }
+          }
           std::vector<std::string> types;
           // without --types, atoms are typed by the force field's rules when it has them (else the file's atom names)
           const bool auto_type = !ff.typing.empty() && !o.count("--types") && !o.count("--names");

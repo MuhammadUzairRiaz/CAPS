@@ -134,6 +134,17 @@ std::vector<std::vector<uint32_t>> sssr(const std::vector<std::vector<uint32_t>>
 
 }  // namespace
 
+int united_atom_hydrogens(const std::string& name, int element) {
+  if (element == 16) return name == "SH1E" || name == "SH" ? 1 : -1;
+  if (element != 6 || name.size() < 2 || name[0] != 'C') return -1;
+  std::string x = name;
+  if (x.size() > 2 && (x.back() == 'E' || x.back() == 'p')) x.pop_back();   // CHARMM19 CH2E, GROMOS CH3p
+  if (x == "CH") return 1;
+  if (x == "CR1") return 1;                                                    // aromatic CH (GROMOS, CHARMM19)
+  if (x.size() == 3 && x[1] == 'H' && x[2] >= '0' && x[2] <= '4') return x[2] - '0';
+  return -1;
+}
+
 Perception perceive(const System& s) {
   const size_t n = s.atoms.size();
   Perception p;
@@ -157,12 +168,26 @@ Perception perceive(const System& s) {
   for (size_t e = 0; e < edges.size(); ++e) { inc[edges[e].i].push_back(e); inc[edges[e].j].push_back(e); }
   std::vector<int> z(n), deg(n);
   for (size_t i = 0; i < n; ++i) { z[i] = s.atoms[i].element; deg[i] = int(inc[i].size()); }
+  // united-atom sites: only when no carbon has an explicit hydrogen (a heavy-atom PDB's "CH2" is a ring carbon's name)
+  p.implicit_h.assign(n, 0);
+  {
+    bool ch = false, named = false;
+    for (const auto& e : edges) ch = ch || (z[e.i] == 6 && z[e.j] == 1) || (z[e.j] == 6 && z[e.i] == 1);
+    if (!ch)
+      for (size_t i = 0; i < n; ++i) {
+        const int h = united_atom_hydrogens(s.atoms[i].name, z[i]);
+        if (h >= 0) p.implicit_h[i] = h, named = true;
+      }
+    p.united_atom = named;
+  }
   // charged centres the valences alone cannot tell: nitro / N-oxide N (N+ with O−), four-connected N+
   std::vector<int> target(n, -1);
   for (size_t i = 0; i < n; ++i) {
-    target[i] = target_valence(z[i], deg[i]);
-    if (deg[i] == 0 && target[i] >= 0 && z[i] != 1) { target[i] = -1; p.charge[i] = ion_charge(z[i]); }
-    if (deg[i] == 0 && target[i] < 0) p.charge[i] = ion_charge(z[i]);
+    target[i] = target_valence(z[i], deg[i] + p.implicit_h[i]);
+    if (target[i] >= 0) target[i] = std::max(0, target[i] - p.implicit_h[i]);   // implicit hydrogens: single bonds already there
+    const bool lone = deg[i] == 0 && p.implicit_h[i] == 0;   // a united-atom methane is not an ion
+    if (lone && target[i] >= 0 && z[i] != 1) { target[i] = -1; p.charge[i] = ion_charge(z[i]); }
+    if (lone && target[i] < 0) p.charge[i] = ion_charge(z[i]);
     if (z[i] == 7 && deg[i] == 4) p.charge[i] = 1;
     if (z[i] == 7 && deg[i] == 3) {
       int term_o = 0;
@@ -362,6 +387,7 @@ Perception perceive(const System& s) {
       p.order[i].push_back(edges[e].order);
       if (z[o] == 1) ++p.hcount[i];
     }
+  for (size_t i = 0; i < n; ++i) p.hcount[i] += p.implicit_h[i];
   // rings
   p.rings = sssr(p.nb);
   p.ring_count.assign(n, 0);
@@ -905,11 +931,11 @@ bool eval_atom(const AtomExpr& e, const Ctx& c, uint32_t a) {
       if (c.s.atoms[a].element != e.value) return false;
       return e.arom < 0 || (e.arom == 1) == bool(p.aromatic[a]);
     case Prim::Degree: return int(p.nb[a].size()) == e.value;
-    case Prim::Connect: return int(p.nb[a].size()) == e.value;   // hydrogens are explicit
+    case Prim::Connect: return int(p.nb[a].size()) + (a < p.implicit_h.size() ? p.implicit_h[a] : 0) == e.value;   // implicit: united atoms
     case Prim::HCount: return p.hcount[a] == e.value;
-    case Prim::ImplicitH: return e.value == 0;   // all hydrogens are explicit
+    case Prim::ImplicitH: return (a < p.implicit_h.size() ? p.implicit_h[a] : 0) == e.value;
     case Prim::Valence: {
-      int v = 0;
+      int v = a < p.implicit_h.size() ? p.implicit_h[a] : 0;
       for (int o : p.order[a]) v += o;
       return v == e.value;
     }

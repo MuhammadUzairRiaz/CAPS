@@ -190,7 +190,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     res.manifest.steps.push_back(step("recipe.run", "recipe " + res.name, {{"recipe", res.name}, {"sha256", o.sha256}, {"stages", std::to_string(n)}}, "", {}));
   // Types a structure with the recipe's force field (throws RecipeError 3 for untyped atoms or missing parameters).
   std::string borrowed;   // a library force field typed with its family's rules
-  auto type_now = [&](const System& sys) {
+  auto type_now = [&](System& sys) {
     const Json T = r.has("type") ? r["type"] : Json::object();
     std::string name = text(T, "forcefield", "default");
     // library ids before the force fields got CAPS's own names ("opls2005-dlfield" is now "opls2005")
@@ -251,6 +251,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             break;
           } catch (const std::exception&) {}
         }
+        // a united-atom force field: hydrogens on carbon fold into their carbons (charges computed first, then summed)
+        const std::string ua = prepare_for_forcefield(sys, def, charges);
         std::vector<std::string> types;
         if (!def.typing.empty()) {
           const TypingResult tr = assign_types(sys, def);
@@ -281,7 +283,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         }
         if (!ff) ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
         if (!rep.missing.empty()) throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")");
-        ffname = def.name;
+        ffname = def.name + (ua.empty() ? "" : " (united-atom: hydrogens on carbon folded into their carbons)");
       }
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
     const std::string ch = charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : "from the force field";

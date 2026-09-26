@@ -1,5 +1,7 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
+#include "caps/charges.hpp"
+#include "caps/resolution.hpp"
 #include "caps/typing.hpp"
 #include "caps/qeq.hpp"
 
@@ -105,6 +107,7 @@ void load_typing(FFDef& ff, const std::string& path) {
   ff.typing.insert(ff.typing.end(), rules.begin(), rules.end());
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
   ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
+  ff.united_atom = ff.united_atom || (j.has("united_atom") && j["united_atom"].boolean());
   if (j.has("variants") && j["variants"].is_object()) {
     std::set<std::string> have;
     for (const auto& ty : ff.types) have.insert(ty.name);
@@ -861,7 +864,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     auto [it, fresh] = tix.emplace(T[i], int(ff.type_names.size()));
     if (fresh) ff.type_names.push_back(T[i]);
     ff.type_index.push_back(it->second);
-    ff.mass.push_back(FT[i]->mass > 0 ? FT[i]->mass : element(s.atoms[i].element).mass);
+    // a type without a mass: the element's, plus the hydrogens a united-atom site carries (a CH4 site weighs 16.04)
+    const int uh = std::max(0, united_atom_hydrogens(s.atoms[i].name, s.atoms[i].element));
+    ff.mass.push_back(FT[i]->mass > 0 ? FT[i]->mass : element(s.atoms[i].element).mass + uh * element(1).mass);
   }
   // Names used for each kind of lookup: the type's own, or its equivalent for that kind.
   auto names_for = [&](const char* kind) {
@@ -1464,6 +1469,33 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   }
   if (rep_out) *rep_out = std::move(rep);
   return ff;
+}
+
+std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges) {
+  if (!ff.united_atom) return "";
+  bool ch = false;
+  for (const auto& b : s.bonds)
+    ch = ch || (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 1) || (s.atoms[b.j].element == 6 && s.atoms[b.i].element == 1);
+  if (!ch) return "";
+  std::string how;
+  if (charges == "auto" || charges == "gasteiger") {   // on the all-atom structure, where the method is defined
+    ChargeReport q;
+    try {
+      q = compute_charges(s, "gasteiger");
+      how = "Gasteiger–Marsili";
+    } catch (const std::exception&) {
+      if (charges == "gasteiger") throw;
+      q = compute_charges(s, "qeq");
+      how = "QEq";
+    }
+    for (size_t i = 0; i < s.atoms.size() && i < q.q.size(); ++i) s.atoms[i].charge = q.q[i];
+    charges = "keep";
+  }
+  ResolutionReport rep;
+  const size_t before = s.atoms.size();
+  s = united_atom(s, &rep);
+  return ff.name + " is united-atom: " + std::to_string(before - s.atoms.size()) + " hydrogens on carbon folded into their carbons (" +
+         std::to_string(s.atoms.size()) + " sites)" + (how.empty() ? "" : "; " + how + " charges computed on the all-atom structure and summed into each site");
 }
 
 }  // namespace caps
