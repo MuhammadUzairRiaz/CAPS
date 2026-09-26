@@ -707,8 +707,12 @@ void field_run(caps_doc* d) {
     if (name.rfind("user:", 0) == 0) estimated += v;
     if (name.rfind("imported:", 0) == 0) imported += v;
   }
+  estimated += F.rep.estimated_terms;   // by analogy (the force field's "analogies"), each listed below
   r["estimated"] = double(estimated);
   r["imported"] = double(imported);
+  caps::Json analog = caps::Json::array();
+  for (const auto& x : F.rep.estimated) analog.push_back(x);
+  r["by_analogy"] = analog;
   caps::Json hand = caps::Json::array();
   for (const auto* v : {&F.extra.pairs, &F.extra.bonds, &F.extra.angles, &F.extra.dihedrals, &F.extra.impropers})
     for (const auto& x : *v)
@@ -1171,6 +1175,12 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       written.push_back({stem + ".mdp", run.kind == caps::LammpsRun::Kind::Check ? "single point, matching cut-offs" : "the run, matching cut-offs"});
       if (fs::exists(folder / (stem + "_em.mdp")) && run.minimize_first && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT))
         written.push_back({stem + "_em.mdp", "minimisation first (gmx grompp -f " + stem + "_em.mdp)"});
+    }
+    if (d->field->rep.estimated_terms) {
+      std::string ex;
+      for (size_t k = 0; k < d->field->rep.estimated.size() && k < 3; ++k) ex += (k ? "; " : "") + d->field->rep.estimated[k];
+      notes.push_back(std::to_string(d->field->rep.estimated_terms) + " terms use the parameters of analogous types (estimated): " + ex +
+                      (d->field->rep.estimated.size() > 3 ? " …" : ""));
     }
     const int head_lines = int(o.num("head_lines", 0));
     for (const auto& [name, what] : written) {
@@ -1839,6 +1849,7 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
         for (size_t m = 0; m < rep.missing.size() && m < 8; ++m) miss.push_back(rep.missing[m]);
         x["missing"] = std::move(miss);
         x["missing_count"] = double(rep.missing.size());
+        x["estimated"] = double(rep.estimated_terms);
         x["charges"] = charges;
         double net = 0;
         for (double q : ff.charge) net += q;

@@ -564,5 +564,111 @@
    "smarts": "[#16X6]"
   }
  ],
+ "analogies": {
+  "cx": [
+   "c3"
+  ],
+  "cy": [
+   "c3"
+  ],
+  "c5": [
+   "c3"
+  ],
+  "c6": [
+   "c3"
+  ],
+  "cu": [
+   "c2"
+  ],
+  "cv": [
+   "c2"
+  ],
+  "ce": [
+   "c2"
+  ],
+  "cf": [
+   "c2"
+  ],
+  "cp": [
+   "ca"
+  ],
+  "cq": [
+   "ca"
+  ],
+  "cc": [
+   "ca",
+   "c2"
+  ],
+  "cd": [
+   "ca",
+   "c2"
+  ],
+  "ne": [
+   "n2"
+  ],
+  "nf": [
+   "n2"
+  ],
+  "nc": [
+   "nb",
+   "n2"
+  ],
+  "nd": [
+   "nb",
+   "n2"
+  ],
+  "n5": [
+   "n3"
+  ],
+  "n6": [
+   "n3"
+  ],
+  "n7": [
+   "n3"
+  ],
+  "n8": [
+   "n3"
+  ],
+  "n9": [
+   "n3"
+  ],
+  "ns": [
+   "n"
+  ],
+  "nt": [
+   "n"
+  ],
+  "nu": [
+   "nh"
+  ],
+  "nv": [
+   "nh"
+  ],
+  "nx": [
+   "n4"
+  ],
+  "ny": [
+   "n4"
+  ],
+  "op": [
+   "os"
+  ],
+  "oq": [
+   "os"
+  ],
+  "px": [
+   "p4"
+  ],
+  "py": [
+   "p5"
+  ],
+  "sx": [
+   "s4"
+  ],
+  "sy": [
+   "s6"
+  ]
+ },
+ "analogy_source": "GAFF analogues: the same element and hybridisation, without the ring-size or conjugation label (as parmchk2 fills missing GAFF terms)",
  "unknown_types": "untyped"
 }
