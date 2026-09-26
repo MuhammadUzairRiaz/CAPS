@@ -14,6 +14,14 @@ public sealed record FfEntry(string Id, string Name, string Version, string Stat
     public override string ToString() => Label;
 }
 
+/// <summary>Type names as shown: moltemplate's OPLS-AA names carry their bonded classes (135_bCT_aCT_dCT_iCT), shown as
+/// the number and its class (135 · CT); the full name stays in the files and tooltips.</summary>
+public static class FieldNames
+{
+    private static readonly System.Text.RegularExpressions.Regex Opls = new(@"^(\d+)_b([^_]+)_a[^_]+_d[^_]+_i[^_]+$");
+    public static string Short(string name) => Opls.Match(name) is { Success: true } m ? $"{m.Groups[1].Value} · {m.Groups[2].Value}" : name;
+}
+
 /// <summary>One atom of the typing report.</summary>
 public sealed class FieldAtomRow
 {
@@ -30,7 +38,7 @@ public sealed class FieldAtomRow
     public string[] Candidates { get; init; } = [];
     public bool Overridden { get; init; }
     public bool Untyped => Type.Length == 0;
-    public string TypeShown => Untyped ? "?" : Type;
+    public string TypeShown => Untyped ? "?" : FieldNames.Short(Type);
     public IBrush TypeBrush => Untyped ? Bad : Overridden ? Sel : Text;
     public IBrush RuleBrush => Untyped ? Bad : Dim;
     internal static IBrush Bad => Tokens.Brush("ErrB");
@@ -42,7 +50,7 @@ public sealed class FieldAtomRow
 /// <summary>A type present in the structure, with the viewer's colour.</summary>
 public sealed record FieldTypeSwatch(string Name, int Count, IBrush Colour, string Description)
 {
-    public string Label => $"{Name} · {Count}";
+    public string Label => $"{FieldNames.Short(Name)} · {Count}";
 }
 
 /// <summary>A term or atom that keeps the structure from running.</summary>
@@ -473,7 +481,7 @@ public sealed partial class FieldViewModel : ObservableObject
             Missing.Add(new FieldMissingRow
             {
                 Kind = kind,
-                Title = $"{char.ToUpperInvariant(kind[0])}{kind[1..]} · {rest}",
+                Title = $"{char.ToUpperInvariant(kind[0])}{kind[1..]} · {string.Join(" – ", rest.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(FieldNames.Short))}",
                 Detail = kind == "bond increment" ? $"Not in {ForceFieldName}: charges need it (or use Gasteiger charges)" : $"Not in {ForceFieldName}",
                 Types = string.Join(' ', names),
             });
