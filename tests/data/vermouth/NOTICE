@@ -8,3 +8,8 @@ DSSP 2.0 (CMBI) secondary structure from the same tests' chain_A.ssd:
   1ICO      CEEEEEETTEEEEEECCCCCCTTCEEEEC
   Trp-cage  CHHHHHHHTTGGGGTCCCCC
 Used by tests/test_martini_protein.cpp to check CAPS's DSSP and Martini 2.2 proteins against DSSP and martinize2.
+
+Martini 3 (vermouth/tests/data/integration_tests, -ff martini3001), for tests/test_martini_protein.cpp:
+  m3_1ubq_aa.pdb, m3_1ubq.itp, m3_1ubq_cg.pdb      tier-1/1UBQ   (martinize2 -ff martini3001 -ignore HOH -dssp -elastic)
+  m3_hst5_aa.pdb, m3_hst5.itp, m3_hst5_cg.pdb      tier-1/hst5   (martinize2 -ff martini3001 -ss C -id-regions 1:24 -noscfix)
+  m3_dipro_aa.pdb, m3_dipro.itp, m3_dipro_cg.pdb   tier-0/dipro-termini (martinize2 -ff martini3001 -nt -noscfix)

@@ -34,6 +34,10 @@ CASES = [
      [("CYTO", 3), ("GUAN", 3), ("THYM", 3), ("URAC", 3), ("MIND", 3), ("TXE", 3), ("PCRE", 3), ("BIM", 3), ("W", 600)]),
     ("Every Martini 3 molecule template once", 90, [(k, 1) for k in sorted(MOLS)] + [("W", 1200)]),
 ]
+# all-atom proteins mapped as martinize2 maps them (vermouth's Martini 3 tests; the files' own cells)
+VREF = os.path.expanduser("~/vermouth-ref/tests-m3/tier-1")
+PROTEINS = [("Ubiquitin 1UBQ, all-atom -> Martini 3 (restricted-bending backbone, side-chain fix dihedrals)", os.path.join(VREF, "1UBQ", "aa.pdb")),
+            ("Lysozyme 3LZT, all-atom -> Martini 3 (tryptophan virtual sites, exclusions, impropers)", os.path.join(VREF, "lysozyme", "aa.pdb"))]
 
 
 def gmx(d, stem):
@@ -95,11 +99,17 @@ def stiff_bonds(d, edge_nm):
 
 order, charge = [], [0.0]
 rows, fails = [], 0
+for label, pdb in PROTEINS:
+    if (only and only.lower() not in label.lower()) or not os.path.exists(pdb):
+        continue
+    CASES.append((label, None, pdb))
 for label, edge, content in CASES:
     if only and only.lower() not in label.lower():
         continue
     d = os.path.join(work, re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")[:40])
     os.makedirs(d, exist_ok=True)
+    if edge is None:   # a protein: mapped and typed straight from the all-atom file
+        content_file, content = content, []
     inp = [f"tolerance 4.3", "output box.data", f"pbc 0 0 0 {edge} {edge} {edge}", "seed 7"]
     bad = None
     for k, (t, n) in enumerate(content):
@@ -113,20 +123,24 @@ for label, edge, content in CASES:
         rows.append((label, "CAPS failed to build " + bad, ""))
         fails += 1
         continue
-    open(os.path.join(d, "box.inp"), "w").write("\n".join(inp) + "\n")
-    r = subprocess.run([CAPS, "pack", "box.inp", "-o", "box.data", "--quiet"], cwd=d, capture_output=True, text=True)
-    if r.returncode:
-        rows.append((label, "packing failed: " + r.stderr.strip()[:200], ""))
-        fails += 1
-        continue
-    r = subprocess.run([CAPS, "ff", "apply", "box.data", "--ff", FF, "--gromacs", "case", "--forces", "caps_f.txt"], cwd=d,
+    if edge is None:
+        src = content_file
+    else:
+        open(os.path.join(d, "box.inp"), "w").write("\n".join(inp) + "\n")
+        r = subprocess.run([CAPS, "pack", "box.inp", "-o", "box.data", "--quiet"], cwd=d, capture_output=True, text=True)
+        if r.returncode:
+            rows.append((label, "packing failed: " + r.stderr.strip()[:200], ""))
+            fails += 1
+            continue
+        src = "box.data"
+    r = subprocess.run([CAPS, "ff", "apply", src, "--ff", FF, "--gromacs", "case", "--forces", "caps_f.txt"], cwd=d,
                        capture_output=True, text=True)
     m = re.search(r"energy \(kcal/mol\): bond (\S+)  angle (\S+)  dihedral (\S+)  improper (\S+)  vdW (\S+)  Coulomb (\S+)", r.stdout)
     if r.returncode or not m:
         rows.append((label, "CAPS failed: " + (r.stderr.strip() or r.stdout.strip())[-200:], ""))
         fails += 1
         continue
-    recog = re.search(r"(\d+) molecules recognised", r.stdout)
+    recog = re.search(r"(\d+) molecules recognised", r.stdout) or re.search(r"onto (\d+) Martini 3 protein beads", r.stdout)
     ce = dict(zip(["bond", "angle", "dihedral", "improper", "vdw", "coulomb"], map(float, m.groups())))
     cf = [tuple(map(float, w[1:4])) for w in (l.split() for l in open(os.path.join(d, "caps_f.txt"))) if len(w) == 4]
     try:
@@ -145,17 +159,19 @@ for label, edge, content in CASES:
     # Constraints are stiff bonds (1e6 kJ/mol/nm^2): a single-precision position (6e-8 relative, 5e-7 nm at 9 nm) moves
     # such a bond's force by ~0.5 kJ/mol/nm = 0.012 kcal/mol/A whatever its stretch, so a bead is allowed that per stiff bond
     order.clear()
-    stiff = stiff_bonds(d, edge / 10)
+    stiff = stiff_bonds(d, (edge or 80) / 10)
     pairs = [(a, tuple(x / 41.84 for x in b), stiff[i]) for i, (a, b) in enumerate(zip(cf, gf)) if any(a)] if len(cf) == len(gf) else []
     df = max((math.dist(a, b) for a, b, _ in pairs), default=float("inf"))
-    worst = max((math.dist(a, b) / (5e-3 + t) for a, b, t in pairs), default=float("inf"))
+    # plus 1e-4 of the force itself: a mapped protein, not relaxed, has beads under 1e5 kcal/mol/A from stretched stiff
+    # bonds and near-straight restricted-bending angles, which single precision carries to ~4e-5
+    worst = max((math.dist(a, b) / (5e-3 + t + 1e-4 * math.hypot(*a)) for a, b, t in pairs), default=float("inf"))
     # the charges are the molecules' own (ions of the same bead type, Na+ / Cl-, told apart)
-    want_q = sum(n * sum(a["charge"] for a in MOLS[t]["atoms"]) for t, n in content)
+    want_q = sum(n * sum(a["charge"] for a in MOLS[t]["atoms"]) for t, n in content) if edge is not None else charge[0]
     dq = abs(charge[0] - want_q)
     ok = de < 5e-5 and worst < 1 and dq < 1e-6
     fails += 0 if ok else 1
     natoms = len(cf)
-    rows.append((label, f"{'ok' if ok else 'DIFFERS'} · {natoms} beads, {recog.group(1) if recog else '?'} molecules recognised · "
+    rows.append((label, f"{'ok' if ok else 'DIFFERS'} · {natoms} beads, {recog.group(1) if recog else '?'} {'molecules recognised' if edge is not None else 'beads mapped'} · "
                  f"charge {charge[0]:+.4f} e (molecules {want_q:+.4f}) · energy terms {de:.1e} (relative) · forces {df:.1e} kcal/mol/A",
                  "CAPS/GROMACS (kcal/mol): " + " ".join(f"{k} {ce[k]:.4f}/{gm[k]:.4f}" for k in keys)))
 

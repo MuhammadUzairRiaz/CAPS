@@ -1564,7 +1564,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       else throw FFError("explicit angle form " + std::to_string(a.form) + " is not supported");
     }
     for (const auto& d : s.topology->dihedrals) {
-      if (d.form == 1) ff.dihedrals.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});
+      if (d.form == 1 || d.form == 9) ff.dihedrals.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});   // GROMACS 1 and 9: k (1 + cos(nφ − φ0))
       else if (d.form == 2) ff.impropers_harmonic.push_back({d.i, d.j, d.k, d.l, d.kd, d.phi0});
       else if (d.form == 4) ff.impropers.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});
       else throw FFError("explicit dihedral form " + std::to_string(d.form) + " is not supported");
@@ -2025,6 +2025,18 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
     // an all-atom protein: Martini beads with the model's explicit topology, DSSP for the secondary structure
     MartiniProteinReport rep;
     const size_t before = s.atoms.size();
+    if (is_martini3_model(ff.martini_protein)) {
+      // Martini 3: martinize2's defaults (DSSP, side-chain fix, charged termini, no elastic network)
+      Martini3Options mo;
+      mo.constraint_kj = ff.constraint_kj;
+      s = martini3_protein(s, mo, ff.martini_protein, &rep);
+      charges = "keep";
+      note = std::to_string(before) + " atoms of " + std::to_string(rep.residues) + " residues mapped onto " + std::to_string(rep.beads) +
+             " Martini 3 protein beads as martinize2 maps them (secondary structure by DSSP: " + rep.cg_ss +
+             "; side-chain fix on; no elastic network — caps martini --martini 3 --elastic writes one)";
+      for (const auto& n : rep.notes) note += "; " + n;
+      return note;
+    }
     s = martini22_protein(s, "", ff.martini_protein, &rep);
     charges = "keep";   // the beads' charges are the model's (termini and charged side chains)
     note = std::to_string(before) + " atoms of " + std::to_string(rep.residues) + " residues mapped onto " + std::to_string(rep.beads) +
