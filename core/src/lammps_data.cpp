@@ -667,7 +667,12 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   else
     out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n\n";
   // a structure without a cell sits in a 100 Å box (as in the data file): periodic, but too large for images to interact
-  out << "units           real\natom_style      full\nboundary        p p p\n\n";
+  out << "units           real\natom_style      full\nboundary        p p p\n";
+  {
+    char t[64];   // in fs, with the other settings at the top, as force-field input files give it
+    std::snprintf(t, sizeof t, "timestep        %.6g\n\n", run.dt);
+    out << t;
+  }
   auto aligned = [](const std::string& l) {   // "keyword       arguments", as the rest of the script
     const size_t sp = l.find(' ');
     if (sp == std::string::npos || sp >= 16) return l;
@@ -711,8 +716,8 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   }
   const bool npt = run.kind == K::NPT;
   out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
-  std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\ntimestep        %.6g\n", mobile.c_str(), run.temperature,
-                static_cast<unsigned long long>(run.seed), run.dt);
+  std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", mobile.c_str(), run.temperature,
+                static_cast<unsigned long long>(run.seed));
   out << b;
   if (npt)
     std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature,

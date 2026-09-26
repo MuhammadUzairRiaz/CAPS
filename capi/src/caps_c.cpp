@@ -1104,7 +1104,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     run.minimize_first = flag("minimize_first", true);
     run.temperature = o.num("temperature", 300);
     run.pressure = o.num("pressure", 1.0);
-    run.dt = o.num("dt", 1.0);
+    run.dt = o.num("dt", 0.5);
     run.steps = int64_t(o.num("steps", 100000));
     run.thermo_every = int(o.num("thermo_every", 1000));
     run.dump_every = int(o.num("dump_every", 5000));
