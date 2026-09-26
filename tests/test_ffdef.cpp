@@ -422,6 +422,8 @@ TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
   check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
   const FFDef sdk = load_forcefield(dir + "sdk-moltemplate.json");
   check_cg_forces(sdk, cg_box(sdk, {{"[NC][PH][GL]([EST1][CM][CM][CT2])[EST2][CM][CM][CT2]", 3}, {"[W]", 30}}, 32.0, 5), "types");
+  const FFDef aa = load_forcefield(dir + "martini-aminoacids.json");   // harmonic impropers, GROMACS type-2 order
+  check_cg_forces(aa, cg_box(aa, {{"TRP", 2}, {"HIS", 2}, {"PHE", 2}, {"TYR", 2}, {"LYS", 2}, {"ASP", 2}, {"[P4]", 30}}, 36.0, 9), "keep");
   const FFDef cd = load_forcefield(dir + "cooke-deserno-moltemplate.json");
   check_cg_forces(cd, cg_box(cd, {{"lipid", 40}}, 12.0, 7, 1.2), "types");
 }

@@ -233,7 +233,7 @@ public sealed partial class MainViewModel
     public static readonly (string Name, string File)[] CgForceFields =
         [("MARTINI · lipids", "martini-moltemplate.json"), ("MARTINI · polymers", "martini-polymers.json"),
          ("MARTINI · solvents", "martini-solvents.json"), ("MARTINI · surfactants", "martini-surfactants.json"),
-         ("MARTINI · sugars", "martini-sugars.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json"),
+         ("MARTINI · sugars", "martini-sugars.json"), ("MARTINI · amino acids", "martini-aminoacids.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json"),
          ("Cooke–Deserno", "cooke-deserno-moltemplate.json")];
     public string[] CgFfNames => CgForceFields.Select(f => f.Name).ToArray();
     private int _cgFf;

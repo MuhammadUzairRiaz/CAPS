@@ -481,6 +481,10 @@ FFDef load_forcefield(const std::string& path) {
     // numbers its own C11, Na1 ... with its own terms)
     if (!ff.bead_templates.empty()) base.bead_templates = ff.bead_templates;
     merge_forcefield(base, ff);
+    // how impropers are formed, when the overlay says (MARTINI's amino acids: GROMACS type-2 order, centre second)
+    if (j.has("improper_order")) base.improper_order = ff.improper_order;
+    if (j.has("improper_matched_order")) base.improper_matched_order = ff.improper_matched_order;
+    if (j.has("improper_max_neighbours")) base.improper_max_neighbours = ff.improper_max_neighbours;
     base.name = ff.name;
     base.version = ff.version;
     base.source = ff.source + " on " + base.source;

@@ -1065,6 +1065,31 @@
    }
   },
   {
+   "id": "martini-aminoacids",
+   "name": "MARTINI 2.0 · aminoacids",
+   "version": "2.0",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "martini_original_format/aminoacids.prm",
+   "status": "converted",
+   "notes": "MARTINI 2.0 with the amino acids (single residues) of aminoacids.prm (20 bead templates); extends MARTINI 2.0",
+   "file": "martini-aminoacids.json",
+   "counts": {
+    "atom_types": 9,
+    "pairs": 0,
+    "bonds": 23,
+    "angles": 10,
+    "dihedrals": 0,
+    "impropers": 5
+   },
+   "typing": {
+    "rules": "typing/martini-aminoacids.typing.json",
+    "evidence": "MARTINI 2.0 bead-name rules plus this file's beads"
+   }
+  },
+  {
    "id": "martini-sugars",
    "name": "MARTINI 2.0 · sugars",
    "version": "2.0",
