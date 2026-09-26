@@ -227,7 +227,7 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       for (const auto* t : v) ok = ok && t->n >= 0 && std::fabs(t->delta * R2D - std::round(t->delta * R2D)) < 1e-9;
       if (ok) {
         for (const auto* t : v)
-          L.dihedrals.add("charmm", num({t->v}) + " " + std::to_string(t->n) + " " + std::to_string(long(std::lround(t->delta * R2D))) + " 0.0", {},
+          L.dihedrals.add("charmm", num({t->v}) + " " + std::to_string(t->n) + " " + std::to_string(((std::lround(t->delta * R2D) % 360) + 360) % 360) + " 0.0", {},
                           {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
         continue;
       }
@@ -381,8 +381,15 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       for (auto& c : nm) c = char(std::tolower(static_cast<unsigned char>(c)));
       r.push_back(nm + "_style " + k->style_line());
     }
-    std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
-    r.push_back(b);
+    // LAMMPS's own keyword where the force field has one: amber (lj 0 0 0.5, coul 0 0 5/6 exactly), dreiding (0 0 1)
+    if (ff.native_special == "amber" && !ff.keep13 && ff.lj14 == 0.5 && std::fabs(ff.coul14 - 5.0 / 6.0) < 1e-9)
+      r.push_back("special_bonds amber");
+    else if (ff.native_special == "dreiding" && !ff.keep13 && ff.lj14 == 1 && ff.coul14 == 1)
+      r.push_back("special_bonds dreiding");
+    else {
+      std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
+      r.push_back(b);
+    }
     if (L.coul == "long") r.push_back("kspace_style " + L.kspace + " " + fmt_accuracy(L.kspace_accuracy));
     return r;
   }

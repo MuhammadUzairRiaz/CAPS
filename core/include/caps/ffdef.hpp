@@ -114,6 +114,11 @@ struct FFDef {
   // Torsions whose rule has a wildcard end get K divided by (connections − 1) of the neighbouring central atom,
   // per wildcard end (msi2lmp and DL_FIELD for CVFF): "none" or "msi2lmp".
   std::string wildcard_torsion_scaling = "none";
+  // "dreiding1990": a torsion no rule lists takes DREIDING's own rule by the hybridisation of its central atoms (Mayo,
+  // Olafson, Goddard 1990, cases a-j), its barrier divided over the torsions about the bond
+  std::string torsion_rules;
+  // the special_bonds keyword LAMMPS has for this force field ("amber", "dreiding"; styles "special" in the file)
+  std::string special_style;
   // Parameters by analogy for terms the file lacks (the typing file's "analogies", as AmberTools' parmchk2 fills
   // missing GAFF terms): type → types whose parameters stand in, most similar first. Every term found this way is
   // listed in ParamReport::estimated; nothing is filled silently.

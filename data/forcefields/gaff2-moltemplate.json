@@ -12,7 +12,8 @@
   "bond": "harmonic",
   "angle": "harmonic",
   "dihedral": "fourier",
-  "improper": "cvff"
+  "improper": "cvff",
+  "special": "amber"
  },
  "mixing": "arithmetic",
  "special_lj": [
