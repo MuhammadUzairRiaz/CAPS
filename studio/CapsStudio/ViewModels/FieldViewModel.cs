@@ -489,6 +489,9 @@ public sealed partial class FieldViewModel : ObservableObject
         Entered.Clear();
         foreach (var x in r.GetProperty("entered").EnumerateArray()) Entered.Add(x.GetString()! + " · estimated");
         foreach (var x in r.GetProperty("imported_files").EnumerateArray()) Entered.Add("imported: " + Path.GetFileName(x.GetString()!));
+        if (r.TryGetProperty("by_analogy", out var an))
+            foreach (var x in an.EnumerateArray())
+                Entered.Add(string.Join(' ', x.GetString()!.Split(' ').Select(FieldNames.Short)) + " · by analogy (estimated)");
         Raise(nameof(HasEntered));
         Notes.Clear();
         foreach (var x in r.GetProperty("notes").EnumerateArray()) Notes.Add(x.GetString()!);

@@ -95,6 +95,11 @@ struct FFDef {
   // Torsions whose rule has a wildcard end get K divided by (connections − 1) of the neighbouring central atom,
   // per wildcard end (msi2lmp and DL_FIELD for CVFF): "none" or "msi2lmp".
   std::string wildcard_torsion_scaling = "none";
+  // Parameters by analogy for terms the file lacks (the typing file's "analogies", as AmberTools' parmchk2 fills
+  // missing GAFF terms): type → types whose parameters stand in, most similar first. Every term found this way is
+  // listed in ParamReport::estimated; nothing is filled silently.
+  std::map<std::string, std::vector<std::string>> analogies;
+  std::string analogy_source;
   std::vector<FFType> types;
   std::vector<FFRule> pairs;           // match: [a] (self) or [a, b] (explicit pair); params: epsilon, sigma
   std::vector<FFRule> bonds, angles, dihedrals, impropers;
@@ -157,6 +162,8 @@ std::string glob_escape(const std::string& name);   // a pattern that matches ex
 
 struct ParamReport {
   std::vector<std::string> missing;    // interactions with no matching rule (each once, with an example)
+  std::vector<std::string> estimated;  // interactions given the parameters of analogous types (FFDef::analogies), each once
+  int estimated_terms = 0;             // how many interactions (all of them, not each kind once)
   std::map<std::string, int> used;     // rule name → interactions
   std::vector<std::string> notes;
   bool complete() const { return missing.empty(); }

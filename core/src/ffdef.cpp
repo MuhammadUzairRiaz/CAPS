@@ -115,6 +115,11 @@ void load_typing(FFDef& ff, const std::string& path) {
       if (!v.empty() && have.count(base)) ff.type_variants[base] = v;
     }
   }
+  if (j.has("analogies") && j["analogies"].is_object()) {
+    for (const auto& [ty, list] : j["analogies"].members())
+      for (const auto& x : list.items()) ff.analogies[ty].push_back(x.str());
+    ff.analogy_source = j.text("analogy_source", "parameters of analogous types");
+  }
   ff.bond_k_per_order = j.num("bond_k_per_order", ff.bond_k_per_order);
   ff.bond_conjugated_single = j.num("conjugated_single_order", ff.bond_conjugated_single);
   if (j.text("pair_mode") == "double_same") ff.typing_pairs_double_same = true;
@@ -914,6 +919,53 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     for (uint32_t a : atoms) r += (r.empty() ? "" : " ") + T[a] + (N[a] != T[a] ? "(" + N[a] + ")" : "");
     return r;
   };
+  // By analogy (FFDef::analogies, parmchk2's approach): one atom's type replaced by an analogue, then two, most similar
+  // first; the term is kept and listed as estimated with the types that stood in.
+  auto analog = [&](const std::vector<FFRule>& rules, const std::vector<std::string>& N, std::initializer_list<uint32_t> atoms, bool* rev,
+                    std::string* used) -> const FFRule* {
+    if (def.analogies.empty() || rules.empty()) return nullptr;
+    const std::vector<uint32_t> at(atoms);
+    std::vector<std::string> cur;
+    for (uint32_t a : at) cur.push_back(N[a]);
+    std::vector<const std::vector<std::string>*> alt(at.size(), nullptr);
+    bool any = false;
+    for (size_t k = 0; k < at.size(); ++k)
+      if (auto it = def.analogies.find(T[at[k]]); it != def.analogies.end()) alt[k] = &it->second, any = true;
+    if (!any) return nullptr;
+    auto attempt = [&]() -> const FFRule* {
+      std::vector<const std::string*> p;
+      for (const auto& x : cur) p.push_back(&x);
+      const FFRule* r = last_match(rules, p, true, rev);
+      if (r && used) {
+        *used = "";
+        for (const auto& x : cur) *used += (used->empty() ? "" : " ") + x;
+      }
+      return r;
+    };
+    for (size_t k = 0; k < at.size(); ++k)
+      if (alt[k])
+        for (const auto& x : *alt[k]) {
+          const std::string keep = cur[k];
+          cur[k] = x;
+          if (const FFRule* r = attempt()) return r;
+          cur[k] = keep;
+        }
+    for (size_t k = 0; k < at.size(); ++k)
+      for (size_t m = k + 1; m < at.size(); ++m)
+        if (alt[k] && alt[m])
+          for (const auto& x : *alt[k])
+            for (const auto& y : *alt[m]) {
+              const std::string kk = cur[k], mm = cur[m];
+              cur[k] = x, cur[m] = y;
+              if (const FFRule* r = attempt()) return r;
+              cur[k] = kk, cur[m] = mm;
+            }
+    return nullptr;
+  };
+  auto estimated = [&](const std::string& what) {
+    ++rep.estimated_terms;
+    if (std::find(rep.estimated.begin(), rep.estimated.end(), what) == rep.estimated.end()) rep.estimated.push_back(what);
+  };
   // LJ: last self rule matching each type (by its vdW equivalent); explicit pairs as overrides
   std::vector<std::string> vdw_name;
   for (const auto& tn : ff.type_names) {
@@ -1041,6 +1093,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   for (const auto& b : s.bonds) {
     const FFRule* r = lookup12(def.bonds, Nb, Nb2, {b.i, b.j});
     if (!r) r = auto_lookup(def.auto_bonds, {&Ab[b.i], &Ab[b.j]}, nullptr);
+    if (std::string u; !r && (r = analog(def.bonds, Nb, {b.i, b.j}, nullptr, &u))) estimated("bond " + shown(Nb, {b.i, b.j}) + " as " + u);
     if (!r) { missing("bond " + shown(Nb, {b.i, b.j})); continue; }
     const std::string st = r->style.empty() ? def.bond_style : r->style;
     if (st == "class2" && r->params.size() >= 4) {
@@ -1076,6 +1129,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           if (c < std::cos(150.0 * kDeg)) { ++trans_skipped; continue; }
         }
         if (!r) r = auto_lookup(def.auto_angles, {&Aae[i], &Aaa[j], &Aae[k]}, &rev);
+        if (std::string u; !r && (r = analog(def.angles, Na, {i, j, k}, &rev, &u))) estimated("angle " + shown(Na, {i, j, k}) + " as " + u);
         if (!r) { missing("angle " + shown(Na, {i, j, k})); continue; }
         const std::string st = r->style.empty() ? def.angle_style : r->style;
         if (st == "cosine") {   // K (1 + cos θ), minimum at 180°
@@ -1131,6 +1185,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           bool rev = false;
           const FFRule* r = lookup12(def.dihedrals, Nd, Nd2, {i, j, k, l}, &rev);
           if (!r) r = auto_lookup(def.auto_dihedrals, {&Ate[i], &Atc[j], &Atc[k], &Ate[l]}, &rev);
+          if (std::string u; !r && (r = analog(def.dihedrals, Nd, {i, j, k, l}, &rev, &u))) estimated("dihedral " + shown(Nd, {i, j, k, l}) + " as " + u);
           if (!r) { missing("dihedral " + shown(Nd, {i, j, k, l})); continue; }
           const std::string st = r->style.empty() ? def.dihedral_style : r->style;
           const auto& p = r->params;
@@ -1393,6 +1448,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
                           : std::string()));
   if (trans_skipped) rep.notes.push_back(std::to_string(trans_skipped) + " trans angles (≈180°) at centres with 90° rules carry no angle term");
   if (n_auto) rep.notes.push_back(std::to_string(n_auto) + " interactions use automatic (auto-equivalence) parameters");
+  if (rep.estimated_terms)
+    rep.notes.push_back(std::to_string(rep.estimated_terms) + " interactions (" + std::to_string(rep.estimated.size()) + " kinds) have no entry in " + def.name +
+                        " and use the parameters of analogous types (" + def.analogy_source + "): estimated, listed in the report");
   if (def.pair_style.find("charmm") != std::string::npos)
     rep.notes.push_back("the force field uses " + def.pair_style + " (switched LJ); CAPS evaluates plain LJ truncated at the cut-off");
   if (def.pair_style.find("long") != std::string::npos)

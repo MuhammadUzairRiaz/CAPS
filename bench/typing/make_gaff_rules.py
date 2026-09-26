@@ -122,12 +122,25 @@ def rules(v2):
 
 
 PAIRS = [["cc", "cd"], ["ce", "cf"], ["cp", "cq"], ["nc", "nd"], ["ne", "nf"], ["pc", "pd"], ["pe", "pf"]]
+# Terms the parameter file lacks, by analogy (as AmberTools' parmchk2 fills missing GAFF terms): the stand-in has the same
+# element and hybridisation and differs only in a label GAFF adds for ring size or conjugation. Every term found this
+# way is listed as estimated in the Field report and the exported files' notes.
+ANALOGIES = {"cx": ["c3"], "cy": ["c3"], "c5": ["c3"], "c6": ["c3"],          # sp3 C in 3-, 4-, 5-, 6-membered rings
+             "cu": ["c2"], "cv": ["c2"], "ce": ["c2"], "cf": ["c2"],          # sp2 C in 3-/4-rings; inner sp2 C of conjugated chains
+             "cp": ["ca"], "cq": ["ca"], "cc": ["ca", "c2"], "cd": ["ca", "c2"],   # biphenyl-bridge aromatic C; sp2 C of non-benzenoid rings
+             "ne": ["n2"], "nf": ["n2"], "nc": ["nb", "n2"], "nd": ["nb", "n2"],   # conjugated / ring sp2 N
+             "n5": ["n3"], "n6": ["n3"], "n7": ["n3"], "n8": ["n3"], "n9": ["n3"],   # sp3 N by H count and ring size (GAFF2)
+             "ns": ["n"], "nt": ["n"],                                        # amide N with one / two H (GAFF2)
+             "nu": ["nh"], "nv": ["nh"], "nx": ["n4"], "ny": ["n4"],          # amine N on aromatic / sp2 C, ammonium N by H count (GAFF2)
+             "op": ["os"], "oq": ["os"],                                      # sp3 O in 3- / 4-membered rings
+             "px": ["p4"], "py": ["p5"], "sx": ["s4"], "sy": ["s6"]}          # conjugated S / P labels
 out = sys.argv[1]
-for name, v2, ff, src in [("gaff-amber16", False, "GAFF (AmberTools 16, DL_FIELD)", "ATOMTYPE_GFF.DEF"),
-                          ("gaff-amber25", True, "GAFF2 (AmberTools 25, DL_FIELD)", "ATOMTYPE_GFF2.DEF")]:
+for name, v2, ff, src in [("gaff-amber16", False, "GAFF (AmberTools 16)", "ATOMTYPE_GFF.DEF"),
+                          ("gaff-amber25", True, "GAFF2 (AmberTools 25)", "ATOMTYPE_GFF2.DEF")]:
     json.dump({"format": "caps-typing", "version": 1, "forcefield": ff,
                "description": f"GAFF{'2' if v2 else ''} atom types following antechamber's {src} in order (first matching rule wins); "
                               "{AR1}..{AR5} are antechamber's ring classes, pairs its conjugation pattern.",
-               "ordered": True, "pairs": PAIRS, "rules": rules(v2)},
+               "ordered": True, "pairs": PAIRS, "rules": rules(v2),
+               "analogies": ANALOGIES, "analogy_source": "GAFF analogues: the same element and hybridisation, without the ring-size or conjugation label (as parmchk2 fills missing GAFF terms)"},
               open(os.path.join(out, name + ".typing.json"), "w"), indent=1)
     print("wrote", name)
