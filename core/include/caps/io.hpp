@@ -21,6 +21,11 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology = nu
 Trajectory read_lammps_dump(const std::string& path, const System* topology, size_t max_frames,
                             const std::function<bool(double, const Trajectory&)>& progress);
 Trajectory read_gro(const std::string& path);
+// A GROMACS topology (.top or .itp; #include and #ifdef resolved, force-field includes that are not found skipped):
+// the atoms of every molecule [ molecules ] lists, named by their types, with charges, residues, masses, and the
+// explicit topology (bonds, constraints as stiff bonds, angles, dihedrals, virtual sites, exclusions) in
+// System::topology. No coordinates: open_file(COORDS, TOP) joins them.
+System read_gromacs_topology(const std::string& path, std::vector<std::string>* notes = nullptr);
 Trajectory read_xyz(const std::string& path);
 Trajectory read_pdb(const std::string& path);
 // Tripos mol2: atoms with their type (Atom::name: SYBYL "C.ar" or a force-field type such as GAFF "ca"), atom

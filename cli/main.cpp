@@ -416,6 +416,7 @@ void electrostatics(EnergyOptions& e, std::map<std::string, std::string>& o) {
 void save_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& out) {
   auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };
   if (ends(".pdb")) write_pdb(s, out);
+  else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
   else if (ends(".xyz")) write_xyz(s, out);
   else if (const std::string why = write_lammps_data_or_structure(s, ff, e, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
 }
@@ -2188,6 +2189,7 @@ int main(int argc, char** argv) {
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, r.field ? *r.field : default_forcefield(s), r.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
@@ -2249,6 +2251,7 @@ int main(int argc, char** argv) {
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, d.field ? *d.field : default_forcefield(s), d.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
@@ -2338,6 +2341,7 @@ int main(int argc, char** argv) {
       const std::string out = o["-o"];
       auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };
       if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, default_forcefield(s), e.md.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);

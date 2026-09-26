@@ -63,6 +63,7 @@ recognised again, exported with `caps ff apply --gromacs` and run with `gmx mdru
 
 | Ubiquitin 1UBQ, all-atom mapped to Martini 3 (restricted-bending backbone, side-chain fix dihedrals) | energy 2.3e-6 |
 | Lysozyme 3LZT, all-atom mapped to Martini 3 (tryptophan virtual sites, exclusions, impropers) | energy 6.1e-6 |
+| Lysozyme as martinize2 wrote it: its cg.pdb and topol.top read by CAPS (`--topology`), elastic network 500 | energy 1.7e-5 |
 
 Forces on beads held by constraints (stiff bonds in CAPS, 1e6 kJ/mol/nm²) carry the single-precision position error of
 GROMACS (~0.012 kcal/mol/Å per stiff bond in a 9 nm box); a mapped protein that is not relaxed has beads under

@@ -220,3 +220,44 @@ TEST(MartiniProtein, Martini3MatchesMartinize2) {
   EXPECT_TRUE(ff.coul_rf);
   EXPECT_EQ(ff.dihedrals.size(), 83u);
 }
+
+// A GROMACS topology read back: martinize2's own .itp for 1UBQ gives the same explicit topology CAPS builds from the
+// all-atom structure (every bond, constraint, angle, dihedral and exclusion), and joins the coordinates of its cg.pdb
+TEST(GromacsTopology, ReadsMartinize2Itp) {
+  const System T = read_gromacs_topology(kRef + "m3_1ubq.itp");
+  ASSERT_TRUE(T.topology);
+  EXPECT_EQ(T.atoms.size(), 166u);
+  EXPECT_EQ(T.atoms[0].name, "Q5");   // N-terminal backbone bead
+  EXPECT_DOUBLE_EQ(T.atoms[0].charge, 1.0);
+  Martini3Options o;
+  o.ss = "CEEEEEETTSCEEEEECCTTSBHHHHHHHHHHHHCCCGGGEEEEETTEECCTTSBTGGGTCCTTCEEEEEECCSCC";
+  o.elastic = true;
+  const System cg = martini3_protein(open_file(kRef + "m3_1ubq_aa.pdb").frame(0), o, std::string(CAPS_SOURCE_DIR) + "/data/martini/martini3-protein.json");
+  auto bonds = [](const ExplicitTopology& t) {
+    std::multiset<std::tuple<uint32_t, uint32_t, long, long>> s;
+    for (const auto& b : t.bonds) s.insert({std::min(b.i, b.j), std::max(b.i, b.j), std::lround(b.r0 * 100), std::lround(b.k * 100)});
+    return s;
+  };
+  EXPECT_EQ(bonds(*T.topology), bonds(*cg.topology));
+  EXPECT_EQ(T.topology->angles.size(), cg.topology->angles.size());
+  EXPECT_EQ(T.topology->dihedrals.size(), cg.topology->dihedrals.size());
+  std::set<std::pair<uint32_t, uint32_t>> ea, eb;
+  for (const auto& e : T.topology->exclusions) ea.insert({std::min(e.first, e.second), std::max(e.first, e.second)});
+  for (const auto& e : cg.topology->exclusions) eb.insert({std::min(e.first, e.second), std::max(e.first, e.second)});
+  EXPECT_EQ(ea, eb);
+  // coordinates from a separate file, the topology from the .itp: typed, parameterised and evaluated with Martini 3
+  System s = open_file(kRef + "m3_1ubq_cg.pdb", kRef + "m3_1ubq.itp").frame(0);
+  ASSERT_TRUE(s.topology);
+  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/martini3.json");
+  std::string ch = "auto";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  EXPECT_EQ(tr.untyped, 0);
+  ParamReport pr;
+  const ForceField ff = parameterize(s, def, tr.types, ch, &pr, false);
+  std::vector<double> x, f;
+  for (const auto& a : s.atoms) x.insert(x.end(), {a.pos[0], a.pos[1], a.pos[2]});
+  Evaluator ev(ff, EnergyOptions{});
+  EXPECT_TRUE(std::isfinite(ev.compute(x, s.cell, f).total()));
+  EXPECT_EQ(ff.dihedrals.size(), 83u);
+}
