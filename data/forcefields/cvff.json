@@ -1,7 +1,7 @@
 {
  "format": "caps-forcefield",
  "format_version": 1,
- "name": "CVFF",
+ "name": "CVFF (CVFF.par)",
  "source": "CVFF.par",
  "references": [
   "P. Dauber-Osguthorpe et al., Proteins 4, 31 (1988)"
