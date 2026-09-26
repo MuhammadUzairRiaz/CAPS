@@ -12,7 +12,7 @@ then reports those atoms instead of guessing charges that would not balance.
 Priorities: 0 the plain element and hybridisation (alkane, alkene, benzene C and H); higher values for functional groups
 and the atoms next to them; among matching rules the highest wins.
 
-Only for the 2024 table: the 2008 (BOSS 4.8) table numbers the same chemistry differently.
+For the 2024 table; the 2008 (BOSS 4.8) numbering gets these rules mapped by make_oplsaa2008_rules.py.
 
 usage: make_oplsaa_rules.py OUTDIR
 """
@@ -162,7 +162,7 @@ by_h((None, 957, 959, 960), 5, ONEX("F"), "monofluoroalkyl C")
 add(958, 5, "[H][CX4;$(*[F]);!$(*(F)F)]", "H on monofluoroalkyl C")
 add(965, 6, "[F][CX4;$(*(F)F)]", "F of a CF2 / CF3 group")
 add(962, 6, "[CX4;$(*(F)F);!$(*(F)(F)F);!$(*[H])]", "CF2")
-add(961, 6, "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F)]", "CF3")
+add(961, 6, "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F);$(*[#6])]", "CF3 on carbon (a perfluoroalkyl end)")
 add(264, 6, "[Cl]c", "aryl chloride Cl")
 add(263, 6, "c[Cl]", "aryl chloride C")
 add(719, 6, "[F]c", "aryl fluoride F")
