@@ -11,8 +11,9 @@
   "pair": "lj/cut/coul/long",
   "bond": "harmonic",
   "angle": "harmonic",
-  "dihedral": "fourier",
-  "improper": "planar"
+  "dihedral": "charmm",
+  "improper": "umbrella",
+  "special": "dreiding"
  },
  "mixing": "arithmetic",
  "special_lj": [
@@ -26,6 +27,7 @@
   1
  ],
  "cutoff": 10,
+ "torsion_rules": "dreiding1990",
  "improper_order": "center1_sorted",
  "equivalence": "replace",
  "improper_matched_order": true,

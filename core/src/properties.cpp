@@ -1499,6 +1499,7 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   s.native_improper = ff.native_improper;
   s.native_cutoff = ff.native_cutoff;
   s.native_timestep = ff.native_timestep;
+  s.native_special = ff.native_special;
   s.lj14 = ff.lj14;
   s.coul14 = ff.coul14;
   s.keep13 = ff.keep13;

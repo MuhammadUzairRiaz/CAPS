@@ -12,7 +12,8 @@
   "bond": "harmonic",
   "angle": "harmonic",
   "dihedral": "charmm",
-  "improper": "umbrella"
+  "improper": "umbrella",
+  "special": "dreiding"
  },
  "mixing": "arithmetic",
  "special_lj": [
