@@ -235,6 +235,19 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   // molecules (a melt's chains, a solvent) become one [ moleculetype ] in STEM.itp, listed with their count in [ molecules ].
   std::vector<Vec3> pos;
   const bool periodic_mol = periodic_bonds(s, pos);
+  // virtual sites where their atoms put them (GROMACS's rerun takes the coordinates as written; CAPS places the sites
+  // at every evaluation)
+  for (const auto& v : ff.vsites) {
+    Vec3 c{0, 0, 0};
+    double wt = 0;
+    const Vec3 ref = pos[v.from[0]];
+    for (size_t k = 0; k < v.from.size(); ++k) {
+      const Vec3 d = s.cell.valid() ? s.cell.minimum_image(pos[v.from[k]] - ref) : pos[v.from[k]] - ref;
+      c = c + (ref + d) * v.w[k];
+      wt += v.w[k];
+    }
+    if (wt > 0) pos[v.site] = c * (1 / wt);
+  }
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
   enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, VSITES, EXCLUSIONS, NSEC };

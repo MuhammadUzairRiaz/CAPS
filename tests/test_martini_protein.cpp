@@ -132,3 +132,91 @@ TEST(MartiniProtein, HelixRules) {
   Evaluator ev(ff, EnergyOptions{});
   EXPECT_TRUE(std::isfinite(ev.compute(x, s.cell, f).total()));
 }
+
+namespace {
+
+// a Martini 3 .itp's terms on its default path (#ifndef FLEXIBLE: constraints), as sorted strings; lengths to 3
+// decimals, force constants and angles to 1, so martinize2's and CAPS's number formats compare
+std::map<std::string, std::multiset<std::string>> itp3_terms(const std::string& text) {
+  std::map<std::string, std::multiset<std::string>> out;
+  std::istringstream in(text);
+  std::string sec, line;
+  std::vector<bool> skip;
+  auto r = [](const std::string& x, int d) { std::ostringstream o; o.setf(std::ios::fixed); o.precision(d); o << std::stod(x) + 0.0; return o.str(); };
+  while (std::getline(in, line)) {
+    line = line.substr(0, line.find(';'));
+    std::istringstream ls(line);
+    std::vector<std::string> w;
+    for (std::string x; ls >> x;) w.push_back(x);
+    if (w.empty()) continue;
+    if (w[0] == "#ifdef") { skip.push_back(w.size() > 1 && w[1] == "FLEXIBLE"); continue; }
+    if (w[0] == "#ifndef") { skip.push_back(false); continue; }
+    if (w[0] == "#else") { skip.back() = !skip.back(); continue; }
+    if (w[0] == "#endif") { skip.pop_back(); continue; }
+    if (std::find(skip.begin(), skip.end(), true) != skip.end()) continue;
+    std::smatch m;
+    if (std::regex_search(line, m, std::regex(R"(\[\s*(\S+)\s*\])"))) { sec = m[1]; continue; }
+    auto pair = [&](size_t a, size_t b) { const int i = std::stoi(w[a]), j = std::stoi(w[b]); return std::to_string(std::min(i, j)) + "-" + std::to_string(std::max(i, j)); };
+    if (sec == "atoms") out[sec].insert(w[0] + " " + w[1] + " " + r(w.size() > 6 ? w[6] : "0", 2));
+    else if (sec == "bonds") out[sec].insert(pair(0, 1) + " " + r(w[3], 3) + " " + r(w[4], 1));
+    else if (sec == "constraints") out[sec].insert(pair(0, 1) + " " + r(w[3], 3));
+    else if (sec == "angles") out[sec].insert(w[0] + "-" + w[1] + "-" + w[2] + " " + w[3] + " " + r(w[4], 1) + " " + r(w[5], 1));
+    else if (sec == "dihedrals") out[w[4] == "2" ? "impropers" : sec].insert(w[0] + "-" + w[1] + "-" + w[2] + "-" + w[3] + " " + w[4] + " " + r(w[5], 1) + " " + r(w[6], 1));
+    else if (sec == "exclusions")
+      for (size_t k = 1; k < w.size(); ++k) out[sec].insert(pair(0, k));
+  }
+  return out;
+}
+
+void check_martini3(const std::string& stem, const Martini3Options& o) {
+  const std::string data = std::string(CAPS_SOURCE_DIR) + "/data/martini/martini3-protein.json";
+  MartiniProteinReport rep;
+  const System cg = martini3_protein(open_file(kRef + stem + "_aa.pdb").frame(0), o, data, &rep);
+  const auto mine = itp3_terms(martini3_itp(cg)), ref = itp3_terms(slurp(kRef + stem + ".itp"));
+  for (const char* sec : {"atoms", "bonds", "constraints", "angles", "dihedrals", "impropers", "exclusions"}) {
+    const auto a = ref.count(sec) ? ref.at(sec) : std::multiset<std::string>{};
+    const auto b = mine.count(sec) ? mine.at(sec) : std::multiset<std::string>{};
+    EXPECT_EQ(b, a) << stem << " " << sec;
+  }
+  const System pos = open_file(kRef + stem + "_cg.pdb").frame(0);
+  ASSERT_EQ(pos.atoms.size(), cg.atoms.size());
+  double worst = 0;
+  for (size_t k = 0; k < cg.atoms.size(); ++k) worst = std::max(worst, norm(cg.atoms[k].pos - pos.atoms[k].pos));
+  EXPECT_LT(worst, 0.002) << stem;
+}
+
+}  // namespace
+
+// Martini 3 proteins are martinize2's, term by term and bead by bead: ubiquitin (DSSP, side-chain fix, elastic
+// network), histatin 5 (a disordered region, hydrogens in the input: protonation and termini from them) and a PRO-PRO
+// dipeptide with neutral termini and no secondary structure
+TEST(MartiniProtein, Martini3MatchesMartinize2) {
+  Martini3Options ubq;
+  ubq.ss = "CEEEEEETTSCEEEEECCTTSBHHHHHHHHHHHHCCCGGGEEEEETTEECCTTSBTGGGTCCTTCEEEEEECCSCC";   // the reference's DSSP (CAPS's is the same)
+  ubq.elastic = true;
+  check_martini3("m3_1ubq", ubq);
+  EXPECT_EQ(dssp(open_file(kRef + "m3_1ubq_aa.pdb").frame(0)), ubq.ss);
+  Martini3Options hst5;
+  hst5.ss = "C";
+  hst5.idr = {{1, 24}};
+  hst5.scfix = false;
+  check_martini3("m3_hst5", hst5);
+  Martini3Options dipro;
+  dipro.ss = "-";
+  dipro.neutral_termini = true;
+  dipro.scfix = false;
+  check_martini3("m3_dipro", dipro);
+  // the force field maps an all-atom protein, types and parameterises it (virtual sites, reaction field)
+  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/martini3.json");
+  System s = open_file(kRef + "m3_1ubq_aa.pdb").frame(0);
+  std::string ch = "auto";
+  prepare_for_forcefield(s, def, ch);
+  ASSERT_TRUE(s.topology);
+  EXPECT_EQ(s.atoms.size(), 166u);
+  const TypingResult tr = assign_types(s, def);
+  EXPECT_EQ(tr.untyped, 0);
+  ParamReport pr;
+  const ForceField ff = parameterize(s, def, tr.types, ch, &pr, false);
+  EXPECT_TRUE(ff.coul_rf);
+  EXPECT_EQ(ff.dihedrals.size(), 83u);
+}

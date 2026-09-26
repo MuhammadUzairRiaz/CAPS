@@ -8,6 +8,7 @@
 #include <cmath>
 #include <fstream>
 #include <map>
+#include <tuple>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -45,10 +46,12 @@ Vec3 pos(const System& s, int i) { return s.atoms[size_t(i)].pos; }
 std::vector<ProteinResidue> protein_residues(const System& s) {
   std::vector<ProteinResidue> out;
   const std::vector<int> mol = s.molecules();
-  std::map<std::pair<int, int64_t>, size_t> index;
+  // a residue: its molecule, its chain (a PDB's chain identifier is kept as the atom's mol) and its number; chains
+  // joined by disulfides are one molecule but keep their own residues
+  std::map<std::tuple<int, int64_t, int64_t>, size_t> index;
   for (uint32_t a = 0; a < s.atoms.size(); ++a) {
     const Atom& at = s.atoms[a];
-    auto key = std::make_pair(mol[a], at.resid);
+    auto key = std::make_tuple(mol[a], at.mol, at.resid);
     auto it = index.find(key);
     if (it == index.end()) {
       it = index.emplace(key, out.size()).first;
@@ -85,7 +88,10 @@ std::vector<ProteinResidue> protein_residues(const System& s) {
 // ---------------------------------------------------------------------------------------------------- DSSP
 
 std::string dssp(const System& s) {
-  const auto res = protein_residues(s);
+  // residues with no backbone atom at all (water, ions, ligands) are not part of the protein
+  std::vector<ProteinResidue> res;
+  for (auto& r : protein_residues(s))
+    if (r.n >= 0 || r.ca >= 0 || r.c >= 0) res.push_back(std::move(r));
   const size_t n = res.size();
   // N, CA and C are needed; a residue without its O (a terminal one written without it) accepts no H-bond
   for (const auto& r : res)

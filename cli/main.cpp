@@ -96,6 +96,10 @@ int usage() {
                "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
                "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|fibre --radius 12 --length 20 --passivate]\n"
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
+               "  caps dssp    PROTEIN.pdb                      DSSP secondary structure (and Martini's codes)\n"
+               "  caps martini PROTEIN.pdb -o CG.data [--itp CG.itp] [--ss LETTERS|C|none]   Martini 2.2 protein (martinize's rules);\n"
+               "               --martini 3 [--noscfix] [--nt] [--extdih] [--cys none] [--idr 1:24] [--elastic --ef 700 --el 0 --eu 0.9\n"
+               "               --ea 0 --ep 1 --es 0 --em 0 --ermd 2 --eunit molecule|chain|all]   Martini 3 protein (martinize2's options)\n"
                "  caps pore    slit [--width 10 --layers 1 --lx 26 --ly 22 --vacuum] | cylinder CRYSTAL.cif [--width 14 --wall 6 --length 20 --passivate] |\n"
                "               framework CRYSTAL.cif [--supercell 2,2,2]   [--fluid SMILES --count N --tolerance 2 --seed 1] -o OUT   a fluid in a pore\n"
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
@@ -173,28 +177,30 @@ const std::set<std::string>& known_options() {
     "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--bci", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax", "--c-term",
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
-    "--components", "--conc", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--density",
-    "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump", "--edge", "--eq-ps",
-    "--equilibrate", "--escalate", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain", "--fa",
-    "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first", "--fit", "--fix-mol",
-    "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame", "--frame-ps", "--from",
-    "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl", "--hold",
-    "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations", "--itp", "--json",
-    "--lammps-input", "--lammps-run", "--last", "--layers", "--length", "--list", "--list-templates", "--log",
-    "--lx", "--ly", "--m", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model",
-    "--molecule-size", "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities",
-    "--no-cell", "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff",
-    "--no-relax", "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
-    "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
-    "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
-    "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
-    "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--ss", "--step",
-    "--steps", "--strain", "--strand", "--stride", "--structure", "--style", "--supercell", "--surface",
-    "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
-    "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow",
-    "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
-    "--until-converged", "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--components", "--conc", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--cys",
+    "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump", "--ea",
+    "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--es",
+    "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
+    "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
+    "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
+    "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl",
+    "--hold", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations", "--itp",
+    "--json", "--lammps-input", "--lammps-run", "--last", "--layers", "--length", "--list", "--list-templates",
+    "--log", "--lx", "--ly", "--m", "--martini", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods",
+    "--model", "--molecule-size", "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise",
+    "--new-velocities", "--no-cell", "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc",
+    "--no-pushoff", "--no-relax", "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding",
+    "--pair", "--particles", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph",
+    "--pitch", "--pmax", "--pme", "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive",
+    "--print-protocol", "--probe", "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet",
+    "--radius", "--ramp", "--rate", "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale",
+    "--seed", "--sequence", "--sf", "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents",
+    "--spring", "--ss", "--step", "--steps", "--strain", "--strand", "--stride", "--structure", "--style",
+    "--supercell", "--surface", "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp",
+    "--template", "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs",
+    "--tlow", "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing",
+    "--units", "--until-converged", "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin",
+    "--zoom"};
   return k;
 }
 
@@ -232,6 +238,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
                         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
+                        a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -1191,7 +1198,13 @@ int main(int argc, char** argv) {
       std::string data;
       for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
         if (!root.empty() && std::filesystem::exists(root + "/data/martini/martini22-protein.json")) { data = root + "/data/martini/martini22-protein.json"; break; }
-      const System aa = load(pos[0], o);
+      System aa = load(pos[0], o);
+      {   // bonds from the file and from distances (martinize2's -bonds-from both: a PDB's CONECT may list only disulfides)
+        std::set<std::pair<uint32_t, uint32_t>> have;
+        for (const auto& b : aa.bonds) have.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+        for (const auto& b : perceive_bonds(aa))
+          if (have.insert({std::min(b.i, b.j), std::max(b.i, b.j)}).second) aa.bonds.push_back(b);
+      }
       if (cmd == "dssp") {
         const std::string ss = dssp(aa);
         std::printf("%s\n", ss.c_str());
@@ -1200,6 +1213,45 @@ int main(int argc, char** argv) {
       }
       if (data.empty()) throw std::runtime_error("data/martini/martini22-protein.json not found (set CAPS_HOME)");
       if (!o.count("-o")) return usage();
+      if (o.count("--martini") && o["--martini"] == "3") {   // Martini 3 (martinize2 -ff martini3001), its options
+        const std::string data3 = std::filesystem::path(data).parent_path().string() + "/martini3-protein.json";
+        Martini3Options mo;
+        if (o.count("--ss")) mo.ss = o["--ss"] == "none" ? "-" : o["--ss"];
+        mo.scfix = !o.count("--noscfix");
+        mo.neutral_termini = o.count("--nt") > 0;
+        mo.extdih = o.count("--extdih") > 0;
+        mo.disulfides = !(o.count("--cys") && o["--cys"] == "none");
+        if (o.count("--idr")) {
+          std::istringstream is(o["--idr"]);
+          for (std::string r; std::getline(is, r, ',');) {
+            const auto c = r.find(':');
+            if (c == std::string::npos) throw std::runtime_error("--idr takes FIRST:LAST[,FIRST:LAST…]");
+            mo.idr.push_back({std::stoll(r.substr(0, c)), std::stoll(r.substr(c + 1))});
+          }
+        }
+        mo.elastic = o.count("--elastic") > 0;
+        if (o.count("--ef")) mo.ef = std::stod(o["--ef"]);
+        if (o.count("--el")) mo.el = std::stod(o["--el"]);
+        if (o.count("--eu")) mo.eu = std::stod(o["--eu"]);
+        if (o.count("--ea")) mo.ea = std::stod(o["--ea"]);
+        if (o.count("--ep")) mo.ep = std::stod(o["--ep"]);
+        if (o.count("--es")) mo.es = std::stod(o["--es"]);
+        if (o.count("--em")) mo.em = std::stod(o["--em"]);
+        if (o.count("--ermd")) mo.ermd = std::stoi(o["--ermd"]);
+        if (o.count("--eunit")) mo.eunit = o["--eunit"];
+        MartiniProteinReport rep;
+        const System cg = martini3_protein(aa, mo, data3, &rep);
+        write_lammps_data(cg, o["-o"]);
+        if (o.count("--itp")) {
+          std::ofstream f(o["--itp"]);
+          f << "; Martini 3 protein written by CAPS; secondary structure " << rep.cg_ss << "\n" << martini3_itp(cg, mo.constraint_kj);
+        }
+        for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+        std::printf("%d residues, %d chains -> %d beads; %zu bonds, %zu angles, %zu dihedrals, %zu virtual sites; %d disulfides\nDSSP    %s\nMartini %s\nwrote %s\n",
+                    rep.residues, rep.chains, rep.beads, cg.topology->bonds.size(), cg.topology->angles.size(), cg.topology->dihedrals.size(),
+                    cg.topology->vsites.size(), rep.disulfides, rep.dssp.c_str(), rep.cg_ss.c_str(), o["-o"].c_str());
+        return 0;
+      }
       MartiniProteinReport rep;
       const System cg = martini22_protein(aa, o.count("--ss") ? o["--ss"] : "", data, &rep);
       write_lammps_data(cg, o["-o"]);
