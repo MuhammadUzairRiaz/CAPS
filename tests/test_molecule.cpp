@@ -57,6 +57,14 @@ TEST(Smiles, ParsesTheGrammar) {
 
   g = parse_smiles("[2H]C([2H])([2H])O");
   EXPECT_EQ(g.atoms[0].isotope, 2);
+
+  // a bond symbol before a ring-closure digit belongs to the ring bond, at the opening or the closing
+  g = parse_smiles("C=1CCCCC1");
+  add_hydrogens(g);
+  EXPECT_EQ(molecule_info(g).formula, "C6H10");
+  g = parse_smiles("[CH]1[C]2=[C]([NH][CH]=1)[CH]=[CH][CH]=[CH]2");   // indole, Kekulé, the ring bond double at its closure
+  add_hydrogens(g);
+  EXPECT_EQ(molecule_info(g).formula, "C8H7N");
 }
 
 TEST(Smiles, RejectsWhatIsNotSmiles) {

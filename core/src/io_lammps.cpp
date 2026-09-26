@@ -295,7 +295,29 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
   return tr;
 }
 
-void write_lammps_data(const System& s, const std::string& path) {
+void write_lammps_data(const System& s_in, const std::string& path) {
+  // atoms without a numeric type (read from a PDB, .xyz or .gro, or packed from such files): every atom gets a type by
+  // its label (its type's, else its element or name) and mass, so the file keeps what the atoms are
+  System retyped;
+  const bool untyped = std::any_of(s_in.atoms.begin(), s_in.atoms.end(), [](const Atom& a) { return a.type <= 0; });
+  if (untyped) {
+    retyped = s_in;
+    std::map<std::pair<std::string, long>, int> tid;
+    std::vector<TypeInfo> types;
+    for (auto& a : retyped.atoms) {
+      std::string label;
+      double mass = 0;
+      for (const auto& t : s_in.types)
+        if (a.type > 0 && t.type == a.type) label = t.label, mass = t.mass;
+      if (label.empty()) label = a.element > 0 ? std::string(element(a.element).symbol) : (a.name.empty() ? "X" : a.name);
+      if (mass == 0) mass = element(a.element).mass;
+      auto [it, fresh] = tid.emplace(std::make_pair(label, std::lround(mass * 1e4)), int(tid.size()) + 1);
+      a.type = it->second;
+      if (fresh) types.push_back({it->second, mass, label});
+    }
+    retyped.types = types;
+  }
+  const System& s = untyped ? retyped : s_in;
   std::ofstream out(path);
   if (!out) throw ReadError("cannot write " + path);
   out << "CAPS 0.1 · " << (s.title.empty() ? "structure" : s.title) << " · atom_style full · units real\n\n";

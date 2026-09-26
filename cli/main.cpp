@@ -1240,8 +1240,10 @@ int main(int argc, char** argv) {
         if (o.count("--em")) mo.em = std::stod(o["--em"]);
         if (o.count("--ermd")) mo.ermd = std::stoi(o["--ermd"]);
         if (o.count("--eunit")) mo.eunit = o["--eunit"];
+        mo.refuse_unmatched = false;   // an explicit mapping: what matches nothing is left out, and listed
+        if (o.count("--centre")) mo.small_geometric = o["--centre"] != "mass";   // small molecules: geometry (default) or mass
         MartiniProteinReport rep;
-        const System cg = martini3_protein(aa, mo, data3, &rep);
+        const System cg = martini3_all_atom(aa, mo, data3, std::filesystem::path(data).parent_path().string() + "/martini3-small-molecules.json", &rep);
         write_lammps_data(cg, o["-o"]);
         if (o.count("--itp")) {
           std::ofstream f(o["--itp"]);

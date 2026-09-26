@@ -176,6 +176,9 @@ struct FFDef {
   // Martini proteins (typing file "martini_protein": the model's JSON): an all-atom protein becomes beads with the
   // model's explicit topology (martini22_protein; DSSP for the secondary structure)
   std::string martini_protein;
+  // Martini 3 small molecules (typing file "martini_small_molecules"): all-atom molecules matched by graph to the model's
+  // CHARMM residues become their beads (martini3_small_molecules)
+  std::string martini_small;
   // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
   // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
   // each conjugated system takes the variants that make every bond's constant equal bond_k_per_order x its bond order

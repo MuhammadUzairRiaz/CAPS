@@ -696,8 +696,10 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   xv_ = x;
   place_virtual_sites(ff_, xv_, cell);
   EnergyTerms e = compute_placed(xv_, cell, f);
-  // the site's force goes back to its constructing atoms (the virial is unchanged: the site is a linear combination)
-  for (const auto& v : ff_.vsites) {
+  // the site's force goes back to its constructing atoms (the virial is unchanged: the site is a linear combination);
+  // in reverse order, so a site built on other sites hands its force to them before they hand theirs on
+  for (auto it = ff_.vsites.rbegin(); it != ff_.vsites.rend(); ++it) {
+    const auto& v = *it;
     for (size_t k = 0; k < v.from.size(); ++k)
       for (int c = 0; c < 3; ++c) f[3 * v.from[k] + c] += v.w[k] * f[3 * v.site + c];
     for (int c = 0; c < 3; ++c) f[3 * v.site + c] = 0;

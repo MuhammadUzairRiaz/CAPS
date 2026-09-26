@@ -196,7 +196,8 @@ if __name__ == "__main__":
     # vermouth's martini3001 files by bench/ff/convert_vermouth_martini3.py)
     tdoc = {"format": "caps-typing", "version": 1, "forcefield": "Martini 3", "coarse_grained": True, "unknown_types": "untyped",
             "martini_protein": "../martini/martini3-protein.json",
-            "description": "Martini 3 beads typed by name (bench/ff/convert_martini3.py); all-atom proteins mapped as martinize2 maps them",
+            "martini_small_molecules": "../martini/martini3-small-molecules.json",
+            "description": "Martini 3 beads typed by name (bench/ff/convert_martini3.py); all-atom proteins mapped as martinize2 maps them, small molecules by vermouth's mappings",
             "rules": rules}
     json.dump(tdoc, open(os.path.join(ROOT, "data", "typing", "martini3.typing.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     cat_p = os.path.join(ROOT, "data", "forcefields", "catalogue.json")
