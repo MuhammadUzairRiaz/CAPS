@@ -81,6 +81,7 @@ struct FFDef {
   double special_lj[3] = {0, 0, 0.5};  // 1-2, 1-3, 1-4 scaling
   double special_coul[3] = {0, 0, 0.8333333333};
   double cutoff = 10.0;
+  double timestep = 0;   // fs: the model's usual MD time step for engine inputs (Martini 20); 0: 0.5 fs
   // Coarse-grained pair settings (JSON "pair_settings"): lj/gromacs inner radius, coul/gromacs inner radius and
   // relative permittivity (MARTINI 9 Å, 1e-6 Å, 15); model_cutoff: the cut-off belongs to the model (MARTINI 12 Å)
   double lj_inner = 0, coul_inner = 0, dielectric = 1;

@@ -208,6 +208,7 @@ TEST(MartiniProtein, Martini3MatchesMartinize2) {
   check_martini3("m3_dipro", dipro);
   // the force field maps an all-atom protein, types and parameterises it (virtual sites, reaction field)
   FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/martini3.json");
+  EXPECT_EQ(def.timestep, 20);   // Martini's 20 fs time step for engine inputs
   System s = open_file(kRef + "m3_1ubq_aa.pdb").frame(0);
   std::string ch = "auto";
   prepare_for_forcefield(s, def, ch);

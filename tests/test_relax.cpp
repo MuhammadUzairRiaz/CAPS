@@ -317,6 +317,14 @@ TEST(LammpsData, MixedClassesBecomeHybridStylesWithSkipLines) {
   EXPECT_NE(npt.find("minimize"), std::string::npos);
   EXPECT_NE(npt.find(" npt temp 300 300 100 iso 1 1 1000"), std::string::npos);
   EXPECT_NE(npt.find("write_data      final.data"), std::string::npos);
+  // the time step: 0.5 fs unless the force field declares its own (Martini 20 fs) or the run sets one
+  EXPECT_NE(npt.find("\ntimestep        0.5\n"), std::string::npos);
+  EXPECT_EQ(lammps_timestep(run, ff), 0.5);
+  ForceField cg = ff;
+  cg.native_timestep = 20;
+  EXPECT_EQ(lammps_timestep(run, cg), 20);
+  run.dt = 2;
+  EXPECT_EQ(lammps_timestep(run, cg), 2);
   // terms LAMMPS cannot reproduce exactly are refused
   ForceField charmm = ff;
   charmm.lj14_types.assign(charmm.type_names.size(), {0.05, 3.0});
