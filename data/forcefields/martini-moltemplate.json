@@ -22294,6 +22294,19 @@
  ],
  "bonds": [
   {
+   "name": "auto",
+   "match": [
+    "*",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ],
+   "comment": "martini.prm BOND_AUTO: the default bond"
+  },
+  {
    "name": "C1-C1",
    "match": [
     "*_bC1_a*_d*_i*",
@@ -23754,7 +23767,8 @@
  "impropers": [],
  "notes": [
   "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
-  "pair settings from the source (In Init): lj/gromacs 9 to 12 A, coul/gromacs 1e-6 to 12 A, dielectric 15; special_bonds 0 1 1"
+  "pair settings from the source (In Init): lj/gromacs 9 to 12 A, coul/gromacs 1e-6 to 12 A, dielectric 15; special_bonds 0 1 1",
+  "the default bond of the source (martini.prm BOND_AUTO: 1250 kJ/mol/nm2, 0.47 nm) for bonded pairs it does not list"
  ],
  "version": "2007",
  "status": "converted",

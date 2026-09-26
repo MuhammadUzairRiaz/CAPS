@@ -1,0 +1,353 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MARTINI 2.0 · solvents",
+ "version": "2.0",
+ "source": "solvents.prm (EMC MARTINI parameters, moltemplate distribution)",
+ "references": [],
+ "extends": "martini-moltemplate.json",
+ "typing": "../typing/martini-solvents.typing.json",
+ "atom_types": [
+  {
+   "name": "C11",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI solvents.prm bead C11 (non-bonded as C1)",
+   "equivalence": {
+    "vdw": "C1_bC1_aC1_dC1_iC1",
+    "bond": "C1_bC1_aC1_dC1_iC1",
+    "angle": "C11",
+    "dihedral": "C11",
+    "improper": "C11"
+   }
+  },
+  {
+   "name": "C31",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI solvents.prm bead C31 (non-bonded as C3)",
+   "equivalence": {
+    "vdw": "C3_bC3_aC3_dC3_iC3",
+    "bond": "C3_bC3_aC3_dC3_iC3",
+    "angle": "C31",
+    "dihedral": "C31",
+    "improper": "C31"
+   }
+  },
+  {
+   "name": "Na1",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI solvents.prm bead Na1 (non-bonded as Na)",
+   "equivalence": {
+    "vdw": "Na_bNa_aNa_dNa_iNa",
+    "bond": "Na_bNa_aNa_dNa_iNa",
+    "angle": "Na1",
+    "dihedral": "Na1",
+    "improper": "Na1"
+   }
+  },
+  {
+   "name": "Na2",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI solvents.prm bead Na2 (non-bonded as Na)",
+   "equivalence": {
+    "vdw": "Na_bNa_aNa_dNa_iNa",
+    "bond": "Na_bNa_aNa_dNa_iNa",
+    "angle": "Na2",
+    "dihedral": "Na2",
+    "improper": "Na2"
+   }
+  }
+ ],
+ "pairs": [],
+ "bonds": [
+  {
+   "name": "C1-C1",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bC1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-C3",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bC3_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-Na",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bNa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-P1",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bP1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "SC1-SC1",
+   "match": [
+    "*_bSC1_a*_d*_i*",
+    "*_bSC1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.0
+   ]
+  },
+  {
+   "name": "SC4-SC4",
+   "match": [
+    "*_bSC4_a*_d*_i*",
+    "*_bSC4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.90057361,
+    2.7
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "C1-C1-C1",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-C1-C3",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC3_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-C1-C31",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "C31"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-C3-C1",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC3_d*_i*",
+    "*_b*_aC1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.37762906,
+    120.0
+   ]
+  },
+  {
+   "name": "C1-C31-C1",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "C31",
+    "*_b*_aC1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.37762906,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-Na-C11",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aNa_d*_i*",
+    "C11"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-Na1-C11",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "Na1",
+    "C11"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-Na2-C11",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "Na2",
+    "C11"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C3-C1-Na",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aNa_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C3-C1-Na1",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "Na1"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C3-C1-Na2",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "Na2"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "Na-C11-Na1",
+   "match": [
+    "*_b*_aNa_d*_i*",
+    "C11",
+    "Na1"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    60.0
+   ]
+  },
+  {
+   "name": "Na-C11-Na2",
+   "match": [
+    "*_b*_aNa_d*_i*",
+    "C11",
+    "Na2"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    130.0
+   ]
+  },
+  {
+   "name": "Na1-C11-Na2",
+   "match": [
+    "Na1",
+    "C11",
+    "Na2"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    130.0
+   ]
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "bead_templates": {
+  "ACE": "[P5]",
+  "ACH": "[P3]",
+  "BENZ": "[SC4]1[SC4][SC4]1",
+  "BOL": "[Nda]",
+  "BUT": "[C1]",
+  "CHEX": "[SC1]1[SC1][SC1]1",
+  "CLF": "[C4]",
+  "DEC": "[C1][C1][C1]",
+  "EOL": "[P2]",
+  "ETH": "[N0]",
+  "HD": "[C1][C1][C1][C1]",
+  "MES": "[C5]",
+  "OCO": "[P1][C1]",
+  "OCT": "[C1][C1]",
+  "OD": "[C1][C1][C1][C1][C1]",
+  "ODE": "[C1][C1][C3][C1][C1]",
+  "ODT": "[C1][C31][C1][C1][C1]",
+  "PAM": "[Nd]",
+  "POL": "[P1]",
+  "PON": "[Na]",
+  "POP": "[C2]",
+  "PRX": "[C3]",
+  "TO": "[C11]([Na1][C1][C3][C1][C1])([Na2][C1][C3][C1][C1])[Na][C1][C3][C1][C1]"
+ },
+ "notes": [
+  "converted by CAPS from solvents.prm (bench/ff/convert_emc_martini.py): nm, kJ/mol → Å, kcal/mol; bonds and impropers ½k → K; angles cosine-harmonic as MARTINI 2.0; new bead types take their pair equivalent's non-bonded terms"
+ ]
+}

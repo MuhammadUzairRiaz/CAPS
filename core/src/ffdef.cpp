@@ -474,7 +474,9 @@ FFDef load_forcefield(const std::string& path) {
       base.bead_rules.clear();
       base.bead_groups.clear();
     }
-    for (const auto& [k, v] : ff.bead_templates) base.bead_templates[k] = v;
+    // an overlay's own bead templates replace the base's: its bead names may shadow the base's (each MARTINI source file
+    // numbers its own C11, Na1 ... with its own terms)
+    if (!ff.bead_templates.empty()) base.bead_templates = ff.bead_templates;
     merge_forcefield(base, ff);
     base.name = ff.name;
     base.version = ff.version;
@@ -970,11 +972,11 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   // 1-3 and 1-4 in full: only bonded pairs are left out, the others are ordinary pairs
   const bool only12 = ff.keep13 && ff.lj14 == 1 && ff.coul14 == 1;
   const bool gromacs = def.pair_style.find("gromacs") != std::string::npos;
+  ff.dielectric = def.dielectric;
   if (gromacs) {
     ff.lj_inner = def.lj_inner;
     ff.coul_gromacs = def.pair_style.find("coul/gromacs") != std::string::npos;
     ff.coul_inner = def.coul_inner;
-    ff.dielectric = def.dielectric;
   }
   if (def.model_cutoff) ff.cutoff = def.cutoff;
   // resolve names: full names, or a moltemplate short name recorded in the description
@@ -1680,6 +1682,7 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
     std::set<std::string> names;
     for (const auto& t : ff.types) {
       names.insert(t.name);
+      names.insert(t.aliases.begin(), t.aliases.end());
       const std::string key = "moltemplate @atom:";
       if (t.description.rfind(key, 0) == 0) names.insert(t.description.substr(key.size(), t.description.find(' ', key.size()) - key.size()));
     }

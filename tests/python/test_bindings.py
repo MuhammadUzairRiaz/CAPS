@@ -210,6 +210,11 @@ rs = dmpc.field.assign("sdk-moltemplate", charges="forcefield")
 check("DPPC" in tpl and dppc.atoms == 12 and rd["complete"] and {a["type"].split("_b")[0] for a in rd["atoms"]} == {"Q0", "Qa", "Na", "C1"}
       and rs["complete"] and dmpc.atoms == 13 and abs(sum(a["q"] for a in rs["atoms"])) < 1e-9,
       f"coarse-grained: MARTINI DPPC template ({len(tpl)} templates), SDK DMPC mapped ({dmpc.atoms} beads)")
+# MARTINI overlays from the source's other parameter files: PEO (polymers.prm, torsions), sucrose (sugars.prm)
+peo = caps.build.beads("PEO", forcefield="martini-polymers")
+suc = caps.build.beads("SUCR", forcefield="martini-sugars")
+rp, ru = peo.field.assign("martini-polymers", charges="keep"), suc.field.assign("martini-sugars", charges="keep")
+check(rp["complete"] and ru["complete"] and peo.atoms == 37, f"MARTINI overlays: PEO {peo.atoms} beads, sucrose {suc.atoms} beads")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)

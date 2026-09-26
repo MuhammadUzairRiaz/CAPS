@@ -1036,7 +1036,7 @@
    },
    "typing": {
     "rules": "typing/sdk-moltemplate.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_cg_rules.py): 23 bead names, 10 fragments, water triplets"
+    "evidence": "CAPS rules (bench/typing/make_cg_rules.py): 27 bead names, 13 fragments, water triplets"
    }
   },
   {
@@ -1062,6 +1062,106 @@
    "typing": {
     "rules": "typing/martini-moltemplate.typing.json",
     "evidence": "CAPS rules (bench/typing/make_cg_rules.py): 120 bead names"
+   }
+  },
+  {
+   "id": "martini-sugars",
+   "name": "MARTINI 2.0 · sugars",
+   "version": "2.0",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "martini_original_format/sugars.prm",
+   "status": "converted",
+   "notes": "MARTINI 2.0 with the sugars (glucose, sucrose, maltose ...) of sugars.prm (12 bead templates); extends MARTINI 2.0",
+   "file": "martini-sugars.json",
+   "counts": {
+    "atom_types": 38,
+    "pairs": 0,
+    "bonds": 86,
+    "angles": 90,
+    "dihedrals": 50,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini-sugars.typing.json",
+    "evidence": "MARTINI 2.0 bead-name rules plus this file's beads"
+   }
+  },
+  {
+   "id": "martini-surfactants",
+   "name": "MARTINI 2.0 · surfactants",
+   "version": "2.0",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "martini_original_format/surfactants.prm",
+   "status": "converted",
+   "notes": "MARTINI 2.0 with the surfactants (SDS, DPC, EO5 ...) of surfactants.prm (6 bead templates); extends MARTINI 2.0",
+   "file": "martini-surfactants.json",
+   "counts": {
+    "atom_types": 3,
+    "pairs": 0,
+    "bonds": 13,
+    "angles": 11,
+    "dihedrals": 2,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini-surfactants.typing.json",
+    "evidence": "MARTINI 2.0 bead-name rules plus this file's beads"
+   }
+  },
+  {
+   "id": "martini-solvents",
+   "name": "MARTINI 2.0 · solvents",
+   "version": "2.0",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "martini_original_format/solvents.prm",
+   "status": "converted",
+   "notes": "MARTINI 2.0 with the solvents (alkanes, alcohols, benzene, chloroform ...) of solvents.prm (23 bead templates); extends MARTINI 2.0",
+   "file": "martini-solvents.json",
+   "counts": {
+    "atom_types": 4,
+    "pairs": 0,
+    "bonds": 6,
+    "angles": 14,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini-solvents.typing.json",
+    "evidence": "MARTINI 2.0 bead-name rules plus this file's beads"
+   }
+  },
+  {
+   "id": "martini-polymers",
+   "name": "MARTINI 2.0 · polymers",
+   "version": "2.0",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "moltemplate",
+   "source_file": "martini_original_format/polymers.prm",
+   "status": "converted",
+   "notes": "MARTINI 2.0 with the PEO and a PEGylated lipid of polymers.prm (3 bead templates); extends MARTINI 2.0",
+   "file": "martini-polymers.json",
+   "counts": {
+    "atom_types": 43,
+    "pairs": 0,
+    "bonds": 10,
+    "angles": 53,
+    "dihedrals": 43,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini-polymers.typing.json",
+    "evidence": "MARTINI 2.0 bead-name rules plus this file's beads"
    }
   },
   {

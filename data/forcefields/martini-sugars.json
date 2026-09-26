@@ -1,0 +1,3533 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MARTINI 2.0 · sugars",
+ "version": "2.0",
+ "source": "sugars.prm (EMC MARTINI parameters, moltemplate distribution)",
+ "references": [],
+ "extends": "martini-moltemplate.json",
+ "typing": "../typing/martini-sugars.typing.json",
+ "atom_types": [
+  {
+   "name": "P11",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P11 (non-bonded as P1)",
+   "equivalence": {
+    "vdw": "P1_bP1_aP1_dP1_iP1",
+    "bond": "P11",
+    "angle": "P11",
+    "dihedral": "P11",
+    "improper": "P11"
+   }
+  },
+  {
+   "name": "P12",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P12 (non-bonded as P1)",
+   "equivalence": {
+    "vdw": "P1_bP1_aP1_dP1_iP1",
+    "bond": "P12",
+    "angle": "P12",
+    "dihedral": "P12",
+    "improper": "P12"
+   }
+  },
+  {
+   "name": "P13",
+   "element": "",
+   "mass": 59.0448,
+   "description": "MARTINI sugars.prm bead P13 (non-bonded as P1)",
+   "equivalence": {
+    "vdw": "P1_bP1_aP1_dP1_iP1",
+    "bond": "P13",
+    "angle": "P13",
+    "dihedral": "P13",
+    "improper": "P13"
+   }
+  },
+  {
+   "name": "P14",
+   "element": "",
+   "mass": 44.0534,
+   "description": "MARTINI sugars.prm bead P14 (non-bonded as P1)",
+   "equivalence": {
+    "vdw": "P1_bP1_aP1_dP1_iP1",
+    "bond": "P14",
+    "angle": "P14",
+    "dihedral": "P14",
+    "improper": "P14"
+   }
+  },
+  {
+   "name": "P15",
+   "element": "",
+   "mass": 43.0454,
+   "description": "MARTINI sugars.prm bead P15 (non-bonded as P1)",
+   "equivalence": {
+    "vdw": "P1_bP1_aP1_dP1_iP1",
+    "bond": "P15",
+    "angle": "P15",
+    "dihedral": "P15",
+    "improper": "P15"
+   }
+  },
+  {
+   "name": "P21",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P21 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P21",
+    "angle": "P21",
+    "dihedral": "P21",
+    "improper": "P21"
+   }
+  },
+  {
+   "name": "P210",
+   "element": "",
+   "mass": 75.0442,
+   "description": "MARTINI sugars.prm bead P210 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P210",
+    "angle": "P210",
+    "dihedral": "P210",
+    "improper": "P210"
+   }
+  },
+  {
+   "name": "P211",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P211 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P211",
+    "angle": "P211",
+    "dihedral": "P211",
+    "improper": "P211"
+   }
+  },
+  {
+   "name": "P212",
+   "element": "",
+   "mass": 59.0448,
+   "description": "MARTINI sugars.prm bead P212 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P212",
+    "angle": "P212",
+    "dihedral": "P212",
+    "improper": "P212"
+   }
+  },
+  {
+   "name": "P213",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P213 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P213",
+    "angle": "P213",
+    "dihedral": "P213",
+    "improper": "P213"
+   }
+  },
+  {
+   "name": "P214",
+   "element": "",
+   "mass": 75.0442,
+   "description": "MARTINI sugars.prm bead P214 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P214",
+    "angle": "P214",
+    "dihedral": "P214",
+    "improper": "P214"
+   }
+  },
+  {
+   "name": "P215",
+   "element": "",
+   "mass": 44.0534,
+   "description": "MARTINI sugars.prm bead P215 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P215",
+    "angle": "P215",
+    "dihedral": "P215",
+    "improper": "P215"
+   }
+  },
+  {
+   "name": "P216",
+   "element": "",
+   "mass": 75.0442,
+   "description": "MARTINI sugars.prm bead P216 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P216",
+    "angle": "P216",
+    "dihedral": "P216",
+    "improper": "P216"
+   }
+  },
+  {
+   "name": "P217",
+   "element": "",
+   "mass": 44.0534,
+   "description": "MARTINI sugars.prm bead P217 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P217",
+    "angle": "P217",
+    "dihedral": "P217",
+    "improper": "P217"
+   }
+  },
+  {
+   "name": "P218",
+   "element": "",
+   "mass": 58.0368,
+   "description": "MARTINI sugars.prm bead P218 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P218",
+    "angle": "P218",
+    "dihedral": "P218",
+    "improper": "P218"
+   }
+  },
+  {
+   "name": "P219",
+   "element": "",
+   "mass": 44.0534,
+   "description": "MARTINI sugars.prm bead P219 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P219",
+    "angle": "P219",
+    "dihedral": "P219",
+    "improper": "P219"
+   }
+  },
+  {
+   "name": "P22",
+   "element": "",
+   "mass": 59.0448,
+   "description": "MARTINI sugars.prm bead P22 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P22",
+    "angle": "P22",
+    "dihedral": "P22",
+    "improper": "P22"
+   }
+  },
+  {
+   "name": "P220",
+   "element": "",
+   "mass": 58.0368,
+   "description": "MARTINI sugars.prm bead P220 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P220",
+    "angle": "P220",
+    "dihedral": "P220",
+    "improper": "P220"
+   }
+  },
+  {
+   "name": "P221",
+   "element": "",
+   "mass": 44.0534,
+   "description": "MARTINI sugars.prm bead P221 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P221",
+    "angle": "P221",
+    "dihedral": "P221",
+    "improper": "P221"
+   }
+  },
+  {
+   "name": "P222",
+   "element": "",
+   "mass": 59.0448,
+   "description": "MARTINI sugars.prm bead P222 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P222",
+    "angle": "P222",
+    "dihedral": "P222",
+    "improper": "P222"
+   }
+  },
+  {
+   "name": "P223",
+   "element": "",
+   "mass": 59.0448,
+   "description": "MARTINI sugars.prm bead P223 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P223",
+    "angle": "P223",
+    "dihedral": "P223",
+    "improper": "P223"
+   }
+  },
+  {
+   "name": "P224",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P224 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P224",
+    "angle": "P224",
+    "dihedral": "P224",
+    "improper": "P224"
+   }
+  },
+  {
+   "name": "P225",
+   "element": "",
+   "mass": 43.0454,
+   "description": "MARTINI sugars.prm bead P225 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P225",
+    "angle": "P225",
+    "dihedral": "P225",
+    "improper": "P225"
+   }
+  },
+  {
+   "name": "P226",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P226 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P226",
+    "angle": "P226",
+    "dihedral": "P226",
+    "improper": "P226"
+   }
+  },
+  {
+   "name": "P227",
+   "element": "",
+   "mass": 43.0454,
+   "description": "MARTINI sugars.prm bead P227 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P227",
+    "angle": "P227",
+    "dihedral": "P227",
+    "improper": "P227"
+   }
+  },
+  {
+   "name": "P228",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P228 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P228",
+    "angle": "P228",
+    "dihedral": "P228",
+    "improper": "P228"
+   }
+  },
+  {
+   "name": "P229",
+   "element": "",
+   "mass": 43.0454,
+   "description": "MARTINI sugars.prm bead P229 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P229",
+    "angle": "P229",
+    "dihedral": "P229",
+    "improper": "P229"
+   }
+  },
+  {
+   "name": "P23",
+   "element": "",
+   "mass": 43.0454,
+   "description": "MARTINI sugars.prm bead P23 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P23",
+    "angle": "P23",
+    "dihedral": "P23",
+    "improper": "P23"
+   }
+  },
+  {
+   "name": "P24",
+   "element": "",
+   "mass": 75.0442,
+   "description": "MARTINI sugars.prm bead P24 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P24",
+    "angle": "P24",
+    "dihedral": "P24",
+    "improper": "P24"
+   }
+  },
+  {
+   "name": "P25",
+   "element": "",
+   "mass": 58.0368,
+   "description": "MARTINI sugars.prm bead P25 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P25",
+    "angle": "P25",
+    "dihedral": "P25",
+    "improper": "P25"
+   }
+  },
+  {
+   "name": "P26",
+   "element": "",
+   "mass": 59.1168,
+   "description": "MARTINI sugars.prm bead P26 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P26",
+    "angle": "P26",
+    "dihedral": "P26",
+    "improper": "P26"
+   }
+  },
+  {
+   "name": "P27",
+   "element": "",
+   "mass": 75.0442,
+   "description": "MARTINI sugars.prm bead P27 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P27",
+    "angle": "P27",
+    "dihedral": "P27",
+    "improper": "P27"
+   }
+  },
+  {
+   "name": "P28",
+   "element": "",
+   "mass": 59.1168,
+   "description": "MARTINI sugars.prm bead P28 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P28",
+    "angle": "P28",
+    "dihedral": "P28",
+    "improper": "P28"
+   }
+  },
+  {
+   "name": "P29",
+   "element": "",
+   "mass": 44.0534,
+   "description": "MARTINI sugars.prm bead P29 (non-bonded as P2)",
+   "equivalence": {
+    "vdw": "P2_bP2_aP2_dP2_iP2",
+    "bond": "P29",
+    "angle": "P29",
+    "dihedral": "P29",
+    "improper": "P29"
+   }
+  },
+  {
+   "name": "P31",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P31 (non-bonded as P3)",
+   "equivalence": {
+    "vdw": "P3_bP3_aP3_dP3_iP3",
+    "bond": "P31",
+    "angle": "P31",
+    "dihedral": "P31",
+    "improper": "P31"
+   }
+  },
+  {
+   "name": "P41",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P41 (non-bonded as P4)",
+   "equivalence": {
+    "vdw": "P4_bP4_aP4_dP4_iP4",
+    "bond": "P41",
+    "angle": "P41",
+    "dihedral": "P41",
+    "improper": "P41"
+   }
+  },
+  {
+   "name": "P42",
+   "element": "",
+   "mass": 60.0528,
+   "description": "MARTINI sugars.prm bead P42 (non-bonded as P4)",
+   "equivalence": {
+    "vdw": "P4_bP4_aP4_dP4_iP4",
+    "bond": "P42",
+    "angle": "P42",
+    "dihedral": "P42",
+    "improper": "P42"
+   }
+  },
+  {
+   "name": "P43",
+   "element": "",
+   "mass": 43.0454,
+   "description": "MARTINI sugars.prm bead P43 (non-bonded as P4)",
+   "equivalence": {
+    "vdw": "P4_bP4_aP4_dP4_iP4",
+    "bond": "P43",
+    "angle": "P43",
+    "dihedral": "P43",
+    "improper": "P43"
+   }
+  }
+ ],
+ "pairs": [],
+ "bonds": [
+  {
+   "name": "P11-P212",
+   "match": [
+    "P11",
+    "P212"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.29
+   ]
+  },
+  {
+   "name": "P11-P213",
+   "match": [
+    "P11",
+    "P213"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.72
+   ]
+  },
+  {
+   "name": "P11-P223",
+   "match": [
+    "P11",
+    "P223"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.76
+   ]
+  },
+  {
+   "name": "P11-P224",
+   "match": [
+    "P11",
+    "P224"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.2
+   ]
+  },
+  {
+   "name": "P11-P225",
+   "match": [
+    "P11",
+    "P225"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.76
+   ]
+  },
+  {
+   "name": "P11-P226",
+   "match": [
+    "P11",
+    "P226"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.2
+   ]
+  },
+  {
+   "name": "P11-P227",
+   "match": [
+    "P11",
+    "P227"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.76
+   ]
+  },
+  {
+   "name": "P11-P228",
+   "match": [
+    "P11",
+    "P228"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.2
+   ]
+  },
+  {
+   "name": "P11-P229",
+   "match": [
+    "P11",
+    "P229"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.76
+   ]
+  },
+  {
+   "name": "P11-P23",
+   "match": [
+    "P11",
+    "P23"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.39
+   ]
+  },
+  {
+   "name": "P11-P31",
+   "match": [
+    "P11",
+    "P31"
+   ],
+   "style": "harmonic",
+   "params": [
+    11.95028681,
+    3.09
+   ]
+  },
+  {
+   "name": "P11-P41",
+   "match": [
+    "P11",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    41.82600382,
+    3.03
+   ]
+  },
+  {
+   "name": "P12-P12",
+   "match": [
+    "P12",
+    "P12"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.93
+   ]
+  },
+  {
+   "name": "P12-P21",
+   "match": [
+    "P12",
+    "P21"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    4.29
+   ]
+  },
+  {
+   "name": "P12-P22",
+   "match": [
+    "P12",
+    "P22"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P12-P41",
+   "match": [
+    "P12",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    41.82600382,
+    3.75
+   ]
+  },
+  {
+   "name": "P12-P42",
+   "match": [
+    "P12",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    41.82600382,
+    3.31
+   ]
+  },
+  {
+   "name": "P12-P43",
+   "match": [
+    "P12",
+    "P43"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.72
+   ]
+  },
+  {
+   "name": "P13-P21",
+   "match": [
+    "P13",
+    "P21"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P14-P210",
+   "match": [
+    "P14",
+    "P210"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P14-P214",
+   "match": [
+    "P14",
+    "P214"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P14-P215",
+   "match": [
+    "P14",
+    "P215"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.31
+   ]
+  },
+  {
+   "name": "P14-P216",
+   "match": [
+    "P14",
+    "P216"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.46
+   ]
+  },
+  {
+   "name": "P14-P217",
+   "match": [
+    "P14",
+    "P217"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.81
+   ]
+  },
+  {
+   "name": "P14-P218",
+   "match": [
+    "P14",
+    "P218"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.46
+   ]
+  },
+  {
+   "name": "P14-P219",
+   "match": [
+    "P14",
+    "P219"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.81
+   ]
+  },
+  {
+   "name": "P14-P220",
+   "match": [
+    "P14",
+    "P220"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.46
+   ]
+  },
+  {
+   "name": "P14-P221",
+   "match": [
+    "P14",
+    "P221"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.81
+   ]
+  },
+  {
+   "name": "P14-P222",
+   "match": [
+    "P14",
+    "P222"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.46
+   ]
+  },
+  {
+   "name": "P14-P24",
+   "match": [
+    "P14",
+    "P24"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.42
+   ]
+  },
+  {
+   "name": "P14-P25",
+   "match": [
+    "P14",
+    "P25"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.34
+   ]
+  },
+  {
+   "name": "P14-P26",
+   "match": [
+    "P14",
+    "P26"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.94
+   ]
+  },
+  {
+   "name": "P14-P27",
+   "match": [
+    "P14",
+    "P27"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P14-P28",
+   "match": [
+    "P14",
+    "P28"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P14-P29",
+   "match": [
+    "P14",
+    "P29"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.99
+   ]
+  },
+  {
+   "name": "P15-P211",
+   "match": [
+    "P15",
+    "P211"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    4.24
+   ]
+  },
+  {
+   "name": "P21-P41",
+   "match": [
+    "P21",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.47
+   ]
+  },
+  {
+   "name": "P210-P211",
+   "match": [
+    "P210",
+    "P211"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    4.13
+   ]
+  },
+  {
+   "name": "P210-P41",
+   "match": [
+    "P210",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.47
+   ]
+  },
+  {
+   "name": "P211-P41",
+   "match": [
+    "P211",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.94
+   ]
+  },
+  {
+   "name": "P212-P213",
+   "match": [
+    "P212",
+    "P213"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P212-P41",
+   "match": [
+    "P212",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.76
+   ]
+  },
+  {
+   "name": "P213-P41",
+   "match": [
+    "P213",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.76
+   ]
+  },
+  {
+   "name": "P214-P215",
+   "match": [
+    "P214",
+    "P215"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.12
+   ]
+  },
+  {
+   "name": "P214-P41",
+   "match": [
+    "P214",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.46
+   ]
+  },
+  {
+   "name": "P215-P41",
+   "match": [
+    "P215",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.2
+   ]
+  },
+  {
+   "name": "P216-P217",
+   "match": [
+    "P216",
+    "P217"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P216-P41",
+   "match": [
+    "P216",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P217-P218",
+   "match": [
+    "P217",
+    "P218"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P217-P41",
+   "match": [
+    "P217",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.39
+   ]
+  },
+  {
+   "name": "P218-P219",
+   "match": [
+    "P218",
+    "P219"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P218-P41",
+   "match": [
+    "P218",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P219-P220",
+   "match": [
+    "P219",
+    "P220"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P219-P41",
+   "match": [
+    "P219",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.39
+   ]
+  },
+  {
+   "name": "P22-P23",
+   "match": [
+    "P22",
+    "P23"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P22-P42",
+   "match": [
+    "P22",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.46
+   ]
+  },
+  {
+   "name": "P220-P221",
+   "match": [
+    "P220",
+    "P221"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P220-P41",
+   "match": [
+    "P220",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P221-P222",
+   "match": [
+    "P221",
+    "P222"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.61
+   ]
+  },
+  {
+   "name": "P221-P41",
+   "match": [
+    "P221",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.39
+   ]
+  },
+  {
+   "name": "P222-P41",
+   "match": [
+    "P222",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.22
+   ]
+  },
+  {
+   "name": "P223-P224",
+   "match": [
+    "P223",
+    "P224"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P223-P41",
+   "match": [
+    "P223",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.29
+   ]
+  },
+  {
+   "name": "P224-P225",
+   "match": [
+    "P224",
+    "P225"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P224-P41",
+   "match": [
+    "P224",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.76
+   ]
+  },
+  {
+   "name": "P225-P226",
+   "match": [
+    "P225",
+    "P226"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P225-P41",
+   "match": [
+    "P225",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.29
+   ]
+  },
+  {
+   "name": "P226-P227",
+   "match": [
+    "P226",
+    "P227"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P226-P41",
+   "match": [
+    "P226",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.76
+   ]
+  },
+  {
+   "name": "P227-P228",
+   "match": [
+    "P227",
+    "P228"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P227-P41",
+   "match": [
+    "P227",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.29
+   ]
+  },
+  {
+   "name": "P228-P229",
+   "match": [
+    "P228",
+    "P229"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.56
+   ]
+  },
+  {
+   "name": "P228-P41",
+   "match": [
+    "P228",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.76
+   ]
+  },
+  {
+   "name": "P229-P41",
+   "match": [
+    "P229",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.29
+   ]
+  },
+  {
+   "name": "P23-P42",
+   "match": [
+    "P23",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.81
+   ]
+  },
+  {
+   "name": "P24-P25",
+   "match": [
+    "P24",
+    "P25"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    5.18
+   ]
+  },
+  {
+   "name": "P24-P41",
+   "match": [
+    "P24",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.84
+   ]
+  },
+  {
+   "name": "P25-P42",
+   "match": [
+    "P25",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.78
+   ]
+  },
+  {
+   "name": "P26-P27",
+   "match": [
+    "P26",
+    "P27"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    4.7
+   ]
+  },
+  {
+   "name": "P26-P41",
+   "match": [
+    "P26",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.58
+   ]
+  },
+  {
+   "name": "P27-P42",
+   "match": [
+    "P27",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.47
+   ]
+  },
+  {
+   "name": "P28-P29",
+   "match": [
+    "P28",
+    "P29"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    4.32
+   ]
+  },
+  {
+   "name": "P28-P42",
+   "match": [
+    "P28",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    2.47
+   ]
+  },
+  {
+   "name": "P29-P42",
+   "match": [
+    "P29",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.85086042,
+    3.84
+   ]
+  },
+  {
+   "name": "P31-P41",
+   "match": [
+    "P31",
+    "P41"
+   ],
+   "style": "harmonic",
+   "params": [
+    59.75143403,
+    4.2
+   ]
+  },
+  {
+   "name": "P41-P42",
+   "match": [
+    "P41",
+    "P42"
+   ],
+   "style": "harmonic",
+   "params": [
+    59.75143403,
+    3.22
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "P11-P212-P213",
+   "match": [
+    "P11",
+    "P212",
+    "P213"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P11-P213-P212",
+   "match": [
+    "P11",
+    "P213",
+    "P212"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P223-P224",
+   "match": [
+    "P11",
+    "P223",
+    "P224"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P11-P224-P223",
+   "match": [
+    "P11",
+    "P224",
+    "P223"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P224-P225",
+   "match": [
+    "P11",
+    "P224",
+    "P225"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P11-P225-P224",
+   "match": [
+    "P11",
+    "P225",
+    "P224"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P225-P226",
+   "match": [
+    "P11",
+    "P225",
+    "P226"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P11-P226-P225",
+   "match": [
+    "P11",
+    "P226",
+    "P225"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P226-P227",
+   "match": [
+    "P11",
+    "P226",
+    "P227"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P11-P227-P226",
+   "match": [
+    "P11",
+    "P227",
+    "P226"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P227-P228",
+   "match": [
+    "P11",
+    "P227",
+    "P228"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P11-P228-P227",
+   "match": [
+    "P11",
+    "P228",
+    "P227"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P228-P229",
+   "match": [
+    "P11",
+    "P228",
+    "P229"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P11-P229-P228",
+   "match": [
+    "P11",
+    "P229",
+    "P228"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    95.60229446,
+    67.0
+   ]
+  },
+  {
+   "name": "P11-P23-P22",
+   "match": [
+    "P11",
+    "P23",
+    "P22"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P12-P12-P21",
+   "match": [
+    "P12",
+    "P12",
+    "P21"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    20.0
+   ]
+  },
+  {
+   "name": "P12-P21-P13",
+   "match": [
+    "P12",
+    "P21",
+    "P13"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    1.19502868,
+    130.0
+   ]
+  },
+  {
+   "name": "P12-P21-P41",
+   "match": [
+    "P12",
+    "P21",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    17.92543021,
+    110.0
+   ]
+  },
+  {
+   "name": "P12-P22-P23",
+   "match": [
+    "P12",
+    "P22",
+    "P23"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P14-P210-P211",
+   "match": [
+    "P14",
+    "P210",
+    "P211"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    0.59751434,
+    87.0
+   ]
+  },
+  {
+   "name": "P14-P214-P215",
+   "match": [
+    "P14",
+    "P214",
+    "P215"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    150.0
+   ]
+  },
+  {
+   "name": "P14-P215-P214",
+   "match": [
+    "P14",
+    "P215",
+    "P214"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    120.0
+   ]
+  },
+  {
+   "name": "P14-P216-P217",
+   "match": [
+    "P14",
+    "P216",
+    "P217"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P14-P217-P216",
+   "match": [
+    "P14",
+    "P217",
+    "P216"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P14-P217-P218",
+   "match": [
+    "P14",
+    "P217",
+    "P218"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P14-P218-P217",
+   "match": [
+    "P14",
+    "P218",
+    "P217"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P14-P218-P219",
+   "match": [
+    "P14",
+    "P218",
+    "P219"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P14-P219-P218",
+   "match": [
+    "P14",
+    "P219",
+    "P218"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P14-P219-P220",
+   "match": [
+    "P14",
+    "P219",
+    "P220"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P14-P220-P219",
+   "match": [
+    "P14",
+    "P220",
+    "P219"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P14-P220-P221",
+   "match": [
+    "P14",
+    "P220",
+    "P221"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P14-P221-P220",
+   "match": [
+    "P14",
+    "P221",
+    "P220"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P14-P221-P222",
+   "match": [
+    "P14",
+    "P221",
+    "P222"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P14-P222-P221",
+   "match": [
+    "P14",
+    "P222",
+    "P221"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P14-P24-P25",
+   "match": [
+    "P14",
+    "P24",
+    "P25"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    126.0
+   ]
+  },
+  {
+   "name": "P14-P25-P24",
+   "match": [
+    "P14",
+    "P25",
+    "P24"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    60.0
+   ]
+  },
+  {
+   "name": "P14-P26-P27",
+   "match": [
+    "P14",
+    "P26",
+    "P27"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    120.0
+   ]
+  },
+  {
+   "name": "P14-P27-P26",
+   "match": [
+    "P14",
+    "P27",
+    "P26"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    127.0
+   ]
+  },
+  {
+   "name": "P14-P28-P29",
+   "match": [
+    "P14",
+    "P28",
+    "P29"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.39005736,
+    90.0
+   ]
+  },
+  {
+   "name": "P14-P29-P28",
+   "match": [
+    "P14",
+    "P29",
+    "P28"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    35.85086042,
+    125.0
+   ]
+  },
+  {
+   "name": "P15-P211-P210",
+   "match": [
+    "P15",
+    "P211",
+    "P210"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    29.87571702,
+    96.0
+   ]
+  },
+  {
+   "name": "P21-P12-P43",
+   "match": [
+    "P21",
+    "P12",
+    "P43"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    17.92543021,
+    85.0
+   ]
+  },
+  {
+   "name": "P210-P211-P41",
+   "match": [
+    "P210",
+    "P211",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    29.87571702,
+    50.0
+   ]
+  },
+  {
+   "name": "P211-P210-P41",
+   "match": [
+    "P211",
+    "P210",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    14.93785851,
+    130.0
+   ]
+  },
+  {
+   "name": "P212-P213-P41",
+   "match": [
+    "P212",
+    "P213",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P213-P212-P41",
+   "match": [
+    "P213",
+    "P212",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    124.0
+   ]
+  },
+  {
+   "name": "P214-P215-P41",
+   "match": [
+    "P214",
+    "P215",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    21.51051625,
+    65.0
+   ]
+  },
+  {
+   "name": "P215-P214-P41",
+   "match": [
+    "P215",
+    "P214",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    29.87571702,
+    95.0
+   ]
+  },
+  {
+   "name": "P216-P217-P218",
+   "match": [
+    "P216",
+    "P217",
+    "P218"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    154.0
+   ]
+  },
+  {
+   "name": "P216-P217-P41",
+   "match": [
+    "P216",
+    "P217",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P217-P216-P41",
+   "match": [
+    "P217",
+    "P216",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P217-P218-P219",
+   "match": [
+    "P217",
+    "P218",
+    "P219"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    154.0
+   ]
+  },
+  {
+   "name": "P217-P218-P41",
+   "match": [
+    "P217",
+    "P218",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P218-P217-P41",
+   "match": [
+    "P218",
+    "P217",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P218-P219-P220",
+   "match": [
+    "P218",
+    "P219",
+    "P220"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    154.0
+   ]
+  },
+  {
+   "name": "P218-P219-P41",
+   "match": [
+    "P218",
+    "P219",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P219-P218-P41",
+   "match": [
+    "P219",
+    "P218",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P219-P220-P221",
+   "match": [
+    "P219",
+    "P220",
+    "P221"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    154.0
+   ]
+  },
+  {
+   "name": "P219-P220-P41",
+   "match": [
+    "P219",
+    "P220",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P22-P23-P42",
+   "match": [
+    "P22",
+    "P23",
+    "P42"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    50.0
+   ]
+  },
+  {
+   "name": "P220-P219-P41",
+   "match": [
+    "P220",
+    "P219",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P220-P221-P222",
+   "match": [
+    "P220",
+    "P221",
+    "P222"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    154.0
+   ]
+  },
+  {
+   "name": "P220-P221-P41",
+   "match": [
+    "P220",
+    "P221",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P221-P220-P41",
+   "match": [
+    "P221",
+    "P220",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P221-P222-P41",
+   "match": [
+    "P221",
+    "P222",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    11.95028681,
+    70.0
+   ]
+  },
+  {
+   "name": "P222-P221-P41",
+   "match": [
+    "P222",
+    "P221",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P223-P224-P225",
+   "match": [
+    "P223",
+    "P224",
+    "P225"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    136.0
+   ]
+  },
+  {
+   "name": "P223-P224-P41",
+   "match": [
+    "P223",
+    "P224",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P224-P223-P41",
+   "match": [
+    "P224",
+    "P223",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P224-P225-P226",
+   "match": [
+    "P224",
+    "P225",
+    "P226"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    136.0
+   ]
+  },
+  {
+   "name": "P224-P225-P41",
+   "match": [
+    "P224",
+    "P225",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P225-P224-P41",
+   "match": [
+    "P225",
+    "P224",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P225-P226-P227",
+   "match": [
+    "P225",
+    "P226",
+    "P227"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    136.0
+   ]
+  },
+  {
+   "name": "P225-P226-P41",
+   "match": [
+    "P225",
+    "P226",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P226-P225-P41",
+   "match": [
+    "P226",
+    "P225",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P226-P227-P228",
+   "match": [
+    "P226",
+    "P227",
+    "P228"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    136.0
+   ]
+  },
+  {
+   "name": "P226-P227-P41",
+   "match": [
+    "P226",
+    "P227",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P227-P226-P41",
+   "match": [
+    "P227",
+    "P226",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P227-P228-P229",
+   "match": [
+    "P227",
+    "P228",
+    "P229"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    136.0
+   ]
+  },
+  {
+   "name": "P227-P228-P41",
+   "match": [
+    "P227",
+    "P228",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P228-P227-P41",
+   "match": [
+    "P228",
+    "P227",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P228-P229-P41",
+   "match": [
+    "P228",
+    "P229",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    59.75143403,
+    44.0
+   ]
+  },
+  {
+   "name": "P229-P228-P41",
+   "match": [
+    "P229",
+    "P228",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    9.56022945,
+    54.0
+   ]
+  },
+  {
+   "name": "P23-P22-P42",
+   "match": [
+    "P23",
+    "P22",
+    "P42"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    140.0
+   ]
+  },
+  {
+   "name": "P24-P25-P42",
+   "match": [
+    "P24",
+    "P25",
+    "P42"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    65.0
+   ]
+  },
+  {
+   "name": "P25-P24-P41",
+   "match": [
+    "P25",
+    "P24",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    120.0
+   ]
+  },
+  {
+   "name": "P26-P27-P42",
+   "match": [
+    "P26",
+    "P27",
+    "P42"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    81.0
+   ]
+  },
+  {
+   "name": "P27-P26-P41",
+   "match": [
+    "P27",
+    "P26",
+    "P41"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    47.80114723,
+    75.0
+   ]
+  },
+  {
+   "name": "P28-P29-P42",
+   "match": [
+    "P28",
+    "P29",
+    "P42"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    41.82600382,
+    90.0
+   ]
+  },
+  {
+   "name": "P29-P28-P42",
+   "match": [
+    "P29",
+    "P28",
+    "P42"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    23.90057361,
+    125.0
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "P11-P212-P213-P11",
+   "match": [
+    "P11",
+    "P212",
+    "P213",
+    "P11"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    55.0
+   ]
+  },
+  {
+   "name": "P11-P212-P213-P41",
+   "match": [
+    "P11",
+    "P212",
+    "P213",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.58508604,
+    1,
+    20.0
+   ]
+  },
+  {
+   "name": "P11-P224-P225-P41",
+   "match": [
+    "P11",
+    "P224",
+    "P225",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    42.0
+   ]
+  },
+  {
+   "name": "P11-P225-P224-P41",
+   "match": [
+    "P11",
+    "P225",
+    "P224",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    55.0
+   ]
+  },
+  {
+   "name": "P11-P226-P227-P41",
+   "match": [
+    "P11",
+    "P226",
+    "P227",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    42.0
+   ]
+  },
+  {
+   "name": "P11-P227-P226-P41",
+   "match": [
+    "P11",
+    "P227",
+    "P226",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    55.0
+   ]
+  },
+  {
+   "name": "P11-P228-P229-P41",
+   "match": [
+    "P11",
+    "P228",
+    "P229",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    42.0
+   ]
+  },
+  {
+   "name": "P11-P229-P228-P41",
+   "match": [
+    "P11",
+    "P229",
+    "P228",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    55.0
+   ]
+  },
+  {
+   "name": "P11-P23-P22-P12",
+   "match": [
+    "P11",
+    "P23",
+    "P22",
+    "P12"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P11-P23-P22-P42",
+   "match": [
+    "P11",
+    "P23",
+    "P22",
+    "P42"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P12-P12-P21-P13",
+   "match": [
+    "P12",
+    "P12",
+    "P21",
+    "P13"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    5.9751434,
+    1,
+    130.0
+   ]
+  },
+  {
+   "name": "P12-P12-P21-P41",
+   "match": [
+    "P12",
+    "P12",
+    "P21",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.78011472,
+    1,
+    -70.0
+   ]
+  },
+  {
+   "name": "P12-P22-P23-P42",
+   "match": [
+    "P12",
+    "P22",
+    "P23",
+    "P42"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P13-P21-P12-P43",
+   "match": [
+    "P13",
+    "P21",
+    "P12",
+    "P43"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.47801147,
+    1,
+    80.0
+   ]
+  },
+  {
+   "name": "P14-P210-P211-P15",
+   "match": [
+    "P14",
+    "P210",
+    "P211",
+    "P15"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.58508604,
+    1,
+    -22.0
+   ]
+  },
+  {
+   "name": "P14-P210-P211-P41",
+   "match": [
+    "P14",
+    "P210",
+    "P211",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.58508604,
+    1,
+    -15.0
+   ]
+  },
+  {
+   "name": "P14-P214-P215-P14",
+   "match": [
+    "P14",
+    "P214",
+    "P215",
+    "P14"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P14-P214-P215-P41",
+   "match": [
+    "P14",
+    "P214",
+    "P215",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    123.0
+   ]
+  },
+  {
+   "name": "P14-P215-P214-P41",
+   "match": [
+    "P14",
+    "P215",
+    "P214",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    4.78011472,
+    1,
+    -40.0
+   ]
+  },
+  {
+   "name": "P14-P216-P217-P41",
+   "match": [
+    "P14",
+    "P216",
+    "P217",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P14-P217-P216-P41",
+   "match": [
+    "P14",
+    "P217",
+    "P216",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P14-P217-P218-P41",
+   "match": [
+    "P14",
+    "P217",
+    "P218",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P14-P218-P217-P41",
+   "match": [
+    "P14",
+    "P218",
+    "P217",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P14-P218-P219-P41",
+   "match": [
+    "P14",
+    "P218",
+    "P219",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P14-P219-P218-P41",
+   "match": [
+    "P14",
+    "P219",
+    "P218",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P14-P219-P220-P41",
+   "match": [
+    "P14",
+    "P219",
+    "P220",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P14-P220-P219-P41",
+   "match": [
+    "P14",
+    "P220",
+    "P219",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P14-P220-P221-P41",
+   "match": [
+    "P14",
+    "P220",
+    "P221",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -80.0
+   ]
+  },
+  {
+   "name": "P14-P221-P220-P41",
+   "match": [
+    "P14",
+    "P221",
+    "P220",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P14-P222-P221-P41",
+   "match": [
+    "P14",
+    "P222",
+    "P221",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -20.0
+   ]
+  },
+  {
+   "name": "P14-P24-P25-P14",
+   "match": [
+    "P14",
+    "P24",
+    "P25",
+    "P14"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    30.0
+   ]
+  },
+  {
+   "name": "P14-P24-P25-P42",
+   "match": [
+    "P14",
+    "P24",
+    "P25",
+    "P42"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -150.0
+   ]
+  },
+  {
+   "name": "P14-P25-P24-P41",
+   "match": [
+    "P14",
+    "P25",
+    "P24",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -150.0
+   ]
+  },
+  {
+   "name": "P14-P26-P27-P14",
+   "match": [
+    "P14",
+    "P26",
+    "P27",
+    "P14"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.39005736,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P14-P27-P26-P41",
+   "match": [
+    "P14",
+    "P27",
+    "P26",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    165.0
+   ]
+  },
+  {
+   "name": "P14-P28-P29-P14",
+   "match": [
+    "P14",
+    "P28",
+    "P29",
+    "P14"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    2.39005736,
+    1,
+    55.0
+   ]
+  },
+  {
+   "name": "P14-P28-P29-P42",
+   "match": [
+    "P14",
+    "P28",
+    "P29",
+    "P42"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    40.0
+   ]
+  },
+  {
+   "name": "P41-P210-P211-P41",
+   "match": [
+    "P41",
+    "P210",
+    "P211",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.23900574,
+    1,
+    160.0
+   ]
+  },
+  {
+   "name": "P41-P212-P213-P41",
+   "match": [
+    "P41",
+    "P212",
+    "P213",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    42.0
+   ]
+  },
+  {
+   "name": "P41-P216-P217-P41",
+   "match": [
+    "P41",
+    "P216",
+    "P217",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P41-P217-P218-P41",
+   "match": [
+    "P41",
+    "P217",
+    "P218",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P41-P218-P219-P41",
+   "match": [
+    "P41",
+    "P218",
+    "P219",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P41-P219-P220-P41",
+   "match": [
+    "P41",
+    "P219",
+    "P220",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P41-P220-P221-P41",
+   "match": [
+    "P41",
+    "P220",
+    "P221",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P41-P221-P222-P41",
+   "match": [
+    "P41",
+    "P221",
+    "P222",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.91204589,
+    1,
+    110.0
+   ]
+  },
+  {
+   "name": "P41-P224-P225-P41",
+   "match": [
+    "P41",
+    "P224",
+    "P225",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.58508604,
+    1,
+    20.0
+   ]
+  },
+  {
+   "name": "P41-P226-P227-P41",
+   "match": [
+    "P41",
+    "P226",
+    "P227",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.58508604,
+    1,
+    20.0
+   ]
+  },
+  {
+   "name": "P41-P228-P229-P41",
+   "match": [
+    "P41",
+    "P228",
+    "P229",
+    "P41"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    3.58508604,
+    1,
+    20.0
+   ]
+  },
+  {
+   "name": "P41-P26-P27-P42",
+   "match": [
+    "P41",
+    "P26",
+    "P27",
+    "P42"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    7.17017208,
+    1,
+    5.0
+   ]
+  },
+  {
+   "name": "P42-P28-P29-P42",
+   "match": [
+    "P42",
+    "P28",
+    "P29",
+    "P42"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    1.19502868,
+    1,
+    -135.0
+   ]
+  }
+ ],
+ "impropers": [],
+ "bead_templates": {
+  "CELL": "[P14][P24]([P41])[P25]([P14])[P42]",
+  "FRUC": "[P11]1[P31][P41]1",
+  "GLUC": "[P12]1[P41][P42]1",
+  "KOJI": "[P14][P27]([P42])[P26]([P41])[P14]",
+  "LAMI": "[P11][P212]([P41])[P213]([P41])[P11]",
+  "Laminaraheptabiose": "[P223]([P41])([P11])[P224]([P41])([P11])[P225]([P41])([P11])[P226]([P41])([P11])[P227]([P41])([P11])[P228]([P41])([P11])[P229]([P41])[P11]",
+  "MALT": "[P12][P22]([P42])[P23]([P11])[P42]",
+  "Maltoheptaose": "[P216]([P41])([P14])[P217]([P41])([P14])[P218]([P41])([P14])[P219]([P41])([P14])[P220]([P41])([P14])[P221]([P41])([P14])[P222]([P41])[P14]",
+  "NIGE": "[P14][P210]([P41])[P211]([P41])[P15]",
+  "SOPH": "[P14][P28]([P42])[P29]([P42])[P14]",
+  "SUCR": "[P13][P21]([P41])[P12]([P12])[P43]",
+  "TREH": "[P14][P214]([P41])[P215]([P14])[P41]"
+ },
+ "notes": [
+  "converted by CAPS from sugars.prm (bench/ff/convert_emc_martini.py): nm, kJ/mol → Å, kcal/mol; bonds and impropers ½k → K; angles cosine-harmonic as MARTINI 2.0; new bead types take their pair equivalent's non-bonded terms"
+ ]
+}
