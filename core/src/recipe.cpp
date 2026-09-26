@@ -256,7 +256,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         std::vector<std::string> types;
         if (!def.typing.empty()) {
           const TypingResult tr = assign_types(sys, def);
-          if (tr.untyped) throw RecipeError(3, std::to_string(tr.untyped) + " atoms match no typing rule of " + def.name);
+          if (tr.untyped) throw RecipeError(3, untyped_message(def, sys, tr.untyped));
           types = tr.types;
         } else {
           for (const auto& a : sys.atoms) types.push_back(a.name);

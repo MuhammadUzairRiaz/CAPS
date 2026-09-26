@@ -8,6 +8,7 @@
 #include <iterator>
 #include <iostream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -164,10 +165,67 @@ std::vector<std::string> glob_files(const std::string& pattern) {
   return out;
 }
 
+// Every option any command reads (a typo such as --cutof must not run with the default): keep in step with the
+// options the commands look up.
+const std::set<std::string>& known_options() {
+  static const std::set<std::string> k = {
+    "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--bci", "--beads", "--bg", "--bibtex",
+    "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax", "--c-term",
+    "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
+    "--components", "--conc", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--density",
+    "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump", "--edge", "--eq-ps",
+    "--equilibrate", "--escalate", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain", "--fa",
+    "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first", "--fit", "--fix-mol",
+    "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame", "--frame-ps", "--from",
+    "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl", "--hold",
+    "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations", "--json", "--lammps-input",
+    "--lammps-run", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
+    "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size", "--molecules",
+    "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell", "--no-cleanup",
+    "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax", "--no-tail",
+    "--normal", "--out", "--overlay", "--padding", "--pair", "--particles", "--passivate", "--pattern",
+    "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme", "--pme-order",
+    "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--props",
+    "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate", "--ratio",
+    "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf", "--shape",
+    "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step", "--steps",
+    "--strain", "--strand", "--stride", "--structure", "--style", "--supercell", "--surface", "--symmetrize",
+    "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template", "--termination", "--tfinal",
+    "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow", "--tmax", "--to", "--tol",
+    "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units", "--until-converged",
+    "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+  return k;
+}
+
+// The known option closest to a mistyped one (edit distance), for the error message.
+std::string closest_option(const std::string& a) {
+  std::string best;
+  size_t bd = 99;
+  for (const auto& k : known_options()) {
+    std::vector<size_t> d(k.size() + 1);
+    for (size_t j = 0; j <= k.size(); ++j) d[j] = j;
+    for (size_t i = 1; i <= a.size(); ++i) {
+      size_t prev = d[0];
+      d[0] = i;
+      for (size_t j = 1; j <= k.size(); ++j) {
+        const size_t t = d[j];
+        d[j] = std::min({d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] == k[j - 1] ? 0 : 1)});
+        prev = t;
+      }
+    }
+    if (d[k.size()] < bd) bd = d[k.size()], best = k;
+  }
+  return bd <= 3 ? best : std::string();
+}
+
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
   std::map<std::string, std::string> o;
   for (int i = from; i < argc; ++i) {
     std::string a = argv[i];
+    if (a.rfind("--", 0) == 0 && !known_options().count(a)) {
+      const std::string near = closest_option(a);
+      throw std::invalid_argument("unknown option " + a + (near.empty() ? "" : " (did you mean " + near + "?)"));
+    }
     if (a.rfind("--", 0) == 0 || a == "-o") {
       const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
@@ -224,7 +282,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   std::vector<std::string> types;
   if (!def.typing.empty()) {
     const TypingResult tr = assign_types(s0, def);
-    if (tr.untyped) throw std::runtime_error(std::to_string(tr.untyped) + " atoms match no typing rule of " + def.name);
+    if (tr.untyped) throw std::runtime_error(untyped_message(def, s0, tr.untyped));
     types = tr.types;
   } else {
     for (const auto& a : s0.atoms) types.push_back(a.name);
@@ -360,7 +418,13 @@ int main(int argc, char** argv) {
   if (argc < 3) return usage();
   const std::string cmd = argv[1];
   std::vector<std::string> pos;
-  auto o = parse(argc, argv, 2, pos);
+  std::map<std::string, std::string> o;
+  try {
+    o = parse(argc, argv, 2, pos);
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "caps: %s\n", e.what());
+    return 2;
+  }
   if (cmd == "grow") {
     try {
       GrowOptions g;

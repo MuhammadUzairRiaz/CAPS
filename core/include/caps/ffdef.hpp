@@ -212,6 +212,10 @@ inline bool needs_prepare(const FFDef& ff) {
   return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty();
 }
 
+// "N atoms match no typing rule of FF", or for a coarse-grained force field that maps atoms onto beads, that they are in
+// molecules its bead fragments cannot cover.
+std::string untyped_message(const FFDef& ff, const System& s, int untyped);
+
 // A bead structure for a coarse-grained force field: `text` is one of its bead templates by name, or bead SMILES.
 // Bond lengths come from the force field's bond terms (typed by bead name), masses from its types; the result is a
 // start for a relax.
