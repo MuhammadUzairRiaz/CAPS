@@ -105,13 +105,13 @@
   },
   {
    "id": "opls2020",
-   "name": "OPLS 2020 bond / angle supplement",
+   "name": "OPLS 2005 with the OPLS 2020 bonds and angles",
    "version": "as distributed",
    "references": [],
    "origin": "converted",
    "source_file": "OPLS2020.par",
    "status": "converted",
-   "notes": "bonds and angles only; used together with OPLS 2005.",
+   "notes": "the OPLS 2020 bond and angle supplement on OPLS 2005 (the base is loaded with it; 2020 values win)",
    "file": "opls2020.json",
    "counts": {
     "atom_types": 0,
@@ -120,6 +120,10 @@
     "angles": 2931,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/opls2005.typing.json",
+    "evidence": "OPLS 2005's CAPS rules; the supplement adds bonds and angles only"
    }
   },
   {

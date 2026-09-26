@@ -137,6 +137,7 @@ struct FFDef {
   double bond_conjugated_single = 1.0;   // the order a force field gives a single bond between two conjugated atoms
   bool typing_pairs_double_same = false;   // pairs keep one type across a double bond (CGenFF CG2DC1/2), not GAFF's   // rules are an ordered list (antechamber): the first match is intended, not ambiguous
   std::string typing_source;
+  std::vector<std::string> typing_files;   // rule files loaded (each once: a recipe may name the file the force field already names)
   std::vector<std::string> notes;
 
   const FFType* type(const std::string& name) const;

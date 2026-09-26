@@ -60,6 +60,12 @@ std::vector<TypingRule> typing_from(const Json& a, const std::string& where) {
 }  // namespace
 
 void load_typing(FFDef& ff, const std::string& path) {
+  {
+    std::error_code ec;
+    const std::string key = std::filesystem::weakly_canonical(path, ec).string();
+    if (std::find(ff.typing_files.begin(), ff.typing_files.end(), key) != ff.typing_files.end()) return;
+    ff.typing_files.push_back(key);
+  }
   std::ifstream in(path);
   if (!in) throw FFError("cannot open typing rules " + path);
   std::stringstream ss;
@@ -392,6 +398,7 @@ FFDef load_forcefield(const std::string& path) {
       base.typing.clear();
       base.typing_pairs.clear();
       base.analogies.clear();
+      base.typing_files.clear();
     }
     merge_forcefield(base, ff);
     base.name = ff.name;
