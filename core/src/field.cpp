@@ -393,7 +393,7 @@ inline Class2Out class2_bond(const Class2Bond& t, const Vec3& d) {
   const double r = norm(d), dr = r - t.r0, dr2 = dr * dr;
   o.e = t.k2 * dr2 + t.k3 * dr2 * dr + t.k4 * dr2 * dr2;
   const double de = 2 * t.k2 * dr + 3 * t.k3 * dr2 + 4 * t.k4 * dr2 * dr;
-  o.f[1] = d * (-de / r);
+  o.f[1] = r > 1e-12 ? d * (-de / r) : Vec3{0, 0, 0};   // a core and its shell on the same point: no force
   o.f[0] = o.f[1] * -1.0;
   o.vir(d, o.f[1]);
   return o;
@@ -856,7 +856,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
         const Vec3 d = mi(pos(bd.j) - pos(bd.i));
         const double r = norm(d), dr = r - bd.r0;
         A[0] += bd.k * dr * dr;
-        const Vec3 fj = d * (-2 * bd.k * dr / r);
+        const Vec3 fj = r > 1e-12 ? d * (-2 * bd.k * dr / r) : Vec3{0, 0, 0};
         add(bd.j, fj);
         add(bd.i, fj * -1.0);
         V(d, fj);
@@ -982,7 +982,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
             o.e = t.a * q * q;
             dEdr = 4 * t.a * q * r;
           }
-          o.f[1] = d * (-dEdr / r);
+          o.f[1] = r > 1e-12 ? d * (-dEdr / r) : Vec3{0, 0, 0};
           o.f[0] = o.f[1] * -1.0;
           o.vir(d, o.f[1]);
           add(t.i, o.f[0]); add(t.j, o.f[1]);
@@ -1029,6 +1029,25 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
         if (r2 >= rc2) continue;
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2, fr;
+        if (r < 0.5) {
+          // a core and its shell (or any pair this close): erfc(κr)/r − 1/r cancels catastrophically as r → 0, so the
+          // same energy is written −erf(κr)/r (exact, with its r → 0 limits) plus what the factor keeps of 1/r
+          const double kap = pme ? beta : a, sp = 2 / std::sqrt(kPi);
+          const double x = kap * r;
+          const double g = r > 1e-8 ? std::erf(x) / r : sp * kap;                                   // erf(κr)/r
+          const double gr = r > 1e-4 ? (sp * kap * std::exp(-x * x) * r - std::erf(x)) / (r2 * r)   // g'(r) / r
+                                     : -2 * sp * kap * kap * kap / 3;
+          const double keep = ex.factor;   // the part of the bare 1/r the exclusion keeps (0 for 1-2 pairs)
+          const double shift = pme ? 0.0 : -dsf_e0 + dsf_f0 * (r - rc);
+          const double inv = r > 1e-8 ? 1 / r : 0.0;
+          A[5] += qq * (-g + keep * inv + shift);
+          fr = qq * (gr + keep * inv * inv * inv - (pme ? 0.0 : dsf_f0) * inv);
+          const Vec3 fj = d * fr;
+          add(j, fj);
+          add(i, fj * -1.0);
+          V(d, fj);
+          continue;
+        }
         if (pme) {
           // Ewald: the reciprocal sum includes the pair; add its real-space part and remove (1 − factor) of 1/r
           const double er = erfc_exp(beta * r, ex2);

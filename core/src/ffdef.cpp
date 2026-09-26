@@ -52,6 +52,14 @@ std::vector<TypingRule> typing_from(const Json& a, const std::string& where) {
     if (o.has("priority")) r.priority = int(o["priority"].number());
     if (o.has("overrides"))
       for (const auto& x : o["overrides"].items()) r.overrides.push_back(x.str());
+    for (auto [key, vec] : {std::make_pair("requires", &r.needs_elements), std::make_pair("excludes", &r.no_elements)})
+      if (o.has(key))
+        for (const auto& x : o[key].items()) {
+          const int z = element_from_symbol(x.str());
+          if (z <= 0) throw FFError(where + ": " + key + ": unknown element " + x.str());
+          vec->push_back(z);
+        }
+    r.atom_name = o.text("atom_name");
     out.push_back(std::move(r));
   }
   return out;
@@ -114,6 +122,9 @@ void load_typing(FFDef& ff, const std::string& path) {
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
   ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
   ff.united_atom = ff.united_atom || (j.has("united_atom") && j["united_atom"].boolean());
+  ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
+  if (j.has("shells") && j["shells"].is_object())
+    for (const auto& [core, shell] : j["shells"].members()) ff.shells[core] = shell.str();
   if (j.has("variants") && j["variants"].is_object()) {
     std::set<std::string> have;
     for (const auto& ty : ff.types) have.insert(ty.name);
@@ -1496,7 +1507,57 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
 }
 
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges) {
-  if (!ff.united_atom) return "";
+  std::string note;
+  if (!ff.shells.empty()) {
+    std::set<std::string> shell_names;
+    for (const auto& [c, sh] : ff.shells) shell_names.insert(sh);
+    bool have = false;
+    for (const auto& a : s.atoms) have = have || shell_names.count(a.name);
+    if (!have) {
+      const TypingResult tr = assign_types(s, ff);
+      const size_t n = s.atoms.size();
+      int added = 0;
+      for (size_t i = 0; i < n && i < tr.types.size(); ++i) {
+        auto it = ff.shells.find(tr.types[i]);
+        if (it == ff.shells.end()) continue;
+        Atom sh = s.atoms[i];
+        sh.id = int64_t(s.atoms.size() + 1);
+        sh.name = it->second;
+        s.atoms.push_back(sh);
+        s.bonds.push_back({uint32_t(i), uint32_t(s.atoms.size() - 1), 1});
+        ++added;
+      }
+      if (added) {
+        s.bonds_from_file = true;
+        note = ff.name + " is a shell model: " + std::to_string(added) + " shells added, one on each core, bonded to it by the core-shell spring";
+      }
+    }
+  }
+  if (ff.keep_defined_bonds) {
+    const TypingResult tr = assign_types(s, ff);
+    std::vector<Bond> kept;
+    for (const auto& b : s.bonds) {
+      const std::string& ti = tr.types[b.i];
+      const std::string& tj = tr.types[b.j];
+      auto bname = [&](const std::string& t) {
+        const FFType* ft = ff.type(t);
+        if (!ft) return t;
+        auto it = ft->equiv.find("bond");
+        return it == ft->equiv.end() ? t : it->second;
+      };
+      const std::string a = bname(ti), c = bname(tj);
+      const bool defined = !ti.empty() && !tj.empty() && last_match(ff.bonds, {&a, &c}, true) != nullptr;
+      if (defined) kept.push_back(b);
+    }
+    const size_t dropped = s.bonds.size() - kept.size();
+    if (dropped) {
+      s.bonds = std::move(kept);
+      s.bonds_from_file = true;
+      note += (note.empty() ? "" : "; ") + ff.name + " has no bonds between ions: " + std::to_string(dropped) +
+              " neighbour bonds dropped, " + std::to_string(s.bonds.size()) + " kept (the terms the force field defines)";
+    }
+  }
+  if (!ff.united_atom) return note;
   bool ch = false;
   for (const auto& b : s.bonds)
     ch = ch || (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 1) || (s.atoms[b.j].element == 6 && s.atoms[b.i].element == 1);

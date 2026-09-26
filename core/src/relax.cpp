@@ -357,6 +357,7 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
     double bulk = 3.0e4;   // atm, first guess (about 3 GPa)
     double lnv_prev = 0, p_prev = 0;
     bool have_prev = false;
+    double max_step = 0.03;   // in ln V per cycle
     int cycles = 0;
     RelaxStage st = last;
     for (; cycles < o.box_cycles; ++cycles) {
@@ -365,12 +366,13 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
       const double lnv = std::log(cell.volume());
       if (have_prev && std::fabs(lnv - lnv_prev) > 1e-9) {
         const double b = -(p - p_prev) / (lnv - lnv_prev);
-        if (b > 1e3 && b < 1e6) bulk = b;
+        if (b > 1e3 && b < 5e6) bulk = b;   // up to 500 GPa: ceramics (MgO 160 GPa) and diamond (443 GPa) too
+        if ((p - o.pressure) * (p_prev - o.pressure) < 0) max_step *= 0.5;   // crossed the target: smaller steps
       }
       lnv_prev = lnv;
       p_prev = p;
       have_prev = true;
-      const double dlnv = std::clamp((p - o.pressure) / bulk, -0.03, 0.03);
+      const double dlnv = std::clamp((p - o.pressure) / bulk, -max_step, max_step);
       scale_affine(x, cell, std::exp(dlnv / 3));
       ev.set_options(o.energy);
       RelaxOptions mo = o;

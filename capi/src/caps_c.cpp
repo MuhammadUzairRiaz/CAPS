@@ -1722,12 +1722,12 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       F->file_has_charges = d->traj.topology.has_charges;
     }
     // a united-atom force field: the structure's hydrogens on carbon fold into their carbons first (undoable)
-    if (F->base.united_atom) {
+    if (caps::needs_prepare(F->base)) {
       caps::System s = d->frame;
       std::string ch = F->auto_charges ? "auto" : F->charges;
       const std::string note = caps::prepare_for_forcefield(s, F->base, ch);
       if (!note.empty()) {
-        push_undo(d, "United-atom for " + F->base.name);
+        push_undo(d, (F->base.united_atom ? "United-atom for " : "Prepared for ") + F->base.name);
         std::vector<caps::Vec3> pos;
         for (const auto& at : s.atoms) pos.push_back(at.pos);
         s.has_charges = true;
@@ -1833,14 +1833,15 @@ extern "C" int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_
           caps::System su;
           caps::Perception pu;
           std::string ua_charges = "auto";
-          if (def->united_atom) {
+          if (caps::needs_prepare(*def)) {
             su = s;
             const std::string note = caps::prepare_for_forcefield(su, *def, ua_charges);
             if (!note.empty()) x["united_atom"] = note;
             pu = caps::perceive(su);
           }
-          const caps::System& s = def->united_atom ? su : d->frame;   // NOLINT: shadows the all-atom structure on purpose
-          const caps::Perception& per = def->united_atom ? pu : per_all;
+          const bool prepared = caps::needs_prepare(*def);
+          const caps::System& s = prepared ? su : d->frame;   // NOLINT: shadows the all-atom structure on purpose
+          const caps::Perception& per = prepared ? pu : per_all;
           caps::TypingResult tr = caps::assign_types(s, *def);
           {   // a rule may give a type this file lacks (rules shared with a larger version): untyped, as in field_run
             std::set<std::string> known;

@@ -196,7 +196,7 @@ System load(const std::string& path, const std::map<std::string, std::string>& o
 
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
-ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
+ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
   if (!o.count("--ff")) {
     const bool ch = std::all_of(s0.atoms.begin(), s0.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
     if (!ch) {
@@ -215,11 +215,11 @@ ForceField cli_forcefield(const System& s0, std::map<std::string, std::string>& 
   }
   FFDef def = load_forcefield(o["--ff"]);
   if (o.count("--typing")) load_typing(def, o["--typing"]);
-  if (def.united_atom) {
-    std::string ch = "types";
-    System probe = s0;
-    if (!prepare_for_forcefield(probe, def, ch).empty())
-      throw std::runtime_error(def.name + " is united-atom: make the structure united-atom first (caps ff apply FILE --ff ... -o UA.data)");
+  if (needs_prepare(def)) {   // united atom, shells, ionic bonds: the structure the force field describes
+    std::string ch = o.count("--charges") ? o["--charges"] : (s0.has_charges ? "keep" : "auto");
+    const std::string note = prepare_for_forcefield(s0, def, ch);
+    if (!note.empty() && !quiet) std::printf("%s\n", note.c_str());
+    if (ch == "keep") o["--charges"] = "keep";
   }
   std::vector<std::string> types;
   if (!def.typing.empty()) {

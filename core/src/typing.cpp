@@ -1084,6 +1084,16 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
   r.candidates.assign(n, {});
   bool any_type_refs = false;
   for (const auto& x : rules) any_type_refs = any_type_refs || x.sm.uses_types();
+  // conditions on the whole structure: which elements it holds
+  std::set<int> present;
+  for (const auto& at : s.atoms) present.insert(at.element);
+  auto applies = [&](const Rule& x, uint32_t a) {
+    for (int z : x.r->needs_elements)
+      if (!present.count(z)) return false;
+    for (int z : x.r->no_elements)
+      if (present.count(z)) return false;
+    return x.r->atom_name.empty() || s.atoms[a].name == x.r->atom_name;
+  };
   for (int pass = 0; pass < (any_type_refs ? 10 : 1); ++pass) {
     std::vector<std::string> next(n);
     std::vector<std::string> why(n);
@@ -1093,7 +1103,7 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
     for (uint32_t a = 0; a < n; ++a) {
       std::vector<const Rule*> hit;
       for (const auto& x : rules)   // the SMARTS decides the element (library element columns have typos)
-        if (x.sm.matches(s, p, a, r.types)) hit.push_back(&x);
+        if (applies(x, a) && x.sm.matches(s, p, a, r.types)) hit.push_back(&x);
       for (const auto* h : hit)
         if (std::find(cands[a].begin(), cands[a].end(), h->t->name) == cands[a].end()) cands[a].push_back(h->t->name);
       if (hit.empty()) { ++untyped; why[a] = "no rule matches"; continue; }
