@@ -55,6 +55,11 @@ CASES = [
     ("Polystyrene melt, DREIDING (periodic; sp3-aromatic torsions by DREIDING's rules)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "dreiding", "gasteiger", "rules"),
     ("DREIDING rules: cis-polybutadiene fragment, butadiene, biphenyl, methyl acetate", ("smiles", "C/C=C\\CC/C=C\\CC/C=C\\C.C=CC=C.c1ccccc1-c1ccccc1.CC(=O)OC"), "dreiding", "gasteiger", "rules"),
     ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides", "qeq", "keys"),
+    # a shell model (core and shell on each ion, a spring between them): CORESHELL's buck/coul/long/cs (born/coul/dsf/cs
+    # in CAPS's own styles, which LAMMPS gives no tail term: compared without one). LAMMPS's /cs styles evaluate each
+    # core-shell pair at r = 1e-10 Å, where 1 - erfc cancels: its Coulomb carries ~1e-5 of that noise; CAPS the exact limit
+    ("SrTiO3 perovskite, core-shell (CORESHELL styles)", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
+     "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "inorganic-ternary-oxides", "types", "rules", ["--no-tail"]),
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
     ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25", "gasteiger", "rules"),
     ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff", "types", "rules"),
@@ -147,6 +152,10 @@ def structure(src, base):
     kind = src[0]
     if kind == "file":
         return src[1], None
+    if kind == "crystal":   # CAPS's space-group builder: caps crystal ARGS
+        out = os.path.join(work, base + ".data")
+        subprocess.run([CAPS, "crystal"] + list(src[1]) + ["-o", out], capture_output=True, check=True)
+        return out, None
     if kind == "solvent-box":   # a liquid from CAPS's solvent packing (caps solvate), bonds from the packed molecules
         out = os.path.join(work, base + ".pdb")
         subprocess.run([CAPS, "solvate", "-o", out, "--edge", str(src[2]), "--solvent", src[1], "--no-ions"], capture_output=True, check=True)
