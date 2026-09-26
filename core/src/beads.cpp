@@ -93,9 +93,34 @@ System build_beads(const std::string& text, const BeadBuildOptions& o) {
   const int n = int(m.type.size());
   std::vector<std::vector<int>> nb(static_cast<size_t>(n));
   for (const auto& [a, b] : m.bonds) nb[size_t(a)].push_back(b), nb[size_t(b)].push_back(a);
-  auto b0 = [&](int a, int b) {
+  std::map<std::pair<int, int>, double> len;   // each bond's target length
+  for (const auto& [a, b] : m.bonds) {
     const double l = o.bond_length ? o.bond_length(m.type[size_t(a)], m.type[size_t(b)]) : 0.0;
-    return l > 0 ? l : o.default_bond;
+    len[{std::min(a, b), std::max(a, b)}] = l > 0 ? l : o.default_bond;
+  }
+  // a bond longer than another path between its beads (Cooke–Deserno's head-to-tail bond across its lipid) is taken at
+  // that path's length: the beads in a straight line
+  for (auto& [ab, l] : len) {
+    std::vector<double> d(size_t(n), 1e30);
+    d[size_t(ab.first)] = 0;
+    std::vector<char> done(size_t(n), 0);
+    for (int it = 0; it < n; ++it) {
+      int u = -1;
+      for (int v = 0; v < n; ++v)
+        if (!done[size_t(v)] && (u < 0 || d[size_t(v)] < d[size_t(u)])) u = v;
+      if (u < 0 || d[size_t(u)] >= 1e30) break;
+      done[size_t(u)] = 1;
+      for (const auto& [e, le] : len) {
+        if (e == ab) continue;
+        const int w = e.first == u ? e.second : e.second == u ? e.first : -1;
+        if (w >= 0 && d[size_t(u)] + le < d[size_t(w)]) d[size_t(w)] = d[size_t(u)] + le;
+      }
+    }
+    if (d[size_t(ab.second)] < l) l = d[size_t(ab.second)];
+  }
+  auto b0 = [&](int a, int b) {
+    auto it = len.find({std::min(a, b), std::max(a, b)});
+    return it != len.end() ? it->second : o.default_bond;
   };
   // graph distances (for the spring model: bonded at b0, others kept apart)
   std::vector<std::vector<int>> gd(size_t(n), std::vector<int>(size_t(n), 1 << 20));
@@ -167,6 +192,10 @@ System build_beads(const std::string& text, const BeadBuildOptions& o) {
     const double step = std::min(0.1, 0.2 / gmax);
     for (int a = 0; a < n; ++a) x[size_t(a)] = x[size_t(a)] - g[size_t(a)] * step;
   }
+  // a small jitter: the spring model leaves chains exactly straight, where an angle's force needs 1/sin θ (LAMMPS clamps
+  // sin θ at 0.001 and so computes a different force there)
+  std::normal_distribution<double> jit(0, 0.05);
+  for (auto& p : x) p = p + Vec3{jit(rng), jit(rng), jit(rng)};
   System s;
   s.title = "beads";
   s.source_format = "caps-beads";

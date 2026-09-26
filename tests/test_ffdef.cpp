@@ -355,7 +355,7 @@ TEST(FieldForms, StillingerWeberForcesMatchFiniteDifferences) {
 // (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion): forces and virial are the energy's derivatives, for bead
 // molecules and water beads in a periodic cell
 namespace {
-System cg_box(const FFDef& def, const std::vector<std::pair<std::string, int>>& parts, double edge, uint64_t seed) {
+System cg_box(const FFDef& def, const std::vector<std::pair<std::string, int>>& parts, double edge, uint64_t seed, double clear = 4.0) {
   System box;
   box.cell.a = {edge, 0, 0};
   box.cell.b = {0, edge, 0};
@@ -366,13 +366,13 @@ System cg_box(const FFDef& def, const std::vector<std::pair<std::string, int>>& 
     for (int c = 0; c < count; ++c) {
       const System m = build_bead_molecule(text, def, seed + c);
       Vec3 t{0, 0, 0};
-      for (int tr = 0; tr < 5000; ++tr) {   // a place 4 Å clear of every bead already in the box
+      for (int tr = 0; tr < 5000; ++tr) {   // a place `clear` Å from every bead already in the box
         t = {u(rng), u(rng), u(rng)};
-        bool clear = true;
+        bool ok = true;
         for (const auto& a : m.atoms)
           for (const auto& b : box.atoms)
-            clear = clear && norm(box.cell.minimum_image(a.pos + t - b.pos)) > 4.0;
-        if (clear) break;
+            ok = ok && norm(box.cell.minimum_image(a.pos + t - b.pos)) > clear;
+        if (ok) break;
       }
       const uint32_t off = uint32_t(box.atoms.size());
       for (auto a : m.atoms) {
@@ -421,6 +421,8 @@ TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
   check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
   const FFDef sdk = load_forcefield(dir + "sdk-moltemplate.json");
   check_cg_forces(sdk, cg_box(sdk, {{"[NC][PH][GL]([EST1][CM][CM][CT2])[EST2][CM][CM][CT2]", 3}, {"[W]", 30}}, 32.0, 5), "types");
+  const FFDef cd = load_forcefield(dir + "cooke-deserno-moltemplate.json");
+  check_cg_forces(cd, cg_box(cd, {{"lipid", 40}}, 12.0, 7, 1.2), "types");
 }
 
 TEST(CoarseGrained, BeadSmilesParse) {

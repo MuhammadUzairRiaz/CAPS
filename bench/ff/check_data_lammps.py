@@ -79,6 +79,8 @@ CASES = [
     ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk-moltemplate", [("beads", "[SO4][CM][CM][CM][CT]", 8),
                                                                    ("beads", "[SOD]", 8), ("beads", "[W]", 120)], 38.0),
      "sdk-moltemplate", "types", "rules"),
+    ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno-moltemplate", [("template", "lipid", 60)], 16.0),
+     "cooke-deserno-moltemplate", "types", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
     ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-moltemplate", "types", "rules"),
 ]
@@ -157,8 +159,8 @@ def structure(src, base):
                         d = (x - cx[0], y - cx[1], z - cx[2])
                         new.append(((m, lab), qq, *[t[k] + sum(R[k][j] * d[j] for j in range(3)) for k in range(3)]))
                     def close(p1, p2):
-                        return math.sqrt(sum(((p1[k] - p2[k] + edge / 2) % edge - edge / 2) ** 2 for k in range(3))) < 3.5
-                    if all(not close(n1[2:], a2[2:]) for n1 in new for a2 in atoms):
+                        return math.sqrt(sum(((p1[k] - p2[k] + edge / 2) % edge - edge / 2) ** 2 for k in range(3))) < (1.2 if "cooke" in src[1] else 3.5)
+                    if all(not close(n1[2:], a2[2:]) for n1 in new for a2 in atoms) or _ == 1999:
                         break
                 off = len(atoms)
                 atoms.extend(new)

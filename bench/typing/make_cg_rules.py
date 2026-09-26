@@ -304,5 +304,45 @@ if __name__ == "__main__":
     e = entries[fid]
     e["notes"] = "SDK: lj/sdk 9-6 / 12-4 and the sdk angle's 1-3 repulsion evaluated by CAPS; all-atom lipids, alkanes and water mapped onto beads"
     e["typing"] = {"rules": f"typing/{fid}.typing.json", "evidence": f"CAPS rules (bench/typing/make_cg_rules.py): {len(names)} bead names, {len(beads)} fragments, water triplets"}
+    # Cooke-Deserno (cooke_deserno_lipid.lt and its supporting gen_potential-cooke.py): the tabulated pair is LAMMPS's
+    # cosine/squared (WCA with b = 0.95 sigma between heads and heads / tails, WCA plus a cos^2 well of width w_c = 1.5
+    # sigma between tails, the table the .lt names: TAIL_TAIL_Wc_1.5); FENE H-T and T-T bonds, a harmonic H-T bond
+    # across the lipid. CAPS types bonds by type pair, so the lipid's end tail is TE (T's non-bonded terms)
+    fid = "cooke-deserno-moltemplate"
+    p = os.path.join(DATA, "forcefields", fid + ".json")
+    ff = json.load(open(p))
+    rm = 2 ** (1 / 6)
+    ff["atom_types"] = [{"name": "H", "element": "", "mass": 1.0, "charge": 0.0, "description": "head bead"},
+                        {"name": "T", "element": "", "mass": 1.0, "charge": 0.0, "description": "tail bead"},
+                        {"name": "TE", "element": "", "mass": 1.0, "charge": 0.0, "description": "CAPS extension: the lipid's end tail bead (T's non-bonded terms)",
+                         "equivalence": {"vdw": "T"}}]
+    ff["styles"]["pair"] = "cosine/squared"
+    ff["pairs"] = [{"name": "H-H", "match": ["H"], "style": "cosine/squared", "params": [1.0, round(0.95 * rm, 10), round(0.95 * rm, 10), 1], "comment": "WCA, b = 0.95"},
+                   {"name": "H-T", "match": ["H", "T"], "style": "cosine/squared", "params": [1.0, round(0.95 * rm, 10), round(0.95 * rm, 10), 1], "comment": "WCA, b = 0.95"},
+                   {"name": "T-T", "match": ["T"], "style": "cosine/squared", "params": [1.0, round(rm, 10), round(rm + 1.5, 10), 1],
+                    "comment": "WCA, b = 1, plus the cos^2 attraction of width 1.5"}]
+    ff["bonds"] = [{"name": "H-T", "match": ["H", "T"], "style": "fene", "params": [30.0, 1.5, 0.0, 0.0], "comment": "fene 30 1.5 0 0"},
+                   {"name": "T-TE", "match": ["T", "TE"], "style": "fene", "params": [30.0, 1.5, 0.0, 0.0], "comment": "fene 30 1.5 0 0"},
+                   {"name": "H-TE", "match": ["H", "TE"], "style": "harmonic", "params": [10.0, 4.0], "comment": "harmonic 10 4 (the lipid's straightening bond)"}]
+    ff["angles"], ff["dihedrals"], ff["impropers"] = [], [], []
+    ff["cutoff"] = 3.0
+    ff["pair_settings"] = {"model_cutoff": True}
+    ff["angle_terms"] = ff["torsion_terms"] = "if_defined"
+    ff["special_lj"], ff["special_coul"] = [0, 1, 1], [0, 1, 1]   # the source: special_bonds lj 0 1 1 (no charges: Coulomb alike)
+    ff["units"] = "lj"
+    ff["bead_templates"] = {"lipid": "[H]1[T][TE]1"}
+    ff["typing"] = f"../typing/{fid}.typing.json"
+    ff["notes"] = [n for n in ff.get("notes", []) if "converted from moltemplate" in n] + [
+        "pairs: the source's table (gen_potential-cooke.py, w_c = 1.5) as LAMMPS cosine/squared; bonds FENE 30 1.5 and harmonic 10 4",
+        "CAPS extension: TE, the lipid's end tail (the source bonds the head to both tails, FENE to one and harmonic to the other)",
+        "reduced units (sigma = epsilon = m = 1): CAPS reads the numbers as A, kcal/mol, g/mol; scale lengths, energies and times yourself"]
+    json.dump(ff, open(p, "w"), ensure_ascii=False, indent=1)
+    doc = {"format": "caps-typing", "version": 1, "forcefield": ff["name"], "coarse_grained": True, "unknown_types": "untyped",
+           "description": "CAPS rules for the Cooke-Deserno lipid (bench/typing/make_cg_rules.py): beads typed by name (H, T, TE)",
+           "rules": [{"type": n, "smarts": "*", "atom_name": n, "priority": 0, "description": f"a bead named {n}"} for n in ("H", "T", "TE")]}
+    json.dump(doc, open(os.path.join(DATA, "typing", fid + ".typing.json"), "w"), ensure_ascii=False, indent=1)
+    e = entries[fid]
+    e["notes"] = "Cooke-Deserno lipid: cosine/squared pairs (w_c 1.5), FENE and harmonic bonds, evaluated by CAPS; reduced units"
+    e["typing"] = {"rules": f"typing/{fid}.typing.json", "evidence": "CAPS rules (bench/typing/make_cg_rules.py): bead names H, T, TE"}
     json.dump(cat, open(cat_p, "w"), ensure_ascii=False, indent=1)
-    print(f"{out}: {len(names)} names, {len(beads)} fragments")
+    print(f"{out}: {len(names)} names, {len(beads)} fragments; Cooke-Deserno rewritten")
