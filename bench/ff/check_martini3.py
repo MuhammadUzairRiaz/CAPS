@@ -37,7 +37,9 @@ CASES = [
 # all-atom proteins mapped as martinize2 maps them (vermouth's Martini 3 tests; the files' own cells)
 VREF = os.path.expanduser("~/vermouth-ref/tests-m3/tier-1")
 PROTEINS = [("Ubiquitin 1UBQ, all-atom -> Martini 3 (restricted-bending backbone, side-chain fix dihedrals)", os.path.join(VREF, "1UBQ", "aa.pdb")),
-            ("Lysozyme 3LZT, all-atom -> Martini 3 (tryptophan virtual sites, exclusions, impropers)", os.path.join(VREF, "lysozyme", "aa.pdb"))]
+            ("Lysozyme 3LZT, all-atom -> Martini 3 (tryptophan virtual sites, exclusions, impropers)", os.path.join(VREF, "lysozyme", "aa.pdb")),
+            ("Lysozyme as martinize2 wrote it (cg.pdb + topol.top read by CAPS; elastic network 500)",
+             (os.path.join(VREF, "lysozyme", "martinize2", "cg.pdb"), os.path.join(VREF, "lysozyme", "martinize2", "topol.top")))]
 
 
 def gmx(d, stem):
@@ -100,7 +102,7 @@ def stiff_bonds(d, edge_nm):
 order, charge = [], [0.0]
 rows, fails = [], 0
 for label, pdb in PROTEINS:
-    if (only and only.lower() not in label.lower()) or not os.path.exists(pdb):
+    if (only and only.lower() not in label.lower()) or not os.path.exists(pdb if isinstance(pdb, str) else pdb[0]):
         continue
     CASES.append((label, None, pdb))
 for label, edge, content in CASES:
@@ -133,7 +135,10 @@ for label, edge, content in CASES:
             fails += 1
             continue
         src = "box.data"
-    r = subprocess.run([CAPS, "ff", "apply", src, "--ff", FF, "--gromacs", "case", "--forces", "caps_f.txt"], cwd=d,
+    topo = []
+    if isinstance(src, tuple):   # coordinates and a GROMACS topology
+        src, topo = src[0], ["--topology", src[1]]
+    r = subprocess.run([CAPS, "ff", "apply", src, "--ff", FF, "--gromacs", "case", "--forces", "caps_f.txt"] + topo, cwd=d,
                        capture_output=True, text=True)
     m = re.search(r"energy \(kcal/mol\): bond (\S+)  angle (\S+)  dihedral (\S+)  improper (\S+)  vdW (\S+)  Coulomb (\S+)", r.stdout)
     if r.returncode or not m:
@@ -171,7 +176,7 @@ for label, edge, content in CASES:
     ok = de < 5e-5 and worst < 1 and dq < 1e-6
     fails += 0 if ok else 1
     natoms = len(cf)
-    rows.append((label, f"{'ok' if ok else 'DIFFERS'} · {natoms} beads, {recog.group(1) if recog else '?'} {'molecules recognised' if edge is not None else 'beads mapped'} · "
+    rows.append((label, f"{'ok' if ok else 'DIFFERS'} · {natoms} beads, {(recog.group(1) + (' molecules recognised' if edge is not None else ' beads mapped')) if recog else 'topology read from ' + os.path.basename(topo[1])} · "
                  f"charge {charge[0]:+.4f} e (molecules {want_q:+.4f}) · energy terms {de:.1e} (relative) · forces {df:.1e} kcal/mol/A",
                  "CAPS/GROMACS (kcal/mol): " + " ".join(f"{k} {ce[k]:.4f}/{gm[k]:.4f}" for k in keys)))
 

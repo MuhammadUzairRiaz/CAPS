@@ -696,8 +696,9 @@ System martini3_protein(const System& aa_in, const Martini3Options& opt, const s
         m.list("bonds").push_back(std::move(t));
         ++n_rubber;
       }
-    rep.notes.push_back(std::to_string(n_rubber) + " elastic bonds (" + std::to_string(opt.ef) + " kJ/mol/nm², " + std::to_string(opt.el) + "–" +
-                        std::to_string(opt.eu) + " nm)");
+    char b[160];
+    std::snprintf(b, sizeof b, "%d elastic bonds (%g kJ/mol/nm², %g–%g nm, residues more than %d apart)", n_rubber, opt.ef, opt.el, opt.eu, opt.ermd >= 0 ? opt.ermd : 2);
+    rep.notes.push_back(b);
   }
   // the beads and their explicit topology (CAPS units; constraints as stiff bonds, the FLEXIBLE variants left out)
   System out;
