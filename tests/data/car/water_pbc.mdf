@@ -26,4 +26,14 @@ WAT_2:O1           O  o*      ?     0  0    -0.8200 0 0 8 1.0000  0.0000 H1%100#
 WAT_2:H1           H  h*      ?     0  0     0.4100 0 0 8 1.0000  0.0000 O1%-100#1
 WAT_2:H2           H  h*      ?     0  0     0.4100 0 0 8 1.0000  0.0000 O1
 
+#symmetry
+@periodicity 3 xyz
+@group (P1)
+
+#atomset
+
+@list subset MDF_FIXED_ATOMS_SUBSET
+WAT_1:H1 H2
+WAT_2:H1 H2
+
 #end

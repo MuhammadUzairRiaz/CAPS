@@ -132,6 +132,8 @@ void load_typing(FFDef& ff, const std::string& path) {
     for (const auto& x : j["united_atom_hosts"].items()) ff.united_atom_hosts.push_back(element_from_symbol(x.str()));
   }
   ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
+  if (j.has("unbonded_types"))
+    for (const auto& x : j["unbonded_types"].items()) ff.unbonded_types.push_back(x.str());
   ff.coarse_grained = ff.coarse_grained || (j.has("coarse_grained") && j["coarse_grained"].boolean());
   if (j.has("martini_protein")) {
     const std::filesystem::path f(j["martini_protein"].str());
@@ -964,6 +966,31 @@ void refine_bond_order_variants(const System& s, const Perception& p, const FFDe
     const double k = k_of(a, b);
     return k >= 0 && std::fabs(k - ff.bond_k_per_order * order) <= 1e-6 * std::max(1.0, k);
   };
+  // A torsion rule across bond a–b for the current types (the file's torsions are the other half of a variant's meaning:
+  // moltemplate's DREIDING has N_R_b1_d2–C_2_b1 torsions but none for N_R_b1_d2–C_2, so the amide C of an aramid takes
+  // C_2_b1). Bonds without a torsion across them pass.
+  auto dih_name = [&](const std::string& t) {
+    auto it = byname.find(t);
+    if (it == byname.end()) return t;
+    auto e = it->second->equiv.find("dihedral");
+    return e == it->second->equiv.end() ? t : e->second;
+  };
+  std::map<std::vector<std::string>, bool> tcache;
+  std::vector<std::string> cur;
+  auto torsion_across = [&](uint32_t a, uint32_t b) {
+    bool any = false;
+    for (uint32_t i : p.nb[a])
+      for (uint32_t l : p.nb[b]) {
+        if (i == b || l == a || l == i) continue;
+        any = true;
+        std::vector<std::string> key{dih_name(cur[i]), dih_name(cur[a]), dih_name(cur[b]), dih_name(cur[l])};
+        auto it = tcache.find(key);
+        if (it == tcache.end())
+          it = tcache.emplace(key, last_match(ff.dihedrals, {&key[0], &key[1], &key[2], &key[3]}, true) != nullptr).first;
+        if (it->second) return true;
+      }
+    return !any;
+  };
   std::vector<char> seen(n, 0);
   for (uint32_t start = 0; start < n; ++start) {
     if (!var[start] || seen[start]) continue;
@@ -973,8 +1000,9 @@ void refine_bond_order_variants(const System& s, const Perception& p, const FFDe
       for (uint32_t j : p.nb[comp[q]])
         if (var[j] && !seen[j]) { seen[j] = 1; comp.push_back(j); }
     std::vector<char> placed(n, 0);
-    std::vector<std::string> cur = types;
+    cur = types;
     size_t steps = 0;
+    bool strict = !ff.dihedrals.empty();   // first with a torsion across each bond, then with the bond constants alone
     std::function<bool(size_t)> dfs = [&](size_t q) -> bool {
       if (q == comp.size()) return true;
       if (++steps > 200000) return false;
@@ -985,7 +1013,7 @@ void refine_bond_order_variants(const System& s, const Perception& p, const FFDe
         for (size_t k = 0; k < p.nb[a].size() && ok; ++k) {
           const uint32_t b = p.nb[a][k];
           if (var[b] && !placed[b]) continue;   // checked when b is placed
-          ok = fits(cur[a], cur[b], expected(a, k));
+          ok = fits(cur[a], cur[b], expected(a, k)) && (!strict || torsion_across(a, b));
         }
         if (!ok) continue;
         placed[a] = 1;
@@ -995,7 +1023,14 @@ void refine_bond_order_variants(const System& s, const Perception& p, const FFDe
       cur[a] = types[a];
       return false;
     };
-    const bool solved = dfs(0);
+    bool solved = dfs(0);
+    if (!solved && strict) {
+      strict = false;
+      std::fill(placed.begin(), placed.end(), 0);
+      cur = types;
+      steps = 0;
+      solved = dfs(0);
+    }
     for (uint32_t a : comp) {
       if (solved && cur[a] != types[a]) {
         types[a] = cur[a];
@@ -2336,6 +2371,28 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
       s.bonds_from_file = true;
       note += (note.empty() ? "" : "; ") + ff.name + " has no bonds between ions: " + std::to_string(dropped) +
               " neighbour bonds dropped, " + std::to_string(s.bonds.size()) + " kept (the terms the force field defines)";
+    }
+  }
+  if (!ff.unbonded_types.empty() && !s.bonds.empty()) {
+    const TypingResult tr = assign_types(s, ff);
+    auto unbonded = [&](uint32_t i) {
+      return std::find(ff.unbonded_types.begin(), ff.unbonded_types.end(), tr.types[i]) != ff.unbonded_types.end();
+    };
+    std::vector<Bond> kept;
+    std::set<std::string> which;
+    for (const auto& b : s.bonds) {
+      if (unbonded(b.i)) which.insert(tr.types[b.i]);
+      if (unbonded(b.j)) which.insert(tr.types[b.j]);
+      if (!unbonded(b.i) && !unbonded(b.j)) kept.push_back(b);
+    }
+    const size_t dropped = s.bonds.size() - kept.size();
+    if (dropped) {
+      s.bonds = std::move(kept);
+      s.bonds_from_file = true;
+      std::string list;
+      for (const auto& t : which) list += (list.empty() ? "" : ", ") + t;
+      note += (note.empty() ? "" : "; ") + ff.name + " does not bond " + list + ": " + std::to_string(dropped) +
+              " neighbour bonds dropped";
     }
   }
   if (!ff.united_atom) return note;

@@ -29,7 +29,26 @@ std::vector<Bond> perceive_bonds(const System& s, const BondOptions& opt) {
     });
   }
   std::sort(out.begin(), out.end(), [](const Bond& x, const Bond& y) { return x.i != y.i ? x.i < y.i : x.j < y.j; });
-  return out;
+  // A long contact (beyond the covalent radii + 0.25 Å) between two atoms bonded to a common third closes a ring across
+  // it, it is not a bond: Si···Si over an edge-sharing Si₂O₂ ring of amorphous silica (2.6 Å, a Si–Si bond is 2.35 Å).
+  // Cyclopropane's C–C (radii + 0.0 Å) is kept.
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  for (const auto& b : out) {
+    nb[b.i].push_back(b.j);
+    nb[b.j].push_back(b.i);
+  }
+  std::vector<Bond> kept;
+  kept.reserve(out.size());
+  for (const auto& b : out) {
+    const double lim = element(s.atoms[b.i].element).covalent + element(s.atoms[b.j].element).covalent + 0.25;
+    const Vec3 d = g.sep(b.i, b.j);
+    bool ring = false;
+    if (dot(d, d) > lim * lim)
+      for (uint32_t k : nb[b.i])
+        if (k != b.j && std::find(nb[b.j].begin(), nb[b.j].end(), k) != nb[b.j].end()) ring = true;
+    if (!ring) kept.push_back(b);
+  }
+  return kept;
 }
 
 void make_molecules_whole(System& s) {
