@@ -204,15 +204,20 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
   // K_n = 2v with δ 0 for odd n, 180° for even n) and CHARMM (one dihedral line per term, K n d with d a whole degree,
   // weight 0: the 1-4 pairs come from special_bonds); a quadruple that does not fit stays a Fourier sum
   const std::string nd = st.native ? ff.native_dihedral : "";
+  // a constant term (n = 0: TraPPE's c0, v(1 + cos δ)) has no opls coefficient; it moves no atom, so it is left out and
+  // its total over the structure's torsions reported (LAMMPS's dihedral energy is lower by exactly that)
+  double opls_constant = 0;
   auto opls_of = [&](const std::vector<const TorsionTerm*>& v, std::string& coef) {
-    double K[4] = {0, 0, 0, 0};
+    double K[4] = {0, 0, 0, 0}, c0 = 0;
     for (const auto* t : v) {
+      if (t->n == 0) { c0 += t->v * (1 + std::cos(t->delta)); continue; }
       if (t->n < 1 || t->n > 4) return false;
       const double want = (t->n % 2) ? 0.0 : 180.0, d = std::fmod(std::fabs(t->delta * R2D), 360.0);
       if (std::fabs(d - want) > 1e-6 && std::fabs(d - want - 360) > 1e-6) return false;
       K[t->n - 1] += 2 * t->v;
     }
     coef = num({K[0], K[1], K[2], K[3]});
+    opls_constant += c0;
     return true;
   };
   size_t fourier_left = 0;
@@ -291,6 +296,12 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
     L.dihedrals.add("fourier", f, {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
     ++fourier_left;
   }
+  if (opls_constant != 0) {
+    char nb[200];
+    std::snprintf(nb, sizeof nb, "torsion constants (n = 0 terms, e.g. TraPPE's c0) have no opls form and are left out: forces unchanged, "
+                  "the dihedral energy lower by %.10g kcal/mol", opls_constant);
+    L.notes.push_back(nb);
+  }
   if (!nd.empty() && nd != "fourier" && fourier_left)
     L.notes.push_back(std::to_string(fourier_left) + " dihedral types have terms the " + nd + " style cannot hold: written as fourier (a hybrid dihedral style)");
   for (const auto& d : ff.dihedrals2)
@@ -320,8 +331,11 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       // LAMMPS umbrella: the centre first, the angle between the last bond and the plane of the other two;
       // the three permutations at K/3 give CAPS's average over the three bonds
       const uint32_t o[3] = {v.a, v.b, v.d};
-      for (int p = 0; p < 3; ++p)
-        L.impropers.add("umbrella", num({v.kw / 3, 0.0}), {}, {v.c, o[(p + 1) % 3], o[(p + 2) % 3], o[p]}, lab({v.c, v.a, v.b, v.d}));
+      if (st.native && ff.native_improper == "fourier")   // UFF's own form: K [1 − cos ω] as improper fourier over all three
+        L.impropers.add("fourier", num({v.kw / 3, 1.0, -1.0, 0.0}) + " 1", {}, {v.c, v.a, v.b, v.d}, lab({v.c, v.a, v.b, v.d}));
+      else
+        for (int p = 0; p < 3; ++p)
+          L.impropers.add("umbrella", num({v.kw / 3, 0.0}), {}, {v.c, o[(p + 1) % 3], o[(p + 2) % 3], o[p]}, lab({v.c, v.a, v.b, v.d}));
     } else if (v.form == 2) {
       // improper fourier: the centre first, ω between the I-L axis and the I-J-K plane; "all" sums the three
       // permutations, each at K/3

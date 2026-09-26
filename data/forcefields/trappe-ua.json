@@ -11,7 +11,7 @@
   "pair": "lj/cut/coul/long",
   "bond": "harmonic",
   "angle": "harmonic",
-  "dihedral": "fourier",
+  "dihedral": "opls",
   "improper": "cvff"
  },
  "mixing": "arithmetic",
@@ -25,7 +25,7 @@
   0,
   0
  ],
- "cutoff": 10,
+ "cutoff": 14,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "improper_matched_order": true,

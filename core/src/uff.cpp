@@ -304,6 +304,11 @@ ForceField assign_uff(const System& s, const UffOptions& o) {
   ff.mixing = "geometric";
   ff.lj14 = 1.0;
   ff.coul14 = 1.0;
+  // UFF's own LAMMPS styles: its torsion ½V[1 − cos(nφ0) cos(nφ)] is dihedral harmonic, its inversion
+  // K [C0 + C1 cos ω + C2 cos 2ω] over the three permutations is improper fourier (angles fourier / cosine/periodic)
+  ff.native_pair = "lj/cut/coul/long";
+  ff.native_dihedral = "harmonic";
+  ff.native_improper = "fourier";
   std::vector<const UffParam*> P(n, nullptr);
   std::map<std::string, int> tindex;
   int fallback = 0;
