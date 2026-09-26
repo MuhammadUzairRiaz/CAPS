@@ -74,6 +74,7 @@ System read_lammps_data(const std::string& path) {
   s.title = trim(line);
 
   size_t natoms = 0, nbonds = 0;
+  bool bonds_declared = false;   // a "N bonds" header line: the file says what is bonded, even when N is 0
   double xlo = 0, xhi = 0, ylo = 0, yhi = 0, zlo = 0, zhi = 0, xy = 0, xz = 0, yz = 0;
   std::string section, style_hint;
   std::unordered_map<int64_t, uint32_t> index;
@@ -99,7 +100,7 @@ System read_lammps_data(const std::string& path) {
 
     if (section.empty()) {
       if (tok.size() >= 2 && tok[1] == "atoms") natoms = std::stoull(tok[0]);
-      else if (tok.size() >= 2 && tok[1] == "bonds") nbonds = std::stoull(tok[0]);
+      else if (tok.size() >= 2 && tok[1] == "bonds") { nbonds = std::stoull(tok[0]); bonds_declared = true; }
       else if (tok.size() >= 4 && tok[2] == "xlo") { xlo = std::stod(tok[0]); xhi = std::stod(tok[1]); }
       else if (tok.size() >= 4 && tok[2] == "ylo") { ylo = std::stod(tok[0]); yhi = std::stod(tok[1]); }
       else if (tok.size() >= 4 && tok[2] == "zlo") { zlo = std::stod(tok[0]); zhi = std::stod(tok[1]); }
@@ -156,7 +157,7 @@ System read_lammps_data(const std::string& path) {
   if (nbonds && s.bonds.size() + skipped_bonds != nbonds)
     s.notes.push_back("header says " + std::to_string(nbonds) + " bonds, read " + std::to_string(s.bonds.size()));
   if (skipped_bonds) s.notes.push_back(std::to_string(skipped_bonds) + " bonds refer to atoms that are not defined; skipped");
-  s.bonds_from_file = !s.bonds.empty();
+  s.bonds_from_file = !s.bonds.empty() || bonds_declared;
   s.cell = lammps_cell(xlo, xhi, ylo, yhi, zlo, zhi, xy, xz, yz);
   // Image flags make molecules whole: store unwrapped positions, as a dump with xu/yu/zu would.
   size_t flagged = 0;

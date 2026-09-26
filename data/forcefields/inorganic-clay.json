@@ -1,18 +1,20 @@
 {
  "format": "caps-forcefield",
  "format_version": 1,
- "name": "Inorganic: clay",
+ "name": "ClayFF (Cygan, Liang, Kalinichev 2004)",
  "source": "INORGANIC_clay.par",
- "references": [],
+ "references": [
+  "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
+ ],
  "units": "real",
  "styles": {
-  "pair": "buck/coul/long",
+  "pair": "lj/cut/coul/long",
   "bond": "harmonic",
   "angle": "harmonic",
-  "dihedral": "fourier",
-  "improper": "fourier"
+  "dihedral": "none",
+  "improper": "none"
  },
- "mixing": "geometric",
+ "mixing": "arithmetic",
  "special_lj": [
   0,
   0,
@@ -24,6 +26,7 @@
   1
  ],
  "cutoff": 10,
+ "angle_contacts": 2.6,
  "improper_order": "center1_sorted",
  "equivalence": "replace",
  "improper_matched_order": true,
@@ -888,7 +891,8 @@
  "impropers": [],
  "notes": [
   "converted by CAPS (inorganic_clay, unit kcal/mol); equivalences replace the type name for each kind of parameter",
-  "CAPS extension: type charges from the force field's compound templates"
+  "CAPS extension: type charges from the force field's compound templates",
+  "ClayFF: Lennard-Jones σ mixed arithmetically and ε geometrically (Lorentz–Berthelot, as the paper and the original file's note say); metals and bridging oxygens unbonded; the M–O–H bends of hydroxyl groups formed with the metal in contact (≤ 2.6 Å) without an M–O bond, so M and H keep their non-bonded terms"
  ],
  "version": "",
  "status": "converted",

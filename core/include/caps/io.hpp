@@ -32,6 +32,9 @@ Trajectory read_pdb(const std::string& path);
 // name kept in Atom::resname's companion field label, charges, substructures as molecules, bonds with orders,
 // and the CRYSIN cell. Several MOLECULE records are read as one system.
 System read_mol2(const std::string& path);
+// Materials Studio .car (coordinates, cell, force-field types, charges; molecules) with the bonds of the .mdf beside it
+// (bonds across the cell included). Each atom's name is its force-field type.
+System read_car(const std::string& path);
 
 // Open any supported file. A topology (LAMMPS data) may be given for dumps.
 Trajectory open_file(const std::string& path, const std::string& topology_path = "");

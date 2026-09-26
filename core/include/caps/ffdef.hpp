@@ -119,6 +119,10 @@ struct FFDef {
   // "dreiding1990": a torsion no rule lists takes DREIDING's own rule by the hybridisation of its central atoms (Mayo,
   // Olafson, Goddard 1990, cases a-j), its barrier divided over the torsions about the bond
   std::string torsion_rules;
+  // ClayFF ("angle_contacts": 2.6): a bend i-j-k whose i has no bonds of its own (a metal of an octahedral sheet) and lies
+  // within this distance of j, j bonded to k (the hydroxyl O-H): its rule applies without a bond i-j, so i and k keep
+  // their non-bonded terms (M-O-H bends of ClayFF, Cygan, Liang, Kalinichev 2004)
+  double angle_contacts = 0;
   // the special_bonds keyword LAMMPS has for this force field ("amber", "dreiding"; styles "special" in the file)
   std::string special_style;
   // GROMACS topology form of the van der Waals parameters: "" σ/ε (comb-rule 2), "c6c12" C6/C12 (GROMOS, comb-rule 1)
