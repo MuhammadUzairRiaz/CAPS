@@ -129,7 +129,7 @@ struct LammpsRun {
   enum class Kind { Check, None, Minimize, NVT, NPT } kind = Kind::Check;
   bool minimize_first = true;
   double temperature = 300, pressure = 1.0;   // K, atm
-  double dt = 1.0;                             // fs
+  double dt = 0.5;                             // fs
   int64_t steps = 100000;
   double tdamp = 100, pdamp = 1000;            // fs
   int thermo_every = 1000, dump_every = 5000;
