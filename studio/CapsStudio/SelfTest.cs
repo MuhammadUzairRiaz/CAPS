@@ -548,7 +548,7 @@ internal static class SelfTest
         }
 
         // Nothing open (VisEmpty): Analyze shows where to get a structure
-        vm.CloseDocument();
+        vm.CloseAllStructures();
         vm.SetModule(1);
         Check(vm.ShowEmpty && vm.KeyOpen.EndsWith("O") && vm.RecentFew.Count <= 4, $"empty state on Analyze · {vm.RecentCount} recent");
         vm.SetModule(8);
@@ -1720,9 +1720,35 @@ internal static class SelfTest
             vm.GrowAssignField = true;
             vm.Grow().GetAwaiter().GetResult();
             var steps = string.Join(" · ", vm.PipelineSteps.Select(s => $"{s.Name} {s.State}"));
-            Check(vm.Field.Assigned && vm.Field.Complete && vm.PipelineSteps.Count == 8 && vm.PipelineSteps[1].State == "done"
-                  && vm.PipelineSteps[2].State == "done" && vm.PipelineSteps[2].Detail.StartsWith("GAFF") && vm.PipelineNextLabel == "Next: Relax",
-                  $"pipeline: force field assigned after Grow · {steps}");
+            // the strip states what the active structure is and what was done to it, in no imposed order
+            Check(vm.Field.Assigned && vm.Field.Complete && vm.PipelineSteps.Count == 6 && vm.PipelineSteps[1].Detail == "Polymer cell"
+                  && vm.PipelineSteps[2].State == "done" && vm.PipelineSteps[2].Detail.StartsWith("GAFF") && vm.PipelineNextLabel == ""
+                  && vm.ActiveItem?.Origin == "Polymer cell",
+                  $"structure status after Grow: force field assigned · {steps}");
+            // the project keeps every structure: another one opened, then the grownCell cell picked again with its force field
+            {
+                var grownCell = vm.ActiveItem!;
+                var structuresBefore = vm.ProjectItems.Count;
+                vm.Open(Path.Combine(dir, "ps_melt.data"));
+                var opened = vm.ActiveItem!;
+                var twoKept = vm.ProjectItems.Count == structuresBefore + 1 && opened != grownCell && !vm.Field.Assigned;
+                vm.Activate(grownCell);
+                Check(twoKept && vm.ActiveItem == grownCell && vm.Field.Assigned && vm.Field.ForceFieldName.StartsWith("GAFF") && vm.Document == grownCell.Doc,
+                      $"project: {vm.ProjectItems.Count} structures · back on {grownCell.Name} with {vm.Field.ForceFieldName}");
+                // Minimise keeping the original: the result is a new structure of the project, force field kept
+                vm.ResultAsNew = true;
+                vm.RelaxIterationsD = 30;
+                vm.Relax().GetAwaiter().GetResult();
+                vm.ResultAsNew = false;
+                var result = vm.ActiveItem!;
+                Check(result != grownCell && result.Name.Contains("relaxed") && !result.Name.Contains("minimised ·") && vm.Field.Assigned && vm.ProjectItems.Count == structuresBefore + 2
+                      && result.History.Contains("minimised") && !grownCell.History.Contains("minimised"),
+                      $"minimise into a new structure: {result.Name} · {result.History} · original: '{grownCell.History}'");
+                vm.CloseDocument();   // the result leaves the project; another structure becomes active
+                vm.Activate(opened);
+                vm.CloseDocument();
+                Check(vm.ProjectItems.Count == structuresBefore && vm.HasDocument && vm.ActiveItem == grownCell, $"close one structure: {vm.ProjectItems.Count} left, working on {vm.Title}");
+            }
             vm.OpenExportCenter();
             vm.RefreshEnginesNow();
             Check(vm.IsExportCenter && vm.IsExportRail && !vm.EngineHasError && vm.EngineLammpsFiles.Count == 2 && vm.EngineGromacsFiles.Count >= 4
@@ -1737,7 +1763,7 @@ internal static class SelfTest
             // incomplete force field: the Export center refuses and says where to go
             vm.Field.Clear().GetAwaiter().GetResult();
             vm.RefreshEnginesNow();
-            Check(vm.EngineHasError && vm.EngineError.Contains("force field") && vm.PipelineSteps[2].State == "next", $"export center without a force field: {vm.EngineError}");
+            Check(vm.EngineHasError && vm.EngineError.Contains("force field") && vm.PipelineSteps[2].State == "todo", $"export center without a force field: {vm.EngineError}");
             vm.SetModule(8);
         }
 
@@ -1805,8 +1831,8 @@ internal static class SelfTest
 
         // Close goes back to Start
         vm.SetModule(1);
-        vm.CloseDocument();
-        Check(vm.NoDocument && vm.IsStudio && vm.Title == "", "close: back to Start with no document");
+        vm.CloseAllStructures();
+        Check(vm.NoDocument && vm.IsStudio && vm.Title == "" && vm.ProjectItems.Count == 0, "close all structures: back to Start with no document");
 
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
         return fails == 0 ? 0 : 1;
