@@ -6342,42 +6342,34 @@
     0.1467,
     3.54845
    ]
-  },
-  {
-   "match": [
-    "*_hd"
-   ],
-   "style": "hbond/dreiding/lj",
-   "params": [
-    4,
-    2.75,
-    4
-   ]
-  },
-  {
-   "match": [
-    "*_hd"
-   ],
-   "style": "hbond/dreiding/lj",
-   "params": [
-    4,
-    2.75,
-    4
-   ]
-  },
-  {
-   "match": [
-    "*_hd",
-    "*_ha"
-   ],
-   "style": "hbond/dreiding/lj",
-   "params": [
-    4,
-    2.75,
-    4
-   ]
   }
  ],
+ "hbonds": {
+  "style": "dreiding/lj",
+  "power": 4,
+  "inner": 6.0,
+  "outer": 6.5,
+  "angle": 90,
+  "source": "moltemplate dreiding.lt: pair_style hybrid/overlay hbond/dreiding/lj 4 6 6.5 90; pair_coeff *_hd *_hd (i and j) and *_hd *_ha (i) hbond/dreiding/lj H_HB 4.0 2.75 4",
+  "terms": [
+   {
+    "donor": "*_hd",
+    "acceptor": "*_hd",
+    "hydrogen": "H_HB",
+    "eps": 4.0,
+    "sigma": 2.75,
+    "n": 4
+   },
+   {
+    "donor": "*_hd",
+    "acceptor": "*_ha",
+    "hydrogen": "H_HB",
+    "eps": 4.0,
+    "sigma": 2.75,
+    "n": 4
+   }
+  ]
+ },
  "bonds": [
   {
    "name": "H-H",
@@ -283362,7 +283354,8 @@
   }
  ],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "DREIDING hydrogen bonds as moltemplate's dreiding.lt gives them (hbond/dreiding/lj): after typing, N, O and F atoms carrying a hydrogen are donors (_hd, their hydrogen H_HB), the others acceptors (_ha) where the type has the variant"
  ],
  "version": "1990",
  "status": "converted",

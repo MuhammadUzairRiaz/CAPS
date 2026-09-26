@@ -82,6 +82,7 @@ struct Layout {
   bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
   bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
   bool charmm = false;                     // CHARMM (native): lj/charmmfsw, 1-4 pairs through dihedral charmmfsw weights
+  bool hbond = false;                      // DREIDING hydrogen bonds: hbond/dreiding/lj overlaid on the pair style
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
   // how the files are written (exact CAPS styles, or the force field's native ones)
   bool native = false, force_hybrid = false;
@@ -272,6 +273,23 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       L.dihedrals.add("opls", c, {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
       continue;
     }
+    if (nd == "class2") {
+      // a class II force field's plain torsions (the diagonal PCFF / COMPASS files) as its own dihedral class2 with no
+      // cross terms: v [1 + cos(nφ − δ)] = K_n [1 − cos(nφ − φ_n)], K_n = v, φ_n = δ + 180°, n 1 to 3
+      double K[3] = {0, 0, 0}, P[3] = {0, 0, 0};
+      bool fits = true;
+      for (const auto* t : v) {
+        if (t->n < 1 || t->n > 3 || K[t->n - 1] != 0) { fits = false; break; }
+        K[t->n - 1] = t->v;
+        P[t->n - 1] = std::fmod(t->delta * R2D + 180.0 + 720.0, 360.0);
+      }
+      if (fits) {
+        L.dihedrals.add("class2", num({K[0], P[0], K[1], P[1], K[2], P[2]}),
+                        {num({0, 0, 0, 0}), num({0, 0, 0, 0, 0, 0, 0, 0}), num({0, 0, 0, 0, 0, 0, 0, 0}), num({0, 0, 0}), num({0, 0, 0})},
+                        {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+        continue;
+      }
+    }
     if (nd == "harmonic" && v.size() == 1 && v[0]->n >= 0 && std::fabs(std::fabs(std::cos(v[0]->delta)) - 1) < 1e-9) {
       // CVFF as msi2lmp writes it: K [1 + d cos(nφ)], d = +1 (phase 0) or −1 (phase 180°)
       L.dihedrals.add("harmonic", num({v[0]->v}) + (std::cos(v[0]->delta) > 0 ? " 1 " : " -1 ") + std::to_string(v[0]->n), {},
@@ -372,6 +390,11 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
   }
   L.periodic = s.cell.valid();
   if (st.hybrid && !L.gromacs) L.pair_hybrid = true;
+  L.hbond = ff.hbond.on();
+  if (L.hbond) {
+    if (L.gromacs || L.charmm) throw FieldError(ff.name + ": DREIDING hydrogen bonds with this pair style have no LAMMPS form");
+    L.pair_hybrid = true;   // hbond/dreiding/lj overlays the Lennard-Jones and Coulomb pairs
+  }
   return L;
 }
 
@@ -400,7 +423,7 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
   if (ff.pair_func.empty() && L.sw_types.empty() && !L.gromacs && !(L.pair_base == "lj/class2" && L.coul == "dsf")) {
     L.pair_combined = L.pair_base + (L.coul == "none" ? "" : "/coul/" + L.coul);
     L.pair_styles = {L.pair_combined};
-    L.pair_hybrid = st.hybrid;   // one style (lj/class2/coul/long too): hybrid only when asked
+    L.pair_hybrid = st.hybrid || L.hbond;   // one style (lj/class2/coul/long too): hybrid only when asked or overlaid
   }
 }
 
@@ -430,6 +453,26 @@ std::string fmt_accuracy(double x) {
   return s;
 }
 
+// DREIDING hydrogen bonds: "hbond/dreiding/lj power r_in r_out angle", and one pair_coeff per (donor type, acceptor type):
+// the lower type index first, the flag i or j naming the donor, the hydrogen type, ε σ n.
+std::string hbond_style(const ForceField& ff) {
+  char b[160];
+  std::snprintf(b, sizeof b, "hbond/dreiding/lj %d %.6g %.6g %.6g", ff.hbond.power, ff.hbond.inner, ff.hbond.outer, ff.hbond.angle_deg);
+  return b;
+}
+std::vector<std::string> hbond_lines(const ForceField& ff) {
+  std::vector<std::string> r;
+  char b[240];
+  for (const auto& [key, p] : ff.hbond.param) {
+    const int d = key.first, a = key.second, h = ff.hbond.htype.at(key);
+    std::snprintf(b, sizeof b, "%d %d hbond/dreiding/lj %d %s %.10g %.10g %d  # donor %s, acceptor %s, hydrogen %s", std::min(d, a) + 1,
+                  std::max(d, a) + 1, h + 1, d <= a ? "i" : "j", p[0], p[1], int(p[2]), ff.type_names[size_t(d)].c_str(),
+                  ff.type_names[size_t(a)].c_str(), ff.type_names[size_t(h)].c_str());
+    r.push_back(b);
+  }
+  return r;
+}
+
 // PME is used (and written) only for periodic cells, as the evaluator does.
 bool pme(const EnergyOptions& e, const Layout& L) { return e.electrostatics == EnergyOptions::Electrostatics::PME && L.periodic && !L.gromacs; }
 
@@ -440,10 +483,16 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   if (L.native && !L.pair_combined.empty()) {
     // the force field's own form: one pair style (hybrid when asked), its long-range sum by PPPM or Ewald
     const std::string args = L.charmm ? fmt_args({ff.lj_inner, e.cutoff}) : L.coul == "dsf" ? fmt_args({e.dsf_alpha, e.cutoff}) : fmt_args({e.cutoff});
-    r.push_back("pair_style " + std::string(L.pair_hybrid ? "hybrid " : "") + L.pair_combined + args);
-    if (L.charmm) {}   // switched to zero at the cut-off: no tail, no shift
-    else if (e.tail && L.periodic) r.push_back("pair_modify tail yes");
-    else if (!e.tail) r.push_back("pair_modify shift yes");
+    if (L.hbond) {   // DREIDING: the hydrogen bond overlaid on the Lennard-Jones and Coulomb pairs
+      r.push_back("pair_style hybrid/overlay " + hbond_style(ff) + " " + L.pair_combined + args);
+      if (e.tail && L.periodic) r.push_back("pair_modify pair " + L.pair_combined + " tail yes");
+      else if (!e.tail) r.push_back("pair_modify pair " + L.pair_combined + " shift yes");
+    } else {
+      r.push_back("pair_style " + std::string(L.pair_hybrid ? "hybrid " : "") + L.pair_combined + args);
+      if (L.charmm) {}   // switched to zero at the cut-off: no tail, no shift
+      else if (e.tail && L.periodic) r.push_back("pair_modify tail yes");
+      else if (!e.tail) r.push_back("pair_modify shift yes");
+    }
     if (ff.dielectric != 1) {
       std::snprintf(b, sizeof b, "dielectric %.10g", ff.dielectric);
       r.push_back(b);
@@ -481,6 +530,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     r.push_back(b);
   } else {
     std::string p = "pair_style hybrid/overlay";
+    if (L.hbond) p += " " + hbond_style(ff);
     for (const auto& st : L.pair_styles) {
       std::snprintf(b, sizeof b, " %s %.6g", st.c_str(), e.cutoff);
       p += b;
@@ -499,6 +549,9 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   // without, they are shifted to zero there
   // lj/gromacs is zero at the cut-off by itself; lj/sdk has no tail correction (CAPS adds none for it either)
   if (L.gromacs || (L.cos2 && L.pair_styles.size() == 1)) {
+  } else if (L.hbond) {   // the tail or shift for the Lennard-Jones sub-style only
+    if (!e.tail) r.push_back("pair_modify pair " + L.pair_base + " shift yes");
+    else if (L.periodic) r.push_back("pair_modify pair " + L.pair_base + " tail yes");
   } else if (!e.tail) r.push_back("pair_modify shift yes");
   else if (L.periodic && L.sdk) {
     if (L.pair_styles.size() > 1) throw FieldError("SDK pairs with other Lennard-Jones pairs and tail corrections have no LAMMPS form (lj/sdk has no tail)");
@@ -702,7 +755,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   }
   // every i-j pair, mixed by the force field's rule (and its explicit pairs): nothing is left to LAMMPS's mixing
   if (pair_coeffs) {
-    out << "\nPairIJ Coeffs  # " << (!L.pair_combined.empty() ? (L.pair_hybrid ? "hybrid" : L.pair_combined) : L.pair_hybrid ? std::string("hybrid/overlay") : L.gromacs ? std::string(e.coulomb ? "lj/gromacs/coul/gromacs" : "lj/gromacs")
+    out << "\nPairIJ Coeffs  # " << (!L.pair_combined.empty() ? (L.hbond ? "hybrid/overlay" : L.pair_hybrid ? "hybrid" : L.pair_combined) : L.pair_hybrid ? std::string("hybrid/overlay") : L.gromacs ? std::string(e.coulomb ? "lj/gromacs/coul/gromacs" : "lj/gromacs")
                                       : e.coulomb ? std::string(pme(e, L) ? "lj/cut/coul/long" : "lj/cut/coul/dsf") : L.pair_base) << "\n\n";
     for (const auto& l : pair_lines(L, ff)) out << l << "\n";
   }
@@ -777,11 +830,22 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
     if (sp == std::string::npos || sp >= 16) return l;
     return l.substr(0, sp) + std::string(16 - sp, ' ') + l.substr(sp + 1);
   };
-  for (const auto& l : style_lines(L, ff, e)) out << aligned(l) << "\n";
+  // the long-range solver after read_data: LAMMPS sets PPPM up for the box it is defined with (a triclinic cell needs it
+  // defined after the cell is read)
+  std::vector<std::string> kspace;
+  for (const auto& l : style_lines(L, ff, e)) {
+    if (l.rfind("kspace_style", 0) == 0) kspace.push_back(l);
+    else out << aligned(l) << "\n";
+  }
   out << "\nread_data       " << data_path << "\n";
+  for (const auto& l : kspace) out << aligned(l) << "\n";
   if (pair_coeffs) {
     out << "\n# pair coefficients: every type pair, " << ff.mixing << " mixing applied by CAPS (nothing left to LAMMPS's mixing)\n";
     for (const auto& l : pair_lines(L, ff)) out << "pair_coeff      " << l << "\n";
+  }
+  if (L.hbond) {
+    out << "\n# DREIDING hydrogen bonds: donor-acceptor type pairs, the hydrogen type\n";
+    for (const auto& l : hbond_lines(ff)) out << "pair_coeff      " << l << "\n";
   }
   for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);

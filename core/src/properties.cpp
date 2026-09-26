@@ -1542,6 +1542,17 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   for (auto t : ff.dihedrals2) if (in({t.i, t.j, t.k, t.l})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); t.l = m(t.l); s.dihedrals2.push_back(t); }
   for (auto t : ff.impropers2) if (in({t.i, t.j, t.k, t.l})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); t.l = m(t.l); s.impropers2.push_back(t); }
   for (const auto& p : ff.pairs14) if (in({p[0], p[1]})) s.pairs14.push_back({m(p[0]), m(p[1])});
+  if (ff.hbond.on()) {   // hydrogen bonds: the per-atom lists renumbered, hydrogens outside the subset dropped
+    s.hbond = ff.hbond;
+    s.hbond.hyd.assign(atoms.size(), {});
+    s.hbond.acceptor.assign(atoms.size(), 0);
+    for (size_t k = 0; k < atoms.size(); ++k) {
+      if (atoms[k] < ff.hbond.acceptor.size()) s.hbond.acceptor[k] = ff.hbond.acceptor[atoms[k]];
+      if (atoms[k] < ff.hbond.hyd.size())
+        for (uint32_t h : ff.hbond.hyd[atoms[k]])
+          if (map[h] >= 0) s.hbond.hyd[k].push_back(uint32_t(map[h]));
+    }
+  }
   s.excluded.resize(atoms.size());
   for (size_t k = 0; k < atoms.size(); ++k)
     if (atoms[k] < ff.excluded.size())
