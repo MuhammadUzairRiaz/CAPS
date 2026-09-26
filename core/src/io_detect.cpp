@@ -124,7 +124,28 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr = read_xyz(path);
   }
   if (tr.topology.atoms.empty()) throw ReadError(path + ": no atoms found (read as " + format_name(fmt) + ")");
-  if (!told) tell(tr, fmt == "lammps-dump" && !topology_path.empty());
+  // a GROMACS topology: its atoms (types, charges, residues), bonds and explicit terms, the coordinates from the file
+  const std::string tl = topology_path.size() > 4 ? topology_path.substr(topology_path.size() - 4) : std::string();
+  const bool gmx_top = tl == ".top" || tl == ".itp";
+  if (gmx_top) {
+    System T = read_gromacs_topology(topology_path);
+    if (T.atoms.size() != tr.topology.atoms.size())
+      throw ReadError(topology_path + " has " + std::to_string(T.atoms.size()) + " atoms, " + path + " " + std::to_string(tr.topology.atoms.size()));
+    for (size_t i = 0; i < T.atoms.size(); ++i) {
+      T.atoms[i].pos = tr.topology.atoms[i].pos;
+      T.atoms[i].image = tr.topology.atoms[i].image;
+    }
+    T.cell = tr.topology.cell;
+    T.title = tr.topology.title.empty() ? T.title : tr.topology.title;
+    T.velocities = tr.topology.velocities;
+    T.unwrapped = tr.topology.unwrapped;
+    T.notes.insert(T.notes.begin(), tr.topology.notes.begin(), tr.topology.notes.end());
+    T.notes.push_back("topology from " + std::filesystem::path(topology_path).filename().string() + ": " + std::to_string(T.bonds.size()) + " bonds, " +
+                      std::to_string(T.topology->angles.size()) + " angles, " + std::to_string(T.topology->dihedrals.size()) + " dihedrals, " +
+                      std::to_string(T.topology->vsites.size()) + " virtual sites");
+    tr.topology = std::move(T);
+  }
+  if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top) && !topology_path.empty());
   report(3, 1, std::to_string(tr.frames()) + " frames");
   if (tr.topology.bonds.empty()) {
     System f0 = tr.frame(0);
