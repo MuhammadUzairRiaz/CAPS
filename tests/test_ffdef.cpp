@@ -13,6 +13,7 @@
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
+#include "caps/martini_protein.hpp"
 #include "caps/molecule.hpp"
 #include "caps/resolution.hpp"
 #include "caps/typing.hpp"
@@ -570,4 +571,43 @@ TEST(FFDef, DlfieldCharmmKeepsOneFourAndUreyBradley) {
   EXPECT_TRUE(lj14);
   EXPECT_TRUE(ub);
   EXPECT_DOUBLE_EQ(back.special_lj[2], 1.0);
+}
+
+// Martini 3 small molecules from all-atom structures, by graph: CAPS's own toluene and anthracene (its atom names, not
+// CHARMM's) become TOLU and ANTR; anthracene's sites built on a site (R1 and R7 on R4, itself between R2 and R6) are
+// placed in order and hand their forces back in reverse: forces and virial are the energy's derivatives
+TEST(CoarseGrained, Martini3SmallMoleculesByGraph) {
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/";
+  const FFDef m3 = load_forcefield(dir + "forcefields/martini3.json");
+  System box;
+  box.cell.a = {40, 0, 0};
+  box.cell.b = {0, 40, 0};
+  box.cell.c = {0, 0, 40};
+  int k = 0;
+  for (const char* smi : {"Cc1ccccc1", "c1ccc2cc3ccccc3cc2c1", "c1ccc2[nH]ccc2c1"}) {
+    System s = build_molecule(smi).system;
+    int64_t mol = ++k;
+    const uint32_t off = uint32_t(box.atoms.size());
+    for (auto a : s.atoms) {
+      a.pos = a.pos + Vec3{10.0 * k, 12.0 * k, 20};
+      a.mol = mol;
+      box.atoms.push_back(a);
+    }
+    for (auto b : s.bonds) box.bonds.push_back({b.i + off, b.j + off, b.order});
+  }
+  box.bonds_from_file = true;
+  std::vector<std::string> un, notes;
+  const System cg = martini3_small_molecules(box, dir + "martini/martini3-small-molecules.json", 1e6, &un, &notes);
+  EXPECT_TRUE(un.empty());
+  ASSERT_FALSE(notes.empty());
+  EXPECT_NE(notes[0].find("1 ANTR, 1 INDO, 1 TOLU"), std::string::npos) << notes[0];
+  EXPECT_EQ(cg.atoms.size(), 3u + 7u + 5u);
+  ASSERT_TRUE(cg.topology);
+  EXPECT_EQ(cg.topology->vsites.size(), 3u + 1u);   // ANTR's three, INDO's one
+  // the same through the force field's typing (all-atom in, beads out)
+  System s = box;
+  std::string ch = "auto";
+  const std::string note = prepare_for_forcefield(s, m3, ch);
+  EXPECT_EQ(s.atoms.size(), cg.atoms.size()) << note;
+  check_cg_forces(m3, cg, "keep");
 }

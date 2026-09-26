@@ -605,10 +605,12 @@ internal static class SelfTest
             vm.BuildBeadsMolecule().GetAwaiter().GetResult();
             var thym = vm.MolDoc?.Summary().Atoms ?? 0;
             vm.OpenMoleculeInStudio();
+            var ffBack = vm.Field.FfIndex;
             vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "martini3");
             vm.Field.Assign().GetAwaiter().GetResult();
             Check(m3n > 200 && thym == 5 && vm.Field.Assigned && vm.Field.Complete,
                   $"Martini 3 builder: {m3n} molecules, THYM {thym} beads, field {(vm.Field.Complete ? "complete" : "incomplete")} ({vm.Field.FfIndex}) {vm.Field.Log} · {string.Join(" · ", vm.Field.Notes.Take(3))}");
+            vm.Field.FfIndex = ffBack;   // later checks assign their own force fields
             vm.SetModule(cgBack);
         }
 

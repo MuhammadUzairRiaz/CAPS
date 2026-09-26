@@ -160,6 +160,12 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
         if (f == 1) v.w.assign(v.from.size(), 1.0);
         else if (f != 2) throw ReadError(where + ": virtual_sitesn function " + w[1] + " is not handled");
       }
+      if (!v.w.empty()) {   // centre of geometry / weighted centre: weights as fractions
+        double sum = 0;
+        for (double x : v.w) sum += x;
+        if (sum <= 0) throw ReadError(where + ": virtual site weights must be positive");
+        for (double& x : v.w) x /= sum;
+      }
       cur->topo.vsites.push_back(v);
     } else if (sec == "virtual_sites2" || sec == "virtual_sites3") {
       ExplicitTopology::VSite v;

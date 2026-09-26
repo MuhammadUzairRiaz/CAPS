@@ -250,11 +250,13 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
-  enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, VSITES, EXCLUSIONS, NSEC };
+  enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, VSITES, VSITES2, VSITES3, EXCLUSIONS, NSEC };
   static const char* sec_head[NSEC] = {"[ atoms ]\n; nr  type  resnr  residue  atom  cgnr  charge  mass\n", "[ bonds ]\n; i  j  func  parameters\n",
                                        "[ pairs ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol), scaled\n", "[ angles ]\n; i  j  k  func  parameters\n",
                                        "[ dihedrals ]\n; i  j  k  l  func  parameters\n",
-                                       "[ virtual_sitesn ]\n; site  func  atom weight ... (3: weighted centre)\n", "[ exclusions ]\n"};
+                                       "[ virtual_sitesn ]\n; site  func  atom weight ... (3: weighted centre)\n",
+                                       "[ virtual_sites2 ]\n; site  i  j  func  a   (x = (1 - a) x_i + a x_j)\n",
+                                       "[ virtual_sites3 ]\n; site  i  j  k  func  a  b   (x = (1 - a - b) x_i + a x_j + b x_k)\n", "[ exclusions ]\n"};
   struct Line { Sec sec; std::vector<uint32_t> atoms; std::string tail; };
   std::vector<Line> lines;
   auto add = [&](Sec sec, std::vector<uint32_t> at, const std::string& tail) { lines.push_back({sec, std::move(at), tail}); };
@@ -316,6 +318,17 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   for (const auto& v : ff.vsites) {
     std::vector<uint32_t> at{v.site};
     at.insert(at.end(), v.from.begin(), v.from.end());
+    double sum = 0, lo = 0;
+    for (double x : v.w) sum += x, lo = std::min(lo, x);
+    // a linear combination of two or three atoms (weights summing to 1, perhaps negative: a site outside its atoms)
+    // as GROMACS's own linear sites; virtual_sitesn takes positive weights only
+    // (two atoms always so: a site built on it may be a virtual_sites3, which GROMACS allows only on lower functions)
+    if ((v.from.size() == 2 || (v.from.size() == 3 && lo < 0)) && std::fabs(sum - 1) < 1e-9) {
+      add(v.from.size() == 2 ? VSITES2 : VSITES3, at,
+          v.from.size() == 2 ? " 1 " + fmt("%.12g", v.w[1]) : " 1 " + fmt("%.12g", v.w[1]) + " " + fmt("%.12g", v.w[2]));
+      continue;
+    }
+    if (lo < 0) throw FieldError("a virtual site with negative weights on " + std::to_string(v.from.size()) + " atoms has no GROMACS form");
     std::string w;
     for (double x : v.w) w += " " + fmt("%.12g", x);
     add(VSITES, at, w);

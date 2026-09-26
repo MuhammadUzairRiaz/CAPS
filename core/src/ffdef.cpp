@@ -136,6 +136,10 @@ void load_typing(FFDef& ff, const std::string& path) {
     const std::filesystem::path f(j["martini_protein"].str());
     ff.martini_protein = (f.is_absolute() ? f : std::filesystem::path(path).parent_path() / f).lexically_normal().string();
   }
+  if (j.has("martini_small_molecules")) {
+    const std::filesystem::path f(j["martini_small_molecules"].str());
+    ff.martini_small = (f.is_absolute() ? f : std::filesystem::path(path).parent_path() / f).lexically_normal().string();
+  }
   if (j.has("exclude_pairs"))
     for (const auto& pr : j["exclude_pairs"].items())
       if (pr.items().size() == 2) ff.exclude_type_pairs.push_back({pr.items()[0].str(), pr.items()[1].str()});
@@ -1948,6 +1952,23 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       ff.mass[v.site] = 0;
       ff.vsites.push_back(vs);
     }
+    // sites built on other sites after them (placed in this order, their forces spread back in reverse)
+    {
+      std::vector<VirtualSite> sorted;
+      std::set<uint32_t> placed, pending;
+      for (const auto& v : ff.vsites) pending.insert(v.site);
+      while (sorted.size() < ff.vsites.size()) {
+        const size_t before = sorted.size();
+        for (const auto& v : ff.vsites) {
+          if (placed.count(v.site)) continue;
+          bool ready = true;
+          for (uint32_t a : v.from) ready = ready && (!pending.count(a) || placed.count(a));
+          if (ready) sorted.push_back(v), placed.insert(v.site);
+        }
+        if (sorted.size() == before) throw FFError("virtual sites built on each other in a cycle");
+      }
+      ff.vsites = std::move(sorted);
+    }
   }
   if (!ff.keep13)
     for (const auto& p : ex13) if (!ex12.count(p)) add_ex(p.first, p.second);
@@ -2029,11 +2050,12 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
       // Martini 3: martinize2's defaults (DSSP, side-chain fix, charged termini, no elastic network)
       Martini3Options mo;
       mo.constraint_kj = ff.constraint_kj;
-      s = martini3_protein(s, mo, ff.martini_protein, &rep);
+      s = ff.martini_small.empty() ? martini3_protein(s, mo, ff.martini_protein, &rep) : martini3_all_atom(s, mo, ff.martini_protein, ff.martini_small, &rep);
       charges = "keep";
-      note = std::to_string(before) + " atoms of " + std::to_string(rep.residues) + " residues mapped onto " + std::to_string(rep.beads) +
-             " Martini 3 protein beads as martinize2 maps them (secondary structure by DSSP: " + rep.cg_ss +
-             "; side-chain fix on; no elastic network — caps martini --martini 3 --elastic writes one)";
+      note = std::to_string(before) + " atoms mapped onto " + std::to_string(rep.beads) + " Martini 3 beads";
+      if (rep.residues)
+        note += " (" + std::to_string(rep.residues) + " amino acids as martinize2 maps them: secondary structure by DSSP " + rep.cg_ss +
+                "; side-chain fix on; no elastic network — caps martini --martini 3 --elastic writes one)";
       for (const auto& n : rep.notes) note += "; " + n;
       return note;
     }
