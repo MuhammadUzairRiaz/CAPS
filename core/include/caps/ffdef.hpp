@@ -148,6 +148,9 @@ struct FFDef {
   // Ionic solids (typing file "bonds": "defined"): the builder's neighbour bonds are not bonds of the model; after
   // typing, only bonds the force field has a term for stay (core-shell springs, O-H of water and hydroxyls)
   bool keep_defined_bonds = false;
+  // Type pairs that never interact (typing file "exclude_pairs": [["C", "C"]]; LAMMPS neigh_modify exclude type): a
+  // graphene sheet held in place, as the source excludes its carbons from each other
+  std::vector<std::pair<std::string, std::string>> exclude_type_pairs;
   // Coarse-grained force fields (typing file "coarse_grained": true): sites are beads, typed by name. "beads" and
   // "bead_groups" map an all-atom structure onto beads first (map_to_beads; SDK). bead_templates: named bead SMILES
   // from the force field's sources (force-field file "bead_templates"), for build_beads.

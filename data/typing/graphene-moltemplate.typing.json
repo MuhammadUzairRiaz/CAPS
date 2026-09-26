@@ -1,0 +1,22 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Graphene (LJ carbon)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "exclude_pairs": [
+  [
+   "C",
+   "C"
+  ]
+ ],
+ "description": "CAPS rules for the LJ graphene carbon (bench/typing/make_graphene_rules.py): carbons bonded only to carbons; the sheet's bonds are dropped (the force field has none: hold the sheet in place)",
+ "rules": [
+  {
+   "type": "C",
+   "smarts": "[#6;!$(*~[!#6])]",
+   "priority": 0,
+   "description": "a carbon bonded only to carbons (a graphene sheet)"
+  }
+ ]
+}

@@ -1224,7 +1224,7 @@
    "origin": "moltemplate",
    "source_file": "graphene.lt",
    "status": "converted",
-   "notes": "",
+   "notes": "LJ carbon for graphene sheets, non-bonded only (hold the sheet in place)",
    "file": "graphene-moltemplate.json",
    "counts": {
     "atom_types": 1,
@@ -1233,6 +1233,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/graphene-moltemplate.typing.json",
+    "evidence": "CAPS rule (bench/typing/make_graphene_rules.py): carbons bonded only to carbons"
    }
   },
   {
