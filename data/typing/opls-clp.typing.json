@@ -1,0 +1,342 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CL&P ionic liquids (OPLS-AA based)",
+ "description": "CAPS rules for CL&P ionic liquids (OPLS-AA based) from the force field's type definitions (bench/typing/make_opls_family_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CT",
+   "smarts": "[CX4]",
+   "priority": 0,
+   "description": "alkyl carbon"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "alkyl H"
+  },
+  {
+   "type": "C1",
+   "smarts": "[CX4;$(*[$([#7+]),$([#7;r5;$(*~[#6;r5]~[#7;r5])])]),$(*[#15+])]",
+   "priority": 2,
+   "description": "carbon on the cationic centre"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4;$(*[$([#7+]),$([#7;r5;$(*~[#6;r5]~[#7;r5])])]),$(*[#15+])]",
+   "priority": 2,
+   "description": "H on a carbon on the cationic centre"
+  },
+  {
+   "type": "NA",
+   "smarts": "[#7;r5;$(*~[#6;r5]~[#7;r5])]",
+   "priority": 3,
+   "description": "imidazolium nitrogen"
+  },
+  {
+   "type": "CR",
+   "smarts": "[#6;r5](~[#7;r5])~[#7;r5]",
+   "priority": 3,
+   "description": "imidazolium C2"
+  },
+  {
+   "type": "CW",
+   "smarts": "[#6;r5;$(*~[#7;r5;$(*~[#6;r5]~[#7;r5])]);!$(*(~[#7;r5])~[#7;r5])]",
+   "priority": 2,
+   "description": "imidazolium C4 / C5"
+  },
+  {
+   "type": "HCR",
+   "smarts": "[H][#6;r5](~[#7;r5])~[#7;r5]",
+   "priority": 3,
+   "description": "H on imidazolium C2"
+  },
+  {
+   "type": "HCW",
+   "smarts": "[H][#6;r5;$(*~[#7;r5;$(*~[#6;r5]~[#7;r5])])]",
+   "priority": 2,
+   "description": "H on imidazolium C4 / C5"
+  },
+  {
+   "type": "HNA",
+   "smarts": "[H][#7;r5]",
+   "priority": 3,
+   "description": "H on an imidazolium nitrogen"
+  },
+  {
+   "type": "NA",
+   "smarts": "[#7+;r6]",
+   "priority": 3,
+   "description": "pyridinium nitrogen"
+  },
+  {
+   "type": "CA",
+   "smarts": "[#6X3;r6;$(*@[#7+;r6]),$(*@*@[#7+;r6]),$(*@*@*@[#7+;r6])]",
+   "priority": 2,
+   "description": "pyridinium ring carbon"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][#6X3;r6;$(*@[#7+;r6]),$(*@*@[#7+;r6]),$(*@*@*@[#7+;r6])]",
+   "priority": 2,
+   "description": "H on a pyridinium ring carbon"
+  },
+  {
+   "type": "NT",
+   "smarts": "[NX4+;H0]",
+   "priority": 3,
+   "description": "quaternary ammonium / pyrrolidinium nitrogen"
+  },
+  {
+   "type": "HN",
+   "smarts": "[H][NX4+]",
+   "priority": 3,
+   "description": "H on an ammonium nitrogen"
+  },
+  {
+   "type": "PT",
+   "smarts": "[PX4+]",
+   "priority": 3,
+   "description": "phosphonium phosphorus"
+  },
+  {
+   "type": "CG",
+   "smarts": "[CX3;$(C(~[#7])(~[#7])~[#7])]",
+   "priority": 4,
+   "description": "guanidinium carbon"
+  },
+  {
+   "type": "NG",
+   "smarts": "[#7;$(*[CX3](~[#7])~[#7])]",
+   "priority": 4,
+   "description": "guanidinium nitrogen"
+  },
+  {
+   "type": "HG",
+   "smarts": "[H][#7;$(*[CX3](~[#7])~[#7])]",
+   "priority": 4,
+   "description": "H on a guanidinium nitrogen"
+  },
+  {
+   "type": "NB",
+   "smarts": "[#7X2;$(*(S)S)]",
+   "priority": 4,
+   "description": "bis(sulfonyl)amide nitrogen (NTf2)"
+  },
+  {
+   "type": "SB",
+   "smarts": "[SX4;$(S~[#7X2])]",
+   "priority": 4,
+   "description": "sulfonyl sulfur of NTf2"
+  },
+  {
+   "type": "OB",
+   "smarts": "[OX1]~[SX4]~[#7X2]",
+   "priority": 4,
+   "description": "sulfonyl oxygen of NTf2"
+  },
+  {
+   "type": "CF",
+   "smarts": "[CX4](F)(F)(F)S",
+   "priority": 4,
+   "description": "CF3 carbon on sulfur"
+  },
+  {
+   "type": "FB",
+   "smarts": "[F][CX4]([F])([F])S",
+   "priority": 4,
+   "description": "F of a CF3 on sulfur"
+  },
+  {
+   "type": "F",
+   "smarts": "[F][CX4]",
+   "priority": 1,
+   "description": "F on carbon"
+  },
+  {
+   "type": "SO",
+   "smarts": "[SX4;$(S(~[OX1])(~[OX1])~[OX1])]",
+   "priority": 3,
+   "description": "sulfonate / sulfate sulfur"
+  },
+  {
+   "type": "OS",
+   "smarts": "[OX1]~[SX4](~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "sulfonate / sulfate oxygen"
+  },
+  {
+   "type": "CS3",
+   "smarts": "[CX4;!$(*(F)(F)F)][SX4](~[OX1])(~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "alkyl carbon on a sulfonate"
+  },
+  {
+   "type": "HS3",
+   "smarts": "[H][CX4][SX4](~[OX1])(~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "H on a sulfonate alkyl carbon"
+  },
+  {
+   "type": "OC",
+   "smarts": "[OX2]([#6])[SX4](~[OX1])(~[OX1])~[OX1]",
+   "priority": 4,
+   "description": "ester oxygen of an alkyl sulfate"
+  },
+  {
+   "type": "CS4",
+   "smarts": "[CX4][OX2][SX4](~[OX1])(~[OX1])~[OX1]",
+   "priority": 4,
+   "description": "alkyl carbon of an alkyl sulfate"
+  },
+  {
+   "type": "HS4",
+   "smarts": "[H][CX4][OX2][SX4]",
+   "priority": 4,
+   "description": "H on an alkyl sulfate carbon"
+  },
+  {
+   "type": "SK",
+   "smarts": "[SX1]~[CX2]~[NX1]",
+   "priority": 4,
+   "description": "thiocyanate sulfur"
+  },
+  {
+   "type": "CK",
+   "smarts": "[CX2](~[SX1])~[NX1]",
+   "priority": 4,
+   "description": "thiocyanate carbon"
+  },
+  {
+   "type": "NK",
+   "smarts": "[NX1]~[CX2]~[SX1]",
+   "priority": 4,
+   "description": "thiocyanate nitrogen"
+  },
+  {
+   "type": "N3",
+   "smarts": "[NX2](C#N)C#N",
+   "priority": 4,
+   "description": "dicyanamide central nitrogen"
+  },
+  {
+   "type": "CZ",
+   "smarts": "[CX2](#N)[NX2]",
+   "priority": 4,
+   "description": "dicyanamide carbon"
+  },
+  {
+   "type": "NZ",
+   "smarts": "[NX1]#C[NX2]",
+   "priority": 4,
+   "description": "dicyanamide terminal nitrogen"
+  },
+  {
+   "type": "C3A",
+   "smarts": "[CX3](C#N)(C#N)C#N",
+   "priority": 4,
+   "description": "tricyanomethanide central carbon"
+  },
+  {
+   "type": "CN",
+   "smarts": "[CX2]#[NX1]",
+   "priority": 2,
+   "description": "nitrile carbon"
+  },
+  {
+   "type": "NC",
+   "smarts": "[NX1]#[CX2]",
+   "priority": 2,
+   "description": "nitrile nitrogen"
+  },
+  {
+   "type": "B",
+   "smarts": "[B]",
+   "priority": 3,
+   "description": "borate boron"
+  },
+  {
+   "type": "P",
+   "smarts": "[PX6]",
+   "priority": 3,
+   "description": "hexafluorophosphate phosphorus"
+  },
+  {
+   "type": "FP",
+   "smarts": "[F][PX6]",
+   "priority": 3,
+   "description": "hexafluorophosphate fluorine"
+  },
+  {
+   "type": "CO",
+   "smarts": "[CX3](=[OX1])[OX1-]",
+   "priority": 3,
+   "description": "carboxylate carbon"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1]",
+   "priority": 2,
+   "description": "alcohol oxygen"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][OX2]",
+   "priority": 2,
+   "description": "alcohol H"
+  },
+  {
+   "type": "Li+",
+   "smarts": "[Li]",
+   "priority": 0,
+   "description": "lithium ion"
+  },
+  {
+   "type": "Na+",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "Cl-",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  },
+  {
+   "type": "Br-",
+   "smarts": "[Br-;X0]",
+   "priority": 0,
+   "description": "bromide ion"
+  },
+  {
+   "type": "OT3",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "TIP3P water O"
+  },
+  {
+   "type": "HT3",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "TIP3P water H"
+  }
+ ],
+ "analogies": {
+  "SO": [
+   "SB"
+  ],
+  "OS": [
+   "OB"
+  ]
+ },
+ "analogy_source": "CL&P ionic liquids (OPLS-AA based) analogues: the same element and hybridisation, nearest in hydrogen count or neighbourhood"
+}

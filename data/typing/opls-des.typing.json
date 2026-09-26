@@ -1,0 +1,309 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "OPLS-DES deep eutectic solvents",
+ "description": "CAPS rules for OPLS-DES deep eutectic solvents from the force field's type definitions (bench/typing/make_opls_family_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "NA1",
+   "smarts": "[$([NX4+](C)(C)(C)CC[OX2H1])]",
+   "priority": 5,
+   "description": "choline nitrogen"
+  },
+  {
+   "type": "CA1",
+   "smarts": "[CX4H3;$(*[NX4+](C)(C)CC[OX2H1])]",
+   "priority": 5,
+   "description": "choline N-methyl carbon"
+  },
+  {
+   "type": "HA1",
+   "smarts": "[H][CX4H3;$(*[NX4+](C)(C)CC[OX2H1])]",
+   "priority": 5,
+   "description": "H on a choline N-methyl"
+  },
+  {
+   "type": "CS1",
+   "smarts": "[CX4H2;$(*([NX4+](C)(C)C)C[OX2H1])]",
+   "priority": 5,
+   "description": "choline CH2 on nitrogen"
+  },
+  {
+   "type": "HS1",
+   "smarts": "[H][CX4H2;$(*([NX4+](C)(C)C)C[OX2H1])]",
+   "priority": 5,
+   "description": "H on the choline CH2 on nitrogen"
+  },
+  {
+   "type": "CW1",
+   "smarts": "[CX4H2;$(*([OX2H1])C[NX4+](C)(C)C)]",
+   "priority": 5,
+   "description": "choline CH2 on oxygen"
+  },
+  {
+   "type": "HW1",
+   "smarts": "[H][CX4H2;$(*([OX2H1])C[NX4+](C)(C)C)]",
+   "priority": 5,
+   "description": "H on the choline CH2 on oxygen"
+  },
+  {
+   "type": "OY1",
+   "smarts": "[OX2H1;$(*CC[NX4+](C)(C)C)]",
+   "priority": 5,
+   "description": "choline hydroxyl oxygen"
+  },
+  {
+   "type": "HY1",
+   "smarts": "[H][OX2;$(*CC[NX4+](C)(C)C)]",
+   "priority": 5,
+   "description": "choline hydroxyl H"
+  },
+  {
+   "type": "CG2",
+   "smarts": "[$([CX4H2]([OX2H1])[CX4H2][OX2H1])]",
+   "priority": 4,
+   "description": "ethylene glycol carbon"
+  },
+  {
+   "type": "HG2",
+   "smarts": "[H][$([CX4H2]([OX2H1])[CX4H2][OX2H1])]",
+   "priority": 4,
+   "description": "H on an ethylene glycol carbon"
+  },
+  {
+   "type": "OH2",
+   "smarts": "[OX2H1;$(*[CX4H2][CX4H2][OX2H1])]",
+   "priority": 4,
+   "description": "ethylene glycol oxygen"
+  },
+  {
+   "type": "HO2",
+   "smarts": "[H][OX2;$(*[CX4H2][CX4H2][OX2H1])]",
+   "priority": 4,
+   "description": "ethylene glycol hydroxyl H"
+  },
+  {
+   "type": "CB3",
+   "smarts": "[$([CX4H2]([OX2H1])[CX4H1]([OX2H1])[CX4H2][OX2H1])]",
+   "priority": 5,
+   "description": "glycerol CH2"
+  },
+  {
+   "type": "CM3",
+   "smarts": "[$([CX4H1]([OX2H1])([CX4H2][OX2H1])[CX4H2][OX2H1])]",
+   "priority": 5,
+   "description": "glycerol CH"
+  },
+  {
+   "type": "HC3",
+   "smarts": "[H][$([CX4H2]([OX2H1])[CX4H1]([OX2H1])[CX4H2][OX2H1]),$([CX4H1]([OX2H1])([CX4H2][OX2H1])[CX4H2][OX2H1])]",
+   "priority": 5,
+   "description": "H on a glycerol carbon"
+  },
+  {
+   "type": "OH3",
+   "smarts": "[OX2H1;$(*[$([CX4H2]([OX2H1])[CX4H1]([OX2H1])[CX4H2][OX2H1]),$([CX4H1]([OX2H1])([CX4H2][OX2H1])[CX4H2][OX2H1])])]",
+   "priority": 5,
+   "description": "glycerol oxygen"
+  },
+  {
+   "type": "HO3",
+   "smarts": "[H][OX2;$(*[$([CX4H2]([OX2H1])[CX4H1]([OX2H1])[CX4H2][OX2H1]),$([CX4H1]([OX2H1])([CX4H2][OX2H1])[CX4H2][OX2H1])])]",
+   "priority": 5,
+   "description": "glycerol hydroxyl H"
+  },
+  {
+   "type": "CT4",
+   "smarts": "[CX4H3;$(*C(=O)[CX4H2][CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "levulinic acid methyl carbon"
+  },
+  {
+   "type": "HT4",
+   "smarts": "[H][CX4H3;$(*C(=O)[CX4H2][CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "H on the levulinic methyl"
+  },
+  {
+   "type": "CD4",
+   "smarts": "[CX3;$(*([CX4H3])(=O)[CX4H2][CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "levulinic ketone carbon"
+  },
+  {
+   "type": "OC4",
+   "smarts": "[OX1;$(*=C([CX4H3])[CX4H2][CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "levulinic ketone oxygen"
+  },
+  {
+   "type": "CF4",
+   "smarts": "[CX4H2;$(*(C(=O)[CX4H3])[CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "levulinic CH2 next to the ketone"
+  },
+  {
+   "type": "HF4",
+   "smarts": "[H][CX4H2;$(*(C(=O)[CX4H3])[CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "H on it"
+  },
+  {
+   "type": "CZ4",
+   "smarts": "[CX4H2;$(*(C(=O)[OX2H1])[CX4H2]C(=O)[CX4H3])]",
+   "priority": 5,
+   "description": "levulinic CH2 next to the acid"
+  },
+  {
+   "type": "HZ4",
+   "smarts": "[H][CX4H2;$(*(C(=O)[OX2H1])[CX4H2]C(=O)[CX4H3])]",
+   "priority": 5,
+   "description": "H on it"
+  },
+  {
+   "type": "CB4",
+   "smarts": "[CX3;$(*(=O)([OX2H1])[CX4H2][CX4H2]C(=O)[CX4H3])]",
+   "priority": 5,
+   "description": "levulinic acid carbon"
+  },
+  {
+   "type": "OB4",
+   "smarts": "[OX1;$(*=C([OX2H1])[CX4H2][CX4H2]C(=O)[CX4H3])]",
+   "priority": 5,
+   "description": "levulinic acid C=O oxygen"
+  },
+  {
+   "type": "OH4",
+   "smarts": "[OX2H1;$(*C(=O)[CX4H2][CX4H2]C(=O)[CX4H3])]",
+   "priority": 5,
+   "description": "levulinic acid OH oxygen"
+  },
+  {
+   "type": "HO4",
+   "smarts": "[H][OX2;$(*C(=O)[CX4H2][CX4H2]C(=O)[CX4H3])]",
+   "priority": 5,
+   "description": "levulinic acid H"
+  },
+  {
+   "type": "CD5",
+   "smarts": "[$([CX3](=O)([OX2H1])[CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "malonic acid carbon"
+  },
+  {
+   "type": "OD5",
+   "smarts": "[OX1;$(*=C([OX2H1])[CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "malonic acid C=O oxygen"
+  },
+  {
+   "type": "OH5",
+   "smarts": "[OX2H1;$(*C(=O)[CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "malonic acid OH oxygen"
+  },
+  {
+   "type": "HO5",
+   "smarts": "[H][OX2;$(*C(=O)[CX4H2]C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "malonic acid H"
+  },
+  {
+   "type": "CT5",
+   "smarts": "[CX4H2;$(*(C(=O)[OX2H1])C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "malonic CH2"
+  },
+  {
+   "type": "HC5",
+   "smarts": "[H][CX4H2;$(*(C(=O)[OX2H1])C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "H on the malonic CH2"
+  },
+  {
+   "type": "CD6",
+   "smarts": "[$([CX3](=O)([OX2H1])[CX3](=O)[OX2H1])]",
+   "priority": 5,
+   "description": "oxalic acid carbon"
+  },
+  {
+   "type": "OD6",
+   "smarts": "[OX1;$(*=C([OX2H1])C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "oxalic acid C=O oxygen"
+  },
+  {
+   "type": "OH6",
+   "smarts": "[OX2H1;$(*C(=O)C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "oxalic acid OH oxygen"
+  },
+  {
+   "type": "HO6",
+   "smarts": "[H][OX2;$(*C(=O)C(=O)[OX2H1])]",
+   "priority": 5,
+   "description": "oxalic acid H"
+  },
+  {
+   "type": "CB7",
+   "smarts": "[c;$(c1ccccc1[OX2H1]),$(c1cccc(c1)[OX2H1]),$(c1ccc(cc1)[OX2H1])]",
+   "priority": 4,
+   "description": "phenol ring carbon"
+  },
+  {
+   "type": "HB7",
+   "smarts": "[H][c;$(c1ccccc1[OX2H1]),$(c1cccc(c1)[OX2H1]),$(c1ccc(cc1)[OX2H1])]",
+   "priority": 4,
+   "description": "phenol ring H"
+  },
+  {
+   "type": "OH7",
+   "smarts": "[OX2H1]c",
+   "priority": 5,
+   "description": "phenol oxygen"
+  },
+  {
+   "type": "HO7",
+   "smarts": "[H][OX2]c",
+   "priority": 5,
+   "description": "phenol hydroxyl H"
+  },
+  {
+   "type": "CB7",
+   "smarts": "c[OX2H1]",
+   "priority": 5,
+   "description": "phenol ring carbon bearing OH"
+  },
+  {
+   "type": "C8",
+   "smarts": "[$([CX3](=O)([NX3H2])[NX3H2])]",
+   "priority": 5,
+   "description": "urea carbon"
+  },
+  {
+   "type": "O8",
+   "smarts": "[OX1;$(*=C([NX3H2])[NX3H2])]",
+   "priority": 5,
+   "description": "urea oxygen"
+  },
+  {
+   "type": "N8",
+   "smarts": "[NX3H2;$(*C(=O)[NX3H2])]",
+   "priority": 5,
+   "description": "urea nitrogen"
+  },
+  {
+   "type": "H8",
+   "smarts": "[H][NX3H2;$(*C(=O)[NX3H2])]",
+   "priority": 5,
+   "description": "urea H"
+  },
+  {
+   "type": "CL",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion (the file's Lennard-Jones entry is CL)"
+  }
+ ]
+}

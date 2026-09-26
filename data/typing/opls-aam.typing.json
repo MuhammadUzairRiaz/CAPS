@@ -1,0 +1,399 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "OPLS-AA/M",
+ "description": "CAPS rules for OPLS-AA/M from the force field's type definitions (bench/typing/make_opls_family_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "C135",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "CH3 (alkanes)"
+  },
+  {
+   "type": "C136",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "CH2 (alkanes)"
+  },
+  {
+   "type": "C137",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "CH (alkanes)"
+  },
+  {
+   "type": "H140",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "H on sp3 carbon"
+  },
+  {
+   "type": "C223",
+   "smarts": "[CX4H2][NX3][CX3]=[OX1]",
+   "priority": 3,
+   "description": "CH2 on an amide nitrogen (glycine Cα)"
+  },
+  {
+   "type": "C224",
+   "smarts": "[CX4H1][NX3][CX3]=[OX1]",
+   "priority": 3,
+   "description": "CH on an amide nitrogen (alanine Cα)"
+  },
+  {
+   "type": "C235",
+   "smarts": "[CX3](=[OX1])[NX3]",
+   "priority": 3,
+   "description": "amide C=O carbon"
+  },
+  {
+   "type": "O236",
+   "smarts": "[OX1]=[CX3][NX3]",
+   "priority": 3,
+   "description": "amide oxygen"
+  },
+  {
+   "type": "N238",
+   "smarts": "[NX3H1][CX3]=[OX1]",
+   "priority": 3,
+   "description": "secondary amide nitrogen"
+  },
+  {
+   "type": "H241",
+   "smarts": "[H][NX3H1][CX3]=[OX1]",
+   "priority": 3,
+   "description": "H on a secondary amide N"
+  },
+  {
+   "type": "N237",
+   "smarts": "[NX3H2][CX3]=[OX1]",
+   "priority": 3,
+   "description": "primary amide nitrogen"
+  },
+  {
+   "type": "H240",
+   "smarts": "[H][NX3H2][CX3]=[OX1]",
+   "priority": 3,
+   "description": "H on a primary amide N"
+  },
+  {
+   "type": "N239",
+   "smarts": "[NX3H0][CX3]=[OX1]",
+   "priority": 3,
+   "description": "tertiary amide nitrogen"
+  },
+  {
+   "type": "C271",
+   "smarts": "[CX3](=[OX1])[OX1-]",
+   "priority": 4,
+   "description": "carboxylate carbon"
+  },
+  {
+   "type": "O272",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 4,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "C274",
+   "smarts": "[CX4H2][CX3](=[OX1])[OX1-]",
+   "priority": 4,
+   "description": "CH2 next to a carboxylate"
+  },
+  {
+   "type": "C267",
+   "smarts": "[CX3](=[OX1])[OX2H1]",
+   "priority": 4,
+   "description": "carboxylic acid carbon"
+  },
+  {
+   "type": "O269",
+   "smarts": "[OX1]=[CX3][OX2H1]",
+   "priority": 4,
+   "description": "carboxylic acid C=O oxygen"
+  },
+  {
+   "type": "O268",
+   "smarts": "[OX2H1][CX3]=[OX1]",
+   "priority": 4,
+   "description": "carboxylic acid OH oxygen"
+  },
+  {
+   "type": "H270",
+   "smarts": "[H][OX2][CX3]=[OX1]",
+   "priority": 4,
+   "description": "carboxylic acid H"
+  },
+  {
+   "type": "C157",
+   "smarts": "[CX4H2][OX2H1]",
+   "priority": 2,
+   "description": "CH2 of an alcohol"
+  },
+  {
+   "type": "C158",
+   "smarts": "[CX4H1][OX2H1]",
+   "priority": 2,
+   "description": "CH of an alcohol"
+  },
+  {
+   "type": "O154",
+   "smarts": "[OX2H1][CX4]",
+   "priority": 2,
+   "description": "alcohol oxygen"
+  },
+  {
+   "type": "H155",
+   "smarts": "[H][OX2][CX4]",
+   "priority": 2,
+   "description": "alcohol H"
+  },
+  {
+   "type": "S200",
+   "smarts": "[SX2H1]",
+   "priority": 2,
+   "description": "thiol sulfur"
+  },
+  {
+   "type": "H204",
+   "smarts": "[H][SX2]",
+   "priority": 2,
+   "description": "thiol H"
+  },
+  {
+   "type": "C206",
+   "smarts": "[CX4H2][SX2H1]",
+   "priority": 2,
+   "description": "CH2 of a thiol"
+  },
+  {
+   "type": "S202",
+   "smarts": "[SX2]([#6])[#6]",
+   "priority": 1,
+   "description": "sulfide sulfur"
+  },
+  {
+   "type": "C209",
+   "smarts": "[CX4H3][SX2]",
+   "priority": 2,
+   "description": "CH3 on sulfur"
+  },
+  {
+   "type": "C210",
+   "smarts": "[CX4H2][SX2;!H1;!$(S[SX2])]",
+   "priority": 2,
+   "description": "CH2 of a sulfide"
+  },
+  {
+   "type": "S203",
+   "smarts": "[SX2][SX2]",
+   "priority": 2,
+   "description": "disulfide sulfur"
+  },
+  {
+   "type": "C214",
+   "smarts": "[CX4H2][SX2][SX2]",
+   "priority": 3,
+   "description": "CH2 of a disulfide"
+  },
+  {
+   "type": "C145",
+   "smarts": "c",
+   "priority": 1,
+   "description": "benzene carbon"
+  },
+  {
+   "type": "H146",
+   "smarts": "[H]c",
+   "priority": 1,
+   "description": "aromatic H"
+  },
+  {
+   "type": "C149",
+   "smarts": "[CX4H2]c",
+   "priority": 2,
+   "description": "CH2 on an aromatic ring"
+  },
+  {
+   "type": "C166",
+   "smarts": "c[OX2H1]",
+   "priority": 3,
+   "description": "phenol carbon"
+  },
+  {
+   "type": "O167",
+   "smarts": "[OX2H1]c",
+   "priority": 3,
+   "description": "phenol oxygen"
+  },
+  {
+   "type": "H168",
+   "smarts": "[H][OX2]c",
+   "priority": 3,
+   "description": "phenol H"
+  },
+  {
+   "type": "N287",
+   "smarts": "[NX4+;H3]",
+   "priority": 3,
+   "description": "ammonium nitrogen"
+  },
+  {
+   "type": "H290",
+   "smarts": "[H][NX4+]",
+   "priority": 3,
+   "description": "H on N+"
+  },
+  {
+   "type": "C292",
+   "smarts": "[CX4H2][NX4+]",
+   "priority": 3,
+   "description": "CH2 on N+"
+  },
+  {
+   "type": "C293",
+   "smarts": "[CX4H1][NX4+]",
+   "priority": 3,
+   "description": "CH on N+"
+  },
+  {
+   "type": "N309",
+   "smarts": "[NX4+;H2]",
+   "priority": 4,
+   "description": "R2NH2+ nitrogen"
+  },
+  {
+   "type": "H310",
+   "smarts": "[H][NX4+;H2]",
+   "priority": 4,
+   "description": "H in R2NH2+"
+  },
+  {
+   "type": "C302",
+   "smarts": "[CX3;$(C(~[#7])(~[#7])~[#7])]",
+   "priority": 4,
+   "description": "guanidinium carbon"
+  },
+  {
+   "type": "N300",
+   "smarts": "[#7;H2;$(*[CX3;$(C(~[#7])(~[#7])~[#7])])]",
+   "priority": 4,
+   "description": "guanidinium NH2"
+  },
+  {
+   "type": "N303",
+   "smarts": "[#7;H1;$(*[CX3;$(C(~[#7])(~[#7])~[#7])])]",
+   "priority": 4,
+   "description": "guanidinium NH-R"
+  },
+  {
+   "type": "H301",
+   "smarts": "[H][#7;H2;$(*[CX3;$(C(~[#7])(~[#7])~[#7])])]",
+   "priority": 4,
+   "description": "H on a guanidinium NH2"
+  },
+  {
+   "type": "H304",
+   "smarts": "[H][#7;H1;$(*[CX3;$(C(~[#7])(~[#7])~[#7])])]",
+   "priority": 4,
+   "description": "H on a guanidinium NH-R"
+  },
+  {
+   "type": "C307",
+   "smarts": "[CX4H2][#7;$(*[CX3;$(C(~[#7])(~[#7])~[#7])])]",
+   "priority": 4,
+   "description": "CH2 on a guanidinium N"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "TIP3P water O"
+  },
+  {
+   "type": "HT",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "TIP3P water H"
+  },
+  {
+   "type": "SOD",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "CLA",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  }
+ ],
+ "analogies": {
+  "C135": [
+   "C136",
+   "C137",
+   "C224"
+  ],
+  "C136": [
+   "C135",
+   "C137",
+   "C224",
+   "C223"
+  ],
+  "C137": [
+   "C136",
+   "C135",
+   "C224"
+  ],
+  "C223": [
+   "C224",
+   "C136"
+  ],
+  "C224": [
+   "C223",
+   "C137"
+  ],
+  "C149": [
+   "C136"
+  ],
+  "C157": [
+   "C136"
+  ],
+  "C158": [
+   "C137"
+  ],
+  "C206": [
+   "C136"
+  ],
+  "C210": [
+   "C136"
+  ],
+  "C214": [
+   "C136"
+  ],
+  "C274": [
+   "C136"
+  ],
+  "C292": [
+   "C136"
+  ],
+  "C293": [
+   "C137"
+  ],
+  "C307": [
+   "C136"
+  ],
+  "N237": [
+   "N238"
+  ],
+  "N239": [
+   "N238"
+  ],
+  "H240": [
+   "H241"
+  ]
+ },
+ "analogy_source": "OPLS-AA/M analogues: the same element and hybridisation, nearest in hydrogen count or neighbourhood"
+}

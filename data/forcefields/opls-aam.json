@@ -23756,5 +23756,6 @@
  ],
  "version": "2015",
  "status": "converted",
- "validation": "same functional forms as OPLS 2005 (validated); the original distribution cannot type the test molecules with this set, so not yet compared."
+ "validation": "same functional forms as OPLS 2005 (validated); the original distribution cannot type the test molecules with this set, so not yet compared.",
+ "typing": "../typing/opls-aam.typing.json"
 }

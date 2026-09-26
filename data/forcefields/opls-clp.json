@@ -4680,5 +4680,6 @@
  ],
  "version": "2004 onwards",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 24 of 24 identical (kJ/mol constants confirmed as DL_POLY's k)."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 24 of 24 identical (kJ/mol constants confirmed as DL_POLY's k).",
+ "typing": "../typing/opls-clp.typing.json"
 }

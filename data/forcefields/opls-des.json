@@ -3535,5 +3535,6 @@
  ],
  "version": "2018",
  "status": "converted",
- "validation": "same forms as OPLS 2005; not yet compared with the original distribution."
+ "validation": "same forms as OPLS 2005; not yet compared with the original distribution.",
+ "typing": "../typing/opls-des.typing.json"
 }
