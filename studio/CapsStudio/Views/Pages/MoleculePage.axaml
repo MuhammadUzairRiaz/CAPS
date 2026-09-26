@@ -222,7 +222,7 @@
                   <StackPanel Grid.Column="1" Spacing="6">
                     <TextBlock Text="Template" Classes="label" />
                     <ComboBox ItemsSource="{Binding CgTemplates}" SelectedItem="{Binding CgTemplate}" IsEnabled="{Binding CgHasTemplates}" HorizontalAlignment="Stretch"
-                              PlaceholderText="none in this force field" />
+                              PlaceholderText="{Binding CgTemplateHint}" />
                   </StackPanel>
                 </Grid>
                 <StackPanel Spacing="6">
