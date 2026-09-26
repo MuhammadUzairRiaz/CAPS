@@ -120,6 +120,13 @@ struct FFDef {
   std::vector<std::pair<std::string, std::string>> typing_pairs;   // conjugated pairs (GAFF cc/cd, ...), see typing.hpp
   bool typing_ordered = false;
   bool typing_unknown_untyped = false;   // rules may name types this file lacks: their atoms end up untyped
+  // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
+  // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
+  // each conjugated system takes the variants that make every bond's constant equal bond_k_per_order x its bond order
+  // (DREIDING: k = 700 n kcal/mol/Å², 350 n in LAMMPS's harmonic K).
+  std::map<std::string, std::vector<std::string>> type_variants;
+  double bond_k_per_order = 0;
+  double bond_conjugated_single = 1.0;   // the order a force field gives a single bond between two conjugated atoms
   bool typing_pairs_double_same = false;   // pairs keep one type across a double bond (CGenFF CG2DC1/2), not GAFF's   // rules are an ordered list (antechamber): the first match is intended, not ambiguous
   std::string typing_source;
   std::vector<std::string> notes;

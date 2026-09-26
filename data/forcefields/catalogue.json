@@ -447,6 +447,10 @@
     "angles": 32,
     "dihedrals": 55,
     "impropers": 18
+   },
+   "typing": {
+    "rules": "typing/dreiding.typing.json",
+    "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py)"
    }
   },
   {
@@ -870,6 +874,10 @@
     "angles": 30,
     "dihedrals": 17576,
     "impropers": 3
+   },
+   "typing": {
+    "rules": "typing/dreiding-moltemplate.typing.json",
+    "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py)"
    }
   },
   {

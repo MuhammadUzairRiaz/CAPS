@@ -1,5 +1,6 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
+#include "caps/typing.hpp"
 #include "caps/qeq.hpp"
 
 #include <filesystem>
@@ -104,6 +105,18 @@ void load_typing(FFDef& ff, const std::string& path) {
   ff.typing.insert(ff.typing.end(), rules.begin(), rules.end());
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
   ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
+  if (j.has("variants") && j["variants"].is_object()) {
+    std::set<std::string> have;
+    for (const auto& ty : ff.types) have.insert(ty.name);
+    for (const auto& [base, list] : j["variants"].members()) {
+      std::vector<std::string> v;
+      for (const auto& x : list.items())
+        if (have.count(x.str())) v.push_back(x.str());
+      if (!v.empty() && have.count(base)) ff.type_variants[base] = v;
+    }
+  }
+  ff.bond_k_per_order = j.num("bond_k_per_order", ff.bond_k_per_order);
+  ff.bond_conjugated_single = j.num("conjugated_single_order", ff.bond_conjugated_single);
   if (j.text("pair_mode") == "double_same") ff.typing_pairs_double_same = true;
   else if (!j.text("pair_mode").empty() && j.text("pair_mode") != "double_differs")
     throw FFError(path + ": pair_mode is double_differs (GAFF) or double_same (CGenFF)");
@@ -702,6 +715,100 @@ std::vector<double> group(const FFRule& r, const char* g, size_t n) {
 
 
 }  // namespace
+
+// Bond-order variants (FFDef::type_variants): each conjugated system of atoms whose type has variants takes the
+// combination that makes every bond's harmonic constant bond_k_per_order x its perceived order (aromatic bonds 1.5),
+// found by depth-first search with the bonds to already-placed atoms checked at each step.
+void refine_bond_order_variants(const System& s, const Perception& p, const FFDef& ff, std::vector<std::string>& types, std::vector<std::string>& why) {
+  if (ff.type_variants.empty() || ff.bond_k_per_order <= 0) return;
+  std::map<std::string, const FFType*> byname;
+  for (const auto& ty : ff.types) byname[ty.name] = &ty;
+  auto bond_name = [&](const std::string& t) {
+    auto it = byname.find(t);
+    if (it == byname.end()) return t;
+    auto e = it->second->equiv.find("bond");
+    return e == it->second->equiv.end() ? t : e->second;
+  };
+  std::map<std::pair<std::string, std::string>, double> kcache;
+  auto k_of = [&](const std::string& a, const std::string& b) {
+    auto key = std::make_pair(a, b);
+    auto it = kcache.find(key);
+    if (it != kcache.end()) return it->second;
+    const std::string A = bond_name(a), B = bond_name(b);
+    const FFRule* r = last_match(ff.bonds, {&A, &B}, true);
+    const double k = r && !r->params.empty() ? r->params[0] : -1;
+    kcache[key] = k;
+    kcache[{b, a}] = k;
+    return k;
+  };
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<std::string>> cand(n);
+  std::vector<char> var(n, 0);
+  for (size_t i = 0; i < n; ++i) {
+    cand[i] = {types[i]};
+    auto it = ff.type_variants.find(types[i]);
+    if (it != ff.type_variants.end()) {
+      cand[i].insert(cand[i].end(), it->second.begin(), it->second.end());
+      var[i] = 1;
+    }
+  }
+  // a single bond between two atoms that each carry a double or aromatic bond is conjugated: some files give it 1.5
+  std::vector<char> unsat(n, 0);
+  for (size_t i = 0; i < n; ++i)
+    for (size_t k = 0; k < p.nb[i].size(); ++k)
+      if (p.arom_bond[i][k] || p.order[i][k] >= 2) unsat[i] = 1;
+  auto expected = [&](uint32_t i, size_t k) {
+    if (p.arom_bond[i][k]) return 1.5;
+    const int o = p.order[i][k];
+    if (o == 1 && unsat[i] && unsat[p.nb[i][k]]) return ff.bond_conjugated_single;
+    return double(o);
+  };
+  auto fits = [&](const std::string& a, const std::string& b, double order) {
+    const double k = k_of(a, b);
+    return k >= 0 && std::fabs(k - ff.bond_k_per_order * order) <= 1e-6 * std::max(1.0, k);
+  };
+  std::vector<char> seen(n, 0);
+  for (uint32_t start = 0; start < n; ++start) {
+    if (!var[start] || seen[start]) continue;
+    std::vector<uint32_t> comp{start};   // the conjugated system: variable atoms joined by bonds
+    seen[start] = 1;
+    for (size_t q = 0; q < comp.size(); ++q)
+      for (uint32_t j : p.nb[comp[q]])
+        if (var[j] && !seen[j]) { seen[j] = 1; comp.push_back(j); }
+    std::vector<char> placed(n, 0);
+    std::vector<std::string> cur = types;
+    size_t steps = 0;
+    std::function<bool(size_t)> dfs = [&](size_t q) -> bool {
+      if (q == comp.size()) return true;
+      if (++steps > 200000) return false;
+      const uint32_t a = comp[q];
+      for (const auto& c : cand[a]) {
+        cur[a] = c;
+        bool ok = true;
+        for (size_t k = 0; k < p.nb[a].size() && ok; ++k) {
+          const uint32_t b = p.nb[a][k];
+          if (var[b] && !placed[b]) continue;   // checked when b is placed
+          ok = fits(cur[a], cur[b], expected(a, k));
+        }
+        if (!ok) continue;
+        placed[a] = 1;
+        if (dfs(q + 1)) return true;
+        placed[a] = 0;
+      }
+      cur[a] = types[a];
+      return false;
+    };
+    const bool solved = dfs(0);
+    for (uint32_t a : comp) {
+      if (solved && cur[a] != types[a]) {
+        types[a] = cur[a];
+        if (a < why.size()) why[a] += " · variant " + cur[a] + " for its bond orders";
+      } else if (!solved && a < why.size()) {
+        why[a] += " · no variant combination gives every bond its order's constant";
+      }
+    }
+  }
+}
 
 ForceField parameterize(const System& s, const FFDef& def, const std::vector<std::string>& types_in, const std::string& charges,
                         ParamReport* rep_out, bool allow_missing) {
