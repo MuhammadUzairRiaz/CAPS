@@ -97,16 +97,21 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     ef.parts = 1;
     ev_fast = std::make_unique<Evaluator>(ff, ef);
   }
-  const std::vector<double>& m = ff.mass;
-  double mtot = 0;
-  for (double x : m) mtot += x;
+  // virtual sites (massless, placed from their atoms) are not integrated: held, with a nominal mass for the arithmetic
+  std::vector<double> m = ff.mass;
   std::vector<char> held(n, 0);
-  size_t nheld = 0;
-  for (size_t i = 0; i < n && i < o.fixed.size(); ++i) nheld += (held[i] = o.fixed[i] ? 1 : 0);
+  for (const auto& vs : ff.vsites) held[vs.site] = 2, m[vs.site] = 1.0;
+  double mtot = 0;
+  for (size_t i = 0; i < n; ++i) mtot += held[i] == 2 ? 0.0 : m[i];
+  size_t nheld = 0, nvs = ff.vsites.size();
+  for (size_t i = 0; i < n && i < o.fixed.size(); ++i)
+    if (o.fixed[i] && !held[i]) held[i] = 1, ++nheld;
+  nheld += nvs;
   if (nheld + 1 >= n) throw std::invalid_argument("dynamics needs at least two atoms that move");
   // with held atoms momentum is not conserved: every free coordinate counts
   const double ndof = nheld ? 3.0 * double(n - nheld) : 3.0 * n - 3.0;
-  if (nheld) rep.notes.push_back(std::to_string(nheld) + " atoms held in place");
+  if (nheld > nvs) rep.notes.push_back(std::to_string(nheld - nvs) + " atoms held in place");
+  if (nvs) rep.notes.push_back(std::to_string(nvs) + " virtual sites placed from their atoms each step");
 
   Cell cell = s.cell;
   std::vector<double> x(3 * n), v(3 * n, 0.0), f, f_slow, f_fast;   // f_slow, f_fast: r-RESPA's two parts (f is their sum)
@@ -387,6 +392,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     rep.notes.push_back(b);
   }
 
+  place_virtual_sites(ff, x, cell);
   for (size_t i = 0; i < n; ++i)
     for (int k = 0; k < 3; ++k) s.atoms[i].pos[k] = x[3 * i + k];
   s.velocities.assign(n, Vec3{0, 0, 0});

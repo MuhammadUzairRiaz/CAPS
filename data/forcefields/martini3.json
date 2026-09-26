@@ -1,0 +1,5118 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Martini 3",
+ "version": "3.0.0",
+ "source": "martini_v3.0.0.itp and its molecule files (cgmartini.nl)",
+ "references": [
+  "P. C. T. Souza et al., Nat. Methods 18, 382 (2021)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/reaction-field",
+  "bond": "harmonic",
+  "angle": "cosine/squared",
+  "dihedral": "fourier",
+  "improper": "harmonic"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  1,
+  1
+ ],
+ "special_coul": [
+  0,
+  1,
+  1
+ ],
+ "cutoff": 11.0,
+ "pair_settings": {
+  "coulomb": "reaction-field",
+  "eps_rf": 0,
+  "dielectric": 15.0,
+  "lj_modifier": "potential-shift",
+  "model_cutoff": true
+ },
+ "pair_table": "../martini/martini3-nonbonded.tsv.gz",
+ "molecule_templates": "../martini/martini3-molecules.json",
+ "torsion_terms": "if_defined",
+ "angle_terms": "if_defined",
+ "typing": "../typing/martini3.typing.json",
+ "atom_types": [
+  {
+   "name": "P6",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6"
+  },
+  {
+   "name": "P5",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5"
+  },
+  {
+   "name": "P4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4"
+  },
+  {
+   "name": "P3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3"
+  },
+  {
+   "name": "P2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2"
+  },
+  {
+   "name": "P1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1"
+  },
+  {
+   "name": "N6",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6"
+  },
+  {
+   "name": "N5",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5"
+  },
+  {
+   "name": "N4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4"
+  },
+  {
+   "name": "N3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3"
+  },
+  {
+   "name": "N2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2"
+  },
+  {
+   "name": "N1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1"
+  },
+  {
+   "name": "C6",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6"
+  },
+  {
+   "name": "C5",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5"
+  },
+  {
+   "name": "C4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4"
+  },
+  {
+   "name": "C3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3"
+  },
+  {
+   "name": "C2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2"
+  },
+  {
+   "name": "C1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1"
+  },
+  {
+   "name": "X4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4"
+  },
+  {
+   "name": "X3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3"
+  },
+  {
+   "name": "X2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2"
+  },
+  {
+   "name": "X1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1"
+  },
+  {
+   "name": "P6d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6d"
+  },
+  {
+   "name": "P5d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5d"
+  },
+  {
+   "name": "P4d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4d"
+  },
+  {
+   "name": "P3d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3d"
+  },
+  {
+   "name": "P2d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2d"
+  },
+  {
+   "name": "P1d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1d"
+  },
+  {
+   "name": "N6d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6d"
+  },
+  {
+   "name": "N5d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5d"
+  },
+  {
+   "name": "N4d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4d"
+  },
+  {
+   "name": "N3d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3d"
+  },
+  {
+   "name": "N2d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2d"
+  },
+  {
+   "name": "N1d",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1d"
+  },
+  {
+   "name": "P6a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6a"
+  },
+  {
+   "name": "P5a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5a"
+  },
+  {
+   "name": "P4a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4a"
+  },
+  {
+   "name": "P3a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3a"
+  },
+  {
+   "name": "P2a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2a"
+  },
+  {
+   "name": "P1a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1a"
+  },
+  {
+   "name": "N6a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6a"
+  },
+  {
+   "name": "N5a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5a"
+  },
+  {
+   "name": "N4a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4a"
+  },
+  {
+   "name": "N3a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3a"
+  },
+  {
+   "name": "N2a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2a"
+  },
+  {
+   "name": "N1a",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1a"
+  },
+  {
+   "name": "C6v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6v"
+  },
+  {
+   "name": "C5v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5v"
+  },
+  {
+   "name": "C4v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4v"
+  },
+  {
+   "name": "C3v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3v"
+  },
+  {
+   "name": "C2v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2v"
+  },
+  {
+   "name": "C1v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1v"
+  },
+  {
+   "name": "X4v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4v"
+  },
+  {
+   "name": "X3v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3v"
+  },
+  {
+   "name": "X2v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2v"
+  },
+  {
+   "name": "X1v",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1v"
+  },
+  {
+   "name": "C6e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6e"
+  },
+  {
+   "name": "C5e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5e"
+  },
+  {
+   "name": "C4e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4e"
+  },
+  {
+   "name": "C3e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3e"
+  },
+  {
+   "name": "C2e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2e"
+  },
+  {
+   "name": "C1e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1e"
+  },
+  {
+   "name": "X3e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3e"
+  },
+  {
+   "name": "X4e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4e"
+  },
+  {
+   "name": "X2e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2e"
+  },
+  {
+   "name": "X1e",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1e"
+  },
+  {
+   "name": "D",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead D"
+  },
+  {
+   "name": "Q5",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q5"
+  },
+  {
+   "name": "Q4",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q4"
+  },
+  {
+   "name": "Q3",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q3"
+  },
+  {
+   "name": "Q2",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q2"
+  },
+  {
+   "name": "Q1",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q1"
+  },
+  {
+   "name": "Q5p",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q5p"
+  },
+  {
+   "name": "Q4p",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q4p"
+  },
+  {
+   "name": "Q3p",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q3p"
+  },
+  {
+   "name": "Q2p",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q2p"
+  },
+  {
+   "name": "Q1p",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q1p"
+  },
+  {
+   "name": "Q5n",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q5n"
+  },
+  {
+   "name": "Q4n",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q4n"
+  },
+  {
+   "name": "Q3n",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q3n"
+  },
+  {
+   "name": "Q2n",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q2n"
+  },
+  {
+   "name": "Q1n",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead Q1n"
+  },
+  {
+   "name": "P6q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6q"
+  },
+  {
+   "name": "P5q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5q"
+  },
+  {
+   "name": "P4q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4q"
+  },
+  {
+   "name": "P3q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3q"
+  },
+  {
+   "name": "P2q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2q"
+  },
+  {
+   "name": "P1q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1q"
+  },
+  {
+   "name": "N6q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6q"
+  },
+  {
+   "name": "N5q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5q"
+  },
+  {
+   "name": "N4q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4q"
+  },
+  {
+   "name": "N3q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3q"
+  },
+  {
+   "name": "N2q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2q"
+  },
+  {
+   "name": "N1q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1q"
+  },
+  {
+   "name": "C6q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6q"
+  },
+  {
+   "name": "C5q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5q"
+  },
+  {
+   "name": "C4q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4q"
+  },
+  {
+   "name": "C3q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3q"
+  },
+  {
+   "name": "C2q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2q"
+  },
+  {
+   "name": "C1q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1q"
+  },
+  {
+   "name": "X4q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4q"
+  },
+  {
+   "name": "X3q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3q"
+  },
+  {
+   "name": "X2q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2q"
+  },
+  {
+   "name": "X1q",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1q"
+  },
+  {
+   "name": "P6dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6dq"
+  },
+  {
+   "name": "P5dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5dq"
+  },
+  {
+   "name": "P4dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4dq"
+  },
+  {
+   "name": "P3dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3dq"
+  },
+  {
+   "name": "P2dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2dq"
+  },
+  {
+   "name": "P1dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1dq"
+  },
+  {
+   "name": "N6dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6dq"
+  },
+  {
+   "name": "N5dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5dq"
+  },
+  {
+   "name": "N4dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4dq"
+  },
+  {
+   "name": "N3dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3dq"
+  },
+  {
+   "name": "N2dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2dq"
+  },
+  {
+   "name": "N1dq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1dq"
+  },
+  {
+   "name": "P6aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6aq"
+  },
+  {
+   "name": "P5aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5aq"
+  },
+  {
+   "name": "P4aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4aq"
+  },
+  {
+   "name": "P3aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3aq"
+  },
+  {
+   "name": "P2aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2aq"
+  },
+  {
+   "name": "P1aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1aq"
+  },
+  {
+   "name": "N6aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6aq"
+  },
+  {
+   "name": "N5aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5aq"
+  },
+  {
+   "name": "N4aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4aq"
+  },
+  {
+   "name": "N3aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3aq"
+  },
+  {
+   "name": "N2aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2aq"
+  },
+  {
+   "name": "N1aq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1aq"
+  },
+  {
+   "name": "C6vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6vq"
+  },
+  {
+   "name": "C5vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5vq"
+  },
+  {
+   "name": "C4vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4vq"
+  },
+  {
+   "name": "C3vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3vq"
+  },
+  {
+   "name": "C2vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2vq"
+  },
+  {
+   "name": "C1vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1vq"
+  },
+  {
+   "name": "X4vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4vq"
+  },
+  {
+   "name": "X3vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3vq"
+  },
+  {
+   "name": "X2vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2vq"
+  },
+  {
+   "name": "X1vq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1vq"
+  },
+  {
+   "name": "C6eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6eq"
+  },
+  {
+   "name": "C5eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5eq"
+  },
+  {
+   "name": "C4eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4eq"
+  },
+  {
+   "name": "C3eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3eq"
+  },
+  {
+   "name": "C2eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2eq"
+  },
+  {
+   "name": "C1eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1eq"
+  },
+  {
+   "name": "X4eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4eq"
+  },
+  {
+   "name": "X3eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3eq"
+  },
+  {
+   "name": "X2eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2eq"
+  },
+  {
+   "name": "X1eq",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1eq"
+  },
+  {
+   "name": "P6h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6h"
+  },
+  {
+   "name": "P5h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5h"
+  },
+  {
+   "name": "P4h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4h"
+  },
+  {
+   "name": "P3h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3h"
+  },
+  {
+   "name": "P2h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2h"
+  },
+  {
+   "name": "P1h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1h"
+  },
+  {
+   "name": "N6h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6h"
+  },
+  {
+   "name": "N5h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5h"
+  },
+  {
+   "name": "N4h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4h"
+  },
+  {
+   "name": "N3h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3h"
+  },
+  {
+   "name": "N2h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2h"
+  },
+  {
+   "name": "N1h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1h"
+  },
+  {
+   "name": "C6h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6h"
+  },
+  {
+   "name": "C5h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5h"
+  },
+  {
+   "name": "C4h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4h"
+  },
+  {
+   "name": "C3h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3h"
+  },
+  {
+   "name": "C2h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2h"
+  },
+  {
+   "name": "C1h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1h"
+  },
+  {
+   "name": "X4h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4h"
+  },
+  {
+   "name": "X3h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3h"
+  },
+  {
+   "name": "X2h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2h"
+  },
+  {
+   "name": "X1h",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1h"
+  },
+  {
+   "name": "P6dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6dh"
+  },
+  {
+   "name": "P5dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5dh"
+  },
+  {
+   "name": "P4dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4dh"
+  },
+  {
+   "name": "P3dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3dh"
+  },
+  {
+   "name": "P2dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2dh"
+  },
+  {
+   "name": "P1dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1dh"
+  },
+  {
+   "name": "N6dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6dh"
+  },
+  {
+   "name": "N5dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5dh"
+  },
+  {
+   "name": "N4dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4dh"
+  },
+  {
+   "name": "N3dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3dh"
+  },
+  {
+   "name": "N2dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2dh"
+  },
+  {
+   "name": "N1dh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1dh"
+  },
+  {
+   "name": "P6ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6ah"
+  },
+  {
+   "name": "P5ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5ah"
+  },
+  {
+   "name": "P4ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4ah"
+  },
+  {
+   "name": "P3ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3ah"
+  },
+  {
+   "name": "P2ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2ah"
+  },
+  {
+   "name": "P1ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1ah"
+  },
+  {
+   "name": "N6ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6ah"
+  },
+  {
+   "name": "N5ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5ah"
+  },
+  {
+   "name": "N4ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4ah"
+  },
+  {
+   "name": "N3ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3ah"
+  },
+  {
+   "name": "N2ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2ah"
+  },
+  {
+   "name": "N1ah",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1ah"
+  },
+  {
+   "name": "C6vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6vh"
+  },
+  {
+   "name": "C5vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5vh"
+  },
+  {
+   "name": "C4vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4vh"
+  },
+  {
+   "name": "C3vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3vh"
+  },
+  {
+   "name": "C2vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2vh"
+  },
+  {
+   "name": "C1vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1vh"
+  },
+  {
+   "name": "X4vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4vh"
+  },
+  {
+   "name": "X3vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3vh"
+  },
+  {
+   "name": "X2vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2vh"
+  },
+  {
+   "name": "X1vh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1vh"
+  },
+  {
+   "name": "C6eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6eh"
+  },
+  {
+   "name": "C5eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5eh"
+  },
+  {
+   "name": "C4eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4eh"
+  },
+  {
+   "name": "C3eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3eh"
+  },
+  {
+   "name": "C2eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2eh"
+  },
+  {
+   "name": "C1eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1eh"
+  },
+  {
+   "name": "X4eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4eh"
+  },
+  {
+   "name": "X3eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3eh"
+  },
+  {
+   "name": "X2eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2eh"
+  },
+  {
+   "name": "X1eh",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1eh"
+  },
+  {
+   "name": "P6r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6r"
+  },
+  {
+   "name": "P5r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5r"
+  },
+  {
+   "name": "P4r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4r"
+  },
+  {
+   "name": "P3r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3r"
+  },
+  {
+   "name": "P2r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2r"
+  },
+  {
+   "name": "P1r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1r"
+  },
+  {
+   "name": "N6r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6r"
+  },
+  {
+   "name": "N5r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5r"
+  },
+  {
+   "name": "N4r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4r"
+  },
+  {
+   "name": "N3r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3r"
+  },
+  {
+   "name": "N2r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2r"
+  },
+  {
+   "name": "N1r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1r"
+  },
+  {
+   "name": "C6r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6r"
+  },
+  {
+   "name": "C5r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5r"
+  },
+  {
+   "name": "C4r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4r"
+  },
+  {
+   "name": "C3r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3r"
+  },
+  {
+   "name": "C2r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2r"
+  },
+  {
+   "name": "C1r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1r"
+  },
+  {
+   "name": "X4r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4r"
+  },
+  {
+   "name": "X3r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3r"
+  },
+  {
+   "name": "X2r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2r"
+  },
+  {
+   "name": "X1r",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1r"
+  },
+  {
+   "name": "P6dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6dr"
+  },
+  {
+   "name": "P5dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5dr"
+  },
+  {
+   "name": "P4dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4dr"
+  },
+  {
+   "name": "P3dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3dr"
+  },
+  {
+   "name": "P2dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2dr"
+  },
+  {
+   "name": "P1dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1dr"
+  },
+  {
+   "name": "N6dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6dr"
+  },
+  {
+   "name": "N5dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5dr"
+  },
+  {
+   "name": "N4dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4dr"
+  },
+  {
+   "name": "N3dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3dr"
+  },
+  {
+   "name": "N2dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2dr"
+  },
+  {
+   "name": "N1dr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1dr"
+  },
+  {
+   "name": "P6ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P6ar"
+  },
+  {
+   "name": "P5ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P5ar"
+  },
+  {
+   "name": "P4ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P4ar"
+  },
+  {
+   "name": "P3ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P3ar"
+  },
+  {
+   "name": "P2ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P2ar"
+  },
+  {
+   "name": "P1ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead P1ar"
+  },
+  {
+   "name": "N6ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N6ar"
+  },
+  {
+   "name": "N5ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N5ar"
+  },
+  {
+   "name": "N4ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N4ar"
+  },
+  {
+   "name": "N3ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N3ar"
+  },
+  {
+   "name": "N2ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N2ar"
+  },
+  {
+   "name": "N1ar",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead N1ar"
+  },
+  {
+   "name": "C6vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6vr"
+  },
+  {
+   "name": "C5vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5vr"
+  },
+  {
+   "name": "C4vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4vr"
+  },
+  {
+   "name": "C3vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3vr"
+  },
+  {
+   "name": "C2vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2vr"
+  },
+  {
+   "name": "C1vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1vr"
+  },
+  {
+   "name": "X4vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4vr"
+  },
+  {
+   "name": "X3vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3vr"
+  },
+  {
+   "name": "X2vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2vr"
+  },
+  {
+   "name": "X1vr",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1vr"
+  },
+  {
+   "name": "C6er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C6er"
+  },
+  {
+   "name": "C5er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C5er"
+  },
+  {
+   "name": "C4er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C4er"
+  },
+  {
+   "name": "C3er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C3er"
+  },
+  {
+   "name": "C2er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C2er"
+  },
+  {
+   "name": "C1er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead C1er"
+  },
+  {
+   "name": "X4er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X4er"
+  },
+  {
+   "name": "X3er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X3er"
+  },
+  {
+   "name": "X2er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X2er"
+  },
+  {
+   "name": "X1er",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead X1er"
+  },
+  {
+   "name": "SP6",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6"
+  },
+  {
+   "name": "SP5",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5"
+  },
+  {
+   "name": "SP4",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4"
+  },
+  {
+   "name": "SP3",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3"
+  },
+  {
+   "name": "SP2",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2"
+  },
+  {
+   "name": "SP1",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1"
+  },
+  {
+   "name": "SN6",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6"
+  },
+  {
+   "name": "SN5",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5"
+  },
+  {
+   "name": "SN4",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4"
+  },
+  {
+   "name": "SN3",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3"
+  },
+  {
+   "name": "SN2",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2"
+  },
+  {
+   "name": "SN1",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1"
+  },
+  {
+   "name": "SC6",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6"
+  },
+  {
+   "name": "SC5",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5"
+  },
+  {
+   "name": "SC4",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4"
+  },
+  {
+   "name": "SC3",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3"
+  },
+  {
+   "name": "SC2",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2"
+  },
+  {
+   "name": "SC1",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1"
+  },
+  {
+   "name": "SX4",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4"
+  },
+  {
+   "name": "SX3",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3"
+  },
+  {
+   "name": "SX2",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2"
+  },
+  {
+   "name": "SX1",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1"
+  },
+  {
+   "name": "SP6d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6d"
+  },
+  {
+   "name": "SP5d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5d"
+  },
+  {
+   "name": "SP4d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4d"
+  },
+  {
+   "name": "SP3d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3d"
+  },
+  {
+   "name": "SP2d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2d"
+  },
+  {
+   "name": "SP1d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1d"
+  },
+  {
+   "name": "SN6d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6d"
+  },
+  {
+   "name": "SN5d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5d"
+  },
+  {
+   "name": "SN4d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4d"
+  },
+  {
+   "name": "SN3d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3d"
+  },
+  {
+   "name": "SN2d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2d"
+  },
+  {
+   "name": "SN1d",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1d"
+  },
+  {
+   "name": "SP6a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6a"
+  },
+  {
+   "name": "SP5a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5a"
+  },
+  {
+   "name": "SP4a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4a"
+  },
+  {
+   "name": "SP3a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3a"
+  },
+  {
+   "name": "SP2a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2a"
+  },
+  {
+   "name": "SP1a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1a"
+  },
+  {
+   "name": "SN6a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6a"
+  },
+  {
+   "name": "SN5a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5a"
+  },
+  {
+   "name": "SN4a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4a"
+  },
+  {
+   "name": "SN3a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3a"
+  },
+  {
+   "name": "SN2a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2a"
+  },
+  {
+   "name": "SN1a",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1a"
+  },
+  {
+   "name": "SC6v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6v"
+  },
+  {
+   "name": "SC5v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5v"
+  },
+  {
+   "name": "SC4v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4v"
+  },
+  {
+   "name": "SC3v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3v"
+  },
+  {
+   "name": "SC2v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2v"
+  },
+  {
+   "name": "SC1v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1v"
+  },
+  {
+   "name": "SX4v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4v"
+  },
+  {
+   "name": "SX3v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3v"
+  },
+  {
+   "name": "SX2v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2v"
+  },
+  {
+   "name": "SX1v",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1v"
+  },
+  {
+   "name": "SC6e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6e"
+  },
+  {
+   "name": "SC5e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5e"
+  },
+  {
+   "name": "SC4e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4e"
+  },
+  {
+   "name": "SC3e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3e"
+  },
+  {
+   "name": "SC2e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2e"
+  },
+  {
+   "name": "SC1e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1e"
+  },
+  {
+   "name": "SX4e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4e"
+  },
+  {
+   "name": "SX3e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3e"
+  },
+  {
+   "name": "SX2e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2e"
+  },
+  {
+   "name": "SX1e",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1e"
+  },
+  {
+   "name": "SD",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SD"
+  },
+  {
+   "name": "SQ5",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ5"
+  },
+  {
+   "name": "SQ4",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ4"
+  },
+  {
+   "name": "SQ3",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ3"
+  },
+  {
+   "name": "SQ2",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ2"
+  },
+  {
+   "name": "SQ1",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ1"
+  },
+  {
+   "name": "SQ5p",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ5p"
+  },
+  {
+   "name": "SQ4p",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ4p"
+  },
+  {
+   "name": "SQ3p",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ3p"
+  },
+  {
+   "name": "SQ2p",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ2p"
+  },
+  {
+   "name": "SQ1p",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ1p"
+  },
+  {
+   "name": "SQ5n",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ5n"
+  },
+  {
+   "name": "SQ4n",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ4n"
+  },
+  {
+   "name": "SQ3n",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ3n"
+  },
+  {
+   "name": "SQ2n",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ2n"
+  },
+  {
+   "name": "SQ1n",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SQ1n"
+  },
+  {
+   "name": "SP6q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6q"
+  },
+  {
+   "name": "SP5q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5q"
+  },
+  {
+   "name": "SP4q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4q"
+  },
+  {
+   "name": "SP3q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3q"
+  },
+  {
+   "name": "SP2q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2q"
+  },
+  {
+   "name": "SP1q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1q"
+  },
+  {
+   "name": "SN6q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6q"
+  },
+  {
+   "name": "SN5q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5q"
+  },
+  {
+   "name": "SN4q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4q"
+  },
+  {
+   "name": "SN3q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3q"
+  },
+  {
+   "name": "SN2q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2q"
+  },
+  {
+   "name": "SN1q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1q"
+  },
+  {
+   "name": "SC6q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6q"
+  },
+  {
+   "name": "SC5q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5q"
+  },
+  {
+   "name": "SC4q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4q"
+  },
+  {
+   "name": "SC3q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3q"
+  },
+  {
+   "name": "SC2q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2q"
+  },
+  {
+   "name": "SC1q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1q"
+  },
+  {
+   "name": "SX4q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4q"
+  },
+  {
+   "name": "SX3q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3q"
+  },
+  {
+   "name": "SX2q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2q"
+  },
+  {
+   "name": "SX1q",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1q"
+  },
+  {
+   "name": "SP6dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6dq"
+  },
+  {
+   "name": "SP5dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5dq"
+  },
+  {
+   "name": "SP4dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4dq"
+  },
+  {
+   "name": "SP3dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3dq"
+  },
+  {
+   "name": "SP2dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2dq"
+  },
+  {
+   "name": "SP1dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1dq"
+  },
+  {
+   "name": "SN6dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6dq"
+  },
+  {
+   "name": "SN5dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5dq"
+  },
+  {
+   "name": "SN4dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4dq"
+  },
+  {
+   "name": "SN3dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3dq"
+  },
+  {
+   "name": "SN2dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2dq"
+  },
+  {
+   "name": "SN1dq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1dq"
+  },
+  {
+   "name": "SP6aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6aq"
+  },
+  {
+   "name": "SP5aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5aq"
+  },
+  {
+   "name": "SP4aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4aq"
+  },
+  {
+   "name": "SP3aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3aq"
+  },
+  {
+   "name": "SP2aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2aq"
+  },
+  {
+   "name": "SP1aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1aq"
+  },
+  {
+   "name": "SN6aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6aq"
+  },
+  {
+   "name": "SN5aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5aq"
+  },
+  {
+   "name": "SN4aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4aq"
+  },
+  {
+   "name": "SN3aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3aq"
+  },
+  {
+   "name": "SN2aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2aq"
+  },
+  {
+   "name": "SN1aq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1aq"
+  },
+  {
+   "name": "SC6vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6vq"
+  },
+  {
+   "name": "SC5vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5vq"
+  },
+  {
+   "name": "SC4vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4vq"
+  },
+  {
+   "name": "SC3vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3vq"
+  },
+  {
+   "name": "SC2vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2vq"
+  },
+  {
+   "name": "SC1vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1vq"
+  },
+  {
+   "name": "SX4vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4vq"
+  },
+  {
+   "name": "SX3vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3vq"
+  },
+  {
+   "name": "SX2vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2vq"
+  },
+  {
+   "name": "SX1vq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1vq"
+  },
+  {
+   "name": "SC6eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6eq"
+  },
+  {
+   "name": "SC5eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5eq"
+  },
+  {
+   "name": "SC4eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4eq"
+  },
+  {
+   "name": "SC3eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3eq"
+  },
+  {
+   "name": "SC2eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2eq"
+  },
+  {
+   "name": "SC1eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1eq"
+  },
+  {
+   "name": "SX4eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4eq"
+  },
+  {
+   "name": "SX3eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3eq"
+  },
+  {
+   "name": "SX2eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2eq"
+  },
+  {
+   "name": "SX1eq",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1eq"
+  },
+  {
+   "name": "SP6h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6h"
+  },
+  {
+   "name": "SP5h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5h"
+  },
+  {
+   "name": "SP4h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4h"
+  },
+  {
+   "name": "SP3h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3h"
+  },
+  {
+   "name": "SP2h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2h"
+  },
+  {
+   "name": "SP1h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1h"
+  },
+  {
+   "name": "SN6h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6h"
+  },
+  {
+   "name": "SN5h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5h"
+  },
+  {
+   "name": "SN4h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4h"
+  },
+  {
+   "name": "SN3h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3h"
+  },
+  {
+   "name": "SN2h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2h"
+  },
+  {
+   "name": "SN1h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1h"
+  },
+  {
+   "name": "SC6h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6h"
+  },
+  {
+   "name": "SC5h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5h"
+  },
+  {
+   "name": "SC4h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4h"
+  },
+  {
+   "name": "SC3h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3h"
+  },
+  {
+   "name": "SC2h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2h"
+  },
+  {
+   "name": "SC1h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1h"
+  },
+  {
+   "name": "SX4h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4h"
+  },
+  {
+   "name": "SX3h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3h"
+  },
+  {
+   "name": "SX2h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2h"
+  },
+  {
+   "name": "SX1h",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1h"
+  },
+  {
+   "name": "SP6dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6dh"
+  },
+  {
+   "name": "SP5dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5dh"
+  },
+  {
+   "name": "SP4dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4dh"
+  },
+  {
+   "name": "SP3dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3dh"
+  },
+  {
+   "name": "SP2dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2dh"
+  },
+  {
+   "name": "SP1dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1dh"
+  },
+  {
+   "name": "SN6dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6dh"
+  },
+  {
+   "name": "SN5dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5dh"
+  },
+  {
+   "name": "SN4dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4dh"
+  },
+  {
+   "name": "SN3dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3dh"
+  },
+  {
+   "name": "SN2dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2dh"
+  },
+  {
+   "name": "SN1dh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1dh"
+  },
+  {
+   "name": "SP6ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6ah"
+  },
+  {
+   "name": "SP5ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5ah"
+  },
+  {
+   "name": "SP4ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4ah"
+  },
+  {
+   "name": "SP3ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3ah"
+  },
+  {
+   "name": "SP2ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2ah"
+  },
+  {
+   "name": "SP1ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1ah"
+  },
+  {
+   "name": "SN6ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6ah"
+  },
+  {
+   "name": "SN5ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5ah"
+  },
+  {
+   "name": "SN4ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4ah"
+  },
+  {
+   "name": "SN3ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3ah"
+  },
+  {
+   "name": "SN2ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2ah"
+  },
+  {
+   "name": "SN1ah",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1ah"
+  },
+  {
+   "name": "SC6vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6vh"
+  },
+  {
+   "name": "SC5vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5vh"
+  },
+  {
+   "name": "SC4vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4vh"
+  },
+  {
+   "name": "SC3vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3vh"
+  },
+  {
+   "name": "SC2vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2vh"
+  },
+  {
+   "name": "SC1vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1vh"
+  },
+  {
+   "name": "SX4vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4vh"
+  },
+  {
+   "name": "SX3vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3vh"
+  },
+  {
+   "name": "SX2vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2vh"
+  },
+  {
+   "name": "SX1vh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1vh"
+  },
+  {
+   "name": "SC6eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6eh"
+  },
+  {
+   "name": "SC5eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5eh"
+  },
+  {
+   "name": "SC4eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4eh"
+  },
+  {
+   "name": "SC3eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3eh"
+  },
+  {
+   "name": "SC2eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2eh"
+  },
+  {
+   "name": "SC1eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1eh"
+  },
+  {
+   "name": "SX4eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4eh"
+  },
+  {
+   "name": "SX3eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3eh"
+  },
+  {
+   "name": "SX2eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2eh"
+  },
+  {
+   "name": "SX1eh",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1eh"
+  },
+  {
+   "name": "SP6r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6r"
+  },
+  {
+   "name": "SP5r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5r"
+  },
+  {
+   "name": "SP4r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4r"
+  },
+  {
+   "name": "SP3r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3r"
+  },
+  {
+   "name": "SP2r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2r"
+  },
+  {
+   "name": "SP1r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1r"
+  },
+  {
+   "name": "SN6r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6r"
+  },
+  {
+   "name": "SN5r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5r"
+  },
+  {
+   "name": "SN4r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4r"
+  },
+  {
+   "name": "SN3r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3r"
+  },
+  {
+   "name": "SN2r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2r"
+  },
+  {
+   "name": "SN1r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1r"
+  },
+  {
+   "name": "SC6r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6r"
+  },
+  {
+   "name": "SC5r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5r"
+  },
+  {
+   "name": "SC4r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4r"
+  },
+  {
+   "name": "SC3r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3r"
+  },
+  {
+   "name": "SC2r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2r"
+  },
+  {
+   "name": "SC1r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1r"
+  },
+  {
+   "name": "SX4r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4r"
+  },
+  {
+   "name": "SX3r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3r"
+  },
+  {
+   "name": "SX2r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2r"
+  },
+  {
+   "name": "SX1r",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1r"
+  },
+  {
+   "name": "SP6dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6dr"
+  },
+  {
+   "name": "SP5dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5dr"
+  },
+  {
+   "name": "SP4dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4dr"
+  },
+  {
+   "name": "SP3dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3dr"
+  },
+  {
+   "name": "SP2dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2dr"
+  },
+  {
+   "name": "SP1dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1dr"
+  },
+  {
+   "name": "SN6dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6dr"
+  },
+  {
+   "name": "SN5dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5dr"
+  },
+  {
+   "name": "SN4dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4dr"
+  },
+  {
+   "name": "SN3dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3dr"
+  },
+  {
+   "name": "SN2dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2dr"
+  },
+  {
+   "name": "SN1dr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1dr"
+  },
+  {
+   "name": "SP6ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP6ar"
+  },
+  {
+   "name": "SP5ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP5ar"
+  },
+  {
+   "name": "SP4ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP4ar"
+  },
+  {
+   "name": "SP3ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP3ar"
+  },
+  {
+   "name": "SP2ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP2ar"
+  },
+  {
+   "name": "SP1ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SP1ar"
+  },
+  {
+   "name": "SN6ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN6ar"
+  },
+  {
+   "name": "SN5ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN5ar"
+  },
+  {
+   "name": "SN4ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN4ar"
+  },
+  {
+   "name": "SN3ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN3ar"
+  },
+  {
+   "name": "SN2ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN2ar"
+  },
+  {
+   "name": "SN1ar",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SN1ar"
+  },
+  {
+   "name": "SC6vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6vr"
+  },
+  {
+   "name": "SC5vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5vr"
+  },
+  {
+   "name": "SC4vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4vr"
+  },
+  {
+   "name": "SC3vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3vr"
+  },
+  {
+   "name": "SC2vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2vr"
+  },
+  {
+   "name": "SC1vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1vr"
+  },
+  {
+   "name": "SX4vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4vr"
+  },
+  {
+   "name": "SX3vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3vr"
+  },
+  {
+   "name": "SX2vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2vr"
+  },
+  {
+   "name": "SX1vr",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1vr"
+  },
+  {
+   "name": "SC6er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC6er"
+  },
+  {
+   "name": "SC5er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC5er"
+  },
+  {
+   "name": "SC4er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC4er"
+  },
+  {
+   "name": "SC3er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC3er"
+  },
+  {
+   "name": "SC2er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC2er"
+  },
+  {
+   "name": "SC1er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SC1er"
+  },
+  {
+   "name": "SX4er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX4er"
+  },
+  {
+   "name": "SX3er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX3er"
+  },
+  {
+   "name": "SX2er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX2er"
+  },
+  {
+   "name": "SX1er",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SX1er"
+  },
+  {
+   "name": "TP6",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6"
+  },
+  {
+   "name": "TP5",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5"
+  },
+  {
+   "name": "TP4",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4"
+  },
+  {
+   "name": "TP3",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3"
+  },
+  {
+   "name": "TP2",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2"
+  },
+  {
+   "name": "TP1",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1"
+  },
+  {
+   "name": "TN6",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6"
+  },
+  {
+   "name": "TN5",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5"
+  },
+  {
+   "name": "TN4",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4"
+  },
+  {
+   "name": "TN3",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3"
+  },
+  {
+   "name": "TN2",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2"
+  },
+  {
+   "name": "TN1",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1"
+  },
+  {
+   "name": "TC6",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6"
+  },
+  {
+   "name": "TC5",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5"
+  },
+  {
+   "name": "TC4",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4"
+  },
+  {
+   "name": "TC3",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3"
+  },
+  {
+   "name": "TC2",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2"
+  },
+  {
+   "name": "TC1",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1"
+  },
+  {
+   "name": "TX4",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4"
+  },
+  {
+   "name": "TX3",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3"
+  },
+  {
+   "name": "TX2",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2"
+  },
+  {
+   "name": "TX1",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1"
+  },
+  {
+   "name": "TP6d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6d"
+  },
+  {
+   "name": "TP5d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5d"
+  },
+  {
+   "name": "TP4d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4d"
+  },
+  {
+   "name": "TP3d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3d"
+  },
+  {
+   "name": "TP2d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2d"
+  },
+  {
+   "name": "TP1d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1d"
+  },
+  {
+   "name": "TN6d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6d"
+  },
+  {
+   "name": "TN5d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5d"
+  },
+  {
+   "name": "TN4d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4d"
+  },
+  {
+   "name": "TN3d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3d"
+  },
+  {
+   "name": "TN2d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2d"
+  },
+  {
+   "name": "TN1d",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1d"
+  },
+  {
+   "name": "TP6a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6a"
+  },
+  {
+   "name": "TP5a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5a"
+  },
+  {
+   "name": "TP4a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4a"
+  },
+  {
+   "name": "TP3a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3a"
+  },
+  {
+   "name": "TP2a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2a"
+  },
+  {
+   "name": "TP1a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1a"
+  },
+  {
+   "name": "TN6a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6a"
+  },
+  {
+   "name": "TN5a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5a"
+  },
+  {
+   "name": "TN4a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4a"
+  },
+  {
+   "name": "TN3a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3a"
+  },
+  {
+   "name": "TN2a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2a"
+  },
+  {
+   "name": "TN1a",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1a"
+  },
+  {
+   "name": "TC6v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6v"
+  },
+  {
+   "name": "TC5v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5v"
+  },
+  {
+   "name": "TC4v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4v"
+  },
+  {
+   "name": "TC3v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3v"
+  },
+  {
+   "name": "TC2v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2v"
+  },
+  {
+   "name": "TC1v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1v"
+  },
+  {
+   "name": "TX4v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4v"
+  },
+  {
+   "name": "TX3v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3v"
+  },
+  {
+   "name": "TX2v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2v"
+  },
+  {
+   "name": "TX1v",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1v"
+  },
+  {
+   "name": "TC6e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6e"
+  },
+  {
+   "name": "TC5e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5e"
+  },
+  {
+   "name": "TC4e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4e"
+  },
+  {
+   "name": "TC3e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3e"
+  },
+  {
+   "name": "TC2e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2e"
+  },
+  {
+   "name": "TC1e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1e"
+  },
+  {
+   "name": "TX4e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4e"
+  },
+  {
+   "name": "TX3e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3e"
+  },
+  {
+   "name": "TX2e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2e"
+  },
+  {
+   "name": "TX1e",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1e"
+  },
+  {
+   "name": "TD",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TD"
+  },
+  {
+   "name": "TQ5",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ5"
+  },
+  {
+   "name": "TQ4",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ4"
+  },
+  {
+   "name": "TQ3",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ3"
+  },
+  {
+   "name": "TQ2",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ2"
+  },
+  {
+   "name": "TQ1",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ1"
+  },
+  {
+   "name": "TQ5p",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ5p"
+  },
+  {
+   "name": "TQ4p",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ4p"
+  },
+  {
+   "name": "TQ3p",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ3p"
+  },
+  {
+   "name": "TQ2p",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ2p"
+  },
+  {
+   "name": "TQ1p",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ1p"
+  },
+  {
+   "name": "TQ5n",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ5n"
+  },
+  {
+   "name": "TQ4n",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ4n"
+  },
+  {
+   "name": "TQ3n",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ3n"
+  },
+  {
+   "name": "TQ2n",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ2n"
+  },
+  {
+   "name": "TQ1n",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TQ1n"
+  },
+  {
+   "name": "TP6q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6q"
+  },
+  {
+   "name": "TP5q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5q"
+  },
+  {
+   "name": "TP4q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4q"
+  },
+  {
+   "name": "TP3q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3q"
+  },
+  {
+   "name": "TP2q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2q"
+  },
+  {
+   "name": "TP1q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1q"
+  },
+  {
+   "name": "TN6q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6q"
+  },
+  {
+   "name": "TN5q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5q"
+  },
+  {
+   "name": "TN4q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4q"
+  },
+  {
+   "name": "TN3q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3q"
+  },
+  {
+   "name": "TN2q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2q"
+  },
+  {
+   "name": "TN1q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1q"
+  },
+  {
+   "name": "TC6q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6q"
+  },
+  {
+   "name": "TC5q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5q"
+  },
+  {
+   "name": "TC4q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4q"
+  },
+  {
+   "name": "TC3q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3q"
+  },
+  {
+   "name": "TC2q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2q"
+  },
+  {
+   "name": "TC1q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1q"
+  },
+  {
+   "name": "TX4q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4q"
+  },
+  {
+   "name": "TX3q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3q"
+  },
+  {
+   "name": "TX2q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2q"
+  },
+  {
+   "name": "TX1q",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1q"
+  },
+  {
+   "name": "TP6dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6dq"
+  },
+  {
+   "name": "TP5dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5dq"
+  },
+  {
+   "name": "TP4dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4dq"
+  },
+  {
+   "name": "TP3dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3dq"
+  },
+  {
+   "name": "TP2dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2dq"
+  },
+  {
+   "name": "TP1dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1dq"
+  },
+  {
+   "name": "TN6dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6dq"
+  },
+  {
+   "name": "TN5dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5dq"
+  },
+  {
+   "name": "TN4dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4dq"
+  },
+  {
+   "name": "TN3dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3dq"
+  },
+  {
+   "name": "TN2dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2dq"
+  },
+  {
+   "name": "TN1dq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1dq"
+  },
+  {
+   "name": "TP6aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6aq"
+  },
+  {
+   "name": "TP5aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5aq"
+  },
+  {
+   "name": "TP4aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4aq"
+  },
+  {
+   "name": "TP3aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3aq"
+  },
+  {
+   "name": "TP2aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2aq"
+  },
+  {
+   "name": "TP1aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1aq"
+  },
+  {
+   "name": "TN6aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6aq"
+  },
+  {
+   "name": "TN5aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5aq"
+  },
+  {
+   "name": "TN4aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4aq"
+  },
+  {
+   "name": "TN3aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3aq"
+  },
+  {
+   "name": "TN2aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2aq"
+  },
+  {
+   "name": "TN1aq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1aq"
+  },
+  {
+   "name": "TC6vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6vq"
+  },
+  {
+   "name": "TC5vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5vq"
+  },
+  {
+   "name": "TC4vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4vq"
+  },
+  {
+   "name": "TC3vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3vq"
+  },
+  {
+   "name": "TC2vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2vq"
+  },
+  {
+   "name": "TC1vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1vq"
+  },
+  {
+   "name": "TX4vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4vq"
+  },
+  {
+   "name": "TX3vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3vq"
+  },
+  {
+   "name": "TX2vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2vq"
+  },
+  {
+   "name": "TX1vq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1vq"
+  },
+  {
+   "name": "TC6eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6eq"
+  },
+  {
+   "name": "TC5eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5eq"
+  },
+  {
+   "name": "TC4eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4eq"
+  },
+  {
+   "name": "TC3eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3eq"
+  },
+  {
+   "name": "TC2eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2eq"
+  },
+  {
+   "name": "TC1eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1eq"
+  },
+  {
+   "name": "TX4eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4eq"
+  },
+  {
+   "name": "TX3eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3eq"
+  },
+  {
+   "name": "TX2eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2eq"
+  },
+  {
+   "name": "TX1eq",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1eq"
+  },
+  {
+   "name": "TP6h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6h"
+  },
+  {
+   "name": "TP5h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5h"
+  },
+  {
+   "name": "TP4h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4h"
+  },
+  {
+   "name": "TP3h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3h"
+  },
+  {
+   "name": "TP2h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2h"
+  },
+  {
+   "name": "TP1h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1h"
+  },
+  {
+   "name": "TN6h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6h"
+  },
+  {
+   "name": "TN5h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5h"
+  },
+  {
+   "name": "TN4h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4h"
+  },
+  {
+   "name": "TN3h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3h"
+  },
+  {
+   "name": "TN2h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2h"
+  },
+  {
+   "name": "TN1h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1h"
+  },
+  {
+   "name": "TC6h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6h"
+  },
+  {
+   "name": "TC5h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5h"
+  },
+  {
+   "name": "TC4h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4h"
+  },
+  {
+   "name": "TC3h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3h"
+  },
+  {
+   "name": "TC2h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2h"
+  },
+  {
+   "name": "TC1h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1h"
+  },
+  {
+   "name": "TX4h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4h"
+  },
+  {
+   "name": "TX3h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3h"
+  },
+  {
+   "name": "TX2h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2h"
+  },
+  {
+   "name": "TX1h",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1h"
+  },
+  {
+   "name": "TP6dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6dh"
+  },
+  {
+   "name": "TP5dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5dh"
+  },
+  {
+   "name": "TP4dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4dh"
+  },
+  {
+   "name": "TP3dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3dh"
+  },
+  {
+   "name": "TP2dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2dh"
+  },
+  {
+   "name": "TP1dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1dh"
+  },
+  {
+   "name": "TN6dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6dh"
+  },
+  {
+   "name": "TN5dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5dh"
+  },
+  {
+   "name": "TN4dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4dh"
+  },
+  {
+   "name": "TN3dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3dh"
+  },
+  {
+   "name": "TN2dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2dh"
+  },
+  {
+   "name": "TN1dh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1dh"
+  },
+  {
+   "name": "TP6ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6ah"
+  },
+  {
+   "name": "TP5ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5ah"
+  },
+  {
+   "name": "TP4ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4ah"
+  },
+  {
+   "name": "TP3ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3ah"
+  },
+  {
+   "name": "TP2ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2ah"
+  },
+  {
+   "name": "TP1ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1ah"
+  },
+  {
+   "name": "TN6ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6ah"
+  },
+  {
+   "name": "TN5ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5ah"
+  },
+  {
+   "name": "TN4ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4ah"
+  },
+  {
+   "name": "TN3ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3ah"
+  },
+  {
+   "name": "TN2ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2ah"
+  },
+  {
+   "name": "TN1ah",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1ah"
+  },
+  {
+   "name": "TC6vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6vh"
+  },
+  {
+   "name": "TC5vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5vh"
+  },
+  {
+   "name": "TC4vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4vh"
+  },
+  {
+   "name": "TC3vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3vh"
+  },
+  {
+   "name": "TC2vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2vh"
+  },
+  {
+   "name": "TC1vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1vh"
+  },
+  {
+   "name": "TX4vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4vh"
+  },
+  {
+   "name": "TX3vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3vh"
+  },
+  {
+   "name": "TX2vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2vh"
+  },
+  {
+   "name": "TX1vh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1vh"
+  },
+  {
+   "name": "TC6eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6eh"
+  },
+  {
+   "name": "TC5eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5eh"
+  },
+  {
+   "name": "TC4eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4eh"
+  },
+  {
+   "name": "TC3eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3eh"
+  },
+  {
+   "name": "TC2eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2eh"
+  },
+  {
+   "name": "TC1eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1eh"
+  },
+  {
+   "name": "TX4eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4eh"
+  },
+  {
+   "name": "TX3eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3eh"
+  },
+  {
+   "name": "TX2eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2eh"
+  },
+  {
+   "name": "TX1eh",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1eh"
+  },
+  {
+   "name": "TP6r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6r"
+  },
+  {
+   "name": "TP5r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5r"
+  },
+  {
+   "name": "TP4r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4r"
+  },
+  {
+   "name": "TP3r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3r"
+  },
+  {
+   "name": "TP2r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2r"
+  },
+  {
+   "name": "TP1r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1r"
+  },
+  {
+   "name": "TN6r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6r"
+  },
+  {
+   "name": "TN5r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5r"
+  },
+  {
+   "name": "TN4r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4r"
+  },
+  {
+   "name": "TN3r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3r"
+  },
+  {
+   "name": "TN2r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2r"
+  },
+  {
+   "name": "TN1r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1r"
+  },
+  {
+   "name": "TC6r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6r"
+  },
+  {
+   "name": "TC5r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5r"
+  },
+  {
+   "name": "TC4r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4r"
+  },
+  {
+   "name": "TC3r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3r"
+  },
+  {
+   "name": "TC2r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2r"
+  },
+  {
+   "name": "TC1r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1r"
+  },
+  {
+   "name": "TX4r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4r"
+  },
+  {
+   "name": "TX3r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3r"
+  },
+  {
+   "name": "TX2r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2r"
+  },
+  {
+   "name": "TX1r",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1r"
+  },
+  {
+   "name": "TP6dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6dr"
+  },
+  {
+   "name": "TP5dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5dr"
+  },
+  {
+   "name": "TP4dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4dr"
+  },
+  {
+   "name": "TP3dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3dr"
+  },
+  {
+   "name": "TP2dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2dr"
+  },
+  {
+   "name": "TP1dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1dr"
+  },
+  {
+   "name": "TN6dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6dr"
+  },
+  {
+   "name": "TN5dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5dr"
+  },
+  {
+   "name": "TN4dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4dr"
+  },
+  {
+   "name": "TN3dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3dr"
+  },
+  {
+   "name": "TN2dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2dr"
+  },
+  {
+   "name": "TN1dr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1dr"
+  },
+  {
+   "name": "TP6ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP6ar"
+  },
+  {
+   "name": "TP5ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP5ar"
+  },
+  {
+   "name": "TP4ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP4ar"
+  },
+  {
+   "name": "TP3ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP3ar"
+  },
+  {
+   "name": "TP2ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP2ar"
+  },
+  {
+   "name": "TP1ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TP1ar"
+  },
+  {
+   "name": "TN6ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN6ar"
+  },
+  {
+   "name": "TN5ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN5ar"
+  },
+  {
+   "name": "TN4ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN4ar"
+  },
+  {
+   "name": "TN3ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN3ar"
+  },
+  {
+   "name": "TN2ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN2ar"
+  },
+  {
+   "name": "TN1ar",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TN1ar"
+  },
+  {
+   "name": "TC6vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6vr"
+  },
+  {
+   "name": "TC5vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5vr"
+  },
+  {
+   "name": "TC4vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4vr"
+  },
+  {
+   "name": "TC3vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3vr"
+  },
+  {
+   "name": "TC2vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2vr"
+  },
+  {
+   "name": "TC1vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1vr"
+  },
+  {
+   "name": "TX4vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4vr"
+  },
+  {
+   "name": "TX3vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3vr"
+  },
+  {
+   "name": "TX2vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2vr"
+  },
+  {
+   "name": "TX1vr",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1vr"
+  },
+  {
+   "name": "TC6er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC6er"
+  },
+  {
+   "name": "TC5er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC5er"
+  },
+  {
+   "name": "TC4er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC4er"
+  },
+  {
+   "name": "TC3er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC3er"
+  },
+  {
+   "name": "TC2er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC2er"
+  },
+  {
+   "name": "TC1er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TC1er"
+  },
+  {
+   "name": "TX4er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX4er"
+  },
+  {
+   "name": "TX3er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX3er"
+  },
+  {
+   "name": "TX2er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX2er"
+  },
+  {
+   "name": "TX1er",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TX1er"
+  },
+  {
+   "name": "W",
+   "element": "",
+   "mass": 72.0,
+   "description": "Martini 3 bead W"
+  },
+  {
+   "name": "SW",
+   "element": "",
+   "mass": 54.0,
+   "description": "Martini 3 bead SW"
+  },
+  {
+   "name": "TW",
+   "element": "",
+   "mass": 36.0,
+   "description": "Martini 3 bead TW"
+  },
+  {
+   "name": "U",
+   "element": "",
+   "mass": 24.0,
+   "description": "Martini 3 bead U"
+  }
+ ],
+ "pairs": [],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "844 bead types and 355746 pairs from martini_v3.0.0.itp (the pair table)",
+  "run settings: LJ cut at 11 A and shifted (Potential-shift), reaction field epsilon_r 15, epsilon_rf infinite, special_bonds 0 1 1",
+  "217 molecules from the parameter files as templates with their topologies (FLEXIBLE variants: stiff bonds for constraints)"
+ ]
+}

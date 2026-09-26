@@ -21,6 +21,8 @@ interaction, and every CAPS energy form is checked against LAMMPS.
 | `validate_rtf_types.py` | automatic typing against a CHARMM topology's residues (CGenFF's own model compounds); `--apply` parameterises them |
 | `check_gromacs.py` | GROMACS topologies written by CAPS, run in GROMACS (grompp, a zero-step mdrun) |
 | `extend_inorganic_water.py` | charges, shells and fixes for the inorganic and water force fields from their sources' templates |
+| `convert_martini3.py` | Martini 3 from cgmartini.nl's martini_v300.zip: bead types and the full pair table (`data/martini/martini3-nonbonded.tsv.gz`), the molecules of its solvent, ion, small-molecule, sugar, nucleobase and phospholipid files as templates |
+| `check_martini3.py` | Martini 3 boxes against GROMACS (reaction field, virtual sites, restricted bending) |
 | `convert_emc_martini.py` | MARTINI overlays (polymers, solvents, surfactants, sugars) from the EMC parameter files of the moltemplate distribution |
 
 LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (lj/sdk, angle sdk) is built at
@@ -35,13 +37,30 @@ LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (
 | MARTINI amino acids: HIS, PHE, TYR, TRP (harmonic impropers, GROMACS type-2 order), ARG, ASP, LYS, water | energy 1.3e-7, forces 7.8e-9 |
 | Martini 2.2 proteins: AK helix (helix constraints, 96° / 700 angles, −120° / 400 dihedrals); an aromatic helix (W, Y, F, H rings, charged termini); 1ICO (VAL / ILE as AC1 / AC2, elastic bonds, disulfide) | energy ≤ 1.4e-7, forces ≤ 2.5e-8 |
 
+| SDK: DMPC / DMPE / water; C12E8 / water; SDS / Na+ / water at relative permittivity 80 (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion) | energy ≤ 1.2e-7, forces ≤ 2e-6 |
+| Cooke-Deserno lipids (cosine/squared, FENE, harmonic head-tail bond) | energy 8.5e-9, forces 7.9e-9 |
+| mW water (Stillinger-Weber, `.sw` file) | energy 1.8e-10, forces 8e-9 |
+
 `check_martini_protein.py`: CAPS's Martini 2.2 protein of 1ICO (vermouth's martini22 integration test, `-dssp -cys auto`)
 against martinize2 — 67 beads with identical types and charges, 67 bonds, 21 constraints, 65 angles, 4 dihedrals
 identical, bead positions within 0.001 Å; CAPS's DSSP gives DSSP 2.0's letters on 1ICO, the Trp-cage (α and 3₁₀) and a
 43-residue helical protein.
-| SDK: DMPC / DMPE / water; C12E8 / water; SDS / Na+ / water at relative permittivity 80 (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion) | energy ≤ 1.2e-7, forces ≤ 2e-6 |
-| Cooke-Deserno lipids (cosine/squared, FENE, harmonic head-tail bond) | energy 8.5e-9, forces 7.9e-9 |
-| mW water (Stillinger-Weber, `.sw` file) | energy 1.8e-10, forces 8e-9 |
+
+### Martini 3 (`check_martini3.py`, against GROMACS)
+
+Martini 3 has no LAMMPS form (reaction-field Coulomb, virtual sites): CAPS refuses the LAMMPS export and GROMACS is the
+reference. Boxes of Martini 3's own molecules are built from the templates, packed, written to a data file and
+recognised again, exported with `caps ff apply --gromacs` and run with `gmx mdrun -rerun`:
+
+| Case | Result |
+|---|---|
+| Water and ions (W, Na+, Cl-, Ca2+; Na+ and Cl- are both TQ5, told apart by charge) | energy 2e-6 (relative), forces 3e-4 kcal/mol/Å |
+| Lipids in water (POPC, POPS, DOPE, Na+) | energy 3.7e-6, forces 3e-4 |
+| Nucleobases (virtual sites, exclusions), TXE (restricted bending), BIM / PCRE (harmonic impropers) | energy 2.4e-6, forces 7.6e-3 |
+| Every one of the 217 molecule templates once, in water | energy 2.9e-6, forces 2.5e-2 |
+
+Forces on beads held by constraints (stiff bonds in CAPS, 1e6 kJ/mol/nm²) carry the single-precision position error of
+GROMACS (~0.012 kcal/mol/Å per stiff bond in a 9 nm box); the check allows that per bead and nothing else.
 
 The SDK beads for PEG and SDS come from LAMMPS's own SDK / SPICA examples (`examples/PACKAGES/cgspica`); their CM, CT,
 CT2 and W terms are checked equal to the library's before they are added (`bench/typing/make_cg_rules.py`).

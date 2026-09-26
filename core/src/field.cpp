@@ -237,6 +237,7 @@ ForceField assign_gaff(const System& s) {
 Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
     : ff_(ff), opt_(o), pool_(std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads())) {
   if (ff.cutoff > 0) opt_.cutoff = ff.cutoff;
+  if (ff.lj_shift) opt_.tail = false;   // Martini 3: shifted at the cut-off, no tail correction
   // a relative permittivity εr (MARTINI 15, SDK 80) divides every Coulomb term: charges scaled by 1/√εr throughout
   if (ff.dielectric <= 0) throw FieldError("the relative permittivity must be positive");
   qeff_ = ff.charge;
@@ -299,6 +300,7 @@ int Evaluator::threads() const { return pool_->size(); }
 void Evaluator::set_options(const EnergyOptions& o0) {
   EnergyOptions o = o0;
   if (ff_.cutoff > 0) o.cutoff = ff_.cutoff;   // the model's own cut-off
+  if (ff_.lj_shift) o.tail = false;
   if (o.threads != opt_.threads) pool_ = std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads());
   const bool relist = o.cutoff != opt_.cutoff || o.skin != opt_.skin;
   opt_ = o;
@@ -676,7 +678,34 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
   ++builds_;
 }
 
+void place_virtual_sites(const ForceField& ff, std::vector<double>& x, const Cell& cell) {
+  for (const auto& v : ff.vsites) {
+    const Vec3 ref{x[3 * v.from[0]], x[3 * v.from[0] + 1], x[3 * v.from[0] + 2]};
+    Vec3 c{0, 0, 0};
+    for (size_t k = 0; k < v.from.size(); ++k) {
+      Vec3 d = Vec3{x[3 * v.from[k]], x[3 * v.from[k] + 1], x[3 * v.from[k] + 2]} - ref;
+      if (cell.valid()) d = cell.minimum_image(d);
+      c = c + (ref + d) * v.w[k];
+    }
+    for (int k = 0; k < 3; ++k) x[3 * v.site + k] = c[k];
+  }
+}
+
 EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, std::vector<double>& f) {
+  if (ff_.vsites.empty()) return compute_placed(x, cell, f);
+  xv_ = x;
+  place_virtual_sites(ff_, xv_, cell);
+  EnergyTerms e = compute_placed(xv_, cell, f);
+  // the site's force goes back to its constructing atoms (the virial is unchanged: the site is a linear combination)
+  for (const auto& v : ff_.vsites) {
+    for (size_t k = 0; k < v.from.size(); ++k)
+      for (int c = 0; c < 3; ++c) f[3 * v.from[k] + c] += v.w[k] * f[3 * v.site + c];
+    for (int c = 0; c < 3; ++c) f[3 * v.site + c] = 0;
+  }
+  return e;
+}
+
+EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& cell, std::vector<double>& f) {
   const size_t n = x.size() / 3;
   f.assign(x.size(), 0.0);
   EnergyTerms e;
@@ -767,7 +796,16 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     const double a1 = (2 * ri - 5 * rc) * r3i * t2i, b1 = (4 * rc - 2 * ri) * r3i * t3i;
     gc[0] = a1; gc[1] = b1; gc[2] = -a1 / 3; gc[3] = -b1 / 4; gc[4] = 1 / rc - tt * tt * tt * (a1 / 3 + b1 * tt / 4);
   }
-  const bool pme = coul && !gro && opt_.electrostatics == EnergyOptions::Electrostatics::PME && cell.valid() && cell.periodic[0] && cell.periodic[1] &&
+  // Martini 3: reaction field, 1/r + k_rf r² − c_rf, k_rf = (ε_rf − ε_r) / ((2 ε_rf + ε_r) r_c³) (ε_rf infinite: 1 / (2 r_c³)); the
+  // relative permittivity ε_r is in the scaled charges
+  const bool rf = coul && !gro && ff_.coul_rf;
+  double krf = 0, crf = 0;
+  if (rf) {
+    const double er = ff_.dielectric, erf = ff_.eps_rf;
+    krf = erf <= 0 ? 1 / (2 * rc2 * rc) : (erf - er) / ((2 * erf + er) * rc2 * rc);
+    crf = 1 / rc + krf * rc2;
+  }
+  const bool pme = coul && !gro && !rf && opt_.electrostatics == EnergyOptions::Electrostatics::PME && cell.valid() && cell.periodic[0] && cell.periodic[1] &&
                    cell.periodic[2];
   const double beta = pme ? ewald_beta(rc, opt_.ewald_rtol) : 0.0;
   const double b2pi = 2 * beta / std::sqrt(kPi);
@@ -882,7 +920,10 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       if (coul && q[i] != 0 && q[j] != 0) {
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2;
-        if (gro) {
+        if (rf) {
+          ecoul += w * qq * (1 / r + krf * r2 - crf);
+          fr += qq * (1 / (r2 * r) - 2 * krf);
+        } else if (gro) {
           const double qd = qq * qscale;
           double ec = qd * (1 / r - gc[4]), fc = qd / r;
           if (r > ri) {
@@ -1066,6 +1107,11 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
               o.e += w;
               dEdth += -20 * w;
             }
+          } else if (t.form == 5) {   // restricted bending (Martini 3, GROMACS 10): K (cos θ − cos θ0)² / sin² θ
+            const double sn = std::sin(th), s2 = std::max(sn * sn, 1e-12);
+            o.e = t.a * dc * dc / s2;
+            // d/dθ: −2K dc sin θ / sin² θ − 2K dc² cos θ / sin³ θ
+            dEdth = -2 * t.a * dc * sn / s2 - 2 * t.a * dc * dc * c / (s2 * sn);
           } else if (t.form == 4) {   // SDK: K (θ − θ0)²
             o.e = t.a * (th - t.b) * (th - t.b);
             dEdth = 2 * t.a * (th - t.b);
@@ -1161,6 +1207,18 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
         if (r2 >= rc2) continue;
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2, fr;
+        if (rf) {
+          // reaction field (GROMACS, Verlet): an excluded pair within the cut-off keeps k_rf r² − c_rf, plus what its factor
+          // keeps of 1/r (the 1-4 scale)
+          const double keep = ex.factor;
+          A[5] += qq * (keep / r + krf * r2 - crf);
+          fr = qq * (keep / (r2 * r) - 2 * krf);
+          const Vec3 fj = d * fr;
+          add(j, fj);
+          add(i, fj * -1.0);
+          V(d, fj);
+          continue;
+        }
         if (r < 0.5) {
           // a core and its shell (or any pair this close): erfc(κr)/r − 1/r cancels catastrophically as r → 0, so the
           // same energy is written −erf(κr)/r (exact, with its r → 0 limits) plus what the factor keeps of 1/r
@@ -1294,6 +1352,11 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       e.virial += 3 * eb;   // E_bg ∝ 1/V ∝ λ⁻³, so −dE/dλ = 3 E_bg
       for (int c = 0; c < 3; ++c) e.w[c] += eb;
     }
+  } else if (rf) {
+    // GROMACS's reaction-field self term: −½ c_rf Σ q²
+    double q2 = 0;
+    for (double c : qeff_) q2 += c * c;
+    e.coulomb -= 0.5 * crf * q2 * kCoulomb;
   } else if (coul && !gro) {
     double q2 = 0;
     for (double c : qeff_) q2 += c * c;

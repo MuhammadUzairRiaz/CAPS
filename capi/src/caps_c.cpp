@@ -1021,7 +1021,7 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
     else if (ends(".xyz")) caps::write_xyz(d->frame, p);
     else if (ends(".mol2")) caps::write_mol2(d->frame, p);
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
-      if (d->field->complete) caps::write_lammps_data_ff(d->frame, *d->field->ff, elec(), p);
+      if (d->field->complete) caps::write_lammps_data_or_structure(d->frame, *d->field->ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
     } else {
       caps::ForceField ff;
@@ -1737,7 +1737,6 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
         d->traj.timesteps = {0};
         d->current = 0;
         refresh(d);
-        if (ch == "keep") F->charges = "keep", F->auto_charges = false;
         F->file_types.clear();
         F->file_charges.clear();
         for (const auto& at : s.atoms) F->file_types.push_back({at.type, at.name}), F->file_charges.push_back(at.charge);
@@ -1745,6 +1744,8 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
         F->file_has_charges = true;
         F->prep_notes.push_back(note);
       }
+      // the model's own charges (a Martini protein's, a molecule template's), whether or not the structure changed
+      if (ch == "keep") F->charges = "keep", F->auto_charges = false;
     }
     if (F->charges == "keep" && !d->traj.topology.has_charges && !F->file_has_charges)
       throw caps::FFError("the structure has no charges to keep; use the force field's or Gasteiger charges");
@@ -2514,7 +2515,7 @@ extern "C" caps_doc* caps_build_beads(const char* text, const char* ff_path, uin
     caps::FFDef def;
     if (ff_path && *ff_path) def = caps::load_forcefield(ff_path);
     const std::string t = text ? text : "";
-    const bool tpl = def.bead_templates.count(t) > 0;
+    const bool tpl = caps::has_bead_template(def, t);
     const caps::System s = caps::build_bead_molecule(t, def, seed ? seed : 1);
     auto* d = new caps_doc;
     d->traj.topology = s;
@@ -2524,7 +2525,7 @@ extern "C" caps_doc* caps_build_beads(const char* text, const char* ff_path, uin
     d->traj.timesteps.push_back(0);
     refresh(d);
     prov_step(d, "cg.build", tpl ? "coarse-grained molecule from the " + def.name + " template " + t : "coarse-grained molecule from bead SMILES",
-              {{"beads", tpl ? def.bead_templates.at(t) : t}, {"forcefield", def.name.empty() ? "none (4.7 Å bonds)" : def.name}}, seeded(seed ? seed : 1), {});
+              {{"beads", tpl ? caps::bead_template_list(def).at(t) : t}, {"forcefield", def.name.empty() ? "none (4.7 Å bonds)" : def.name}}, seeded(seed ? seed : 1), {});
     double q = 0;
     for (const auto& a : s.atoms) q += a.charge;
     caps::Json j = caps::Json::object();
@@ -2545,7 +2546,7 @@ extern "C" int32_t caps_bead_templates(const char* ff_path, char* json, int32_t 
   try {
     const caps::FFDef def = caps::load_forcefield(ff_path ? ff_path : "");
     caps::Json j = caps::Json::object();
-    for (const auto& [k, v] : def.bead_templates) j[k] = v;
+    for (const auto& [k, v] : caps::bead_template_list(def)) j[k] = v;
     return report_out(j.dump(), json, cap);
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -3315,8 +3316,8 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
     notes.push_back("wrapped coordinates with image flags");
     const bool same = s.atoms.size() == d->frame.atoms.size() && !use_pipeline;
     if (coeffs && d->field && d->field->complete && same) {
-      caps::write_lammps_data_ff(s, *d->field->ff, elec(), path);
-      notes.push_back("coefficients from Field: " + d->field->ff->name);
+      const std::string why = caps::write_lammps_data_or_structure(s, *d->field->ff, elec(), path);
+      notes.push_back(why.empty() ? "coefficients from Field: " + d->field->ff->name : why);
     } else if (coeffs) {
       try {
         caps::write_lammps_data_ff(s, default_ff(s), elec(), path);

@@ -410,7 +410,7 @@ void save_structure(const System& s, const ForceField& ff, const EnergyOptions& 
   auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };
   if (ends(".pdb")) write_pdb(s, out);
   else if (ends(".xyz")) write_xyz(s, out);
-  else write_lammps_data_ff(s, ff, e, out);
+  else if (const std::string why = write_lammps_data_or_structure(s, ff, e, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
 }
 
 }  // namespace
@@ -1126,11 +1126,11 @@ int main(int argc, char** argv) {
       FFDef def;
       if (o.count("--ff")) def = load_forcefield(o["--ff"]);
       if (o.count("--template") && o["--template"] == "list") {
-        for (const auto& [k, v] : def.bead_templates) std::printf("%-20s %s\n", k.c_str(), v.size() > 90 ? (v.substr(0, 87) + "...").c_str() : v.c_str());
+        for (const auto& [k, v] : bead_template_list(def)) std::printf("%-20s %s\n", k.c_str(), v.size() > 90 ? (v.substr(0, 87) + "...").c_str() : v.c_str());
         return 0;
       }
       const std::string text = o.count("--template") ? o["--template"] : o["--beads"];
-      if (o.count("--template") && !def.bead_templates.count(text)) throw std::runtime_error(def.name + " has no bead template '" + text + "' (--template list)");
+      if (o.count("--template") && !has_bead_template(def, text)) throw std::runtime_error(def.name + " has no bead template '" + text + "' (--template list)");
       const System s = build_bead_molecule(text, def, o.count("--seed") ? std::stoull(o["--seed"]) : 1);
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - std::strlen(e)) == e; };
@@ -2138,7 +2138,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
-      else write_lammps_data_ff(s, r.field ? *r.field : default_forcefield(s), r.energy, out);
+      else if (const std::string why = write_lammps_data_or_structure(s, r.field ? *r.field : default_forcefield(s), r.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       std::printf("%s\n", rep.field.c_str());
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       for (const auto& st : rep.stages)
@@ -2199,7 +2199,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (ends("mol2")) write_mol2(s, out);
-      else write_lammps_data_ff(s, d.field ? *d.field : default_forcefield(s), d.energy, out);
+      else if (const std::string why = write_lammps_data_or_structure(s, d.field ? *d.field : default_forcefield(s), d.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       if (o.count("--log")) {
         std::ofstream lg(o["--log"]);
@@ -2287,7 +2287,7 @@ int main(int argc, char** argv) {
       auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
-      else write_lammps_data_ff(s, default_forcefield(s), e.md.energy, out);
+      else if (const std::string why = write_lammps_data_or_structure(s, default_forcefield(s), e.md.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       if (o.count("--log")) {
         std::ofstream lg(o["--log"]);
