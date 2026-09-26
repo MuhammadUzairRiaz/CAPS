@@ -79,7 +79,7 @@ def welcome():
              f'<input id="qs" value="C=Cc1ccccc1" style="flex-grow: 1; background: transparent; border: 0; outline: none; font-family: {MONO}; font-size: 15px; color: {TEXT}">'
              f'{chip("SMILES detected", OK, "#16261A")}{btn("Build 3D", True, "cube", small=True, href="Sketch.dc.html")}</div>')
     drop = (f'<div style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 56px; border: 1.5px dashed {LINE}; border-radius: 10px; color: {MUTED}; font-size: 12.5px">'
-            f'{icon("download", 16, DIM)}<span>Drop PDB, CIF, mol2, SDF, XYZ, LAMMPS data, GROMACS gro/top or a CAPS recipe</span></div>')
+            f'{icon("download", 16, DIM)}<span>Drop PDB, CIF, mol2, SDF, XYZ, LAMMPS data or GROMACS gro/top</span></div>')
     main = (f'<div style="flex-grow: 1; display: flex; gap: 28px; padding: 34px 40px; min-height: 0">'
             f'<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 22px">'
             f'<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.015em">Start</h1>'
@@ -90,8 +90,8 @@ def welcome():
             + drop + '</div>'
             + f'<div style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">'
             + card("Learn", lr, chip("5 tutorials"))
-            + card("From a recipe", col(f'<div style="font-size: 12.5px; color: {MUTED}; line-height: 1.5">Open a YAML or JSON recipe. Monomers, sequences and force-field choices carry over; external-tool steps become CAPS engine steps.</div>',
-                                    btn("Import recipe", ic="download", small=True), gap=10))
+            + card("From LAMMPS", col(f'<div style="font-size: 12.5px; color: {MUTED}; line-height: 1.5">Open a LAMMPS data file with its input script. Atoms, types and force-field coefficients carry over; the run steps become CAPS engine steps.</div>',
+                                    btn("Import LAMMPS input", ic="download", small=True), gap=10))
             + card("This machine", col(kv("Threads", "10"), kv("GPU", "Apple M5 · CPU path"), kv("Remote hosts", "none"), gap=7), btn("Settings", ic="gear", small=True, href="Settings.dc.html"))
             + '</div></div>')
     body = (topbar(["Start"], "Start") + '<div style="flex-grow: 1; display: flex; min-height: 0">' + rail("Studio")

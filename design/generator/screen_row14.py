@@ -255,8 +255,8 @@ def download_page():
              f'<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px"><h2 style="margin: 0; font-size: 26px; font-weight: 600">How to cite</h2>'
              f'<p style="margin: 0; font-size: 14px; color: {MUTED}; line-height: 1.6">If CAPS contributes to your work, cite the software paper and the methods it used. CAPS writes the method references for you into every provenance manifest.</p>'
              f'<div style="padding: 16px 18px; background: {BG1}; border: 1px solid {LINE}; border-radius: 10px; font-family: {MONO}; font-size: 13px; line-height: 1.7; color: {TEXT}">[Authors]. CAPS: Chain Assembly and Packing Suite. [Journal] ([year]). doi:[pending]</div></div>'
-             f'<div style="width: 420px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px"><h2 style="margin: 0; font-size: 26px; font-weight: 600">Coming from scripts?</h2>'
-             f'<p style="margin: 0; font-size: 14px; color: {MUTED}; line-height: 1.6">CAPS reads YAML and JSON recipes. Steps that used packmol, LAMMPS or DL_FIELD now run on CAPS engines.</p>{btn("Migration guide", ic="file")}</div></section>')
+             f'<div style="width: 420px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px"><h2 style="margin: 0; font-size: 26px; font-weight: 600">Coming from another tool?</h2>'
+             f'<p style="margin: 0; font-size: 14px; color: {MUTED}; line-height: 1.6">CAPS reads LAMMPS, GROMACS, PDB, CIF and mol2 files. Steps that used packmol or LAMMPS now run on CAPS engines.</p>{btn("Migration guide", ic="file")}</div></section>')
     footer_ = (f'<footer style="margin-top: auto; display: flex; align-items: center; gap: 24px; padding: 24px 64px; border-top: 1px solid {LINE}; font-size: 13px; color: {DIM}">'
                f'<span>CAPS · BSD-3-Clause</span><a href="#" style="color: {MUTED}; text-decoration: none">Source code [repository]</a><a href="#" style="color: {MUTED}; text-decoration: none">Documentation</a><a href="#" style="color: {MUTED}; text-decoration: none">Theory manual</a></footer>')
     body = (nav + hero
