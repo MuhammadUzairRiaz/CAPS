@@ -88,6 +88,14 @@ CASES = [
     # (its own in.PyAC_bulk-clayff as well).
     ("ClayFF pyrophyllite (LAMMPS's ClayFF test, triclinic, M-O-H bends)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
      "inorganic-clay", "keep", "names", ["--kspace", "ewald"]),
+    # IFF typed by rule on slabs CAPS builds: hydroxylated quartz (sc4, oc23, oc24, hoy; the charges IFF states from
+    # bond increments), a copper (111) slab (Lennard-Jones atoms, perceived bonds dropped)
+    ("IFF (PCFF) hydroxylated quartz (001) slab, typed by rule", ("surface", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif"),
+     ["--hkl", "0,0,1", "--layers", "3", "--supercell", "2,2", "--passivate"]), "iff-pcff", "types", "rules"),
+    ("IFF (CVFF) hydroxylated quartz (001) slab, typed by rule", ("surface", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif"),
+     ["--hkl", "0,0,1", "--layers", "3", "--supercell", "2,2", "--passivate"]), "iff-cvff", "types", "rules"),
+    ("IFF copper (111) slab, typed by rule (no bonds)", ("surface", os.path.join(ROOT, "data", "crystals", "copper.cif"),
+     ["--hkl", "1,1,1", "--layers", "4", "--supercell", "3,3"]), "iff-pcff", "types", "rules"),
     ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
     # TraPPE in its own styles: the c1-c3 torsions as dihedral opls, 14 Å with TraPPE's 1-4 exclusions (united atom;
     # explicit-hydrogen aromatics)
@@ -155,6 +163,10 @@ def structure(src, base):
     if kind == "crystal":   # CAPS's space-group builder: caps crystal ARGS
         out = os.path.join(work, base + ".data")
         subprocess.run([CAPS, "crystal"] + list(src[1]) + ["-o", out], capture_output=True, check=True)
+        return out, None
+    if kind == "surface":   # CAPS's slab builder: caps surface CIF ARGS
+        out = os.path.join(work, base + ".data")
+        subprocess.run([CAPS, "surface", src[1], "-o", out] + list(src[2]), capture_output=True, check=True)
         return out, None
     if kind == "solvent-box":   # a liquid from CAPS's solvent packing (caps solvate), bonds from the packed molecules
         out = os.path.join(work, base + ".pdb")
