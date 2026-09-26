@@ -383,6 +383,23 @@ FFDef load_forcefield(const std::string& path) {
   ff.oop_scheme = j.text("oop_scheme");
   if (j.has("notes"))
     for (const auto& n : j["notes"].items()) ff.notes.push_back(n.str());
+  // an overlay naming the force field it extends (L-OPLS on OPLS-AA): the base first, this file's types and terms on
+  // top (merge_forcefield; later terms win), one complete force field under this file's name
+  if (j.has("extends")) {
+    const std::filesystem::path bp(j["extends"].str());
+    FFDef base = load_forcefield((bp.is_absolute() ? bp : std::filesystem::path(path).parent_path() / bp).lexically_normal().string());
+    if (j.has("typing")) {   // this file's own rules replace the base's
+      base.typing.clear();
+      base.typing_pairs.clear();
+      base.analogies.clear();
+    }
+    merge_forcefield(base, ff);
+    base.name = ff.name;
+    base.version = ff.version;
+    base.source = ff.source + " on " + base.source;
+    base.references.insert(base.references.end(), ff.references.begin(), ff.references.end());
+    ff = std::move(base);
+  }
   if (j.has("typing")) {
     if (j["typing"].is_string()) {
       // relative to the force-field file (either separator: Windows paths use backslashes)
