@@ -305,11 +305,13 @@ public sealed partial class FieldViewModel : ObservableObject
         try
         {
             var complete = await Task.Run(() => action(doc));
+            if (!ReferenceEquals(_doc(), doc)) return;   // another structure is open now: this assignment went with the old one
             LoadReport(doc);
             _changed();
             _ = CheckCoverage(auto: true);   // when this force field cannot describe the structure: why, and which can
             _status(complete ? $"{what} · {_ffName}: complete" : $"{what} · {_ffName}: {UntypedText}, {MissingText}");
         }
+        catch (ObjectDisposedException) { }   // the structure was closed while it was being typed
         catch (Exception ex) { Log = what + " failed: " + ex.Message; _status(Log); }
         finally { Working = false; }
     }

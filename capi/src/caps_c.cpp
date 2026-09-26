@@ -1078,6 +1078,143 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
   });
 }
 
+// Export center (ABI 23): the simulation files for LAMMPS and GROMACS in one call, from a complete force field.
+extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json o = caps::Json::parse(options && *options ? options : "{}");
+    auto flag = [&](const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
+    const bool lammps = flag("lammps", true), gromacs = flag("gromacs", true), preview = flag("preview", false);
+    const std::string stem = o.text("stem", "system");
+    if (stem.empty() || stem.find('/') != std::string::npos || stem.find('\\') != std::string::npos) throw std::runtime_error("the file stem must be a plain name");
+    if (!d->field || !d->field->ff) throw std::runtime_error("assign a force field first (Force field step)");
+    if (!d->field->complete) throw std::runtime_error("the force field is incomplete for this structure: see the Force field step for the untyped atoms and missing terms");
+    const caps::ForceField& ff = *d->field->ff;
+    const caps::System& s = d->frame;
+    caps::LammpsRun run;
+    const std::string kind = o.text("run", "check");
+    run.kind = kind == "none" ? caps::LammpsRun::Kind::None : kind == "minimize" ? caps::LammpsRun::Kind::Minimize
+             : kind == "nvt" ? caps::LammpsRun::Kind::NVT : kind == "npt" ? caps::LammpsRun::Kind::NPT : caps::LammpsRun::Kind::Check;
+    run.minimize_first = flag("minimize_first", true);
+    run.temperature = o.num("temperature", 300);
+    run.pressure = o.num("pressure", 1.0);
+    run.dt = o.num("dt", 1.0);
+    run.steps = int64_t(o.num("steps", 100000));
+    run.thermo_every = int(o.num("thermo_every", 1000));
+    run.dump_every = int(o.num("dump_every", 5000));
+    run.seed = uint64_t(o.num("seed", 4928459));
+    if (run.temperature <= 0 || run.dt <= 0 || run.steps < 0) throw std::runtime_error("temperature and time step must be positive");
+    namespace fs = std::filesystem;
+    const fs::path folder = preview ? fs::temp_directory_path() / ("caps_export_" + std::to_string(reinterpret_cast<uintptr_t>(d))) : fs::path(dir ? dir : "");
+    if (folder.empty()) throw std::runtime_error("choose a folder");
+    fs::create_directories(folder);
+    const auto base = (folder / stem).string();
+    caps::Json files = caps::Json::array(), notes = caps::Json::array();
+    std::vector<std::pair<std::string, std::string>> written;   // name, what
+    const caps::EnergyOptions e = elec();
+    if (lammps) {
+      caps::write_lammps_data_ff(s, ff, e, base + ".data", false);
+      caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run);
+      written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
+      written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
+    }
+    if (gromacs) {
+      for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
+      if (d->held_mol > 0) notes.push_back("GROMACS: the held molecule is not frozen: give it an index group and freezegrps / freezedim");
+      // the core's .mdp is a single point with the matching non-bonded settings; a protocol replaces its run lines
+      if (run.kind != caps::LammpsRun::Kind::Check) {
+        std::ifstream in(base + ".mdp");
+        std::string mdp((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        in.close();
+        std::string kept;
+        std::istringstream ls(mdp);
+        for (std::string line; std::getline(ls, line);) {
+          const auto key = line.substr(0, line.find_first_of(" =\t"));
+          if (key == "integrator" || key == "nsteps" || key == "dt" || key == "nstcalcenergy" || key == "nstenergy") continue;
+          if (line.rfind("; GROMACS run parameters", 0) == 0) continue;
+          kept += line + "\n";
+        }
+        char b[512];
+        const bool md = run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT;
+        std::string head = "; GROMACS run parameters written by CAPS: " + ff.name + "\n";
+        if (!md) {
+          std::snprintf(b, sizeof b, "integrator               = steep\nnsteps                   = %lld\nemtol                    = 10.0        ; kJ/mol/nm\n", static_cast<long long>(std::max<int64_t>(run.steps, 5000)));
+          head += b;
+        } else {
+          std::snprintf(b, sizeof b, "integrator               = md\ndt                       = %.6g\nnsteps                   = %lld\nnstxout-compressed       = %d\nnstenergy                = %d\nnstlog                   = %d\n",
+                        run.dt / 1000, static_cast<long long>(run.steps), run.dump_every, run.thermo_every, run.thermo_every);
+          head += b;
+        }
+        std::string tail;
+        if (md) {
+          std::snprintf(b, sizeof b, "tcoupl                   = V-rescale   ; Bussi\ntc-grps                  = System\ntau-t                    = 0.1\nref-t                    = %.6g\n", run.temperature);
+          tail += b;
+          if (run.kind == caps::LammpsRun::Kind::NPT) {
+            std::snprintf(b, sizeof b, "pcoupl                   = C-rescale\npcoupltype               = isotropic\ntau-p                    = 1.0\nref-p                    = %.6g\ncompressibility          = 4.5e-5\n", run.pressure * 1.01325);
+            tail += b;
+          }
+          std::snprintf(b, sizeof b, "gen-vel                  = yes\ngen-temp                 = %.6g\ngen-seed                 = %llu\n", run.temperature, static_cast<unsigned long long>(run.seed % 2147483647));
+          tail += b;
+        }
+        std::ofstream mo(base + ".mdp");
+        mo << head << kept << tail;
+        if (md && run.minimize_first) {
+          std::ofstream em(folder / (stem + "_em.mdp"));
+          std::snprintf(b, sizeof b, "integrator               = steep\nnsteps                   = 5000\nemtol                    = 10.0        ; kJ/mol/nm\n");
+          em << "; energy minimisation before " << (run.kind == caps::LammpsRun::Kind::NPT ? "NPT" : "NVT") << ", written by CAPS: " << ff.name << "\n" << b << kept;
+        }
+      }
+      const std::string itp = stem + ".itp";
+      written.push_back({stem + ".top", "defaults, atom types, every pair"});
+      if (fs::exists(folder / itp)) written.push_back({itp, "molecule types"});
+      written.push_back({stem + ".gro", "coordinates in nm, molecules whole"});
+      written.push_back({stem + ".mdp", run.kind == caps::LammpsRun::Kind::Check ? "single point, matching cut-offs" : "the run, matching cut-offs"});
+      if (fs::exists(folder / (stem + "_em.mdp")) && run.minimize_first && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT))
+        written.push_back({stem + "_em.mdp", "minimisation first (gmx grompp -f " + stem + "_em.mdp)"});
+    }
+    const int head_lines = int(o.num("head_lines", 0));
+    for (const auto& [name, what] : written) {
+      caps::Json f = caps::Json::object();
+      f["name"] = name, f["what"] = what;
+      f["bytes"] = double(fs::file_size(folder / name));
+      if (head_lines > 0) {
+        caps::Json lines = caps::Json::array();
+        std::ifstream in(folder / name);
+        std::string line;
+        for (int k = 0; k < head_lines && std::getline(in, line); ++k) lines.push_back(line);
+        f["head"] = std::move(lines);
+      }
+      files.push_back(std::move(f));
+    }
+    if (preview) fs::remove_all(folder);
+    // what was checked before writing
+    double net = 0;
+    for (double q : ff.charge) net += q;
+    std::set<std::string> types(d->field->types.begin(), d->field->types.end());
+    caps::Json checks = caps::Json::object();
+    checks["atoms"] = double(s.atoms.size());
+    checks["typed"] = double(s.atoms.size() - size_t(d->field->typing.untyped));
+    checks["types"] = double(types.size());
+    checks["type_pairs"] = double(ff.type_names.size() * (ff.type_names.size() + 1) / 2);
+    checks["bonds"] = double(ff.bonds.size()), checks["angles"] = double(ff.angles.size());
+    checks["dihedrals"] = double(ff.dihedrals.size()), checks["impropers"] = double(ff.impropers.size() + ff.impropers_harmonic.size() + ff.inversions.size());
+    checks["missing"] = double(d->field->rep.missing.size());
+    checks["net_charge"] = net;
+    checks["charges"] = d->field->auto_charges ? "automatic" : d->field->charges;
+    checks["forcefield"] = ff.name;
+    checks["density"] = s.density();
+    r["ok"] = true;
+    r["files"] = std::move(files);
+    r["notes"] = std::move(notes);
+    r["checks"] = std::move(checks);
+    r["folder"] = preview ? std::string() : folder.string();
+  } catch (const std::exception& ex) {
+    r["ok"] = false;
+    r["error"] = std::string(ex.what());
+  }
+  return report_out(r.dump(), out, cap);
+}
+
 int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn progress, void* user, char* report, int32_t cap) {
   return guard([&] {
     caps::RelaxOptions r;
