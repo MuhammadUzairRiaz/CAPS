@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <filesystem>
+#include <map>
 #include <random>
 #include <set>
 
@@ -376,13 +377,18 @@ System cg_box(const FFDef& def, const std::vector<std::pair<std::string, int>>& 
         if (ok) break;
       }
       const uint32_t off = uint32_t(box.atoms.size());
+      const int64_t mol = box.atoms.empty() ? 1 : box.atoms.back().mol + 1;
       for (auto a : m.atoms) {
         a.pos = a.pos + t;
+        a.mol = mol;   // molecules by id: a virtual site is bonded to nothing
+        a.id = int64_t(box.atoms.size()) + 1;
         box.atoms.push_back(a);
       }
       for (auto b : m.bonds) box.bonds.push_back({b.i + off, b.j + off, 1});
     }
   box.bonds_from_file = true;
+  box.has_mol = true;
+  box.has_charges = true;
   return box;
 }
 
@@ -426,6 +432,60 @@ TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
   check_cg_forces(aa, cg_box(aa, {{"TRP", 2}, {"HIS", 2}, {"PHE", 2}, {"TYR", 2}, {"LYS", 2}, {"ASP", 2}, {"[P4]", 30}}, 36.0, 9), "keep");
   const FFDef cd = load_forcefield(dir + "cooke-deserno-moltemplate.json");
   check_cg_forces(cd, cg_box(cd, {{"lipid", 40}}, 12.0, 7, 1.2), "types");
+  // Martini 3: reaction field (εr 15, εrf ∞), LJ shifted at 11 Å, every pair from the table; its molecules with their
+  // own topology: virtual sites (nucleobases, the weighted centre), exclusions, restricted bending (TXE), impropers
+  const FFDef m3 = load_forcefield(dir + "martini3.json");
+  check_cg_forces(m3, cg_box(m3, {{"THYM", 2}, {"GUAN", 2}, {"TXE", 2}, {"POPS", 2}, {"DIM", 2}, {"NA", 4}, {"CL", 4}, {"W", 30}}, 30.0, 11), "auto");
+}
+
+// Martini 3's pair table and molecule templates: pairs as martini_v3.0.0.itp gives them (no mixing), a molecule's own
+// topology when built, and recognised again in the structure written to a data file and read back
+TEST(CoarseGrained, Martini3TemplatesAndPairTable) {
+  const FFDef m3 = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/martini3.json");
+  ASSERT_TRUE(m3.molecule_templates);
+  EXPECT_GT(bead_template_list(m3).size(), 200u);
+  const System w = build_bead_molecule("THYM", m3, 1);
+  ASSERT_TRUE(w.topology);
+  EXPECT_EQ(w.atoms.size(), 5u);
+  EXPECT_EQ(w.topology->vsites.size(), 1u);
+  System box = cg_box(m3, {{"W", 20}, {"NA", 2}, {"CL", 2}, {"THYM", 2}, {"POPC", 2}}, 30.0, 2);
+  std::map<std::string, int> tix;   // one numeric type per bead name, labelled, as CAPS Pack writes a box
+  for (auto& a : box.atoms) {
+    auto [it, fresh] = tix.emplace(a.name, int(tix.size()) + 1);
+    a.type = it->second;
+    if (fresh)
+      for (const auto& t : m3.types)
+        if (t.name == a.name) box.types.push_back({it->second, t.mass, a.name});
+  }
+  const std::string path = (std::filesystem::temp_directory_path() / "caps_m3_box.data").string();
+  write_lammps_data(box, path);
+  System s = open_file(path).frame(0);
+  std::string ch = "auto";
+  const std::string note = prepare_for_forcefield(s, m3, ch);
+  ASSERT_TRUE(s.topology) << note;
+  EXPECT_EQ(ch, "keep");
+  EXPECT_NE(note.find("28 molecules recognised"), std::string::npos) << note;
+  const TypingResult tr = assign_types(s, m3);
+  EXPECT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, m3, tr.types, ch, &rep, false);
+  EXPECT_TRUE(ff.coul_rf);
+  EXPECT_TRUE(ff.lj_shift);
+  EXPECT_EQ(ff.vsites.size(), 2u);
+  double q = 0;
+  for (double c : ff.charge) q += c;
+  EXPECT_NEAR(q, 0.0, 1e-12);
+  auto ti = [&](const std::string& n) { return int(std::find(ff.type_names.begin(), ff.type_names.end(), n) - ff.type_names.begin()); };
+  // martini_v3.0.0.itp: W–W σ 0.47 nm, ε 4.65 kJ/mol; TQ5 (Na+) – W σ 0.385 nm, ε 11.46 kJ/mol (not a mixing rule's)
+  const int iw = ti("W"), iq = ti("TQ5");
+  ASSERT_LT(iw, int(ff.type_names.size()));
+  ASSERT_LT(iq, int(ff.type_names.size()));
+  EXPECT_NEAR(ff.lj[iw].sigma, 4.7, 1e-12);
+  EXPECT_NEAR(ff.lj[iw].eps, 4.65 / 4.184, 1e-12);
+  const PairType& p = ff.pair_override.at({std::min(iw, iq), std::max(iw, iq)});
+  EXPECT_NEAR(p.sigma, 3.85, 1e-12);
+  EXPECT_NEAR(p.eps, 11.46 / 4.184, 1e-12);
+  std::filesystem::remove(path);
 }
 
 TEST(CoarseGrained, BeadSmilesParse) {

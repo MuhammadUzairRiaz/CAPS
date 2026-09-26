@@ -15,6 +15,7 @@
 
 #include "caps/elements.hpp"
 #include "caps/json.hpp"
+#include "caps/resolution.hpp"
 
 namespace caps {
 
@@ -522,6 +523,84 @@ System martini22_protein(const System& aa, const std::string& ss_in, const std::
   rep.residue_names = mres;
   if (rep_out) *rep_out = std::move(rep);
   return out;
+}
+
+System gromacs_molecule(const Json& mol, const std::function<double(const std::string&)>& type_mass, double constraint_kj, uint64_t seed) {
+  BeadMolecule m;
+  std::vector<double> len;
+  const auto& atoms = mol["atoms"].items();
+  for (const auto& a : atoms) {
+    m.type.push_back(a["type"].str());
+    m.charge.push_back(a["charge"].number());
+  }
+  auto topo = std::make_shared<ExplicitTopology>();
+  topo->source = "Martini 3 molecule";
+  const size_t n = atoms.size();
+  topo->masses.assign(n, std::nan(""));
+  bool any_mass = false;
+  for (size_t i = 0; i < n; ++i)
+    if (atoms[i].has("mass") && !atoms[i]["mass"].is_null()) topo->masses[i] = atoms[i]["mass"].number(), any_mass = true;
+  if (!any_mass) topo->masses.clear();
+  auto u = [](const Json& v) { return uint32_t(v.number()); };
+  for (const auto& b : mol["bonds"].items()) {
+    if (int(b[2].number()) != 1) throw std::invalid_argument("bond function " + std::to_string(int(b[2].number())) + " is not handled");
+    topo->bonds.push_back({u(b[0]), u(b[1]), b[4].number() / (2 * kKJ * 100), b[3].number() * 10, "bond"});
+    m.bonds.push_back({int(b[0].number()), int(b[1].number())});
+    len.push_back(b[3].number() * 10);
+  }
+  for (const auto& c : mol["constraints"].items()) {
+    topo->bonds.push_back({u(c[0]), u(c[1]), constraint_kj / (2 * kKJ * 100), c[3].number() * 10, "constraint"});
+    m.bonds.push_back({int(c[0].number()), int(c[1].number())});
+    len.push_back(c[3].number() * 10);
+  }
+  for (const auto& a : mol["angles"].items()) {
+    const int f = int(a[3].number());
+    const double th = a[4].number() * kDeg, k = a[5].number();
+    if (f == 1) topo->angles.push_back({u(a[0]), u(a[1]), u(a[2]), 0, k / (2 * kKJ), th, "angle"});
+    else if (f == 2) topo->angles.push_back({u(a[0]), u(a[1]), u(a[2]), 1, k / (2 * kKJ), th, "angle"});
+    else if (f == 10) topo->angles.push_back({u(a[0]), u(a[1]), u(a[2]), 5, k / (2 * kKJ), th, "angle"});
+    else throw std::invalid_argument("angle function " + std::to_string(f) + " is not handled");
+  }
+  for (const auto& d : mol["dihedrals"].items()) {
+    const int f = int(d[4].number());
+    const uint32_t a = u(d[0]), b = u(d[1]), c = u(d[2]), e = u(d[3]);
+    if (f == 1 || f == 9 || f == 4) {
+      const int mult = d.size() > 7 ? int(d[7].number()) : 1;
+      topo->dihedrals.push_back({a, b, c, e, f == 4 ? 4 : 1, d[6].number() / kKJ, d[5].number() * kDeg, mult, "dihedral"});
+    } else if (f == 2) {
+      topo->dihedrals.push_back({a, b, c, e, 2, d[6].number() / (2 * kKJ), d[5].number() * kDeg, 0, "improper"});
+    } else {
+      throw std::invalid_argument("dihedral function " + std::to_string(f) + " is not handled");
+    }
+  }
+  for (const auto& x : mol["exclusions"].items())
+    for (size_t k = 1; k < x.size(); ++k) topo->exclusions.push_back({u(x[0]), u(x[k])});
+  for (const auto& v : mol["vsites"].items()) {
+    ExplicitTopology::VSite vs;
+    vs.site = u(v["site"]);
+    for (const auto& a : v["from"].items()) vs.from.push_back(u(a));
+    if (v.has("weights") && !v["weights"].is_null())
+      for (const auto& w : v["weights"].items()) vs.w.push_back(w.number());
+    topo->vsites.push_back(vs);
+  }
+  BeadBuildOptions o;
+  o.seed = seed;
+  o.mass = type_mass;
+  System s = build_bead_graph(m, len, o);
+  // virtual sites where their atoms put them (weights, or the centre of mass)
+  for (const auto& v : topo->vsites) {
+    Vec3 c{0, 0, 0};
+    double wt = 0;
+    for (size_t k = 0; k < v.from.size(); ++k) {
+      const double w = !v.w.empty() ? v.w[k] : (!topo->masses.empty() && !std::isnan(topo->masses[v.from[k]]) ? topo->masses[v.from[k]] : type_mass(m.type[v.from[k]]));
+      c = c + s.atoms[v.from[k]].pos * w;
+      wt += w;
+    }
+    if (wt != 0) s.atoms[v.site].pos = c * (1 / wt);
+  }
+  topo->natoms = n;
+  s.topology = topo;
+  return s;
 }
 
 std::string martini_itp(const System& s, const std::string& data_path) {

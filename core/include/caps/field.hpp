@@ -37,11 +37,15 @@ struct InversionTerm { uint32_t c, a, b, d; double kw, w0; int form = 0; };
 // C1 = −4 C2 cos θ0, C0 = C2 (2 cos²θ0 + 1) (LAMMPS fourier; a = K, b = θ0); forms 11–14 (UFF) K (1 − cos nθ)/n² with
 // n = form − 10, n = 1 meaning K (1 + cos θ), plus UFF's wall e^(−20 (θ − θ0 + 0.25)) below 30° (LAMMPS cosine/periodic,
 // without the wall; b = θ0); form 4 (SDK / SPICA, LAMMPS angle sdk) K (θ − θ0)² plus the repulsive part of the end
-// atoms' SDK pair, cut at its minimum and shifted to zero there.
+// atoms' SDK pair, cut at its minimum and shifted to zero there; form 5 restricted bending (GROMACS angle 10, LAMMPS
+// cosine/squared/restricted, Martini 3) K (cos θ − cos θ0)² / sin² θ.
 // Urey–Bradley: K (r13 − r0)² between the end atoms of an angle, counted as angle energy (CHARMM).
 struct BondX { uint32_t i, j; int form; double a, b, c, d = 0; };   // form 3 FENE: −½ K R0² ln(1 − (r/R0)²) (a = K, b = R0) plus WCA ε, σ (c, d) below 2^(1/6) σ
 struct AngleX { uint32_t i, j, k; int form; double a, b; };
 struct UreyBradley { uint32_t i, k; double kub, r0; };
+// A virtual site (GROMACS virtual_sitesn): its position is Σ w_k x_k over its constructing atoms (w: their masses, summing
+// to 1 — the centre of mass); the force on it goes back to them in the same proportions. It has no mass of its own.
+struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; };
 
 // Pair forms other than Lennard-Jones, per type pair: 1 Buckingham A e^(−r/ρ) − C/r⁶ (a = A, b = ρ, c = C);
 // 2 Morse D0 [e^(−2α(r − r0)) − 2 e^(−α(r − r0))] (a = D0, b = α, c = r0);
@@ -125,6 +129,12 @@ struct ForceField {
   // the lj/gromacs switch; cutoff > 0 is the model's own cut-off (used whatever EnergyOptions says).
   bool coul_gromacs = false;
   double coul_inner = 0, lj_inner = 0, dielectric = 1, cutoff = 0;
+  // Martini 3: reaction-field Coulomb (ε_rf, 0 meaning infinite) in place of DSF / PME, and Lennard-Jones shifted to zero
+  // at the cut-off without tail corrections (GROMACS vdw-modifier Potential-shift), whatever EnergyOptions says
+  bool coul_rf = false;
+  double eps_rf = 0;
+  bool lj_shift = false;
+  std::vector<VirtualSite> vsites;
   std::vector<std::string> notes;
 };
 
@@ -173,7 +183,7 @@ class Evaluator {
   void set_options(const EnergyOptions& o);
   const EnergyOptions& options() const { return opt_; }
   // x: 3N positions (Å). f: 3N forces out (kcal/mol/Å). Returns the energy terms.
-  EnergyTerms compute(const std::vector<double>& x, const Cell& cell, std::vector<double>& f);
+  EnergyTerms compute(const std::vector<double>& x, const Cell& cell, std::vector<double>& f);   // virtual sites placed first
   int list_builds() const { return builds_; }
   // Freezes the set of interacting pairs at configuration (x, cell): later calls use exactly the pairs inside the
   // cut-off there, whatever their new distance, and never rebuild the list (small deformations only). Makes the energy
@@ -184,6 +194,8 @@ class Evaluator {
   size_t pairs() const { return pi_.size(); }
 
  private:
+  EnergyTerms compute_placed(const std::vector<double>& x, const Cell& cell, std::vector<double>& f);
+  std::vector<double> xv_;           // positions with the virtual sites placed
   void build(const std::vector<double>& x, const Cell& cell);
   void cap_radii();
   const ForceField& ff_;
@@ -213,6 +225,9 @@ class Evaluator {
   bool frozen_ = false;
   std::vector<uint8_t> inside_;      // per pair: inside the cut-off when frozen
 };
+
+// Puts every virtual site at the weighted centre of its constructing atoms (minimum image about the first in a cell).
+void place_virtual_sites(const ForceField& ff, std::vector<double>& x, const Cell& cell);
 
 // LJ parameters between two type indices, with the force field's mixing rule and explicit pairs.
 PairType mixed_pair(const ForceField& ff, int a, int b);

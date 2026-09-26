@@ -123,7 +123,7 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   for (const auto& b : ff.bonds_x)
     if (b.form != 1 && b.form != 2) throw FieldError("bond form " + std::to_string(b.form) + " has no GROMACS function");
   for (const auto& a : ff.angles_x)
-    if (a.form != 1) throw FieldError("angle form " + std::to_string(a.form) + " has no GROMACS function");
+    if (a.form != 1 && a.form != 5) throw FieldError("angle form " + std::to_string(a.form) + " has no GROMACS function");
   for (const auto& t : ff.dihedrals)
     if (t.n < 0) throw FieldError("a torsion with multiplicity < 0 has no GROMACS form");
   for (const auto& t : ff.impropers)
@@ -131,7 +131,8 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   std::vector<Vec3> pos;
   if (periodic_bonds(s, pos)) notes.push_back("bonds cross the cell (an infinite network): periodic-molecules = yes");
   if (!s.cell.valid()) notes.push_back("no periodic cell: the molecule is centred in a box 2 r_c larger than it is");
-  if (s.cell.valid() && e.coulomb && e.electrostatics != EnergyOptions::Electrostatics::PME)
+  if (ff.coul_rf && e.coulomb) notes.push_back("reaction-field Coulomb (ε_r " + fmt("%g", ff.dielectric) + ", ε_rf " + (ff.eps_rf == 0 ? std::string("∞") : fmt("%g", ff.eps_rf)) + "), as in CAPS");
+  else if (s.cell.valid() && e.coulomb && e.electrostatics != EnergyOptions::Electrostatics::PME)
     notes.push_back("CAPS's damped shifted force becomes PME in GROMACS (no DSF there)");
   if (s.cell.valid()) {
     const Cell& c = s.cell;
@@ -140,26 +141,33 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
       notes.push_back("the cell is " + fmt("%.1f", w) + " Å across, less than 2 r_c (" + fmt("%.0f", 2 * e.cutoff) +
                       " Å): GROMACS needs a larger cell (a supercell) or a shorter cut-off; CAPS sums the further images");
   }
-  if (!s.cell.valid() && e.coulomb) notes.push_back("no cell: plain cut-off Coulomb in GROMACS, damped shifted force in CAPS");
+  if (!s.cell.valid() && e.coulomb && !ff.coul_rf) notes.push_back("no cell: plain cut-off Coulomb in GROMACS, damped shifted force in CAPS");
   if (!e.tail) notes.push_back("1-4 Lennard-Jones is unshifted in GROMACS: a constant offset from CAPS's shifted 1-4 terms, no force difference");
   return notes;
 }
 
-std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptions& e) {
-  (void)ff;
+std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptions& e0) {
+  EnergyOptions e = e0;
+  if (ff.cutoff > 0) e.cutoff = ff.cutoff;
   const bool cell = s.cell.valid();
   const bool pme = cell && e.coulomb;
   std::ostringstream m;
-  m << "; non-bonded settings matching CAPS (" << (e.coulomb ? (e.electrostatics == EnergyOptions::Electrostatics::PME ? "PME" : "damped shifted force") : "no Coulomb")
+  m << "; non-bonded settings matching CAPS ("
+    << (e.coulomb ? (ff.coul_rf ? "reaction field" : e.electrostatics == EnergyOptions::Electrostatics::PME ? "PME" : "damped shifted force") : "no Coulomb")
     << ", r_c " << e.cutoff << " Å)\n";
   m << "cutoff-scheme            = Verlet\n";
   m << "pbc                      = xyz\n";
   m << "rvdw                     = " << e.cutoff / 10 << "\n";
   m << "rcoulomb                 = " << e.cutoff / 10 << "\n";
   m << "vdwtype                  = Cut-off\n";
-  m << "vdw-modifier             = " << (e.tail ? "None" : "Potential-shift") << "\n";
-  m << "DispCorr                 = " << (e.tail && cell ? "AllEnerPres" : "no") << "\n";
-  if (!e.coulomb) {
+  const bool tail = e.tail && !ff.lj_shift;
+  m << "vdw-modifier             = " << (tail ? "None" : "Potential-shift") << "\n";
+  m << "DispCorr                 = " << (tail && cell ? "AllEnerPres" : "no") << "\n";
+  if (ff.dielectric != 1 && e.coulomb) m << "epsilon-r                = " << ff.dielectric << "\n";
+  if (e.coulomb && ff.coul_rf) {   // Martini 3: reaction field, ε_rf 0 meaning infinite
+    m << "coulombtype              = Reaction-Field\n";
+    m << "epsilon-rf               = " << ff.eps_rf << "\n";
+  } else if (!e.coulomb) {
     m << "coulombtype              = Reaction-Field\n";
     m << "epsilon-r                = 0             ; 0: infinite, no Coulomb\n";
   } else if (pme) {
@@ -229,10 +237,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   const bool periodic_mol = periodic_bonds(s, pos);
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
-  enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, EXCLUSIONS, NSEC };
+  enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, VSITES, EXCLUSIONS, NSEC };
   static const char* sec_head[NSEC] = {"[ atoms ]\n; nr  type  resnr  residue  atom  cgnr  charge  mass\n", "[ bonds ]\n; i  j  func  parameters\n",
                                        "[ pairs ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol), scaled\n", "[ angles ]\n; i  j  k  func  parameters\n",
-                                       "[ dihedrals ]\n; i  j  k  l  func  parameters\n", "[ exclusions ]\n"};
+                                       "[ dihedrals ]\n; i  j  k  l  func  parameters\n",
+                                       "[ virtual_sitesn ]\n; site  func  atom weight ... (3: weighted centre)\n", "[ exclusions ]\n"};
   struct Line { Sec sec; std::vector<uint32_t> atoms; std::string tail; };
   std::vector<Line> lines;
   auto add = [&](Sec sec, std::vector<uint32_t> at, const std::string& tail) { lines.push_back({sec, std::move(at), tail}); };
@@ -285,9 +294,18 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   if (ub_used != ub.size()) throw FieldError("a Urey–Bradley term has no angle to join (GROMACS angle function 5 needs one)");
   for (const auto& a : ff.angles_x) {
-    if (a.form != 1) throw FieldError("angle form " + std::to_string(a.form) + " has no GROMACS function");
-    std::snprintf(b, sizeof b, " 2 %.10g %.10g", a.b * R2D, 2 * a.a * KJ);   // K (cos θ − cos θ0)² = ½ kθ (…)², GROMOS-96 angle
+    if (a.form == 1) std::snprintf(b, sizeof b, " 2 %.10g %.10g", a.b * R2D, 2 * a.a * KJ);   // K (cos θ − cos θ0)² = ½ kθ (…)², GROMOS-96 angle
+    else if (a.form == 5) std::snprintf(b, sizeof b, " 10 %.10g %.10g", a.b * R2D, 2 * a.a * KJ);   // restricted bending
+    else throw FieldError("angle form " + std::to_string(a.form) + " has no GROMACS function");
     add(ANGLES, {a.i, a.j, a.k}, b);
+  }
+  // virtual sites: function 3, each atom with its weight (the centre of mass, or a fixed combination, exactly)
+  for (const auto& v : ff.vsites) {
+    std::vector<uint32_t> at{v.site};
+    at.insert(at.end(), v.from.begin(), v.from.end());
+    std::string w;
+    for (double x : v.w) w += " " + fmt("%.12g", x);
+    add(VSITES, at, w);
   }
   // proper torsions: every Fourier term of a quadruple on consecutive lines (function 9)
   std::map<std::array<uint32_t, 4>, std::vector<const TorsionTerm*>> quad;
@@ -384,6 +402,17 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
       for (const Line* l : by_mol[size_t(m)]) {
         if (l->sec != sec) continue;
         if (!head) o << "\n" << sec_head[sec], head = true;
+        if (sec == VSITES) {   // virtual_sitesn: the site, function 3, then each atom and its weight
+          std::istringstream ws(l->tail);
+          o << std::setw(7) << (l->atoms[0] - s0 + 1) << "  3";
+          for (size_t k = 1; k < l->atoms.size(); ++k) {
+            double wk = 0;
+            ws >> wk;
+            o << std::setw(7) << (l->atoms[k] - s0 + 1) << " " << fmt("%.12g", wk);
+          }
+          o << "\n";
+          continue;
+        }
         for (uint32_t a : l->atoms) o << std::setw(7) << (a - s0 + 1);
         o << l->tail << "\n";
       }

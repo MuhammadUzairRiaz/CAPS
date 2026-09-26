@@ -2,9 +2,11 @@
 // bench/ff/convert_vermouth_martini22.py): an all-atom protein mapped onto Martini beads with the model's explicit
 // topology, as martinize writes it; and DSSP secondary structure (Kabsch & Sander, Biopolymers 22, 2577 (1983)).
 #pragma once
+#include <functional>
 #include <string>
 #include <vector>
 
+#include "caps/json.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -41,6 +43,12 @@ struct MartiniProteinReport {
 // model has no mapping for or missing backbone atoms. Other molecules (water, ions ...) are not converted: they must be
 // absent (the caller splits them off).
 System martini22_protein(const System& aa, const std::string& ss, const std::string& data_path, MartiniProteinReport* rep = nullptr);
+
+// A molecule given as GROMACS terms (data/martini/martini3-molecules.json: atoms with type, name, charge and optional mass;
+// bonds, constraints, angles, dihedrals, exclusions and virtual sites by 0-based index, nm, kJ/mol, degrees, the .itp
+// functions): beads named by their types, placed by the bead builder at the bond lengths, with the explicit topology.
+// Constraints become stiff bonds of constraint_kj (kJ/mol/nm²); type_mass gives each type's mass for mass-weighted sites.
+System gromacs_molecule(const Json& mol, const std::function<double(const std::string&)>& type_mass, double constraint_kj, uint64_t seed = 1);
 
 // The topology as a GROMACS .itp (nm, kJ/mol, the Martini functions; stiff bonds written back as constraints when their
 // force constant is the constraint one), for comparison with martinize2.

@@ -598,6 +598,17 @@ internal static class SelfTest
             vm.CgTemplate = "DPPC";
             vm.BuildBeadsMolecule().GetAwaiter().GetResult();
             Check(hasDppc && vm.MolDoc?.Summary().Atoms == 12, $"coarse-grained builder: {vm.CgTemplates.Count} MARTINI templates, DPPC {vm.MolDoc?.Summary().Atoms} beads · {vm.MolNotes}");
+            // Martini 3: thymine (a virtual site at the centre of two beads) built from its template, opened and assigned
+            vm.CgFf = Array.FindIndex(MainViewModel.CgForceFields, f => f.File == "martini3.json");
+            var m3n = vm.CgTemplates.Count;
+            vm.CgTemplate = "THYM";
+            vm.BuildBeadsMolecule().GetAwaiter().GetResult();
+            var thym = vm.MolDoc?.Summary().Atoms ?? 0;
+            vm.OpenMoleculeInStudio();
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "martini3");
+            vm.Field.Assign().GetAwaiter().GetResult();
+            Check(m3n > 200 && thym == 5 && vm.Field.Assigned && vm.Field.Complete,
+                  $"Martini 3 builder: {m3n} molecules, THYM {thym} beads, field {(vm.Field.Complete ? "complete" : "incomplete")} ({vm.Field.FfIndex}) {vm.Field.Log} · {string.Join(" · ", vm.Field.Notes.Take(3))}");
             vm.SetModule(cgBack);
         }
 

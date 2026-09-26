@@ -7,12 +7,14 @@
 #pragma once
 #include <limits>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "caps/field.hpp"
 #include "caps/resolution.hpp"
+#include "caps/json.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -83,6 +85,9 @@ struct FFDef {
   // relative permittivity (MARTINI 9 Å, 1e-6 Å, 15); model_cutoff: the cut-off belongs to the model (MARTINI 12 Å)
   double lj_inner = 0, coul_inner = 0, dielectric = 1;
   bool model_cutoff = false;
+  // Martini 3 ("coulomb": "reaction-field", "eps_rf", "lj_modifier": "potential-shift" in pair_settings)
+  bool coul_rf = false, lj_shift = false;
+  double eps_rf = 0;
   // Torsions only where the file defines them ("torsion_terms": "if_defined"; MARTINI, SDK: TORSION IGNORE in their
   // sources): a dihedral with no term is not missing
   bool torsions_if_defined = false;
@@ -158,6 +163,16 @@ struct FFDef {
   std::vector<BeadRule> bead_rules;
   std::vector<BeadGroup> bead_groups;
   std::map<std::string, std::string> bead_templates;
+  // Molecules given term by term (force-field file "molecule_templates": a caps-martini-molecules file, GROMACS units;
+  // Martini 3's solvents, ions, small molecules ...): built with their explicit topology, and recognised again in a
+  // structure without one (same bead types in the same order, same bonds). Loaded with the force field.
+  std::string molecule_templates_path;
+  std::shared_ptr<const Json> molecule_templates;
+  // Every pair's Lennard-Jones terms from a table (force-field file "pair_table": gzip text, "T name mass" and
+  // "P a b sigma(nm) epsilon(kJ/mol)"; Martini 3's 355,746 pairs): no mixing rule, a pair not listed has no LJ
+  std::string pair_table;
+  // stiff bonds for constraints of molecule templates (kJ/mol/nm², "constraint_k")
+  double constraint_kj = 1e6;
   // Martini proteins (typing file "martini_protein": the model's JSON): an all-atom protein becomes beads with the
   // model's explicit topology (martini22_protein; DSSP for the secondary structure)
   std::string martini_protein;
@@ -227,6 +242,17 @@ std::string untyped_message(const FFDef& ff, const System& s, int untyped);
 // Bond lengths come from the force field's bond terms (typed by bead name), masses from its types; the result is a
 // start for a relax.
 System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t seed = 1);
+
+// The force field's named molecules: bead templates (bead SMILES) and molecule templates (a short description:
+// "N beads, source file"), by name.
+std::map<std::string, std::string> bead_template_list(const FFDef& ff);
+bool has_bead_template(const FFDef& ff, const std::string& name);
+
+// Give a structure without an explicit topology its molecule templates' topology: every molecule (by molecule id, else
+// bonded component) whose bead types in order and bonds are a template's. Returns how many molecules were recognised;
+// `unmatched` gets the others' first bead types. Templates with the same beads and bonds (Martini 3's ions) are told apart by
+// the structure's charges when it has them, else the first by name is taken. Does nothing without molecule templates.
+int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::string>* unmatched = nullptr);
 
 // Build the evaluator force field for a structure whose atoms carry force-field type names (one per atom).
 // Charges: `charges` = "types" (from the force field: type charges and / or bond increments; error if neither

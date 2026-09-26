@@ -88,14 +88,17 @@ BeadMolecule parse_bead_smiles(const std::string& text) {
   return m;
 }
 
-System build_beads(const std::string& text, const BeadBuildOptions& o) {
-  const BeadMolecule m = parse_bead_smiles(text);
+System build_beads(const std::string& text, const BeadBuildOptions& o) { return build_bead_graph(parse_bead_smiles(text), {}, o); }
+
+System build_bead_graph(const BeadMolecule& m, const std::vector<double>& bond_lengths, const BeadBuildOptions& o) {
   const int n = int(m.type.size());
   std::vector<std::vector<int>> nb(static_cast<size_t>(n));
   for (const auto& [a, b] : m.bonds) nb[size_t(a)].push_back(b), nb[size_t(b)].push_back(a);
-  std::map<std::pair<int, int>, double> len;   // each bond's target length
-  for (const auto& [a, b] : m.bonds) {
-    const double l = o.bond_length ? o.bond_length(m.type[size_t(a)], m.type[size_t(b)]) : 0.0;
+  std::map<std::pair<int, int>, double> len;   // each bond's target length (given, else from the callback)
+  for (size_t k = 0; k < m.bonds.size(); ++k) {
+    const auto [a, b] = m.bonds[k];
+    double l = k < bond_lengths.size() ? bond_lengths[k] : 0.0;
+    if (l <= 0 && o.bond_length) l = o.bond_length(m.type[size_t(a)], m.type[size_t(b)]);
     len[{std::min(a, b), std::max(a, b)}] = l > 0 ? l : o.default_bond;
   }
   // a bond longer than another path between its beads (Cooke–Deserno's head-to-tail bond across its lipid) is taken at

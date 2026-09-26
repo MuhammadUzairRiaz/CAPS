@@ -103,6 +103,9 @@ double max_force(const std::vector<double>& f);
 std::string export_title(std::string title, const std::string& ffname);
 
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true);
+// The same, or the structure alone (atoms, types, charges, bonds; no coefficients) when LAMMPS has no form for the force
+// field (Martini 3's reaction field and virtual sites): returns why, or "" when the coefficients were written.
+std::string write_lammps_data_or_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path);
 
 // How a LAMMPS input ends. Check: a single point with every energy term printed (the parity benches). Otherwise a
 // protocol: an optional conjugate-gradient minimisation, then NVT or NPT (Nosé–Hoover, LAMMPS's standard; CAPS's own

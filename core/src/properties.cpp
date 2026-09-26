@@ -1498,6 +1498,9 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   s.coul14 = ff.coul14;
   s.keep13 = ff.keep13;
   s.excluded_type_pairs = ff.excluded_type_pairs;
+  s.coul_rf = ff.coul_rf;
+  s.eps_rf = ff.eps_rf;
+  s.lj_shift = ff.lj_shift;
   s.coul_gromacs = ff.coul_gromacs;
   s.coul_inner = ff.coul_inner;
   s.lj_inner = ff.lj_inner;

@@ -67,6 +67,8 @@ struct BeadBuildOptions {
   uint64_t seed = 1;
 };
 System build_beads(const std::string& text, const BeadBuildOptions& o = {});
+// The same for a bead graph (types, charges, bonds): bond_lengths[k] (Å, > 0) for bond k where known.
+System build_bead_graph(const BeadMolecule& m, const std::vector<double>& bond_lengths, const BeadBuildOptions& o = {});
 
 // All-atom → beads by fragment rules (a coarse-grained force field's typing file, "beads" and "bead_groups"). Every
 // heavy atom of a molecule is covered by exactly one fragment (an exact cover: at chain ends the fragments are chosen so

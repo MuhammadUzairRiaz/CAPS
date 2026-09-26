@@ -229,12 +229,13 @@ public sealed partial class MainViewModel
 
     // ---------------------------------------------------------------- coarse-grained molecules (beads)
     /// <summary>Coarse-grained force fields with bead structures: MARTINI (templates from its sources), Dry MARTINI and
-    /// SDK (bead SMILES; SDK also maps all-atom structures in the Force field step).</summary>
+    /// SDK (bead SMILES; SDK also maps all-atom structures in the Force field step), Martini 3 (its molecules with their
+    /// own topology: solvents, ions, small molecules, sugars, nucleobases, lipids).</summary>
     public static readonly (string Name, string File)[] CgForceFields =
         [("MARTINI · lipids", "martini-moltemplate.json"), ("MARTINI · polymers", "martini-polymers.json"),
          ("MARTINI · solvents", "martini-solvents.json"), ("MARTINI · surfactants", "martini-surfactants.json"),
          ("MARTINI · sugars", "martini-sugars.json"), ("MARTINI · amino acids", "martini-aminoacids.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json"),
-         ("Cooke–Deserno", "cooke-deserno-moltemplate.json")];
+         ("Cooke–Deserno", "cooke-deserno-moltemplate.json"), ("Martini 3", "martini3.json")];
     public string[] CgFfNames => CgForceFields.Select(f => f.Name).ToArray();
     private int _cgFf;
     private string _cgBeadText = "", _cgTemplate = "";
@@ -267,7 +268,8 @@ public sealed partial class MainViewModel
     public string CgTemplate
     {
         get => _cgTemplate;
-        set { if (Set(ref _cgTemplate, value ?? "") && _cgTemplateText.TryGetValue(_cgTemplate, out var t)) CgBeadText = t; }
+        // bead SMILES are shown to edit; a molecule given term by term (Martini 3) is built by its name
+        set { if (Set(ref _cgTemplate, value ?? "") && _cgTemplateText.TryGetValue(_cgTemplate, out var t)) CgBeadText = t.StartsWith('[') ? t : _cgTemplate; }
     }
     public string CgBeadText { get => _cgBeadText; set => Set(ref _cgBeadText, value ?? ""); }
 
@@ -277,7 +279,7 @@ public sealed partial class MainViewModel
         if (!_cgLoaded) LoadCgTemplates();
         var text = _cgBeadText.Trim();
         if (text.Length == 0) { MolNotes = "Choose a template or type bead SMILES, e.g. [Q0+1][Qa-1][Na]([Na][C1][C1])[C1][C1]"; return; }
-        if (_cgTemplateText.TryGetValue(_cgTemplate, out var t) && t == text) text = _cgTemplate;
+        if (_cgTemplateText.TryGetValue(_cgTemplate, out var t) && (t == text || text == _cgTemplate)) text = _cgTemplate;
         var ff = CgFfPath;
         var ticket = ++_buildTicket;
         MolBuilding = true;
