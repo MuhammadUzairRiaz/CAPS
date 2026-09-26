@@ -261,9 +261,9 @@
   },
   {
    "type": "osi",
-   "smarts": "[OX2][Si]",
+   "smarts": "[OX2]([Si])[Si,#1]",
    "priority": 4,
-   "description": "siloxane / silanol O"
+   "description": "siloxane / silanol O (Si-O-Si, Si-O-H; an alkoxysilane's Si-O-C O is o, as PCFF's templates type it)"
   },
   {
    "type": "o*",

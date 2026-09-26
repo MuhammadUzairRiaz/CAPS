@@ -3,7 +3,10 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <tuple>
+#include <vector>
 
+#include "caps/analysis.hpp"
 #include "caps/import.hpp"
 
 using namespace caps;
@@ -115,7 +118,8 @@ TEST(Import, MaterialsStudioCarMdf) {
   EXPECT_NEAR(s.cell.b[0], 12.0 * std::cos(120.0 * M_PI / 180), 1e-9);
   EXPECT_NEAR(s.cell.b[1], 12.0 * std::sin(120.0 * M_PI / 180), 1e-9);
   EXPECT_NEAR(s.cell.c[2], 14.0, 1e-9);
-  ASSERT_EQ(s.bonds.size(), 4u);   // O-H twice per water, listed from both ends in the .mdf
+  // O-H twice per water, listed from both ends in the .mdf; #atomset's "@list subset" lines (WAT_1:H1 H2) are no atoms
+  ASSERT_EQ(s.bonds.size(), 4u);
   EXPECT_TRUE(s.bonds_from_file);
   std::set<std::pair<uint32_t, uint32_t>> b;
   for (const auto& x : s.bonds) b.insert({x.i, x.j});
@@ -139,4 +143,28 @@ TEST(Import, MaterialsStudioCarRoundTrip) {
   EXPECT_EQ(b.bonds.size(), a.bonds.size());
   EXPECT_NEAR(norm(b.cell.b), norm(a.cell.b), 1e-6);
   EXPECT_NEAR(dot(b.cell.a, b.cell.b), dot(a.cell.a, a.cell.b), 1e-4);
+}
+
+// Bond perception: a long contact between two atoms bonded to a common third closes a ring across it, it is no bond
+// (Si···Si over an edge-sharing Si2O2 ring of amorphous silica, 2.6 Å); cyclopropane keeps its three C–C bonds.
+TEST(Import, PerceptionLeavesRingContacts) {
+  System s;
+  const double y = std::sqrt(1.65 * 1.65 - 1.3 * 1.3);
+  for (auto [z, x, yy] : std::vector<std::tuple<int, double, double>>{{14, -1.3, 0}, {14, 1.3, 0}, {8, 0, y}, {8, 0, -y}}) {
+    Atom a;
+    a.element = z;
+    a.pos = {x, yy, 0};
+    s.atoms.push_back(a);
+  }
+  const auto b = perceive_bonds(s);
+  EXPECT_EQ(b.size(), 4u);
+  for (const auto& x : b) EXPECT_FALSE(s.atoms[x.i].element == 14 && s.atoms[x.j].element == 14);
+  System c;
+  for (int k = 0; k < 3; ++k) {
+    Atom a;
+    a.element = 6;
+    a.pos = {1.51 / std::sqrt(3.0) * std::cos(2 * M_PI * k / 3), 1.51 / std::sqrt(3.0) * std::sin(2 * M_PI * k / 3), 0};
+    c.atoms.push_back(a);
+  }
+  EXPECT_EQ(perceive_bonds(c).size(), 3u);
 }

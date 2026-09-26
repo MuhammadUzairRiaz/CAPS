@@ -49,6 +49,14 @@ using namespace caps;
 
 namespace {
 
+// Charges worth keeping: a file whose charge column is all zero (a builder's placeholder) has none.
+bool file_charges(const System& s) {
+  if (!s.has_charges) return false;
+  for (const auto& a : s.atoms)
+    if (std::fabs(a.charge) > 1e-9) return true;
+  return false;
+}
+
 int usage() {
   std::cerr << "caps 0.1.0\n"
                "usage:\n"
@@ -283,7 +291,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   FFDef def = load_forcefield(o["--ff"]);
   if (o.count("--typing")) load_typing(def, o["--typing"]);
   if (needs_prepare(def)) {   // united atom, shells, ionic bonds: the structure the force field describes
-    std::string ch = o.count("--charges") ? o["--charges"] : (s0.has_charges ? "keep" : "auto");
+    std::string ch = o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "auto");
     const std::string note = prepare_for_forcefield(s0, def, ch);
     if (!note.empty() && !quiet) std::printf("%s\n", note.c_str());
     if (ch == "keep") o["--charges"] = "keep";
@@ -297,7 +305,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     for (const auto& a : s0.atoms) types.push_back(a.name);
   }
   ParamReport rep;
-  ForceField ff = parameterize(s0, def, types, o.count("--charges") ? o["--charges"] : (s0.has_charges ? "keep" : "types"), &rep, false);
+  ForceField ff = parameterize(s0, def, types, o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "types"), &rep, false);
   if (!rep.missing.empty()) throw std::runtime_error(std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (caps ff apply lists them)");
   if (!quiet) std::printf("force field: %s\n", def.name.c_str());
   return ff;
@@ -1492,23 +1500,28 @@ int main(int argc, char** argv) {
           } else {
             for (const auto& a : s.atoms) types.push_back(a.name);
           }
-          std::string charges = o.count("--charges") ? o["--charges"] : (s.has_charges ? "keep" : "types");
+          std::string charges = o.count("--charges") ? o["--charges"] : (file_charges(s) ? "keep" : "auto");
           ParamReport rep;
           if (charges == "auto") {   // the force field's own charges, else Gasteiger–Marsili (as the Studio's default)
             try {
               f = parameterize(s, ff, types, "types", &rep, o.count("--allow-missing"));
               charges = "types";
             } catch (const FFError& e) {
-              if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
+              // no charges on its types, or a bond without an increment (pcff.frc has none for an alkoxysilane's o-sio)
+              const std::string msg = e.what();
+              const bool no_increment = msg.find("bond increment") != std::string::npos;
+              if (msg.find("has no charge for type") == std::string::npos && !no_increment) throw;
+              const std::string why = no_increment ? "has no bond increment for " + msg.substr(msg.find("bond increment") + 15, msg.find('\n', msg.find("bond increment")) - msg.find("bond increment") - 15)
+                                                   : "has no charges on its types";
               rep = ParamReport{};
               charges = "gasteiger";
               try {
                 ParamReport probe;
                 (void)parameterize(s, ff, types, "gasteiger", &probe, true);
-                std::printf("charges: %s has no charges on its types; Gasteiger–Marsili charges used\n", ff.name.c_str());
+                std::printf("charges: %s %s; Gasteiger–Marsili charges used\n", ff.name.c_str(), why.c_str());
               } catch (const std::exception&) {   // Gasteiger–Marsili has no parameters for this structure (S=O, metals): QEq
                 charges = "qeq";
-                std::printf("charges: %s has no charges on its types and Gasteiger–Marsili none for this structure; QEq charges used\n", ff.name.c_str());
+                std::printf("charges: %s %s and Gasteiger–Marsili none for this structure; QEq charges used\n", ff.name.c_str(), why.c_str());
               }
             }
           }

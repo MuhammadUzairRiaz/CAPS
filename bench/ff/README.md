@@ -19,6 +19,8 @@ interaction, and every CAPS energy form is checked against LAMMPS.
 | `compare_msi_types.py` | automatic typing against Materials Studio's types in msi2lmp data files |
 | `check_data_lammps.py` | LAMMPS data files written by CAPS, run in LAMMPS: every energy term and force, for each force-field family, hybrid styles included |
 | `validate_rtf_types.py` | automatic typing against a CHARMM topology's residues (CGenFF's own model compounds); `--apply` parameterises them |
+| `convert_frc.py` | CVFF, PCFF, COMPASS and IFF 1.5 from their `.frc` files with msi2lmp's semantics; IFF's silica and metal typing rules and the silica charges IFF states |
+| `check_msi2lmp.py` | the `.frc` conversions against msi2lmp's data files (LAMMPS's test structures, IFF's model database), term by term in LAMMPS; then IFF's rules on its own silica and metal models read as bare coordinates (types, charges, bonds) |
 | `check_gromacs.py` | GROMACS topologies written by CAPS, run in GROMACS (grompp, a zero-step mdrun) |
 | `extend_inorganic_water.py` | charges, shells and fixes for the inorganic and water force fields from their sources' templates |
 | `convert_martini3.py` | Martini 3 from cgmartini.nl's martini_v300.zip: bead types and the full pair table (`data/martini/martini3-nonbonded.tsv.gz`), the molecules of its solvent, ion, small-molecule, sugar, nucleobase and phospholipid files as templates |

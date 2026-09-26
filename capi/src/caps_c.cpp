@@ -590,6 +590,9 @@ void field_run(caps_doc* d) {
       try {
         F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "types", &F.rep, true));
         F.charges = "types";
+        // a bond without an increment (pcff.frc has none for an alkoxysilane's o-sio): not the force field's charges
+        for (const auto& m : F.rep.missing)
+          if (m.rfind("bond increment", 0) == 0) throw caps::FFError(def.name + " has no charge for type pair " + m.substr(15) + " (no bond increment)");
       } catch (const caps::FFError& e) {
         if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
         F.rep = caps::ParamReport{};

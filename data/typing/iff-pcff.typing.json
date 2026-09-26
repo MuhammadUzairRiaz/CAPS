@@ -261,9 +261,9 @@
   },
   {
    "type": "osi",
-   "smarts": "[OX2][Si]",
+   "smarts": "[OX2]([Si])[Si,#1]",
    "priority": 4,
-   "description": "siloxane / silanol O"
+   "description": "siloxane / silanol O (Si-O-Si, Si-O-H; an alkoxysilane's Si-O-C O is o, as PCFF's templates type it)"
   },
   {
    "type": "o*",
@@ -547,6 +547,129 @@
    "smarts": "[SX4](=O)(=O)",
    "priority": 2,
    "description": "sulfone S: sf in PCFF's templates, a child of s' (pcff.frc parameterises s')"
+  },
+  {
+   "type": "sc4",
+   "smarts": "[SiX4](~[#8])(~[#8])(~[#8])~[#8]",
+   "priority": 6,
+   "description": "IFF: Si in silica (four O)"
+  },
+  {
+   "type": "oc23",
+   "smarts": "[OX2]([Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])])[Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])]",
+   "priority": 6,
+   "description": "IFF: O in bulk silica, Si-O-Si"
+  },
+  {
+   "type": "oc24",
+   "smarts": "[OX2H1][Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])]",
+   "priority": 6,
+   "description": "IFF: silanol O on a silica surface"
+  },
+  {
+   "type": "hoy",
+   "smarts": "[H][OX2][Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])]",
+   "priority": 6,
+   "description": "IFF: silanol H on a silica surface"
+  },
+  {
+   "type": "na+",
+   "smarts": "[Na]",
+   "priority": 6,
+   "description": "IFF: sodium ion (silica, clays, salts)"
+  },
+  {
+   "type": "Ag",
+   "smarts": "[Ag;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Ag metal"
+  },
+  {
+   "type": "Al",
+   "smarts": "[Al;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Al metal"
+  },
+  {
+   "type": "Au",
+   "smarts": "[Au;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Au metal"
+  },
+  {
+   "type": "Cr",
+   "smarts": "[Cr;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Cr metal"
+  },
+  {
+   "type": "Cu",
+   "smarts": "[Cu;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Cu metal"
+  },
+  {
+   "type": "Fe",
+   "smarts": "[Fe;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Fe metal"
+  },
+  {
+   "type": "Mo",
+   "smarts": "[Mo;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Mo metal"
+  },
+  {
+   "type": "Ni",
+   "smarts": "[Ni;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Ni metal"
+  },
+  {
+   "type": "Pb",
+   "smarts": "[Pb;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Pb metal"
+  },
+  {
+   "type": "Pd",
+   "smarts": "[Pd;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Pd metal"
+  },
+  {
+   "type": "Pt",
+   "smarts": "[Pt;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Pt metal"
+  },
+  {
+   "type": "Sn",
+   "smarts": "[Sn;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: Sn metal"
+  },
+  {
+   "type": "W",
+   "smarts": "[W;!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]",
+   "priority": 6,
+   "description": "IFF: W metal"
   }
+ ],
+ "unbonded_types": [
+  "Ag",
+  "Al",
+  "Au",
+  "Cr",
+  "Cu",
+  "Fe",
+  "Mo",
+  "Ni",
+  "Pb",
+  "Pd",
+  "Pt",
+  "Sn",
+  "W"
  ]
 }

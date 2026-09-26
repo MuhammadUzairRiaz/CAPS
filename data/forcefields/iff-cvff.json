@@ -2367,7 +2367,8 @@
     "auto_torsion_center": "k+_",
     "auto_oop_end": "k+_",
     "auto_oop_center": "k+_"
-   }
+   },
+   "charge": 1.0
   },
   {
    "name": "na+",
@@ -2382,7 +2383,8 @@
     "auto_torsion_center": "na+_",
     "auto_oop_end": "na+_",
     "auto_oop_center": "na+_"
-   }
+   },
+   "charge": 1.0
   },
   {
    "name": "sy1",
@@ -30359,18 +30361,6 @@
    "comment": "ver 3.6, ref 32"
   },
   {
-   "name": "sc4-oc23",
-   "match": [
-    "sc4",
-    "oc23"
-   ],
-   "params": [
-    -1.0,
-    1.0
-   ],
-   "comment": "ver 3.6, ref 32"
-  },
-  {
    "name": "oc5-hoc",
    "match": [
     "oc5",
@@ -38673,12 +38663,48 @@
     -0.1684
    ],
    "comment": "ver 2.3, ref 23"
+  },
+  {
+   "name": "sc4-oc23",
+   "match": [
+    "sc4",
+    "oc23"
+   ],
+   "params": [
+    0.275,
+    -0.275
+   ],
+   "comment": "IFF: from the stated charges sc4 +1.1, oc23 -0.55"
+  },
+  {
+   "name": "sc4-oc24",
+   "match": [
+    "sc4",
+    "oc24"
+   ],
+   "params": [
+    0.275,
+    -0.275
+   ],
+   "comment": "IFF: from the stated charges sc4 +1.1, oc24 -0.675"
+  },
+  {
+   "name": "oc24-hoy",
+   "match": [
+    "oc24",
+    "hoy"
+   ],
+   "params": [
+    -0.4,
+    0.4
+   ],
+   "comment": "IFF: from the stated charges oc24 -0.675, hoy +0.4"
   }
  ],
  "notes": [
   "converted by CAPS from cvff_interface_v1_5.frc: explicit parameters as LAMMPS's msi2lmp assigns them; Materials Studio's automatic parameters where no explicit entry exists (reported as automatic)",
   "CVFF as msi2lmp writes it for LAMMPS: harmonic bonds and angles, no cross terms, no Morse bonds"
  ],
- "typing": "../typing/cvff.typing.json",
+ "typing": "../typing/iff-cvff.typing.json",
  "status": "validated"
 }

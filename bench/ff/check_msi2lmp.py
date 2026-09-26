@@ -17,6 +17,10 @@ database (clays, silica, metals, hydroxyapatite, cement minerals) with pcff_inte
 cvff_interface_v1_5.frc (class 1), -ignore as IFF's documentation runs it (a missing parameter is zero: CAPS
 --allow-missing).
 
+Then IFF's typing rules: the neutral silica models and metal surfaces of IFF's database, read as bare coordinates
+(.xyz: elements only, bonds perceived), typed and charged by CAPS's rules (IFF's silica: sc4, oc23, oc24, hoy with the
+charges IFF states; its metals) must give the types, charges and bonds of the model's own .car / .mdf.
+
 usage: check_msi2lmp.py [--only NAME] [--keep DIR]
 """
 import os, re, subprocess, sys, tempfile
@@ -40,6 +44,10 @@ IFF_MODELS = [("CLAY_MINERALS/pyrophyllite_unit_cell", "21"), ("CLAY_MINERALS/ka
 STYLES = {"class1": ["bond_style harmonic", "angle_style harmonic", "dihedral_style harmonic", "improper_style cvff"],
           "class2": ["bond_style class2", "angle_style class2", "dihedral_style class2", "improper_style class2"]}
 TERMS = ["ebond", "eangle", "edihed", "eimp", "evdwl", "ecoul"]
+# models typed by rule from bare coordinates (the ionised silica models' SiO- charges come from their .car only)
+IFF_RULE_MODELS = ["SILICA/a_quartz_unit_cell", "SILICA/a_cristobalite_20m2_cell", "SILICA/silica_Q4_0_0OH",
+                   "SILICA/silica_Q3_4_7OH_0pct_ion", "SILICA/silica_Q2_9_4OH_0pct_ion", "SILICA/silica_Q3_amorph_4_7OH_0pct_ion",
+                   "METALS/au_cell_P1_111", "METALS/cu_cell_P1_100", "METALS/ni_cell_P1_110", "METALS/al_cell_P1_111"]
 
 
 def lammps(inp, cwd):
@@ -248,7 +256,60 @@ def main():
     for fn, res, more in rows:
         print(f"{fn}\n   {res}" + (f"\n{more}" if more else ""))
     print(f"\n{sum(1 for r in rows if ' ok ' in ' ' + r[1][:3] + ' ')} of {len(rows)} msi2lmp reference structures agree with CAPS (work: {work})")
+    rule_rows = rule_typing() if os.path.isdir(IFF) else []
+    for fn, res in rule_rows:
+        print(f"{fn}\n   {res}")
+    if rule_rows:
+        good = sum(1 for _, r in rule_rows if r.startswith("ok"))
+        fails += len(rule_rows) - good
+        print(f"\n{good} of {len(rule_rows)} IFF models typed by rule from bare coordinates give the model's types, charges and bonds")
     sys.exit(1 if fails else 0)
+
+
+def data_bonds(path):
+    m = re.search(r"(?m)^\s*(\d+)\s+bonds", open(path).read())
+    return int(m.group(1)) if m else 0
+
+
+def rule_typing():
+    rows = []
+    for model in IFF_RULE_MODELS:
+        if only and only not in model:
+            continue
+        car = os.path.join(IFF, "MODEL_DATABASE", model + ".car")
+        name = "rules_" + os.path.basename(model)
+        d = os.path.join(work, name)
+        os.makedirs(d, exist_ok=True)
+        ref = [(l.split()[6], float(l.split()[8])) for l in open(car).read().splitlines()[4:] if len(l.split()) >= 9 and l.split()[0] != "end"]
+        xyz, refdata = os.path.join(d, "bare.xyz"), os.path.join(d, "ref.data")
+        subprocess.run([CAPS, "convert", car, xyz], capture_output=True)
+        subprocess.run([CAPS, "convert", car, refdata], capture_output=True)
+        for ffname in ("iff-pcff.json", "iff-cvff.json"):
+            out = os.path.join(d, ffname.replace(".json", ".data"))
+            r = subprocess.run([CAPS, "ff", "apply", xyz, "--ff", os.path.join(ROOT, "data", "forcefields", ffname), "-o", out],
+                               capture_output=True, text=True)
+            t = subprocess.run([CAPS, "ff", "type", xyz, "--ff", os.path.join(ROOT, "data", "forcefields", ffname), "-o",
+                                os.path.join(d, "types.txt")], capture_output=True, text=True)
+            label = f"{model} ({ffname[:-5]}, by rule)"
+            if r.returncode or t.returncode:
+                rows.append((label, "FAILED: " + ((r.stderr or t.stderr).strip().splitlines() or ["?"])[-1][:200]))
+                continue
+            types = [l.split()[-1] for l in open(os.path.join(d, "types.txt")).read().splitlines() if l.strip()]
+            q, sec = {}, ""
+            for line in open(out).read().splitlines():
+                if line and line[0].isalpha():
+                    sec = line.split("#")[0].strip()
+                elif sec == "Atoms" and len(line.split()) > 6:
+                    w = line.split()
+                    q[int(w[0])] = float(w[3])
+            dt = sum(1 for (rt, _), ct in zip(ref, types) if rt != ct)
+            dq = max((abs(rq - q.get(i + 1, 0.0)) for i, (_, rq) in enumerate(ref)), default=0.0)
+            nb, rb = data_bonds(out), data_bonds(refdata)
+            ok = len(types) == len(ref) and dt == 0 and dq < 1e-6 and nb == rb
+            kinds = " ".join(f"{k}×{sum(1 for x in types if x == k)}" for k in sorted(set(types)))
+            rows.append((label, f"{'ok' if ok else 'DIFFERS'} · {len(ref)} atoms ({kinds}) · {dt} types differ · largest charge "
+                                f"difference {dq:.1e} · {nb} bonds (the .mdf has {rb})"))
+    return rows
 
 
 if __name__ == "__main__":

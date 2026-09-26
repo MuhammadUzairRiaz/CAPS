@@ -334,7 +334,10 @@ missing right-hand half repeated, own types before equivalences, exact entries b
 term looked up on its own with references from the assigned bonds and angles, Wilson out-of-plane and angle-angle terms
 as msi2lmp builds them — with Materials Studio's automatic parameters as the fallback. The INTERFACE force field (IFF 1.5,
 Heinz et al., Langmuir 29, 1754 (2013): clays, silica, metals, hydroxyapatite, cement minerals on PCFF and CVFF;
-`iff-pcff`, `iff-cvff`) is converted the same way from the Heinz group's distribution. ClayFF (Cygan, Liang, Kalinichev
+`iff-pcff`, `iff-cvff`) is converted the same way from the Heinz group's distribution; its silica (sc4, oc23, oc24, hoy
+with the charges IFF states: +1.1, −0.55, −0.675, +0.4) and its metals (Lennard-Jones atoms, no bonds) are typed by rule,
+so a silica filler, a glass fibre or a steel, copper or gold surface built in CAPS needs no `.car` file; clays, cement
+and apatite take their types from IFF's own `.car` models. ClayFF (Cygan, Liang, Kalinichev
 2004) mixes Lorentz–Berthelot and forms its metal–O–H bends with the metal in contact (≤ 2.6 Å), no M–O bond, so M and H
 keep their non-bonded terms. DREIDING (DREIDING.par) takes the paper's torsion rules (Mayo, Olafson, Goddard 1990, cases
 a–j) where the file lists no torsion, and both DREIDING files carry DREIDING's hydrogen bond (D_hb 4.0 kcal/mol, R_hb
@@ -345,6 +348,7 @@ field (ε_rf 61, 1.4 nm).
 |---|---|
 | msi2lmp (built from LAMMPS's `tools/msi2lmp`) on LAMMPS's own test structures (`bench/ff/check_msi2lmp.py`): CVFF, COMPASS, PCFF | 23 of 23 term by term in LAMMPS; the differences are msi2lmp's own shortcuts, reported (cp-only bond-bond-1-3, `.mdf` neighbour order of CVFF out-of-plane atoms, wildcard torsions counted by type) |
 | msi2lmp on IFF's model database: pyrophyllite, kaolinite, mica, Na-montmorillonite, cristobalite, hydroxylated silica, Au(111), Al(100), hydroxyapatite, gypsum, a hydrated C3A surface, PEO — PCFF and CVFF versions | 22 of 22 term by term |
+| IFF's rules on its own models read as bare coordinates (elements only, bonds perceived): α-quartz, cristobalite, Q4, Q3 and Q2 hydroxylated and amorphous silica, Au(111), Cu(100), Ni(110), Al(111) — PCFF and CVFF versions | 20 of 20: every type, charge and bond as in the model's `.car` / `.mdf` |
 
 ### Automatic atom typing
 

@@ -110,6 +110,30 @@ def rule(e, params, style=None, name=None):
 # (o= s' bond, ver 2.1 ref 8), so a sulfone S takes s'
 PCFF_EXTRA = [{"type": "s'", "smarts": "[SX4](=O)(=O)", "priority": 2,
                "description": "sulfone S: sf in PCFF's templates, a child of s' (pcff.frc parameterises s')"}]
+# IFF's silica (the types and charges of its silica models: Si +1.1, Si-O-Si -0.55, Si-OH -0.675 / +0.4, from the .frc bond
+# increments) and its metals (12-6 Lennard-Jones, no bonds), so that a silica filler, a glass fibre or a steel, copper or gold
+# surface built in CAPS is typed without a .car file. Only Si with four O: an organosilane's Si keeps its PCFF / CVFF type;
+# only metal atoms bonded to no non-metal (the Al of a clay's octahedral sheet is IFF's ay1 or ao, from its .car file).
+SILICA_SI = "[SiX4](~[#8])(~[#8])(~[#8])~[#8]"
+SIO4 = "[Si;$(" + SILICA_SI + ")]"
+IFF_EXTRA = [
+    {"type": "sc4", "smarts": SILICA_SI, "priority": 6, "description": "IFF: Si in silica (four O)"},
+    {"type": "oc23", "smarts": f"[OX2]({SIO4}){SIO4}", "priority": 6, "description": "IFF: O in bulk silica, Si-O-Si"},
+    {"type": "oc24", "smarts": f"[OX2H1]{SIO4}", "priority": 6, "description": "IFF: silanol O on a silica surface"},
+    {"type": "hoy", "smarts": f"[H][OX2]{SIO4}", "priority": 6, "description": "IFF: silanol H on a silica surface"},
+    {"type": "na+", "smarts": "[Na]", "priority": 6, "description": "IFF: sodium ion (silica, clays, salts)"},
+] + [{"type": m, "smarts": f"[{m};!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])]", "priority": 6, "description": f"IFF: {m} metal"}
+     for m in ("Ag", "Al", "Au", "Cr", "Cu", "Fe", "Mo", "Ni", "Pb", "Pd", "Pt", "Sn", "W")]
+IFF_METALS = [r["type"] for r in IFF_EXTRA if r["description"].endswith(" metal")]
+# IFF's .frc files carry no bond increments for its minerals, or placeholders (the charges are in its models' .car files). The charges its
+# type descriptions state (sc4 +1.1, oc23 -0.55, oc24 -0.675, hoy +0.4) are these increments exactly; the ions' own charges
+# (na+, k+ +1.0) are the types' charges.
+IFF_INCREMENTS = [
+    {"name": "sc4-oc23", "match": ["sc4", "oc23"], "params": [0.275, -0.275], "comment": "IFF: from the stated charges sc4 +1.1, oc23 -0.55"},
+    {"name": "sc4-oc24", "match": ["sc4", "oc24"], "params": [0.275, -0.275], "comment": "IFF: from the stated charges sc4 +1.1, oc24 -0.675"},
+    {"name": "oc24-hoy", "match": ["oc24", "hoy"], "params": [-0.4, 0.4], "comment": "IFF: from the stated charges oc24 -0.675, hoy +0.4"},
+]
+IFF_ION_CHARGES = {"na+": 1.0, "k+": 1.0}
 
 
 def convert(frc, cls, name, version, references, typing, out_name, src=None, extra_rules=None):
@@ -213,6 +237,17 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
         ff["auto_angles"] = ordered(aa_, lambda e: auto_rule(e, [e[3][1], e[3][0]], "harmonic"))
         ff["auto_dihedrals"] = ordered(at_, lambda e: auto_rule(e, [e[3][0], 1 if e[3][2] == 0 else -1, int(e[3][1])], "harmonic"))
     ff["bond_increments"] = ordered(entries(first(secs, "#bond_increments"), 2, 2), lambda e: rule(e, e[3]))
+    if src and "INTERFACE_FF" in src:
+        # cvff_interface_v1_5.frc lists sc4-oc23 as -1.0 / +1.0, a placeholder (Si -4): the stated charges replace it
+        mine = {tuple(r["match"]) for r in IFF_INCREMENTS}
+        for r in ff["bond_increments"]:
+            if tuple(r["match"]) in mine or tuple(reversed(r["match"])) in mine:
+                print(f"  {frc}: bond increment {r['name']} {r['params']} replaced by the charges IFF states")
+        ff["bond_increments"] = [r for r in ff["bond_increments"]
+                                 if tuple(r["match"]) not in mine and tuple(reversed(r["match"])) not in mine] + IFF_INCREMENTS
+        for t in ff["atom_types"]:
+            if t["name"] in IFF_ION_CHARGES:
+                t["charge"] = IFF_ION_CHARGES[t["name"]]
     ff["notes"] = [f"converted by CAPS from {frc}: explicit parameters as LAMMPS's msi2lmp assigns them; Materials Studio's "
                    "automatic parameters where no explicit entry exists (reported as automatic)"]
     if cls == 1:
@@ -222,6 +257,8 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
     have = {t["name"] for t in types}
     added = [r for r in (extra_rules or []) if r["type"] in have]
     tj["rules"] = tj["rules"] + added
+    if src and "INTERFACE_FF" in src:   # IFF's metals are Lennard-Jones atoms: perceived metal-metal bonds are dropped
+        tj["unbonded_types"] = [m for m in IFF_METALS if m in have]
     # moltemplate spells the characters its names cannot hold: c3prime is c3', o1=star is o1=*
     renamed = 0
     for r in tj["rules"]:
@@ -255,9 +292,9 @@ IFF = os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/FORCE_FIELDS")
 if os.path.isdir(IFF):   # the INTERFACE force field: PCFF and CVFF with the inorganic phases (clays, silica, metals, cement …)
     convert("pcff_interface_v1_5.frc", 2, "INTERFACE (IFF 1.5, PCFF)", "IFF 1.5 on pcff.frc",
             ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/pcff.typing.json", "iff-pcff.json", IFF,
-            PCFF_EXTRA)
+            PCFF_EXTRA + IFF_EXTRA)
     convert("cvff_interface_v1_5.frc", 1, "INTERFACE (IFF 1.5, CVFF)", "IFF 1.5 on cvff.frc",
-            ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/cvff.typing.json", "iff-cvff.json", IFF)
+            ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/cvff.typing.json", "iff-cvff.json", IFF, IFF_EXTRA)
 convert("compass_published.frc", 2, "COMPASS (compass_published.frc, full class II)", "compass_published.frc 1.1",
         ["H. Sun, J. Phys. Chem. B 102, 7338 (1998)"], "../typing/compass-published-moltemplate.typing.json", "compass-frc.json")
 
@@ -277,7 +314,10 @@ CHECKED = {
                 "own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py)",
     "compass-frc": "the parameters msi2lmp assigns from compass_published.frc for LAMMPS's msi2lmp test structures (ethane, "
                    "benzene, naphthalene, a carbon nanotube, hydrogen): equal (msi2lmp leaves out bond-bond-1-3 terms without a cp "
-                   "type); CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py)",
+                   "type); CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py). The published file "
+                   "covers alkanes, aromatics, alcohols, ethers, acetate esters and small molecules, but has no alkene C, halogen, "
+                   "nitrile or N–H amide types and not every ester torsion (methacrylates): 38 of CAPS's 127 library polymers "
+                   "(bench/polymers/check_matrix.py), the others refused with the missing type or term named",
 }
 cat_p = os.path.join(ROOT, "data", "forcefields", "catalogue.json")
 cat = json.load(open(cat_p))
@@ -293,7 +333,8 @@ for fid in ("pcff-frc", "cvff-frc", "compass-frc", "iff-pcff", "iff-cvff"):
                 "source_file": ff["source"].split(" ")[0], "status": "validated", "notes": "validated against " + CHECKED[fid],
                 "file": fid + ".json",
                 "typing": {"rules": ff["typing"].replace("../", ""),
-                           "evidence": ("the typing rules of CAPS's PCFF / CVFF library for organic atoms; inorganic types from the "
+                           "evidence": ("the typing rules of CAPS's PCFF / CVFF library for organic atoms, IFF's silica (sc4, oc23, "
+                                        "oc24, hoy) and metals by rule; other inorganic types (clays, cement, apatite) from the "
                                         "model's .car file (IFF's model database)") if fid.startswith("iff") else
                                        "the typing rules of CAPS's " + ff["name"].split(" ")[0] + " library, for the types the .frc file defines"},
                 "counts": {k: len(ff[k]) for k in ("atom_types", "pairs", "bonds", "angles", "dihedrals", "impropers")}})

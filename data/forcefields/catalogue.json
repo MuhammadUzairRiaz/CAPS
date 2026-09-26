@@ -63,7 +63,7 @@
    "origin": "BIOVIA .frc",
    "source_file": "compass_published.frc",
    "status": "validated",
-   "notes": "validated against the parameters msi2lmp assigns from compass_published.frc for LAMMPS's msi2lmp test structures (ethane, benzene, naphthalene, a carbon nanotube, hydrogen): equal (msi2lmp leaves out bond-bond-1-3 terms without a cp type); CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py)",
+   "notes": "validated against the parameters msi2lmp assigns from compass_published.frc for LAMMPS's msi2lmp test structures (ethane, benzene, naphthalene, a carbon nanotube, hydrogen): equal (msi2lmp leaves out bond-bond-1-3 terms without a cp type); CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py). The published file covers alkanes, aromatics, alcohols, ethers, acetate esters and small molecules, but has no alkene C, halogen, nitrile or N–H amide types and not every ester torsion (methacrylates): 38 of CAPS's 127 library polymers (bench/polymers/check_matrix.py), the others refused with the missing type or term named",
    "file": "compass-frc.json",
    "typing": {
     "rules": "typing/compass-frc.typing.json",
@@ -92,7 +92,7 @@
    "file": "iff-pcff.json",
    "typing": {
     "rules": "typing/iff-pcff.typing.json",
-    "evidence": "the typing rules of CAPS's PCFF / CVFF library for organic atoms; inorganic types from the model's .car file (IFF's model database)"
+    "evidence": "the typing rules of CAPS's PCFF / CVFF library for organic atoms, IFF's silica (sc4, oc23, oc24, hoy) and metals by rule; other inorganic types (clays, cement, apatite) from the model's .car file (IFF's model database)"
    },
    "counts": {
     "atom_types": 214,
@@ -116,8 +116,8 @@
    "notes": "validated against the parameters msi2lmp assigns from cvff_interface_v1_5.frc for models of IFF's own database (clays, silica, metals, hydroxyapatite, PEO), energies term by term in LAMMPS (bench/ff/check_msi2lmp.py)",
    "file": "iff-cvff.json",
    "typing": {
-    "rules": "typing/cvff.typing.json",
-    "evidence": "the typing rules of CAPS's PCFF / CVFF library for organic atoms; inorganic types from the model's .car file (IFF's model database)"
+    "rules": "typing/iff-cvff.typing.json",
+    "evidence": "the typing rules of CAPS's PCFF / CVFF library for organic atoms, IFF's silica (sc4, oc23, oc24, hoy) and metals by rule; other inorganic types (clays, cement, apatite) from the model's .car file (IFF's model database)"
    },
    "counts": {
     "atom_types": 177,
