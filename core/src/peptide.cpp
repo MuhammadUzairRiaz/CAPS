@@ -382,6 +382,17 @@ System build_peptide(const PeptideOptions& o, PeptideReport* report) {
     for (const auto& [key, atoms] : groups)
       for (size_t k = 0; k < atoms.size(); ++k)
         names[size_t(atoms[k])] = std::string(element(key.second).symbol) + kGreek[std::min(key.first, 6)] + (atoms.size() > 1 ? std::to_string(k + 1) : "");
+    // the PDB names, in the order of the side chain's SMILES (rings and branches numbered as the PDB numbers them)
+    static const std::map<std::string, std::vector<const char*>> kPdb = {
+        {"ALA", {"CB"}}, {"ARG", {"CB", "CG", "CD", "NE", "CZ", "NH1", "NH2"}}, {"ASN", {"CB", "CG", "OD1", "ND2"}},
+        {"ASP", {"CB", "CG", "OD1", "OD2"}}, {"CYS", {"CB", "SG"}}, {"GLN", {"CB", "CG", "CD", "OE1", "NE2"}},
+        {"GLU", {"CB", "CG", "CD", "OE1", "OE2"}}, {"HIS", {"CB", "CG", "CD2", "NE2", "CE1", "ND1"}}, {"ILE", {"CB", "CG2", "CG1", "CD1"}},
+        {"LEU", {"CB", "CG", "CD1", "CD2"}}, {"LYS", {"CB", "CG", "CD", "CE", "NZ"}}, {"MET", {"CB", "CG", "SD", "CE"}},
+        {"PHE", {"CB", "CG", "CD1", "CE1", "CZ", "CE2", "CD2"}}, {"PRO", {"CB", "CG", "CD"}}, {"SER", {"CB", "OG"}},
+        {"THR", {"CB", "OG1", "CG2"}}, {"TRP", {"CB", "CG", "CD1", "NE1", "CE2", "CZ2", "CH2", "CZ3", "CE3", "CD2"}},
+        {"TYR", {"CB", "CG", "CD1", "CE1", "CZ", "OH", "CE2", "CD2"}}, {"VAL", {"CB", "CG1", "CG2"}}};
+    if (auto it = kPdb.find(r.def->name); it != kPdb.end() && int(it->second.size()) == r.nside)
+      for (int k = 0; k < r.nside; ++k) names[size_t(r.side0 + k)] = it->second[size_t(k)];
   }
   if (oxt >= 0) { names[size_t(oxt)] = "OXT"; resname[size_t(oxt)] = res.back().def->name; resid[size_t(oxt)] = first_res + int64_t(n) - 1; }
   if (ace) { names[size_t(ace_me)] = "CH3"; names[size_t(ace_c)] = "C"; names[size_t(ace_o)] = "O"; for (int a : {ace_me, ace_c, ace_o}) resname[size_t(a)] = "ACE", resid[size_t(a)] = 1; }

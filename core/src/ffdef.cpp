@@ -1,5 +1,6 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
+#include "caps/martini_protein.hpp"
 #include "caps/charges.hpp"
 #include "caps/resolution.hpp"
 #include "caps/typing.hpp"
@@ -128,6 +129,10 @@ void load_typing(FFDef& ff, const std::string& path) {
   }
   ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
   ff.coarse_grained = ff.coarse_grained || (j.has("coarse_grained") && j["coarse_grained"].boolean());
+  if (j.has("martini_protein")) {
+    const std::filesystem::path f(j["martini_protein"].str());
+    ff.martini_protein = (f.is_absolute() ? f : std::filesystem::path(path).parent_path() / f).lexically_normal().string();
+  }
   if (j.has("exclude_pairs"))
     for (const auto& pr : j["exclude_pairs"].items())
       if (pr.items().size() == 2) ff.exclude_type_pairs.push_back({pr.items()[0].str(), pr.items()[1].str()});
@@ -1326,8 +1331,33 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   auto missing = [&](const std::string& what) {
     if (std::find(rep.missing.begin(), rep.missing.end(), what) == rep.missing.end()) rep.missing.push_back(what);
   };
+  // an explicit topology (a Martini protein, as martinize writes it): its bonded terms as given, none looked up
+  static const std::vector<Bond> kNoBonds;
+  bool use_topo = false;
+  if (s.topology && s.topology->natoms == n) {
+    std::set<std::pair<uint32_t, uint32_t>> sb, tb;
+    for (const auto& b : s.bonds) sb.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+    for (const auto& b : s.topology->bonds) tb.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+    use_topo = sb == tb;
+    if (!use_topo) rep.notes.push_back("the structure's bonds no longer match its " + s.topology->source + " topology: bonded terms looked up instead");
+  }
+  if (use_topo) {
+    for (const auto& b : s.topology->bonds) ff.bonds.push_back({b.i, b.j, b.k, b.r0});
+    for (const auto& a : s.topology->angles) {
+      if (a.form != 1) throw FFError("explicit angle form " + std::to_string(a.form) + " is not supported");
+      ff.angles_x.push_back({a.i, a.j, a.k, 1, a.kt, a.theta0});
+    }
+    for (const auto& d : s.topology->dihedrals) {
+      if (d.form == 1) ff.dihedrals.push_back({d.i, d.j, d.k, d.l, d.kd, d.n, d.phi0});
+      else if (d.form == 2) ff.impropers_harmonic.push_back({d.i, d.j, d.k, d.l, d.kd, d.phi0});
+      else throw FFError("explicit dihedral form " + std::to_string(d.form) + " is not supported");
+    }
+    rep.notes.push_back(std::to_string(s.topology->bonds.size()) + " bonds, " + std::to_string(s.topology->angles.size()) + " angles and " +
+                        std::to_string(s.topology->dihedrals.size()) + " dihedrals from the " + s.topology->source + " topology");
+  }
+  const std::vector<Bond>& rule_bonds = use_topo ? kNoBonds : s.bonds;
   // bonds
-  for (const auto& b : s.bonds) {
+  for (const auto& b : rule_bonds) {
     const FFRule* r = lookup12(def.bonds, Nb, Nb2, {b.i, b.j});
     if (!r) r = auto_lookup(def.auto_bonds, {&Ab[b.i], &Ab[b.j]}, nullptr);
     if (std::string u; !r && (r = analog(def.bonds, Nb, {b.i, b.j}, nullptr, &u))) estimated("bond " + shown(Nb, {b.i, b.j}) + " as " + u);
@@ -1352,7 +1382,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   int trans_skipped = 0, no_angle = 0;
   std::set<std::pair<uint32_t, uint32_t>> ex12, ex13;
   for (const auto& b : s.bonds) ex12.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
-  for (uint32_t j = 0; j < n; ++j)
+  for (uint32_t j = 0; j < (use_topo ? 0u : uint32_t(n)); ++j)
     for (size_t x = 0; x < nb[j].size(); ++x)
       for (size_t y = x + 1; y < nb[j].size(); ++y) {
         uint32_t i = nb[j][x], k = nb[j][y];
@@ -1419,7 +1449,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       }
   // dihedrals (one per i-j-k-l with i < l, as moltemplate's canonical order)
   std::set<std::pair<uint32_t, uint32_t>> p14;
-  for (const auto& b : s.bonds)
+  for (const auto& b : rule_bonds)
     for (int dir = 0; dir < 2; ++dir) {
       const uint32_t j = dir ? b.j : b.i, k = dir ? b.i : b.j;
       for (uint32_t i : nb[j]) {
@@ -1513,7 +1543,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all
   // orderings of the three (as moltemplate's canonical ordering does)
   const int cpos = def.improper_order == "center1_sorted" ? 0 : def.improper_order == "center2_sorted" ? 1 : 2;
-  if (def.oop_scheme == "msi2lmp") {
+  if (use_topo) {
+    // the explicit topology's impropers are among its dihedrals
+  } else if (def.oop_scheme == "msi2lmp") {
     // msi2lmp / Discover class II out-of-plane terms: a three-connected centre B with neighbours (A, C, D) in bond order
     // gets the Wilson term (the rule may match any order of A, C, D) and the three angle-angle couplings; a centre with
     // more neighbours gets angle-angle terms for every triple.
@@ -1737,6 +1769,20 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
         s.bonds.clear();
       }
     }
+  }
+  if (!ff.martini_protein.empty() && std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; })) {
+    // an all-atom protein: Martini beads with the model's explicit topology, DSSP for the secondary structure
+    MartiniProteinReport rep;
+    const size_t before = s.atoms.size();
+    s = martini22_protein(s, "", ff.martini_protein, &rep);
+    charges = "keep";   // the beads' charges are the model's (termini and charged side chains)
+    int unparam = 0;
+    for (const auto& a : s.atoms) unparam += a.name == "AC1" || a.name == "AC2";
+    note = std::to_string(before) + " atoms of " + std::to_string(rep.residues) + " residues mapped onto " + std::to_string(rep.beads) +
+           " Martini 2.2 protein beads with martinize's topology (secondary structure by DSSP: " + rep.cg_ss + ")";
+    if (unparam)
+      note += "; " + std::to_string(unparam) + " AC1 / AC2 beads (VAL, LEU, ILE) have no non-bonded parameters in this library (martini_v2.2.itp gives them)";
+    return note;
   }
   if (!ff.bead_rules.empty() || !ff.bead_groups.empty()) {
     // an all-atom structure (any site with an element) is mapped onto the force field's beads

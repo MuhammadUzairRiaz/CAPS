@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -56,6 +57,22 @@ struct TypeInfo {
   std::string label;     // e.g. "c3" from "1 12.011 # c3"
 };
 
+// A molecule topology given term by term (a coarse-grained protein, as martinize writes one): parameterize uses these
+// bonded terms, with their own parameters, in place of rule lookups; the non-bonded terms still come from the types.
+// Units as LAMMPS real: bonds K (r − r0)² (kcal/mol/Å², Å); angles form 1 cosine/squared K (cos θ − cos θ0)²; dihedrals
+// form 1 K [1 + cos(nφ − φ0)], form 2 harmonic K (ξ − ξ0)² on the i-j-k-l dihedral (radians). Valid only for the
+// structure it was made with (natoms and the bond list must still match; parameterize checks).
+struct ExplicitTopology {
+  struct Bond { uint32_t i, j; double k, r0; std::string group; };
+  struct Angle { uint32_t i, j, k; int form; double kt, theta0; std::string group; };
+  struct Dihedral { uint32_t i, j, k, l; int form; double kd, phi0; int n; std::string group; };
+  size_t natoms = 0;
+  std::vector<Bond> bonds;
+  std::vector<Angle> angles;
+  std::vector<Dihedral> dihedrals;
+  std::string source;   // "Martini 2.2 protein (martinize rules)"
+};
+
 struct System {
   std::string title;
   std::string source_format;
@@ -70,6 +87,7 @@ struct System {
   bool has_mol = false;
   bool unwrapped = false;   // positions are unwrapped (xu/yu/zu or image flags applied)
   std::vector<std::string> notes;  // what the reader inferred or skipped
+  std::shared_ptr<const ExplicitTopology> topology;   // bonded terms given term by term, or null
 
   double mass_of(const Atom& a) const;
   double total_mass() const;          // g/mol

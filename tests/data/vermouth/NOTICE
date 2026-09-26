@@ -1,0 +1,10 @@
+Files from vermouth-martinize (https://github.com/marrink-lab/vermouth-martinize), Apache License 2.0 (LICENSE here),
+vermouth/tests/data/integration_tests/tier-0:
+  1ico_aa.pdb            mini-protein1_betasheet/aa.pdb
+  1ico_martini22.itp     mini-protein1_betasheet/martinize2/molecule_0.itp   (martinize2 -ff martini22 -dssp -cys auto)
+  1ico_martini22_cg.pdb  mini-protein1_betasheet/martinize2/cg.pdb
+  trpcage_aa.pdb         mini-protein3_trp-cage/aa.pdb
+DSSP 2.0 (CMBI) secondary structure from the same tests' chain_A.ssd:
+  1ICO      CEEEEEETTEEEEEECCCCCCTTCEEEEC
+  Trp-cage  CHHHHHHHTTGGGGTCCCCC
+Used by tests/test_martini_protein.cpp to check CAPS's DSSP and Martini 2.2 proteins against DSSP and martinize2.

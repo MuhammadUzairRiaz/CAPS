@@ -18,6 +18,7 @@
 #include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
+#include "caps/martini_protein.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 #include "caps/checks.hpp"
@@ -178,22 +179,22 @@ const std::set<std::string>& known_options() {
     "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first", "--fit", "--fix-mol",
     "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame", "--frame-ps", "--from",
     "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl", "--hold",
-    "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations", "--json", "--lammps-input",
-    "--lammps-run", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
-    "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size", "--molecules",
-    "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell", "--no-cleanup",
-    "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax", "--no-tail",
-    "--normal", "--out", "--overlay", "--padding", "--pair", "--particles", "--passivate", "--pattern",
-    "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme", "--pme-order",
-    "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--props",
-    "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate", "--ratio",
-    "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf", "--shape",
-    "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step", "--steps",
-    "--strain", "--strand", "--stride", "--structure", "--style", "--supercell", "--surface", "--symmetrize",
-    "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template", "--termination", "--tfinal",
-    "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow", "--tmax", "--to", "--tol",
-    "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units", "--until-converged",
-    "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations", "--itp", "--json",
+    "--lammps-input", "--lammps-run", "--last", "--layers", "--length", "--list", "--list-templates", "--log",
+    "--lx", "--ly", "--m", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model",
+    "--molecule-size", "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities",
+    "--no-cell", "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff",
+    "--no-relax", "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
+    "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
+    "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
+    "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
+    "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--ss", "--step",
+    "--steps", "--strain", "--strand", "--stride", "--structure", "--style", "--supercell", "--surface",
+    "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
+    "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow",
+    "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
+    "--until-converged", "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -1180,6 +1181,38 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps build: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "dssp" || cmd == "martini") {
+    // DSSP secondary structure, and Martini 2.2 proteins (beads with martinize's topology)
+    try {
+      if (pos.empty()) return usage();
+      std::string data;
+      for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+        if (!root.empty() && std::filesystem::exists(root + "/data/martini/martini22-protein.json")) { data = root + "/data/martini/martini22-protein.json"; break; }
+      const System aa = load(pos[0], o);
+      if (cmd == "dssp") {
+        const std::string ss = dssp(aa);
+        std::printf("%s\n", ss.c_str());
+        if (!data.empty()) std::printf("%s  (Martini)\n", dssp_to_martini(ss, data).c_str());
+        return 0;
+      }
+      if (data.empty()) throw std::runtime_error("data/martini/martini22-protein.json not found (set CAPS_HOME)");
+      if (!o.count("-o")) return usage();
+      MartiniProteinReport rep;
+      const System cg = martini22_protein(aa, o.count("--ss") ? o["--ss"] : "", data, &rep);
+      write_lammps_data(cg, o["-o"]);
+      if (o.count("--itp")) {
+        std::ofstream f(o["--itp"]);
+        f << "; Martini 2.2 protein written by CAPS; secondary structure " << rep.cg_ss << "\n" << martini_itp(cg, data);
+      }
+      std::printf("%d residues, %d chains -> %d beads; %zu bonds, %zu angles, %zu dihedrals; %d disulfides\nDSSP    %s\nMartini %s\nwrote %s\n",
+                  rep.residues, rep.chains, rep.beads, cg.topology->bonds.size(), cg.topology->angles.size(), cg.topology->dihedrals.size(),
+                  rep.disulfides, rep.dssp.c_str(), rep.cg_ss.c_str(), o["-o"].c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
       return 1;
     }
   }
