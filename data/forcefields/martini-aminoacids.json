@@ -1,0 +1,643 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MARTINI 2.0 · aminoacids",
+ "version": "2.0",
+ "source": "aminoacids.prm (EMC MARTINI parameters, moltemplate distribution)",
+ "references": [],
+ "extends": "martini-moltemplate.json",
+ "typing": "../typing/martini-aminoacids.typing.json",
+ "atom_types": [
+  {
+   "name": "P51",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P51 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P51",
+    "angle": "P51",
+    "dihedral": "P51",
+    "improper": "P51"
+   }
+  },
+  {
+   "name": "P52",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P52 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P52",
+    "angle": "P52",
+    "dihedral": "P52",
+    "improper": "P52"
+   }
+  },
+  {
+   "name": "P53",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P53 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P53",
+    "angle": "P53",
+    "dihedral": "P53",
+    "improper": "P53"
+   }
+  },
+  {
+   "name": "P54",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P54 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P54",
+    "angle": "P54",
+    "dihedral": "P54",
+    "improper": "P54"
+   }
+  },
+  {
+   "name": "P55",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P55 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P55",
+    "angle": "P55",
+    "dihedral": "P55",
+    "improper": "P55"
+   }
+  },
+  {
+   "name": "P56",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P56 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P56",
+    "angle": "P56",
+    "dihedral": "P56",
+    "improper": "P56"
+   }
+  },
+  {
+   "name": "P57",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P57 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P57",
+    "angle": "P57",
+    "dihedral": "P57",
+    "improper": "P57"
+   }
+  },
+  {
+   "name": "P58",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P58 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P58",
+    "angle": "P58",
+    "dihedral": "P58",
+    "improper": "P58"
+   }
+  },
+  {
+   "name": "P59",
+   "element": "",
+   "mass": 72.0,
+   "description": "MARTINI aminoacids.prm bead P59 (non-bonded as P5)",
+   "equivalence": {
+    "vdw": "P5_bP5_aP5_dP5_iP5",
+    "bond": "P59",
+    "angle": "P59",
+    "dihedral": "P59",
+    "improper": "P59"
+   }
+  }
+ ],
+ "pairs": [],
+ "bonds": [
+  {
+   "name": "C3-P1",
+   "match": [
+    "*_bC3_a*_d*_i*",
+    "*_bP1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    2.8
+   ]
+  },
+  {
+   "name": "C3-P5",
+   "match": [
+    "*_bC3_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.3
+   ]
+  },
+  {
+   "name": "C3-Qd",
+   "match": [
+    "*_bC3_a*_d*_i*",
+    "*_bQd_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    2.8
+   ]
+  },
+  {
+   "name": "C5-P5",
+   "match": [
+    "*_bC5_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.96271511,
+    3.1
+   ]
+  },
+  {
+   "name": "C5-P52",
+   "match": [
+    "*_bC5_a*_d*_i*",
+    "P52"
+   ],
+   "style": "harmonic",
+   "params": [
+    2.9875717,
+    4.0
+   ]
+  },
+  {
+   "name": "N0-P4",
+   "match": [
+    "*_bN0_a*_d*_i*",
+    "*_bP4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.4
+   ]
+  },
+  {
+   "name": "N0-P5",
+   "match": [
+    "*_bN0_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.3
+   ]
+  },
+  {
+   "name": "N0-Qd",
+   "match": [
+    "*_bN0_a*_d*_i*",
+    "*_bQd_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.4
+   ]
+  },
+  {
+   "name": "P1-P5",
+   "match": [
+    "*_bP1_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    4.0
+   ]
+  },
+  {
+   "name": "P1-P55",
+   "match": [
+    "*_bP1_a*_d*_i*",
+    "P55"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.90057361,
+    2.6
+   ]
+  },
+  {
+   "name": "P1-P56",
+   "match": [
+    "*_bP1_a*_d*_i*",
+    "P56"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.96271511,
+    2.5
+   ]
+  },
+  {
+   "name": "P3-P5",
+   "match": [
+    "*_bP3_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.96271511,
+    3.2
+   ]
+  },
+  {
+   "name": "P4-P5",
+   "match": [
+    "*_bP4_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    4.0
+   ]
+  },
+  {
+   "name": "P5-P5",
+   "match": [
+    "*_bP5_a*_d*_i*",
+    "*_bP5_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.2
+   ]
+  },
+  {
+   "name": "P5-Qa",
+   "match": [
+    "*_bP5_a*_d*_i*",
+    "*_bQa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.96271511,
+    3.2
+   ]
+  },
+  {
+   "name": "P5-SC4",
+   "match": [
+    "*_bP5_a*_d*_i*",
+    "*_bSC4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.96271511,
+    3.2
+   ]
+  },
+  {
+   "name": "P54-Qa",
+   "match": [
+    "P54",
+    "*_bQa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    4.0
+   ]
+  },
+  {
+   "name": "P57-SC4",
+   "match": [
+    "P57",
+    "*_bSC4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.96271511,
+    3.1
+   ]
+  },
+  {
+   "name": "P58-SC4",
+   "match": [
+    "P58",
+    "*_bSC4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.2
+   ]
+  },
+  {
+   "name": "P59-SC4",
+   "match": [
+    "P59",
+    "*_bSC4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    3.0
+   ]
+  },
+  {
+   "name": "SC4-SC4",
+   "match": [
+    "*_bSC4_a*_d*_i*",
+    "*_bSC4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.90057361,
+    2.7
+   ]
+  },
+  {
+   "name": "SC4-SP1",
+   "match": [
+    "*_bSC4_a*_d*_i*",
+    "*_bSP1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.90057361,
+    2.7
+   ]
+  },
+  {
+   "name": "SP1-SP1",
+   "match": [
+    "*_bSP1_a*_d*_i*",
+    "*_bSP1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.90057361,
+    2.7
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "P1-C3-P5",
+   "match": [
+    "*_b*_aP1_d*_i*",
+    "*_b*_aC3_d*_i*",
+    "*_b*_aP5_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "P4-N0-P5",
+   "match": [
+    "*_b*_aP4_d*_i*",
+    "*_b*_aN0_d*_i*",
+    "*_b*_aP5_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "P5-C3-Qd",
+   "match": [
+    "*_b*_aP5_d*_i*",
+    "*_b*_aC3_d*_i*",
+    "*_b*_aQd_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "P5-N0-Qd",
+   "match": [
+    "*_b*_aP5_d*_i*",
+    "*_b*_aN0_d*_i*",
+    "*_b*_aQd_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "P5-SC4-SP1",
+   "match": [
+    "*_b*_aP5_d*_i*",
+    "*_b*_aSC4_d*_i*",
+    "*_b*_aSP1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P57-SC4-SC4",
+   "match": [
+    "P57",
+    "*_b*_aSC4_d*_i*",
+    "*_b*_aSC4_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P58-SC4-SC4",
+   "match": [
+    "P58",
+    "*_b*_aSC4_d*_i*",
+    "*_b*_aSC4_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P58-SC4-SP1",
+   "match": [
+    "P58",
+    "*_b*_aSC4_d*_i*",
+    "*_b*_aSP1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    150.0
+   ]
+  },
+  {
+   "name": "P59-SC4-SC4",
+   "match": [
+    "P59",
+    "*_b*_aSC4_d*_i*",
+    "*_b*_aSC4_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    90.0
+   ]
+  },
+  {
+   "name": "P59-SC4-SP1",
+   "match": [
+    "P59",
+    "*_b*_aSC4_d*_i*",
+    "*_b*_aSP1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    210.0
+   ]
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [
+  {
+   "name": "P5-SC4-SP1-SP1",
+   "match": [
+    "*_b*_a*_d*_iP5",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSP1",
+    "*_b*_a*_d*_iSP1"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    0.0
+   ]
+  },
+  {
+   "name": "P57-SC4-SC4-SC4",
+   "match": [
+    "P57",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSC4"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    0.0
+   ]
+  },
+  {
+   "name": "P58-SC4-SC4-SP1",
+   "match": [
+    "P58",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSP1"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    0.0
+   ]
+  },
+  {
+   "name": "P59-SC4-SC4-SP1",
+   "match": [
+    "P59",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSP1"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.9751434,
+    0.0
+   ]
+  },
+  {
+   "name": "SC4-SC4-SC4-SP1",
+   "match": [
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSC4",
+    "*_b*_a*_d*_iSP1"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.90057361,
+    0.0
+   ]
+  }
+ ],
+ "bead_templates": {
+  "ALA": "[P4]",
+  "ARG": "[P5][N0][Qd+1]",
+  "ARG0": "[P5][N0][P4]",
+  "ASN": "[P5][P5]",
+  "ASP": "[P5][Qa-1]",
+  "ASP0": "[P5][P3]",
+  "CYS": "[P5][C5]",
+  "GLN": "[P5][P4]",
+  "GLU": "[P54][Qa-1]",
+  "GLU0": "[P5][P1]",
+  "GLY": "[P5]",
+  "HIS": "[P5][SC4]1[SP1][SP1]1",
+  "LYS": "[P5][C3][Qd+1]",
+  "LYS0": "[P5][C3][P1]",
+  "MET": "[P52][C5]",
+  "PHE": "[P57][SC4]1[SC4][SC4]1",
+  "SER": "[P56][P1]",
+  "THR": "[P55][P1]",
+  "TRP": "[P59][SC4]2[SP1]1[SC4]2[SC4]1",
+  "TYR": "[P58][SC4]1[SC4][SP1]1"
+ },
+ "improper_order": "center2_sorted",
+ "improper_matched_order": true,
+ "improper_max_neighbours": 3,
+ "notes": [
+  "converted by CAPS from aminoacids.prm (bench/ff/convert_emc_martini.py): nm, kJ/mol → Å, kcal/mol; bonds and impropers ½k → K; angles cosine-harmonic as MARTINI 2.0; new bead types take their pair equivalent's non-bonded terms",
+  "templates left out (beads without parameters in the file): ILE, LEU, PRO, VAL",
+  "4 bonded rows name types the file does not define and were skipped"
+ ]
+}

@@ -350,7 +350,7 @@ rule): PCFF, CVFF, COMPASS, DREIDING, UFF, GAFF / GAFF2, OPLS-AA (2005, BOSS 200
 OPLS-DES, AMBER, CHARMM (generic, 22 / 36 proteins, lipids, carbohydrates, nucleic acids, CHARMM19), CGenFF, GROMOS
 54A7, TraPPE (UA, EH), the inorganic potential sets (by composition: "requires" / "excludes" elements), CLAYFF, the
 Hill-Sauer zeolite field, SPC/E, TIP3P, mW, the miscellaneous set, graphene, MARTINI 2.0 (with its polymer, solvent,
-surfactant and sugar files), Dry MARTINI, SDK and Cooke-Deserno. Parameters a force field lacks can come from
+surfactant, sugar and amino-acid files), Dry MARTINI, SDK and Cooke-Deserno. Parameters a force field lacks can come from
 analogous types (parmchk-style `analogies`, listed as estimated).
 
 Some force fields describe a different structure than the one drawn, and CAPS converts it before typing (in the Studio
