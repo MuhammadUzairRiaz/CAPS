@@ -231,14 +231,16 @@ public sealed partial class MainViewModel
     /// <summary>Coarse-grained force fields with bead structures: MARTINI (templates from its sources), Dry MARTINI and
     /// SDK (bead SMILES; SDK also maps all-atom structures in the Force field step).</summary>
     public static readonly (string Name, string File)[] CgForceFields =
-        [("MARTINI 2.0 · lipids, ions, cholesterol", "martini-moltemplate.json"), ("MARTINI 2.0 · polymers (PEO)", "martini-polymers.json"),
-         ("MARTINI 2.0 · solvents", "martini-solvents.json"), ("MARTINI 2.0 · surfactants", "martini-surfactants.json"),
-         ("MARTINI 2.0 · sugars", "martini-sugars.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json"),
-         ("Cooke–Deserno lipid (reduced units)", "cooke-deserno-moltemplate.json")];
+        [("MARTINI · lipids", "martini-moltemplate.json"), ("MARTINI · polymers", "martini-polymers.json"),
+         ("MARTINI · solvents", "martini-solvents.json"), ("MARTINI · surfactants", "martini-surfactants.json"),
+         ("MARTINI · sugars", "martini-sugars.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json"),
+         ("Cooke–Deserno", "cooke-deserno-moltemplate.json")];
     public string[] CgFfNames => CgForceFields.Select(f => f.Name).ToArray();
     private int _cgFf;
     private string _cgBeadText = "", _cgTemplate = "";
-    public ObservableCollection<string> CgTemplates { get; } = new();
+    private readonly ObservableCollection<string> _cgTemplates = new();
+    /// <summary>The chosen force field's bead templates (read the first time the list is shown).</summary>
+    public ObservableCollection<string> CgTemplates { get { if (!_cgLoaded) LoadCgTemplates(); return _cgTemplates; } }
     private Dictionary<string, string> _cgTemplateText = new();
     private string? CgFfPath => Paths.ForceFields is { } dir ? System.IO.Path.Combine(dir, CgForceFields[_cgFf].File) : null;
     public int CgFf
@@ -253,13 +255,15 @@ public sealed partial class MainViewModel
     private void LoadCgTemplates()
     {
         _cgLoaded = true;
-        CgTemplates.Clear();
+        _cgTemplates.Clear();
         _cgTemplateText = new();
         try { if (CgFfPath is { } p) _cgTemplateText = CapsDocument.BeadTemplates(p); } catch (Exception) { }
-        foreach (var k in _cgTemplateText.Keys.OrderBy(k => k)) CgTemplates.Add(k);
+        foreach (var k in _cgTemplateText.Keys.OrderBy(k => k)) _cgTemplates.Add(k);
         Raise(nameof(CgHasTemplates));
+        Raise(nameof(CgTemplateHint));
     }
-    public bool CgHasTemplates => CgTemplates.Count > 0;
+    public bool CgHasTemplates => CgTemplates.Count > 0;   // (loads the list the first time)
+    public string CgTemplateHint => CgHasTemplates ? "choose a template" : "none in this force field";
     public string CgTemplate
     {
         get => _cgTemplate;
