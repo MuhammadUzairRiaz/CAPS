@@ -141,6 +141,10 @@
     "angles": 438,
     "dihedrals": 794,
     "impropers": 105
+   },
+   "typing": {
+    "rules": "typing/opls-aam.typing.json",
+    "evidence": "CAPS rules from OPLS-AA/M's type definitions (bench/typing/make_opls_family_rules.py)"
    }
   },
   {
@@ -162,6 +166,10 @@
     "angles": 81,
     "dihedrals": 98,
     "impropers": 16
+   },
+   "typing": {
+    "rules": "typing/opls-clp.typing.json",
+    "evidence": "CAPS rules from CL&P ionic liquids (OPLS-AA based)'s type definitions (bench/typing/make_opls_family_rules.py)"
    }
   },
   {
@@ -183,6 +191,10 @@
     "angles": 67,
     "dihedrals": 61,
     "impropers": 6
+   },
+   "typing": {
+    "rules": "typing/opls-des.typing.json",
+    "evidence": "CAPS rules from OPLS-DES deep eutectic solvents's type definitions (bench/typing/make_opls_family_rules.py)"
    }
   },
   {
@@ -854,7 +866,7 @@
   },
   {
    "id": "loplsaa2024-moltemplate",
-   "name": "L-OPLS overlay (on OPLS-AA 2024)",
+   "name": "L-OPLS (on OPLS-AA 2024)",
    "version": "2012 / 2015",
    "references": [
     "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)",
@@ -863,7 +875,7 @@
    "origin": "moltemplate",
    "source_file": "loplsaa2024.lt",
    "status": "converted",
-   "notes": "overlay: merge on top of oplsaa2024 (caps ff apply --overlay).",
+   "notes": "L-OPLS types and torsions on OPLS-AA 2024 (the base is loaded with it)",
    "file": "loplsaa2024-moltemplate.json",
    "counts": {
     "atom_types": 33,
@@ -872,6 +884,10 @@
     "angles": 0,
     "dihedrals": 21,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/loplsaa2024-moltemplate.typing.json",
+    "evidence": "OPLS-AA 2024 rules with L-OPLS hydrocarbon types (bench/typing/make_lopls_rules.py)"
    }
   },
   {

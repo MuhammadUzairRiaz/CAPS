@@ -1,7 +1,7 @@
 {
  "format": "caps-forcefield",
  "format_version": 1,
- "name": "L-OPLS overlay (on OPLS-AA 2024)",
+ "name": "L-OPLS (on OPLS-AA 2024)",
  "source": "moltemplate: loplsaa2024.lt",
  "references": [
   "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)",
@@ -884,5 +884,7 @@
  ],
  "version": "2012 / 2015",
  "status": "converted",
- "validation": "overlay: merge on top of oplsaa2024 (caps ff apply --overlay)."
+ "validation": "overlay on OPLS-AA 2024, loaded as one force field (\"extends\").",
+ "extends": "oplsaa2024-moltemplate.json",
+ "typing": "../typing/loplsaa2024-moltemplate.typing.json"
 }
