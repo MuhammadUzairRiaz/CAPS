@@ -32,12 +32,14 @@
   {
    "name": "H",
    "element": "H",
-   "mass": 1.008
+   "mass": 1.008,
+   "charge": 0.4238
   },
   {
    "name": "O",
    "element": "O",
-   "mass": 15.9994
+   "mass": 15.9994,
+   "charge": -0.8476
   }
  ],
  "pairs": [
@@ -60,14 +62,45 @@
    ]
   }
  ],
- "bonds": [],
- "angles": [],
+ "bonds": [
+  {
+   "name": "O-H",
+   "match": [
+    "O",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.0
+   ],
+   "comment": "moltemplate's OH bond (rigid there, by SHAKE)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "H-O-H",
+   "match": [
+    "H",
+    "O",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    75.0,
+    109.47
+   ],
+   "comment": "moltemplate's HOH angle (rigid there, by SHAKE)"
+  }
+ ],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "CAPS extension: charges and the O-H / H-O-H terms of the moltemplate file; the model is rigid (SHAKE) there, CAPS has no constraints and runs it flexible with these terms"
  ],
  "version": "1987",
  "status": "converted",
- "validation": "rigid model: needs SHAKE / RATTLE."
+ "validation": "rigid model: needs SHAKE / RATTLE.",
+ "typing": "../typing/spce-moltemplate.typing.json"
 }

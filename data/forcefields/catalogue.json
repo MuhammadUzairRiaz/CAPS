@@ -612,6 +612,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/inorganic-binary-halides.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 32 rules, 16 compounds"
    }
   },
   {
@@ -631,6 +635,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/inorganic-binary-misc.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 2 rules, 1 compounds"
    }
   },
   {
@@ -650,6 +658,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/inorganic-binary-oxides.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 82 rules, 23 compounds, 20 shelled cores"
    }
   },
   {
@@ -669,6 +681,10 @@
     "angles": 19,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/inorganic-clay.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 26 rules"
    }
   },
   {
@@ -688,6 +704,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/inorganic-glass.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 22 rules, 5 compounds, 1 shelled cores"
    }
   },
   {
@@ -707,6 +727,10 @@
     "angles": 2,
     "dihedrals": 0,
     "impropers": 1
+   },
+   "typing": {
+    "rules": "typing/inorganic-ternary-oxides.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 70 rules, 13 compounds, 18 shelled cores"
    }
   },
   {
@@ -726,6 +750,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/inorganic-zeolite.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 11 rules, 3 compounds"
    }
   },
   {
@@ -745,6 +773,10 @@
     "angles": 21,
     "dihedrals": 29,
     "impropers": 1
+   },
+   "typing": {
+    "rules": "typing/inorganic-zeolite-hill-sauer.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 10 rules"
    }
   },
   {
@@ -1097,6 +1129,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/spce-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 2 rules"
    }
   },
   {
@@ -1118,6 +1154,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/tip3p-1983-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 2 rules"
    }
   },
   {
@@ -1139,6 +1179,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/tip3p-2004-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 2 rules"
    }
   },
   {
