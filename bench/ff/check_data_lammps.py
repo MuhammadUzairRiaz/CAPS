@@ -69,7 +69,10 @@ CASES = [
     # K[1 − cos 2φ]: smooth. A harmonic improper with χ0 = 0 on a class II centre-second quadruple sits at χ ≈ 180°,
     # a cusp of K(χ − χ0)² where the two programs take different one-sided slopes.)
     ("COMPASS polystyrene + class I overlay (hybrid in every kind)", ("compass-ps",), "compass-published-moltemplate", "types", "keys"),
-    ("CGenFF toluene (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", "rules"),
+    ("CGenFF methane template (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", "rules"),
+    # CHARMM in its own styles: lj/charmmfsw (force switch 10-12 Å, pairs in the switching shell), the 1-4 pairs with
+    # their own ε14 / σ14 through dihedral charmmfsw weights (a phenyl ring's para pairs reached by two torsions once)
+    ("Polystyrene melt, CGenFF (periodic; lj/charmmfsw, 1-4 by dihedral weights)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "cgenff", "gasteiger", "rules"),
     # UFF (every element): Fourier and periodic angles (linear, trigonal, square planar, octahedral, trigonal
     # bipyramid), sp2 and pyramidal-P inversions (improper fourier), group-16 torsions, full 1-4 van der Waals
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
@@ -316,7 +319,8 @@ for label, src, fid, charges, typing in CASES:
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode or "missing parameters" in r.stdout:
         why = (r.stderr.strip().splitlines() or r.stdout.strip().splitlines() or ["?"])[-1]
-        expected = "1-4 Lennard-Jones" in why
+        # CHARMM's force switch and 1-4 terms exist in CHARMM's own styles only (lj/charmmfsw): refused in the exact mode
+        expected = "1-4 Lennard-Jones" in why or ("CHARMM's own LAMMPS styles only" in why and not NATIVE)
         rows.append((label, ("refused, as intended: " if expected else "CAPS failed: ") + why[:150], "", ""))
         fails += 0 if expected else 1
         continue

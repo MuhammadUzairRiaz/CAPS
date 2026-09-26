@@ -322,7 +322,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.timestep > 0) j["timestep"] = ff.timestep;
   if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
   if (ff.angles_if_defined) j["angle_terms"] = "if_defined";
-  if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff || ff.coul_rf || ff.lj_shift) {
+  if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff || ff.coul_rf || ff.lj_shift || ff.lj_fsw) {
     Json ps = Json::object();
     if (ff.lj_inner > 0) ps["lj_inner"] = ff.lj_inner;
     if (ff.coul_inner > 0) ps["coul_inner"] = ff.coul_inner;
@@ -330,6 +330,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
     if (ff.model_cutoff) ps["model_cutoff"] = true;
     if (ff.coul_rf) ps["coulomb"] = "reaction-field", ps["eps_rf"] = ff.eps_rf;
     if (ff.lj_shift) ps["lj_modifier"] = "potential-shift";
+    if (ff.lj_fsw) ps["lj_modifier"] = "charmm-force-switch";
     j["pair_settings"] = ps;
   }
   {
@@ -455,6 +456,7 @@ FFDef load_forcefield(const std::string& path) {
     ff.coul_rf = ps.text("coulomb") == "reaction-field";
     ff.eps_rf = ps.num("eps_rf", 0);
     ff.lj_shift = ps.text("lj_modifier") == "potential-shift";
+    ff.lj_fsw = ps.text("lj_modifier") == "charmm-force-switch";
   }
   {
     auto rel = [&](const std::string& f) {
@@ -1213,6 +1215,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.coul_rf = def.coul_rf;
   ff.eps_rf = def.eps_rf;
   ff.lj_shift = def.lj_shift;
+  if (def.lj_fsw) {
+    ff.lj_fsw = true;
+    ff.lj_inner = def.lj_inner;
+  }
   if (gromacs) {
     ff.lj_inner = def.lj_inner;
     ff.coul_gromacs = def.pair_style.find("coul/gromacs") != std::string::npos;
