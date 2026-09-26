@@ -1,7 +1,7 @@
 {
  "format": "caps-forcefield",
  "format_version": 1,
- "name": "L-OPLS overlay (on OPLS-AA 2008)",
+ "name": "L-OPLS (on OPLS-AA 2008)",
  "source": "moltemplate: loplsaa2008.lt",
  "references": [
   "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)"
@@ -885,5 +885,7 @@
  ],
  "version": "2012 / 2015",
  "status": "converted",
- "validation": "overlay on oplsaa2008."
+ "validation": "overlay on OPLS-AA 2008, loaded as one force field (\"extends\").",
+ "extends": "oplsaa2008-moltemplate.json",
+ "typing": "../typing/loplsaa2008-moltemplate.typing.json"
 }

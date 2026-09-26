@@ -792,9 +792,9 @@
   },
   {
    "type": "961",
-   "smarts": "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F)]",
+   "smarts": "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F);$(*[#6])]",
    "priority": 6,
-   "description": "CF3"
+   "description": "CF3 on carbon (a perfluoroalkyl end)"
   },
   {
    "type": "264",

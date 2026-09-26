@@ -862,6 +862,10 @@
     "angles": 1017,
     "dihedrals": 800,
     "impropers": 6
+   },
+   "typing": {
+    "rules": "typing/oplsaa2008-moltemplate.typing.json",
+    "evidence": "the OPLS-AA 2024 rules mapped to the 2008 numbering by element, charge, class and description (bench/typing/make_oplsaa2008_rules.py)"
    }
   },
   {
@@ -892,7 +896,7 @@
   },
   {
    "id": "loplsaa2008-moltemplate",
-   "name": "L-OPLS overlay (on OPLS-AA 2008)",
+   "name": "L-OPLS (on OPLS-AA 2008)",
    "version": "2012 / 2015",
    "references": [
     "S. W. I. Siu, K. Pluhackova, R. A. Böckmann, J. Chem. Theory Comput. 8, 1459 (2012)"
@@ -900,7 +904,7 @@
    "origin": "moltemplate",
    "source_file": "loplsaa2008.lt",
    "status": "converted",
-   "notes": "overlay on oplsaa2008.",
+   "notes": "L-OPLS types and torsions on OPLS-AA 2008 (the base is loaded with it)",
    "file": "loplsaa2008-moltemplate.json",
    "counts": {
     "atom_types": 33,
@@ -909,6 +913,10 @@
     "angles": 0,
     "dihedrals": 21,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/loplsaa2008-moltemplate.typing.json",
+    "evidence": "OPLS-AA 2008 rules with L-OPLS hydrocarbon types (bench/typing/make_lopls_rules.py)"
    }
   },
   {
