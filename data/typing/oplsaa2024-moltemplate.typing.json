@@ -2,7 +2,7 @@
  "format": "caps-typing",
  "version": 1,
  "forcefield": "OPLS-AA (2024 parameter file)",
- "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no number for (siloxanes, aryl carbonates, CCl2 / R-CCl= carbons, ureas, imides, carbamates) are left untyped and reported. Among matching rules the highest priority wins.",
+ "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no number for (siloxanes, aryl carbonates, CCl2 carbons, ureas, imides, carbamates) are left untyped and reported. Among matching rules the highest priority wins.",
  "rules": [
   {
    "type": "135",
@@ -834,15 +834,33 @@
   },
   {
    "type": "226",
-   "smarts": "[Cl][CX3H1]=[CX3]",
+   "smarts": "[Cl][CX3;!$(*(Cl)Cl)]=[CX3]",
    "priority": 6,
-   "description": "chloroalkene Cl (ClHC=)"
+   "description": "chloroalkene Cl, one Cl on the C (ClHC=, R-CCl=)"
   },
   {
    "type": "227",
    "smarts": "[CX3H1]([Cl])=[CX3]",
    "priority": 6,
    "description": "chloroalkene C (ClHC=)"
+  },
+  {
+   "type": "399",
+   "smarts": "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]",
+   "priority": 7,
+   "description": "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e"
+  },
+  {
+   "type": "398",
+   "smarts": "[Cl][CX3;$(*(Cl)Cl)]=[CX3]",
+   "priority": 7,
+   "description": "chloroalkene Cl (Cl2C=)"
+  },
+  {
+   "type": "399",
+   "smarts": "[CX3;$(*(Cl)Cl)]=[CX3]",
+   "priority": 7,
+   "description": "chloroalkene C (Cl2C=)"
   },
   {
    "type": "493",
