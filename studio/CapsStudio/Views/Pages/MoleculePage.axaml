@@ -210,6 +210,32 @@
                 <TextBlock Text="{Binding MolNotes}" Classes="dim" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
+            <!-- coarse-grained: bead templates from the force field's sources, or bead SMILES -->
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="COARSE-GRAINED" Classes="h3" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="Force field" Classes="label" />
+                    <ComboBox ItemsSource="{Binding CgFfNames}" SelectedIndex="{Binding CgFf}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Template" Classes="label" />
+                    <ComboBox ItemsSource="{Binding CgTemplates}" SelectedItem="{Binding CgTemplate}" IsEnabled="{Binding CgHasTemplates}" HorizontalAlignment="Stretch"
+                              PlaceholderText="none in this force field" />
+                  </StackPanel>
+                </Grid>
+                <StackPanel Spacing="6">
+                  <TextBlock Text="Bead SMILES" Classes="label" />
+                  <TextBox Text="{Binding CgBeadText}" Classes="mono" TextWrapping="Wrap" Watermark="[Q0+1][Qa-1][Na]([Na][C1][C1])[C1][C1]" />
+                </StackPanel>
+                <Button Click="OnBuildBeads" HorizontalAlignment="Stretch" ToolTip.Tip="One site per bead, named by its type; bond lengths from the force field">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="atom" Size="16" VerticalAlignment="Center" /><TextBlock Text="Build beads" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="MARTINI and Dry MARTINI type bead structures by name. SDK also maps all-atom structures onto its beads in the Force field step (alkanes, lipids, water)." />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </ScrollViewer>
       </DockPanel>

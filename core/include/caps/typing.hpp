@@ -60,6 +60,10 @@ class Smarts {
   Smarts& operator=(Smarts&&) noexcept;
   // Does the pattern match with its first atom on `atom`? `types` (may be empty) serves %type references.
   bool matches(const System& s, const Perception& p, uint32_t atom, const std::vector<std::string>& types) const;
+  // Every complete match with its first atom on `atom` (pattern atom k → structure atom), avoiding atoms marked in
+  // `taken` (may be null): the fragments a bead-mapping rule covers.
+  std::vector<std::vector<uint32_t>> embeddings(const System& s, const Perception& p, uint32_t atom, const std::vector<char>* taken = nullptr) const;
+  size_t size() const;   // pattern atoms
   bool uses_types() const;
   const std::string& text() const;
 

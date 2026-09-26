@@ -236,6 +236,12 @@ ForceField assign_gaff(const System& s) {
 
 Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
     : ff_(ff), opt_(o), pool_(std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads())) {
+  if (ff.cutoff > 0) opt_.cutoff = ff.cutoff;
+  if (ff.dielectric != 1 && !ff.coul_gromacs) throw FieldError("a relative permittivity other than 1 needs the GROMACS Coulomb form");
+  // coarse-grained bonds (several Å): bonded partners are recognised at their bonded image out to three bonds' length
+  double r0max = 0;
+  for (const auto& b : ff.bonds) r0max = std::max(r0max, b.r0);
+  if (r0max > 2.5) excl_r2_ = (3 * r0max + 2) * (3 * r0max + 2);
   std::set<std::pair<uint32_t, uint32_t>> p14;
   for (const auto& p : ff.pairs14) p14.insert({p[0], p[1]});
   for (uint32_t i = 0; i < ff.excluded.size(); ++i)
@@ -288,7 +294,9 @@ Evaluator::~Evaluator() = default;
 
 int Evaluator::threads() const { return pool_->size(); }
 
-void Evaluator::set_options(const EnergyOptions& o) {
+void Evaluator::set_options(const EnergyOptions& o0) {
+  EnergyOptions o = o0;
+  if (ff_.cutoff > 0) o.cutoff = ff_.cutoff;   // the model's own cut-off
   if (o.threads != opt_.threads) pool_ = std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads());
   const bool relist = o.cutoff != opt_.cutoff || o.skin != opt_.skin;
   opt_ = o;
@@ -299,6 +307,34 @@ void Evaluator::set_options(const EnergyOptions& o) {
 // For each type pair, the radius inside which |F_LJ| exceeds the cap; the potential is continued linearly inside it.
 void Evaluator::cap_radii() {
   const size_t nt2 = eps_.size();
+  // lj/gromacs switch coefficients (LAMMPS pair lj/gromacs) and the SDK minima, for the cut-off in use
+  gsw_.assign(5 * nt2, 0.0);
+  rmin2_.assign(nt2, 0.0);
+  emin_.assign(nt2, 0.0);
+  const double rc = opt_.cutoff, r1 = ff_.lj_inner;
+  for (size_t t = 0; t < nt2; ++t) {
+    if (form_[t] == kPairGromacs) {
+      if (r1 <= 0 || r1 >= rc) throw FieldError("lj/gromacs needs an inner radius below the cut-off");
+      const double e = pa_[t], sg = pb_[t], s6 = std::pow(sg, 6), s12 = s6 * s6;
+      const double l1 = 48 * e * s12, l2 = 24 * e * s6, l3 = 4 * e * s12, l4 = 4 * e * s6;
+      const double r6i = 1 / std::pow(rc, 6), r8i = 1 / std::pow(rc, 8), tt = rc - r1, t2i = 1 / (tt * tt), t3i = t2i / tt, t3 = tt * tt * tt;
+      const double a6 = (7 * r1 - 10 * rc) * r8i * t2i, b6 = (9 * rc - 7 * r1) * r8i * t3i;
+      const double a12 = (13 * r1 - 16 * rc) * r6i * r8i * t2i, b12 = (15 * rc - 13 * r1) * r6i * r8i * t3i;
+      const double c6 = r6i - t3 * (6 * a6 / 3 + 6 * b6 * tt / 4), c12 = r6i * r6i - t3 * (12 * a12 / 3 + 12 * b12 * tt / 4);
+      double* g = &gsw_[5 * t];
+      g[0] = l1 * a12 - l2 * a6;
+      g[1] = l1 * b12 - l2 * b6;
+      g[2] = -l3 * 12 * a12 / 3 + l4 * 6 * a6 / 3;
+      g[3] = -l3 * 12 * b12 / 4 + l4 * 6 * b6 / 4;
+      g[4] = -l3 * c12 + l4 * c6;
+    } else if (form_[t] >= kPairSdk96 && form_[t] <= kPairSdk125) {
+      static const double pw1[] = {9, 12, 12, 12}, pw2[] = {6, 4, 6, 5}, pre[] = {6.75, 2.59807621135332, 4.0, 3.20377984125109};
+      const int k = form_[t] - kPairSdk96;
+      const double rmin = pb_[t] * std::exp(std::log(pw1[k] / pw2[k]) / (pw1[k] - pw2[k])), q = pb_[t] / rmin;
+      rmin2_[t] = rmin * rmin;
+      emin_[t] = pre[k] * pa_[t] * (std::pow(q, pw1[k]) - std::pow(q, pw2[k]));
+    }
+  }
   rcap2_.assign(nt2, 0.0);
   ecap_.assign(nt2, 0.0);
   fcap_.assign(nt2, 0.0);
@@ -595,7 +631,7 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
               const Vec3 d = cell.a * df[0] + cell.b * df[1] + cell.c * df[2];
               if (dot(d, d) >= rcs2) continue;
               // 1-2, 1-3 and 1-4 partners are excluded at their bonded (nearest) image only; further images interact
-              if (j != i && dot(d, d) < 36.0 && std::binary_search(ex.begin(), ex.end(), j)) continue;
+              if (j != i && dot(d, d) < excl_r2_ && std::binary_search(ex.begin(), ex.end(), j)) continue;
               PI.push_back(static_cast<uint32_t>(i));
               PJ.push_back(j);
               // d = x_j − x_i + shift with the actual (possibly unwrapped) positions
@@ -709,7 +745,16 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   const double dsf_f0 = erfc_rc / (rc * rc) + 2 * a / std::sqrt(kPi) * std::exp(-a * a * rc2) / rc;
   const bool coul = opt_.coulomb;
   // PME: the pair term is erfc(βr)/r with no shift; the reciprocal part, self energy and background come after
-  const bool pme = coul && opt_.electrostatics == EnergyOptions::Electrostatics::PME && cell.valid() && cell.periodic[0] && cell.periodic[1] &&
+  // MARTINI: Coulomb / εr with GROMACS's force switch (coul/gromacs) replaces DSF / PME
+  const bool gro = coul && ff_.coul_gromacs;
+  const double ri = ff_.coul_inner, qscale = 1 / ff_.dielectric;
+  double gc[5] = {0, 0, 0, 0, 0};
+  if (gro) {
+    const double r3i = 1 / (rc2 * rc), tt = rc - ri, t2i = 1 / (tt * tt), t3i = t2i / tt;
+    const double a1 = (2 * ri - 5 * rc) * r3i * t2i, b1 = (4 * rc - 2 * ri) * r3i * t3i;
+    gc[0] = a1; gc[1] = b1; gc[2] = -a1 / 3; gc[3] = -b1 / 4; gc[4] = 1 / rc - tt * tt * tt * (a1 / 3 + b1 * tt / 4);
+  }
+  const bool pme = coul && !gro && opt_.electrostatics == EnergyOptions::Electrostatics::PME && cell.valid() && cell.periodic[0] && cell.periodic[1] &&
                    cell.periodic[2];
   const double beta = pme ? ewald_beta(rc, opt_.ewald_rtol) : 0.0;
   const double b2pi = 2 * beta / std::sqrt(kPi);
@@ -729,6 +774,25 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       en += scale * pa_[tp] * (e1 * e1 - 2 * e1);
       return scale * 2 * pa_[tp] * pb_[tp] * (e1 * e1 - e1) / r;
     }
+    if (form_[tp] == kPairGromacs) {   // LJ with GROMACS's force switch (lj/gromacs)
+      const double e = pa_[tp], s6 = std::pow(pb_[tp], 6), r2i = 1 / r2, r6i = r2i * r2i * r2i;
+      const double* g = &gsw_[5 * tp];
+      double ev = r6i * (4 * e * s6 * s6 * r6i - 4 * e * s6) + g[4], fr = r6i * (48 * e * s6 * s6 * r6i - 24 * e * s6);
+      if (r2 > ff_.lj_inner * ff_.lj_inner) {
+        const double r = std::sqrt(r2), tl = r - ff_.lj_inner;
+        ev += tl * tl * tl * (g[2] + g[3] * tl);
+        fr += r * tl * tl * (g[0] + g[1] * tl);
+      }
+      en += scale * ev;
+      return scale * fr * r2i;
+    }
+    if (form_[tp] >= kPairSdk96 && form_[tp] <= kPairSdk125) {   // SDK / SPICA C ε [(σ/r)^m − (σ/r)^n]
+      static const double pw1[] = {9, 12, 12, 12}, pw2[] = {6, 4, 6, 5}, pre[] = {6.75, 2.59807621135332, 4.0, 3.20377984125109};
+      const int k = form_[tp] - kPairSdk96;
+      const double sr2 = pb_[tp] * pb_[tp] / r2, sm = std::pow(sr2, pw1[k] / 2), sn = std::pow(sr2, pw2[k] / 2), c = pre[k] * pa_[tp];
+      en += scale * c * (sm - sn);
+      return scale * c * (pw1[k] * sm - pw2[k] * sn) / r2;
+    }
     if (capped && r2 < rcap2_[tp]) {
       const double r = std::sqrt(r2), rcp = std::sqrt(rcap2_[tp]);
       en += scale * (ecap_[tp] + fcap_[tp] * (rcp - r));
@@ -747,7 +811,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   // Energy shift so that LJ is zero at the cut-off.
   // With the tail correction the LJ energy is truncated, not shifted (the tail term assumes the plain potential).
   auto lj_shift = [&](size_t tp) {
-    if (opt_.tail) return 0.0;
+    if (opt_.tail || form_[tp] == kPairGromacs) return 0.0;   // lj/gromacs is zero at the cut-off by construction
     if (form_[tp] != 0) {
       double e0 = 0;
       lj(tp, rc2, 1.0, e0);
@@ -786,7 +850,17 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       if (coul && q[i] != 0 && q[j] != 0) {
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2;
-        if (pme) {
+        if (gro) {
+          const double qd = qq * qscale;
+          double ec = qd * (1 / r - gc[4]), fc = qd / r;
+          if (r > ri) {
+            const double tc = r - ri;
+            ec += qd * tc * tc * tc * (gc[2] + gc[3] * tc);
+            fc += qd * r * tc * tc * (gc[0] + gc[1] * tc);
+          }
+          ecoul += w * ec;
+          fr += fc / r2;
+        } else if (pme) {
           const double er = erfc_exp(beta * r, ex2);
           ecoul += w * qq * er / r;
           fr += qq * (er / r2 + b2pi * ex2 / r) / r;
@@ -812,7 +886,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
 
   // Phase 2: bonded terms, 1-4 pairs and the electrostatics of bonded partners, as one index space split over workers.
   const size_t nb = ff_.bonds.size(), na = ff_.angles.size(), nd = ff_.dihedrals.size(), ni = ff_.impropers.size();
-  const size_t n14 = ff_.pairs14.size(), nx = coul ? excl_.size() : 0, nh = ff_.impropers_harmonic.size();
+  const size_t n14 = ff_.pairs14.size(), nx = coul && !gro ? excl_.size() : 0, nh = ff_.impropers_harmonic.size();
   const size_t o1 = nb, o2 = o1 + na, o3 = o2 + nd, o4 = o3 + ni, o5 = o4 + n14, o6 = o5 + nx, o7 = o6 + nh;
   const size_t c1 = o7 + ff_.bonds2.size(), c2 = c1 + ff_.angles2.size(), c3 = c2 + ff_.dihedrals2.size();
   const size_t c4 = c3 + ff_.impropers2.size();
@@ -960,11 +1034,27 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
               o.e += w;
               dEdth += -20 * w;
             }
+          } else if (t.form == 4) {   // SDK: K (θ − θ0)²
+            o.e = t.a * (th - t.b) * (th - t.b);
+            dEdth = 2 * t.a * (th - t.b);
           } else {
             o.e = t.a * dc * dc;
             dEdth = -2 * t.a * dc * std::sin(th);
           }
-          o.f[0] = gu * -dEdth; o.f[2] = gv * -dEdth; o.f[1] = (o.f[0] + o.f[2]) * -1.0;
+          o.f[0] = gu * -dEdth; o.f[2] = gv * -dEdth;
+          if (t.form == 4) {   // the end atoms' SDK pair, repulsive part only: cut at its minimum, shifted to zero there
+            const size_t tp = size_t(ff_.type_index[t.i]) * nt + ff_.type_index[t.k];
+            const Vec3 d13 = v - u;   // i → k
+            const double r2 = dot(d13, d13);
+            if (r2 < rmin2_[tp]) {
+              double e13 = 0;
+              const double fr = lj(tp, r2, 1.0, e13);
+              o.e += e13 - emin_[tp];
+              o.f[2] = o.f[2] + d13 * fr;
+              o.f[0] = o.f[0] - d13 * fr;
+            }
+          }
+          o.f[1] = (o.f[0] + o.f[2]) * -1.0;
           o.vir(u, o.f[0]); o.vir(v, o.f[2]);
           add(t.i, o.f[0]); add(t.j, o.f[1]); add(t.k, o.f[2]);
           A[1] += o.e;
@@ -1162,7 +1252,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       e.virial += 3 * eb;   // E_bg ∝ 1/V ∝ λ⁻³, so −dE/dλ = 3 E_bg
       for (int c = 0; c < 3; ++c) e.w[c] += eb;
     }
-  } else if (coul) {
+  } else if (coul && !gro) {
     double q2 = 0;
     for (double c : ff_.charge) q2 += c * c;
     // Self energy: half the r → 0 limit of the damped shifted pair potential minus the bare 1/r, i.e. with the full
@@ -1188,6 +1278,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
           continue;
         }
         if (form_[tp] == 2) continue;   // Morse: no tail term (LAMMPS pair morse)
+        if (form_[tp] >= kPairSdk96) continue;   // SDK (LAMMPS refuses a tail for lj/sdk) and lj/gromacs (zero at rc)
         if (lj96_) {
           // lj/class2: E = 2π N_a N_b ε σ⁶ (σ³ − 3rc³) / (3rc⁶ V), P = 2π N_a N_b ε σ⁶ (σ³ − 2rc³) / (rc⁶ V²) per ordered pair
           const double s3 = std::sqrt(s6), rc6 = rc3 * rc3;

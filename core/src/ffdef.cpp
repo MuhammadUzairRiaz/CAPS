@@ -127,6 +127,29 @@ void load_typing(FFDef& ff, const std::string& path) {
     for (const auto& x : j["united_atom_hosts"].items()) ff.united_atom_hosts.push_back(element_from_symbol(x.str()));
   }
   ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
+  ff.coarse_grained = ff.coarse_grained || (j.has("coarse_grained") && j["coarse_grained"].boolean());
+  if (j.has("beads"))
+    for (const auto& b : j["beads"].items()) {
+      BeadRule r;
+      if (b.has("types"))
+        for (const auto& t : b["types"].items()) r.types.push_back(t.str());
+      else
+        r.types.push_back(b.text("type"));
+      r.smarts = b.text("smarts");
+      r.description = b.text("description");
+      if (r.types.empty() || r.types[0].empty() || r.smarts.empty()) throw FFError(path + ": a bead rule needs a type and a smarts");
+      Smarts check(r.smarts);   // a bad pattern fails here, with the file named by the caller
+      ff.bead_rules.push_back(r);
+    }
+  if (j.has("bead_groups"))
+    for (const auto& b : j["bead_groups"].items()) {
+      BeadGroup g;
+      g.type = b.text("type");
+      g.molecule = b.text("molecule");
+      g.count = int(b.num("count", 1));
+      g.description = b.text("description");
+      ff.bead_groups.push_back(g);
+    }
   if (j.has("shells") && j["shells"].is_object())
     for (const auto& [core, shell] : j["shells"].members()) ff.shells[core] = shell.str();
   if (j.has("variants") && j["variants"].is_object()) {
@@ -169,6 +192,19 @@ const FFType* FFDef::type(const std::string& n) const {
     if (t.name == n) return &t;
   return nullptr;
 }
+
+namespace {
+// A type by its name, an alias, or the moltemplate short name its description records (C1 for C1_bC1_aC1_dC1_iC1).
+const FFType* find_type(const FFDef& ff, const std::string& n) {
+  if (const FFType* t = ff.type(n)) return t;
+  for (const auto& t : ff.types)
+    if (std::find(t.aliases.begin(), t.aliases.end(), n) != t.aliases.end()) return &t;
+  const std::string key = "moltemplate @atom:" + n;
+  for (const auto& t : ff.types)
+    if (t.description.rfind(key, 0) == 0 && (t.description.size() == key.size() || t.description[key.size()] == ' ')) return &t;
+  return nullptr;
+}
+}  // namespace
 
 // '*' any run, '?' one character, '\' makes the next character literal (type names such as PCFF's "h*").
 bool glob_match(const std::string& pattern, const std::string& text) {
@@ -266,6 +302,16 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   j["special_lj"] = sl;
   j["special_coul"] = sc;
   j["cutoff"] = ff.cutoff;
+  if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
+  if (ff.angles_if_defined) j["angle_terms"] = "if_defined";
+  if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff) {
+    Json ps = Json::object();
+    if (ff.lj_inner > 0) ps["lj_inner"] = ff.lj_inner;
+    if (ff.coul_inner > 0) ps["coul_inner"] = ff.coul_inner;
+    if (ff.dielectric != 1) ps["dielectric"] = ff.dielectric;
+    if (ff.model_cutoff) ps["model_cutoff"] = true;
+    j["pair_settings"] = ps;
+  }
   j["improper_order"] = ff.improper_order;
   j["equivalence"] = ff.equivalence;
   if (ff.improper_matched_order) j["improper_matched_order"] = true;
@@ -368,6 +414,15 @@ FFDef load_forcefield(const std::string& path) {
   if (j.has("special_coul"))
     for (int k = 0; k < 3; ++k) ff.special_coul[k] = j["special_coul"][k].number();
   ff.cutoff = j.num("cutoff", ff.cutoff);
+  ff.torsions_if_defined = j.text("torsion_terms") == "if_defined";
+  ff.angles_if_defined = j.text("angle_terms") == "if_defined";
+  if (j.has("pair_settings")) {
+    const Json& ps = j["pair_settings"];
+    ff.lj_inner = ps.num("lj_inner", 0);
+    ff.coul_inner = ps.num("coul_inner", 0);
+    ff.dielectric = ps.num("dielectric", 1);
+    ff.model_cutoff = ps.has("model_cutoff") && ps["model_cutoff"].boolean();
+  }
   ff.improper_order = j.text("improper_order", ff.improper_order);
   ff.equivalence = j.text("equivalence", ff.equivalence);
   ff.improper_matched_order = j.has("improper_matched_order") && j["improper_matched_order"].boolean();
@@ -406,6 +461,8 @@ FFDef load_forcefield(const std::string& path) {
     for (const auto& n : j["notes"].items()) ff.notes.push_back(n.str());
   // an overlay naming the force field it extends (L-OPLS on OPLS-AA): the base first, this file's types and terms on
   // top (merge_forcefield; later terms win), one complete force field under this file's name
+  if (j.has("bead_templates") && j["bead_templates"].is_object())
+    for (const auto& [k, v] : j["bead_templates"].members()) ff.bead_templates[k] = v.str();
   if (j.has("extends")) {
     const std::filesystem::path bp(j["extends"].str());
     FFDef base = load_forcefield((bp.is_absolute() ? bp : std::filesystem::path(path).parent_path() / bp).lexically_normal().string());
@@ -414,7 +471,10 @@ FFDef load_forcefield(const std::string& path) {
       base.typing_pairs.clear();
       base.analogies.clear();
       base.typing_files.clear();
+      base.bead_rules.clear();
+      base.bead_groups.clear();
     }
+    for (const auto& [k, v] : ff.bead_templates) base.bead_templates[k] = v;
     merge_forcefield(base, ff);
     base.name = ff.name;
     base.version = ff.version;
@@ -857,6 +917,42 @@ void refine_bond_order_variants(const System& s, const Perception& p, const FFDe
   }
 }
 
+// The SDK / SPICA Lennard-Jones form a pair style names (lj9_6, lj12_4, lj12_6, lj12_5), or 0.
+int sdk_form(const std::string& st) {
+  if (st == "lj9_6") return kPairSdk96;
+  if (st == "lj12_4") return kPairSdk124;
+  if (st == "lj12_6") return kPairSdk126;
+  if (st == "lj12_5") return kPairSdk125;
+  return 0;
+}
+
+System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t seed) {
+  auto it = ff.bead_templates.find(text);
+  const std::string smiles = it != ff.bead_templates.end() ? it->second : text;
+  auto full = [&](const std::string& bead) -> const FFType* { return find_type(ff, bead); };
+  BeadBuildOptions o;
+  o.seed = seed;
+  o.mass = [&](const std::string& b) {
+    const FFType* t = full(b);
+    return t && !std::isnan(t->mass) ? t->mass : 0.0;
+  };
+  o.bond_length = [&](const std::string& a, const std::string& b) -> double {
+    const FFType* ta = full(a);
+    const FFType* tb = full(b);
+    if (!ta || !tb) return 0.0;
+    auto bname = [](const FFType* t) {
+      auto e = t->equiv.find("bond");
+      return e == t->equiv.end() ? t->name : e->second;
+    };
+    const std::string na = bname(ta), nb = bname(tb);
+    const FFRule* r = last_match(ff.bonds, {&na, &nb}, true);
+    return r && r->params.size() >= 2 ? r->params[1] : 0.0;
+  };
+  System s = build_beads(smiles, o);
+  s.title = it != ff.bead_templates.end() ? text + " (" + ff.name + " template)" : "beads";
+  return s;
+}
+
 ForceField parameterize(const System& s, const FFDef& def, const std::vector<std::string>& types_in, const std::string& charges,
                         ParamReport* rep_out, bool allow_missing) {
   ParamReport rep;
@@ -867,8 +963,20 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.mixing = def.mixing;
   ff.lj14 = def.special_lj[2];
   ff.coul14 = def.special_coul[2];
-  if (def.special_lj[0] != 0 || def.special_lj[1] != 0 || def.special_coul[0] != 0 || def.special_coul[1] != 0)
-    throw FFError(def.name + ": 1-2 or 1-3 non-bonded scaling other than 0 is not supported yet");
+  // 1-3 pairs: excluded (0) or in full (1, both LJ and Coulomb: MARTINI's special_bonds 0 1 1)
+  ff.keep13 = def.special_lj[1] == 1 && def.special_coul[1] == 1;
+  if (def.special_lj[0] != 0 || def.special_coul[0] != 0 || (!ff.keep13 && (def.special_lj[1] != 0 || def.special_coul[1] != 0)))
+    throw FFError(def.name + ": 1-2 non-bonded scaling other than 0, or 1-3 scaling other than 0 or 1, is not supported yet");
+  // 1-3 and 1-4 in full: only bonded pairs are left out, the others are ordinary pairs
+  const bool only12 = ff.keep13 && ff.lj14 == 1 && ff.coul14 == 1;
+  const bool gromacs = def.pair_style.find("gromacs") != std::string::npos;
+  if (gromacs) {
+    ff.lj_inner = def.lj_inner;
+    ff.coul_gromacs = def.pair_style.find("coul/gromacs") != std::string::npos;
+    ff.coul_inner = def.coul_inner;
+    ff.dielectric = def.dielectric;
+  }
+  if (def.model_cutoff) ff.cutoff = def.cutoff;
   // resolve names: full names, or a moltemplate short name recorded in the description
   std::map<std::string, const FFType*> byname;
   for (const auto& t : def.types) byname[t.name] = &t;
@@ -1047,6 +1155,13 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       rep.used["pair " + tn]++;
       continue;
     }
+    if (int f = sdk_form(r->style)) {   // SDK / SPICA: no mixing, every pair given (the self pair here)
+      ff.pair_func[{int(ti), int(ti)}] = {f, r->params[0], r->params[1], 0};
+      ff.lj.push_back({0, 0});
+      lj14.push_back({0, 0});
+      rep.used["pair " + tn]++;
+      continue;
+    }
     // any Lennard-Jones variant (lj/cut, lj/charmm/coul/long, ... as moltemplate names hybrid sub-styles) mixes
     if (!r->style.empty() && r->style.rfind("lj", 0) != 0)
       throw FFError("pair style '" + r->style + "' on a single type (" + r->name + ") has no mixing rule; give it per pair");
@@ -1073,12 +1188,29 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           if (r.style == "buck" || r.style == "born" || r.style == "morse") {
             if (r.params.size() < 3) throw FFError("pair " + r.name + ": " + r.style + " needs 3 parameters");
             ff.pair_func[{int(a), int(b)}] = {r.style == "morse" ? 2 : 1, r.params[0], r.params[1], r.params[2]};
+          } else if (int f = sdk_form(r.style)) {
+            ff.pair_func[{int(a), int(b)}] = {f, r.params[0], r.params[1], 0};
           } else if (r.style.empty() || r.style.rfind("lj", 0) == 0) {
             ff.pair_override[{int(a), int(b)}] = {r.params[0], r.params[1]};
           } else {
             throw FFError("pair style '" + r.style + "' (" + r.name + ") is not supported yet");
           }
         }
+  }
+  if (def.pair_style.find("sdk") != std::string::npos || def.pair_style.find("spica") != std::string::npos) {
+    // SDK has no mixing rule: a pair of types present with no entry is missing
+    std::set<int> present(ff.type_index.begin(), ff.type_index.end());
+    for (int a : present)
+      for (int b : present)
+        if (a <= b && !ff.pair_func.count({a, b})) rep.missing.push_back("pair " + ff.type_names[size_t(a)] + " " + ff.type_names[size_t(b)]);
+  }
+  if (gromacs) {   // every pair (mixed or explicit) with GROMACS's force switch
+    for (size_t a = 0; a < ff.type_names.size(); ++a)
+      for (size_t b = a; b < ff.type_names.size(); ++b) {
+        if (ff.pair_func.count({int(a), int(b)})) throw FFError(def.name + ": lj/gromacs cannot be mixed with other pair forms");
+        const PairType pt = mixed_pair(ff, int(a), int(b));
+        ff.pair_func[{int(a), int(b)}] = {kPairGromacs, pt.eps, pt.sigma, 0};
+      }
   }
   if (def.pair_style.find("class2") != std::string::npos) {
     ff.pair_form = "lj9-6";
@@ -1171,7 +1303,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     rep.used["bond " + r->name]++;
   }
   // angles
-  int trans_skipped = 0;
+  int trans_skipped = 0, no_angle = 0;
   std::set<std::pair<uint32_t, uint32_t>> ex12, ex13;
   for (const auto& b : s.bonds) ex12.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
   for (uint32_t j = 0; j < n; ++j)
@@ -1191,10 +1323,17 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
         if (!r) r = auto_lookup(def.auto_angles, {&Aae[i], &Aaa[j], &Aae[k]}, &rev);
         if (std::string u; !r && (r = analog(def.angles, Na, {i, j, k}, &rev, &u))) estimated("angle " + shown(Na, {i, j, k}) + " as " + u);
-        if (!r) { missing("angle " + shown(Na, {i, j, k})); continue; }
+        if (!r) {
+          if (def.angles_if_defined) ++no_angle;
+          else missing("angle " + shown(Na, {i, j, k}));
+          continue;
+        }
         const std::string st = r->style.empty() ? def.angle_style : r->style;
         if (st == "cosine") {   // K (1 + cos θ), minimum at 180°
           ff.angles_x.push_back({i, j, k, 2, r->params.at(0), kPi});
+        } else if (st == "sdk") {   // K (θ − θ0)² plus the end atoms' SDK repulsion (LAMMPS angle sdk)
+          if (r->params.size() < 2) throw FFError("sdk angle " + r->name + " needs K theta0");
+          ff.angles_x.push_back({i, j, k, 4, r->params[0], r->params[1] * kDeg});
         } else if (st == "cosine/squared") {   // K (cos θ − cos θ0)²
           if (r->params.size() < 2) throw FFError("cosine/squared angle " + r->name + " needs K theta0");
           ff.angles_x.push_back({i, j, k, 1, r->params[0], r->params[1] * kDeg});
@@ -1247,7 +1386,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           const FFRule* r = lookup12(def.dihedrals, Nd, Nd2, {i, j, k, l}, &rev);
           if (!r) r = auto_lookup(def.auto_dihedrals, {&Ate[i], &Atc[j], &Atc[k], &Ate[l]}, &rev);
           if (std::string u; !r && (r = analog(def.dihedrals, Nd, {i, j, k, l}, &rev, &u))) estimated("dihedral " + shown(Nd, {i, j, k, l}) + " as " + u);
-          if (!r) { missing("dihedral " + shown(Nd, {i, j, k, l})); continue; }
+          if (!r) {
+            if (!def.torsions_if_defined) missing("dihedral " + shown(Nd, {i, j, k, l}));
+            continue;
+          }
           const std::string st = r->style.empty() ? def.dihedral_style : r->style;
           const auto& p = r->params;
           // msi2lmp / DL_FIELD (CVFF): a wildcard end spreads the barrier over the torsions about the central bond
@@ -1320,6 +1462,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
       }
     }
+  if (only12) p14.clear();
   for (const auto& q : p14) ff.pairs14.push_back({q.first, q.second});
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all
   // orderings of the three (as moltemplate's canonical ordering does)
@@ -1494,7 +1637,8 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.excluded.assign(n, {});
   auto add_ex = [&](uint32_t a, uint32_t b) { ff.excluded[a].push_back(b); ff.excluded[b].push_back(a); };
   for (const auto& p : ex12) add_ex(p.first, p.second);
-  for (const auto& p : ex13) if (!ex12.count(p)) add_ex(p.first, p.second);
+  if (!ff.keep13)
+    for (const auto& p : ex13) if (!ex12.count(p)) add_ex(p.first, p.second);
   for (const auto& p : p14) add_ex(p.first, p.second);
   for (auto& e : ff.excluded) {
     std::sort(e.begin(), e.end());
@@ -1507,6 +1651,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
                           ? "; class II: " + std::to_string(ff.bonds2.size()) + " bonds, " + std::to_string(ff.angles2.size()) + " angles, " +
                                 std::to_string(ff.dihedrals2.size()) + " dihedrals, " + std::to_string(ff.impropers2.size()) + " impropers"
                           : std::string()));
+  if (no_angle) rep.notes.push_back(std::to_string(no_angle) + " angles have no term in " + def.name + " (its angles apply only where defined)");
   if (trans_skipped) rep.notes.push_back(std::to_string(trans_skipped) + " trans angles (≈180°) at centres with 90° rules carry no angle term");
   if (n_auto) rep.notes.push_back(std::to_string(n_auto) + " interactions use automatic (auto-equivalence) parameters");
   if (rep.estimated_terms)
@@ -1529,6 +1674,49 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
 
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges) {
   std::string note;
+  if (ff.coarse_grained && !s.atoms.empty()) {
+    // sites all named by the force field's bead types (short or full names, as a data file CAPS wrote labels them) are
+    // beads already, whatever element their names suggest (W is not tungsten)
+    std::set<std::string> names;
+    for (const auto& t : ff.types) {
+      names.insert(t.name);
+      const std::string key = "moltemplate @atom:";
+      if (t.description.rfind(key, 0) == 0) names.insert(t.description.substr(key.size(), t.description.find(' ', key.size()) - key.size()));
+    }
+    if (std::all_of(s.atoms.begin(), s.atoms.end(), [&](const Atom& a) { return names.count(a.name) > 0; })) {
+      for (auto& a : s.atoms) a.element = 0;
+      if (!s.bonds_from_file && !s.bonds.empty()) {   // bonds guessed from distances mean nothing between beads
+        note = std::to_string(s.bonds.size()) + " bonds perceived from distances dropped (beads are bonded only as the file says)";
+        s.bonds.clear();
+      }
+    }
+  }
+  if (!ff.bead_rules.empty() || !ff.bead_groups.empty()) {
+    // an all-atom structure (any site with an element) is mapped onto the force field's beads
+    const bool atoms = std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; });
+    if (atoms) {
+      auto r0 = [&](const std::string& a, const std::string& b) -> double {
+        const FFType* ta = find_type(ff, a);
+        const FFType* tb = find_type(ff, b);
+        if (!ta || !tb) return 0.0;
+        auto bname = [](const FFType* t) {
+          auto it = t->equiv.find("bond");
+          return it == t->equiv.end() ? t->name : it->second;
+        };
+        const std::string na = bname(ta), nb = bname(tb);
+        const FFRule* r = last_match(ff.bonds, {&na, &nb}, true);
+        return r && r->params.size() >= 2 ? r->params[1] : 0.0;
+      };
+      BeadMapReport rep;
+      const size_t before = s.atoms.size();
+      s = map_to_beads(s, ff.bead_rules, ff.bead_groups, r0, &rep);
+      charges = "types";   // the beads' charges are the force field's
+      std::string by;
+      for (const auto& [t, c] : rep.by_type) by += (by.empty() ? "" : ", ") + std::to_string(c) + " " + t;
+      note = std::to_string(before) + " atoms mapped onto " + std::to_string(rep.beads) + " " + ff.name + " beads (" + by + ")";
+      for (const auto& x : rep.notes) note += "; " + x;
+    }
+  }
   if (!ff.shells.empty()) {
     std::set<std::string> shell_names;
     for (const auto& [c, sh] : ff.shells) shell_names.insert(sh);

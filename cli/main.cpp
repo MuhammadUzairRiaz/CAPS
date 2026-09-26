@@ -1053,6 +1053,35 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
+  if (cmd == "build" && (o.count("--beads") || o.count("--template"))) {
+    // coarse-grained: bead SMILES, or a force field's bead template by name
+    try {
+      if (!o.count("-o")) return usage();
+      if (o.count("--template") && !o.count("--ff")) throw std::runtime_error("--template needs --ff (the force field whose templates to use)");
+      FFDef def;
+      if (o.count("--ff")) def = load_forcefield(o["--ff"]);
+      if (o.count("--template") && o["--template"] == "list") {
+        for (const auto& [k, v] : def.bead_templates) std::printf("%-20s %s\n", k.c_str(), v.size() > 90 ? (v.substr(0, 87) + "...").c_str() : v.c_str());
+        return 0;
+      }
+      const std::string text = o.count("--template") ? o["--template"] : o["--beads"];
+      if (o.count("--template") && !def.bead_templates.count(text)) throw std::runtime_error(def.name + " has no bead template '" + text + "' (--template list)");
+      const System s = build_bead_molecule(text, def, o.count("--seed") ? std::stoull(o["--seed"]) : 1);
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - std::strlen(e)) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else write_lammps_data(s, out);
+      double q = 0;
+      for (const auto& a : s.atoms) q += a.charge;
+      std::printf("%zu beads · %zu bonds · charge %+g e%s\n", s.atoms.size(), s.bonds.size(), q, def.name.empty() ? "" : (" · " + def.name).c_str());
+      std::printf("wrote %s (relax it with the force field: caps relax %s --ff …)\n", out.c_str(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps build: %s\n", e.what());
+      return 1;
+    }
+  }
   if (cmd == "build") {
     try {
       if (pos.empty() || !o.count("-o")) return usage();

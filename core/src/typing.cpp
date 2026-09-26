@@ -1026,6 +1026,48 @@ bool match_node(const SmartsNode& g, const Ctx& c, uint32_t anchor) {
   return go(1);
 }
 
+// Every complete embedding with its first atom on `anchor`, avoiding atoms marked in `taken` (may be null).
+void match_all(const SmartsNode& g, const Ctx& c, uint32_t anchor, const std::vector<char>* taken, std::vector<std::vector<uint32_t>>& out) {
+  const size_t m = g.atoms.size();
+  if ((taken && (*taken)[anchor]) || !eval_atom(*g.atoms[0], c, anchor)) return;
+  std::vector<int64_t> map(m, -1);
+  std::vector<char> used(c.s.atoms.size(), 0);
+  if (taken) used = *taken;
+  map[0] = anchor;
+  used[anchor] = 1;
+  std::function<void(size_t)> go = [&](size_t k) {
+    if (k == m) {
+      out.emplace_back(map.begin(), map.end());
+      return;
+    }
+    int parent = -1, pb = -1;
+    for (auto [o, b] : g.adj[k])
+      if (size_t(o) < k) { parent = o; pb = b; break; }
+    if (parent < 0) return;
+    const uint32_t pa = uint32_t(map[parent]);
+    for (size_t q = 0; q < c.p.nb[pa].size(); ++q) {
+      const uint32_t t = c.p.nb[pa][q];
+      if (used[t] || !eval_bond(*g.bonds[pb].expr, c, pa, q) || !eval_atom(*g.atoms[k], c, t)) continue;
+      bool ok = true;
+      for (auto [o, b] : g.adj[k]) {
+        if (b == pb || size_t(o) >= k) continue;
+        const uint32_t ta = uint32_t(map[o]);
+        size_t kk = SIZE_MAX;
+        for (size_t z = 0; z < c.p.nb[t].size(); ++z)
+          if (c.p.nb[t][z] == ta) kk = z;
+        if (kk == SIZE_MAX || !eval_bond(*g.bonds[b].expr, c, t, kk)) { ok = false; break; }
+      }
+      if (!ok) continue;
+      map[k] = t;
+      used[t] = 1;
+      go(k + 1);
+      used[t] = 0;
+      map[k] = -1;
+    }
+  };
+  go(1);
+}
+
 }  // namespace
 
 struct Smarts::Impl {
@@ -1052,6 +1094,14 @@ bool Smarts::matches(const System& s, const Perception& p, uint32_t atom, const 
   Ctx c{s, p, types};
   return match_node(d_->g, c, atom);
 }
+std::vector<std::vector<uint32_t>> Smarts::embeddings(const System& s, const Perception& p, uint32_t atom, const std::vector<char>* taken) const {
+  static const std::vector<std::string> none;
+  Ctx c{s, p, none};
+  std::vector<std::vector<uint32_t>> out;
+  match_all(d_->g, c, atom, taken, out);
+  return out;
+}
+size_t Smarts::size() const { return d_->g.atoms.size(); }
 bool Smarts::uses_types() const { return d_->g.uses_types; }
 const std::string& Smarts::text() const { return d_->text; }
 

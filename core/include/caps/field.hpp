@@ -35,15 +35,20 @@ struct InversionTerm { uint32_t c, a, b, d; double kw, w0; int form = 0; };
 // form 2 K (1 + cos θ) (LAMMPS cosine, linear centres); form 3 (UFF) K [C0 + C1 cos θ + C2 cos 2θ] with C2 = 1/(4 sin²θ0),
 // C1 = −4 C2 cos θ0, C0 = C2 (2 cos²θ0 + 1) (LAMMPS fourier; a = K, b = θ0); forms 11–14 (UFF) K (1 − cos nθ)/n² with
 // n = form − 10, n = 1 meaning K (1 + cos θ), plus UFF's wall e^(−20 (θ − θ0 + 0.25)) below 30° (LAMMPS cosine/periodic,
-// without the wall; b = θ0).
+// without the wall; b = θ0); form 4 (SDK / SPICA, LAMMPS angle sdk) K (θ − θ0)² plus the repulsive part of the end
+// atoms' SDK pair, cut at its minimum and shifted to zero there.
 // Urey–Bradley: K (r13 − r0)² between the end atoms of an angle, counted as angle energy (CHARMM).
 struct BondX { uint32_t i, j; int form; double a, b, c; };
 struct AngleX { uint32_t i, j, k; int form; double a, b; };
 struct UreyBradley { uint32_t i, k; double kub, r0; };
 
 // Pair forms other than Lennard-Jones, per type pair: 1 Buckingham A e^(−r/ρ) − C/r⁶ (a = A, b = ρ, c = C);
-// 2 Morse D0 [e^(−2α(r − r0)) − 2 e^(−α(r − r0))] (a = D0, b = α, c = r0).
+// 2 Morse D0 [e^(−2α(r − r0)) − 2 e^(−α(r − r0))] (a = D0, b = α, c = r0);
+// SDK / SPICA coarse-grained Lennard-Jones (LAMMPS lj/sdk; a = ε, b = σ), C ε [(σ/r)^m − (σ/r)^n]:
+// 11 9-6 (C = 27/4), 12 12-4 (C = 3√3/2), 13 12-6 (C = 4), 14 12-5;
+// 20 Lennard-Jones 12-6 with GROMACS's force switch from ForceField::lj_inner to the cut-off (LAMMPS lj/gromacs, MARTINI).
 struct PairFunc { int form; double a, b, c; };
+constexpr int kPairSdk96 = 11, kPairSdk124 = 12, kPairSdk126 = 13, kPairSdk125 = 14, kPairGromacs = 20;
 
 // Class II forms (COMPASS, PCFF), as LAMMPS bond / angle / dihedral / improper_style class2. Angles in radians.
 struct Class2Bond { uint32_t i, j; double r0, k2, k3, k4; };               // K2 Δr² + K3 Δr³ + K4 Δr⁴
@@ -110,6 +115,12 @@ struct ForceField {
   std::vector<std::vector<uint32_t>> excluded;   // per atom, sorted: 1-2, 1-3 and 1-4 partners, left out of the pair list
   StillingerWeber sw;                         // many-body term (mW water); counted in the vdW energy
   double lj14 = 0.5, coul14 = 1.0 / 1.2;
+  bool keep13 = false;                        // 1-3 pairs interact in full (MARTINI: special_bonds 0 1 1)
+  // Coarse-grained electrostatics and cut-offs (MARTINI): Coulomb / εr with GROMACS's force switch from coul_inner to
+  // the cut-off instead of DSF / PME; lj_inner starts the lj/gromacs switch; cutoff > 0 is the model's own cut-off
+  // (used whatever EnergyOptions says).
+  bool coul_gromacs = false;
+  double coul_inner = 0, lj_inner = 0, dielectric = 1, cutoff = 0;
   std::vector<std::string> notes;
 };
 
@@ -181,7 +192,10 @@ class Evaluator {
   Cell cells_;                       // the cell the Cartesian shifts were computed for
   std::vector<double> eps_, s6_, rcap2_, ecap_, fcap_;   // per type pair
   bool lj96_ = false;                // class II 9-6 LJ
-  std::vector<uint8_t> form_;        // per type pair: 0 LJ, 1 Buckingham, 2 Morse
+  std::vector<uint8_t> form_;        // per type pair: 0 LJ, else the PairFunc form
+  std::vector<double> gsw_;          // per type pair, 5 each: lj/gromacs switch coefficients
+  std::vector<double> rmin2_, emin_; // per type pair: SDK minimum (r², energy), for the angle's 1-3 repulsion
+  double excl_r2_ = 36.0;            // bonded partners closer than this (Å²) are the bonded image
   std::vector<double> pa_, pb_, pc_;
   std::vector<double> eps14_, s614_;  // separate 1-4 LJ, when the force field has them
   std::vector<double> type_count_;   // atoms per type, for the tail correction

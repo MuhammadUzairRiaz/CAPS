@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 23, "native ABI version 23");
+        Check(Native.AbiVersion() == 24, "native ABI version 24");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -587,6 +587,18 @@ internal static class SelfTest
             vm.UndoEdit(false);
             Check(vm.Document!.Summary().Atoms == uaBefore, $"united-atom conversion undone: {vm.Document!.Summary().Atoms} atoms");
             vm.GrowAssignField = true;
+        }
+
+        // Coarse-grained: the builder's MARTINI DPPC template (12 beads, bond lengths from the force field)
+        {
+            var cgBack = vm.Module;
+            vm.OpenBuilder();
+            vm.CgFf = 0;
+            var hasDppc = vm.CgTemplates.Contains("DPPC");
+            vm.CgTemplate = "DPPC";
+            vm.BuildBeadsMolecule().GetAwaiter().GetResult();
+            Check(hasDppc && vm.MolDoc?.Summary().Atoms == 12, $"coarse-grained builder: {vm.CgTemplates.Count} MARTINI templates, DPPC {vm.MolDoc?.Summary().Atoms} beads · {vm.MolNotes}");
+            vm.SetModule(cgBack);
         }
 
         // Torsion scan: n-butane from SMILES (UFF), relaxed: trans lowest, gauche± above it

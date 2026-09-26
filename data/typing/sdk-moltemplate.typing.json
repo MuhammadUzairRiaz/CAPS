@@ -1,0 +1,395 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "SDK coarse-grained",
+ "coarse_grained": true,
+ "unknown_types": "untyped",
+ "description": "CAPS rules for SDK (bench/typing/make_cg_rules.py): bead structures typed by site name; all-atom structures mapped onto SDK beads by the source's fragments (every heavy atom in exactly one bead, hydrogens with their atom).",
+ "rules": [
+  {
+   "type": "C2T",
+   "smarts": "*",
+   "atom_name": "C2T",
+   "priority": 0,
+   "description": "a SDK bead named C2T"
+  },
+  {
+   "type": "C2T",
+   "smarts": "*",
+   "atom_name": "C2T_bC2T_aC2T_dC2T_iC2T",
+   "priority": 0,
+   "description": "a SDK bead named C2T_bC2T_aC2T_dC2T_iC2T"
+  },
+  {
+   "type": "CM",
+   "smarts": "*",
+   "atom_name": "CM",
+   "priority": 0,
+   "description": "a SDK bead named CM"
+  },
+  {
+   "type": "CM",
+   "smarts": "*",
+   "atom_name": "CM_bCM_aCM_dCM_iCM",
+   "priority": 0,
+   "description": "a SDK bead named CM_bCM_aCM_dCM_iCM"
+  },
+  {
+   "type": "CM2",
+   "smarts": "*",
+   "atom_name": "CM2",
+   "priority": 0,
+   "description": "a SDK bead named CM2"
+  },
+  {
+   "type": "CM2",
+   "smarts": "*",
+   "atom_name": "CM2_bCM2_aCM2_dCM2_iCM2",
+   "priority": 0,
+   "description": "a SDK bead named CM2_bCM2_aCM2_dCM2_iCM2"
+  },
+  {
+   "type": "CM2R",
+   "smarts": "*",
+   "atom_name": "CM2R",
+   "priority": 0,
+   "description": "a SDK bead named CM2R"
+  },
+  {
+   "type": "CM2R",
+   "smarts": "*",
+   "atom_name": "CM2R_bCM2R_aCM2R_dCM2R_iCM2R",
+   "priority": 0,
+   "description": "a SDK bead named CM2R_bCM2R_aCM2R_dCM2R_iCM2R"
+  },
+  {
+   "type": "CMB",
+   "smarts": "*",
+   "atom_name": "CMB",
+   "priority": 0,
+   "description": "a SDK bead named CMB"
+  },
+  {
+   "type": "CMB",
+   "smarts": "*",
+   "atom_name": "CMB_bCMB_aCMB_dCMB_iCMB",
+   "priority": 0,
+   "description": "a SDK bead named CMB_bCMB_aCMB_dCMB_iCMB"
+  },
+  {
+   "type": "CMD2",
+   "smarts": "*",
+   "atom_name": "CMD2",
+   "priority": 0,
+   "description": "a SDK bead named CMD2"
+  },
+  {
+   "type": "CMD2",
+   "smarts": "*",
+   "atom_name": "CMD2_bCMD2_aCMD2_dCMD2_iCMD2",
+   "priority": 0,
+   "description": "a SDK bead named CMD2_bCMD2_aCMD2_dCMD2_iCMD2"
+  },
+  {
+   "type": "CMDB",
+   "smarts": "*",
+   "atom_name": "CMDB",
+   "priority": 0,
+   "description": "a SDK bead named CMDB"
+  },
+  {
+   "type": "CMDB",
+   "smarts": "*",
+   "atom_name": "CMDB_bCMDB_aCMDB_dCMDB_iCMDB",
+   "priority": 0,
+   "description": "a SDK bead named CMDB_bCMDB_aCMDB_dCMDB_iCMDB"
+  },
+  {
+   "type": "CMR",
+   "smarts": "*",
+   "atom_name": "CMR",
+   "priority": 0,
+   "description": "a SDK bead named CMR"
+  },
+  {
+   "type": "CMR",
+   "smarts": "*",
+   "atom_name": "CMR_bCMR_aCMR_dCMR_iCMR",
+   "priority": 0,
+   "description": "a SDK bead named CMR_bCMR_aCMR_dCMR_iCMR"
+  },
+  {
+   "type": "CMR5",
+   "smarts": "*",
+   "atom_name": "CMR5",
+   "priority": 0,
+   "description": "a SDK bead named CMR5"
+  },
+  {
+   "type": "CMR5",
+   "smarts": "*",
+   "atom_name": "CMR5_bCMR5_aCMR5_dCMR5_iCMR5",
+   "priority": 0,
+   "description": "a SDK bead named CMR5_bCMR5_aCMR5_dCMR5_iCMR5"
+  },
+  {
+   "type": "CT",
+   "smarts": "*",
+   "atom_name": "CT",
+   "priority": 0,
+   "description": "a SDK bead named CT"
+  },
+  {
+   "type": "CT",
+   "smarts": "*",
+   "atom_name": "CT_bCT_aCT_dCT_iCT",
+   "priority": 0,
+   "description": "a SDK bead named CT_bCT_aCT_dCT_iCT"
+  },
+  {
+   "type": "CT2",
+   "smarts": "*",
+   "atom_name": "CT2",
+   "priority": 0,
+   "description": "a SDK bead named CT2"
+  },
+  {
+   "type": "CT2",
+   "smarts": "*",
+   "atom_name": "CT2_bCT2_aCT2_dCT2_iCT2",
+   "priority": 0,
+   "description": "a SDK bead named CT2_bCT2_aCT2_dCT2_iCT2"
+  },
+  {
+   "type": "CTB",
+   "smarts": "*",
+   "atom_name": "CTB",
+   "priority": 0,
+   "description": "a SDK bead named CTB"
+  },
+  {
+   "type": "CTB",
+   "smarts": "*",
+   "atom_name": "CTB_bCTB_aCTB_dCTB_iCTB",
+   "priority": 0,
+   "description": "a SDK bead named CTB_bCTB_aCTB_dCTB_iCTB"
+  },
+  {
+   "type": "CTBA",
+   "smarts": "*",
+   "atom_name": "CTBA",
+   "priority": 0,
+   "description": "a SDK bead named CTBA"
+  },
+  {
+   "type": "CTBA",
+   "smarts": "*",
+   "atom_name": "CTBA_bCTBA_aCTBA_dCTBA_iCTBA",
+   "priority": 0,
+   "description": "a SDK bead named CTBA_bCTBA_aCTBA_dCTBA_iCTBA"
+  },
+  {
+   "type": "CTBB",
+   "smarts": "*",
+   "atom_name": "CTBB",
+   "priority": 0,
+   "description": "a SDK bead named CTBB"
+  },
+  {
+   "type": "CTBB",
+   "smarts": "*",
+   "atom_name": "CTBB_bCTBB_aCTBB_dCTBB_iCTBB",
+   "priority": 0,
+   "description": "a SDK bead named CTBB_bCTBB_aCTBB_dCTBB_iCTBB"
+  },
+  {
+   "type": "EST1",
+   "smarts": "*",
+   "atom_name": "EST1",
+   "priority": 0,
+   "description": "a SDK bead named EST1"
+  },
+  {
+   "type": "EST1",
+   "smarts": "*",
+   "atom_name": "EST1_bEST1_aEST1_dEST1_iEST1",
+   "priority": 0,
+   "description": "a SDK bead named EST1_bEST1_aEST1_dEST1_iEST1"
+  },
+  {
+   "type": "EST2",
+   "smarts": "*",
+   "atom_name": "EST2",
+   "priority": 0,
+   "description": "a SDK bead named EST2"
+  },
+  {
+   "type": "EST2",
+   "smarts": "*",
+   "atom_name": "EST2_bEST2_aEST2_dEST2_iEST2",
+   "priority": 0,
+   "description": "a SDK bead named EST2_bEST2_aEST2_dEST2_iEST2"
+  },
+  {
+   "type": "GL",
+   "smarts": "*",
+   "atom_name": "GL",
+   "priority": 0,
+   "description": "a SDK bead named GL"
+  },
+  {
+   "type": "GL",
+   "smarts": "*",
+   "atom_name": "GL_bGL_aGL_dGL_iGL",
+   "priority": 0,
+   "description": "a SDK bead named GL_bGL_aGL_dGL_iGL"
+  },
+  {
+   "type": "NC",
+   "smarts": "*",
+   "atom_name": "NC",
+   "priority": 0,
+   "description": "a SDK bead named NC"
+  },
+  {
+   "type": "NC",
+   "smarts": "*",
+   "atom_name": "NC_bNC_aNC_dNC_iNC",
+   "priority": 0,
+   "description": "a SDK bead named NC_bNC_aNC_dNC_iNC"
+  },
+  {
+   "type": "NH",
+   "smarts": "*",
+   "atom_name": "NH",
+   "priority": 0,
+   "description": "a SDK bead named NH"
+  },
+  {
+   "type": "NH",
+   "smarts": "*",
+   "atom_name": "NH_bNH_aNH_dNH_iNH",
+   "priority": 0,
+   "description": "a SDK bead named NH_bNH_aNH_dNH_iNH"
+  },
+  {
+   "type": "OAB",
+   "smarts": "*",
+   "atom_name": "OAB",
+   "priority": 0,
+   "description": "a SDK bead named OAB"
+  },
+  {
+   "type": "OAB",
+   "smarts": "*",
+   "atom_name": "OAB_bOAB_aOAB_dOAB_iOAB",
+   "priority": 0,
+   "description": "a SDK bead named OAB_bOAB_aOAB_dOAB_iOAB"
+  },
+  {
+   "type": "PH",
+   "smarts": "*",
+   "atom_name": "PH",
+   "priority": 0,
+   "description": "a SDK bead named PH"
+  },
+  {
+   "type": "PH",
+   "smarts": "*",
+   "atom_name": "PH_bPH_aPH_dPH_iPH",
+   "priority": 0,
+   "description": "a SDK bead named PH_bPH_aPH_dPH_iPH"
+  },
+  {
+   "type": "PHE",
+   "smarts": "*",
+   "atom_name": "PHE",
+   "priority": 0,
+   "description": "a SDK bead named PHE"
+  },
+  {
+   "type": "PHE",
+   "smarts": "*",
+   "atom_name": "PHE_bPHE_aPHE_dPHE_iPHE",
+   "priority": 0,
+   "description": "a SDK bead named PHE_bPHE_aPHE_dPHE_iPHE"
+  },
+  {
+   "type": "W",
+   "smarts": "*",
+   "atom_name": "W",
+   "priority": 0,
+   "description": "a SDK bead named W"
+  },
+  {
+   "type": "W",
+   "smarts": "*",
+   "atom_name": "W_bW_aW_dW_iW",
+   "priority": 0,
+   "description": "a SDK bead named W_bW_aW_dW_iW"
+  }
+ ],
+ "beads": [
+  {
+   "type": "NC",
+   "smarts": "[CH2X4][CH2X4][NX4+]([CH3X4])([CH3X4])[CH3X4]",
+   "description": ">CCN(C)(C)C, +1 (choline)"
+  },
+  {
+   "type": "NH",
+   "smarts": "[CH2X4][CH2X4][N;$([NX4+;H3]),$([NX3;H2])]",
+   "description": ">CCN, +1 (ethanolamine)"
+  },
+  {
+   "type": "PHE",
+   "smarts": "[OX2;$(O[CH2X4][CH2X4][N;$([NX4+;H3]),$([NX3;H2])])][PX4](~[OX1])(~[OX1])~[OX2]",
+   "description": ">OP(O)(O)O<, -1, of a PE lipid (README: PHE -PO4- (PE lipid))"
+  },
+  {
+   "type": "PH",
+   "smarts": "[OX2][PX4](~[OX1])(~[OX1])~[OX2]",
+   "description": ">OP(O)(O)O<, -1"
+  },
+  {
+   "type": "GL",
+   "smarts": "[CH2X4;$(*O)][CH1X4;$(*O)][CH2X4;$(*O)]",
+   "description": ">CC<C< (glycerol)"
+  },
+  {
+   "types": [
+    "EST1",
+    "EST2"
+   ],
+   "smarts": "[CH2X4][CX3](=[OX1])[OX2]",
+   "description": ">CC(=O)O< (the two ester beads, told apart by their bond lengths to GL)"
+  },
+  {
+   "type": "CMD2",
+   "smarts": "[CH1X3]=[CH1X3]",
+   "description": ">\\C=C/< (cis)"
+  },
+  {
+   "type": "CT",
+   "smarts": "[CH3X4][CH2X4][CH2X4]",
+   "description": "CCC<"
+  },
+  {
+   "type": "CT2",
+   "smarts": "[CH3X4][CH2X4]",
+   "description": "CC<"
+  },
+  {
+   "type": "CM",
+   "smarts": "[CH2X4][CH2X4][CH2X4]",
+   "description": ">CCC<"
+  }
+ ],
+ "bead_groups": [
+  {
+   "type": "W",
+   "molecule": "[OH2]",
+   "count": 3,
+   "description": "(H2O)3: three nearest waters"
+  }
+ ]
+}

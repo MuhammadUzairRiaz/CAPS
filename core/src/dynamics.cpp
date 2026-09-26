@@ -65,7 +65,11 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   DynamicsReport rep;
   const size_t n = s.atoms.size();
   if (n < 2) throw FieldError("dynamics needs at least two atoms");
-  if (o.dt <= 0 || o.dt > 5) throw std::invalid_argument("time step must be in (0, 5] fs");
+  // coarse-grained beads (every site element 0) move slowly enough for the model's own steps (SDK 10 fs, MARTINI 20–40 fs)
+  const bool beads = std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 0; });
+  const double dt_max = beads ? 50.0 : 5.0;
+  if (o.dt <= 0 || o.dt > dt_max)
+    throw std::invalid_argument(beads ? "time step must be in (0, 50] fs for coarse-grained beads" : "time step must be in (0, 5] fs");
   if (o.barostat != Barostat::None && !s.cell.valid()) throw FieldError("pressure control needs a periodic cell");
   if (o.thermostat == Thermostat::None && o.barostat == Barostat::CRescale)
     throw std::invalid_argument("stochastic cell rescaling needs a thermostat");

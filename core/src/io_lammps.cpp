@@ -34,8 +34,11 @@ void assign_elements(System& s) {
         int z = element_from_mass(t.mass);
         if (!z && !t.label.empty()) z = element_from_name(t.label);
         // a united-atom site (mW water's 18.02, a CH2's 14.03 under another label): its heavy atom plus hydrogens
-        for (int nh = 1; !z && nh <= 4 && t.mass > 1.5 + nh * 1.008; ++nh)
-          if ((z = element_from_mass(t.mass - nh * 1.008, 0.02))) ++sites;
+        // (C, N, O or S hosts only: a coarse-grained bead's 54 or 72 must not read as a metal hydride)
+        for (int nh = 1; !z && nh <= 4 && t.mass > 1.5 + nh * 1.008; ++nh) {
+          const int h = element_from_mass(t.mass - nh * 1.008, 0.02);
+          if (h == 6 || h == 7 || h == 8 || h == 16) z = h, ++sites;
+        }
         at.element = z;
         if (!at.name.size() && !t.label.empty()) at.name = t.label;
         break;
