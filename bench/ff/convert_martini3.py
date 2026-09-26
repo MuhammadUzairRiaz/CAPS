@@ -70,7 +70,15 @@ def nonbonded():
 def molecules(path):
     """{name: molecule} from an .itp: atoms (name, type, charge, mass or None), and the terms by 0-based atom index"""
     out, cur, sec = {}, None, None
+    insane = None
     for raw in lines_with_defines(path):
+        # a lipid's building blocks, as insane writes them: head, linker, one letter per tail bead (C saturated, D
+        # unsaturated); CAPS maps all-atom lipids with them
+        m = re.match(r"^;@INSANE\s+(.*)", raw.strip())
+        if m:
+            f = dict(re.findall(r"(\w+)=([^,]*)", m.group(1)))
+            insane = {"head": f.get("alhead", "").split(), "link": f.get("allink", "").split(), "tails": f.get("altail", "").split()}
+            continue
         l = raw.split(";")[0].strip()
         if not l:
             continue
@@ -82,6 +90,9 @@ def molecules(path):
         if sec == "moleculetype":
             cur = {"atoms": [], "bonds": [], "constraints": [], "angles": [], "dihedrals": [], "exclusions": [], "vsites": [],
                    "nrexcl": int(w[1]) if len(w) > 1 else 1, "source": os.path.basename(path)}
+            if insane:
+                cur["insane"] = insane
+                insane = None
             out[w[0]] = cur
             sec = None
             continue

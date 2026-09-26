@@ -108,6 +108,17 @@ molecule to a residue by graph (elements, bonds, hydrogen counts), so any atom n
 | geometric (default) | 43 of 43 recognised and mapped; mapped bond lengths 0.32 Å rms from the model's on average, most aromatic molecules within 0.1 Å (INDO 0.04, NAFT 0.06, PYRM 0.05); saturated two-bead rings (THP, CHXE, DIOX, THF) about 1 Å (their model bond is longer than the mapped distance with either centre) |
 | mass (vermouth's) | 43 of 43; 0.80 Å rms on average |
 
+### Martini 3 lipids
+
+The 109 phospholipids of cgmartini's `martini_v3.0.0_phospholipids_v1.itp` (PC, PE, PS, PG, PA) carry insane's building
+blocks (head, linker, one C / D letter per tail bead); the templates keep them. No Martini 3 atomistic lipid mapping is
+published with the models, so CAPS maps by the building blocks (its own rule, `martini3_lipids`): the phosphate, the
+glycerol with its two esters, the head group and each acyl chain are found by structure; a chain is split as evenly as
+possible into the model's tail beads, a bead "D" when a double bond starts in it (this reproduces the models' letters
+for oleoyl, linoleoyl, linolenoyl, arachidonoyl, EPA); of the templates whose letters match, the one nearest four
+carbons per tail bead is the lipid. POPC, DPPC, DOPE, POPS, POPG, POPA and DAPC built from SMILES are recognised as
+themselves; mapped bond lengths about 0.8 Å rms from the model's before relaxing.
+
 In GROMACS (`check_martini3.py`) the 43 mapped molecules together agree to 1.1e-6, anthracene's virtual sites built on
 a virtual site included (exported as `virtual_sites2` / `virtual_sites3`).
 
