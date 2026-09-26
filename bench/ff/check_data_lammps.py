@@ -78,6 +78,11 @@ CASES = [
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
                                                "FP(F)(F)(F)F.C[Si](C)(C)O[Si](C)(C)C.CSSC"), "uff", "types", "rules"),
     ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
+    # TraPPE in its own styles: the c1-c3 torsions as dihedral opls, 14 Å with TraPPE's 1-4 exclusions (united atom;
+    # explicit-hydrogen aromatics)
+    ("TraPPE-UA: dodecane, 2-methylpentane (opls torsions)", ("smiles", "CCCCCCCCCCCC.CC(C)CCC"), "trappe-ua", "keep", "rules"),
+    ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
+    ("TraPPE-EH: benzene, naphthalene", ("smiles", "c1ccccc1.c1ccc2ccccc2c1"), "trappe-eh", "keep", "rules"),
     ("Miscellaneous set: HFA-134a, methanol, chloroform, isopentane", ("smiles", "FCC(F)(F)F.CO.ClC(Cl)Cl.CCC(C)C"), "misc", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
@@ -335,6 +340,10 @@ for label, src, fid, charges, typing in CASES:
         continue
     lm = {"bond": le["E_bond"], "angle": le["E_angle"], "dihedral": le["E_dihed"], "improper": le["E_impro"], "vdw": le["E_vdwl"],
           "coulomb": le["E_coul"] + le["E_long"]}
+    # torsion constants the opls style cannot hold (TraPPE's c0) are left out of the LAMMPS file; CAPS reports their total
+    c0 = re.search(r"the dihedral energy lower by (\S+) kcal/mol", r.stdout)
+    if c0:
+        lm["dihedral"] += float(c0.group(1))
     # with PME both codes reach the Ewald limit only to their discretisation and the real-space erfc approximation
     # (Abramowitz–Stegun, 1.5e-7 per pair, as LAMMPS): the Coulomb term is compared to 1e-3 kcal/mol absolute there
     de = max(abs(ce[k] - lm[k]) / (max(1.0, abs(ce[k])) if not (PME and k == "coulomb") else 100.0) for k in ce)
