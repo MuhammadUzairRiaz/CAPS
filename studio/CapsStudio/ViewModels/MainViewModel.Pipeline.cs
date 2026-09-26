@@ -86,11 +86,11 @@ public sealed partial class MainViewModel
     private static string ShortFf(string name) => Shorten(name, 22);
     private static string Shorten(string s, int n) => s.Length <= n ? s : s[..(n - 1)] + "…";
 
-    public string PipelineNextLabel => PipelineSteps.FirstOrDefault(s => s.State is "next" or "warn") is { } s ? "Next: " + s.Name : "";
+    public string PipelineNextLabel => PipelineSteps.FirstOrDefault(s => s.State is "next" or "warn") is { Current: false } s ? "Next: " + s.Name : "";
     public bool HasPipelineNext => PipelineNextLabel.Length > 0;
     public void GoPipelineNext()
     {
-        if (PipelineSteps.FirstOrDefault(s => s.State is "next" or "warn") is { } s) GoPipelineStep(s);
+        if (PipelineSteps.FirstOrDefault(s => s.State is "next" or "warn") is { Current: false } s) GoPipelineStep(s);
     }
     public void GoPipelineStep(PipelineStep s)
     {
