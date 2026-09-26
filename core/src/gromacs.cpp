@@ -65,11 +65,13 @@ std::string type_label(const std::string& full) {
 }
 
 // An atom name for the itp and gro (5 characters): the structure's own name when it is one (a PDB name such as CA or
-// HB2), otherwise the element with its count in the molecule (C1, H14; C* past 9999)
-std::string atom_label(const Atom& a, std::map<int, int>& count) {
+// HB2; not a force-field type a typed file carries as the name), otherwise the element with its count in the molecule
+// (C1, H14; C* past 9999)
+std::string atom_label(const Atom& a, const std::string& type, std::map<int, int>& count) {
   const std::string sym = element(a.element).symbol;
   const std::string& nm = a.name;
-  if (!nm.empty() && nm.size() <= 5 && nm.find('_') == std::string::npos && std::isalpha(static_cast<unsigned char>(nm[0]))) return clean(nm);
+  if (!nm.empty() && nm != type && nm.size() <= 5 && nm.find('_') == std::string::npos && std::isalpha(static_cast<unsigned char>(nm[0])))
+    return clean(nm);
   const int k = ++count[a.element];
   const std::string num = std::to_string(k);
   return sym.size() + num.size() <= 5 ? sym + num : sym + "*";
@@ -356,7 +358,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     std::map<int, int> per_element;
     for (uint32_t i = 0; i < n; ++i) {
       if (i == 0 || mol_of[i] != mol_of[i - 1]) per_element.clear();
-      aname[i] = atom_label(s.atoms[i], per_element);
+      aname[i] = atom_label(s.atoms[i], ff.type_names[size_t(ff.type_index[i])], per_element);
     }
   }
   // each molecule's sections with local numbering; identical text is one molecule type
