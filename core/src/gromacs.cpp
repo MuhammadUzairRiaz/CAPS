@@ -120,6 +120,10 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   if (!ff.bonds2.empty() || !ff.angles2.empty() || !ff.dihedrals2.empty() || !ff.impropers2.empty())
     throw FieldError(ff.name + ": class II terms (COMPASS, PCFF) have no GROMACS functions; export to LAMMPS instead");
   if (!ff.inversions.empty()) throw FieldError(ff.name + ": inversion (umbrella) terms (DREIDING, UFF) have no GROMACS function; export to LAMMPS instead");
+  if (ff.lj_fsw)
+    notes.push_back("Lennard-Jones with GROMACS's force switch from " + std::to_string(ff.lj_inner / 10).substr(0, 4) + " nm (CHARMM36's GROMACS setting); "
+                    "its polynomial differs slightly from CHARMM's own switch (CAPS, LAMMPS lj/charmmfsw), and GROMACS's 1-4 pairs carry "
+                    "no switch offset: about 0.1 % of the Lennard-Jones energy");
   for (const auto& b : ff.bonds_x)
     if (b.form != 1 && b.form != 2) throw FieldError("bond form " + std::to_string(b.form) + " has no GROMACS function");
   for (const auto& a : ff.angles_x)
@@ -160,8 +164,13 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
   m << "rvdw                     = " << e.cutoff / 10 << "\n";
   m << "rcoulomb                 = " << e.cutoff / 10 << "\n";
   m << "vdwtype                  = Cut-off\n";
-  const bool tail = e.tail && !ff.lj_shift;
-  m << "vdw-modifier             = " << (tail ? "None" : "Potential-shift") << "\n";
+  const bool tail = e.tail && !ff.lj_shift && !ff.lj_fsw;
+  if (ff.lj_fsw) {   // CHARMM: the force switch from lj_inner (as CHARMM-GUI writes CHARMM36 for GROMACS), no dispersion correction
+    m << "vdw-modifier             = Force-switch\n";
+    m << "rvdw-switch              = " << ff.lj_inner / 10 << "\n";
+  } else {
+    m << "vdw-modifier             = " << (tail ? "None" : "Potential-shift") << "\n";
+  }
   m << "DispCorr                 = " << (tail && cell ? "AllEnerPres" : "no") << "\n";
   if (ff.dielectric != 1 && e.coulomb) m << "epsilon-r                = " << ff.dielectric << "\n";
   if (e.coulomb && ff.coul_rf) {   // Martini 3: reaction field, ε_rf 0 meaning infinite

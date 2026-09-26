@@ -238,6 +238,10 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
     : ff_(ff), opt_(o), pool_(std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads())) {
   if (ff.cutoff > 0) opt_.cutoff = ff.cutoff;
   if (ff.lj_shift) opt_.tail = false;   // Martini 3: shifted at the cut-off, no tail correction
+  if (ff.lj_fsw) {   // CHARMM: switched to zero at the cut-off, no tail correction
+    opt_.tail = false;
+    if (ff.lj_inner <= 0 || ff.lj_inner >= opt_.cutoff) throw FieldError("the CHARMM force switch needs an inner radius below the cut-off");
+  }
   // a relative permittivity εr (MARTINI 15, SDK 80) divides every Coulomb term: charges scaled by 1/√εr throughout
   if (ff.dielectric <= 0) throw FieldError("the relative permittivity must be positive");
   qeff_ = ff.charge;
@@ -300,7 +304,7 @@ int Evaluator::threads() const { return pool_->size(); }
 void Evaluator::set_options(const EnergyOptions& o0) {
   EnergyOptions o = o0;
   if (ff_.cutoff > 0) o.cutoff = ff_.cutoff;   // the model's own cut-off
-  if (ff_.lj_shift) o.tail = false;
+  if (ff_.lj_shift || ff_.lj_fsw) o.tail = false;
   if (o.threads != opt_.threads) pool_ = std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads());
   const bool relist = o.cutoff != opt_.cutoff || o.skin != opt_.skin;
   opt_ = o;
@@ -870,6 +874,21 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       en += scale * (ecap_[tp] + fcap_[tp] * (rcp - r));
       return scale * fcap_[tp] / r;
     }
+    if (ff_.lj_fsw && !lj96_) {
+      // CHARMM force switch: below r_in the plain 12-6 plus a constant, between r_in and r_c
+      //   E = A k12 (r⁻⁶ − r_c⁻⁶)² − B k6 (r⁻³ − r_c⁻³)²,  k12 = r_c⁶/(r_c⁶ − r_in⁶), k6 = r_c³/(r_c³ − r_in³)
+      // (A = 4εσ¹², B = 4εσ⁶); the force is its exact derivative
+      const double A = 4 * eps * s6_[tp] * s6_[tp], B = 4 * eps * s6_[tp], ri = ff_.lj_inner;
+      const double ri3 = ri * ri * ri, rc3 = rc2 * rc, ri6 = ri3 * ri3, rc6 = rc3 * rc3, r6i = 1 / (r2 * r2 * r2);
+      if (r2 <= ri * ri) {
+        en += scale * (A * (r6i * r6i - 1 / (ri6 * rc6)) - B * (r6i - 1 / (ri3 * rc3)));
+        return scale * (12 * A * r6i * r6i - 6 * B * r6i) / r2;
+      }
+      const double r3i = 1 / (r2 * std::sqrt(r2)), k12 = rc6 / (rc6 - ri6), k6 = rc3 / (rc3 - ri3);
+      const double u = r6i - 1 / rc6, w = r3i - 1 / rc3;
+      en += scale * (A * k12 * u * u - B * k6 * w * w);
+      return scale * (12 * A * k12 * u * r6i - 6 * B * k6 * w * r3i) / r2;
+    }
     const double q = s6_[tp] / (r2 * r2 * r2);
     if (lj96_) {
       const double q9 = q * std::sqrt(q);   // (σ/r)⁹
@@ -883,7 +902,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   // Energy shift so that LJ is zero at the cut-off.
   // With the tail correction the LJ energy is truncated, not shifted (the tail term assumes the plain potential).
   auto lj_shift = [&](size_t tp) {
-    if (opt_.tail || form_[tp] == kPairGromacs || form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca) return 0.0;   // zero at their cut-offs by construction
+    if (opt_.tail || ff_.lj_fsw || form_[tp] == kPairGromacs || form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca) return 0.0;   // zero at their cut-offs by construction
     if (form_[tp] != 0) {
       double e0 = 0;
       lj(tp, rc2, 1.0, e0);
@@ -1098,7 +1117,10 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           const double r2 = dot(d, d), qq = s614_[tp] / (r2 * r2 * r2), e14 = eps14_[tp];
           ev = ff_.lj14 * 4 * e14 * (qq * qq - qq);
           fr = ff_.lj14 * 24 * e14 * (2 * qq * qq - qq) / r2;
-          if (!opt_.tail) {
+          if (ff_.lj_fsw) {   // the force switch's constant below r_in (LAMMPS dihedral charmmfsw adds the same)
+            const double ri3 = std::pow(ff_.lj_inner, 3), rc3 = rc2 * std::sqrt(rc2), s6 = s614_[tp];
+            ev -= ff_.lj14 * 4 * e14 * (s6 * s6 / (ri3 * ri3 * rc3 * rc3) - s6 / (ri3 * rc3));
+          } else if (!opt_.tail) {
             const double qc = s614_[tp] / (rc2 * rc2 * rc2);
             ev -= ff_.lj14 * 4 * e14 * (qc * qc - qc);
           }

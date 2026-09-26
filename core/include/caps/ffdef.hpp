@@ -88,6 +88,8 @@ struct FFDef {
   bool model_cutoff = false;
   // Martini 3 ("coulomb": "reaction-field", "eps_rf", "lj_modifier": "potential-shift" in pair_settings)
   bool coul_rf = false, lj_shift = false;
+  // CHARMM (pair_settings "lj_modifier": "charmm-force-switch", "lj_inner" 10 with the model cut-off 12): LAMMPS lj/charmmfsw
+  bool lj_fsw = false;
   double eps_rf = 0;
   // Torsions only where the file defines them ("torsion_terms": "if_defined"; MARTINI, SDK: TORSION IGNORE in their
   // sources): a dihedral with no term is not missing

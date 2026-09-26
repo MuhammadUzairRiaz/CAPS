@@ -149,6 +149,9 @@ struct ForceField {
   bool coul_rf = false;
   double eps_rf = 0;
   bool lj_shift = false;
+  // CHARMM's force switch for Lennard-Jones (Steinbach & Brooks 1994, CHARMM vfswitch; LAMMPS lj/charmmfsw) from
+  // lj_inner to the cut-off: every LJ pair, and the constant energy offset below lj_inner on the 1-4 pairs too
+  bool lj_fsw = false;
   std::vector<VirtualSite> vsites;
   std::vector<std::string> notes;
 };

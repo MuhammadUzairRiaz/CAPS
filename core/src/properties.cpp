@@ -1510,6 +1510,7 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   s.coul_gromacs = ff.coul_gromacs;
   s.coul_inner = ff.coul_inner;
   s.lj_inner = ff.lj_inner;
+  s.lj_fsw = ff.lj_fsw;
   s.dielectric = ff.dielectric;
   s.cutoff = ff.cutoff;
   for (uint32_t a : atoms) {
