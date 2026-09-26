@@ -349,6 +349,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.improper_max_neighbours) j["improper_max_neighbours"] = ff.improper_max_neighbours;
   if (ff.wildcard_torsion_scaling != "none") j["wildcard_torsion_scaling"] = ff.wildcard_torsion_scaling;
   if (!ff.torsion_rules.empty()) j["torsion_rules"] = ff.torsion_rules;
+  if (ff.angle_contacts > 0) j["angle_contacts"] = ff.angle_contacts;
   if (!ff.hbonds.terms.empty()) {
     Json h = Json::object(), ts = Json::array();
     h["power"] = double(ff.hbonds.power), h["inner"] = ff.hbonds.inner, h["outer"] = ff.hbonds.outer, h["angle"] = ff.hbonds.angle;
@@ -498,6 +499,7 @@ FFDef load_forcefield(const std::string& path) {
   ff.improper_max_neighbours = int(j.num("improper_max_neighbours", 0));
   ff.wildcard_torsion_scaling = j.text("wildcard_torsion_scaling", ff.wildcard_torsion_scaling);
   ff.torsion_rules = j.text("torsion_rules");
+  ff.angle_contacts = j.num("angle_contacts", 0);
   if (j.has("hbonds")) {
     const Json& h = j["hbonds"];
     ff.hbonds.power = int(h.num("power", 4));
@@ -1719,6 +1721,32 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
         rep.used["angle " + r->name]++;
       }
+  // ClayFF's metal–O–H bends: an atom with no bonds (the metal) within angle_contacts of the apex; no bond is made, so
+  // the metal and the hydrogen keep their non-bonded terms, as in ClayFF (LAMMPS: the angle listed, no bond)
+  if (def.angle_contacts > 0 && !use_topo) {
+    const double rc2 = def.angle_contacts * def.angle_contacts;
+    int n_contact = 0;
+    std::vector<uint32_t> loose;
+    for (uint32_t a = 0; a < n; ++a)
+      if (nb[a].empty()) loose.push_back(a);
+    for (uint32_t j = 0; j < n && !loose.empty(); ++j) {
+      if (nb[j].empty()) continue;
+      for (uint32_t i : loose) {
+        Vec3 d = s.atoms[i].pos - s.atoms[j].pos;
+        if (s.cell.valid()) d = s.cell.minimum_image(d);
+        if (dot(d, d) >= rc2) continue;
+        for (uint32_t k : nb[j]) {
+          bool rev = false;
+          const FFRule* r = lookup12(def.angles, Na, Na2, {i, j, k}, &rev);
+          if (!r || r->params.size() < 2 || (r->style.empty() ? def.angle_style : r->style) != "harmonic") continue;
+          ff.angles.push_back({i, j, k, r->params[0], r->params[1] * kDeg});
+          rep.used["angle " + r->name]++;
+          ++n_contact;
+        }
+      }
+    }
+    if (n_contact) rep.notes.push_back(std::to_string(n_contact) + " bends through unbonded contacts (" + std::to_string(def.angle_contacts).substr(0, 4) + " Å; ClayFF's M–O–H)");
+  }
   // DREIDING's torsion rules (Mayo, Olafson, Goddard, J. Phys. Chem. 94, 8897 (1990)): E = ½V[1 − cos(n(φ − φ0))] by the
   // hybridisation of the central atoms j, k (the character after "_" in the type: 1, 2, 3, R), V then divided over the
   // (nj − 1)(nk − 1) torsions about the bond. Bond orders, aromatic bonds from the structure's perception.
