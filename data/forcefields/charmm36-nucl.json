@@ -12232,5 +12232,6 @@
  ],
  "version": "",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): the original nucleic-acid example identical (types nucleic templates carry no impropers; CAPS adds them from the rules)."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): the original nucleic-acid example identical (types nucleic templates carry no impropers; CAPS adds them from the rules).",
+ "typing": "../typing/charmm36-nucl.typing.json"
 }

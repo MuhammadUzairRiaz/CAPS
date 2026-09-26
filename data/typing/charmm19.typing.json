@@ -1,0 +1,154 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CHARMM19 united atom",
+ "description": "CAPS rules for CHARMM19 united atom from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. United-atom: hydrogens on carbon fold into their carbons before typing. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CH1E",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "united CH"
+  },
+  {
+   "type": "CH2E",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "united CH2"
+  },
+  {
+   "type": "CH3E",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "united CH3"
+  },
+  {
+   "type": "CT",
+   "smarts": "[CX4H0]",
+   "priority": 0,
+   "description": "aliphatic carbon without H"
+  },
+  {
+   "type": "CR1E",
+   "smarts": "[cH1]",
+   "priority": 1,
+   "description": "united aromatic CH"
+  },
+  {
+   "type": "C",
+   "smarts": "[c,C;H0;X3]",
+   "priority": 1,
+   "description": "carbonyl or aromatic carbon without H"
+  },
+  {
+   "type": "O",
+   "smarts": "[OX1]=[#6]",
+   "priority": 1,
+   "description": "carbonyl oxygen"
+  },
+  {
+   "type": "OC",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OS",
+   "smarts": "[OX2]([#6])[#6]",
+   "priority": 0,
+   "description": "ester (and ether) oxygen"
+  },
+  {
+   "type": "OH1",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "NH1",
+   "smarts": "[NX3H1]",
+   "priority": 1,
+   "description": "nitrogen with one H"
+  },
+  {
+   "type": "NH2",
+   "smarts": "[NX3H2]",
+   "priority": 1,
+   "description": "nitrogen with two H"
+  },
+  {
+   "type": "N",
+   "smarts": "[NX3H0]",
+   "priority": 0,
+   "description": "nitrogen without H"
+  },
+  {
+   "type": "NH3",
+   "smarts": "[NX4+]",
+   "priority": 3,
+   "description": "ammonium nitrogen"
+  },
+  {
+   "type": "NR",
+   "smarts": "[nX2]",
+   "priority": 1,
+   "description": "aromatic nitrogen without H"
+  },
+  {
+   "type": "NP",
+   "smarts": "[nX3H1]",
+   "priority": 1,
+   "description": "pyrrole nitrogen"
+  },
+  {
+   "type": "H",
+   "smarts": "[H][N,O,n]",
+   "priority": 0,
+   "description": "polar H"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][NX4+]",
+   "priority": 2,
+   "description": "H on a charged nitrogen"
+  },
+  {
+   "type": "S",
+   "smarts": "[SX2]",
+   "priority": 0,
+   "description": "sulfur"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "TIP3P water O"
+  },
+  {
+   "type": "H",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  }
+ ],
+ "united_atom": true,
+ "analogies": {
+  "CH1E": [
+   "CH2E",
+   "CH3E"
+  ],
+  "CH2E": [
+   "CH1E",
+   "CH3E"
+  ],
+  "CH3E": [
+   "CH2E",
+   "CH1E"
+  ],
+  "CT": [
+   "CH1E"
+  ]
+ },
+ "analogy_source": "CHARMM19 united atom analogues: the same element and hybridisation, nearest in hydrogen count"
+}

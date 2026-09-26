@@ -14657,5 +14657,6 @@
  ],
  "version": "1998",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 35 of 35 buildable templates and the whole SOD1 protein (4412 bonds, 7986 angles, 8968 torsion terms, 3556 Urey-Bradley, 11472 1-4 pairs) identical."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 35 of 35 buildable templates and the whole SOD1 protein (4412 bonds, 7986 angles, 8968 torsion terms, 3556 Urey-Bradley, 11472 1-4 pairs) identical.",
+ "typing": "../typing/charmm22-prot.typing.json"
 }

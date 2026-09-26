@@ -1,0 +1,226 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "AMBER (Cornell et al. 1995 family)",
+ "description": "CAPS rules for AMBER (Cornell et al. 1995 family) from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "C1",
+   "smarts": "[CX4]",
+   "priority": 0,
+   "description": "sp3 carbon (CT)"
+  },
+  {
+   "type": "CA",
+   "smarts": "c",
+   "priority": 1,
+   "description": "aromatic carbon"
+  },
+  {
+   "type": "G_Ck",
+   "smarts": "[CX3]=[CX3]",
+   "priority": 1,
+   "description": "alkene sp2 carbon (GLYCAM Ck)"
+  },
+  {
+   "type": "C",
+   "smarts": "[CX3]=[OX1]",
+   "priority": 2,
+   "description": "carbonyl carbon (amide, ester, acid, ketone)"
+  },
+  {
+   "type": "CY",
+   "smarts": "[CX2]#[NX1]",
+   "priority": 2,
+   "description": "nitrile carbon"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "H on sp3 C without electron-withdrawing neighbours"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4;$(*[N,O,S,F,Cl,Br,I]);!$(*([N,O,S,F,Cl,Br,I])[N,O,S,F,Cl,Br,I])]",
+   "priority": 1,
+   "description": "H on sp3 C with one electron-withdrawing neighbour (N, O, S, halogen)"
+  },
+  {
+   "type": "H2",
+   "smarts": "[H][CX4;$(*([N,O,S,F,Cl,Br,I])[N,O,S,F,Cl,Br,I])]",
+   "priority": 2,
+   "description": "H on sp3 C with two electron-withdrawing neighbours"
+  },
+  {
+   "type": "HP",
+   "smarts": "[H][CX4][N+,n+]",
+   "priority": 3,
+   "description": "H on C next to a positively charged group"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H]c",
+   "priority": 0,
+   "description": "aromatic H"
+  },
+  {
+   "type": "G_Ha",
+   "smarts": "[H][CX3]=[CX3]",
+   "priority": 1,
+   "description": "H on an alkene carbon (GLYCAM Ha)"
+  },
+  {
+   "type": "HN",
+   "smarts": "[H][N,n]",
+   "priority": 0,
+   "description": "H on N"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][OX2]",
+   "priority": 0,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "HS",
+   "smarts": "[H][SX2]",
+   "priority": 0,
+   "description": "thiol H"
+  },
+  {
+   "type": "N1",
+   "smarts": "[NX3][CX3]=[OX1]",
+   "priority": 2,
+   "description": "sp2 amide nitrogen"
+  },
+  {
+   "type": "N4",
+   "smarts": "[NX3;!$(N[CX3]=[OX1]);!$(Nc)]",
+   "priority": 0,
+   "description": "sp3 amino nitrogen"
+  },
+  {
+   "type": "N2",
+   "smarts": "[NX3;!$(N[CX3]=[OX1])]c",
+   "priority": 1,
+   "description": "sp2 nitrogen of an amino group on an aromatic ring"
+  },
+  {
+   "type": "N3",
+   "smarts": "[NX4+]",
+   "priority": 3,
+   "description": "sp3 ammonium nitrogen"
+  },
+  {
+   "type": "NY",
+   "smarts": "[NX1]#[CX2]",
+   "priority": 2,
+   "description": "nitrile nitrogen"
+  },
+  {
+   "type": "N5",
+   "smarts": "[nX2;r5]",
+   "priority": 2,
+   "description": "sp2 nitrogen in a five-membered ring with a lone pair (NB)"
+  },
+  {
+   "type": "N5H",
+   "smarts": "[nX3;r5]",
+   "priority": 2,
+   "description": "sp2 nitrogen in a five-membered ring with H or a substituent (NA)"
+  },
+  {
+   "type": "O",
+   "smarts": "[OX1]=[#6]",
+   "priority": 1,
+   "description": "carbonyl oxygen"
+  },
+  {
+   "type": "OC",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OS",
+   "smarts": "[OX2]([#6])[#6]",
+   "priority": 0,
+   "description": "ether or ester oxygen"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "S1",
+   "smarts": "[SX2][SX2]",
+   "priority": 1,
+   "description": "disulfide sulfur"
+  },
+  {
+   "type": "S2",
+   "smarts": "[SX2H1]",
+   "priority": 1,
+   "description": "thiol sulfur"
+  },
+  {
+   "type": "P",
+   "smarts": "[PX4]",
+   "priority": 0,
+   "description": "phosphate phosphorus"
+  },
+  {
+   "type": "OW",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "Na+",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "Cl-",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  },
+  {
+   "type": "Ca2+",
+   "smarts": "[Ca]",
+   "priority": 0,
+   "description": "calcium ion"
+  }
+ ],
+ "analogies": {
+  "G_Ck": [
+   "CA"
+  ],
+  "G_Ha": [
+   "HA"
+  ],
+  "H1": [
+   "HC"
+  ],
+  "H2": [
+   "H1",
+   "HC"
+  ],
+  "HP": [
+   "HC"
+  ]
+ },
+ "analogy_source": "AMBER (Cornell et al. 1995 family) analogues: the same element and hybridisation, nearest in hydrogen count"
+}

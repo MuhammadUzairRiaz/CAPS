@@ -1,0 +1,40 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TraPPE-UA alkanes",
+ "description": "CAPS rules for TraPPE-UA alkanes from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. United-atom: hydrogens on carbon fold into their carbons before typing. Types this file lacks leave their atoms untyped: CH0, CH1.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CH4",
+   "smarts": "[CX4H4]",
+   "priority": 0,
+   "description": "methane"
+  },
+  {
+   "type": "CH3",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "CH3"
+  },
+  {
+   "type": "CH2",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "CH2"
+  },
+  {
+   "type": "CH1",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "CH"
+  },
+  {
+   "type": "CH0",
+   "smarts": "[CX4H0]",
+   "priority": 0,
+   "description": "quaternary C"
+  }
+ ],
+ "united_atom": true
+}

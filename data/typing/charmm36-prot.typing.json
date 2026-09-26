@@ -1,0 +1,267 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CHARMM36 proteins",
+ "description": "CAPS rules for CHARMM36 proteins from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CT1",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "aliphatic sp3 CH"
+  },
+  {
+   "type": "CT2",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "aliphatic sp3 CH2"
+  },
+  {
+   "type": "CT3",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "aliphatic sp3 CH3"
+  },
+  {
+   "type": "CT",
+   "smarts": "[CX4H0]",
+   "priority": 0,
+   "description": "aliphatic sp3 C without H"
+  },
+  {
+   "type": "HA1",
+   "smarts": "[H][CX4H1]",
+   "priority": 0,
+   "description": "H on an aliphatic CH"
+  },
+  {
+   "type": "HA2",
+   "smarts": "[H][CX4H2]",
+   "priority": 0,
+   "description": "H on an aliphatic CH2"
+  },
+  {
+   "type": "HA3",
+   "smarts": "[H][CX4H3]",
+   "priority": 0,
+   "description": "H on an aliphatic CH3"
+  },
+  {
+   "type": "CA",
+   "smarts": "c",
+   "priority": 1,
+   "description": "aromatic carbon"
+  },
+  {
+   "type": "HP",
+   "smarts": "[H]c",
+   "priority": 0,
+   "description": "aromatic H"
+  },
+  {
+   "type": "CE1",
+   "smarts": "[CX3;H1,H0]=[CX3]",
+   "priority": 1,
+   "description": "alkene carbon RHC= (and R2C=)"
+  },
+  {
+   "type": "CE2",
+   "smarts": "[CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "alkene carbon H2C="
+  },
+  {
+   "type": "HE1",
+   "smarts": "[H][CX3H1]=[CX3]",
+   "priority": 1,
+   "description": "H on an RHC= carbon"
+  },
+  {
+   "type": "HE2",
+   "smarts": "[H][CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "H on an H2C= carbon"
+  },
+  {
+   "type": "C",
+   "smarts": "[CX3](=[OX1])[NX3]",
+   "priority": 3,
+   "description": "amide (peptide) carbonyl carbon"
+  },
+  {
+   "type": "CD",
+   "smarts": "[CX3](=[OX1])[OX2]",
+   "priority": 3,
+   "description": "carbonyl carbon of an acid or ester"
+  },
+  {
+   "type": "CC",
+   "smarts": "[CX3](=[OX1])[OX1-]",
+   "priority": 4,
+   "description": "carboxylate carbon"
+  },
+  {
+   "type": "CC",
+   "smarts": "[CX3](=[OX1])[NX3H2]",
+   "priority": 4,
+   "description": "primary amide carbon (as the asparagine side chain)"
+  },
+  {
+   "type": "O",
+   "smarts": "[OX1]=[CX3][NX3]",
+   "priority": 2,
+   "description": "amide carbonyl oxygen"
+  },
+  {
+   "type": "OB",
+   "smarts": "[OX1]=[CX3][OX2]",
+   "priority": 2,
+   "description": "carbonyl oxygen of an acid or ester"
+  },
+  {
+   "type": "OC",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OS",
+   "smarts": "[OX2]([#6])[CX3]=[OX1]",
+   "priority": 2,
+   "description": "ester oxygen"
+  },
+  {
+   "type": "OH1",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "NH1",
+   "smarts": "[NX3H1][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide nitrogen with one H"
+  },
+  {
+   "type": "NH2",
+   "smarts": "[NX3H2][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide nitrogen with two H"
+  },
+  {
+   "type": "N",
+   "smarts": "[NX3H0][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide nitrogen without H (proline)"
+  },
+  {
+   "type": "NH3",
+   "smarts": "[NX4+]",
+   "priority": 3,
+   "description": "ammonium nitrogen"
+  },
+  {
+   "type": "H",
+   "smarts": "[H][N,O]",
+   "priority": 0,
+   "description": "polar H"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][NX4+]",
+   "priority": 1,
+   "description": "H on an ammonium nitrogen"
+  },
+  {
+   "type": "S",
+   "smarts": "[SX2]([#6])[#6]",
+   "priority": 1,
+   "description": "sulfide sulfur"
+  },
+  {
+   "type": "SM",
+   "smarts": "[SX2][SX2]",
+   "priority": 1,
+   "description": "disulfide sulfur"
+  },
+  {
+   "type": "HS",
+   "smarts": "[H][SX2]",
+   "priority": 1,
+   "description": "thiol H"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HT",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "SOD",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "CLA",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  },
+  {
+   "type": "POT",
+   "smarts": "[K]",
+   "priority": 0,
+   "description": "potassium ion"
+  }
+ ],
+ "analogies": {
+  "CT1": [
+   "CT2",
+   "CT3"
+  ],
+  "CT2": [
+   "CT1",
+   "CT3"
+  ],
+  "CT3": [
+   "CT2",
+   "CT1"
+  ],
+  "CT": [
+   "CT1"
+  ],
+  "HA1": [
+   "HA2",
+   "HA3"
+  ],
+  "HA2": [
+   "HA3",
+   "HA1"
+  ],
+  "HA3": [
+   "HA2",
+   "HA1"
+  ],
+  "CE1": [
+   "CE2"
+  ],
+  "CE2": [
+   "CE1"
+  ],
+  "HE1": [
+   "HE2"
+  ],
+  "HE2": [
+   "HE1"
+  ]
+ },
+ "analogy_source": "CHARMM36 proteins analogues: the same element and hybridisation, nearest in hydrogen count"
+}

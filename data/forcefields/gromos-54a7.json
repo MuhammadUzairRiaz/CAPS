@@ -593,6 +593,17 @@
     0.5847858976,
     3.38556744
    ]
+  },
+  {
+   "name": "H",
+   "match": [
+    "H"
+   ],
+   "params": [
+    0,
+    0
+   ],
+   "comment": "CAPS extension: GROMOS polar hydrogens carry no Lennard-Jones (C6 = C12 = 0; Schmid et al. 2011)"
   }
  ],
  "bonds": [
@@ -1890,5 +1901,6 @@
  ],
  "version": "2011",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): octane identical; bonds kept as the GROMOS quartic form (the original distribution writes a harmonic approximation)."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): octane identical; bonds kept as the GROMOS quartic form (the original distribution writes a harmonic approximation).",
+ "typing": "../typing/gromos-54a7.typing.json"
 }

@@ -117,5 +117,6 @@
  ],
  "version": "1998",
  "status": "converted",
- "validation": "united atoms: element guesses from mass are not meaningful."
+ "validation": "united atoms: element guesses from mass are not meaningful.",
+ "typing": "../typing/trappe1998-moltemplate.typing.json"
 }

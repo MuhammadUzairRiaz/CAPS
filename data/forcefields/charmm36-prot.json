@@ -20725,5 +20725,6 @@
  ],
  "version": "2012",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) identical: 896 bonds, 1608 angles, 1843 torsion terms, 700 Urey-Bradley, 2322 1-4 pairs."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) identical: 896 bonds, 1608 angles, 1843 torsion terms, 700 Urey-Bradley, 2322 1-4 pairs.",
+ "typing": "../typing/charmm36-prot.typing.json"
 }

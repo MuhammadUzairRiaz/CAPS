@@ -3506,5 +3506,6 @@
  ],
  "version": "1998",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are the original C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are the original C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion.",
+ "typing": "../typing/trappe-ua.typing.json"
 }

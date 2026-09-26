@@ -14516,5 +14516,6 @@
  ],
  "version": "Cornell et al. 1995 family",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) and a methyl glucoside identical."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) and a methyl glucoside identical.",
+ "typing": "../typing/amber.typing.json"
 }

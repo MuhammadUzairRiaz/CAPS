@@ -1,0 +1,189 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CHARMM36 carbohydrates",
+ "description": "CAPS rules for CHARMM36 carbohydrates from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: HT, OT.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CC331",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "methyl carbon"
+  },
+  {
+   "type": "CC321",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "exocyclic CH2 (C6)"
+  },
+  {
+   "type": "CC3161",
+   "smarts": "[CX4H1;r6]",
+   "priority": 1,
+   "description": "pyranose ring CH (C2-C4)"
+  },
+  {
+   "type": "CC3263",
+   "smarts": "[CX4H2;r6]",
+   "priority": 1,
+   "description": "pyranose ring CH2"
+  },
+  {
+   "type": "CC3163",
+   "smarts": "[CX4H1;r6;$(*@[OX2;r6]);!$(*[OX2;!r6])]",
+   "priority": 2,
+   "description": "pyranose C5 (ring oxygen and an exocyclic carbon)"
+  },
+  {
+   "type": "CC3162",
+   "smarts": "[CX4;r6;$(*@[OX2;r6]);$(*-[OX2;!R])]",
+   "priority": 3,
+   "description": "pyranose C1 (anomeric: ring oxygen and an exocyclic oxygen)"
+  },
+  {
+   "type": "CC3151",
+   "smarts": "[CX4H1;r5]",
+   "priority": 1,
+   "description": "furanose ring CH"
+  },
+  {
+   "type": "CC3251",
+   "smarts": "[CX4H2;r5]",
+   "priority": 1,
+   "description": "furanose ring CH2"
+  },
+  {
+   "type": "CC3152",
+   "smarts": "[CX4;r5;$(*@[OX2;r5]);$(*-[OX2;!R])]",
+   "priority": 3,
+   "description": "furanose C1 (anomeric)"
+  },
+  {
+   "type": "CC3153",
+   "smarts": "[CX4H1;r5;$(*@[OX2;r5]);!$(*-[OX2;!R])]",
+   "priority": 2,
+   "description": "furanose C4 (ring oxygen and an exocyclic carbon)"
+  },
+  {
+   "type": "OC3C61",
+   "smarts": "[OX2;r6]",
+   "priority": 2,
+   "description": "pyranose ring oxygen"
+  },
+  {
+   "type": "OC3C51",
+   "smarts": "[OX2;r5]",
+   "priority": 2,
+   "description": "furanose ring oxygen"
+  },
+  {
+   "type": "OC311",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "HCP1",
+   "smarts": "[H][OX2]",
+   "priority": 1,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "HCA1",
+   "smarts": "[H][CX4H1]",
+   "priority": 0,
+   "description": "H on CH"
+  },
+  {
+   "type": "HCA2",
+   "smarts": "[H][CX4H2]",
+   "priority": 0,
+   "description": "H on CH2"
+  },
+  {
+   "type": "HCA3",
+   "smarts": "[H][CX4H3]",
+   "priority": 0,
+   "description": "H on CH3"
+  },
+  {
+   "type": "CC2O1",
+   "smarts": "[CX3](=[OX1])[NX3]",
+   "priority": 3,
+   "description": "amide carbon (N-acetyl)"
+  },
+  {
+   "type": "OC2D1",
+   "smarts": "[OX1]=[CX3][NX3]",
+   "priority": 2,
+   "description": "amide oxygen"
+  },
+  {
+   "type": "NC2D1",
+   "smarts": "[NX3][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide nitrogen"
+  },
+  {
+   "type": "CC2O2",
+   "smarts": "[CX3](=[OX1])[OX1-]",
+   "priority": 3,
+   "description": "carboxylate carbon (uronic acids)"
+  },
+  {
+   "type": "OC2D2",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HT",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "SOD",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "CLA",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  },
+  {
+   "type": "POT",
+   "smarts": "[K]",
+   "priority": 0,
+   "description": "potassium ion"
+  }
+ ],
+ "analogies": {
+  "CC331": [
+   "CC321"
+  ],
+  "CC321": [
+   "CC331"
+  ],
+  "HCA1": [
+   "HCA2"
+  ],
+  "HCA2": [
+   "HCA1"
+  ],
+  "HCA3": [
+   "HCA2"
+  ]
+ },
+ "analogy_source": "CHARMM36 carbohydrates analogues: the same element and hybridisation, nearest in hydrogen count"
+}

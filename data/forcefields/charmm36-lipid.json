@@ -5740,5 +5740,6 @@
  ],
  "version": "2010",
  "status": "converted",
- "validation": "same forms as CHARMM36 (validated); the library holds no buildable lipid templates."
+ "validation": "same forms as CHARMM36 (validated); the library holds no buildable lipid templates.",
+ "typing": "../typing/charmm36-lipid.typing.json"
 }

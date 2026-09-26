@@ -24511,5 +24511,6 @@
  ],
  "version": "",
  "status": "converted",
- "validation": "same forms as CHARMM36 (validated); the original distribution could not build its own carbohydrate examples."
+ "validation": "same forms as CHARMM36 (validated); the original distribution could not build its own carbohydrate examples.",
+ "typing": "../typing/charmm36-carb.typing.json"
 }

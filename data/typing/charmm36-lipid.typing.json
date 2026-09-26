@@ -1,0 +1,216 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CHARMM36 lipids",
+ "description": "CAPS rules for CHARMM36 lipids from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CTL1",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "sp3 CH"
+  },
+  {
+   "type": "CTL2",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "sp3 CH2"
+  },
+  {
+   "type": "CTL3",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "sp3 CH3"
+  },
+  {
+   "type": "CTL5",
+   "smarts": "[CX4H3][NX4+]",
+   "priority": 2,
+   "description": "methyl on a quaternary ammonium (choline)"
+  },
+  {
+   "type": "HAL1",
+   "smarts": "[H][CX4H1]",
+   "priority": 0,
+   "description": "H on CH"
+  },
+  {
+   "type": "HAL2",
+   "smarts": "[H][CX4H2]",
+   "priority": 0,
+   "description": "H on CH2"
+  },
+  {
+   "type": "HAL3",
+   "smarts": "[H][CX4H3]",
+   "priority": 0,
+   "description": "H on CH3"
+  },
+  {
+   "type": "HL",
+   "smarts": "[H][CX4][NX4+]",
+   "priority": 2,
+   "description": "H on a carbon bonded to N+"
+  },
+  {
+   "type": "CEL1",
+   "smarts": "[CX3;H1,H0]=[CX3]",
+   "priority": 1,
+   "description": "alkene carbon =CH- (and =CR-)"
+  },
+  {
+   "type": "CEL2",
+   "smarts": "[CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "alkene carbon =CH2"
+  },
+  {
+   "type": "HEL1",
+   "smarts": "[H][CX3H1]=[CX3]",
+   "priority": 1,
+   "description": "H on =CH-"
+  },
+  {
+   "type": "HEL2",
+   "smarts": "[H][CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "H on =CH2"
+  },
+  {
+   "type": "CL",
+   "smarts": "[CX3](=[OX1])[OX2]",
+   "priority": 3,
+   "description": "ester / acid carbonyl carbon"
+  },
+  {
+   "type": "CCL",
+   "smarts": "[CX3](=[OX1])[OX1-]",
+   "priority": 4,
+   "description": "carboxylate carbon"
+  },
+  {
+   "type": "OBL",
+   "smarts": "[OX1]=[CX3][OX2]",
+   "priority": 2,
+   "description": "ester / acid carbonyl oxygen"
+  },
+  {
+   "type": "OCL",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OSL",
+   "smarts": "[OX2]([#6])[CX3]=[OX1]",
+   "priority": 2,
+   "description": "ester oxygen"
+  },
+  {
+   "type": "OHL",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "HOL",
+   "smarts": "[H][OX2]",
+   "priority": 1,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "NTL",
+   "smarts": "[NX4+;H0]",
+   "priority": 3,
+   "description": "quaternary ammonium nitrogen"
+  },
+  {
+   "type": "NH3L",
+   "smarts": "[NX4+;H3]",
+   "priority": 3,
+   "description": "ammonium nitrogen"
+  },
+  {
+   "type": "HCL",
+   "smarts": "[H][NX4+]",
+   "priority": 3,
+   "description": "H on N+"
+  },
+  {
+   "type": "PL",
+   "smarts": "[PX4]",
+   "priority": 0,
+   "description": "phosphorus"
+  },
+  {
+   "type": "O2L",
+   "smarts": "[OX1]~P",
+   "priority": 1,
+   "description": "phosphate non-bridging oxygen"
+  },
+  {
+   "type": "OSLP",
+   "smarts": "[OX2](P)[#6]",
+   "priority": 1,
+   "description": "phosphate ester oxygen"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HT",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "SOD",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "CLA",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  },
+  {
+   "type": "POT",
+   "smarts": "[K]",
+   "priority": 0,
+   "description": "potassium ion"
+  }
+ ],
+ "analogies": {
+  "CTL1": [
+   "CTL2",
+   "CTL3"
+  ],
+  "CTL2": [
+   "CTL1",
+   "CTL3"
+  ],
+  "CTL3": [
+   "CTL2",
+   "CTL1"
+  ],
+  "HAL1": [
+   "HAL2",
+   "HAL3"
+  ],
+  "HAL2": [
+   "HAL3",
+   "HAL1"
+  ],
+  "HAL3": [
+   "HAL2",
+   "HAL1"
+  ]
+ },
+ "analogy_source": "CHARMM36 lipids analogues: the same element and hybridisation, nearest in hydrogen count"
+}

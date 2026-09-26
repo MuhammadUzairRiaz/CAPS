@@ -1,0 +1,309 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CHARMM36 nucleic acids",
+ "description": "CAPS rules for CHARMM36 nucleic acids from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "P",
+   "smarts": "[PX4]",
+   "priority": 0,
+   "description": "phosphodiester phosphorus"
+  },
+  {
+   "type": "P2",
+   "smarts": "[PX4;$(P[OX2H1])]",
+   "priority": 1,
+   "description": "phosphorus of a terminal phosphate monoester"
+  },
+  {
+   "type": "ON3",
+   "smarts": "[OX1]~P",
+   "priority": 1,
+   "description": "non-bridging phosphate oxygen"
+  },
+  {
+   "type": "ON2",
+   "smarts": "[OX2]([#6])P",
+   "priority": 1,
+   "description": "bridging (ester) phosphate oxygen"
+  },
+  {
+   "type": "ON4",
+   "smarts": "[OX2H1]P",
+   "priority": 2,
+   "description": "phosphate hydroxyl oxygen"
+  },
+  {
+   "type": "HN4",
+   "smarts": "[H][OX2]P",
+   "priority": 2,
+   "description": "phosphate hydroxyl H"
+  },
+  {
+   "type": "CN7",
+   "smarts": "[CX4H1;r5]",
+   "priority": 0,
+   "description": "sugar ring CH (C3', C4')"
+  },
+  {
+   "type": "CN7B",
+   "smarts": "[CX4;r5;$(*[#7]);$(*@[OX2])]",
+   "priority": 2,
+   "description": "C1' (anomeric, bonded to the base)"
+  },
+  {
+   "type": "CN7B",
+   "smarts": "[CX4H1;r5;$(*[OX2H1]);$(*@[CX4]([#7]))]",
+   "priority": 2,
+   "description": "C2' of RNA (bonded to the 2'-OH)"
+  },
+  {
+   "type": "CN8",
+   "smarts": "[CX4H2;r5]",
+   "priority": 1,
+   "description": "C2' of DNA (CH2)"
+  },
+  {
+   "type": "CN8B",
+   "smarts": "[CX4H2;!R][CX4;r5]",
+   "priority": 1,
+   "description": "C5' (CH2 next to the ring)"
+  },
+  {
+   "type": "ON6",
+   "smarts": "[OX2;r5]",
+   "priority": 1,
+   "description": "sugar ring oxygen O4' (DNA)"
+  },
+  {
+   "type": "ON6B",
+   "smarts": "[OX2;r5;$(O1[CX4]([#7])[CX4]([OX2H1])[CX4][CX4]1)]",
+   "priority": 2,
+   "description": "sugar ring oxygen O4' (RNA)"
+  },
+  {
+   "type": "ON5",
+   "smarts": "[OX2H1][CX4]",
+   "priority": 1,
+   "description": "sugar hydroxyl oxygen (2'-OH, 5'/3' ends)"
+  },
+  {
+   "type": "HN5",
+   "smarts": "[H][OX2][CX4]",
+   "priority": 1,
+   "description": "sugar hydroxyl H"
+  },
+  {
+   "type": "HN7",
+   "smarts": "[H][CX4H1]",
+   "priority": 0,
+   "description": "H on a sugar CH"
+  },
+  {
+   "type": "HN8",
+   "smarts": "[H][CX4H2]",
+   "priority": 0,
+   "description": "H on a sugar CH2"
+  },
+  {
+   "type": "CN9",
+   "smarts": "[CX4H3][#6;r6]",
+   "priority": 2,
+   "description": "thymine methyl carbon"
+  },
+  {
+   "type": "HN9",
+   "smarts": "[H][CX4H3]",
+   "priority": 2,
+   "description": "thymine methyl H"
+  },
+  {
+   "type": "CN1",
+   "smarts": "[#6;R](=[OX1])(~[#7H1])~[#6]",
+   "priority": 2,
+   "description": "carbonyl carbon next to N-H and C (T/U C4, G C6)"
+  },
+  {
+   "type": "CN1T",
+   "smarts": "[#6;r6;!$(*@[R2]);!$(*@*@[R2]);!R2](=[OX1])(~[#7][CX4])~[#7H1]",
+   "priority": 3,
+   "description": "C2 of thymine / uracil"
+  },
+  {
+   "type": "CN1",
+   "smarts": "[#6;r6;!$(*@[R2]);!$(*@*@[R2]);!R2](=[OX1])(~[#7][CX4])~[#7X2]",
+   "priority": 3,
+   "description": "C2 of cytosine (CN1 in CHARMM36)"
+  },
+  {
+   "type": "ON1",
+   "smarts": "[OX1]=[#6;R]",
+   "priority": 1,
+   "description": "base carbonyl oxygen"
+  },
+  {
+   "type": "ON1C",
+   "smarts": "[OX1]=[#6;r6;!$(*@[R2]);!$(*@*@[R2]);!R2](~[#7][CX4])~[#7X2]",
+   "priority": 3,
+   "description": "O2 of cytosine"
+  },
+  {
+   "type": "CN2",
+   "smarts": "[#6;R]~[NX3H2]",
+   "priority": 2,
+   "description": "ring carbon bearing an amino group (C C4, A C6, G C2)"
+  },
+  {
+   "type": "NN1",
+   "smarts": "[NX3H2][#6;R]",
+   "priority": 2,
+   "description": "amino nitrogen of a base"
+  },
+  {
+   "type": "HN1",
+   "smarts": "[H][NX3H2]",
+   "priority": 2,
+   "description": "amino H of a base"
+  },
+  {
+   "type": "CN3",
+   "smarts": "[#6;r6;!$(*@[R2]);!$(*@*@[R2]);!R2]",
+   "priority": 1,
+   "description": "pyrimidine ring carbon (C5, C6)"
+  },
+  {
+   "type": "CN3T",
+   "smarts": "[#6;r6;!$(*@[R2]);!$(*@*@[R2]);!R2][CX4H3]",
+   "priority": 2,
+   "description": "C5 of thymine"
+  },
+  {
+   "type": "CN4",
+   "smarts": "[#6H1;!R2;$(*@[R2]),$(*@*@[R2]),$([R2])]",
+   "priority": 1,
+   "description": "purine CH (C8, adenine C2)"
+  },
+  {
+   "type": "CN5",
+   "smarts": "[#6;R2]",
+   "priority": 1,
+   "description": "purine ring-fusion carbon (C4, C5)"
+  },
+  {
+   "type": "CN5G",
+   "smarts": "[#6;R2]~[#6]=[OX1]",
+   "priority": 2,
+   "description": "C5 of guanine"
+  },
+  {
+   "type": "NN4",
+   "smarts": "[#7X2;r5]",
+   "priority": 1,
+   "description": "purine N7"
+  },
+  {
+   "type": "NN2",
+   "smarts": "[#7X3;r5]([CX4])",
+   "priority": 1,
+   "description": "adenine N9 (glycosidic)"
+  },
+  {
+   "type": "NN2B",
+   "smarts": "[#7X3;r5;$(*[CX4]);$(*~[#6]~[#6]~[#6]=[OX1])]",
+   "priority": 2,
+   "description": "guanine N9 (glycosidic)"
+  },
+  {
+   "type": "NN2B",
+   "smarts": "[#7X3;r6;!$(*@[R2]);!$(*@*@[R2]);!R2]([CX4])",
+   "priority": 1,
+   "description": "thymine / uracil N1 (glycosidic)"
+  },
+  {
+   "type": "NN2",
+   "smarts": "[#7X3;r6;!$(*@[R2]);!$(*@*@[R2]);!R2;$(*([CX4])~[#6](=[OX1])~[#7X2])]",
+   "priority": 3,
+   "description": "cytosine N1 (glycosidic)"
+  },
+  {
+   "type": "NN2U",
+   "smarts": "[#7H1;r6;!$(*@[R2]);!$(*@*@[R2]);!R2]",
+   "priority": 2,
+   "description": "thymine / uracil N3 (N-H)"
+  },
+  {
+   "type": "NN2G",
+   "smarts": "[#7H1;r6;$(*@[R2]),$(*@*@[R2]),$([R2])]",
+   "priority": 2,
+   "description": "guanine N1 (N-H)"
+  },
+  {
+   "type": "NN3",
+   "smarts": "[#7X2;r6;!$(*@[R2]);!$(*@*@[R2]);!R2]",
+   "priority": 1,
+   "description": "cytosine N3"
+  },
+  {
+   "type": "NN3A",
+   "smarts": "[#7X2;r6;$(*@[R2]),$(*@*@[R2]),$([R2])]",
+   "priority": 1,
+   "description": "adenine N1 / N3"
+  },
+  {
+   "type": "NN3G",
+   "smarts": "[#7X2;r6;$(*@[R2]),$(*@*@[R2]),$([R2]);$(*~[#6](~[NX3H2])~[#7H1])]",
+   "priority": 2,
+   "description": "guanine N3"
+  },
+  {
+   "type": "HN2",
+   "smarts": "[H][#7;R]",
+   "priority": 2,
+   "description": "H on a base ring nitrogen"
+  },
+  {
+   "type": "HN3",
+   "smarts": "[H][#6;R;X3]",
+   "priority": 1,
+   "description": "H on a base ring carbon"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HT",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "SOD",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "CLA",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  },
+  {
+   "type": "POT",
+   "smarts": "[K]",
+   "priority": 0,
+   "description": "potassium ion"
+  }
+ ],
+ "analogies": {
+  "P2": [
+   "P"
+  ]
+ },
+ "analogy_source": "CHARMM36 nucleic acids analogues: the same element and hybridisation, nearest in hydrogen count"
+}

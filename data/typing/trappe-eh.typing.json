@@ -1,0 +1,147 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TraPPE-EH (explicit-hydrogen aromatics)",
+ "description": "CAPS rules for TraPPE-EH (explicit-hydrogen aromatics) from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "C_1",
+   "smarts": "[c;r6;!$(c~[!#6;!#1]);!$(c:[!#6])]",
+   "priority": 0,
+   "description": "benzene carbon"
+  },
+  {
+   "type": "H_1",
+   "smarts": "[H]c",
+   "priority": 0,
+   "description": "benzene H"
+  },
+  {
+   "type": "N1_2",
+   "smarts": "[nX2;r6;!$(n:c:n);!$(n:n);!$(n:c:c:n)]",
+   "priority": 2,
+   "description": "pyridine nitrogen"
+  },
+  {
+   "type": "C2_2",
+   "smarts": "[c;r6;$(c:[nX2]);!$(c:[n]:c:[n])]",
+   "priority": 2,
+   "description": "pyridine C2 (next to N)"
+  },
+  {
+   "type": "C3_2",
+   "smarts": "[c;r6;$(c:c:[nX2]);!$(c:[n])]",
+   "priority": 2,
+   "description": "pyridine C3"
+  },
+  {
+   "type": "C4_2",
+   "smarts": "[c;r6;$(c:c:c:[nX2]);!$(c:[n]);!$(c:c:[n])]",
+   "priority": 2,
+   "description": "pyridine C4"
+  },
+  {
+   "type": "H_2",
+   "smarts": "[H]c(:c):[nX2,$(c:c:n),$(c:c:c:n)]",
+   "priority": 2,
+   "description": "pyridine H"
+  },
+  {
+   "type": "O_8",
+   "smarts": "[OX2H1]c",
+   "priority": 3,
+   "description": "phenol oxygen"
+  },
+  {
+   "type": "HO_8",
+   "smarts": "[H][OX2]c",
+   "priority": 3,
+   "description": "phenol hydroxyl H"
+  },
+  {
+   "type": "C1_8",
+   "smarts": "c[OX2H1]",
+   "priority": 3,
+   "description": "phenol C1"
+  },
+  {
+   "type": "N1_9",
+   "smarts": "[nX3H1;r5]",
+   "priority": 3,
+   "description": "pyrrole nitrogen"
+  },
+  {
+   "type": "H6_9",
+   "smarts": "[H][nX3;r5]",
+   "priority": 3,
+   "description": "pyrrole N-H"
+  },
+  {
+   "type": "C2_9",
+   "smarts": "[c;r5;$(c:[nH1])]",
+   "priority": 3,
+   "description": "pyrrole C2"
+  },
+  {
+   "type": "C3_9",
+   "smarts": "[c;r5;$(c:c:[nH1]);!$(c:[nH1])]",
+   "priority": 3,
+   "description": "pyrrole C3"
+  },
+  {
+   "type": "H_9",
+   "smarts": "[H][c;r5;$(c:[nH1]),$(c:c:[nH1])]",
+   "priority": 3,
+   "description": "pyrrole C-H"
+  },
+  {
+   "type": "O1_7",
+   "smarts": "[o;r5]",
+   "priority": 3,
+   "description": "furan oxygen"
+  },
+  {
+   "type": "C2_7",
+   "smarts": "[c;r5;$(c:o)]",
+   "priority": 3,
+   "description": "furan C2"
+  },
+  {
+   "type": "C3_7",
+   "smarts": "[c;r5;$(c:c:o);!$(c:o)]",
+   "priority": 3,
+   "description": "furan C3"
+  },
+  {
+   "type": "H_7",
+   "smarts": "[H][c;r5;$(c:o),$(c:c:o)]",
+   "priority": 3,
+   "description": "furan H"
+  },
+  {
+   "type": "S1_6",
+   "smarts": "[s;r5]",
+   "priority": 3,
+   "description": "thiophene sulfur"
+  },
+  {
+   "type": "C2_6",
+   "smarts": "[c;r5;$(c:s)]",
+   "priority": 3,
+   "description": "thiophene C2"
+  },
+  {
+   "type": "C3_6",
+   "smarts": "[c;r5;$(c:c:s);!$(c:s)]",
+   "priority": 3,
+   "description": "thiophene C3"
+  },
+  {
+   "type": "H_6",
+   "smarts": "[H][c;r5;$(c:s),$(c:c:s)]",
+   "priority": 3,
+   "description": "thiophene H"
+  }
+ ]
+}

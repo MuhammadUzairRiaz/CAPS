@@ -30738,5 +30738,6 @@
  ],
  "version": "",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres reference templates leave out."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres reference templates leave out.",
+ "typing": "../typing/charmm.typing.json"
 }

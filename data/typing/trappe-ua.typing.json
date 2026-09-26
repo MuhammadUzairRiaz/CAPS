@@ -1,0 +1,182 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TraPPE-UA",
+ "description": "CAPS rules for TraPPE-UA from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. United-atom: hydrogens on carbon fold into their carbons before typing. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "CH4",
+   "smarts": "[CX4H4]",
+   "priority": 0,
+   "description": "methane"
+  },
+  {
+   "type": "CH3",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "CH3"
+  },
+  {
+   "type": "CH2",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "CH2"
+  },
+  {
+   "type": "CH1",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "CH"
+  },
+  {
+   "type": "CH0",
+   "smarts": "[CX4H0]",
+   "priority": 0,
+   "description": "quaternary C"
+  },
+  {
+   "type": "CYC6",
+   "smarts": "[CX4H2;r6]",
+   "priority": 1,
+   "description": "CH2 in a six-membered ring"
+  },
+  {
+   "type": "CYC5",
+   "smarts": "[CX4H2;r5]",
+   "priority": 1,
+   "description": "CH2 in a five-membered ring"
+  },
+  {
+   "type": "CE2",
+   "smarts": "[CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "alkene CH2="
+  },
+  {
+   "type": "CE1",
+   "smarts": "[CX3H1]=[CX3]",
+   "priority": 1,
+   "description": "alkene CH="
+  },
+  {
+   "type": "CE0",
+   "smarts": "[CX3H0]=[CX3]",
+   "priority": 1,
+   "description": "alkene C="
+  },
+  {
+   "type": "CB",
+   "smarts": "[cH1]",
+   "priority": 1,
+   "description": "benzene CH"
+  },
+  {
+   "type": "CB0",
+   "smarts": "[cH0]",
+   "priority": 1,
+   "description": "substituted aromatic C"
+  },
+  {
+   "type": "OA",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "alcohol oxygen"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][OX2]",
+   "priority": 1,
+   "description": "alcohol H"
+  },
+  {
+   "type": "OE",
+   "smarts": "[OX2]([#6])[#6]",
+   "priority": 0,
+   "description": "ether oxygen"
+  },
+  {
+   "type": "CK",
+   "smarts": "[CX3](=[OX1])([#6])[#6]",
+   "priority": 2,
+   "description": "ketone carbon"
+  },
+  {
+   "type": "OK",
+   "smarts": "[OX1]=[CX3]([#6])[#6]",
+   "priority": 2,
+   "description": "ketone oxygen"
+  },
+  {
+   "type": "STI",
+   "smarts": "[SX2H1]",
+   "priority": 1,
+   "description": "thiol sulfur"
+  },
+  {
+   "type": "HTI",
+   "smarts": "[H][SX2]",
+   "priority": 1,
+   "description": "thiol H"
+  },
+  {
+   "type": "SS",
+   "smarts": "[SX2][SX2]",
+   "priority": 1,
+   "description": "disulfide sulfur"
+  },
+  {
+   "type": "S",
+   "smarts": "[SX2]([#6])[#6]",
+   "priority": 0,
+   "description": "sulfide sulfur"
+  },
+  {
+   "type": "CNI",
+   "smarts": "[CX2]#[NX1]",
+   "priority": 2,
+   "description": "nitrile carbon"
+  },
+  {
+   "type": "NI",
+   "smarts": "[NX1]#[CX2]",
+   "priority": 2,
+   "description": "nitrile nitrogen"
+  }
+ ],
+ "united_atom": true,
+ "analogies": {
+  "CH1": [
+   "CH2",
+   "CH3"
+  ],
+  "CH2": [
+   "CH1",
+   "CH3"
+  ],
+  "CH3": [
+   "CH2",
+   "CH1"
+  ],
+  "CH0": [
+   "CH1"
+  ],
+  "CYC6": [
+   "CH2"
+  ],
+  "CYC5": [
+   "CH2"
+  ],
+  "CE1": [
+   "CE2",
+   "CE0"
+  ],
+  "CE2": [
+   "CE1"
+  ],
+  "CE0": [
+   "CE1"
+  ]
+ },
+ "analogy_source": "TraPPE-UA analogues: the same element and hybridisation, nearest in hydrogen count"
+}

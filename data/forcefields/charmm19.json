@@ -4882,5 +4882,6 @@
  ],
  "version": "",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): butane, octane, ethanol and the original C18 alkane example identical."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): butane, octane, ethanol and the original C18 alkane example identical.",
+ "typing": "../typing/charmm19.typing.json"
 }

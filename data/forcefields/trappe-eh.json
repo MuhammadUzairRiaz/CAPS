@@ -3657,5 +3657,6 @@
  ],
  "version": "2007",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical.",
+ "typing": "../typing/trappe-eh.typing.json"
 }

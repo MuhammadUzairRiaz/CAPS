@@ -25,6 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
+GMX = os.environ.get("GMX", "/opt/homebrew/bin/gmx")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 ONLY_FF, ONLY_P = arg("--ff", ""), arg("--polymer", "")
 JOBS = int(arg("--jobs", "8"))
@@ -62,7 +63,7 @@ def polymers():
     return out
 
 
-def recipe(pid, spec, ff):
+def recipe(pid, spec, ff, export="lammps", chains=3):
     lines = ["recipe: 1", f"name: {pid}", "build:", "  polymer:"]
     if "smiles" in spec:
         lines.append(f"    smiles: {json.dumps(spec['smiles'])}")
@@ -71,8 +72,8 @@ def recipe(pid, spec, ff):
         lines.append(f"    sequence: {spec['sequence']}")
         if "weights" in spec:
             lines.append("    weights: [" + ", ".join(str(w) for w in spec["weights"]) + "]")
-    lines += ["    dp: 10", "    chains: 3", f"type: {{ forcefield: {ff}, charges: auto }}", "grow: { density: 0.3, seed: 7 }",
-              "relax: { method: lbfgs, fmax: 1.0 }", "export: [lammps]"]
+    lines += ["    dp: 10", f"    chains: {chains}", f"type: {{ forcefield: {ff}, charges: auto }}", "grow: { density: 0.3, seed: 7 }",
+              "relax: { method: lbfgs, fmax: 1.0 }", f"export: [{export}]"]
     return "\n".join(lines) + "\n"
 
 
@@ -161,6 +162,103 @@ def geometry(data, script):
     return worst_bond, worst_what, closest, pair, len(atoms)
 
 
+def cell_check(L, atoms, bonds_r0):
+    """Worst bond against r0 and the closest non-bonded, non-1-3 contact (minimum image). atoms {i: (x, y, z)} in Å,
+    bonds_r0 [(i, j, r0 or None)]."""
+    mi = lambda d, k: d - L[k] * round(d / L[k]) if L[k] > 0 else d
+    dist = lambda a, b: math.sqrt(sum(mi(atoms[a][k] - atoms[b][k], k) ** 2 for k in range(3)))
+    worst_bond, worst_what = 0.0, ""
+    nb = {i: set() for i in atoms}
+    for i, j, r0 in bonds_r0:
+        nb[i].add(j), nb[j].add(i)
+        if r0 is None:
+            continue
+        d = abs(dist(i, j) - r0)
+        if d > worst_bond:
+            worst_bond, worst_what = d, f"bond {i}-{j} {dist(i, j):.2f} Å vs r0 {r0:.2f}"
+    near = {i: nb[i] | {k for j in nb[i] for k in nb[j]} for i in atoms}
+    cs = 2.5
+    n = [max(1, int(L[k] // cs)) for k in range(3)]
+    cells = {}
+    for i, a in atoms.items():
+        key = tuple(int((a[k] % L[k]) / L[k] * n[k]) % n[k] if L[k] > 0 else 0 for k in range(3))
+        cells.setdefault(key, []).append(i)
+    closest, pair = 9e9, None
+    for key, members in cells.items():
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    other = cells.get(((key[0] + dx) % n[0], (key[1] + dy) % n[1], (key[2] + dz) % n[2]), [])
+                    for i in members:
+                        for j in other:
+                            if j <= i or j in near[i]:
+                                continue
+                            d = dist(i, j)
+                            if d < closest:
+                                closest, pair = d, (i, j)
+    return worst_bond, worst_what, closest, pair, len(atoms)
+
+
+def gromacs_geometry(d, stem):
+    """The GROMACS files a recipe wrote: coordinates from STEM.gro, bonds and their b0 from STEM.top and its .itp."""
+    lines = open(os.path.join(d, stem + ".gro")).read().splitlines()
+    n = int(lines[1])
+    atoms = {k + 1: tuple(float(lines[2 + k][20:].split()[c]) * 10 for c in range(3)) for k in range(n)}
+    L = [float(x) * 10 for x in lines[2 + n].split()[:3]]
+    text = []
+    for l in open(os.path.join(d, stem + ".top")):
+        m = re.match(r'\s*#include\s+"([^"]+)"', l)
+        text += open(os.path.join(d, m.group(1))).read().splitlines() if m else [l.rstrip("\n")]
+    moltypes, cur, sec, molecules = {}, None, "", []
+    for raw in text:
+        l = raw.split(";")[0].strip()
+        if not l or l.startswith("#"):
+            continue
+        m = re.match(r"\[\s*(\S+)\s*\]", l)
+        if m:
+            sec = m.group(1)
+            continue
+        w = l.split()
+        if sec == "moleculetype":
+            cur = w[0]
+            moltypes[cur] = {"n": 0, "bonds": []}
+        elif sec == "atoms" and cur:
+            moltypes[cur]["n"] += 1
+        elif sec == "bonds" and cur:
+            fn = int(w[2])
+            moltypes[cur]["bonds"].append((int(w[0]), int(w[1]), float(w[3]) * 10 if fn in (1, 2) and len(w) > 3 else None))
+        elif sec == "molecules":
+            molecules.append((w[0], int(w[1])))
+    bonds, off = [], 0
+    for name, count in molecules:
+        mt = moltypes[name]
+        for _ in range(count):
+            bonds += [(i + off, j + off, r0) for i, j, r0 in mt["bonds"]]
+            off += mt["n"]
+    return cell_check(L, atoms, bonds)
+
+
+def gromacs_energy(d, stem):
+    """Potential energy (kcal/mol) of step 0: gmx grompp, then mdrun with no steps."""
+    r = subprocess.run([GMX, "grompp", "-f", stem + ".mdp", "-c", stem + ".gro", "-p", stem + ".top", "-o", "check.tpr", "-maxwarn", "5"], cwd=d, capture_output=True, text=True, timeout=300)
+    if r.returncode:
+        err = [l for l in (r.stdout + r.stderr).splitlines() if "ERROR" in l or "Fatal" in l or "error" in l.lower()]
+        return None, "grompp: " + (err[0] if err else "failed")[:150]
+    r = subprocess.run([GMX, "mdrun", "-s", "check.tpr", "-deffnm", "check", "-nsteps", "0", "-nt", "1"], cwd=d, capture_output=True, text=True, timeout=300)
+    if r.returncode:
+        return None, "mdrun failed"
+    log = open(os.path.join(d, "check.log")).read().splitlines()
+    k = next((i for i, l in enumerate(log) if "Energies (kJ/mol)" in l), None)
+    if k is None:
+        return None, "no energies in the log"
+    for a in range(k + 1, k + 20, 2):   # names and values, 15 characters each
+        names = [log[a][c:c + 15].strip() for c in range(0, len(log[a]), 15)]
+        if "Potential" in names:
+            v = log[a + 1][names.index("Potential") * 15: names.index("Potential") * 15 + 15]
+            return float(v) / 4.184, ""
+    return None, "no Potential in the log"
+
+
 def lammps_energy(d, stem):
     r = subprocess.run([LMP, "-in", stem + ".in", "-log", "none"], cwd=d, capture_output=True, text=True, timeout=300)
     if r.returncode:
@@ -181,6 +279,12 @@ def case(job):
     open(rp, "w").write(recipe(pid, spec, ffid))
     r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
     out = r.stdout + r.stderr
+    engine = "LAMMPS"
+    if r.returncode and "no exact LAMMPS form" in out:   # separate 1-4 Lennard-Jones (CHARMM, GROMOS): GROMACS writes it exactly
+        open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))   # GROMACS needs a cell at least twice the cut-off
+        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
+        out = r.stdout + r.stderr
+        engine = "GROMACS"
     if r.returncode:
         why = next((l for l in out.splitlines() if "failed" in l), out.strip().splitlines()[-1] if out.strip() else "?")
         why = re.sub(r"\s+", " ", why).strip()
@@ -188,20 +292,20 @@ def case(job):
         return pid, pname, ffid, "fail-" + stage, why[:220]
     data, script = os.path.join(d, pid + ".data"), os.path.join(d, pid + ".in")
     try:
-        wb, what, closest, pair, n = geometry(data, script)
+        wb, what, closest, pair, n = geometry(data, script) if engine == "LAMMPS" else gromacs_geometry(d, pid)
     except Exception as e:
-        return pid, pname, ffid, "fail-check", f"could not read the data file: {e}"
-    e, err = lammps_energy(d, pid)
+        return pid, pname, ffid, "fail-check", f"could not read the {engine} files: {e}"
+    e, err = lammps_energy(d, pid) if engine == "LAMMPS" else gromacs_energy(d, pid)
     probs = []
     if wb > 0.25:
         probs.append(f"stretched {what}")
     if closest < 1.0:
         probs.append(f"overlap {closest:.2f} Å between atoms {pair[0]} and {pair[1]}")
     if e is None:
-        probs.append("LAMMPS: " + err)
+        probs.append(f"{engine}: " + err)
     elif not math.isfinite(e) or e / n > 30:
-        probs.append(f"LAMMPS energy {e:.1f} kcal/mol ({e / n:.1f} per atom)")
-    detail = f"{n} atoms · worst bond {wb:.3f} Å · closest contact {closest:.2f} Å · LAMMPS {e if e is None else round(e, 1)} kcal/mol"
+        probs.append(f"{engine} energy {e:.1f} kcal/mol ({e / n:.1f} per atom)")
+    detail = f"{n} atoms · worst bond {wb:.3f} Å · closest contact {closest:.2f} Å · {engine} {e if e is None else round(e, 1)} kcal/mol"
     return pid, pname, ffid, ("ok" if not probs else "bad-structure"), (detail if not probs else "; ".join(probs))
 
 

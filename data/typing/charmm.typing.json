@@ -1,0 +1,365 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CHARMM (library set)",
+ "description": "CAPS rules for CHARMM (library set) from the force field's own type definitions (bench/typing/make_biomolecular_rules.py); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "C1",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "sp3 CH (CT1)"
+  },
+  {
+   "type": "C2",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "sp3 CH2 (CT2)"
+  },
+  {
+   "type": "C3",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "sp3 CH3 (CT3)"
+  },
+  {
+   "type": "CAE1",
+   "smarts": "[CX4H1][OX2;!$(O[CX3]=O);!$([OH1])]",
+   "priority": 2,
+   "description": "sp3 CH next to an ether oxygen"
+  },
+  {
+   "type": "CAE2",
+   "smarts": "[CX4H2][OX2;!$(O[CX3]=O);!$([OH1])]",
+   "priority": 2,
+   "description": "sp3 CH2 next to an ether oxygen"
+  },
+  {
+   "type": "CAE3",
+   "smarts": "[CX4H3][OX2;!$(O[CX3]=O);!$([OH1])]",
+   "priority": 2,
+   "description": "sp3 CH3 next to an ether oxygen"
+  },
+  {
+   "type": "CTHF",
+   "smarts": "[CX4H2;r5]@[OX2;r5]",
+   "priority": 3,
+   "description": "ring CH2 next to O in tetrahydrofuran"
+  },
+  {
+   "type": "CTHP",
+   "smarts": "[CX4H2;r6]@[OX2;r6]",
+   "priority": 3,
+   "description": "ring CH2 next to O in tetrahydropyran"
+  },
+  {
+   "type": "CYCP",
+   "smarts": "[CX4H2;r5;!$(*[O,N,S])]",
+   "priority": 1,
+   "description": "CH2 in a five-membered carbon ring"
+  },
+  {
+   "type": "C4",
+   "smarts": "c",
+   "priority": 1,
+   "description": "aromatic carbon"
+  },
+  {
+   "type": "C15",
+   "smarts": "[CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "terminal alkene carbon H2C="
+  },
+  {
+   "type": "C16",
+   "smarts": "[CX3;H1,H0]=[CX3]",
+   "priority": 1,
+   "description": "inner alkene carbon =CH- (and =CR-)"
+  },
+  {
+   "type": "C6",
+   "smarts": "[CX3](=[OX1])[NX3]",
+   "priority": 3,
+   "description": "amide carbonyl carbon"
+  },
+  {
+   "type": "C5",
+   "smarts": "[CX3](=[OX1])[OX2]",
+   "priority": 3,
+   "description": "carbonyl carbon of an acid or ester"
+  },
+  {
+   "type": "C18",
+   "smarts": "[CX3](=[OX1])([OX2])[OX2]",
+   "priority": 4,
+   "description": "carbonate carbon"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "aliphatic H"
+  },
+  {
+   "type": "HAE1",
+   "smarts": "[H][CX4H1][OX2;!$(O[CX3]=O);!$([OH1])]",
+   "priority": 2,
+   "description": "H on an ether CH"
+  },
+  {
+   "type": "HAE2",
+   "smarts": "[H][CX4H2][OX2;!$(O[CX3]=O);!$([OH1])]",
+   "priority": 2,
+   "description": "H on an ether CH2"
+  },
+  {
+   "type": "HAE3",
+   "smarts": "[H][CX4H3][OX2;!$(O[CX3]=O);!$([OH1])]",
+   "priority": 2,
+   "description": "H on an ether CH3"
+  },
+  {
+   "type": "HTHF",
+   "smarts": "[H][CX4H2;r5]",
+   "priority": 3,
+   "description": "H on a CH2 in a five-membered ring"
+  },
+  {
+   "type": "H2",
+   "smarts": "[H]c",
+   "priority": 0,
+   "description": "aromatic H"
+  },
+  {
+   "type": "H7",
+   "smarts": "[H][CX3H2]=[CX3]",
+   "priority": 1,
+   "description": "H on a terminal alkene carbon"
+  },
+  {
+   "type": "H8",
+   "smarts": "[H][CX3H1]=[CX3]",
+   "priority": 1,
+   "description": "H on an inner alkene carbon"
+  },
+  {
+   "type": "HN",
+   "smarts": "[H][N,n]",
+   "priority": 0,
+   "description": "H on N"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][OX2]",
+   "priority": 0,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "HS",
+   "smarts": "[H][SX2]",
+   "priority": 0,
+   "description": "thiol H"
+  },
+  {
+   "type": "N1",
+   "smarts": "[NX3H2][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide N with two H"
+  },
+  {
+   "type": "N2",
+   "smarts": "[NX3H1][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide N with one H"
+  },
+  {
+   "type": "N5",
+   "smarts": "[NX3H0][CX3]=[OX1]",
+   "priority": 2,
+   "description": "amide N without H (as in proline)"
+  },
+  {
+   "type": "N3",
+   "smarts": "[NX4+]",
+   "priority": 3,
+   "description": "ammonium nitrogen"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl oxygen"
+  },
+  {
+   "type": "OET",
+   "smarts": "[OX2]([#6])[#6]",
+   "priority": 0,
+   "description": "ether oxygen"
+  },
+  {
+   "type": "OE",
+   "smarts": "[OX2]([#6])[CX3]=[OX1]",
+   "priority": 2,
+   "description": "ester oxygen"
+  },
+  {
+   "type": "OC1",
+   "smarts": "[OX1]=[CX3][OX2]",
+   "priority": 2,
+   "description": "carbonyl oxygen of an acid or ester"
+  },
+  {
+   "type": "OC2",
+   "smarts": "[OX1]=[CX3][NX3]",
+   "priority": 2,
+   "description": "carbonyl oxygen of an amide"
+  },
+  {
+   "type": "OC3",
+   "smarts": "[OX1]~[CX3]~[OX1]",
+   "priority": 3,
+   "description": "carboxylate oxygen"
+  },
+  {
+   "type": "OCA",
+   "smarts": "[OX1]=[CX3]([OX2])[OX2]",
+   "priority": 3,
+   "description": "carbonate carbonyl oxygen"
+  },
+  {
+   "type": "S1",
+   "smarts": "[SX2H1]",
+   "priority": 1,
+   "description": "thiol sulfur"
+  },
+  {
+   "type": "S2",
+   "smarts": "[SX2][SX2]",
+   "priority": 1,
+   "description": "disulfide sulfur"
+  },
+  {
+   "type": "S4",
+   "smarts": "[SX3]=[OX1]",
+   "priority": 1,
+   "description": "sulfoxide sulfur"
+  },
+  {
+   "type": "S5",
+   "smarts": "[SX4](=[OX1])=[OX1]",
+   "priority": 1,
+   "description": "sulfone / sulfate sulfur"
+  },
+  {
+   "type": "P1",
+   "smarts": "[PX4]",
+   "priority": 0,
+   "description": "phosphate phosphorus"
+  },
+  {
+   "type": "OP",
+   "smarts": "[OX1]~P",
+   "priority": 1,
+   "description": "phosphate oxygen"
+  },
+  {
+   "type": "OW",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "Na+",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "sodium ion"
+  },
+  {
+   "type": "Cl-",
+   "smarts": "[Cl-;X0]",
+   "priority": 0,
+   "description": "chloride ion"
+  }
+ ],
+ "analogies": {
+  "C1": [
+   "C2",
+   "C3"
+  ],
+  "C2": [
+   "C1",
+   "C3"
+  ],
+  "C3": [
+   "C2",
+   "C1"
+  ],
+  "CAE1": [
+   "C1"
+  ],
+  "CAE2": [
+   "C2"
+  ],
+  "CAE3": [
+   "C3"
+  ],
+  "CTHF": [
+   "CAE2",
+   "C2"
+  ],
+  "CTHP": [
+   "CAE2",
+   "C2"
+  ],
+  "CYCP": [
+   "C2"
+  ],
+  "HAE1": [
+   "H1"
+  ],
+  "HAE2": [
+   "H1"
+  ],
+  "HAE3": [
+   "H1"
+  ],
+  "HTHF": [
+   "H1"
+  ],
+  "C15": [
+   "C16"
+  ],
+  "C16": [
+   "C15"
+  ],
+  "H7": [
+   "H8"
+  ],
+  "H8": [
+   "H7"
+  ],
+  "N1": [
+   "N2"
+  ],
+  "N2": [
+   "N1"
+  ],
+  "N5": [
+   "N2"
+  ],
+  "OET": [
+   "OE"
+  ],
+  "OE": [
+   "OET"
+  ]
+ },
+ "analogy_source": "CHARMM (library set) analogues: the same element and hybridisation, nearest in hydrogen count"
+}
