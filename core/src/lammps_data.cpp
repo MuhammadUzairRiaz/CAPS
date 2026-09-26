@@ -83,6 +83,8 @@ struct Layout {
   bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
   bool charmm = false;                     // CHARMM (native): lj/charmmfsw, 1-4 pairs through dihedral charmmfsw weights
   bool hbond = false;                      // DREIDING hydrogen bonds: hbond/dreiding/lj overlaid on the pair style
+  bool coreshell = false;                  // core-shell pairs (a shell on its core): the long-range Coulomb as .../cs
+  bool cs_buck = false;                    // …with only Buckingham (and empty) pairs: one CORESHELL style for all of them
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
   // how the files are written (exact CAPS styles, or the force field's native ones)
   bool native = false, force_hybrid = false;
@@ -390,6 +392,24 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
   }
   L.periodic = s.cell.valid();
   if (st.hybrid && !L.gromacs) L.pair_hybrid = true;
+  // shell models: a core and its shell bonded at (nearly) the same place; coul/long would evaluate their excluded pair's
+  // Ewald correction at r = 0 (nan), CORESHELL's coul/long/cs does it stably
+  for (const auto& b : s.bonds) {
+    const Vec3 d = s.cell.valid() ? s.cell.minimum_image(s.atoms[b.j].pos - s.atoms[b.i].pos) : s.atoms[b.j].pos - s.atoms[b.i].pos;
+    if (dot(d, d) < 0.25 * 0.25) { L.coreshell = true; break; }
+  }
+  // a shell model's pairs all Buckingham (the others empty): CORESHELL's buck/coul/long/cs, or born/coul/dsf/cs with DSF
+  // (Buckingham is Born-Mayer-Huggins with σ = 0, D = 0), so no sub-style meets a core and its shell at r = 0
+  if (L.coreshell && !L.gromacs && L.sw_types.empty()) {
+    bool all = true, any_buck = false;
+    for (int a2 = 0; a2 < nt && all; ++a2)
+      for (int b2 = a2; b2 < nt && all; ++b2) {
+        auto it = ff.pair_func.find({a2, b2});
+        if (it != ff.pair_func.end()) { all = it->second.form == 1; any_buck = true; }
+        else all = mixed_pair(ff, a2, b2).eps == 0;
+      }
+    if (all && any_buck) { L.cs_buck = true; L.pair_hybrid = false; }
+  }
   L.hbond = ff.hbond.on();
   if (L.hbond) {
     if (L.gromacs || L.charmm) throw FieldError(ff.name + ": DREIDING hydrogen bonds with this pair style have no LAMMPS form");
@@ -412,6 +432,14 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
   L.coul = c == "pppm" || c == "ewald" ? "long" : c;
   if (L.coul == "long") L.kspace = c;
   L.kspace_accuracy = st.kspace_accuracy;
+  if (L.cs_buck) {   // a shell model: one CORESHELL style for every pair
+    L.pair_combined = L.coul == "long" ? "buck/coul/long/cs" : "born/coul/dsf/cs";
+    if (L.coul == "cut" || L.coul == "none") L.notes.push_back("shell model without long-range Coulomb: born/coul/dsf/cs (DSF)");
+    if (L.coul != "long") L.coul = "dsf";
+    L.pair_styles = {L.pair_combined};
+    L.pair_hybrid = st.hybrid;
+    return;
+  }
   if (L.charmm) {   // CHARMM: the force-switched LJ with its long-range sum, else CHARMM's force-shifted Coulomb
     L.pair_combined = std::string("lj/charmmfsw/coul/") + (L.coul == "long" ? "long" : "charmmfsh");
     if (L.coul == "dsf" || L.coul == "cut") L.notes.push_back("Coulomb: CHARMM's force shift (coul/charmmfsh), not " + c);
@@ -532,6 +560,10 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     else if (e.coulomb) throw FieldError("lj/gromacs needs the GROMACS Coulomb form");
     else std::snprintf(b, sizeof b, "pair_style lj/gromacs %.6g %.6g", ff.lj_inner, e.cutoff);
     r.push_back(b);
+  } else if (L.cs_buck) {   // a shell model (CORESHELL): Buckingham with its Coulomb, stable for a core on its shell
+    if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style buck/coul/long/cs %.6g", e.cutoff);
+    else std::snprintf(b, sizeof b, "pair_style born/coul/dsf/cs %.6g %.6g", e.dsf_alpha, e.cutoff);
+    r.push_back(b);
   } else if (!L.pair_hybrid) {
     if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/long %.6g", e.cutoff);
     else if (e.coulomb) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
@@ -545,7 +577,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       p += b;
     }
     if (e.coulomb && pme(e, L)) {
-      std::snprintf(b, sizeof b, " coul/long %.6g", e.cutoff);
+      std::snprintf(b, sizeof b, L.coreshell ? " coul/long/cs %.6g" : " coul/long %.6g", e.cutoff);
       p += b;
     } else if (e.coulomb) {
       std::snprintf(b, sizeof b, " coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
@@ -558,6 +590,8 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   // without, they are shifted to zero there
   // lj/gromacs is zero at the cut-off by itself; lj/sdk has no tail correction (CAPS adds none for it either)
   if (L.gromacs || (L.cos2 && L.pair_styles.size() == 1)) {
+  } else if (L.cs_buck && L.pair_combined.find("dsf") != std::string::npos) {   // born/coul/dsf/cs: no tail correction in LAMMPS
+    if (!e.tail) r.push_back("pair_modify shift yes");
   } else if (L.hbond) {   // the tail or shift for the Lennard-Jones sub-style only
     if (!e.tail) r.push_back("pair_modify pair " + L.pair_base + " shift yes");
     else if (L.periodic) r.push_back("pair_modify pair " + L.pair_base + " tail yes");
@@ -608,6 +642,12 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
       } else if (f == kPairCos2 || f == kPairCos2Wca) {
         style = "cosine/squared";
         coef = num({it->second.a, it->second.b, it->second.c}) + (f == kPairCos2Wca ? " wca" : "");
+      } else if (L.cs_buck) {   // Buckingham (A ρ C), or as Born–Mayer–Huggins (A ρ σ=0 C D=0); empty pairs zero
+        const bool born = L.pair_combined.find("born") != std::string::npos;
+        const double A = it != ff.pair_func.end() ? it->second.a : 0.0, rho = it != ff.pair_func.end() ? it->second.b : 1.0,
+                     C = it != ff.pair_func.end() ? it->second.c : 0.0;
+        style = L.pair_combined;
+        coef = born ? num({A, rho, 0.0, C, 0.0}) : num({A, rho, C});
       } else if (it != ff.pair_func.end()) {
         style = it->second.form == 1 ? "buck" : "morse";
         coef = num({it->second.a, it->second.b, it->second.c});
@@ -641,7 +681,8 @@ std::string sw_path(const std::string& data_path) {
 std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path,
                                     const std::set<std::pair<int, int>>& ff_excl = {}) {
   std::vector<std::string> r;
-  if (L.pair_hybrid && e.coulomb && L.pair_combined.empty()) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
+  if (L.pair_hybrid && e.coulomb && L.pair_combined.empty())
+    r.push_back(pme(e, L) ? (L.coreshell ? "pair_coeff * * coul/long/cs" : "pair_coeff * * coul/long") : "pair_coeff * * coul/dsf");
   for (const auto& [a, b] : ff_excl) r.push_back("neigh_modify exclude type " + std::to_string(a + 1) + " " + std::to_string(b + 1));
   if (!L.sw_types.empty()) {
     std::string l = "pair_coeff * * sw " + sw_path(data_path);
@@ -711,6 +752,10 @@ Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const La
     if (L.coul == "long") e.electrostatics = EnergyOptions::Electrostatics::PME;
     else if (L.coul == "dsf") e.electrostatics = EnergyOptions::Electrostatics::DSF;
   }
+  // a shell model in CAPS's own styles: the CORESHELL style that matches the Coulomb in use
+  if (L.cs_buck && !L.native) L.pair_combined = e.coulomb && pme(e, L) ? "buck/coul/long/cs" : "born/coul/dsf/cs";
+  if (L.cs_buck && L.pair_combined == "born/coul/dsf/cs" && e.tail && L.periodic)
+    L.notes.push_back("born/coul/dsf/cs has no tail correction: LAMMPS's van der Waals leaves out CAPS's tail term (use --no-tail, or Ewald / PPPM)");
   return L;
 }
 
@@ -891,8 +936,27 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   }
   const bool npt = run.kind == K::NPT;
   out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
-  std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", mobile.c_str(), run.temperature,
-                static_cast<unsigned long long>(run.seed));
+  if (L.coreshell) {
+    // a shell model (LAMMPS CORESHELL): the thermostat sees the ions' centre-of-mass motion, not the core-shell vibration
+    std::set<int> cores, shells;
+    for (const auto& bd : s.bonds) {
+      const Vec3 d = s.cell.valid() ? s.cell.minimum_image(s.atoms[bd.j].pos - s.atoms[bd.i].pos) : s.atoms[bd.j].pos - s.atoms[bd.i].pos;
+      if (dot(d, d) >= 0.25 * 0.25) continue;
+      const bool j_shell = ff.mass[bd.j] < ff.mass[bd.i];
+      shells.insert(ff.type_index[j_shell ? bd.j : bd.i] + 1);
+      cores.insert(ff.type_index[j_shell ? bd.i : bd.j] + 1);
+    }
+    std::string gc, gs;
+    for (int t : cores) gc += " " + std::to_string(t);
+    for (int t : shells) gs += " " + std::to_string(t);
+    out << "group           cores type" << gc << "\ngroup           shells type" << gs << "\n"
+        << "comm_modify     vel yes\ncompute         CSequ all temp/cs cores shells\nthermo_modify   temp CSequ\n";
+    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu dist gaussian mom yes rot no bias yes temp CSequ\n", mobile.c_str(), run.temperature,
+                  static_cast<unsigned long long>(run.seed));
+  } else {
+    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", mobile.c_str(), run.temperature,
+                  static_cast<unsigned long long>(run.seed));
+  }
   out << b;
   if (npt)
     std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature,
@@ -900,6 +964,7 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   else
     std::snprintf(b, sizeof b, "fix             integrate %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature, run.tdamp);
   out << b;
+  if (L.coreshell) out << "fix_modify      integrate temp CSequ\n";
   std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\nrun             %lld\n",
                 std::max(1, run.dump_every), static_cast<long long>(run.steps));
   out << b;
