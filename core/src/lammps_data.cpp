@@ -630,7 +630,7 @@ Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const La
   if (!charged) e.coulomb = false;
   if (ff.lj_shift || ff.lj_fsw) e.tail = false;   // Martini 3: shifted at the cut-off; CHARMM: switched
   if (ff.coul_rf && e.coulomb)
-    throw FieldError(ff.name + ": reaction-field Coulomb (Martini 3) has no LAMMPS pair style; export to GROMACS instead");
+    throw FieldError(ff.name + ": reaction-field Coulomb (GROMOS, Martini 3) has no LAMMPS pair style; export to GROMACS instead");
   Layout L = build(s, ff, st);
   if (st.native) {
     // a coarse-grained model's own cut-off belongs to the model (MARTINI 12 Å, SDK 15 Å); otherwise the user's, else the

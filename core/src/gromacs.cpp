@@ -206,8 +206,21 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   const std::string title = export_title(s.title, ff.name);
   top << "; CAPS 0.1 · " << title << " · " << ff.name << "\n";
   top << "; kJ/mol and nm; every Lennard-Jones pair written with " << ff.mixing << " mixing applied, 1-4 pairs with their scaled σ, ε\n\n";
+  // GROMOS writes its van der Waals as C6 = 4εσ⁶ and C12 = 4εσ¹² (comb-rule 1); the others as σ, ε (comb-rule 2).
+  // Either way every pair is listed, so the numbers GROMACS uses are the same.
+  const bool c6c12 = ff.native_gromacs_lj == "c6c12";
+  auto lj_pair = [&](double sigma, double eps) {   // the two numbers for σ (Å), ε (kcal/mol)
+    char t[80];
+    if (c6c12) {
+      const double s6 = std::pow(sigma / 10, 6);
+      std::snprintf(t, sizeof t, "%.10g %.10g", 4 * eps * KJ * s6, 4 * eps * KJ * s6 * s6);
+    } else {
+      std::snprintf(t, sizeof t, "%.10g %.10g", sigma / 10, eps * KJ);
+    }
+    return std::string(t);
+  };
   top << "[ defaults ]\n; nbfunc  comb-rule  gen-pairs  fudgeLJ  fudgeQQ\n";
-  std::snprintf(b, sizeof b, "  1        2          no         1.0      %.10g\n\n", ff.coul14);
+  std::snprintf(b, sizeof b, "  1        %d          no         1.0      %.10g\n\n", c6c12 ? 1 : 2, ff.coul14);
   top << b;
 
   // atom types: the mass of the first atom of each type; charges per atom
@@ -223,20 +236,20 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     used.insert(nm);
     tname[size_t(t)] = nm;
   }
-  top << "[ atomtypes ]\n; name  at.num  mass  charge  ptype  sigma (nm)  epsilon (kJ/mol)\n";
+  top << (c6c12 ? "[ atomtypes ]\n; name  at.num  mass  charge  ptype  C6 (kJ/mol nm⁶)  C12 (kJ/mol nm¹²)\n"
+                 : "[ atomtypes ]\n; name  at.num  mass  charge  ptype  sigma (nm)  epsilon (kJ/mol)\n");
   for (int t = 0; t < nt; ++t) {
     const int a = first[size_t(t)];
     const int z = a >= 0 ? s.atoms[size_t(a)].element : 0;
     const double mass = a >= 0 ? ff.mass[size_t(a)] : 0;
-    std::snprintf(b, sizeof b, "%-16s %3d %12.6f  0.0  A %.10g %.10g\n", tname[size_t(t)].c_str(), z, mass, ff.lj[size_t(t)].sigma / 10,
-                  ff.lj[size_t(t)].eps * KJ);
+    std::snprintf(b, sizeof b, "%-16s %3d %12.6f  0.0  A %s\n", tname[size_t(t)].c_str(), z, mass, lj_pair(ff.lj[size_t(t)].sigma, ff.lj[size_t(t)].eps).c_str());
     top << b;
   }
-  top << "\n[ nonbond_params ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol)\n";
+  top << (c6c12 ? "\n[ nonbond_params ]\n; i  j  func  C6  C12\n" : "\n[ nonbond_params ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol)\n");
   for (int a = 0; a < nt; ++a)
     for (int c = a; c < nt; ++c) {
       const PairType p = mixed_pair(ff, a, c);
-      std::snprintf(b, sizeof b, "%-16s %-16s 1 %.10g %.10g\n", tname[size_t(a)].c_str(), tname[size_t(c)].c_str(), p.sigma / 10, p.eps * KJ);
+      std::snprintf(b, sizeof b, "%-16s %-16s 1 %s\n", tname[size_t(a)].c_str(), tname[size_t(c)].c_str(), lj_pair(p.sigma, p.eps).c_str());
       top << b;
     }
 
@@ -298,14 +311,12 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     for (const auto& p : ff.pairs14) {
       const int ta = ff.type_index[p[0]], tb = ff.type_index[p[1]];
       const PairType q = ff.lj14_types.empty() ? mixed_pair(ff, ta, tb) : mixed_pair(f14, ta, tb);
-      std::snprintf(b, sizeof b, " 1 %.10g %.10g", q.sigma / 10, ff.lj14 * q.eps * KJ);
-      add(PAIRS, {p[0], p[1]}, b);
+      add(PAIRS, {p[0], p[1]}, " 1 " + lj_pair(q.sigma, ff.lj14 * q.eps));
     }
   }
   // explicit LJ pairs (Martini 3 polymers): their own σ, ε (GROMACS adds fudgeQQ × the pair's Coulomb, as CAPS does)
   for (const auto& p : ff.lj_pairs) {
-    std::snprintf(b, sizeof b, " 1 %.10g %.10g", p.sigma / 10, p.eps * KJ);
-    add(PAIRS, {p.i, p.j}, b);
+    add(PAIRS, {p.i, p.j}, " 1 " + lj_pair(p.sigma, p.eps));
   }
   // angles (Urey–Bradley terms join their angle: GROMACS function 5)
   std::map<std::pair<uint32_t, uint32_t>, const UreyBradley*> ub;
@@ -359,7 +370,8 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   for (const auto& k : order)
     for (const auto* t : quad[k]) {
       if (t->n < 0) throw FieldError("a torsion with multiplicity < 0 has no GROMACS form");
-      std::snprintf(b, sizeof b, " 9 %.10g %.10g %d", t->delta * R2D, t->v * KJ, t->n);
+      // GROMOS's own proper dihedral is function 1, one term per quadruple; several terms need function 9
+      std::snprintf(b, sizeof b, " %d %.10g %.10g %d", c6c12 && quad[k].size() == 1 ? 1 : 9, t->delta * R2D, t->v * KJ, t->n);
       add(DIHEDRALS, {k[0], k[1], k[2], k[3]}, b);
     }
   // impropers: periodic (function 4, AMBER order with the centre third) and harmonic (function 2)

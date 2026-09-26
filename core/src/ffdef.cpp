@@ -312,6 +312,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   st["dihedral"] = ff.dihedral_style;
   st["improper"] = ff.improper_style;
   if (!ff.special_style.empty()) st["special"] = ff.special_style;
+  if (!ff.gromacs_lj.empty()) st["gromacs_lj"] = ff.gromacs_lj;
   j["styles"] = st;
   j["mixing"] = ff.mixing;
   Json sl = Json::array(), sc = Json::array();
@@ -437,6 +438,7 @@ FFDef load_forcefield(const std::string& path) {
     ff.dihedral_style = st.text("dihedral", ff.dihedral_style);
     ff.improper_style = st.text("improper", ff.improper_style);
     ff.special_style = st.text("special", ff.special_style);
+    ff.gromacs_lj = st.text("gromacs_lj", ff.gromacs_lj);
   }
   ff.mixing = j.text("mixing", ff.mixing);
   if (j.has("special_lj"))
@@ -1202,6 +1204,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.native_cutoff = def.cutoff;
   ff.native_timestep = def.timestep;
   ff.native_special = def.special_style;
+  ff.native_gromacs_lj = def.gromacs_lj;
   ff.lj14 = def.special_lj[2];
   ff.coul14 = def.special_coul[2];
   // 1-3 pairs: excluded (0) or in full (1, both LJ and Coulomb: MARTINI's special_bonds 0 1 1)

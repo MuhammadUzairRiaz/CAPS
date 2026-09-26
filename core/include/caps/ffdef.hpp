@@ -121,6 +121,8 @@ struct FFDef {
   std::string torsion_rules;
   // the special_bonds keyword LAMMPS has for this force field ("amber", "dreiding"; styles "special" in the file)
   std::string special_style;
+  // GROMACS topology form of the van der Waals parameters: "" σ/ε (comb-rule 2), "c6c12" C6/C12 (GROMOS, comb-rule 1)
+  std::string gromacs_lj;
   // Parameters by analogy for terms the file lacks (the typing file's "analogies", as AmberTools' parmchk2 fills
   // missing GAFF terms): type → types whose parameters stand in, most similar first. Every term found this way is
   // listed in ParamReport::estimated; nothing is filled silently.
