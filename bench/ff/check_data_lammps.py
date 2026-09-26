@@ -73,6 +73,10 @@ CASES = [
     ("MARTINI amino acids: HIS, PHE, TYR, TRP (impropers), ARG, ASP, LYS + water (periodic)",
      ("cg-box", "martini-aminoacids", [("template", t, 3) for t in ("HIS", "PHE", "TYR", "TRP", "ARG", "ASP", "LYS")] + [("beads", "[P4]", 100)], 40.0),
      "martini-aminoacids", "keep", "rules"),
+    ("Martini 2.2 protein: AK helix (DSSP; helix constraints, BBB angles, backbone dihedrals)", ("peptide", "AEAAAKEAAAKEAAAKA", "--helix"),
+     "martini22-proteins", "keep", "rules"),
+    ("Martini 2.2 protein: aromatic helix (W, Y, F, H ring constraints and impropers, charged termini)", ("peptide", "AEAWAKEAYAKEAFAKHA", "--helix"),
+     "martini22-proteins", "keep", "rules"),
     ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
                                                                      ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
                                                                      ("beads", "[W]", 120)], 36.0),
@@ -183,6 +187,10 @@ def structure(src, base):
             f.write("\nBonds\n\n")
             for k, (i, j) in enumerate(bonds):
                 f.write(f"{k + 1} 1 {i + 1} {j + 1}\n")
+        return out, None
+    if kind == "peptide":   # an all-atom peptide from CAPS's builder
+        out = os.path.join(work, base + ".pdb")
+        subprocess.run([CAPS, "peptide", src[1], "-o", out] + list(src[2:]), capture_output=True, check=True)
         return out, None
     if kind == "smiles":   # built and cleaned up by CAPS with UFF
         m = os.path.join(work, base + ".mol2")
