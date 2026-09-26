@@ -317,6 +317,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   j["special_lj"] = sl;
   j["special_coul"] = sc;
   j["cutoff"] = ff.cutoff;
+  if (ff.timestep > 0) j["timestep"] = ff.timestep;
   if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
   if (ff.angles_if_defined) j["angle_terms"] = "if_defined";
   if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff || ff.coul_rf || ff.lj_shift) {
@@ -438,6 +439,7 @@ FFDef load_forcefield(const std::string& path) {
   if (j.has("special_coul"))
     for (int k = 0; k < 3; ++k) ff.special_coul[k] = j["special_coul"][k].number();
   ff.cutoff = j.num("cutoff", ff.cutoff);
+  ff.timestep = j.num("timestep", 0);
   ff.torsions_if_defined = j.text("torsion_terms") == "if_defined";
   ff.angles_if_defined = j.text("angle_terms") == "if_defined";
   if (j.has("pair_settings")) {
@@ -530,6 +532,7 @@ FFDef load_forcefield(const std::string& path) {
     if (j.has("improper_order")) base.improper_order = ff.improper_order;
     if (j.has("improper_matched_order")) base.improper_matched_order = ff.improper_matched_order;
     if (j.has("improper_max_neighbours")) base.improper_max_neighbours = ff.improper_max_neighbours;
+    if (j.has("timestep")) base.timestep = ff.timestep;
     base.name = ff.name;
     base.version = ff.version;
     base.source = ff.source + " on " + base.source;
@@ -1189,6 +1192,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.native_dihedral = def.dihedral_style;
   ff.native_improper = def.improper_style;
   ff.native_cutoff = def.cutoff;
+  ff.native_timestep = def.timestep;
   ff.lj14 = def.special_lj[2];
   ff.coul14 = def.special_coul[2];
   // 1-3 pairs: excluded (0) or in full (1, both LJ and Coulomb: MARTINI's special_bonds 0 1 1)
