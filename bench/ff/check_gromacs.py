@@ -137,12 +137,20 @@ def gmx(d, stem):
     return e, f
 
 
-def top_tail(d, stem, cutoff):
-    """CAPS's tail term (kcal/mol) from the topology's pair coefficients and the box: (2π/V) Σ_ab N_a N_b 4ε[σ¹²/9rc⁹ − σ⁶/3rc³]."""
-    sec, types, pairs, counts = "", {}, {}, {}
+def expand_topology(d, stem):
+    """(pair table, per-atom type names, global exclusion pairs) of the whole system: the .top with its #include'd
+    .itp, each molecule type repeated as [ molecules ] lists it."""
+    text = []
     for l in open(os.path.join(d, stem + ".top")):
-        l = l.split(";")[0].strip()
-        if not l:
+        m = re.match(r'\s*#include\s+"([^"]+)"', l)
+        if m:
+            text += open(os.path.join(d, m.group(1))).read().splitlines()
+        else:
+            text.append(l.rstrip("\n"))
+    pairs, moltypes, cur, sec, molecules = {}, {}, None, "", []
+    for raw in text:
+        l = raw.split(";")[0].strip()
+        if not l or l.startswith("#"):
             continue
         m = re.match(r"\[\s*(\S+)\s*\]", l)
         if m:
@@ -151,8 +159,31 @@ def top_tail(d, stem, cutoff):
         w = l.split()
         if sec == "nonbond_params":
             pairs[(w[0], w[1])] = pairs[(w[1], w[0])] = (float(w[3]) * 10, float(w[4]) / 4.184)
-        elif sec == "atoms":
-            counts[w[1]] = counts.get(w[1], 0) + 1
+        elif sec == "moleculetype":
+            cur = w[0]
+            moltypes[cur] = {"atoms": [], "excl": []}
+        elif sec == "atoms" and cur:
+            moltypes[cur]["atoms"].append(w[1])
+        elif sec == "exclusions" and cur:
+            moltypes[cur]["excl"] += [(int(w[0]) - 1, int(j) - 1) for j in w[1:]]
+        elif sec == "molecules":
+            molecules.append((w[0], int(w[1])))
+    at, excl = [], []
+    for name, count in molecules:
+        mt = moltypes[name]
+        for _ in range(count):
+            off = len(at)
+            at += mt["atoms"]
+            excl += [(i + off, j + off) for i, j in mt["excl"]]
+    return pairs, at, excl
+
+
+def top_tail(d, stem, cutoff):
+    """CAPS's tail term (kcal/mol) from the topology's pair coefficients and the box: (2π/V) Σ_ab N_a N_b 4ε[σ¹²/9rc⁹ − σ⁶/3rc³]."""
+    pairs, at, _ = expand_topology(d, stem)
+    counts = {}
+    for a in at:
+        counts[a] = counts.get(a, 0) + 1
     box = [float(x) * 10 for x in open(os.path.join(d, stem + ".gro")).read().strip().splitlines()[-1].split()]
     vol = box[0] * box[1] * box[2]
     rc = cutoff
@@ -167,23 +198,7 @@ def top_tail(d, stem, cutoff):
 def gmx_tail(d, stem, cutoff):
     """GROMACS's DispCorr AllEnerPres (kcal/mol): (2π N²/V)[⟨C12⟩/(9rc⁹) − ⟨C6⟩/(3rc³)], the averages over all atom
     pairs less the excluded ones."""
-    sec, P, at, ex = "", {}, [], 0
-    excl = []
-    for l in open(os.path.join(d, stem + ".top")):
-        l = l.split(";")[0].strip()
-        m = re.match(r"\[\s*(\S+)\s*\]", l)
-        if m:
-            sec = m.group(1)
-            continue
-        if not l:
-            continue
-        w = l.split()
-        if sec == "nonbond_params":
-            P[(w[0], w[1])] = P[(w[1], w[0])] = (float(w[3]) * 10, float(w[4]) / 4.184)
-        elif sec == "atoms":
-            at.append(w[1])
-        elif sec == "exclusions":
-            excl += [(int(w[0]) - 1, int(j) - 1) for j in w[1:]]
+    P, at, excl = expand_topology(d, stem)
     c6 = lambda a, b: 4 * P[(a, b)][1] * P[(a, b)][0] ** 6
     c12 = lambda a, b: 4 * P[(a, b)][1] * P[(a, b)][0] ** 12
     n = len(at)
@@ -206,20 +221,31 @@ def gmx_tail(d, stem, cutoff):
 
 
 def pair14_shift(d, stem, cutoff):
-    """Σ over [pairs] of 4ε'[(σ/rc)¹² − (σ/rc)⁶] (kcal/mol): CAPS shifts its 1-4 terms at the cut-off when there is no
-    tail correction, GROMACS never shifts [pairs]; a constant, with no force."""
-    sec, e = "", 0.0
+    """Σ over [pairs] of 4ε'[(σ/rc)¹² − (σ/rc)⁶] (kcal/mol), each molecule type times its count: CAPS shifts its 1-4
+    terms at the cut-off when there is no tail correction, GROMACS never shifts [pairs]; a constant, with no force."""
+    text = []
     for l in open(os.path.join(d, stem + ".top")):
-        l = l.split(";")[0].strip()
+        m = re.match(r'\s*#include\s+"([^"]+)"', l)
+        text += open(os.path.join(d, m.group(1))).read().splitlines() if m else [l]
+    per, counts, cur, sec = {}, {}, None, ""
+    for raw in text:
+        l = raw.split(";")[0].strip()
+        if not l or l.startswith("#"):
+            continue
         m = re.match(r"\[\s*(\S+)\s*\]", l)
         if m:
             sec = m.group(1)
-        elif l and sec == "pairs":
-            w = l.split()
+            continue
+        w = l.split()
+        if sec == "moleculetype":
+            cur = w[0]
+            per[cur] = 0.0
+        elif sec == "pairs" and cur:
             s, eps = float(w[3]) * 10, float(w[4]) / 4.184
-            e += 4 * eps * ((s / cutoff) ** 12 - (s / cutoff) ** 6)
-    return e
-
+            per[cur] += 4 * eps * ((s / cutoff) ** 12 - (s / cutoff) ** 6)
+        elif sec == "molecules":
+            counts[w[0]] = counts.get(w[0], 0) + int(w[1])
+    return sum(per[k] * c for k, c in counts.items())
 
 rows, fails = [], 0
 KJ = 4.184

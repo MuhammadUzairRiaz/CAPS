@@ -20,6 +20,8 @@
 #include <array>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
+#include <filesystem>
 #include <map>
 #include <queue>
 #include <set>
@@ -40,7 +42,6 @@ std::string fmt(const char* f, double a) {
   std::snprintf(b, sizeof b, f, a);
   return b;
 }
-std::string g(double x) { return fmt(" %.10g", x); }
 
 // GROMACS names: no spaces, at most 16 characters
 std::string clean(std::string s) {
@@ -193,82 +194,72 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
       top << b;
     }
 
-  // one molecule type holds the whole system (CAPS's exclusions are listed, not generated)
+  // The molecule sections, as lines tagged with their atoms: each written with molecule-local numbering, so identical
+  // molecules (a melt's chains, a solvent) become one [ moleculetype ] in STEM.itp, listed with their count in [ molecules ].
   std::vector<Vec3> pos;
   const bool periodic_mol = periodic_bonds(s, pos);
-  const auto mol = s.molecules();
-  top << "\n[ moleculetype ]\n; name  nrexcl\nSYSTEM  0\n\n[ atoms ]\n; nr  type  resnr  residue  atom  cgnr  charge  mass\n";
-  for (size_t i = 0; i < n; ++i) {
-    const Atom& a = s.atoms[i];
-    const long res = a.resid > 0 ? long(a.resid) : s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1);
-    const std::string rn = clean(a.resname.empty() ? "MOL" : a.resname).substr(0, 5);
-    const std::string an = clean(a.name.empty() ? element(a.element).symbol : a.name).substr(0, 5);
-    std::snprintf(b, sizeof b, "%7zu %-16s %6ld %-5s %-5s %7zu %14.10f %12.6f\n", i + 1, tname[size_t(ff.type_index[i])].c_str(), res, rn.c_str(), an.c_str(),
-                  i + 1, ff.charge[i], ff.mass[i]);
-    top << b;
-  }
+  int nmol = 0;
+  const auto mol = s.molecules(&nmol);
+  enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, EXCLUSIONS, NSEC };
+  static const char* sec_head[NSEC] = {"[ atoms ]\n; nr  type  resnr  residue  atom  cgnr  charge  mass\n", "[ bonds ]\n; i  j  func  parameters\n",
+                                       "[ pairs ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol), scaled\n", "[ angles ]\n; i  j  k  func  parameters\n",
+                                       "[ dihedrals ]\n; i  j  k  l  func  parameters\n", "[ exclusions ]\n"};
+  struct Line { Sec sec; std::vector<uint32_t> atoms; std::string tail; };
+  std::vector<Line> lines;
+  auto add = [&](Sec sec, std::vector<uint32_t> at, const std::string& tail) { lines.push_back({sec, std::move(at), tail}); };
 
-  // bonds (structure bonds without a term: type 5, a connection, so tools see the molecule)
-  top << "\n[ bonds ]\n; i  j  func  parameters\n";
+  // bonds (structure bonds without a term: function 5, a connection, so tools see the molecule)
   std::set<std::pair<uint32_t, uint32_t>> have;
   auto mark = [&](uint32_t i, uint32_t j) { have.insert({std::min(i, j), std::max(i, j)}); };
   for (const auto& t : ff.bonds) {
-    std::snprintf(b, sizeof b, "%7u %7u 1 %.10g %.10g\n", t.i + 1, t.j + 1, t.r0 / 10, 2 * t.k * KJ * 100);
-    top << b;
+    std::snprintf(b, sizeof b, " 1 %.10g %.10g", t.r0 / 10, 2 * t.k * KJ * 100);
+    add(BONDS, {t.i, t.j}, b);
     mark(t.i, t.j);
   }
   for (const auto& t : ff.bonds_x) {
-    if (t.form == 1) std::snprintf(b, sizeof b, "%7u %7u 3 %.10g %.10g %.10g\n", t.i + 1, t.j + 1, t.c / 10, t.a * KJ, t.b * 10);   // Morse: b0, D, β
-    else if (t.form == 2) std::snprintf(b, sizeof b, "%7u %7u 2 %.10g %.10g\n", t.i + 1, t.j + 1, t.b / 10, t.a * KJ * 1e4);   // GROMOS quartic
+    if (t.form == 1) std::snprintf(b, sizeof b, " 3 %.10g %.10g %.10g", t.c / 10, t.a * KJ, t.b * 10);   // Morse: b0, D, β
+    else if (t.form == 2) std::snprintf(b, sizeof b, " 2 %.10g %.10g", t.b / 10, t.a * KJ * 1e4);   // GROMOS quartic
     else throw FieldError("bond form " + std::to_string(t.form) + " has no GROMACS function");
-    top << b;
+    add(BONDS, {t.i, t.j}, b);
     mark(t.i, t.j);
   }
   for (const auto& t : s.bonds)
     if (t.i != t.j && !have.count({std::min(t.i, t.j), std::max(t.i, t.j)})) {
-      std::snprintf(b, sizeof b, "%7u %7u 5\n", t.i + 1, t.j + 1);
-      top << b;
+      add(BONDS, {t.i, t.j}, " 5");
       mark(t.i, t.j);
     }
-
   // 1-4 pairs, each with its scaled coefficients
-  if (!ff.pairs14.empty()) {
-    top << "\n[ pairs ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol), scaled by " << ff.lj14 << "\n";
+  {
     ForceField f14;
     f14.mixing = ff.mixing;
     f14.lj = ff.lj14_types;
     for (const auto& p : ff.pairs14) {
       const int ta = ff.type_index[p[0]], tb = ff.type_index[p[1]];
       const PairType q = ff.lj14_types.empty() ? mixed_pair(ff, ta, tb) : mixed_pair(f14, ta, tb);
-      std::snprintf(b, sizeof b, "%7u %7u 1 %.10g %.10g\n", p[0] + 1, p[1] + 1, q.sigma / 10, ff.lj14 * q.eps * KJ);
-      top << b;
+      std::snprintf(b, sizeof b, " 1 %.10g %.10g", q.sigma / 10, ff.lj14 * q.eps * KJ);
+      add(PAIRS, {p[0], p[1]}, b);
     }
   }
-
   // angles (Urey–Bradley terms join their angle: GROMACS function 5)
   std::map<std::pair<uint32_t, uint32_t>, const UreyBradley*> ub;
   for (const auto& u : ff.urey_bradley) ub[{std::min(u.i, u.k), std::max(u.i, u.k)}] = &u;
   size_t ub_used = 0;
-  if (!ff.angles.empty() || !ff.angles_x.empty()) top << "\n[ angles ]\n; i  j  k  func  parameters\n";
   for (const auto& a : ff.angles) {
     auto it = ub.find({std::min(a.i, a.k), std::max(a.i, a.k)});
     if (it != ub.end()) {
       ++ub_used;
-      std::snprintf(b, sizeof b, "%7u %7u %7u 5 %.10g %.10g %.10g %.10g\n", a.i + 1, a.j + 1, a.k + 1, a.theta0 * R2D, 2 * a.kt * KJ, it->second->r0 / 10,
-                    2 * it->second->kub * KJ * 100);
+      std::snprintf(b, sizeof b, " 5 %.10g %.10g %.10g %.10g", a.theta0 * R2D, 2 * a.kt * KJ, it->second->r0 / 10, 2 * it->second->kub * KJ * 100);
     } else {
-      std::snprintf(b, sizeof b, "%7u %7u %7u 1 %.10g %.10g\n", a.i + 1, a.j + 1, a.k + 1, a.theta0 * R2D, 2 * a.kt * KJ);
+      std::snprintf(b, sizeof b, " 1 %.10g %.10g", a.theta0 * R2D, 2 * a.kt * KJ);
     }
-    top << b;
+    add(ANGLES, {a.i, a.j, a.k}, b);
   }
   if (ub_used != ub.size()) throw FieldError("a Urey–Bradley term has no angle to join (GROMACS angle function 5 needs one)");
   for (const auto& a : ff.angles_x) {
     if (a.form != 1) throw FieldError("angle form " + std::to_string(a.form) + " has no GROMACS function");
-    // K (cos θ − cos θ0)² = ½ kθ (cos θ − cos θ0)², GROMOS-96 angle
-    std::snprintf(b, sizeof b, "%7u %7u %7u 2 %.10g %.10g\n", a.i + 1, a.j + 1, a.k + 1, a.b * R2D, 2 * a.a * KJ);
-    top << b;
+    std::snprintf(b, sizeof b, " 2 %.10g %.10g", a.b * R2D, 2 * a.a * KJ);   // K (cos θ − cos θ0)² = ½ kθ (…)², GROMOS-96 angle
+    add(ANGLES, {a.i, a.j, a.k}, b);
   }
-
   // proper torsions: every Fourier term of a quadruple on consecutive lines (function 9)
   std::map<std::array<uint32_t, 4>, std::vector<const TorsionTerm*>> quad;
   std::vector<std::array<uint32_t, 4>> order;
@@ -278,12 +269,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     if (v.empty()) order.push_back(k);
     v.push_back(&t);
   }
-  if (!order.empty() || !ff.impropers.empty() || !ff.impropers_harmonic.empty()) top << "\n[ dihedrals ]\n; i  j  k  l  func  parameters\n";
   for (const auto& k : order)
     for (const auto* t : quad[k]) {
       if (t->n < 0) throw FieldError("a torsion with multiplicity < 0 has no GROMACS form");
-      std::snprintf(b, sizeof b, "%7u %7u %7u %7u 9 %.10g %.10g %d\n", k[0] + 1, k[1] + 1, k[2] + 1, k[3] + 1, t->delta * R2D, t->v * KJ, t->n);
-      top << b;
+      std::snprintf(b, sizeof b, " 9 %.10g %.10g %d", t->delta * R2D, t->v * KJ, t->n);
+      add(DIHEDRALS, {k[0], k[1], k[2], k[3]}, b);
     }
   // impropers: periodic (function 4, AMBER order with the centre third) and harmonic (function 2)
   std::map<std::array<uint32_t, 4>, int> imp_count;
@@ -291,26 +281,103 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   for (const auto& t : ff.impropers) {
     if (t.n < 0) throw FieldError("an improper with multiplicity < 0 has no GROMACS form");
     const int fn = imp_count[{t.i, t.j, t.k, t.l}] > 1 ? 9 : 4;   // several terms on one quadruple: function 9
-    std::snprintf(b, sizeof b, "%7u %7u %7u %7u %d %.10g %.10g %d\n", t.i + 1, t.j + 1, t.k + 1, t.l + 1, fn, t.delta * R2D, t.v * KJ, t.n);
-    top << b;
+    std::snprintf(b, sizeof b, " %d %.10g %.10g %d", fn, t.delta * R2D, t.v * KJ, t.n);
+    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, b);
   }
   for (const auto& t : ff.impropers_harmonic) {
-    std::snprintf(b, sizeof b, "%7u %7u %7u %7u 2 %.10g %.10g\n", t.i + 1, t.j + 1, t.k + 1, t.l + 1, t.chi0 * R2D, 2 * t.k2 * KJ);
-    top << b;
+    std::snprintf(b, sizeof b, " 2 %.10g %.10g", t.chi0 * R2D, 2 * t.k2 * KJ);
+    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, b);
+  }
+  // exclusions: CAPS's own list (nrexcl 0)
+  for (uint32_t i = 0; i < ff.excluded.size(); ++i) {
+    std::vector<uint32_t> at{i};
+    for (uint32_t j : ff.excluded[i])
+      if (j > i) at.push_back(j);
+    if (at.size() > 1) add(EXCLUSIONS, at, "");
   }
 
-  // exclusions: CAPS's own list
-  bool any_ex = false;
-  for (uint32_t i = 0; i < ff.excluded.size(); ++i) {
-    std::string line;
-    for (uint32_t j : ff.excluded[i])
-      if (j > i) line += " " + std::to_string(j + 1);
-    if (line.empty()) continue;
-    if (!any_ex) top << "\n[ exclusions ]\n";
-    any_ex = true;
-    top << (i + 1) << line << "\n";
+  // molecules: contiguous atom ranges in order, else one molecule type for the whole system
+  std::vector<uint32_t> first_atom(static_cast<size_t>(nmol), UINT32_MAX), last_atom(static_cast<size_t>(nmol), 0), count(static_cast<size_t>(nmol), 0);
+  for (uint32_t i = 0; i < n; ++i) {
+    const auto m = size_t(mol[i]);
+    first_atom[m] = std::min(first_atom[m], i);
+    last_atom[m] = std::max(last_atom[m], i);
+    ++count[m];
   }
-  top << "\n[ system ]\n" << clean(s.title.empty() ? "CAPS" : s.title) << "\n\n[ molecules ]\nSYSTEM  1\n";
+  bool contiguous = true;
+  for (int m = 0; m < nmol && contiguous; ++m) contiguous = last_atom[size_t(m)] - first_atom[size_t(m)] + 1 == count[size_t(m)];
+  for (const auto& l : lines)
+    for (uint32_t a : l.atoms) contiguous = contiguous && mol[a] == mol[l.atoms[0]];
+  std::vector<int> mol_of(n);
+  std::vector<uint32_t> start;
+  if (contiguous) {
+    std::vector<int> byfirst(static_cast<size_t>(nmol));
+    for (int m = 0; m < nmol; ++m) byfirst[size_t(m)] = m;
+    std::sort(byfirst.begin(), byfirst.end(), [&](int a, int c) { return first_atom[size_t(a)] < first_atom[size_t(c)]; });
+    std::vector<int> rank(static_cast<size_t>(nmol));
+    for (int r = 0; r < nmol; ++r) rank[size_t(byfirst[size_t(r)])] = r, start.push_back(first_atom[size_t(byfirst[size_t(r)])]);
+    for (uint32_t i = 0; i < n; ++i) mol_of[i] = rank[size_t(mol[i])];
+  } else {
+    nmol = 1;
+    start = {0};
+    std::fill(mol_of.begin(), mol_of.end(), 0);
+  }
+  std::vector<std::vector<const Line*>> by_mol(static_cast<size_t>(nmol));
+  for (const auto& l : lines) by_mol[size_t(mol_of[l.atoms[0]])].push_back(&l);
+  // each molecule's sections with local numbering; identical text is one molecule type
+  auto body_of = [&](int m) {
+    const uint32_t s0 = start[size_t(m)];
+    const uint32_t s1 = m + 1 < nmol ? start[size_t(m) + 1] : uint32_t(n);
+    std::ostringstream o;
+    long res0 = -1;
+    o << sec_head[ATOMS];
+    for (uint32_t i = s0; i < s1; ++i) {
+      const Atom& a = s.atoms[i];
+      long res = a.resid > 0 ? long(a.resid) : 1;
+      if (res0 < 0) res0 = res;
+      const std::string rn = clean(a.resname.empty() ? "MOL" : a.resname).substr(0, 5);
+      const std::string an = clean(a.name.empty() ? element(a.element).symbol : a.name).substr(0, 5);
+      std::snprintf(b, sizeof b, "%7u %-16s %6ld %-5s %-5s %7u %14.10f %12.6f\n", i - s0 + 1, tname[size_t(ff.type_index[i])].c_str(), res - res0 + 1, rn.c_str(),
+                    an.c_str(), i - s0 + 1, ff.charge[i], ff.mass[i]);
+      o << b;
+    }
+    for (int sec = BONDS; sec < NSEC; ++sec) {
+      bool head = false;
+      for (const Line* l : by_mol[size_t(m)]) {
+        if (l->sec != sec) continue;
+        if (!head) o << "\n" << sec_head[sec], head = true;
+        for (uint32_t a : l->atoms) o << std::setw(7) << (a - s0 + 1);
+        o << l->tail << "\n";
+      }
+    }
+    return o.str();
+  };
+  std::vector<std::string> kinds;              // molecule-type bodies
+  std::vector<std::pair<int, int>> runs;       // (kind, count) in order
+  for (int m = 0; m < nmol; ++m) {
+    const std::string body = body_of(m);
+    int k = int(std::find(kinds.begin(), kinds.end(), body) - kinds.begin());
+    if (k == int(kinds.size())) kinds.push_back(body);
+    if (!runs.empty() && runs.back().first == k) ++runs.back().second;
+    else runs.push_back({k, 1});
+  }
+  // STEM.itp: the molecule types
+  const std::string itp_name = std::filesystem::path(stem + ".itp").filename().string();
+  std::ofstream itp(stem + ".itp");
+  if (!itp) throw std::runtime_error("cannot write " + stem + ".itp");
+  itp << "; CAPS 0.1 · molecule types of " << (s.title.empty() ? "structure" : s.title) << " · " << ff.name << " · kJ/mol and nm\n";
+  std::vector<std::string> kname(kinds.size());
+  for (size_t k = 0; k < kinds.size(); ++k) {
+    kname[k] = contiguous ? (kinds.size() == 1 ? std::string("MOL") : "MOL" + std::to_string(k + 1)) : std::string("SYSTEM");
+    int copies = 0;
+    for (const auto& r : runs) if (size_t(r.first) == k) copies += r.second;
+    itp << "\n[ moleculetype ]\n; name  nrexcl   (" << copies << (copies == 1 ? " molecule" : " molecules") << "; exclusions listed below)\n"
+        << kname[k] << "  0\n\n" << kinds[k];
+  }
+  itp.close();
+  top << "\n#include \"" << itp_name << "\"\n";
+  top << "\n[ system ]\n" << clean(s.title.empty() ? "CAPS" : s.title) << "\n\n[ molecules ]\n; name  count\n";
+  for (const auto& r : runs) top << kname[size_t(r.first)] << "  " << r.second << "\n";
   top.close();
 
   // coordinates: nm, 8 decimals (GROMACS reads the precision from the first line)
