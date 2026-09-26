@@ -23,9 +23,9 @@
  "special_coul": [
   0,
   0,
-  0.8333333333
+  0
  ],
- "cutoff": 11,
+ "cutoff": 14,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "atom_types": [
@@ -77,7 +77,9 @@
    ]
   }
  ],
- "bonds": [],
+ "bonds": [
+  {"name": "saturated", "match": ["CH?", "CH?"], "style": "harmonic", "params": [120.0, 1.54], "comment": "moltemplate trappe1998.lt: bond_coeff @bond:saturated harmonic 120.0 1.54 (its molecule files give every CH?-CH? bond this type)"}
+ ],
  "angles": [
   {
    "name": "backbone",
