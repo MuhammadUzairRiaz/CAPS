@@ -257,9 +257,14 @@ TEST(Gromacs, TopologyUnitsExclusionsAndRefusals) {
   const auto& b = ff.bonds[0];
   char line[160];
   std::snprintf(line, sizeof line, "%7u %7u 1 %.10g %.10g\n", b.i + 1, b.j + 1, b.r0 / 10, 2 * b.k * 4.184 * 100);
-  EXPECT_NE(top.find(line), std::string::npos) << line;
-  EXPECT_NE(top.find("SYSTEM  0"), std::string::npos);   // nrexcl 0: CAPS's exclusions are listed
-  EXPECT_NE(top.find("[ exclusions ]"), std::string::npos);
+  // the bond line, numbered within its molecule
+  std::snprintf(line, sizeof line, " 1 %.10g %.10g\n", b.r0 / 10, 2 * b.k * 4.184 * 100);
+  std::ifstream fi(stem + ".itp");
+  const std::string itp((std::istreambuf_iterator<char>(fi)), {});
+  EXPECT_NE(top.find("#include \"caps_gmx_unit.itp\""), std::string::npos);   // molecule types in the .itp
+  EXPECT_NE(itp.find("MOL  0"), std::string::npos);                              // nrexcl 0: CAPS's exclusions are listed
+  EXPECT_NE(itp.find("[ exclusions ]"), std::string::npos);
+  EXPECT_NE(itp.find(line), std::string::npos) << line;                          // kb = 2 k · 4.184 · 100
   EXPECT_NE(top.find("[ nonbond_params ]"), std::string::npos);
   EXPECT_NE(mdp.find("coulombtype              = PME"), std::string::npos);
   EXPECT_NE(mdp.find("DispCorr                 = AllEnerPres"), std::string::npos);
