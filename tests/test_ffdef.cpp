@@ -696,3 +696,42 @@ TEST(FieldForms, CombinedBendingTorsionAndExplicitPairs) {
   const auto d = strain_derivative(ev, x, c);
   for (int v = 0; v < 6; ++v) EXPECT_NEAR(et.w[v], d[v], 1e-4 * std::max(1.0, std::fabs(et.virial))) << "virial " << v;
 }
+
+// CVFF, PCFF and COMPASS from their .frc files (bench/ff/convert_frc.py; msi2lmp's assignment, checked against msi2lmp
+// by bench/ff/check_msi2lmp.py): a polystyrene melt is typed and fully parameterised, the class II files with their
+// cross terms and Wilson / angle-angle out-of-plane terms, CVFF with its improper torsions; each keeps its own LAMMPS
+// styles for the native export.
+TEST(FFDef, FrcConversionsParameteriseFully) {
+  const System melt = read_lammps_data(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  for (const char* id : {"pcff-frc", "cvff-frc", "compass-frc"}) {
+    System s = melt;
+    const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + id + ".json");
+    EXPECT_EQ(def.equivalence, "fallback") << id;
+    EXPECT_EQ(def.oop_scheme, "msi2lmp") << id;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << id;
+    ParamReport rep;
+    const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << id;
+    if (std::string(id) == "cvff-frc") {
+      EXPECT_EQ(ff.native_dihedral, "harmonic");
+      EXPECT_EQ(ff.native_improper, "cvff");
+      EXPECT_FALSE(ff.impropers.empty());   // the aromatic carbons' out-of-plane torsions
+      EXPECT_TRUE(ff.dihedrals2.empty());
+    } else {
+      EXPECT_EQ(ff.native_dihedral, "class2") << id;
+      ASSERT_FALSE(ff.dihedrals2.empty()) << id;
+      ASSERT_FALSE(ff.impropers2.empty()) << id;
+      bool mbt = false, bb = false, aa = false;
+      for (const auto& d : ff.dihedrals2) mbt = mbt || d.mbt[0] != 0 || d.mbt[1] != 0 || d.mbt[2] != 0;
+      for (const auto& a : ff.angles2) bb = bb || a.bb_m != 0;
+      for (const auto& q : ff.impropers2) {
+        aa = aa || q.m1 != 0 || q.m2 != 0 || q.m3 != 0;
+        EXPECT_GT(q.theta2, 0) << id;   // θ2 is the k-j-l angle (LAMMPS's order)
+      }
+      EXPECT_TRUE(mbt && bb && aa) << id;
+    }
+  }
+}

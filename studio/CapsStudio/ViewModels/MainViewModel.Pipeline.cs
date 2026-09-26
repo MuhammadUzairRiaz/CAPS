@@ -139,7 +139,7 @@ public sealed partial class MainViewModel
     private readonly Dictionary<string, List<string>> _engHeads = new();
 
     public bool EngineLammps { get => _engLammps; set { if (Set(ref _engLammps, value)) RefreshEngines(); } }
-    public bool EngineGromacs { get => _engGromacs; set { if (Set(ref _engGromacs, value)) RefreshEngines(); } }
+    public bool EngineGromacs { get => _engGromacs; set { if (Set(ref _engGromacs, value)) { Raise(nameof(EngineGromacsRefused)); RefreshEngines(); } } }
     public int EngineRun { get => _engRun; set { if (Set(ref _engRun, Math.Clamp(value, 0, 3))) { Raise(nameof(EngineIsMd)); RefreshEngines(); } } }
     public bool EngineIsMd => _engRun >= 2;
     public bool EngineMinimiseFirst { get => _engMinFirst; set { if (Set(ref _engMinFirst, value)) RefreshEngines(); } }
@@ -153,6 +153,10 @@ public sealed partial class MainViewModel
     public decimal? EngineStepsD { get => _engSteps; set => EngineSteps = (long)Math.Clamp(value ?? 100000m, 0m, 1_000_000_000m); }
     public string EngineFolder { get => _engFolder; set { if (Set(ref _engFolder, value)) Raise(nameof(EngineCanWrite)); } }
     public string EngineStem { get => _engStem; set { if (Set(ref _engStem, value)) RefreshEngines(); } }
+    private string _engGromacsError = "";
+    /// <summary>Why GROMACS cannot take this force field (class II …): shown in the GROMACS card; LAMMPS still exports.</summary>
+    public string EngineGromacsError { get => _engGromacsError; private set { if (Set(ref _engGromacsError, value)) Raise(nameof(EngineGromacsRefused)); } }
+    public bool EngineGromacsRefused => _engGromacsError.Length > 0 && _engGromacs;
     public string EngineError { get => _engError; private set { if (Set(ref _engError, value)) { Raise(nameof(EngineHasError)); Raise(nameof(EngineCanWrite)); } } }
     public bool EngineHasError => _engError.Length > 0;
     public bool EngineBusy { get => _engBusy; private set { if (Set(ref _engBusy, value)) Raise(nameof(EngineCanWrite)); } }
@@ -247,6 +251,7 @@ public sealed partial class MainViewModel
             return;
         }
         EngineError = "";
+        EngineGromacsError = (string?)j["gromacs_error"] ?? "";
         long total = 0;
         var names = new List<string>();
         foreach (var f in (JsonArray)j["files"]!)

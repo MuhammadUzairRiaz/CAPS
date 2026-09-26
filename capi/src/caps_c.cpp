@@ -1135,7 +1135,10 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
       written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
     }
-    if (gromacs) {
+    // a force field GROMACS cannot express (class II's 9-6 Lennard-Jones and cross terms …) refuses the GROMACS files
+    // only: the LAMMPS files are still written, and the reason goes back as gromacs_error
+    std::string gromacs_error;
+    if (gromacs) try {
       for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
       if (d->held_mol > 0) notes.push_back("GROMACS: the held molecule is not frozen: give it an index group and freezegrps / freezedim");
       // the core's .mdp is a single point with the matching non-bonded settings; a protocol replaces its run lines
@@ -1188,6 +1191,9 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       written.push_back({stem + ".mdp", run.kind == caps::LammpsRun::Kind::Check ? "single point, matching cut-offs" : "the run, matching cut-offs"});
       if (fs::exists(folder / (stem + "_em.mdp")) && run.minimize_first && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT))
         written.push_back({stem + "_em.mdp", "minimisation first (gmx grompp -f " + stem + "_em.mdp)"});
+    } catch (const std::exception& ex) {
+      gromacs_error = ex.what();   // refused before any GROMACS file is written (write_gromacs checks first)
+      if (!lammps) throw;
     }
     if (d->field->rep.estimated_terms) {
       std::string ex;
@@ -1219,14 +1225,18 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     checks["typed"] = double(s.atoms.size() - size_t(d->field->typing.untyped));
     checks["types"] = double(types.size());
     checks["type_pairs"] = double(ff.type_names.size() * (ff.type_names.size() + 1) / 2);
-    checks["bonds"] = double(ff.bonds.size()), checks["angles"] = double(ff.angles.size());
-    checks["dihedrals"] = double(ff.dihedrals.size()), checks["impropers"] = double(ff.impropers.size() + ff.impropers_harmonic.size() + ff.inversions.size());
+    // every form counted (class II bonds, angles, torsions and out-of-plane terms too)
+    checks["bonds"] = double(ff.bonds.size() + ff.bonds2.size() + ff.bonds_x.size());
+    checks["angles"] = double(ff.angles.size() + ff.angles2.size() + ff.angles_x.size());
+    checks["dihedrals"] = double(ff.dihedrals.size() + ff.dihedrals2.size() + ff.cbt.size());
+    checks["impropers"] = double(ff.impropers.size() + ff.impropers_harmonic.size() + ff.inversions.size() + ff.impropers2.size());
     checks["missing"] = double(d->field->rep.missing.size());
     checks["net_charge"] = net;
     checks["charges"] = d->field->auto_charges ? "automatic" : d->field->charges;
     checks["forcefield"] = ff.name;
     checks["density"] = s.density();
     r["ok"] = true;
+    if (!gromacs_error.empty()) r["gromacs_error"] = gromacs_error;
     r["files"] = std::move(files);
     r["notes"] = std::move(notes);
     r["checks"] = std::move(checks);

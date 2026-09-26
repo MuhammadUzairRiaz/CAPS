@@ -192,7 +192,7 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
     if (v.empty()) order.push_back(k);
     v.push_back(&t);
   }
-  // native styles: OPLS (½K1(1+cos φ) + ½K2(1−cos 2φ) + ½K3(1+cos 3φ) + ½K4(1−cos 4φ): a term v(1+cos(nφ−δ)) is
+  // native styles: CVFF's harmonic (one term K [1 + d cos(nφ)]), OPLS (½K1(1+cos φ) + ½K2(1−cos 2φ) + ½K3(1+cos 3φ) + ½K4(1−cos 4φ): a term v(1+cos(nφ−δ)) is
   // K_n = 2v with δ 0 for odd n, 180° for even n) and CHARMM (one dihedral line per term, K n d with d a whole degree,
   // weight 0: the 1-4 pairs come from special_bonds); a quadruple that does not fit stays a Fourier sum
   const std::string nd = st.native ? ff.native_dihedral : "";
@@ -214,6 +214,12 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
     std::string c;
     if (nd == "opls" && opls_of(v, c)) {
       L.dihedrals.add("opls", c, {}, {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
+      continue;
+    }
+    if (nd == "harmonic" && v.size() == 1 && v[0]->n >= 0 && std::fabs(std::fabs(std::cos(v[0]->delta)) - 1) < 1e-9) {
+      // CVFF as msi2lmp writes it: K [1 + d cos(nφ)], d = +1 (phase 0) or −1 (phase 180°)
+      L.dihedrals.add("harmonic", num({v[0]->v}) + (std::cos(v[0]->delta) > 0 ? " 1 " : " -1 ") + std::to_string(v[0]->n), {},
+                      {k[0], k[1], k[2], k[3]}, lab({k[0], k[1], k[2], k[3]}));
       continue;
     }
     if (nd == "charmm") {
@@ -322,6 +328,7 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
   if (ff.pair_func.empty() && L.sw_types.empty() && !L.gromacs && !(L.pair_base == "lj/class2" && L.coul == "dsf")) {
     L.pair_combined = L.pair_base + (L.coul == "none" ? "" : "/coul/" + L.coul);
     L.pair_styles = {L.pair_combined};
+    L.pair_hybrid = st.hybrid;   // one style (lj/class2/coul/long too): hybrid only when asked
   }
 }
 
