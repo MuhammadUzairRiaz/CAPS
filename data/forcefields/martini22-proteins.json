@@ -15,7 +15,7 @@
   "pair": "lj/gromacs/coul/gromacs",
   "bond": "harmonic",
   "angle": "cosine/squared",
-  "dihedral": "fourier",
+  "dihedral": "charmm",
   "improper": "harmonic"
  },
  "mixing": "arithmetic",
