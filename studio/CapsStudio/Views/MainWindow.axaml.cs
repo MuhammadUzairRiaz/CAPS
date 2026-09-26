@@ -342,6 +342,15 @@ public partial class MainWindow : Window
     private void OnModuleJobs(object? s, RoutedEventArgs e) => _vm.SetModule(11);
     private void OnModuleBench(object? s, RoutedEventArgs e) => _vm.SetModule(12);
     private void OnCloseDocument(object? s, RoutedEventArgs e) { e.Handled = true; _vm.CloseDocument(); }
+    private void OnProjectTab(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.ProjectItem it) _vm.Activate(it); }
+    private void OnCloseProjectTab(object? s, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if ((s as Control)?.Tag is not ViewModels.ProjectItem it) return;
+        _vm.Activate(it);
+        if (_vm.ActiveItem == it) _vm.CloseDocument();
+    }
+    private void OnDuplicateStructure(object? s, RoutedEventArgs e) => _vm.DuplicateStructure();
     private void OnThemeDark(object? s, RoutedEventArgs e) { Tokens.Use(false); RequestRender(); }
     private void OnThemeLight(object? s, RoutedEventArgs e) { Tokens.Use(true); RequestRender(); }
     private void OnCommandPalette(object? s, RoutedEventArgs e) => TogglePalette();

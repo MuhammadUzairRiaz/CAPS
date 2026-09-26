@@ -97,6 +97,19 @@ public sealed partial class MainViewModel
         if (Busy) { Status = "Wait for the run to finish (or cancel it) before closing"; return; }
         var d = _doc;
         ClearFocus();
+        // the structure leaves the project; another one of it becomes active, or Start when it was the last
+        var gone = _activeItem;
+        if (gone != null) ProjectItems.Remove(gone);
+        _activeItem = null;
+        if (ProjectItems.Count > 0)
+        {
+            Activate(ProjectItems[^1]);
+            d.Dispose();
+            RaiseProject();
+            Status = $"Closed {gone?.Name} · working on {Title}";
+            return;
+        }
+        RaiseProject();
         Document = null;
         d.Dispose();
         Field.Reset();

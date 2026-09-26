@@ -10,6 +10,7 @@
       <StackPanel Spacing="3">
         <TextBlock Text="Dynamics · CAPS Dynamics" Classes="title" />
         <TextBlock Classes="muted"><Run Text="Molecular dynamics in CAPS, or a matching input deck for LAMMPS or GROMACS · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
+        <v:StructurePicker ShowResultOption="True" Margin="0,8,0,0" HorizontalAlignment="Left" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}" ToolTip.Tip="Save every frame as a LAMMPS dump">

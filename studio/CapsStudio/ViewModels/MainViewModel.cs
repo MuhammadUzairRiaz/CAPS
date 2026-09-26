@@ -130,7 +130,11 @@ public sealed partial class MainViewModel : ObservableObject
     public bool HasDocument => _doc != null;
     public bool NoDocument => _doc == null;
 
-    public string Title { get => _title; set => Set(ref _title, value); }
+    public string Title
+    {
+        get => _title;
+        set { if (Set(ref _title, value) && _activeItem != null && value.Length > 0) _activeItem.Name = value; }
+    }
     public string Status { get => _status; set => Set(ref _status, value); }
 
     public int StyleIndex { get => _style; set { if (Set(ref _style, value)) { Raise(nameof(StyleText)); Raise(nameof(DisplayStatus)); Raise(nameof(DsStyle)); RenderRequested?.Invoke(); } } }
@@ -356,9 +360,9 @@ public sealed partial class MainViewModel : ObservableObject
     public bool IsField => _module == 7;
     /// <summary>Studio: the workspace with the 3D view and the inspector.</summary>
     public bool IsStudio => _module == 8;
-    private static readonly string[] Crumbs = ["Grow › Amorphous cell", "Analyze › Properties", "Relax › Minimise", "Dynamics › Run",
-        "Equilibrate › Protocol", "Pack › Molecules & regions", "React › Crosslinking", "Field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Pack › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
-        "Grow › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
+    private static readonly string[] Crumbs = ["Polymer cell › Amorphous cell", "Analyze › Properties", "Minimise", "Dynamics › Run",
+        "Equilibrate › Protocol", "Packing › Molecules & regions", "React › Crosslinking", "Force field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Packing › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
+        "Polymer cell › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
         "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
@@ -825,7 +829,7 @@ public sealed partial class MainViewModel : ObservableObject
     private int _relaxMethod = 2, _relaxIterations = 5000;
     private double _relaxFtol = 0.5, _relaxDensity = 1.05, _relaxStep = 0.06, _relaxPressure = 1.0, _relaxCutoff = 10.0;
     private bool _relaxPushoff = true, _relaxCompress = true, _relaxBox, _relaxCoulomb = true, _relaxing;
-    private string _relaxLog = "Relaxes the structure in the viewer with GAFF (C and H in this version): capped-force push-off, " +
+    private string _relaxLog = "Minimises the chosen structure with its assigned force field: capped-force push-off, " +
                                "compression to a target density, then minimisation to the force tolerance.";
     private string _fieldInfo = "";
     private CancellationTokenSource? _relaxCancel;
@@ -885,7 +889,8 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task Relax()
     {
         if (_doc == null || !Idle || BlockedByField("Relax")) return;
-        var doc = _doc;
+        PrepareRunTarget("minimised");
+        var doc = _doc!;
         ApplyRestraints();
         Relaxing = true;
         IsPlaying = false;
@@ -1122,7 +1127,8 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task RunMd()
     {
         if (_doc == null || !Idle || BlockedByField("Dynamics")) return;
-        var doc = _doc;
+        PrepareRunTarget("MD");
+        var doc = _doc!;
         MdRunning = true;
         IsPlaying = false;
         _mdCancel = new CancellationTokenSource();
@@ -1275,7 +1281,8 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task RunEquilibrate()
     {
         if (_doc == null || !Idle || BlockedByField("Equilibrate")) return;
-        var doc = _doc;
+        PrepareRunTarget("equilibrated");
+        var doc = _doc!;
         EqRunning = true;
         IsPlaying = false;
         _eqCancel = new CancellationTokenSource();
@@ -1783,7 +1790,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (Busy) { doc.Dispose(); Status = "Wait for the run to finish (or cancel it) before opening another structure"; return; }
         if (_wrap) doc.SetWrap(true);
-        Document?.Dispose();
+        // a new structure joins the project; the one that was active stays there (pick it again from the tabs or the list)
+        var item = AddProjectItem(doc, title);
         Document = doc;
         RestraintsFollow(doc);
         ClearFocus();
@@ -1817,6 +1825,7 @@ public sealed partial class MainViewModel : ObservableObject
         AutoLod(doc);
         AutoStyle(doc);
         LoadFileChecks();
+        UpdateItemInfo(item);
         var look = FileChecks.Count(c => c.NeedsLook);
         Status = $"Opened {Title} · {s.Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · {s.Format}" + (look > 0 ? $" · {look} file check{(look == 1 ? "" : "s")} need a look" : "");
         RenderRequested?.Invoke();

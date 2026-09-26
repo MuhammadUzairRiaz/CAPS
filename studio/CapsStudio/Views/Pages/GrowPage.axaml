@@ -6,8 +6,8 @@
     <!-- header -->
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
-        <TextBlock Text="Amorphous cell · CAPS Grow" Classes="title" />
-        <TextBlock Text="Grow chains into a periodic cell, then hand off to Pack, Relax and Equilibrate" Classes="muted" />
+        <TextBlock Text="Polymer cell · CAPS Grow" Classes="title" />
+        <TextBlock Text="Builds polymer chains monomer by monomer, from repeat units, inside a periodic cell at the density you set (an amorphous polymer, as Materials Studio's Amorphous Cell). The cell joins the project as a new structure; Minimise, Dynamics and Export work on it, or on any other structure." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSaveRecipe" ToolTip.Tip="This build as a YAML recipe: caps run RECIPE.yaml, or Start › From a recipe">
