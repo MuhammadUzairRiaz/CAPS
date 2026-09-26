@@ -79,7 +79,16 @@ System martini3_small_molecules(const System& aa, const std::string& data_path, 
 // An all-atom structure in Martini 3: its amino acids as martini3_protein, its other molecules as small molecules;
 // water and ions are left out (noted).
 System martini3_all_atom(const System& aa, const Martini3Options& o, const std::string& protein_path, const std::string& small_path,
-                         MartiniProteinReport* rep = nullptr);
+                         MartiniProteinReport* rep = nullptr, const Json* templates = nullptr);
+// Martini 3 phospholipids (PC, PE, PS, PG, PA; the molecule templates that carry their insane building blocks) from
+// all-atom lipids, by structure: the phosphate, the glycerol with its two esters, the head group (choline, ethanolamine,
+// serine, glycerol, none) and each acyl chain (its carbons after the carbonyl, where its double bonds start). A chain is
+// split as evenly as possible into the model's number of tail beads, a bead "D" when a double bond starts in it; the
+// lipid is the template whose head and tail letters match. Beads at the geometric centres of their atoms: the head
+// group; the phosphate; GL1 the glycerol's phosphate-side and middle carbons with the sn-2 ester and carbonyl; GL2 the
+// sn-1 carbon with its ester and carbonyl; the tail beads their carbons. `used` marks the atoms of mapped lipids.
+System martini3_lipids(const System& aa, const Json& templates, double constraint_kj = 1e6, std::vector<char>* used = nullptr,
+                       std::vector<std::string>* notes = nullptr);
 
 // Whether a model file is a vermouth model (Martini 3) rather than the Martini 2.2 tables
 bool is_martini3_model(const std::string& path);

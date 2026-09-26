@@ -611,3 +611,31 @@ TEST(CoarseGrained, Martini3SmallMoleculesByGraph) {
   EXPECT_EQ(s.atoms.size(), cg.atoms.size()) << note;
   check_cg_forces(m3, cg, "keep");
 }
+
+// Martini 3 phospholipids from all-atom lipids by their building blocks: POPC, DPPC and POPS built by CAPS from
+// SMILES are recognised (head, tail lengths, where the double bonds are) and typed through the force field
+TEST(CoarseGrained, Martini3LipidsByBuildingBlocks) {
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/";
+  const FFDef m3 = load_forcefield(dir + "forcefields/martini3.json");
+  ASSERT_TRUE(m3.molecule_templates);
+  const std::string pal = "CCCCCCCCCCCCCCC";
+  const std::string ole = "CCCCCCC/C=C\\CCCCCCCC";
+  const std::vector<std::pair<std::string, std::string>> lipids = {
+      {"POPC", pal + "C(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)" + ole},
+      {"DPPC", pal + "C(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)" + pal},
+      {"POPS", pal + "C(=O)OC[C@H](COP(=O)([O-])OC[C@H]([NH3+])C(=O)[O-])OC(=O)" + ole}};
+  for (const auto& [name, smi] : lipids) {
+    const System aa = build_molecule(smi).system;
+    std::vector<std::string> notes;
+    const System cg = martini3_lipids(aa, *m3.molecule_templates, 1e6, nullptr, &notes);
+    ASSERT_EQ(notes.size(), 1u) << name;
+    EXPECT_NE(notes[0].find("1 " + name), std::string::npos) << notes[0];
+    EXPECT_EQ(cg.atoms.size(), 12u) << name;
+    System s = aa;
+    std::string ch = "auto";
+    prepare_for_forcefield(s, m3, ch);
+    ASSERT_TRUE(s.topology) << name;
+    const TypingResult tr = assign_types(s, m3);
+    EXPECT_EQ(tr.untyped, 0) << name;
+  }
+}
