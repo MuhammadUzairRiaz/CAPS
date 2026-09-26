@@ -19,8 +19,25 @@ interaction, and every CAPS energy form is checked against LAMMPS.
 | `compare_msi_types.py` | automatic typing against Materials Studio's types in msi2lmp data files |
 | `check_data_lammps.py` | LAMMPS data files written by CAPS, run in LAMMPS: every energy term and force, for each force-field family, hybrid styles included |
 | `validate_rtf_types.py` | automatic typing against a CHARMM topology's residues (CGenFF's own model compounds); `--apply` parameterises them |
+| `check_gromacs.py` | GROMACS topologies written by CAPS, run in GROMACS (grompp, a zero-step mdrun) |
+| `extend_inorganic_water.py` | charges, shells and fixes for the inorganic and water force fields from their sources' templates |
+| `convert_emc_martini.py` | MARTINI overlays (polymers, solvents, surfactants, sugars) from the EMC parameter files of the moltemplate distribution |
 
-LAMMPS with CLASS2, MOFFF and CORESHELL is built at `~/lammps/build-class2/lmp`.
+LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (lj/sdk, angle sdk) is built at
+`~/lammps/build-class2/lmp`.
+
+### Coarse-grained and many-body forms (`check_data_lammps.py`, DSF and PME)
+
+| Case | Result |
+|---|---|
+| MARTINI 2.0: DPPC, POPE, ions, water (lj/gromacs/coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept) | energy 1e-7, forces 8e-9 kcal/mol/Å |
+| MARTINI overlays: PEO with its torsions; sucrose, maltose, glucose | energy ≤ 4e-9, forces 8e-9 |
+| SDK: DMPC / DMPE / water; C12E8 / water; SDS / Na+ / water at relative permittivity 80 (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion) | energy ≤ 1.2e-7, forces ≤ 2e-6 |
+| Cooke-Deserno lipids (cosine/squared, FENE, harmonic head-tail bond) | energy 8.5e-9, forces 7.9e-9 |
+| mW water (Stillinger-Weber, `.sw` file) | energy 1.8e-10, forces 8e-9 |
+
+The SDK beads for PEG and SDS come from LAMMPS's own SDK / SPICA examples (`examples/PACKAGES/cgspica`); their CM, CT,
+CT2 and W terms are checked equal to the library's before they are added (`bench/typing/make_cg_rules.py`).
 
 ## Results (DL_FIELD 4.13, FIELD-file comparison unless noted)
 
@@ -79,6 +96,8 @@ order of symmetric outer atoms; DL_FIELD's harmonic approximation of GROMOS bond
 | `data/typing/gaff-amber16.typing.json` | 32 DL_FIELD GAFF templates (water models aside) | 365 / 373 atoms |
 | `data/typing/gaff-amber25.typing.json` | 27 DL_FIELD GAFF2 templates | 304 / 316 atoms |
 | `data/typing/opls2005.typing.json` | 99 DL_FIELD OPLS 2005 templates | 1368 / 1398 atoms, 91 molecules fully right |
+| `data/typing/sdk-moltemplate.typing.json` (bead mapping) | all-atom DMPC, C12E8, SDS and n-alkanes C12–C30 | the model's own bead topologies (Shinoda's 13-bead DMPC; the LAMMPS examples' C12E8 and SDS); every chain length tiles |
+| `data/typing/martini-*.typing.json` | the 74 bead templates of the MARTINI source files | all built, typed and parameterised |
 
 DL_FIELD's templates are not consistent with one another: its PCFF templates give the carbons of furan, oxazole and
 indole `cp` but those of pyrrole, isoxazole and benzoxazole `c5`; neutral histidine carbons `ci` (the charged-ring type).
