@@ -969,7 +969,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
                    dz = x[3 * j + 2] - x[3 * i + 2] + shift_[3 * p + 2];
       const double r2 = dx * dx + dy * dy + dz * dz;
       if (frozen ? !inside_[p] : r2 >= rc2) continue;
-      const double w = i == j ? 0.5 : 1.0;   // a self image is shared between the atom and its copy
+      // a self image is listed once for each ±shift pair (the pair list keeps one), so it counts in full, as in LAMMPS
+      const double w = 1.0;
       const size_t tp = size_t(ff_.type_index[i]) * nt + ff_.type_index[j];
       double ev = 0;
       double fr = lj(tp, r2, 1.0, ev);
