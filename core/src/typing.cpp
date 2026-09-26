@@ -1145,6 +1145,7 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
     }
     if (conflicts) r.notes.push_back(std::to_string(conflicts / 2) + " conjugated bonds could not follow the cc/cd pattern (odd ring)");
   }
+  refine_bond_order_variants(s, p, ff, r.types, r.why);
   return r;
 }
 

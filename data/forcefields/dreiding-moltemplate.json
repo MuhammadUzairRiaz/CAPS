@@ -283365,5 +283365,6 @@
  ],
  "version": "1990",
  "status": "converted",
- "validation": "not yet compared; its hydrogen-bond term is not evaluated by CAPS."
+ "validation": "not yet compared; its hydrogen-bond term is not evaluated by CAPS.",
+ "typing": "../typing/dreiding-moltemplate.typing.json"
 }

@@ -1,0 +1,232 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "DREIDING (moltemplate)",
+ "description": "CAPS rules for DREIDING (Mayo, Olafson & Goddard 1990): element and hybridisation, then the variants that give each bond between sp2 atoms the constant of its order. Types this file lacks leave their atoms untyped: none.",
+ "unknown_types": "untyped",
+ "variants": {
+  "C_2": [
+   "C_2_b1",
+   "C_2_b2"
+  ],
+  "C_1": [
+   "C_1_b1"
+  ],
+  "C_R": [
+   "C_R_b1"
+  ],
+  "N_R_d2": [
+   "N_R_b1_d2"
+  ],
+  "N_2_d1": [
+   "N_2_b1_d1",
+   "N_2_b2_d1"
+  ],
+  "N_2_d2": [
+   "N_2_b1_d2",
+   "N_2_b2_d2"
+  ],
+  "O_2": [
+   "O_2_b1",
+   "O_2_b2"
+  ],
+  "B_2_d1": [
+   "B_2_b1_d1",
+   "B_2_b2_d1"
+  ],
+  "B_2_d2": [
+   "B_2_b1_d2",
+   "B_2_b2_d2"
+  ]
+ },
+ "bond_k_per_order": 350.0,
+ "conjugated_single_order": 1.0,
+ "rules": [
+  {
+   "type": "H",
+   "smarts": "[#1]",
+   "priority": 0,
+   "description": "hydrogen"
+  },
+  {
+   "type": "C_3",
+   "smarts": "[CX4]",
+   "priority": 0,
+   "description": "sp3 C"
+  },
+  {
+   "type": "C_2",
+   "smarts": "[CX3]",
+   "priority": 0,
+   "description": "sp2 C"
+  },
+  {
+   "type": "C_R",
+   "smarts": "[c]",
+   "priority": 1,
+   "description": "resonant C (aromatic)"
+  },
+  {
+   "type": "C_1",
+   "smarts": "[CX2]",
+   "priority": 0,
+   "description": "sp C"
+  },
+  {
+   "type": "N_3",
+   "smarts": "[NX4,NX3]",
+   "priority": 0,
+   "description": "sp3 N"
+  },
+  {
+   "type": "N_R_d1",
+   "smarts": "[n;X2]",
+   "priority": 1,
+   "description": "resonant N with two neighbours (pyridine)"
+  },
+  {
+   "type": "N_R_d2",
+   "smarts": "[n;X3]",
+   "priority": 1,
+   "description": "resonant N with three neighbours (pyrrole)"
+  },
+  {
+   "type": "N_R_d2",
+   "smarts": "[NX3;$(N[CX3]=[O,S,N]),$(Nc)]",
+   "priority": 2,
+   "description": "resonant N: amide, urea, aniline (conjugated lone pair)"
+  },
+  {
+   "type": "N_2_d1",
+   "smarts": "[NX2]=*",
+   "priority": 1,
+   "description": "sp2 N with two neighbours (imine, azo)"
+  },
+  {
+   "type": "N_2_d2",
+   "smarts": "[NX3]=*",
+   "priority": 1,
+   "description": "sp2 N with three neighbours (nitro)"
+  },
+  {
+   "type": "N_1",
+   "smarts": "[NX1]#*",
+   "priority": 1,
+   "description": "sp N (nitrile)"
+  },
+  {
+   "type": "O_3",
+   "smarts": "[OX2]",
+   "priority": 0,
+   "description": "sp3 O (ether, alcohol, ester)"
+  },
+  {
+   "type": "O_2",
+   "smarts": "[OX1]=*",
+   "priority": 1,
+   "description": "sp2 O (carbonyl)"
+  },
+  {
+   "type": "O_2",
+   "smarts": "[OX1]~[NX3](~[OX1])",
+   "priority": 1,
+   "description": "O of a nitro group"
+  },
+  {
+   "type": "O_R",
+   "smarts": "[o]",
+   "priority": 1,
+   "description": "resonant O (furan)"
+  },
+  {
+   "type": "S_3",
+   "smarts": "[SX2,SX4,SX3]",
+   "priority": 0,
+   "description": "S"
+  },
+  {
+   "type": "F",
+   "smarts": "[F]",
+   "priority": 0,
+   "description": "F"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl]",
+   "priority": 0,
+   "description": "Cl"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br]",
+   "priority": 0,
+   "description": "Br"
+  },
+  {
+   "type": "I",
+   "smarts": "[I]",
+   "priority": 0,
+   "description": "I"
+  },
+  {
+   "type": "Si_3",
+   "smarts": "[Si]",
+   "priority": 0,
+   "description": "Si"
+  },
+  {
+   "type": "P_3_d2",
+   "smarts": "[PX3]",
+   "priority": 0,
+   "description": "P with three neighbours"
+  },
+  {
+   "type": "P_3_d3",
+   "smarts": "[PX4]",
+   "priority": 0,
+   "description": "P with four neighbours"
+  },
+  {
+   "type": "B_3",
+   "smarts": "[BX4]",
+   "priority": 0,
+   "description": "sp3 B"
+  },
+  {
+   "type": "B_2_d1",
+   "smarts": "[BX2]",
+   "priority": 0,
+   "description": "sp2 B with two neighbours"
+  },
+  {
+   "type": "B_2_d2",
+   "smarts": "[BX3]",
+   "priority": 0,
+   "description": "sp2 B with three neighbours"
+  },
+  {
+   "type": "Na",
+   "smarts": "[Na]",
+   "priority": 0,
+   "description": "Na"
+  },
+  {
+   "type": "Ca",
+   "smarts": "[Ca]",
+   "priority": 0,
+   "description": "Ca"
+  },
+  {
+   "type": "Zn",
+   "smarts": "[Zn]",
+   "priority": 0,
+   "description": "Zn"
+  },
+  {
+   "type": "Fe",
+   "smarts": "[Fe]",
+   "priority": 0,
+   "description": "Fe"
+  }
+ ]
+}

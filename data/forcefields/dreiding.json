@@ -3443,5 +3443,6 @@
  ],
  "version": "1990",
  "status": "validated",
- "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 29 of 29 buildable templates identical (planar inversions, linear angles, conjugated and ammonium torsions)."
+ "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 29 of 29 buildable templates identical (planar inversions, linear angles, conjugated and ammonium torsions).",
+ "typing": "../typing/dreiding.typing.json"
 }

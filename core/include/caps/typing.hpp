@@ -73,4 +73,7 @@ struct TypingResult {
 // Types every atom with the force field's rules. Throws FFError when the force field has no typing rules.
 TypingResult assign_types(const System& s, const FFDef& ff);
 
+// Bond-order variants (FFDef::type_variants), run by assign_types after the rules.
+void refine_bond_order_variants(const System& s, const Perception& p, const FFDef& ff, std::vector<std::string>& types, std::vector<std::string>& why);
+
 }  // namespace caps
