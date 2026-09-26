@@ -60,7 +60,7 @@ struct TypeInfo {
 // A molecule topology given term by term (a coarse-grained protein, as martinize writes one): parameterize uses these
 // bonded terms, with their own parameters, in place of rule lookups; the non-bonded terms still come from the types.
 // Units as LAMMPS real: bonds K (r − r0)² (kcal/mol/Å², Å); angles form 0 harmonic K (θ − θ0)², 1 cosine/squared
-// K (cos θ − cos θ0)², 5 restricted bending K (cos θ − cos θ0)² / sin² θ; dihedrals form 1 K [1 + cos(nφ − φ0)], form 2
+// K (cos θ − cos θ0)², 5 restricted bending K (cos θ − cos θ0)² / sin² θ; dihedrals form 1 (and 9, GROMACS's multiple form) K [1 + cos(nφ − φ0)], form 2
 // harmonic K (ξ − ξ0)² on the i-j-k-l dihedral, form 4 periodic improper K [1 + cos(nφ − φ0)] (radians); exclusions: pairs
 // with no non-bonded interaction beyond the bonded ones; virtual sites: the centre of mass of their atoms (GROMACS
 // virtual_sitesn 2), massless. Valid only for the structure it was made with (natoms and the bond list must still match;

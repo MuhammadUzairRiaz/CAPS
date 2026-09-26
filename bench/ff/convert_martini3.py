@@ -133,7 +133,8 @@ if __name__ == "__main__":
     dd = os.path.join(ROOT, "data", "martini")
     os.makedirs(dd, exist_ok=True)
     table = os.path.join(dd, "martini3-nonbonded.tsv.gz")
-    with gzip.open(table, "wt", compresslevel=9) as f:
+    # mtime 0: the same table gives the same bytes
+    with gzip.GzipFile(table, "wb", compresslevel=9, mtime=0) as raw, __import__("io").TextIOWrapper(raw, encoding="utf-8") as f:
         f.write("# Martini 3.0.0 non-bonded parameters (martini_v3.0.0.itp, cgmartini.nl): T name mass(g/mol); P a b sigma(nm) epsilon(kJ/mol)\n")
         for t, m in types:
             f.write(f"T {t} {m:g}\n")
@@ -191,8 +192,12 @@ if __name__ == "__main__":
                     f"{len(mols)} molecules from the parameter files as templates with their topologies (FLEXIBLE variants: stiff bonds for constraints)"]}
     json.dump(ff, open(os.path.join(ROOT, "data", "forcefields", "martini3.json"), "w"), ensure_ascii=False, indent=1)
     rules = [{"type": t, "smarts": "*", "atom_name": t, "priority": 0} for t in names]
+    # all-atom proteins become Martini 3 beads as martinize2 makes them (data/martini/martini3-protein.json, from
+    # vermouth's martini3001 files by bench/ff/convert_vermouth_martini3.py)
     tdoc = {"format": "caps-typing", "version": 1, "forcefield": "Martini 3", "coarse_grained": True, "unknown_types": "untyped",
-            "description": "Martini 3 beads typed by name (bench/ff/convert_martini3.py)", "rules": rules}
+            "martini_protein": "../martini/martini3-protein.json",
+            "description": "Martini 3 beads typed by name (bench/ff/convert_martini3.py); all-atom proteins mapped as martinize2 maps them",
+            "rules": rules}
     json.dump(tdoc, open(os.path.join(ROOT, "data", "typing", "martini3.typing.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     cat_p = os.path.join(ROOT, "data", "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))

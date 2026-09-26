@@ -23,6 +23,8 @@ interaction, and every CAPS energy form is checked against LAMMPS.
 | `extend_inorganic_water.py` | charges, shells and fixes for the inorganic and water force fields from their sources' templates |
 | `convert_martini3.py` | Martini 3 from cgmartini.nl's martini_v300.zip: bead types and the full pair table (`data/martini/martini3-nonbonded.tsv.gz`), the molecules of its solvent, ion, small-molecule, sugar, nucleobase and phospholipid files as templates |
 | `check_martini3.py` | Martini 3 boxes against GROMACS (reaction field, virtual sites, restricted bending) |
+| `convert_vermouth_martini3.py` | Martini 3 proteins from vermouth-martinize (martini3001 force field and mappings) |
+| `check_martini3_protein.py` | Martini 3 proteins against martinize2, term by term |
 | `convert_emc_martini.py` | MARTINI overlays (polymers, solvents, surfactants, sugars) from the EMC parameter files of the moltemplate distribution |
 
 LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (lj/sdk, angle sdk) is built at
@@ -59,8 +61,28 @@ recognised again, exported with `caps ff apply --gromacs` and run with `gmx mdru
 | Nucleobases (virtual sites, exclusions), TXE (restricted bending), BIM / PCRE (harmonic impropers) | energy 2.4e-6, forces 7.6e-3 |
 | Every one of the 217 molecule templates once, in water | energy 2.9e-6, forces 2.5e-2 |
 
+| Ubiquitin 1UBQ, all-atom mapped to Martini 3 (restricted-bending backbone, side-chain fix dihedrals) | energy 2.3e-6 |
+| Lysozyme 3LZT, all-atom mapped to Martini 3 (tryptophan virtual sites, exclusions, impropers) | energy 6.1e-6 |
+
 Forces on beads held by constraints (stiff bonds in CAPS, 1e6 kJ/mol/nm²) carry the single-precision position error of
-GROMACS (~0.012 kcal/mol/Å per stiff bond in a 9 nm box); the check allows that per bead and nothing else.
+GROMACS (~0.012 kcal/mol/Å per stiff bond in a 9 nm box); a mapped protein that is not relaxed has beads under
+1e5 kcal/mol/Å, which single precision carries to ~4e-5 of the force. The check allows those and nothing else. The
+.gro holds the virtual sites where CAPS places them (GROMACS's rerun takes coordinates as written).
+
+`check_martini3_protein.py`: CAPS's Martini 3 proteins against martinize2 (-ff martini3001), vermouth's Martini 3
+integration tests with their own commands — beads, types and charges, every bond (the rubber band included),
+constraint, angle, dihedral, improper, virtual site and exclusion, bead positions:
+
+| Test | Result |
+|---|---|
+| PRO-PRO, neutral termini, no secondary structure (vermouth 0.7.4) | identical, positions 0.001 Å |
+| Histatin 5, a disordered region, hydrogens in the input (0.15.1) | identical, positions 0.001 Å |
+| Ubiquitin 1UBQ, DSSP, side-chain fix, elastic network (0.0.1) | identical, DSSP identical, positions 0.001 Å |
+| Lysozyme 3LZT, DSSP, elastic network 500, four disulfides, six tryptophans (0.15.1) | identical, DSSP identical, positions 0.001 Å |
+| Insulin, two chains joined by disulfides, network per chain (0.7.3) | identical but for 2 elastic bonds (chain A 6–9 and 7–10) that vermouth 0.7.3 left out; DSSP differs in 5 letters (that DSSP ranks π-helices before α, DSSP 2.0 the other way; both are helix to Martini) |
+
+The model is data (`data/martini/martini3-protein.json`, from vermouth's martini3001 files by
+`convert_vermouth_martini3.py`): blocks, modifications, the 66 links with vermouth's matching rules, the mappings.
 
 The SDK beads for PEG and SDS come from LAMMPS's own SDK / SPICA examples (`examples/PACKAGES/cgspica`); their CM, CT,
 CT2 and W terms are checked equal to the library's before they are added (`bench/typing/make_cg_rules.py`).
