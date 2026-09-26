@@ -2050,7 +2050,7 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
       // Martini 3: martinize2's defaults (DSSP, side-chain fix, charged termini, no elastic network)
       Martini3Options mo;
       mo.constraint_kj = ff.constraint_kj;
-      s = ff.martini_small.empty() ? martini3_protein(s, mo, ff.martini_protein, &rep) : martini3_all_atom(s, mo, ff.martini_protein, ff.martini_small, &rep);
+      s = ff.martini_small.empty() ? martini3_protein(s, mo, ff.martini_protein, &rep) : martini3_all_atom(s, mo, ff.martini_protein, ff.martini_small, &rep, ff.molecule_templates.get());
       charges = "keep";
       note = std::to_string(before) + " atoms mapped onto " + std::to_string(rep.beads) + " Martini 3 beads";
       if (rep.residues)

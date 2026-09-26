@@ -1084,8 +1084,204 @@ System martini3_small_molecules(const System& aa, const std::string& data_path, 
   return out;
 }
 
+System martini3_lipids(const System& aa, const Json& templates, double constraint_kj, std::vector<char>* used, std::vector<std::string>* notes) {
+  System out;
+  out.cell = aa.cell;
+  if (aa.atoms.empty()) return out;
+  const auto nb = aa.neighbours();
+  int ncomp = 0;
+  System tmp = aa;
+  tmp.has_mol = false;
+  const auto comp = tmp.molecules(&ncomp);
+  std::vector<std::vector<uint32_t>> members(static_cast<size_t>(ncomp));
+  for (uint32_t i = 0; i < aa.atoms.size(); ++i) members[size_t(comp[i])].push_back(i);
+  std::map<std::pair<uint32_t, uint32_t>, int> order;
+  for (const auto& b : aa.bonds) order[{std::min(b.i, b.j), std::max(b.i, b.j)}] = b.order;
+  auto Z = [&](uint32_t a) { return aa.atoms[a].element; };
+  auto nh = [&](uint32_t a) { int h = 0; for (uint32_t v : nb[a]) h += Z(v) == 1; return h; };
+  auto heavy_nb = [&](uint32_t a, int z) { std::vector<uint32_t> r; for (uint32_t v : nb[a]) if (Z(v) == z) r.push_back(v); return r; };
+  // a carbonyl carbon: C with a terminal O (=O) and the ester O
+  auto carbonyl_of = [&](uint32_t ester_o, uint32_t not_c) -> int {
+    for (uint32_t c : heavy_nb(ester_o, 6)) {
+      if (c == not_c) continue;
+      for (uint32_t o : heavy_nb(c, 8))
+        if (o != ester_o && nb[o].size() == 1) return int(c);
+    }
+    return -1;
+  };
+  auto ester_on = [&](uint32_t c, int& carbonyl) -> int {   // an O on c that is an ester oxygen
+    for (uint32_t o : heavy_nb(c, 8)) {
+      const int k = carbonyl_of(o, c);
+      if (k >= 0) { carbonyl = k; return int(o); }
+    }
+    return -1;
+  };
+  std::map<std::string, int> found;
+  for (const auto& atoms : members) {
+    std::vector<uint32_t> P;
+    bool anyh = false;
+    for (uint32_t a : atoms) {
+      if (Z(a) == 15) P.push_back(a);
+      anyh = anyh || Z(a) == 1;
+    }
+    if (P.size() != 1) continue;
+    const uint32_t p = P[0];
+    const auto po = heavy_nb(p, 8);
+    if (po.size() != 4) continue;
+    // the glycerol: a bridging O's carbon, the middle carbon and the end carbon, both with an ester
+    int cp = -1, cm = -1, ce = -1, oa = -1, ob = -1, ka = -1, kb = -1, head_o = -1;
+    for (uint32_t o : po) {
+      const auto cs = heavy_nb(o, 6);
+      if (cs.empty()) continue;
+      bool glycerol = false;
+      for (uint32_t m : heavy_nb(cs[0], 6)) {
+        int k1 = -1;
+        const int e1 = ester_on(m, k1);
+        if (e1 < 0) continue;
+        for (uint32_t e : heavy_nb(m, 6)) {
+          if (e == cs[0]) continue;
+          int k2 = -1;
+          const int e2 = ester_on(e, k2);
+          if (e2 < 0) continue;
+          cp = int(cs[0]), cm = int(m), ce = int(e), oa = e1, ob = e2, ka = k1, kb = k2, glycerol = true;
+        }
+      }
+      if (!glycerol && head_o < 0) head_o = int(o);
+    }
+    if (cp < 0) continue;
+    // the head: what hangs on the phosphate's other bridging oxygen
+    std::vector<uint32_t> head;
+    if (head_o >= 0) {
+      std::set<uint32_t> seen{p, uint32_t(head_o)};
+      std::vector<uint32_t> stack;
+      for (uint32_t c : heavy_nb(uint32_t(head_o), 6)) stack.push_back(c), seen.insert(c);
+      while (!stack.empty()) {
+        const uint32_t u = stack.back();
+        stack.pop_back();
+        head.push_back(u);
+        for (uint32_t v : nb[u])
+          if (!seen.count(v)) seen.insert(v), stack.push_back(v);
+      }
+    }
+    std::string code = "O";   // phosphatidic acid: no head
+    if (!head.empty()) {
+      int n_n = 0, quat = 0, carboxyl = 0;
+      for (uint32_t a : head) {
+        if (Z(a) == 7) ++n_n, quat += nb[a].size() == 4 && heavy_nb(a, 6).size() == 4;
+        if (Z(a) == 6 && heavy_nb(a, 8).size() == 2) ++carboxyl;
+      }
+      code = quat ? "C" : n_n && carboxyl ? "S" : n_n ? "E" : "G";
+    }
+    // the tails: the carbons after each carbonyl, and where their double bonds start
+    auto chain = [&](uint32_t k) {
+      std::vector<uint32_t> c;
+      uint32_t prev = k, cur = uint32_t(-1);
+      for (uint32_t v : heavy_nb(k, 6)) cur = v;
+      while (cur != uint32_t(-1)) {
+        c.push_back(cur);
+        uint32_t next = uint32_t(-1);
+        for (uint32_t v : heavy_nb(cur, 6))
+          if (v != prev) next = v;
+        prev = cur, cur = next;
+      }
+      return c;
+    };
+    auto doubles = [&](const std::vector<uint32_t>& c) {
+      std::vector<int> d;
+      for (size_t j = 0; j + 1 < c.size(); ++j) {
+        const int o = order.count({std::min(c[j], c[j + 1]), std::max(c[j], c[j + 1])}) ? order[{std::min(c[j], c[j + 1]), std::max(c[j], c[j + 1])}] : 0;
+        if (o == 2 || (anyh && o == 0 && nh(c[j]) == 1 && nh(c[j + 1]) == 1)) d.push_back(int(j));
+      }
+      return d;
+    };
+    const auto ca = chain(uint32_t(ka)), cb = chain(uint32_t(kb));
+    const auto da = doubles(ca), db = doubles(cb);
+    // the chain in k beads, as evenly as possible; a bead is D when a double bond starts in it
+    auto split = [](size_t n, size_t k, bool up) {
+      std::vector<size_t> b;
+      for (size_t i = 0; i <= k; ++i) {
+        const double x = double(i * n) / double(k);
+        b.push_back(size_t(up ? std::floor(x + 0.5) : std::ceil(x - 0.5)));
+      }
+      return b;
+    };
+    auto letters = [](const std::vector<size_t>& b, const std::vector<int>& d) {
+      std::string s;
+      for (size_t i = 0; i + 1 < b.size(); ++i) {
+        bool D = false;
+        for (int x : d) D = D || (size_t(x) >= b[i] && size_t(x) < b[i + 1]);
+        s += D ? 'D' : 'C';
+      }
+      return s;
+    };
+    // of the templates whose letters match, the one closest to Martini's four carbons per tail bead
+    const Json* tpl = nullptr;
+    std::string name;
+    std::vector<size_t> ba, bb;
+    double best = 1e9;
+    for (const auto& [n, t] : templates.members()) {
+      if (!t.has("insane")) continue;
+      const Json& ins = t["insane"];
+      if (ins["head"].items().empty() || ins["head"][0].str() != code || ins["tails"].items().size() != 2) continue;
+      const std::string ta = ins["tails"][0].str(), tb = ins["tails"][1].str();
+      for (bool up : {true, false}) {
+        const auto sa = split(ca.size(), ta.size(), up), sb = split(cb.size(), tb.size(), up);
+        if (letters(sa, da) != ta || letters(sb, db) != tb) continue;
+        const double dev = std::fabs(double(ca.size()) / double(ta.size()) - 4) + std::fabs(double(cb.size()) / double(tb.size()) - 4);
+        if (dev < best - 1e-9) best = dev, tpl = &t, name = n, ba = sa, bb = sb;
+        break;
+      }
+    }
+    if (!tpl) continue;
+    // beads: the model's atoms, at the geometric centres of their atoms (hydrogens included)
+    const auto& ta = (*tpl)["atoms"].items();
+    std::map<std::string, std::vector<uint32_t>> sets;
+    auto with_h = [&](std::vector<uint32_t>& v, uint32_t a) { v.push_back(a); for (uint32_t h : nb[a]) if (Z(h) == 1) v.push_back(h); };
+    const bool has_head = (*tpl)["insane"]["head"].items().size() == 2;
+    if (has_head) for (uint32_t a : head) sets[ta[0]["name"].str()].push_back(a);
+    with_h(sets["PO4"], p);
+    for (uint32_t o : po) if (int(o) != head_o || !has_head) with_h(sets["PO4"], o);
+    if (has_head) sets["PO4"].push_back(uint32_t(head_o));
+    for (int a : {cp, cm, oa, ka}) with_h(sets["GL1"], uint32_t(a));
+    for (uint32_t o : heavy_nb(uint32_t(ka), 8)) if (int(o) != oa) with_h(sets["GL1"], o);
+    for (int a : {ce, ob, kb}) with_h(sets["GL2"], uint32_t(a));
+    for (uint32_t o : heavy_nb(uint32_t(kb), 8)) if (int(o) != ob) with_h(sets["GL2"], o);
+    std::vector<std::string> tail_a, tail_b;
+    for (const auto& a : ta) {
+      const std::string n = a["name"].str();
+      if (n.size() > 2 && n.back() == 'A' && n != "GL1") tail_a.push_back(n);
+      if (n.size() > 2 && n.back() == 'B' && n != "GL2") tail_b.push_back(n);
+    }
+    if (tail_a.size() != ba.size() - 1 || tail_b.size() != bb.size() - 1) continue;
+    for (size_t i = 0; i < tail_a.size(); ++i) for (size_t j = ba[i]; j < ba[i + 1]; ++j) with_h(sets[tail_a[i]], ca[j]);
+    for (size_t i = 0; i < tail_b.size(); ++i) for (size_t j = bb[i]; j < bb[i + 1]; ++j) with_h(sets[tail_b[i]], cb[j]);
+    System one = gromacs_molecule(*tpl, [](const std::string& t) { return size_mass(t); }, constraint_kj);
+    const Vec3 origin = aa.atoms[p].pos;
+    for (size_t i = 0; i < ta.size(); ++i) {
+      one.atoms[i].resname = name;
+      auto it = sets.find(ta[i]["name"].str());
+      if (it == sets.end() || it->second.empty()) continue;
+      Vec3 c{0, 0, 0};
+      for (uint32_t a : it->second) {
+        const Vec3 d = aa.cell.valid() ? aa.cell.minimum_image(aa.atoms[a].pos - origin) : aa.atoms[a].pos - origin;
+        c = c + origin + d;
+      }
+      one.atoms[i].pos = c * (1.0 / double(it->second.size()));
+    }
+    append_system(out, one);
+    if (used) for (uint32_t a : atoms) (*used)[a] = 1;
+    ++found[name];
+  }
+  if (notes && !found.empty()) {
+    std::string l;
+    for (const auto& [n, c] : found) l += (l.empty() ? "" : ", ") + std::to_string(c) + " " + n;
+    notes->push_back("lipids mapped onto Martini 3 beads by building blocks (head, glycerol, tails): " + l);
+  }
+  return out;
+}
+
 System martini3_all_atom(const System& aa_in, const Martini3Options& o, const std::string& protein_path, const std::string& small_path,
-                         MartiniProteinReport* rep_out) {
+                         MartiniProteinReport* rep_out, const Json* templates) {
   MartiniProteinReport rep;
   const Json& MAP = model3(protein_path)["mapping"];
   static const std::map<std::string, std::string> alias = {{"HID", "HSD"}, {"HIE", "HSE"}, {"HIP", "HSP"}, {"CYX", "CYS"}, {"CYM", "CYS"},
@@ -1143,6 +1339,24 @@ System martini3_all_atom(const System& aa_in, const Martini3Options& o, const st
   }
   for (const auto& b : aa.bonds)
     if (keep[b.i] >= 0 && keep[b.j] >= 0) rest.bonds.push_back({uint32_t(keep[b.i]), uint32_t(keep[b.j]), b.order});
+  if (!rest.atoms.empty() && templates) {   // phospholipids first, by their building blocks
+    std::vector<char> used(rest.atoms.size(), 0);
+    std::vector<std::string> notes;
+    System lip = martini3_lipids(rest, *templates, o.constraint_kj, &used, &notes);
+    if (!lip.atoms.empty()) {
+      rep.notes.insert(rep.notes.end(), notes.begin(), notes.end());
+      if (out.atoms.empty()) out = lip;
+      else append_system(out, lip);
+      System left;
+      left.cell = rest.cell;
+      std::vector<int> k2(rest.atoms.size(), -1);
+      for (size_t i = 0; i < rest.atoms.size(); ++i)
+        if (!used[i]) k2[i] = int(left.atoms.size()), left.atoms.push_back(rest.atoms[i]);
+      for (const auto& b : rest.bonds)
+        if (k2[b.i] >= 0 && k2[b.j] >= 0) left.bonds.push_back({uint32_t(k2[b.i]), uint32_t(k2[b.j]), b.order});
+      rest = std::move(left);
+    }
+  }
   if (!rest.atoms.empty()) {
     std::vector<std::string> un, notes;
     System sm = martini3_small_molecules(rest, small_path, o.constraint_kj, &un, &notes, o.small_geometric);

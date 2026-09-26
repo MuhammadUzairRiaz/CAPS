@@ -1243,7 +1243,15 @@ int main(int argc, char** argv) {
         mo.refuse_unmatched = false;   // an explicit mapping: what matches nothing is left out, and listed
         if (o.count("--centre")) mo.small_geometric = o["--centre"] != "mass";   // small molecules: geometry (default) or mass
         MartiniProteinReport rep;
-        const System cg = martini3_all_atom(aa, mo, data3, std::filesystem::path(data).parent_path().string() + "/martini3-small-molecules.json", &rep);
+        const std::string mdir = std::filesystem::path(data).parent_path().string();
+        Json tpl;
+        {
+          std::ifstream tf(mdir + "/martini3-molecules.json");
+          std::stringstream ts;
+          ts << tf.rdbuf();
+          tpl = Json::parse(ts.str())["molecules"];
+        }
+        const System cg = martini3_all_atom(aa, mo, data3, mdir + "/martini3-small-molecules.json", &rep, &tpl);
         write_lammps_data(cg, o["-o"]);
         if (o.count("--itp")) {
           std::ofstream f(o["--itp"]);
