@@ -193,6 +193,46 @@
    "mass": 54.0456,
    "description": "moltemplate @atom:W · W",
    "charge": 0.0
+  },
+  {
+   "name": "OA_bOA_aOA_dOA_iOA",
+   "element": "",
+   "mass": 31.035,
+   "charge": 0.0,
+   "aliases": [
+    "OA"
+   ],
+   "description": "SDK OA: -CH2OH, the hydroxyl end of a PEG chain (LAMMPS examples/PACKAGES/cgspica/peg-verlet)"
+  },
+  {
+   "name": "EO_bEO_aEO_dEO_iEO",
+   "element": "",
+   "mass": 44.054,
+   "charge": 0.0,
+   "aliases": [
+    "EO"
+   ],
+   "description": "SDK EO: -CH2OCH2-, an ethylene-oxide unit (LAMMPS examples/PACKAGES/cgspica/peg-verlet)"
+  },
+  {
+   "name": "SO4_bSO4_aSO4_dSO4_iSO4",
+   "element": "",
+   "mass": 96.0576,
+   "charge": -1.0,
+   "aliases": [
+    "SO4"
+   ],
+   "description": "SDK SO4: -OSO3-, the sulfate of SDS (LAMMPS examples/PACKAGES/cgspica/sds-monolayer)"
+  },
+  {
+   "name": "SOD_bSOD_aSOD_dSOD_iSOD",
+   "element": "",
+   "mass": 77.0342,
+   "charge": 1.0,
+   "aliases": [
+    "SOD"
+   ],
+   "description": "SDK SOD: Na+ with three waters (LAMMPS examples/PACKAGES/cgspica/sds-monolayer)"
   }
  ],
  "pairs": [
@@ -2169,6 +2209,218 @@
     4.3805
    ],
    "comment": "CM2-EST2"
+  },
+  {
+   "match": [
+    "OA_bOA_aOA_dOA_iOA"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.4491,
+    3.713
+   ],
+   "comment": "OA-OA (peg-verlet)"
+  },
+  {
+   "match": [
+    "OA_bOA_aOA_dOA_iOA",
+    "EO_bEO_aEO_dEO_iEO"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.44,
+    3.89
+   ],
+   "comment": "OA-EO (peg-verlet)"
+  },
+  {
+   "match": [
+    "OA_bOA_aOA_dOA_iOA",
+    "CM_bCM_aCM_dCM_iCM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.365,
+    3.987
+   ],
+   "comment": "OA-CM (peg-verlet)"
+  },
+  {
+   "match": [
+    "OA_bOA_aOA_dOA_iOA",
+    "CT2_bCT2_aCT2_dCT2_iCT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.38,
+    3.84
+   ],
+   "comment": "OA-CT2 (peg-verlet)"
+  },
+  {
+   "match": [
+    "OA_bOA_aOA_dOA_iOA",
+    "W_bW_aW_dW_iW"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.7,
+    3.95
+   ],
+   "comment": "OA-W (peg-verlet)"
+  },
+  {
+   "match": [
+    "EO_bEO_aEO_dEO_iEO"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.405,
+    4.25
+   ],
+   "comment": "EO-EO (peg-verlet)"
+  },
+  {
+   "match": [
+    "EO_bEO_aEO_dEO_iEO",
+    "CM_bCM_aCM_dCM_iCM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.377,
+    4.274
+   ],
+   "comment": "EO-CM (peg-verlet)"
+  },
+  {
+   "match": [
+    "EO_bEO_aEO_dEO_iEO",
+    "CT2_bCT2_aCT2_dCT2_iCT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.37,
+    4.14
+   ],
+   "comment": "EO-CT2 (peg-verlet)"
+  },
+  {
+   "match": [
+    "EO_bEO_aEO_dEO_iEO",
+    "W_bW_aW_dW_iW"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.57,
+    4.31
+   ],
+   "comment": "EO-W (peg-verlet)"
+  },
+  {
+   "match": [
+    "SO4_bSO4_aSO4_dSO4_iSO4"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.7,
+    4.321
+   ],
+   "comment": "SO4-SO4 (sds-monolayer)"
+  },
+  {
+   "match": [
+    "SO4_bSO4_aSO4_dSO4_iSO4",
+    "CM_bCM_aCM_dCM_iCM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.383,
+    4.4135
+   ],
+   "comment": "SO4-CM (sds-monolayer)"
+  },
+  {
+   "match": [
+    "SO4_bSO4_aSO4_dSO4_iSO4",
+    "CT_bCT_aCT_dCT_iCT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.405,
+    4.453
+   ],
+   "comment": "SO4-CT (sds-monolayer)"
+  },
+  {
+   "match": [
+    "SO4_bSO4_aSO4_dSO4_iSO4",
+    "SOD_bSOD_aSOD_dSOD_iSOD"
+   ],
+   "style": "lj12_4",
+   "params": [
+    1.1,
+    4.1
+   ],
+   "comment": "SO4-SOD (sds-monolayer)"
+  },
+  {
+   "match": [
+    "SO4_bSO4_aSO4_dSO4_iSO4",
+    "W_bW_aW_dW_iW"
+   ],
+   "style": "lj12_4",
+   "params": [
+    1.1,
+    4.1
+   ],
+   "comment": "SO4-W (sds-monolayer)"
+  },
+  {
+   "match": [
+    "CM_bCM_aCM_dCM_iCM",
+    "SOD_bSOD_aSOD_dSOD_iSOD"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.34,
+    4.4385
+   ],
+   "comment": "CM-SOD (sds-monolayer)"
+  },
+  {
+   "match": [
+    "CT_bCT_aCT_dCT_iCT",
+    "SOD_bSOD_aSOD_dSOD_iSOD"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.36,
+    4.478
+   ],
+   "comment": "CT-SOD (sds-monolayer)"
+  },
+  {
+   "match": [
+    "SOD_bSOD_aSOD_dSOD_iSOD"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.35,
+    4.371
+   ],
+   "comment": "SOD-SOD (sds-monolayer)"
+  },
+  {
+   "match": [
+    "SOD_bSOD_aSOD_dSOD_iSOD",
+    "W_bW_aW_dW_iW"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.895,
+    4.371
+   ],
+   "comment": "SOD-W (sds-monolayer)"
   }
  ],
  "bonds": [
@@ -2587,6 +2839,45 @@
     3.1
    ],
    "comment": "CMR5-CTB"
+  },
+  {
+   "name": "EO-OA",
+   "match": [
+    "*_bEO_a*_d*_i*",
+    "*_bOA_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    15.0,
+    2.79
+   ],
+   "comment": "EO-OA (peg-verlet)"
+  },
+  {
+   "name": "EO-EO",
+   "match": [
+    "*_bEO_a*_d*_i*",
+    "*_bEO_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    4.9,
+    3.28
+   ],
+   "comment": "EO-EO (peg-verlet)"
+  },
+  {
+   "name": "CM-EO",
+   "match": [
+    "*_bCM_a*_d*_i*",
+    "*_bEO_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.1,
+    3.56
+   ],
+   "comment": "CM-EO (peg-verlet)"
   }
  ],
  "angles": [
@@ -3317,6 +3608,76 @@
     39.7
    ],
    "comment": "CMR5-CTB-CTBB"
+  },
+  {
+   "name": "EO-EO-OA",
+   "match": [
+    "*_b*_aEO_d*_i*",
+    "*_b*_aEO_d*_i*",
+    "*_b*_aOA_d*_i*"
+   ],
+   "style": "sdk",
+   "params": [
+    3.0,
+    131.0
+   ],
+   "comment": "EO-EO-OA (peg-verlet)"
+  },
+  {
+   "name": "EO-EO-EO",
+   "match": [
+    "*_b*_aEO_d*_i*",
+    "*_b*_aEO_d*_i*",
+    "*_b*_aEO_d*_i*"
+   ],
+   "style": "sdk",
+   "params": [
+    3.4,
+    132.0
+   ],
+   "comment": "EO-EO-EO (peg-verlet)"
+  },
+  {
+   "name": "CM-EO-EO",
+   "match": [
+    "*_b*_aCM_d*_i*",
+    "*_b*_aEO_d*_i*",
+    "*_b*_aEO_d*_i*"
+   ],
+   "style": "sdk",
+   "params": [
+    3.2,
+    146.0
+   ],
+   "comment": "CM-EO-EO (peg-verlet)"
+  },
+  {
+   "name": "CM-CM-EO",
+   "match": [
+    "*_b*_aCM_d*_i*",
+    "*_b*_aCM_d*_i*",
+    "*_b*_aEO_d*_i*"
+   ],
+   "style": "sdk",
+   "params": [
+    1.5,
+    172.0
+   ],
+   "comment": "CM-CM-EO (peg-verlet)"
+  },
+  {
+   "name": "CM-CM-SO4",
+   "match": [
+    "*_b*_aCM_d*_i*",
+    "*_b*_aCM_d*_i*",
+    "*_b*_aSO4_d*_i*"
+   ],
+   "style": "sdk",
+   "params": [
+    1.1,
+    178.0
+   ],
+   "comment": "CM-CM-SO4 (sds-monolayer)"
   }
  ],
  "dihedrals": [],
@@ -3326,7 +3687,9 @@
   "CAPS correction: beads have no element (the converter guessed Al, Ca, K, Si from bead masses)",
   "cut-off 15 A, the model's (LAMMPS SDK / SPICA examples: lj/sdk 15.0); the source file's 12 A leaves W water at 0.85 g/cm3",
   "bead charges from the source's parameter file (sdk_lipids.prm: NC, NH +1; PH, PHE -1; others 0)",
-  "CAPS extension: PH takes PHE's bond and angle terms (the source gives the phosphate's bonded terms under PHE only, including the PC head's NC-PHE bond and GL-PHE-NC angle); PH keeps its own non-bonded pairs"
+  "CAPS extension: PH takes PHE's bond and angle terms (the source gives the phosphate's bonded terms under PHE only, including the PC head's NC-PHE bond and GL-PHE-NC angle); PH keeps its own non-bonded pairs",
+  "relative permittivity 80 (LAMMPS's SDK SDS example: ionic beads +-0.1118 e = 1/sqrt(80))",
+  "CAPS extension: SDK beads for PEG (OA, EO) and SDS (SO4, SOD) with their pairs, bonds and angles from LAMMPS's SDK / SPICA examples (examples/PACKAGES/cgspica: peg-verlet, sds-monolayer); their CM, CT, CT2 and W terms equal this file's"
  ],
  "version": "2007 / 2010",
  "status": "converted",
@@ -3334,7 +3697,8 @@
  "torsion_terms": "if_defined",
  "angle_terms": "if_defined",
  "pair_settings": {
-  "model_cutoff": true
+  "model_cutoff": true,
+  "dielectric": 80.0
  },
  "typing": "../typing/sdk-moltemplate.typing.json"
 }

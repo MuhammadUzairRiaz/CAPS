@@ -1,0 +1,420 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MARTINI 2.0 · surfactants",
+ "version": "2.0",
+ "source": "surfactants.prm (EMC MARTINI parameters, moltemplate distribution)",
+ "references": [],
+ "extends": "martini-moltemplate.json",
+ "typing": "../typing/martini-surfactants.typing.json",
+ "atom_types": [
+  {
+   "name": "C11",
+   "element": "",
+   "mass": 56.108,
+   "description": "MARTINI surfactants.prm bead C11 (non-bonded as C1)",
+   "equivalence": {
+    "vdw": "C1_bC1_aC1_dC1_iC1",
+    "bond": "C11",
+    "angle": "C11",
+    "dihedral": "C11",
+    "improper": "C11"
+   }
+  },
+  {
+   "name": "C12",
+   "element": "",
+   "mass": 57.116,
+   "description": "MARTINI surfactants.prm bead C12 (non-bonded as C1)",
+   "equivalence": {
+    "vdw": "C1_bC1_aC1_dC1_iC1",
+    "bond": "C12",
+    "angle": "C12",
+    "dihedral": "C12",
+    "improper": "C12"
+   }
+  },
+  {
+   "name": "Qa1",
+   "element": "",
+   "mass": 96.0576,
+   "charge": -1.0,
+   "description": "MARTINI surfactants.prm bead Qa1 (non-bonded as Qa)",
+   "equivalence": {
+    "vdw": "Qa_bQa_aQa_dQa_iQa",
+    "bond": "Qa1",
+    "angle": "Qa1",
+    "dihedral": "Qa1",
+    "improper": "Qa1"
+   }
+  }
+ ],
+ "pairs": [],
+ "bonds": [
+  {
+   "name": "C1-C1",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bC1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-Na",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bNa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-P4",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bP4_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-Qa",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bQa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C1-SNa",
+   "match": [
+    "*_bC1_a*_d*_i*",
+    "*_bSNa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    3.7
+   ]
+  },
+  {
+   "name": "C11-C11",
+   "match": [
+    "C11",
+    "C11"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C11-C12",
+   "match": [
+    "C11",
+    "C12"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "C11-Qa1",
+   "match": [
+    "C11",
+    "Qa1"
+   ],
+   "style": "harmonic",
+   "params": [
+    11.95028681,
+    4.04
+   ]
+  },
+  {
+   "name": "Na-P1",
+   "match": [
+    "*_bNa_a*_d*_i*",
+    "*_bP1_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "P1-Qa",
+   "match": [
+    "*_bP1_a*_d*_i*",
+    "*_bQa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "Q0-Qa",
+   "match": [
+    "*_bQ0_a*_d*_i*",
+    "*_bQa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.49378585,
+    4.7
+   ]
+  },
+  {
+   "name": "SNa-SNa",
+   "match": [
+    "*_bSNa_a*_d*_i*",
+    "*_bSNa_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    20.31548757,
+    3.3
+   ]
+  },
+  {
+   "name": "SNa-SP2",
+   "match": [
+    "*_bSNa_a*_d*_i*",
+    "*_bSP2_a*_d*_i*"
+   ],
+   "style": "harmonic",
+   "params": [
+    20.31548757,
+    3.3
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "C1-C1-C1",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-C1-Na",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aNa_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-C1-P4",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aP4_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-C1-SNa",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aC1_d*_i*",
+    "*_b*_aSNa_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-Na-P1",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aNa_d*_i*",
+    "*_b*_aP1_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C1-SNa-SNa",
+   "match": [
+    "*_b*_aC1_d*_i*",
+    "*_b*_aSNa_d*_i*",
+    "*_b*_aSNa_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    120.0
+   ]
+  },
+  {
+   "name": "C11-C11-C12",
+   "match": [
+    "C11",
+    "C11",
+    "C12"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "C11-C11-Qa1",
+   "match": [
+    "C11",
+    "C11",
+    "Qa1"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    1.79254302,
+    170.0
+   ]
+  },
+  {
+   "name": "Na-P1-Qa",
+   "match": [
+    "*_b*_aNa_d*_i*",
+    "*_b*_aP1_d*_i*",
+    "*_b*_aQa_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.9875717,
+    180.0
+   ]
+  },
+  {
+   "name": "SNa-SNa-SNa",
+   "match": [
+    "*_b*_aSNa_d*_i*",
+    "*_b*_aSNa_d*_i*",
+    "*_b*_aSNa_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    130.0
+   ]
+  },
+  {
+   "name": "SNa-SNa-SP2",
+   "match": [
+    "*_b*_aSNa_d*_i*",
+    "*_b*_aSNa_d*_i*",
+    "*_b*_aSP2_d*_i*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.9751434,
+    130.0
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "SNa-SNa-SNa-SNa",
+   "match": [
+    "*_b*_a*_dSNa_i*",
+    "*_b*_a*_dSNa_i*",
+    "*_b*_a*_dSNa_i*",
+    "*_b*_a*_dSNa_i*"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.46845124,
+    1,
+    180.0,
+    0.04302103,
+    2,
+    0.0,
+    0.07887189,
+    3,
+    0.0,
+    0.02868069,
+    4,
+    0.0
+   ]
+  },
+  {
+   "name": "SNa-SNa-SNa-SP2",
+   "match": [
+    "*_b*_a*_dSNa_i*",
+    "*_b*_a*_dSNa_i*",
+    "*_b*_a*_dSNa_i*",
+    "*_b*_a*_dSP2_i*"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.46845124,
+    1,
+    180.0,
+    0.04302103,
+    2,
+    0.0,
+    0.07887189,
+    3,
+    0.0,
+    0.02868069,
+    4,
+    0.0
+   ]
+  }
+ ],
+ "impropers": [],
+ "bead_templates": {
+  "DPC": "[Q0+1][Qa-1][C1][C1][C1]",
+  "EO5": "[SP2][SNa][SNa][SNa][SNa][SNa][C1][C1][C1]",
+  "HPC": "[Q0+1][Qa-1][P1][Na][C1]",
+  "PCA": "[P4][C1][C1][C1][C1]",
+  "PPC": "[Q0+1][Qa-1][P1][Na][C1][C1][C1]",
+  "SDS": "[Qa1-1][C11][C11][C12]"
+ },
+ "notes": [
+  "converted by CAPS from surfactants.prm (bench/ff/convert_emc_martini.py): nm, kJ/mol → Å, kcal/mol; bonds and impropers ½k → K; angles cosine-harmonic as MARTINI 2.0; new bead types take their pair equivalent's non-bonded terms"
+ ]
+}

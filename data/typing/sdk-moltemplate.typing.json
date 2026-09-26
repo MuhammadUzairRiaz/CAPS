@@ -203,6 +203,20 @@
    "description": "a SDK bead named CTBB_bCTBB_aCTBB_dCTBB_iCTBB"
   },
   {
+   "type": "EO",
+   "smarts": "*",
+   "atom_name": "EO",
+   "priority": 0,
+   "description": "a SDK bead named EO"
+  },
+  {
+   "type": "EO",
+   "smarts": "*",
+   "atom_name": "EO_bEO_aEO_dEO_iEO",
+   "priority": 0,
+   "description": "a SDK bead named EO_bEO_aEO_dEO_iEO"
+  },
+  {
    "type": "EST1",
    "smarts": "*",
    "atom_name": "EST1",
@@ -273,6 +287,20 @@
    "description": "a SDK bead named NH_bNH_aNH_dNH_iNH"
   },
   {
+   "type": "OA",
+   "smarts": "*",
+   "atom_name": "OA",
+   "priority": 0,
+   "description": "a SDK bead named OA"
+  },
+  {
+   "type": "OA",
+   "smarts": "*",
+   "atom_name": "OA_bOA_aOA_dOA_iOA",
+   "priority": 0,
+   "description": "a SDK bead named OA_bOA_aOA_dOA_iOA"
+  },
+  {
    "type": "OAB",
    "smarts": "*",
    "atom_name": "OAB",
@@ -313,6 +341,34 @@
    "atom_name": "PHE_bPHE_aPHE_dPHE_iPHE",
    "priority": 0,
    "description": "a SDK bead named PHE_bPHE_aPHE_dPHE_iPHE"
+  },
+  {
+   "type": "SO4",
+   "smarts": "*",
+   "atom_name": "SO4",
+   "priority": 0,
+   "description": "a SDK bead named SO4"
+  },
+  {
+   "type": "SO4",
+   "smarts": "*",
+   "atom_name": "SO4_bSO4_aSO4_dSO4_iSO4",
+   "priority": 0,
+   "description": "a SDK bead named SO4_bSO4_aSO4_dSO4_iSO4"
+  },
+  {
+   "type": "SOD",
+   "smarts": "*",
+   "atom_name": "SOD",
+   "priority": 0,
+   "description": "a SDK bead named SOD"
+  },
+  {
+   "type": "SOD",
+   "smarts": "*",
+   "atom_name": "SOD_bSOD_aSOD_dSOD_iSOD",
+   "priority": 0,
+   "description": "a SDK bead named SOD_bSOD_aSOD_dSOD_iSOD"
   },
   {
    "type": "W",
@@ -377,6 +433,21 @@
    "type": "CT2",
    "smarts": "[CH3X4][CH2X4]",
    "description": "CC<"
+  },
+  {
+   "type": "EO",
+   "smarts": "[CH2X4][OX2][CH2X4]",
+   "description": "-CH2OCH2- (LAMMPS SDK example peg-verlet: 44.05 g/mol)"
+  },
+  {
+   "type": "OA",
+   "smarts": "[CH2X4][OX2H1]",
+   "description": "-CH2OH (peg-verlet: 31.03 g/mol)"
+  },
+  {
+   "type": "SO4",
+   "smarts": "[OX2][SX4](~[OX1])(~[OX1])~[OX1]",
+   "description": "-OSO3-, -1 (sds-monolayer: 96.06 g/mol)"
   },
   {
    "type": "CM",

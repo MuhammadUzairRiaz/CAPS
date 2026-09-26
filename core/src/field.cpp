@@ -237,7 +237,11 @@ ForceField assign_gaff(const System& s) {
 Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
     : ff_(ff), opt_(o), pool_(std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads())) {
   if (ff.cutoff > 0) opt_.cutoff = ff.cutoff;
-  if (ff.dielectric != 1 && !ff.coul_gromacs) throw FieldError("a relative permittivity other than 1 needs the GROMACS Coulomb form");
+  // a relative permittivity εr (MARTINI 15, SDK 80) divides every Coulomb term: charges scaled by 1/√εr throughout
+  if (ff.dielectric <= 0) throw FieldError("the relative permittivity must be positive");
+  qeff_ = ff.charge;
+  if (ff.dielectric != 1)
+    for (auto& c : qeff_) c /= std::sqrt(ff.dielectric);
   // coarse-grained bonds (several Å): bonded partners are recognised at their bonded image out to three bonds' length
   double r0max = 0;
   for (const auto& b : ff.bonds) r0max = std::max(r0max, b.r0);
@@ -747,7 +751,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   // PME: the pair term is erfc(βr)/r with no shift; the reciprocal part, self energy and background come after
   // MARTINI: Coulomb / εr with GROMACS's force switch (coul/gromacs) replaces DSF / PME
   const bool gro = coul && ff_.coul_gromacs;
-  const double ri = ff_.coul_inner, qscale = 1 / ff_.dielectric;
+  const double ri = ff_.coul_inner, qscale = 1.0;   // εr is in the scaled charges
   double gc[5] = {0, 0, 0, 0, 0};
   if (gro) {
     const double r3i = 1 / (rc2 * rc), tt = rc - ri, t2i = 1 / (tt * tt), t3i = t2i / tt;
@@ -822,7 +826,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     return 4 * eps_[tp] * (q * q - q);
   };
 
-  const double* q = ff_.charge.data();
+  const double* q = qeff_.data();
   const int nth = pool_->size();
   tf_.resize(nth);
   // per worker: bond, angle, dihedral, improper, vdW, Coulomb, virial, virial tensor (xx yy zz xy xz yz)
@@ -1239,12 +1243,12 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);
     std::vector<double> fk(x.size(), 0.0);
     double vk[6];
-    e.coulomb += pme_reciprocal(x, ff_.charge, cell, grid, fk, vk, *pool_);
+    e.coulomb += pme_reciprocal(x, qeff_, cell, grid, fk, vk, *pool_);
     for (size_t k = 0; k < x.size(); ++k) f[k] += fk[k];
     e.virial += vk[0] + vk[1] + vk[2];
     for (int c = 0; c < 6; ++c) e.w[c] += vk[c];
     double q2 = 0, qt = 0;
-    for (double c : ff_.charge) q2 += c * c, qt += c;
+    for (double c : qeff_) q2 += c * c, qt += c;
     e.coulomb -= kCoulomb * beta / std::sqrt(kPi) * q2;
     if (std::fabs(qt) > 1e-10) {
       const double eb = -kCoulomb * kPi * qt * qt / (2 * cell.volume() * beta * beta);
@@ -1254,7 +1258,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
     }
   } else if (coul && !gro) {
     double q2 = 0;
-    for (double c : ff_.charge) q2 += c * c;
+    for (double c : qeff_) q2 += c * c;
     // Self energy: half the r → 0 limit of the damped shifted pair potential minus the bare 1/r, i.e. with the full
     // shift (potential and force-shift parts), as LAMMPS coul/dsf (e_shift = erfc(αrc)/rc + f0 rc). A constant: no force.
     e.coulomb -= (erfc_rc / (2 * rc) + dsf_f0 * rc / 2 + a / std::sqrt(kPi)) * q2 * kCoulomb;

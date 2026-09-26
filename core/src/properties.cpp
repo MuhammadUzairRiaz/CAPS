@@ -1496,6 +1496,12 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   s.mixing = ff.mixing;
   s.lj14 = ff.lj14;
   s.coul14 = ff.coul14;
+  s.keep13 = ff.keep13;
+  s.coul_gromacs = ff.coul_gromacs;
+  s.coul_inner = ff.coul_inner;
+  s.lj_inner = ff.lj_inner;
+  s.dielectric = ff.dielectric;
+  s.cutoff = ff.cutoff;
   for (uint32_t a : atoms) {
     s.atom_type.push_back(ff.atom_type[a]);
     s.why.push_back(a < ff.why.size() ? ff.why[a] : "");
