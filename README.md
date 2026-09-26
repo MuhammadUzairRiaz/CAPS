@@ -350,7 +350,7 @@ rule): PCFF, CVFF, COMPASS, DREIDING, UFF, GAFF / GAFF2, OPLS-AA (2005, BOSS 200
 OPLS-DES, AMBER, CHARMM (generic, 22 / 36 proteins, lipids, carbohydrates, nucleic acids, CHARMM19), CGenFF, GROMOS
 54A7, TraPPE (UA, EH), the inorganic potential sets (by composition: "requires" / "excludes" elements), CLAYFF, the
 Hill-Sauer zeolite field, SPC/E, TIP3P, mW, the miscellaneous set, graphene, MARTINI 2.0 (with its polymer, solvent,
-surfactant, sugar and amino-acid files), Dry MARTINI, SDK and Cooke-Deserno. Parameters a force field lacks can come from
+surfactant, sugar and amino-acid files), Martini 2.2 proteins, Dry MARTINI, SDK and Cooke-Deserno. Parameters a force field lacks can come from
 analogous types (parmchk-style `analogies`, listed as estimated).
 
 Some force fields describe a different structure than the one drawn, and CAPS converts it before typing (in the Studio
@@ -360,7 +360,15 @@ and SDK maps an all-atom structure onto its beads by the fragments its parameter
 chains tile into CT / CT2 ends with CM between for every length; DMPC, C12E8 and SDS come out as the model's own
 topologies). MARTINI's sources give bead molecules only, so MARTINI types bead structures: `caps build --template DPPC
 --ff data/forcefields/martini-moltemplate.json -o dppc.data`, bead SMILES with `--beads '[Q0+1][Qa-1][Na]…'`, or the
-Coarse-grained section of the Studio's molecule builder. Two additions beyond SMARTS serve GAFF and CGenFF: `{AR1}`..`{AR5}`, antechamber's ring
+Coarse-grained section of the Studio's molecule builder. Proteins follow Martini 2.2 as martinize2 builds them (the
+rules and mappings of vermouth-martinize, converted by `bench/ff/convert_vermouth_martini22.py`): typing an all-atom
+protein with `martini22-proteins` runs DSSP (Kabsch & Sander, as DSSP 2.0 assigns it), sets the backbone bead types by
+secondary structure and writes the explicit topology — backbone bonds and constraints, BBB / BBS angles, helix
+dihedrals, elastic bonds in extended regions, side chains, termini, disulfides. `caps dssp FILE` prints the secondary
+structure; `caps martini FILE -o cg.data --itp cg.itp [--ss …]` writes the beads and a GROMACS topology. On vermouth's
+own martini22 test protein the topology and bead positions are martinize2's, term by term
+(`bench/ff/check_martini_protein.py`). VAL, LEU and ILE side chains are AC1 / AC2 beads, which have no non-bonded
+parameters in the library (they are in martini_v2.2.itp). Two additions beyond SMARTS serve GAFF and CGenFF: `{AR1}`..`{AR5}`, antechamber's ring
 classes, and conjugated type pairs (`"pairs"`: GAFF's cc/cd, ce/cf, nc/nd ... alternate across double bonds; CGenFF's
 CG2DC1/CG2DC2 with `"pair_mode": "double_same"`). A rules file marked `"ordered"` takes the first matching rule, as
 antechamber does.

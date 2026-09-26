@@ -1,0 +1,27 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Martini 2.2 proteins",
+ "version": "2.2",
+ "source": "vermouth-martinize martini22 (05-aminoacids.ff, mappings) on the library's MARTINI 2.0",
+ "references": [
+  "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)",
+  "L. Monticelli et al., J. Chem. Theory Comput. 4, 819 (2008)",
+  "D. H. de Jong et al., J. Chem. Theory Comput. 9, 687 (2013)",
+  "P. C. Kroon et al., Martinize2 and Vermouth, eLife 12, RP90627 (2023)"
+ ],
+ "extends": "martini-moltemplate.json",
+ "typing": "../typing/martini22-proteins.typing.json",
+ "atom_types": [],
+ "pairs": [],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "an all-atom protein is mapped onto Martini 2.2 beads with martinize's explicit topology (data/martini/martini22-protein.json; DSSP for the secondary structure); non-bonded terms are MARTINI 2.0's (the library's martini.lt)",
+  "constraints are stiff bonds (20000 kJ/mol/nm2): CAPS has no constraints",
+  "AC1 / AC2 (VAL, LEU, ILE side chains) have no non-bonded parameters in the library (martini_v2.2.itp gives them)",
+  "ring (S) beads weigh 54 in the library's MARTINI file (EMC); Martini 2.2's itp gives 45: masses change dynamics, not energies"
+ ]
+}

@@ -33,6 +33,12 @@ LAMMPS with CLASS2, MOFFF, CORESHELL, MANYBODY (Stillinger-Weber) and CG-SPICA (
 | MARTINI 2.0: DPPC, POPE, ions, water (lj/gromacs/coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept) | energy 1e-7, forces 8e-9 kcal/mol/Å |
 | MARTINI overlays: PEO with its torsions; sucrose, maltose, glucose | energy ≤ 4e-9, forces 8e-9 |
 | MARTINI amino acids: HIS, PHE, TYR, TRP (harmonic impropers, GROMACS type-2 order), ARG, ASP, LYS, water | energy 1.3e-7, forces 7.8e-9 |
+| Martini 2.2 proteins: AK helix (helix constraints, 96° / 700 angles, −120° / 400 dihedrals); an aromatic helix (W, Y, F, H rings, charged termini) | energy ≤ 1.4e-7, forces ≤ 2.2e-8 |
+
+`check_martini_protein.py`: CAPS's Martini 2.2 protein of 1ICO (vermouth's martini22 integration test, `-dssp -cys auto`)
+against martinize2 — 67 beads with identical types and charges, 67 bonds, 21 constraints, 65 angles, 4 dihedrals
+identical, bead positions within 0.001 Å; CAPS's DSSP gives DSSP 2.0's letters on 1ICO, the Trp-cage (α and 3₁₀) and a
+43-residue helical protein.
 | SDK: DMPC / DMPE / water; C12E8 / water; SDS / Na+ / water at relative permittivity 80 (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion) | energy ≤ 1.2e-7, forces ≤ 2e-6 |
 | Cooke-Deserno lipids (cosine/squared, FENE, harmonic head-tail bond) | energy 8.5e-9, forces 7.9e-9 |
 | mW water (Stillinger-Weber, `.sw` file) | energy 1.8e-10, forces 8e-9 |

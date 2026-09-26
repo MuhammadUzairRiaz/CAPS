@@ -1090,6 +1090,34 @@
    }
   },
   {
+   "id": "martini22-proteins",
+   "name": "Martini 2.2 proteins",
+   "version": "2.2",
+   "references": [
+    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)",
+    "L. Monticelli et al., J. Chem. Theory Comput. 4, 819 (2008)",
+    "D. H. de Jong et al., J. Chem. Theory Comput. 9, 687 (2013)",
+    "P. C. Kroon et al., Martinize2 and Vermouth, eLife 12, RP90627 (2023)"
+   ],
+   "origin": "vermouth-martinize",
+   "source_file": "force_fields/martini22/05-aminoacids.ff",
+   "status": "converted",
+   "notes": "proteins mapped as martinize2 does (term by term identical on vermouth's martini22 test), DSSP included; VAL / LEU / ILE lack AC1 / AC2 pairs",
+   "file": "martini22-proteins.json",
+   "counts": {
+    "atom_types": 0,
+    "pairs": 0,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/martini22-proteins.typing.json",
+    "evidence": "bench/ff/check_martini_protein.py: identical to martinize2 (types, charges, every term, positions)"
+   }
+  },
+  {
    "id": "martini-sugars",
    "name": "MARTINI 2.0 · sugars",
    "version": "2.0",

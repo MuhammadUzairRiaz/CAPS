@@ -158,6 +158,9 @@ struct FFDef {
   std::vector<BeadRule> bead_rules;
   std::vector<BeadGroup> bead_groups;
   std::map<std::string, std::string> bead_templates;
+  // Martini proteins (typing file "martini_protein": the model's JSON): an all-atom protein becomes beads with the
+  // model's explicit topology (martini22_protein; DSSP for the secondary structure)
+  std::string martini_protein;
   // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
   // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
   // each conjugated system takes the variants that make every bond's constant equal bond_k_per_order x its bond order
@@ -212,7 +215,8 @@ struct ParamReport {
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
 // Does the force field change the structure before typing (united atom, shells, ionic bonds)?
 inline bool needs_prepare(const FFDef& ff) {
-  return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty();
+  return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty() ||
+         !ff.martini_protein.empty();
 }
 
 // "N atoms match no typing rule of FF", or for a coarse-grained force field that maps atoms onto beads, that they are in

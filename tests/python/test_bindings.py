@@ -219,6 +219,10 @@ trp = caps.build.beads("TRP", forcefield="martini-aminoacids")
 rt = trp.field.assign("martini-aminoacids", charges="keep")
 check(rt["complete"] and trp.atoms == 5 and "ILE" not in caps.bead_templates("martini-aminoacids"),
       f"MARTINI amino acids: TRP {trp.atoms} beads with its impropers; ILE / LEU / PRO / VAL left out (no AC1 / AC2 parameters)")
+# Martini 2.2 proteins: an all-atom helical peptide mapped as martinize does (DSSP, explicit topology)
+ak = caps.build.peptide("AEAAAKEAAAKEAAAKA", structure="H" * 17)
+ra = ak.field.assign("martini22-proteins", charges="keep")
+check(ra["complete"] and ak.atoms == 26, f"Martini 2.2 protein: AK peptide -> {ak.atoms} beads with its topology")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
