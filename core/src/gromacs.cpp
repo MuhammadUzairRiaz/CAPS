@@ -293,6 +293,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
       add(PAIRS, {p[0], p[1]}, b);
     }
   }
+  // explicit LJ pairs (Martini 3 polymers): their own σ, ε (GROMACS adds fudgeQQ × the pair's Coulomb, as CAPS does)
+  for (const auto& p : ff.lj_pairs) {
+    std::snprintf(b, sizeof b, " 1 %.10g %.10g", p.sigma / 10, p.eps * KJ);
+    add(PAIRS, {p.i, p.j}, b);
+  }
   // angles (Urey–Bradley terms join their angle: GROMACS function 5)
   std::map<std::pair<uint32_t, uint32_t>, const UreyBradley*> ub;
   for (const auto& u : ff.urey_bradley) ub[{std::min(u.i, u.k), std::max(u.i, u.k)}] = &u;
@@ -359,6 +364,10 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   for (const auto& t : ff.impropers_harmonic) {
     std::snprintf(b, sizeof b, " 2 %.10g %.10g", t.chi0 * R2D, 2 * t.k2 * KJ);
+    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, b);
+  }
+  for (const auto& t : ff.cbt) {   // combined bending–torsion: k 1, the coefficients in kJ/mol
+    std::snprintf(b, sizeof b, " 11 1 %.10g %.10g %.10g %.10g %.10g", t.a[0] * KJ, t.a[1] * KJ, t.a[2] * KJ, t.a[3] * KJ, t.a[4] * KJ);
     add(DIHEDRALS, {t.i, t.j, t.k, t.l}, b);
   }
   // exclusions: CAPS's own list (nrexcl 0)

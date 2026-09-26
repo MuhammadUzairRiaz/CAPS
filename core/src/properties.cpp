@@ -1527,6 +1527,8 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   for (const auto& t : ff.bonds_x) if (in({t.i, t.j})) s.bonds_x.push_back({m(t.i), m(t.j), t.form, t.a, t.b, t.c, t.d});
   for (const auto& t : ff.angles_x) if (in({t.i, t.j, t.k})) s.angles_x.push_back({m(t.i), m(t.j), m(t.k), t.form, t.a, t.b});
   for (const auto& t : ff.urey_bradley) if (in({t.i, t.k})) s.urey_bradley.push_back({m(t.i), m(t.k), t.kub, t.r0});
+  for (auto t : ff.cbt) if (in({t.i, t.j, t.k, t.l})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); t.l = m(t.l); s.cbt.push_back(t); }
+  for (auto t : ff.lj_pairs) if (in({t.i, t.j})) { t.i = m(t.i); t.j = m(t.j); s.lj_pairs.push_back(t); }
   for (auto t : ff.bonds2) if (in({t.i, t.j})) { t.i = m(t.i); t.j = m(t.j); s.bonds2.push_back(t); }
   for (auto t : ff.angles2) if (in({t.i, t.j, t.k})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); s.angles2.push_back(t); }
   for (auto t : ff.dihedrals2) if (in({t.i, t.j, t.k, t.l})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); t.l = m(t.l); s.dihedrals2.push_back(t); }

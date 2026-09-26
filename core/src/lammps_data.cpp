@@ -86,6 +86,10 @@ struct Layout {
 Layout build(const System& s, const ForceField& ff) {
   if (!ff.vsites.empty())
     throw FieldError(ff.name + ": virtual sites (Martini 3's tryptophan, ...) have no LAMMPS form; export to GROMACS instead");
+  if (!ff.cbt.empty())
+    throw FieldError(ff.name + ": combined bending–torsion dihedrals (Martini 3 polymers) have no LAMMPS form; export to GROMACS instead");
+  if (!ff.lj_pairs.empty())
+    throw FieldError(ff.name + ": explicit Lennard-Jones pairs (Martini 3 polymers) have no LAMMPS form; export to GROMACS instead");
   {   // exclusions LAMMPS can make: bonded 1-2 pairs, and 1-3 / 1-4 pairs when their scaling is 0
     const auto nb = s.neighbours();
     std::set<std::pair<uint32_t, uint32_t>> can;

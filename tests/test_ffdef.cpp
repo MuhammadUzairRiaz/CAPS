@@ -639,3 +639,60 @@ TEST(CoarseGrained, Martini3LipidsByBuildingBlocks) {
     EXPECT_EQ(tr.untyped, 0) << name;
   }
 }
+
+// GROMACS's combined bending–torsion (dihedral function 11, Martini 3 polymer backbones): k sin³θ1 sin³θ2 Σ a_n cos^n φ,
+// energies as GROMACS 2026 gives them for six random conformations (k 1.30929464, a 6.51130136 −4.6419125 10.24767684
+// −7.64602475 12.3432375 kJ/mol), then forces and virial against finite differences, an explicit LJ pair with charges too
+TEST(FieldForms, CombinedBendingTorsionAndExplicitPairs) {
+  ForceField ff;
+  ff.type_names = {"X"};
+  ff.type_index = {0, 0, 0, 0};
+  ff.lj = {{0, 0}};
+  ff.mass = {72, 72, 72, 72};
+  ff.charge = {0, 0, 0, 0};
+  ff.excluded.assign(4, {});
+  const double k = 1.30929464, a[5] = {6.51130136, -4.6419125, 10.24767684, -7.64602475, 12.3432375};
+  CbtTorsion t{0, 1, 2, 3, {}};
+  for (int n = 0; n < 5; ++n) t.a[n] = k * a[n] / 4.184;
+  ff.cbt.push_back(t);
+  EnergyOptions o;
+  o.tail = false;
+  o.coulomb = false;
+  Cell none;
+  const double frames[6][12] = {{2.0, 2.0, 2.0, 1.734, 2.045, 1.868, 1.801, 2.126, 1.587, 1.573, 2.284, 1.474},
+                                {2.0, 2.0, 2.0, 1.858, 2.264, 1.984, 2.135, 2.245, 2.099, 1.936, 2.322, 2.309},
+                                {2.0, 2.0, 2.0, 2.023, 2.244, 2.173, 1.769, 2.394, 2.226, 1.674, 2.17, 2.401},
+                                {2.0, 2.0, 2.0, 1.981, 2.15, 2.259, 2.114, 2.411, 2.194, 2.284, 2.38, 2.44},
+                                {2.0, 2.0, 2.0, 2.172, 1.818, 1.835, 2.017, 2.072, 1.8, 2.178, 1.819, 1.809},
+                                {2.0, 2.0, 2.0, 1.834, 1.783, 2.124, 1.89, 2.052, 2.245, 2.063, 2.196, 2.443}};
+  const double gromacs_kj[6] = {33.835560, 7.251500, 5.617820, 21.503141, 0.011181, 1.107190};
+  {
+    Evaluator ev(ff, o);
+    for (int f = 0; f < 6; ++f) {
+      std::vector<double> x(frames[f], frames[f] + 12), g;
+      for (double& v : x) v *= 10;   // nm → Å
+      EXPECT_NEAR(ev.compute(x, none, g).total() * 4.184, gromacs_kj[f], 2e-5 * std::max(1.0, gromacs_kj[f])) << f;
+    }
+  }
+  // forces and virial: the CBT term and a charged explicit pair between the ends, in a periodic cell
+  ff.lj_pairs.push_back({0, 3, 0.8, 4.6});
+  ff.charge = {0.5, 0, 0, -1};
+  ff.coul14 = 1.0;
+  o.coulomb = true;
+  Cell c;
+  c.a = {40, 0, 0};
+  c.b = {0, 40, 0};
+  c.c = {0, 0, 40};
+  Evaluator ev(ff, o);
+  std::vector<double> x = {20, 20, 20, 17.3, 20.4, 18.7, 18.0, 21.3, 15.9, 15.7, 22.8, 14.7}, f, g;
+  const EnergyTerms et = ev.compute(x, c, f);
+  for (size_t kk = 0; kk < x.size(); ++kk) {
+    std::vector<double> xp = x, xm = x;
+    xp[kk] += 1e-5;
+    xm[kk] -= 1e-5;
+    const double fd = -(ev.compute(xp, c, g).total() - ev.compute(xm, c, g).total()) / 2e-5;
+    EXPECT_NEAR(f[kk], fd, 1e-4 * std::max(1.0, std::fabs(fd))) << kk;
+  }
+  const auto d = strain_derivative(ev, x, c);
+  for (int v = 0; v < 6; ++v) EXPECT_NEAR(et.w[v], d[v], 1e-4 * std::max(1.0, std::fabs(et.virial))) << "virial " << v;
+}

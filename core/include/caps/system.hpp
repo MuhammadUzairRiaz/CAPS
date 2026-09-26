@@ -61,19 +61,22 @@ struct TypeInfo {
 // bonded terms, with their own parameters, in place of rule lookups; the non-bonded terms still come from the types.
 // Units as LAMMPS real: bonds K (r − r0)² (kcal/mol/Å², Å); angles form 0 harmonic K (θ − θ0)², 1 cosine/squared
 // K (cos θ − cos θ0)², 5 restricted bending K (cos θ − cos θ0)² / sin² θ; dihedrals form 1 (and 9, GROMACS's multiple form) K [1 + cos(nφ − φ0)], form 2
-// harmonic K (ξ − ξ0)² on the i-j-k-l dihedral, form 4 periodic improper K [1 + cos(nφ − φ0)] (radians); exclusions: pairs
+// harmonic K (ξ − ξ0)² on the i-j-k-l dihedral, form 4 periodic improper K [1 + cos(nφ − φ0)] (radians), form 11 combined
+// bending–torsion sin³θ1 sin³θ2 Σ c_n cos^n φ; pairs: explicit LJ pairs; exclusions: pairs
 // with no non-bonded interaction beyond the bonded ones; virtual sites: the centre of mass of their atoms (GROMACS
 // virtual_sitesn 2), massless. Valid only for the structure it was made with (natoms and the bond list must still match;
 // parameterize checks).
 struct ExplicitTopology {
   struct Bond { uint32_t i, j; double k, r0; std::string group; };
   struct Angle { uint32_t i, j, k; int form; double kt, theta0; std::string group; };
-  struct Dihedral { uint32_t i, j, k, l; int form; double kd, phi0; int n; std::string group; };
+  struct Dihedral { uint32_t i, j, k, l; int form; double kd, phi0; int n; std::string group; std::array<double, 5> c{}; };   // c: form 11's coefficients
+  struct Pair { uint32_t i, j; double eps, sigma; };   // an explicit LJ pair (kcal/mol, Å)
   size_t natoms = 0;
   std::vector<Bond> bonds;
   std::vector<Angle> angles;
   std::vector<Dihedral> dihedrals;
   std::vector<std::pair<uint32_t, uint32_t>> exclusions;
+  std::vector<Pair> pairs;
   struct VSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; };   // w empty: the centre of mass
   std::vector<VSite> vsites;
   std::vector<double> masses;   // per atom when the molecule sets them (NaN: the type's), else empty

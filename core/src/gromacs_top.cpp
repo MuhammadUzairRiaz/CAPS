@@ -146,6 +146,11 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
         cur->topo.dihedrals.push_back({idx(0), idx(1), idx(2), idx(3), f, num(w, 6, where) / kKJ, num(w, 5, where) * kDeg, int(num(w, 7, where)), "dihedral"});
       else if (f == 2)
         cur->topo.dihedrals.push_back({idx(0), idx(1), idx(2), idx(3), 2, num(w, 6, where) / (2 * kKJ), num(w, 5, where) * kDeg, 0, "improper"});
+      else if (f == 11) {   // combined bending–torsion: k a0 … a4
+        ExplicitTopology::Dihedral d{idx(0), idx(1), idx(2), idx(3), 11, 0, 0, 0, "bending-torsion"};
+        for (int n = 0; n < 5; ++n) d.c[size_t(n)] = num(w, 5, where) * num(w, size_t(6 + n), where) / kKJ;
+        cur->topo.dihedrals.push_back(d);
+      }
       else throw ReadError(where + ": dihedral function " + w[4] + " is not handled");
     } else if (sec == "exclusions") {
       for (size_t k = 1; k < w.size(); ++k) cur->topo.exclusions.push_back({idx(0), idx(k)});
@@ -187,6 +192,8 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
       title += (title.empty() ? "" : " ") + lines[ln];
     } else if (sec == "molecules") {
       molecules.push_back({w[0], std::stol(w.at(1))});
+    } else if (sec == "pairs" && w.size() >= 5 && int(num(w, 2, where)) == 1) {   // with its own σ, ε
+      cur->topo.pairs.push_back({idx(0), idx(1), num(w, 4, where) / kKJ, num(w, 3, where) * 10});
     } else if (sec == "pairs" || sec == "cmap" || sec == "settles" || sec == "virtual_sites4") {
       if (!ignored.count(sec)) notes.push_back("[ " + sec + " ] not read");
       ignored.insert(sec);
@@ -261,6 +268,7 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
       for (auto a : m.topo.angles) a.i = sh(a.i), a.j = sh(a.j), a.k = sh(a.k), topo->angles.push_back(a);
       for (auto d : m.topo.dihedrals) d.i = sh(d.i), d.j = sh(d.j), d.k = sh(d.k), d.l = sh(d.l), topo->dihedrals.push_back(d);
       for (const auto& e : m.topo.exclusions) topo->exclusions.push_back({sh(e.first), sh(e.second)});
+      for (auto pr : m.topo.pairs) pr.i = sh(pr.i), pr.j = sh(pr.j), topo->pairs.push_back(pr);
       for (const auto& e : gen) topo->exclusions.push_back({sh(e.first), sh(e.second)});
       for (auto v : m.topo.vsites) {
         v.site = sh(v.site);
