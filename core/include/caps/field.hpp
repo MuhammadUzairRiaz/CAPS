@@ -43,6 +43,13 @@ struct InversionTerm { uint32_t c, a, b, d; double kw, w0; int form = 0; };
 struct BondX { uint32_t i, j; int form; double a, b, c, d = 0; };   // form 3 FENE: −½ K R0² ln(1 − (r/R0)²) (a = K, b = R0) plus WCA ε, σ (c, d) below 2^(1/6) σ
 struct AngleX { uint32_t i, j, k; int form; double a, b; };
 struct UreyBradley { uint32_t i, k; double kub, r0; };
+// Combined bending–torsion (GROMACS dihedral function 11, Martini 3 polymer backbones): sin³θ1 sin³θ2 Σ_{n=0..4} a_n cos^n φ
+// with θ1, θ2 the i-j-k and j-k-l angles and φ the i-j-k-l dihedral (IUPAC); a_n in kcal/mol (GROMACS's k folded in).
+// Written in |b1×b2|², |b2×b3|², their dot product and the bond lengths, so straight angles are not singular.
+struct CbtTorsion { uint32_t i, j, k, l; double a[5]; };
+// An explicit Lennard-Jones pair (GROMACS [ pairs ] with its own σ, ε): 4ε[(σ/r)¹² − (σ/r)⁶] and the pair's plain Coulomb
+// times the 1-4 scale (GROMACS fudgeQQ), no cut-off, on top of the pair's ordinary non-bonded terms.
+struct PairLJ { uint32_t i, j; double eps, sigma; };
 // A virtual site (GROMACS virtual_sitesn): its position is Σ w_k x_k over its constructing atoms (w: their masses, summing
 // to 1 — the centre of mass); the force on it goes back to them in the same proportions. It has no mass of its own.
 struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; };
@@ -107,6 +114,8 @@ struct ForceField {
   std::vector<BondX> bonds_x;
   std::vector<AngleX> angles_x;
   std::vector<UreyBradley> urey_bradley;
+  std::vector<CbtTorsion> cbt;             // combined bending–torsion (counted with the torsions)
+  std::vector<PairLJ> lj_pairs;            // explicit LJ pairs (counted with van der Waals)
   std::map<std::pair<int, int>, PairFunc> pair_func;       // non-LJ pair forms for type-index pairs (a ≤ b)
   // Separate 1-4 Lennard-Jones parameters per type (CHARMM ε14 / Rmin14, GROMOS C6/C12 1-4); empty: the normal
   // parameters scaled by lj14.

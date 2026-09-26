@@ -385,7 +385,7 @@ double vermouth_mass(int z) {
 // virtual_sites3). Terms only for GROMACS's FLEXIBLE variant are left out (their constraints are used).
 void add_term(ExplicitTopology& topo, System& out, const std::string& type, const std::vector<int>& atoms, const std::vector<std::string>& params,
               const Json& meta, double stiff) {
-  if (meta.text("ifdef") == "FLEXIBLE") return;
+  if (!meta.text("ifdef").empty()) return;   // nothing is defined: FLEXIBLE, TI, POSRE_… variants are left out
   auto group = [&](const std::string& def) { return meta.text("group", def); };
   auto P = [&](size_t k) { return k < params.size() ? std::stod(params[k]) : 0.0; };
   auto u = [&](size_t k) { return uint32_t(atoms.at(k)); };
@@ -401,6 +401,13 @@ void add_term(ExplicitTopology& topo, System& out, const std::string& type, cons
     const int form = f == 1 ? 0 : f == 2 ? 1 : f == 10 ? 5 : -1;
     if (form < 0) throw std::invalid_argument("angle function " + params[0] + " is not handled");
     topo.angles.push_back({u(0), u(1), u(2), form, P(2) / (2 * kKJ), P(1) * kDeg, group("angle")});
+  } else if (type == "dihedrals" && int(P(0)) == 11) {   // combined bending–torsion: k a0 … a4
+    ExplicitTopology::Dihedral d{u(0), u(1), u(2), u(3), 11, 0, 0, 0, group("dihedral")};
+    for (int n = 0; n < 5; ++n) d.c[size_t(n)] = P(1) * P(size_t(2 + n)) / kKJ;
+    topo.dihedrals.push_back(d);
+  } else if (type == "pairs") {   // an explicit LJ pair: function 1, σ, ε
+    if (int(P(0)) != 1 || params.size() < 3) throw std::invalid_argument("pairs without their own σ, ε are not handled");
+    topo.pairs.push_back({u(0), u(1), P(2) / kKJ, P(1) * 10});
   } else if (type == "dihedrals") {
     const int f = int(P(0));
     if (f != 1 && f != 9 && f != 4) throw std::invalid_argument("dihedral function " + params[0] + " is not handled");
@@ -846,6 +853,7 @@ void append_system(System& a, const System& b) {
   for (auto x : tb.angles) x.i += off, x.j += off, x.k += off, ta->angles.push_back(x);
   for (auto x : tb.dihedrals) x.i += off, x.j += off, x.k += off, x.l += off, ta->dihedrals.push_back(x);
   for (auto x : tb.exclusions) ta->exclusions.push_back({x.first + off, x.second + off});
+  for (auto x : tb.pairs) x.i += off, x.j += off, ta->pairs.push_back(x);
   for (auto v : tb.vsites) {
     v.site += off;
     for (auto& f : v.from) f += off;

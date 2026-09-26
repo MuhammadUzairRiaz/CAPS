@@ -966,7 +966,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   const size_t c1 = o7 + ff_.bonds2.size(), c2 = c1 + ff_.angles2.size(), c3 = c2 + ff_.dihedrals2.size();
   const size_t c4 = c3 + ff_.impropers2.size();
   const size_t c5 = c4 + ff_.inversions.size(), c6 = c5 + ff_.bonds_x.size(), c7 = c6 + ff_.angles_x.size();
-  const size_t total = c7 + ff_.urey_bradley.size();
+  const size_t c8 = c7 + ff_.urey_bradley.size(), c9 = c8 + ff_.cbt.size();
+  const size_t total = c9 + ff_.lj_pairs.size();
   pool_->run(total, [&](int t, size_t b, size_t en) {
     std::vector<double>& ft = tf_[t];
     auto& A = acc[t];
@@ -998,6 +999,63 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       V(r2, f2); V(r3, f3); V(r4, f4);
     };
     for (size_t k = b; k < en; ++k) {
+      if (k >= c8) {
+        if (k < c9) {
+          // combined bending–torsion: E = Σ a_n C^n (AB)^((3−n)/2) / (L1^(3/2) L2³ L3^(3/2)), A = |b1×b2|², B = |b2×b3|²,
+          // C = (b1×b2)·(b2×b3), L the squared bond lengths
+          if (!bonded) continue;
+          const auto& t = ff_.cbt[k - c8];
+          const Vec3 b1 = mi(pos(t.j) - pos(t.i)), b2 = mi(pos(t.k) - pos(t.j)), b3 = mi(pos(t.l) - pos(t.k));
+          const double L1 = dot(b1, b1), L2 = dot(b2, b2), L3 = dot(b3, b3);
+          const double d12 = dot(b1, b2), d23 = dot(b2, b3), d13 = dot(b1, b3);
+          const double Aa = L1 * L2 - d12 * d12, Bb = L2 * L3 - d23 * d23, Cc = d12 * d23 - d13 * L2;
+          const double AB = Aa * Bb;
+          if (AB < 1e-24 || L1 < 1e-12 || L2 < 1e-12 || L3 < 1e-12) continue;
+          const double D = std::pow(L1, 1.5) * L2 * L2 * L2 * std::pow(L3, 1.5);
+          double e = 0, dC = 0, dAB = 0;   // dAB: ∂(Σ)/∂(AB)
+          for (int n = 0; n <= 4; ++n) {
+            if (t.a[n] == 0) continue;
+            const double pw = std::pow(AB, 0.5 * (3 - n)), cn = n ? std::pow(Cc, n) : 1.0;
+            e += t.a[n] * cn * pw;
+            if (n) dC += t.a[n] * n * std::pow(Cc, n - 1) * pw;
+            dAB += t.a[n] * cn * 0.5 * (3 - n) * pw / AB;
+          }
+          const double E = e / D;
+          A[2] += E;
+          const double dEdA = dAB * Bb / D, dEdB = dAB * Aa / D, dEdC = dC / D;
+          const double dL1 = -1.5 * E / L1, dL2 = -3 * E / L2, dL3 = -1.5 * E / L3;
+          // gradients with respect to the bond vectors
+          const Vec3 gA1 = (b1 * L2 - b2 * d12) * 2.0, gA2 = (b2 * L1 - b1 * d12) * 2.0;
+          const Vec3 gB2 = (b2 * L3 - b3 * d23) * 2.0, gB3 = (b3 * L2 - b2 * d23) * 2.0;
+          const Vec3 gC1 = b2 * d23 - b3 * L2, gC3 = b2 * d12 - b1 * L2, gC2 = b1 * d23 + b3 * d12 - b2 * (2 * d13);
+          const Vec3 g1 = gA1 * dEdA + gC1 * dEdC + b1 * (2 * dL1);
+          const Vec3 g2 = gA2 * dEdA + gB2 * dEdB + gC2 * dEdC + b2 * (2 * dL2);
+          const Vec3 g3 = gB3 * dEdB + gC3 * dEdC + b3 * (2 * dL3);
+          const Vec3 f1 = g1, f2 = g2 - g1, f3 = g3 - g2, f4 = g3 * -1.0;
+          add(t.i, f1); add(t.j, f2); add(t.k, f3); add(t.l, f4);
+          V(b1, f2); V(b1 + b2, f3); V(b1 + b2 + b3, f4);
+        } else {
+          // an explicit LJ pair, no cut-off
+          if (!nonb) continue;
+          const auto& pr = ff_.lj_pairs[k - c9];
+          const Vec3 d = mi(pos(pr.j) - pos(pr.i));
+          const double r2 = dot(d, d);
+          if (r2 < 1e-12) continue;
+          const double sr2 = pr.sigma * pr.sigma / r2, sr6 = sr2 * sr2 * sr2;
+          A[4] += 4 * pr.eps * (sr6 * sr6 - sr6);
+          double fr = 24 * pr.eps * (2 * sr6 * sr6 - sr6) / r2;
+          if (q[pr.i] != 0 && q[pr.j] != 0) {   // and the pair's plain Coulomb, scaled as 1-4 pairs are (GROMACS fudgeQQ)
+            const double r = std::sqrt(r2), qq = kCoulomb * q[pr.i] * q[pr.j] * ff_.coul14;
+            A[5] += qq / r;
+            fr += qq / (r2 * r);
+          }
+          const Vec3 fj = d * fr;
+          add(pr.j, fj);
+          add(pr.i, fj * -1.0);
+          V(d, fj);
+        }
+        continue;
+      }
       // 1-4 pairs and the electrostatics of bonded partners are non-bonded; everything else is bonded
       if ((k >= o4 && k < o6) ? !nonb : !bonded) continue;
       if (k < o1) {
