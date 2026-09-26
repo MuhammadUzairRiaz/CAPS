@@ -1,0 +1,171 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "COMPASS (compass_published.frc, full class II)",
+ "description": "CAPS rules for COMPASS from the published type definitions (Sun, J. Phys. Chem. B 102, 7338 (1998)); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: c2t, c3-, c3=, c3n, c3o, c4x, cl1, cl12, cl14, f1, f12, f13, h1n, n1t, n2a, n3, n3a, n3h2, n3mh, n4+, o1-, o2c. (for compass_published.frc: rules for c2t, c3-, c3=, c3n, c3o, c4x, cl1, cl12, cl14, f1, f12, f13, h1n, n1t, n2a, n3, n3a, n3h2, n3mh, n4+, o1-, o2c, which it does not define, left out)",
+ "unknown_types": "untyped",
+ "rules": [
+  {
+   "type": "h1",
+   "smarts": "[H][#6,#14]",
+   "priority": 0,
+   "description": "non-polar H (on C or Si)"
+  },
+  {
+   "type": "h1o",
+   "smarts": "[H][O,F]",
+   "priority": 1,
+   "description": "strongly polar H (on O or F)"
+  },
+  {
+   "type": "h1h",
+   "smarts": "[H][H]",
+   "priority": 2,
+   "description": "H in H2"
+  },
+  {
+   "type": "c4",
+   "smarts": "[CX4]",
+   "priority": 0,
+   "description": "generic sp3 C"
+  },
+  {
+   "type": "c43",
+   "smarts": "[CX4H1]",
+   "priority": 2,
+   "description": "sp3 C with three heavy atoms attached"
+  },
+  {
+   "type": "c44",
+   "smarts": "[CX4H0]",
+   "priority": 2,
+   "description": "sp3 C with four heavy atoms attached"
+  },
+  {
+   "type": "c4o",
+   "smarts": "[CX4][OX2]",
+   "priority": 4,
+   "description": "sp3 C alpha to an oxygen"
+  },
+  {
+   "type": "c41o",
+   "smarts": "[CX4H3][OX2H1]",
+   "priority": 5,
+   "description": "C of methanol"
+  },
+  {
+   "type": "c43o",
+   "smarts": "[CX4H1][OX2H1]",
+   "priority": 5,
+   "description": "C of a secondary alcohol"
+  },
+  {
+   "type": "c4z",
+   "smarts": "[CX4][NX2]=[NX2+]=[NX1-]",
+   "priority": 5,
+   "description": "sp3 C bonded to -N3"
+  },
+  {
+   "type": "c3a",
+   "smarts": "c",
+   "priority": 1,
+   "description": "aromatic C"
+  },
+  {
+   "type": "c3'",
+   "smarts": "[CX3](=[OX1])[OX2,NX3]",
+   "priority": 4,
+   "description": "carbonyl C with one polar substituent (ester, acid, amide)"
+  },
+  {
+   "type": "c2=",
+   "smarts": "[CX2](=O)=O",
+   "priority": 5,
+   "description": "C in CO2"
+  },
+  {
+   "type": "c1o",
+   "smarts": "[CX1-]#[OX1+]",
+   "priority": 5,
+   "description": "C in CO"
+  },
+  {
+   "type": "o2",
+   "smarts": "[OX2]",
+   "priority": 0,
+   "description": "generic O with two bonds"
+  },
+  {
+   "type": "o1=",
+   "smarts": "[OX1]=[#6,#7,#16]",
+   "priority": 1,
+   "description": "carbonyl O (and O in NO2, SO2)"
+  },
+  {
+   "type": "o2e",
+   "smarts": "[OX2]([#6])[#6]",
+   "priority": 2,
+   "description": "ether O"
+  },
+  {
+   "type": "o2s",
+   "smarts": "[OX2]([#6])[CX3]=[OX1]",
+   "priority": 3,
+   "description": "ester O"
+  },
+  {
+   "type": "o2h",
+   "smarts": "[OX2H1]",
+   "priority": 3,
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "o2z",
+   "smarts": "[OX2]([Si])[Si,Al]",
+   "priority": 3,
+   "description": "O in siloxanes and zeolites"
+  },
+  {
+   "type": "o12",
+   "smarts": "[OX1]~[NX3](~[OX1])[#6]",
+   "priority": 4,
+   "description": "O in a nitro group"
+  },
+  {
+   "type": "o2n",
+   "smarts": "[OX2][NX3](~[OX1])~[OX1]",
+   "priority": 4,
+   "description": "O in a nitrate"
+  },
+  {
+   "type": "n3m",
+   "smarts": "[NX3H0][CX3]=[OX1]",
+   "priority": 3,
+   "description": "amide N without H"
+  },
+  {
+   "type": "n3o",
+   "smarts": "[NX3](~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "N of a nitro group"
+  },
+  {
+   "type": "n2=",
+   "smarts": "[NX2]=[#6,#7,#8]",
+   "priority": 1,
+   "description": "sp2 N (imine, nitroso)"
+  },
+  {
+   "type": "si4",
+   "smarts": "[SiX4]",
+   "priority": 0,
+   "description": "generic Si with four bonds"
+  },
+  {
+   "type": "si4c",
+   "smarts": "[SiX4H0]",
+   "priority": 1,
+   "description": "Si with no H attached (siloxanes)"
+  }
+ ]
+}

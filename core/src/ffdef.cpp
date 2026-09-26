@@ -1386,8 +1386,12 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   for (size_t ti = 0; ti < (table ? 0 : ff.type_names.size()); ++ti) {
     const std::string& tn = ff.type_names[ti];
     const FFRule* r = nullptr;
+    // msi2lmp ("fallback"): the type's own name first, then its van der Waals equivalent
+    if (fallback)
+      for (auto it = def.pairs.rbegin(); it != def.pairs.rend() && !r; ++it)
+        if (it->match.size() == 1 && glob_match(it->match[0], tn)) r = &*it;
     for (auto it = def.pairs.rbegin(); it != def.pairs.rend() && !r; ++it)
-      if (it->match.size() == 1 && (glob_match(it->match[0], vdw_name[ti]) || (fallback && glob_match(it->match[0], tn)))) r = &*it;
+      if (it->match.size() == 1 && glob_match(it->match[0], vdw_name[ti])) r = &*it;
     if (!r || r->params.size() < 2) {
       // a type that only has explicit pair entries (Buckingham ion pairs) has no self term of its own
       bool explicit_pairs = false;
@@ -1801,7 +1805,30 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         if (found) return;
       }
     };
-    for (uint32_t c = 0; c < n; ++c) {
+    // class I (CVFF's out_of_plane, an improper torsion): msi2lmp tries the same six orders, each forwards or backwards,
+    // and writes the atoms in the order that matched; no angle-angle terms
+    const bool class1 = def.improper_style == "cvff";
+    for (uint32_t c = 0; class1 && c < n; ++c) {
+      const auto& nbc = nb[c];
+      if (nbc.size() != 3) continue;
+      const uint32_t A = nbc[0], C = nbc[1], D = nbc[2];
+      const uint32_t perm[6][3] = {{A, C, D}, {A, D, C}, {D, A, C}, {D, C, A}, {C, A, D}, {C, D, A}};
+      const FFRule* r = nullptr;
+      const uint32_t* pm = nullptr;
+      for (int pass = 0; pass < 2 && !r; ++pass) {
+        const std::vector<std::string>& N = pass == 0 ? T : Ni;
+        for (const auto& p3 : perm) {
+          std::vector<const std::string*> ty = {&N[p3[0]], &N[c], &N[p3[1]], &N[p3[2]]};
+          if ((r = last_match(def.impropers, ty, true))) { pm = p3; break; }
+        }
+      }
+      if (!r) continue;
+      const auto& p = r->params;
+      if (p.size() < 3) throw FFError("cvff improper " + r->name + " needs K d n");
+      if (p[0] != 0) ff.impropers.push_back({pm[0], c, pm[1], pm[2], p[0], int(p[2]), p[1] >= 0 ? 0.0 : kPi});
+      rep.used["improper " + r->name]++;
+    }
+    for (uint32_t c = 0; !class1 && c < n; ++c) {
       const auto& nbc = nb[c];
       if (nbc.size() == 3) {
         const uint32_t A = nbc[0], C = nbc[1], D = nbc[2];
@@ -1825,7 +1852,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
         double m[3] = {0, 0, 0};
         aa_terms(A, c, C, D, m);
-        ff.impropers2.push_back({A, c, C, D, K, chi0 * kDeg, m[0], m[1], m[2], t0_of(A, c, C), t0_of(A, c, D), t0_of(C, c, D)});
+        ff.impropers2.push_back({A, c, C, D, K, chi0 * kDeg, m[0], m[1], m[2], t0_of(A, c, C), t0_of(C, c, D), t0_of(A, c, D)});
       } else if (nbc.size() > 3) {
         for (size_t x = 0; x + 2 < nbc.size(); ++x)
           for (size_t y = x + 1; y + 1 < nbc.size(); ++y)
@@ -1833,7 +1860,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
               const uint32_t A = nbc[x], C = nbc[y], D = nbc[z];
               double m[3] = {0, 0, 0};
               aa_terms(A, c, C, D, m);
-              ff.impropers2.push_back({A, c, C, D, 0.0, 0.0, m[0], m[1], m[2], t0_of(A, c, C), t0_of(A, c, D), t0_of(C, c, D)});
+              ff.impropers2.push_back({A, c, C, D, 0.0, 0.0, m[0], m[1], m[2], t0_of(A, c, C), t0_of(C, c, D), t0_of(A, c, D)});
             }
       }
     }

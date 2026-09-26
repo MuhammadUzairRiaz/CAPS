@@ -53,6 +53,13 @@ CASES = [
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
     ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25", "gasteiger", "rules"),
     ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff", "types", "rules"),
+    # CVFF, PCFF and COMPASS from their .frc files (msi2lmp's assignment; check_msi2lmp.py compares with msi2lmp itself)
+    ("Polystyrene melt, PCFF from pcff.frc (periodic, full class II)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff-frc", "types", "rules"),
+    ("PCFF from pcff.frc: ester, ether, amide, siloxane, amine", ("smiles", "CCOC(=O)C.COCC.CC(=O)NC.C[Si](C)(C)O[Si](C)(C)C.CCN(C)C"), "pcff-frc", "types", "rules"),
+    ("Polystyrene melt, CVFF from cvff.frc (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "cvff-frc", "types", "rules"),
+    ("CVFF from cvff.frc: phenol, ethyl acetate, N-methylacetamide", ("smiles", "Oc1ccccc1.CCOC(=O)C.CC(=O)NC"), "cvff-frc", "types", "rules"),
+    ("Polystyrene melt, COMPASS from compass_published.frc (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "compass-frc", "types", "rules"),
+    ("COMPASS from compass_published.frc: propylbenzene, ester-ether", ("smiles", "CCCc1ccccc1.COCCOC(=O)C"), "compass-frc", "types", "rules"),
     # every bonded kind hybrid: COMPASS (class II with all cross terms) plus an overlay turning one angle, one torsion
     # and one improper type into class I forms, so each class II section carries skip lines. (The improper is cvff,
     # K[1 − cos 2φ]: smooth. A harmonic improper with χ0 = 0 on a class II centre-second quadruple sits at χ ≈ 180°,
@@ -288,7 +295,7 @@ for label, src, fid, charges, typing in CASES:
     os.makedirs(d, exist_ok=True)
     cmd = [CAPS, "ff", "apply", s, "--ff", ffj, "--charges", charges, "-o", os.path.join(d, "case.data"),
            "--lammps-input", os.path.join(d, "case.in"), "--forces", os.path.join(d, "caps_f.txt")]
-    cmd += ["--lammps-style", "native", "--lammps-cutoff", "10"] if NATIVE else ["--lammps-style", "exact"]
+    cmd += ["--lammps-style", "native"] if NATIVE else ["--lammps-style", "exact"]   # native: the force field's own cut-off, as CAPS evaluates
     if HYBRID:
         cmd += ["--hybrid"]
     if typing == "keys" and tfile:
