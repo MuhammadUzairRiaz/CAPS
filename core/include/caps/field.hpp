@@ -38,7 +38,7 @@ struct InversionTerm { uint32_t c, a, b, d; double kw, w0; int form = 0; };
 // without the wall; b = θ0); form 4 (SDK / SPICA, LAMMPS angle sdk) K (θ − θ0)² plus the repulsive part of the end
 // atoms' SDK pair, cut at its minimum and shifted to zero there.
 // Urey–Bradley: K (r13 − r0)² between the end atoms of an angle, counted as angle energy (CHARMM).
-struct BondX { uint32_t i, j; int form; double a, b, c; };
+struct BondX { uint32_t i, j; int form; double a, b, c, d = 0; };   // form 3 FENE: −½ K R0² ln(1 − (r/R0)²) (a = K, b = R0) plus WCA ε, σ (c, d) below 2^(1/6) σ
 struct AngleX { uint32_t i, j, k; int form; double a, b; };
 struct UreyBradley { uint32_t i, k; double kub, r0; };
 
@@ -48,7 +48,9 @@ struct UreyBradley { uint32_t i, k; double kub, r0; };
 // 11 9-6 (C = 27/4), 12 12-4 (C = 3√3/2), 13 12-6 (C = 4), 14 12-5;
 // 20 Lennard-Jones 12-6 with GROMACS's force switch from ForceField::lj_inner to the cut-off (LAMMPS lj/gromacs, MARTINI).
 struct PairFunc { int form; double a, b, c; };
-constexpr int kPairSdk96 = 11, kPairSdk124 = 12, kPairSdk126 = 13, kPairSdk125 = 14, kPairGromacs = 20;
+// 31 / 32 cosine-squared attraction (LAMMPS cosine/squared; Cooke–Deserno): −ε below σ, −ε cos²(π(r − σ) / 2(rc − σ)) up to
+// the pair's cut-off rc (a = ε, b = σ, c = rc), 32 with WCA ε[(σ/r)¹² − 2(σ/r)⁶ + 1] below σ; rc = σ: WCA only.
+constexpr int kPairSdk96 = 11, kPairSdk124 = 12, kPairSdk126 = 13, kPairSdk125 = 14, kPairGromacs = 20, kPairCos2 = 31, kPairCos2Wca = 32;
 
 // Class II forms (COMPASS, PCFF), as LAMMPS bond / angle / dihedral / improper_style class2. Angles in radians.
 struct Class2Bond { uint32_t i, j; double r0, k2, k3, k4; };               // K2 Δr² + K3 Δr³ + K4 Δr⁴

@@ -6,9 +6,9 @@
  "references": [
   "I. R. Cooke, M. Deserno, J. Chem. Phys. 123, 224710 (2005)"
  ],
- "units": "real",
+ "units": "lj",
  "styles": {
-  "pair": "table",
+  "pair": "cosine/squared",
   "bond": "harmonic",
   "angle": "harmonic",
   "dihedral": "fourier",
@@ -22,58 +22,147 @@
  ],
  "special_coul": [
   0,
-  0,
-  0.8333333333
+  1,
+  1
  ],
- "cutoff": 600,
+ "cutoff": 3.0,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "atom_types": [
   {
    "name": "H",
-   "element": "H",
-   "mass": 1,
-   "description": "# Head Bead"
+   "element": "",
+   "mass": 1.0,
+   "charge": 0.0,
+   "description": "head bead"
   },
   {
    "name": "T",
-   "element": "H",
-   "mass": 1,
-   "description": "# Tail Bead"
+   "element": "",
+   "mass": 1.0,
+   "charge": 0.0,
+   "description": "tail bead"
+  },
+  {
+   "name": "TE",
+   "element": "",
+   "mass": 1.0,
+   "charge": 0.0,
+   "description": "CAPS extension: the lipid's end tail bead (T's non-bonded terms)",
+   "equivalence": {
+    "vdw": "T"
+   }
   }
  ],
  "pairs": [
   {
+   "name": "H-H",
    "match": [
     "H"
    ],
-   "style": "table",
-   "params": []
+   "style": "cosine/squared",
+   "params": [
+    1.0,
+    1.0663389459,
+    1.0663389459,
+    1
+   ],
+   "comment": "WCA, b = 0.95"
   },
   {
+   "name": "H-T",
    "match": [
     "H",
     "T"
    ],
-   "style": "table",
-   "params": []
+   "style": "cosine/squared",
+   "params": [
+    1.0,
+    1.0663389459,
+    1.0663389459,
+    1
+   ],
+   "comment": "WCA, b = 0.95"
   },
   {
+   "name": "T-T",
    "match": [
     "T"
    ],
-   "style": "table",
-   "params": []
+   "style": "cosine/squared",
+   "params": [
+    1.0,
+    1.1224620483,
+    2.6224620483,
+    1
+   ],
+   "comment": "WCA, b = 1, plus the cos^2 attraction of width 1.5"
   }
  ],
- "bonds": [],
+ "bonds": [
+  {
+   "name": "H-T",
+   "match": [
+    "H",
+    "T"
+   ],
+   "style": "fene",
+   "params": [
+    30.0,
+    1.5,
+    0.0,
+    0.0
+   ],
+   "comment": "fene 30 1.5 0 0"
+  },
+  {
+   "name": "T-TE",
+   "match": [
+    "T",
+    "TE"
+   ],
+   "style": "fene",
+   "params": [
+    30.0,
+    1.5,
+    0.0,
+    0.0
+   ],
+   "comment": "fene 30 1.5 0 0"
+  },
+  {
+   "name": "H-TE",
+   "match": [
+    "H",
+    "TE"
+   ],
+   "style": "harmonic",
+   "params": [
+    10.0,
+    4.0
+   ],
+   "comment": "harmonic 10 4 (the lipid's straightening bond)"
+  }
+ ],
  "angles": [],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "pairs: the source's table (gen_potential-cooke.py, w_c = 1.5) as LAMMPS cosine/squared; bonds FENE 30 1.5 and harmonic 10 4",
+  "CAPS extension: TE, the lipid's end tail (the source bonds the head to both tails, FENE to one and harmonic to the other)",
+  "reduced units (sigma = epsilon = m = 1): CAPS reads the numbers as A, kcal/mol, g/mol; scale lengths, energies and times yourself"
  ],
  "version": "2005",
  "status": "converted",
- "validation": "cosine-squared attraction not evaluated yet."
+ "validation": "cosine-squared attraction not evaluated yet.",
+ "pair_settings": {
+  "model_cutoff": true
+ },
+ "angle_terms": "if_defined",
+ "torsion_terms": "if_defined",
+ "bead_templates": {
+  "lipid": "[H]1[T][TE]1"
+ },
+ "typing": "../typing/cooke-deserno-moltemplate.typing.json"
 }

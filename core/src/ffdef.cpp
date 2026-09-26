@@ -958,7 +958,11 @@ System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t se
     };
     const std::string na = bname(ta), nb = bname(tb);
     const FFRule* r = last_match(ff.bonds, {&na, &nb}, true);
-    return r && r->params.size() >= 2 ? r->params[1] : 0.0;
+    if (!r || r->params.size() < 2) return 0.0;
+    // FENE's second number is its maximum extension R0: the beads sit at 11/15 of it, as the Cooke–Deserno source's own
+    // lipid template (1.1 for R0 = 1.5)
+    if ((r->style.empty() ? ff.bond_style : r->style) == "fene") return r->params[1] * 11.0 / 15.0;
+    return r->params[1];
   };
   System s = build_beads(smiles, o);
   s.title = it != ff.bead_templates.end() ? text + " (" + ff.name + " template)" : "beads";
@@ -1167,6 +1171,14 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       rep.used["pair " + tn]++;
       continue;
     }
+    if (r->style == "cosine/squared") {   // no mixing (LAMMPS): every pair given; ε σ cutoff [wca]
+      if (r->params.size() < 3) throw FFError("cosine/squared pair " + r->name + " needs epsilon sigma cutoff [wca]");
+      ff.pair_func[{int(ti), int(ti)}] = {r->params.size() > 3 && r->params[3] != 0 ? kPairCos2Wca : kPairCos2, r->params[0], r->params[1], r->params[2]};
+      ff.lj.push_back({0, 0});
+      lj14.push_back({0, 0});
+      rep.used["pair " + tn]++;
+      continue;
+    }
     if (int f = sdk_form(r->style)) {   // SDK / SPICA: no mixing, every pair given (the self pair here)
       ff.pair_func[{int(ti), int(ti)}] = {f, r->params[0], r->params[1], 0};
       ff.lj.push_back({0, 0});
@@ -1202,6 +1214,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             ff.pair_func[{int(a), int(b)}] = {r.style == "morse" ? 2 : 1, r.params[0], r.params[1], r.params[2]};
           } else if (int f = sdk_form(r.style)) {
             ff.pair_func[{int(a), int(b)}] = {f, r.params[0], r.params[1], 0};
+          } else if (r.style == "cosine/squared") {
+            if (r.params.size() < 3) throw FFError("cosine/squared pair " + r.name + " needs epsilon sigma cutoff [wca]");
+            ff.pair_func[{int(a), int(b)}] = {r.params.size() > 3 && r.params[3] != 0 ? kPairCos2Wca : kPairCos2, r.params[0], r.params[1], r.params[2]};
           } else if (r.style.empty() || r.style.rfind("lj", 0) == 0) {
             ff.pair_override[{int(a), int(b)}] = {r.params[0], r.params[1]};
           } else {
@@ -1209,8 +1224,13 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           }
         }
   }
-  if (def.pair_style.find("sdk") != std::string::npos || def.pair_style.find("spica") != std::string::npos) {
-    // SDK has no mixing rule: a pair of types present with no entry is missing
+  if (def.pair_style.find("sdk") != std::string::npos || def.pair_style.find("spica") != std::string::npos ||
+      def.pair_style.find("cosine/squared") != std::string::npos) {
+    // no mixing rule: two types with the same non-bonded name share their self pair; another pair with no entry is missing
+    for (size_t a = 0; a < ff.type_names.size(); ++a)
+      for (size_t b = a + 1; b < ff.type_names.size(); ++b)
+        if (vdw_name[a] == vdw_name[b] && !ff.pair_func.count({int(a), int(b)}))
+          if (auto it = ff.pair_func.find({int(a), int(a)}); it != ff.pair_func.end()) ff.pair_func[{int(a), int(b)}] = it->second;
     std::set<int> present(ff.type_index.begin(), ff.type_index.end());
     for (int a : present)
       for (int b : present)
@@ -1307,6 +1327,8 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     }
     else if (st == "morse" && r->params.size() >= 3) ff.bonds_x.push_back({b.i, b.j, 1, r->params[0], r->params[1], r->params[2]});
     else if (st == "gromos" && r->params.size() >= 2) ff.bonds_x.push_back({b.i, b.j, 2, r->params[0], r->params[1], 0});
+    else if (st == "fene" && r->params.size() >= 2)   // K R0 [ε σ] (LAMMPS bond fene)
+      ff.bonds_x.push_back({b.i, b.j, 3, r->params[0], r->params[1], r->params.size() > 3 ? r->params[2] : 0.0, r->params.size() > 3 ? r->params[3] : 0.0});
     else if (st != "harmonic" || r->params.size() < 2) throw FFError("bond style '" + st + "' (" + r->name + ") is not supported yet");
     else {
       ff.bonds.push_back({b.i, b.j, r->params[0], r->params[1]});

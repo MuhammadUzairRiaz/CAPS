@@ -778,6 +778,25 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
       en += scale * pa_[tp] * (e1 * e1 - 2 * e1);
       return scale * 2 * pa_[tp] * pb_[tp] * (e1 * e1 - e1) / r;
     }
+    if (form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca) {   // cosine-squared attraction, optionally with WCA
+      const double r = std::sqrt(r2), ep = pa_[tp], sg = pb_[tp], rcp = pc_[tp];
+      if (r >= rcp && !(form_[tp] == kPairCos2Wca && r < sg)) return 0.0;
+      double ev = 0, dEdr = 0;
+      if (r < sg) {
+        if (rcp > sg) ev = -ep;   // the attraction's flat bottom (none when the pair is WCA only)
+        if (form_[tp] == kPairCos2Wca) {
+          const double s6 = std::pow(sg / r, 6);
+          ev += ep * (s6 * s6 - 2 * s6 + 1);
+          dEdr += -12 * ep * (s6 * s6 - s6) / r;
+        }
+      } else {
+        const double w = kPi * (r - sg) / (2 * (rcp - sg)), c = std::cos(w);
+        ev = -ep * c * c;
+        dEdr = ep * 2 * c * std::sin(w) * kPi / (2 * (rcp - sg));
+      }
+      en += scale * ev;
+      return -scale * dEdr / r;
+    }
     if (form_[tp] == kPairGromacs) {   // LJ with GROMACS's force switch (lj/gromacs)
       const double e = pa_[tp], s6 = std::pow(pb_[tp], 6), r2i = 1 / r2, r6i = r2i * r2i * r2i;
       const double* g = &gsw_[5 * tp];
@@ -815,7 +834,7 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   // Energy shift so that LJ is zero at the cut-off.
   // With the tail correction the LJ energy is truncated, not shifted (the tail term assumes the plain potential).
   auto lj_shift = [&](size_t tp) {
-    if (opt_.tail || form_[tp] == kPairGromacs) return 0.0;   // lj/gromacs is zero at the cut-off by construction
+    if (opt_.tail || form_[tp] == kPairGromacs || form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca) return 0.0;   // zero at their cut-offs by construction
     if (form_[tp] != 0) {
       double e0 = 0;
       lj(tp, rc2, 1.0, e0);
@@ -1067,7 +1086,17 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
           const Vec3 d = mi(pos(t.j) - pos(t.i));
           const double r = norm(d);
           double dEdr = 0;
-          if (t.form == 1) {
+          if (t.form == 3) {   // FENE (LAMMPS bond fene): −½ K R0² ln(1 − (r/R0)²), plus WCA below 2^(1/6) σ when ε > 0
+            const double q = r / t.b;
+            if (q >= 1) throw FieldError("a FENE bond is stretched past R0 (" + std::to_string(r) + " Å)");
+            o.e = -0.5 * t.a * t.b * t.b * std::log(1 - q * q);
+            dEdr = t.a * r / (1 - q * q);
+            if (t.c > 0 && r < std::pow(2.0, 1.0 / 6) * t.d) {
+              const double s6 = std::pow(t.d / r, 6);
+              o.e += 4 * t.c * (s6 * s6 - s6) + t.c;
+              dEdr += -24 * t.c * (2 * s6 * s6 - s6) / r;
+            }
+          } else if (t.form == 1) {
             const double e1 = std::exp(-t.b * (r - t.c));
             o.e = t.a * (1 - e1) * (1 - e1);
             dEdr = 2 * t.a * t.b * e1 * (1 - e1);

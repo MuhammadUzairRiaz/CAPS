@@ -1199,7 +1199,7 @@
    "origin": "moltemplate",
    "source_file": "cooke_deserno_lipid.lt",
    "status": "converted",
-   "notes": "cosine-squared attraction not evaluated yet.",
+   "notes": "Cooke-Deserno lipid: cosine/squared pairs (w_c 1.5), FENE and harmonic bonds, evaluated by CAPS; reduced units",
    "file": "cooke-deserno-moltemplate.json",
    "counts": {
     "atom_types": 2,
@@ -1208,6 +1208,10 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/cooke-deserno-moltemplate.typing.json",
+    "evidence": "CAPS rules (bench/typing/make_cg_rules.py): bead names H, T, TE"
    }
   },
   {

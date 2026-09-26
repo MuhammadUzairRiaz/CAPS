@@ -1,0 +1,31 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Cooke–Deserno lipid model",
+ "coarse_grained": true,
+ "unknown_types": "untyped",
+ "description": "CAPS rules for the Cooke-Deserno lipid (bench/typing/make_cg_rules.py): beads typed by name (H, T, TE)",
+ "rules": [
+  {
+   "type": "H",
+   "smarts": "*",
+   "atom_name": "H",
+   "priority": 0,
+   "description": "a bead named H"
+  },
+  {
+   "type": "T",
+   "smarts": "*",
+   "atom_name": "T",
+   "priority": 0,
+   "description": "a bead named T"
+  },
+  {
+   "type": "TE",
+   "smarts": "*",
+   "atom_name": "TE",
+   "priority": 0,
+   "description": "a bead named TE"
+  }
+ ]
+}
