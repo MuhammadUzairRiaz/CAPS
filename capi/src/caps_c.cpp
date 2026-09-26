@@ -554,6 +554,7 @@ void field_run(caps_doc* d) {
   F.types = F.typing.types;
   // a Materials Studio .car carries its force-field types (IFF's inorganic ones, ClayFF's …): where they are types of this
   // force field they are kept, the rules type the rest
+  int car_kept = 0;
   if (!uff && d->traj.topology.source_format == "car" && F.file_types.size() == n) {
     std::set<std::string> ffnames;
     for (const auto& t : def.types) ffnames.insert(t.name);
@@ -562,6 +563,7 @@ void field_run(caps_doc* d) {
         F.types[i] = F.file_types[i].second;
         if (i < F.typing.why.size()) F.typing.why[i] = "type from the .car file";
         if (i < F.typing.types.size()) F.typing.types[i] = F.types[i];
+        ++car_kept;
       }
   }
   for (const auto& [i, t] : F.overrides)
@@ -572,6 +574,7 @@ void field_run(caps_doc* d) {
   for (auto& t : F.types)
     if (t.empty() || !known.count(t)) { t.clear(); ++untyped; }
   F.rep = caps::ParamReport{};
+  if (car_kept) F.rep.notes.push_back(std::to_string(car_kept) + " atoms keep the force-field types of the .car file; the typing rules gave the others");
   F.ff.reset();
   if (!untyped && uff) {
     caps::UffOptions uo;
