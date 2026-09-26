@@ -325,7 +325,10 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap);
    GROMACS (STEM.top, STEM.itp, STEM.gro, STEM.mdp; STEM_em.mdp when a run minimises first) written into dir from the
    complete Field assignment (refused otherwise). options {lammps: true, gromacs: true, stem: "system", run: "check" |
    "none" | "minimize" | "nvt" | "npt", minimize_first, temperature (K), pressure (atm), dt (fs), steps, thermo_every,
-   dump_every, seed, head_lines: N (each file's first N lines in the reply), preview: true (written to a scratch folder,
+   dump_every, seed, lammps_styles: "native" (the force field's own styles: OPLS dihedrals, PPPM …) | "exact" (CAPS's
+   energy exactly), hybrid: bool (every style as hybrid), coulomb: "auto" | "pppm" | "ewald" | "dsf" | "cut",
+   kspace_accuracy (1e-4), cutoff (Å, 0 the force field's), tail: bool, head_lines: N (each file's first N lines in the
+   reply), preview: true (written to a scratch folder,
    read and removed)} → {ok, error, folder, files: [{name, what, bytes, head[]}], notes[], checks: {atoms, typed, types,
    type_pairs, bonds, angles, dihedrals, impropers, missing, net_charge, charges, forcefield, density}}. */
 int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);

@@ -17,8 +17,57 @@
         </StackPanel>
       </DockPanel>
     </Border>
+    <!-- checks and writing -->
+    <Border DockPanel.Dock="Right" Width="340" Margin="12,0,0,0" Classes="card" CornerRadius="10" Padding="16,14">
+      <DockPanel>
+        <!-- where the files go: its own block under a rule, never under the checks -->
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
+          <Border Height="1" Background="{DynamicResource LineB}" Margin="0,0,0,4" />
+          <TextBlock Text="OTHER EXPORTS" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+            <Button Classes="small" HorizontalAlignment="Stretch" Click="OnExportData" ToolTip.Tip="LAMMPS data or dump, GROMACS .gro, PDB, XYZ or mol2 of this frame">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="file" Size="14" VerticalAlignment="Center" /><TextBlock Text="Structure file" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Grid.Column="1" Classes="small" HorizontalAlignment="Stretch" Click="OnExportFigure" ToolTip.Tip="A figure of the view: PNG, SVG or PDF">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Figure / movie" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </Grid>
+          <Border Height="1" Background="{DynamicResource LineB}" Margin="0,4" />
+          <TextBlock Text="WRITE TO" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />
+          <TextBlock Text="Folder" Classes="muted" FontSize="11.5" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <TextBox Text="{Binding EngineFolder}" Watermark="Folder" Classes="mono" FontSize="12" ToolTip.Tip="{Binding EngineFolder}" />
+            <Button Grid.Column="1" Classes="small" Content="Choose…" Click="OnPickFolder" ToolTip.Tip="Choose the folder" />
+          </Grid>
+          <TextBlock Text="File name" Classes="muted" FontSize="11.5" />
+          <TextBox Text="{Binding EngineStem}" Watermark="system" Classes="mono" FontSize="12" ToolTip.Tip="STEM.data, STEM.in, STEM.top …" />
+          <Button Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" IsEnabled="{Binding EngineCanWrite}" Click="OnWrite" Margin="0,4,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding EngineWriteLabel}" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <TextBlock Text="{Binding EngineSummary}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+        </StackPanel>
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="CHECKED BEFORE WRITING" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" Margin="0,0,0,6" />
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding EngineChecks}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:Row">
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4">
+                  <v:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" VerticalAlignment="Top" />
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Key}" FontSize="12.5" />
+                    <TextBlock Text="{Binding Value}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" MaxWidth="260" />
+                  </StackPanel>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </DockPanel>
+    </Border>
     <!-- the engines -->
-    <Grid DockPanel.Dock="Top" ColumnDefinitions="1.15*,1.15*,0.9*" ColumnSpacing="12" Margin="0,0,0,12">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,12">
       <Border Classes="card" CornerRadius="10">
         <StackPanel>
           <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -42,9 +91,27 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <Border Height="1" Background="{DynamicResource LineB}" />
+            <TextBlock Text="STYLES" FontSize="10.5" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineStyleModes}" SelectedIndex="{Binding EngineStyle}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="The force field's own LAMMPS styles (OPLS dihedrals, PPPM …) for production runs, or the styles that give exactly CAPS's energy" />
+              <CheckBox Grid.Column="1" Content="Hybrid" IsChecked="{Binding EngineHybrid}" VerticalAlignment="Center"
+                        ToolTip.Tip="Write every style as 'hybrid STYLE', each coefficient line naming its style (moltemplate's layout)" />
+            </Grid>
+            <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="8" IsVisible="{Binding EngineNative}">
+              <StackPanel Spacing="4"><TextBlock Text="Electrostatics" Classes="muted" FontSize="11.5" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineCoulombModes}" SelectedIndex="{Binding EngineCoulomb}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="Automatic: PPPM when the force field is long-range and the cell periodic" /></StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Cut-off (Å, 0 = own)" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineCutoffD}" Minimum="0" Maximum="50" Increment="1" FormatString="0.#" ToolTip.Tip="0: the force field's own cut-off" /></StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4" IsVisible="{Binding EngineKspaceVisible}"><TextBlock Text="k-space accuracy" Classes="muted" FontSize="11.5" />
+                <TextBox Text="{Binding EngineKspaceText}" Classes="mono" FontSize="12" /></StackPanel>
+            </Grid>
+            <Border Height="1" Background="{DynamicResource LineB}" />
+            <TextBlock Text="RUN" FontSize="10.5" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
               <StackPanel Spacing="4">
-                <TextBlock Text="Run" Classes="muted" FontSize="11.5" />
+                <TextBlock Text="Protocol" Classes="muted" FontSize="11.5" />
                 <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineRuns}" SelectedIndex="{Binding EngineRun}" HorizontalAlignment="Stretch" />
               </StackPanel>
               <CheckBox Grid.Column="1" Content="Minimise first" IsChecked="{Binding EngineMinimiseFirst}" IsVisible="{Binding EngineIsMd}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
@@ -93,55 +160,7 @@
           </StackPanel>
         </StackPanel>
       </Border>
-      <Border Grid.Column="2" Classes="card" CornerRadius="10">
-        <StackPanel>
-          <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-            <TextBlock Text="Structures and figures" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel Margin="16,12" Spacing="8">
-            <Button Classes="small" HorizontalAlignment="Stretch" Click="OnExportData" ToolTip.Tip="LAMMPS data or dump, GROMACS .gro, PDB, XYZ or mol2 of this frame">
-              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="file" Size="14" VerticalAlignment="Center" /><TextBlock Text="Structure file (PDB, mol2, XYZ …)" VerticalAlignment="Center" /></StackPanel>
-            </Button>
-            <Button Classes="small" HorizontalAlignment="Stretch" Click="OnExportFigure" ToolTip.Tip="A figure of the view: PNG, SVG or PDF">
-              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Figure or movie" VerticalAlignment="Center" /></StackPanel>
-            </Button>
-            <TextBlock Text="Any step can be exported: the files hold the structure as it is now." Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
-          </StackPanel>
-        </StackPanel>
-      </Border>
     </Grid>
-    <!-- checks and writing -->
-    <Border DockPanel.Dock="Right" Width="330" Margin="12,0,0,0" Classes="card" CornerRadius="10" Padding="14">
-      <DockPanel>
-        <StackPanel DockPanel.Dock="Bottom" Spacing="8">
-          <Grid ColumnDefinitions="*,Auto,90" ColumnSpacing="6">
-            <TextBox Text="{Binding EngineFolder}" Watermark="Folder" Classes="mono" FontSize="12" />
-            <Button Grid.Column="1" Classes="small" Content="…" Click="OnPickFolder" ToolTip.Tip="Choose the folder" />
-            <TextBox Grid.Column="2" Text="{Binding EngineStem}" Watermark="stem" Classes="mono" FontSize="12" ToolTip.Tip="File stem: STEM.data, STEM.in, STEM.top …" />
-          </Grid>
-          <Button Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" IsEnabled="{Binding EngineCanWrite}" Click="OnWrite">
-            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding EngineWriteLabel}" VerticalAlignment="Center" /></StackPanel>
-          </Button>
-          <TextBlock Text="{Binding EngineSummary}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
-        </StackPanel>
-        <StackPanel Spacing="8">
-          <TextBlock Text="CHECKED BEFORE WRITING" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />
-          <ItemsControl ItemsSource="{Binding EngineChecks}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:Row">
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4">
-                  <v:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" VerticalAlignment="Top" />
-                  <StackPanel Spacing="1">
-                    <TextBlock Text="{Binding Key}" FontSize="12.5" />
-                    <TextBlock Text="{Binding Value}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" MaxWidth="260" />
-                  </StackPanel>
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </DockPanel>
-    </Border>
     <!-- preview of each file -->
     <Border Classes="card" CornerRadius="10">
       <DockPanel>

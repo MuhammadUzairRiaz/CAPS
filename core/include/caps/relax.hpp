@@ -102,7 +102,22 @@ double max_force(const std::vector<double>& f);
 // style and force-field parts ("structure" when nothing is left).
 std::string export_title(std::string title, const std::string& ffname);
 
-void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true);
+// How the LAMMPS files are written. exact (native false): the styles that give exactly CAPS's energy (damped shifted
+// force or Ewald as CAPS computes, torsions as Fourier sums): for checking CAPS against LAMMPS. native: the force
+// field's own styles, as its file declares them, for production runs: its dihedral style (OPLS K1–K4, CHARMM), long-range
+// Coulomb by PPPM, its own cut-off. hybrid: every style written as "hybrid <sub-style>", each coefficient line naming its
+// sub-style (moltemplate's layout); styles that need more than one sub-style are hybrid whatever this says.
+struct LammpsStyle {
+  bool native = false;
+  bool hybrid = false;
+  std::string coulomb = "auto";   // native: auto (PPPM when the force field is long-range and the cell periodic), pppm, ewald, dsf, cut
+  double cutoff = 0;              // native: Å; 0 the force field's
+  double kspace_accuracy = 1e-4;  // native: relative accuracy of PPPM / Ewald
+  int tail = -1;                  // native: 1 pair_modify tail yes, 0 no, −1 as the energy options say
+};
+
+void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true,
+                          const LammpsStyle& style = {});
 // The same, or the structure alone (atoms, types, charges, bonds; no coefficients) when LAMMPS has no form for the force
 // field (Martini 3's reaction field and virtual sites): returns why, or "" when the coefficients were written.
 std::string write_lammps_data_or_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path);
@@ -125,7 +140,8 @@ struct LammpsRun {
 // the run section. held_mol > 0: that molecule is held in place (group, zero velocity, fix setforce), as CAPS holds an
 // interface's surface.
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
-                        int64_t held_mol = 0, bool pair_coeffs = false, const LammpsRun& run = {});
+                        int64_t held_mol = 0, bool pair_coeffs = false, const LammpsRun& run = {}, const LammpsStyle& style = {},
+                        std::vector<std::string>* notes = nullptr);
 
 // GROMACS files with the force field: STEM.top (every term in the GROMACS function with the same energy; every
 // Lennard-Jones type pair and 1-4 pair written out, CAPS's exclusions listed), STEM.gro (nm, 8 decimals; molecules made
