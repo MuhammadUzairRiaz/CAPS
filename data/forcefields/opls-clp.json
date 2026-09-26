@@ -25,7 +25,7 @@
   0,
   0.5
  ],
- "cutoff": 10,
+ "cutoff": 12,
  "improper_order": "center3_sorted",
  "equivalence": "replace",
  "improper_matched_order": true,
