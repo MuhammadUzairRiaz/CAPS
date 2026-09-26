@@ -9,6 +9,8 @@
 #include <random>
 #include <set>
 
+#include "caps/analysis.hpp"
+#include "caps/crystal.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
@@ -844,4 +846,55 @@ TEST(FieldForms, DreidingHydrogenBond) {
   }
   // the hydrogen on the far side (D–H···A below 90°): no term
   EXPECT_NEAR(energy({0, 0, 0, -0.97, 0, 0, 2.9, 0, 0}), 0, 1e-12);
+}
+
+// IFF's silica and metals by rule (bench/ff/convert_frc.py IFF_EXTRA): orthosilicic acid's Si is sc4, its silanol O oc24
+// and H hoy, with the charges IFF states (+1.1, -0.675, +0.4) from bond increments; quartz is sc4 / oc23 (+1.1 / -0.55);
+// copper's perceived Cu-Cu bonds are dropped (IFF's metals are Lennard-Jones atoms). Both IFF variants.
+TEST(FFDef, IffSilicaAndMetalsByRule) {
+  for (const char* id : {"iff-pcff", "iff-cvff"}) {
+    const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + id + ".json");
+    System s = build_molecule("O[Si](O)(O)O").system;
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << id;
+    ParamReport rep;
+    const ForceField ff = parameterize(s, def, tr.types, "types", &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << id;
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      const int z = s.atoms[i].element;
+      EXPECT_EQ(tr.types[i], z == 14 ? "sc4" : z == 8 ? "oc24" : "hoy") << id;
+      EXPECT_NEAR(ff.charge[i], z == 14 ? 1.1 : z == 8 ? -0.675 : 0.4, 1e-12) << id;
+    }
+    System q = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/alpha-quartz.cif");
+    q.bonds = perceive_bonds(q);
+    ASSERT_EQ(q.bonds.size(), 2 * q.atoms.size() / 3 * 2) << id;   // four Si-O per Si
+    const TypingResult tq = assign_types(q, def);
+    const ForceField fq = parameterize(q, def, tq.types, "types", nullptr, false);
+    for (size_t i = 0; i < q.atoms.size(); ++i) {
+      EXPECT_EQ(tq.types[i], q.atoms[i].element == 14 ? "sc4" : "oc23") << id;
+      EXPECT_NEAR(fq.charge[i], q.atoms[i].element == 14 ? 1.1 : -0.55, 1e-12) << id;
+    }
+    System cu = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/copper.cif");
+    cu.bonds = perceive_bonds(cu);
+    std::string ch = "types";
+    const std::string note = prepare_for_forcefield(cu, def, ch);
+    EXPECT_TRUE(cu.bonds.empty()) << id;
+    EXPECT_NE(note.find("does not bond Cu"), std::string::npos) << note;
+    EXPECT_EQ(assign_types(cu, def).types[0], "Cu") << id;
+  }
+}
+
+// moltemplate's DREIDING gives N_R_b1_d2 (an amide N on a ring) torsions to C_2_b1 only: acetanilide's (an aramid's)
+// carbonyl C takes the variant that has them, and every term is found.
+TEST(FFDef, BondOrderVariantsKeepTorsions) {
+  System s = build_molecule("CC(=O)Nc1ccccc1").system;
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/dreiding-moltemplate.json");
+  std::string ch = "gasteiger";
+  if (needs_prepare(def)) prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  EXPECT_EQ(tr.types[1], "C_2_b1");
+  ParamReport rep;
+  (void)parameterize(s, def, tr.types, ch, &rep, false);
+  EXPECT_TRUE(rep.missing.empty()) << (rep.missing.empty() ? "" : rep.missing.front());
 }

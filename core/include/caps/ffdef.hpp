@@ -177,6 +177,9 @@ struct FFDef {
   // Ionic solids (typing file "bonds": "defined"): the builder's neighbour bonds are not bonds of the model; after
   // typing, only bonds the force field has a term for stay (core-shell springs, O-H of water and hydroxyls)
   bool keep_defined_bonds = false;
+  // Types that are never bonded (typing file "unbonded_types"): IFF's metals, 12-6 Lennard-Jones atoms; the neighbour
+  // bonds perception gives them are dropped after typing (prepare_for_forcefield)
+  std::vector<std::string> unbonded_types;
   // Type pairs that never interact (typing file "exclude_pairs": [["C", "C"]]; LAMMPS neigh_modify exclude type): a
   // graphene sheet held in place, as the source excludes its carbons from each other
   std::vector<std::pair<std::string, std::string>> exclude_type_pairs;
@@ -257,7 +260,7 @@ struct ParamReport {
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
 // Does the force field change the structure before typing (united atom, shells, ionic bonds)?
 inline bool needs_prepare(const FFDef& ff) {
-  return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty() ||
+  return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || !ff.unbonded_types.empty() || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty() ||
          !ff.martini_protein.empty();
 }
 

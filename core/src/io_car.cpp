@@ -104,11 +104,13 @@ System read_car(const std::string& path) {
   std::set<std::pair<uint32_t, uint32_t>> seen;
   size_t m = 0;
   int conn_col = 12, n_missing = 0;
-  bool started = false;
+  bool started = false, topology = true;   // atoms only in #topology (#atomset's @list lines also start "RES:NAME")
   while (std::getline(md, line)) {
     if (!line.empty() && line.back() == '\r') line.pop_back();
     const auto t = split(line);
     if (t.empty() || line[0] == '!') continue;
+    if (t[0][0] == '#' && t[0] != "#") topology = t[0] == "#topology";
+    if (!topology) continue;
     if (t[0] == "@column" && t.size() >= 3 && t[2] == "connections") conn_col = std::atoi(t[1].c_str());
     if (t[0] == "@molecule") {
       if (started) ++m;
