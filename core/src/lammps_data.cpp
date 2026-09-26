@@ -330,9 +330,11 @@ std::string sw_path(const std::string& data_path) {
 }
 
 // Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
-std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path) {
+std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path,
+                                    const std::set<std::pair<int, int>>& ff_excl = {}) {
   std::vector<std::string> r;
   if (L.pair_hybrid && e.coulomb) r.push_back(pme(e, L) ? "pair_coeff * * coul/long" : "pair_coeff * * coul/dsf");
+  for (const auto& [a, b] : ff_excl) r.push_back("neigh_modify exclude type " + std::to_string(a + 1) + " " + std::to_string(b + 1));
   if (!L.sw_types.empty()) {
     std::string l = "pair_coeff * * sw " + sw_path(data_path);
     for (const auto& t : L.sw_types) l += " " + t;
@@ -493,7 +495,7 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
     out << "\n# pair coefficients: every type pair, " << ff.mixing << " mixing applied by CAPS (nothing left to LAMMPS's mixing)\n";
     for (const auto& l : pair_lines(L, ff)) out << "pair_coeff      " << l << "\n";
   }
-  for (const auto& l : after_read(L, e, data_path)) out << aligned(l) << "\n";
+  for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (held_mol > 0)

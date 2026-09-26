@@ -260,6 +260,8 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
       eps_[a * nt + b] = pt.eps;
       s6_[a * nt + b] = std::pow(pt.sigma, 6);
     }
+  skip_type_.assign(nt * nt, 0);
+  for (const auto& [a, b] : ff.excluded_type_pairs) skip_type_[size_t(a) * nt + b] = skip_type_[size_t(b) * nt + a] = 1;
   form_.assign(nt * nt, 0);
   pa_.assign(nt * nt, 0.0);
   pb_.assign(nt * nt, 0.0);
@@ -599,6 +601,8 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
     bins[index(bin[i][0], bin[i][1], bin[i][2])].push_back(static_cast<uint32_t>(i));
   }
   const double rcs2 = rcs * rcs;
+  const size_t ntypes = ff_.lj.size();
+  const bool skipping = !ff_.excluded_type_pairs.empty();
   const int nth = pool_->size();
   std::vector<std::vector<uint32_t>> vi(nth), vj(nth);
   std::vector<std::vector<double>> vs(nth);
@@ -636,6 +640,7 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
               if (dot(d, d) >= rcs2) continue;
               // 1-2, 1-3 and 1-4 partners are excluded at their bonded (nearest) image only; further images interact
               if (j != i && dot(d, d) < excl_r2_ && std::binary_search(ex.begin(), ex.end(), j)) continue;
+              if (skipping && skip_type_[size_t(ff_.type_index[i]) * ntypes + ff_.type_index[j]]) continue;
               PI.push_back(static_cast<uint32_t>(i));
               PJ.push_back(j);
               // d = x_j − x_i + shift with the actual (possibly unwrapped) positions

@@ -52,9 +52,11 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)"
+  "converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)",
+  "no bonded terms (the source's sheet has no bonds): CAPS drops a built sheet's bonds and its carbons do not interact with each other (the source's neigh_modify exclude group Cgraphene Cgraphene); hold the sheet in place"
  ],
  "version": "",
  "status": "converted",
- "validation": ""
+ "validation": "",
+ "typing": "../typing/graphene-moltemplate.typing.json"
 }

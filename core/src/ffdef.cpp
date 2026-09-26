@@ -128,6 +128,9 @@ void load_typing(FFDef& ff, const std::string& path) {
   }
   ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
   ff.coarse_grained = ff.coarse_grained || (j.has("coarse_grained") && j["coarse_grained"].boolean());
+  if (j.has("exclude_pairs"))
+    for (const auto& pr : j["exclude_pairs"].items())
+      if (pr.items().size() == 2) ff.exclude_type_pairs.push_back({pr.items()[0].str(), pr.items()[1].str()});
   if (j.has("beads"))
     for (const auto& b : j["beads"].items()) {
       BeadRule r;
@@ -1224,6 +1227,11 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           }
         }
   }
+  for (const auto& [ea, eb] : def.exclude_type_pairs)
+    for (size_t a = 0; a < ff.type_names.size(); ++a)
+      for (size_t b = a; b < ff.type_names.size(); ++b)
+        if ((glob_match(ea, ff.type_names[a]) && glob_match(eb, ff.type_names[b])) || (glob_match(eb, ff.type_names[a]) && glob_match(ea, ff.type_names[b])))
+          ff.excluded_type_pairs.insert({int(a), int(b)});
   if (def.pair_style.find("sdk") != std::string::npos || def.pair_style.find("spica") != std::string::npos ||
       def.pair_style.find("cosine/squared") != std::string::npos) {
     // no mixing rule: two types with the same non-bonded name share their self pair; another pair with no entry is missing
