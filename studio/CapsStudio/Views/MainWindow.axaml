@@ -1780,6 +1780,7 @@
                       </Button>
                       <Button Classes="small" Margin="0,0,6,6" Content="PDB…" Click="OnSavePdb" />
                       <Button Classes="small" Margin="0,0,6,6" Content="XYZ…" Click="OnSaveXyz" />
+                      <Button Classes="small" Margin="0,0,6,6" Content="Materials Studio…" Click="OnSaveCar" ToolTip.Tip=".car with its .mdf: the force-field types and charges, bonds across the cell" />
                       <Button Classes="small" Margin="0,0,6,6" Content="Trajectory…" Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" />
                     </WrapPanel>
                     <ItemsControl ItemsSource="{Binding SummaryRows}">
