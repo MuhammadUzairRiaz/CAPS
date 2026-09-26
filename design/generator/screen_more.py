@@ -165,7 +165,7 @@ def react():
             f'<span style="font-size: 11px; color: {DIM}">POST</span><span style="font-family: {MONO}; font-size: 12px">R′HN:4–[CH2:1][CH:3](O:2H)R</span><span style="font-size: 11.5px; color: {MUTED}">β-hydroxy amine</span></div></div>')
     left = (f'<div style="width: 560px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 0 18px 22px">'
             + card("Reaction templates", col(tmpl, row(chip("atom-mapped · 4 reacting atoms"), chip("retype after bond"), chip("second step: secondary amine"), gap=6),
-                                             row(btn("Edit template", ic="sliders", small=True), btn("Import template", ic="download", small=True), gap=6), gap=10), chip("2 templates"))
+                                             row(btn("Edit template", ic="sliders", small=True), btn("Import template file", ic="download", small=True), gap=6), gap=10), chip("2 templates"))
             + card("Protocol", col(radio_list([("REACTER-style during MD", "Gissinger, Jensen &amp; Wise, <i>Polymer</i> 128, 211 (2017)", True),
                                                ("Polymatic cycle", "Abbott, Hart &amp; Colina, <i>Theor. Chem. Acc.</i> 132, 1334 (2013)", False)]),
                                    row(field("Capture distance", "4.5", "Å"), field("Probability", "0.5"), field("Relax per step", "5", "ps"), gap=8),
