@@ -419,6 +419,14 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
     L.pair_hybrid = st.hybrid;
     return;
   }
+  // SDK / SPICA: every pair lj/sdk, with its long-range Coulomb as the one style lj/sdk/coul/long (as its own inputs write
+  // it); without charges lj/sdk alone. Other Coulomb forms stay an overlay.
+  if (L.sdk && L.pair_styles.size() == 1 && L.sw_types.empty() && (L.coul == "long" || L.coul == "none")) {
+    L.pair_combined = L.coul == "long" ? "lj/sdk/coul/long" : "lj/sdk";
+    L.pair_styles = {L.pair_combined};
+    L.pair_hybrid = st.hybrid || L.hbond;
+    return;
+  }
   // one style for all pairs: lj/cut or lj/class2 with its Coulomb (lj/class2 has no DSF form)
   if (ff.pair_func.empty() && L.sw_types.empty() && !L.gromacs && !(L.pair_base == "lj/class2" && L.coul == "dsf")) {
     L.pair_combined = L.pair_base + (L.coul == "none" ? "" : "/coul/" + L.coul);
@@ -490,6 +498,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     } else {
       r.push_back("pair_style " + std::string(L.pair_hybrid ? "hybrid " : "") + L.pair_combined + args);
       if (L.charmm) {}   // switched to zero at the cut-off: no tail, no shift
+      else if (L.sdk) { if (!e.tail) r.push_back("pair_modify shift yes"); }   // lj/sdk has no tail correction (nor has CAPS for it)
       else if (e.tail && L.periodic) r.push_back("pair_modify tail yes");
       else if (!e.tail) r.push_back("pair_modify shift yes");
     }
@@ -566,7 +575,10 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     for (auto& c : nm) c = char(std::tolower(static_cast<unsigned char>(c)));
     r.push_back(nm + "_style " + k->style_line());
   }
-  std::snprintf(b, sizeof b, "special_bonds lj 0 %d %.10g coul 0 %d %.10g", ff.keep13 ? 1 : 0, ff.lj14, ff.keep13 ? 1 : 0, ff.coul14);
+  if (L.native)   // the force field's own form of the line (MARTINI: lj 0.0 1.0 1.0)
+    std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
+  else
+    std::snprintf(b, sizeof b, "special_bonds lj 0 %d %.10g coul 0 %d %.10g", ff.keep13 ? 1 : 0, ff.lj14, ff.keep13 ? 1 : 0, ff.coul14);
   r.push_back(b);
   if (e.coulomb && pme(e, L)) {
     // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
@@ -589,7 +601,7 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
       const int f = it != ff.pair_func.end() ? it->second.form : 0;
       if (f >= kPairSdk96 && f <= kPairSdk125) {
         static const char* nm[] = {"lj9_6", "lj12_4", "lj12_6", "lj12_5"};
-        style = "lj/sdk";
+        style = L.pair_combined.empty() ? "lj/sdk" : L.pair_combined;   // lj/sdk/coul/long when that is the one style
         coef = std::string(" ") + nm[f - kPairSdk96] + num({it->second.a, it->second.b});
       } else if (f == kPairGromacs) {
         coef = num({it->second.a, it->second.b});
