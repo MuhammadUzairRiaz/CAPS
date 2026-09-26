@@ -1032,6 +1032,7 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
     if (ends(".pdb")) caps::write_pdb(d->frame, p);
     else if (ends(".xyz")) caps::write_xyz(d->frame, p);
     else if (ends(".mol2")) caps::write_mol2(d->frame, p);
+    else if (ends(".car")) caps::write_car(d->frame, p);   // Materials Studio, with its .mdf; the force-field types as names
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
       if (d->field->complete) caps::write_lammps_data_or_structure(d->frame, *d->field->ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
@@ -3349,6 +3350,10 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
   if (fmt == "pdb") caps::write_pdb(s, path);
   else if (fmt == "xyz") caps::write_xyz(s, path);
   else if (fmt == "mol2") caps::write_mol2(s, path);
+  else if (fmt == "car") {
+    caps::write_car(s, path);
+    notes.push_back("the .mdf with the bonds beside it; atom types as the force field (or the file) names them");
+  }
   else if (fmt == "gro") caps::write_gro(s, path);
   else if (fmt == "lammps-dump") {
     caps::write_lammps_dump(d->traj, path);

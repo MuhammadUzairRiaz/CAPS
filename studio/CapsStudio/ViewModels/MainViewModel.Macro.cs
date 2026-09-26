@@ -66,7 +66,7 @@ public sealed partial class MainViewModel
     {
         // absolute paths: the script runs from the macros folder
         path = Path.GetFullPath(path);
-        Record(topology != null ? $"doc = caps.open({PyStr(path)}, {PyStr(Path.GetFullPath(topology))})" : $"doc = caps.open({PyStr(path)})");
+        Record(!string.IsNullOrEmpty(topology) ? $"doc = caps.open({PyStr(path)}, {PyStr(Path.GetFullPath(topology))})" : $"doc = caps.open({PyStr(path)})");
     }
     public void RecordEdit(string json) => Record($"doc.edit({PyJsonArgs(json)})");
 

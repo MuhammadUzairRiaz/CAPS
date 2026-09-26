@@ -392,6 +392,9 @@ public partial class MainWindow : Window
             Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("pdb", "PDB") });
         _vm.AddCommand(new PaletteCommand { Title = "Save as mol2…", Id = "document.save mol2", Icon = "save", Section = "File",
             Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("mol2", "Tripos mol2") });
+        _vm.AddCommand(new PaletteCommand { Title = "Save as Materials Studio (.car / .mdf)…", Id = "document.save car", Icon = "save", Section = "File",
+            Keywords = "materials studio biovia discover car mdf msi2lmp interface",
+            Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("car", "Materials Studio .car (with its .mdf)") });
         _vm.AddCommand(new PaletteCommand { Title = "Save the trajectory (LAMMPS dump)…", Id = "trajectory.save", Icon = "save", Section = "File",
             Enabled = () => _vm.HasDocument && _vm.HasFrames && _vm.Idle, Run = () => _ = SaveTrajectoryAsync() });
         _vm.AddCommand(new PaletteCommand { Title = "Export figure (PNG)…", Id = "export.png", Icon = "download", Section = "File", Keywords = "image picture render",
@@ -569,6 +572,7 @@ public partial class MainWindow : Window
     private async void OnSaveData(object? s, RoutedEventArgs e) => await SaveAs("data", "LAMMPS data");
     private async void OnSavePdb(object? s, RoutedEventArgs e) => await SaveAs("pdb", "PDB");
     private async void OnSaveXyz(object? s, RoutedEventArgs e) => await SaveAs("xyz", "Extended XYZ");
+    private async void OnSaveCar(object? s, RoutedEventArgs e) => await SaveAs("car", "Materials Studio .car (with its .mdf)");
 
     /// <summary>Save dialog for the open document (pages call this).</summary>
     public Task SaveAsAsync(string ext, string label) => SaveAs(ext, label);
