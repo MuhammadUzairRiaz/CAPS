@@ -67,6 +67,8 @@ public partial class MainWindow : Window
         _vm.LoadSettings();
         _vm.HookJobs();
         _vm.LoadRecent();
+        _vm.LoadLastSession();
+        Closing += (_, _) => _vm.SaveSession();   // the project tree comes back from Start next time
         AddWindowCommands();
         _vm.InitProtocol();
         _vm.LoadReactionSet();
