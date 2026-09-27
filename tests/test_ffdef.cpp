@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <random>
 #include <set>
@@ -897,4 +898,57 @@ TEST(FFDef, BondOrderVariantsKeepTorsions) {
   ParamReport rep;
   (void)parameterize(s, def, tr.types, ch, &rep, false);
   EXPECT_TRUE(rep.missing.empty()) << (rep.missing.empty() ? "" : rep.missing.front());
+}
+
+// AMBER frcmod: harmonic terms as written, multi-term dihedrals (negative periodicity), IDIVF, impropers, R*/2 → σ
+TEST(ParamImport, Frcmod) {
+  const auto path = (std::filesystem::temp_directory_path() / "caps_test.frcmod").string();
+  {
+    std::ofstream o(path);
+    o << "remark\nMASS\nzz 12.01         0.878               my carbon\n\nBOND\nzz-c3  303.1   1.5350\n\nANGL\nc3-zz-hc   46.37   110.05\n\n"
+         "DIHE\nX -zz-c3-X    9    1.400       0.000           3.000\nhc-zz-c3-hc   1    0.150       0.000          -3.000\nhc-zz-c3-hc   1    0.250     180.000           1.000\n\n"
+         "IMPR\nX -X -zz-o    1.1      180.0         2.0\n\nNONB\n  zz          1.9080  0.1094\n\n";
+  }
+  const caps::FFDef d = caps::import_frcmod(path);
+  ASSERT_EQ(d.types.size(), 1u);
+  EXPECT_EQ(d.types[0].element, 6);
+  ASSERT_EQ(d.bonds.size(), 1u);
+  EXPECT_EQ(d.bonds[0].match, (std::vector<std::string>{"zz", "c3"}));
+  EXPECT_DOUBLE_EQ(d.bonds[0].params[0], 303.1);
+  EXPECT_DOUBLE_EQ(d.angles[0].params[1], 110.05);
+  ASSERT_EQ(d.dihedrals.size(), 2u);
+  EXPECT_EQ(d.dihedrals[0].match[0], "*");
+  EXPECT_NEAR(d.dihedrals[0].params[1], 1.4 / 9, 1e-12);                        // PK / IDIVF
+  EXPECT_EQ(d.dihedrals[1].params, (std::vector<double>{2, 0.15, 3, 0, 0.25, 1, 180}));   // two terms in one rule
+  EXPECT_EQ(d.impropers[0].params, (std::vector<double>{1.1, -1, 2}));
+  EXPECT_NEAR(d.pairs[0].params[1], 3.39966950842, 1e-9);                        // 2 R*/2 / 2^(1/6)
+  EXPECT_DOUBLE_EQ(d.pairs[0].params[0], 0.1094);
+}
+
+// GROMACS [ *types ]: GROMACS's own AMBER ff14SB gives back the AMBER numbers (kJ/mol, nm → kcal/mol, Å; ½k → K)
+TEST(ParamImport, GromacsAmberTypes) {
+  const std::string dir = "/opt/homebrew/share/gromacs/top/amber14sb.ff/";
+  if (!std::filesystem::exists(dir + "ffbonded.itp")) GTEST_SKIP() << "GROMACS's amber14sb.ff not installed";
+  const caps::FFDef b = caps::import_gromacs_params(dir + "ffbonded.itp");
+  auto find = [](const std::vector<caps::FFRule>& v, std::vector<std::string> m) {
+    for (const auto& r : v) if (r.match == m) return &r;
+    return static_cast<const caps::FFRule*>(nullptr);
+  };
+  const auto* ctct = find(b.bonds, {"CT", "CT"});
+  ASSERT_NE(ctct, nullptr);
+  EXPECT_NEAR(ctct->params[0], 310.0, 0.05);
+  EXPECT_NEAR(ctct->params[1], 1.526, 1e-9);
+  const auto* hch = find(b.angles, {"HC", "CT", "HC"});
+  ASSERT_NE(hch, nullptr);
+  EXPECT_NEAR(hch->params[0], 35.0, 0.01);
+  EXPECT_NEAR(hch->params[1], 109.5, 1e-9);
+  const auto* xctctx = find(b.dihedrals, {"*", "CT", "CT", "*"});
+  ASSERT_NE(xctctx, nullptr);
+  EXPECT_NEAR(xctctx->params[1], 1.4 / 9, 1e-4);
+  EXPECT_EQ(xctctx->params[2], 3);
+  const caps::FFDef nb = caps::import_gromacs_params(dir + "ffnonbonded.itp");
+  const auto* ct = find(nb.pairs, {"CT"});
+  ASSERT_NE(ct, nullptr);
+  EXPECT_NEAR(ct->params[1], 3.39967, 1e-4);
+  EXPECT_NEAR(ct->params[0], 0.1094, 1e-4);
 }
