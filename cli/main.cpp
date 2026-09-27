@@ -436,6 +436,19 @@ void save_structure(const System& s, const ForceField& ff, const EnergyOptions& 
 
 }  // namespace
 
+// A structure written by its file extension: .pdb .xyz .mol2 .car .gro .sdf/.mol .cif, else a LAMMPS data file.
+static void write_structure_file(const System& s, const std::string& out) {
+  auto ends = [&](const char* e) { const std::string x(e); return out.size() > x.size() && out.compare(out.size() - x.size(), x.size(), x) == 0; };
+  if (ends(".pdb")) write_pdb(s, out);
+  else if (ends(".xyz")) write_xyz(s, out);
+  else if (ends(".mol2")) write_mol2(s, out);
+  else if (ends(".car")) write_car(s, out);
+  else if (ends(".gro")) write_gro(s, out);
+  else if (ends(".sdf") || ends(".mol")) write_sdf(s, out);
+  else if (ends(".cif")) write_cif(s, out);
+  else write_lammps_data(s, out);
+}
+
 int main(int argc, char** argv) {
   if (argc < 3) return usage();
   const std::string cmd = argv[1];
@@ -728,12 +741,7 @@ int main(int argc, char** argv) {
       for (size_t k = 0; k < spec.sites.size(); ++k) std::printf("  %-6s %-2s multiplicity %d\n", spec.sites[k].label.c_str(), element(spec.sites[k].element).symbol, rep.multiplicity[k]);
       for (const auto& n : rep.notes) std::printf("note: %s\n", n.c_str());
       const std::string out = o["-o"];
-      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
-      if (ends(".pdb")) write_pdb(s, out);
-      else if (ends(".xyz")) write_xyz(s, out);
-      else if (ends("mol2")) write_mol2(s, out);
-      else if (ends(".car")) write_car(s, out);
-      else write_lammps_data(s, out);
+      write_structure_file(s, out);
       std::printf("%zu atoms · %zu bonds · %.4f g/cm³ · wrote %s\n", s.atoms.size(), s.bonds.size(), s.density(), out.c_str());
       return 0;
     } catch (const std::exception& e) {
