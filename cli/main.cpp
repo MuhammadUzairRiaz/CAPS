@@ -139,7 +139,7 @@ int usage() {
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
-               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
+               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
                "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
@@ -194,7 +194,7 @@ const std::set<std::string>& known_options() {
     "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
     "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl",
     "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
-    "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--lammps-input", "--lammps-run",
+    "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
     "--martini", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
@@ -1663,6 +1663,11 @@ int main(int argc, char** argv) {
             write_lammps_input(s, f, eo, rel, o["--lammps-input"], o.count("--fix-mol") ? std::stoll(o["--fix-mol"]) : 0, true, run, ls, &lnotes);
             for (const auto& n : lnotes) std::printf("lammps: %s\n", n.c_str());
             std::printf("wrote %s (%s)\n", o["--lammps-input"].c_str(), ls.native ? (ls.hybrid ? "the force field's own styles, hybrid" : "the force field's own styles") : "CAPS-exact styles");
+            if (o.count("--moltemplate")) {   // the same as a moltemplate system
+              std::ofstream lt(o["--moltemplate"]);
+              lt << lammps_to_moltemplate(o["-o"], o["--lammps-input"], f.name);
+              std::printf("wrote %s (moltemplate)\n", o["--moltemplate"].c_str());
+            }
           }
         }
         if (o.count("--gromacs")) {   // STEM.top, STEM.gro and STEM.mdp with the same force field
