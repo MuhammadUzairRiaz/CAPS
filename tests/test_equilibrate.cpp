@@ -151,12 +151,35 @@ TEST(Equilibrate, ConvergenceChecks) {
     o.tol_density = 0.2;
     o.tol_energy = 1.0;
     o.tol_rg = 0.5;
+    o.tol_internal = 0.5;
     EquilibrateReport r;
     equilibrate(s, o, &r);
     EXPECT_TRUE(r.converged);
     EXPECT_EQ(r.blocks, 3);
-    ASSERT_EQ(r.checks.size(), 3u);
+    ASSERT_EQ(r.checks.size(), 4u);
+    EXPECT_EQ(r.checks[3].quantity, "internal distances");
     for (const auto& c : r.checks) EXPECT_TRUE(c.ok) << c.quantity;
+  }
+  {
+    // the same, but the internal distances must match a target far from the chains' own: never converged
+    System s = small_relaxed();
+    EquilibrateOptions o;
+    o.stages = parse_protocol("npt 2 ps T 300 P 1 atm");
+    o.until_converged = true;
+    o.block_ps = 1;
+    o.min_blocks = 3;
+    o.max_blocks = 4;
+    o.tol_density = 0.2;
+    o.tol_energy = 1.0;
+    o.tol_rg = 0.5;
+    o.tol_internal = 0.05;
+    o.internal_target.assign(50, 25.0);   // C_n = 25 everywhere: no real chain
+    EquilibrateReport r;
+    equilibrate(s, o, &r);
+    EXPECT_FALSE(r.converged);
+    ASSERT_EQ(r.checks.size(), 4u);
+    EXPECT_FALSE(r.checks[3].ok);
+    EXPECT_GT(r.checks[3].change, 0.5);
   }
   {
     System s = small_relaxed();

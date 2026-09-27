@@ -1755,6 +1755,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     if (o->tol_density > 0) e.tol_density = o->tol_density;
     if (o->tol_energy > 0) e.tol_energy = o->tol_energy;
     if (o->tol_rg > 0) e.tol_rg = o->tol_rg;
+    if (o->tol_internal > 0) e.tol_internal = o->tol_internal;
     if (progress)
       e.progress = [&](int st, int n, const std::string& label, const caps::ThermoRow& r) {
         caps_thermo t{r.step, r.time_ps, r.temperature, r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density};
