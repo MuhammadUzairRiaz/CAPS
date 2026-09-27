@@ -75,6 +75,12 @@ CASES = [
     # K[1 − cos 2φ]: smooth. A harmonic improper with χ0 = 0 on a class II centre-second quadruple sits at χ ≈ 180°,
     # a cusp of K(χ − χ0)² where the two programs take different one-sided slopes.)
     ("COMPASS polystyrene + class I overlay (hybrid in every kind)", ("compass-ps",), "compass-published-moltemplate", "types", "keys"),
+    # OPLS-AA with its numbered types and their own charges (the 2024 and BOSS 2008 files), L-OPLS for long alkyl chains:
+    # rubber-relevant groups — trisubstituted alkene (isoprene), styrene, nitrile, ester, chloroalkene, disulfide
+    ("OPLS-AA 2024: isoprene, ethylbenzene, nitrile, ester, disulfide", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCC#N.CCOC(=O)C.CSSC"), "oplsaa2024-moltemplate", "types", "rules"),
+    ("OPLS-AA 2024 polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "oplsaa2024-moltemplate", "types", "rules"),
+    ("OPLS-AA 2008 (BOSS 4.8): isoprene, chloroethene, NBR nitrile (R2CH-CN); nudged off linear", ("smiles-nudged", "CC=C(C)CC.CC=CCl.CCC(C#N)CC"), "oplsaa2008-moltemplate", "types", "rules"),
+    ("L-OPLS 2024: hexadecane", ("smiles", "CCCCCCCCCCCCCCCC"), "loplsaa2024-moltemplate", "types", "rules"),
     ("CGenFF methane template (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", "rules"),
     # CHARMM in its own styles: lj/charmmfsw (force switch 10-12 Å, pairs in the switching shell), the 1-4 pairs with
     # their own ε14 / σ14 through dihedral charmmfsw weights (a phenyl ring's para pairs reached by two torsions once)
@@ -252,9 +258,25 @@ def structure(src, base):
         out = os.path.join(work, base + ".pdb")
         subprocess.run([CAPS, "peptide", src[1], "-o", out] + list(src[2:]), capture_output=True, check=True)
         return out, None
-    if kind == "smiles":   # built and cleaned up by CAPS with UFF
+    if kind in ("smiles", "smiles-nudged"):   # built and cleaned up by CAPS with UFF
         m = os.path.join(work, base + ".mol2")
         subprocess.run([CAPS, "build", src[1], "--ff", "uff", "-o", m], capture_output=True, check=True)
+        if kind == "smiles-nudged":
+            # every atom moved by up to 0.03 Å (fixed seed): a planar centre is no longer within 0.06° of flat, where
+            # LAMMPS's improper harmonic clamps 1/sin χ (SMALL = 0.001) and its forces there are not the analytic ones
+            import random
+            rng = random.Random(7)
+            lines, atoms = open(m).read().split("\n"), False
+            for i, l in enumerate(lines):
+                if l.startswith("@<TRIPOS>"):
+                    atoms = l.strip() == "@<TRIPOS>ATOM"
+                    continue
+                w = l.split()
+                if atoms and len(w) >= 6:
+                    for c in (2, 3, 4):
+                        w[c] = "%.5f" % (float(w[c]) + rng.uniform(-0.03, 0.03))
+                    lines[i] = " ".join(w)
+            open(m, "w").write("\n".join(lines))
         return m, None
     if kind == "compass-ps":   # polystyrene melt with COMPASS types (from the GAFF2 typing: c3 → c4, ca → c3a, H → h1)
         ps = os.path.join(ROOT, "samples", "ps_melt.data")
@@ -305,6 +327,40 @@ def structure(src, base):
             f.write(key_of.get(t, t) + "\n")
     return pdb, tfile
 
+
+
+def harmonic_improper_clamped(d):
+    """Atoms of improper-harmonic quadruplets inside LAMMPS's clamp window (see improper_harmonic.cpp)."""
+    inp = open(os.path.join(d, "case.in")).read()
+    if not re.search(r"improper_style\s+harmonic", inp):
+        return set()
+    lines = open(os.path.join(d, "case.data")).read().split("\n")
+    def section(name):
+        i = next((k for k, l in enumerate(lines) if l.strip().split("#")[0].strip() == name), None)
+        out = []
+        if i is None:
+            return out
+        i += 2
+        while i < len(lines) and lines[i].strip():
+            out.append(lines[i].split())
+            i += 1
+        return out
+    pos = {int(w[0]): tuple(float(x) for x in w[4:7]) for w in section("Atoms")}
+    sub = lambda a, b: tuple(a[k] - b[k] for k in range(3))
+    dot = lambda a, b: sum(a[k] * b[k] for k in range(3))
+    out = set()
+    for w in section("Impropers"):
+        i1, i2, i3, i4 = (int(x) for x in w[2:6])
+        v1, v2, v3 = sub(pos[i1], pos[i2]), sub(pos[i3], pos[i2]), sub(pos[i4], pos[i3])
+        r1, r2, r3 = (math.sqrt(dot(v, v)) for v in (v1, v2, v3))
+        c0 = dot(v1, v3) / (r1 * r3)
+        c1 = dot(v1, v2) / (r1 * r2)
+        c2 = -dot(v3, v2) / (r3 * r2)
+        s1, s2 = 1 - c1 * c1, 1 - c2 * c2
+        c = max(-1.0, min(1.0, (c1 * c2 + c0) / math.sqrt(max(s1, 0.001) * max(s2, 0.001))))
+        if s1 < 0.001 or s2 < 0.001 or math.sqrt(1 - c * c) < 0.001:
+            out |= {i1, i2, i3, i4}
+    return out
 
 
 def lammps_hbond_offset(d):
@@ -469,7 +525,11 @@ for case in CASES:
     lw = [le[f"c_pv[{k}]"] * le["Volume"] / 68568.415 for k in range(1, 7)]
     scale = max(1.0, max(abs(w) for w in cw))
     dw = max(abs(a - b) for a, b in zip(cw, lw)) / scale
-    df = max(math.dist(cf[i], lf[i]) for i in cf)
+    # improper harmonic: LAMMPS clamps 1 − cos² of both bond angles and sin χ at 0.001 (improper_harmonic.cpp SMALL), so
+    # at a (near-)flat centre its forces are not the derivative of its energy: those atoms are left out of the force
+    # comparison (their energy is still compared) and counted
+    clamped = harmonic_improper_clamped(d)
+    df = max((math.dist(cf[i], lf[i]) for i in cf if i not in clamped), default=0.0)
     styles = " · ".join(l.strip() for l in open(os.path.join(d, "case.in")) if re.match(r"(bond|angle|dihedral|improper|pair)_style", l))
     if NATIVE:   # Coulomb by another method: the other terms only
         de = max(abs(ce[k] - lm[k]) / max(1.0, abs(ce[k])) for k in ce if k != "coulomb")
@@ -481,7 +541,8 @@ for case in CASES:
         continue
     ok = de < 1e-5 and df < 1e-3 and dw < 1e-5
     fails += 0 if ok else 1
-    rows.append((label, f"{'ok' if ok else 'DIFFERS'} · energy terms {de:.1e} (relative) · forces {df:.1e} kcal/mol/Å · virial tensor {dw:.1e} (relative)", styles,
+    rows.append((label, f"{'ok' if ok else 'DIFFERS'} · energy terms {de:.1e} (relative) · forces {df:.1e} kcal/mol/Å · virial tensor {dw:.1e} (relative)" +
+                 (f" · {len(clamped)} atoms of flat harmonic impropers left out of the forces (LAMMPS clamps there)" if clamped else ""), styles,
                  " ".join(f"{k} {ce[k]:.4f}/{lm[k]:.4f}" for k in ce if abs(ce[k]) > 0 or abs(lm[k]) > 0)))
 
 for label, res, styles, terms in rows:
