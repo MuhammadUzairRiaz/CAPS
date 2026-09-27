@@ -86,13 +86,21 @@ public sealed partial class MainViewModel
     public void OpenFigure()
     {
         if (_doc == null) { Status = "Open or build a structure first, then export it as a figure"; return; }
+        if (_module == 18) PrepareFigure();
+        else SetModule(18);   // prepares it
+    }
+
+    /// <summary>The figure page's size, title and three background previews, whichever way the page was reached.</summary>
+    private void PrepareFigure()
+    {
+        if (_doc == null) return;
         var p = FigurePresets[Math.Clamp(_settings.FigurePreset, 0, FigurePresets.Length - 1)];
         _figWidthMm = p.Mm > 0 ? (decimal)p.Mm : 325;
         _figDpi = p.Dpi > 0 ? p.Dpi : 150;
         if (_figTitleText.Length == 0) _figTitleText = FigureDefaultTitle();
         foreach (var t in FigureTiles) t.Selected = t.Background == FigBackground;
+        Raise(nameof(FigBackground)); Raise(nameof(FigBgDark)); Raise(nameof(FigBgWhite)); Raise(nameof(FigBgTransparent));   // the saved choice
         RaiseFigure();
-        SetModule(18);
         RefreshFigure();
     }
 

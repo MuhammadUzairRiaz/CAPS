@@ -741,6 +741,23 @@ internal static class Screenshot
                 var v = kv[1].Split(':').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
                 (w.ViewModel.Analyze.TensRateD, w.ViewModel.Analyze.TensMaxD, w.ViewModel.Analyze.TensTD) = (v[0], v[1], v[2]);
             }
+            if (kv[0] == "sweep")   // sweep=DIR: every page in turn: time to show, a picture, visible text that reads as an error
+            {
+                Directory.CreateDirectory(kv[1]);
+                var bad = new System.Text.RegularExpressions.Regex(@"(?i)\b(error|exception|could not|cannot|failed|not found|nan|null reference|object reference|unhandled)\b");
+                for (var m = 0; m <= 68; m++)
+                {
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    try { w.ViewModel.SetModule(m); } catch (Exception ex) { Console.WriteLine($"page {m}: SetModule threw {ex.GetType().Name}: {ex.Message}"); continue; }
+                    Dispatcher.UIThread.RunJobs();
+                    var ms = sw.Elapsed.TotalMilliseconds;
+                    for (var i = 0; i < 12; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                    var texts = w.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().Where(t => t.IsEffectivelyVisible && !string.IsNullOrEmpty(t.Text))
+                                 .Select(t => t.Text!.Replace('\n', ' ')).Where(t => bad.IsMatch(t)).Distinct().Take(6).ToArray();
+                    Console.WriteLine($"page {m,2} {w.ViewModel.Module,3} {ms,7:0} ms  {(texts.Length > 0 ? "TEXT: " + string.Join(" | ", texts.Select(t => t.Length > 140 ? t[..140] : t)) : "")}");
+                    w.CaptureRenderedFrame()?.Save(Path.Combine(kv[1], $"page{m:00}.png"));
+                }
+            }
             if (kv[0] == "wrap") w.ViewModel.Wrap = kv[1] == "1";
             if (kv[0] == "tab") w.SelectAnalysisTab(int.Parse(kv[1]));
             if (kv[0] == "view") w.ViewModel.ViewBackground = int.Parse(kv[1]);
