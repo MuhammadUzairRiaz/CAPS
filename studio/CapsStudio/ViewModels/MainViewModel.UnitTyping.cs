@@ -51,6 +51,8 @@ public sealed record UtType(string Name, string Element, string Charge, string D
 public sealed partial class MainViewModel
 {
     public bool IsUnitTyping => _module == 69;
+    private string _utSequence = "";
+    private List<string> _utUnitNames = [];
     public ObservableCollection<UtAtom> UtAtoms { get; } = new();
     public ObservableCollection<UtType> UtTypes { get; } = new();
     private readonly List<UtType> _utAllTypes = new();
@@ -110,6 +112,9 @@ public sealed partial class MainViewModel
             spec["dp"] = seq.Length;
         }
         var names = units!.Select(u => (string?)u?["name"] ?? "").ToList();
+        // residue k (1-based, in chain order) is unit _utSequence[k − 1]
+        _utSequence = n == 1 ? new string('A', 3) : (string?)spec["pattern"] ?? "";
+        _utUnitNames = names;
         UtSource = n == 1 ? $"{names[0]} · head, body and tail" : $"{string.Join(" / ", names)} · {spec["dp"]} units covering every junction ({(string?)spec["pattern"]})";
         try
         {
@@ -182,6 +187,9 @@ public sealed partial class MainViewModel
             var res = (long?)p["residue"] ?? 1;
             var kind = res <= 1 ? 0 : res >= lastRes ? 2 : 1;
             var unit = (string?)p["resname"] ?? "";
+            var r0 = (int)res - 1;
+            if (r0 >= 0 && r0 < _utSequence.Length && _utSequence[r0] - 'A' is var u && u >= 0 && u < _utUnitNames.Count)
+                unit = _utUnitNames.Count > 1 ? $"{_utSequence[r0]} {_utUnitNames[u]}" : _utUnitNames[u];
             var nb = p["neighbours"] is JsonArray na ? string.Join(" ", na.Select(x => (string?)x?["element"] + ((int?)x?["index"] + 1))) : "";
             var el = (string?)p["element"] ?? "";
             UtAtoms.Add(new UtAtom
