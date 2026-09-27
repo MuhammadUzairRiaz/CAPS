@@ -371,12 +371,71 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Kept for scripts and tests: the property calculations are the Analyze module.</summary>
     public bool AnalyzeProperties { get => _module == 1; set { if (value) SetModule(1); else if (_module == 1) SetModule(8); } }
     public bool IsProperties => _module == 1;
-    public void SetModule(int m)
+    /// <summary>Each page's own set-up (its Open… method), run when the page is reached any other way: the rail, the
+    /// command palette, a Back button — so no page shows empty because it was not opened through its button.</summary>
+    private static readonly Dictionary<int, Action<MainViewModel>> PageOpeners = new()
+    {
+        [14] = v => v.OpenSurface(),
+        [15] = v => v.OpenNano(),
+        [16] = v => v.OpenBlend(),
+        [17] = v => v.OpenChecks(),
+        [18] = v => v.OpenFigure(),
+        [19] = v => v.OpenRender(),
+        [20] = v => v.OpenVisualize(),
+        [21] = v => v.OpenExport(),
+        [22] = v => v.OpenBatch(),
+        [23] = v => v.OpenCompare(),
+        [24] = v => v.OpenColourBy(),
+        [25] = v => v.OpenViewports(),
+        [26] = v => v.OpenBundle(),
+        [28] = v => v.OpenSavePipeline(),
+        [29] = v => v.OpenCrystal(),
+        [30] = v => v.OpenBio(),
+        [31] = v => v.OpenSolvation(),
+        [32] = v => v.OpenTrajectory(),
+        [33] = v => v.OpenTorsion(),
+        [34] = v => v.OpenSplit(),
+        [36] = v => v.OpenMacro(),
+        [37] = v => v.OpenProvenance(),
+        [38] = v => v.OpenMechanics(),
+        [39] = v => v.OpenScattering(),
+        [40] = v => v.OpenFreeVolume(),
+        [43] = v => v.OpenSweep(),
+        [44] = v => v.OpenCg(),
+        [46] = v => v.OpenColourVision(),
+        [47] = v => v.OpenGlass(),
+        [48] = v => v.OpenInterface(),
+        [49] = v => v.OpenDiffusion(),
+        [50] = v => v.OpenCharges(),
+        [51] = v => v.OpenPeriodic(),
+        [52] = v => v.OpenOrientation(),
+        [53] = v => v.OpenRecipes(),
+        [54] = v => v.OpenComposer(),
+        [55] = v => v.OpenChainStats(),
+        [56] = v => v.OpenDensityCalc(),
+        [57] = v => v.OpenSurfaceArea(),
+        [58] = v => v.OpenCellEditor(),
+        [59] = v => v.OpenPolydispersity(),
+        [60] = v => v.OpenCopolymer(),
+        [61] = v => v.OpenSolventScreen(),
+        [62] = v => v.OpenTacticityStats(),
+        [63] = v => v.OpenBlendPhase(),
+        [64] = v => v.OpenElectrostatics(),
+        [65] = v => v.OpenDisplayStyles(),
+        [66] = v => _ = v.OpenAddHydrogens(),
+        [67] = v => v.OpenModelResolution(),
+        [68] = v => v.OpenExportCenter(),
+    };
+
+    public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
     {
         var was = _module;
         if (!Set(ref _module, m, nameof(Module))) return;
+        if (!caller.StartsWith("Open", StringComparison.Ordinal) && PageOpeners.TryGetValue(m, out var open))
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_module == m) open(this); });
         if (was is 20 or 21 && m != 20) SuspendPipeline();
         if (m == 20) ApplyPipeline();
+        if (m == 19 || was == 19) RenderRequested?.Invoke();   // the view takes (or gives back) the render background
         if (was == 40 && _doc != null) { try { _doc.Voids("{\"clear\":true}"); _fvVoids = 0; Raise(nameof(FvHasVoids)); RenderRequested?.Invoke(); } catch { } }
         Raise(nameof(IsGrow));
         Raise(nameof(IsAnalyze));
@@ -2034,7 +2093,7 @@ public sealed partial class MainViewModel : ObservableObject
         var o = new CapsRenderOpts
         {
         Width = w, Height = h, Supersample = supersample,
-        Background = _viewBackground,
+        Background = _module == 19 ? _renderBg : _viewBackground,   // Render: the preview on the image's own background
         ColourBy = _colour, Style = _style,
         Outlines = _outlines ? 1 : 0, ShowCell = _showCell ? 1 : 0,
         Highlight0 = _selection.Count > 0 ? _selection[0] : -1,
