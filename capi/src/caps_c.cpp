@@ -518,6 +518,11 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     r.colours = st.colour;
     for (size_t i = 0; i < r.colours.size(); ++i) if (st.selected[i]) r.colours[i] = 0xE5484D;   // selected particles in red
     r.segments = st.segments;
+    // the pipeline's Radius (Å) and Transparency (0 … 1) properties, drawn
+    if (auto it = st.props.find("Radius"); it != st.props.end() && it->second.size() == st.system.atoms.size())
+      r.radius.assign(it->second.begin(), it->second.end());
+    if (auto it = st.props.find("Transparency"); it != st.props.end() && it->second.size() == st.system.atoms.size())
+      r.transparency.assign(it->second.begin(), it->second.end());
     if (r.colour_by == caps::ColourBy::Property) caps::property_values(st, "DistanceToCOM", r.property);
   } else if (r.colour_by == caps::ColourBy::Property && r.property.size() != d->frame.atoms.size()) {
     r.property = d->dcom;
