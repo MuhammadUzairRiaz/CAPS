@@ -210,6 +210,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   bool polymer = false;
   int chains = 1;
   std::shared_ptr<const ForceField> ff;
+  std::string filled_from;   // type.fill_from: the force fields gaps were filled from
+  int filled_terms = 0;
   std::string ffname = "built-in default (GAFF for C and H, UFF otherwise)";
   if (!o.sha256.empty())
     res.manifest.steps.push_back(step("recipe.run", "recipe " + res.name, {{"recipe", res.name}, {"sha256", o.sha256}, {"stages", std::to_string(n)}}, "", {}));
@@ -266,6 +268,35 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (!std::filesystem::exists(path)) throw RecipeError(2, "no force field '" + name + "' (a library id, uff, default or a path)");
         FFDef def = load_forcefield(path);
         if (!typing.empty()) load_typing(def, typing);
+        // fill_from: another force field's bond, angle and dihedral rules, used only where this one has none (as Field's
+        // "Fill gaps from…": OPLS-AA 2024 has no CM–CT–CT–CM torsion, OPLS 2005 does); what was borrowed is reported
+        filled_from.clear();
+        if (T.has("fill_from")) {
+          std::vector<std::string> donors;
+          if (T["fill_from"].is_array()) for (const auto& x : T["fill_from"].items()) donors.push_back(x.str());
+          else donors.push_back(T["fill_from"].str());
+          FFDef fill;
+          for (const auto& dn : donors) {
+            std::string dp = path_of(dn);
+            if (!std::filesystem::exists(dp) && !o.forcefield_dir.empty()) {
+              std::ifstream cf(std::filesystem::path(o.forcefield_dir) / "catalogue.json");
+              if (cf) {
+                const Json cat = Json::parse(std::string((std::istreambuf_iterator<char>(cf)), std::istreambuf_iterator<char>()));
+                for (const auto& e : cat["forcefields"].items())
+                  if (e.text("id") == dn && e.has("file") && e["file"].is_string()) dp = (std::filesystem::path(o.forcefield_dir) / e["file"].str()).string();
+              }
+            }
+            if (!std::filesystem::exists(dp)) throw RecipeError(2, "type.fill_from: no force field '" + dn + "'");
+            const FFDef donor = load_forcefield(dp);
+            GapFill g = gap_fill_rules(def, donor, donor.name);
+            if (!g.kept) throw RecipeError(2, "type.fill_from: none of " + donor.name + "'s rules can apply to " + def.name + " (no shared atom classes)");
+            fill.bonds.insert(fill.bonds.end(), g.rules.bonds.begin(), g.rules.bonds.end());
+            fill.angles.insert(fill.angles.end(), g.rules.angles.begin(), g.rules.angles.end());
+            fill.dihedrals.insert(fill.dihedrals.end(), g.rules.dihedrals.begin(), g.rules.dihedrals.end());
+            filled_from += (filled_from.empty() ? "" : ", ") + donor.name;
+          }
+          prepend_fill(def, fill);
+        }
         for (const auto& [id, rules_path] : family) {   // newest first; the first whose types all exist in this force field
           if (!typing.empty()) break;
           try {
@@ -309,6 +340,10 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (!ff) ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
         if (!rep.missing.empty()) throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")");
         ffname = def.name + (ua.empty() ? "" : " (united-atom: hydrogens on carbon folded into their carbons)");
+        filled_terms = 0;
+        for (const auto& [rule, count] : rep.used)
+          if (rule.find("filled:") != std::string::npos) filled_terms += count;
+        if (!filled_from.empty()) ffname += " (gaps filled from " + filled_from + ": " + std::to_string(filled_terms) + " terms)";
       }
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
     const std::string ch = charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : "from the force field";
@@ -319,6 +354,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     if (charges == "gasteiger") c.push_back("gasteiger1980");
     KeyValues kv = {{"force field", ffname}, {"charges", ch}};
     if (!borrowed.empty()) kv.push_back({"typing rules", borrowed});
+    if (!filled_from.empty()) kv.push_back({"gaps filled from", filled_from + " (" + std::to_string(filled_terms) + " terms where " + ffname.substr(0, ffname.find(" (gaps")) + " has none)"});
     bool found = false;
     for (auto& ps : res.manifest.steps)
       if (ps.engine == "field.assign") { ps = step("field.assign", ffname + " · charges " + ch, kv, "", c); found = true; }

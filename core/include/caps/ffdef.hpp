@@ -228,6 +228,20 @@ void save_forcefield(const FFDef& ff, const std::string& path);
 // Appends the overlay's types and rules after the base's (so they win), replacing types of the same name.
 void merge_forcefield(FFDef& base, const FFDef& overlay);
 
+// Gap filling: the bond, angle and dihedral rules of `donor` usable where `base` defines nothing (impropers are never
+// borrowed — an absent improper is not a gap). For a moltemplate OPLS-AA base (numbered types 136_bCT_aCT_dCT_iCT) the
+// donor's class names become the base's patterns; a rule on a class the base lacks is dropped (nothing is guessed).
+// Rules are renamed "filled: …" and commented with `source`. Prepend them with prepend_fill: the last matching rule
+// wins, so the base's own rules still decide wherever they apply.
+struct GapFill {
+  FFDef rules;
+  size_t kept = 0, dropped = 0;
+};
+GapFill gap_fill_rules(const FFDef& base, const FFDef& donor, const std::string& source);
+void prepend_fill(FFDef& def, const FFDef& fill);
+// A moltemplate OPLS-AA type name, 136_bCT_aCT_dCT_iCT: its bond, angle, dihedral and improper classes
+bool opls_classes(const std::string& name, std::array<std::string, 4>& classes);
+
 // moltemplate force-field files (.lt): "In Init" styles and special_bonds, "Data Masses", "In Charges",
 // pair / bond / angle / dihedral / improper coefficients, the "By Type" rules and their symmetry plugins, "replace"
 // aliases, and the type descriptions from the comments.

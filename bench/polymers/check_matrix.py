@@ -16,7 +16,7 @@ bead models), library entries without a parameter file (aliases, templates) and 
 for yet are listed and skipped with the reason. Failures print CAPS's own reason (untyped atoms, missing
 parameters) so each can be traced to a typing rule or a parameter the library lacks.
 
-usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--jobs 8] [--keep DIR] [--json OUT]
+usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--fill-from FF] [--jobs 8] [--keep DIR] [--json OUT]
 """
 import json, math, os, re, subprocess, sys, tempfile
 from concurrent.futures import ProcessPoolExecutor
@@ -28,6 +28,7 @@ LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
 GMX = os.environ.get("GMX", "/opt/homebrew/bin/gmx")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 ONLY_FF, ONLY_P = arg("--ff", ""), arg("--polymer", "")
+FILL = arg("--fill-from", "")   # another force field's rules where the tested one has none (type.fill_from)
 JOBS = int(arg("--jobs", "8"))
 WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_matrix_")
 
@@ -72,7 +73,7 @@ def recipe(pid, spec, ff, export="lammps", chains=3):
         lines.append(f"    sequence: {spec['sequence']}")
         if "weights" in spec:
             lines.append("    weights: [" + ", ".join(str(w) for w in spec["weights"]) + "]")
-    lines += ["    dp: 10", f"    chains: {chains}", f"type: {{ forcefield: {ff}, charges: auto }}", "grow: { density: 0.3, seed: 7 }",
+    lines += ["    dp: 10", f"    chains: {chains}", f"type: {{ forcefield: {ff}, charges: auto{', fill_from: ' + FILL if FILL else ''} }}", "grow: { density: 0.3, seed: 7 }",
               "relax: { method: lbfgs, fmax: 1.0 }", f"export: [{export}]"]
     return "\n".join(lines) + "\n"
 
