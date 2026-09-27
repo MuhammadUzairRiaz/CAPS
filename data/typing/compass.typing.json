@@ -49,9 +49,9 @@
   },
   {
    "type": "c4o",
-   "smarts": "[CX4][OX2]",
+   "smarts": "[CX4;$(*[OX2H1]),$(*[OX2][CX3]=O),$(*[OX2][NX3](~O)~O),$(*[OX2]P),$([C;r5][OX2;r5])]",
    "priority": 4,
-   "description": "sp3 C alpha to an oxygen"
+   "description": "sp3 C alpha to a hydroxyl, ester, nitrate or phosphorus O, or in a five-ring ether (an open-chain ether C stays c4)"
   },
   {
    "type": "c41o",
@@ -175,9 +175,9 @@
   },
   {
    "type": "o2z",
-   "smarts": "[OX2]([Si])[Si,Al]",
-   "priority": 3,
-   "description": "O in siloxanes and zeolites"
+   "smarts": "[OX2;$(*([Si])[Si,Al]),$([OX2H1][Si])]",
+   "priority": 4,
+   "description": "O in siloxanes and zeolites, and silanol O"
   },
   {
    "type": "o12",
