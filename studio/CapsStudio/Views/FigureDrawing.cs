@@ -355,6 +355,18 @@ public sealed class TimelineView : Control
                 g.EndFigure(false);
             }
             ctx.DrawGeometry(null, new Pen(Tokens.Brush("SelB"), 1.4), geo);
+            var mean = Vm.SparklineMean();
+            if (mean.Length > 1)
+            {
+                var mg = new StreamGeometry();
+                using (var g = mg.Open())
+                {
+                    g.BeginFigure(new Point(X(mean[0].X), Y(mean[0].Y)), false);
+                    foreach (var p in mean.Skip(1)) g.LineTo(new Point(X(p.X), Y(p.Y)));
+                    g.EndFigure(false);
+                }
+                ctx.DrawGeometry(null, new Pen(Tokens.Brush("OkB"), 2.2), mg);
+            }
         }
         if (Vm.ShowMarkers)
         {

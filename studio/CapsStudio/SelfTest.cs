@@ -908,6 +908,23 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Timeline: the time series of a pipeline over the three frames, with a centred running mean over it
+        {
+            vm.SetModule(20);
+            vm.ClearPipeline();
+            vm.AddStep("coordination");
+            vm.ComputeSeries().GetAwaiter().GetResult();
+            vm.SeriesWindow = 3;
+            var spark = vm.Sparkline();
+            var mean = vm.SparklineMean();
+            var inRange = spark.Length > 0 && mean.All(m => m.Y >= spark.Min(p => p.Y) - 1e-9 && m.Y <= spark.Max(p => p.Y) + 1e-9);
+            Check(vm.HasTimeline && spark.Length == 3 && mean.Length == 3 && inRange && Math.Abs(mean[1].Y - spark.Average(p => p.Y)) < 1e-9,
+                  $"timeline running mean: {spark.Length} frames of {vm.SparkAttribute}, mean {mean.Length}");
+            vm.SeriesWindow = 1;
+            vm.ClearPipeline();
+            vm.SetModule(8);
+        }
+
         // Select by query (SmartSelect): counted while typing, applied on Enter, errors in words, saved queries counted
         {
             vm.QueryOpen = true;

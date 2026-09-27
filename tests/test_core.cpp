@@ -708,10 +708,37 @@ TEST(Pipeline, MsdRecoversDiffusionAndScatter) {
   EXPECT_NEAR(st.attribute("MSD.D_centres_cm2s"), st.attribute("MSD.D_centres") / 2 * 0.1, 1e-15);
   // rigid motion: every atom moves with its chain, so the atom and centre curves agree
   for (const auto& r : st.tables[0].rows) EXPECT_NEAR(r[1], r[2], 1e-6 * std::max(1.0, r[2]));
+  // the same walk with every chain carried along 0.3 Å per frame: the drift swamps the MSD unless removed; the
+  // per-molecule table has one curve per chain
+  Trajectory td = t;
+  for (size_t f = 0; f < td.positions.size(); ++f)
+    for (auto& r : td.positions[f]) r = r + Vec3{0.3 * double(f), 0, 0};
+  const auto sd = run_pipeline(td.frame(0), pipeline_from_json(Json::parse(R"([{"type":"msd"}])")), 0, 0, &td);
+  const auto sr = run_pipeline(td.frame(0), pipeline_from_json(Json::parse(R"([{"type":"msd","remove_drift":true,"per_molecule":true}])")), 0, 0, &td);
+  EXPECT_GT(sd.attribute("MSD.D_centres"), 20 * D);
+  EXPECT_NEAR(sr.attribute("MSD.D_centres"), D * 0.9, 0.35 * D);   // the system's own walk (1/N of it) goes with the drift
+  ASSERT_EQ(sr.tables.size(), 2u);
+  EXPECT_EQ(sr.tables[1].columns.size(), 11u);
   // scatter: a property against itself is perfectly correlated; the table is drawn as points
   const auto sc = run_pipeline(t.frame(0), pipeline_from_json(Json::parse(R"([{"type":"scatter","x":"Position.X","y":"Position.X"}])")));
   EXPECT_NEAR(sc.attribute("Scatter.pearson_r"), 1.0, 1e-9);
   EXPECT_TRUE(sc.tables[0].points);
+}
+
+// Cluster unwrap: the melt's chains, clustered by bonds and unwrapped, have every bond short in the shown positions
+TEST(Pipeline, ClusterUnwrapMakesChainsWhole) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  System w = t.frame(0);
+  for (auto& a : w.atoms) a.pos = w.cell.wrap(a.pos);   // folded into the cell: chains cut at the faces
+  auto longest = [](const System& s) {
+    double m = 0;
+    for (const auto& b : s.bonds) m = std::max(m, norm(s.atoms[b.j].pos - s.atoms[b.i].pos));
+    return m;
+  };
+  ASSERT_GT(longest(w), 5.0);
+  const auto st = run_pipeline(w, pipeline_from_json(Json::parse(R"([{"type":"cluster","mode":"bonds","unwrap":true}])")));
+  EXPECT_LT(longest(st.system), 1.8);
+  EXPECT_EQ(st.tables[0].rows.size(), 10u);
 }
 
 TEST(Bundle, Sha256ZipAndReproduce) {
