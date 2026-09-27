@@ -2092,6 +2092,16 @@ internal static class SelfTest
             var deck = File.Exists(Path.Combine(pkg, "system.in")) ? File.ReadAllText(Path.Combine(pkg, "system.in")) : "";
             Check(deck.Contains("pair_coeff") && deck.Contains("all npt") && File.Exists(Path.Combine(pkg, "system.itp")) && File.Exists(Path.Combine(pkg, "system_em.mdp")),
                   $"export center: wrote {Directory.GetFiles(pkg).Length} files · {vm.Status}");
+            // DL_POLY as well: FIELD, CONFIG, CONTROL in STEM_dlpoly
+            vm.EngineDlpoly = true;
+            vm.RefreshEnginesNow();
+            var dlListed = vm.EngineGromacsFiles.Any(f => f.Name.EndsWith("_dlpoly/FIELD"));
+            vm.WriteEngines().GetAwaiter().GetResult();
+            var field = Path.Combine(pkg, "system_dlpoly", "FIELD");
+            var fieldText = File.Exists(field) ? File.ReadAllText(field) : "";
+            Check(dlListed && fieldText.Contains("units kcal") && fieldText.Contains("nummols") && fieldText.Contains("vdw") && File.Exists(Path.Combine(pkg, "system_dlpoly", "CONFIG")),
+                  $"export center DL_POLY: listed {dlListed}, FIELD {fieldText.Length} bytes");
+            vm.EngineDlpoly = false;
             // incomplete force field: the Export center refuses and says where to go
             vm.Field.Clear().GetAwaiter().GetResult();
             vm.RefreshEnginesNow();

@@ -130,6 +130,12 @@ struct ForceField {
   // the force field's own LAMMPS styles and cut-off, as its file declares them (for exports in its native form; CAPS's
   // evaluator may compute the same terms in another equivalent form, e.g. OPLS torsions as Fourier sums)
   std::string native_pair, native_dihedral, native_improper;
+  // "center2": impropers were matched i j C l and are held (and evaluated) i C j l, as the DL-derived OPLS files write
+  // them for LAMMPS; their DL_POLY files write the same term j i C l (write_dlpoly follows that)
+  std::string improper_written;
+  // DL-derived files: the improper torsions as their DL_POLY files write them (rule and atom order found as those do)
+  std::vector<TorsionTerm> impropers_dlpoly;
+  bool impropers_dlpoly_ok = true, impropers_dlpoly_set = false;
   double native_cutoff = 0;
   std::string native_gromacs_lj;             // "c6c12": GROMACS topology in C6/C12 (GROMOS)
   std::string native_special;               // the special_bonds keyword of the force field ("amber", "dreiding")

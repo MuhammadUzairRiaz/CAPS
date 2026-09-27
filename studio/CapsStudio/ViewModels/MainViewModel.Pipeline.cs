@@ -116,7 +116,9 @@ public sealed partial class MainViewModel
     public bool IsExportCenter => _module == 68;
     public static readonly string[] EngineRuns = ["Check (single point)", "Minimise", "NVT", "NPT"];
     private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt"];
-    private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy, _engMoltemplate;
+    private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy, _engMoltemplate, _engDlpoly;
+    /// <summary>Also DL_POLY 4 input (STEM_dlpoly/FIELD, CONFIG, CONTROL) in the conventions of the DL_POLY force-field tools.</summary>
+    public bool EngineDlpoly { get => _engDlpoly; set { if (Set(ref _engDlpoly, value)) RefreshEngines(); } }
     /// <summary>Also the same system as a moltemplate .lt (with the LAMMPS files; the same energies through moltemplate.sh -overlay-all).</summary>
     public bool EngineMoltemplate { get => _engMoltemplate; set { if (Set(ref _engMoltemplate, value)) RefreshEngines(); } }
     private int _engRun = 3;
@@ -202,7 +204,7 @@ public sealed partial class MainViewModel
 
     private string EngineOptions(bool preview) => new JsonObject
     {
-        ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["moltemplate"] = _engLammps && _engMoltemplate, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
+        ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["moltemplate"] = _engLammps && _engMoltemplate, ["dlpoly"] = _engDlpoly, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
         ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps, ["constraints"] = _engConstraints switch { 1 => "h-bonds", 2 => "all-bonds", _ => "none" },
         ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
         ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace,
@@ -252,6 +254,7 @@ public sealed partial class MainViewModel
         EngineError = "";
         EngineGromacsError = (string?)j["gromacs_error"] ?? "";
         EngineLammpsError = (string?)j["lammps_error"] ?? "";
+        if ((string?)j["dlpoly_error"] is { Length: > 0 } dle) EngineNotes.Add("DL_POLY not written: " + dle);
         long total = 0;
         var names = new List<string>();
         foreach (var f in (JsonArray)j["files"]!)
@@ -260,7 +263,7 @@ public sealed partial class MainViewModel
             var bytes = (long)((double?)f["bytes"] ?? 0);
             total += bytes;
             var ef = new EngineFile(name, (string?)f["what"] ?? "", FileSize(bytes));
-            if (name.EndsWith(".data") || name.EndsWith(".in")) EngineLammpsFiles.Add(ef); else EngineGromacsFiles.Add(ef);
+            if (name.EndsWith(".data") || name.EndsWith(".in") || name.EndsWith(".lt")) EngineLammpsFiles.Add(ef); else EngineGromacsFiles.Add(ef);
             _engHeads[name] = ((JsonArray?)f["head"] ?? new JsonArray()).Select(l => (string?)l ?? "").ToList();
             names.Add(name);
         }
