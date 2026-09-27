@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <ctime>
 #include <fstream>
+#include <cstring>
 #include <map>
 #include <set>
 
@@ -241,6 +242,19 @@ std::string citation_text(const std::string& key) {
         if (e[i] == '{') { ++depth; continue; }
         if (e[i] == '}') { if (--depth == 0) break; continue; }
         if (e[i] == '\\') {   // LaTeX accents: \'e → é and the like, kept simple
+          // letters of their own: \o ø, \O Ø, \ss ß, \aa å (followed by a brace, a space or the end)
+          static const std::pair<const char*, const char*> letters[] = {{"ss", "ß"}, {"aa", "å"}, {"AA", "Å"}, {"o", "ø"}, {"O", "Ø"}, {"l", "ł"}};
+          bool done = false;
+          for (const auto& [cmd, u] : letters) {
+            const size_t k = std::strlen(cmd);
+            if (e.compare(i + 1, k, cmd) == 0 && (i + 1 + k >= e.size() || e[i + 1 + k] == '}' || e[i + 1 + k] == ' ' || e[i + 1 + k] == '{')) {
+              out += u;
+              i += k + (i + 1 + k < e.size() && e[i + 1 + k] == ' ' ? 1 : 0);
+              done = true;
+              break;
+            }
+          }
+          if (done) continue;
           if (i + 2 < e.size()) {
             const char a = e[i + 1], b = e[i + 2] == '{' && i + 3 < e.size() ? e[i + 3] : e[i + 2];
             static const std::map<std::string, std::string> acc = {{"'e", "é"}, {"'a", "á"}, {"'o", "ó"}, {"'i", "í"}, {"`e", "è"}, {"\"a", "ä"}, {"\"o", "ö"}, {"\"u", "ü"}, {"\"U", "Ü"}};

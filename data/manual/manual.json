@@ -1103,7 +1103,7 @@
    "group": "Force fields",
    "title": "OPLS charges from bond increments",
    "summary": "OPLS 2005 gives each atom a charge key (an OPLS number chosen by its chemical environment) and each bonded pair of keys an increment that moves charge from one atom to the other. Summing over the bonds gives charges that balance bond by bond, so every molecule keeps its formal charge. OPLS-AA 2024's fixed per-type charges sometimes do not add up where two groups meet (a substituted ring, a benzylic junction); CAPS then uses OPLS 2005's typing and increments for the charges, and OPLS-AA 2024's types for everything else, and says so.",
-   "equation": "q_i = Σ_{j bonded to i} δ_ij,   δ_ji = −δ_ij,   δ from the OPLS2005 table by the pair's keys (the first entry for a pair)",
+   "equation": "q_i = Σ_j δ_ij over the atoms j bonded to i,   δ_ji = −δ_ij,   δ from the OPLS 2005 table by the pair's keys (its first entry for a pair)",
    "equation_note": "OPLS 2005 as in Banks et al. 2005",
    "symbols": [
     [
