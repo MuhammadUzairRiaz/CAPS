@@ -339,9 +339,10 @@ class Document:
            respa: int = 1, constraints: str = "none") -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
-        rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa)."""
-        o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2}[thermostat], 100.0,
-                    {"none": 0, "crescale": 1, "berendsen": 2}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
+        rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
+        barostat "mtk" runs as LAMMPS's fix nvt / fix npt iso."""
+        o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], 100.0,
+                    {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
                     cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints])
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:

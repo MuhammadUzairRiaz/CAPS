@@ -623,8 +623,15 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           m.steps = int64_t(ps * 1000 / m.dt);
           m.temperature = num(J, "temperature", 300);
           const std::string ens = text(J, "ensemble", "nvt");
-          m.thermostat = ens == "nve" || ens == "nph" ? Thermostat::None : Thermostat::Bussi;
-          m.barostat = ens == "npt" ? Barostat::CRescale : ens == "nph" ? Barostat::Berendsen : Barostat::None;   // NPH: no thermostat, so Berendsen
+          // thermostat: bussi (default) | langevin | nose-hoover; barostat: crescale (default) | berendsen | mtk (with
+          // nose-hoover or NPH). NPH without MTK: Berendsen (no thermostat)
+          const Thermostat th = thermostat_from_string(text(J, "thermostat", "bussi"));
+          m.thermostat = ens == "nve" || ens == "nph" ? Thermostat::None : th;
+          const std::string bs = text(J, "barostat", th == Thermostat::NoseHoover ? "mtk" : ens == "nph" ? "berendsen" : "crescale");
+          m.barostat = ens == "npt" || ens == "nph" ? barostat_from_string(bs) : Barostat::None;
+          if (ens == "nph" && m.barostat == Barostat::CRescale) m.barostat = Barostat::Berendsen;
+          if (m.tau_t = num(J, "tau_t", 100); m.tau_t <= 0) m.tau_t = 100;
+          if (m.tau_p = num(J, "tau_p", 1000); m.tau_p <= 0) m.tau_p = 1000;
           m.pressure = num(J, "pressure", 1.0);
           m.seed = seed_of(J);
           m.new_velocities = true;
@@ -638,15 +645,17 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           std::vector<std::string> c = {"swope1982"};
           if (m.respa > 1) c.push_back("tuckerman1992");
           if (m.thermostat == Thermostat::Bussi) c.push_back("bussi2007");
+          if (m.thermostat == Thermostat::NoseHoover) c.push_back("martyna1992");
           if (m.barostat == Barostat::CRescale) c.push_back("bernetti2020");
           if (m.barostat == Barostat::Berendsen) c.push_back("berendsen1984");
+          if (m.barostat == Barostat::MTK) c.push_back("martyna1994");
           elec_cite(c, energy);
           KeyValues pr = {{"length", g6(ps) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs" +
                                          (m.respa > 1 ? " (r-RESPA: bonded forces every " + g6(m.dt / m.respa) + " fs)" : "")},
                           {"temperature", g6(m.temperature) + " K"},
-                          {"thermostat", m.thermostat == Thermostat::Bussi ? "Bussi velocity rescaling · τ 100 fs" : "none"}};
-          if (m.barostat == Barostat::CRescale) pr.push_back({"barostat", "stochastic cell rescaling · " + g6(m.pressure) + " atm · τ 1000 fs"});
-          if (m.barostat == Barostat::Berendsen) pr.push_back({"barostat", "Berendsen · " + g6(m.pressure) + " atm · τ 1000 fs (no thermostat: NPH)"});
+                          {"thermostat", m.thermostat == Thermostat::None ? std::string("none") : std::string(to_string(m.thermostat)) + " · τ " + g6(m.tau_t) + " fs"}};
+          if (m.barostat != Barostat::None)
+            pr.push_back({"barostat", std::string(to_string(m.barostat)) + " · " + g6(m.pressure) + " atm · τ " + g6(m.tau_p) + " fs" + (m.thermostat == Thermostat::None ? " (no thermostat: NPH)" : "")});
           pr.push_back({"force field", ffname});
           res.manifest.steps.push_back(step("dynamics." + ens, ens == "npt" ? "NPT molecular dynamics" : ens == "nvt" ? "NVT molecular dynamics" : ens == "nph" ? "NPH molecular dynamics" : "NVE molecular dynamics", pr,
                                             seeded(m.seed), c, approx(energy, o.threads)));
@@ -663,6 +672,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           e.md.field = ff;
           e.md.energy = energy;
           e.md.seed = seed_of(J);
+          e.md.thermostat = thermostat_from_string(text(J, "thermostat", "bussi"));
+          if (e.md.thermostat == Thermostat::None) e.md.thermostat = Thermostat::Bussi;
+          e.md.barostat = barostat_from_string(text(J, "barostat", e.md.thermostat == Thermostat::NoseHoover ? "mtk" : "crescale"));
+          if (e.md.barostat == Barostat::None) e.md.barostat = Barostat::CRescale;
+          if (e.md.barostat == Barostat::MTK) e.md.thermostat = Thermostat::NoseHoover;
           e.until_converged = flag(J, "until_converged", false);
           e.progress = [&](int si, int sn, const std::string& label, const ThermoRow&) {
             report(k, st, proto + " · step " + std::to_string(si + 1) + "/" + std::to_string(sn) + " · " + label, "running", sn ? double(si) / sn : 0);
@@ -670,7 +684,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           };
           EquilibrateReport er;
           try { equilibrate(s, e, &er); } catch (const std::exception& ex) { throw RecipeError(4, std::string("equilibrate: ") + ex.what()); }
-          std::vector<std::string> c = {"swope1982", "bussi2007", "bernetti2020"};
+          std::vector<std::string> c = {"swope1982", e.md.thermostat == Thermostat::NoseHoover ? "martyna1992" : e.md.thermostat == Thermostat::Langevin ? "leimkuhler2013" : "bussi2007",
+                                        e.md.barostat == Barostat::MTK ? "martyna1994" : e.md.barostat == Barostat::Berendsen ? "berendsen1984" : "bernetti2020"};
           if (proto == "larsen21") c.insert(c.begin(), "larsen2011");
           elec_cite(c, energy);
           double pmax = 0;

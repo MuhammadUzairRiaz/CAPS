@@ -45,15 +45,19 @@ public sealed partial class MainViewModel
         // coupling: τ in ps, pressure in bar
         if (MdHasThermostat)
         {
-            sb.Append(_mdThermostat == 1 ? "; tcoupl is implied by the sd integrator\n" : "tcoupl                   = V-rescale   ; Bussi\n");
+            sb.Append(_mdThermostat == 1 ? "; tcoupl is implied by the sd integrator\n"
+                    : _mdThermostat == 2 ? "tcoupl                   = Nose-Hoover\nnh-chain-length          = 3           ; as this run\n"
+                    : "tcoupl                   = V-rescale   ; Bussi\n");
             sb.Append(string.Format(inv, "tc-grps                  = System\ntau-t                    = {0:0.####}\nref-t                    = {1:0.##}\n", _mdTauT / 1000, _mdTemp));
         }
         else sb.Append("tcoupl                   = no\n");
         if (MdHasBarostat)
         {
             var berendsen = _mdEnsemble == 3 || _mdBarostat == 1;
+            var mttk = !berendsen && _mdBarostat == 2;
             sb.Append(string.Format(inv, "pcoupl                   = {0}\npcoupltype               = isotropic\ntau-p                    = {1:0.####}\nref-p                    = {2:0.#####}\ncompressibility          = 4.5e-5\n",
-                berendsen ? "Berendsen" : "C-rescale", _mdTauP / 1000, _mdPressure * 1.01325));
+                berendsen ? "Berendsen" : mttk ? "MTTK" : "C-rescale", _mdTauP / 1000, _mdPressure * 1.01325));
+            if (mttk) sb.Append("nstcalcenergy            = 1           ; MTTK needs the energies every step\n");
         }
         else sb.Append("pcoupl                   = no\n");
         sb.Append(string.Format(inv, "gen-vel                  = yes         ; {0}\ngen-temp                 = {1:0.##}\ngen-seed                 = {2}\n",

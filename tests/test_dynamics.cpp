@@ -306,3 +306,57 @@ TEST(Dynamics, BondConstraintsHoldAndConserveEnergy) {
   o.respa = 2;
   EXPECT_THROW(run_dynamics(t, o), std::invalid_argument);
 }
+
+// Nosé–Hoover chains and MTK pressure coupling: the temperature settles at the target, the extended system's energy
+// does not drift (0.5 fs steps), and a high target pressure packs the cell denser than 1 atm does. Step-by-step
+// agreement with LAMMPS's fix nvt / npt iso is checked by scripts/check_lammps.sh.
+TEST(Dynamics, NoseHooverChainsAndMtkBarostat) {
+  {
+    System s = relaxed_cell();
+    DynamicsOptions o;
+    o.thermostat = Thermostat::NoseHoover;
+    o.temperature = 400;
+    o.tau_t = 50;
+    o.steps = 4000;
+    o.thermo_every = 10;
+    o.seed = 11;
+    DynamicsReport r;
+    run_dynamics(s, o, &r);
+    EXPECT_NEAR(mean(r.thermo, 100, &ThermoRow::temperature), 400.0, 20.0);
+  }
+  {
+    System s = relaxed_cell();
+    DynamicsOptions o;
+    o.thermostat = Thermostat::NoseHoover;
+    o.barostat = Barostat::MTK;
+    o.dt = 0.5;
+    o.steps = 2000;
+    o.thermo_every = 20;
+    DynamicsReport r;
+    run_dynamics(s, o, &r);
+    double lo = 1e300, hi = -1e300;
+    for (size_t k = 10; k < r.thermo.size(); ++k) lo = std::min(lo, r.thermo[k].conserved), hi = std::max(hi, r.thermo[k].conserved);
+    EXPECT_LT(hi - lo, 0.02 * mean(r.thermo, 10, &ThermoRow::kinetic));
+  }
+  double rho[2];
+  int k = 0;
+  for (double p0 : {1.0, 20000.0}) {
+    System s = relaxed_cell();
+    DynamicsOptions o;
+    o.thermostat = Thermostat::NoseHoover;
+    o.barostat = Barostat::MTK;
+    o.pressure = p0;
+    o.tau_p = 200;
+    o.steps = 2000;
+    DynamicsReport r;
+    run_dynamics(s, o, &r);
+    rho[k++] = s.density();
+  }
+  EXPECT_GT(rho[1], rho[0] + 0.02);
+  // MTK is isotropic and runs without constraints
+  System s = relaxed_cell();
+  DynamicsOptions bad;
+  bad.barostat = Barostat::MTK;
+  bad.thermostat = Thermostat::Bussi;
+  EXPECT_THROW(run_dynamics(s, bad), std::invalid_argument);
+}

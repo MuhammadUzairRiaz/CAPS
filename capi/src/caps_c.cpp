@@ -1558,9 +1558,9 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     if (o->dt > 0) m.dt = o->dt;
     m.steps = std::max<int64_t>(0, o->steps);
     m.temperature = o->temperature;
-    m.thermostat = static_cast<caps::Thermostat>(std::clamp(o->thermostat, 0, 2));
+    m.thermostat = static_cast<caps::Thermostat>(std::clamp(o->thermostat, 0, 3));
     if (o->tau_t > 0) m.tau_t = o->tau_t;
-    m.barostat = static_cast<caps::Barostat>(std::clamp(o->barostat, 0, 2));
+    m.barostat = static_cast<caps::Barostat>(std::clamp(o->barostat, 0, 3));
     m.pressure = o->pressure;
     if (o->tau_p > 0) m.tau_p = o->tau_p;
     m.new_velocities = o->new_velocities != 0;
@@ -1627,6 +1627,8 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     {
       const bool nvt = m.thermostat != caps::Thermostat::None, npt = nvt && m.barostat != caps::Barostat::None;
       std::vector<std::string> c = {"swope1982"};
+      if (m.thermostat == caps::Thermostat::NoseHoover) c.push_back("martyna1992");
+      if (m.barostat == caps::Barostat::MTK) c.push_back("martyna1994");
       if (m.constraints != caps::ConstraintMode::None) c.push_back("ryckaert1977"), c.push_back("andersen1983");
       if (m.thermostat == caps::Thermostat::Bussi) c.push_back("bussi2007");
       if (npt && m.barostat == caps::Barostat::CRescale) c.push_back("bernetti2020");
@@ -1692,8 +1694,9 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.field = field_for_run(d);
     e.stages = caps::parse_protocol(protocol ? protocol : "");
     if (o->dt > 0) e.md.dt = o->dt;
-    e.md.thermostat = o->thermostat == 2 ? caps::Thermostat::Langevin : caps::Thermostat::Bussi;
-    e.md.barostat = o->barostat == 2 ? caps::Barostat::Berendsen : caps::Barostat::CRescale;
+    e.md.thermostat = o->thermostat == 2 ? caps::Thermostat::Langevin : o->thermostat == 3 ? caps::Thermostat::NoseHoover : caps::Thermostat::Bussi;
+    e.md.barostat = o->barostat == 2 ? caps::Barostat::Berendsen : o->barostat == 3 ? caps::Barostat::MTK : caps::Barostat::CRescale;
+    if (e.md.barostat == caps::Barostat::MTK) e.md.thermostat = caps::Thermostat::NoseHoover;   // MTK is the NPT half of Nosé–Hoover
     if (o->tau_t > 0) e.md.tau_t = o->tau_t;
     if (o->tau_p > 0) e.md.tau_p = o->tau_p;
     e.md.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
@@ -1762,9 +1765,9 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
       const bool l21 = e.stages.size() == 21 && e.stages.back().label.find("final") != std::string::npos;
       double pmax = 0;
       for (const auto& st : e.stages) pmax = std::max(pmax, st.pressure);
-      std::vector<std::string> c = {"swope1982", e.md.thermostat == caps::Thermostat::Bussi ? "bussi2007" : ""};
+      std::vector<std::string> c = {"swope1982", e.md.thermostat == caps::Thermostat::Bussi ? "bussi2007" : e.md.thermostat == caps::Thermostat::NoseHoover ? "martyna1992" : ""};
       if (e.md.constraints != caps::ConstraintMode::None) c.push_back("ryckaert1977"), c.push_back("andersen1983");
-      c.push_back(e.md.barostat == caps::Barostat::CRescale ? "bernetti2020" : "berendsen1984");
+      c.push_back(e.md.barostat == caps::Barostat::CRescale ? "bernetti2020" : e.md.barostat == caps::Barostat::MTK ? "martyna1994" : "berendsen1984");
       if (l21) c.insert(c.begin(), "larsen2011");
       elec_cites(c, e.md.energy.coulomb);
       c.erase(std::remove(c.begin(), c.end(), std::string()), c.end());

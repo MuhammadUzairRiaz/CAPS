@@ -12,11 +12,14 @@
 
 namespace caps {
 
-enum class Thermostat { None, Bussi, Langevin };
-enum class Barostat { None, CRescale, Berendsen };
+// NoseHoover: a chain of three thermostats (Martyna, Klein & Tuckerman, J. Chem. Phys. 97, 2635 (1992)), integrated as
+// LAMMPS's fix nvt does. MTK: isotropic Martyna–Tobias–Klein pressure coupling (J. Chem. Phys. 101, 4177 (1994)) with its
+// own chain of three, as LAMMPS's fix npt / nph iso.
+enum class Thermostat { None, Bussi, Langevin, NoseHoover };
+enum class Barostat { None, CRescale, Berendsen, MTK };
 
-Thermostat thermostat_from_string(const std::string& s);   // "none" | "bussi" | "langevin"
-Barostat barostat_from_string(const std::string& s);       // "none" | "crescale" | "berendsen"
+Thermostat thermostat_from_string(const std::string& s);   // "none" | "bussi" | "langevin" | "nose-hoover"
+Barostat barostat_from_string(const std::string& s);       // "none" | "crescale" | "berendsen" | "mtk"
 const char* to_string(Thermostat t);
 const char* to_string(Barostat b);
 
