@@ -54,9 +54,18 @@
               <Border Classes="phead"><TextBlock Text="Push-off &amp; cell" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,12,16,16" Spacing="12">
                 <CheckBox Classes="toggle" Content="Soft-core push-off before minimising" IsChecked="{Binding RelaxPushoff}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RelaxPushoff}">
+                  <TextBlock Text="Force cap (kcal/mol/Å)" Classes="label" /><TextBlock Grid.Column="1" Text="λ ramp over (ps)" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RelaxCap}" Minimum="5" Maximum="5000" Increment="50" FormatString="0"
+                                 ToolTip.Tip="The last cap: the LJ force is linear inside the radius where it would exceed this" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxRampPs}" Minimum="1" Maximum="1000" Increment="5" FormatString="0.#" IsEnabled="{Binding RelaxPushoffMdEnabled}"
+                                 ToolTip.Tip="NVT molecular dynamics with the cap raised geometrically in ten steps over this time, before minimising" />
+                </Grid>
+                <CheckBox Content="Push off by MD first (NVT, the cap ramped)" IsChecked="{Binding RelaxPushoffMd}" IsEnabled="{Binding RelaxPushoff}"
+                          ToolTip.Tip="Overlapping chains move apart by motion rather than straight down the steepest path; needs a force field and takes longer" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
-                  <TextBlock Text="Auhl et al., J. Chem. Phys. 119, 12718 (2003): LJ forces capped at 5 → 20 → 100 → 500 kcal/mol/Å" Classes="dim" TextWrapping="Wrap" MaxWidth="400" />
+                  <TextBlock Text="{Binding RelaxPushoffText}" Classes="dim" TextWrapping="Wrap" MaxWidth="400" />
                 </StackPanel>
                 <CheckBox Classes="toggle" Content="Compress to a target density" IsChecked="{Binding RelaxCompress}" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding RelaxCompress}">

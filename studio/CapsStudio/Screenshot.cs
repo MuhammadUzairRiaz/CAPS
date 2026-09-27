@@ -154,6 +154,12 @@ internal static class Screenshot
                 w.ViewModel.NanoKind = int.Parse(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "particle")   // particle=ID after nano=2: the particle's crystal (gold: thiolate-capped)
+            {
+                var k = w.ViewModel.Crystals.ToList().FindIndex(c => c.Id == kv[1]);
+                if (k >= 0) w.ViewModel.ParticleCrystal = k;
+                for (int t = 0; t < 60; ++t) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "walls")   // walls=N after nano=1: a multi-walled tube (armchair by default)
             {
                 w.ViewModel.TubeN = 5;

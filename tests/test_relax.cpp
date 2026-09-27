@@ -410,3 +410,28 @@ TEST(Relax, BoxRelaxAlongOneAxis) {
   ASSERT_FALSE(r.stages.empty());
   EXPECT_NE(r.stages.back().name.find("axis by axis"), std::string::npos) << r.stages.back().name;
 }
+
+// Push-off by MD with the force cap ramped (Auhl et al. 2003): ten NVT stages with caps rising geometrically to the
+// chosen cap, then the minimisation stages ending at that cap; the structure converges and keeps no velocities
+TEST(Relax, PushoffByMdRampsTheCap) {
+  System s = small_cell(3, 4, 0.5, 0.7);
+  RelaxOptions o;
+  o.pushoff_ramp_ps = 0.5;
+  o.pushoff_cap = 200;
+  o.ftol = 1.0;
+  RelaxReport r;
+  relax(s, o, &r);
+  std::vector<std::string> md, mini;
+  for (const auto& st : r.stages) {
+    if (st.name.rfind("push-off MD", 0) == 0) md.push_back(st.name);
+    else if (st.name.rfind("push-off", 0) == 0) mini.push_back(st.name);
+  }
+  ASSERT_EQ(md.size(), 10u);
+  EXPECT_EQ(md.front(), "push-off MD, force cap 5");
+  EXPECT_EQ(md.back(), "push-off MD, force cap 200");
+  ASSERT_FALSE(mini.empty());
+  EXPECT_EQ(mini.back(), "push-off, force cap 200");
+  EXPECT_TRUE(r.converged);
+  EXPECT_TRUE(s.velocities.empty());
+  EXPECT_TRUE(std::any_of(r.notes.begin(), r.notes.end(), [](const std::string& n) { return n.rfind("push-off MD", 0) == 0; }));
+}

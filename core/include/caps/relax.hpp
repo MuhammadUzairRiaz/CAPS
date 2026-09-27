@@ -47,6 +47,14 @@ struct RelaxOptions {
   // stage by stage. Needed after Grow with a contact scale below 1, or for any structure with overlaps.
   bool pushoff = true;
   std::vector<double> pushoff_caps{5, 20, 100, 500};   // kcal/mol/Å
+  // The same push-off by molecular dynamics first (Auhl et al.): NVT at pushoff_temperature for pushoff_ramp_ps, the
+  // LJ force cap raised geometrically in pushoff_ramp_segments steps from the first cap to pushoff_cap (λ ramp), so
+  // overlapping chains move apart by motion rather than by the steepest path down. 0 ps: minimisation stages only.
+  // pushoff_cap > 0 also ends the minimisation stages there.
+  double pushoff_ramp_ps = 0;
+  double pushoff_cap = 0;         // kcal/mol/Å, 0 = the last of pushoff_caps
+  double pushoff_temperature = 300;
+  int pushoff_ramp_segments = 10;
 
   // Compression: scale the cell and all positions affinely, stage by stage, minimising after each stage.
   double target_density = 0.0;    // g/cm³, 0 = keep the cell

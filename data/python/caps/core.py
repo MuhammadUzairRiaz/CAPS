@@ -90,7 +90,8 @@ class _RenderOpts(C.Structure):
 class _RelaxOpts(C.Structure):
     _fields_ = [("method", C.c_int32), ("ftol", C.c_double), ("max_iterations", C.c_int32), ("target_density", C.c_double),
                 ("compress_step", C.c_double), ("pushoff", C.c_int32), ("relax_box", C.c_int32), ("pressure", C.c_double),
-                ("cutoff", C.c_double), ("coulomb", C.c_int32), ("threads", C.c_int32), ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32)]
+                ("cutoff", C.c_double), ("coulomb", C.c_int32), ("threads", C.c_int32), ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32),
+                ("pushoff_ramp_ps", C.c_double), ("pushoff_cap", C.c_double), ("pushoff_temperature", C.c_double)]
 
 
 class _MdOpts(C.Structure):
@@ -308,12 +309,14 @@ class Document:
     # engines
     def relax(self, ftol: float = 0.5, method: str = "lbfgs", max_iterations: int = 5000, density: float = 0.0, pushoff: bool = True,
               box: bool = False, pressure: float = 1.0, cutoff: float = 10.0, coulomb: bool = True, threads: int = 0,
-              restraints: Optional[list] = None, box_axes: str = "") -> int:
+              restraints: Optional[list] = None, box_axes: str = "", pushoff_md_ps: float = 0.0, pushoff_cap: float = 0.0,
+              pushoff_temperature: float = 0.0) -> int:
         """Minimises the current frame with the Field assignment (else the built-in GAFF): 0 converged, 1 not quite.
         restraints: [(i, j, r0), …] or [(i, j, r0, k), …] — k (r − r0)² between atoms i and j (indices from 0, Å,
         k kcal/mol/Å², default 10); dihedral ones as {"i", "j", "k", "l", "phi0", "kphi"} dicts; they stay set for later
         relaxations until relax(restraints=[]) clears them. box_axes: "z", "xy" … relaxes the box axis by axis (only
-        those axes move); "" keeps the isotropic box relaxation (box=True)."""
+        those axes move); "" keeps the isotropic box relaxation (box=True). pushoff_md_ps > 0: the push-off by NVT MD
+        first (Auhl et al. 2003), the LJ force cap raised to pushoff_cap (default 500 kcal/mol/Å) over that time."""
         if restraints is not None:
             rs = [dict(r) if isinstance(r, dict) else {"i": int(r[0]), "j": int(r[1]), "r0": float(r[2]), "k": float(r[3]) if len(r) > 3 else 10.0}
                   for r in restraints]
@@ -321,7 +324,7 @@ class Document:
                 raise _error()
         o = _RelaxOpts({"sd": 0, "cg": 1, "lbfgs": 2, "fire": 3}[method], ftol, max_iterations, density, 0.06, int(pushoff), int(box),
                        pressure, cutoff, int(coulomb), threads, int(bool(box_axes)),
-                       sum({"x": 1, "y": 2, "z": 4}[a] for a in set(box_axes)))
+                       sum({"x": 1, "y": 2, "z": 4}[a] for a in set(box_axes)), pushoff_md_ps, pushoff_cap, pushoff_temperature)
         if box_axes:
             o.relax_box = 1
         rep = _report()
@@ -801,7 +804,8 @@ class build:
 
     @staticmethod
     def nano(**options) -> Document:
-        """kind="tube" (n, m, length, periodic) | "sheet" (lx, ly, layers) | "particle" (crystal CIF, shape, radius)."""
+        """kind="tube" (n, m, length, periodic) | "sheet" (lx, ly, layers) | "particle" (crystal CIF, shape, radius; a metal
+        particle takes thiolate="C6" | "C12" | "C18" | "MPA" | "MUA" | "MHA" | "*S…" SMILES and thiolate_fraction)."""
         rep = _report()
         d = Document(library().caps_nano_build(_enc(json.dumps(options)), rep, len(rep)), options.get("kind", "nano"))
         d.report = rep.value.decode()

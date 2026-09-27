@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <cmath>
+#include <functional>
 #include <map>
 #include <set>
 #include <sstream>
@@ -12,6 +13,7 @@
 #include "caps/elements.hpp"
 #include "caps/molecule.hpp"
 #include "caps/relax.hpp"
+#include "caps/torsion.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 
@@ -527,6 +529,202 @@ GraftReport graft_silanes(System& s, const GraftOptions& o) {
                         " Å to a grafted one were passed over");
   rep.notes.push_back(o.name + " grafted on " + std::to_string(rep.grafted) + " of " + std::to_string(rep.silanols) + " silanols (" +
                       std::to_string(rep.added_atoms) + " atoms added; one ethanol released per graft); relax before dynamics");
+  return rep;
+}
+
+std::string thiolate_smiles(const std::string& name) {
+  if (name == "C6" || name == "hexanethiolate") return "*SCCCCCC";
+  if (name == "C12" || name == "dodecanethiolate") return "*SCCCCCCCCCCCC";
+  if (name == "C18" || name == "octadecanethiolate") return "*SCCCCCCCCCCCCCCCCCC";
+  if (name == "MPA") return "*SCCC(=O)O";
+  if (name == "MUA") return "*SCCCCCCCCCCC(=O)O";
+  if (name == "MHA") return "*SCCCCCCO";
+  throw EditError("unknown thiolate '" + name + "' (C6, C12, C18, MPA, MUA, MHA, or a SMILES starting *S)");
+}
+
+ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
+  ThiolateReport rep;
+  if (o.smiles.find('*') == std::string::npos) throw EditError("the thiolate SMILES needs * where the sulfur binds the metal");
+  auto metal = [](int z) { return z == 79 || z == 47 || z == 29 || z == 78 || z == 46; };
+  std::vector<uint32_t> M;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i)
+    if (metal(s.atoms[i].element)) M.push_back(i);
+  if (M.size() < 4) throw EditError("no metal surface to cap: thiolates bind gold, silver, copper, platinum or palladium");
+  auto rel = [&](const Vec3& a, const Vec3& b) { Vec3 d = b - a; return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+  // nearest-neighbour distance and the neighbour lists within 1.2 of it
+  double dnn = 1e300;
+  for (size_t a = 0; a < std::min<size_t>(M.size(), 200); ++a)
+    for (size_t b = 0; b < M.size(); ++b)
+      if (a != b) dnn = std::min(dnn, norm(rel(s.atoms[M[a]].pos, s.atoms[M[b]].pos)));
+  const double cut = 1.2 * dnn;
+  std::vector<std::vector<uint32_t>> nbm(M.size());
+  for (size_t a = 0; a < M.size(); ++a)
+    for (size_t b = a + 1; b < M.size(); ++b)
+      if (norm(rel(s.atoms[M[a]].pos, s.atoms[M[b]].pos)) < cut) nbm[a].push_back(uint32_t(b)), nbm[b].push_back(uint32_t(a));
+  size_t zmax = 0;
+  for (const auto& l : nbm) zmax = std::max(zmax, l.size());
+  // surface atoms: fewer neighbours than the bulk; their outward direction away from their neighbours' centre
+  std::vector<char> surf(M.size(), 0);
+  std::vector<Vec3> out(M.size(), Vec3{0, 0, 0});
+  for (size_t a = 0; a < M.size(); ++a) {
+    if (nbm[a].size() >= zmax) continue;
+    Vec3 c{0, 0, 0};
+    for (uint32_t b : nbm[a]) c = c + rel(s.atoms[M[a]].pos, s.atoms[M[b]].pos);
+    const double l = norm(c);
+    if (l < 1e-6) continue;
+    surf[a] = 1;
+    out[a] = c * (-1.0 / l);
+    ++rep.surface_atoms;
+  }
+  if (!rep.surface_atoms) throw EditError("the metal has no surface atoms (a periodic bulk crystal?)");
+  // candidate sites: each surface triangle (three mutually neighbouring surface atoms) facing out, else on top
+  struct Site { Vec3 p, n; bool hollow; };
+  std::vector<Site> sites;
+  const double dms = 2.45;   // Å, metal–S
+  for (size_t a = 0; a < M.size(); ++a) {
+    if (!surf[a]) continue;
+    for (uint32_t b : nbm[a]) {
+      if (!surf[b] || b <= a) continue;
+      for (uint32_t c : nbm[b]) {
+        if (!surf[c] || c <= b || std::find(nbm[a].begin(), nbm[a].end(), c) == nbm[a].end()) continue;
+        const Vec3 A = s.atoms[M[a]].pos, B = A + rel(A, s.atoms[M[b]].pos), C = A + rel(A, s.atoms[M[c]].pos);
+        const Vec3 g = (A + B + C) * (1.0 / 3.0);
+        Vec3 n = cross(B - A, C - A);
+        const double ln = norm(n);
+        if (ln < 1e-9) continue;
+        n = n * (1 / ln);
+        const Vec3 o3 = out[a] + out[b] + out[c];
+        if (dot(n, o3) < 0) n = n * -1.0;
+        if (dot(n, unitv(o3)) < 0.5) continue;   // an edge triangle standing across the surface
+        // an atom below the hollow's centre (hcp site) or not (fcc) — either is a three-fold hollow
+        const double R = norm(A - g), h = std::sqrt(std::max(0.25, dms * dms - R * R));
+        sites.push_back({g + n * h, n, true});
+      }
+    }
+  }
+  const size_t hollows = sites.size();
+  for (size_t a = 0; a < M.size(); ++a)
+    if (surf[a]) sites.push_back({s.atoms[M[a]].pos + out[a] * dms, out[a], false});
+  // greedy in random order, hollows first: each S at least the spacing from those before, and clear of the metal
+  const double spacing = o.min_spacing > 0 ? o.min_spacing : std::sqrt(3.0) * dnn;
+  std::mt19937_64 rng(o.seed);
+  std::shuffle(sites.begin(), sites.begin() + std::ptrdiff_t(hollows), rng);
+  std::shuffle(sites.begin() + std::ptrdiff_t(hollows), sites.end(), rng);
+  std::vector<Site> chosen;
+  for (const auto& st : sites) {
+    bool ok = true;
+    for (const auto& c : chosen)
+      if (norm(rel(c.p, st.p)) < spacing * 0.999) { ok = false; break; }
+    if (!ok) continue;
+    for (uint32_t m : M)
+      if (norm(rel(st.p, s.atoms[m].pos)) < dms - 0.05) { ok = false; break; }
+    if (ok) chosen.push_back(st);
+  }
+  const size_t want = size_t(std::lround(std::clamp(o.fraction, 0.0, 1.0) * double(chosen.size())));
+  if (want == 0) throw EditError("no site for a thiolate at this spacing");
+  std::shuffle(chosen.begin(), chosen.end(), rng);
+  chosen.resize(want);
+  // each ligand: its S on the site, the tail's heavy-atom centre along the surface normal, rolled clear of the others
+  const auto& F = fragment_3d(o.smiles);
+  const uint32_t D = F.dummy[0], X = F.root[0];
+  if (F.s.atoms[X].element != 16) throw EditError("the thiolate must bind through sulfur: write its SMILES as *S…");
+  // the ligand straightened: every torsion along its longest heavy-atom path from the metal side anti (all-trans tail)
+  System L = F.s;
+  {
+    const auto nbl = neighbours(L);
+    std::vector<int> path{int(D), int(X)}, best_path;
+    std::function<void(std::vector<int>&)> walk = [&](std::vector<int>& p) {
+      bool ext = false;
+      for (uint32_t q : nbl[size_t(p.back())]) {
+        if (L.atoms[q].element <= 1 || std::find(p.begin(), p.end(), int(q)) != p.end()) continue;
+        p.push_back(int(q));
+        walk(p);
+        p.pop_back();
+        ext = true;
+      }
+      if (!ext && p.size() > best_path.size()) best_path = p;
+    };
+    walk(path);
+    for (size_t k = 1; k + 2 < best_path.size(); ++k) {
+      try {
+        const auto mv = moving_side(L, best_path[k], best_path[k + 1]);
+        set_dihedral(L, {best_path[k - 1], best_path[k], best_path[k + 1], best_path[k + 2]}, 180.0, mv);
+      } catch (const std::exception&) {}   // a ring bond stays as built
+    }
+  }
+  // the S–C bond along the surface normal (tilted up to 30° where that clears the neighbours), rolled about it
+  int C1 = -1;
+  for (const auto& b : L.bonds) {
+    if (b.i == X && b.j != D) C1 = int(b.j);
+    if (b.j == X && b.i != D) C1 = int(b.i);
+  }
+  const Vec3 v = C1 >= 0 ? unitv(L.atoms[size_t(C1)].pos - L.atoms[X].pos) : unitv(L.atoms[X].pos - L.atoms[D].pos);
+  double reach = 0;
+  for (const auto& a : L.atoms) reach = std::max(reach, norm(a.pos - L.atoms[X].pos));
+  auto rotate = [](const Vec3& p, const Vec3& axis, double c, double sn) { return p * c + cross(axis, p) * sn + axis * (dot(axis, p) * (1 - c)); };
+  const int mol = s.atoms.empty() ? 1 : std::max_element(s.atoms.begin(), s.atoms.end(), [](const Atom& a, const Atom& b) { return a.mol < b.mol; })->mol;
+  int next_mol = mol + 1;
+  constexpr double kPi = 3.14159265358979323846;
+  for (const auto& st : chosen) {
+    // the atoms a ligand here could touch
+    std::vector<Vec3> near;
+    for (const auto& a : s.atoms)
+      if (norm(rel(st.p, a.pos)) < reach + 4) near.push_back(st.p + rel(st.p, a.pos));
+    std::vector<Vec3> axes{st.n};
+    const Vec3 t1 = perpendicular(st.n), t2 = cross(st.n, t1);
+    for (double tilt : {15.0, 30.0})
+      for (int az = 0; az < 6; ++az) {
+        const double th = tilt * kPi / 180, ph = az * kPi / 3;
+        axes.push_back(unitv(st.n * std::cos(th) + (t1 * std::cos(ph) + t2 * std::sin(ph)) * std::sin(th)));
+      }
+    double best = -1;
+    std::vector<Vec3> placed;
+    for (const Vec3& ax : axes) {
+      const Vec3 axis0 = cross(v, ax);
+      const double s0 = norm(axis0), c0 = dot(v, ax);
+      auto align = [&](const Vec3& p) {
+        if (s0 < 1e-9) return c0 > 0 ? p : rotate(p, perpendicular(v), -1, 0);
+        return rotate(p, axis0 * (1.0 / s0), c0, s0);
+      };
+      for (int k = 0; k < 24; ++k) {
+        const double ang = 2 * kPi * k / 24;
+        std::vector<Vec3> trial(L.atoms.size());
+        double dmin = 1e300;
+        for (size_t i = 0; i < L.atoms.size(); ++i) {
+          trial[i] = st.p + rotate(align(L.atoms[i].pos - L.atoms[X].pos), ax, std::cos(ang), std::sin(ang));
+          if (i == D || i == X) continue;
+          for (const auto& q : near) dmin = std::min(dmin, norm(trial[i] - q));
+        }
+        if (dmin > best) best = dmin, placed = trial;
+      }
+    }
+    std::vector<int64_t> map(L.atoms.size(), -1);
+    for (size_t i = 0; i < L.atoms.size(); ++i) {
+      if (i == D) continue;
+      Atom a = L.atoms[i];
+      a.pos = placed[i];
+      a.type = type_for(s, a.element);
+      a.mol = next_mol;
+      a.resname = "SR";
+      a.resid = next_mol;
+      a.id = s.atoms.empty() ? 1 : s.atoms.back().id + 1;
+      a.charge = 0;
+      a.name = std::string(element(a.element).symbol) + std::to_string(s.atoms.size() + 1);
+      map[i] = int64_t(s.atoms.size());
+      s.atoms.push_back(a);
+      ++rep.added_atoms;
+    }
+    for (const auto& b : L.bonds)
+      if (map[b.i] >= 0 && map[b.j] >= 0) s.bonds.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+    ++next_mol;
+    ++rep.ligands;
+    (st.hollow ? rep.hollow : rep.on_top) += 1;
+  }
+  char b[320];
+  std::snprintf(b, sizeof b, "%zu %s ligands on %zu surface metal atoms (%zu in three-fold hollows, %zu on top; S–S ≥ %.2f Å; %zu atoms added); "
+                "no metal–S bonds written — relax with a force field that has metal–S terms before dynamics",
+                rep.ligands, o.name.c_str(), rep.surface_atoms, rep.hollow, rep.on_top, spacing, rep.added_atoms);
+  rep.notes.push_back(b);
   return rep;
 }
 

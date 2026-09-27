@@ -162,6 +162,9 @@ public struct CapsRelaxOpts
     public int Coulomb, Threads;
     public int BoxAnisotropic;    // each axis follows its own diagonal pressure (orthorhombic cells)
     public int BoxAxes;           // axes that move: bits 1 x, 2 y, 4 z (0 = all)
+    public double PushoffRampPs;  // > 0: push-off by NVT MD first, the force cap ramped over this time
+    public double PushoffCap;     // final force cap, kcal/mol/Å (0 = 500)
+    public double PushoffTemperature;   // K (0 = 300)
 }
 
 [StructLayout(LayoutKind.Sequential)]
