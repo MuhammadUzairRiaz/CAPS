@@ -11,6 +11,7 @@
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/molecule.hpp"
+#include "caps/appearance.hpp"
 #include "caps/relax.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
@@ -749,6 +750,34 @@ BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
     R.notes.push_back(std::to_string(R.conformers.size() - uniq.size()) + " embeddings reached a minimum already found");
   R.conformers = std::move(uniq);
   R.system = molecule_system(R.graph, R.conformers.front().pos);
+  // stereo the SMILES left open: centres and double bonds that are stereogenic in 3D but written without @/@@ or / \,
+  // so the embedding chose their configuration
+  if (R.system.atoms.size() == R.graph.atoms.size()) {
+    const auto rs = stereo_labels(R.system);
+    std::vector<std::string> open_c;
+    for (size_t i = 0; i < rs.size(); ++i)
+      if (!rs[i].empty() && R.graph.atoms[i].chiral == 0) open_c.push_back(std::to_string(i + 1) + " (" + rs[i] + ")");
+    std::vector<std::pair<uint32_t, uint32_t>> dbs;
+    const auto ez = ez_labels(R.system, &dbs);
+    std::vector<std::string> open_d;
+    for (const auto& [a, b] : dbs) {
+      bool marked = false;   // a / or \ on a bond to either end
+      for (const auto& mb : R.graph.bonds)
+        if (mb.dir != 0 && (mb.a == int(a) || mb.b == int(a) || mb.a == int(b) || mb.b == int(b))) marked = true;
+      if (!marked) open_d.push_back(std::to_string(a + 1) + "=" + std::to_string(b + 1) + " (" + ez[a] + ")");
+    }
+    auto list = [](const std::vector<std::string>& v) {
+      std::string t;
+      for (size_t k = 0; k < v.size() && k < 6; ++k) t += (k ? ", " : "") + v[k];
+      return t + (v.size() > 6 ? " …" : "");
+    };
+    if (!open_c.empty())
+      R.notes.push_back(std::to_string(open_c.size()) + " stereocentre" + (open_c.size() > 1 ? "s" : "") +
+                        " not specified in the SMILES, built as the embedding chose (atoms " + list(open_c) + "): write @ or @@ to fix them");
+    if (!open_d.empty())
+      R.notes.push_back(std::to_string(open_d.size()) + " double bond" + (open_d.size() > 1 ? "s" : "") +
+                        " without / or \\ in the SMILES, built as the embedding chose (" + list(open_d) + "): mark E or Z with / and \\");
+  }
   return R;
 }
 
