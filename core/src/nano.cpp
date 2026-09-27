@@ -40,7 +40,22 @@ void add(System& s, int z, const Vec3& p, int64_t mol = 1) {
   s.atoms.push_back(a);
 }
 
-// Hydrogen on every carbon with two carbon neighbours (graphene edges, open tube ends), in the plane of its bonds.
+// A honeycomb: the elements of its two sublattices, bond length, interlayer spacing, stacking
+struct Honeycomb {
+  int za, zb;
+  double cc, gap;
+  bool aa;                 // AA′ stacking (B over N) instead of graphite's AB
+  const char* name;
+};
+Honeycomb honeycomb(const std::string& m) {
+  if (m == "graphene" || m.empty()) return {6, 6, 1.42, 3.35, false, "graphene"};
+  if (m == "h-BN" || m == "hbn" || m == "bn" || m == "boron-nitride") return {5, 7, 2.504 / std::sqrt(3.0), 6.656 / 2, true, "h-BN"};   // Pease 1952
+  throw std::invalid_argument("unknown sheet material '" + m + "' (graphene, h-BN)");
+}
+bool honeycomb_element(int z) { return z == 5 || z == 6 || z == 7; }
+double x_h_length(int z) { return z == 5 ? 1.19 : z == 7 ? 1.01 : 1.09; }   // B–H, N–H, C–H
+
+// Hydrogen on every sheet atom (C, B, N) with two sheet neighbours (edges, open tube ends), in the plane of its bonds.
 int cap_edges(System& s) {
   // carbons hanging on by one bond are trimmed (again, until none is left), the rest of the edge is capped
   for (bool again = true; again;) {
@@ -50,7 +65,7 @@ int cap_edges(System& s) {
     System t;
     t.cell = s.cell;
     for (size_t i = 0; i < s.atoms.size(); ++i) {
-      if (s.atoms[i].element == 6 && deg[i] <= 1) { again = true; continue; }
+      if (honeycomb_element(s.atoms[i].element) && deg[i] <= 1) { again = true; continue; }
       add(t, s.atoms[i].element, s.atoms[i].pos, s.atoms[i].mol);
     }
     if (again) s = std::move(t);
@@ -65,11 +80,11 @@ int cap_edges(System& s) {
   const size_t n0 = s.atoms.size();
   int added = 0;
   for (size_t i = 0; i < n0; ++i) {
-    if (s.atoms[i].element != 6 || dirs[i].size() != 2) continue;
+    if (!honeycomb_element(s.atoms[i].element) || dirs[i].size() != 2) continue;
     Vec3 u = (dirs[i][0] + dirs[i][1]) * -1.0;
     const double l = norm(u);
     if (l < 1e-6) continue;
-    add(s, 1, s.atoms[i].pos + u * (1.09 / l), s.atoms[i].mol);
+    add(s, 1, s.atoms[i].pos + u * (x_h_length(s.atoms[i].element) / l), s.atoms[i].mol);
     ++added;
   }
   s.bonds = crystal_bonds(s);
@@ -151,10 +166,11 @@ ParticleShape particle_shape_from_string(const std::string& s) {
 // ---------------------------------------------------------------- graphene
 
 System graphene_sheet(const SheetOptions& o, NanoReport* rep) {
-  const double cc = o.cc > 0 ? o.cc : 1.42, a = std::sqrt(3.0) * cc, h = 3 * cc;   // rectangular cell a × 3cc, 4 atoms
+  const Honeycomb H = honeycomb(o.material);
+  const double cc = o.cc > 0 ? o.cc : H.cc, a = std::sqrt(3.0) * cc, h = 3 * cc;   // rectangular cell a × 3cc, 4 atoms
   const int nx = std::max(3, int(std::lround(o.lx / a))), ny = std::max(2, int(std::lround(o.ly / h)));
   const int layers = std::max(1, o.layers);
-  const double gap = 3.35;
+  const double gap = H.gap;
   const double Lx = nx * a, Ly = ny * h;
   System s;
   const double vac = std::max(0.0, o.vacuum);
@@ -163,22 +179,24 @@ System graphene_sheet(const SheetOptions& o, NanoReport* rep) {
   s.cell.b = {0, Ly + (o.periodic ? 0 : vac), 0};
   s.cell.c = {0, 0, (layers - 1) * gap + std::max(vac, 2.0 * gap)};
   const double z0 = std::max(vac, 2.0 * gap) / 2;
-  const Vec3 basis[4] = {{0, 0, 0}, {a / 2, cc / 2, 0}, {a / 2, 1.5 * cc, 0}, {0, 2 * cc, 0}};
+  const Vec3 basis[4] = {{0, 0, 0}, {a / 2, cc / 2, 0}, {a / 2, 1.5 * cc, 0}, {0, 2 * cc, 0}};   // sublattices A B A B
   for (int l = 0; l < layers; ++l) {
-    const double sy = (l % 2) ? cc : 0.0;   // AB stacking: every other layer shifted by one C–C along y
+    // AB stacking: every other layer shifted by one bond along y; AA′ (h-BN): straight above, the sublattices swapped
+    const double sy = (!H.aa && l % 2) ? cc : 0.0;
+    const bool swap = H.aa && l % 2;
     for (int i = 0; i < nx; ++i)
       for (int j = 0; j < ny; ++j)
-        for (const auto& b : basis) {
-          double y = j * h + b[1] + sy;
+        for (int k = 0; k < 4; ++k) {
+          double y = j * h + basis[k][1] + sy;
           if (o.periodic) y -= Ly * std::floor(y / Ly);
-          add(s, 6, {off_xy + i * a + b[0], off_xy + y, z0 + l * gap});
+          add(s, ((k % 2 == 0) != swap) ? H.za : H.zb, {off_xy + i * a + basis[k][0], off_xy + y, z0 + l * gap});
         }
   }
-  finish(s, "graphene " + std::to_string(layers) + (layers > 1 ? " layers" : " layer"));
+  finish(s, std::string(H.name) + " " + std::to_string(layers) + (layers > 1 ? " layers" : " layer"));
   NanoReport r;
   if (!o.periodic) r.capped = cap_edges(s);
   char b[160];
-  std::snprintf(b, sizeof b, "graphene %.2f × %.2f Å (%d × %d cells), %d layer%s, %zu atoms%s", Lx, Ly, nx, ny, layers, layers > 1 ? "s" : "", s.atoms.size(),
+  std::snprintf(b, sizeof b, "%s %.2f × %.2f Å (%d × %d cells), %d layer%s, %zu atoms%s", H.name, Lx, Ly, nx, ny, layers, layers > 1 ? "s" : "", s.atoms.size(),
                 o.periodic ? " · periodic in the plane" : " · flake, edges capped with H");
   r.notes.push_back(b);
   s.notes = r.notes;
@@ -187,6 +205,11 @@ System graphene_sheet(const SheetOptions& o, NanoReport* rep) {
 }
 
 // ---------------------------------------------------------------- nanotubes
+
+const std::vector<std::string>& honeycomb_materials() {
+  static const std::vector<std::string> m = {"graphene", "h-BN"};
+  return m;
+}
 
 std::array<double, 3> nanotube_geometry(int n, int m, double cc) {
   const double a = std::sqrt(3.0) * cc;
@@ -200,7 +223,8 @@ std::array<double, 3> nanotube_geometry(int n, int m, double cc) {
 System nanotube(const NanotubeOptions& o, NanoReport* rep) {
   const int n = o.n, m = o.m;
   if (n < 1 || m < 0 || m > n) throw std::invalid_argument("chirality (n, m) needs n ≥ 1 and 0 ≤ m ≤ n");
-  const double cc = o.cc > 0 ? o.cc : 1.42, a = std::sqrt(3.0) * cc;
+  const Honeycomb H = honeycomb(o.material);
+  const double cc = o.cc > 0 ? o.cc : H.cc, a = std::sqrt(3.0) * cc;
   const int walls = std::max(1, o.walls);
   if (walls > 1 && m != n && m != 0)
     throw std::invalid_argument("multi-walled tubes need armchair (n,n) or zigzag (n,0) walls, whose periods along the axis match");
@@ -210,7 +234,7 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
   const Vec3 a1{a, 0, 0}, a2{a / 2, a * std::sqrt(3.0) / 2, 0};
   const Vec3 basis[2] = {{0, 0, 0}, (a1 + a2) * (1.0 / 3)};
   // one wall's period: graphene points inside the parallelogram of Ch and T, as (u around, v along)
-  struct Wall { int n, m, expect; double R, lt; std::vector<std::pair<double, double>> uv; };
+  struct Wall { int n, m, expect; double R, lt; std::vector<std::array<double, 3>> uv; };   // u around, v along, sublattice
   auto roll = [&](int wn, int wm) {
     Wall w{wn, wm, 0, 0, 0, {}};
     const Vec3 Ch = a1 * wn + a2 * wm;
@@ -222,10 +246,10 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
     const int span = 2 * (std::abs(wn) + std::abs(wm) + std::abs(t1) + std::abs(t2)) + 2;
     for (int i = -span; i <= span; ++i)
       for (int j = -span; j <= span; ++j)
-        for (const auto& bv : basis) {
-          const Vec3 r = a1 * i + a2 * j + bv;
+        for (int k = 0; k < 2; ++k) {
+          const Vec3 r = a1 * i + a2 * j + basis[k];
           const double u = dot(r, Ch) / (lc * lc), v = dot(r, T) / (w.lt * w.lt);
-          if (u >= -1e-9 && u < 1 - 1e-9 && v >= -1e-9 && v < 1 - 1e-9) w.uv.push_back({u, v});
+          if (u >= -1e-9 && u < 1 - 1e-9 && v >= -1e-9 && v < 1 - 1e-9) w.uv.push_back({u, v, double(k)});
         }
     w.expect = 4 * (wn * wn + wn * wm + wm * wm) / dr;
     if (int(w.uv.size()) != w.expect)
@@ -248,9 +272,9 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
   for (const auto& w : W) {
     per_period += w.expect;
     for (int p = 0; p < periods; ++p)
-      for (const auto& [u, v] : w.uv) {
+      for (const auto& [u, v, k] : w.uv) {
         const double th = 2 * kPi * u;
-        add(s, 6, {box / 2 + w.R * std::cos(th), box / 2 + w.R * std::sin(th), zoff + (v + p) * lt});
+        add(s, k < 0.5 ? H.za : H.zb, {box / 2 + w.R * std::cos(th), box / 2 + w.R * std::sin(th), zoff + (v + p) * lt});
       }
   }
   NanoReport r;
@@ -258,12 +282,12 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
   r.diameter = 2 * Rout, r.chiral_angle = g[1], r.translation = g[2], r.atoms_per_period = per_period;
   std::string name = "(" + std::to_string(n) + "," + std::to_string(m) + ")";
   for (size_t k = 1; k < W.size(); ++k) name += "@(" + std::to_string(W[k].n) + "," + std::to_string(W[k].m) + ")";
-  finish(s, name + " nanotube");
+  finish(s, name + (H.za == 6 ? " nanotube" : " " + std::string(H.name) + " nanotube"));
   if (!o.periodic) r.capped = cap_edges(s);
   const char* kind = m == n ? "armchair" : m == 0 ? "zigzag" : "chiral";
   char b[320];
   if (walls == 1)
-    std::snprintf(b, sizeof b, "(%d,%d) %s nanotube · d = %.2f Å · chiral angle %.2f° · |T| = %.3f Å · %d atoms per period × %d · %s", n, m, kind, r.diameter,
+    std::snprintf(b, sizeof b, "(%d,%d) %s %snanotube · d = %.2f Å · chiral angle %.2f° · |T| = %.3f Å · %d atoms per period × %d · %s", n, m, kind, H.za == 6 ? "" : "boron nitride ", r.diameter,
                   r.chiral_angle, r.translation, per_period, periods, o.periodic ? "periodic along z" : "finite, ends capped with H");
   else
     std::snprintf(b, sizeof b, "%s %d-walled %s nanotube · outer d = %.2f Å · walls %.2f Å apart · |T| = %.3f Å · %d atoms per period × %d · %s", name.c_str(), walls,

@@ -154,6 +154,11 @@ internal static class Screenshot
                 w.ViewModel.NanoKind = int.Parse(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
+            if (kv[0] == "nanomat")   // nanomat=1 after nano=0|1: boron nitride
+            {
+                w.ViewModel.NanoMaterial = int.Parse(kv[1]);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "particle")   // particle=ID after nano=2: the particle's crystal (gold: thiolate-capped)
             {
                 var k = w.ViewModel.Crystals.ToList().FindIndex(c => c.Id == kv[1]);

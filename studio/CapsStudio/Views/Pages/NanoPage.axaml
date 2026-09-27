@@ -92,7 +92,7 @@
                   <Grid ColumnDefinitions="*,*,2*" ColumnSpacing="8">
                     <StackPanel Spacing="6"><TextBlock Text="n" Classes="label" /><NumericUpDown Value="{Binding TubeN}" Minimum="1" Maximum="60" Increment="1" FormatString="0" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="m" Classes="label" /><NumericUpDown Value="{Binding TubeM}" Minimum="0" Maximum="60" Increment="1" FormatString="0" /></StackPanel>
-                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Material" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Carbon (graphene)" /></ComboBox></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Material" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.NanoMaterials}" SelectedIndex="{Binding NanoMaterial}" HorizontalAlignment="Stretch" /></StackPanel>
                   </Grid>
                   <Border Classes="seg" HorizontalAlignment="Left">
                     <StackPanel Orientation="Horizontal">
@@ -106,7 +106,7 @@
                     <TextBlock Grid.Row="1" Text="Diameter" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TubeDiameterText}" Classes="mono" />
                     <TextBlock Grid.Row="2" Text="Translation |T|" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TubeTText}" Classes="mono" />
                   </Grid>
-                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="d = a·√(n² + nm + m²)/π, a = 2.46 Å — Saito, Dresselhaus &amp; Dresselhaus (1998)" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="d = a·√(n² + nm + m²)/π, a = √3 × bond (2.46 Å carbon, 2.504 Å h-BN) — Saito, Dresselhaus &amp; Dresselhaus (1998)" />
                 </StackPanel>
               </Border>
               <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsTube}">
@@ -114,7 +114,7 @@
                   <TextBlock Text="GEOMETRY" Classes="h3" />
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <StackPanel Spacing="6"><TextBlock Text="Length · Å" Classes="label" /><NumericUpDown Value="{Binding TubeLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" /></StackPanel>
-                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="C–C · Å" Classes="label" /><NumericUpDown Value="{Binding NanoCc}" Minimum="1.30" Maximum="1.60" Increment="0.01" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding NanoBondLabel}" Classes="label" /><NumericUpDown Value="{Binding NanoCc}" Minimum="1.30" Maximum="1.60" Increment="0.01" FormatString="0.000" /></StackPanel>
                   </Grid>
                   <CheckBox Classes="toggle" Content="Periodic along the tube axis" IsChecked="{Binding NanoPeriodic}" />
                   <CheckBox Classes="toggle" Content="Cap the ends with hydrogen" IsChecked="{Binding NanoCap}" />
@@ -129,14 +129,15 @@
               <!-- sheet -->
               <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsSheet}">
                 <StackPanel Spacing="10">
-                  <TextBlock Text="GRAPHENE" Classes="h3" />
+                  <TextBlock Text="SHEET" Classes="h3" />
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.NanoMaterials}" SelectedIndex="{Binding NanoMaterial}" HorizontalAlignment="Stretch" />
                   <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                     <StackPanel Spacing="6"><TextBlock Text="Width x · Å" Classes="label" /><NumericUpDown Value="{Binding SheetLx}" Minimum="5" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Width y · Å" Classes="label" /><NumericUpDown Value="{Binding SheetLy}" Minimum="5" Maximum="300" Increment="1" FormatString="0.0" /></StackPanel>
                     <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Layers" Classes="label" /><NumericUpDown Value="{Binding SheetLayers}" Minimum="1" Maximum="20" Increment="1" FormatString="0" /></StackPanel>
                   </Grid>
                   <CheckBox Classes="toggle" Content="Periodic in the plane (off: a flake with H on the edges)" IsChecked="{Binding NanoPeriodic}" />
-                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Zigzag edges along x; layers AB-stacked 3.35 Å apart (graphite)" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="{Binding NanoStackingText}" />
                 </StackPanel>
               </Border>
 
