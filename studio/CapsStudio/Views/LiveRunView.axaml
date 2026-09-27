@@ -1,0 +1,25 @@
+<!-- The atoms of a running MD or equilibration, about four times a second (caps_set_live): drag rotates, the wheel zooms. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views"
+             x:Class="CapsStudio.Views.LiveRunView" x:DataType="vm:MainViewModel">
+  <Border Classes="card" ClipToBounds="True">
+    <Grid RowDefinitions="38,*">
+      <Border Classes="phead">
+        <DockPanel>
+          <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding Busy}">
+            <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="live" Foreground="{DynamicResource AccB}" /></StackPanel>
+          </Border>
+          <TextBlock Text="Live view" Classes="h2" VerticalAlignment="Center" />
+        </DockPanel>
+      </Border>
+      <Panel Grid.Row="1" Background="{DynamicResource Bg0B}">
+        <v:MolView x:Name="View" IsVisible="{Binding RunLiveShown}" />
+        <TextBlock IsVisible="{Binding !RunLiveShown}" Text="The atoms move here while the run goes (drag rotates, the wheel zooms)" Classes="dim"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="20" />
+        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Classes="chip" IsVisible="{Binding RunLiveShown}" IsHitTestVisible="False">
+          <TextBlock Text="{Binding RunLiveText}" Foreground="{DynamicResource MutedB}" />
+        </Border>
+      </Panel>
+    </Grid>
+  </Border>
+</UserControl>

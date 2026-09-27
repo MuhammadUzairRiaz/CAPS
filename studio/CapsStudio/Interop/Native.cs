@@ -270,6 +270,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_chain_preview")] public static extern int ChainPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, ulong seed, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_chains_live")] public static extern IntPtr GrowChainsLive([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, CapsGrowLive? live, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_live")] public static extern int SetLive(IntPtr doc, CapsGrowLive? live, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_set_display")] public static extern int SetDisplay(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_lens_inside")] public static extern int LensInside(IntPtr doc, int atom);
     [DllImport(Lib, EntryPoint = "caps_display_counts")] public static extern int DisplayCounts(IntPtr doc, byte[]? outJson, int cap);
@@ -899,15 +900,21 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>Molecular dynamics from the current frame (the document becomes the recorded trajectory). The progress
     /// callback runs on the calling (worker) thread with each thermo row; return false to cancel.</summary>
-    public string Md(CapsMdOpts o, Func<CapsThermo, long, bool>? progress)
+    public string Md(CapsMdOpts o, Func<CapsThermo, long, bool>? progress, Action<CapsDocument, string>? live = null)
     {
         lock (_lock)
         {
             Alive();
             var report = new byte[8192];
             CapsMdProgress? cb = progress == null ? null : (in CapsThermo r, long n, IntPtr _) => progress(r, n) ? 0 : 1;
-            var rc = Native.Md(_h, o, cb, IntPtr.Zero, report, report.Length);
+            // live: the positions so far about four times a second (a new document each time; the receiver disposes it)
+            CapsGrowLive? lv = live == null ? null : (h0, stats, _) => live(new CapsDocument(h0, "live"), stats);
+            Native.SetLive(_h, lv, IntPtr.Zero);
+            int rc;
+            try { rc = Native.Md(_h, o, cb, IntPtr.Zero, report, report.Length); }
+            finally { Native.SetLive(_h, null, IntPtr.Zero); }
             GC.KeepAlive(cb);
+            GC.KeepAlive(lv);
             Check(rc);
             return System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
         }
@@ -923,7 +930,8 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>Run a protocol from the current frame; the document becomes the recorded trajectory.
     /// Returns whether the convergence checks passed (true when they were not asked for) and the report.</summary>
-    public (bool Converged, string Report) Equilibrate(string protocol, CapsEquilOpts o, Func<int, int, string, CapsThermo, bool>? progress)
+    public (bool Converged, string Report) Equilibrate(string protocol, CapsEquilOpts o, Func<int, int, string, CapsThermo, bool>? progress,
+                                                      Action<CapsDocument, string>? live = null)
     {
         lock (_lock)
         {
@@ -932,8 +940,13 @@ public sealed class CapsDocument : IDisposable
             var text = System.Text.Encoding.UTF8.GetBytes(protocol + "\0");
             CapsEquilProgress? cb = progress == null ? null
                 : (int st, int n, IntPtr label, in CapsThermo r, IntPtr _) => progress(st, n, Marshal.PtrToStringUTF8(label) ?? "", r) ? 0 : 1;
-            var rc = Native.Equilibrate(_h, text, o, cb, IntPtr.Zero, report, report.Length);
+            CapsGrowLive? lv = live == null ? null : (h0, stats, _) => live(new CapsDocument(h0, "live"), stats);
+            Native.SetLive(_h, lv, IntPtr.Zero);
+            int rc;
+            try { rc = Native.Equilibrate(_h, text, o, cb, IntPtr.Zero, report, report.Length); }
+            finally { Native.SetLive(_h, null, IntPtr.Zero); }
             GC.KeepAlive(cb);
+            GC.KeepAlive(lv);
             Check(rc);
             return (rc == 0, System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
         }

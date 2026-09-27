@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 24, "native ABI version 24");
+        Check(Native.AbiVersion() == 25, "native ABI version 25");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -252,6 +252,10 @@ internal static class SelfTest
         Check(File.ReadAllText(mddata).Contains("Velocities"), "md: saved data carries velocities");
         using (var tr = CapsDocument.Open(traj, mddata))
             Check(tr.Summary().Frames == 5, $"md: trajectory reopens with {tr.Summary().Frames} frames");
+        // the live view: snapshots of the running positions (the first at once), each a document of the cell's atoms
+        var liveN = 0; var liveAtoms = 0L; var liveStats = "";
+        cell.Md(mdOpts with { Steps = 50 }, null, (snap, stats) => { liveN++; liveAtoms = snap.Summary().Atoms; liveStats = stats; snap.Dispose(); });
+        Check(liveN >= 1 && liveAtoms == cell.Summary().Atoms && liveStats.Contains("density"), $"live MD view: {liveN} snapshot(s) of {liveAtoms} atoms · {liveStats}");
         var cont = cell.Md(mdOpts with { Steps = 100 }, null);
         Check(cont.Contains("velocities taken"), "md: a second run continues with the same velocities");
         var respaRows = new List<CapsThermo>();

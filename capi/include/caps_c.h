@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 24  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates) */
+#define CAPS_ABI_VERSION 25  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -336,6 +336,11 @@ int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);
 /* 1: fold atoms into the cell (bonds across faces are hidden); 0: keep molecules whole (default). */
 int32_t caps_set_wrap(caps_doc* d, int32_t wrap);
+/* v25 live view of a run: while caps_md or caps_equilibrate runs on d, about four times a second `live` gets the
+   positions so far as a new document (wrapped into the cell; the callee closes it) and JSON {step, time_ps, atoms,
+   density}. NULL stops it. The callback runs on the run's thread. */
+typedef void (*caps_live_fn)(caps_doc* snapshot, const char* stats_json, void* user);
+int32_t caps_set_live(caps_doc* d, caps_live_fn live, void* user);
 int32_t caps_atom(caps_doc* d, int32_t index, caps_atom_info* out);
 int32_t caps_note_count(caps_doc* d);
 const char* caps_note(caps_doc* d, int32_t k);

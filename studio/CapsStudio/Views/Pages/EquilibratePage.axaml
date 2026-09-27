@@ -43,7 +43,8 @@
         <Border Grid.Row="2" Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead"><TextBlock Text="Radius of gyration" Classes="h2" VerticalAlignment="Center" /></Border>
-            <v:LinePlot Grid.Row="1" x:Name="RgPlot" Margin="10,6,12,8" AutoRange="True" XLabel="production block" YLabel="⟨Rg⟩ (Å)" />
+            <v:LinePlot Grid.Row="1" x:Name="RgPlot" Margin="10,6,12,8" AutoRange="True" XLabel="production block" YLabel="⟨Rg⟩ (Å)"
+                        EmptyText="⟨Rg⟩ per production block: switch on “Production blocks until converged”" />
           </Grid>
         </Border>
       </Grid>
@@ -51,6 +52,7 @@
       <!-- right: protocol, criteria, internal distances, report -->
       <ScrollViewer Grid.Column="1">
         <StackPanel Spacing="16">
+          <v:LiveRunView Height="380" />
           <Border Classes="card">
             <StackPanel>
               <Border Classes="phead">

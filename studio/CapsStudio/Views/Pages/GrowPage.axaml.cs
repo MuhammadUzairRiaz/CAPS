@@ -17,6 +17,7 @@ public partial class GrowPage : PageBase
             _hooked = vm;
             vm.PropertyChanged += (_, e) =>
             {
+                if (e.PropertyName == nameof(CapsStudio.ViewModels.MainViewModel.Growing)) { Centre(vm.Growing); return; }
                 if (e.PropertyName != nameof(CapsStudio.ViewModels.MainViewModel.GrowLiveDoc)) return;
                 var v = this.FindControl<MolView>("LiveView")!;
                 var first = v.Document == null;
@@ -26,6 +27,16 @@ public partial class GrowPage : PageBase
             };
         };
     }
+    /// <summary>While growing, the live cell takes the page's full width (centred); afterwards the settings come back.</summary>
+    private void Centre(bool growing)
+    {
+        var settings = this.FindControl<ScrollViewer>("SettingsPane")!;
+        var live = this.FindControl<Grid>("LivePane")!;
+        settings.IsVisible = !growing;
+        Grid.SetColumn(live, growing ? 0 : 1);
+        Grid.SetColumnSpan(live, growing ? 2 : 1);
+    }
+
     /// <summary>Where the 3D view goes while this page shows.</summary>
     public Decorator Slot => this.FindControl<Decorator>("ViewSlot")!;
 

@@ -35,7 +35,7 @@
     </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
-      <ScrollViewer>
+      <ScrollViewer x:Name="SettingsPane">
         <StackPanel Spacing="16" IsEnabled="{Binding NotGrowing}">
           <!-- Components -->
           <Border Classes="card">
@@ -242,8 +242,8 @@
         </StackPanel>
       </ScrollViewer>
 
-      <!-- Live cell -->
-      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto" RowSpacing="12">
+      <!-- Live cell (while growing it takes the whole page, centred; the settings are locked then anyway) -->
+      <Grid Grid.Column="1" x:Name="LivePane" RowDefinitions="*,Auto,Auto" RowSpacing="12">
         <Border Classes="card" ClipToBounds="True">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead">
@@ -267,8 +267,11 @@
             <!-- while growing: the chains so far (snapshots from the grower), over the 3D view -->
             <Panel Grid.Row="1" IsVisible="{Binding GrowLiveShown}" Background="{DynamicResource Bg0B}">
               <v:MolView x:Name="LiveView" />
-              <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Classes="chip">
+              <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Classes="chip" IsHitTestVisible="False">
                 <TextBlock Text="{Binding GrowLiveAtoms}" Foreground="{DynamicResource MutedB}" />
+              </Border>
+              <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" Classes="chip" IsHitTestVisible="False">
+                <TextBlock Text="drag rotates · wheel zooms · double-click resets" Foreground="{DynamicResource MutedB}" />
               </Border>
             </Panel>
           </Grid>
