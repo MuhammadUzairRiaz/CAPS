@@ -107,6 +107,7 @@ public partial class MainWindow : Window
         {
             PipeTablePlot.XLabel = _vm.PipeTableXLabel;
             PipeTablePlot.YLabel = _vm.PipeTableYLabel;
+            if (_vm.PipeTableHeat is { } heat) { PipeTablePlot.ZLabel = _vm.PipeTableZLabel; PipeTablePlot.SetHeat(heat.X, heat.Y, heat.Z); return; }
             var pts = _vm.PipeTableX.Zip(_vm.PipeTableY).Where(p => double.IsFinite(p.Second)).ToArray();
             if (_vm.PipeTableScatter) { PipeTablePlot.RefY = null; PipeTablePlot.SetData(pts, []); }
             else { PipeTablePlot.RefY = 1.0; PipeTablePlot.Markers = false; PipeTablePlot.SetData(pts); }

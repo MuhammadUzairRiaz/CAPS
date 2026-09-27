@@ -698,6 +698,53 @@ void step_binning(PipelineState& st, const Json& p, StepStatus& out) {
     if (s.atoms.empty() || hi - lo < 1e-9) { lo = 0; hi = 1; }
   }
   const double w = (hi - lo) / bins;
+  // a map over two axes: a table with one row per cell (the Studio draws it as a heat map)
+  const int axis2 = int(p.num("axis2", -1));
+  if (axis2 >= 0 && axis2 <= 2 && axis2 != axis) {
+    const int bins2 = std::clamp(int(p.num("bins2", bins)), 1, 2000);
+    double lo2, hi2;
+    if (s.cell.valid()) {
+      const Vec3 e2 = axis2 == 0 ? s.cell.a : axis2 == 1 ? s.cell.b : s.cell.c;
+      lo2 = s.cell.origin[axis2];
+      hi2 = lo2 + e2[axis2];
+    } else {
+      lo2 = 1e300; hi2 = -1e300;
+      for (const auto& a : s.atoms) { lo2 = std::min(lo2, a.pos[axis2]); hi2 = std::max(hi2, a.pos[axis2]); }
+      if (s.atoms.empty() || hi2 - lo2 < 1e-9) { lo2 = 0; hi2 = 1; }
+    }
+    const double w2 = (hi2 - lo2) / bins2;
+    std::vector<double> sum2(size_t(bins) * size_t(bins2), 0), cnt2(sum2.size(), 0);
+    auto fold = [&](double x, int ax, double l, double h) {
+      if (s.cell.valid() && s.cell.periodic[size_t(ax)]) x = l + std::fmod(std::fmod(x - l, h - l) + (h - l), h - l);
+      return x;
+    };
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      const double x = fold(s.atoms[i].pos[axis], axis, lo, hi), y = fold(s.atoms[i].pos[axis2], axis2, lo2, hi2);
+      if (x < lo || x > hi || y < lo2 || y > hi2) continue;
+      const size_t k = size_t(std::min(bins - 1, int((x - lo) / w))), m = size_t(std::min(bins2 - 1, int((y - lo2) / w2)));
+      sum2[k * size_t(bins2) + m] += v[i];
+      cnt2[k * size_t(bins2) + m] += 1;
+    }
+    const double cellvol = s.cell.valid() ? s.cell.volume() / (double(bins) * bins2) : 0;   // each column through the cell
+    const char* ax1 = axis == 0 ? "x" : axis == 1 ? "y" : "z";
+    const char* ax2 = axis2 == 0 ? "x" : axis2 == 1 ? "y" : "z";
+    DataTable t;
+    t.name = "binning2d";
+    t.title = std::string("Map over ") + ax1 + " and " + ax2 + " · " + (red == "density" ? "density" : prop);
+    t.columns = {std::string(ax1) + " (Å)", std::string(ax2) + " (Å)", red == "density" ? "Density (g/cm³)" : red == "sum" ? prop + " (sum)" : prop + " (mean)", "Count"};
+    for (int k = 0; k < bins; ++k)
+      for (int m = 0; m < bins2; ++m) {
+        const size_t q = size_t(k) * size_t(bins2) + size_t(m);
+        double y = sum2[q];
+        if (red == "mean") y = cnt2[q] > 0 ? y / cnt2[q] : 0;
+        else if (red == "density") y = cellvol > 0 ? y / cellvol * 1.66053906660 : 0;
+        t.rows.push_back({lo + (k + 0.5) * w, lo2 + (m + 0.5) * w2, y, cnt2[q]});
+      }
+    st.tables.push_back(std::move(t));
+    out.summary = std::to_string(bins) + " × " + std::to_string(bins2) + " bins over " + ax1 + ax2 + " · " + (red == "density" ? std::string("density") : red + " of " + prop);
+    if (red == "density" && cellvol <= 0) { out.level = "warning"; out.summary += " · no cell: density not normalised"; }
+    return;
+  }
   std::vector<double> sum(size_t(bins), 0), cnt(size_t(bins), 0);
   for (size_t i = 0; i < s.atoms.size(); ++i) {
     double x = s.atoms[i].pos[axis];

@@ -194,7 +194,7 @@ public sealed partial class MainViewModel
     {
         var name = type switch
         {
-            "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
+            "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => (_pipeSel != null && double.TryParse(_pipeSel.Params["axis2"]?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var a2) && a2 >= 0 ? "binning2d" : "binning"),
             "molecule_shape" => "molecules", "cna" => "structures", "ptm" => "structures", "wigner_seitz" => "defects", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => (_pipeSel != null && ((string?)_pipeSel.Params["method"] ?? "").StartsWith("exact", StringComparison.Ordinal) ? "voronoi_indices" : "voronoi"), "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", "primitive_paths" => "primitive_paths", _ => null,
         };
@@ -290,6 +290,8 @@ public sealed partial class MainViewModel
     }
     public bool HasPipeTables => PipeTables.Count > 0;
     public double[] PipeTableX { get; private set; } = [];
+    public (double[] X, double[] Y, double[] Z)? PipeTableHeat { get; private set; }
+    public string PipeTableZLabel { get; private set; } = "";
     public double[] PipeTableY { get; private set; } = [];
     public string PipeTableXLabel { get; private set; } = "";
     public bool PipeTableScatter { get; private set; }
@@ -446,7 +448,7 @@ public sealed partial class MainViewModel
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
         "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["stack_by"] = "none", ["only_selected"] = false },
         "molecule_shape" => new JsonObject { ["glyphs"] = true },
-        "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density" },
+        "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density", ["axis2"] = -1, ["bins2"] = 50 },
         "topology" => new JsonObject { ["bins"] = 60, ["colour_states"] = true },
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
@@ -604,7 +606,11 @@ public sealed partial class MainViewModel
             case "primitive_paths": Bool("show_chains", "Show the chains too"); Text("radius", "Line radius (Å)", "number"); Text("max_steps", "Minimisation steps at most", "number", "blank: 200 000"); break;
             case "molecule_shape": Bool("glyphs", "Principal-axis glyphs (±√(3λ))"); break;
             case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Choice("stack_by", "Stack by", ["none", "Type", "Element", "Molecule"]); Bool("only_selected", "Only selected"); break;
-            case "binning": Choice("property", "Property", props); Choice("axis", "Along", ["0", "1", "2"]); Text("bins", "Bins", "number"); Choice("reduction", "Reduction", ["density", "mean", "sum"]); break;
+            case "binning":
+                Choice("property", "Property", props); Choice("axis", "Along (0 x, 1 y, 2 z)", ["0", "1", "2"]); Text("bins", "Bins", "number"); Choice("reduction", "Reduction", ["density", "mean", "sum"]);
+                Choice("axis2", "Second axis: a map (−1 none)", ["-1", "0", "1", "2"]); Text("bins2", "Bins along the second axis", "number");
+                Note("With a second axis the result is a map, one cell per pair of bins, drawn as a heat map in the data table view (density: each cell's column through the box)");
+                break;
         }
     }
 
@@ -769,7 +775,7 @@ public sealed partial class MainViewModel
 
     private void LoadPipeTable()
     {
-        PipeTableX = []; PipeTableY = [];
+        PipeTableX = []; PipeTableY = []; PipeTableHeat = null;
         var coreTables = _pipeResult?["tables"] as JsonArray;
         var ncore = coreTables?.Count ?? 0;
         var t = _pipeTable < ncore ? coreTables![_pipeTable] as JsonObject : _pipeTable == ncore ? _series : null;
@@ -788,6 +794,16 @@ public sealed partial class MainViewModel
             PipeTableXLabel = (string?)cols[0] ?? "";
             PipeTableYLabel = (string?)cols[yc] ?? "";
             PipeTableScatter = (bool?)t["points"] ?? false;
+            // a map over two axes (Spatial binning, second axis): x, y and the chosen value column as a heat map
+            PipeTableHeat = null;
+            if ((string?)t["name"] == "binning2d" && cols.Count >= 3)
+            {
+                var zc = Math.Clamp(Math.Max(_pipeYCol, 2), 2, cols.Count - 1);
+                PipeTableHeat = (rows.Select(r => (double?)r?[0] ?? 0).ToArray(), rows.Select(r => (double?)r?[1] ?? 0).ToArray(),
+                                 rows.Select(r => (double?)r?[zc] ?? double.NaN).ToArray());
+                PipeTableYLabel = (string?)cols[1] ?? "";
+                PipeTableZLabel = (string?)cols[zc] ?? "";
+            }
             if (_inspectorTab == 3)
             {
                 // a text column (the molecules a cluster holds …) goes after the first
