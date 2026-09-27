@@ -493,6 +493,8 @@ public partial class MainWindow : Window
         if (!_vm.Busy) await _vm.Field.UseCompanionCharges();
     }
 
+    private void OnSetMeasured(object? s, RoutedEventArgs e) => _vm.SetMeasured();
+
     private async void OnFieldFillSuggested(object? s, RoutedEventArgs e)
     {
         if (!_vm.Busy) await _vm.Field.FillSuggested();

@@ -46,6 +46,20 @@ struct HydrogenPlanRow {
 std::vector<HydrogenPlanRow> hydrogen_plan(const System& s, const std::vector<char>& atoms = {});
 void invert_centre(System& s, uint32_t centre);
 
+// Exact internal coordinates by moving one side of the structure (the side of the last atom, which must not be in a
+// ring with the bond that moves): the bond i–j to r Å, the angle i–j–k to θ degrees, the dihedral i–j–k–l to φ degrees.
+// Throws when the chosen bond is in a ring (the two sides are one).
+void set_bond_length(System& s, uint32_t i, uint32_t j, double r);
+void set_bond_angle(System& s, uint32_t i, uint32_t j, uint32_t k, double theta_deg);
+void set_torsion(System& s, uint32_t i, uint32_t j, uint32_t k, uint32_t l, double phi_deg);
+// Rigid rotation of the atoms by `degrees` about `axis` through their centre; reflection of the atoms through the
+// plane with normal `normal` through their centre (a mirror image: every stereocentre among them inverts).
+void rotate_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& axis, double degrees);
+void mirror_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& normal);
+// The centre made R or S (CIP, from the 3D geometry) by inverting it when it is the other; false when it is not a
+// stereocentre.
+bool set_configuration(System& s, uint32_t centre, const std::string& rs);
+
 struct TacticityChain {
   std::vector<uint32_t> centres;   // stereocentres in chain order
   std::vector<int> sign;           // relative configuration (+1 / −1) of each

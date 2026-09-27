@@ -4896,6 +4896,45 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       char b[96];
       std::snprintf(b, sizeof b, "Move %zu atom(s) by %.2f Å", at.size(), caps::norm(by));
       what = b;
+    } else if (op == "set_geometry") {   // {atoms: [i, j (, k (, l))], value}: the length, angle or dihedral made exact
+      if (!j.has("atoms") || !j["atoms"].is_array()) throw std::invalid_argument("set_geometry needs atoms: [i, j …]");
+      std::vector<uint32_t> at;
+      for (const auto& x : j["atoms"].items()) at.push_back(uint32_t(x.number()));
+      const double v = j.num("value", 0);
+      char b[120];
+      if (at.size() == 2) {
+        caps::set_bond_length(s, at[0], at[1], v);
+        std::snprintf(b, sizeof b, "Bond %u–%u to %.3f Å", at[0] + 1, at[1] + 1, v);
+      } else if (at.size() == 3) {
+        caps::set_bond_angle(s, at[0], at[1], at[2], v);
+        std::snprintf(b, sizeof b, "Angle %u–%u–%u to %.2f°", at[0] + 1, at[1] + 1, at[2] + 1, v);
+      } else if (at.size() == 4) {
+        caps::set_torsion(s, at[0], at[1], at[2], at[3], v);
+        std::snprintf(b, sizeof b, "Dihedral %u–%u–%u–%u to %.2f°", at[0] + 1, at[1] + 1, at[2] + 1, at[3] + 1, v);
+      } else {
+        throw std::invalid_argument("pick two, three or four atoms: a bond, an angle or a dihedral");
+      }
+      what = b;
+    } else if (op == "rotate" || op == "mirror") {   // {atoms | "selection", axis: [x, y, z], degrees} / {…, normal: [x, y, z]}
+      const auto at = atoms_of(d, j);
+      if (at.empty()) throw std::invalid_argument("pick or select the atoms to " + op);
+      const char* key = op == "rotate" ? "axis" : "normal";
+      if (!j.has(key) || !j[key].is_array() || j[key].size() != 3) throw std::invalid_argument(op + " needs " + key + ": [x, y, z]");
+      const caps::Vec3 ax{j[key][0].number(), j[key][1].number(), j[key][2].number()};
+      char b[120];
+      if (op == "rotate") {
+        caps::rotate_atoms(s, at, ax, j.num("degrees", 90));
+        std::snprintf(b, sizeof b, "Rotate %zu atom(s) by %.1f°", at.size(), j.num("degrees", 90));
+      } else {
+        caps::mirror_atoms(s, at, ax);
+        std::snprintf(b, sizeof b, "Mirror %zu atom(s)", at.size());
+      }
+      what = b;
+    } else if (op == "set_rs") {   // {centre, to: "R" | "S"}
+      const uint32_t c = uint32_t(j.num("centre", -1));
+      const std::string to = j.text("to", "R");
+      if (!caps::set_configuration(s, c, to)) throw std::invalid_argument("atom " + std::to_string(c + 1) + " is not a stereocentre");
+      what = "Centre " + std::to_string(c + 1) + " made " + to;
     } else if (op == "fuse_ring") {   // {i, j}: a benzene ring fused onto the bond i–j, cleaned with UFF
       const uint32_t a = uint32_t(j.num("i", -1)), b = uint32_t(j.num("j", -1));
       const auto at = caps::fuse_benzene(s, a, b);
