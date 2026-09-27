@@ -123,7 +123,7 @@ int usage() {
                "               [--no-coulomb] [--quiet]   (.data output carries the force field for LAMMPS)\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
-               "               [--constraints none|h-bonds|all-bonds] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
+               "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
                "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]\n"
                "  caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]\n"
                "               [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)\n"
@@ -186,7 +186,7 @@ const std::set<std::string>& known_options() {
     "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--bci", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax", "--c-term",
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
-    "--components", "--conc", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--cys",
+    "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--cys",
     "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump", "--ea",
     "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--es",
     "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
@@ -2275,6 +2275,7 @@ int main(int argc, char** argv) {
       if (o.count("--pressure")) d.pressure = std::stod(o["--pressure"]);
       if (o.count("--tau-p")) d.tau_p = std::stod(o["--tau-p"]);
       if (o.count("--constraints")) d.constraints = constraints_from_string(o["--constraints"]);
+      if (o.count("--constraint-solver")) d.constraint_algorithm = constraint_algorithm_from_string(o["--constraint-solver"]);
       if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
       if (o.count("--thermo")) d.thermo_every = std::stoi(o["--thermo"]);
       if (o.count("--every")) d.frame_every = std::stoi(o["--every"]);

@@ -186,6 +186,7 @@ public struct CapsMdOpts
     public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
     public long StepOffset;       // added to reported steps (a run continued from a checkpoint)
     public long CheckpointEvery;  // steps between checkpoints (0: about 50 per run; < 0: none)
+    public int ConstraintAlgorithm;   // 0 SHAKE, 1 LINCS (positions; RATTLE for the velocities)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -219,6 +220,7 @@ public struct CapsEquilOpts
     public double TolDensity, TolEnergy, TolRg;
     public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
     public double TolInternal;    // internal distances: relative change at any n (0: 5 %)
+    public int ConstraintAlgorithm;   // 0 SHAKE, 1 LINCS
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

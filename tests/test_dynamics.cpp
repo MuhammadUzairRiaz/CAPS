@@ -360,3 +360,30 @@ TEST(Dynamics, NoseHooverChainsAndMtkBarostat) {
   bad.thermostat = Thermostat::Bussi;
   EXPECT_THROW(run_dynamics(s, bad), std::invalid_argument);
 }
+
+// LINCS solves the same constraint equations as SHAKE: the two trajectories agree to the tolerance, energy is
+// conserved as well, and every constrained bond holds its length
+TEST(Dynamics, LincsMatchesShake) {
+  const System& c0 = relaxed_cell();
+  auto run = [&](ConstraintAlgorithm alg, DynamicsReport& r) {
+    System s = c0;
+    DynamicsOptions o;
+    o.thermostat = Thermostat::None;
+    o.dt = 2.0;
+    o.constraints = ConstraintMode::HBonds;
+    o.constraint_algorithm = alg;
+    o.steps = 200;
+    o.thermo_every = 5;
+    o.seed = 7;
+    o.new_velocities = true;
+    run_dynamics(s, o, &r);
+    return s;
+  };
+  DynamicsReport rs, rl;
+  const System a = run(ConstraintAlgorithm::Shake, rs), b = run(ConstraintAlgorithm::Lincs, rl);
+  double worst = 0;
+  for (size_t i = 0; i < a.atoms.size(); ++i) worst = std::max(worst, norm(a.atoms[i].pos - b.atoms[i].pos));
+  EXPECT_LT(worst, 1e-4);
+  EXPECT_NEAR(rl.thermo.back().total, rs.thermo.back().total, 1e-3 * std::fabs(rs.thermo.back().kinetic));
+  EXPECT_TRUE(std::any_of(rl.notes.begin(), rl.notes.end(), [](const std::string& n) { return n.find("LINCS") != std::string::npos; }));
+}

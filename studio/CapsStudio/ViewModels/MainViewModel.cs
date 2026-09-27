@@ -1135,7 +1135,8 @@ public sealed partial class MainViewModel : ObservableObject
         MdHasBarostat ? (_mdEnsemble == 3 || _mdBarostat == 1 ? "Berendsen et al., J. Chem. Phys. 81, 3684 (1984)" : _mdBarostat == 2 ? "Martyna, Tobias & Klein, J. Chem. Phys. 101, 4177 (1994)" : "Bernetti & Bussi, J. Chem. Phys. 153, 114107 (2020)") : null,
         _mdEnsemble == 0 ? "Swope et al., J. Chem. Phys. 76, 637 (1982)" : null,
         _mdRespa > 0 ? "r-RESPA: Tuckerman, Berne & Martyna, J. Chem. Phys. 97, 1990 (1992)" : null,
-        _mdConstraints > 0 ? "SHAKE/RATTLE: Ryckaert et al., J. Comput. Phys. 23, 327 (1977); Andersen, J. Comput. Phys. 52, 24 (1983)" : null,
+        _mdConstraints > 0 ? (_mdConstraintSolver == 1 ? "LINCS: Hess et al., J. Comput. Chem. 18, 1463 (1997); RATTLE: Andersen, J. Comput. Phys. 52, 24 (1983)"
+                                                       : "SHAKE/RATTLE: Ryckaert et al., J. Comput. Phys. 23, 327 (1977); Andersen, J. Comput. Phys. 52, 24 (1983)") : null,
     }.Where(x => x != null));
     public bool MdHasThermostat => _mdEnsemble is 1 or 2;
     public bool MdHasBarostat => _mdEnsemble is 2 or 3;
@@ -1157,8 +1158,12 @@ public sealed partial class MainViewModel : ObservableObject
     private int _mdRespa;
     public int MdRespa { get => _mdRespa; set { if (Set(ref _mdRespa, Math.Clamp(value, 0, 2))) { Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed)); RefreshPreflight(); } } }
     public bool MdRespaAllowed => !(MdHasThermostat && _mdThermostat is 1 or 2) && _mdConstraints == 0;
-    // bond constraints (SHAKE/RATTLE): 0 none, 1 bonds to hydrogen with rigid water, 2 every bond; r-RESPA is the alternative
-    public static readonly string[] ConstraintChoices = ["None: every bond flexible", "Bonds to hydrogen (SHAKE), rigid water", "All bonds (SHAKE)"];
+    // bond constraints (SHAKE or LINCS, RATTLE velocities): 0 none, 1 bonds to hydrogen with rigid water, 2 every bond; r-RESPA is the alternative
+    public static readonly string[] ConstraintChoices = ["None: every bond flexible", "Bonds to hydrogen, rigid water", "All bonds"];
+    public static readonly string[] ConstraintSolvers = ["SHAKE / RATTLE (as LAMMPS)", "LINCS (as GROMACS)"];
+    private int _mdConstraintSolver;
+    public int MdConstraintSolver { get => _mdConstraintSolver; set { if (Set(ref _mdConstraintSolver, Math.Clamp(value, 0, 1))) { Raise(nameof(MdCitation)); RefreshPreflight(); } } }
+    public bool MdHasConstraints => _mdConstraints > 0;
     private int _mdConstraints;
     public int MdConstraints
     {
@@ -1167,7 +1172,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (!Set(ref _mdConstraints, Math.Clamp(value, 0, 2))) return;
             if (value > 0) { MdRespa = 0; if (_mdDt < 2) MdDtD = 2; if (_mdBarostat == 2) MdBarostat = 0; }   // what constraints are for: 2 fs steps; MTK runs without them
-            Raise(nameof(MdRespaAllowed)); Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed));
+            Raise(nameof(MdRespaAllowed)); Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed)); Raise(nameof(MdHasConstraints));
             RefreshPreflight();
         }
     }
@@ -1307,8 +1312,8 @@ public sealed partial class MainViewModel : ObservableObject
         // time step
         var inner = _mdDt / RespaSteps;   // the step the bonded forces (C–H stretches) see
         if (_mdConstraints > 0)
-            MdPreflight.Add(new CheckRow(string.Format(inv, "Δt {0:0.##} fs with {1} held at their lengths (SHAKE/RATTLE)", _mdDt,
-                    _mdConstraints == 1 ? "bonds to hydrogen" : "all bonds"),
+            MdPreflight.Add(new CheckRow(string.Format(inv, "Δt {0:0.##} fs with {1} held at their lengths ({2})", _mdDt,
+                    _mdConstraints == 1 ? "bonds to hydrogen" : "all bonds", _mdConstraintSolver == 1 ? "LINCS" : "SHAKE/RATTLE"),
                 _mdDt <= (_mdConstraints == 1 ? 2.0 : 2.5) ? "ok" : _mdDt <= 3.0 ? "check" : "fail"));
         else
             MdPreflight.Add(new CheckRow(RespaSteps > 1
@@ -1409,7 +1414,7 @@ public sealed partial class MainViewModel : ObservableObject
             Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
             NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
             ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints,
+            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
         };
         _thermo.Clear();
         ThermoChanged?.Invoke();
@@ -1626,7 +1631,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
-            FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints,
+            FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
         };
         _thermo.Clear();
         ThermoChanged?.Invoke();

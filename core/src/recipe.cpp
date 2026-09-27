@@ -634,6 +634,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (m.tau_t = num(J, "tau_t", 100); m.tau_t <= 0) m.tau_t = 100;
           if (m.tau_p = num(J, "tau_p", 1000); m.tau_p <= 0) m.tau_p = 1000;
           m.pressure = num(J, "pressure", 1.0);
+          // constraints: none (default) | h-bonds | all-bonds; constraint_solver: shake (default) | lincs
+          try {
+            m.constraints = constraints_from_string(text(J, "constraints", "none"));
+            m.constraint_algorithm = constraint_algorithm_from_string(text(J, "constraint_solver", "shake"));
+          } catch (const std::exception& ex) { throw RecipeError(2, std::string("md: ") + ex.what()); }
           m.seed = seed_of(J);
           m.new_velocities = true;
           m.frame_every = 0;
@@ -650,6 +655,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (m.barostat == Barostat::CRescale) c.push_back("bernetti2020");
           if (m.barostat == Barostat::Berendsen) c.push_back("berendsen1984");
           if (m.barostat == Barostat::MTK) c.push_back("martyna1994");
+          if (m.constraints != ConstraintMode::None) c.push_back(m.constraint_algorithm == ConstraintAlgorithm::Lincs ? "hess1997" : "ryckaert1977"), c.push_back("andersen1983");
           elec_cite(c, energy);
           KeyValues pr = {{"length", g6(ps) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs" +
                                          (m.respa > 1 ? " (r-RESPA: bonded forces every " + g6(m.dt / m.respa) + " fs)" : "")},
@@ -657,6 +663,10 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
                           {"thermostat", m.thermostat == Thermostat::None ? std::string("none") : std::string(to_string(m.thermostat)) + " · τ " + g6(m.tau_t) + " fs"}};
           if (m.barostat != Barostat::None)
             pr.push_back({"barostat", std::string(to_string(m.barostat)) + " · " + g6(m.pressure) + " atm · τ " + g6(m.tau_p) + " fs" + (m.thermostat == Thermostat::None ? " (no thermostat: NPH)" : "")});
+          if (m.constraints != ConstraintMode::None) {
+            pr.push_back({"constraints", to_string(m.constraints)});
+            pr.push_back({"constraint solver", m.constraint_algorithm == ConstraintAlgorithm::Lincs ? "LINCS" : "SHAKE"});
+          }
           pr.push_back({"force field", ffname});
           res.manifest.steps.push_back(step("dynamics." + ens, ens == "npt" ? "NPT molecular dynamics" : ens == "nvt" ? "NVT molecular dynamics" : ens == "nph" ? "NPH molecular dynamics" : "NVE molecular dynamics", pr,
                                             seeded(m.seed), c, approx(energy, o.threads)));
@@ -678,6 +688,10 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           e.md.barostat = barostat_from_string(text(J, "barostat", e.md.thermostat == Thermostat::NoseHoover ? "mtk" : "crescale"));
           if (e.md.barostat == Barostat::None) e.md.barostat = Barostat::CRescale;
           if (e.md.barostat == Barostat::MTK) e.md.thermostat = Thermostat::NoseHoover;
+          try {
+            e.md.constraints = constraints_from_string(text(J, "constraints", "none"));
+            e.md.constraint_algorithm = constraint_algorithm_from_string(text(J, "constraint_solver", "shake"));
+          } catch (const std::exception& ex) { throw RecipeError(2, std::string("equilibrate: ") + ex.what()); }
           e.until_converged = flag(J, "until_converged", false);
           e.progress = [&](int si, int sn, const std::string& label, const ThermoRow&) {
             report(k, st, proto + " · step " + std::to_string(si + 1) + "/" + std::to_string(sn) + " · " + label, "running", sn ? double(si) / sn : 0);
