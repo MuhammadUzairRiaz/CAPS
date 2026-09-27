@@ -84,8 +84,40 @@ struct RenderStats {
   size_t bonds = 0;                    // bond halves drawn
 };
 
+// What the renderer draws, in world coordinates, for a GPU view (the view uploads it once and turns it cheaply):
+// spheres, half-bond capsules and lines with their final colours (fading and ambient occlusion applied), the same
+// atoms, styles, colours and radii as render(). Level of detail is not applied; meshes are not included (has_meshes).
+struct Scene {
+  std::vector<float> spheres;          // x y z r per sphere (Å)
+  std::vector<uint32_t> sphere_rgb;    // 0xRRGGBB
+  std::vector<int32_t> sphere_id;      // atom index
+  std::vector<uint8_t> sphere_ring;    // 1 selection ring, 2 keyboard-focus ring, 3 both
+  std::vector<float> capsules;         // ax ay az bx by bz r per capsule (Å)
+  std::vector<uint32_t> capsule_rgb;
+  std::vector<float> lines;            // ax ay az bx by bz per line
+  std::vector<uint32_t> line_rgb;
+  std::vector<float> line_width;       // pixels at 1×
+  bool has_meshes = false;             // surfaces or polyhedra: a view that needs them draws on the CPU
+  uint32_t background = 0;             // 0xRRGGBB
+  bool transparent = false, dark = true, depth_cue = true, outlines = true;
+};
+
+// The camera as render() fits it for an image of opt.width × opt.height × opt.supersample pixels: a world point p maps to
+// r = R (p − centre) + pan (R: yaw about y, then pitch about x), screen x = w/2 + r.x·scale·k, y = h/2 − r.y·scale·k,
+// k = dist / (dist − r.z) in perspective (else 1); zmin, zmax: the view depths of the shown atoms (depth cue).
+struct ViewFit {
+  double cos_yaw = 1, sin_yaw = 0, cos_pitch = 1, sin_pitch = 0;
+  Vec3 centre{0, 0, 0};
+  double scale = 1, w = 1, h = 1, pan_x = 0, pan_y = 0;
+  bool perspective = false;
+  double dist = 100, zmin = 0, zmax = 0;
+};
+ViewFit view_fit(const System& s, const Camera& cam, const RenderOptions& opt);
+
 struct Renderer {
   RenderStats stats;                   // of the last render
+  // The drawable scene (see Scene); ambient occlusion from the renderer's cache.
+  Scene scene(const System& s, const RenderOptions& opt);
   // Picks the atom under a pixel of the last render (-1 if none).
   int pick(int x, int y) const;
   Image render(const System& s, const Camera& cam, const RenderOptions& opt);
@@ -97,6 +129,8 @@ struct Renderer {
   int id_w_ = 0, id_h_ = 0;
   std::vector<float> ao_;              // per-atom accessibility of the last frame (camera independent), and its key
   double ao_key_ = 0;
+  std::vector<float> scene_ao_;        // the same for scene()
+  double scene_ao_key_ = 0;
 };
 
 // Per-atom ambient accessibility in [0, 1]: the share of 32 directions from each atom's surface that leave a 5 Å shell

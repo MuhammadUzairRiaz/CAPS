@@ -207,7 +207,7 @@
               <TextBlock Text="3D view" Classes="title" />
               <TextBlock Text="How structures are drawn when they open. The Studio's toolbar changes them for the session." Classes="muted" />
             </StackPanel>
-            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="18" ColumnSpacing="20" MaxWidth="620" HorizontalAlignment="Left">
               <TextBlock Text="Display style" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.Styles}" SelectedIndex="{Binding SetStyle}" HorizontalAlignment="Stretch" />
               <TextBlock Grid.Row="1" Text="Background" VerticalAlignment="Center" />
@@ -221,6 +221,12 @@
               <CheckBox Grid.Row="2" Grid.Column="1" Classes="toggle" IsChecked="{Binding SetOutlines}" />
               <TextBlock Grid.Row="3" Text="Depth cue" VerticalAlignment="Center" />
               <CheckBox Grid.Row="3" Grid.Column="1" Classes="toggle" IsChecked="{Binding SetDepthCue}" />
+              <TextBlock Grid.Row="4" Text="GPU rendering" VerticalAlignment="Top" Margin="0,4,0,0" />
+              <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
+                <CheckBox Classes="toggle" IsChecked="{Binding SetGpuView}" Content="Draw the 3D view with OpenGL (large structures turn smoothly)" />
+                <TextBlock Text="{Binding GpuStatus}" Classes="dim" TextWrapping="Wrap" />
+                <TextBlock Text="The same atoms, colours and shading as the CPU renderer; images, figures and movies are always rendered on the CPU." Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
             </Grid>
           </StackPanel>
 

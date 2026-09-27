@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 25, "native ABI version 25");
+        Check(Native.AbiVersion() == 26, "native ABI version 26");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -44,6 +44,28 @@ internal static class SelfTest
         Check(s.Atoms == 1300 && s.Bonds == 1370 && s.Molecules == 10, $"summary: {s.Atoms} atoms, {s.Bonds} bonds, {s.Molecules} molecules");
         Check(s.Frames == 3 && vm.HasFrames, $"frames: {s.Frames}");
         Check(Math.Abs(s.Density - 0.386) < 0.001, $"density {s.Density:F4} g/cm³");
+        {
+            // the GPU view's scene and camera: the same atoms and bonds, and every sphere projected where the CPU image has it
+            var gcam = new CapsCamera { Yaw = 0.9, Pitch = 0.3, Zoom = 1.3, PanX = 1.5, PanY = -2, Perspective = 1 };
+            var gopt = vm.ViewOptions(800, 500, 1);
+            var sc = vm.Document!.RenderScene(gopt);
+            var fit = vm.Document!.ViewFit(gcam, gopt);
+            vm.Document!.Render(gcam, gopt, new byte[800 * 500 * 4]);
+            var proj = vm.Document!.ProjectAtoms(gcam, gopt, 1300);
+            double worst = 0;
+            for (var k = 0; k < sc.SphereId.Length; k++)
+            {
+                double dx = sc.Spheres[4 * k] - fit.Cx, dy = sc.Spheres[4 * k + 1] - fit.Cy, dz = sc.Spheres[4 * k + 2] - fit.Cz;
+                var rx = dx * fit.CosYaw + dz * fit.SinYaw; var rz = -dx * fit.SinYaw + dz * fit.CosYaw;
+                var ry = dy * fit.CosPitch - rz * fit.SinPitch; var rz2 = dy * fit.SinPitch + rz * fit.CosPitch;
+                rx += fit.PanX; ry += fit.PanY;
+                var kk = fit.Perspective != 0 ? fit.Dist / Math.Max(1e-3, fit.Dist - rz2) : 1;
+                var i = sc.SphereId[k];
+                worst = Math.Max(worst, Math.Max(Math.Abs(fit.W / 2 + rx * fit.Scale * kk - proj[3 * i]), Math.Abs(fit.H / 2 - ry * fit.Scale * kk - proj[3 * i + 1])));
+            }
+            Check(sc.SphereId.Length == 1300 && sc.CapsuleRgb.Length == 2 * 1370 && sc.LineRgb.Length == 12 && !sc.CpuOnly && worst < 1e-3,
+                  $"GPU scene: {sc.SphereId.Length} spheres, {sc.CapsuleRgb.Length} half-bonds, {sc.LineRgb.Length} cell edges; projected as the CPU image to {worst:G2} px");
+        }
         Check(s.Format == "lammps-dump", $"format '{s.Format}'");
 
         // Command palette: filters commands, offers a typed SMILES, runs the chosen one

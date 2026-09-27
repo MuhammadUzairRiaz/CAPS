@@ -80,6 +80,14 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
+        _vm.ViewRequested += RequestViewRender;
+        ViewGl.FitStale += RequestViewRender;
+        ViewGl.ReadyChanged += () => Dispatcher.UIThread.Post(() =>
+        {
+            _vm.GpuStatus = ViewGl.Ready ? "In use · " + ViewGl.Status : "Not in use: " + ViewGl.Status;
+            if (!ViewGl.Ready) { ViewGl.IsVisible = false; ViewImage.IsVisible = true; }
+            RequestRender();
+        });
         RenderGuide.Vm = _vm;
         PipeTablePlot.Brushable = true;
         PipeTablePlot.Brushed += (x0, x1, y0, y1) => _vm.ApplyBrush(x0, x1, y0, y1);
@@ -710,9 +718,85 @@ public partial class MainWindow : Window
 
     private void RequestRender()
     {
+        _sceneDirty = true;   // content may have changed: the GPU view rebuilds its scene
+        RequestViewRender();
+    }
+
+    /// <summary>Only the camera moved (drag, wheel, flight): the GPU view turns the scene it has.</summary>
+    private void RequestViewRender()
+    {
         if (_vm.IsRender) RenderGuide.InvalidateVisual();
         _requested++;
         if (!_busy) _ = RenderLoop();
+    }
+
+    // ---- GPU view (GlMolView): the scene is uploaded on content changes; turning only sends the camera. Picking and the
+    // label overlay use the CPU renderer's id buffer, refreshed off screen once the view stops moving, or before a click.
+    private bool _sceneDirty = true, _gpuCpuOnly, _cpuStale, _gpuTried;
+    private object? _sceneDoc;
+    private DispatcherTimer? _idle;
+    private byte[] _pickBuf = [];
+
+    private bool GpuPath()
+    {
+        if (!_vm.GpuView || _vm.IsRender) return false;
+        if (!ViewGl.Ready)
+        {
+            if (!_gpuTried) { _gpuTried = true; ViewGl.IsVisible = true; }   // shown once: OpenGL starts, ReadyChanged follows
+            return false;
+        }
+        return true;
+    }
+
+    private void RestartIdle()
+    {
+        if (_idle == null)
+        {
+            _idle = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _idle.Tick += async (_, _) =>
+            {
+                _idle!.Stop();
+                if (_cpuStale && !_busy) await RefreshPickBuffer();
+            };
+        }
+        _idle.Stop();
+        _idle.Start();
+    }
+
+    /// <summary>The CPU id buffer for the GPU view's last camera (off the UI thread), then the overlays from it.</summary>
+    private async Task RefreshPickBuffer()
+    {
+        if (_vm.Document is not { } doc || _vm.Busy || !_haveLast) return;
+        var cam = _lastCam;
+        var opt = _lastOpt;
+        var n = _pixW * _pixH * 4;
+        if (_pickBuf.Length != n) _pickBuf = new byte[n];
+        var buf = _pickBuf;
+        try { await Task.Run(() => doc.Render(cam, opt, buf)); } catch { return; }
+        if (!ReferenceEquals(doc, _vm.Document) || !SameCamera(cam, _lastCam)) return;   // moved meanwhile: the next idle does it
+        _cpuStale = false;
+        UpdateOverlays(cam, opt);
+    }
+
+    /// <summary>Before a pick: the id buffer for what the GPU view shows now.</summary>
+    private void EnsurePickBuffer()
+    {
+        if (!_cpuStale || _vm.Document is not { } doc || !_haveLast || _vm.Busy) return;
+        var n = _pixW * _pixH * 4;
+        if (_pickBuf.Length != n) _pickBuf = new byte[n];
+        try { doc.Render(_lastCam, _lastOpt, _pickBuf); _cpuStale = false; } catch { }
+    }
+
+    private static bool SameCamera(in CapsStudio.Interop.CapsCamera a, in CapsStudio.Interop.CapsCamera b) =>
+        a.Yaw == b.Yaw && a.Pitch == b.Pitch && a.Zoom == b.Zoom && a.PanX == b.PanX && a.PanY == b.PanY && a.Perspective == b.Perspective;
+
+    /// <summary>Atom labels, the lens and pinned monitors over the view for this camera.</summary>
+    private void UpdateOverlays(CapsStudio.Interop.CapsCamera cam, CapsStudio.Interop.CapsRenderOpts opt)
+    {
+        try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>()); }
+        catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
+        Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
+        try { Labels.SetMonitors(_vm.MonitorMarks(cam, opt, _scaling)); } catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
     }
 
     private byte[] _frameBuf = [];
@@ -741,6 +825,38 @@ public partial class MainWindow : Window
                 var pw = (int)(w * _scaling);
                 var ph = (int)(h * _scaling);
                 var cam = _vm.ViewCamera(w, h);
+                if (!field && GpuPath())
+                {
+                    var gopt = _vm.ViewOptions(pw, ph, 1);
+                    if (_sceneDirty || !ReferenceEquals(_sceneDoc, doc))
+                    {
+                        _sceneDirty = false;   // a change during the build marks it again
+                        CapsStudio.Interop.CapsSceneData? sc;
+                        try { sc = await Task.Run(() => doc.RenderScene(gopt)); } catch { sc = null; }
+                        _gpuCpuOnly = sc == null || sc.CpuOnly;   // surfaces, polyhedra, colour-vision preview: the CPU draws them
+                        if (!_gpuCpuOnly) { ViewGl.SetScene(sc!); _sceneDoc = doc; }
+                        else _sceneDoc = null;
+                    }
+                    if (!_gpuCpuOnly && ReferenceEquals(doc, _vm.Document))
+                    {
+                        var gsw = Stopwatch.StartNew();
+                        var fit = doc.ViewFit(cam, gopt);
+                        ViewGl.SetView(fit);
+                        if (!ViewGl.IsVisible) ViewGl.IsVisible = true;
+                        if (ViewImage.IsVisible) ViewImage.IsVisible = false;
+                        var cpuOpt = _vm.ViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2);   // what picks and overlays are made with
+                        _pixW = pw; _pixH = ph;
+                        _lastCam = cam; _lastOpt = cpuOpt; _haveLast = true;
+                        _cpuStale = true;
+                        UpdateOverlays(cam, cpuOpt);
+                        RenderStat.Text = $"{pw}×{ph} px · GPU · {gsw.Elapsed.TotalMilliseconds + ViewGl.LastFrameMs:0} ms";
+                        RestartIdle();
+                        _rendered = ticket;
+                        continue;
+                    }
+                }
+                if (!field && ViewGl.IsVisible && ViewGl.Ready) { ViewGl.IsVisible = false; }
+                if (!field && !ViewImage.IsVisible) ViewImage.IsVisible = true;
                 // Retina already gives 2 samples per point; supersample only on 1× screens.
                 var opt = field ? _vm.FieldViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2) : _vm.ViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2);
                 // the pixel buffer and two bitmaps are kept while the size holds (a drag renders tens of frames a second;
@@ -901,6 +1017,7 @@ public partial class MainWindow : Window
             {
                 try
                 {
+                    EnsurePickBuffer();
                     var hit = doc.Pick((int)(p.Position.X * _scaling), (int)(p.Position.Y * _scaling));
                     var set = _vm.MoveSet(hit);
                     if (set.Length > 0)
@@ -931,6 +1048,7 @@ public partial class MainWindow : Window
         if (!_dragging && _vm.LensHold && _vm.Document != null && !_vm.Busy)   // L held: the lens follows the atom under the cursor
         {
             var at = e.GetPosition(_host);
+            EnsurePickBuffer();
             var hit = _vm.Document.Pick((int)(at.X * _scaling), (int)(at.Y * _scaling));
             if (hit >= 0) { _vm.MoveLens(hit); RequestRender(); }
             return;
@@ -967,7 +1085,7 @@ public partial class MainWindow : Window
             _vm.Camera.Yaw += d.X * 0.008;
             _vm.Camera.Pitch = Math.Clamp(_vm.Camera.Pitch + d.Y * 0.008, -Math.PI / 2, Math.PI / 2);
         }
-        RequestRender();
+        RequestViewRender();
     }
 
     private Interop.CapsSummary Summary() => _vm.Document?.Summary() ?? default;
@@ -982,6 +1100,7 @@ public partial class MainWindow : Window
             var inside = new List<int>();
             if (poly.Count >= 3 && _haveLast)
             {
+                EnsurePickBuffer();
                 var n = (int)ldoc.Summary().Atoms;
                 var proj = ldoc.ProjectAtoms(_lastCam, _lastOpt, n);
                 for (var i = 0; i < n; ++i)
@@ -1012,6 +1131,7 @@ public partial class MainWindow : Window
         if (_dragging && !_moved && _vm.Document != null && !_vm.Busy)
         {
             var pos = e.GetPosition(_host);
+            if (_host == ViewHost) EnsurePickBuffer();
             var hit = _vm.Document.Pick((int)(pos.X * _scaling), (int)(pos.Y * _scaling));
             if (!_vm.PickAllowed(hit)) hit = -1;   // "Measurements only inside" the lens
             if (_host == FieldViewHost) { if (hit >= 0) _vm.Field.SelectAtom(hit); }
@@ -1027,7 +1147,7 @@ public partial class MainWindow : Window
         if (_vm.Document == null || _vm.Busy) return;
         _vm.StopFly();
         _vm.Camera.Zoom = Math.Clamp(_vm.Camera.Zoom * Math.Pow(1.12, e.Delta.Y), 0.1, 40);
-        RequestRender();
+        RequestViewRender();
     }
 
     // ---------------------------------------------------------------- export

@@ -355,21 +355,47 @@ int Renderer::pick(int x, int y) const {
   return v >= 0 ? v : -1;
 }
 
-Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& opt) {
-  const int ss = std::clamp(opt.supersample, 1, 4);
-  const int W = opt.width * ss, H = opt.height * ss;
-  Buffers B(W, H);
-  const bool dark_bg = opt.background == Background::Dark ||
-                       (opt.background == Background::Custom && (((opt.custom_rgb >> 16) & 255) + ((opt.custom_rgb >> 8) & 255) + (opt.custom_rgb & 255)) < 384);
-  const RGB bg = rgb(background_rgb(opt.background, opt.custom_rgb));
+namespace {
+// What every renderer (CPU image, GPU scene) draws: which atoms, each one's style, colour and radius.
+struct Prep {
+  const System* s = nullptr;
+  const RenderOptions* opt = nullptr;
+  std::vector<char> show;
+  bool mixed = false;
+  std::vector<RGB> colour;
+  RGB bg{0, 0, 0};
+  bool dark_bg = true;
+  double bond_r = 0.14;
+  Style style_of(size_t i) const { return mixed ? Style(opt->atom_style[i]) : opt->style; }
+  double radius(size_t i) const {
+    const double vdw = element(s->atoms[i].element).vdw;
+    switch (style_of(i)) {
+      case Style::SpaceFilling: return vdw;
+      case Style::Sticks: return opt->bond_radius;
+      case Style::Backbone: return opt->bond_radius * 2.2;
+      case Style::Wireframe: return 0.0;
+      case Style::Polyhedra: return std::max(opt->bond_radius * 1.1, vdw * opt->atom_scale * 0.7);
+      default: return std::max(opt->bond_radius * 1.25, vdw * opt->atom_scale);
+    }
+  }
+};
 
-  // Which atoms are drawn, and each one's style (mixed styles override the global one).
+Prep prepare(const System& s, const RenderOptions& opt) {
+  Prep P;
+  P.s = &s;
+  P.opt = &opt;
+  P.dark_bg = opt.background == Background::Dark ||
+              (opt.background == Background::Custom && (((opt.custom_rgb >> 16) & 255) + ((opt.custom_rgb >> 8) & 255) + (opt.custom_rgb & 255)) < 384);
+  P.bg = rgb(background_rgb(opt.background, opt.custom_rgb));
+  const RGB bg = P.bg;
   const size_t n = s.atoms.size();
-  std::vector<char> show(n, 1);
+  std::vector<char>& show = P.show;
+  show.assign(n, 1);
   if (opt.style == Style::NoHydrogens || opt.style == Style::Backbone)
     for (size_t i = 0; i < n; ++i) show[i] = s.atoms[i].element != 1;
-  const bool mixed = opt.atom_style.size() == n;
-  auto style_of = [&](size_t i) { return mixed ? Style(opt.atom_style[i]) : opt.style; };
+  P.mixed = opt.atom_style.size() == n;
+  const bool mixed = P.mixed;
+  auto style_of = [&](size_t i) { return P.style_of(i); };
   if (mixed)
     for (size_t i = 0; i < n; ++i) {
       const Style st = style_of(i);
@@ -377,7 +403,6 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       else if (st == Style::NoHydrogens || st == Style::Backbone) show[i] = s.atoms[i].element != 1;
       else show[i] = 1;
     }
-
   // Colours.
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
@@ -389,7 +414,8 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     if (opt.range_max > opt.range_min) pmin = opt.range_min, pmax = opt.range_max;
     if (pmax - pmin < 1e-12) pmax = pmin + 1;
   }
-  std::vector<RGB> colour(n);
+  std::vector<RGB>& colour = P.colour;
+  colour.assign(n, RGB{0, 0, 0});
   const bool overrides = opt.colours.size() == n;
   for (size_t i = 0; i < n; ++i) {
     const Atom& a = s.atoms[i];
@@ -412,22 +438,160 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   if (opt.faded.size() == n)
     for (size_t i = 0; i < n; ++i) if (opt.faded[i]) colour[i] = mixc(colour[i], bg, std::clamp(opt.fade, 0.0f, 1.0f));
 
+
+  P.bond_r = opt.style == Style::Backbone && !mixed ? opt.bond_radius * 2.2 : opt.bond_radius;
+  return P;
+}
+}  // namespace
+
+
+ViewFit view_fit(const System& s, const Camera& cam, const RenderOptions& opt) {
+  const Prep P = prepare(s, opt);
+  const int ss = std::clamp(opt.supersample, 1, 4);
+  const View v = fit_view(s, cam, opt, P.show, opt.width * ss, opt.height * ss);
+  ViewFit f;
+  f.cos_yaw = v.cy, f.sin_yaw = v.sy, f.cos_pitch = v.cp, f.sin_pitch = v.sp;
+  f.centre = v.centre, f.scale = v.scale, f.w = v.w, f.h = v.h, f.pan_x = v.pan_x, f.pan_y = v.pan_y;
+  f.perspective = v.persp, f.dist = v.dist;
+  double zmin = 1e300, zmax = -1e300;
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (P.show[i]) { const double z = v.rot(s.atoms[i].pos)[2]; zmin = std::min(zmin, z); zmax = std::max(zmax, z); }
+  if (zmin > zmax) zmin = zmax = 0;
+  f.zmin = zmin, f.zmax = zmax;
+  return f;
+}
+
+Scene Renderer::scene(const System& s, const RenderOptions& opt) {
+  const Prep P = prepare(s, opt);
+  const size_t n = s.atoms.size();
+  Scene sc;
+  sc.background = background_rgb(opt.background, opt.custom_rgb);
+  sc.transparent = opt.background == Background::Transparent;
+  sc.dark = P.dark_bg, sc.depth_cue = opt.depth_cue, sc.outlines = opt.outlines;
+  sc.has_meshes = !opt.meshes.empty();
+  auto pack = [](RGB c) {
+    auto q = [](float x) { return uint32_t(std::clamp(x, 0.f, 1.f) * 255 + .5f); };
+    return (q(c.r) << 16) | (q(c.g) << 8) | q(c.b);
+  };
+  // ambient occlusion per atom (as render(), all atoms in full detail), multiplied into the colours
+  std::vector<RGB> colour = P.colour;
+  if (opt.ambient_occlusion && n) {
+    double key = double(n) * 1e-3 + double(opt.style) * 7 + 0.5;
+    for (size_t i = 0; i < n; i += std::max<size_t>(1, n / 512)) key += s.atoms[i].pos[0] * 1.3 + s.atoms[i].pos[1] * 1.7 + s.atoms[i].pos[2] * 2.9;
+    if (scene_ao_.size() != n || scene_ao_key_ != key) {
+      std::vector<double> rad(n);
+      for (size_t i = 0; i < n; ++i) rad[i] = P.radius(i);
+      scene_ao_ = ambient_accessibility(s, rad, P.show);
+      scene_ao_key_ = key;
+    }
+    for (size_t i = 0; i < n; ++i)
+      if (P.show[i]) { const float f = 0.3f + 0.7f * scene_ao_[i]; colour[i] = {colour[i].r * f, colour[i].g * f, colour[i].b * f}; }
+  }
+  // bonds: two half-capsules in their atoms' colours (wireframe: lines), as render()
+  if (opt.style != Style::SpaceFilling || P.mixed) {
+    double half_cell = 1e300;
+    if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
+    for (const auto& b : s.bonds) {
+      if (!P.show[b.i] || !P.show[b.j]) continue;
+      const Style si = P.style_of(b.i), sj = P.style_of(b.j);
+      if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
+      const Vec3 a = s.atoms[b.i].pos, c = s.atoms[b.j].pos;
+      if (norm(a - c) > half_cell) continue;
+      const Vec3 m = (a + c) * 0.5;
+      if (si == Style::Wireframe || sj == Style::Wireframe) {
+        for (int h = 0; h < 2; ++h) {
+          const Vec3& p0 = h ? m : a;
+          const Vec3& p1 = h ? c : m;
+          sc.lines.insert(sc.lines.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2])});
+          sc.line_rgb.push_back(pack(colour[h ? b.j : b.i]));
+          sc.line_width.push_back(1.4f);
+        }
+        continue;
+      }
+      const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : P.bond_r;
+      for (int h = 0; h < 2; ++h) {
+        const Vec3& p0 = h ? m : a;
+        const Vec3& p1 = h ? c : m;
+        sc.capsules.insert(sc.capsules.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2]), float(br)});
+        sc.capsule_rgb.push_back(pack(colour[h ? b.j : b.i]));
+      }
+    }
+  }
+  // atoms
+  std::vector<uint8_t> ring(n, 0);
+  for (int hi : opt.highlight) if (hi >= 0 && size_t(hi) < n) ring[size_t(hi)] |= 1;
+  if (opt.focus >= 0 && size_t(opt.focus) < n) ring[size_t(opt.focus)] |= 2;
+  for (size_t i = 0; i < n; ++i) {
+    if (!P.show[i]) continue;
+    const double r = P.radius(i);
+    if (r <= 0 && !ring[i]) continue;   // wireframe: bonds only
+    const Vec3& p = s.atoms[i].pos;
+    sc.spheres.insert(sc.spheres.end(), {float(p[0]), float(p[1]), float(p[2]), float(std::max(r, 0.0))});
+    sc.sphere_rgb.push_back(pack(colour[i]));
+    sc.sphere_id.push_back(int32_t(i));
+    sc.sphere_ring.push_back(ring[i]);
+  }
+  // segments: tubes, arrows ending in a stepped cone
+  for (const auto& sg : opt.segments) {
+    auto tube = [&](const Vec3& a, const Vec3& b, double r) {
+      sc.capsules.insert(sc.capsules.end(), {float(a[0]), float(a[1]), float(a[2]), float(b[0]), float(b[1]), float(b[2]), float(r)});
+      sc.capsule_rgb.push_back(sg.rgb & 0xFFFFFF);
+    };
+    if (!sg.arrow) { tube(sg.a, sg.b, sg.radius); continue; }
+    const double len = norm(sg.b - sg.a);
+    const double head = std::min(0.35 * len, 6.0 * sg.radius);
+    const double f = len > 1e-9 ? 1 - head / len : 0;
+    const Vec3 h = sg.a + (sg.b - sg.a) * f;
+    tube(sg.a, h, sg.radius);
+    constexpr int steps = 6;
+    for (int k = 0; k < steps; ++k) {
+      const double t0 = double(k) / steps, t1 = double(k + 1) / steps;
+      tube(h + (sg.b - h) * t0, h + (sg.b - h) * t1, sg.radius * (2.4 * (1 - t0) + 0.3));
+    }
+  }
+  // cell edges (a supercell dashed, with one unit cell in the accent)
+  if (opt.show_cell && s.cell.valid()) {
+    const uint32_t ec = P.dark_bg ? 0xA5ABB1 : 0x6B7178;
+    const int E[12][2] = {{0, 1}, {0, 2}, {0, 4}, {1, 3}, {1, 5}, {2, 3}, {2, 6}, {3, 7}, {4, 5}, {4, 6}, {5, 7}, {6, 7}};
+    const auto& rep = opt.cell_repeats;
+    const bool super = rep[0] * rep[1] * rep[2] > 1 && rep[0] > 0 && rep[1] > 0 && rep[2] > 0;
+    auto corner = [&](int k, double fa, double fb, double fc) {
+      return s.cell.origin + s.cell.a * (((k >> 2) & 1) * fa) + s.cell.b * (((k >> 1) & 1) * fb) + s.cell.c * ((k & 1) * fc);
+    };
+    auto add = [&](const Vec3& a, const Vec3& b, uint32_t c, float w) {
+      sc.lines.insert(sc.lines.end(), {float(a[0]), float(a[1]), float(a[2]), float(b[0]), float(b[1]), float(b[2])});
+      sc.line_rgb.push_back(c);
+      sc.line_width.push_back(w);
+    };
+    for (auto& e : E) {
+      const Vec3 a = corner(e[0], 1, 1, 1), b = corner(e[1], 1, 1, 1);
+      if (!super) { add(a, b, ec, 1.1f); continue; }
+      const int nd = std::max(1, int(norm(b - a) / 0.8));   // dashes of about 0.8 Å
+      for (int q = 0; q < nd; q += 2) add(a + (b - a) * (double(q) / nd), a + (b - a) * (double(std::min(q + 1, nd)) / nd), ec, 1.0f);
+    }
+    if (super)
+      for (auto& e : E) add(corner(e[0], 1.0 / rep[0], 1.0 / rep[1], 1.0 / rep[2]), corner(e[1], 1.0 / rep[0], 1.0 / rep[1], 1.0 / rep[2]), 0xF5A524, 2.0f);
+  }
+  return sc;
+}
+
+Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& opt) {
+  const int ss = std::clamp(opt.supersample, 1, 4);
+  const int W = opt.width * ss, H = opt.height * ss;
+  Buffers B(W, H);
+  const Prep P = prepare(s, opt);
+  const bool dark_bg = P.dark_bg;
+  const RGB bg = P.bg;
+  const size_t n = s.atoms.size();
+  const std::vector<char>& show = P.show;
+  const bool mixed = P.mixed;
+  auto style_of = [&](size_t i) { return P.style_of(i); };
+  const std::vector<RGB>& colour = P.colour;
   // Camera: centre on the cell (or the atoms), fit the rotated extent.
   const View v = fit_view(s, cam, opt, show, W, H);
 
-  // Radii.
-  auto radius = [&](size_t i) {
-    const double vdw = element(s.atoms[i].element).vdw;
-    switch (style_of(i)) {
-      case Style::SpaceFilling: return vdw;
-      case Style::Sticks: return opt.bond_radius;
-      case Style::Backbone: return opt.bond_radius * 2.2;
-      case Style::Wireframe: return 0.0;
-      case Style::Polyhedra: return std::max(opt.bond_radius * 1.1, vdw * opt.atom_scale * 0.7);
-      default: return std::max(opt.bond_radius * 1.25, vdw * opt.atom_scale);
-    }
-  };
-  const double bond_r = opt.style == Style::Backbone && !mixed ? opt.bond_radius * 2.2 : opt.bond_radius;
+  auto radius = [&](size_t i) { return P.radius(i); };
+  const double bond_r = P.bond_r;
 
   std::vector<double> px(n), py(n), pz(n), pk(n);
   double zmin = 1e300, zmax = -1e300;
