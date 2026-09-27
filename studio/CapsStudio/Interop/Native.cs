@@ -221,6 +221,8 @@ public struct CapsEquilOpts
     public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
     public double TolInternal;    // internal distances: relative change at any n (0: 5 %)
     public int ConstraintAlgorithm;   // 0 SHAKE, 1 LINCS
+    public IntPtr InternalTarget;     // a target ⟨R²(n)⟩/(n⟨b²⟩) indexed by n (pinned by the caller for the run), or zero
+    public int InternalTargetN;
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

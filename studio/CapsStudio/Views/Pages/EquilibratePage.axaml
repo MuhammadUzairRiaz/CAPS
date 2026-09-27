@@ -91,6 +91,15 @@
                   <NumericUpDown Grid.Row="1" Value="{Binding EqBlockD}" Minimum="0.1" Increment="5" FormatString="0.#" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding EqMaxBlocksD}" Minimum="1" Increment="1" FormatString="0" />
                 </Grid>
+                <StackPanel Spacing="4" IsEnabled="{Binding EqUntilConverged}">
+                  <TextBlock Text="Internal distances also converge to" Classes="label" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.EqTargetChoices}" SelectedIndex="{Binding EqTarget}" HorizontalAlignment="Stretch"
+                              ToolTip.Tip="Besides settling between blocks, ⟨R²(n)⟩/(n⟨b²⟩) along the backbones must come within the tolerance of this curve at every n it gives (Theodorou &amp; Suter): the RIS polyethylene C_n for alkane cells, or a curve of your own (e.g. from a longer run or a single-chain simulation)" />
+                    <Button Grid.Column="1" Content="Load…" Click="OnLoadTarget" IsVisible="{Binding EqTargetIsFile}" />
+                  </Grid>
+                  <TextBlock Text="{Binding EqTargetNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding EqTargetNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
                 <Expander Header="Stages (editable text)" Padding="0,8,0,0">
                   <TextBox Text="{Binding EqText}" AcceptsReturn="True" Classes="mono" FontSize="11.5" MinHeight="160" MaxHeight="300" TextWrapping="NoWrap" />
                 </Expander>

@@ -341,6 +341,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (Native.RisCn(_mdTemp, nmax, c) == nmax) ris = n.Select(v => ((double)v, c[Math.Clamp(v, 1, nmax) - 1])).ToArray();
             }
             RisCurve = ris;
+            Raise(nameof(ChainReference)); Raise(nameof(EqTargetNote));
             ChainCurve = n.Select((v, k) => ((double)v, r[k])).ToArray();
             ChainNote = chains == 0 ? "no chains of four or more heavy atoms"
                 : string.Format(CultureInfo.InvariantCulture, "{0} backbones · ⟨b²⟩ {1:F3} Å² · plateau → C∞ for equilibrated long chains · frame {2}", chains, b2, _frame)
@@ -1633,6 +1634,10 @@ public sealed partial class MainViewModel : ObservableObject
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
             FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
         };
+        // the internal-distance target curve, pinned for the run
+        var target = EqTargetCurve();
+        var pin = target.Length > 0 ? System.Runtime.InteropServices.GCHandle.Alloc(target, System.Runtime.InteropServices.GCHandleType.Pinned) : default;
+        if (pin.IsAllocated) { o.InternalTarget = pin.AddrOfPinnedObject(); o.InternalTargetN = target.Length; }
         _thermo.Clear();
         ThermoChanged?.Invoke();
         EqLog = "Starting…";
@@ -1709,12 +1714,78 @@ public sealed partial class MainViewModel : ObservableObject
         }
         finally
         {
+            if (pin.IsAllocated) pin.Free();
             EqRunning = false;
             ThermoChanged?.Invoke();
         }
     }
 
     public void CancelEquilibrate() => _eqCancel?.Cancel();
+
+    // ---- the internal-distance target: production blocks also stop only when ⟨R²(n)⟩/(n⟨b²⟩) is within the tolerance of it
+    public static readonly string[] EqTargetChoices = ["None: between blocks only", "RIS polyethylene (alkane cells)", "A curve from a file (n, value)"];
+    private int _eqTarget;
+    private (double X, double Y)[] _eqTargetFile = [];
+    private string _eqTargetFileName = "";
+    public int EqTarget
+    {
+        get => _eqTarget;
+        set { if (Set(ref _eqTarget, Math.Clamp(value, 0, 2))) { Raise(nameof(EqTargetNote)); Raise(nameof(EqTargetIsFile)); Raise(nameof(ChainReference)); } }
+    }
+    public bool EqTargetIsFile => _eqTarget == 2;
+    /// <summary>The protocol's final temperature (the RIS reference is taken there).</summary>
+    private double EqEndTemperature => _eqProtocol == 1 ? _eqTLow : _eqTFinal;
+    public string EqTargetNote => _eqTarget switch
+    {
+        1 => _risCurve.Length > 0 ? string.Format(CultureInfo.InvariantCulture, "Flory's three-state model at {0:F0} K (the protocol's end); every n within the tolerance", EqEndTemperature)
+                                  : "Only for cells of alkanes (every molecule CₙH₂ₙ₊₂): this structure has none, so no target is used",
+        2 => _eqTargetFile.Length > 0 ? $"{_eqTargetFileName}: {_eqTargetFile.Length} points, n {_eqTargetFile[0].X:0}–{_eqTargetFile[^1].X:0}" : "Load a file: two columns, n and ⟨R²(n)⟩/(n⟨b²⟩) (# comments)",
+        _ => "",
+    };
+    /// <summary>The curve the chain plot compares with: the loaded target, else the RIS reference for alkanes.</summary>
+    public (double X, double Y)[] ChainReference => _eqTarget == 2 && _eqTargetFile.Length > 0 ? _eqTargetFile : _risCurve;
+
+    /// <summary>Reads a target curve: lines of n and the value (whitespace or comma separated); others are skipped.</summary>
+    public void LoadEqTarget(string path)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var pts = new SortedDictionary<int, double>();
+        foreach (var raw in File.ReadLines(path))
+        {
+            var line = raw.Split('#')[0].Trim();
+            var f = line.Split([' ', '\t', ',', ';'], StringSplitOptions.RemoveEmptyEntries);
+            if (f.Length < 2 || !double.TryParse(f[0], NumberStyles.Float, inv, out var n) || !double.TryParse(f[1], NumberStyles.Float, inv, out var v)) continue;
+            if (n < 1 || n > 1_000_000 || Math.Abs(n - Math.Round(n)) > 1e-9 || !(v > 0) || !double.IsFinite(v)) continue;
+            pts[(int)Math.Round(n)] = v;
+        }
+        if (pts.Count == 0) { Status = "No (n, value) rows in " + Path.GetFileName(path); return; }
+        _eqTargetFile = pts.Select(kv => ((double)kv.Key, kv.Value)).ToArray();
+        _eqTargetFileName = Path.GetFileName(path);
+        EqTarget = 2;
+        Raise(nameof(EqTargetNote)); Raise(nameof(ChainReference));
+        Status = $"Target curve: {_eqTargetFile.Length} points from {_eqTargetFileName}";
+    }
+
+    /// <summary>The target indexed by n (0 where there is none), or empty.</summary>
+    private double[] EqTargetCurve()
+    {
+        if (_eqTarget == 2 && _eqTargetFile.Length > 0)
+        {
+            var t = new double[(int)_eqTargetFile[^1].X + 1];
+            foreach (var (n, v) in _eqTargetFile) t[(int)n] = v;
+            return t;
+        }
+        if (_eqTarget == 1 && _risCurve.Length > 0)
+        {
+            var nmax = (int)_risCurve.Max(p => p.X);
+            var c = new double[nmax];
+            if (Native.RisCn(EqEndTemperature, nmax, c) != nmax) return [];
+            var t = new double[nmax + 1];
+            Array.Copy(c, 0, t, 1, nmax);
+            return t;
+        }
+        return [];
+    }
 
     // ---- convergence (Convergence board): criteria and block means
     public ObservableCollection<CriterionRow> EqCriteria { get; } = new();
