@@ -7,7 +7,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="Polymer cell · CAPS Grow" Classes="title" />
-        <TextBlock Text="Builds polymer chains monomer by monomer, from repeat units, inside a periodic cell at the density you set (an amorphous polymer, as Materials Studio's Amorphous Cell). The cell joins the project as a new structure; Minimise, Dynamics and Export work on it, or on any other structure." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
+        <TextBlock Text="Makes new polymer chains: from repeat units, monomer by monomer, each chain grown inside a periodic cell at the density you set (an amorphous polymer or rubber, as Materials Studio's Amorphous Cell Construction). To put molecules you already have — solvent, gas, fillers, curatives — into a box or into this cell, use Packing. The cell can go straight to Export; Minimise and Dynamics are optional." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSaveRecipe" ToolTip.Tip="This build as a YAML recipe: caps run RECIPE.yaml, or Start › From a recipe">
@@ -94,14 +94,8 @@
                     <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Choose polymer…" VerticalAlignment="Center" /></StackPanel>
                   </Button>
                   <Button Classes="small ghost" Click="OnUsePs" IsVisible="{Binding GrowHasSpec}" Content="Back to polystyrene" />
-                  <Button Classes="small" Click="OnToggleSmall" ToolTip.Tip="Solvent or gas molecules put into the free space after the chains are grown (CAPS Pack)">
-                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add solvent / gas" VerticalAlignment="Center" /></StackPanel>
-                  </Button>
                 </StackPanel>
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding GrowSmallOpen}">
-                  <ComboBox ItemsSource="{Binding GrowSmallChoices}" SelectedIndex="{Binding GrowSmallPick}" HorizontalAlignment="Stretch" />
-                  <Button Grid.Column="1" Classes="small primary" Content="Add" Click="OnAddSmall" />
-                </Grid>
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Solvent, gas or fillers in the grown cell: Pack › Pack into › Around the current structure." />
               </StackPanel>
             </StackPanel>
           </Border>
@@ -119,14 +113,14 @@
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                   <StackPanel Spacing="4">
                     <TextBlock Text="Force field" Classes="muted" FontSize="11.5" />
-                    <ComboBox ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding Field.FfIndex}" HorizontalAlignment="Stretch" />
+                    <ComboBox ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding GrowFfIndex}" HorizontalAlignment="Stretch" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="4">
                     <TextBlock Text="Charges" Classes="muted" FontSize="11.5" />
-                    <ComboBox ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" HorizontalAlignment="Stretch" />
+                    <ComboBox ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding GrowChargeMode}" HorizontalAlignment="Stretch" />
                   </StackPanel>
                 </Grid>
-                <CheckBox Classes="toggle" Content="Assign when Grow or Pack finishes" IsChecked="{Binding GrowAssignField}" />
+                <CheckBox Classes="toggle" Content="Assign when growing finishes" IsChecked="{Binding GrowAssignField}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <v:Icon Kind="check" Size="15" Foreground="{DynamicResource OkB}" IsVisible="{Binding GrowFieldOk}" VerticalAlignment="Top" />
                   <v:Icon Kind="alert" Size="15" Foreground="{DynamicResource WarnB}" IsVisible="{Binding GrowFieldWarn}" VerticalAlignment="Top" />
