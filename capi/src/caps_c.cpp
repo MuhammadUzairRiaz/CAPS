@@ -4537,6 +4537,10 @@ extern "C" int32_t caps_atom_labels(caps_doc* d, const char* kind, char* json, i
   const caps::System& f = d->frame;
   if (k == "rs") {
     for (const auto& x : caps::stereo_labels(f)) arr.push_back(x);
+  } else if (k == "ez" || k == "stereo") {   // E/Z on double-bond atoms; "stereo": R/S and E/Z together
+    const auto ez = caps::ez_labels(f);
+    const auto rs = k == "stereo" ? caps::stereo_labels(f) : std::vector<std::string>(f.atoms.size());
+    for (size_t i = 0; i < f.atoms.size(); ++i) arr.push_back(rs[i].empty() ? ez[i] : rs[i]);
   } else {
     for (const auto& a : f.atoms) {
       if (k == "charge") {
