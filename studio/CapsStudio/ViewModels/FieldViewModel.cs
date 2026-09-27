@@ -314,6 +314,7 @@ public sealed partial class FieldViewModel : ObservableObject
     {
         var doc = _doc();
         if (doc == null) { Log = "Open or build a structure first."; return; }
+        if (doc.LongRunning) { _status("A run is using this structure: assign or change the force field when it finishes"); return; }
         Working = true;
         try
         {

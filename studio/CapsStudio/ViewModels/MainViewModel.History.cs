@@ -89,6 +89,7 @@ public partial class MainViewModel
     public void JumpToStep(int step)
     {
         if (_doc == null) return;
+        if (EditLocked()) return;
         var current = HistoryRows.LastOrDefault(r => !r.IsUndone)?.Step ?? 0;
         var ok = true;
         while (ok && current > step) { ok = _doc.Undo(false); current--; }
@@ -99,6 +100,7 @@ public partial class MainViewModel
     public void TakeSnapshot(string? name = null)
     {
         if (_doc == null) return;
+        if (EditLocked()) return;
         name ??= $"snapshot {Snapshots.Count + 1}";
         _doc.Snapshot(new JsonObject { ["op"] = "take", ["name"] = name }.ToJsonString());
         try
@@ -117,6 +119,7 @@ public partial class MainViewModel
     public void RestoreSnapshot(SnapshotRow r)
     {
         if (_doc == null) return;
+        if (EditLocked()) return;
         _doc.Snapshot(new JsonObject { ["op"] = "restore", ["index"] = r.Index }.ToJsonString());
         AfterEdit($"Restored snapshot “{r.Name}” (undo goes back)");
     }

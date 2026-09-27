@@ -352,6 +352,7 @@ public partial class MainViewModel
     public void ApplyCell()
     {
         if (_doc == null) return;
+        if (EditLocked()) return;
         var j = new JsonObject { ["a"] = (double)_ceA, ["b"] = (double)_ceB, ["c"] = (double)_ceC, ["alpha"] = (double)_ceAl, ["beta"] = (double)_ceBe, ["gamma"] = (double)_ceGa, ["scale"] = _ceScale };
         try { _doc.SetCell(j.ToJsonString()); CeError = ""; }
         catch (Exception e) { CeError = e.Message; return; }
@@ -361,6 +362,7 @@ public partial class MainViewModel
     public void MakeSupercell()
     {
         if (_doc == null) return;
+        if (EditLocked()) return;
         try { _doc.Supercell((int)_ceSupA, (int)_ceSupB, (int)_ceSupC); CeError = ""; }
         catch (Exception e) { CeError = e.Message; return; }
         Frames = 1; Raise(nameof(FrameMax)); _frame = 0; Raise(nameof(Frame));
