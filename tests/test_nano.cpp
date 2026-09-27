@@ -250,3 +250,46 @@ TEST(Nano, GoldParticleCappedWithThiolates) {
   for (const auto& a : p.atoms)
     for (int k = 0; k < 3; ++k) { EXPECT_GT(a.pos[k], 5.0); EXPECT_LT(a.pos[k], p.cell.a[0] - 5.0); }
 }
+
+// Boron nitride: a periodic h-BN sheet has as many B as N, every bond B–N at 1.446 Å and three per atom; a (10,10) BN tube
+// has the rolled diameter a√(n² + nm + m²)/π with a = 2.504 Å and only B–N bonds; a flake's edges get B–H 1.19, N–H 1.01 Å
+TEST(Nano, BoronNitrideSheetAndTube) {
+  SheetOptions so;
+  so.material = "h-BN";
+  so.layers = 2;
+  const System sh = graphene_sheet(so);
+  int nb = 0, nn = 0;
+  for (const auto& a : sh.atoms) nb += a.element == 5, nn += a.element == 7;
+  EXPECT_EQ(nb, nn);
+  EXPECT_GT(nb, 0);
+  std::vector<int> deg(sh.atoms.size(), 0);
+  for (const auto& b : sh.bonds) {
+    const int zi = sh.atoms[b.i].element, zj = sh.atoms[b.j].element;
+    EXPECT_EQ(zi + zj, 12) << "bond " << zi << "–" << zj;
+    EXPECT_NEAR(norm(sh.cell.minimum_image(sh.atoms[b.j].pos - sh.atoms[b.i].pos)), 2.504 / std::sqrt(3.0), 1e-6);
+    ++deg[b.i], ++deg[b.j];
+  }
+  for (int d : deg) EXPECT_EQ(d, 3);
+  // AA′: the second layer's atom above each B is an N 3.328 Å up
+  NanotubeOptions to;
+  to.material = "h-BN";
+  to.n = 10, to.m = 10;
+  NanoReport r;
+  const System t = nanotube(to, &r);
+  EXPECT_NEAR(r.diameter, 2.504 * std::sqrt(300.0) / 3.14159265358979323846, 1e-6);
+  for (const auto& b : t.bonds) EXPECT_EQ(t.atoms[b.i].element + t.atoms[b.j].element, 12);
+  SheetOptions fo = so;
+  fo.layers = 1;
+  fo.periodic = false;
+  const System fl = graphene_sheet(fo);
+  int caps = 0;
+  for (const auto& b : fl.bonds) {
+    const int zi = fl.atoms[b.i].element, zj = fl.atoms[b.j].element;
+    if (zi != 1 && zj != 1) continue;
+    const int heavy = zi == 1 ? zj : zi;
+    EXPECT_NEAR(norm(fl.atoms[b.j].pos - fl.atoms[b.i].pos), heavy == 5 ? 1.19 : 1.01, 1e-6);
+    ++caps;
+  }
+  EXPECT_GT(caps, 0);
+  EXPECT_THROW(graphene_sheet(SheetOptions{"MoS2"}), std::invalid_argument);
+}
