@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 25  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live) */
+#define CAPS_ABI_VERSION 26  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -347,6 +347,37 @@ const char* caps_note(caps_doc* d, int32_t k);
 
 /* Renders into caller memory of width*height*4 bytes, RGBA with straight alpha. */
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba);
+/* v26 GPU view: the scene caps_render draws, in world coordinates, for a view that uploads it once and turns it on the
+   GPU (the arrays belong to the document until the next call): spheres x y z r, half-bond and segment capsules
+   ax ay az bx by bz r, lines ax ay az bx by bz with a width in pixels; colours 0xRRGGBB with fading and ambient occlusion
+   applied; ring 1 selection, 2 keyboard focus. cpu_only: surfaces, polyhedra or the colour-vision preview, which only
+   caps_render draws. caps_view_fit: the camera exactly as caps_render fits it for opt's size (× supersample):
+   r = R(p − c) + pan, R yaw about y then pitch about x; x = w/2 + r.x·scale·k, y = h/2 − r.y·scale·k,
+   k = dist/(dist − r.z) in perspective, else 1; zmin, zmax the shown atoms' view depths (depth cue). */
+typedef struct {
+  int32_t n_spheres;
+  const float* spheres;
+  const uint32_t* sphere_rgb;
+  const int32_t* sphere_id;
+  const uint8_t* sphere_ring;
+  int32_t n_capsules;
+  const float* capsules;
+  const uint32_t* capsule_rgb;
+  int32_t n_lines;
+  const float* lines;
+  const uint32_t* line_rgb;
+  const float* line_width;
+  int32_t cpu_only;
+  uint32_t background;
+  int32_t transparent, dark, depth_cue, outlines;
+} caps_scene;
+typedef struct {
+  double cos_yaw, sin_yaw, cos_pitch, sin_pitch, cx, cy, cz, scale, w, h, pan_x, pan_y;
+  int32_t perspective;
+  double dist, zmin, zmax;
+} caps_view_fit_t;
+int32_t caps_render_scene(caps_doc* d, const caps_render_opts* opt, caps_scene* out);
+int32_t caps_view_fit(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, caps_view_fit_t* out);
 int32_t caps_pick(caps_doc* d, int32_t x, int32_t y);   /* atom index under pixel of last render, -1 none */
 /* v19: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */
 double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt);

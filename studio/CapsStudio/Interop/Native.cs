@@ -11,6 +11,43 @@ public struct CapsCamera
     public int Perspective;
 }
 
+/// <summary>caps_scene: the scene arrays (owned by the document until the next call).</summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct CapsSceneRaw
+{
+    public int NSpheres;
+    public IntPtr Spheres, SphereRgb, SphereId, SphereRing;
+    public int NCapsules;
+    public IntPtr Capsules, CapsuleRgb;
+    public int NLines;
+    public IntPtr Lines, LineRgb, LineWidth;
+    public int CpuOnly;
+    public uint Background;
+    public int Transparent, Dark, DepthCue, Outlines;
+}
+
+/// <summary>caps_view_fit: the camera exactly as caps_render fits it (see caps_c.h).</summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct CapsViewFit
+{
+    public double CosYaw, SinYaw, CosPitch, SinPitch, Cx, Cy, Cz, Scale, W, H, PanX, PanY;
+    public int Perspective;
+    public double Dist, ZMin, ZMax;
+}
+
+/// <summary>The GPU view's copy of a scene: spheres (x y z r), half-bond and segment capsules (ax ay az bx by bz r),
+/// lines (ax ay az bx by bz) with widths in pixels, colours 0xRRGGBB.</summary>
+public sealed class CapsSceneData
+{
+    public float[] Spheres = [], Capsules = [], Lines = [], LineWidth = [];
+    public uint[] SphereRgb = [], CapsuleRgb = [], LineRgb = [];
+    public byte[] SphereRing = [];
+    public int[] SphereId = [];
+    public bool CpuOnly, Transparent, Dark, DepthCue, Outlines;
+    public uint Background;
+    public float MaxRadius;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct CapsRenderOpts
 {
@@ -400,6 +437,8 @@ internal static class Native
     public static string Note(IntPtr doc, int k) => Marshal.PtrToStringUTF8(NotePtr(doc, k)) ?? "";
 
     [DllImport(Lib, EntryPoint = "caps_render")] public static extern unsafe int Render(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, byte* rgba);
+    [DllImport(Lib, EntryPoint = "caps_render_scene")] public static extern int RenderScene(IntPtr doc, in CapsRenderOpts opt, out CapsSceneRaw scene);
+    [DllImport(Lib, EntryPoint = "caps_view_fit")] public static extern int ViewFit(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, out CapsViewFit fit);
     [DllImport(Lib, EntryPoint = "caps_pick")] public static extern int Pick(IntPtr doc, int x, int y);
     [DllImport(Lib, EntryPoint = "caps_export_png")] public static extern int ExportPng(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
     [DllImport(Lib, EntryPoint = "caps_export_svg")] public static extern int ExportSvg(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
@@ -1125,6 +1164,47 @@ public sealed class CapsDocument : IDisposable
     }
 
     public int Pick(int x, int y) { lock (_lock) return Native.Pick(_h, x, y); }
+
+    /// <summary>The scene caps_render would draw, copied for the GPU view.</summary>
+    public CapsSceneData RenderScene(in CapsRenderOpts opt)
+    {
+        lock (_lock)
+        {
+            Alive();
+            Check(Native.RenderScene(_h, opt, out var r));
+            static T[] Copy<T>(IntPtr p, int n) where T : unmanaged
+            {
+                var a = new T[n];
+                if (n > 0 && p != IntPtr.Zero) unsafe { new ReadOnlySpan<T>((void*)p, n).CopyTo(a); }
+                return a;
+            }
+            var d = new CapsSceneData
+            {
+                Spheres = Copy<float>(r.Spheres, 4 * r.NSpheres), SphereRgb = Copy<uint>(r.SphereRgb, r.NSpheres),
+                SphereId = Copy<int>(r.SphereId, r.NSpheres), SphereRing = Copy<byte>(r.SphereRing, r.NSpheres),
+                Capsules = Copy<float>(r.Capsules, 7 * r.NCapsules), CapsuleRgb = Copy<uint>(r.CapsuleRgb, r.NCapsules),
+                Lines = Copy<float>(r.Lines, 6 * r.NLines), LineRgb = Copy<uint>(r.LineRgb, r.NLines), LineWidth = Copy<float>(r.LineWidth, r.NLines),
+                CpuOnly = r.CpuOnly != 0, Background = r.Background, Transparent = r.Transparent != 0, Dark = r.Dark != 0,
+                DepthCue = r.DepthCue != 0, Outlines = r.Outlines != 0,
+            };
+            float mr = 0;
+            for (var k = 3; k < d.Spheres.Length; k += 4) mr = Math.Max(mr, d.Spheres[k]);
+            for (var k = 6; k < d.Capsules.Length; k += 7) mr = Math.Max(mr, d.Capsules[k]);
+            d.MaxRadius = mr;
+            return d;
+        }
+    }
+
+    /// <summary>The camera as caps_render fits it for opt's size.</summary>
+    public CapsViewFit ViewFit(in CapsCamera cam, in CapsRenderOpts opt)
+    {
+        lock (_lock)
+        {
+            Alive();
+            Check(Native.ViewFit(_h, cam, opt, out var f));
+            return f;
+        }
+    }
     /// <summary>H-bonds, contacts, clashes and checks of the frame (caps_interactions); drawn until ClearChecks.</summary>
     public string Interactions(string options) { lock (_lock) { Alive(); return JsonCallOnce((b, c) => Native.Interactions(_h, options, b, c)); } }
     public void ClearChecks() { lock (_lock) { Alive(); Native.ClearChecks(_h); } }

@@ -14,6 +14,7 @@ public sealed class AppSettings
     public int Background { get; set; }                   // view background: 0 dark, 1 white
     public bool Outlines { get; set; } = true;
     public bool DepthCue { get; set; } = true;
+    public bool GpuView { get; set; } = true;             // the 3D view on the GPU (OpenGL) where available
     public int Style { get; set; }                        // ball & stick …
     public bool AutoStyle { get; set; } = true;           // display style by model size (design/boards/DisplayStyles)
     public long AutoNoH { get; set; } = 20_000;           // above this many atoms: No H

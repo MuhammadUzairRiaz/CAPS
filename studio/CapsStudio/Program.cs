@@ -19,7 +19,9 @@ internal static partial class Program
     }
 
     public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<App>().UsePlatformDetect().WithCapsFonts().LogToTrace();
+        AppBuilder.Configure<App>().UsePlatformDetect().WithCapsFonts().LogToTrace()
+            // macOS: the compositor on OpenGL, so the GPU 3D view (GlMolView) shares its context
+            .With(new AvaloniaNativePlatformOptions { RenderingMode = [AvaloniaNativeRenderingMode.OpenGl, AvaloniaNativeRenderingMode.Software] });
 
     /// <summary>IBM Plex Sans (and Mono) from the app's assets as the default family: the design system's type.</summary>
     public static AppBuilder WithCapsFonts(this AppBuilder b) =>

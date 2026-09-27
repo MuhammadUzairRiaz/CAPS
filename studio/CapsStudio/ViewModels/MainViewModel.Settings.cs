@@ -168,6 +168,13 @@ public sealed partial class MainViewModel
     public int SetBackground { get => _settings.Background; set { if (_settings.Background == value) return; _settings.Background = value; ViewBackground = value; Raise(); Changed("View background"); } }
     public bool SetOutlines { get => _settings.Outlines; set { if (_settings.Outlines == value) return; _settings.Outlines = value; Outlines = value; Raise(); Changed("Outlines"); } }
     public bool SetDepthCue { get => _settings.DepthCue; set { if (_settings.DepthCue == value) return; _settings.DepthCue = value; DepthCue = value; Raise(); Changed("Depth cue"); } }
+    /// <summary>Draw the Studio's 3D view on the GPU (OpenGL 3.3 / ES 3.0) where the machine has it; images and exports are
+    /// always rendered on the CPU.</summary>
+    public bool SetGpuView { get => _settings.GpuView; set { if (_settings.GpuView == value) return; _settings.GpuView = value; Raise(); Raise(nameof(GpuView)); Changed("GPU view"); RenderRequested?.Invoke(); } }
+    public bool GpuView => _settings.GpuView;
+    private string _gpuStatus = "not started yet";
+    /// <summary>What the GPU view runs on, or why it is not in use.</summary>
+    public string GpuStatus { get => _gpuStatus; set => Set(ref _gpuStatus, value); }
     public int SetStyle { get => _settings.Style; set { if (_settings.Style == value) return; _settings.Style = value; StyleIndex = value; Raise(); Changed("Display style"); } }
 
     /// <summary>The default force field: the Field page's first choice and the molecule builder's clean-up.</summary>

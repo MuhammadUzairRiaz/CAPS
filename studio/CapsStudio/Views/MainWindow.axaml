@@ -562,6 +562,7 @@
                 AutomationProperties.Name="3D view · arrow keys walk the atoms, [ and ] the molecules, B the bonds">
           <Panel>
             <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <local:GlMolView x:Name="ViewGl" IsVisible="False" IsHitTestVisible="False" />
             <local:LabelOverlay x:Name="Labels" />
             <!-- pinned measurements (the toolbar's Pin monitor): they follow the frames and edits -->
             <Border Classes="hud" Padding="10,8" Margin="14,14,14,58" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding HasMonitors}">
