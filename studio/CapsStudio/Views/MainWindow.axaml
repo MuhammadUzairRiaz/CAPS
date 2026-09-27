@@ -54,6 +54,9 @@
     <Style Selector="TextBlock.stepdetail.ok"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
   </Window.Styles>
 
+  <DockPanel>
+  <!-- the menu bar in the window on Windows and Linux (macOS shows it in the system menu bar) -->
+  <NativeMenuBar DockPanel.Dock="Top" x:Name="MenuBarHost" />
   <LayoutTransformControl x:Name="ScaleRoot">
   <Grid RowDefinitions="44,Auto,*,26">
 
@@ -2963,4 +2966,5 @@
     <local:TourOverlay x:Name="Tour" Grid.RowSpan="4" ZIndex="40" IsVisible="{Binding TourOpen}" />
   </Grid>
   </LayoutTransformControl>
+  </DockPanel>
 </Window>
