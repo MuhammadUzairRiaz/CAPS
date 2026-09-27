@@ -16,6 +16,11 @@ public partial class SettingsPage : PageBase
         ("⌘ K", "Command palette"), ("⌘ O", "Open a structure"), ("⌘ S", "Save as LAMMPS data"), ("⌘ W", "Close the document"),
         ("R", "Reset the view"), ("← →", "Previous / next frame"), ("Space", "Play the trajectory"), ("⇧ click", "Measure up to four atoms"),
         ("⌘ + / ⌘ −", "Interface scale"), ("Esc", "Close the palette"),
+        ("F", "Frame the selection"), ("1 · 2 · 3", "Front · top · side view"), ("5", "Perspective / orthographic"),
+        ("⌘ Z / ⇧ ⌘ Z", "Undo / redo"), ("⌘ F", "Select by query"), ("⌘ I", "Invert the selection"), ("]", "Grow the selection one bond"),
+        ("⌘ H", "Add hydrogens"), ("⇧ ⌘ C", "Clean the geometry (UFF)"), ("⌥ I", "Invert the picked stereocentre"), ("⇧ E", "Periodic table"),
+        ("⌫", "Delete the picked atoms"), ("⌘ E", "Export an image"), ("⌘ 1 … ⌘ 9", "Studio · Build · Polymer cell · Force field · Packing · Minimise · Equilibrate · Dynamics · Analyze"),
+        ("⌃ Tab", "Next structure"), ("F1", "Theory manual"),
     ];
 
     private readonly ItemsControl _nav;
