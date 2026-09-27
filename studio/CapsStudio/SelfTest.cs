@@ -136,7 +136,38 @@ internal static class SelfTest
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
         }
-        // Automatic charges: OPLS 2005's own — charge keys and its bond charge increments (no Gasteiger stand-in)
+        // Type by hand: polystyrene's head, body and tail typed by OPLS-AA 2024's rules, one body CH changed by hand
+        // (with every equivalent atom), applied to the whole melt by environment; an SBR copolymer example holds every junction
+        {
+            var o24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            vm.Field.FfIndex = o24;
+            vm.UsePolystyreneInGrow();
+            while (vm.PolyUnits.Count > 1) vm.RemovePolyUnit(vm.PolyUnits[^1]);
+            if (vm.PolyUnits.Count == 0) vm.AddPolyUnit("Styrene", "*CC(*)c1ccccc1");
+            else { vm.PolyUnits[0].Name = "Styrene"; vm.PolyUnits[0].Smiles = "*CC(*)c1ccccc1"; }
+            vm.OpenUnitTyping();
+            var exampleAtoms = vm.UtAtoms.Count;
+            var roles = vm.UtAtoms.Select(a => a.RoleKind).Distinct().Count();
+            var bodyCh = vm.UtAtoms.FirstOrDefault(a => a.RoleKind == 1 && a.Auto.StartsWith("515_", StringComparison.Ordinal));
+            var applied = "";
+            if (bodyCh != null)
+            {
+                vm.UtSelected = bodyCh;
+                vm.UtTypeSelected = vm.UtTypes.FirstOrDefault(t => t.Name.StartsWith("137_", StringComparison.Ordinal));
+                vm.AssignUnitType();
+                vm.ApplyUnitTyping();
+                applied = vm.UtStatus;
+            }
+            var rep = vm.Document!.FieldReport();
+            var count137 = System.Text.RegularExpressions.Regex.Matches(rep, "\"type\": ?\"137_").Count;
+            Check(exampleAtoms == 50 && roles == 3 && bodyCh != null && vm.UtUntyped == 0 && count137 == 60 && applied.Contains("atoms of the structure typed from the example"),
+                  $"type by hand: {exampleAtoms} example atoms, {roles} roles, 137 on {count137} melt atoms · {applied} {vm.UtStatus}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.SetModule(8);
+            Check(MainViewModel.DeBruijnPairs("AB") == "AABBA" && MainViewModel.DeBruijnPairs("ABC").Length == 10, $"junction sequence: {MainViewModel.DeBruijnPairs("AB")} · {MainViewModel.DeBruijnPairs("ABC")}");
+        }
+
+        // Automatic charges: OPLS 2005's own        // Automatic charges: OPLS 2005's own — charge keys and its bond charge increments (no Gasteiger stand-in)
         var opls = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005");
         if (opls >= 0)
         {

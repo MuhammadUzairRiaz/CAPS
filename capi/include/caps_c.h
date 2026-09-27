@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 29  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE) */
+#define CAPS_ABI_VERSION 29  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -258,6 +258,15 @@ typedef int32_t (*caps_stage_fn)(const char* stage, double fraction, void* user)
 int32_t caps_field_coverage(caps_doc* d, const char* dir, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* Sets atom `index` (0-based) to a type by hand; type "" or NULL removes the override. Returns as caps_field_assign. */
 int32_t caps_field_override(caps_doc* d, int32_t index, const char* type);
+/* Typing by example (ABI 29): types given on an example document (a repeat unit's head, body and tail in a short chain,
+   a copolymer's units and junctions; types_json: one type name per example atom, "" = not given) are learned by each
+   atom's chemical environment and set as overrides on every atom of `d` whose environment the example has (d's Field
+   must be assigned with the force field the types belong to). Report: {"radius", "environments", "exact", "shorter",
+   "unmatched", "set", "conflicts": [...], "unknown_types": [...]}. Returns as caps_field_assign, -1 on error. */
+int32_t caps_field_type_by_example(caps_doc* d, caps_doc* example, const char* types_json, char* report, int32_t cap);
+/* Atoms of the current frame with the same chemical environment as `atom` to `radius` bonds (JSON array of indices,
+   `atom` included): where one hand-assigned type applies. Returns the length needed or -1. */
+int32_t caps_equivalent_atoms(caps_doc* d, int32_t atom, int32_t radius, char* json, int32_t cap);
 /* Adds a parameter rule entered by hand: kind pair | bond | angle | dihedral | improper, the atom types (space-
    separated, as the missing-term list names them), a style ("" for the force field's default) and the parameters in
    that style's order. Such terms are reported as estimated. Returns as caps_field_assign. */

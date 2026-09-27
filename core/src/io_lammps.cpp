@@ -326,7 +326,16 @@ void write_lammps_data(const System& s_in, const std::string& path) {
   int ntypes = 0;
   for (const auto& a : s.atoms) ntypes = std::max(ntypes, a.type);
   out << ntypes << " atom types\n" << (s.bonds.empty() ? 0 : 1) << " bond types\n\n";
-  const Cell& c = s.cell;
+  Cell c = s.cell;
+  if (!c.valid()) {   // no cell: a box around the atoms with 25 Å of vacuum on every side, at least 100 Å
+    Vec3 mn{1e30, 1e30, 1e30}, mx{-1e30, -1e30, -1e30};
+    for (const auto& at : s.atoms)
+      for (int k = 0; k < 3; ++k) mn[k] = std::min(mn[k], at.pos[k]), mx[k] = std::max(mx[k], at.pos[k]);
+    if (s.atoms.empty()) mn = {0, 0, 0}, mx = {0, 0, 0};
+    Vec3 w;
+    for (int k = 0; k < 3; ++k) w[k] = std::max(100.0, mx[k] - mn[k] + 50.0), c.origin[k] = 0.5 * (mn[k] + mx[k]) - 0.5 * w[k];
+    c.a = {w[0], 0, 0}, c.b = {0, w[1], 0}, c.c = {0, 0, w[2]};
+  }
   char buf[256];
   std::snprintf(buf, sizeof buf, "%.6f %.6f xlo xhi\n%.6f %.6f ylo yhi\n%.6f %.6f zlo zhi\n", c.origin[0], c.origin[0] + c.a[0],
                 c.origin[1], c.origin[1] + c.b[1], c.origin[2], c.origin[2] + c.c[2]);

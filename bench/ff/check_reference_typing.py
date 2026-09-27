@@ -10,7 +10,9 @@ largest charge difference, and the first disagreements.
 With --energies, both sides also write LAMMPS files for the same structure and LAMMPS (LMP, default
 ~/lammps/build-class2/lmp) evaluates them in one common setting (a 400 Å box, Coulomb and van der Waals cut off at
 25 Å, no k-space), each with its own styles, coefficients and 1-4 scaling: every bond, angle, dihedral, improper,
-van der Waals and Coulomb term must give the same energy.
+van der Waals and Coulomb term must give the same energy. Where only torsions differ, the reference is also run on the
+same molecule with its atoms listed backwards: if its own torsion energy then changes to CAPS's value, the reference is
+the one that depends on atom order (reported, counted as agreeing).
 
 usage: python3 bench/ff/check_reference_typing.py --ff opls2005 [--caps-ff opls2005] [--polymer substring] [--dp 3]
                                                    [--energies] [--jobs 8] [--keep DIR] [--json OUT]
@@ -145,10 +147,14 @@ def one(job):
         return (pid, name, "caps", str(e)[:200], None)
     ct = [a.get("type") or "?" for a in rep["atoms"]]
     energies = None
+    order_dependent = ""
     if ENERGIES:
         try:
             rw = os.path.join(d, "ref_lmp")
             reference(xyz, rw, lammps=True)
+            if "read_data" not in open(os.path.join(rw, "dlf_output1", "lammps.in")).read():
+                return (pid, name, "reference", "the reference wrote no LAMMPS input for this structure (types and charges: "
+                        f"{n - sum(rt[i].lower() != ct[i].lower() for i in range(n))}/{n} types agree)", None)
             re_ = lammps_terms(os.path.join(rw, "dlf_output1", "lammps.in"), os.path.join(rw, "dlf_output1"))
             cw = os.path.join(d, "caps_lmp")
             os.makedirs(cw, exist_ok=True)
@@ -159,6 +165,22 @@ def one(job):
                 raise RuntimeError("caps ff apply: " + (r2.stdout + r2.stderr).strip()[-200:])
             ce = lammps_terms(os.path.join(cw, "caps.in"), cw)
             energies = {t: (a, b) for t, a, b in zip(TERMS, re_, ce)}
+            bad = [t for t, (a, b) in energies.items() if abs(a - b) / max(1.0, abs(a)) >= 1e-4]
+            if bad and set(bad) <= {"E_dihed", "E_impro"}:
+                # does the reference itself give the same energy for the same molecule with its atoms listed backwards?
+                rv = os.path.join(d, "ref_rev")
+                os.makedirs(rv, exist_ok=True)
+                L = open(xyz).read().rstrip("\n").split("\n")
+                open(os.path.join(rv, pid + ".xyz"), "w").write("\n".join(L[:2] + L[2:2 + n][::-1]) + "\n")
+                reference(os.path.join(rv, pid + ".xyz"), os.path.join(rv, "ref"), lammps=True)
+                rr = lammps_terms(os.path.join(rv, "ref", "dlf_output1", "lammps.in"), os.path.join(rv, "ref", "dlf_output1"))
+                rev = dict(zip(TERMS, rr))
+                if any(abs(rev[t] - energies[t][0]) / max(1.0, abs(rev[t])) >= 1e-4 for t in bad) and \
+                        all(abs(rev[t] - energies[t][1]) / max(1.0, abs(rev[t])) < 1e-4 for t in bad):
+                    order_dependent = ", ".join(f"{t[2:]} {energies[t][0]:.3f} or {rev[t]:.3f}" for t in bad)
+                    energies = {t: (energies[t][1] if t in bad else a, b) for t, (a, b) in energies.items()}
+                elif any(abs(rev[t] - energies[t][0]) / max(1.0, abs(rev[t])) >= 1e-4 for t in bad):
+                    order_dependent = "!" + ", ".join(f"{t[2:]} {energies[t][0]:.3f} or {rev[t]:.3f} (CAPS {energies[t][1]:.3f})" for t in bad)
         except Exception as e:
             energies = {"error": str(e)[:200]}
     cq = [a.get("q", 0.0) for a in rep["atoms"]]
@@ -174,8 +196,12 @@ def one(job):
         else:
             eworst = max(abs(a - b) / max(1.0, abs(a)) for a, b in energies.values())
             eok = eworst < 1e-4
-            ediff = f" · energy terms {eworst:.1e}" + ("" if eok else " (" + ", ".join(f"{t[2:]} {a:.3f}/{b:.3f}" for t, (a, b) in energies.items() if abs(a - b) / max(1.0, abs(a)) >= 1e-4) + ")")
-    return (pid, name, "ok" if not diffs and dq < 1e-3 and eok else "differs",
+            if order_dependent.startswith("!"):
+                ediff = " · the reference's own energy depends on the atom order: " + order_dependent[1:]
+            else:
+                ediff = f" · energy terms {eworst:.1e}" + (f" (the reference's own {order_dependent} with the atoms listed backwards; CAPS gives the latter)" if order_dependent else "") + ("" if eok else " (" + ", ".join(f"{t[2:]} {a:.3f}/{b:.3f}" for t, (a, b) in energies.items() if abs(a - b) / max(1.0, abs(a)) >= 1e-4) + ")")
+    status = "ok" if not diffs and dq < 1e-3 and eok else "ref-order" if not diffs and dq < 1e-3 and order_dependent.startswith("!") else "differs"
+    return (pid, name, status,
             f"types {n - len(diffs)}/{n} · max |Δq| {dq:.3f}" + ediff, {"type_diffs": diffs[:8], "charge_worst": [(i, rt[i], rq[i], cq[i]) for i in worst],
                                                                  "caps_complete": rep.get("complete"), "charges": rep.get("charges")})
 
@@ -194,7 +220,11 @@ def main():
             if not det["type_diffs"]:
                 for i, a, qa, qb in det["charge_worst"][:2]:
                     print(f"      atom {i + 1} {a}: reference {qa:+.4f} · CAPS {qb:+.4f}")
-    print(f"\n{agree} of {len(rows)} polymers agree with the reference ({REF_FF} → CAPS {CAPS_FF}); work {WORK}")
+    order = sum(r[2] == "ref-order" for r in rows)
+    refail = sum(r[2] == "reference" for r in rows)
+    print(f"\n{agree} of {len(rows)} polymers agree with the reference ({REF_FF} → CAPS {CAPS_FF})"
+          + (f"; {order} where the reference's own energy depends on the atom order" if order else "")
+          + (f"; {refail} the reference cannot do" if refail else "") + f"; work {WORK}")
     out = arg("--json", "")
     if out:
         json.dump([{"id": r[0], "name": r[1], "result": r[2], "detail": r[3], "more": r[4]} for r in rows], open(out, "w"), indent=1)
