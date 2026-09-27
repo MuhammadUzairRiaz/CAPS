@@ -2660,7 +2660,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       std::string cur;
       for (const char* c = props ? props : ""; ; ++c) {
         if (*c == ',' || *c == 0) {
-          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
+          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
           cur.clear();
           if (*c == 0) break;
         } else if (*c != ' ') cur += *c;
@@ -2745,6 +2745,17 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         if (mo.seed) fo.seed = mo.seed;
         fo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
         for (auto& q : caps::elastic_properties(caps::fluctuation_run(s, fo), "_fluct")) res.push_back(std::move(q));
+      } else if (id == "viscosity") {
+        caps::System s = frame_copy();
+        caps::ViscosityOptions vo;
+        vo.field = ff;
+        vo.energy = o.energy;
+        if (mo.temperature > 0) vo.temperature = mo.temperature;
+        if (mo.run_ps > 0) vo.ps = mo.run_ps;
+        if (mo.dt > 0) vo.dt = mo.dt;
+        if (mo.seed) vo.seed = mo.seed;
+        vo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        for (auto& q : caps::viscosity_properties(caps::viscosity_green_kubo(s, vo))) res.push_back(std::move(q));
       } else if (id == "tensile") {
         caps::System s = frame_copy();
         caps::TensileOptions to;

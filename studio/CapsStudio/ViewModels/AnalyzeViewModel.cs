@@ -124,19 +124,25 @@ public sealed class AnalyzeViewModel : ObservableObject
                 Chip("entanglements", "Entanglements")]),
             new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), TgChip]),
             new("Mechanics", [StrainChip, FluctChip, TensileChip]),
-            new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation")]),
+            new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), ViscChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
             new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), PullShearChip, PullNormalChip]),
             new("Rubber network", [Chip("crosslinks", "Crosslink density")]),
         ];
         LoadReferences();
         PullShearChip.PropertyChanged += (_, _) => Raise(nameof(PullOn));
+        FluctChip.PropertyChanged += (_, _) => Raise(nameof(NvtRunOn));
+        ViscChip.PropertyChanged += (_, _) => Raise(nameof(NvtRunOn));
         PullNormalChip.PropertyChanged += (_, _) => Raise(nameof(PullOn));
     }
 
     // protocols (their settings show when switched on)
     public CalcChip TgChip { get; } = Chip("tg", "Tg", tip: "Glass transition from a stepwise NPT cooling run of the current frame (a copy: the document is not changed)");
     public CalcChip StrainChip { get; } = Chip("cij_strain", "Cij strain", tip: "Static elastic constants: minimise, strain ±ε in each direction, re-minimise (Theodorou & Suter)");
+    /// <summary>A Green–Kubo viscosity came out (mPa·s): the Diffusion page's finite-size correction takes it.</summary>
+    public event Action<double>? ViscosityComputed;
+    public CalcChip ViscChip { get; } = Chip("viscosity", "Viscosity", tip: "Shear viscosity by Green–Kubo: an NVT run of the current frame (Nosé–Hoover), the pressure tensor's autocorrelation integrated (Daivis & Evans); melts need long runs");
+    public bool NvtRunOn => FluctChip.IsOn || ViscChip.IsOn;
     public CalcChip FluctChip { get; } = Chip("cij_run", "Cij fluct.", tip: "Elastic constants from stress fluctuations: an NVT run of the current frame, the stress sampled at every step (Lutsko; Clavier et al.)");
     public CalcChip PullShearChip { get; } = Chip("pull_shear", "Pull · shear", tip: "Steered MD: the film dragged along x over the held surface (molecule 1); interfacial shear strength and work");
     public CalcChip PullNormalChip { get; } = Chip("pull_normal", "Pull · normal", tip: "Steered MD: the film pulled off the held surface along +z (needs vacuum above the film); peak normal stress and work of separation");
@@ -242,7 +248,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         return new CapsMechOpts
         {
             Configurations = _cijConfigs, Strain = _cijStrain,
-            Temperature = pull ? _pullT : FluctChip.IsOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : _fluctT,
+            Temperature = pull ? _pullT : NvtRunOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : _fluctT,
             Axis = pull ? _pullAxis : _tensAxis, Rate = pull ? _pullRate : _tensRate, MaxStrain = pull ? _pullDist : _tensMax, LateralFixed = _tensFixed ? 1 : 0,
             TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs,
             EquilibratePs = pull ? (_pullEq > 0 ? _pullEq : -1) : _eqPs > 0 ? _eqPs : -1,
@@ -419,6 +425,7 @@ public sealed class AnalyzeViewModel : ObservableObject
                 Ref = m != null && m.Values.TryGetValue(id, out var r) ? r : null,
             };
             Results.Add(card);
+            if (id == "viscosity" && double.IsFinite(card.Value) && card.Value > 0) ViscosityComputed?.Invoke(card.Value);
             if (p.TryGetProperty("series", out var ss))
             {
                 var list = new List<SeriesItem>();
