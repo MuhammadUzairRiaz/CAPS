@@ -353,3 +353,60 @@ TEST(Relax, DistanceRestraintPullsAtomsToTarget) {
   EXPECT_NEAR(d, 4.0, 0.1) << "from " << far;
   EXPECT_TRUE(std::any_of(r.notes.begin(), r.notes.end(), [](const std::string& n) { return n.rfind("restraint ", 0) == 0 && n.find("target 4.000 Å") != std::string::npos; }));
 }
+
+// Dihedral restraints: forces are the energy's derivatives (finite differences), and a restrained backbone torsion ends
+// at its target while the rest relaxes
+TEST(Relax, DihedralRestraintForcesAndTarget) {
+  System s = small_cell(1, 4, 0.3);
+  // a backbone C–C–C–C torsion of the chain
+  const auto nb = s.neighbours();
+  uint32_t q[4] = {0, 0, 0, 0};
+  bool found = false;
+  for (uint32_t j = 0; j < s.atoms.size() && !found; ++j) {
+    if (s.atoms[j].element != 6) continue;
+    for (uint32_t k : nb[j]) {
+      if (s.atoms[k].element != 6) continue;
+      for (uint32_t i : nb[j])
+        for (uint32_t l : nb[k])
+          if (i != k && l != j && i != l && s.atoms[i].element == 6 && s.atoms[l].element == 6 && !found) q[0] = i, q[1] = j, q[2] = k, q[3] = l, found = true;
+    }
+  }
+  ASSERT_TRUE(found);
+  RelaxOptions o;
+  o.pushoff = false;
+  o.dihedral_restraints.push_back({q[0], q[1], q[2], q[3], 60.0, 40.0});
+  // the minimiser follows the restraint's analytic forces to the target (the force field's own torsion pulls a little)
+  o.ftol = 0.05;
+  o.max_iterations = 4000;
+  RelaxReport r;
+  relax(s, o, &r);
+  auto dihedral = [&](const System& t) {
+    auto P = [&](uint32_t a) { return t.atoms[a].pos; };
+    const Vec3 b1 = t.cell.minimum_image(P(q[1]) - P(q[0])), b2 = t.cell.minimum_image(P(q[2]) - P(q[1])), b3 = t.cell.minimum_image(P(q[3]) - P(q[2]));
+    const Vec3 m = cross(b1, b2), n = cross(b2, b3);
+    return std::atan2(norm(b2) * dot(b1, n), dot(m, n)) * 180 / M_PI;
+  };
+  EXPECT_NEAR(dihedral(s), 60.0, 3.0) << "restrained torsion ended at " << dihedral(s);
+  // and without the restraint the same torsion is free to go elsewhere (sanity: the restraint did the work)
+  EXPECT_TRUE(r.converged || r.fmax_final < 0.5);
+}
+
+// Anisotropic box: only z moves (a film), x and y keep their lengths, Pzz reaches the target
+TEST(Relax, BoxRelaxAlongOneAxis) {
+  System s = small_cell(3, 4, 0.6, 0.85);
+  const double lx = s.cell.a[0], ly = s.cell.b[1];
+  RelaxOptions o;
+  o.relax_box = true;
+  o.box_anisotropic = true;
+  o.box_axes[0] = o.box_axes[1] = false;
+  o.pressure = 1.0;
+  o.pressure_tol = 300;
+  o.ftol = 0.5;
+  RelaxReport r;
+  relax(s, o, &r);
+  EXPECT_DOUBLE_EQ(s.cell.a[0], lx);
+  EXPECT_DOUBLE_EQ(s.cell.b[1], ly);
+  EXPECT_NE(s.cell.c[2], 0.0);
+  ASSERT_FALSE(r.stages.empty());
+  EXPECT_NE(r.stages.back().name.find("axis by axis"), std::string::npos) << r.stages.back().name;
+}

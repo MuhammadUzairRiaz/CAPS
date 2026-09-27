@@ -160,6 +160,8 @@ public struct CapsRelaxOpts
     public int Pushoff, RelaxBox;
     public double Pressure, Cutoff;
     public int Coulomb, Threads;
+    public int BoxAnisotropic;    // each axis follows its own diagonal pressure (orthorhombic cells)
+    public int BoxAxes;           // axes that move: bits 1 x, 2 y, 4 z (0 = all)
 }
 
 [StructLayout(LayoutKind.Sequential)]
