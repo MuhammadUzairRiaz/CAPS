@@ -829,7 +829,10 @@ void step_unwrap(PipelineState& st, const Json& p, StepStatus& out) {
       for (auto& a : s.atoms) a.pos = a.pos + s.cell.a * a.image[0] + s.cell.b * a.image[1] + s.cell.c * a.image[2];
     how = flagged ? std::to_string(flagged) + " atoms with image flags" + (s.unwrapped ? " (applied when the file was read)" : "")
                   : "no image flags in the file";
-    if (!flagged && !s.unwrapped) { out.level = "warning"; how += ": positions as read"; }
+    if (!flagged && !s.unwrapped) {   // the fallback: follow the bonds
+      make_molecules_whole(s);
+      how += ": molecules whole along their bonds instead";
+    }
   } else if (method == "nojump") {
     if (!st.traj || st.traj->frames() < 2) {
       make_molecules_whole(s);
@@ -2158,6 +2161,7 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
   if (old.empty()) unsetenv("PYTHONPATH"); else setenv("PYTHONPATH", old.c_str(), 1);
 #endif
   std::filesystem::remove(fin);
+  out.output = log.size() > 8000 ? "…" + log.substr(log.size() - 8000) : log;   // the console, kept on errors too
   if (!std::filesystem::exists(fout)) {   // Python itself failed: say which error (the traceback's last line)
     std::string last = log;
     while (!last.empty() && (last.back() == '\n' || last.back() == '\r')) last.pop_back();
@@ -2171,6 +2175,7 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
     std::string where;
     if (res.has("trace")) {   // the script's own line
       const std::string& tr = res["trace"].str();
+      out.output += tr;
       const auto at = tr.rfind(std::filesystem::path(script).filename().string());
       if (at != std::string::npos) where = " · " + tr.substr(at, tr.find('\n', at) - at);
     }
@@ -2209,7 +2214,7 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
     for (size_t i = 0; i < n; ++i) st.selected[i] = res["selection"][i].number() != 0;
   out.title = res.text("name", "Python step");
   out.summary = std::to_string(na) + " attribute" + (na == 1 ? "" : "s") + ", " + std::to_string(np) + " propert" + (np == 1 ? "y" : "ies") + ", " +
-                std::to_string(nt) + " table" + (nt == 1 ? "" : "s") + (log.empty() ? "" : " · printed " + std::to_string(std::count(log.begin(), log.end(), '\n')) + " lines");
+                std::to_string(nt) + " table" + (nt == 1 ? "" : "s") + (log.empty() ? "" : [&] { const auto nl = std::count(log.begin(), log.end(), '\n'); return " · printed " + std::to_string(nl) + (nl == 1 ? " line" : " lines"); }());
 }
 
 struct StepDef {
@@ -2454,6 +2459,7 @@ Json pipeline_result_json(const PipelineState& st) {
     o["type"] = s.type;
     o["title"] = s.title;
     o["summary"] = s.summary;
+    if (!s.output.empty()) o["output"] = s.output;
     o["level"] = s.level;
     steps.push_back(std::move(o));
   }

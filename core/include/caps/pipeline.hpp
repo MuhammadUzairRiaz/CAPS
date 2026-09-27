@@ -93,6 +93,7 @@ struct PipelineLegend {
 struct StepStatus {
   std::string type, title, summary;
   std::string level = "ok";   // ok | warning | error | off
+  std::string output;         // what the step printed (a Python step's console)
 };
 
 struct PipelineState {
