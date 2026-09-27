@@ -1108,7 +1108,7 @@ const std::string& Smarts::text() const { return d_->text; }
 // ---------------------------------------------------------------------------------------------------------------------
 // Typing
 
-TypingResult assign_types(const System& s, const FFDef& ff) {
+TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<std::string>* context) {
   struct Rule { const TypingRule* r; const FFType* t; size_t order; Smarts sm; };
   std::map<std::string, const FFType*> byname;
   for (const auto& t : ff.types) byname[t.name] = &t;
@@ -1150,7 +1150,7 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
       if (present.count(z)) return false;
     return x.r->atom_name.empty() || s.atoms[a].name == x.r->atom_name;
   };
-  for (int pass = 0; pass < (any_type_refs ? 10 : 1); ++pass) {
+  for (int pass = 0; pass < (any_type_refs && !context ? 10 : 1); ++pass) {
     std::vector<std::string> next(n);
     std::vector<std::string> why(n);
     std::vector<int> rule_of(n, -1);
@@ -1159,7 +1159,7 @@ TypingResult assign_types(const System& s, const FFDef& ff) {
     for (uint32_t a = 0; a < n; ++a) {
       std::vector<const Rule*> hit;
       for (const auto& x : rules)   // the SMARTS decides the element (library element columns have typos)
-        if (applies(x, a) && x.sm.matches(s, p, a, r.types)) hit.push_back(&x);
+        if (applies(x, a) && x.sm.matches(s, p, a, context ? *context : r.types)) hit.push_back(&x);
       for (const auto* h : hit)
         if (std::find(cands[a].begin(), cands[a].end(), h->t->name) == cands[a].end()) cands[a].push_back(h->t->name);
       if (hit.empty()) { ++untyped; why[a] = "no rule matches"; continue; }

@@ -26,6 +26,11 @@
     "angles": 303,
     "dihedrals": 488,
     "impropers": 69
+   },
+   "list": {
+    "label": "PCFF",
+    "key": "pcff",
+    "order": 0
    }
   },
   {
@@ -51,6 +56,11 @@
     "angles": 234,
     "dihedrals": 82,
     "impropers": 36
+   },
+   "list": {
+    "label": "CVFF",
+    "key": "cvff",
+    "order": 2
    }
   },
   {
@@ -76,6 +86,11 @@
     "angles": 94,
     "dihedrals": 95,
     "impropers": 19
+   },
+   "list": {
+    "label": "COMPASS",
+    "key": "compass",
+    "order": 1
    }
   },
   {
@@ -161,11 +176,6 @@
     "angles": 289,
     "dihedrals": 436,
     "impropers": 93
-   },
-   "list": {
-    "label": "PCFF",
-    "key": "pcff",
-    "order": 0
    }
   },
   {
@@ -191,11 +201,6 @@
    "typing": {
     "rules": "typing/compass.typing.json",
     "evidence": "CAPS COMPASS rules from the published type definitions (bench/typing/make_compass_rules.py)"
-   },
-   "list": {
-    "label": "COMPASS",
-    "key": "compass",
-    "order": 1
    }
   },
   {
@@ -221,11 +226,6 @@
     "angles": 134,
     "dihedrals": 59,
     "impropers": 44
-   },
-   "list": {
-    "label": "CVFF",
-    "key": "cvff",
-    "order": 2
    }
   },
   {

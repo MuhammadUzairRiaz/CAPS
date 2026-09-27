@@ -136,7 +136,7 @@ internal static class SelfTest
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
         }
-        // Automatic charges: the library's OPLS-AA keeps charges on templates, not types; the default falls back to Gasteiger
+        // Automatic charges: OPLS 2005's own — charge keys and its bond charge increments (no Gasteiger stand-in)
         var opls = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005");
         if (opls >= 0)
         {
@@ -144,7 +144,8 @@ internal static class SelfTest
             vm.Field.ChargeMode = 0;
             vm.Field.Assign().GetAwaiter().GetResult();
             var rep = vm.Document!.FieldReport();
-            Check(vm.Field.Assigned && vm.Field.Complete && rep.Contains("Gasteiger–Marsili charges were used instead", StringComparison.Ordinal),
+            Check(vm.Field.Assigned && vm.Field.Complete && rep.Contains("charges from bond increments", StringComparison.Ordinal) &&
+                  !rep.Contains("Gasteiger", StringComparison.Ordinal) && rep.Contains("\"ck\"", StringComparison.Ordinal),
                   $"Field OPLS-AA 2005 with automatic charges: {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
             vm.Field.Clear().GetAwaiter().GetResult();
         }
@@ -157,7 +158,7 @@ internal static class SelfTest
             vm.Field.Assign().GetAwaiter().GetResult();
             var complete24 = vm.Field.Assigned && vm.Field.Complete;
             vm.Field.CheckCoverage().GetAwaiter().GetResult();
-            Check(complete24 && vm.Field.Alternatives.Any(a => a.Id == "pcff") && !vm.Field.HasUntypedGroups && !vm.Field.HasBalanceNote,
+            Check(complete24 && vm.Field.Alternatives.Any(a => a.Id == "pcff-frc") && !vm.Field.HasUntypedGroups && !vm.Field.HasBalanceNote,
                   $"Field OPLS-AA 2024 by number: complete {complete24} · {vm.Field.TypedText} · {vm.Field.MissingText} · alternatives {string.Join(", ", vm.Field.Alternatives.Select(a => a.Id))} · {vm.Field.CoverageNote}");
             vm.Field.Clear().GetAwaiter().GetResult();
         }

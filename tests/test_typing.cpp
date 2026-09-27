@@ -301,3 +301,33 @@ TEST(Typing, ByExampleFromATrimer) {
   for (const auto& t : em2.types) custom += t == "CUSTOM";
   EXPECT_EQ(custom, 10u * 6);   // every backbone CH with a unit on both sides: six in each 8-unit chain
 }
+
+#include "caps/molecule.hpp"
+
+// OPLS 2005's own charges: charge keys (the typing file's charge_rules) and its bond charge increments give the ester
+// charges of PMMA's side group (C=O 0.51, O= −0.43, O −0.33, OCH3 0.16 with H 0.03), as the reference assigns them
+TEST(Typing, Opls2005ChargesFromBondIncrements) {
+  FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/opls2005.json");
+  load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/opls2005.typing.json");
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  const System s = build_molecule("COC(=O)C(C)(C)C", bo).system;   // methyl pivalate
+  const TypingResult tr = assign_types(s, ff);
+  ASSERT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField f = parameterize(s, ff, tr.types, "types", &rep, false);
+  EXPECT_TRUE(rep.missing.empty()) << rep.missing.front();
+  double net = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) net += f.charge[i];
+  EXPECT_NEAR(net, 0.0, 1e-9);
+  auto q_of = [&](const std::string& type, int element) {
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      if (tr.types[i] == type && s.atoms[i].element == element) return f.charge[i];
+    return std::nan("");
+  };
+  EXPECT_NEAR(q_of("CO4", 6), 0.51, 1e-9);
+  EXPECT_NEAR(q_of("O", 8), -0.43, 1e-9);
+  EXPECT_NEAR(q_of("OES", 8), -0.33, 1e-9);
+  EXPECT_NEAR(f.charge[0], 0.16, 1e-9);   // the methoxy C (charge key 181)
+  EXPECT_EQ(rep.charge_keys[0], "181");
+}

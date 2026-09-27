@@ -166,9 +166,9 @@
   },
   {
    "type": "c=1",
-   "smarts": "[CX3](=[C,N])[c,$([CX3]=[C,N]),$([NX2]=*)]",
+   "smarts": "[CX3](=[C,N])[$([CX3]=[C,N]),$([NX2]=*)]",
    "priority": 1,
-   "description": "double-bonded C conjugated with an aromatic ring or another double bond"
+   "description": "double-bonded C conjugated with another double bond (a C=C next to an aromatic ring stays c=)"
   },
   {
    "type": "c=2",
@@ -547,6 +547,18 @@
    "smarts": "[SX4](=O)(=O)",
    "priority": 2,
    "description": "sulfone S: sf in PCFF's templates, a child of s' (pcff.frc parameterises s')"
+  },
+  {
+   "type": "c=2",
+   "smarts": "[CX3]=[CX3]Cl",
+   "priority": 3,
+   "description": "alkene C double-bonded to a chlorinated one (chloroprene =CH-)"
+  },
+  {
+   "type": "c3h",
+   "smarts": "[CX4;r3;!H0;!$(*@[!#6])]",
+   "priority": 5,
+   "description": "sp3 C with hydrogens in an all-carbon 3-ring (cyclopropane; epoxide C stay c3m)"
   }
  ]
 }

@@ -329,6 +329,18 @@
    "type": "ca+",
    "smarts": "[Ca]",
    "description": "calcium"
+  },
+  {
+   "type": "c2",
+   "smarts": "[CX4;r3]",
+   "priority": 3,
+   "description": "sp3 C in a 3-ring (epoxide, cyclopropane), whatever its hydrogens"
+  },
+  {
+   "type": "c1",
+   "smarts": "[CX4H2]([OX2])[OX2]",
+   "priority": 3,
+   "description": "acetal CH2 (between two ether O)"
   }
  ]
 }
