@@ -1742,6 +1742,13 @@ internal static class SelfTest
             vm.LoadPipeline(yamlPath);
             Check(File.ReadAllText(yamlPath).StartsWith("caps_pipeline: 1") && vm.PipelineRows.Count == 2 && vm.PipelineJson() == jsonBefore && vm.PipelineYamlHash.Length == 64,
                   $"save pipeline: {vm.PipelineRows.Count} steps back from YAML · sha256 {vm.PipelineYamlHash[..12]}");
+            // a pipeline file with a Python step: loaded, but the step is switched off until turned on
+            var pyPath = Path.Combine(outDir, "caps-selftest-python.json");
+            File.WriteAllText(pyPath, "{\"steps\":[{\"type\":\"python\",\"code\":\"print('hi')\"},{\"type\":\"coordination\"}]}");
+            vm.ClearPipeline();
+            vm.LoadPipeline(pyPath);
+            Check(vm.PipelineRows.Count == 2 && !vm.PipelineRows[0].Enabled && vm.PipelineRows[1].Enabled && vm.PipelineHeldPython == 1 && vm.Status.Contains("switched off"),
+                  $"load pipeline with Python: held {vm.PipelineHeldPython} · {vm.Status}");
             vm.ClearPipeline();
             vm.SetModule(8);
         }
