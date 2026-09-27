@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/constraints.hpp"
 #include "caps/field.hpp"
 #include "caps/system.hpp"
 
@@ -134,8 +135,11 @@ struct LammpsRun {
   double tdamp = 100, pdamp = 1000;            // fs
   int thermo_every = 1000, dump_every = 5000;
   uint64_t seed = 4928459;
+  // bonds to hydrogen (and rigid water) or every bond held at its length: fix shake in LAMMPS, constraints in GROMACS
+  ConstraintMode constraints = ConstraintMode::None;
 };
-// The time step engine inputs are written with: the run's when set, else the force field's own (Martini 20 fs), else 0.5 fs.
+// The time step engine inputs are written with: the run's when set, else the force field's own (Martini 20 fs), else 2 fs
+// with constraints, else 0.5 fs.
 double lammps_timestep(const LammpsRun& run, const ForceField& ff);
 
 // A LAMMPS input script for that data file: units, styles, special_bonds, read_data (as data_path is given), the pair
@@ -145,6 +149,11 @@ double lammps_timestep(const LammpsRun& run, const ForceField& ff);
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& data_path, const std::string& path,
                         int64_t held_mol = 0, bool pair_coeffs = false, const LammpsRun& run = {}, const LammpsStyle& style = {},
                         std::vector<std::string>* notes = nullptr);
+
+// The LAMMPS fix shake line for these constraints on group (empty when there is nothing to hold), with the bond and angle
+// type numbers of the data file written with the same style.
+std::string lammps_shake_fix(const System& s, const ForceField& ff, const EnergyOptions& e, ConstraintMode mode, const std::string& group = "all",
+                             const LammpsStyle& style = {});
 
 // GROMACS files with the force field: STEM.top (every term in the GROMACS function with the same energy; every
 // Lennard-Jones type pair and 1-4 pair written out, CAPS's exclusions listed), STEM.gro (nm, 8 decimals; molecules made

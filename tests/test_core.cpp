@@ -925,3 +925,33 @@ TEST(FileChecks, SampleAndBrokenStructures) {
   EXPECT_TRUE(dhas("warn", "closer than 0.7"));
   EXPECT_TRUE(dhas("warn", "Net charge"));
 }
+
+// Horn superposition: a rotated, translated copy fits back exactly; noise shows as the RMSD; weights pick the atoms
+#include "caps/superpose.hpp"
+TEST(Superpose, RecoversRotationAndTranslation) {
+  std::vector<caps::Vec3> ref;
+  uint64_t seed = 12345;
+  auto rnd = [&] { seed = seed * 6364136223846793005ULL + 1442695040888963407ULL; return double(seed >> 11) / double(1ULL << 53) * 10 - 5; };
+  for (int i = 0; i < 40; ++i) ref.push_back({rnd(), rnd(), rnd()});
+  // rotation about (1, 2, 3) by 1.1 rad, then a shift
+  const double th = 1.1, l = std::sqrt(14.0), ux = 1 / l, uy = 2 / l, uz = 3 / l, c = std::cos(th), s = std::sin(th);
+  const double R[3][3] = {{c + ux * ux * (1 - c), ux * uy * (1 - c) - uz * s, ux * uz * (1 - c) + uy * s},
+                          {uy * ux * (1 - c) + uz * s, c + uy * uy * (1 - c), uy * uz * (1 - c) - ux * s},
+                          {uz * ux * (1 - c) - uy * s, uz * uy * (1 - c) + ux * s, c + uz * uz * (1 - c)}};
+  std::vector<caps::Vec3> mov;
+  for (const auto& p : ref)
+    mov.push_back({R[0][0] * p[0] + R[0][1] * p[1] + R[0][2] * p[2] + 7, R[1][0] * p[0] + R[1][1] * p[1] + R[1][2] * p[2] - 3,
+                   R[2][0] * p[0] + R[2][1] * p[1] + R[2][2] * p[2] + 11});
+  const auto fit = caps::superpose(ref, mov);
+  EXPECT_LT(fit.rmsd, 1e-9);
+  EXPECT_EQ(fit.fitted, 40u);
+  for (size_t i = 0; i < ref.size(); ++i) EXPECT_LT(caps::norm(fit.apply(mov[i]) - ref[i]), 1e-9);
+  // one atom moved by 3 Å: fitting on the others leaves exactly that shift on it
+  mov[5] = mov[5] + caps::Vec3{3, 0, 0};
+  std::vector<double> w(ref.size(), 1.0);
+  w[5] = 0;
+  const auto fit2 = caps::superpose(ref, mov, w);
+  EXPECT_LT(fit2.rmsd, 1e-9);
+  EXPECT_NEAR(caps::norm(fit2.apply(mov[5]) - ref[5]), 3.0, 1e-9);
+  EXPECT_THROW(caps::superpose(ref, std::vector<caps::Vec3>(3)), std::invalid_argument);
+}

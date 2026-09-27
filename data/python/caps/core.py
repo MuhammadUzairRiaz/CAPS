@@ -97,7 +97,7 @@ class _MdOpts(C.Structure):
     _fields_ = [("dt", C.c_double), ("steps", C.c_int64), ("temperature", C.c_double), ("thermostat", C.c_int32), ("tau_t", C.c_double),
                 ("barostat", C.c_int32), ("pressure", C.c_double), ("tau_p", C.c_double), ("new_velocities", C.c_int32),
                 ("seed", C.c_uint64), ("thermo_every", C.c_int32), ("frame_every", C.c_int32), ("cutoff", C.c_double),
-                ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32)]
+                ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32)]
 
 
 class _BuildOpts(C.Structure):
@@ -306,12 +306,13 @@ class Document:
 
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
-           respa: int = 1) -> str:
+           respa: int = 1, constraints: str = "none") -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
-        the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens)."""
+        the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
+        rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa)."""
         o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2}[thermostat], 100.0,
                     {"none": 0, "crescale": 1, "berendsen": 2}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
-                    cutoff, 1, 1, 0, respa)
+                    cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints])
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()

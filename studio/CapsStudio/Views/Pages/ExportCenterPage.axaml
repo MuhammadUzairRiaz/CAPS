@@ -126,9 +126,14 @@
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8" IsVisible="{Binding EngineIsMd}">
               <StackPanel Spacing="4"><TextBlock Text="T (K)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineTemperatureD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" /></StackPanel>
               <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="P (atm)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EnginePressureD}" Minimum="0" Increment="1" FormatString="0.##" /></StackPanel>
-              <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="dt (fs, 0 = own)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineDtD}" Minimum="0" Maximum="50" Increment="0.5" FormatString="0.##" ToolTip.Tip="0: the force field's own time step (Martini 20 fs, all-atom 0.5 fs)" /></StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="dt (fs, 0 = own)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineDtD}" Minimum="0" Maximum="50" Increment="0.5" FormatString="0.##" ToolTip.Tip="0: the force field's own time step (Martini 20 fs; all-atom 0.5 fs, 2 fs with bond constraints)" /></StackPanel>
               <StackPanel Grid.Column="3" Spacing="4"><TextBlock Text="Steps" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineStepsD}" Minimum="0" Increment="10000" FormatString="0" /></StackPanel>
             </Grid>
+            <StackPanel Spacing="4" IsVisible="{Binding EngineIsMd}">
+              <TextBlock Text="Bond constraints" Classes="muted" FontSize="11.5" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ConstraintChoices}" SelectedIndex="{Binding EngineConstraints}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="LAMMPS: fix shake on the same bonds (water's angle by its type); GROMACS: constraints = h-bonds / all-bonds. With constraints and dt 0 the time step is 2 fs" />
+            </StackPanel>
           </StackPanel>
         </StackPanel>
       </Border>

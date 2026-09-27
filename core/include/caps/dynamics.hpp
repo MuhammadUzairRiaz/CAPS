@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/constraints.hpp"
 #include "caps/field.hpp"
 #include "caps/system.hpp"
 
@@ -22,7 +23,7 @@ const char* to_string(Barostat b);
 struct ThermoRow {
   int64_t step = 0;
   double time_ps = 0;
-  double temperature = 0;      // K, 3N − 3 degrees of freedom
+  double temperature = 0;      // K, 3N − 3 − (constraints) degrees of freedom
   double potential = 0, kinetic = 0, total = 0;   // kcal/mol
   double conserved = 0;        // total plus the energy the thermostat and barostat exchanged (drift check)
   double pressure = 0;         // atm, virial + kinetic
@@ -41,6 +42,9 @@ struct DynamicsOptions {
   // r-RESPA (Tuckerman, Berne & Martyna, J. Chem. Phys. 97, 1990 (1992)): > 1 splits each step: non-bonded forces at dt,
   // bonded forces at dt / respa. NVE or the Bussi thermostat; barostats act on the outer step.
   int respa = 1;
+  // Bond constraints (SHAKE/RATTLE): bonds to hydrogen with rigid water (2 fs steps), or every bond. Each constraint
+  // takes one degree of freedom out of the temperature; its forces are in the virial (pressure, barostat).
+  ConstraintMode constraints = ConstraintMode::None;
   int64_t steps = 10000;
   double temperature = 300.0;       // K, thermostat target and initial velocities
   double temperature_end = -1.0;    // K; ≥ 0 ramps the thermostat target linearly to this over the run

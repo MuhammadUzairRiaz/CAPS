@@ -27,7 +27,7 @@ public sealed partial class MainViewModel
     private static readonly string[] SetColours = ["#6CC4D8", "#F5A524", "#9AA1A8", "#9B7BD6", "#7CC784", "#E07A5F"];
 
     private bool _selOpen;
-    public bool SelectionOpen { get => _selOpen; set { if (Set(ref _selOpen, value)) { if (value) { AppearanceOpen = false; InteractionsOpen = false; LodOpen = false; HistoryOpen = false; LensOpen = false; RefreshStereo(); } RaiseSelectionPanel(); } } }
+    public bool SelectionOpen { get => _selOpen; set { if (Set(ref _selOpen, value)) { if (value) { AppearanceOpen = false; InteractionsOpen = false; LodOpen = false; HistoryOpen = false; StatesOpen = false; LensOpen = false; RefreshStereo(); } RaiseSelectionPanel(); } } }
     public bool ShowSelectionPanel => IsStudio && _selOpen && _doc != null;
     private void RaiseSelectionPanel() { Raise(nameof(ShowSelectionPanel)); Raise(nameof(ShowStudioTabs)); }
 

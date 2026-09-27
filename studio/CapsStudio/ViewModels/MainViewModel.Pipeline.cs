@@ -143,6 +143,8 @@ public sealed partial class MainViewModel
     public int EngineRun { get => _engRun; set { if (Set(ref _engRun, Math.Clamp(value, 0, 3))) { Raise(nameof(EngineIsMd)); RefreshEngines(); } } }
     public bool EngineIsMd => _engRun >= 2;
     public bool EngineMinimiseFirst { get => _engMinFirst; set { if (Set(ref _engMinFirst, value)) RefreshEngines(); } }
+    private int _engConstraints;
+    public int EngineConstraints { get => _engConstraints; set { if (Set(ref _engConstraints, Math.Clamp(value, 0, 2))) RefreshEngines(); } }
     public double EngineTemperature { get => _engTemp; set { if (Set(ref _engTemp, value)) RefreshEngines(); } }
     public double EnginePressure { get => _engPress; set { if (Set(ref _engPress, value)) RefreshEngines(); } }
     public double EngineDt { get => _engDt; set { if (Set(ref _engDt, value)) RefreshEngines(); } }
@@ -208,7 +210,7 @@ public sealed partial class MainViewModel
     private string EngineOptions(bool preview) => new JsonObject
     {
         ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
-        ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps,
+        ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps, ["constraints"] = _engConstraints switch { 1 => "h-bonds", 2 => "all-bonds", _ => "none" },
         ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
         ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace,
         ["preview"] = preview, ["head_lines"] = preview ? 60 : 0,

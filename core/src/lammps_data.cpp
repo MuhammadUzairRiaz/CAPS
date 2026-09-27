@@ -863,6 +863,45 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   }
 }
 
+// fix shake on the bonds CAPS constrains: to hydrogen by mass (and water's H–O–H angle by its type), or every bond type
+std::string shake_fix(const System& s, const ForceField& ff, const Layout& L, ConstraintMode mode, const std::string& group) {
+  if (mode == ConstraintMode::None || L.bonds.types.empty()) return {};
+  char b[160];
+  std::string what;
+  if (mode == ConstraintMode::AllBonds) {
+    what = "b";
+    for (size_t t = 1; t <= L.bonds.types.size(); ++t) what += " " + std::to_string(t);
+  } else {
+    double mh = 0;
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      if (s.atoms[i].element == 1) mh = std::max(mh, ff.mass[i]);
+    if (mh <= 0) return {};
+    std::snprintf(b, sizeof b, "m %.4g", mh + 0.05);
+    what = b;
+    const auto nb = s.neighbours();
+    std::set<int> water;
+    for (size_t k = 0; k < L.angles.term_atoms.size(); ++k) {
+      const auto& t = L.angles.term_atoms[k];
+      if (t.size() != 3) continue;
+      const uint32_t o = t[1];
+      if (s.atoms[o].element == 8 && nb[o].size() == 2 && s.atoms[t[0]].element == 1 && s.atoms[t[2]].element == 1) water.insert(L.angles.term_type[k]);
+    }
+    if (!water.empty()) {
+      what += " a";
+      for (int t : water) what += " " + std::to_string(t);
+    }
+  }
+  std::snprintf(b, sizeof b, "fix             hold_bonds %s shake 1.0e-6 100 0 ", group.c_str());
+  return b + what + "\n";
+}
+
+std::string lammps_shake_fix(const System& s, const ForceField& ff, const EnergyOptions& e0, ConstraintMode mode, const std::string& group,
+                             const LammpsStyle& st) {
+  EnergyOptions e = e0;
+  const Layout L = prepare(s, ff, e, st);
+  return shake_fix(s, ff, L, mode, group);
+}
+
 void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run, const LammpsStyle& st, std::vector<std::string>* notes) {
   EnergyOptions e = e0;
@@ -937,6 +976,11 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   }
   const bool npt = run.kind == K::NPT;
   out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
+  if (run.constraints != ConstraintMode::None) {
+    const std::string line = shake_fix(s, ff, L, run.constraints, mobile);
+    if (!line.empty())
+      out << "# " << (run.constraints == ConstraintMode::AllBonds ? "every bond" : "bonds to hydrogen (and water's angle)") << " held at its length, as in CAPS (before the velocities: the temperature counts the constraints)\n" << line;
+  }
   if (L.coreshell) {
     // a shell model (LAMMPS CORESHELL): the thermostat sees the ions' centre-of-mass motion, not the core-shell vibration
     std::set<int> cores, shells;
@@ -966,6 +1010,7 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
     std::snprintf(b, sizeof b, "fix             integrate %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature, run.tdamp);
   out << b;
   if (L.coreshell) out << "fix_modify      integrate temp CSequ\n";
+
   std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\nrun             %lld\n",
                 std::max(1, run.dump_every), static_cast<long long>(run.steps));
   out << b;
@@ -974,7 +1019,8 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
 
 double lammps_timestep(const LammpsRun& run, const ForceField& ff) {
   if (run.dt > 0) return run.dt;
-  return ff.native_timestep > 0 ? ff.native_timestep : 0.5;
+  if (ff.native_timestep > 0) return ff.native_timestep;
+  return run.constraints != ConstraintMode::None ? 2.0 : 0.5;
 }
 
 }  // namespace caps

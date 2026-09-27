@@ -317,6 +317,10 @@
                           ToolTip.Tip="History &amp; snapshots (design/boards/History): every edit, undone branches, named snapshots to compare">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="18" VerticalAlignment="Center" /><TextBlock Text="History" VerticalAlignment="Center" /></StackPanel>
             </ToggleButton>
+            <ToggleButton Classes="tool" IsChecked="{Binding StatesOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
+                          ToolTip.Tip="Compare states (design/boards/Compare): superpose two states of the structure (start, now, a frame, a snapshot), RMSD and each atom's shift">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="18" VerticalAlignment="Center" /><TextBlock Text="Compare" VerticalAlignment="Center" /></StackPanel>
+            </ToggleButton>
             <ToggleButton Classes="tool" IsChecked="{Binding LensOpen}" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}"
                           ToolTip.Tip="All-atom lens (design/boards/LensView): every atom inside, a lighter style outside; hold L to move it">
               <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="search" Size="18" VerticalAlignment="Center" /><TextBlock Text="Lens" VerticalAlignment="Center" /></StackPanel>
@@ -1244,6 +1248,76 @@
               <Border Padding="16,12">
                 <TextBlock Text="{Binding SelectError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding SelectHasError}" />
               </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+        <!-- Compare states (design/boards/Compare): the moving state superposed on the reference, shifts in the view -->
+        <DockPanel IsVisible="{Binding ShowStatesPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Click="OnStatesClose" ToolTip.Tip="Close (the view's colours go back)"><local:Icon Kind="close" Size="14" /></Button>
+              <TextBlock Text="Compare states" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="14,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding CompareInfo}" Classes="dim" TextWrapping="Wrap" FontSize="11" />
+          </Border>
+          <ScrollViewer>
+            <StackPanel Margin="14,12,14,14" Spacing="10">
+              <TextBlock Text="Same atoms, matched one to one" Classes="dim" />
+              <StackPanel Spacing="4">
+                <TextBlock Text="Reference" Classes="label" />
+                <ComboBox ItemsSource="{Binding StateChoices}" SelectedItem="{Binding CompareReference}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Moving (superposed on the reference)" Classes="label" />
+                <ComboBox ItemsSource="{Binding StateChoices}" SelectedItem="{Binding CompareMoving}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Fit on" Classes="label" />
+                <Border Classes="seg">
+                  <UniformGrid Columns="4">
+                    <RadioButton Classes="seg" GroupName="cmpfit" Content="All" IsChecked="{Binding CompareFit, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                    <RadioButton Classes="seg" GroupName="cmpfit" Content="Heavy" IsChecked="{Binding CompareFit, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                    <RadioButton Classes="seg" GroupName="cmpfit" Content="Backbone" IsChecked="{Binding CompareFit, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                    <RadioButton Classes="seg" GroupName="cmpfit" Content="Selection" IsChecked="{Binding CompareFit, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=3}" />
+                  </UniformGrid>
+                </Border>
+              </StackPanel>
+              <CheckBox Content="Colour the view by each atom's shift" IsChecked="{Binding CompareColour}" />
+              <TextBlock Text="{Binding CompareError}" Classes="err" TextWrapping="Wrap" IsVisible="{Binding CompareHasError}" />
+              <Border Classes="card" CornerRadius="8" Padding="12,10">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="RMSD AFTER SUPERPOSITION" Classes="h3" />
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding CompareRmsdAll}" Classes="mono" /><TextBlock Text="All atoms" /></DockPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding CompareRmsdHeavy}" Classes="mono" /><TextBlock Text="Heavy atoms" /></DockPanel>
+                  <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding CompareRmsdBackbone}" Classes="mono" /><TextBlock Text="Backbone" /></DockPanel>
+                </StackPanel>
+              </Border>
+              <StackPanel Spacing="4">
+                <TextBlock Text="SHIFT PER ATOM (Å)" Classes="h3" />
+                <Border Height="120" Background="{DynamicResource Bg0B}" CornerRadius="6" Padding="4">
+                  <local:LinePlot x:Name="ShiftPlot" AutoRange="True" />
+                </Border>
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="LARGEST SHIFTS" Classes="h3" />
+                <ItemsControl ItemsSource="{Binding LargestShifts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ShiftRow">
+                      <Grid ColumnDefinitions="60,*,Auto" Margin="0,1">
+                        <TextBlock Text="{Binding Label}" Classes="mono" />
+                        <TextBlock Grid.Column="1" Text="{Binding Where}" Classes="dim" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Shift}" Classes="mono" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="small" Content="Export CSV…" Click="OnStatesCsv" ToolTip.Tip="Atom, element, molecule and shift of every atom" />
+                <Button Classes="small" Content="Take snapshot" Click="OnTakeSnapshot" ToolTip.Tip="Keep the structure now under a name, to compare later" />
+              </StackPanel>
             </StackPanel>
           </ScrollViewer>
         </DockPanel>

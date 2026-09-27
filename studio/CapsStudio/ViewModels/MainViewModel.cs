@@ -1078,6 +1078,7 @@ public sealed partial class MainViewModel : ObservableObject
         MdHasBarostat ? (_mdEnsemble == 3 || _mdBarostat == 1 ? "Berendsen et al., J. Chem. Phys. 81, 3684 (1984)" : "Bernetti & Bussi, J. Chem. Phys. 153, 114107 (2020)") : null,
         _mdEnsemble == 0 ? "Swope et al., J. Chem. Phys. 76, 637 (1982)" : null,
         _mdRespa > 0 ? "r-RESPA: Tuckerman, Berne & Martyna, J. Chem. Phys. 97, 1990 (1992)" : null,
+        _mdConstraints > 0 ? "SHAKE/RATTLE: Ryckaert et al., J. Comput. Phys. 23, 327 (1977); Andersen, J. Comput. Phys. 52, 24 (1983)" : null,
     }.Where(x => x != null));
     public bool MdHasThermostat => _mdEnsemble is 1 or 2;
     public bool MdHasBarostat => _mdEnsemble is 2 or 3;
@@ -1091,8 +1092,23 @@ public sealed partial class MainViewModel : ObservableObject
     // r-RESPA: 0 off, 1 two inner steps, 2 four (bonded forces every Δt/2 or Δt/4); with Bussi or no thermostat
     public static readonly string[] RespaChoices = ["r-RESPA · off", "r-RESPA · bonded ×2", "r-RESPA · bonded ×4"];
     private int _mdRespa;
-    public int MdRespa { get => _mdRespa; set { if (Set(ref _mdRespa, Math.Clamp(value, 0, 2))) { Raise(nameof(MdCitation)); RefreshPreflight(); } } }
-    public bool MdRespaAllowed => !(MdHasThermostat && _mdThermostat == 1);
+    public int MdRespa { get => _mdRespa; set { if (Set(ref _mdRespa, Math.Clamp(value, 0, 2))) { Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed)); RefreshPreflight(); } } }
+    public bool MdRespaAllowed => !(MdHasThermostat && _mdThermostat == 1) && _mdConstraints == 0;
+    // bond constraints (SHAKE/RATTLE): 0 none, 1 bonds to hydrogen with rigid water, 2 every bond; r-RESPA is the alternative
+    public static readonly string[] ConstraintChoices = ["None: every bond flexible", "Bonds to hydrogen (SHAKE), rigid water", "All bonds (SHAKE)"];
+    private int _mdConstraints;
+    public int MdConstraints
+    {
+        get => _mdConstraints;
+        set
+        {
+            if (!Set(ref _mdConstraints, Math.Clamp(value, 0, 2))) return;
+            if (value > 0) { MdRespa = 0; if (_mdDt < 2) MdDtD = 2; }   // what constraints are for: 2 fs steps
+            Raise(nameof(MdRespaAllowed)); Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed));
+            RefreshPreflight();
+        }
+    }
+    public bool MdConstraintsAllowed => _mdRespa == 0;
     private int RespaSteps => _mdRespa == 0 ? 1 : _mdRespa == 1 ? 2 : 4;
     public int MdBarostat { get => _mdBarostat; set { if (Set(ref _mdBarostat, value)) Raise(nameof(MdCitation)); } }
     public bool MdNewVelocities { get => _mdNewVelocities; set => Set(ref _mdNewVelocities, value); }
@@ -1218,10 +1234,15 @@ public sealed partial class MainViewModel : ObservableObject
             MdPreflight.Add(new CheckRow("NPH: Berendsen barostat without a thermostat; Berendsen scaling does not conserve the enthalpy exactly, so watch the drift", "check"));
         // time step
         var inner = _mdDt / RespaSteps;   // the step the bonded forces (C–H stretches) see
-        MdPreflight.Add(new CheckRow(RespaSteps > 1
-                ? string.Format(inv, "Δt {0:0.##} fs, bonded forces every {1:0.###} fs (r-RESPA), no bond constraints", _mdDt, inner)
-                : string.Format(inv, "Δt {0:0.##} fs with hydrogens, no bond constraints", _mdDt),
-            inner <= 1.0 && _mdDt <= 4.0 ? "ok" : inner <= 2.0 ? "check" : "fail"));
+        if (_mdConstraints > 0)
+            MdPreflight.Add(new CheckRow(string.Format(inv, "Δt {0:0.##} fs with {1} held at their lengths (SHAKE/RATTLE)", _mdDt,
+                    _mdConstraints == 1 ? "bonds to hydrogen" : "all bonds"),
+                _mdDt <= (_mdConstraints == 1 ? 2.0 : 2.5) ? "ok" : _mdDt <= 3.0 ? "check" : "fail"));
+        else
+            MdPreflight.Add(new CheckRow(RespaSteps > 1
+                    ? string.Format(inv, "Δt {0:0.##} fs, bonded forces every {1:0.###} fs (r-RESPA), no bond constraints", _mdDt, inner)
+                    : string.Format(inv, "Δt {0:0.##} fs with hydrogens, no bond constraints", _mdDt),
+                inner <= 1.0 && _mdDt <= 4.0 ? "ok" : inner <= 2.0 ? "check" : "fail"));
         // velocities
         MdPreflight.Add(new CheckRow(_mdNewVelocities ? string.Format(inv, "New velocities at {0:0} K (seed {1})", _mdTemp, _mdSeed) : "Velocities from the structure, or drawn at the target if it has none", "ok"));
         var fails = MdPreflight.Count(r => r.State == "fail");
@@ -1248,6 +1269,7 @@ public sealed partial class MainViewModel : ObservableObject
         return "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
                (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
                (RespaSteps > 1 ? $"run_style respa 2 {RespaSteps} bond 1 angle 1 dihedral 1 improper 1 pair 2 kspace 2\n" : "") +
+               (_mdConstraints > 0 ? doc.LammpsShake(_mdConstraints) : "") +
                string.Format(inv, "timestep {0:0.###}\n{1}\nthermo {2}\ndump d all custom {3} traj.lammpstrj id mol type xu yu zu\nrun {4}\n",
                    _mdDt, ens, Math.Max(1, _mdFrameEvery / 10), _mdFrameEvery, steps);
     }
@@ -1271,7 +1293,7 @@ public sealed partial class MainViewModel : ObservableObject
             Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
             NewVelocities = _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
             ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps,
+            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints,
         };
         _thermo.Clear();
         ThermoChanged?.Invoke();
@@ -1428,7 +1450,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
-            FramePs = 10, ThermoPs = 0.5, UntilConverged = _eqUntil ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks,
+            FramePs = 10, ThermoPs = 0.5, UntilConverged = _eqUntil ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints,
         };
         _thermo.Clear();
         ThermoChanged?.Invoke();
