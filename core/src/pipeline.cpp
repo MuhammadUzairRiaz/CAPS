@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <cstdlib>
 #include <functional>
+#include <map>
 #include <numeric>
 #include <set>
 #include <sstream>
@@ -19,6 +20,7 @@
 #include "caps/entangle.hpp"
 #include "caps/io.hpp"
 #include "caps/superpose.hpp"
+#include "caps/voronoi.hpp"
 #include "cell_list.hpp"
 
 namespace caps {
@@ -1545,6 +1547,132 @@ void step_ptm(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = sum.empty() ? "no particles" : sum + " · RMSD ≤ " + num_text(cutoff);
 }
 
+// Wigner–Seitz defect analysis: each particle belongs to the reference site it is nearest to (the site's Wigner–Seitz
+// cell, minimum image); a site with no particle is a vacancy, each particle beyond the first on a site an interstitial.
+// Reference: a frame of the trajectory, or a file. Output per particle (Site Index, Occupancy of its site) or per site
+// (the reference sites replace the particles, with their Occupancy).
+void step_wigner_seitz(PipelineState& st, const Json& p, StepStatus& out) {
+  System ref;
+  const std::string rsrc = p.text("reference", "frame");
+  if (rsrc == "file") {
+    const std::string path = p.text("path", "");
+    if (path.empty()) throw std::invalid_argument("choose the reference file (the perfect lattice)");
+    const Trajectory t = open_file(path);
+    if (t.frames() == 0) throw std::invalid_argument(path + ": no frame");
+    ref = t.frame(0);
+  } else {
+    if (!st.traj || st.traj->frames() == 0) throw std::invalid_argument("no trajectory: choose a reference file");
+    const size_t rf = size_t(std::clamp(int(p.num("frame", 0)), 0, int(st.traj->frames()) - 1));
+    ref = st.traj->frame(rf);
+  }
+  const size_t ns = ref.atoms.size(), n = st.system.atoms.size();
+  if (ns == 0) throw std::invalid_argument("the reference has no sites");
+  const Cell& rc = ref.cell;
+  const bool per = rc.valid();
+  // sites on a grid of fractional bins (about 3 Å), searched outward until the nearest is certain
+  int nb[3] = {1, 1, 1};
+  Vec3 lo{0, 0, 0}, hi{1, 1, 1};
+  if (per) {
+    const double v = rc.volume();
+    const double w[3] = {v / norm(cross(rc.b, rc.c)), v / norm(cross(rc.c, rc.a)), v / norm(cross(rc.a, rc.b))};
+    for (int d = 0; d < 3; ++d) nb[d] = std::max(1, int(w[d] / 3.0));
+  } else {
+    lo = {1e300, 1e300, 1e300}, hi = {-1e300, -1e300, -1e300};
+    for (const auto& a : ref.atoms)
+      for (int d = 0; d < 3; ++d) lo[size_t(d)] = std::min(lo[size_t(d)], a.pos[size_t(d)]), hi[size_t(d)] = std::max(hi[size_t(d)], a.pos[size_t(d)]);
+    for (int d = 0; d < 3; ++d) nb[d] = std::max(1, int((hi[size_t(d)] - lo[size_t(d)]) / 3.0));
+  }
+  auto bin_of = [&](const Vec3& x) {
+    std::array<int, 3> b{};
+    for (int d = 0; d < 3; ++d) {
+      double f;
+      if (per) { f = rc.to_fractional(x)[size_t(d)]; f -= std::floor(f); }
+      else f = (x[size_t(d)] - lo[size_t(d)]) / std::max(1e-9, hi[size_t(d)] - lo[size_t(d)]);
+      b[size_t(d)] = std::clamp(int(f * nb[d]), 0, nb[d] - 1);
+    }
+    return b;
+  };
+  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * size_t(nb[1]) * size_t(nb[2]));
+  for (uint32_t k = 0; k < ns; ++k) {
+    const auto b = bin_of(ref.atoms[k].pos);
+    grid[(size_t(b[0]) * size_t(nb[1]) + size_t(b[1])) * size_t(nb[2]) + size_t(b[2])].push_back(k);
+  }
+  auto dist = [&](const Vec3& a, const Vec3& b) { Vec3 d = b - a; if (per) d = rc.minimum_image(d); return norm(d); };
+  double binw = 1e300;
+  if (per) {
+    const double v = rc.volume();
+    const double w[3] = {v / norm(cross(rc.b, rc.c)), v / norm(cross(rc.c, rc.a)), v / norm(cross(rc.a, rc.b))};
+    for (int d = 0; d < 3; ++d) binw = std::min(binw, w[d] / nb[d]);
+  } else {
+    for (int d = 0; d < 3; ++d) binw = std::min(binw, std::max(1e-9, hi[size_t(d)] - lo[size_t(d)]) / nb[d]);
+  }
+  std::vector<int> site(n, -1), occ(ns, 0);
+  for (size_t i = 0; i < n; ++i) {
+    const Vec3 x = st.system.atoms[i].pos;
+    const auto b0 = bin_of(x);
+    int best = -1;
+    double bd = 1e300;
+    for (int reach = 1;; ++reach) {
+      std::set<size_t> seen;
+      for (int dx = -reach; dx <= reach; ++dx)
+        for (int dy = -reach; dy <= reach; ++dy)
+          for (int dz = -reach; dz <= reach; ++dz) {
+            int b[3] = {b0[0] + dx, b0[1] + dy, b0[2] + dz};
+            bool skip = false;
+            for (int d = 0; d < 3; ++d) {
+              if (per) b[d] = ((b[d] % nb[d]) + nb[d]) % nb[d];
+              else if (b[d] < 0 || b[d] >= nb[d]) skip = true;
+            }
+            if (skip) continue;
+            const size_t id = (size_t(b[0]) * size_t(nb[1]) + size_t(b[1])) * size_t(nb[2]) + size_t(b[2]);
+            if (!seen.insert(id).second) continue;
+            for (uint32_t k : grid[id]) {
+              const double d = dist(x, ref.atoms[k].pos);
+              if (d < bd) bd = d, best = int(k);
+            }
+          }
+      const bool all = 2 * reach + 1 >= nb[0] && 2 * reach + 1 >= nb[1] && 2 * reach + 1 >= nb[2];
+      if ((best >= 0 && bd <= reach * binw) || all) break;
+    }
+    site[i] = best;
+    if (best >= 0) ++occ[size_t(best)];
+  }
+  size_t vac = 0, inter = 0;
+  for (int o : occ) { vac += o == 0; inter += o > 1 ? size_t(o - 1) : 0; }
+  st.set_attribute("WignerSeitz.vacancy_count", double(vac));
+  st.set_attribute("WignerSeitz.interstitial_count", double(inter));
+  DataTable t;
+  t.name = "defects";
+  t.title = "Wigner–Seitz · sites by occupancy";
+  t.columns = {"Occupancy", "Sites"};
+  std::map<int, size_t> h;
+  for (int o : occ) ++h[o];
+  for (const auto& [o, c] : h) t.rows.push_back({double(o), double(c)});
+  st.tables.push_back(std::move(t));
+  if (p.text("output", "particles") == "sites") {
+    // the reference sites as the particles, each with its occupancy (vacancies: 0)
+    System sites = ref;
+    sites.bonds.clear();
+    st.system = std::move(sites);
+    st.origin.assign(ns, 0);
+    std::iota(st.origin.begin(), st.origin.end(), 0);
+    st.selected.assign(ns, 0);
+    st.colour.assign(ns, kNoColour);
+    for (auto& [name, v] : st.props) v.assign(ns, 0);
+    auto& o = st.props["Occupancy"];
+    o.assign(ns, 0);
+    for (size_t k = 0; k < ns; ++k) o[k] = occ[k];
+  } else {
+    auto& si = st.props["Site Index"];
+    auto& o = st.props["Occupancy"];
+    si.assign(n, -1);
+    o.assign(n, 0);
+    for (size_t i = 0; i < n; ++i)
+      if (site[i] >= 0) si[i] = site[i], o[i] = occ[size_t(site[i])];
+  }
+  out.summary = std::to_string(vac) + " vacancies · " + std::to_string(inter) + " interstitials · " + std::to_string(ns) + " sites";
+}
+
 // Combine datasets: the particles (and bonds) of a second file added to the pipeline's, as they are in that file
 void step_combine(PipelineState& st, const Json& p, StepStatus& out) {
   const std::string path = p.text("path", "");
@@ -2191,10 +2319,60 @@ void step_voids(PipelineState& st, const Json& p, StepStatus& out) {
 
 void step_voronoi(PipelineState& st, const Json& p, StepStatus& out) {
   const System& s = st.system;
-  if (!s.cell.valid()) throw std::invalid_argument("Voronoi volumes need a periodic cell");
-  const bool radical = p.text("method", "grid") == "radical";
-  const CellGrid g(s.cell, std::clamp(p.num("grid", 0.5), 0.15, 2.0));
+  const std::string method = p.text("method", "grid");
   const size_t n = s.atoms.size();
+  if (method == "exact" || method == "exact_radical") {
+    // the polyhedral cells: exact volumes, faces and the Voronoi index
+    VoronoiOptions vo;
+    vo.radical = method == "exact_radical";
+    vo.face_area_min = std::max(0.0, p.num("face_area_min", 0.0));
+    vo.edge_min = std::max(1e-9, p.num("edge_min", 1e-6));
+    if (flag(p, "only_selected", false)) vo.only.assign(st.selected.begin(), st.selected.end());
+    const auto cells = voronoi_cells(s, vo);
+    auto& vol = st.props["AtomicVolume"];
+    auto& coord = st.props["Coordination"];
+    auto& order = st.props["Max Face Order"];
+    auto& area = st.props["Cell Surface Area"];
+    std::array<std::vector<double>*, 4> idx{&st.props["Voronoi Index.3"], &st.props["Voronoi Index.4"], &st.props["Voronoi Index.5"], &st.props["Voronoi Index.6"]};
+    for (auto* v : {&vol, &coord, &order, &area}) v->assign(n, 0);
+    for (auto* v : idx) v->assign(n, 0);
+    std::map<std::array<int, 4>, size_t> common;
+    double sum = 0;
+    size_t open = 0;
+    for (size_t i = 0; i < n; ++i) {
+      const auto& c = cells[i];
+      if (!c.bounded) { ++open; continue; }
+      vol[i] = c.volume, coord[i] = c.faces, order[i] = c.max_face_order, area[i] = c.area;
+      sum += c.volume;
+      if (c.index.size() >= 7) {
+        for (int k = 0; k < 4; ++k) (*idx[size_t(k)])[i] = c.index[size_t(k + 3)];
+        if (c.faces > 0) ++common[{c.index[3], c.index[4], c.index[5], c.index[6]}];
+      }
+    }
+    std::vector<std::pair<size_t, std::array<int, 4>>> ranked;
+    for (const auto& [k, v] : common) ranked.push_back({v, k});
+    std::sort(ranked.rbegin(), ranked.rend());
+    DataTable t;
+    t.name = "voronoi_indices";
+    t.title = "Voronoi index ⟨n3 n4 n5 n6⟩ · most frequent";
+    t.columns = {"n3", "n4", "n5", "n6", "Atoms", "Fraction"};
+    for (size_t k = 0; k < ranked.size() && k < 12; ++k)
+      t.rows.push_back({double(ranked[k].second[0]), double(ranked[k].second[1]), double(ranked[k].second[2]), double(ranked[k].second[3]),
+                        double(ranked[k].first), double(ranked[k].first) / double(std::max<size_t>(1, n - open))});
+    st.tables.push_back(std::move(t));
+    st.set_attribute("Voronoi.sum", sum);
+    st.set_attribute("Voronoi.mean", n > open ? sum / double(n - open) : 0);
+    if (open) st.set_attribute("Voronoi.open_cells", double(open));
+    out.summary = std::string(vo.radical ? "exact radical" : "exact") + " · sum " + fmt("%.0f Å³", sum) +
+                  (s.cell.valid() ? " of " + fmt("%.0f Å³", s.cell.volume()) : std::string()) +
+                  (ranked.empty() ? std::string() : " · most common ⟨" + std::to_string(ranked[0].second[0]) + " " + std::to_string(ranked[0].second[1]) + " " +
+                                                   std::to_string(ranked[0].second[2]) + " " + std::to_string(ranked[0].second[3]) + "⟩") +
+                  (open ? " · " + std::to_string(open) + " open cells (no periodic cell around them)" : std::string());
+    return;
+  }
+  if (!s.cell.valid()) throw std::invalid_argument("Voronoi volumes on a grid need a periodic cell (the exact method does not)");
+  const bool radical = method == "radical";
+  const CellGrid g(s.cell, std::clamp(p.num("grid", 0.5), 0.15, 2.0));
   std::vector<double> best(g.size(), 1e300);
   std::vector<int> owner(g.size(), -1);
   // every atom claims the points within 6 Å; the few points farther from all atoms are settled one by one
@@ -2609,6 +2787,7 @@ const StepDef kSteps[] = {
     {"cna", "Common neighbour analysis", "adaptive CNA: FCC, HCP, BCC, icosahedral, other", step_cna},
     {"ptm", "Polyhedral template matching", "structure, orientation and strain per particle (RMSD to ideal templates)", step_ptm},
     {"combine", "Combine datasets", "add the particles of a second file", step_combine},
+    {"wigner_seitz", "Wigner–Seitz defects", "vacancies and interstitials against a reference lattice", step_wigner_seitz},
     {"centrosymmetry", "Centrosymmetry", "Kelchner's parameter from the N nearest neighbours", step_centrosymmetry},
     {"molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", step_molecule_shape},
     {"topology", "Topology distributions", "bond lengths, angles, dihedrals", step_topology},
@@ -2618,7 +2797,7 @@ const StepDef kSteps[] = {
     {"trajectory_lines", "Trajectory lines", "paths of molecule centres or particles", step_trajectory_lines},
     {"primitive_paths", "Primitive paths", "chains pulled tight without crossing: entanglements, N_e", step_primitive_paths},
     {"voids", "Voids & pores", "accessible volume for a probe, voids by size", step_voids},
-    {"voronoi", "Voronoi volumes", "volume per atom on a grid", step_voronoi},
+    {"voronoi", "Voronoi analysis", "volume per atom: exact polyhedra (faces, Voronoi index) or on a grid", step_voronoi},
     {"density_field", "Density field", "Gaussian-smoothed mass density, profile, slice", step_density_field},
     {"msd", "Mean-square displacement", "MSD(τ) of atoms and chain centres, diffusion", step_msd},
     {"scatter", "Scatter plot", "one property against another", step_scatter},

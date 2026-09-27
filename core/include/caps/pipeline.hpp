@@ -45,7 +45,7 @@
 //   primitive_paths     radius, max_steps   chains pulled tight between fixed ends without crossing (Everaers 2004) → lines,
 //                       attributes PrimitivePath.Ne (modified S-coil), .Ne_coil, .Z, .Lpp, .a_pp, table primitive_paths
 //   voids               probe, grid, show (points)       accessible volume, voids by volume, probe sweep (needs a cell)
-//   voronoi             method grid|radical, grid        → AtomicVolume, table by type; cells sum to the box
+//   voronoi             method exact|exact_radical|grid|radical → AtomicVolume (+ exact: Coordination, Max Face Order, Voronoi Index.3–6, table voronoi_indices); cells sum to the box
 //   density_field       grid, sigma, axis, position       Gaussian mass density: mean, empty share, profile, slice points
 //   msd                 heavy_only, every, max_lag, fit_from, fit_to (lags, frames), timestep_fs
 //                       MSD(τ) of atoms and chain centres, D from the centres over the fit lags
