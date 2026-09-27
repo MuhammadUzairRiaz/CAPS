@@ -274,6 +274,25 @@ TEST(Polymer, DendrimerGenerations) {
   EXPECT_NE(rep.notes.front().find("dendrimers of generation 2"), std::string::npos) << rep.notes.front();
 }
 
+// Head and tail on one ring (addition norbornenes): flagged until their configuration is written; exo,exo grows
+TEST(Polymer, RingBackboneStereo) {
+  const UnitInfo open = repeat_unit_info("[*]C1C2CCC(C2)C1[*]");
+  EXPECT_TRUE(open.ring_backbone);
+  EXPECT_TRUE(open.ring_stereo_open);
+  const UnitInfo exo = repeat_unit_info("[*][C@H]1[C@@H]2CC[C@@H](C2)[C@H]1[*]");
+  EXPECT_TRUE(exo.ring_backbone);
+  EXPECT_FALSE(exo.ring_stereo_open);
+  EXPECT_FALSE(repeat_unit_info("*CC(*)c1ccccc1").ring_backbone);
+  EXPECT_FALSE(repeat_unit_info("[*]C1CCC(CC[*])C1").ring_stereo_open);   // ROMP: the tail is off the ring
+  GrowOptions o;
+  o.chains = 1;
+  o.density = 0.05;
+  o.seed = 1;
+  o.auto_scale = true;
+  const System s = grow_chains(spec({"[*][C@H]1[C@@H]2CC[C@@H](C2)[C@H]1[*]"}, Sequence::Homopolymer, 8), o);
+  EXPECT_EQ(s.atoms.size(), size_t(8 * 17 + 2));   // C₇H₁₀ units, two end caps
+}
+
 TEST(Polymer, CombsAndRandomBranches) {
   GrowOptions o;
   o.chains = 2;

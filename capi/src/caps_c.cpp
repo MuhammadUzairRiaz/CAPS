@@ -3159,6 +3159,10 @@ extern "C" int32_t caps_unit_info(const char* smiles, char* json, int32_t cap) {
     j["head_element"] = u.head_element;
     j["tail_element"] = u.tail_element;
     j["stereocentres"] = double(u.stereocentres);
+    j["ring_backbone"] = u.ring_backbone;
+    if (u.ring_stereo_open)
+      j["note"] = std::string("head and tail sit on one ring: give their configuration with @/@@ (e.g. 2,3-exo,exo for norbornenes); ") +
+                  "without it the embedding picks one, and some (endo,endo) cannot form a chain";
   } catch (const std::exception& e) {
     j["ok"] = false;
     j["error"] = std::string(e.what());

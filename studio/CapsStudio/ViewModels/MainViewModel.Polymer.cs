@@ -48,6 +48,7 @@ public sealed class PolyUnit : INotifyPropertyChanged
                 Stereocentres = (int?)r["stereocentres"] ?? 0;
                 Info = string.Format(CultureInfo.InvariantCulture, "{0} · {1:F2} g/mol · head {2} → tail {3}{4}", Sub((string?)r["formula"] ?? ""),
                     (double?)r["mass"] ?? 0, r["head_element"], r["tail_element"], Stereocentres > 0 ? " · stereocentre" : "");
+                if ((string?)r["note"] is { } note) Info += "\n" + char.ToUpper(note[0]) + note[1..];
                 Error = "";
             }
             else { Info = ""; Error = (string?)r["error"] ?? "not a repeat unit"; }

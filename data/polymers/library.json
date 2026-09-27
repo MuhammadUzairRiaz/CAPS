@@ -595,8 +595,8 @@
   },
   {
    "id": "P209",
-   "name": "Ethylidene norbornene unit (ENB, addition through the ring double bond)",
-   "smiles": "[*]C1C2CC(=CC)C(C2)C1[*]",
+   "name": "Ethylidene norbornene unit (ENB, 2,3-exo,exo addition through the ring double bond)",
+   "smiles": "[*][C@H]1[C@@H]2CC(=CC)[C@@H](C2)[C@H]1[*]",
    "tags": [
     "rubber"
    ]

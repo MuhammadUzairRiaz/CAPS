@@ -87,6 +87,10 @@ struct UnitInfo {
   int head = -1, tail = -1;        // atom indices in the SMILES
   int stereocentres = 0;           // atoms that tacticity acts on (backbone atoms with two different side groups)
   std::string head_element, tail_element;
+  // head and tail on one ring system (norbornenes, cyclic olefins): the SMILES should give their configuration
+  // (@/@@, e.g. 2,3-exo,exo); without it the embedding picks one, and some (endo,endo) cannot form a chain
+  bool ring_backbone = false;
+  bool ring_stereo_open = false;
 };
 
 // Parses and checks a repeat unit (two attachment points, each on one atom). Throws with the reason.
