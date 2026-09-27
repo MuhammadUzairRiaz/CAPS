@@ -58,7 +58,14 @@ public partial class MainViewModel
     }
 
     /// <summary>Images are a view of this page; they go when the page does.</summary>
-    private void LeavePeriodic() { try { _doc?.SetImages(1, 1, 1, 0); } catch { } }
+    // during a run the document is held: the images go once the run ends
+    private bool _leavePeriodicPending;
+    private void LeavePeriodic()
+    {
+        if (_doc?.LongRunning == true) { _leavePeriodicPending = true; return; }
+        _leavePeriodicPending = false;
+        try { _doc?.SetImages(1, 1, 1, 0); } catch { }
+    }
 
     public void RefreshPeriodic()
     {

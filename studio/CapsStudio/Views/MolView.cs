@@ -117,7 +117,9 @@ public sealed class MolView : Control
                 var buf = new byte[w * h * 4];
                 try { await Task.Run(() => doc.Render(cam, opt, buf)); }
                 catch { _rendered = ticket; break; }   // disposed while rendering: a newer document follows
-                var bmp = new WriteableBitmap(new PixelSize(w, h), new Vector(96 * scale, 96 * scale), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
+                // 96 dpi, so the bitmap's size is its pixel size and DrawImage below takes all of it into the bounds (at
+                // 96 × scale on a Retina screen only its top-left quarter was drawn, twice as large)
+                var bmp = new WriteableBitmap(new PixelSize(w, h), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
                 using (var fb = bmp.Lock())
                     for (var y = 0; y < h; y++)
                         System.Runtime.InteropServices.Marshal.Copy(buf, y * w * 4, fb.Address + y * fb.RowBytes, w * 4);
@@ -143,7 +145,7 @@ public sealed class MolView : Control
     public override void Render(DrawingContext ctx)
     {
         ctx.FillRectangle(Tokens.Brush("Bg0B"), new Rect(Bounds.Size));
-        if (_bmp != null) ctx.DrawImage(_bmp, new Rect(0, 0, Bounds.Width, Bounds.Height));
+        if (_bmp != null) ctx.DrawImage(_bmp, new Rect(0, 0, _bmp.PixelSize.Width, _bmp.PixelSize.Height), new Rect(0, 0, Bounds.Width, Bounds.Height));
         if (_pa is Point a && _pb is Point b)
         {
             var acc = Tokens.Brush("AccB");
