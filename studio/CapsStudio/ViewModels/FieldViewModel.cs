@@ -94,6 +94,9 @@ public sealed partial class FieldViewModel : ObservableObject
     private int _chargeMode;
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 
+    /// <summary>The force fields most polymer work uses, in this order at the top of the list.</summary>
+    internal static readonly string[] PolymerFirst = ["pcff-frc", "compass-frc", "oplsaa2024-moltemplate", "opls2005", "pcff", "compass"];
+
     private void LoadCatalogue()
     {
         var dir = FindLibrary();
@@ -108,11 +111,13 @@ public sealed partial class FieldViewModel : ObservableObject
                 var typing = e.TryGetProperty("typing", out var t) && t.ValueKind == JsonValueKind.Object;
                 list.Add(new FfEntry(Str(e, "id"), Str(e, "name"), Str(e, "version"), Str(e, "status"), Path.Combine(dir, f.GetString()!), typing));
             }
-            // force fields that type automatically first, then the validated ones
-            foreach (var x in list.OrderByDescending(x => x.AutoTyping).ThenByDescending(x => x.Status == "validated").ThenBy(x => x.Name))
+            // the polymer workhorses first (PCFF and COMPASS in full class II from their .frc files, OPLS-AA), then the
+            // force fields that type automatically, the validated ones, the rest
+            int Rank(FfEntry x) { var k = Array.IndexOf(PolymerFirst, x.Id); return k < 0 ? PolymerFirst.Length : k; }
+            foreach (var x in list.OrderBy(Rank).ThenByDescending(x => x.AutoTyping).ThenByDescending(x => x.Status == "validated").ThenBy(x => x.Name))
                 Library.Add(x);
             // UFF (built into the core): every element, typed from bonds, hybridisation and oxidation state
-            Library.Insert(Math.Min(1, Library.Count), new FfEntry("uff", "UFF (Rappé 1992) · every element", "1992", "validated", "uff", true));
+            Library.Insert(Math.Min(PolymerFirst.Count(id => list.Any(x => x.Id == id)), Library.Count), new FfEntry("uff", "UFF (Rappé 1992) · every element", "1992", "validated", "uff", true));
             LibraryNote = $"{Library.Count} force fields · {Library.Count(x => x.AutoTyping)} with automatic typing";
             FfIndex = Library.Count > 0 ? 0 : -1;
         }
@@ -366,6 +371,9 @@ public sealed partial class FieldViewModel : ObservableObject
     }
 
     public Task Import(string path) => Do($"Imported {Path.GetFileName(path)}", d => d.FieldImport(path));
+    /// <summary>Fill gaps: another force field's terms only where this one has none (OPLS-AA 2024 from OPLS 2005 …),
+    /// each borrowed term listed in the report.</summary>
+    public Task FillGaps(string path) => Do($"Missing terms filled from {Path.GetFileName(path)} (only where the force field has none)", d => d.FieldFillGaps(path));
     public Task RemoveRules() => Do("Removed imported and entered parameters", d => d.FieldRemoveRules());
 
     public async Task Clear()
@@ -420,7 +428,8 @@ public sealed partial class FieldViewModel : ObservableObject
         TypedText = $"{typed.ToString("N0", Inv)} typed";
         UntypedText = $"{untyped:N0} untyped";
         MissingText = missing.Count == 1 ? "1 missing term" : $"{missing.Count:N0} missing terms";
-        EstimatedText = $"{estimated:N0} estimated" + (imported > 0 ? $" · {imported:N0} imported" : "");
+        var filled = r.TryGetProperty("filled", out var fl) ? fl.GetDouble() : 0;
+        EstimatedText = $"{estimated:N0} estimated" + (imported > 0 ? $" · {imported:N0} imported" : "") + (filled > 0 ? $" · {filled:N0} filled from another force field" : "");
         HasUntyped = untyped > 0;
         HasMissing = missing.Count > 0;
         HasEstimated = estimated > 0;
@@ -489,6 +498,8 @@ public sealed partial class FieldViewModel : ObservableObject
         Entered.Clear();
         foreach (var x in r.GetProperty("entered").EnumerateArray()) Entered.Add(x.GetString()! + " · estimated");
         foreach (var x in r.GetProperty("imported_files").EnumerateArray()) Entered.Add("imported: " + Path.GetFileName(x.GetString()!));
+        if (r.TryGetProperty("filled_terms", out var ft))
+            foreach (var x in ft.EnumerateArray()) Entered.Add(x.GetString()!.Replace("filled: ", "") + " · filled (the force field has none)");
         if (r.TryGetProperty("by_analogy", out var an))
             foreach (var x in an.EnumerateArray())
                 Entered.Add(string.Join(' ', x.GetString()!.Split(' ').Select(FieldNames.Short)) + " · by analogy (estimated)");

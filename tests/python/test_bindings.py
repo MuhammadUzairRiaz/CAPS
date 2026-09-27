@@ -15,6 +15,7 @@ def check(cond, what):
 
 check(caps.abi_version() >= 22, f"ABI {caps.abi_version()}")
 samples = os.environ["CAPS_SAMPLES"]
+root = os.path.dirname(os.path.abspath(samples))
 melt = caps.open(os.path.join(samples, "ps_melt.data"))
 s = melt.summary()
 check(s["atoms"] == 1300 and s["molecules"] == 10, f"open: {s['atoms']} atoms, {s['molecules']} molecules")
@@ -25,6 +26,11 @@ melt_ff = caps.open(os.path.join(samples, "ps_melt.data"))
 melt_ff.field.assign("gaff")
 rep_ff = melt_ff.field.import_params(frc)
 check(rep_ff["complete"] and rep_ff["imported"] > 100, f"frcmod import: {rep_ff['imported']} terms from the imported rule")
+br = caps.polymer("[*]C/C=C\\C[*]", dp=6)
+before = br.field.assign(os.path.join(root, "data", "forcefields", "oplsaa2024-moltemplate.json"))["complete"]
+filled = br.field.import_params(os.path.join(root, "data", "forcefields", "opls2005.json"), fill_gaps=True)
+check(not before and filled["complete"] and filled["filled_terms"] == ["dihedral filled: CM-CT-CT-CM × 5"],
+      f"OPLS-AA 2024 on polybutadiene: gaps filled from OPLS 2005 only where missing: {filled['filled_terms']}")
 xyz = caps.import_file(os.path.join(samples, "ps_melt.xyz"))
 check(xyz.summary()["bonds"] == 1370 and xyz.summary()["molecules"] == 10, "import_file: bonds perceived, molecules split")
 check(caps.import_preview(os.path.join(samples, "ps_melt.xyz"), bonds="none")["bonds"] == 0, "import_preview: bonds none")
