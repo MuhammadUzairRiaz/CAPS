@@ -412,6 +412,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sorption")] public static extern int Sorption(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_adsorption")] public static extern int Adsorption(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_coverage")] public static extern int FieldCoverage(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -929,6 +930,17 @@ public sealed class CapsDocument : IDisposable
             if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
             return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
         }
+    }
+
+    /// <summary>A DPD run (caps_dpd): the frames as a new document (null on error) and the JSON report.</summary>
+    public static (CapsDocument? Doc, string Report) Dpd(string json, Func<string, double, bool>? progress, string label)
+    {
+        CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+        var buf = new byte[1 << 20];
+        var h = Native.Dpd(json, cb, IntPtr.Zero, buf, buf.Length);
+        GC.KeepAlive(cb);
+        var report = System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0').Trim();
+        return (h == IntPtr.Zero ? null : new CapsDocument(h, label), report);
     }
 
     /// <summary>A polymer blend grown component after component (caps_grow_blend).</summary>

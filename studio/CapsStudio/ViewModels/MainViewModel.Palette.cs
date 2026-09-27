@@ -119,6 +119,7 @@ public sealed partial class MainViewModel
             ("Biomolecule builder", 30, "hex", "peptide protein sequence fasta helix sheet amino acid residue biomolecule"),
             ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
             ("Blend builder", 16, "grow", "blend mixture nr br sbr tyre compound two polymers"),
+            ("Mesoscale DPD", 72, "grow", "dpd dissipative particle dynamics mesoscale coarse block copolymer microphase lamellae micelle blend morphology chi"),
             ("Sorption", 71, "chart", "sorption gas uptake solubility henry widom gcmc isotherm permeability co2 methane nitrogen water rubber barrier"),
             ("Adsorption locator", 70, "layers", "adsorption adsorbate substrate surface binding site simulated annealing monte carlo filler gas coupling agent sizing"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),

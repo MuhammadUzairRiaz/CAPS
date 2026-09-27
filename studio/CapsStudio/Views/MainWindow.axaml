@@ -2282,6 +2282,7 @@
       <pages:ChargesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCharges}" />
       <pages:AdsorptionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsAdsorption}" />
       <pages:SorptionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSorption}" />
+      <pages:DpdPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDpd}" />
       <pages:PeriodicPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPeriodic}" />
       <pages:OrientationPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsOrientation}" />
       <pages:RecipesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsRecipes}" />
