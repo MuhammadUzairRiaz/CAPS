@@ -222,6 +222,7 @@ public sealed partial class MainViewModel
             ["active"] = AppLayers.Count > 0 || AppColour == 4 || _appSurface > 0,
             ["layers"] = new JsonArray(AppLayers.Select(l => (JsonNode)new JsonObject { ["expression"] = l.Expression, ["style"] = AppStyleCodes[l.Style] }).ToArray()),
             ["colour"] = AppColour == 4 ? "charge" : "",
+            ["charges"] = AppColour == 4 && _chgPreview is { } pq ? new JsonArray(pq.Select(x => (JsonNode)x).ToArray()) : null,
             ["ramp"] = AppRampCodes[_appRamp],
             ["surface"] = new JsonObject
             {
@@ -280,7 +281,9 @@ public sealed partial class MainViewModel
         if (AppColour == 4 && !(_appSurface > 0 && _appMap == 0) && j["charge"] is JsonArray q)
         {
             var m = Math.Max(Math.Abs(q[0]!.GetValue<double>()), Math.Abs(q[1]!.GetValue<double>()));
-            AppLegendTitle = m < 1e-9 ? "Partial charge (e) · no charges in the file: assign them in Field" : "Partial charge (e) · colour-blind-safe diverging";
+            var preview = j["preview"]?.GetValue<bool>() == true;
+            AppLegendTitle = m < 1e-9 ? "Partial charge (e) · no charges in the file: assign them in Field"
+                           : preview ? "Partial charge (e) · computed here, not applied yet · colour-blind-safe diverging" : "Partial charge (e) · colour-blind-safe diverging";
             AppLegendLo = (-m).ToString("+0.00;−0.00;0", CultureInfo.InvariantCulture);
             AppLegendHi = m.ToString("+0.00;−0.00;0", CultureInfo.InvariantCulture);
         }
