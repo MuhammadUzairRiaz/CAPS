@@ -161,6 +161,45 @@ public sealed partial class MainViewModel
         RunEdit(new { op = "fuse_ring", i = _selection[0], j = _selection[1] });
     }
 
+    // exact geometry (design/boards/InteractionMap "Set exact value"): the picked bond, angle or dihedral made the value
+    // typed in the live monitor; the side of the last-picked atom moves
+    private string _measureTarget = "";
+    public string MeasureTarget { get => _measureTarget; set => Set(ref _measureTarget, value); }
+    public bool CanSetMeasure => _selection.Count is >= 2 and <= 4 && _doc != null;
+    public void SetMeasured()
+    {
+        if (!CanSetMeasure) { Status = "Pick 2, 3 or 4 atoms (⇧ click): a bond, an angle or a dihedral"; return; }
+        if (!double.TryParse(_measureTarget.Replace("Å", "").Replace("°", "").Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v))
+        { Status = "Type the value to set (Å for a bond, degrees for an angle or dihedral)"; return; }
+        var picks = _selection.ToArray();
+        if (RunEdit(new { op = "set_geometry", atoms = picks, value = v }) == null) return;
+        for (var k = 0; k < picks.Length; ++k) Pick(picks[k], k > 0);   // the monitor shows the new value
+    }
+    /// <summary>The selection (or every atom) turned about a Cartesian axis through its centre.</summary>
+    public void RotateSelection(int axis, double degrees)
+    {
+        if (_doc == null) return;
+        var ax = new double[3];
+        ax[axis] = 1;
+        RunEdit(_selection.Count > 0 ? new { op = "rotate", atoms = (object)_selection.ToArray(), axis = ax, degrees }
+                                     : new { op = "rotate", atoms = (object)Enumerable.Range(0, (int)_doc.Summary().Atoms).ToArray(), axis = ax, degrees });
+    }
+    /// <summary>The selection (or every atom) reflected through the plane normal to a Cartesian axis: its mirror image.</summary>
+    public void MirrorSelection(int axis)
+    {
+        if (_doc == null) return;
+        var n = new double[3];
+        n[axis] = 1;
+        RunEdit(_selection.Count > 0 ? new { op = "mirror", atoms = (object)_selection.ToArray(), normal = n }
+                                     : new { op = "mirror", atoms = (object)Enumerable.Range(0, (int)_doc.Summary().Atoms).ToArray(), normal = n });
+    }
+    /// <summary>The picked stereocentre made R or S (inverted only when it is the other).</summary>
+    public void MakePicked(string rs)
+    {
+        if (_selection.Count != 1) { Status = "Pick one stereocentre, then make it " + rs; return; }
+        RunEdit(new { op = "set_rs", centre = _selection[0], to = rs });
+    }
+
     public void InvertPicked()
     {
         if (_selection.Count != 1) { Status = "Pick one tetrahedral centre to invert"; return; }
