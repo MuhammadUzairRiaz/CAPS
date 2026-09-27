@@ -110,7 +110,7 @@
                             </Button>
                           </Grid>
                           <TextBox Text="{Binding Smiles}" Classes="mono" FontSize="12" Watermark="*CC(*)c1ccccc1 — head first" />
-                          <TextBlock Text="{Binding Info}" Classes="dim" />
+                          <TextBlock Text="{Binding Info}" Classes="dim" TextWrapping="Wrap" />
                           <TextBlock Text="{Binding Error}" Classes="err" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding HasError}" />
                           <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).PolyShowWeights}">
                             <TextBlock Text="Share" Classes="label" VerticalAlignment="Center" />

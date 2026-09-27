@@ -436,6 +436,40 @@ UnitInfo repeat_unit_info(const std::string& smiles) {
       if (h == 1 && kinds.size() == 4) ++u.stereocentres;
     }
   }
+  {   // head and tail joined through ring bonds (a bond is in a ring when its ends stay connected without it)
+    auto connected_without = [&](int a, int b) {
+      std::vector<char> seen(g.atoms.size(), 0);
+      std::vector<int> st{a};
+      seen[size_t(a)] = 1;
+      while (!st.empty()) {
+        const int x = st.back();
+        st.pop_back();
+        for (int w : adj[size_t(x)]) {
+          if ((x == a && w == b) || seen[size_t(w)] || !keep[size_t(w)]) continue;
+          if (w == b) return true;
+          seen[size_t(w)] = 1;
+          st.push_back(w);
+        }
+      }
+      return false;
+    };
+    std::vector<char> seen(g.atoms.size(), 0);
+    std::vector<int> st{P.head};
+    seen[size_t(P.head)] = 1;
+    while (!st.empty() && !seen[size_t(P.tail)]) {
+      const int x = st.back();
+      st.pop_back();
+      for (int w : adj[size_t(x)])
+        if (keep[size_t(w)] && !seen[size_t(w)] && connected_without(x, w)) seen[size_t(w)] = 1, st.push_back(w);
+    }
+    u.ring_backbone = P.head != P.tail && seen[size_t(P.tail)];
+    auto open = [&](int a) {
+      int h = 0;
+      for (int w : adj[size_t(a)]) h += g.atoms[size_t(w)].element == 1;
+      return adj[size_t(a)].size() == 4 && h == 1 && P.g.atoms[size_t(a)].chiral == 0;
+    };
+    u.ring_stereo_open = u.ring_backbone && (open(P.head) || open(P.tail));
+  }
   std::ostringstream f;
   const bool carbon = count.count(6) > 0;
   auto put = [&](const std::string& e, int k) { f << e; if (k > 1) f << k; };
