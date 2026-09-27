@@ -8,6 +8,8 @@
 #include "caps/crystal.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
+#include <random>
+#include <zlib.h>
 #include "io_util.hpp"
 
 namespace caps {
@@ -90,7 +92,43 @@ const char* format_name(const std::string& f) {
 }
 }  // namespace
 
+namespace {
+bool gz_name(const std::string& p) { return p.size() > 3 && p.compare(p.size() - 3, 3, ".gz") == 0; }
+// a gzip-compressed file unpacked into the temporary folder, under its own name without .gz (so the format is known)
+std::string gunzip_to_temp(const std::string& path) {
+  gzFile in = gzopen(path.c_str(), "rb");
+  if (!in) throw ReadError("cannot open " + path);
+  static int serial = 0;
+  const auto dir = std::filesystem::temp_directory_path() / ("caps-gz-" + std::to_string(std::random_device{}()) + "-" + std::to_string(++serial));
+  std::filesystem::create_directories(dir);
+  const std::string name = std::filesystem::path(path).filename().string();
+  const auto out_path = dir / name.substr(0, name.size() - 3);
+  std::ofstream out(out_path, std::ios::binary);
+  char buf[1 << 16];
+  for (int k; (k = gzread(in, buf, sizeof buf)) > 0;) out.write(buf, k);
+  const bool bad = !gzeof(in);
+  gzclose(in);
+  out.close();
+  if (bad) { std::filesystem::remove_all(dir); throw ReadError(path + ": not a complete gzip file"); }
+  return out_path.string();
+}
+}  // namespace
+
 Trajectory open_file(const std::string& path, const std::string& topology_path, const OpenProgress& progress) {
+  if (gz_name(path) || gz_name(topology_path)) {
+    // compressed input (a .lammpstrj.gz, a .data.gz …): read the unpacked copies, then remove them
+    const std::string p = gz_name(path) ? gunzip_to_temp(path) : path;
+    const std::string t = gz_name(topology_path) ? gunzip_to_temp(topology_path) : topology_path;
+    struct Cleanup {
+      std::vector<std::string> dirs;
+      ~Cleanup() { for (const auto& d : dirs) { std::error_code ec; std::filesystem::remove_all(d, ec); } }
+    } cleanup;
+    if (p != path) cleanup.dirs.push_back(std::filesystem::path(p).parent_path().string());
+    if (t != topology_path) cleanup.dirs.push_back(std::filesystem::path(t).parent_path().string());
+    Trajectory tr = open_file(p, t, progress);
+    tr.topology.notes.push_back("read from the gzip-compressed " + std::filesystem::path(path).filename().string());
+    return tr;
+  }
   const auto report = [&](int stage, double f, const std::string& detail) { return !progress.report || progress.report(stage, f, detail); };
   const std::string fmt = detect_format(path);
   report(0, 1, format_name(fmt));

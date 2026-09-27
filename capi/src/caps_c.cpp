@@ -1176,6 +1176,9 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
     else if (ends(".xyz")) caps::write_xyz(d->frame, p);
     else if (ends(".mol2")) caps::write_mol2(d->frame, p);
     else if (ends(".car")) caps::write_car(d->frame, p);   // Materials Studio, with its .mdf; the force-field types as names
+    else if (ends(".gro")) caps::write_gro(d->frame, p);
+    else if (ends(".sdf") || ends(".mol")) caps::write_sdf(d->frame, p);
+    else if (ends(".cif")) caps::write_cif(d->frame, p);
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
       if (d->field->complete) caps::write_lammps_data_or_structure(d->frame, *d->field->ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
@@ -3739,7 +3742,17 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
     notes.push_back("the .mdf with the bonds beside it; atom types as the force field (or the file) names them");
   }
   else if (fmt == "gro") caps::write_gro(s, path);
-  else if (fmt == "lammps-dump") {
+  else if (fmt == "sdf" || fmt == "mol") {
+    caps::write_sdf(s, path);
+    notes.push_back(s.atoms.size() > 999 || s.bonds.size() > 999 ? "V3000 connection table (more than 999 atoms or bonds)" : "V2000 connection table");
+    notes.push_back("formal charges from the structure's chemistry; partial charges are not part of the format");
+  } else if (fmt == "cif") {
+    caps::write_cif(s, path);
+    notes.push_back("space group P 1: every atom at its fractional coordinates; no bonds");
+  } else if (fmt == "dcd") {
+    caps::write_dcd(d->traj, path);
+    notes.push_back("every frame with its cell, single precision (as LAMMPS writes DCD); open it with a topology (the .data)");
+  } else if (fmt == "lammps-dump") {
     caps::write_lammps_dump(d->traj, path);
     notes.push_back("every frame, unwrapped coordinates; the pipeline is not applied to a dump");
   } else if (fmt == "lammps-data") {

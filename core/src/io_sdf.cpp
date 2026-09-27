@@ -1,4 +1,6 @@
 // MDL molfile / SD file (V2000 and V3000 connection tables; every record one molecule) and VASP POSCAR / CONTCAR.
+#include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -6,6 +8,7 @@
 
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
+#include "caps/typing.hpp"
 #include "io_util.hpp"
 
 namespace caps {
@@ -131,6 +134,88 @@ System read_sdf(const std::string& path) {
   s.has_mol = true;
   if (records > 1) s.notes.push_back(std::to_string(records) + " molecules from the SD file, one molecule each");
   return s;
+}
+
+void write_sdf(const System& s, const std::string& path) {
+  std::ofstream out(path);
+  if (!out) throw std::runtime_error("cannot write " + path);
+  const size_t na = s.atoms.size(), nb = s.bonds.size();
+  // formal charges (MDL keeps formal charges, not partial ones): from the structure's perceived chemistry
+  std::vector<int> formal(na, 0);
+  try { formal = perceive(s).charge; } catch (...) {}
+  auto order = [](int o) { return o >= 1 && o <= 4 ? o : 1; };
+  const bool v3000 = na > 999 || nb > 999;
+  out << (s.title.empty() ? std::string("CAPS") : s.title.substr(0, 80)) << "\n  CAPS      3D\n\n";
+  char b[160];
+  if (!v3000) {
+    std::snprintf(b, sizeof b, "%3zu%3zu  0  0  0  0  0  0  0  0999 V2000\n", na, nb);
+    out << b;
+    for (size_t i = 0; i < na; ++i) {
+      const auto& a = s.atoms[i];
+      std::snprintf(b, sizeof b, "%10.4f%10.4f%10.4f %-3s 0  0  0  0  0  0  0  0  0  0  0  0\n", a.pos[0], a.pos[1], a.pos[2], element(a.element).symbol);
+      out << b;
+    }
+    for (const auto& bd : s.bonds) {
+      std::snprintf(b, sizeof b, "%3u%3u%3d  0  0  0  0\n", bd.i + 1, bd.j + 1, order(bd.order));
+      out << b;
+    }
+    std::vector<size_t> charged;
+    for (size_t i = 0; i < na; ++i) if (formal[i] != 0) charged.push_back(i);
+    for (size_t k = 0; k < charged.size(); k += 8) {
+      const size_t m = std::min<size_t>(8, charged.size() - k);
+      std::snprintf(b, sizeof b, "M  CHG%3zu", m);
+      out << b;
+      for (size_t q = k; q < k + m; ++q) { std::snprintf(b, sizeof b, " %3zu %3d", charged[q] + 1, formal[charged[q]]); out << b; }
+      out << "\n";
+    }
+  } else {
+    out << "  0  0  0     0  0            999 V3000\n";
+    out << "M  V30 BEGIN CTAB\n";
+    std::snprintf(b, sizeof b, "M  V30 COUNTS %zu %zu 0 0 0\n", na, nb);
+    out << b << "M  V30 BEGIN ATOM\n";
+    for (size_t i = 0; i < na; ++i) {
+      const auto& a = s.atoms[i];
+      std::snprintf(b, sizeof b, "M  V30 %zu %s %.4f %.4f %.4f 0", i + 1, element(a.element).symbol, a.pos[0], a.pos[1], a.pos[2]);
+      out << b;
+      if (formal[i] != 0) out << " CHG=" << formal[i];
+      out << "\n";
+    }
+    out << "M  V30 END ATOM\nM  V30 BEGIN BOND\n";
+    for (size_t k = 0; k < nb; ++k) {
+      std::snprintf(b, sizeof b, "M  V30 %zu %d %u %u\n", k + 1, order(s.bonds[k].order), s.bonds[k].i + 1, s.bonds[k].j + 1);
+      out << b;
+    }
+    out << "M  V30 END BOND\nM  V30 END CTAB\n";
+  }
+  out << "M  END\n$$$$\n";
+}
+
+// CIF (P 1): the cell, every atom at its fractional coordinates, with its element as type symbol
+void write_cif(const System& s, const std::string& path) {
+  if (!s.cell.valid()) throw std::runtime_error("a CIF needs a periodic cell: this structure has none");
+  std::ofstream out(path);
+  if (!out) throw std::runtime_error("cannot write " + path);
+  const Cell& c = s.cell;
+  const double la = norm(c.a), lb = norm(c.b), lc = norm(c.c);
+  auto ang = [](const Vec3& u, const Vec3& v) { return std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI; };
+  std::string name = s.title.empty() ? std::string("caps") : s.title;
+  for (char& ch : name) if (std::isspace(static_cast<unsigned char>(ch))) ch = '_';
+  char b[200];
+  out << "# written by CAPS\ndata_" << name << "\n_symmetry_space_group_name_H-M 'P 1'\n_symmetry_Int_Tables_number 1\n";
+  std::snprintf(b, sizeof b, "_cell_length_a %.6f\n_cell_length_b %.6f\n_cell_length_c %.6f\n_cell_angle_alpha %.6f\n_cell_angle_beta %.6f\n_cell_angle_gamma %.6f\n",
+                la, lb, lc, ang(c.b, c.c), ang(c.a, c.c), ang(c.a, c.b));
+  out << b << "loop_\n_symmetry_equiv_pos_as_xyz\n'x, y, z'\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n";
+  if (s.has_charges) out << "_atom_site_charge\n";
+  std::map<int, int> count;
+  for (const auto& a : s.atoms) {
+    Vec3 f = c.to_fractional(a.pos);
+    for (int k = 0; k < 3; ++k) f[size_t(k)] -= std::floor(f[size_t(k)]);
+    const char* sym = element(a.element).symbol;
+    std::snprintf(b, sizeof b, "%s%d %s %.6f %.6f %.6f", sym, ++count[a.element], sym, f[0], f[1], f[2]);
+    out << b;
+    if (s.has_charges) { std::snprintf(b, sizeof b, " %.5f", a.charge); out << b; }
+    out << "\n";
+  }
 }
 
 System read_poscar(const std::string& path) {

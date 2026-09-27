@@ -405,6 +405,58 @@ struct Fortran {
 
 }  // namespace
 
+// DCD as LAMMPS writes it (CHARMM flavour, a unit-cell record per frame with the angles as cosines, little-endian)
+void write_dcd(const Trajectory& t, const std::string& path, double dt_fs) {
+  std::ofstream out(path, std::ios::binary);
+  if (!out) throw std::runtime_error("cannot write " + path);
+  const size_t n = t.topology.atoms.size(), nf = t.frames();
+  auto i32 = [&](int32_t v) { out.write(reinterpret_cast<const char*>(&v), 4); };
+  auto rec = [&](const void* p, int32_t len) { i32(len); out.write(static_cast<const char*>(p), len); i32(len); };
+  const bool cells = std::any_of(t.cells.begin(), t.cells.end(), [](const Cell& c) { return c.valid(); });
+  {
+    char h[84] = {};
+    std::memcpy(h, "CORD", 4);
+    int32_t ic[20] = {};
+    ic[0] = int32_t(nf);
+    ic[1] = nf ? int32_t(t.timesteps.front()) : 0;
+    ic[2] = nf > 1 ? int32_t(std::max<int64_t>(1, t.timesteps[1] - t.timesteps[0])) : 1;
+    ic[3] = nf ? int32_t(t.timesteps.back() - t.timesteps.front()) : 0;
+    const float delta = float(dt_fs / 48.88821);   // AKMA time units
+    std::memcpy(&ic[9], &delta, 4);
+    ic[10] = cells ? 1 : 0;
+    ic[19] = 24;
+    std::memcpy(h + 4, ic, 80);
+    rec(h, 84);
+  }
+  {
+    char ti[4 + 2 * 80];
+    const int32_t two = 2;
+    std::memcpy(ti, &two, 4);
+    std::string l1 = "Created by CAPS", l2 = t.topology.title.substr(0, 80);
+    l1.resize(80, ' ');
+    l2.resize(80, ' ');
+    std::memcpy(ti + 4, l1.data(), 80);
+    std::memcpy(ti + 84, l2.data(), 80);
+    rec(ti, int32_t(sizeof ti));
+  }
+  const int32_t na = int32_t(n);
+  rec(&na, 4);
+  std::vector<float> buf(n);
+  for (size_t f = 0; f < nf; ++f) {
+    if (cells) {
+      const Cell& c = f < t.cells.size() ? t.cells[f] : t.topology.cell;
+      const double la = norm(c.a), lb = norm(c.b), lc = norm(c.c);
+      auto cosang = [](const Vec3& u, const Vec3& v) { const double d = norm(u) * norm(v); return d > 0 ? dot(u, v) / d : 0.0; };
+      const double d[6] = {la, cosang(c.a, c.b), lb, cosang(c.a, c.c), cosang(c.b, c.c), lc};
+      rec(d, 48);
+    }
+    for (int k = 0; k < 3; ++k) {
+      for (size_t i = 0; i < n; ++i) buf[i] = float(t.positions[f][i][size_t(k)]);
+      rec(buf.data(), int32_t(4 * n));
+    }
+  }
+}
+
 Trajectory read_dcd(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress) {
   Fortran f(path);
   {

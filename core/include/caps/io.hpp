@@ -92,5 +92,11 @@ void write_gro(const System& s, const std::string& path);
 void write_pdb(const System& s, const std::string& path);
 // Tripos mol2 with Atom::name as the atom type (force-field types or SYBYL), charges and bond orders.
 void write_mol2(const System& s, const std::string& path);
+// MDL SD file (V2000; V3000 above 999 atoms or bonds), the formal charges perceived from the structure
+void write_sdf(const System& s, const std::string& path);
+// CIF in P 1: the cell and every atom's fractional coordinates (throws without a periodic cell)
+void write_cif(const System& s, const std::string& path);
+// DCD as LAMMPS writes it (every frame with its cell); dt_fs is the time step recorded in the header
+void write_dcd(const Trajectory& t, const std::string& path, double dt_fs = 1.0);
 
 }  // namespace caps
