@@ -298,6 +298,11 @@ int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn progress, v
    solubility (cm³(STP)/(cm³ atm)), host_mass, volume, forcefield, isotherm: [{pressure_kpa, loading (per cell),
    loading_error, mol_per_kg, cm3stp_per_cm3, heat (kcal/mol), acceptance_insert, acceptance_delete}], notes}. */
 int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
+/* DPD (v34, dpd.hpp): JSON {species: [{name, sequence ("AAAAABBBBB"), count}], density, chi: {"AB": χ}, a: {"AB": a_ij},
+   gamma, dt, bond_k, steps, equilibration, frame_every, rc_angstrom, seed} → a new document with the frames (beads as
+   atoms: A C, B O, C N, D S, others P) and report JSON {ok, error, beads, molecules, box, kT, kT_error, pressure,
+   pressure_error, order (ψ), q_peak, spacing, q[], sq[], order_series [[step, ψ]], types, notes, seconds}; NULL on error. */
+caps_doc* caps_dpd(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* Sets atom `index` (0-based) to a type by hand; type "" or NULL removes the override. Returns as caps_field_assign. */
 int32_t caps_field_override(caps_doc* d, int32_t index, const char* type);
 /* Typing by example (ABI 29): types given on an example document (a repeat unit's head, body and tail in a short chain,

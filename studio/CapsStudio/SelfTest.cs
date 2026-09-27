@@ -606,6 +606,19 @@ internal static class SelfTest
             vm.NanoMaterial = 0;
         }
 
+        // Mesoscale (DPD): a small A5B5 diblock melt at χN = 43; the frames open as a new structure
+        {
+            vm.OpenDpd();
+            vm.DpdSpecies.Clear();
+            vm.DpdSpecies.Add(new DpdSpeciesRow { Name = "diblock", Sequence = "A5B5", Count = 80 });
+            vm.DpdSteps = 2000;
+            vm.RunDpd().GetAwaiter().GetResult();
+            Check(!vm.DpdHasError && vm.IsDpd && vm.DpdOrder != "—" && vm.Document!.Summary().Atoms == 800 && vm.DpdSq.Length > 0
+                  && MainViewModel.ExpandSequence("A2B3") == "AABBB" && vm.Document!.Provenance().Contains("dpd.run"),
+                  $"DPD: ψ {vm.DpdOrder} · spacing {vm.DpdSpacing} · kT {vm.DpdKt} · {vm.DpdError}");
+            vm.SetModule(8);
+        }
+
         // Blend builder: NR / BR 70 : 30
         vm.OpenBlend();
         vm.BlendChains = 4;

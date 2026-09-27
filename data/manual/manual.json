@@ -583,6 +583,42 @@
    "engines": []
   },
   {
+   "id": "dpd",
+   "group": "Coarse-grained",
+   "title": "Dissipative particle dynamics (mesoscale)",
+   "summary": "Coarse beads for the mesoscale of blends, block copolymers and solutions (Groot & Warren 1997). Beads within the cut-off r_c interact by a soft conservative force a_ij(1 − r)r̂, a dissipative force and a random force related by fluctuation–dissipation (a pair thermostat that conserves momentum, so hydrodynamics survive); bonded beads by springs. Chemistry enters through a_ij: like beads 75 kT/ρ (25 at ρ = 3, water's compressibility), unlike beads a_ii + χ/0.286 at ρ = 3. A species is a bead sequence (A5B5: a symmetric diblock) with a count. Reported: kT and the pressure, the segregation order parameter ψ over the run (0 mixed, 1 separated), the structure factor of the first bead type with its peak q* and the domain spacing 2π/q*, and the frames as a structure (beads as atoms, r_c in Å for the view).",
+   "equation": "F_ij = a_ij(1 − r)r̂ − γ(1 − r)²(r̂·v_ij)r̂ + σ(1 − r)θ_ij r̂/√dt,   σ² = 2γkT,   a_ij = a_ii + χ_ij/0.286 (ρ = 3)",
+   "equation_note": "Groot & Warren 1997; Hoogerbrugge & Koelman 1992",
+   "symbols": [
+    [
+     "ρ",
+     "bead density",
+     "3 r_c⁻³"
+    ],
+    [
+     "γ",
+     "friction",
+     "4.5"
+    ],
+    [
+     "dt",
+     "time step",
+     "0.04 (modified velocity Verlet, λ = 0.65)"
+    ]
+   ],
+   "when": "Morphologies over tens of nanometres and microseconds: block copolymer microdomains (lamellae, cylinders, spheres), blend phase separation, micelles, the effect of χ and composition. Map chemistry to beads (a few repeat units each) and χ from Blend phase diagram or Solvent screen.",
+   "cites": [
+    "groot1997",
+    "hoogerbrugge1992"
+   ],
+   "source": "core/src/dpd.cpp (run_dpd)",
+   "tested": "Dpd.EquationOfStateAndTemperature (ideal gas p = ρkT; water model p = 23.65 at kT = 1; (p − ρkT)/(aρ²) → 0.101 at high density); Dpd.DiblockMicrophaseSeparation (χN = 43: ψ 0.18 → 0.67, an S(q) peak)",
+   "deviation": "reduced units; χ mapping for ρ = 3 only (give a_ij at other densities)",
+   "engines": [
+    "dpd.run"
+   ]
+  },
+  {
    "id": "trial-growth",
    "group": "Growth",
    "title": "Chain growth by trial placement",
