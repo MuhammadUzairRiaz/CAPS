@@ -42,7 +42,7 @@ public sealed partial class MainViewModel
 
     public decimal RenderW { get => _renderW; set { if (Set(ref _renderW, Math.Clamp(Math.Round(value), 64, 8192))) RenderChanged(); } }
     public decimal RenderH { get => _renderH; set { if (Set(ref _renderH, Math.Clamp(Math.Round(value), 64, 8192))) RenderChanged(); } }
-    public int RenderBg { get => _renderBg; set { if (Set(ref _renderBg, value)) { Raise(nameof(RenderBgDark)); Raise(nameof(RenderBgWhite)); Raise(nameof(RenderBgTransparent)); } } }
+    public int RenderBg { get => _renderBg; set { if (Set(ref _renderBg, value)) { Raise(nameof(RenderBgDark)); Raise(nameof(RenderBgWhite)); Raise(nameof(RenderBgTransparent)); RenderChanged(); } } }
     public bool RenderBgDark { get => _renderBg == 0; set { if (value) RenderBg = 0; } }
     public bool RenderBgWhite { get => _renderBg == 1; set { if (value) RenderBg = 1; } }
     public bool RenderBgTransparent { get => _renderBg == 2; set { if (value) RenderBg = 2; } }
