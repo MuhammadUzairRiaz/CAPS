@@ -493,6 +493,13 @@ int32_t caps_set_atom_values(caps_doc* d, const double* values, int32_t n, int32
    heavy, backbone}, fit, fitted, atoms, reference, moving, max, mean, largest: [{atom, label, element, molecule,
    backbone, shift}], shifts}. The moving state is superposed on the reference (Horn 1987 quaternions). */
 int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap);
+/* The Properties explorer (ABI 29). caps_structure_info: {ok, formula (Hill), composition {symbol: count}, title, format,
+   atoms, bonds, molecules, frames, frame, timestep, mass (g/mol), charge, has_charges, unwrapped, bonds_from_file,
+   cell {a, b, c, alpha, beta, gamma, volume, density, periodic [3]}, forcefield {name, complete, missing, types},
+   selected}. caps_atom_properties: {ok, index, id, element, name, type, ff_type, charge, mass, molecule, residue,
+   resname, xyz [3], fractional [3], neighbours [{index, element, distance, order}]}. */
+int32_t caps_structure_info(caps_doc* d, char* out, int32_t cap);
+int32_t caps_atom_properties(caps_doc* d, int32_t index, char* out, int32_t cap);
 /* v20 cell editor (design/boards/CellEditor): caps_set_cell JSON {a, b, c, alpha, beta, gamma, scale: true} (a along x,
    b in xy; scale keeps fractional coordinates, false leaves the atoms where they are); caps_supercell replicates the
    frame na × nb × nc (atoms, bonds, molecules). Both undoable. */

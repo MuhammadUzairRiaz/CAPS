@@ -10,7 +10,13 @@ namespace CapsStudio.ViewModels;
 /// the active one; the others keep their state (camera, frame, what was done to them) until they are picked again.</summary>
 public sealed class ProjectItem : ObservableObject
 {
-    public ProjectItem(CapsDocument doc, string name) { Doc = doc; _name = name; }
+    public ProjectItem(CapsDocument doc, string name)
+    {
+        Doc = doc;
+        _name = name;
+        Jobs.CollectionChanged += (_, _) => Raise(nameof(HasJobs));
+    }
+    public bool HasJobs => Jobs.Count > 0;
     public CapsDocument Doc { get; }
 
     private string _name;
@@ -29,6 +35,10 @@ public sealed class ProjectItem : ObservableObject
     /// <summary>What has been done to it: "minimised · equilibrated · MD".</summary>
     public string History { get => _history; set { if (Set(ref _history, value)) Raise(nameof(HasHistory)); } }
     public bool HasHistory => _history.Length > 0;
+    /// <summary>Its job folders, newest first (Materials Studio's project tree).</summary>
+    public ObservableCollection<Job> Jobs { get; } = new();
+    private bool _expanded = true;
+    public bool Expanded { get => _expanded; set => Set(ref _expanded, value); }
     public string IconKind => _origin switch { "Polymer cell" => "grow", "Packing" => "pack", "File" => "file", _ => "cube" };
 
     // the state kept while another structure is active
