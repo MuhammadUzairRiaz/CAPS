@@ -454,6 +454,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_atom_properties")] public static extern int AtomProperties(IntPtr doc, int index, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_checkpoint")] public static extern int Checkpoint(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_note")] public static extern int ProvenanceNote(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_state_document")] public static extern IntPtr StateDocument(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_compare_states")] public static extern int CompareStates(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_select")] public static extern int Select(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_selection")] public static extern int Selection(IntPtr doc, byte[]? json, int cap);
@@ -1474,6 +1475,17 @@ public sealed class CapsDocument : IDisposable
     public void ProvenanceNote(string json) { using (Hold()) { Alive(); Check(Native.ProvenanceNote(H, json)); } }
     /// <summary>Two states of the structure superposed (caps_compare_states): RMSD, per-atom shifts, the largest ones.</summary>
     public string CompareStates(string json) { using (Hold()) return JsonCall((b, c) => Native.CompareStates(H, json, b, c)); }
+    /// <summary>One state of this document ({kind, index}) as a new document.</summary>
+    public CapsDocument StateDocument(string json, string label)
+    {
+        using (Hold())
+        {
+            Alive();
+            var h = Native.StateDocument(H, json);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return new CapsDocument(h, label);
+        }
+    }
     /// <summary>Each atom's residue number (Grow: the repeat unit's position along its chain, from 1; 0 = none).</summary>
     public int[] AtomResidues() { using (Hold()) { Alive(); var n = Native.AtomResidues(H, null, 0); var r = new int[n]; Native.AtomResidues(H, r, n); return r; } }
     // display (design/boards DisplayStyles, LensView), hydrogens (AddHydrogens), resolution (ModelResolution)

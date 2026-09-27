@@ -6688,6 +6688,49 @@ extern "C" int32_t caps_atom_properties(caps_doc* d, int32_t index, char* out, i
   return report_out(r.dump(0), out, cap);
 }
 
+namespace {
+// A state of the document as positions, with its name: {kind: current | start | frame | snapshot, index}
+std::pair<std::vector<caps::Vec3>, std::string> state_positions(caps_doc* d, const caps::Json& st, const std::string& def) {
+  const std::string kind = st.kind() == caps::Json::Object ? st.text("kind", def) : def;
+  const int idx = st.kind() == caps::Json::Object ? int(st.num("index", 0)) : 0;
+  std::vector<caps::Vec3> p;
+  if (kind == "current") {
+    for (const auto& a : d->frame.atoms) p.push_back(a.pos);
+    return {p, "current"};
+  }
+  if (kind == "start") {
+    if (!d->undo.empty()) return {d->undo.front().positions, "before the first edit"};
+    if (d->traj.frames()) return {d->traj.positions.front(), "frame 1"};
+    for (const auto& a : d->frame.atoms) p.push_back(a.pos);
+    return {p, "current"};
+  }
+  if (kind == "frame") {
+    if (idx < 0 || size_t(idx) >= d->traj.frames()) throw std::runtime_error("no frame " + std::to_string(idx + 1));
+    return {d->traj.positions[size_t(idx)], "frame " + std::to_string(idx + 1)};
+  }
+  if (kind == "snapshot") {
+    if (idx < 0 || size_t(idx) >= d->snapshots.size()) throw std::runtime_error("no snapshot " + std::to_string(idx + 1));
+    return {d->snapshots[size_t(idx)].state.positions, d->snapshots[size_t(idx)].name};
+  }
+  throw std::runtime_error("unknown state '" + kind + "' (current, start, frame, snapshot)");
+}
+}  // namespace
+
+// One state of the document as a new document (the split view shows two states side by side).
+extern "C" caps_doc* caps_state_document(caps_doc* d, const char* json) {
+  try {
+    if (!d) throw std::runtime_error("no document");
+    const auto [pos, name] = state_positions(d, caps::Json::parse(json && *json ? json : "{}"), "current");
+    caps::System s = d->frame;
+    if (pos.size() != s.atoms.size()) throw std::runtime_error("that state has other atoms than the structure shown");
+    for (size_t i = 0; i < pos.size(); ++i) s.atoms[i].pos = pos[i];
+    return doc_of_system(s, d, "state.copy", "the structure at " + name, {{"state", name}});
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
 extern "C" int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {
@@ -6698,31 +6741,8 @@ extern "C" int32_t caps_compare_states(caps_doc* d, const char* json, char* out,
       r["ok"] = true;
       return report_out(r.dump(0), out, cap);
     }
-    // a state: {kind: current | start | frame | snapshot, index}
-    auto state = [&](const std::string& key, const std::string& def) -> std::pair<std::vector<caps::Vec3>, std::string> {
-      caps::Json st = o.has(key) ? o[key] : caps::Json::object();
-      const std::string kind = st.kind() == caps::Json::Object ? st.text("kind", def) : def;
-      const int idx = st.kind() == caps::Json::Object ? int(st.num("index", 0)) : 0;
-      std::vector<caps::Vec3> p;
-      if (kind == "current") {
-        for (const auto& a : d->frame.atoms) p.push_back(a.pos);
-        return {p, "current"};
-      }
-      if (kind == "start") {
-        if (!d->undo.empty()) return {d->undo.front().positions, "before the first edit"};
-        if (d->traj.frames()) return {d->traj.positions.front(), "frame 1"};
-        for (const auto& a : d->frame.atoms) p.push_back(a.pos);
-        return {p, "current"};
-      }
-      if (kind == "frame") {
-        if (idx < 0 || size_t(idx) >= d->traj.frames()) throw std::runtime_error("no frame " + std::to_string(idx + 1));
-        return {d->traj.positions[size_t(idx)], "frame " + std::to_string(idx + 1)};
-      }
-      if (kind == "snapshot") {
-        if (idx < 0 || size_t(idx) >= d->snapshots.size()) throw std::runtime_error("no snapshot " + std::to_string(idx + 1));
-        return {d->snapshots[size_t(idx)].state.positions, d->snapshots[size_t(idx)].name};
-      }
-      throw std::runtime_error("unknown state '" + kind + "' (current, start, frame, snapshot)");
+    auto state = [&](const std::string& key, const std::string& def) {
+      return state_positions(d, o.has(key) ? o[key] : caps::Json::object(), def);
     };
     auto [ref, ref_name] = state("reference", "start");
     auto [mov, mov_name] = state("moving", "current");
