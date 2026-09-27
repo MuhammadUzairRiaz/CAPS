@@ -99,7 +99,7 @@ class _MdOpts(C.Structure):
                 ("barostat", C.c_int32), ("pressure", C.c_double), ("tau_p", C.c_double), ("new_velocities", C.c_int32),
                 ("seed", C.c_uint64), ("thermo_every", C.c_int32), ("frame_every", C.c_int32), ("cutoff", C.c_double),
                 ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
-                ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64)]
+                ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32)]
 
 
 class _ReactOpts(C.Structure):
@@ -336,14 +336,16 @@ class Document:
 
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
-           respa: int = 1, constraints: str = "none") -> str:
+           respa: int = 1, constraints: str = "none", constraint_solver: str = "shake") -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
-        barostat "mtk" runs as LAMMPS's fix nvt / fix npt iso."""
+        barostat "mtk" runs as LAMMPS's fix nvt / fix npt iso. constraint_solver "lincs" puts the positions back on the
+        constraints with LINCS (as GROMACS), "shake" with SHAKE (as LAMMPS); the same result to the tolerance."""
         o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], 100.0,
                     {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
-                    cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints])
+                    cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0, 0,
+                    {"shake": 0, "lincs": 1}[constraint_solver])
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()

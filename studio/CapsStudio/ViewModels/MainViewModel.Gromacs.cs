@@ -38,8 +38,10 @@ public sealed partial class MainViewModel
         if (_mdConstraints > 0)
         {   // the core's settings say every bond is flexible: this run holds some
             nb = string.Join("\n", nb.Split('\n').Where(l => !l.StartsWith("constraints ", StringComparison.Ordinal)));
-            sb.Append(_mdConstraints == 1 ? "constraints              = h-bonds     ; bonds to hydrogen, as this run (LINCS)\n"
-                                          : "constraints              = all-bonds   ; as this run (LINCS)\n");
+            sb.Append(_mdConstraints == 1 ? "constraints              = h-bonds     ; bonds to hydrogen, as this run\n"
+                                          : "constraints              = all-bonds   ; as this run\n");
+            sb.Append(_mdConstraintSolver == 1 ? "constraint-algorithm     = lincs\nlincs-order              = 4\n"
+                                               : "constraint-algorithm     = shake       ; as this run (GROMACS allows it without domain decomposition)\n");
         }
         sb.Append(nb);
         // coupling: τ in ps, pressure in bar

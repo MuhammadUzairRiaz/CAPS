@@ -11,9 +11,15 @@
 namespace caps {
 
 enum class ConstraintMode { None, HBonds, AllBonds };
+// How the positions are brought back onto the constraints: SHAKE (iterative, one constraint at a time) or LINCS (Hess,
+// Bekker, Berendsen & Fraaije, J. Comput. Chem. 18, 1463 (1997): a matrix expansion of order 4 over coupled constraints,
+// then corrections for the lengthening by rotation until every constraint holds to the tolerance). Both solve the same
+// equations along the old bond directions; velocities are corrected by RATTLE in both.
+enum class ConstraintAlgorithm { Shake, Lincs };
 
 ConstraintMode constraints_from_string(const std::string& s);   // "none" | "h-bonds" | "all-bonds"
 const char* to_string(ConstraintMode m);
+ConstraintAlgorithm constraint_algorithm_from_string(const std::string& s);   // "shake" | "lincs"
 
 struct DistanceConstraint {
   uint32_t i, j;
@@ -35,7 +41,8 @@ ConstraintSet make_constraints(const System& s, const ForceField& ff, Constraint
 // The solver, for one run: positions x (3N, Å), velocities v (3N, Å/fs), masses m (g/mol).
 class ConstraintSolver {
  public:
-  ConstraintSolver(ConstraintSet set, const std::vector<double>& m, const Cell& cell, double tol = 1e-8, int max_iter = 1000);
+  ConstraintSolver(ConstraintSet set, const std::vector<double>& m, const Cell& cell, double tol = 1e-8, int max_iter = 1000,
+                   ConstraintAlgorithm algorithm = ConstraintAlgorithm::Shake);
 
   size_t size() const { return set_.c.size(); }
   const ConstraintSet& set() const { return set_; }
@@ -59,6 +66,11 @@ class ConstraintSolver {
   std::vector<double> x0_;
   double tol_;
   int max_iter_;
+  ConstraintAlgorithm alg_;
+  // LINCS: for each pair of constraints sharing an atom, S_k S_l s_ka s_la / m_a (the coupling without the directions)
+  struct Coupling { uint32_t k, l; double coef; };
+  std::vector<Coupling> couple_;
+  void lincs(std::vector<double>& x, std::vector<double>* v, double h);
   double w_[6] = {0, 0, 0, 0, 0, 0};
 };
 
