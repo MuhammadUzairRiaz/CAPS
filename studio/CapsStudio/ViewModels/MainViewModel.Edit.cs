@@ -64,9 +64,18 @@ public sealed partial class MainViewModel
     private bool _canRedo;
     public bool CanRedo { get => _canRedo; private set => Set(ref _canRedo, value); }
 
+    /// <summary>A run (dynamics, minimisation, a protocol …) holds the structure: a change now would be lost, so it waits.</summary>
+    private bool EditLocked()
+    {
+        if (_doc?.LongRunning != true) return false;
+        Status = "A run is using this structure: change it when the run finishes (or Stop it)";
+        return true;
+    }
+
     private JsonNode? RunEdit(object spec)
     {
         if (_doc == null) return null;
+        if (EditLocked()) return null;
         var json = System.Text.Json.JsonSerializer.Serialize(spec);
         var r = JsonNode.Parse(_doc.Edit(json))!;
         if (r["ok"]?.GetValue<bool>() != true)
@@ -174,6 +183,7 @@ public sealed partial class MainViewModel
     public void UndoEdit(bool redo)
     {
         if (_doc == null) return;
+        if (EditLocked()) return;
         if (!_doc.Undo(redo)) { Status = redo ? "Nothing to redo" : "Nothing to undo"; return; }
         AfterEdit(redo ? "Redone" : "Undone");
     }
