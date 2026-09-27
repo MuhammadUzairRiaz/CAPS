@@ -14,6 +14,7 @@
 #include "caps/analysis.hpp"
 #include "caps/adsorption.hpp"
 #include "caps/cbmc.hpp"
+#include "caps/functionalize.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
 #include "caps/dlpoly.hpp"
@@ -5243,6 +5244,21 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       g.seed = uint64_t(j.num("seed", 1));
       const auto gr = caps::graft_silanes(s, g);
       what = "Graft " + g.name + " on " + std::to_string(gr.grafted) + " of " + std::to_string(gr.silanols) + " silanols";
+    } else if (op == "functionalize") {   // groups on sidewalls, ends, edges or chosen atoms of a filler (functionalize.hpp)
+      caps::FunctionalizeOptions f;
+      f.group = j.text("group", "hydroxyl");
+      f.pattern = j.text("pattern", "random");
+      f.elements = j.text("elements", "");
+      f.fraction = j.num("fraction", 0.05);
+      f.count = int(j.num("count", 0));
+      f.min_spacing = j.num("min_spacing", 3.0);
+      f.from = j.num("from", 0.0), f.to = j.num("to", 1.0);
+      f.pitch = j.num("pitch", 20.0), f.phase = j.num("phase", 0.0);
+      f.side = j.text("side", "outer");
+      f.seed = uint64_t(j.num("seed", 1));
+      if (f.pattern == "atoms") for (uint32_t a : atoms_of(d, j)) f.atoms.push_back(a);
+      const auto fr = caps::functionalize(s, f);
+      what = fr.notes.empty() ? "Functionalised" : fr.notes.front();
     } else if (op == "phosphate_ends") {   // P–H (a strand's 3′ cap) → P–OH
       const int k = caps::hydroxylate_phosphorus(s);
       if (k == 0) throw std::invalid_argument("no hydrogen on phosphorus");

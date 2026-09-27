@@ -78,7 +78,8 @@ int set_tacticity(System& s, bool iso);
 // the target (replacing one of the target's hydrogens when it has one, else in its free direction); the fragment is
 // rolled about the new bond to keep clear of the structure; other attachment points become hydrogens. Returns the
 // fragment's atoms in the structure.
-std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which = 0, bool replace_h = true);
+// direction: where the attaching atom goes from the target (a site's outward normal) when no hydrogen is replaced.
+std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which = 0, bool replace_h = true, const Vec3* direction = nullptr);
 
 // Silane coupling agents grafted onto surface silanols (silica fillers in rubber: TESPT / Si69 couples silica to the
 // sulfur-cured matrix): each chosen Si–O–H loses its H and the silane's silicon bonds to that oxygen (the condensation's

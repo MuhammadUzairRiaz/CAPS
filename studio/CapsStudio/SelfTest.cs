@@ -569,6 +569,29 @@ internal static class SelfTest
         var comp = vm.Document?.Summary();
         Check(comp is { } csum && csum.Molecules == 5 && vm.HoldOn, $"nanotube composite: {vm.Title} · {comp?.Atoms} atoms · {vm.NanoError} {vm.Status}");
 
+        // Nanostructure › Functional groups: a bare (8,8) boron nitride tube, then carboxyls on 4 % of its borons (undoable)
+        {
+            vm.OpenNano();
+            vm.NanoKind = 1;
+            vm.NanoMaterial = 1;
+            vm.TubeN = 8;
+            vm.TubeM = 8;
+            vm.TubeLength = 15;
+            vm.NanoMatrix = false;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var bare = vm.Document!.Summary().Atoms;
+            vm.FnGroup = "carboxyl";
+            vm.FnPattern = 0;
+            vm.FnFraction = 0.04m;
+            vm.FnElements = "B";
+            vm.Functionalize();
+            var grafted = vm.Document!.Summary().Atoms - bare;
+            Check(grafted > 0 && grafted % 4 == 0 && vm.Status.Contains("carboxyl groups"), $"functional groups on a BN tube: +{grafted} atoms · {vm.Status}");
+            vm.UndoEdit(false);
+            Check(vm.Document!.Summary().Atoms == bare, "functional groups undone");
+            vm.NanoMaterial = 0;
+        }
+
         // Blend builder: NR / BR 70 : 30
         vm.OpenBlend();
         vm.BlendChains = 4;

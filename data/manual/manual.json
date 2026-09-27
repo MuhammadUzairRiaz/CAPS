@@ -552,6 +552,37 @@
    "engines": []
   },
   {
+   "id": "functionalization",
+   "group": "Growth",
+   "title": "Functional groups on nanotubes, sheets and fillers",
+   "summary": "Groups grafted covalently onto a filler: the sidewalls, ends and edges of carbon and boron nitride nanotubes and sheets (and any sp² framework), or the atoms chosen. A group is a preset (hydroxyl, carboxyl, amine, methyl, fluoro, phenyl, nitrophenyl, amide, ester, hydroxymethyl, vinyl, thiol, aminopropyl, octadecylamide, PEG) or a SMILES with one attachment point. The sites follow a pattern: at random, every site at a spacing, a band along the axis, a helix round a tube, the tube's rim or the flake's edge hydrogens, or the selected atoms; only the elements named (e.g. boron of h-BN). A sidewall group sits on its site's outward normal — the normal of the three bonds, turned away from the filler's centre (outside a tube, on top of a sheet; inside or below, or both at random, on request); sites stay at least the spacing apart.",
+   "equation": "degree = grafted sites / framework atoms × 100",
+   "equation_note": "",
+   "symbols": [
+    [
+     "spacing",
+     "between grafted sites",
+     "3 Å"
+    ],
+    [
+     "share",
+     "of the eligible sites (random, band)",
+     "0.05"
+    ],
+    [
+     "pitch",
+     "helix: Å per turn",
+     "20 Å"
+    ]
+   ],
+   "when": "Functionalised CNT, graphene and BN fillers for polymer and rubber composites: build the filler, graft the groups, relax (the grafted sp² atoms pyramidalise), then embed it in the matrix or compare adsorbates on it with the Adsorption locator.",
+   "cites": [],
+   "source": "core/src/functionalize.cpp (functionalize)",
+   "tested": "Functionalize.TubeSidewallOutsideAndInside, SheetSidesSpacingAndElements, EndsAndHelix",
+   "deviation": "the grafted atoms keep their sp² places until relaxed; no two neighbouring sites are grafted (by the spacing)",
+   "engines": []
+  },
+  {
    "id": "trial-growth",
    "group": "Growth",
    "title": "Chain growth by trial placement",
