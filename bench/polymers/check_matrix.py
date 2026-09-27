@@ -23,7 +23,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-CAPS = os.path.join(ROOT, "build", "cli", "caps")
+CAPS = os.environ.get("CAPS_BIN", os.path.join(ROOT, "build", "cli", "caps"))
 LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
 GMX = os.environ.get("GMX", "/opt/homebrew/bin/gmx")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d

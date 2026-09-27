@@ -1787,8 +1787,12 @@ internal static class SelfTest
                 vm.SelectedRecipe = vm.Recipes.First(r => r.Name == "Quick molecule");
                 vm.RunSelectedRecipe().GetAwaiter().GetResult();
                 var prov = vm.Document?.Provenance() ?? "";
-                Check(templates == 4 && first != null && valid && flagged && files == 2 && vm.Document?.Summary().Atoms == 9 && prov.Contains("recipe.run") && prov.Contains(vm.RecipeSha),
+                Check(templates == 5 && first != null && valid && flagged && files == 2 && vm.Document?.Summary().Atoms == 9 && prov.Contains("recipe.run") && prov.Contains(vm.RecipeSha),
                       $"recipes: {templates} · valid {valid} · flagged {flagged} · {files} files · {vm.Status}");
+                vm.SelectedRecipe = vm.Recipes.First(r => r.Name.StartsWith("Sulfur-cured"));
+                var cureOk = vm.RecipeOk && vm.RecipeStages.Any(st => st.Name == "React" && st.Ok);
+                Check(cureOk, $"recipe template: sulfur-cured NR · {string.Join(", ", vm.RecipeStages.Select(st => st.Name + (st.Ok ? "" : "!")))} · {vm.RecipeValid}");
+
                 Environment.SetEnvironmentVariable("CAPS_RECIPES", null);
                 vm.SetModule(8);
             }
