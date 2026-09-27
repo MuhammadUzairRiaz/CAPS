@@ -1,0 +1,44 @@
+<!-- The structure alone, full screen, for clean screenshots (the main view's ⤢ button, or the live view's during a run):
+     drag rotates, ⇧ drag or the right button pans, the wheel or a pinch zooms; the controls hide with H, Esc closes. -->
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:CapsStudio.Views" xmlns:local="using:CapsStudio.Views"
+        x:Class="CapsStudio.Views.VisualizationWindow" Title="CAPS · view" Width="1280" Height="820"
+        Background="{DynamicResource Bg0B}">
+  <Panel>
+    <v:MolView x:Name="View" />
+    <Border x:Name="Bar" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="14" Padding="12,8" Classes="hud">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <StackPanel Spacing="3"><TextBlock Text="Style" Classes="label" />
+          <ComboBox x:Name="StyleBox" Width="150" SelectedIndex="0">
+            <ComboBoxItem Content="All atoms" /><ComboBoxItem Content="Space filling" /><ComboBoxItem Content="Sticks" />
+            <ComboBoxItem Content="No hydrogens" /><ComboBoxItem Content="Backbone" />
+          </ComboBox></StackPanel>
+        <StackPanel Spacing="3"><TextBlock Text="Colour by" Classes="label" />
+          <ComboBox x:Name="ColourBox" Width="140" SelectedIndex="1">
+            <ComboBoxItem Content="Element" /><ComboBoxItem Content="Molecule" /><ComboBoxItem Content="Type" /><ComboBoxItem Content="Distance to centre" />
+          </ComboBox></StackPanel>
+        <StackPanel Spacing="3"><TextBlock Text="Background" Classes="label" />
+          <ComboBox x:Name="BackBox" Width="120" SelectedIndex="0">
+            <ComboBoxItem Content="Theme" /><ComboBoxItem Content="Dark" /><ComboBoxItem Content="White" /><ComboBoxItem Content="Transparent" />
+          </ComboBox></StackPanel>
+        <StackPanel Spacing="3"><TextBlock Text="Show only (expression)" Classes="label" />
+          <TextBox x:Name="Expr" Width="230" Classes="mono" Watermark="Molecule &lt;= 3 · Element == &quot;C&quot;"
+                   ToolTip.Tip="Only the atoms where the expression holds are drawn (the Visualize expression language); empty: all atoms. Enter applies." /></StackPanel>
+        <CheckBox x:Name="CellBox" Content="Cell" IsChecked="True" VerticalAlignment="Bottom" />
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+          <Button x:Name="ZoomOut" Content="−" Width="32" Padding="0" HorizontalContentAlignment="Center" FontSize="16" ToolTip.Tip="Zoom out (or the wheel, a pinch)" />
+          <Button x:Name="ZoomIn" Content="+" Width="32" Padding="0" HorizontalContentAlignment="Center" FontSize="16" ToolTip.Tip="Zoom in" />
+          <Button x:Name="ResetBtn" ToolTip.Tip="Reset the view (double-click)"><local:Icon Kind="rotate" Size="14" /></Button>
+          <Button x:Name="SaveBtn" ToolTip.Tip="Save this view as a PNG at twice the screen resolution">
+            <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="PNG" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button x:Name="HideBtn" Content="Hide controls (H)" />
+          <Button x:Name="CloseBtn" Content="Close (Esc)" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+    <Border x:Name="Note" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14" Classes="chip" IsHitTestVisible="False">
+      <TextBlock x:Name="NoteText" Foreground="{DynamicResource MutedB}" />
+    </Border>
+  </Panel>
+</Window>

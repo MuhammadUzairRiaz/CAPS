@@ -21,6 +21,14 @@ public partial class LiveRunView : UserControl
             };
             Show(vm);
         };
+        var view = this.FindControl<MolView>("View")!;
+        this.FindControl<Button>("ZoomIn")!.Click += (_, _) => view.ZoomBy(1.25);
+        this.FindControl<Button>("ZoomOut")!.Click += (_, _) => view.ZoomBy(0.8);
+        this.FindControl<Button>("ResetBtn")!.Click += (_, _) => view.Reset();
+        this.FindControl<Button>("FullBtn")!.Click += (_, _) =>
+        {
+            if (DataContext is ViewModels.MainViewModel vm && TopLevel.GetTopLevel(this) is MainWindow w) w.OpenFullView(vm.RunLiveDoc != null);
+        };
     }
 
     /// <summary>The run's latest snapshot; with none, the structure itself while nothing runs (a running MD holds the

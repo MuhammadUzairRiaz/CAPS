@@ -116,6 +116,8 @@ public sealed partial class MainViewModel
         return region.Where(a => a < n).OrderBy(a => a).ToArray();
     }
 
+    /// <summary>The window opens the full-screen view (true: follow the running job's live snapshots).</summary>
+    public event Action<bool>? FullViewRequested;
     public bool AutoCleanOn => _settings.AutoClean;
     public string AutoCleanText => _settings.AutoClean ? "Auto-clean on · UFF" : "";
     public void ToggleAutoClean()
