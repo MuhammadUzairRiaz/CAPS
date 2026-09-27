@@ -86,6 +86,10 @@ struct DynamicsOptions {
   std::function<void(const EnergyTerms&, const std::vector<double>&, const Cell&, int64_t)> each_step;
   // Called for each recorded frame with positions (3N, unwrapped), cell and step.
   std::function<void(const std::vector<double>&, const Cell&, int64_t)> frame;
+  // Checkpoints: every checkpoint_every steps (0: none) the full state — positions (3N, unwrapped), velocities (3N,
+  // Å/fs), cell and step (with step_offset) — so a run that fails or is stopped can continue from the last one.
+  int64_t checkpoint_every = 0;
+  std::function<void(const std::vector<double>& x, const std::vector<double>& v, const Cell&, int64_t step)> checkpoint;
 };
 
 struct DynamicsReport {

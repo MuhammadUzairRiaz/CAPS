@@ -414,6 +414,12 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     if (o.frame && o.frame_every > 0 && (step % o.frame_every == 0 || step == o.steps)) o.frame(x, cell, step + o.step_offset);
     for (size_t k = 0; k < x.size(); k += 3 * 64)
       if (!std::isfinite(x[k])) throw FieldError("the simulation became unstable at step " + std::to_string(step) + "; lower the time step or relax first");
+    // a checkpoint only of a state that is whole: every coordinate and velocity finite
+    if (o.checkpoint && o.checkpoint_every > 0 && step % o.checkpoint_every == 0 && step < o.steps &&
+        std::all_of(x.begin(), x.end(), [](double q) { return std::isfinite(q); }) && std::all_of(v.begin(), v.end(), [](double q) { return std::isfinite(q); })) {
+      place_virtual_sites(ff, x, cell);
+      o.checkpoint(x, v, cell, step + o.step_offset);
+    }
   }
 
   rep.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_start).count();
