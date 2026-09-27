@@ -1,0 +1,99 @@
+<!-- CAPS Studio › Analyze › Sorption: a gas or small molecule in the open structure held fixed — Widom insertion
+     (μ_ex, Henry constant, solubility coefficient) and GCMC at each pressure (the isotherm, the isosteric heat). -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SorptionPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding SorbRunning}" />
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Compute" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Sorption" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="How much gas the open structure takes up: Widom insertion and grand-canonical Monte Carlo with the assigned force field" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding SorbProgress}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+    </Border>
+    <Grid ColumnDefinitions="380,*" ColumnSpacing="14" Margin="22,18">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Sorbate" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,150" ColumnSpacing="8">
+                <TextBox Text="{Binding Sorbate}" Classes="mono" Watermark="SMILES" />
+                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.SorbPresets}" SelectedItem="{Binding SorbPreset}" PlaceholderText="Common gases" HorizontalAlignment="Stretch" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="A rigid molecule typed with the structure's force field (the Field assignment, else the built-in one). The structure is the host: a polymer or rubber cell, a filler, a porous crystal — held fixed." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Conditions" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="T (K)" Classes="label" /><TextBlock Grid.Column="1" Text="Widom insertions" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding SorbTD}" Minimum="1" Increment="10" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SorbInsertD}" Minimum="0" Increment="50000" FormatString="0" />
+                <TextBlock Grid.Row="2" Text="GCMC pressures (kPa)" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Steps per pressure" Classes="label" />
+                <TextBox Grid.Row="3" Text="{Binding SorbPressures}" Classes="mono" Watermark="blank: Widom only" />
+                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding SorbStepsD}" Minimum="1000" Increment="100000" FormatString="0" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Widom: random places and orientations of one molecule, ⟨e^(−βΔU)⟩ (Widom 1963). GCMC: insertions, deletions, moves and rotations at an ideal-gas reservoir's pressure (Frenkel &amp; Smit 2002); the first quarter of each run equilibrates." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding SorbHasError}">
+            <TextBlock Text="{Binding SorbError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Low pressure (Widom)" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+                <TextBlock Text="Solubility coefficient S" Classes="label" /><TextBlock Grid.Column="1" Text="{Binding SorbS}" Classes="mono" />
+                <TextBlock Grid.Row="1" Text="Henry constant" Classes="label" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SorbHenry}" Classes="mono" />
+                <TextBlock Grid.Row="2" Text="Excess chemical potential" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SorbMu}" Classes="mono" />
+                <TextBlock Grid.Row="3" Text="⟨e^(−βΔU)⟩" Classes="label" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SorbW}" Classes="mono" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Isotherm (GCMC)" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Iso" Height="200" XLabel="p (kPa)" YLabel="mol/kg" AutoRange="True" />
+              <Grid ColumnDefinitions="*,*,*,*,*">
+                <TextBlock Text="P (KPA)" Classes="h3" /><TextBlock Grid.Column="1" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="2" Text="MOL/KG" Classes="h3" />
+                <TextBlock Grid.Column="3" Text="CM³(STP)/CM³" Classes="h3" /><TextBlock Grid.Column="4" Text="Q_ST (KCAL/MOL)" Classes="h3" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding SorbRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SorbRow">
+                    <Grid ColumnDefinitions="*,*,*,*,*" Margin="0,2">
+                      <TextBlock Text="{Binding Pressure}" Classes="mono" /><TextBlock Grid.Column="1" Text="{Binding Loading}" Classes="mono" />
+                      <TextBlock Grid.Column="2" Text="{Binding MolKg}" Classes="mono" /><TextBlock Grid.Column="3" Text="{Binding Cm3}" Classes="mono" />
+                      <TextBlock Grid.Column="4" Text="{Binding Heat}" Classes="mono" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding SorbNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

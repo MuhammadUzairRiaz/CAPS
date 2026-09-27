@@ -2200,6 +2200,17 @@ internal static class SelfTest
                       && vm.AdsComponents[0].Name == "H2O" && vm.AdsConfigs.Count >= 1 && vm.Document!.Provenance().Contains("adsorption.locator"),
                       $"adsorption locator: {vm.AdsEnergy} · {vm.AdsSplit} · {added} atoms added · {vm.AdsError}");
                 vm.UndoEdit(false);
+                // Analyze › Sorption: methane in the PE cell (Widom, then two GCMC pressures); the structure is not changed
+                vm.OpenSorption();
+                vm.Sorbate = "C";
+                vm.SorbInsertD = 20000;
+                vm.SorbPressures = "100, 1000";
+                vm.SorbStepsD = 4000;
+                var atomsS = vm.Document!.Summary().Atoms;
+                vm.RunSorption().GetAwaiter().GetResult();
+                Check(vm.IsSorption && !vm.SorbHasError && vm.SorbS.Contains("cm³") && vm.SorbRows.Count == 2 && vm.Document!.Summary().Atoms == atomsS
+                      && vm.Document!.Provenance().Contains("sorption.widom_gcmc"),
+                      $"sorption: S {vm.SorbS} · K_H {vm.SorbHenry} · μex {vm.SorbMu} · {vm.SorbRows.Count} points · {vm.SorbError}");
                 vm.SetModule(4);
             }
             // Equilibrate › Chain ends: CBMC regrowth with the built-in force field; a new frame, the provenance step
