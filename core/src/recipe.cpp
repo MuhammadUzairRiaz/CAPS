@@ -345,6 +345,27 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           }
         }
         if (!ff) ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
+        // automatic charges: fixed per-type charges that miss the formal charge give way to the companion force
+        // field's bond-increment charges when it names one (OPLS-AA 2024 → OPLS 2005)
+        if (auto_charges && charges == "types" && !def.charge_increments_from.empty()) {
+          double net = 0;
+          for (double q : ff->charge) net += q;
+          int formal = 0;
+          for (int fc : perceive(sys).charge) formal += fc;
+          if (std::fabs(net - formal) > 1e-3) {
+            try {
+              std::string note;
+              const auto q = companion_charges(sys, def, path, &note);
+              for (size_t i = 0; i < sys.atoms.size(); ++i) sys.atoms[i].charge = q[i];
+              sys.has_charges = true;
+              ParamReport rep2;
+              ff = std::make_shared<ForceField>(parameterize(sys, def, types, "keep", &rep2, false));
+              rep = std::move(rep2);
+              companion_note = note;
+              charges = "keep";
+            } catch (const FFError&) {}
+          }
+        }
         if (!rep.missing.empty()) throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")");
         ffname = def.name + (ua.empty() ? "" : " (united-atom: hydrogens on carbon folded into their carbons)");
         filled_terms = 0;
