@@ -355,6 +355,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.improper_all_explicit) j["improper_all_explicit"] = true;
   if (ff.improper_max_neighbours) j["improper_max_neighbours"] = ff.improper_max_neighbours;
   if (ff.wildcard_torsion_scaling != "none") j["wildcard_torsion_scaling"] = ff.wildcard_torsion_scaling;
+  if (!ff.charge_increments_from.empty()) j["charge_increments_from"] = ff.charge_increments_from;
   if (!ff.torsion_rules.empty()) j["torsion_rules"] = ff.torsion_rules;
   if (ff.angle_contacts > 0) j["angle_contacts"] = ff.angle_contacts;
   if (!ff.hbonds.terms.empty()) {
@@ -434,6 +435,21 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   out << j.dump(1) << "\n";
 }
 
+std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note) {
+  if (def.charge_increments_from.empty()) throw FFError(def.name + " names no force field for bond-increment charges");
+  const std::filesystem::path src = std::filesystem::path(ff_path).parent_path() / def.charge_increments_from;
+  const FFDef other = load_forcefield(src.string());
+  if (other.bond_increments.empty()) throw FFError(other.name + " has no bond increments");
+  const TypingResult tr = assign_types(s, other);
+  if (tr.untyped) throw FFError(other.name + " cannot type " + std::to_string(tr.untyped) + " atoms of this structure, so it gives no charges for it");
+  ParamReport rep;
+  const ForceField ff = parameterize(s, other, tr.types, "types", &rep, true);
+  for (const auto& m : rep.missing)
+    if (m.rfind("bond increment", 0) == 0) throw FFError(other.name + " has no " + m + ", so it gives no charges for this structure");
+  if (note) *note = "charges: " + other.name + "'s own, from its bond increments (its typing of this structure); types and parameters: " + def.name;
+  return ff.charge;
+}
+
 FFDef load_forcefield(const std::string& path) {
   std::ifstream in(path);
   if (!in) throw FFError("cannot open " + path);
@@ -506,6 +522,7 @@ FFDef load_forcefield(const std::string& path) {
   ff.improper_all_explicit = j.has("improper_all_explicit") && j["improper_all_explicit"].boolean();
   ff.improper_max_neighbours = int(j.num("improper_max_neighbours", 0));
   ff.wildcard_torsion_scaling = j.text("wildcard_torsion_scaling", ff.wildcard_torsion_scaling);
+  ff.charge_increments_from = j.text("charge_increments_from", ff.charge_increments_from);
   ff.torsion_rules = j.text("torsion_rules");
   ff.angle_contacts = j.num("angle_contacts", 0);
   if (j.has("hbonds")) {

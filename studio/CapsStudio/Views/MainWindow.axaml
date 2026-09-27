@@ -2974,6 +2974,8 @@
                       <TextBlock Text="{Binding Field.EntryHint}" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Content="{Binding Field.CompanionChargesText}" Classes="primary" Click="OnFieldCompanionCharges" IsVisible="{Binding Field.CanUseCompanionCharges}" ToolTip.Tip="{Binding Field.CompanionChargesTip}" />
+                      <Button Content="{Binding Field.FillSuggestedText}" Classes="primary" Click="OnFieldFillSuggested" IsVisible="{Binding Field.CanFillSuggested}" ToolTip.Tip="{Binding Field.FillSuggestedTip}" />
                       <Button Content="Fill gaps from…" Click="OnFieldFill" ToolTip.Tip="Another force field's bonds, angles and torsions used only where this one defines none (OPLS-AA 2024's missing alkene torsions from OPLS 2005 …); every borrowed term is listed; impropers are never borrowed" />
                       <Button Content="Import parameters…" Click="OnFieldImport" ToolTip.Tip="caps-forcefield JSON, moltemplate .lt, AMBER frcmod or a GROMACS .itp/.top ([ *types ] sections); its rules are added over the force field" />
                       <Button Content="Enter manually (estimated)" Click="OnFieldAddRule" IsEnabled="{Binding Field.CanEnterRule}" />
