@@ -2,6 +2,7 @@
 #include "caps/edit.hpp"
 
 #include <algorithm>
+#include <random>
 #include <cmath>
 #include <map>
 #include <set>
@@ -469,6 +470,64 @@ std::vector<int> fragment_attach_atoms(const std::string& smiles) {
   std::vector<int> out;
   for (uint32_t r : f.root) out.push_back(int(r));
   return out;
+}
+
+std::string silane_smiles(const std::string& name) {
+  // each bonded through one silicon (one ethoxy condensed with a silanol); a bis-silane keeps its second silicon free
+  if (name == "TESPT" || name == "Si69") return "*[Si](OCC)(OCC)CCCSSSSCCC[Si](OCC)(OCC)OCC";
+  if (name == "TESPD" || name == "Si75") return "*[Si](OCC)(OCC)CCCSSCCC[Si](OCC)(OCC)OCC";
+  if (name == "MPTES") return "*[Si](OCC)(OCC)CCCS";
+  if (name == "APTES") return "*[Si](OCC)(OCC)CCCN";
+  if (name == "VTES") return "*[Si](OCC)(OCC)C=C";
+  if (name == "OCTEO") return "*[Si](OCC)(OCC)CCCCCCCC";
+  throw EditError("unknown silane '" + name + "' (TESPT, TESPD, MPTES, APTES, VTES, OCTEO, or a SMILES with *)");
+}
+
+GraftReport graft_silanes(System& s, const GraftOptions& o) {
+  GraftReport rep;
+  if (o.smiles.find('*') == std::string::npos) throw EditError("the silane SMILES needs * where it bonds to the surface oxygen");
+  const auto nb = neighbours(s);
+  // surface silanols: an oxygen bonded to exactly one silicon and one hydrogen
+  std::vector<uint32_t> sites;
+  for (uint32_t o_ = 0; o_ < s.atoms.size(); ++o_) {
+    if (s.atoms[o_].element != 8 || nb[o_].size() != 2) continue;
+    int si = 0, h = 0;
+    for (uint32_t q : nb[o_]) si += s.atoms[q].element == 14, h += s.atoms[q].element == 1;
+    if (si == 1 && h == 1) sites.push_back(o_);
+  }
+  rep.silanols = sites.size();
+  if (sites.empty()) throw EditError("no surface silanols (Si–O–H): build the silica passivated (Nanostructure or Surface builder)");
+  const size_t want = o.count > 0 ? size_t(o.count) : size_t(std::lround(o.fraction * double(sites.size())));
+  if (want == 0) throw EditError("nothing to graft: a count or a fraction above zero");
+  // random order, then greedy: each accepted site at least min_spacing from those before it
+  std::mt19937_64 rng(o.seed);
+  std::shuffle(sites.begin(), sites.end(), rng);
+  std::vector<Vec3> kept;
+  std::vector<uint32_t> chosen;
+  for (uint32_t site : sites) {
+    if (chosen.size() >= want) break;
+    bool ok = true;
+    for (const auto& p : kept) {
+      Vec3 d = s.atoms[site].pos - p;
+      if (s.cell.valid()) d = s.cell.minimum_image(d);
+      if (norm(d) < o.min_spacing) { ok = false; break; }
+    }
+    if (!ok) continue;
+    kept.push_back(s.atoms[site].pos);
+    chosen.push_back(site);
+  }
+  // attach from the highest index down: deleting each replaced hydrogen shifts only the indices above it
+  std::sort(chosen.rbegin(), chosen.rend());
+  for (uint32_t site : chosen) {
+    rep.added_atoms += attach_fragment(s, site, o.smiles, 0, true).size();
+    ++rep.grafted;
+  }
+  if (rep.grafted < want)
+    rep.notes.push_back(std::to_string(want - rep.grafted) + " fewer than asked: silanols closer than " + std::to_string(o.min_spacing).substr(0, 4) +
+                        " Å to a grafted one were passed over");
+  rep.notes.push_back(o.name + " grafted on " + std::to_string(rep.grafted) + " of " + std::to_string(rep.silanols) + " silanols (" +
+                      std::to_string(rep.added_atoms) + " atoms added; one ethanol released per graft); relax before dynamics");
+  return rep;
 }
 
 std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which, bool replace_h) {

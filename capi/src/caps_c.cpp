@@ -4781,6 +4781,18 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
         caps::clean_up(s, m, 0.5);
       }
       what = "Attach " + j.text("name", "fragment") + " to atom " + std::to_string(t + 1);
+    } else if (op == "graft") {   // silane coupling agents on the surface silanols of silica
+      caps::GraftOptions g;
+      const std::string silane = j.text("silane", "TESPT");
+      g.name = silane;
+      g.smiles = silane.find('*') != std::string::npos ? silane : caps::silane_smiles(silane);
+      if (silane.find('*') != std::string::npos) g.name = j.text("name", "silane");
+      g.count = int(j.num("count", 0));
+      g.fraction = j.num("fraction", 0.25);
+      g.min_spacing = j.num("min_spacing", 5.0);
+      g.seed = uint64_t(j.num("seed", 1));
+      const auto gr = caps::graft_silanes(s, g);
+      what = "Graft " + g.name + " on " + std::to_string(gr.grafted) + " of " + std::to_string(gr.silanols) + " silanols";
     } else if (op == "phosphate_ends") {   // P–H (a strand's 3′ cap) → P–OH
       const int k = caps::hydroxylate_phosphorus(s);
       if (k == 0) throw std::invalid_argument("no hydrogen on phosphorus");

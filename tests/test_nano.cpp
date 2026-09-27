@@ -5,6 +5,7 @@
 
 #include "caps/crystal.hpp"
 #include "caps/mechanics.hpp"
+#include "caps/edit.hpp"
 #include "caps/nano.hpp"
 
 using namespace caps;
@@ -154,4 +155,61 @@ TEST(Nano, MultiWalledTubes) {
   EXPECT_EQ((nanotube(o, &r), r.atoms_per_period), 36 + 72);
   o.n = 8, o.m = 4;
   EXPECT_THROW(nanotube(o), std::invalid_argument);
+}
+
+// Truncated octahedron and icosahedron: at the same circumscribed radius a copper particle holds the atoms of their
+// volumes relative to the sphere (32/√5³ ÷ 4π/3 = 0.683 and 0.6055) once the particle is large enough (30 Å) for the
+// lattice's layering at the faces to matter little (at 18 Å every shape, the cube and octahedron too, is 5–10 % off)
+TEST(Nano, TruncatedOctahedronAndIcosahedron) {
+  const System bulk = read_cif(kCrystals + "copper.cif");
+  auto count = [&](ParticleShape sh) {
+    ParticleOptions o;
+    o.shape = sh;
+    o.radius = 30;
+    const System p = nanoparticle(bulk, o);
+    Vec3 c{0, 0, 0};
+    for (const auto& a : p.atoms) c = c + a.pos;
+    c = c * (1.0 / double(p.atoms.size()));
+    double rmax = 0;
+    for (const auto& a : p.atoms) rmax = std::max(rmax, norm(a.pos - c));
+    EXPECT_LT(rmax, 30.0 + 1.5) << to_string(sh);
+    return double(p.atoms.size());
+  };
+  const double sphere = count(ParticleShape::Sphere);
+  EXPECT_NEAR(count(ParticleShape::TruncatedOctahedron) / sphere, 32 / std::pow(5.0, 1.5) / (4 * M_PI / 3), 0.06);
+  EXPECT_NEAR(count(ParticleShape::Icosahedron) / sphere, 0.6055, 0.06);
+  EXPECT_EQ(particle_shape_from_string("icosahedron"), ParticleShape::Icosahedron);
+}
+
+// TESPT grafted on a passivated silica particle: each graft trades a silanol H for the silane bonded through its Si
+// (64 atoms: net +63), the sites at least the spacing apart, no atom closer than 0.9 Å to another
+TEST(Nano, SilaneGraftOnSilica) {
+  ParticleOptions po;
+  po.radius = 12;
+  po.passivate = true;
+  System p = nanoparticle(read_cif(kCrystals + "alpha-quartz.cif"), po);
+  const size_t n0 = p.atoms.size();
+  {
+    double d0 = 1e9;
+    size_t bi = 0, bj = 0;
+    for (size_t i = 0; i < n0; ++i)
+      for (size_t j = i + 1; j < n0; ++j) if (norm(p.atoms[i].pos - p.atoms[j].pos) < d0) d0 = norm(p.atoms[i].pos - p.atoms[j].pos), bi = i, bj = j;
+    const auto nb0 = p.neighbours();
+    EXPECT_GT(d0, 0.9) << "passivation left atoms " << bi << " (Z " << p.atoms[bi].element << ", " << nb0[bi].size() << " bonds) and " << bj << " " << d0 << " Å apart";
+  }
+  GraftOptions g;
+  g.count = 4;
+  g.min_spacing = 6;
+  const GraftReport r = graft_silanes(p, g);
+  ASSERT_EQ(r.grafted, 4u);
+  EXPECT_GT(r.silanols, 4u);
+  EXPECT_EQ(p.atoms.size(), n0 + 4 * 63);
+  size_t sulfur = 0;
+  for (const auto& a : p.atoms) sulfur += a.element == 16;
+  EXPECT_EQ(sulfur, 4u * 4u);
+  double dmin = 1e9;
+  for (size_t i = 0; i < p.atoms.size(); ++i)
+    for (size_t j = i + 1; j < p.atoms.size(); ++j) dmin = std::min(dmin, norm(p.atoms[i].pos - p.atoms[j].pos));
+  EXPECT_GT(dmin, 0.9);
+  EXPECT_THROW(graft_silanes(p, GraftOptions{"CCC", "bad"}), EditError);
 }

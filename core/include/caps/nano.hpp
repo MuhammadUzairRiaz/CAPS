@@ -5,7 +5,8 @@
 //                  plane, or a flake with its edge carbons capped by hydrogen.
 //  nanotube        (n, m) tube rolled from graphene (or several concentric armchair / zigzag walls) (Saito, Dresselhaus & Dresselhaus, 1998): diameter
 //                  a √(n² + nm + m²) / π, a = √3 × C–C; periodic along z, or a finite tube with hydrogen-capped ends.
-//  nanoparticle    A sphere, cube, octahedron or cuboctahedron (the size is the circumscribed radius), or a fibre
+//  nanoparticle    A sphere, cube, octahedron, cuboctahedron, truncated octahedron or icosahedron (the size is the
+//                  circumscribed radius; an icosahedron cut from the bulk keeps its lattice: it is not multiply twinned), or a fibre
 //                  (a cylinder periodic along the crystal's c axis) cut from a bulk
 //                  crystal, centred on an atom or on the cell centre; isolated atoms dropped; optionally passivated
 //                  (silanols on silica) as the surface builder does, the new groups pointing away from the centre.
@@ -56,7 +57,7 @@ std::array<double, 3> nanotube_geometry(int n, int m, double cc = 1.42);
 
 // Fibre: a cylinder along the crystal's c axis (which must be normal to a and b), periodic along it — a glass, carbon or
 // steel fibre to embed in a rubber matrix.
-enum class ParticleShape { Sphere, Cube, Octahedron, Cuboctahedron, Fibre };
+enum class ParticleShape { Sphere, Cube, Octahedron, Cuboctahedron, Fibre, TruncatedOctahedron, Icosahedron };
 const char* to_string(ParticleShape s);
 ParticleShape particle_shape_from_string(const std::string& s);
 

@@ -65,6 +65,23 @@ int set_tacticity(System& s, bool iso);
 // rolled about the new bond to keep clear of the structure; other attachment points become hydrogens. Returns the
 // fragment's atoms in the structure.
 std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which = 0, bool replace_h = true);
+
+// Silane coupling agents grafted onto surface silanols (silica fillers in rubber: TESPT / Si69 couples silica to the
+// sulfur-cured matrix): each chosen Si–O–H loses its H and the silane's silicon bonds to that oxygen (the condensation's
+// ethanol goes), the rest of the silane pointing away from the surface. Sites are drawn at random (seed) among the
+// silanols, at least min_spacing apart; count > 0 grafts that many, else fraction of the silanols.
+struct GraftOptions {
+  std::string smiles = "*[Si](OCC)(OCC)CCCSSSSCCC[Si](OCC)(OCC)OCC";   // the silane with * where it bonds (TESPT)
+  std::string name = "TESPT";
+  int count = 0;
+  double fraction = 0.25;
+  double min_spacing = 5.0;   // Å between grafted oxygens
+  uint64_t seed = 1;
+};
+struct GraftReport { size_t silanols = 0, grafted = 0, added_atoms = 0; std::vector<std::string> notes; };
+// the preset silanes by name: TESPT (Si69), TESPD (Si75), MPTES, APTES, VTES, OCTEO
+std::string silane_smiles(const std::string& name);
+GraftReport graft_silanes(System& s, const GraftOptions& o);
 // Attachment points of a fragment's SMILES: for each *, the index (among the written atoms) of the atom it hangs on.
 std::vector<int> fragment_attach_atoms(const std::string& smiles);
 
