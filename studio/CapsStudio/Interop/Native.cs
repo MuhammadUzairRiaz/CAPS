@@ -423,6 +423,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_edit")] public static extern int Edit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_undo")] public static extern int Undo(IntPtr doc, int redo);
     [DllImport(Lib, EntryPoint = "caps_history")] public static extern int History(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_structure_info")] public static extern int StructureInfo(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_atom_properties")] public static extern int AtomProperties(IntPtr doc, int index, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_checkpoint")] public static extern int Checkpoint(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_note")] public static extern int ProvenanceNote(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_compare_states")] public static extern int CompareStates(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
@@ -1360,6 +1362,10 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { using (Hold()) { Alive(); return Native.Undo(H, redo ? 1 : 0) == 0; } }
     public string History() { using (Hold()) return JsonCall((b, c) => Native.History(H, b, c)); }
+    /// <summary>The structure in numbers (the Properties explorer): formula, composition, cell and its angles, force field.</summary>
+    public string StructureInfo() { using (Hold()) return JsonCall((b, c) => Native.StructureInfo(H, b, c)); }
+    /// <summary>One atom in numbers: types, charge, position, fractional position, bonded neighbours.</summary>
+    public string AtomProperties(int index) { using (Hold()) return JsonCall((b, c) => Native.AtomProperties(H, index, b, c)); }
     /// <summary>The last checkpoint of an MD or equilibration run (caps_checkpoint): info, restore, clear.</summary>
     public string Checkpoint(string op) { using (Hold()) return JsonCall((b, c) => Native.Checkpoint(H, "{\"op\":\"" + op + "\"}", b, c)); }
     /// <summary>A decision recorded as a provenance step ({engine, summary, params}).</summary>

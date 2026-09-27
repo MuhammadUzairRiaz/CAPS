@@ -714,6 +714,9 @@ public partial class MainWindow : Window
     private void OnTakeSnapshot(object? s, RoutedEventArgs e) => _vm.TakeSnapshot();
     private void OnSnapshotCompare(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.CompareWithSnapshot(r); }
     private void OnStatesClose(object? s, RoutedEventArgs e) => _vm.StatesOpen = false;
+    // the project tree: a job folder opens its outputs (twice: its report), an output opens what it is
+    private void OnJobFolder(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is Job j) j.Expanded = !j.Expanded; }
+    private void OnJobOutput(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is JobOutput o) o.Open(); }
     private async void OnStatesCsv(object? s, RoutedEventArgs e)
     {
         var f = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
