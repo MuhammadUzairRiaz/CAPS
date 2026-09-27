@@ -2004,7 +2004,8 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:StepField">
                         <StackPanel Spacing="4" Margin="0,0,0,10">
-                          <TextBlock Text="{Binding Label}" Classes="label" IsVisible="{Binding !IsBool}" />
+                          <TextBlock Text="{Binding Label}" Classes="label" IsVisible="{Binding ShowLabel}" />
+                          <TextBlock Text="{Binding Hint}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding IsNote}" />
                           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" IsVisible="{Binding IsText}">
                             <TextBox Text="{Binding Text}" Classes.mono="{Binding IsMono}" Watermark="{Binding Hint}" AcceptsReturn="False" />
                             <Button Grid.Column="1" Classes="small" Content="Choose…" IsVisible="{Binding IsFile}" Click="OnStepFile" Tag="{Binding}" />

@@ -955,3 +955,53 @@ TEST(Superpose, RecoversRotationAndTranslation) {
   EXPECT_NEAR(caps::norm(fit2.apply(mov[5]) - ref[5]), 3.0, 1e-9);
   EXPECT_THROW(caps::superpose(ref, std::vector<caps::Vec3>(3)), std::invalid_argument);
 }
+
+// Wrap by molecule keeps every molecule whole with its centre of mass in the cell; unwrap nojump follows an atom that
+// crosses the boundary each frame; unwrap along bonds leaves no split bond
+TEST(Pipeline, WrapModesAndUnwrapMethods) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const System f = t.frame(0);
+  auto run = [&](const System& s, const std::string& json, int frame = 0, const Trajectory* tr = nullptr) {
+    return run_pipeline(s, pipeline_from_json(Json::parse(json)), frame, 0, tr);
+  };
+  auto st = run(f, R"([{"type":"wrap","mode":"molecules"}])");
+  EXPECT_EQ(st.attribute("Wrap.bonds_across_faces"), 0.0);
+  int nm = 0;
+  const auto mol = st.system.molecules(&nm);
+  std::vector<Vec3> com(size_t(nm), Vec3{0, 0, 0});
+  std::vector<double> mass(size_t(nm), 0);
+  for (size_t i = 0; i < mol.size(); ++i) {
+    const double m = st.system.mass_of(st.system.atoms[i]);
+    com[size_t(mol[i])] = com[size_t(mol[i])] + st.system.atoms[i].pos * m, mass[size_t(mol[i])] += m;
+  }
+  for (int m = 0; m < nm; ++m) {
+    const Vec3 fr = st.system.cell.to_fractional(com[size_t(m)] * (1.0 / mass[size_t(m)]));
+    for (int k = 0; k < 3; ++k) EXPECT_TRUE(fr[k] >= -1e-9 && fr[k] < 1 + 1e-9) << m;
+  }
+  // atoms folded one by one cut bonds; unwrapping along bonds joins them again
+  st = run(f, R"([{"type":"unwrap"},{"type":"wrap"}])");
+  EXPECT_EQ(st.attribute("Unwrap.bonds_split"), 0.0);
+  EXPECT_GT(st.attribute("Unwrap.atoms_moved"), 0.0);
+  ASSERT_FALSE(st.tables.empty());
+  EXPECT_EQ(st.tables.back().name, "images");
+
+  // one argon atom stepping +4 Å a frame through a 10 Å box, written wrapped
+  const auto dir = std::filesystem::temp_directory_path() / "caps_nojump";
+  std::filesystem::create_directories(dir);
+  const auto gro = (dir / "hop.gro").string();
+  {
+    std::ofstream o(gro);
+    for (int k = 0; k < 5; ++k) {
+      const double x = std::fmod(1.0 + 4.0 * k, 10.0) / 10.0;
+      char line[128];
+      std::snprintf(line, sizeof line, "%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n", 1, "AR", "AR", 1, x, 0.5, 0.5);
+      o << "hop t= " << k << "\n    1\n" << line << "   1.00000   1.00000   1.00000\n";
+    }
+  }
+  const Trajectory hop = open_file(gro);
+  ASSERT_EQ(hop.frames(), 5u);
+  const auto nj = run(hop.frame(4), R"([{"type":"unwrap","method":"nojump"}])", 4, &hop);
+  EXPECT_NEAR(nj.system.atoms[0].pos[0], 1.0 + 16.0, 1e-6);
+  const auto plain = run(hop.frame(4), R"([{"type":"unwrap","method":"bonds"}])", 4, &hop);
+  EXPECT_NEAR(plain.system.atoms[0].pos[0], 7.0, 1e-6);
+}

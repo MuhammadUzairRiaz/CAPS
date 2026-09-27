@@ -1478,6 +1478,18 @@ internal static class SelfTest
                   && cleared && vm.PipelineJson().Contains("\"delete_selected\""),
                   $"visualize: {sel} · {particles} particles · {note} · {filtered} · cleared on leaving {cleared}");
             vm.InspectorFilter = "";
+            // wrap by molecule: the editor offers the modes with a note; no bond is left across a face
+            vm.OpenVisualize();
+            vm.ClearPipeline();
+            vm.AddStep("wrap");
+            var modeField = vm.StepFields.FirstOrDefault(f => f.Key == "mode");
+            if (modeField != null) modeField.Text = "molecules";
+            var across = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Wrap.bonds_across_faces")?.Value;
+            var moved = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Wrap.molecules_moved")?.Value;
+            Check(modeField != null && vm.StepFields.Any(f => f.IsNote) && across == "0" && moved != null,
+                  $"wrap molecules: {across} bonds across faces · {moved} molecules moved · {vm.PipelineRows.LastOrDefault()?.Summary}");
+            vm.ClearPipeline();
+            vm.SetModule(8);
         }
 
         // Export › Data (ExportData): every format previews and writes; the .gro reads back
