@@ -3943,6 +3943,53 @@ extern "C" caps_doc* caps_nano_embed(const char* options_json, const char* spec_
   }
 }
 
+// A polymer matrix grown around the document's structure (a filler built and functionalised in the Studio): the
+// structure held at the centre, the directions it spans across its cell kept periodic.
+extern "C" caps_doc* caps_embed_document(caps_doc* filler, const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress,
+                                         void* user, char* report, int32_t cap) {
+  try {
+    if (!filler) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::System f = filler->traj.frame(filler->current);
+    std::array<bool, 3> keep{false, false, false};
+    if (f.cell.valid()) {
+      caps::Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
+      for (const auto& a : f.atoms) for (int k = 0; k < 3; ++k) lo[size_t(k)] = std::min(lo[size_t(k)], a.pos[size_t(k)]), hi[size_t(k)] = std::max(hi[size_t(k)], a.pos[size_t(k)]);
+      const double L[3] = {caps::norm(f.cell.a), caps::norm(f.cell.b), caps::norm(f.cell.c)};
+      for (int k = 0; k < 3; ++k) keep[size_t(k)] = f.cell.periodic[size_t(k)] && hi[size_t(k)] - lo[size_t(k)] > 0.8 * L[k];
+    }
+    caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    caps::FillerMatrixOptions fo;
+    const caps::Json m = j.has("matrix") ? j["matrix"] : caps::Json::object();
+    fo.chains = int(m.num("chains", 10));
+    fo.density = m.num("density", 0.9);
+    fo.keep_axis = keep;
+    if (o) {
+      if (o->dp > 0) c.dp = o->dp;
+      c.tacticity = o->tacticity == 1 ? caps::Tacticity::Isotactic : o->tacticity == 2 ? caps::Tacticity::Syndiotactic : caps::Tacticity::Atactic;
+      fo.grow.seed = o->seed;
+      fo.grow.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
+      fo.grow.curve = o->curve != 0;
+    }
+    if (progress) fo.grow.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::FillerReport fr;
+    const caps::System s = caps::embed_filler(f, c, fo, &fr);
+    std::string notes;
+    for (const auto& n : fr.notes) notes += n + "\n";
+    report_out(notes, report, cap);
+    caps_doc* d = doc_of(s);
+    d->prov = filler->prov;   // the filler's history (built, functionalised) comes along
+    caps::KeyValues pr = json_params(options_json);
+    for (auto& kv : json_params(spec_json)) pr.push_back({"chain " + kv.first, kv.second});
+    prov_step(d, "nano.embed", "the structure in a grown polymer matrix", std::move(pr), seeded(o ? o->seed : 0), {"matsumoto1998"});
+    d->held_mol = 1;
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
 extern "C" caps_doc* caps_grow_blend(const char* options_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap) {
   try {
     const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
