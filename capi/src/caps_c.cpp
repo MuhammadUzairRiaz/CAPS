@@ -653,6 +653,31 @@ void field_run(caps_doc* d) {
         // a bond without an increment (pcff.frc has none for an alkoxysilane's o-sio): not the force field's charges
         for (const auto& m : F.rep.missing)
           if (m.rfind("bond increment", 0) == 0) throw caps::FFError(def.name + " has no charge for type pair " + m.substr(15) + " (no bond increment)");
+        // fixed per-type charges that miss the formal charge (a group OPLS-AA's charges do not close): the companion
+        // force field's bond-increment charges when it names one (OPLS-AA 2024 → OPLS 2005), said in the report
+        if (!def.charge_increments_from.empty()) {
+          double net = 0;
+          for (double q : F.ff->charge) net += q;
+          int formal = 0;
+          for (int c : caps::perceive(s).charge) formal += c;
+          if (std::fabs(net - formal) > 1e-3) {
+            try {
+              std::string note;
+              caps::System sq = s;
+              const auto q = caps::companion_charges(s, def, F.ff_path, &note);
+              for (size_t i = 0; i < n; ++i) sq.atoms[i].charge = q[i];
+              sq.has_charges = true;
+              caps::ParamReport rep2;
+              auto ff2 = std::make_shared<caps::ForceField>(caps::parameterize(sq, def, F.types, "keep", &rep2, true));
+              char b[200];
+              std::snprintf(b, sizeof b, "%s's own charges add up to %+.3f e here, not %+d e: ", def.name.c_str(), net, formal);
+              rep2.notes.push_back(b + note + " (charges: automatic)");
+              F.ff = std::move(ff2);
+              F.rep = std::move(rep2);
+              F.charges = "increments";
+            } catch (const caps::FFError&) {}   // the companion cannot type this structure: the imbalance is reported below
+          }
+        }
       } catch (const caps::FFError& e) {
         if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
         F.rep = caps::ParamReport{};
