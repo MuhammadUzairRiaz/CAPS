@@ -57,6 +57,22 @@ const std::map<std::string, std::string>& builtins() {
        "form 1 4\n"
        "delete 3 5\n"
        "sites 4   # the donor's S–H ends\n"},
+      {"polysulfide_allylic",
+       "reaction polysulfide_allylic   # a silane's polysulfide (TESPT, TESPD) couples to a diene rubber: an S–S bond opens, one\n"
+       "                               # sulfur bonds to an allylic carbon, that carbon's hydrogen moves to the other (S–H)\n"
+       "atom 1 C degree=4 H>=1 not_aromatic   # the allylic carbon\n"
+       "atom 2 C degree=3 not_aromatic bonded 1   # its double-bond neighbour\n"
+       "atom 3 H bonded 1\n"
+       "atom 4 S degree=2\n"
+       "atom 5 S degree=2 bonded 4\n"
+       "initiators 1 4\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 0\n"
+       "form 1 4\n"
+       "break 4 5\n"
+       "move 3 5\n"
+       "sites 4 5   # one S–S bond\n"},
       {"peroxide_allylic",
        "reaction peroxide_allylic   # peroxide cure of a diene rubber: C–C crosslink between allylic carbons, H2 released\n"
        "atom 1 C degree=4 H>=1 not_aromatic\n"

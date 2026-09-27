@@ -255,3 +255,48 @@ TEST(React, DuringMdChecksAtIntervals) {
   o.md_ps = 0;
   EXPECT_THROW(react(s, o), ReactError);
 }
+
+// Silane coupling to rubber: the tetrasulfide of diethyl tetrasulfide (TESPT's polysulfide without its silyl groups)
+// opens S–S bonds onto allylic carbons of natural rubber; every sulfur keeps two neighbours, each moved H is an S–H
+TEST(React, PolysulfideCouplesToNaturalRubber) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "[*]C/C=C(C)\\C[*]"}};
+  spec.dp = 10;
+  GrowOptions g;
+  g.chains = 4;
+  g.density = 0.6;
+  System s = grow_chains(spec, g);
+  BuildResult donor = build_molecule("CCSSSSCC");
+  s = insert_molecules(s, donor.system, 6, PackOptions{});
+  auto count_ss = [](const System& t) {
+    int n = 0;
+    for (const auto& b : t.bonds) n += t.atoms[b.i].element == 16 && t.atoms[b.j].element == 16;
+    return n;
+  };
+  const int ss0 = count_ss(s);
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("polysulfide_allylic"));
+  r.relax = false;
+  r.max_cycles = 20;
+  ReactReport rep;
+  react(s, r, &rep);
+  ASSERT_GT(rep.reactions, 2);
+  EXPECT_EQ(count_ss(s), ss0 - rep.reactions);   // one S–S opened per reaction
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  int sh = 0, sc_rubber = 0;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+    if (s.atoms[i].element != 16) continue;
+    EXPECT_EQ(nb[i].size(), 2u);
+    for (uint32_t j : nb[i]) sh += s.atoms[j].element == 1;
+    // a rubber carbon: allylic, bonded to a carbon with three neighbours (the C=C), unlike the donors' ethyl carbons
+    for (uint32_t j : nb[i]) {
+      if (s.atoms[j].element != 6) continue;
+      bool allylic = false;
+      for (uint32_t k : nb[j]) allylic = allylic || (s.atoms[k].element == 6 && nb[k].size() == 3);
+      sc_rubber += allylic;
+    }
+  }
+  EXPECT_EQ(sh, rep.reactions);
+  EXPECT_EQ(sc_rubber, rep.reactions);
+}
