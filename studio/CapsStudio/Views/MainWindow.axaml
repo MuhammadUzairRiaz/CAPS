@@ -15,6 +15,21 @@
     <Style Selector="Border#Rail.compact Button.rail Panel"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact Button TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact ToggleButton TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+    <!-- the project tree: chevrons, rows, job status dots -->
+    <Style Selector="ToggleButton.treechev"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" />
+      <Setter Property="Width" Value="18" /><Setter Property="Height" Value="22" /><Setter Property="VerticalAlignment" Value="Top" /><Setter Property="Margin" Value="0,2,0,0" /><Setter Property="Foreground" Value="{DynamicResource DimB}" />
+      <Setter Property="RenderTransform" Value="rotate(-90deg)" /><Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" /></Transitions></Setter></Style>
+    <Style Selector="ToggleButton.treechev:checked"><Setter Property="RenderTransform" Value="rotate(0deg)" /></Style>
+    <Style Selector="ToggleButton.treechev:checked /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="ToggleButton.treechev:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="ToggleButton.treechev:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+    <Style Selector="Button.treerow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="6,3" />
+      <Setter Property="CornerRadius" Value="5" /><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="MinHeight" Value="22" /></Style>
+    <Style Selector="Button.treerow:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+    <Style Selector="Ellipse.jobdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.jobdot.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
+    <Style Selector="Ellipse.jobdot.done"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+    <Style Selector="Ellipse.jobdot.failed"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
     <Style Selector="Button.histrow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="Padding" Value="8,6" /><Setter Property="CornerRadius" Value="7" /><Setter Property="Margin" Value="0,0,0,2" /></Style>
     <Style Selector="Button.histrow.current /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
@@ -405,10 +420,18 @@
 
       <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="0,*,Auto,Auto">
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
-        <!-- Project (Main board): documents and what is in them; fragments for the builder -->
-        <Border x:Name="ProjectPanel" Grid.Column="0" Width="260" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding ProjectPanelShown}">
-          <DockPanel>
-            <Border DockPanel.Dock="Top" Classes="phead">
+        <!-- Project explorer (structures, and under each a folder per job with what it produced) over the Properties
+             explorer (the picked atom, else the structure, in numbers) and the fragments: Materials Studio's arrangement -->
+        <Border x:Name="ProjectPanel" Grid.Column="0" Width="272" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding ProjectPanelShown}">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="5*" MinHeight="110" />
+              <RowDefinition Height="5" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="6*" MinHeight="140" />
+            </Grid.RowDefinitions>
+            <Border Classes="phead">
               <DockPanel>
                 <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Command="{Binding $parent[local:MainWindow].OpenCommand}" ToolTip.Tip="Add a file">
                   <local:Icon Kind="plus" Size="16" />
@@ -416,62 +439,73 @@
                 <TextBlock Text="Project" Classes="h2" VerticalAlignment="Center" />
               </DockPanel>
             </Border>
-            <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-              <StackPanel>
-                <Border Classes="phead">
-                  <DockPanel>
-                    <Button DockPanel.Dock="Right" Classes="small ghost" Content="Library…" Click="OnFragmentLibrary" ToolTip.Tip="The fragment library: rings, groups, monomers, rubber additives …" />
-                    <TextBlock Text="Fragments" Classes="h2" VerticalAlignment="Center" />
-                  </DockPanel>
-                </Border>
-                <StackPanel Margin="10" Spacing="10">
-                  <TextBox Text="{Binding FragmentQuery}" Watermark="Search fragments" FontSize="12" KeyUp="OnFragmentSearchKey" />
-                  <ItemsControl ItemsSource="{Binding QuickFragments}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:FragmentItem">
-                        <Button Margin="3" Height="62" MinHeight="62" Padding="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnQuickFragment" Tag="{Binding}"
-                                ToolTip.Tip="{Binding Tip}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).HasDocument}">
-                          <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <local:Icon Kind="{Binding Icon}" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                            <TextBlock Text="{Binding Short}" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                          </StackPanel>
-                        </Button>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </StackPanel>
-            </Border>
-            <ScrollViewer>
-              <StackPanel Margin="6,8" Spacing="1">
-                <Border Height="26" Padding="10,0" CornerRadius="5">
+            <ScrollViewer Grid.Row="1">
+              <StackPanel Margin="6,6" Spacing="1">
+                <Border Height="24" Padding="8,0" CornerRadius="5">
                   <StackPanel Orientation="Horizontal" Spacing="7">
-                    <local:Icon Kind="chev" Size="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
                     <local:Icon Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                    <TextBlock Text="Structures" Foreground="{DynamicResource MutedB}" FontSize="12.5" VerticalAlignment="Center" />
+                    <TextBlock Text="Structures" Foreground="{DynamicResource MutedB}" FontSize="12" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding ProjectCountText}" Foreground="{DynamicResource DimB}" FontSize="11" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
                   </StackPanel>
                 </Border>
-                <!-- every structure of the project: pick one to work on it in any module -->
                 <ItemsControl ItemsSource="{Binding ProjectItems}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProjectItem">
-                      <Button Classes="projrow" Classes.on="{Binding Active}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="18,5,8,5"
-                              Background="Transparent" BorderThickness="0" CornerRadius="5" Click="OnProjectTab" Tag="{Binding}" ToolTip.Tip="Work on this structure">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                          <Border Width="3" CornerRadius="2" Background="{DynamicResource AccB}" IsVisible="{Binding Active}" Margin="-12,0,0,0" />
-                          <StackPanel Grid.Column="1" Spacing="1">
-                            <StackPanel Orientation="Horizontal" Spacing="7">
-                              <local:Icon Kind="{Binding IconKind}" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-                              <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="190" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" Margin="21,0,0,0" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding ForceField}" FontSize="11" Foreground="{DynamicResource SelB}" Margin="21,0,0,0" IsVisible="{Binding HasForceField}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding History}" FontSize="11" Foreground="{DynamicResource OkB}" Margin="21,0,0,0" IsVisible="{Binding HasHistory}" />
-                          </StackPanel>
+                      <StackPanel>
+                        <Grid ColumnDefinitions="18,*">
+                          <ToggleButton Classes="treechev" IsChecked="{Binding Expanded}" IsVisible="{Binding HasJobs}" ToolTip.Tip="Show or hide its job folders">
+                            <local:Icon Kind="chev" Size="10" />
+                          </ToggleButton>
+                          <Button Grid.Column="1" Classes="projrow" Classes.on="{Binding Active}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,4,8,4"
+                                  Background="Transparent" BorderThickness="0" CornerRadius="5" Click="OnProjectTab" Tag="{Binding}" ToolTip.Tip="Work on this structure">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                              <Border Width="3" CornerRadius="2" Background="{DynamicResource AccB}" IsVisible="{Binding Active}" Margin="-8,0,0,0" />
+                              <StackPanel Grid.Column="1" Spacing="1">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                  <local:Icon Kind="{Binding IconKind}" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                                  <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="180" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" Margin="21,0,0,0" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding ForceField}" FontSize="11" Foreground="{DynamicResource SelB}" Margin="21,0,0,0" IsVisible="{Binding HasForceField}" TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                            </Grid>
+                          </Button>
                         </Grid>
-                      </Button>
+                        <!-- its job folders, newest first; each holds what the job produced -->
+                        <ItemsControl ItemsSource="{Binding Jobs}" IsVisible="{Binding Expanded}" Margin="18,0,0,2">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:Job">
+                              <StackPanel>
+                                <Grid ColumnDefinitions="18,*">
+                                  <ToggleButton Classes="treechev" IsChecked="{Binding Expanded}" ToolTip.Tip="Show or hide what it produced">
+                                    <local:Icon Kind="chev" Size="10" />
+                                  </ToggleButton>
+                                  <Button Grid.Column="1" Classes="treerow" Click="OnJobFolder" Tag="{Binding}" ToolTip.Tip="{Binding Subtitle}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+                                      <local:Icon Kind="folder" Size="13" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                                      <TextBlock Grid.Column="1" Text="{Binding FolderLabel}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                      <Ellipse Grid.Column="2" Width="7" Height="7" Classes="jobdot" Classes.running="{Binding IsRunning}" Classes.failed="{Binding IsFailed}"
+                                               Classes.done="{Binding IsDone}" Classes.quiet="{Binding IsQuiet}" VerticalAlignment="Center" ToolTip.Tip="{Binding StatusText}" />
+                                    </Grid>
+                                  </Button>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding Outputs}" IsVisible="{Binding Expanded}" Margin="24,0,0,2">
+                                  <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:JobOutput">
+                                      <Button Classes="treerow" Click="OnJobOutput" Tag="{Binding}" ToolTip.Tip="Open">
+                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                          <local:Icon Kind="{Binding Icon}" Size="12" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                                          <TextBlock Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="170" />
+                                        </StackPanel>
+                                      </Button>
+                                    </DataTemplate>
+                                  </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -496,7 +530,71 @@
                 </ItemsControl>
               </StackPanel>
             </ScrollViewer>
-          </DockPanel>
+            <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="{DynamicResource LineB}" Height="1" Margin="0,2" />
+            <!-- Properties | Fragments -->
+            <Border Grid.Row="3" Padding="8,6" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <Border Classes="seg">
+                <UniformGrid Columns="2">
+                  <RadioButton Classes="seg" GroupName="lefttab" Content="Properties" IsChecked="{Binding LeftTab, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                  <RadioButton Classes="seg" GroupName="lefttab" Content="Fragments" IsChecked="{Binding LeftTab, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                </UniformGrid>
+              </Border>
+            </Border>
+            <Grid Grid.Row="4">
+              <DockPanel IsVisible="{Binding ShowPropertiesTab}">
+                <Border DockPanel.Dock="Top" Padding="10,8,10,4">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding PropertyTitle}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBox Text="{Binding PropertyFilter}" Watermark="Filter properties" FontSize="12" Height="28" MinHeight="28" Padding="8,4" />
+                  </StackPanel>
+                </Border>
+                <TextBlock DockPanel.Dock="Top" Text="Open or build a structure to see its properties; pick an atom for the atom's." Classes="dim" TextWrapping="Wrap" Margin="12,6"
+                           IsVisible="{Binding !HasProperties}" />
+                <ScrollViewer>
+                  <ItemsControl ItemsSource="{Binding PropertyRows}" Margin="4,0,4,8">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:PropRow">
+                        <Panel>
+                          <TextBlock Text="{Binding Name}" IsVisible="{Binding IsHeader}" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="6,8,6,3" />
+                          <Grid IsVisible="{Binding IsValue}" ColumnDefinitions="104,*" Margin="6,1" MinHeight="20">
+                            <TextBlock Text="{Binding Name}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}" />
+                            <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11.5" Classes="mono" TextWrapping="Wrap" VerticalAlignment="Center" />
+                          </Grid>
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </DockPanel>
+              <DockPanel IsVisible="{Binding ShowFragmentsTab}">
+                <Border DockPanel.Dock="Top" Padding="10,6,10,0">
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="small ghost" Content="Library…" Click="OnFragmentLibrary" ToolTip.Tip="The fragment library: rings, groups, monomers, rubber additives …" />
+                    <TextBlock Text="Attach to the picked atom, or place" Classes="dim" VerticalAlignment="Center" />
+                  </DockPanel>
+                </Border>
+                <ScrollViewer>
+                <StackPanel Margin="10" Spacing="10">
+                  <TextBox Text="{Binding FragmentQuery}" Watermark="Search fragments" FontSize="12" KeyUp="OnFragmentSearchKey" />
+                  <ItemsControl ItemsSource="{Binding QuickFragments}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:FragmentItem">
+                        <Button Margin="3" Height="62" MinHeight="62" Padding="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnQuickFragment" Tag="{Binding}"
+                                ToolTip.Tip="{Binding Tip}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).HasDocument}">
+                          <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <local:Icon Kind="{Binding Icon}" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding Short}" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                </ScrollViewer>
+              </DockPanel>
+            </Grid>
+          </Grid>
         </Border>
         <!-- Visualize pipeline (design/boards/VisPipeline): steps run bottom to top, data source, visual elements -->
         <Border Grid.Column="0" Width="300" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsVisualize}">

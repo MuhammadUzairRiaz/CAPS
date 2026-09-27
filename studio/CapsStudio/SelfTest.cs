@@ -1971,7 +1971,26 @@ internal static class SelfTest
             var optional = vm.PipelineSteps.First(p => p.Name == "Minimise").Detail == "optional";
             Check(packCell.Molecules == 50 && packCell.Atoms == 1300 + 120 && vm.PackDone && export && optional,
                   $"pack around the current structure: {packCell.Molecules} molecules, {packCell.Atoms} atoms · next: export (minimise {(optional ? "optional" : "?")}) · {vm.PackLog.Split('\n')[0]}");
+            // the job tree: the Pack job's folder sits under the cell it made, with its result, report and chart
+            var packJob = vm.ActiveItem?.Jobs.FirstOrDefault(j => j.Kind == "Pack");
+            Check(packJob != null && packJob.Outputs.Any(o => o.Label.StartsWith("Result")) && packJob.Outputs.Any(o => o.Label.StartsWith("Report")),
+                  $"job tree: {vm.ActiveItem?.Name} › {packJob?.FolderLabel} › {string.Join(" · ", packJob?.Outputs.Select(o => o.Label) ?? [])}");
             vm.PackStart = 0;
+        }
+        {
+            // the Properties explorer: the structure in numbers, then a picked atom with its bonded neighbours
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.RefreshProperties();
+            var formula = vm.PropertyRows.FirstOrDefault(r => r.Name == "Formula")?.Value ?? "";
+            var lattice = vm.PropertyRows.FirstOrDefault(r => r.Name.StartsWith("α"))?.Value ?? "";
+            vm.PropertyFilter = "density";
+            var filtered = vm.PropertyRows.Count(r => r.IsValue);
+            vm.PropertyFilter = "";
+            vm.Pick(0);
+            vm.RefreshProperties();
+            var bonded = vm.PropertyRows.FirstOrDefault(r => r.IsHeader && r.Name.StartsWith("Bonded to"))?.Name ?? "";
+            Check(formula == "C640H660" && lattice == "90.00  90.00  90.00" && filtered == 1 && bonded.Length > 0 && vm.PropertyTitle.StartsWith("Atom 1"),
+                  $"properties: {formula} · angles {lattice} · filter density → {filtered} row · {vm.PropertyTitle} · {bonded}");
         }
 
         // Close goes back to Start

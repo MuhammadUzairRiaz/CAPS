@@ -2170,6 +2170,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void RefreshSummary()
     {
+        RequestProperties();
         if (_doc == null) return;
         var s = _doc.Summary();
         Analyze.OnDocument(Title, s);
@@ -2222,6 +2223,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void RefreshSelection()
     {
+        RequestProperties();
         RefreshMolInspector();
         Raise(nameof(StatusSelection));
         Raise(nameof(HudSelection));

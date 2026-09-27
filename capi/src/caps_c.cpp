@@ -5916,6 +5916,133 @@ extern "C" int32_t caps_checkpoint(caps_doc* d, const char* json, char* out, int
   return report_out(r.dump(0), out, cap);
 }
 
+// The Properties explorer's data (as Materials Studio's): the structure (formula, composition, mass, charge, cell with
+// its angles, frames, force field) and one atom (types, charge, position, fractional position, bonded neighbours).
+extern "C" int32_t caps_structure_info(caps_doc* d, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::runtime_error("no document");
+    const caps::System& s = d->frame;
+    std::map<int, size_t> count;
+    double mass = 0, q = 0;
+    for (const auto& a : s.atoms) {
+      ++count[a.element];
+      mass += s.mass_of(a);
+      q += a.charge;
+    }
+    // Hill order: C, H, then the rest alphabetically
+    std::vector<std::pair<std::string, size_t>> parts;
+    for (const auto& [e, n] : count) parts.push_back({e > 0 ? caps::element(e).symbol : "X", n});
+    auto rank = [&](const std::string& x) { return count.count(6) ? (x == "C" ? 0 : x == "H" ? 1 : 2) : 2; };
+    std::sort(parts.begin(), parts.end(), [&](const auto& a, const auto& b) { return rank(a.first) != rank(b.first) ? rank(a.first) < rank(b.first) : a.first < b.first; });
+    std::string formula;
+    caps::Json comp = caps::Json::object();
+    for (const auto& [sym, n] : parts) {
+      formula += sym + (n > 1 ? std::to_string(n) : "");
+      comp[sym] = double(n);
+    }
+    r["formula"] = formula;
+    r["composition"] = comp;
+    r["title"] = s.title;
+    r["format"] = s.source_format;
+    r["atoms"] = double(s.atoms.size());
+    r["bonds"] = double(s.bonds.size());
+    int nmol = 0;
+    s.molecules(&nmol);
+    r["molecules"] = double(nmol);
+    r["frames"] = double(std::max<size_t>(1, d->traj.frames()));
+    r["frame"] = double(d->current);
+    r["timestep"] = double(s.timestep);
+    r["mass"] = mass;
+    r["charge"] = q;
+    r["has_charges"] = s.has_charges;
+    r["unwrapped"] = s.unwrapped;
+    r["bonds_from_file"] = s.bonds_from_file;
+    if (s.cell.valid()) {
+      const auto& c = s.cell;
+      const double la = caps::norm(c.a), lb = caps::norm(c.b), lc = caps::norm(c.c);
+      auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 180.0 / M_PI; };
+      caps::Json cell = caps::Json::object();
+      cell["a"] = la, cell["b"] = lb, cell["c"] = lc;
+      cell["alpha"] = ang(c.b, c.c), cell["beta"] = ang(c.a, c.c), cell["gamma"] = ang(c.a, c.b);
+      cell["volume"] = c.volume();
+      cell["density"] = s.density();
+      caps::Json per = caps::Json::array();
+      for (bool p : c.periodic) per.push_back(p);
+      cell["periodic"] = per;
+      r["cell"] = cell;
+    }
+    if (d->field) {
+      caps::Json f = caps::Json::object();
+      f["name"] = d->field->base.name.empty() ? std::filesystem::path(d->field->ff_path).stem().string() : d->field->base.name;
+      f["complete"] = d->field->complete;
+      f["missing"] = double(d->field->rep.missing.size());
+      std::set<std::string> ts(d->field->types.begin(), d->field->types.end());
+      f["types"] = double(ts.size());
+      r["forcefield"] = f;
+    }
+    size_t sel = 0;
+    for (char c : d->selection) sel += c != 0;
+    r["selected"] = double(sel);
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = e.what();
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_atom_properties(caps_doc* d, int32_t index, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::runtime_error("no document");
+    const caps::System& s = d->frame;
+    if (index < 0 || size_t(index) >= s.atoms.size()) throw std::runtime_error("no atom " + std::to_string(index + 1));
+    const auto& a = s.atoms[size_t(index)];
+    r["index"] = double(index);
+    r["id"] = double(a.id);
+    r["element"] = a.element > 0 ? std::string(caps::element(a.element).symbol) : std::string("X");
+    r["name"] = a.name;
+    r["type"] = double(a.type);
+    if (d->field && size_t(index) < d->field->types.size()) r["ff_type"] = d->field->types[size_t(index)];
+    r["charge"] = a.charge;
+    r["mass"] = s.mass_of(a);
+    r["molecule"] = double(a.mol);
+    if (a.resid) r["residue"] = double(a.resid);
+    if (!a.resname.empty()) r["resname"] = a.resname;
+    caps::Json xyz = caps::Json::array();
+    for (double v : a.pos) xyz.push_back(v);
+    r["xyz"] = xyz;
+    if (s.cell.valid()) {
+      const caps::Vec3 f = s.cell.to_fractional(a.pos);
+      caps::Json fr = caps::Json::array();
+      for (double v : f) fr.push_back(v);
+      r["fractional"] = fr;
+    }
+    caps::Json nb = caps::Json::array();
+    for (const auto& b : s.bonds) {
+      if (b.i != uint32_t(index) && b.j != uint32_t(index)) continue;
+      const uint32_t o = b.i == uint32_t(index) ? b.j : b.i;
+      caps::Vec3 dv = s.atoms[o].pos - a.pos;
+      if (s.cell.valid()) dv = s.cell.minimum_image(dv);
+      caps::Json e = caps::Json::object();
+      e["index"] = double(o);
+      e["element"] = s.atoms[o].element > 0 ? std::string(caps::element(s.atoms[o].element).symbol) : std::string("X");
+      e["distance"] = caps::norm(dv);
+      e["order"] = double(b.order);
+      nb.push_back(e);
+    }
+    r["neighbours"] = nb;
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = e.what();
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
 extern "C" int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {

@@ -23,6 +23,13 @@ public sealed class Job : INotifyPropertyChanged
 
     public string Id { get; init; } = "";
     public string Kind { get; init; } = "";
+    /// <summary>The structure whose job folder holds it in the project tree (the session only).</summary>
+    public ProjectItem? Item { get; set; }
+    /// <summary>What the job left: the result, the trajectory, charts, the report …</summary>
+    public ObservableCollection<JobOutput> Outputs { get; } = new();
+    private bool _expanded;
+    public bool Expanded { get => _expanded; set { _expanded = value; Raise(nameof(Expanded)); } }
+    public string FolderLabel => $"{Title} · {Started:HH:mm}";
     public int Module { get; init; }
     public string Title { get; init; } = "";
     public string Document { get; init; } = "";
@@ -222,6 +229,7 @@ public sealed partial class MainViewModel
             else if (kind == "Relax") { job.CurveA = "Energy"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Largest force"; job.AxisB = "log₁₀ |F|max"; job.AxisX = "iteration"; }
             _live[kind] = job;
             Jobs.Insert(0, job);
+            if (kind is not ("Grow" or "Pack")) AttachJob(job, _activeItem);   // the structure it runs on
             job.Add($"{title} started on {job.Document}");
             SelectedJob = job;
         }
@@ -247,6 +255,8 @@ public sealed partial class MainViewModel
             // the reader hears it once, politely (AccessibilityMap: "Growth finished, 20 chains, no close contacts")
             Announcement = $"{job.Title} {(job.Status == "done" ? "finished" : job.Status)}" + (last.Length > 0 ? ". " + last : ".");
             if (_doc != null && job.Atoms == 0) job.Provenance.Add(new JobFact("result", $"{_doc.Summary().Atoms:N0} atoms"));
+            AttachJob(job, _activeItem);   // Grow and Pack: the cell they made
+            BuildJobOutputs(job);
             SaveJobs();
         }
         Raise(nameof(HasJobs));
