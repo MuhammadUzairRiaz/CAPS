@@ -5730,6 +5730,20 @@ extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t n
 
 // Two states of the same atoms compared (design/boards/Compare): the moving one superposed on the reference (Horn 1987),
 // RMSD over all, heavy and backbone atoms, the shift of each atom and the largest ones; colour: the view shows the shift.
+extern "C" int32_t caps_provenance_note(caps_doc* d, const char* json) {
+  return guard([&] {
+    if (!d) throw std::runtime_error("no document");
+    const caps::Json o = caps::Json::parse(json && *json ? json : "{}");
+    const std::string engine = o.text("engine");
+    if (engine.empty() || engine.find('.') == std::string::npos) throw std::runtime_error("a provenance note needs an engine such as equilibrate.accepted");
+    caps::KeyValues kv;
+    if (o.has("params") && o["params"].kind() == caps::Json::Object)
+      for (const auto& [k, v] : o["params"].members()) kv.push_back({k, v.kind() == caps::Json::String ? v.str() : v.dump(0)});
+    prov_step(d, engine, o.text("summary"), kv);
+    return 0;
+  });
+}
+
 extern "C" int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {

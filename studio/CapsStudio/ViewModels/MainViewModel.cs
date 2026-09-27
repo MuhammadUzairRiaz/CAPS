@@ -51,8 +51,45 @@ public sealed partial class MainViewModel : ObservableObject
     public static readonly string[] ColourModes = ["Element", "Molecule", "Type", "Distance to molecule centre"];
     public static readonly string[] Backgrounds = ["Dark", "White", "Transparent"];
     public static readonly string[] ViewBackgrounds = ["Dark", "White (paper)"];
-    public static readonly string[] RdfPairs = ["C – C", "C – H", "H – H", "all – all"];
-    private static readonly (int A, int B)[] RdfElements = [(6, 6), (6, 1), (1, 1), (0, 0)];
+    // g(r) pairs from the elements present: the commonest heavy elements with themselves and each other, with hydrogen,
+    // H – H, all – all (a water box offers O – O, O – H …, a polystyrene melt C – C, C – H …)
+    public System.Collections.ObjectModel.ObservableCollection<string> RdfPairs { get; } = new(["C – C", "C – H", "H – H", "all – all"]);
+    private (int A, int B)[] _rdfElements = [(6, 6), (6, 1), (1, 1), (0, 0)];
+    private (CapsDocument? Doc, long Atoms) _rdfPairsFor;
+
+    private void EnsureRdfPairs()
+    {
+        if (_doc == null) return;
+        var atoms = _doc.Summary().Atoms;
+        if (_rdfPairsFor.Doc == _doc && _rdfPairsFor.Atoms == atoms) return;
+        _rdfPairsFor = (_doc, atoms);
+        var counts = new Dictionary<int, (int N, string Sym)>();
+        var stride = (int)Math.Max(1, atoms / 20000);   // a sample is enough to rank the elements
+        for (var i = 0; i < atoms; i += stride)
+        {
+            var a = _doc.Atom(i);
+            if (a.Element <= 0) continue;
+            counts[a.Element] = (counts.GetValueOrDefault(a.Element).N + 1, a.ElementSymbol);
+        }
+        var heavy = counts.Where(kv => kv.Key != 1).OrderByDescending(kv => kv.Value.N).Take(3).ToList();
+        var hasH = counts.ContainsKey(1);
+        var pairs = new List<(int, int, string)>();
+        for (var x = 0; x < heavy.Count; x++)
+            for (var y = x; y < heavy.Count; y++)
+                pairs.Add((heavy[x].Key, heavy[y].Key, $"{heavy[x].Value.Sym} – {heavy[y].Value.Sym}"));
+        if (hasH)
+        {
+            foreach (var h in heavy.Take(2)) pairs.Add((h.Key, 1, $"{h.Value.Sym} – H"));
+            pairs.Add((1, 1, "H – H"));
+        }
+        pairs.Add((0, 0, "all – all"));
+        var keep = _rdfPair < RdfPairs.Count ? RdfPairs[_rdfPair] : "";
+        _rdfElements = pairs.Select(p => (p.Item1, p.Item2)).ToArray();
+        RdfPairs.Clear();
+        foreach (var p in pairs) RdfPairs.Add(p.Item3);
+        _rdfPair = Math.Max(0, RdfPairs.IndexOf(keep));
+        Raise(nameof(RdfPairIndex));
+    }
     public static readonly string[] SizePresets = ["1920 × 1080 (slide)", "2008 × 1130 (85 mm @ 600 dpi)", "4016 × 2259 (170 mm @ 600 dpi)", "Viewport size"];
 
     private CapsDocument? _doc;
@@ -1375,7 +1412,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string EqText { get => _eqText; set { if (Set(ref _eqText, value)) Raise(nameof(EqTotal)); } }
     public string EqLog { get => _eqLog; private set => Set(ref _eqLog, value); }
     public bool EqUntilConverged { get => _eqUntil; set => Set(ref _eqUntil, value); }
-    public bool EqRunning { get => _eqRunning; private set { if (Set(ref _eqRunning, value)) RaiseBusy(); } }
+    public bool EqRunning { get => _eqRunning; private set { if (Set(ref _eqRunning, value)) { RaiseBusy(); Raise(nameof(EqCanDecide)); } } }
     public bool CanEquilibrate => _doc != null && Idle;
 
     private decimal? D(ref double f, decimal? v, double lo, double hi, [System.Runtime.CompilerServices.CallerMemberName] string? name = null)
@@ -1395,8 +1432,8 @@ public sealed partial class MainViewModel : ObservableObject
     public decimal? EqRampD { get => (decimal)_eqRamp; set => D(ref _eqRamp, value, 0.1, 1e6); }
     public decimal? EqHoldD { get => (decimal)_eqHold; set => D(ref _eqHold, value, 0.1, 1e6); }
     public decimal? EqCyclesD { get => _eqCycles; set { _eqCycles = Math.Clamp((int)(value ?? 3), 1, 100); Raise(); RegenerateProtocol(); } }
-    public decimal? EqBlockD { get => (decimal)_eqBlock; set { _eqBlock = Math.Clamp((double)(value ?? 20m), 0.1, 1e6); Raise(); } }
-    public decimal? EqMaxBlocksD { get => _eqMaxBlocks; set { _eqMaxBlocks = Math.Clamp((int)(value ?? 20), 1, 1000); Raise(); } }
+    public decimal? EqBlockD { get => (decimal)_eqBlock; set { _eqBlock = Math.Clamp((double)(value ?? 20m), 0.1, 1e6); Raise(); Raise(nameof(EqExtendLabel)); } }
+    public decimal? EqMaxBlocksD { get => _eqMaxBlocks; set { _eqMaxBlocks = Math.Clamp((int)(value ?? 20), 1, 1000); Raise(); Raise(nameof(EqExtendLabel)); } }
 
     /// <summary>Total simulated time of the protocol text (stage durations in ps, ns or fs).</summary>
     public string EqTotal
@@ -1437,7 +1474,65 @@ public sealed partial class MainViewModel : ObservableObject
     /// so the density is flat there by construction.</summary>
     public (double From, double To, string Label, bool Shade)[] EqStageBands { get; private set; } = [];
 
-    public async Task RunEquilibrate()
+    public async Task RunEquilibrate() => await RunEquilibrate(null, null);
+
+    /// <summary>Extend (design/boards/Convergence): production NPT blocks again, from where the run ended, at the
+    /// protocol's final conditions, until the checks pass or the blocks run out.</summary>
+    public async Task ExtendEquilibrate()
+    {
+        var (t, p) = FinalNpt(_eqText);
+        var text = string.Format(CultureInfo.InvariantCulture, "npt {0:0.###} ps T {1:0.##} P {2:0.###} atm   # extend: production blocks from the end of the last run", _eqBlock, t, p);
+        _eqAccepted = false;
+        await RunEquilibrate(text, true);
+    }
+
+    /// <summary>The temperature and pressure of a protocol's last NPT stage (the Dynamics temperature and 1 atm without one).</summary>
+    internal (double T, double P) FinalNpt(string text)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        double t = _mdTemp, p = 1;
+        foreach (var raw in text.Split('\n'))
+        {
+            var w = raw.Split('#')[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (w.Length == 0 || !w[0].Equals("npt", StringComparison.OrdinalIgnoreCase)) continue;
+            for (var k = 1; k + 1 < w.Length; k++)
+            {
+                if (w[k] == "T" && double.TryParse(w[k + 1], NumberStyles.Float, inv, out var tv)) t = tv;
+                if (w[k] == "P" && double.TryParse(w[k + 1], NumberStyles.Float, inv, out var pv)) p = pv;
+            }
+        }
+        return (t, p);
+    }
+
+    private bool _eqAccepted;
+    public bool EqCanDecide => EqCriteria.Count > 0 && !_eqRunning && !_eqAccepted && EqCriteria.Any(r => r.State != "pass");
+    public string EqExtendLabel => string.Format(CultureInfo.InvariantCulture, "Extend {0:0.#} ps", _eqBlock * _eqMaxBlocks);
+
+    /// <summary>Accept now: the cell is taken as equilibrated with the criteria as they stand; the decision and the
+    /// unmet criteria go into the provenance manifest.</summary>
+    public void AcceptEquilibration()
+    {
+        if (_doc == null || EqCriteria.Count == 0) return;
+        var unmet = EqCriteria.Where(r => r.State != "pass").Select(r => r.Title).ToArray();
+        var met = EqCriteria.Count - unmet.Length;
+        _doc.ProvenanceNote(new System.Text.Json.Nodes.JsonObject
+        {
+            ["engine"] = "equilibrate.accepted",
+            ["summary"] = $"accepted as equilibrated with {met} of {EqCriteria.Count} criteria met",
+            ["params"] = new System.Text.Json.Nodes.JsonObject
+            {
+                ["criteria met"] = $"{met} of {EqCriteria.Count}",
+                ["not met"] = unmet.Length > 0 ? string.Join(", ", unmet) : "none",
+                ["decided by"] = "the user (Accept now)",
+            },
+        }.ToJsonString());
+        _eqAccepted = true;
+        EqCriteriaText = $"{met} of {EqCriteria.Count} criteria met · accepted";
+        Raise(nameof(EqCanDecide));
+        Status = "Accepted as equilibrated; the decision and the unmet criteria are in the provenance";
+    }
+
+    private async Task RunEquilibrate(string? protocol, bool? until)
     {
         if (_doc == null || !Idle || BlockedByField("Equilibrate")) return;
         PrepareRunTarget("equilibrated");
@@ -1450,7 +1545,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
-            FramePs = 10, ThermoPs = 0.5, UntilConverged = _eqUntil ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints,
+            FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints,
         };
         _thermo.Clear();
         ThermoChanged?.Invoke();
@@ -1461,7 +1556,8 @@ public sealed partial class MainViewModel : ObservableObject
         var rows = new List<CapsThermo>();
         var lastUi = 0L;
         var finished = false;
-        var text = _eqText;
+        var text = protocol ?? _eqText;
+        if (protocol == null) _eqAccepted = false;
         // each stage's ensemble from the protocol text (its first word: nvt, npt, …); production blocks are NPT
         var ens = text.Split('\n').Select(l => l.Split('#')[0].Trim()).Where(l => l.Length > 0)
                       .Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].ToUpperInvariant()).ToArray();
@@ -1540,12 +1636,17 @@ public sealed partial class MainViewModel : ObservableObject
     public string EqCriteriaText { get => _eqCriteriaText; private set => Set(ref _eqCriteriaText, value); }
     /// <summary>Mean Rg per production block (Å).</summary>
     public (double X, double Y)[] EqRgBlocks { get; private set; } = [];
+    /// <summary>Block means of the density and the potential energy at each production block's middle (ps), over the time series.</summary>
+    public (double X, double Y)[] EqDensityBlocks { get; private set; } = [];
+    public (double X, double Y)[] EqEnergyBlocks { get; private set; } = [];
     public event Action? EqChecksChanged;
 
     private void LoadEqChecks(string json)
     {
         EqCriteria.Clear();
         EqRgBlocks = [];
+        EqDensityBlocks = [];
+        EqEnergyBlocks = [];
         var inv = CultureInfo.InvariantCulture;
         if (json.Length > 0)
         {
@@ -1564,11 +1665,23 @@ public sealed partial class MainViewModel : ObservableObject
                 EqCriteria.Add(new CriterionRow(char.ToUpperInvariant(q[0]) + q[1..], rule, now, ok ? "pass" : "not yet"));
                 if (q.Contains("Rg", StringComparison.Ordinal))
                     EqRgBlocks = c.GetProperty("blocks").EnumerateArray().Select((v, k) => ((double)(k + 1), v.GetDouble())).ToArray();
+                // the blocks are the last ones of the run: their middles, counted back from its end
+                var means = c.GetProperty("blocks").EnumerateArray().Select(v => v.GetDouble()).ToArray();
+                var bps = root.TryGetProperty("block_ps", out var bp) ? bp.GetDouble() : _eqBlock;
+                var tEnd = _thermo.Count > 0 ? _thermo[^1].TimePs : means.Length * bps;
+                var mids = means.Select((v, k) => (tEnd - (means.Length - k - 0.5) * bps, v)).ToArray();
+                if (q.StartsWith("density", StringComparison.Ordinal)) EqDensityBlocks = mids;
+                else if (energy)   // per atom in the checks, the whole cell on the plot
+                {
+                    var natoms = _doc?.Summary().Atoms ?? 0;
+                    EqEnergyBlocks = natoms > 0 ? mids.Select(m => (m.Item1, m.v * natoms)).ToArray() : [];
+                }
             }
             var met = EqCriteria.Count(r => r.State == "pass");
             EqCriteriaText = $"{met} of {EqCriteria.Count} criteria met";
         }
         else EqCriteriaText = "";
+        Raise(nameof(EqCanDecide));
         EqChecksChanged?.Invoke();
     }
 
@@ -2138,10 +2251,11 @@ public sealed partial class MainViewModel : ObservableObject
         if (s.CellValid == 0) { RdfCurve = []; RdfNote = "g(r) needs a periodic cell"; return; }
         var half = Math.Min(s.CellA, Math.Min(s.CellB, s.CellC)) / 2;
         var rmax = Math.Min(12.0, Math.Floor(half));
-        var (ea, eb) = RdfElements[_rdfPair];
+        EnsureRdfPairs();
+        var (ea, eb) = _rdfElements[Math.Clamp(_rdfPair, 0, _rdfElements.Length - 1)];
         var sampled = s.Atoms > 20000 ? " · 20 000 sampled centres" : "";
         RdfNote = string.Format(CultureInfo.InvariantCulture, "{0} · {1} · r ≤ {2:F0} Å · 0.2 Å bins · frame {3}{4}",
-            RdfPairs[_rdfPair], _rdfInter ? "between molecules" : "all pairs", rmax, _frame, sampled);
+            RdfPairs[Math.Clamp(_rdfPair, 0, RdfPairs.Count - 1)], _rdfInter ? "between molecules" : "all pairs", rmax, _frame, sampled);
         if (s.Atoms < 200_000) { RdfCurve = _doc.Rdf(ea, eb, rmax, 0.2, _rdfInter); return; }
         // large cells: off the UI thread
         var doc = _doc;

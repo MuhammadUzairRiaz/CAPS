@@ -13,6 +13,12 @@
         <Border Classes="chip" Height="26" IsVisible="{Binding EqCriteriaText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
           <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="{Binding EqCriteriaText}" Foreground="{DynamicResource TextB}" /></StackPanel>
         </Border>
+        <Button Click="OnExtend" IsVisible="{Binding EqCanDecide}" IsEnabled="{Binding Idle}"
+                ToolTip.Tip="Production NPT blocks again from where the run ended, at the protocol's final conditions, until the criteria pass or the blocks run out">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding EqExtendLabel}" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnAccept" IsVisible="{Binding EqCanDecide}" IsEnabled="{Binding Idle}"
+                ToolTip.Tip="Take the cell as equilibrated now: the decision and the criteria not met go into the provenance manifest" Content="Accept now" />
         <Button Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save trajectory…" VerticalAlignment="Center" /></StackPanel>
         </Button>

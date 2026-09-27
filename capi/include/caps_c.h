@@ -414,6 +414,9 @@ typedef int32_t (*caps_series_progress_fn)(int32_t done, int32_t total, void* us
    same_generator, steps_a, steps_b, differing_steps, rows [{step, engine, key, a, b}], notes[]}; caps_provenance_bibtex
    the BibTeX of every method cited (-1 on error). */
 int32_t caps_provenance(caps_doc* d, char* json, int32_t cap);
+/* A decision taken on the structure recorded as a provenance step (ABI 29): JSON {engine: "equilibrate.accepted" …,
+   summary, params: {key: value …}}. 0, or -1 with caps_last_error. */
+int32_t caps_provenance_note(caps_doc* d, const char* json);
 int32_t caps_provenance_file(const char* path, char* json, int32_t cap);
 int32_t caps_provenance_compare(const char* a_json, const char* b_json, char* json, int32_t cap);
 int32_t caps_provenance_bibtex(const char* manifest_json, char* text, int32_t cap);
