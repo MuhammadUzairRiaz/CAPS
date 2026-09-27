@@ -24,7 +24,12 @@ public partial class EquilibratePage : PageBase
                 rho.SetData(vm.Thermo.Select(r => (r.TimePs, r.Density)).ToArray());
                 e.SetData(vm.Thermo.Select(r => (r.TimePs, r.Potential)).ToArray());
             };
-            vm.EqChecksChanged += () => rg.SetData(vm.EqRgBlocks);
+            vm.EqChecksChanged += () =>
+            {
+                rg.SetData(vm.EqRgBlocks);
+                rho.SetThird(vm.EqDensityBlocks);   // block means over the time series
+                e.SetThird(vm.EqEnergyBlocks);
+            };
             void Draw() { if (vm.RisCurve.Length > 0) chain.SetCompare(vm.ChainCurve, vm.RisCurve); else chain.SetData(vm.ChainCurve); }
             vm.PropertyChanged += (_, a) => { if (a.PropertyName == nameof(vm.ChainCurve)) Draw(); };
             Draw();
@@ -33,5 +38,7 @@ public partial class EquilibratePage : PageBase
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunEquilibrate();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelEquilibrate();
+    private async void OnExtend(object? s, RoutedEventArgs e) => await Vm.ExtendEquilibrate();
+    private void OnAccept(object? s, RoutedEventArgs e) => Vm.AcceptEquilibration();
     private async void OnSaveTrajectory(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveTrajectoryAsync(); }
 }

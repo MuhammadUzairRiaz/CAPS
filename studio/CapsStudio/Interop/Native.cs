@@ -421,6 +421,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_edit")] public static extern int Edit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_undo")] public static extern int Undo(IntPtr doc, int redo);
     [DllImport(Lib, EntryPoint = "caps_history")] public static extern int History(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_provenance_note")] public static extern int ProvenanceNote(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_compare_states")] public static extern int CompareStates(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_select")] public static extern int Select(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_selection")] public static extern int Selection(IntPtr doc, byte[]? json, int cap);
@@ -1351,6 +1352,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { using (Hold()) { Alive(); return Native.Undo(H, redo ? 1 : 0) == 0; } }
     public string History() { using (Hold()) return JsonCall((b, c) => Native.History(H, b, c)); }
+    /// <summary>A decision recorded as a provenance step ({engine, summary, params}).</summary>
+    public void ProvenanceNote(string json) { using (Hold()) { Alive(); Check(Native.ProvenanceNote(H, json)); } }
     /// <summary>Two states of the structure superposed (caps_compare_states): RMSD, per-atom shifts, the largest ones.</summary>
     public string CompareStates(string json) { using (Hold()) return JsonCall((b, c) => Native.CompareStates(H, json, b, c)); }
     /// <summary>Each atom's residue number (Grow: the repeat unit's position along its chain, from 1; 0 = none).</summary>
