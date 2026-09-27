@@ -62,6 +62,7 @@ public sealed class LinePlot : Control
 
     public void SetData((double X, double Y)[] data)
     {
+        _heat = null;
         _data = data;
         _overlay = [];
         _second = [];
@@ -87,6 +88,7 @@ public sealed class LinePlot : Control
     /// <summary>Data as points with a line through them (a fit or a smoothed curve).</summary>
     public void SetData((double X, double Y)[] points, (double X, double Y)[] line)
     {
+        _heat = null;
         _data = points;
         _overlay = line;
         Markers = true;
@@ -127,8 +129,77 @@ public sealed class LinePlot : Control
     private static IBrush Dot => Tokens.Brush("SelB");
     private static IPen RefPen => new Pen(Tokens.Brush("DimB"), 1, new DashStyle([4, 4], 0));
 
+    // ---- a map over two axes (Spatial binning over two axes): one cell per (x, y), coloured by z
+    private (double[] X, double[] Y, double[] Z)? _heat;
+    /// <summary>Draws a heat map instead of curves: cells at the distinct x and y values, coloured by z (viridis), with
+    /// a colour bar; null returns to curves.</summary>
+    public void SetHeat(double[]? x, double[]? y, double[]? z)
+    {
+        _heat = x == null || y == null || z == null ? null : (x, y, z);
+        InvalidateVisual();
+    }
+    // viridis at five stops (van der Walt & Smith, matplotlib 2015)
+    private static readonly Color[] Viridis = [Color.FromRgb(68, 1, 84), Color.FromRgb(59, 82, 139), Color.FromRgb(33, 145, 140), Color.FromRgb(94, 201, 98), Color.FromRgb(253, 231, 37)];
+    private static Color Ramp(double t)
+    {
+        t = Math.Clamp(double.IsFinite(t) ? t : 0, 0, 1) * (Viridis.Length - 1);
+        var k = Math.Min(Viridis.Length - 2, (int)t);
+        var f = t - k;
+        Color a = Viridis[k], c = Viridis[k + 1];
+        return Color.FromRgb((byte)(a.R + (c.R - a.R) * f), (byte)(a.G + (c.G - a.G) * f), (byte)(a.B + (c.B - a.B) * f));
+    }
+    /// <summary>What the colour bar is (the z column).</summary>
+    public string ZLabel { get; set; } = "";
+
+    private void RenderHeat(DrawingContext ctx, (double[] X, double[] Y, double[] Z) hm)
+    {
+        var b = Bounds;
+        const double L = 44, R = 64, T = 18, B = 24;
+        var w = b.Width - L - R;
+        var h = b.Height - T - B;
+        if (w < 20 || h < 20) return;
+        var tf = new Typeface(Tokens.Mono);
+        void Text(string s, double x, double y, bool right = false, bool centre = false)
+        {
+            var ft = new FormattedText(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, 10, Label);
+            ctx.DrawText(ft, new Point(right ? x - ft.Width : centre ? x - ft.Width / 2 : x, y - ft.Height / 2));
+        }
+        var xs = hm.X.Distinct().OrderBy(v => v).ToArray();
+        var ys = hm.Y.Distinct().OrderBy(v => v).ToArray();
+        if (xs.Length < 1 || ys.Length < 1) { Text(EmptyText, L + w / 2, T + h / 2, centre: true); return; }
+        var fin = hm.Z.Where(double.IsFinite).ToArray();
+        double zmin = fin.Length > 0 ? fin.Min() : 0, zmax = fin.Length > 0 ? fin.Max() : 1;
+        if (zmax - zmin < 1e-12) zmax = zmin + 1;
+        double dx = xs.Length > 1 ? xs[1] - xs[0] : 1, dy = ys.Length > 1 ? ys[1] - ys[0] : 1;
+        double x0 = xs[0] - dx / 2, x1 = xs[^1] + dx / 2, y0 = ys[0] - dy / 2, y1 = ys[^1] + dy / 2;
+        double PX(double v) => L + (v - x0) / (x1 - x0) * w;
+        double PY(double v) => T + h - (v - y0) / (y1 - y0) * h;
+        for (var k = 0; k < hm.Z.Length && k < hm.X.Length && k < hm.Y.Length; ++k)
+        {
+            var r = new Rect(new Point(PX(hm.X[k] - dx / 2), PY(hm.Y[k] + dy / 2)), new Point(PX(hm.X[k] + dx / 2) + 0.5, PY(hm.Y[k] - dy / 2) + 0.5));
+            ctx.FillRectangle(new SolidColorBrush(Ramp((hm.Z[k] - zmin) / (zmax - zmin))), r);
+        }
+        ctx.DrawRectangle(null, new Pen(Axis, 1), new Rect(L, T, w, h));
+        string F(double v) => Math.Abs(v) >= 100 ? v.ToString("0", CultureInfo.InvariantCulture) : v.ToString("0.###", CultureInfo.InvariantCulture);
+        Text(F(x0), L, T + h + 12);
+        Text(F(x1), L + w, T + h + 12, right: true);
+        Text(XLabel, L + w / 2, T + h + 12, centre: true);
+        Text(F(y0), L - 6, T + h, right: true);
+        Text(F(y1), L - 6, T, right: true);
+        Text(YLabel, L - 6, T + h / 2, right: true);
+        // colour bar
+        var bx = L + w + 14;
+        for (var k = 0; k < 64; ++k)
+            ctx.FillRectangle(new SolidColorBrush(Ramp(k / 63.0)), new Rect(bx, T + h - (k + 1) * h / 64, 10, h / 64 + 0.5));
+        ctx.DrawRectangle(null, new Pen(Axis, 1), new Rect(bx, T, 10, h));
+        Text(F(zmax), bx + 14, T);
+        Text(F(zmin), bx + 14, T + h);
+        if (ZLabel.Length > 0) Text(ZLabel.Split(" (")[0], bx + 10, T - 10, right: true);   // the quantity; its unit is in the table
+    }
+
     public override void Render(DrawingContext ctx)
     {
+        if (_heat is { } hm) { RenderHeat(ctx, hm); return; }
         var b = Bounds;
         const double L = 44, R = 12, T = 18, B = 24;
         var w = b.Width - L - R;

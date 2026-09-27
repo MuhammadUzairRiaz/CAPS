@@ -810,6 +810,22 @@ TEST(Structure, ExactVoronoiCells) {
   }
 }
 
+// Spatial binning over two axes: a density map whose cells average to the box density, every particle counted once
+TEST(Structure, BinningMap) {
+  const caps::Trajectory t = caps::open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const caps::System melt = t.frame(0);
+  const auto st = caps::run_pipeline(melt, caps::pipeline_from_json(caps::Json::parse(
+                                               R"([{"type":"binning","axis":0,"axis2":2,"bins":8,"bins2":5,"reduction":"density","property":"Mass"}])")), 0, 0);
+  const caps::DataTable* map = nullptr;
+  for (const auto& tb : st.tables) if (tb.name == "binning2d") map = &tb;
+  ASSERT_NE(map, nullptr);
+  ASSERT_EQ(map->rows.size(), 40u);
+  double rho = 0, count = 0;
+  for (const auto& r : map->rows) rho += r[2], count += r[3];
+  EXPECT_NEAR(rho / 40, melt.density(), 1e-9);
+  EXPECT_EQ(count, double(melt.atoms.size()));
+}
+
 TEST(Recipe, CheckedWithoutRunning) {
   const auto ok = caps::check_recipe(caps::yaml_parse(
       "recipe: 1\nbuild: {polymer: {smiles: \"*CC(*)c1ccccc1\", dp: 40, chains: 20}}\ntype: {forcefield: gaff2}\ngrow: {density: 0.5}\n"
