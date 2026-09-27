@@ -233,3 +233,17 @@ TEST(Bench, QuickTablesPassAndExport) {
   EXPECT_NE(bench_latex(ts).find("\\begin{tabular}"), std::string::npos);
   EXPECT_NE(bench_csv(ts[0]).find("Check,Atoms"), std::string::npos);
 }
+
+// Stereo the SMILES leaves open is named in the notes; written stereo is not
+TEST(Molecule, UnspecifiedStereoIsReported) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  auto has = [](const BuildResult& r, const char* what) {
+    return std::any_of(r.notes.begin(), r.notes.end(), [&](const std::string& n) { return n.find(what) != std::string::npos; });
+  };
+  EXPECT_TRUE(has(build_molecule("CC(N)O", bo), "1 stereocentre not specified"));
+  EXPECT_FALSE(has(build_molecule("C[C@H](N)O", bo), "not specified"));
+  EXPECT_TRUE(has(build_molecule("CC=CC", bo), "1 double bond without"));
+  EXPECT_FALSE(has(build_molecule("C/C=C/C", bo), "double bond without"));
+  EXPECT_FALSE(has(build_molecule("CC(C)=CC", bo), "double bond without"));   // not stereogenic
+}
