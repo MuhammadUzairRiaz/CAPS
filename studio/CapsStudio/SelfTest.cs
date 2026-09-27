@@ -1516,8 +1516,9 @@ internal static class SelfTest
             var pending = codeField?.DraftChanged == true;
             codeField?.Commit();
             var afterRun = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Heavy atoms")?.Value;
-            Check(heavy == "640" && beforeRun == "640" && pending && afterRun == "1280" && codeField?.DraftChanged == false,
-                  $"python step typed: {heavy} → {afterRun} after Run (pending {pending}) · {vm.PipelineRows.LastOrDefault()?.Summary}");
+            var console = vm.StepFields.FirstOrDefault(f => f.IsCode)?.Output ?? "";
+            Check(heavy == "640" && beforeRun == "640" && pending && afterRun == "1280" && codeField?.DraftChanged == false && console.Contains("1280 heavy atoms in 10 molecules"),
+                  $"python step typed: {heavy} → {afterRun} after Run (pending {pending}) · console '{console}' · {vm.PipelineRows.LastOrDefault()?.Summary}");
             vm.ClearPipeline();
             // chain orientation per atom, then an affine strain of 10 % along x
             vm.AddStep("orientation");

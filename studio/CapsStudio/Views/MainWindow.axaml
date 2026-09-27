@@ -2019,6 +2019,15 @@
                               <Button Classes="primary small" Content="Run step" Click="OnStepCodeRun" Tag="{Binding}" ToolTip.Tip="Runs the step on the shown frame (⌘↵)" />
                               <TextBlock Text="edited · not run yet" Classes="dim" FontSize="11.5" VerticalAlignment="Center" IsVisible="{Binding DraftChanged}" />
                             </StackPanel>
+                            <Border Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Padding="8,6"
+                                    IsVisible="{Binding HasOutput}">
+                              <StackPanel Spacing="3">
+                                <TextBlock Text="CONSOLE" Classes="dim" FontSize="10" LetterSpacing="0.6" />
+                                <ScrollViewer MaxHeight="160" HorizontalScrollBarVisibility="Auto">
+                                  <SelectableTextBlock Text="{Binding Output}" FontFamily="{DynamicResource Mono}" FontSize="11" TextWrapping="NoWrap" />
+                                </ScrollViewer>
+                              </StackPanel>
+                            </Border>
                           </StackPanel>
                         </StackPanel>
                       </DataTemplate>
