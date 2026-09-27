@@ -598,7 +598,8 @@ void caps_set_python(const char* package_dir, const char* interpreter);
    and YAML back to steps JSON ({"steps":[…],"name":…,"file":…,"topology":…}). */
 int32_t caps_pipeline_to_yaml(const char* json, const char* name, const char* file, const char* topology, char* yaml, int32_t cap);
 int32_t caps_pipeline_from_yaml(const char* yaml, char* json, int32_t cap);
-/* v19 export (design/boards/ExportData): format lammps-data | lammps-dump (all frames) | gro | pdb | xyz | mol2;
+/* v19 export (design/boards/ExportData): format lammps-data | lammps-dump (all frames) | dcd (all frames) | gro | pdb | xyz |
+   mol2 | sdf | cif | car;
    options JSON {"pipeline": bool (the Visualize result instead of the frame), "wrap": bool, "coeffs": bool (force-field
    sections in LAMMPS data)}. The preview writes to a scratch file and returns {"lines":[first n],"bytes","atoms","bonds",
    "angles","dihedrals","atom_types","bond_types","angle_types","dihedral_types","notes":[…]}. */

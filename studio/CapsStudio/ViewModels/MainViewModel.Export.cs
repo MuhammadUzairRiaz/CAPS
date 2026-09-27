@@ -21,6 +21,9 @@ public sealed partial class MainViewModel
         new("pdb", "PDB", "CONECT, residues", "pdb"),
         new("xyz", "XYZ · extended XYZ", "lattice in the comment line", "xyz"),
         new("mol2", "Tripos mol2", "bond orders, charges, atom types", "mol2"),
+        new("dcd", "DCD trajectory", "every frame with its cell · single precision", "dcd"),
+        new("sdf", "MDL SD file", "V2000 / V3000 · bond orders, formal charges", "sdf"),
+        new("cif", "CIF (P 1)", "cell and fractional coordinates", "cif"),
     ];
 
     private int _exportFormat;
