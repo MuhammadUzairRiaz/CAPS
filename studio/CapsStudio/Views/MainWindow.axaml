@@ -1178,10 +1178,12 @@
         <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,8" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
           <StackPanel Spacing="6">
           <!-- Timeline (design/boards/Timeline): a sparkline and markers once a time series is computed -->
-          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="12" IsVisible="{Binding HasTimeline}">
+          <Grid ColumnDefinitions="140,Auto,*,Auto" ColumnSpacing="12" IsVisible="{Binding HasTimeline}">
             <ComboBox ItemsSource="{Binding TimelineAttributes}" SelectedItem="{Binding SparkAttribute}" FontSize="11.5" HorizontalAlignment="Stretch" ToolTip.Tip="Attribute drawn over the frames" />
-            <local:TimelineView Grid.Column="1" x:Name="Timeline" Height="40" Cursor="Hand" />
-            <TextBlock Grid.Column="2" Text="{Binding MarkerNote}" FontSize="11" Foreground="{DynamicResource WarnB}" VerticalAlignment="Center" MaxWidth="200" TextWrapping="Wrap" />
+            <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.SeriesWindows}" SelectedItem="{Binding SeriesWindow}" FontSize="11.5" Width="64"
+                      ToolTip.Tip="Running mean over this many frames, centred (drawn in green; 1: off)" />
+            <local:TimelineView Grid.Column="2" x:Name="Timeline" Height="40" Cursor="Hand" />
+            <TextBlock Grid.Column="3" Text="{Binding MarkerNote}" FontSize="11" Foreground="{DynamicResource WarnB}" VerticalAlignment="Center" MaxWidth="200" TextWrapping="Wrap" />
           </Grid>
           <Grid ColumnDefinitions="Auto,Auto,*,Auto">
             <Button Content="{Binding PlayLabel}" Click="OnPlay" Width="64" Margin="0,0,12,0" ToolTip.Tip="Play / pause (Space) · ← → step frames" />

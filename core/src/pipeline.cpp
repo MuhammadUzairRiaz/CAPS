@@ -283,11 +283,19 @@ void step_cluster(PipelineState& st, const Json& p, StepStatus& out) {
     if (a != b) parent[std::max(a, b)] = std::min(a, b);
   };
   const bool heavy = flag(p, "heavy_only", false);
+  // periodic: links across the cell's faces count (minimum image); unwrap: each cluster made whole through its links
+  const bool periodic = flag(p, "periodic", true), unwrap = flag(p, "unwrap", false);
+  std::vector<std::vector<uint32_t>> links(unwrap ? n : 0);
   if (mode == "cutoff")
     for_pairs(s, rc, [&](uint32_t i, uint32_t j, double, const Vec3&) {
-      if (!heavy || (s.atoms[i].element != 1 && s.atoms[j].element != 1)) unite(i, j);
+      if (heavy && (s.atoms[i].element == 1 || s.atoms[j].element == 1)) return;
+      if (!periodic && s.cell.valid() && norm(s.atoms[j].pos - s.atoms[i].pos) > rc) return;   // only through the image
+      unite(i, j);
+      if (unwrap && (!only_sel || (st.selected[i] && st.selected[j]))) links[i].push_back(j), links[j].push_back(i);
     });
   else for (const auto& b : s.bonds) unite(b.i, b.j);
+  if (unwrap)
+    for (const auto& b : s.bonds) links[b.i].push_back(b.j), links[b.j].push_back(b.i);
   if (p.text("unit", "atoms") == "molecules") {   // whole molecules: every atom joins its molecule's cluster
     const auto mol = s.molecules();
     std::map<int, uint32_t> first;
@@ -360,19 +368,34 @@ void step_cluster(PipelineState& st, const Json& p, StepStatus& out) {
   for (size_t c = 0; c < cl.size(); ++c) {
     const auto& g = cl[c];
     for (uint32_t i : g) id[i] = double(c + 1);
-    // positions made whole from the first atom by minimum-image steps
+    // positions made whole: through the cluster's own links step by step (unwrap), else from the first atom by
+    // minimum image (right while the cluster spans less than half the cell)
     std::vector<Vec3> pos;
     pos.reserve(g.size());
     const Vec3 r0 = s.atoms[g[0]].pos;
+    std::map<uint32_t, Vec3> walked;
+    if (unwrap && s.cell.valid()) {
+      std::set<uint32_t> in(g.begin(), g.end());
+      std::vector<uint32_t> queue{g[0]};
+      walked[g[0]] = r0;
+      for (size_t h = 0; h < queue.size(); ++h) {
+        const uint32_t a = queue[h];
+        for (uint32_t b : links[a])
+          if (in.count(b) && !walked.count(b)) { walked[b] = walked[a] + s.cell.minimum_image(s.atoms[b].pos - s.atoms[a].pos); queue.push_back(b); }
+      }
+    }
     double m = 0;
     Vec3 com{0, 0, 0};
     for (uint32_t i : g) {
-      const Vec3 r = s.cell.valid() ? r0 + s.cell.minimum_image(s.atoms[i].pos - r0) : s.atoms[i].pos;
+      const auto w = walked.find(i);
+      const Vec3 r = w != walked.end() ? w->second : s.cell.valid() ? r0 + s.cell.minimum_image(s.atoms[i].pos - r0) : s.atoms[i].pos;
       const double mi = s.mass_of(s.atoms[i]);
       pos.push_back(r);
       com = com + r * mi;
       m += mi;
     }
+    if (unwrap)
+      for (size_t k = 0; k < g.size(); ++k) st.system.atoms[g[k]].pos = pos[k];   // shown whole
     if (m > 0) com = com * (1.0 / m);
     double rg2 = 0;
     for (size_t k = 0; k < g.size(); ++k) { const Vec3 d = pos[k] - com; rg2 += s.mass_of(s.atoms[g[k]]) * dot(d, d); }
@@ -2139,6 +2162,8 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
   const int stride = std::max(1, int(p.num("stride", std::max(1, (to - from) / 200))));
   const double radius = std::max(0.02, p.num("radius", 0.12));
   const bool centres = p.text("particles", "centres") == "centres";
+  const bool fade = flag(p, "fade", false), by_time = p.text("colour", "molecule") == "time";
+  const int last = flag(p, "up_to_current", false) ? std::min(to, std::max(from, st.frame)) : to;   // what has happened by the frame shown
   // what to trace: molecule centres of mass, or the selected particles (by their frame index)
   const System& s0 = st.system;
   const auto mol = s0.molecules();
@@ -2155,7 +2180,14 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
   size_t segs = 0;
   std::vector<Vec3> start(tracks);
   std::vector<double> travelled(tracks, 0.0);
-  for (int f = from; f <= to; f += stride) {
+  auto shade = [&](unsigned c, int f) {   // fade: older segments toward mid grey (the newest keep their colour)
+    if (by_time) c = ramp(kViridis, 9, last > from ? double(f - from) / (last - from) : 1.0);
+    if (!fade || last <= from) return c;
+    const double w = 0.25 + 0.75 * double(f - from) / (last - from);
+    auto ch = [&](int sh) { return unsigned(std::lround(w * ((c >> sh) & 0xFF) + (1 - w) * 0x70)) << sh; };
+    return ch(16) | ch(8) | ch(0);
+  };
+  for (int f = from; f <= last; f += stride) {
     System fr = st.traj->frame(size_t(f));
     if (!fr.unwrapped && fr.cell.valid()) make_molecules_whole(fr);
     std::vector<Vec3> now(tracks);
@@ -2172,7 +2204,7 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
         if (fr.cell.valid() && !fr.unwrapped) d = fr.cell.minimum_image(d);   // follow across the boundary
         const Vec3 next = path[k] + d;
         travelled[k] += norm(d);
-        st.segments.push_back({path[k], next, kCat[(centres ? k : size_t(mol[size_t(std::max(0, picks[k]))])) % 10], radius, false});
+        st.segments.push_back({path[k], next, shade(kCat[(centres ? k : size_t(mol[size_t(std::max(0, picks[k]))])) % 10], f), radius, false});
         path[k] = next;
         ++segs;
       }
@@ -2191,7 +2223,7 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
     }
     st.tables.push_back(std::move(t));
   }
-  out.summary = std::to_string(tracks) + (centres ? " molecule centres" : " particles") + " · frames " + std::to_string(from) + "–" + std::to_string(to) +
+  out.summary = std::to_string(tracks) + (centres ? " molecule centres" : " particles") + " · frames " + std::to_string(from) + "–" + std::to_string(last) +
                 (stride > 1 ? " every " + std::to_string(stride) : "") + " · " + std::to_string(segs) + " segments";
 }
 
@@ -2323,7 +2355,15 @@ void step_voids(PipelineState& st, const Json& p, StepStatus& out) {
   const double probe = std::max(0.0, p.num("probe", 1.4));
   const CellGrid g(s.cell, std::clamp(p.num("grid", 0.5), 0.2, 2.0));
   const auto ok = accessible(s, g, probe);
-  const auto comps = components(g, ok);
+  auto comps = components(g, ok);
+  // only voids above a volume (Å³): smaller ones are counted, not listed or drawn
+  const double vmin = std::max(0.0, p.num("min_volume", 0.0));
+  size_t small = 0;
+  if (vmin > 0) {
+    const auto keep = std::stable_partition(comps.begin(), comps.end(), [&](const auto& c) { return c.size() * g.voxel >= vmin; });
+    small = size_t(comps.end() - keep);
+    comps.erase(keep, comps.end());
+  }
   size_t acc = 0;
   for (char c : ok) acc += c;
   const double share = double(acc) / g.size();
@@ -2360,7 +2400,8 @@ void step_voids(PipelineState& st, const Json& p, StepStatus& out) {
         st.segments.push_back({r, r, kCat[c % 10], 0.14, false});
       }
   }
-  out.summary = fmt("%.1f %% accessible", 100 * share) + " · " + std::to_string(comps.size()) + " voids · probe " + fmt("%.2g Å", probe) + " · grid " +
+  st.set_attribute("Voids.smaller_than_limit", double(small));
+  out.summary = fmt("%.1f %% accessible", 100 * share) + " · " + std::to_string(comps.size()) + " voids" + (vmin > 0 ? fmt(" ≥ %g Å³", vmin) + " (" + std::to_string(small) + " smaller)" : "") + " · probe " + fmt("%.2g Å", probe) + " · grid " +
                 std::to_string(g.n[0]) + "×" + std::to_string(g.n[1]) + "×" + std::to_string(g.n[2]);
 }
 
@@ -2641,6 +2682,29 @@ void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
         rc[size_t(f)][m] = rc[size_t(f - 1)][m] + s.cell.minimum_image(rc[size_t(f)][m] - rc[size_t(f - 1)][m]);
     }
   }
+  // remove the system's drift: every path taken relative to the mass-weighted centre of all molecules at that frame
+  const bool drift = flag(p, "remove_drift", false);
+  double drift_end = 0;
+  if (drift) {
+    std::vector<double> mw;
+    {
+      System s0 = tr.frame(0);
+      for (const auto& sh : molecule_shapes(s0)) mw.push_back(sh.mass);
+    }
+    std::vector<Vec3> sys(static_cast<size_t>(nf));
+    for (int f = 0; f < nf; ++f) {
+      Vec3 c{0, 0, 0};
+      double m = 0;
+      for (size_t k = 0; k < rc[size_t(f)].size() && k < mw.size(); ++k) c = c + rc[size_t(f)][k] * mw[k], m += mw[k];
+      sys[size_t(f)] = m > 0 ? c * (1 / m) : c;
+    }
+    for (int f = 0; f < nf; ++f) {
+      const Vec3 d = sys[size_t(f)] - sys[0];
+      for (auto& x : ra[size_t(f)]) x = x - d;
+      for (auto& x : rc[size_t(f)]) x = x - d;
+    }
+    drift_end = norm(sys[size_t(nf - 1)] - sys[0]);
+  }
   auto msd = [&](const std::vector<std::vector<Vec3>>& r, int lag) {
     double sum = 0;
     size_t cnt = 0;
@@ -2665,6 +2729,30 @@ void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
     if (lag >= fit_lo && lag <= fit_hi) { x.push_back(lag * dts); y.push_back(c); }
   }
   st.tables.push_back(std::move(t));
+  if (flag(p, "per_molecule", false) && !rc.empty()) {   // one curve per molecule centre (the first twelve)
+    const size_t shown = std::min<size_t>(12, rc[0].size());
+    DataTable pm;
+    pm.name = "msd_molecules";
+    pm.title = "MSD of each molecule centre";
+    pm.columns = {"Lag (timesteps)"};
+    for (size_t m = 0; m < shown; ++m) pm.columns.push_back("Molecule " + std::to_string(m + 1) + " (Å²)");
+    for (int lag = 1; lag <= max_lag; ++lag) {
+      std::vector<double> row = {lag * dts};
+      const int stride = std::max(1, (nf - lag) / 100);
+      for (size_t m = 0; m < shown; ++m) {
+        double sum = 0;
+        int cnt = 0;
+        for (int t0 = 0; t0 + lag < nf; t0 += stride) {
+          if (m >= rc[size_t(t0)].size() || m >= rc[size_t(t0 + lag)].size()) continue;
+          const Vec3 d = rc[size_t(t0 + lag)][m] - rc[size_t(t0)][m];
+          sum += dot(d, d), ++cnt;
+        }
+        row.push_back(cnt ? sum / cnt : 0.0);
+      }
+      pm.rows.push_back(std::move(row));
+    }
+    st.tables.push_back(std::move(pm));
+  }
   // D from the centres of mass: MSD = 6 D τ over the fit lags
   double D = 0;
   if (x.size() >= 2) {
@@ -2680,7 +2768,7 @@ void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
   st.set_attribute("MSD.fit_from", double(fit_lo)), st.set_attribute("MSD.fit_to", double(fit_hi));
   if (fs > 0) st.set_attribute("MSD.D_centres_cm2s", D / fs * 0.1);   // Å²/fs = 0.1 cm²/s
   out.summary = std::to_string(atoms.size()) + " atoms, " + std::to_string(nm) + " centres · lags to " + std::to_string(max_lag) + " frames · D " +
-                (fs > 0 ? fmt("%.3g cm²/s", D / fs * 0.1) : fmt("%.3g Å²/timestep", D));
+                (fs > 0 ? fmt("%.3g cm²/s", D / fs * 0.1) : fmt("%.3g Å²/timestep", D)) + (drift ? fmt(" · drift removed (%.2f Å over the run)", drift_end) : "");
 }
 
 void step_scatter(PipelineState& st, const Json& p, StepStatus& out) {

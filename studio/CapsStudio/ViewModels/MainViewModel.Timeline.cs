@@ -53,6 +53,28 @@ public sealed partial class MainViewModel
         return rows.Select(r => ((double?)r?[0] ?? 0, (double?)r?[k] ?? double.NaN)).Where(p => double.IsFinite(p.Item2)).ToArray();
     }
 
+    private int _seriesWindow = 1;
+    public static readonly int[] SeriesWindows = [1, 3, 5, 9, 15, 25, 51];
+    /// <summary>Running mean over this many computed frames, centred (1: off), drawn over the sparkline.</summary>
+    public int SeriesWindow { get => _seriesWindow; set { if (Set(ref _seriesWindow, Math.Max(1, value))) TimelineChanged?.Invoke(); } }
+
+    /// <summary>The sparkline's centred running mean over SeriesWindow points (shorter at the ends); empty when off.</summary>
+    public (double X, double Y)[] SparklineMean()
+    {
+        var pts = Sparkline();
+        if (_seriesWindow <= 1 || pts.Length < 3) return [];
+        var half = _seriesWindow / 2;
+        var outp = new (double X, double Y)[pts.Length];
+        for (var i = 0; i < pts.Length; ++i)
+        {
+            int a = Math.Max(0, i - half), b = Math.Min(pts.Length - 1, i + half);
+            double sum = 0;
+            for (var k = a; k <= b; ++k) sum += pts[k].Y;
+            outp[i] = (pts[i].X, sum / (b - a + 1));
+        }
+        return outp;
+    }
+
     /// <summary>Frames where the marker attribute changes value.</summary>
     public List<int> MarkerFrames()
     {
