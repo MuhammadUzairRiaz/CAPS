@@ -804,6 +804,19 @@ internal static class SelfTest
             Check(n1 == n0 + 1 && n2 == n0 && n3 == n0 + 1 && vm.EditHistory.Count >= 1, $"edit: place N {n0}→{n1}, delete →{n2}, undo →{n3} · {string.Join(" / ", vm.EditHistory)} {vm.EditError}");
             vm.UndoEdit(false);
             vm.UndoEdit(false);
+            // auto-clean (A): a placed atom is followed by a UFF clean-up of its neighbourhood, its own undo step
+            if (!vm.AutoCleanOn) vm.ToggleAutoClean();
+            vm.BuildElement = "O";
+            vm.EditTool = 1;
+            var carbonAt = Enumerable.Range(0, (int)vm.Document!.Summary().Atoms).First(i => vm.Document!.Atom(i).ElementSymbol == "C");
+            var hist0 = vm.EditHistory.Count;
+            vm.ToolClick(carbonAt);
+            var cleaned = vm.Status.Contains("auto-cleaned") && vm.EditHistory.Count == hist0 + 2;
+            vm.EditTool = 0;
+            vm.UndoEdit(false);
+            vm.UndoEdit(false);
+            vm.ToggleAutoClean();
+            Check(cleaned && !vm.AutoCleanOn && vm.Document!.Summary().Atoms == n0, $"auto-clean: {vm.EditHistory.Count} history · {(cleaned ? "cleaned after placing O" : "not cleaned")}");
             var sel = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Select("{\"mode\":\"smarts\",\"pattern\":\"c1ccccc1\"}"))!;
             var tac = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Tacticity())!;
             Check(sel["count"]?.GetValue<double>() > 100 && tac["centres"]?.GetValue<double>() > 10, $"select: {sel["count"]} ring atoms · tacticity {tac["label"]} m {tac["m"]} r {tac["r"]}");

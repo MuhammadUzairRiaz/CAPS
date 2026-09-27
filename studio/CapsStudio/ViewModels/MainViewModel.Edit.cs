@@ -86,8 +86,45 @@ public sealed partial class MainViewModel
         }
         EditError = "";
         RecordEdit(json);
-        AfterEdit(r["what"]?.GetValue<string>() ?? "Edit");
+        var what = r["what"]?.GetValue<string>() ?? "Edit";
+        if (_settings.AutoClean && CleanAfter(json, r) is { Length: > 0 } region)
+        {
+            // auto-clean (A): the edited atoms and their nearest neighbours relaxed with UFF, as its own undo step
+            var c = JsonNode.Parse(_doc.Edit(System.Text.Json.JsonSerializer.Serialize(new { op = "clean", atoms = region })))!;
+            if (c["ok"]?.GetValue<bool>() == true) { what += " · auto-cleaned (UFF)"; Record($"doc.edit(op=\"clean\", atoms=[{string.Join(", ", region)}])"); }
+        }
+        AfterEdit(what);
         return r;
+    }
+
+    // the builder edits that change bonding: their atoms (and new ones) with the six nearest atoms of each
+    private static readonly HashSet<string> CleanedOps = ["add_atom", "bond", "unbond", "element", "charge", "attach", "fuse_ring", "add_h"];
+    private int[] CleanAfter(string json, JsonNode reply)
+    {
+        if (_doc == null || JsonNode.Parse(json) is not JsonObject spec || !CleanedOps.Contains((string?)spec["op"] ?? "")) return [];
+        var core = new HashSet<int>();
+        foreach (var x in reply["added"] as JsonArray ?? []) core.Add((int)(double)x!);
+        foreach (var k in new[] { "to", "i", "j", "target" })
+            if (spec[k] is JsonValue v && v.TryGetValue<int>(out var a) && a >= 0) core.Add(a);
+        if (spec["atoms"] is JsonArray aa) foreach (var x in aa) if (x is JsonValue v && v.TryGetValue<int>(out var a)) core.Add(a);
+        var n = (int)_doc.Summary().Atoms;
+        core.RemoveWhere(a => a >= n);
+        if (core.Count == 0 && (string?)spec["op"] == "add_atom") core.Add(n - 1);
+        var region = new HashSet<int>(core);
+        foreach (var a in core)
+            foreach (var (i, _) in _doc.Neighbours(a, 6)) region.Add(i);
+        return region.Where(a => a < n).OrderBy(a => a).ToArray();
+    }
+
+    public bool AutoCleanOn => _settings.AutoClean;
+    public string AutoCleanText => _settings.AutoClean ? "Auto-clean on · UFF" : "";
+    public void ToggleAutoClean()
+    {
+        _settings.AutoClean = !_settings.AutoClean;
+        _settings.Save();
+        Raise(nameof(AutoCleanOn)); Raise(nameof(AutoCleanText));
+        Status = _settings.AutoClean ? "Auto-clean on: every builder edit is followed by a UFF clean-up of the atoms it touched (A turns it off)"
+                                     : "Auto-clean off";
     }
 
     private void AfterEdit(string what)
