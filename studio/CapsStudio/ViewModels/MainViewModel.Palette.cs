@@ -148,6 +148,21 @@ public sealed partial class MainViewModel
             Keywords = "select query smarts element chain within ring stereo and or not find", Enabled = () => _doc != null, Run = () => { SetModule(8); QueryOpen = true; } });
         AddCommand(new PaletteCommand { Title = "Frame selection", Id = "view.frame", Icon = "cube", Shortcut = "F", Section = "View",
             Keywords = "focus fit zoom to selection centre camera fly", Enabled = () => _doc != null, Run = FrameSelection });
+        for (var ax = 0; ax < 3; ++ax)
+        {
+            var a = ax;
+            var name = "xyz"[a].ToString();
+            AddCommand(new PaletteCommand { Title = $"Rotate selection 90° about {name}", Id = "edit.rotate " + name, Icon = "rotate", Section = "Edit",
+                Keywords = "rotate turn selection molecule axis 90 degrees", Enabled = () => _doc != null, Run = () => RotateSelection(a, 90) });
+            AddCommand(new PaletteCommand { Title = $"Mirror selection through the plane normal to {name}", Id = "edit.mirror " + name, Icon = "mirror", Section = "Edit",
+                Keywords = "mirror reflect enantiomer image flip selection plane", Enabled = () => _doc != null, Run = () => MirrorSelection(a) });
+        }
+        foreach (var rs in new[] { "R", "S" })
+        {
+            var c = rs;
+            AddCommand(new PaletteCommand { Title = $"Make the picked stereocentre {c}", Id = "edit.make " + c, Icon = "atom", Section = "Edit",
+                Keywords = "stereo chirality configuration cip set r s centre", Enabled = () => _doc != null && _selection.Count == 1, Run = () => MakePicked(c) });
+        }
         AddCommand(new PaletteCommand { Title = "Reduce motion", Id = "settings.motion", Icon = "gear", Section = "Settings",
             Keywords = "motion animation reduce accessibility camera fly cut vestibular", Run = () => SetReduceMotion = Motion.Reduced ? "off" : "on" });
         for (var k = 0; k < Styles.Length; k++)

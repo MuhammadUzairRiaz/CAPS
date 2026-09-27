@@ -2322,6 +2322,8 @@ public sealed partial class MainViewModel : ObservableObject
                 3 => string.Format(inv, "Angle {0}: {1:F2}°", ids, v),
                 _ => string.Format(inv, "Dihedral {0}: {1:F2}°", ids, v),
             };
+            MeasureTarget = _selection.Count == 2 ? v.ToString("F3", inv) : v.ToString("F2", inv);
+            Raise(nameof(CanSetMeasure));
             Status = MeasureText;
         }
         else

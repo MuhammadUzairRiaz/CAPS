@@ -833,6 +833,20 @@ internal static class SelfTest
             Check(vm.QuickFragments.Count == 9 && nf1 == nf0 + 3 && nf2 == nf1 + 3 && vm.FragmentCategories.Count >= 10,
                   $"fragments: {vm.FragmentCategories.Count} categories · methyl {nf0}→{nf1} · water →{nf2} · {vm.FragmentError}");
             vm.UndoEdit(false);
+            // exact geometry from the live monitor: a C–H bond picked, set to 1.200 Å (the hydrogen moves), undone
+            {
+                var hc = vm.Document!.Neighbours(carbon, 4).First(nb => vm.Document!.Atom(nb.Item1).ElementSymbol == "H").Item1;
+                vm.Pick(carbon);
+                vm.Pick(hc, true);
+                var chBefore = vm.Document!.Measure([carbon, hc]);
+                vm.MeasureTarget = "1.200";
+                vm.SetMeasured();
+                var after = vm.Document!.Measure([carbon, hc]);
+                var kept = vm.CanSetMeasure && vm.MeasureText.Contains("1.200");
+                vm.UndoEdit(false);
+                var chUndone = vm.Document!.Measure([carbon, hc]);
+                Check(Math.Abs(after - 1.2) < 1e-6 && Math.Abs(chUndone - chBefore) < 1e-9 && kept, $"set exact bond length: {chBefore:F3} → {after:F3} Å · undo {chUndone:F3} · monitor '{vm.MeasureText}'");
+            }
             vm.UndoEdit(false);
             vm.SetModule(8);
             // History & snapshots: a snapshot, two edits, an undo, an edit that branches, the snapshot back, a jump

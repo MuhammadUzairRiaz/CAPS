@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "caps/analysis.hpp"
+#include "caps/appearance.hpp"
 #include "caps/elements.hpp"
 #include "caps/molecule.hpp"
 #include "caps/relax.hpp"
@@ -530,6 +531,86 @@ GraftReport graft_silanes(System& s, const GraftOptions& o) {
   rep.notes.push_back(o.name + " grafted on " + std::to_string(rep.grafted) + " of " + std::to_string(rep.silanols) + " silanols (" +
                       std::to_string(rep.added_atoms) + " atoms added; one ethanol released per graft); relax before dynamics");
   return rep;
+}
+
+namespace {
+Vec3 rotate_about(const Vec3& p, const Vec3& origin, const Vec3& axis, double rad) {
+  const Vec3 r = p - origin, k = unitv(axis);
+  const double c = std::cos(rad), sn = std::sin(rad);
+  return origin + r * c + cross(k, r) * sn + k * (dot(k, r) * (1 - c));
+}
+std::vector<uint32_t> side_of(const System& s, uint32_t b, uint32_t c) {
+  bool bonded = false;
+  for (const auto& bd : s.bonds) bonded |= (bd.i == b && bd.j == c) || (bd.i == c && bd.j == b);
+  if (!bonded) throw EditError("atoms " + std::to_string(b + 1) + " and " + std::to_string(c + 1) + " are not bonded");
+  try {
+    const auto m = moving_side(s, int(b), int(c));
+    return m;
+  } catch (const std::exception&) {
+    throw EditError("the bond " + std::to_string(b + 1) + "–" + std::to_string(c + 1) + " is in a ring: its two sides cannot move apart");
+  }
+}
+}  // namespace
+
+void set_bond_length(System& s, uint32_t i, uint32_t j, double r) {
+  if (i >= s.atoms.size() || j >= s.atoms.size() || i == j) throw EditError("pick two bonded atoms");
+  if (!(r > 0.3 && r < 10)) throw EditError("a bond length between 0.3 and 10 Å");
+  const auto mv = side_of(s, i, j);
+  const Vec3 d = s.atoms[j].pos - s.atoms[i].pos;
+  const double now = norm(d);
+  if (now < 1e-9) throw EditError("the two atoms sit on each other");
+  const Vec3 shift = d * ((r - now) / now);
+  for (uint32_t a : mv) s.atoms[a].pos = s.atoms[a].pos + shift;
+}
+
+void set_bond_angle(System& s, uint32_t i, uint32_t j, uint32_t k, double theta_deg) {
+  if (i >= s.atoms.size() || j >= s.atoms.size() || k >= s.atoms.size() || i == k || i == j || j == k) throw EditError("pick three atoms i–j–k");
+  if (!(theta_deg > 1 && theta_deg < 179.5)) throw EditError("an angle between 1° and 179.5°");
+  const auto mv = side_of(s, j, k);
+  if (std::find(mv.begin(), mv.end(), i) != mv.end()) throw EditError("atom " + std::to_string(i + 1) + " is on the side that moves (a ring)");
+  const Vec3 a = s.atoms[i].pos - s.atoms[j].pos, b = s.atoms[k].pos - s.atoms[j].pos;
+  Vec3 n = cross(a, b);
+  if (norm(n) < 1e-9) n = perpendicular(a);   // straight now: any plane through the bond
+  const double now = std::acos(std::clamp(dot(a, b) / (norm(a) * norm(b)), -1.0, 1.0));
+  const double rot = theta_deg * M_PI / 180 - now;
+  for (uint32_t x : mv) s.atoms[x].pos = rotate_about(s.atoms[x].pos, s.atoms[j].pos, n, rot);
+}
+
+void set_torsion(System& s, uint32_t i, uint32_t j, uint32_t k, uint32_t l, double phi_deg) {
+  if (std::max({i, j, k, l}) >= s.atoms.size()) throw EditError("pick four atoms i–j–k–l");
+  const auto mv = side_of(s, j, k);
+  if (std::find(mv.begin(), mv.end(), i) != mv.end()) throw EditError("atom " + std::to_string(i + 1) + " is on the side that moves (a ring)");
+  set_dihedral(s, {int(i), int(j), int(k), int(l)}, phi_deg, mv);
+}
+
+void rotate_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& axis, double degrees) {
+  if (atoms.empty()) throw EditError("pick or select the atoms to rotate");
+  if (norm(axis) < 1e-12) throw EditError("the rotation axis has no length");
+  Vec3 c{0, 0, 0};
+  for (uint32_t a : atoms) c = c + s.atoms[a].pos;
+  c = c * (1.0 / double(atoms.size()));
+  for (uint32_t a : atoms) s.atoms[a].pos = rotate_about(s.atoms[a].pos, c, axis, degrees * M_PI / 180);
+}
+
+void mirror_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& normal) {
+  if (atoms.empty()) throw EditError("pick or select the atoms to mirror");
+  if (norm(normal) < 1e-12) throw EditError("the mirror plane's normal has no length");
+  const Vec3 nn = unitv(normal);
+  Vec3 c{0, 0, 0};
+  for (uint32_t a : atoms) c = c + s.atoms[a].pos;
+  c = c * (1.0 / double(atoms.size()));
+  for (uint32_t a : atoms) s.atoms[a].pos = s.atoms[a].pos - nn * (2 * dot(s.atoms[a].pos - c, nn));
+}
+
+bool set_configuration(System& s, uint32_t centre, const std::string& rs) {
+  if (rs != "R" && rs != "S") throw EditError("the configuration is R or S");
+  if (centre >= s.atoms.size()) throw EditError("pick the stereocentre");
+  std::vector<char> only(s.atoms.size(), 0);
+  only[centre] = 1;
+  const auto now = stereo_labels(s, only)[centre];
+  if (now.empty()) return false;
+  if (now != rs) invert_centre(s, centre);
+  return true;
 }
 
 std::string thiolate_smiles(const std::string& name) {

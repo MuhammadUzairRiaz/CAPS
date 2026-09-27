@@ -11,6 +11,7 @@
 #include "caps/molecule.hpp"
 #include "caps/peptide.hpp"
 #include "caps/polymer.hpp"
+#include "caps/torsion.hpp"
 
 using namespace caps;
 
@@ -227,4 +228,49 @@ TEST(Edit, ProtonationByPhMatchesThePeptideBuilder) {
     EXPECT_EQ(h1, h0) << "pH " << ph << " · " << notes.front();
     EXPECT_NEAR(q1, std::lround(q0), 0.01) << "pH " << ph << " · " << notes.front();
   }
+}
+
+// Exact geometry edits: butane's C1–C2 bond, C1–C2–C3 angle and dihedral set by moving one side, the rest untouched;
+// a rigid rotation keeps every distance; a mirror image inverts the stereocentre; R/S set by name; a ring bond refused
+TEST(Edit, ExactGeometryRotateMirrorAndConfiguration) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  System s = build_molecule("CCCC", bo).system;
+  auto dist = [&](uint32_t a, uint32_t b) { return norm(s.atoms[a].pos - s.atoms[b].pos); };
+  auto angle = [&](uint32_t a, uint32_t b, uint32_t c) {
+    const Vec3 u = s.atoms[a].pos - s.atoms[b].pos, v = s.atoms[c].pos - s.atoms[b].pos;
+    return std::acos(dot(u, v) / (norm(u) * norm(v))) * 180 / M_PI;
+  };
+  const double c34 = dist(2, 3);
+  set_bond_length(s, 1, 0, 1.60);   // C2–C1: C1's side (with its hydrogens) moves
+  EXPECT_NEAR(dist(0, 1), 1.60, 1e-9);
+  EXPECT_NEAR(dist(2, 3), c34, 1e-9);
+  set_bond_angle(s, 0, 1, 2, 120.0);
+  EXPECT_NEAR(angle(0, 1, 2), 120.0, 1e-7);
+  set_torsion(s, 0, 1, 2, 3, 60.0);
+  EXPECT_NEAR(dihedral_angle(s, {0, 1, 2, 3}), 60.0, 1e-6);
+  EXPECT_NEAR(dist(0, 1), 1.60, 1e-9);
+  // rotation of the whole molecule about an arbitrary axis: every distance kept
+  std::vector<uint32_t> all(s.atoms.size());
+  for (uint32_t k = 0; k < all.size(); ++k) all[k] = k;
+  const double d03 = dist(0, 3);
+  rotate_atoms(s, all, {1, 2, 3}, 37.0);
+  EXPECT_NEAR(dist(0, 3), d03, 1e-9);
+  // a stereocentre: mirrored it turns over; set_configuration puts it back
+  System c = build_molecule("C[C@H](N)O", bo).system;
+  std::vector<char> only(c.atoms.size(), 0);
+  only[1] = 1;
+  const std::string before = stereo_labels(c, only)[1];
+  ASSERT_FALSE(before.empty());
+  std::vector<uint32_t> every(c.atoms.size());
+  for (uint32_t k = 0; k < every.size(); ++k) every[k] = k;
+  mirror_atoms(c, every, {0, 0, 1});
+  const std::string mirrored = stereo_labels(c, only)[1];
+  EXPECT_NE(mirrored, before);
+  EXPECT_TRUE(set_configuration(c, 1, before));
+  EXPECT_EQ(stereo_labels(c, only)[1], before);
+  EXPECT_FALSE(set_configuration(c, 0, "R"));   // the methyl carbon is no stereocentre
+  // a bond in a ring cannot be stretched by moving one side
+  System ring = build_molecule("C1CCCCC1", bo).system;
+  EXPECT_THROW(set_bond_length(ring, 0, 1, 1.7), EditError);
 }

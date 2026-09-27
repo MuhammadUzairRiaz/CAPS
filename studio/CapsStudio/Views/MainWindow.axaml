@@ -792,6 +792,10 @@
                   <TextBlock Text="LIVE MONITORS" Classes="h3" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Text="{Binding MeasureText}" Classes="mono" Foreground="{DynamicResource AccB}" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" IsVisible="{Binding CanSetMeasure}">
+                  <TextBox Text="{Binding MeasureTarget}" FontFamily="{DynamicResource Mono}" ToolTip.Tip="The exact value: Å for a bond, degrees for an angle or a dihedral" />
+                  <Button Grid.Column="1" Content="Set" Click="OnSetMeasured" ToolTip.Tip="Moves the side of the last-picked atom (undo with ⌘Z); a bond in a ring cannot be set" />
+                </Grid>
               </StackPanel>
             </Border>
             <Border IsVisible="{Binding ShowLegend}" Classes="hud"
