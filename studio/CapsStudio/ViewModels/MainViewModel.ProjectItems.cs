@@ -85,6 +85,7 @@ public sealed partial class MainViewModel
         Raise(nameof(ActiveItem));
         Raise(nameof(HasSeveralStructures));
         Raise(nameof(ProjectCountText));
+        Raise(nameof(HasLastSession));
     }
 
     /// <summary>Keeps the active structure's view and workflow state in its item.</summary>

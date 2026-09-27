@@ -2093,10 +2093,25 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // The session: the project tree kept on quitting and restored from Start, with its job folders
+        var keptItems = vm.ProjectItems.Select(p => p.Name.Replace(" (unsaved)", "")).ToList();
+        var keptJobs = vm.ProjectItems.Sum(p => p.Jobs.Count);
+        var keptActive = vm.ActiveItem?.Name.Replace(" (unsaved)", "");
+        vm.SaveSession();
+
         // Close goes back to Start
         vm.SetModule(1);
         vm.CloseAllStructures();
         Check(vm.NoDocument && vm.IsStudio && vm.Title == "" && vm.ProjectItems.Count == 0, "close all structures: back to Start with no document");
+        vm.LoadLastSession();
+        var offered = vm.HasLastSession;
+        var offerText = vm.LastSessionText;
+        vm.RestoreSession();
+        var backItems = vm.ProjectItems.Select(p => p.Name).ToList();
+        var backJobs = vm.ProjectItems.Sum(p => p.Jobs.Count);
+        Check(offered && backItems.SequenceEqual(keptItems) && backJobs == keptJobs && vm.ActiveItem?.Name == keptActive && !vm.HasLastSession,
+              $"session: offered {offered} ({offerText}) · back {backItems.Count}/{keptItems.Count} structures, {backJobs}/{keptJobs} jobs, active {vm.ActiveItem?.Name} · {vm.Status}");
+        vm.CloseAllStructures();
 
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
         return fails == 0 ? 0 : 1;

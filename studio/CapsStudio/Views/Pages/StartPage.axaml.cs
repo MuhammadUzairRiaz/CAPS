@@ -40,6 +40,9 @@ public partial class StartPage : PageBase
         }
     }
 
+    private void OnRestoreSession(object? s, RoutedEventArgs e) => Vm.RestoreSession();
+    private void OnForgetSession(object? s, RoutedEventArgs e) => Vm.ForgetSession();
+
     private void OnRecent(object? s, RoutedEventArgs e)
     {
         if ((s as Control)?.Tag is not RecentItem r) return;
