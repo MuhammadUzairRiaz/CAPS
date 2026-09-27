@@ -80,6 +80,11 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
+        _vm.CompareStatesChanged += () =>
+        {
+            var sh = _vm.CompareShifts;
+            this.FindControl<LinePlot>("ShiftPlot")?.SetData(sh.Select((y, i) => ((double)(i + 1), y)).ToArray());
+        };
         _vm.ViewRequested += RequestViewRender;
         _vm.PropertyChanged += (_, e) =>
         {
@@ -688,7 +693,17 @@ public partial class MainWindow : Window
     private void OnAddMolLibrary(object? s, RoutedEventArgs e) => _vm.AddMoleculeToLibrary();
     private void OnHistoryStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is HistoryRow r) _vm.JumpToStep(r.Step); }
     private void OnTakeSnapshot(object? s, RoutedEventArgs e) => _vm.TakeSnapshot();
-    private void OnSnapshotCompare(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.CompareSnapshot(r); }
+    private void OnSnapshotCompare(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.CompareWithSnapshot(r); }
+    private void OnStatesClose(object? s, RoutedEventArgs e) => _vm.StatesOpen = false;
+    private async void OnStatesCsv(object? s, RoutedEventArgs e)
+    {
+        var f = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Shift of each atom", SuggestedFileName = "shifts.csv",
+            FileTypeChoices = [new Avalonia.Platform.Storage.FilePickerFileType("CSV") { Patterns = ["*.csv"] }],
+        });
+        if (f?.TryGetLocalPath() is { } p) _vm.ExportShiftsCsv(p);
+    }
     private void OnSnapshotMenu(object? s, RoutedEventArgs e) { }
     private void OnSnapshotRestore(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.RestoreSnapshot(r); }
     private void OnSnapshotDelete(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.DeleteSnapshot(r); }

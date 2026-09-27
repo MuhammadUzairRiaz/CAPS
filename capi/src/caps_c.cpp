@@ -13,6 +13,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/dynamics.hpp"
+#include "caps/superpose.hpp"
 #include "caps/elements.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/ffdef.hpp"
@@ -1123,6 +1124,23 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
   });
 }
 
+int32_t caps_lammps_shake(caps_doc* d, int32_t mode, const char* group, char* text, int32_t cap) {
+  return guard([&] {
+    caps::ForceField ff;
+    if (d->field && d->field->complete) ff = *d->field->ff;
+    else ff = default_ff(d->frame);
+    const std::string out = caps::lammps_shake_fix(d->frame, ff, elec(), static_cast<caps::ConstraintMode>(std::clamp(mode, 0, 2)),
+                                                   group && *group ? group : "all");
+    const int32_t need = int32_t(out.size() + 1);
+    if (text && cap > 0) {
+      const size_t m = std::min<size_t>(size_t(cap - 1), out.size());
+      std::memcpy(text, out.data(), m);
+      text[m] = 0;
+    }
+    return need;
+  });
+}
+
 int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_t cap) {
   return guard([&] {
     caps::ForceField ff;
@@ -1195,6 +1213,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     run.thermo_every = int(o.num("thermo_every", 1000));
     run.dump_every = int(o.num("dump_every", 5000));
     run.seed = uint64_t(o.num("seed", 4928459));
+    run.constraints = caps::constraints_from_string(o.text("constraints", "none"));
     if (run.temperature <= 0 || run.dt < 0 || run.steps < 0) throw std::runtime_error("temperature and time step must be positive");
     namespace fs = std::filesystem;
     const fs::path folder = preview ? fs::temp_directory_path() / ("caps_export_" + std::to_string(reinterpret_cast<uintptr_t>(d))) : fs::path(dir ? dir : "");
@@ -1233,16 +1252,27 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     if (gromacs) try {
       for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
       if (d->held_mol > 0) notes.push_back("GROMACS: the held molecule is not frozen: give it an index group and freezegrps / freezedim");
+      if (run.constraints == caps::ConstraintMode::HBonds && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT)) {
+        const auto nb = s.neighbours();
+        size_t waters = 0;
+        for (size_t o = 0; o < s.atoms.size(); ++o)
+          if (s.atoms[o].element == 8 && nb[o].size() == 2 && s.atoms[nb[o][0]].element == 1 && s.atoms[nb[o][1]].element == 1) ++waters;
+        if (waters)
+          notes.push_back("GROMACS: constraints = h-bonds holds water's O–H bonds but not its angle; CAPS and LAMMPS hold " + std::to_string(waters) +
+                          " water(s) rigid — use [ settles ] in the topology for the same model");
+      }
       // the core's .mdp is a single point with the matching non-bonded settings; a protocol replaces its run lines
       if (run.kind != caps::LammpsRun::Kind::Check) {
         std::ifstream in(base + ".mdp");
         std::string mdp((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
         in.close();
         std::string kept;
+        const bool md_run = run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT;
         std::istringstream ls(mdp);
         for (std::string line; std::getline(ls, line);) {
           const auto key = line.substr(0, line.find_first_of(" =\t"));
           if (key == "integrator" || key == "nsteps" || key == "dt" || key == "nstcalcenergy" || key == "nstenergy") continue;
+          if (key == "constraints" && run.constraints != caps::ConstraintMode::None && md_run) continue;
           if (line.rfind("; GROMACS run parameters", 0) == 0) continue;
           kept += line + "\n";
         }
@@ -1267,6 +1297,9 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
           }
           std::snprintf(b, sizeof b, "gen-vel                  = yes\ngen-temp                 = %.6g\ngen-seed                 = %llu\n", run.temperature, static_cast<unsigned long long>(run.seed % 2147483647));
           tail += b;
+          if (run.constraints != caps::ConstraintMode::None)
+            tail += run.constraints == caps::ConstraintMode::AllBonds ? "constraints              = all-bonds   ; as in CAPS (LINCS)\n"
+                                                                     : "constraints              = h-bonds     ; bonds to hydrogen, as in CAPS (LINCS)\n";
         }
         std::ofstream mo(base + ".mdp");
         mo << head << kept << tail;
@@ -1461,6 +1494,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy.tail = o->tail != 0;
     m.energy.threads = o->threads;
     m.respa = std::clamp(o->respa, 1, 16);
+    m.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
     if (progress)
       m.progress = [&](const caps::ThermoRow& r) {
         caps_thermo t{r.step, r.time_ps, r.temperature, r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density};
@@ -1489,6 +1523,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     {
       const bool nvt = m.thermostat != caps::Thermostat::None, npt = nvt && m.barostat != caps::Barostat::None;
       std::vector<std::string> c = {"swope1982"};
+      if (m.constraints != caps::ConstraintMode::None) c.push_back("ryckaert1977"), c.push_back("andersen1983");
       if (m.thermostat == caps::Thermostat::Bussi) c.push_back("bussi2007");
       if (npt && m.barostat == caps::Barostat::CRescale) c.push_back("bernetti2020");
       if (npt && m.barostat == caps::Barostat::Berendsen) c.push_back("berendsen1984");
@@ -1496,6 +1531,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       caps::KeyValues pr = {{"length", g6(m.dt * double(m.steps) / 1000.0) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs"},
                             {"temperature", g6(m.temperature) + " K"}, {"thermostat", std::string(caps::to_string(m.thermostat)) + (nvt ? " · τ " + g6(m.tau_t) + " fs" : "")}};
       if (npt) pr.push_back({"barostat", std::string(caps::to_string(m.barostat)) + " · " + g6(m.pressure) + " atm · τ " + g6(m.tau_p) + " fs"});
+      if (m.constraints != caps::ConstraintMode::None) pr.push_back({"constraints", caps::to_string(m.constraints)});
       pr.push_back({"force field", ff_label(d)});
       const bool drew = m.new_velocities || s.velocities.empty();
       prov_step(d, npt ? "dynamics.npt" : nvt ? "dynamics.nvt" : "dynamics.nve", npt ? "NPT molecular dynamics" : nvt ? "NVT molecular dynamics" : "NVE molecular dynamics",
@@ -1556,6 +1592,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.barostat = o->barostat == 2 ? caps::Barostat::Berendsen : caps::Barostat::CRescale;
     if (o->tau_t > 0) e.md.tau_t = o->tau_t;
     if (o->tau_p > 0) e.md.tau_p = o->tau_p;
+    e.md.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
     e.md.seed = o->seed;
     if (o->cutoff > 0) e.md.energy.cutoff = o->cutoff;
     e.md.energy.coulomb = o->coulomb != 0;
@@ -1599,6 +1636,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
       double pmax = 0;
       for (const auto& st : e.stages) pmax = std::max(pmax, st.pressure);
       std::vector<std::string> c = {"swope1982", e.md.thermostat == caps::Thermostat::Bussi ? "bussi2007" : ""};
+      if (e.md.constraints != caps::ConstraintMode::None) c.push_back("ryckaert1977"), c.push_back("andersen1983");
       c.push_back(e.md.barostat == caps::Barostat::CRescale ? "bernetti2020" : "berendsen1984");
       if (l21) c.insert(c.begin(), "larsen2011");
       elec_cites(c, e.md.energy.coulomb);
@@ -5688,6 +5726,127 @@ extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t n
     refresh(d);
     return 0;
   });
+}
+
+// Two states of the same atoms compared (design/boards/Compare): the moving one superposed on the reference (Horn 1987),
+// RMSD over all, heavy and backbone atoms, the shift of each atom and the largest ones; colour: the view shows the shift.
+extern "C" int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::runtime_error("no document");
+    const caps::Json o = caps::Json::parse(json && *json ? json : "{}");
+    if (o.text("op") == "clear") {
+      d->atom_values.clear();
+      r["ok"] = true;
+      return report_out(r.dump(0), out, cap);
+    }
+    // a state: {kind: current | start | frame | snapshot, index}
+    auto state = [&](const std::string& key, const std::string& def) -> std::pair<std::vector<caps::Vec3>, std::string> {
+      caps::Json st = o.has(key) ? o[key] : caps::Json::object();
+      const std::string kind = st.kind() == caps::Json::Object ? st.text("kind", def) : def;
+      const int idx = st.kind() == caps::Json::Object ? int(st.num("index", 0)) : 0;
+      std::vector<caps::Vec3> p;
+      if (kind == "current") {
+        for (const auto& a : d->frame.atoms) p.push_back(a.pos);
+        return {p, "current"};
+      }
+      if (kind == "start") {
+        if (!d->undo.empty()) return {d->undo.front().positions, "before the first edit"};
+        if (d->traj.frames()) return {d->traj.positions.front(), "frame 1"};
+        for (const auto& a : d->frame.atoms) p.push_back(a.pos);
+        return {p, "current"};
+      }
+      if (kind == "frame") {
+        if (idx < 0 || size_t(idx) >= d->traj.frames()) throw std::runtime_error("no frame " + std::to_string(idx + 1));
+        return {d->traj.positions[size_t(idx)], "frame " + std::to_string(idx + 1)};
+      }
+      if (kind == "snapshot") {
+        if (idx < 0 || size_t(idx) >= d->snapshots.size()) throw std::runtime_error("no snapshot " + std::to_string(idx + 1));
+        return {d->snapshots[size_t(idx)].state.positions, d->snapshots[size_t(idx)].name};
+      }
+      throw std::runtime_error("unknown state '" + kind + "' (current, start, frame, snapshot)");
+    };
+    auto [ref, ref_name] = state("reference", "start");
+    auto [mov, mov_name] = state("moving", "current");
+    const auto& atoms = d->frame.atoms;
+    if (ref.size() != mov.size()) throw std::runtime_error("the two states have different atoms (" + std::to_string(ref.size()) + " and " + std::to_string(mov.size()) + "): compare states of the same structure");
+    if (ref.size() != atoms.size()) throw std::runtime_error("the states have " + std::to_string(ref.size()) + " atoms, the structure shown " + std::to_string(atoms.size()));
+    const size_t n = ref.size();
+    // periodic cells: each atom's nearest image to its reference position (frames may be wrapped)
+    if (d->frame.cell.valid() && o.text("periodic", "yes") != "no")
+      for (size_t i = 0; i < n; ++i) mov[i] = ref[i] + d->frame.cell.minimum_image(mov[i] - ref[i]);
+    std::vector<char> heavy(n), back(n, 0);
+    for (size_t i = 0; i < n; ++i) heavy[i] = atoms[i].element != 1;
+    for (const auto& chain : caps::backbones(d->frame))
+      for (uint32_t i : chain) back[i] = 1;
+    size_t nback = 0;
+    for (char b : back) nback += b;
+    const std::string fit_on = o.text("fit", "all");
+    std::vector<double> w(n, 1.0);
+    if (fit_on == "heavy") for (size_t i = 0; i < n; ++i) w[i] = heavy[i] ? 1.0 : 0.0;
+    else if (fit_on == "backbone") {
+      if (!nback) throw std::runtime_error("no backbone found to fit on");
+      for (size_t i = 0; i < n; ++i) w[i] = back[i] ? 1.0 : 0.0;
+    } else if (fit_on == "selection") {
+      if (d->selection.size() != n) throw std::runtime_error("select the atoms to fit on first");
+      for (size_t i = 0; i < n; ++i) w[i] = d->selection[i] ? 1.0 : 0.0;
+    } else if (fit_on == "none") {
+      w.clear();
+    } else if (fit_on != "all") throw std::runtime_error("fit on all, heavy, backbone, selection or none");
+    caps::Superposition fit;
+    if (!w.empty() || fit_on == "none") {
+      if (fit_on == "none") fit = caps::Superposition{};
+      else fit = caps::superpose(ref, mov, w);
+    }
+    std::vector<double> shift(n);
+    for (size_t i = 0; i < n; ++i) shift[i] = caps::norm(fit.apply(mov[i]) - ref[i]);
+    caps::Json rm = caps::Json::object();
+    rm["all"] = caps::rmsd_after(fit, ref, mov);
+    rm["heavy"] = caps::rmsd_after(fit, ref, mov, heavy);
+    if (nback) rm["backbone"] = caps::rmsd_after(fit, ref, mov, back);
+    r["rmsd"] = rm;
+    r["fit"] = fit_on;
+    r["fitted"] = double(fit.fitted);
+    r["atoms"] = double(n);
+    r["reference"] = ref_name;
+    r["moving"] = mov_name;
+    double mx = 0, mean = 0;
+    for (double x : shift) mx = std::max(mx, x), mean += x;
+    r["max"] = mx;
+    r["mean"] = n ? mean / double(n) : 0.0;
+    std::vector<size_t> order(n);
+    for (size_t i = 0; i < n; ++i) order[i] = i;
+    const size_t k = std::min(n, size_t(std::max(0.0, o.num("largest", 20))));
+    std::partial_sort(order.begin(), order.begin() + k, order.end(), [&](size_t a, size_t b) { return shift[a] > shift[b]; });
+    caps::Json big = caps::Json::array();
+    for (size_t q = 0; q < k; ++q) {
+      const size_t i = order[q];
+      caps::Json e = caps::Json::object();
+      e["atom"] = double(i);
+      e["label"] = std::string(caps::element(atoms[i].element).symbol) + std::to_string(i + 1);
+      e["element"] = std::string(caps::element(atoms[i].element).symbol);
+      e["molecule"] = double(atoms[i].mol);
+      e["backbone"] = bool(back[i]);
+      e["shift"] = shift[i];
+      big.push_back(e);
+    }
+    r["largest"] = big;
+    if (o.num("per_atom", 0) > 0) {
+      caps::Json all = caps::Json::array();
+      for (double x : shift) all.push_back(x);
+      r["shifts"] = all;
+    }
+    if (o.num("colour", 0) > 0) {
+      d->atom_values = shift;
+      d->atom_values_ramp = 0;
+    }
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = e.what();
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 extern "C" int32_t caps_set_atom_values(caps_doc* d, const double* values, int32_t n, int32_t ramp) {

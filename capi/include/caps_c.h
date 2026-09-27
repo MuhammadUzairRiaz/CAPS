@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 28  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document) */
+#define CAPS_ABI_VERSION 29  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -123,6 +123,7 @@ typedef struct {
   double cutoff;
   int32_t coulomb, tail, threads;
   int32_t respa;                   /* r-RESPA inner steps: bonded forces every dt / respa (0 or 1: off) */
+  int32_t constraints;             /* 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE) */
 } caps_md_opts;
 
 typedef struct {
@@ -165,6 +166,7 @@ typedef struct {
   double block_ps;
   int32_t max_blocks;
   double tol_density, tol_energy, tol_rg;  /* relative, kcal/mol per atom, relative */
+  int32_t constraints;                     /* 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE) */
 } caps_equil_opts;
 
 /* Equilibrate progress: (stage, stages, stage label, thermo row, user) -> non-zero cancels. */
@@ -318,6 +320,9 @@ int32_t caps_save(caps_doc* d, const char* path);
    complete, else GAFF of C and H): units, styles, special bonds, read_data <data_name>, neighbour settings, ending
    before any run command. Returns the length needed including the final NUL (text = NULL to size the buffer). */
 int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_t cap);
+/* The LAMMPS fix shake line holding the constraints of mode (1 bonds to hydrogen and rigid water, 2 all bonds) on
+   group, with the type numbers of the data file caps_lammps_input reads; "" when nothing is held (ABI 29). */
+int32_t caps_lammps_shake(caps_doc* d, int32_t mode, const char* group, char* text, int32_t cap);
 /* GROMACS files with the same force field (ABI 22): when stem is non-empty, writes stem.top, stem.gro and stem.mdp (a
    single-point run). Returns the .mdp non-bonded settings (cut-offs, modifiers, dispersion correction, electrostatics)
    preceded by "; note: " lines where GROMACS cannot compute exactly what CAPS does. Fails for forms GROMACS lacks
@@ -466,6 +471,13 @@ int32_t caps_molecule_info(caps_doc* d, int32_t atom, char* out, int32_t cap);
    n = 0 clears). */
 int32_t caps_sasa(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_set_atom_values(caps_doc* d, const double* values, int32_t n, int32_t ramp);
+/* Two states of the same atoms compared (ABI 29, design/boards/Compare): JSON {reference: {kind: "start" | "current" |
+   "frame" | "snapshot", index}, moving: {…} (default current), fit: "all" | "heavy" | "backbone" | "selection" | "none",
+   periodic: "yes" | "no" (each atom's nearest image to its reference), largest: 20, per_atom: 1 (the shifts array),
+   colour: 1 (the view shows each atom's shift on a ramp)} or {op: "clear"} (colouring off) → {ok, error, rmsd: {all,
+   heavy, backbone}, fit, fitted, atoms, reference, moving, max, mean, largest: [{atom, label, element, molecule,
+   backbone, shift}], shifts}. The moving state is superposed on the reference (Horn 1987 quaternions). */
+int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap);
 /* v20 cell editor (design/boards/CellEditor): caps_set_cell JSON {a, b, c, alpha, beta, gamma, scale: true} (a along x,
    b in xy; scale keeps fractional coordinates, false leaves the atoms where they are); caps_supercell replicates the
    frame na × nb × nc (atoms, bonds, molecules). Both undoable. */

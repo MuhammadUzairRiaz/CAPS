@@ -36,7 +36,7 @@ public partial class MainViewModel
         set
         {
             if (!Set(ref _histOpen, value)) return;
-            if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; LodOpen = false; LensOpen = false; RefreshHistoryPanel(); }
+            if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; LodOpen = false; LensOpen = false; StatesOpen = false; RefreshHistoryPanel(); }
             Raise(nameof(ShowHistoryPanel)); Raise(nameof(ShowStudioTabs));
         }
     }

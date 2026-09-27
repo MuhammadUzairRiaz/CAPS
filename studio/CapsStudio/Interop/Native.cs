@@ -178,6 +178,7 @@ public struct CapsMdOpts
     public double Cutoff;
     public int Coulomb, Tail, Threads;
     public int Respa;             // r-RESPA inner steps (0 or 1: off)
+    public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -209,6 +210,7 @@ public struct CapsEquilOpts
     public double BlockPs;
     public int MaxBlocks;
     public double TolDensity, TolEnergy, TolRg;
+    public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -419,6 +421,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_edit")] public static extern int Edit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_undo")] public static extern int Undo(IntPtr doc, int redo);
     [DllImport(Lib, EntryPoint = "caps_history")] public static extern int History(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_compare_states")] public static extern int CompareStates(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_select")] public static extern int Select(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_selection")] public static extern int Selection(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_tacticity")] public static extern int Tacticity(IntPtr doc, byte[]? json, int cap);
@@ -455,6 +458,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_field_assign")] public static extern int FieldAssign(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string ff, [MarshalAs(UnmanagedType.LPUTF8Str)] string? rules, int charges);
     [DllImport(Lib, EntryPoint = "caps_analyze")] public static extern int Analyze(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, CapsAnalyzeProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_analyze_ex")] public static extern int AnalyzeEx(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, in CapsMechOpts m, CapsAnalyzeProgress? progress, IntPtr user);
+    [DllImport(Lib, EntryPoint = "caps_lammps_shake")] public static extern int LammpsShake(IntPtr doc, int mode, [MarshalAs(UnmanagedType.LPUTF8Str)] string group, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_lammps_input")] public static extern int LammpsInput(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dataName, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_gromacs")] public static extern int Gromacs(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? stem, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
@@ -1221,6 +1225,20 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>The LAMMPS input setup (styles, read_data, neighbour list) for the data file Save writes.</summary>
+    /// <summary>The LAMMPS fix shake line for these constraints (1 bonds to hydrogen, 2 all bonds); "" when nothing is held.</summary>
+    public string LammpsShake(int mode, string group = "all")
+    {
+        using (Hold())
+        {
+            Alive();
+            var n = Native.LammpsShake(H, mode, group, null, 0);
+            Check(n);
+            var buf = new byte[n];
+            Check(Native.LammpsShake(H, mode, group, buf, n));
+            return System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0');
+        }
+    }
+
     public string LammpsInput(string dataName)
     {
         using (Hold())
@@ -1333,6 +1351,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { using (Hold()) { Alive(); return Native.Undo(H, redo ? 1 : 0) == 0; } }
     public string History() { using (Hold()) return JsonCall((b, c) => Native.History(H, b, c)); }
+    /// <summary>Two states of the structure superposed (caps_compare_states): RMSD, per-atom shifts, the largest ones.</summary>
+    public string CompareStates(string json) { using (Hold()) return JsonCall((b, c) => Native.CompareStates(H, json, b, c)); }
     /// <summary>Each atom's residue number (Grow: the repeat unit's position along its chain, from 1; 0 = none).</summary>
     public int[] AtomResidues() { using (Hold()) { Alive(); var n = Native.AtomResidues(H, null, 0); var r = new int[n]; Native.AtomResidues(H, r, n); return r; } }
     // display (design/boards DisplayStyles, LensView), hydrogens (AddHydrogens), resolution (ModelResolution)

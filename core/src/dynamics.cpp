@@ -80,6 +80,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     throw std::invalid_argument("the deformed axis cannot also follow the barostat: use per-axis coupling without that axis");
   if (o.respa < 1 || o.respa > 16) throw std::invalid_argument("r-RESPA inner steps must be 1 … 16");
   if (o.respa > 1 && o.thermostat == Thermostat::Langevin) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
+  if (o.respa > 1 && o.constraints != ConstraintMode::None) throw std::invalid_argument("r-RESPA and bond constraints are alternatives: choose one");
 
   if (o.field && o.field->atom_type.size() != n)
     throw FieldError("the assigned force field is for " + std::to_string(o.field->atom_type.size()) + " atoms, the structure has " +
@@ -108,8 +109,14 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     if (o.fixed[i] && !held[i]) held[i] = 1, ++nheld;
   nheld += nvs;
   if (nheld + 1 >= n) throw std::invalid_argument("dynamics needs at least two atoms that move");
+  // bond constraints (SHAKE/RATTLE), one degree of freedom each
+  ConstraintSet cset = make_constraints(s, ff, o.constraints, held);
+  for (const auto& note : cset.notes) rep.notes.push_back(note);
+  const size_t ncons = cset.c.size();
+  ConstraintSolver cons(std::move(cset), m, s.cell);
   // with held atoms momentum is not conserved: every free coordinate counts
-  const double ndof = nheld ? 3.0 * double(n - nheld) : 3.0 * n - 3.0;
+  const double ndof = (nheld ? 3.0 * double(n - nheld) : 3.0 * n - 3.0) - double(ncons);
+  if (ndof < 1) throw std::invalid_argument("the constraints leave no degree of freedom");
   if (nheld > nvs) rep.notes.push_back(std::to_string(nheld - nvs) + " atoms held in place");
   if (nvs) rep.notes.push_back(std::to_string(nvs) + " virtual sites placed from their atoms each step");
 
@@ -117,6 +124,13 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   std::vector<double> x(3 * n), v(3 * n, 0.0), f, f_slow, f_fast;   // f_slow, f_fast: r-RESPA's two parts (f is their sum)
   for (size_t i = 0; i < n; ++i)
     for (int k = 0; k < 3; ++k) x[3 * i + k] = s.atoms[i].pos[k];
+  // the constrained lengths hold from the start (bonds move to them along their own direction)
+  auto project = [&] {
+    if (!ncons) return;
+    cons.reference(x, cell);
+    cons.shake(x, nullptr, 0);
+  };
+  project();
 
   std::mt19937_64 rng(o.seed);
   std::normal_distribution<double> gauss(0.0, 1.0);
@@ -139,6 +153,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       }
     for (size_t i = 0; i < n; ++i)
       for (int k = 0; k < 3; ++k) v[3 * i + k] = held[i] ? 0.0 : v[3 * i + k] - p[k] / mfree;
+    if (ncons) cons.rattle(x, v, cell);
     const double t0 = 2 * kinetic_energy(v, m) / (ndof * kB);
     if (t0 > 0)
       for (auto& q : v) q *= std::sqrt(o.temperature / t0);
@@ -150,6 +165,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (nheld)
     for (size_t i = 0; i < n; ++i)
       if (held[i]) v[3 * i] = v[3 * i + 1] = v[3 * i + 2] = 0;
+  if (ncons) cons.rattle(x, v, cell);
   // steered pulling: the group, its mass, and where its centre starts along the pull direction
   std::vector<uint32_t> pulled;
   double mpull = 0, com0 = 0, pull_f = 0, pull_x = 0;
@@ -254,7 +270,26 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   };
   auto kick = [&](double h) { kick_with(f, h); };
   auto drift = [&](double h) {
+    if (ncons) cons.reference(x, cell);
     for (size_t k = 0; k < x.size(); ++k) x[k] += h * v[k];
+    if (ncons) cons.shake(x, &v, h);
+  };
+  // RATTLE's velocity half after the closing half kick: its impulse is the constraint force at the new positions,
+  // which joins the virial (pressure, barostat)
+  auto constraint_virial = [&] {
+    et.virial += cons.virial();
+    for (int c = 0; c < 6; ++c) et.w[c] += cons.tensor()[c];
+  };
+  auto settle_v = [&] {
+    if (!ncons) return;
+    cons.rattle(x, v, cell, dt);
+    constraint_virial();
+  };
+  // after the cell is scaled or deformed: bonds back to their lengths, no relative velocity along them
+  auto reproject = [&] {
+    if (!ncons) return;
+    project();
+    cons.rattle(x, v, cell);
   };
 
   // Bussi et al. 2007, appendix: the new kinetic energy is drawn from its canonical distribution in one step.
@@ -309,11 +344,14 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       const double k0 = kinetic_energy(v, m);
       for (size_t i = 0; i < n; ++i)
         for (int k = 0; k < 3; ++k) v[3 * i + k] = held[i] ? 0.0 : c1 * v[3 * i + k] + c2 * sdv[i] * gauss(rng);
+      if (ncons) cons.rattle(x, v, cell);   // the noise has no part along a constraint
       bath -= kinetic_energy(v, m) - k0;
       drift(0.5 * dt);
       deform(step);
+      if (o.deform_axis >= 0) reproject();
       et = compute();
       kick(0.5 * dt);
+      settle_v();
     } else if (respa > 1) {
       // outer half kick with the non-bonded forces, `respa` velocity-Verlet steps with the bonded ones, outer half kick
       const double h = dt / respa;
@@ -332,8 +370,10 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       kick(0.5 * dt);
       drift(dt);
       deform(step);
+      if (o.deform_axis >= 0) reproject();
       et = compute();
       kick(0.5 * dt);
+      settle_v();
       if (o.thermostat == Thermostat::Bussi) bussi(dt);
     }
 
@@ -346,7 +386,9 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
         const double deps = std::clamp(-o.compressibility / o.tau_p * (o.pressure - r.p[k]) * hp / 3, -0.0033, 0.0033);
         scale_axis(k, std::exp(deps));
       }
+      reproject();
       et = compute();
+      if (ncons) constraint_virial();
     } else if (o.barostat != Barostat::None && step % std::max(1, o.barostat_every) == 0) {
       const double hp = dt * std::max(1, o.barostat_every);
       const double k = kinetic_energy(v, m);
@@ -362,7 +404,9 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
         for (auto& q : v) q /= mu;
         bath -= kinetic_energy(v, m) - k;
       }
+      reproject();
       et = compute();
+      if (ncons) constraint_virial();
     }
 
     if (o.each_step) o.each_step(et, x, cell, step + o.step_offset);
@@ -382,6 +426,10 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   rep.notes.insert(rep.notes.begin(), b);
   std::snprintf(b, sizeof b, "thermostat %s (τ %.0f fs) · barostat %s", to_string(o.thermostat), o.tau_t, to_string(o.barostat));
   rep.notes.insert(rep.notes.begin() + 1, b);
+  if (ncons) {
+    std::snprintf(b, sizeof b, "constraints: %s, %zu in all; %.0f degrees of freedom", to_string(o.constraints), ncons, ndof);
+    rep.notes.insert(rep.notes.begin() + 2, b);
+  }
   if (respa > 1) {
     std::snprintf(b, sizeof b, "r-RESPA: non-bonded forces every %.2f fs, bonded forces every %.3f fs (%d inner steps)", dt, dt / respa, respa);
     rep.notes.insert(rep.notes.begin() + 2, b);

@@ -19,6 +19,8 @@ add_library(caps_core STATIC
   src/gromacs.cpp
   src/chipair.cpp
   src/dynamics.cpp
+  src/constraints.cpp
+  src/superpose.cpp
   src/equilibrate.cpp
   src/pack.cpp
   src/react.cpp

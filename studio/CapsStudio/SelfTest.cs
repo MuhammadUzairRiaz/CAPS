@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 28, "native ABI version 28");
+        Check(Native.AbiVersion() == 29, "native ABI version 29");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -215,6 +215,17 @@ internal static class SelfTest
         vm.Frame = 0;
         var f0 = vm.Document.Atom(10);
         Check(Math.Abs(f2.X - f0.X - 1.0) < 1e-3, $"frame 2 moves atom 11 by {f2.X - f0.X:F3} Å in x (sample pattern)");
+        {
+            // compare states: frame 3 is frame 1 moved 1 Å along x (the sample pattern above), so the fit leaves nothing and no fit leaves 1 Å everywhere
+            var fit = System.Text.Json.Nodes.JsonNode.Parse(vm.Document.CompareStates("{\"reference\":{\"kind\":\"frame\",\"index\":0},\"moving\":{\"kind\":\"frame\",\"index\":2},\"periodic\":\"no\"}"))!;
+            var raw = System.Text.Json.Nodes.JsonNode.Parse(vm.Document.CompareStates("{\"reference\":{\"kind\":\"frame\",\"index\":0},\"moving\":{\"kind\":\"frame\",\"index\":2},\"fit\":\"none\",\"periodic\":\"no\"}"))!;
+            var rf = fit["rmsd"]!["all"]!.GetValue<double>();
+            var rr = raw["rmsd"]!["all"]!.GetValue<double>();
+            vm.StatesOpen = true;
+            var panel = vm.CompareRmsdAll;
+            vm.StatesOpen = false;
+            Check(rf < 1e-6 && Math.Abs(rr - (f2.X - f0.X)) < 1e-3 && panel.EndsWith("Å"), $"compare states: frame 3 on frame 1 RMSD {rf:0.######} Å after the fit, {rr:0.###} Å without · panel {panel}");
+        }
 
         foreach (var (bg, name) in new[] { (0, "dark"), (1, "white"), (2, "transparent") })
         {
@@ -302,6 +313,12 @@ internal static class SelfTest
             try { run.Wait(); } catch { }
             Check(longRun && readMs < 200 && during.Atoms == cell.Summary().Atoms && during.Frames == 1,
                   $"a run holds the structure: the window reads its shadow in {readMs:F1} ms ({during.Atoms} atoms)");
+        }
+        {
+            // bond constraints: 2 fs steps with bonds to hydrogen held; the report says so, the LAMMPS line holds the same bonds
+            var shk = cell.Md(mdOpts with { Dt = 2, Steps = 100, Constraints = 1 }, null);
+            var line = cell.LammpsShake(1);
+            Check(shk.Contains("SHAKE/RATTLE") && line.Contains("shake") && line.Contains(" m 1."), $"bond constraints: {shk.Split('\n').FirstOrDefault(l => l.Contains("SHAKE"))} · {line.Trim()}");
         }
         var cont = cell.Md(mdOpts with { Steps = 100 }, null);
         Check(cont.Contains("velocities taken"), "md: a second run continues with the same velocities");
