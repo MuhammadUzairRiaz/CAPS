@@ -1269,6 +1269,24 @@ internal static class SelfTest
             vm.UndoEdit(false);
             Check(grafted > bare && sulfur > 0 && sulfur % 4 == 0 && (grafted - bare) == sulfur / 4 * 63 && vm.Document!.Summary().Atoms == bare,
                   $"silane: TESPT on silica · {bare} → {grafted} atoms, {sulfur / 4} grafts · undone · {vm.Status}");
+            // a copper particle: adaptive CNA finds its FCC core, surface atoms are other; centrosymmetry is large there
+            vm.OpenNano();
+            vm.NanoKind = 2;
+            vm.ParticleCrystal = Math.Max(0, vm.Crystals.ToList().FindIndex(c => c.Name.Contains("copper", StringComparison.OrdinalIgnoreCase)));
+            vm.ParticleRadius = 12;
+            vm.ParticlePassivate = false;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var cuAtoms = vm.Document!.Summary().Atoms;
+            vm.OpenVisualize();
+            vm.ClearPipeline();
+            vm.AddStep("cna");
+            string A(string k) => vm.PipeAttributes.FirstOrDefault(a => a.Key == k)?.Value ?? "0";
+            var fcc = long.Parse(A("CommonNeighborAnalysis.counts.FCC"));
+            var other = long.Parse(A("CommonNeighborAnalysis.counts.Other"));
+            vm.ClearPipeline();
+            vm.InspectorTab = 0;   // the step opened its table: back to the particles
+            vm.SetModule(8);
+            Check(fcc > cuAtoms / 2 && fcc + other == cuAtoms && other > 0, $"CNA on a copper particle: {fcc} FCC, {other} other of {cuAtoms}");
             vm.NanoKind = 1;
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
