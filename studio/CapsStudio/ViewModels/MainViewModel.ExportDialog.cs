@@ -249,7 +249,8 @@ public sealed partial class MainViewModel
                 ExportProgress = "Encoding MP4 with ffmpeg…";
                 var psi = new System.Diagnostics.ProcessStartInfo(FfmpegPath!) { UseShellExecute = false, RedirectStandardError = true };
                 foreach (var a in new[] { "-y", "-framerate", _movFps.ToString(CultureInfo.InvariantCulture), "-i", Path.Combine(seqDir, "frame_%05d.png"),
-                                          "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", path }) psi.ArgumentList.Add(a);
+                                          "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-tune", "animation", "-pix_fmt", "yuv420p",
+                                          "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-movflags", "+faststart", path }) psi.ArgumentList.Add(a);
                 using var p = System.Diagnostics.Process.Start(psi)!;
                 var err = await p.StandardError.ReadToEndAsync();
                 await p.WaitForExitAsync();
