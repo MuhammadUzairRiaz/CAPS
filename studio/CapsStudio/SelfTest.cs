@@ -1501,6 +1501,16 @@ internal static class SelfTest
             Check(heavy == "640" && beforeRun == "640" && pending && afterRun == "1280" && codeField?.DraftChanged == false,
                   $"python step typed: {heavy} → {afterRun} after Run (pending {pending}) · {vm.PipelineRows.LastOrDefault()?.Summary}");
             vm.ClearPipeline();
+            // chain orientation per atom, then an affine strain of 10 % along x
+            vm.AddStep("orientation");
+            var orS = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Orientation.S")?.Value;
+            var hasProps = vm.PipeProperties().Contains("Orientation") && vm.PipeProperties().Contains("Crystalline");
+            vm.ClearPipeline();
+            vm.AddStep("affine_transform");
+            var ratio = vm.PipeAttributes.FirstOrDefault(a => a.Key == "AffineTransformation.volume_ratio")?.Value;
+            Check(orS != null && double.Parse(orS, System.Globalization.CultureInfo.InvariantCulture) is > 0 and < 0.5 && hasProps && ratio == "1.1",
+                  $"orientation step: S {orS}, properties {hasProps} · affine: volume × {ratio}");
+            vm.ClearPipeline();
             vm.SetModule(8);
         }
 
