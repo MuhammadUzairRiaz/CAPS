@@ -118,9 +118,10 @@ typedef struct {
   double dt;                       /* fs */
   int64_t steps;
   double temperature;              /* K */
-  int32_t thermostat;              /* 0 none (NVE), 1 Bussi, 2 Langevin */
+  int32_t thermostat;              /* 0 none (NVE), 1 Bussi, 2 Langevin, 3 Nosé–Hoover chain (LAMMPS fix nvt) */
   double tau_t;                    /* fs */
-  int32_t barostat;                /* 0 none, 1 stochastic cell rescaling, 2 Berendsen */
+  int32_t barostat;                /* 0 none, 1 stochastic cell rescaling, 2 Berendsen, 3 MTK (isotropic, LAMMPS fix npt iso;
+                                      with the Nosé–Hoover thermostat or none, no constraints) */
   double pressure, tau_p;          /* atm, fs */
   int32_t new_velocities;          /* draw velocities even when the document has them */
   uint64_t seed;
@@ -167,8 +168,8 @@ int32_t caps_protocol_text(const char* name, const caps_protocol_params* p, char
 
 typedef struct {
   double dt;                               /* fs */
-  int32_t thermostat;                      /* 1 Bussi, 2 Langevin */
-  int32_t barostat;                        /* 1 stochastic cell rescaling, 2 Berendsen */
+  int32_t thermostat;                      /* 1 Bussi, 2 Langevin, 3 Nosé–Hoover chain */
+  int32_t barostat;                        /* 1 stochastic cell rescaling, 2 Berendsen, 3 MTK (with Nosé–Hoover) */
   double tau_t, tau_p;                     /* fs */
   uint64_t seed;
   double cutoff;

@@ -83,6 +83,8 @@ const Cite kCites[] = {
     {"honeycutt1987", "@article{honeycutt1987,\n  author = {Honeycutt, J. D. and Andersen, H. C.},\n  title = {Molecular dynamics study of melting and freezing of small {L}ennard-{J}ones clusters},\n  journal = {J. Phys. Chem.}, volume = {91}, pages = {4950--4963}, year = {1987}, doi = {10.1021/j100303a014}\n}"},
     {"kelchner1998", "@article{kelchner1998,\n  author = {Kelchner, C. L. and Plimpton, S. J. and Hamilton, J. C.},\n  title = {Dislocation nucleation and defect structure during surface indentation},\n  journal = {Phys. Rev. B}, volume = {58}, pages = {11085--11088}, year = {1998}, doi = {10.1103/PhysRevB.58.11085}\n}"},
     {"everaers2004", "@article{everaers2004,\n  author = {Everaers, R. and Sukumaran, S. K. and Grest, G. S. and Svaneborg, C. and Sivasubramanian, A. and Kremer, K.},\n  title = {Rheology and microscopic topology of entangled polymeric liquids},\n  journal = {Science}, volume = {303}, pages = {823--826}, year = {2004}, doi = {10.1126/science.1091215}\n}"},
+    {"martyna1992", "@article{martyna1992,\n  author = {Martyna, G. J. and Klein, M. L. and Tuckerman, M.},\n  title = {{N}os{\\'e}--{H}oover chains: the canonical ensemble via continuous dynamics},\n  journal = {J. Chem. Phys.}, volume = {97}, pages = {2635--2643}, year = {1992}, doi = {10.1063/1.463940}\n}"},
+    {"martyna1994", "@article{martyna1994,\n  author = {Martyna, G. J. and Tobias, D. J. and Klein, M. L.},\n  title = {Constant pressure molecular dynamics algorithms},\n  journal = {J. Chem. Phys.}, volume = {101}, pages = {4177--4189}, year = {1994}, doi = {10.1063/1.467468}\n}"},
 };
 
 }  // namespace

@@ -1916,6 +1916,20 @@ internal static class SelfTest
             vm.MdEnsemble = 1;
             vm.PreflightNow().GetAwaiter().GetResult();
             Check(vm.MdDeck.Contains("read_data"), "LAMMPS deck back");
+            // Nosé–Hoover NPT: MTK chooses the Nosé–Hoover thermostat; the decks name fix npt and Nose-Hoover/MTTK
+            vm.MdEnsemble = 2;
+            vm.MdBarostat = 2;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var nhDeck = vm.MdDeck;
+            vm.MdGromacs = true;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var nhGmx = vm.MdDeck;
+            vm.MdGromacs = false;
+            Check(vm.MdThermostat == 2 && nhDeck.Contains("fix 1 all npt temp 300 300 100 iso 1 1 1000") && nhGmx.Contains("Nose-Hoover") && nhGmx.Contains("MTTK"),
+                  $"Nosé–Hoover NPT: thermostat {vm.MdThermostat}, LAMMPS {nhDeck.Split('\n').FirstOrDefault(l => l.StartsWith("fix 1"))}, GROMACS MTTK {nhGmx.Contains("MTTK")}");
+            vm.MdBarostat = 0;
+            vm.MdThermostat = 0;
+            vm.MdEnsemble = 1;
         }
 
         // View tools: the view-plane fit behind Move, lasso selection, a move with undo, a pinned distance

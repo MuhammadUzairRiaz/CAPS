@@ -27,13 +27,15 @@ Thermostat thermostat_from_string(const std::string& s) {
   if (s == "none" || s == "nve") return Thermostat::None;
   if (s == "bussi" || s == "csvr" || s == "v-rescale") return Thermostat::Bussi;
   if (s == "langevin" || s == "baoab") return Thermostat::Langevin;
-  throw std::invalid_argument("unknown thermostat '" + s + "' (none, bussi, langevin)");
+  if (s == "nose-hoover" || s == "nosehoover" || s == "nh" || s == "nhc") return Thermostat::NoseHoover;
+  throw std::invalid_argument("unknown thermostat '" + s + "' (none, bussi, langevin, nose-hoover)");
 }
 
 Barostat barostat_from_string(const std::string& s) {
   if (s == "none") return Barostat::None;
   if (s == "crescale" || s == "c-rescale") return Barostat::CRescale;
   if (s == "berendsen") return Barostat::Berendsen;
+  if (s == "mtk" || s == "mttk" || s == "nose-hoover" || s == "parrinello-rahman-mtk") return Barostat::MTK;
   throw std::invalid_argument("unknown barostat '" + s + "' (none, crescale, berendsen)");
 }
 
@@ -42,6 +44,7 @@ const char* to_string(Thermostat t) {
     case Thermostat::None: return "none (NVE)";
     case Thermostat::Bussi: return "Bussi velocity rescaling";
     case Thermostat::Langevin: return "Langevin (BAOAB)";
+    case Thermostat::NoseHoover: return "Nosé–Hoover chain (3)";
   }
   return "?";
 }
@@ -51,6 +54,7 @@ const char* to_string(Barostat b) {
     case Barostat::None: return "none";
     case Barostat::CRescale: return "stochastic cell rescaling";
     case Barostat::Berendsen: return "Berendsen";
+    case Barostat::MTK: return "Martyna–Tobias–Klein (isotropic, chain of 3)";
   }
   return "?";
 }
@@ -81,6 +85,12 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.respa < 1 || o.respa > 16) throw std::invalid_argument("r-RESPA inner steps must be 1 … 16");
   if (o.respa > 1 && o.thermostat == Thermostat::Langevin) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
   if (o.respa > 1 && o.constraints != ConstraintMode::None) throw std::invalid_argument("r-RESPA and bond constraints are alternatives: choose one");
+  const bool nhc = o.thermostat == Thermostat::NoseHoover, mtk = o.barostat == Barostat::MTK;
+  if ((nhc || mtk) && o.respa > 1) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
+  if (mtk && (o.anisotropic || o.deform_axis >= 0)) throw std::invalid_argument("the MTK barostat couples the volume isotropically; per-axis coupling and deformation use Berendsen");
+  if (mtk && o.constraints != ConstraintMode::None) throw std::invalid_argument("the MTK barostat runs without bond constraints; use the stochastic cell rescaling barostat with constraints");
+  if (mtk && !(o.thermostat == Thermostat::NoseHoover || o.thermostat == Thermostat::None))
+    throw std::invalid_argument("the MTK barostat pairs with the Nosé–Hoover thermostat (NPT) or none (NPH)");
 
   if (o.field && o.field->atom_type.size() != n)
     throw FieldError("the assigned force field is for " + std::to_string(o.field->atom_type.size()) + " atoms, the structure has " +
@@ -214,6 +224,15 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   };
   EnergyTerms et = compute();
   double bath = 0;   // energy taken out of the system by the thermostat and barostat, kcal/mol
+  // Nosé–Hoover chains (LAMMPS fix nh): the particles' chain eta and the barostat's chain etap, three each; omega_dot the
+  // logarithmic strain rate of the volume (isotropic: one value for all three axes)
+  constexpr int kChain = 3;
+  double eta[kChain] = {}, eta_dot[kChain + 1] = {}, eta_dotdot[kChain] = {}, eta_mass[kChain] = {};
+  double etap[kChain] = {}, etap_dot[kChain + 1] = {}, etap_dotdot[kChain] = {}, etap_mass[kChain] = {};
+  double omega_dot = 0, omega_mass = 0, mtk_term2 = 0;
+  const double vol0 = cell.valid() ? cell.volume() : 0;
+  const double t_freq = 1.0 / std::max(o.tau_t, 1e-9), p_freq = 1.0 / std::max(o.tau_p, 1e-9);
+  const double natoms = double(n);
 
   auto density = [&] { return cell.valid() ? mtot / kNA / (cell.volume() * 1e-24) : 0.0; };
   const bool ramp = o.temperature_end >= 0 && o.steps > 0;
@@ -242,7 +261,22 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       r.ly = norm(cell.b);
       r.lz = norm(cell.c);
     }
-    r.conserved = r.total + bath + (o.barostat != Barostat::None ? o.pressure * r.volume / kAtm : 0.0);
+    if (nhc || mtk) {
+      // the extended system's energy (LAMMPS fix nh compute_scalar)
+      const double tt = target_t(step), kt = kB * tt;
+      double e = 0;
+      if (nhc) {
+        e += ndof * kt * eta[0] + 0.5 * eta_mass[0] * eta_dot[0] * eta_dot[0];
+        for (int c = 1; c < kChain; ++c) e += kt * eta[c] + 0.5 * eta_mass[c] * eta_dot[c] * eta_dot[c];
+      }
+      if (mtk) {
+        e += 3 * 0.5 * omega_mass * omega_dot * omega_dot + o.pressure * (r.volume - vol0) / kAtm;
+        e += 3 * kt * etap[0] + 0.5 * etap_mass[0] * etap_dot[0] * etap_dot[0];   // LAMMPS: one kT per coupled axis
+        for (int c = 1; c < kChain; ++c) e += kt * etap[c] + 0.5 * etap_mass[c] * etap_dot[c] * etap_dot[c];
+      }
+      r.conserved = r.total + e;
+    } else
+      r.conserved = r.total + bath + (o.barostat != Barostat::None ? o.pressure * r.volume / kAtm : 0.0);
     r.pull_force = pull_f;
     r.pull_disp = pull_x;
     return r;
@@ -306,6 +340,85 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     bath -= knew - k;
   };
 
+  const double dthalf = 0.5 * o.dt, dt4 = 0.25 * o.dt, dt8 = 0.125 * o.dt;
+  // the particles' chain over half a step (LAMMPS FixNH::nhc_temp_integrate, one loop, no drag)
+  auto nhc_temp = [&](double tt) {
+    const double kt = kB * tt, ke_target = ndof * kt;
+    eta_mass[0] = ndof * kt / (t_freq * t_freq);
+    for (int c = 1; c < kChain; ++c) eta_mass[c] = kt / (t_freq * t_freq);
+    double kecur = 2 * kinetic_energy(v, m);
+    eta_dotdot[0] = (kecur - ke_target) / eta_mass[0];
+    for (int c = kChain - 1; c > 0; --c) {
+      const double ex = std::exp(-dt8 * eta_dot[c + 1]);
+      eta_dot[c] = (eta_dot[c] * ex + eta_dotdot[c] * dt4) * ex;
+    }
+    double ex = std::exp(-dt8 * eta_dot[1]);
+    eta_dot[0] = (eta_dot[0] * ex + eta_dotdot[0] * dt4) * ex;
+    const double factor = std::exp(-dthalf * eta_dot[0]);
+    for (auto& q : v) q *= factor;
+    kecur *= factor * factor;
+    eta_dotdot[0] = (kecur - ke_target) / eta_mass[0];
+    for (int c = 0; c < kChain; ++c) eta[c] += dthalf * eta_dot[c];
+    eta_dot[0] = (eta_dot[0] * ex + eta_dotdot[0] * dt4) * ex;
+    for (int c = 1; c < kChain; ++c) {
+      ex = std::exp(-dt8 * eta_dot[c + 1]);
+      eta_dot[c] *= ex;
+      eta_dotdot[c] = (eta_mass[c - 1] * eta_dot[c - 1] * eta_dot[c - 1] - kt) / eta_mass[c];
+      eta_dot[c] = (eta_dot[c] + eta_dotdot[c] * dt4) * ex;
+    }
+  };
+  // the barostat's chain over half a step (FixNH::nhc_press_integrate, iso)
+  auto nhc_press = [&](double tt) {
+    const double kt = kB * tt;
+    omega_mass = (natoms + 1) * kt / (p_freq * p_freq);
+    for (int c = 0; c < kChain; ++c) etap_mass[c] = kt / (p_freq * p_freq);
+    for (int c = 1; c < kChain; ++c) etap_dotdot[c] = (etap_mass[c - 1] * etap_dot[c - 1] * etap_dot[c - 1] - kt) / etap_mass[c];
+    double kecur = 3 * omega_mass * omega_dot * omega_dot;
+    etap_dotdot[0] = (kecur - kt) / etap_mass[0];
+    for (int c = kChain - 1; c > 0; --c) {
+      const double ex = std::exp(-dt8 * etap_dot[c + 1]);
+      etap_dot[c] = (etap_dot[c] * ex + etap_dotdot[c] * dt4) * ex;
+    }
+    double ex = std::exp(-dt8 * etap_dot[1]);
+    etap_dot[0] = (etap_dot[0] * ex + etap_dotdot[0] * dt4) * ex;
+    for (int c = 0; c < kChain; ++c) etap[c] += dthalf * etap_dot[c];
+    omega_dot *= std::exp(-dthalf * etap_dot[0]);
+    kecur = 3 * omega_mass * omega_dot * omega_dot;
+    etap_dotdot[0] = (kecur - kt) / etap_mass[0];
+    etap_dot[0] = (etap_dot[0] * ex + etap_dotdot[0] * dt4) * ex;
+    for (int c = 1; c < kChain; ++c) {
+      ex = std::exp(-dt8 * etap_dot[c + 1]);
+      etap_dot[c] *= ex;
+      etap_dotdot[c] = (etap_mass[c - 1] * etap_dot[c - 1] * etap_dot[c - 1] - kt) / etap_mass[c];
+      etap_dot[c] = (etap_dot[c] + etap_dotdot[c] * dt4) * ex;
+    }
+  };
+  // the volume's momentum over half a step (FixNH::nh_omega_dot, iso, with the MTK terms)
+  auto omega_step = [&](double tt) {
+    const double kt = kB * tt;
+    omega_mass = (natoms + 1) * kt / (p_freq * p_freq);
+    const double vol = cell.volume();
+    const double ke2 = 2 * kinetic_energy(v, m);
+    const double p = (ke2 + et.virial) / (3 * vol) * kAtm;
+    const double mtk_term1 = ke2 / (3 * natoms);   // tdof kB T / (pdim N)
+    omega_dot += ((p - o.pressure) * vol / (omega_mass * kAtm) + mtk_term1 / omega_mass) * dthalf;
+    mtk_term2 = 3 * omega_dot / (3 * natoms);
+  };
+  auto v_press = [&] {   // FixNH::nh_v_press: two quarter-step factors
+    const double factor = std::exp(-dthalf * (omega_dot + mtk_term2));
+    for (auto& q : v) q *= factor;
+  };
+  auto remap = [&] {   // the cell and the positions scaled by exp(Δt/2 · ω̇) about the cell's centre
+    const double mu = std::exp(dthalf * omega_dot);
+    const Vec3 c0 = cell.origin + (cell.a + cell.b + cell.c) * 0.5;
+    for (size_t i = 0; i < n; ++i)
+      for (int k = 0; k < 3; ++k) x[3 * i + k] = c0[k] + mu * (x[3 * i + k] - c0[k]);
+    cell.a = cell.a * mu;
+    cell.b = cell.b * mu;
+    cell.c = cell.c * mu;
+    cell.origin = c0 - (cell.a + cell.b + cell.c) * 0.5;
+  };
+
   auto scale_cell = [&](double mu) {
     for (size_t i = 0; i < n; ++i)
       for (int k = 0; k < 3; ++k) x[3 * i + k] = cell.origin[k] + mu * (x[3 * i + k] - cell.origin[k]);
@@ -352,6 +465,21 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       et = compute();
       kick(0.5 * dt);
       settle_v();
+    } else if (nhc || mtk) {
+      // LAMMPS fix nvt / npt / nph: initial_integrate, forces, final_integrate
+      if (mtk) nhc_press(t_now);
+      if (nhc) nhc_temp(t_now);
+      if (mtk) { omega_step(t_now); v_press(); }
+      kick(0.5 * dt);
+      if (mtk) remap();
+      drift(dt);
+      if (mtk) remap();
+      et = compute();
+      kick(0.5 * dt);
+      settle_v();
+      if (mtk) { v_press(); omega_step(t_now); }
+      if (nhc) nhc_temp(t_now);
+      if (mtk) nhc_press(t_now);
     } else if (respa > 1) {
       // outer half kick with the non-bonded forces, `respa` velocity-Verlet steps with the bonded ones, outer half kick
       const double h = dt / respa;
@@ -377,7 +505,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       if (o.thermostat == Thermostat::Bussi) bussi(dt);
     }
 
-    if (o.barostat != Barostat::None && o.anisotropic && step % std::max(1, o.barostat_every) == 0) {
+    if (o.barostat != Barostat::None && !mtk && o.anisotropic && step % std::max(1, o.barostat_every) == 0) {
       // Berendsen per axis: μ_k = exp(−β hp (P0 − P_kk) / (3τ)), the linear-strain form of the isotropic update
       const double hp = dt * std::max(1, o.barostat_every);
       const ThermoRow r = row(step);
@@ -389,7 +517,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       reproject();
       et = compute();
       if (ncons) constraint_virial();
-    } else if (o.barostat != Barostat::None && step % std::max(1, o.barostat_every) == 0) {
+    } else if (o.barostat != Barostat::None && !mtk && step % std::max(1, o.barostat_every) == 0) {
       const double hp = dt * std::max(1, o.barostat_every);
       const double k = kinetic_energy(v, m);
       const double vol = cell.volume();

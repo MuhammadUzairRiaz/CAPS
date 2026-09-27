@@ -123,6 +123,43 @@
    ]
   },
   {
+   "id": "nose-hoover",
+   "group": "Thermostats",
+   "title": "Nosé–Hoover chains and MTK pressure coupling",
+   "summary": "A chain of three thermostat variables couples to the particles' kinetic energy, each link thermostatting the one before; the equations are deterministic and time-reversible, and the extended system's energy is conserved. For constant pressure the logarithm of the volume becomes a dynamical variable with its own mass and chain (Martyna–Tobias–Klein), driven by the difference between the instantaneous and target pressure. CAPS integrates both exactly as LAMMPS's fix nvt and fix npt iso do: chain half-steps (Trotter splitting) around velocity Verlet, the cell scaled in two half-steps around the drift.",
+   "equation": "ṗ_i = F_i − (η̇₁ + (1 + 3/N_f) ε̇) p_i,   Q₁ η̈₁ = Σ p²/m − N_f k_B T − Q₁ η̇₁ η̇₂,   W ε̈ = 3V (P − P₀) + (3/N_f) Σ p²/m − W ε̇ η̇ₚ₁",
+   "equation_note": "Martyna, Klein & Tuckerman 1992; Martyna, Tobias & Klein 1994",
+   "symbols": [
+    [
+     "Q₁, Qₖ",
+     "chain masses",
+     "N_f k_B T τ_T², k_B T τ_T² (τ_T the damping time)"
+    ],
+    [
+     "W",
+     "volume mass",
+     "(N + 1) k_B T τ_P²"
+    ],
+    [
+     "chain length",
+     "links per chain",
+     "3, as LAMMPS"
+    ]
+   ],
+   "when": "Production NVT and NPT runs that must match LAMMPS (or GROMACS Nose-Hoover/MTTK) exactly; for equilibration from a poor start the Bussi thermostat and stochastic cell rescaling relax faster.",
+   "cites": [
+    "martyna1992",
+    "martyna1994"
+   ],
+   "source": "core/src/dynamics.cpp (nhc_temp, nhc_press, omega_step, remap)",
+   "tested": "Dynamics.NoseHooverChainsAndMtkBarostat · scripts/check_lammps.sh (fix nvt, fix npt iso: positions within 1.5e-5 Å after 400 steps)",
+   "deviation": "isotropic pressure coupling only; not with bond constraints or r-RESPA",
+   "engines": [
+    "dynamics.nvt",
+    "dynamics.npt"
+   ]
+  },
+  {
    "id": "berendsen-barostat",
    "group": "Barostats",
    "title": "Berendsen pressure coupling",

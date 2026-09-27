@@ -84,3 +84,24 @@ IN
 "$LMP" -in "$out/in.rattle" -log none -screen none
 echo "NVE with bonds to hydrogen constrained (fix rattle), 200 steps of 2 fs from the same start:"
 python3 scripts/compare_dumps.py "$out/caps_c.lammpstrj" "$out/lmp_c.lammpstrj" 1e-3
+
+# Nosé–Hoover chains (fix nvt) and MTK pressure coupling (fix npt iso): 400 steps of 1 fs from the same start
+build/cli/caps md "$out/start.data" -o "$out/end_nvt.data" --steps 400 --thermostat nose-hoover --tau-t 100 --dump "$out/caps_nvt.lammpstrj" --every 200 --quiet >/dev/null
+build/cli/caps md "$out/start.data" -o "$out/end_npt.data" --steps 400 --thermostat nose-hoover --tau-t 100 --barostat mtk --pressure 1 --tau-p 1000 \
+  --dump "$out/caps_npt.lammpstrj" --every 200 --quiet >/dev/null
+for kind in nvt npt; do
+  fix="fix 1 all nvt temp 300 300 100.0"
+  [ "$kind" = npt ] && fix="fix 1 all npt temp 300 300 100.0 iso 1 1 1000.0"
+  sed -e "s#read_data .*#read_data $out/start.data#" -e '/thermo_style/,$d' "$out/in.check" > "$out/in.$kind"
+  cat >> "$out/in.$kind" <<IN
+neigh_modify every 1 delay 0 check yes
+timestep 1.0
+$fix
+dump d all custom 200 $out/lmp_$kind.lammpstrj id xu yu zu
+dump_modify d sort id format float %.6f
+run 400
+IN
+  "$LMP" -in "$out/in.$kind" -log none -screen none
+  echo "Nosé–Hoover $kind vs LAMMPS fix $kind, 400 steps of 1 fs from the same start:"
+  python3 scripts/compare_dumps.py "$out/caps_$kind.lammpstrj" "$out/lmp_$kind.lammpstrj" 1e-3
+done
