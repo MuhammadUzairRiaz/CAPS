@@ -592,6 +592,22 @@
    "tags": [
     "rubber"
    ]
+  },
+  {
+   "id": "P209",
+   "name": "Ethylidene norbornene unit (ENB, addition through the ring double bond)",
+   "smiles": "[*]C1C2CC(=CC)C(C2)C1[*]",
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "P210",
+   "name": "Hexafluoropropylene unit (HFP)",
+   "smiles": "[*]C(F)(F)C([*])(F)C(F)(F)F",
+   "tags": [
+    "rubber"
+   ]
   }
  ],
  "copolymers": [
@@ -827,6 +843,56 @@
     0.604,
     0.13,
     0.129
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C109",
+   "name": "EPDM (55 wt % ethylene, 40.5 wt % propylene, 4.5 wt % ENB)",
+   "units": [
+    "P001",
+    "P004",
+    "P209"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.6622,
+    0.3251,
+    0.0126
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C110",
+   "name": "FKM (VDF–HFP, 60 : 40 wt %)",
+   "units": [
+    "P007",
+    "P210"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.7785,
+    0.2215
+   ],
+   "tags": [
+    "rubber"
+   ]
+  },
+  {
+   "id": "C111",
+   "name": "HNBR (34 wt % acrylonitrile, 1,4-butadiene units hydrogenated)",
+   "units": [
+    "P001",
+    "P011"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.7859,
+    0.2141
    ],
    "tags": [
     "rubber"

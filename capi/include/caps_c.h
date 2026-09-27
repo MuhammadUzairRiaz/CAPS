@@ -263,6 +263,10 @@ int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, co
 /* Merges parameters from another file over the force field: caps-forcefield .json, moltemplate .lt, AMBER frcmod (any
    name containing frcmod, or .dat) or the [ *types ] sections of a GROMACS .itp / .top. */
 int32_t caps_field_import(caps_doc* d, const char* path);
+/* The same with options (ABI 29): {mode: "override" (the default: the file's rules win) | "fill" (the file's rules are
+   used only where the force field defines nothing — borrowed parameters, each listed in the report as filled_terms;
+   for a moltemplate OPLS-AA force field the file's atom classes become its type patterns)}. */
+int32_t caps_field_import_ex(caps_doc* d, const char* path, const char* options_json);
 /* Removes every imported and hand-entered parameter. */
 int32_t caps_field_remove_rules(caps_doc* d);
 /* Ends the assignment and restores the file's own types and charges. */
