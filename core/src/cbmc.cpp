@@ -55,7 +55,18 @@ void cbmc_regrow(System& s, const ForceField& ff, const CbmcOptions& o, CbmcRepo
   make_molecules_whole(s);
   const Cell& cell = s.cell;
   const bool per = cell.valid();
-  auto mi = [&](const Vec3& d) { return per ? cell.minimum_image(d) : d; };
+  // minimum image: per component in a rectangular cell (the common case, and the hot loop), else the cell's own
+  const bool ortho = per && std::fabs(cell.a[1]) + std::fabs(cell.a[2]) + std::fabs(cell.b[0]) + std::fabs(cell.b[2]) + std::fabs(cell.c[0]) + std::fabs(cell.c[1]) < 1e-9;
+  const double Lx = cell.a[0], Ly = cell.b[1], Lz = cell.c[2];
+  const bool px = cell.periodic[0], py = cell.periodic[1], pz = cell.periodic[2];
+  auto mi = [&](Vec3 d) {
+    if (!per) return d;
+    if (!ortho) return cell.minimum_image(d);
+    if (px) d[0] -= Lx * std::round(d[0] / Lx);
+    if (py) d[1] -= Ly * std::round(d[1] / Ly);
+    if (pz) d[2] -= Lz * std::round(d[2] / Lz);
+    return d;
+  };
 
   // the cut-off: at most half the narrowest periodic width (one image per pair)
   double rc = o.cutoff;
@@ -241,11 +252,11 @@ void cbmc_regrow(System& s, const ForceField& ff, const CbmcOptions& o, CbmcRepo
   };
   rep.r2_before = r2_mean();
 
-  // ---- cell list over fractional coordinates (bins at least rc wide; fewer than three: every bin once)
+  // ---- cell list over fractional coordinates (bins at least rc/2 wide, two either side; fewer than five: every bin once)
   int nbin[3] = {1, 1, 1};
   if (per)
     for (int d = 0; d < 3; ++d)
-      if (cell.periodic[size_t(d)]) nbin[d] = std::max(1, int(std::floor(width[d] / rc)));
+      if (cell.periodic[size_t(d)]) nbin[d] = std::max(1, int(std::floor(2 * width[d] / rc)));   // bins at least rc/2 wide
   auto bin_of = [&](const Vec3& p) {
     if (!per) return 0;
     const Vec3 f = cell.to_fractional(p);
@@ -266,8 +277,8 @@ void cbmc_regrow(System& s, const ForceField& ff, const CbmcOptions& o, CbmcRepo
         std::vector<int> list;
         auto offs = [&](int d, int v) {
           std::vector<int> r;
-          if (nbin[d] < 3) for (int k = 0; k < nbin[d]; ++k) r.push_back(k);
-          else for (int dv = -1; dv <= 1; ++dv) r.push_back(((v + dv) % nbin[d] + nbin[d]) % nbin[d]);
+          if (nbin[d] < 5) for (int k = 0; k < nbin[d]; ++k) r.push_back(k);
+          else for (int dv = -2; dv <= 2; ++dv) r.push_back(((v + dv) % nbin[d] + nbin[d]) % nbin[d]);
           return r;
         };
         for (int i : offs(0, a))
