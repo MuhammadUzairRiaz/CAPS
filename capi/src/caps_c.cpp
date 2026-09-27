@@ -3804,6 +3804,14 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
 }
 }  // namespace
 
+extern "C" int32_t caps_pipeline_export_grid(caps_doc* d, const char* path) {
+  return guard([&] {
+    if (!d->pstate || !d->pstate->grid) throw std::invalid_argument("no grid: add a Density field step to the pipeline");
+    caps::write_grid(*d->pstate->grid, d->pstate->system, path ? path : "");
+    return 0;
+  });
+}
+
 extern "C" int32_t caps_export_data(caps_doc* d, const char* path, const char* format, const char* options) {
   return guard([&] {
     std::vector<std::string> notes;

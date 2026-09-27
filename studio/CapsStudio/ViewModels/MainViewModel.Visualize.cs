@@ -699,6 +699,15 @@ public sealed partial class MainViewModel
         Raise(nameof(ShowPipeLegend));
     }
 
+    /// <summary>A step made a grid (Density field): it can be written as .cube, .vtk or .npy.</summary>
+    public bool PipeHasGrid => _pipeResult?["grid"] != null;
+    public void ExportGrid(string path)
+    {
+        if (_doc == null) return;
+        try { _doc.PipelineExportGrid(path); Status = $"Grid written: {System.IO.Path.GetFileName(path)}"; }
+        catch (Exception e) { Status = "Grid export: " + e.Message; }
+    }
+
     private void RefreshPipeline()
     {
         PipeAttributes.Clear();
@@ -707,6 +716,7 @@ public sealed partial class MainViewModel
         string text;
         try { text = _doc.PipelineResult(); } catch { text = ""; }
         _pipeResult = text.Length > 0 ? JsonNode.Parse(text) : null;
+        Raise(nameof(PipeHasGrid));
         var inv = CultureInfo.InvariantCulture;
         if (_pipeResult?["steps"] is JsonArray steps)
             for (int k = 0; k < steps.Count && k < PipelineRows.Count; ++k)
