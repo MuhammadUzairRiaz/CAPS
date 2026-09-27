@@ -872,7 +872,9 @@ int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
    attachment points), which, clean, name}, "place" {smiles, name, resname}, "translate" {atoms | "selection", by: [dx, dy,
    dz]}, "fuse_ring" {i, j, clean} (a benzene ring onto the bond i–j), "set_geometry" {atoms: [i, j (, k (, l))], value (Å or
    degrees): the side of the last atom moves}, "rotate" {atoms | "selection", axis, degrees}, "mirror" {atoms | "selection",
-   normal}, "set_rs" {centre, to: "R" | "S"} → {ok, error, what, atoms,
+   normal}, "set_rs" {centre, to: "R" | "S"}, "functionalize" {group (preset or SMILES with *), pattern: "random" | "all" |
+   "band" | "helix" | "ends" | "edges" | "atoms" (with atoms | "selection"), elements, fraction, count, min_spacing, from,
+   to, pitch, phase, side: "outer" | "inner" | "both", seed} (functionalize.hpp) → {ok, error, what, atoms,
    added: [new atom indices]}. A Field assignment is cleared by any edit. caps_undo(d, 0) undoes, (d, 1) redoes;
    caps_history: {undo: [what…], redo: […]}.
    caps_select JSON {mode: "smarts" | "element" | "type" | "charge" {lo, hi} | "within" {distance} | "grow" {steps} |

@@ -170,6 +170,36 @@
                 </StackPanel>
               </Border>
 
+              <!-- functional groups on the structure shown: sidewalls, ends and edges of tubes and sheets -->
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsHoneycomb}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="FUNCTIONAL GROUPS" Classes="h3" />
+                  <TextBlock Text="Grafted on the structure shown (build it first): sidewall groups on the sites' outward normals, end and edge groups in place of the rim hydrogens. Undo with ⌘Z; relax before dynamics."
+                             Classes="dim" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Group (preset or SMILES with *)" Classes="label" />
+                      <AutoCompleteBox Text="{Binding FnGroup}" ItemsSource="{x:Static vm:MainViewModel.FnGroups}" FilterMode="StartsWith" MinimumPrefixLength="0" Classes="mono" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Where" Classes="label" />
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.FnPatterns}" SelectedIndex="{Binding FnPattern}" HorizontalAlignment="Stretch" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6" IsVisible="{Binding FnHasShare}"><TextBlock Text="Share of sites" Classes="label" /><NumericUpDown Value="{Binding FnFraction}" Minimum="0.001" Maximum="1" Increment="0.01" FormatString="0.000" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Or exactly (0: share)" Classes="label" /><NumericUpDown Value="{Binding FnCountD}" Minimum="0" Increment="1" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Spacing · Å" Classes="label" /><NumericUpDown Value="{Binding FnSpacing}" Minimum="0" Maximum="50" Increment="0.5" FormatString="0.0" ToolTip.Tip="Grafted sites at least this far apart (2.5 Å keeps neighbours from both carrying a group)" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding FnIsBand}">
+                    <StackPanel Spacing="6"><TextBlock Text="Band from (share of the length)" Classes="label" /><NumericUpDown Value="{Binding FnFrom}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="to" Classes="label" /><NumericUpDown Value="{Binding FnTo}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                  </Grid>
+                  <StackPanel Spacing="6" IsVisible="{Binding FnIsHelix}"><TextBlock Text="Helix pitch · Å per turn" Classes="label" /><NumericUpDown Value="{Binding FnPitch}" Minimum="2" Maximum="1000" Increment="1" FormatString="0.0" /></StackPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Side" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.FnSides}" SelectedIndex="{Binding FnSide}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="On elements (blank: any)" Classes="label" /><TextBox Text="{Binding FnElements}" Watermark="C, or B for h-BN" Classes="mono" /></StackPanel>
+                  </Grid>
+                  <Button Classes="small" Click="OnFunctionalize" IsEnabled="{Binding HasDocument}" HorizontalAlignment="Left" Content="Graft on the structure shown" />
+                </StackPanel>
+              </Border>
+
               <!-- silane coupling agents on the silanols of the structure shown (silica in rubber: TESPT couples it to the sulfur network) -->
               <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsParticle}">
                 <StackPanel Spacing="10">

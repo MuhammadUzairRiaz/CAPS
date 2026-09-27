@@ -24,6 +24,45 @@ public sealed partial class MainViewModel
             Status = (r["what"]?.GetValue<string>() ?? "Grafted") + " · relax before dynamics";
     }
 
+    // ---- functional groups on the structure shown (sidewalls, ends, edges of tubes and sheets; functionalize.hpp)
+    public static readonly string[] FnGroups = ["carboxyl", "hydroxyl", "amine", "methyl", "fluoro", "phenyl", "nitrophenyl", "amide", "ester",
+                                                "hydroxymethyl", "vinyl", "thiol", "aminopropyl", "octadecylamide", "peg3"];
+    public static readonly string[] FnPatterns = ["Random on the sidewall", "Every site, spaced", "A band along the axis", "A helix round the tube", "Tube ends (rim H)", "Sheet edges (edge H)", "The selected atoms"];
+    private static readonly string[] FnPatternIds = ["random", "all", "band", "helix", "ends", "edges", "atoms"];
+    public static readonly string[] FnSides = ["Outside / on top", "Inside / below", "Both, at random"];
+    private static readonly string[] FnSideIds = ["outer", "inner", "both"];
+    private string _fnGroup = "carboxyl", _fnElements = "";
+    private int _fnPattern, _fnSide, _fnCount;
+    private decimal _fnFraction = 0.05m, _fnSpacing = 3.0m, _fnFrom = 0.25m, _fnTo = 0.75m, _fnPitch = 20m;
+    public string FnGroup { get => _fnGroup; set => Set(ref _fnGroup, value ?? ""); }
+    public int FnPattern { get => _fnPattern; set { if (Set(ref _fnPattern, Math.Clamp(value, 0, FnPatterns.Length - 1))) { Raise(nameof(FnIsBand)); Raise(nameof(FnIsHelix)); Raise(nameof(FnHasShare)); } } }
+    public bool FnIsBand => _fnPattern == 2;
+    public bool FnIsHelix => _fnPattern == 3;
+    public bool FnHasShare => _fnPattern is 0 or 2;
+    public int FnSide { get => _fnSide; set => Set(ref _fnSide, Math.Clamp(value, 0, 2)); }
+    public decimal FnFraction { get => _fnFraction; set => Set(ref _fnFraction, Math.Clamp(value, 0.001m, 1m)); }
+    public decimal FnCountD { get => _fnCount; set => Set(ref _fnCount, (int)Math.Clamp(value, 0, 100000)); }
+    public decimal FnSpacing { get => _fnSpacing; set => Set(ref _fnSpacing, Math.Clamp(value, 0m, 50m)); }
+    public decimal FnFrom { get => _fnFrom; set => Set(ref _fnFrom, Math.Clamp(value, 0m, 1m)); }
+    public decimal FnTo { get => _fnTo; set => Set(ref _fnTo, Math.Clamp(value, 0m, 1m)); }
+    public decimal FnPitch { get => _fnPitch; set => Set(ref _fnPitch, Math.Clamp(value, 2m, 1000m)); }
+    public string FnElements { get => _fnElements; set => Set(ref _fnElements, value ?? ""); }
+    public bool NanoIsHoneycomb => _nanoKind is 0 or 1;
+
+    /// <summary>Grafts the groups on the structure shown (undoable).</summary>
+    public void Functionalize()
+    {
+        if (_doc == null) return;
+        var spec = new System.Text.Json.Nodes.JsonObject
+        {
+            ["op"] = "functionalize", ["group"] = _fnGroup.Trim(), ["pattern"] = FnPatternIds[_fnPattern], ["elements"] = _fnElements.Trim(),
+            ["fraction"] = (double)_fnFraction, ["count"] = _fnCount, ["min_spacing"] = (double)_fnSpacing, ["from"] = (double)_fnFrom, ["to"] = (double)_fnTo,
+            ["pitch"] = (double)_fnPitch, ["side"] = FnSideIds[_fnSide], ["seed"] = 1,
+        };
+        if (_fnPattern == 6) spec["atoms"] = "selection";
+        if (RunEdit(spec) is { } r) Status = (r["what"]?.GetValue<string>() ?? "Functionalised") + " · relax before dynamics";
+    }
+
     public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre", "Truncated octahedron", "Icosahedron"];
 
     public void OpenNano()
@@ -178,7 +217,7 @@ public sealed partial class MainViewModel
 
     private void RaiseNano()
     {
-        foreach (var n in new[] { nameof(NanoIsSheet), nameof(NanoIsTube), nameof(NanoIsParticle), nameof(TubeKind), nameof(TubeArmchair), nameof(TubeZigzag), nameof(TubeChiral),
+        foreach (var n in new[] { nameof(NanoIsSheet), nameof(NanoIsTube), nameof(NanoIsParticle), nameof(NanoIsHoneycomb), nameof(TubeKind), nameof(TubeArmchair), nameof(TubeZigzag), nameof(TubeChiral),
                                   nameof(TubeAngleText), nameof(TubeDiameterText), nameof(TubeTText), nameof(NanoTitle), nameof(NanoAxisText), nameof(NanoBuildText), nameof(NanoBuildIcon), nameof(TubeWallsAllowed) })
             Raise(n);
     }

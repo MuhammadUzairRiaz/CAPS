@@ -809,7 +809,7 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
   return rep;
 }
 
-std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which, bool replace_h) {
+std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which, bool replace_h, const Vec3* direction) {
   if (target >= s.atoms.size()) throw EditError("pick the atom to attach to");
   const auto& F = fragment_3d(smiles);
   if (which < 0 || size_t(which) >= F.dummy.size()) which = 0;
@@ -821,6 +821,7 @@ std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::str
     for (uint32_t q : nb[target]) if (s.atoms[q].element == 1) { h = int(q); break; }
   Vec3 dir;
   if (h >= 0) dir = unitv(rel(s, target, uint32_t(h)));
+  else if (direction && norm(*direction) > 1e-9) dir = unitv(*direction);
   else {
     std::vector<Vec3> dirs;
     for (uint32_t q : nb[target]) dirs.push_back(unitv(rel(s, target, q)));
