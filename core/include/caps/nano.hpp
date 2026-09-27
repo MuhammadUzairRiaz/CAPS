@@ -2,8 +2,9 @@
 // composites — and a filler embedded in a grown polymer matrix.
 //
 //  graphene_sheet  Rectangular graphene (zigzag along x), one or more AB-stacked layers 3.35 Å apart; periodic in the
-//                  plane, or a flake with its edge carbons capped by hydrogen.
-//  nanotube        (n, m) tube rolled from graphene (or several concentric armchair / zigzag walls) (Saito, Dresselhaus & Dresselhaus, 1998): diameter
+//                  plane, or a flake with its edge carbons capped by hydrogen. material "h-BN": hexagonal boron nitride
+//                  (B and N on the two sublattices, B–N 1.446 Å, AA′ stacking 3.33 Å apart, B over N; Pease 1952).
+//  nanotube        (n, m) tube rolled from graphene (or h-BN: a boron nitride nanotube) (or several concentric armchair / zigzag walls) (Saito, Dresselhaus & Dresselhaus, 1998): diameter
 //                  a √(n² + nm + m²) / π, a = √3 × C–C; periodic along z, or a finite tube with hydrogen-capped ends.
 //  nanoparticle    A sphere, cube, octahedron, cuboctahedron, truncated octahedron or icosahedron (the size is the
 //                  circumscribed radius; an icosahedron cut from the bulk keeps its lattice: it is not multiply twinned), or a fibre
@@ -32,9 +33,13 @@ struct NanoReport {
   std::vector<std::string> notes;
 };
 
+// the honeycomb materials of sheets and tubes: "graphene" (C–C 1.42 Å) or "h-BN" (B–N 1.446 Å)
+const std::vector<std::string>& honeycomb_materials();
+
 struct SheetOptions {
+  std::string material = "graphene";
   double lx = 20.0, ly = 20.0;   // Å, rounded to whole rectangular cells (2.46 × 4.26 Å at C–C 1.42)
-  double cc = 1.42;               // C–C, Å
+  double cc = 0;                  // bond length, Å; 0: the material's
   int layers = 1;                 // AB stacked, 3.35 Å apart
   bool periodic = true;           // periodic in the plane; false: a flake with hydrogen on the edge carbons
   double vacuum = 15.0;           // Å above and below (and around a flake)
@@ -42,9 +47,10 @@ struct SheetOptions {
 System graphene_sheet(const SheetOptions& o, NanoReport* rep = nullptr);
 
 struct NanotubeOptions {
+  std::string material = "graphene";
   int n = 10, m = 10;
   double length = 25.0;           // Å, rounded to whole periods
-  double cc = 1.42;
+  double cc = 0;                  // bond length, Å; 0: the material's
   bool periodic = true;           // periodic along z; false: finite, ends capped with hydrogen
   double vacuum = 10.0;           // Å around the tube
   // multi-walled: concentric armchair or zigzag walls about wall_spacing apart ((5,5)@(10,10)@(15,15) at 3.4 Å)

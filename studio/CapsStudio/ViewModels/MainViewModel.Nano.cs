@@ -50,7 +50,27 @@ public sealed partial class MainViewModel
     public decimal TubeN { get => _tubeN; set { if (Set(ref _tubeN, Math.Clamp(Math.Round(value), 1, 60))) { if (_tubeM > _tubeN) { _tubeM = _tubeN; Raise(nameof(TubeM)); } RaiseNano(); NanoPreview(); } } }
     public decimal TubeM { get => _tubeM; set { if (Set(ref _tubeM, Math.Clamp(Math.Round(value), 0, _tubeN))) { RaiseNano(); NanoPreview(); } } }
     public decimal TubeLength { get => _tubeLength; set { if (Set(ref _tubeLength, Math.Clamp(value, 3, 500))) NanoPreview(); } }
-    // C–C bond length (sheets and tubes) and concentric walls (armchair or zigzag tubes)
+    // the honeycomb material of sheets and tubes: 0 graphene, 1 hexagonal boron nitride; its bond length the default
+    public static readonly string[] NanoMaterials = ["Carbon (graphene)", "Boron nitride (h-BN)"];
+    private static readonly string[] NanoMaterialIds = ["graphene", "h-BN"];
+    private static readonly decimal[] NanoMaterialBond = [1.42m, 1.446m];
+    private int _nanoMaterial;
+    public int NanoMaterial
+    {
+        get => _nanoMaterial;
+        set
+        {
+            if (!Set(ref _nanoMaterial, Math.Clamp(value, 0, 1))) return;
+            _nanoCc = NanoMaterialBond[_nanoMaterial];
+            Raise(nameof(NanoCc)); Raise(nameof(NanoIsBn)); Raise(nameof(NanoBondLabel)); Raise(nameof(NanoStackingText));
+            RaiseNano(); NanoPreview();
+        }
+    }
+    public bool NanoIsBn => _nanoMaterial == 1;
+    public string NanoBondLabel => _nanoMaterial == 1 ? "B–N · Å" : "C–C · Å";
+    public string NanoStackingText => _nanoMaterial == 1 ? "Zigzag edges along x; layers AA′-stacked 3.33 Å apart, B over N (h-BN, Pease 1952); flake edges B–H 1.19, N–H 1.01 Å"
+                                                         : "Zigzag edges along x; layers AB-stacked 3.35 Å apart (graphite)";
+    // bond length (sheets and tubes) and concentric walls (armchair or zigzag tubes)
     private decimal _nanoCc = 1.42m, _tubeWalls = 1;
     public decimal NanoCc { get => _nanoCc; set { if (Set(ref _nanoCc, Math.Clamp(value, 1.30m, 1.60m))) { RaiseNano(); NanoPreview(); } } }
     public bool TubeMultiWalled
@@ -146,9 +166,9 @@ public sealed partial class MainViewModel
     public string NanoTitle => _nanoKind switch
     {
         3 => PoreTitle,
-        0 => $"Graphene · {_sheetLayers} layer{(_sheetLayers > 1 ? "s" : "")}",
+        0 => $"{(_nanoMaterial == 1 ? "h-BN" : "Graphene")} · {_sheetLayers} layer{(_sheetLayers > 1 ? "s" : "")}",
         1 => TubeWallsAllowed && _tubeWalls > 1 ? TubeWallsTitle()
-                                                : $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")} · d = {TubeGeometry()[0]:F2} Å",
+                                                : $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")}{(_nanoMaterial == 1 ? " BN" : "")} · d = {TubeGeometry()[0]:F2} Å",
         _ => $"{(_particleCrystal < Crystals.Count ? Crystals[_particleCrystal].Name : "crystal")} {ParticleShapes[_particleShape].ToLowerInvariant()} · r = {_particleRadius:0.#} Å",
     };
     public string NanoAxisText => _nanoKind == 3 ? (_poreType == 0 ? (_poreVacuum ? "vacuum above the walls" : "periodic in x, y, z") : "periodic in x, y, z") : _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake")
@@ -169,9 +189,9 @@ public sealed partial class MainViewModel
         var o = new JsonObject { ["kind"] = _nanoKind switch { 0 => "sheet", 1 => "tube", _ => "particle" }, ["periodic"] = _nanoPeriodic ? 1 : 0 };
         switch (_nanoKind)
         {
-            case 0: o["lx"] = (double)_sheetLx; o["ly"] = (double)_sheetLy; o["layers"] = (int)_sheetLayers; o["cc"] = (double)_nanoCc; break;
+            case 0: o["lx"] = (double)_sheetLx; o["ly"] = (double)_sheetLy; o["layers"] = (int)_sheetLayers; o["cc"] = (double)_nanoCc; o["material"] = NanoMaterialIds[_nanoMaterial]; break;
             case 1:
-                o["n"] = (int)_tubeN; o["m"] = (int)_tubeM; o["length"] = (double)_tubeLength; o["cc"] = (double)_nanoCc;
+                o["n"] = (int)_tubeN; o["m"] = (int)_tubeM; o["length"] = (double)_tubeLength; o["cc"] = (double)_nanoCc; o["material"] = NanoMaterialIds[_nanoMaterial];
                 o["walls"] = TubeWallsAllowed ? (int)_tubeWalls : 1;
                 break;
             default:
