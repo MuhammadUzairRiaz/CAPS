@@ -123,6 +123,58 @@ std::vector<FileCheck> file_checks(const Trajectory& t) {
   } else if (n > 1) {
     out.push_back({"note", "No bonds", "Neither the file nor the distances give bonds (ions, atoms, or a coarse model).", ""});
   }
+  // bond angles: squeezed ones (below 70° outside three-membered rings) and flattened tetrahedral centres (four
+  // neighbours, an angle above 150°: its configuration is undefined); aromatic bonds that close no ring (a cut ring)
+  if (!s.bonds.empty() && n < 2000000) {
+    std::vector<std::vector<uint32_t>> nb(n);
+    std::vector<int> arom(n, 0);
+    for (const auto& b : s.bonds) {
+      nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+      if (b.order == 4) ++arom[b.i], ++arom[b.j];
+    }
+    auto vec = [&](uint32_t a, uint32_t b) { const Vec3 d = s.atoms[b].pos - s.atoms[a].pos; return cell ? s.cell.minimum_image(d) : d; };
+    size_t squeezed = 0, flat = 0;
+    double worst_small = 180, worst_flat = 0;
+    uint32_t at_small = 0, at_flat = 0;
+    for (uint32_t j = 0; j < n; ++j) {
+      const auto& L = nb[j];
+      if (L.size() < 2 || L.size() > 8 || s.atoms[j].element == 0) continue;   // beads (a coarse model) have no chemical angles
+      bool flattened = false;
+      for (size_t a = 0; a < L.size(); ++a)
+        for (size_t b = a + 1; b < L.size(); ++b) {
+          const Vec3 u = vec(j, L[a]), w = vec(j, L[b]);
+          const double nu = norm(u), nw = norm(w);
+          if (nu < 1e-6 || nw < 1e-6) continue;
+          const double ang = std::acos(std::clamp(dot(u, w) / (nu * nw), -1.0, 1.0)) * 180 / M_PI;
+          const bool ring3 = std::find(nb[L[a]].begin(), nb[L[a]].end(), L[b]) != nb[L[a]].end();
+          if (ang < 70 && !ring3) {
+            ++squeezed;
+            if (ang < worst_small) worst_small = ang, at_small = j;
+          }
+          if (L.size() == 4 && s.atoms[j].element == 6 && ang > 150) {
+            flattened = true;
+            if (ang > worst_flat) worst_flat = ang, at_flat = j;
+          }
+        }
+      if (flattened) ++flat;
+    }
+    if (squeezed)
+      out.push_back({"warn", num(squeezed) + " bond angles below 70°",
+                     "The smallest, " + fmt("%.0f", worst_small) + "°, is at atom " + num(at_small + 1) +
+                         " (outside a three-membered ring): overlapping groups or a wrong bond. Clean or relax the structure, or check the bonds there.",
+                     "relax"});
+    if (flat)
+      out.push_back({"warn", num(flat) + " flattened tetrahedral carbons",
+                     "Atom " + num(at_flat + 1) + " has a bond angle of " + fmt("%.0f", worst_flat) +
+                         "°: a four-bonded carbon this flat has no defined configuration (R/S, tacticity). Clean up the geometry (⌘⇧C) before typing or runs.",
+                     "relax"});
+    size_t cut = 0;
+    for (uint32_t i = 0; i < n; ++i) cut += arom[i] == 1;
+    if (cut)
+      out.push_back({"warn", num(cut) + " aromatic atoms with a single aromatic bond",
+                     "An aromatic bond that closes no ring: a ring was cut (at the cell boundary or by a deletion) or the bond orders are wrong. Check the rings there; Field types these atoms as they stand.",
+                     ""});
+  }
   // close contacts between atoms that are not bonded
   {
     Grid g(s, 0.7);
