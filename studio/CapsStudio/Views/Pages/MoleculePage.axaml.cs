@@ -9,6 +9,7 @@ namespace CapsStudio.Views.Pages;
 
 public partial class MoleculePage : PageBase
 {
+    private void OnUseAsUnit(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.UseSketchAsRepeatUnit();
     private readonly SketchCanvas _sketch;
     private readonly MolView _preview;
 
