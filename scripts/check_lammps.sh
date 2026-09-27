@@ -66,3 +66,21 @@ IN
 "$LMP" -in "$out/in.nve" -log none -screen none
 echo "NVE, 200 steps of 1 fs from the same positions and velocities:"
 python3 scripts/compare_dumps.py "$out/caps.lammpstrj" "$out/lmp.lammpstrj" 1e-3
+
+# Bond constraints: bonds to hydrogen held by SHAKE/RATTLE (fix rattle in LAMMPS), 200 steps of 2 fs from a start that
+# already meets them (caps projects positions and velocities onto the constraints before its first step).
+build/cli/caps md "$out/cell.data" -o "$out/start_c.data" --steps 0 --temp 300 --seed 7 --constraints h-bonds --quiet >/dev/null
+build/cli/caps md "$out/start_c.data" -o "$out/end_c.data" --steps 200 --dt 2 --thermostat none --constraints h-bonds --dump "$out/caps_c.lammpstrj" --every 100 --quiet >/dev/null
+sed -e "s#read_data .*#read_data $out/start_c.data#" -e '/thermo_style/,$d' "$out/in.check" > "$out/in.rattle"
+cat >> "$out/in.rattle" <<IN
+neigh_modify every 1 delay 0 check yes
+timestep 2.0
+fix 1 all nve
+fix 2 all rattle 1e-10 500 0 m 1.008
+dump d all custom 100 $out/lmp_c.lammpstrj id xu yu zu
+dump_modify d sort id format float %.6f
+run 200
+IN
+"$LMP" -in "$out/in.rattle" -log none -screen none
+echo "NVE with bonds to hydrogen constrained (fix rattle), 200 steps of 2 fs from the same start:"
+python3 scripts/compare_dumps.py "$out/caps_c.lammpstrj" "$out/lmp_c.lammpstrj" 1e-3

@@ -40,6 +40,8 @@ const Cite kCites[] = {
     {"yeh2004", "@article{yeh2004,\n  author = {Yeh, I.-C. and Hummer, G.},\n  title = {System-size dependence of diffusion coefficients and viscosities from molecular dynamics simulations with periodic boundary conditions},\n  journal = {J. Phys. Chem. B}, volume = {108}, pages = {15873--15879}, year = {2004}, doi = {10.1021/jp0477147}\n}"},
     {"bernetti2020", "@article{bernetti2020,\n  author = {Bernetti, M. and Bussi, G.},\n  title = {Pressure control using stochastic cell rescaling},\n  journal = {J. Chem. Phys.}, volume = {153}, pages = {114107}, year = {2020}, doi = {10.1063/5.0020514}\n}"},
     {"berendsen1984", "@article{berendsen1984,\n  author = {Berendsen, H. J. C. and Postma, J. P. M. and van Gunsteren, W. F. and DiNola, A. and Haak, J. R.},\n  title = {Molecular dynamics with coupling to an external bath},\n  journal = {J. Chem. Phys.}, volume = {81}, pages = {3684--3690}, year = {1984}, doi = {10.1063/1.448118}\n}"},
+    {"ryckaert1977", "@article{ryckaert1977,\n  author = {Ryckaert, J.-P. and Ciccotti, G. and Berendsen, H. J. C.},\n  title = {Numerical integration of the cartesian equations of motion of a system with constraints: molecular dynamics of n-alkanes},\n  journal = {J. Comput. Phys.}, volume = {23}, pages = {327--341}, year = {1977}, doi = {10.1016/0021-9991(77)90098-5}\n}"},
+    {"andersen1983", "@article{andersen1983,\n  author = {Andersen, H. C.},\n  title = {Rattle: a ``velocity'' version of the shake algorithm for molecular dynamics calculations},\n  journal = {J. Comput. Phys.}, volume = {52}, pages = {24--34}, year = {1983}, doi = {10.1016/0021-9991(83)90014-1}\n}"},
     {"swope1982", "@article{swope1982,\n  author = {Swope, W. C. and Andersen, H. C. and Berens, P. H. and Wilson, K. R.},\n  title = {A computer simulation method for the calculation of equilibrium constants for the formation of physical clusters of molecules: application to small water clusters},\n  journal = {J. Chem. Phys.}, volume = {76}, pages = {637--649}, year = {1982}, doi = {10.1063/1.442716}\n}"},
     {"essmann1995", "@article{essmann1995,\n  author = {Essmann, U. and Perera, L. and Berkowitz, M. L. and Darden, T. and Lee, H. and Pedersen, L. G.},\n  title = {A smooth particle mesh {E}wald method},\n  journal = {J. Chem. Phys.}, volume = {103}, pages = {8577--8593}, year = {1995}, doi = {10.1063/1.470117}\n}"},
     {"fennell2006", "@article{fennell2006,\n  author = {Fennell, C. J. and Gezelter, J. D.},\n  title = {Is the {E}wald summation still necessary? {P}airwise alternatives to the accepted standard for long-range electrostatics},\n  journal = {J. Chem. Phys.}, volume = {124}, pages = {234104}, year = {2006}, doi = {10.1063/1.2206581}\n}"},
@@ -325,7 +327,10 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       const std::string len = param(s, "length");
       const size_t of = len.find(" of ");
       const std::string duration = len.substr(0, len.find(" · ")), step = of == std::string::npos ? std::string() : len.substr(of + 4);
-      t = std::string(npt ? "NPT" : nvt ? "NVT" : "NVE") + " molecular dynamics (velocity Verlet" + cite({"swope1982"}) + (step.empty() ? "" : ", " + step + " time step") + ") was run for " + duration +
+      const std::string cons = param(s, "constraints");
+      t = std::string(npt ? "NPT" : nvt ? "NVT" : "NVE") + " molecular dynamics (velocity Verlet" + cite({"swope1982"}) + (step.empty() ? "" : ", " + step + " time step") +
+          (cons.empty() ? "" : ", " + std::string(cons.rfind("all bonds", 0) == 0 ? "all bonds" : "bonds to hydrogen") + " constrained with SHAKE/RATTLE" + cite({"ryckaert1977", "andersen1983"})) +
+          ") was run for " + duration +
           " at " + param(s, "temperature") +
           (nvt || npt ? " with the " + th + " thermostat" + cite(only(s, {"bussi2007"})) : std::string()) +
           (npt ? " and " + param(s, "barostat").substr(0, param(s, "barostat").find(" · ")) + " pressure control" + cite(only(s, {"bernetti2020", "berendsen1984"})) : std::string()) + ".";

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <map>
 #include <numeric>
 
 #include "caps/dynamics.hpp"
@@ -241,4 +242,67 @@ TEST(Dynamics, RespaConservesEnergyWithLongOuterSteps) {
   o.respa = 2;
   o.thermostat = Thermostat::Langevin;
   EXPECT_THROW(run_dynamics(c, o), std::invalid_argument);
+}
+
+// SHAKE/RATTLE: bonds to hydrogen stay at the force field's r0 to the tolerance, with no relative velocity along them;
+// 2 fs steps conserve energy better than plain 1 fs steps (plain 2 fs steps do not); each constraint takes one degree of freedom
+TEST(Dynamics, BondConstraintsHoldAndConserveEnergy) {
+  const System& c0 = relaxed_cell();
+  const ForceField ff = assign_gaff(c0);
+  auto run = [&](ConstraintMode mode, double dt, int steps, System& s) {
+    s = c0;
+    DynamicsOptions o;
+    o.thermostat = Thermostat::None;
+    o.dt = dt;
+    o.constraints = mode;
+    o.steps = steps;
+    o.thermo_every = 5;
+    o.seed = 7;
+    o.new_velocities = true;
+    DynamicsReport r;
+    run_dynamics(s, o, &r);
+    double lo = 1e300, hi = -1e300;
+    for (size_t k = 4; k < r.thermo.size(); ++k) lo = std::min(lo, r.thermo[k].total), hi = std::max(hi, r.thermo[k].total);
+    return std::make_pair(hi - lo, mean(r.thermo, 4, &ThermoRow::kinetic));
+  };
+  System s;
+  const auto [band, kin] = run(ConstraintMode::HBonds, 2.0, 300, s);
+  System u;
+  const auto [plain1, kin1] = run(ConstraintMode::None, 1.0, 600, u);
+  const auto [plain2, kin2] = run(ConstraintMode::None, 2.0, 300, u);
+  EXPECT_LT(band, 0.03 * kin) << "SHAKE 2 fs band " << band;
+  EXPECT_LT(band, plain1) << "SHAKE 2 fs " << band << " vs plain 1 fs " << plain1;
+  EXPECT_LT(band, 0.3 * plain2) << "SHAKE 2 fs " << band << " vs plain 2 fs " << plain2;
+  (void)kin1, (void)kin2;
+  // every C–H at r0, no velocity along it
+  std::map<std::pair<uint32_t, uint32_t>, double> r0;
+  for (const auto& b : ff.bonds) r0[{std::min(b.i, b.j), std::max(b.i, b.j)}] = b.r0;
+  size_t nh = 0;
+  double worst = 0, worst_v = 0;
+  for (const auto& b : s.bonds) {
+    if (s.atoms[b.i].element != 1 && s.atoms[b.j].element != 1) continue;
+    ++nh;
+    const Vec3 d = s.cell.minimum_image(s.atoms[b.i].pos - s.atoms[b.j].pos);
+    worst = std::max(worst, std::fabs(norm(d) - r0[{std::min(b.i, b.j), std::max(b.i, b.j)}]));
+    worst_v = std::max(worst_v, std::fabs(dot(d, s.velocities[b.i] - s.velocities[b.j])) / norm(d));
+  }
+  ASSERT_GT(nh, 0u);
+  EXPECT_LT(worst, 1e-6);
+  EXPECT_LT(worst_v, 1e-7);
+  // degrees of freedom: 3N − 3 − constraints
+  System t = c0;
+  DynamicsOptions o;
+  o.steps = 0;
+  o.temperature = 300;
+  o.constraints = ConstraintMode::HBonds;
+  DynamicsReport r;
+  run_dynamics(t, o, &r);
+  const double k = kinetic_energy([&] {
+    std::vector<double> v;
+    for (const auto& q : t.velocities) v.insert(v.end(), {q[0], q[1], q[2]});
+    return v;
+  }(), ff.mass);
+  EXPECT_NEAR(2 * k / ((3.0 * t.atoms.size() - 3 - nh) * 0.0019872041), 300.0, 1e-6);
+  o.respa = 2;
+  EXPECT_THROW(run_dynamics(t, o), std::invalid_argument);
 }

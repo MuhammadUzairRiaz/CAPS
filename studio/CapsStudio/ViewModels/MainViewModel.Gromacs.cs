@@ -35,6 +35,12 @@ public sealed partial class MainViewModel
         if (respa)
             sb.Append(string.Format(inv, "mts                      = yes         ; r-RESPA: bonded forces every step, non-bonded every {0}\nmts-levels               = 2\nmts-level2-forces        = longrange-nonbonded nonbonded pair\nmts-level2-factor        = {0}\n", RespaSteps));
         sb.Append(string.Format(inv, "nstxout-compressed       = {0}\nnstenergy                = {1}\nnstlog                   = {1}\n", every, Math.Max(1, every / 10)));
+        if (_mdConstraints > 0)
+        {   // the core's settings say every bond is flexible: this run holds some
+            nb = string.Join("\n", nb.Split('\n').Where(l => !l.StartsWith("constraints ", StringComparison.Ordinal)));
+            sb.Append(_mdConstraints == 1 ? "constraints              = h-bonds     ; bonds to hydrogen, as this run (LINCS)\n"
+                                          : "constraints              = all-bonds   ; as this run (LINCS)\n");
+        }
         sb.Append(nb);
         // coupling: τ in ps, pressure in bar
         if (MdHasThermostat)

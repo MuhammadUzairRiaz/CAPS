@@ -49,6 +49,14 @@
                             ToolTip.Tip="Bonded forces every Δt/2 or Δt/4, non-bonded every Δt: Δt 2 fs with ×4 keeps the C–H stretches at 0.5 fs. With the Bussi thermostat or none" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding MdDtD}" Minimum="0.1" Maximum="5" Increment="0.25" FormatString="0.##" />
                 </Grid>
+                <Grid ColumnDefinitions="2*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Bond constraints" Classes="label" />
+                  <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ConstraintChoices}" SelectedIndex="{Binding MdConstraints}" HorizontalAlignment="Stretch"
+                            IsEnabled="{Binding MdConstraintsAllowed}" ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="SHAKE/RATTLE hold bonds at the force field's length, so the fastest vibrations are gone and Δt can be 2 fs. Each constraint removes one degree of freedom from the temperature; its forces are in the pressure. The alternative to r-RESPA" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Classes="dim" VerticalAlignment="Center" TextWrapping="Wrap"
+                             Text="Equilibrate uses the same choice; exports write fix shake / constraints" />
+                </Grid>
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasThermostat}">
                   <TextBlock Text="Thermostat" Classes="label" /><TextBlock Grid.Column="1" Text="T (K)" Classes="label" /><TextBlock Grid.Column="2" Text="τ_T (fs)" Classes="label" />
                   <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.Thermostats}" SelectedIndex="{Binding MdThermostat}" HorizontalAlignment="Stretch" />

@@ -26,6 +26,8 @@ pep = caps.build.peptide("AEAAAKA", structure="HHHHHHH", cleanup=False)
 check(pep.atoms == 90, f"peptide: {pep.atoms} atoms")
 check(pep.field.assign("uff")["complete"], "UFF assigned")
 check(pep.relax(ftol=3.0) in (0, 1), "relax")
+rep = pep.md(steps=50, dt=2.0, thermo_every=10, frame_every=50, constraints="h-bonds")
+check("SHAKE/RATTLE" in rep, "md with bonds to hydrogen constrained")
 prov = pep.provenance()
 engines = [st["engine"] for st in prov["steps"]]
 check(engines[:3] == ["bio.peptide", "field.assign", "relax.lbfgs"], f"provenance: {engines}")

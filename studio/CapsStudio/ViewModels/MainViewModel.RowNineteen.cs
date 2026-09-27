@@ -146,7 +146,7 @@ public partial class MainViewModel
         set
         {
             if (!Set(ref _lensOpen, value)) return;
-            if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; HistoryOpen = false; LodOpen = false; if (!_lensOn) LensOn = true; else RefreshLensCounts(); }
+            if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; HistoryOpen = false; StatesOpen = false; LodOpen = false; if (!_lensOn) LensOn = true; else RefreshLensCounts(); }
             Raise(nameof(ShowLensPanel)); Raise(nameof(ShowStudioTabs));
         }
     }
