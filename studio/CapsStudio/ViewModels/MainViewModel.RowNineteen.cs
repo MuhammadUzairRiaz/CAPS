@@ -232,6 +232,9 @@ public partial class MainViewModel
     public string AhOrders { get => _ahOrders; private set => Set(ref _ahOrders, value); }
     public string AhHeavy { get => _ahHeavy; private set => Set(ref _ahHeavy, value); }
     public string AhAdded { get => _ahAdded; private set => Set(ref _ahAdded, value); }
+    private bool _ahCanAdd;
+    /// <summary>The plan adds at least one hydrogen (else the button is off: nothing is missing).</summary>
+    public bool AhCanAdd { get => _ahCanAdd; private set => Set(ref _ahCanAdd, value); }
     public string AhCharge { get => _ahCharge; private set => Set(ref _ahCharge, value); }
     public string AhBeforeCaption { get => _ahBefore; private set => Set(ref _ahBefore, value); }
     public string AhAfterCaption { get => _ahAfter; private set => Set(ref _ahAfter, value); }
@@ -288,6 +291,7 @@ public partial class MainViewModel
             var first = (int)after.Summary().Atoms - Math.Max(0, added);
             try { after.Select(new JsonObject { ["mode"] = "indices", ["atoms"] = new JsonArray(Enumerable.Range(first, Math.Max(0, added)).Select(i => (JsonNode)i).ToArray()) }.ToJsonString()); } catch { }
             AhAdded = added.ToString(Inv);
+            AhCanAdd = added > 0;
             AhAfterCaption = $"{n1} atoms · +{added} H";
             AhTotal = $"Rule total {D("add"):0} H" + (D("h") > 0 && _ahKeep ? $" (the {D("h"):0} present kept)" : "") + ".";
             AhStatus = $"{AhSource} · {n1} atoms after · {n1 - (int)D("heavy")} H";

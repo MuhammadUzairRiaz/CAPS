@@ -47,7 +47,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="S per frame" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="200">
-                <v:LinePlot x:Name="PerFrame" XLabel="time (ps)" YLabel="S (chord vectors)" AutoRange="True" />
+                <v:LinePlot x:Name="PerFrame" XLabel="time (ps)" YLabel="S (chord vectors)" AutoRange="True" EmptyText="" />
                 <TextBlock IsVisible="{Binding !OrHasFrames}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" TextAlignment="Center"
                            Text="One frame: open a trajectory (a tensile run, a draw) to follow S frame by frame." />
               </Panel>
@@ -57,7 +57,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="P₂ along z" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="200">
-                <v:LinePlot x:Name="AlongZ" XLabel="z (Å)" YLabel="⟨P₂(cos θ_z)⟩" AutoRange="True" />
+                <v:LinePlot x:Name="AlongZ" XLabel="z (Å)" YLabel="⟨P₂(cos θ_z)⟩" AutoRange="True" EmptyText="" />
                 <TextBlock IsVisible="{Binding !OrHasZ}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Text="Needs a periodic cell" />
               </Panel>
             </StackPanel>
