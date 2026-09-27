@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "caps/analysis.hpp"
+#include "caps/cbmc.hpp"
 #include "caps/bench.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
@@ -121,6 +122,8 @@ int usage() {
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff 10]\n"
                "               [--no-coulomb] [--quiet]   (.data output carries the force field for LAMMPS)\n"
+               "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
+               "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
@@ -196,7 +199,7 @@ const std::set<std::string>& known_options() {
     "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
     "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
-    "--martini", "--max-blocks", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
+    "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
@@ -2262,6 +2265,35 @@ int main(int argc, char** argv) {
         std::printf("  %-34s %5d it  E %12.1f  |F|max %8.3f  (%s)\n", st.name.c_str(), st.iterations, st.energy, st.fmax, st.stopped_by.c_str());
       std::printf("wrote %s\n", out.c_str());
       return rep.converged ? 0 : 3;
+    }
+    if (cmd == "cbmc") {
+      if (!o.count("-o")) return usage();
+      CbmcOptions c;
+      if (o.count("--moves")) c.moves = std::stoi(o["--moves"]);
+      if (o.count("--trials")) c.trials = std::stoi(o["--trials"]);
+      if (o.count("--max-torsions")) c.max_torsions = std::stoi(o["--max-torsions"]);
+      if (o.count("--temp")) c.temperature = std::stod(o["--temp"]);
+      if (o.count("--cutoff")) c.cutoff = std::stod(o["--cutoff"]);
+      if (o.count("--seed")) c.seed = std::stoull(o["--seed"]);
+      c.coulomb = !o.count("--no-coulomb");
+      const ForceField ff = o.count("--ff") ? cli_forcefield(s, o) : default_forcefield(s);
+      CbmcReport rep;
+      cbmc_regrow(s, ff, c, &rep);
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".gro")) write_gro(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else if (ends("mol2")) write_mol2(s, out);
+      else if (ends(".car")) write_car(s, out);
+      else {
+        EnergyOptions eo;
+        eo.coulomb = c.coulomb;
+        if (const std::string why = write_lammps_data_or_structure(s, ff, eo, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
+      }
+      for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      std::printf("energy change %.3f kcal/mol · %.1f s\nwrote %s\n", rep.energy_change, rep.seconds, out.c_str());
+      return 0;
     }
     if (cmd == "md") {
       if (!o.count("-o")) return usage();

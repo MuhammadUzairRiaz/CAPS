@@ -1,6 +1,7 @@
 // CAPS Field (first slice): GAFF typing and parameters for hydrocarbons, and the energy / force evaluator used by Relax.
 #pragma once
 #include <array>
+#include <functional>
 #include <map>
 #include <set>
 #include <memory>
@@ -259,6 +260,11 @@ class Evaluator {
 
 // Puts every virtual site at the weighted centre of its constructing atoms (minimum image about the first in a cell).
 void place_virtual_sites(const ForceField& ff, std::vector<double>& x, const Cell& cell);
+
+// The energy of chosen proper-torsion terms (indices into ff.dihedrals, ff.dihedrals2 — with their class II cross terms —
+// and ff.cbt), as the Evaluator computes them, at the positions pos gives (bond vectors by minimum image in a valid cell).
+struct TorsionRefs { std::vector<uint32_t> dihedrals, dihedrals2, cbt; };
+double torsion_energy(const ForceField& ff, const TorsionRefs& refs, const std::function<Vec3(uint32_t)>& pos, const Cell& cell);
 
 // LJ parameters between two type indices, with the force field's mixing rule and explicit pairs.
 PairType mixed_pair(const ForceField& ff, int a, int b);

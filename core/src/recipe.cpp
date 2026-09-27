@@ -11,6 +11,7 @@
 #include "caps/analysis.hpp"
 #include "caps/config.hpp"
 #include "caps/dynamics.hpp"
+#include "caps/cbmc.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/polystats.hpp"
 #include "caps/ffdef.hpp"
@@ -30,8 +31,8 @@ namespace caps {
 
 namespace {
 
-const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "md", "equilibrate", "analyze", "export"};
-const std::set<std::string> kTop = {"recipe", "name", "build", "type", "grow", "react", "relax", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
+const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export"};
+const std::set<std::string> kTop = {"recipe", "name", "build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
 
 std::string g6(double x) { char b[32]; std::snprintf(b, sizeof b, "%.6g", x); return b; }
 double num(const Json& j, const char* k, double def) { return j.is_object() && j.has(k) && j[k].is_number() ? j[k].number() : def; }
@@ -150,6 +151,8 @@ RecipeCheck check_recipe(const Json& r) {
       } else if (st == "relax") {
         const Minimiser m = minimiser_from_string(text(J, "method", "lbfgs"));
         info.summary = std::string(to_string(m)) + " · |F|max " + g6(num(J, "fmax", 0.5));
+      } else if (st == "cbmc") {
+        info.summary = g6(num(J, "moves", 1000)) + " end regrowths · k " + g6(num(J, "trials", 8)) + " · " + g6(num(J, "temperature", 300)) + " K";
       } else if (st == "md") {
         const std::string ens = text(J, "ensemble", "nvt");
         if (ens != "nve" && ens != "nvt" && ens != "npt" && ens != "nph") throw RecipeError(2, "md.ensemble: nve, nvt, npt or nph");
@@ -587,6 +590,32 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (r.has("type")) type_now(s);   // the network in the recipe's force field
         report(k, st, std::to_string(rr.reactions) + " reactions · conversion " + g6(conv) + (rr.gel_conversion >= 0 ? " · gel at " + g6(rr.gel_conversion) : "") +
                           (r.has("type") ? " · typed again: " + ffname : ""), "done", 1);
+      } else if (st == "cbmc") {
+        // configurational-bias regrowth of chain ends with the recipe's force field (Siepmann & Frenkel)
+        if (!ff) type_now(s);
+        CbmcOptions co;
+        co.moves = int(num(J, "moves", 1000));
+        co.trials = int(num(J, "trials", 8));
+        co.max_torsions = int(num(J, "max_torsions", 4));
+        co.temperature = num(J, "temperature", 300);
+        co.cutoff = std::min(energy.cutoff, num(J, "cutoff", 9.0));
+        co.coulomb = energy.coulomb;
+        co.seed = seed_of(J);
+        co.progress = [&](int done, int acc) {
+          report(k, st, std::to_string(done) + " of " + std::to_string(co.moves) + " · " + std::to_string(acc) + " accepted", "running", co.moves ? double(done) / co.moves : 1);
+          return true;
+        };
+        CbmcReport cr;
+        try { cbmc_regrow(s, *ff, co, &cr); } catch (const std::exception& e) { throw RecipeError(4, std::string("cbmc: ") + e.what()); }
+        res.manifest.steps.push_back(step("cbmc.regrow", "Configurational-bias Monte Carlo regrowth of chain ends",
+                                          {{"moves", std::to_string(cr.attempted) + " end regrowths, " + std::to_string(cr.accepted) + " accepted (" + g6(std::round(1000 * cr.acceptance) / 10) + " %)"},
+                                           {"trials", std::to_string(co.trials) + " torsions per bond, up to " + std::to_string(co.max_torsions) + " bonds per move"},
+                                           {"temperature", g6(co.temperature) + " K"},
+                                           {"trial energies", std::string("van der Waals") + (co.coulomb ? ", DSF electrostatics" : "") + ", torsions · cut-off " + g6(cr.cutoff) + " Å"},
+                                           {"⟨R²⟩ end-to-end", g6(cr.r2_before) + " → " + g6(cr.r2_after) + " Å²"},
+                                           {"force field", ffname}},
+                                          seeded(co.seed), {"siepmann1992", "rosenbluth1955"}));
+        report(k, st, std::to_string(cr.accepted) + " of " + std::to_string(cr.attempted) + " accepted · ⟨R²⟩ " + g6(cr.r2_before) + " → " + g6(cr.r2_after) + " Å²", "done", 1);
       } else if (st == "relax" || st == "md" || st == "equilibrate") {
         if (!ff) type_now(s);
         if (st == "relax") {
