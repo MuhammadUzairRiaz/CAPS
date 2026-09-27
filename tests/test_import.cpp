@@ -9,6 +9,7 @@
 #include "caps/analysis.hpp"
 #include "caps/import.hpp"
 #include "caps/io.hpp"
+#include "caps/checks.hpp"
 
 using namespace caps;
 
@@ -257,4 +258,25 @@ TEST(Import, SdfAndPoscar) {
   EXPECT_EQ(p.topology.atoms[5].element, 8);
   EXPECT_NEAR(p.topology.atoms[1].pos[2], 1.4795, 1e-9);
   EXPECT_NEAR(p.topology.cell.volume(), 4.594 * 4.594 * 2.959, 1e-9);
+}
+
+// A bond longer than half the box is flagged: the minimum image cannot say which copies it joins
+TEST(Import, ChecksFlagBondsLongerThanHalfTheBox) {
+  caps::Trajectory t;
+  caps::System& s = t.topology;
+  s.cell.a = {2.6, 0, 0}, s.cell.b = {0, 20, 0}, s.cell.c = {0, 0, 20};   // narrower than twice a C–C bond
+  s.unwrapped = true;   // whole: the bond's real length shows
+  for (int k = 0; k < 2; ++k) {
+    caps::Atom a;
+    a.id = k + 1;
+    a.element = 6;
+    a.pos = {k * 1.5, 5, 5};   // 1.5 Å apart along a 2.6 Å axis: its nearest image is 1.1 Å the other way
+    s.atoms.push_back(a);
+  }
+  s.bonds.push_back({0, 1, 1});
+  t.positions.push_back({s.atoms[0].pos, s.atoms[1].pos});
+  t.cells.push_back(s.cell);
+  t.timesteps.push_back(0);
+  const auto checks = caps::file_checks(t);
+  EXPECT_TRUE(std::any_of(checks.begin(), checks.end(), [](const caps::FileCheck& c) { return c.level == "error" && c.title.find("half the box") != std::string::npos; }));
 }
