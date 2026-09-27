@@ -12,6 +12,8 @@ public sealed class LinePlot : Control
     private (double X, double Y)[] _data = [];
     public string XLabel { get; set; } = "";
     public string YLabel { get; set; } = "";
+    /// <summary>What an empty plot says (default "no data").</summary>
+    public string EmptyText { get; set; } = "no data";
     public bool AutoRange { get; set; }
     public double? RefY { get; set; } = 1.0;
     /// <summary>A dashed vertical line at this x (a trajectory player's current frame).</summary>
@@ -100,6 +102,8 @@ public sealed class LinePlot : Control
 
     /// <summary>A shaded x range (a fit window), drawn under the curves.</summary>
     public (double From, double To)? Band { get; set; }
+    /// <summary>Stages along x (an equilibration protocol): from, to, a short label; shaded ones (constant pressure) tinted.</summary>
+    public (double From, double To, string Label, bool Shade)[] Stages { get; set; } = [];
     private (double X, double Y)[] _fit = [];
     private (double X, double Y)[] _third = [];
     /// <summary>A third curve (measured data), drawn dotted in the text colour; it takes part in the range.</summary>
@@ -139,7 +143,7 @@ public sealed class LinePlot : Control
 
         if (_data.Length < 2)
         {
-            Text("no data", L + w / 2, T + h / 2, centre: true);
+            Text(EmptyText, L + w / 2, T + h / 2, centre: true);
             return;
         }
         double xmin = 0, xmax, ymin = 0, ymax;
@@ -194,6 +198,16 @@ public sealed class LinePlot : Control
         {
             for (var t = 0.0; t <= xmax + 1e-9; t += xmax > 8 ? 2 : 1)
                 if (X(t) < L + w - 40) Text(t.ToString("0", CultureInfo.InvariantCulture), X(t), T + h + 12, centre: true);
+        }
+        foreach (var st in Stages)   // NPT stages tinted, each stage's ensemble written where it fits
+        {
+            var x0 = Math.Clamp(X(st.From), L, L + w);
+            var x1 = Math.Clamp(X(st.To), L, L + w);
+            if (x1 <= x0) continue;
+            if (st.Shade) ctx.FillRectangle(new SolidColorBrush((Tokens.Brush("AccB") as ISolidColorBrush)?.Color ?? Colors.Orange, 0.09), new Rect(x0, T, x1 - x0, h));
+            ctx.DrawLine(new Pen(Grid, 1, new DashStyle([2, 3], 0)), new Point(x0, T), new Point(x0, T + h));
+            var ft = new FormattedText(st.Label, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, 9, Label);
+            if (ft.Width + 4 < x1 - x0) ctx.DrawText(ft, new Point((x0 + x1 - ft.Width) / 2, T + 2));
         }
         if (Band is { } band)
         {
