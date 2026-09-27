@@ -62,6 +62,7 @@
 
 #include <map>
 #include <mutex>
+#include <chrono>
 #include <memory>
 #include <set>
 #include <numeric>
@@ -133,6 +134,8 @@ struct caps_doc {
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
   std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
+  caps_live_fn live_fn = nullptr;             // caps_set_live: snapshots of a running caps_md / caps_equilibrate
+  void* live_user = nullptr;
   AppearanceState look;                            // caps_set_appearance
   int smooth_window = 1;                           // caps_set_smoothing: frames averaged for display
   std::vector<std::vector<caps::Vec3>> scan_frames; // caps_torsion_scan: the geometry of each point
@@ -316,6 +319,37 @@ void refresh(caps_doc* d) {
   }
   run_doc_pipeline(d);
   prepare_appearance(d);
+}
+
+// A running MD's positions as a new document about four times a second (wall clock), for a live view: the callee owns
+// it. Wrapped into the cell, as the Grow live view; stats: step, time, and the density of the cell.
+std::function<void(const caps::EnergyTerms&, const std::vector<double>&, const caps::Cell&, int64_t)> live_hook(caps_doc* d, const caps::System& topo, double dt_fs) {
+  if (!d->live_fn) return {};
+  auto fn = d->live_fn;
+  auto user = d->live_user;
+  auto last = std::make_shared<std::chrono::steady_clock::time_point>();   // the first step shows at once
+  auto base = std::make_shared<caps::System>(topo);
+  double mass = 0;
+  for (const auto& a : topo.atoms) mass += caps::element(a.element).mass;
+  return [fn, user, last, base, mass, dt_fs](const caps::EnergyTerms&, const std::vector<double>& x, const caps::Cell& c, int64_t step) {
+    const auto now = std::chrono::steady_clock::now();
+    if (now - *last < std::chrono::milliseconds(250)) return;
+    *last = now;
+    auto* sd = new caps_doc;
+    sd->traj.topology = *base;
+    std::vector<caps::Vec3> pp(x.size() / 3);
+    for (size_t i = 0; i < pp.size(); ++i) pp[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+    sd->traj.topology.cell = c;
+    sd->traj.positions.push_back(std::move(pp));
+    sd->traj.cells.push_back(c);
+    sd->traj.timesteps.push_back(step);
+    sd->wrap = c.valid();
+    refresh(sd);
+    caps::Json j = caps::Json::object();
+    j["step"] = double(step), j["time_ps"] = double(step) * dt_fs / 1000.0, j["atoms"] = double(base->atoms.size());
+    if (c.valid()) j["density"] = mass / c.volume() * 1.66053906660;
+    fn(sd, j.dump(0).c_str(), user);
+  };
 }
 
 caps::Camera cam_of(const caps_camera* c) {
@@ -1416,6 +1450,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       out.timesteps.push_back(step);
     };
     if (m.frame_every <= 0) m.frame_every = int(std::max<int64_t>(1, m.steps));   // at least the start and the end
+    m.each_step = live_hook(d, s, m.dt);
     caps::DynamicsReport rep;
     caps::run_dynamics(s, m, &rep);
     {
@@ -1523,6 +1558,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
       out.cells.push_back(c);
       out.timesteps.push_back(step);
     };
+    e.md.each_step = live_hook(d, s, e.md.dt);
     caps::EquilibrateReport rep;
     caps::equilibrate(s, e, &rep);
     {
@@ -2161,6 +2197,14 @@ int32_t caps_set_frame(caps_doc* d, int64_t f) {
     if (f < 0 || size_t(f) >= d->traj.frames()) throw std::out_of_range("frame out of range");
     d->current = size_t(f);
     refresh(d);
+    return 0;
+  });
+}
+
+int32_t caps_set_live(caps_doc* d, caps_live_fn fn, void* user) {
+  return guard([&] {
+    d->live_fn = fn;
+    d->live_user = user;
     return 0;
   });
 }

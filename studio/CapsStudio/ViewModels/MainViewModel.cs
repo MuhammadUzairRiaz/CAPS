@@ -769,6 +769,7 @@ public sealed partial class MainViewModel : ObservableObject
                     Action<CapsDocument, string> onLive = (live, stats) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                     {
                         if (ticket != _growLiveTicket || !_growing) { live.Dispose(); return; }
+                        try { live.SetWrap(true); } catch { }   // chains folded into the cell, as Amorphous Cell shows them
                         var old = GrowLiveDoc;
                         GrowLiveDoc = live;
                         old?.Dispose();
@@ -1034,6 +1035,37 @@ public sealed partial class MainViewModel : ObservableObject
     public string MdLog { get => _mdLog; private set => Set(ref _mdLog, value); }
     public IReadOnlyList<CapsThermo> Thermo => _thermo;
     public event Action? ThermoChanged;
+    // ---- live view of a running MD or equilibration: the positions so far, about four times a second
+    private CapsDocument? _runLiveDoc;
+    private string _runLiveText = "";
+    private int _runLiveTicket;
+    public CapsDocument? RunLiveDoc { get => _runLiveDoc; private set { if (Set(ref _runLiveDoc, value)) Raise(nameof(RunLiveShown)); } }
+    public bool RunLiveShown => _runLiveDoc != null;
+    public string RunLiveText { get => _runLiveText; private set => Set(ref _runLiveText, value); }
+    /// <summary>A receiver for caps_set_live snapshots on the run's thread: shown on the UI thread, the previous one disposed.</summary>
+    private Action<CapsDocument, string> LiveReceiver(string what)
+    {
+        var ticket = ++_runLiveTicket;
+        var inv = CultureInfo.InvariantCulture;
+        return (live, stats) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (ticket != _runLiveTicket) { live.Dispose(); return; }
+            var old = RunLiveDoc;
+            RunLiveDoc = live;
+            old?.Dispose();
+            try
+            {
+                var j = System.Text.Json.Nodes.JsonNode.Parse(stats);
+                var t = (double?)j?["time_ps"] ?? 0;
+                var rho = (double?)j?["density"];
+                RunLiveText = string.Format(inv, "{0} · {1:F2} ps · {2:N0} atoms", what, t, (double?)j?["atoms"] ?? 0) +
+                              (rho is double r ? string.Format(inv, " · ρ {0:F4} g/cm³", r) : "");
+            }
+            catch { RunLiveText = what; }
+        });
+    }
+    /// <summary>The live view keeps the last snapshot of the run until the next run starts.</summary>
+    private void StartLive() { _runLiveTicket++; var old = RunLiveDoc; RunLiveDoc = null; old?.Dispose(); RunLiveText = ""; }
 
     public decimal? MdDtD { get => (decimal)_mdDt; set { _mdDt = Math.Clamp((double)(value ?? 1m), 0.1, 5); Raise(); Raise(nameof(MdEstimate)); } }
     public decimal? MdStepsD { get => _mdSteps; set { _mdSteps = Math.Clamp((long)(value ?? 20000), 0, 1_000_000_000); Raise(); Raise(nameof(MdEstimate)); } }
@@ -1165,6 +1197,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
         try
         {
+            StartLive();
+            var live = LiveReceiver(new[] { "NVE", "NVT", "NPT", "NPH" }[_mdEnsemble] + " dynamics");
             var report = await Task.Run(() =>
             {
                 var r = doc.Md(o, (row, n) =>
@@ -1179,7 +1213,7 @@ public sealed partial class MainViewModel : ObservableObject
                             row.Step, n, row.TimePs, row.Temperature, row.Pressure, row.Density, row.Total, eta));
                     }
                     return !token.IsCancellationRequested;
-                });
+                }, live);
                 Publish(null);
                 return r;
             });
@@ -1278,6 +1312,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void InitProtocol() => RegenerateProtocol();
 
+    /// <summary>The protocol's stages on the time axis (from, to, ensemble · stage, NPT tinted): NVT stages hold the volume,
+    /// so the density is flat there by construction.</summary>
+    public (double From, double To, string Label, bool Shade)[] EqStageBands { get; private set; } = [];
+
     public async Task RunEquilibrate()
     {
         if (_doc == null || !Idle || BlockedByField("Equilibrate")) return;
@@ -1303,25 +1341,44 @@ public sealed partial class MainViewModel : ObservableObject
         var lastUi = 0L;
         var finished = false;
         var text = _eqText;
+        // each stage's ensemble from the protocol text (its first word: nvt, npt, …); production blocks are NPT
+        var ens = text.Split('\n').Select(l => l.Split('#')[0].Trim()).Where(l => l.Length > 0)
+                      .Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].ToUpperInvariant()).ToArray();
+        var starts = new List<(int Stage, double T)>();
+        EqStageBands = [];
         void Publish(string? line)
         {
             CapsThermo[] copy;
-            lock (rows) copy = rows.ToArray();
+            (int Stage, double T)[] st0;
+            lock (rows) { copy = rows.ToArray(); st0 = starts.ToArray(); }
+            var end = copy.Length > 0 ? copy[^1].TimePs : 0;
+            var bands = st0.Select((b, k) =>
+            {
+                var e = b.Stage - 1 < ens.Length ? ens[b.Stage - 1] : "NPT";
+                return (b.T, k + 1 < st0.Length ? st0[k + 1].T : end, e, e is "NPT" or "NPH");
+            }).ToArray();
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 _thermo.Clear();
                 _thermo.AddRange(copy);
+                EqStageBands = bands;
                 if (line != null && !finished) EqLog = line;
                 ThermoChanged?.Invoke();
             });
         }
         try
         {
+            StartLive();
+            var live = LiveReceiver("Equilibration");
             var (converged, report) = await Task.Run(() =>
             {
                 var r = doc.Equilibrate(text, o, (st, n, label, row) =>
                 {
-                    lock (rows) rows.Add(row);
+                    lock (rows)
+                    {
+                        rows.Add(row);
+                        if (starts.Count == 0 || starts[^1].Stage != st) starts.Add((st, starts.Count == 0 ? 0 : row.TimePs));
+                    }
                     if (sw.ElapsedMilliseconds - lastUi > 150)
                     {
                         lastUi = sw.ElapsedMilliseconds;
@@ -1329,7 +1386,7 @@ public sealed partial class MainViewModel : ObservableObject
                             st, n, label, row.TimePs, row.Temperature, row.Pressure, row.Density, sw.Elapsed.TotalSeconds));
                     }
                     return !token.IsCancellationRequested;
-                });
+                }, live);
                 Publish(null);
                 return r;
             });

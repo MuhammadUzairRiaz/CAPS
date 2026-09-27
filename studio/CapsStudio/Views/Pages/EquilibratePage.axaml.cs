@@ -20,6 +20,7 @@ public partial class EquilibratePage : PageBase
             vm.ThermoChanged += () =>
             {
                 if (!vm.IsEquilibrate && !vm.EqRunning) return;
+                rho.Stages = vm.EqStageBands; e.Stages = vm.EqStageBands;
                 rho.SetData(vm.Thermo.Select(r => (r.TimePs, r.Density)).ToArray());
                 e.SetData(vm.Thermo.Select(r => (r.TimePs, r.Potential)).ToArray());
             };
