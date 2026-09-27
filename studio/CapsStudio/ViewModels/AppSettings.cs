@@ -42,6 +42,8 @@ public sealed class AppSettings
     public List<SavedQueryData> SavedQueries { get; set; } = SavedQueryData.Defaults();   // Select by query (SmartSelect)
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }
+    /// <summary>Keys the user gave palette commands: command id → gesture ("Meta+Shift+G").</summary>
+    public Dictionary<string, string> Shortcuts { get; set; } = new();
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
     public int UnitSystem { get; set; }                    // Settings › Units: 0 CAPS, 1 SI-derived, 2 LAMMPS metal
     public string UnitEnergy { get; set; } = "kcal/mol";

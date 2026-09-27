@@ -71,9 +71,13 @@ public partial class SettingsPage : PageBase
             };
             MarkNav();
         };
-        AttachedToVisualTree += (_, _) => { MarkNav(); MarkPalettes(); };
+        AttachedToVisualTree += (_, _) => { MarkNav(); MarkPalettes(); Vm.FillShortcutRows(); };
         LayoutUpdated += (_, _) => { if (!_marked) MarkPalettes(); };
     }
+
+    private void OnRecordShortcut(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutRow r) Vm.BeginRecordShortcut(r); }
+    private void OnClearShortcut(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutRow r) Vm.ClearShortcut(r); }
+    private void OnResetShortcuts(object? s, RoutedEventArgs e) => Vm.ResetShortcuts();
 
     private bool _marked;
 
