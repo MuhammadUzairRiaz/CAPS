@@ -14,6 +14,7 @@
 #include <stdexcept>
 
 #include "caps/analysis.hpp"
+#include "caps/bundle.hpp"
 #include "caps/elements.hpp"
 #include "caps/entangle.hpp"
 #include "cell_list.hpp"
@@ -1693,8 +1694,18 @@ std::string python_package_dir(const Json& p) {
 }
 
 void step_python(PipelineState& st, const Json& p, StepStatus& out) {
-  const std::string script = p.text("file", "");
-  if (script.empty()) throw std::invalid_argument("choose a Python file with an @step function");
+  // a file, or the code typed in the step (written to a script named by its hash, so an edit is a new file)
+  std::string script = p.text("file", "");
+  const std::string code = p.text("code", "");
+  if (script.empty() && !code.empty()) {
+    const auto path = std::filesystem::temp_directory_path() / ("caps_step_" + sha256_hex(code).substr(0, 16) + ".py");
+    if (!std::filesystem::exists(path)) {
+      std::ofstream f(path);
+      f << code << (code.back() == '\n' ? "" : "\n");
+    }
+    script = path.string();
+  }
+  if (script.empty()) throw std::invalid_argument("choose a Python file with an @step function, or type the step");
   if (!std::filesystem::exists(script)) throw std::invalid_argument("no file " + script);
   const std::string pkg = python_package_dir(p);
   if (pkg.empty()) throw std::runtime_error("the caps Python package was not found (set CAPS_PYTHON_PATH to data/python)");

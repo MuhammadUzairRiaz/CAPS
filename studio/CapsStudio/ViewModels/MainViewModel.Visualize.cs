@@ -31,7 +31,12 @@ public sealed class StepField : INotifyPropertyChanged
     public bool IsFile => Kind == "file";
     public bool IsBool => Kind == "bool";
     public bool IsChoice => Kind == "choice";
-    public bool IsNote => Kind == "note";                 // a line of explanation under the fields (Hint)
+    public bool IsNote => Kind == "note";
+    public bool IsCode => Kind == "code";                 // several lines, sent with Run (not per keystroke)
+    private string _draft = "";
+    public string Draft { get => _draft; set { if (_draft == value) return; _draft = value; Raise(nameof(Draft)); Raise(nameof(DraftChanged)); } }
+    public bool DraftChanged => _draft != _text;
+    public void Commit() { Text = _draft; Raise(nameof(DraftChanged)); }                 // a line of explanation under the fields (Hint)
     public bool ShowLabel => Kind is not ("bool" or "note");
     public bool IsMono => Kind is "expression" or "number" or "vector" or "file";
 }
@@ -420,7 +425,7 @@ public sealed partial class MainViewModel
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
         "smooth" => new JsonObject { ["window"] = 5 },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
-        "python" => new JsonObject { ["file"] = "" },
+        "python" => new JsonObject { ["file"] = "", ["code"] = PythonStepTemplate },
         "msd" => new JsonObject { ["heavy_only"] = true, ["every"] = 1, ["timestep_fs"] = 1.0 },
         "scatter" => new JsonObject { ["x"] = "DistanceToCOM", ["y"] = "Charge", ["only_selected"] = false },
         "voids" => new JsonObject { ["probe"] = 1.4, ["grid"] = 0.5, ["show"] = true },
@@ -430,6 +435,20 @@ public sealed partial class MainViewModel
         "primitive_paths" => new JsonObject { ["radius"] = 0.3, ["show_chains"] = false },
         _ => new JsonObject(),
     };
+
+    /// <summary>A Python step to start from: what a step reads and writes.</summary>
+    public const string PythonStepTemplate =
+        "from caps.pipeline import step\n\n" +
+        "@step(name=\"Heavy atoms per molecule\")\n" +
+        "def modify(frame, data):\n" +
+        "    # data.particles: one list per property (\"Element\", \"Position\", \"Molecule Identifier\", \"Charge\", \"Backbone\", …)\n" +
+        "    heavy = [1 if e != \"H\" else 0 for e in data.particles[\"Element\"]]\n" +
+        "    per = {}\n" +
+        "    for m, h in zip(data.particles[\"Molecule Identifier\"], heavy):\n" +
+        "        per[int(m)] = per.get(int(m), 0) + h\n" +
+        "    data.particles[\"Heavy\"] = heavy          # a new property, for colour coding and expressions\n" +
+        "    data.attributes[\"Heavy atoms\"] = sum(heavy)\n" +
+        "    data.tables[\"heavy_per_molecule\"] = per\n";
 
     /// <summary>The fields of the selected step's editor, from its parameters.</summary>
     private void BuildStepFields()
@@ -478,7 +497,9 @@ public sealed partial class MainViewModel
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); Bool("subtract_drift", "Subtract system drift"); break;
             case "smooth": Text("window", "Window (frames, centred)", "number"); break;
             case "python":
-                Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "choose a Python file", Text = S("file") });
+                Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "blank: the step typed below", Text = S("file") });
+                var code = S("code", PythonStepTemplate);
+                Add(new StepField { Key = "code", Label = "Or type the step (Run sends it; a file above takes precedence)", Kind = "code", Text = code, Draft = code });
                 break;
             case "msd":
                 Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");

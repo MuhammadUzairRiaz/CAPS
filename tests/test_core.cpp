@@ -836,6 +836,17 @@ TEST(Pipeline, PythonStep) {
   EXPECT_EQ(e.steps[0].level, "error");
   EXPECT_NE(e.steps[0].summary.find("ValueError: bad input"), std::string::npos) << e.steps[0].summary;
   std::filesystem::remove(script);
+  // the step typed in (code instead of a file)
+  Json typed = Json::object();
+  typed["type"] = "python";
+  typed["code"] = std::string("from caps.pipeline import step\n\n@step(name=\"Typed\")\ndef modify(frame, data):\n    data.attributes[\"N\"] = len(data.particles[\"Element\"])\n");
+  typed["path"] = std::string(CAPS_SOURCE_DIR) + "/data/python";
+  Json arr2 = Json::array();
+  arr2.push_back(typed);
+  const auto c = run_pipeline(t.frame(0), pipeline_from_json(arr2), 0, 0, &t);
+  ASSERT_EQ(c.steps[0].level, "ok") << c.steps[0].summary;
+  EXPECT_EQ(c.steps[0].title, "Typed");
+  EXPECT_EQ(c.attribute("N"), 1300.0);
 }
 
 TEST(Io, FileWithoutAtomsIsAnError) {

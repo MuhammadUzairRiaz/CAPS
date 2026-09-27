@@ -1347,6 +1347,13 @@ public partial class MainWindow : Window
     private void OnRenderPage(object? s, RoutedEventArgs e) => _vm.OpenRender();
     private void OnProvenancePage(object? s, RoutedEventArgs e) => _vm.OpenProvenance();
     private async void OnBenchmarkView(object? s, RoutedEventArgs e) => await _vm.BenchmarkView(_pixW > 0 ? _pixW : 1000, _pixH > 0 ? _pixH : 700);
+    private void OnStepCodeRun(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is StepField f) f.Commit(); }
+    private void OnStepCodeKey(object? s, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Meta) || e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            if ((s as Control)?.Tag is StepField f) { f.Commit(); e.Handled = true; }
+    }
+
     private void OnProjectPage(object? s, RoutedEventArgs e) => _vm.OpenProject();
 
     /// <summary>Compact layout: rail and toolbar icons only, the inspector and project as drawers, the dock folded.</summary>

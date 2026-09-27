@@ -1488,6 +1488,18 @@ internal static class SelfTest
             var moved = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Wrap.molecules_moved")?.Value;
             Check(modeField != null && vm.StepFields.Any(f => f.IsNote) && across == "0" && moved != null,
                   $"wrap molecules: {across} bonds across faces · {moved} molecules moved · {vm.PipelineRows.LastOrDefault()?.Summary}");
+            // a Python step typed in the editor: the template runs; an edit runs only when sent
+            vm.ClearPipeline();
+            vm.AddStep("python");
+            var codeField = vm.StepFields.FirstOrDefault(f => f.IsCode);
+            var heavy = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Heavy atoms")?.Value;
+            if (codeField != null) codeField.Draft = codeField.Draft.Replace("sum(heavy)", "2 * sum(heavy)");
+            var beforeRun = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Heavy atoms")?.Value;
+            var pending = codeField?.DraftChanged == true;
+            codeField?.Commit();
+            var afterRun = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Heavy atoms")?.Value;
+            Check(heavy == "640" && beforeRun == "640" && pending && afterRun == "1280" && codeField?.DraftChanged == false,
+                  $"python step typed: {heavy} → {afterRun} after Run (pending {pending}) · {vm.PipelineRows.LastOrDefault()?.Summary}");
             vm.ClearPipeline();
             vm.SetModule(8);
         }
