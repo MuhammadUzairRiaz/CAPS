@@ -80,6 +80,7 @@ struct FieldState {
   std::string ff_path;
   caps::FFDef base;                          // the library force field, with its typing rules
   caps::FFDef extra;                         // imported and hand-entered parameter rules (win over the base)
+  caps::FFDef fill;                          // borrowed rules used only where the base (and extra) define nothing
   std::vector<std::string> imported;         // files the imported rules came from
   std::map<int32_t, std::string> overrides;  // atom → type set by hand
   std::string charges = "types";             // types (force field), gasteiger, keep (from the file)
@@ -575,6 +576,11 @@ std::string hex_colour(unsigned c) {
 void field_run(caps_doc* d) {
   FieldState& F = *d->field;
   caps::FFDef def = F.base;
+  // gap fillers first: the last matching rule wins, so the force field's own rules (and the imported ones) come later
+  auto front = [](std::vector<caps::FFRule>& a, const std::vector<caps::FFRule>& b) { a.insert(a.begin(), b.begin(), b.end()); };
+  front(def.bonds, F.fill.bonds);
+  front(def.angles, F.fill.angles);
+  front(def.dihedrals, F.fill.dihedrals);
   caps::merge_forcefield(def, F.extra);
   const caps::System& s = d->frame;
   const size_t n = s.atoms.size();
@@ -763,13 +769,20 @@ void field_run(caps_doc* d) {
   caps::Json miss = caps::Json::array();
   for (const auto& m : F.rep.missing) miss.push_back(m);
   r["missing"] = miss;
-  int estimated = 0, imported = 0;
+  int estimated = 0, imported = 0, filled = 0;
+  caps::Json filled_terms = caps::Json::array();
   for (const auto& [k, v] : F.rep.used) {
     const auto sp = k.find(' ');
     const std::string name = sp == std::string::npos ? k : k.substr(sp + 1);
     if (name.rfind("user:", 0) == 0) estimated += v;
     if (name.rfind("imported:", 0) == 0) imported += v;
+    if (name.rfind("filled:", 0) == 0) {
+      filled += v;
+      filled_terms.push_back(k + " × " + std::to_string(v));
+    }
   }
+  r["filled"] = double(filled);
+  r["filled_terms"] = filled_terms;
   estimated += F.rep.estimated_terms;   // by analogy (the force field's "analogies"), each listed below
   r["estimated"] = double(estimated);
   r["imported"] = double(imported);
@@ -2206,14 +2219,30 @@ int32_t caps_field_remove_rules(caps_doc* d) {
   return guard([&] {
     if (!d->field) throw caps::FFError("assign a force field first");
     d->field->extra = caps::FFDef{};
+    d->field->fill = caps::FFDef{};
     d->field->imported.clear();
     field_run(d);
     return d->field->complete ? 0 : 1;
   });
 }
 
-int32_t caps_field_import(caps_doc* d, const char* path) {
+int32_t caps_field_import(caps_doc* d, const char* path) { return caps_field_import_ex(d, path, nullptr); }
+
+namespace {
+// A moltemplate OPLS-AA type name, 136_bCT_aCT_dCT_iCT: its bond, angle, dihedral and improper classes
+bool opls_classes(const std::string& n, std::array<std::string, 4>& c) {
+  const auto b = n.find("_b"), a = n.find("_a", b == std::string::npos ? 0 : b), dd = n.find("_d", a == std::string::npos ? 0 : a),
+             i = n.find("_i", dd == std::string::npos ? 0 : dd);
+  if (b == std::string::npos || a == std::string::npos || dd == std::string::npos || i == std::string::npos) return false;
+  c = {n.substr(b + 2, a - b - 2), n.substr(a + 2, dd - a - 2), n.substr(dd + 2, i - dd - 2), n.substr(i + 2)};
+  return true;
+}
+}  // namespace
+
+int32_t caps_field_import_ex(caps_doc* d, const char* path, const char* options) {
   return guard([&] {
+    const caps::Json opt = caps::Json::parse(options && *options ? options : "{}");
+    const bool fill = opt.text("mode", "override") == "fill";
     if (!d->field) throw caps::FFError("assign a force field first");
     const std::string p = path ? path : "";
     auto ends = [&](const char* e) { const std::string x = e; return p.size() > x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
@@ -2235,6 +2264,49 @@ int32_t caps_field_import(caps_doc* d, const char* path) {
         r.name = "imported: " + r.name;
         r.comment = "imported from " + file + (r.comment.empty() ? "" : "; " + r.comment);
       }
+    if (fill) {
+      // borrowed only where the force field defines nothing; for a moltemplate OPLS-AA base the other file's class
+      // names become its patterns (a class the base does not have drops the rule: nothing is guessed)
+      std::array<std::set<std::string>, 4> have;
+      bool opls = false;
+      for (const auto& t : d->field->base.types) {
+        std::array<std::string, 4> c;
+        if (opls_classes(t.name, c)) { opls = true; for (int k = 0; k < 4; ++k) have[size_t(k)].insert(c[size_t(k)]); }
+      }
+      auto cls = [&](const std::string& x, int kind) -> std::string {
+        if (x == "*" || x == "X") return "*";
+        if (!opls) return x;
+        for (const std::string& y : {x, x + "~"})
+          if (have[size_t(kind)].count(y)) {
+            static const char* pre[4] = {"*_b", "*_b*_a", "*_b*_a*_d", "*_b*_a*_d*_i"};
+            static const char* post[4] = {"_a*_d*_i*", "_d*_i*", "_i*", ""};
+            return std::string(pre[kind]) + y + post[kind];
+          }
+        return "";
+      };
+      size_t kept = 0, dropped = 0;
+      auto take = [&](std::vector<caps::FFRule>& from, std::vector<caps::FFRule>& to, int kind) {
+        for (auto r : from) {
+          bool ok = true;
+          for (auto& m : r.match) { m = cls(m, kind); if (m.empty()) ok = false; }
+          if (!ok) { ++dropped; continue; }
+          r.name = "filled: " + (r.name.rfind("imported: ", 0) == 0 ? r.name.substr(10) : r.name);
+          r.comment = "from " + file + " where " + d->field->base.name + " has none" + (r.comment.empty() ? "" : "; " + r.comment);
+          to.push_back(std::move(r));
+          ++kept;
+        }
+      };
+      auto& F = d->field->fill;
+      take(imp.bonds, F.bonds, 0);
+      take(imp.angles, F.angles, 1);
+      take(imp.dihedrals, F.dihedrals, 2);
+      // impropers are applied only where a force field defines them: an absent one is not a gap, so none is borrowed
+      if (!kept) throw caps::FFError(file + ": none of its rules can apply to " + d->field->base.name + " (no shared atom classes)");
+      d->field->imported.push_back(p + " (gaps only: " + std::to_string(kept) + " rules usable" +
+                                   (dropped ? ", " + std::to_string(dropped) + " on classes " + d->field->base.name + " lacks" : "") + ")");
+      field_run(d);
+      return d->field->complete ? 0 : 1;
+    }
     caps::merge_forcefield(d->field->extra, imp);
     d->field->imported.push_back(p);
     field_run(d);

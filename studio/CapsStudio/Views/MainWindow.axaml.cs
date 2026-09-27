@@ -484,6 +484,20 @@ public partial class MainWindow : Window
     private async void OnFieldAddRule(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AddRule(); }
     private async void OnFieldRemoveRules(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.RemoveRules(); }
 
+    private async void OnFieldFill(object? s, RoutedEventArgs e)
+    {
+        if (_vm.Busy) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Fill missing terms from another force field",
+            AllowMultiple = false,
+            SuggestedStartLocation = Paths.ForceFields is { } lib ? await StorageProvider.TryGetFolderFromPathAsync(lib) : null,
+            FileTypeFilter = [new FilePickerFileType("Force fields") { Patterns = ["*.json", "*.lt", "*.frcmod", "frcmod*", "*.itp", "*.top"] }],
+        });
+        var path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        if (path != null) await _vm.Field.FillGaps(path);
+    }
+
     private async void OnFieldImport(object? s, RoutedEventArgs e)
     {
         if (_vm.Busy) return;

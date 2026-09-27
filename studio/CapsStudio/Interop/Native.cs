@@ -472,6 +472,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_field_add_rule")] public static extern int FieldAddRule(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, [MarshalAs(UnmanagedType.LPUTF8Str)] string types,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string style, [MarshalAs(UnmanagedType.LPUTF8Str)] string pars);
     [DllImport(Lib, EntryPoint = "caps_field_import")] public static extern int FieldImport(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
+    [DllImport(Lib, EntryPoint = "caps_field_import_ex")] public static extern int FieldImportEx(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
     [DllImport(Lib, EntryPoint = "caps_field_remove_rules")] public static extern int FieldRemoveRules(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_field_clear")] public static extern int FieldClear(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_field_types_file")] public static extern int FieldTypesFile(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
@@ -1173,6 +1174,8 @@ public sealed class CapsDocument : IDisposable
     public bool FieldOverride(int index, string? type) { using (Hold()) { Alive(); return CheckField(Native.FieldOverride(H, index, type)); } }
     public bool FieldAddRule(string kind, string types, string style, string pars) { using (Hold()) { Alive(); return CheckField(Native.FieldAddRule(H, kind, types, style, pars)); } }
     public bool FieldImport(string path) { using (Hold()) { Alive(); return CheckField(Native.FieldImport(H, path)); } }
+    /// <summary>Borrows another file's bonds, angles and torsions only where the assigned force field defines none.</summary>
+    public bool FieldFillGaps(string path) { using (Hold()) { Alive(); return CheckField(Native.FieldImportEx(H, path, "{\"mode\":\"fill\"}")); } }
     public bool FieldRemoveRules() { using (Hold()) { Alive(); return CheckField(Native.FieldRemoveRules(H)); } }
     public void FieldClear() { using (Hold()) { Alive(); Check(Native.FieldClear(H)); } }
     public void FieldTypesFile(string path) { using (Hold()) { Alive(); Check(Native.FieldTypesFile(H, path)); } }
