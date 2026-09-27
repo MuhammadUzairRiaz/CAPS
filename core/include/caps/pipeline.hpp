@@ -23,6 +23,8 @@
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
 //   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
 //                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace
+//   freeze_property     property, frame (reference, default 0), output (default "<property> frozen"): the values it had
+//                       at the reference frame, after the steps below this one, matched by particle identifier
 //   orientation         axis director|x|y|z, radius, angle, neighbours → Orientation (P₂ per atom), Crystalline, Orientation.S
 //   affine_transform    strain [εxx εyy εzz] or matrix (9, row-major), translation, target all|particles|cell, only_selected
 //   cna                 adaptive common neighbour analysis → Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 ICO), table structures
@@ -111,6 +113,8 @@ struct PipelineState {
   int frame = 0;
   int64_t timestep = 0;
   const Trajectory* traj = nullptr;                    // the whole trajectory, for steps that read other frames
+  const struct Pipeline* pipeline = nullptr;           // the steps being run and the one running (freeze re-runs those
+  size_t step_index = 0;                               // below it on the reference frame)
 
   double attribute(const std::string& name, double def = 0) const;
   void set_attribute(const std::string& name, double v);
