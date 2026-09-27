@@ -37,7 +37,7 @@ struct PackItem {
 };
 
 struct PackProgress {
-  std::string stage;            // "insertion", "optimisation", "verification"
+  std::string stage;            // "insertion", "optimisation", "verification", "compression"
   int loop = 0, loops = 0;
   double penalty = 0;
   double dmin = 0;              // smallest intermolecular distance so far, Å
@@ -54,6 +54,10 @@ struct PackOptions {
   int trials = 16;              // placements tried per molecule during insertion
   double move_fraction = 0.05;  // share of molecules in violation moved between rounds
   int threads = 0;              // 0 = automatic
+  // Stage 3 (a dense cell): pack loosely in the given cell, then compress it to this density (g/cm³) by affine steps with
+  // capped-force push-off and minimisation (Relax's compression, the built-in force field); 0 = off. Periodic, no fixed
+  // structures. packmol text: "compress 0.9".
+  double compress_to = 0;
   std::function<bool(const PackProgress&)> progress;   // return false to cancel
 };
 

@@ -28,6 +28,7 @@ public partial class MainViewModel
                 PackXD = (decimal)s.CellA; PackYD = (decimal)s.CellB; PackZD = (decimal)s.CellC;
             }
             Raise(nameof(PackStartNote));
+            Raise(nameof(PackIntoCurrent));
         }
     }
     /// <summary>Packing around a structure needs its cell (orthorhombic: packmol's boxes are axis-aligned).</summary>
@@ -57,7 +58,21 @@ public partial class MainViewModel
     public bool PackDone { get => _packDone; private set => Set(ref _packDone, value); }
 
     /// <summary>The packmol text actually run: with the current structure as a fixed block and its cell as the periodic box.</summary>
+    // stage 3: pack loosely, then compress the cell to a density (push-off and minimisation between affine steps)
+    /// <summary>Packing around the current structure: it stays fixed, so the cell cannot be compressed.</summary>
+    public bool PackIntoCurrent => _packStart == 1;
+    private bool _packCompress;
+    private decimal _packCompressTo = 0.9m;
+    public bool PackCompress { get => _packCompress; set => Set(ref _packCompress, value); }
+    public decimal PackCompressTo { get => _packCompressTo; set => Set(ref _packCompressTo, Math.Clamp(value, 0.05m, 5m)); }
     private string PackTextToRun()
+    {
+        var text = PackTextToRunCore();
+        if (_packCompress && _packStart != 1 && !text.Split('\n').Any(l => l.TrimStart().StartsWith("compress ", StringComparison.OrdinalIgnoreCase)))
+            text = string.Format(CultureInfo.InvariantCulture, "compress {0:0.###}\n", _packCompressTo) + text;
+        return text;
+    }
+    private string PackTextToRunCore()
     {
         if (_packStart != 1 || _doc == null) return _packText;
         if (!PackCanUseCurrent) throw new InvalidOperationException("the current structure has no orthorhombic cell to pack into");

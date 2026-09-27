@@ -141,6 +141,12 @@
                   <TextBox Grid.Row="1" Grid.Column="1" Text="L-BFGS (m = 10)" IsReadOnly="True" />
                   <TextBox Grid.Row="1" Grid.Column="2" Text="Cell list, threaded" IsReadOnly="True" />
                 </Grid>
+                <Grid ColumnDefinitions="Auto,120,Auto" ColumnSpacing="8" IsEnabled="{Binding !PackIntoCurrent}">
+                  <CheckBox Content="Then compress the cell to" IsChecked="{Binding PackCompress}" VerticalAlignment="Center"
+                            ToolTip.Tip="Stage 3: pack at a low density (an easy, fast packing), then compress the cell by affine steps of 6 % with capped-force push-off and minimisation (the built-in force field) to this density" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding PackCompressTo}" Minimum="0.05" Maximum="5" Increment="0.05" FormatString="0.00" IsEnabled="{Binding PackCompress}" />
+                  <TextBlock Grid.Column="2" Text="g/cm³" Classes="dim" VerticalAlignment="Center" />
+                </Grid>
               </StackPanel>
             </StackPanel>
           </Border>

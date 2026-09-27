@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include "caps/io.hpp"
+#include "caps/relax.hpp"
 #include "parallel.hpp"
 
 namespace caps {
@@ -702,6 +703,39 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
                   rep.close_pairs, o.tolerance, rep.dmin, rep.region_violation, rep.loops);
     throw PackError(b);
   }
+  // stage 3: compression to the target density (the packed cell holds no overlaps to start from)
+  if (o.compress_to > 0) {
+    if (!o.periodic || !out.cell.valid()) throw PackError("compression needs a periodic cell (pbc)");
+    for (const auto& m : inst)
+      if (m.fixed) throw PackError("compression would move the fixed structures: pack them at the density you want instead");
+    const double rho0 = out.density();
+    if (o.compress_to > rho0 * 1.0001) {
+      RelaxOptions ro;
+      ro.target_density = o.compress_to;
+      ro.compress_step = 0.06;
+      ro.ftol = 2.0;
+      ro.max_iterations = 2000;
+      ro.energy.threads = o.threads;
+      ro.progress = [&](const RelaxProgress& p) {
+        if (!o.progress) return true;
+        PackProgress pr{"compression", p.stage_index, p.stages, p.energy, 0, 0};
+        return o.progress(pr);
+      };
+      RelaxReport rr;
+      try {
+        relax(out, ro, &rr);
+      } catch (const RelaxCancelled&) {
+        throw PackError("packing cancelled");
+      }
+      std::snprintf(b, sizeof b, "compressed from %.3f to %.3f g/cm³ (affine steps of 6 %%, push-off and minimisation with %s)", rho0, out.density(),
+                    rr.field.c_str());
+      if (rep_out) rep_out->notes.push_back(b);
+      out.velocities.clear();
+    } else if (rep_out) {
+      std::snprintf(b, sizeof b, "already at %.3f g/cm³: no compression to %.3f", rho0, o.compress_to);
+      rep_out->notes.push_back(b);
+    }
+  }
   return out;
 }
 
@@ -796,6 +830,7 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
       cur = nullptr;
     } else if (!cur) {
       if (k == "tolerance") o.tolerance = num(1);
+      else if (k == "compress") o.compress_to = num(1);   // CAPS: pack loosely, then compress the cell to this density (g/cm³)
       else if (k == "seed") { const double s = num(1); o.seed = s < 0 ? uint64_t(std::random_device{}()) : uint64_t(s); }
       else if (k == "output") { if (output && t.size() > 1) *output = (base / t[1]).string(); }
       else if (k == "pbc") {
