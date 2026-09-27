@@ -1574,6 +1574,38 @@ void Evaluator::freeze_pairs(const std::vector<double>& x, const Cell& cell) {
   frozen_ = true;
 }
 
+double torsion_energy(const ForceField& ff, const TorsionRefs& refs, const std::function<Vec3(uint32_t)>& pos, const Cell& cell) {
+  const bool per = cell.valid();
+  auto mi = [&](const Vec3& d) { return per ? cell.minimum_image(d) : d; };
+  double e = 0;
+  for (uint32_t k : refs.dihedrals) {   // v [1 + cos(nφ − δ)], φ as the Evaluator's (IUPAC)
+    const auto& tt = ff.dihedrals[k];
+    const Vec3 b1 = mi(pos(tt.j) - pos(tt.i)), b2 = mi(pos(tt.k) - pos(tt.j)), b3 = mi(pos(tt.l) - pos(tt.k));
+    const Vec3 m = cross(b1, b2), nn = cross(b2, b3);
+    const double lb2 = norm(b2);
+    if (dot(m, m) < 1e-12 || dot(nn, nn) < 1e-12 || lb2 < 1e-9) continue;
+    const double phi = std::atan2(lb2 * dot(b1, nn), dot(m, nn));
+    e += tt.v * (1 + std::cos(tt.n * phi - tt.delta));
+  }
+  for (uint32_t k : refs.dihedrals2) {
+    const auto& t = ff.dihedrals2[k];
+    e += class2_dihedral(t, mi(pos(t.j) - pos(t.i)), mi(pos(t.k) - pos(t.j)), mi(pos(t.l) - pos(t.k))).e;
+  }
+  for (uint32_t k : refs.cbt) {   // combined bending–torsion, as in Evaluator::compute
+    const auto& t = ff.cbt[k];
+    const Vec3 b1 = mi(pos(t.j) - pos(t.i)), b2 = mi(pos(t.k) - pos(t.j)), b3 = mi(pos(t.l) - pos(t.k));
+    const double L1 = dot(b1, b1), L2 = dot(b2, b2), L3 = dot(b3, b3);
+    const double d12 = dot(b1, b2), d23 = dot(b2, b3), d13 = dot(b1, b3);
+    const double Aa = L1 * L2 - d12 * d12, Bb = L2 * L3 - d23 * d23, Cc = d12 * d23 - d13 * L2, AB = Aa * Bb;
+    if (AB < 1e-24 || L1 < 1e-12 || L2 < 1e-12 || L3 < 1e-12) continue;
+    double s = 0;
+    for (int n = 0; n <= 4; ++n)
+      if (t.a[n] != 0) s += t.a[n] * (n ? std::pow(Cc, n) : 1.0) * std::pow(AB, 0.5 * (3 - n));
+    e += s / (std::pow(L1, 1.5) * L2 * L2 * L2 * std::pow(L3, 1.5));
+  }
+  return e;
+}
+
 PairType mixed_pair(const ForceField& ff, int a, int b) {
   if (auto it = ff.pair_override.find({std::min(a, b), std::max(a, b)}); it != ff.pair_override.end()) return it->second;
   const double ea = ff.lj[a].eps, eb = ff.lj[b].eps, sa = ff.lj[a].sigma, sb = ff.lj[b].sigma;

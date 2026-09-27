@@ -299,6 +299,18 @@ public delegate int CapsStageProgress(int stage, int loop, int loops, double dmi
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsMdProgress(in CapsThermo row, long steps, IntPtr user);
 
+[StructLayout(LayoutKind.Sequential)]
+public struct CapsCbmcOpts
+{
+    public int Moves, Trials, MaxTorsions;
+    public double Temperature, Cutoff;
+    public int Coulomb;
+    public ulong Seed;
+}
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int CapsCbmcProgress(int done, int moves, int accepted, IntPtr user);
+
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int CapsRelaxProgress(int stage, int stages, int iteration, double energy, double fmax, double density, IntPtr user);
 
@@ -335,6 +347,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_memory")] public static extern int Memory(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_cbmc")] public static extern int Cbmc(IntPtr doc, in CapsCbmcOpts o, CapsCbmcProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_md")] public static extern int Md(IntPtr doc, in CapsMdOpts o, CapsMdProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_save_trajectory")] public static extern int SaveTrajectory(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
@@ -1079,6 +1092,22 @@ public sealed class CapsDocument : IDisposable
             GC.KeepAlive(cb);
             Check(rc);
             return (rc == 0, System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+        }
+    }
+
+    /// <summary>Configurational-bias regrowth of chain ends (the document gains the start and snapshots through the run).
+    /// The progress callback (moves done, moves, accepted) runs on the worker thread; false cancels. Returns the JSON report.</summary>
+    public string Cbmc(CapsCbmcOpts o, Func<int, int, int, bool>? progress)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            var report = new byte[8192];
+            CapsCbmcProgress? cb = progress == null ? null : (d, n, a, _) => progress(d, n, a) ? 0 : 1;
+            var rc = Native.Cbmc(H, o, cb, IntPtr.Zero, report, report.Length);
+            GC.KeepAlive(cb);
+            Check(rc);
+            return System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
         }
     }
 

@@ -39,6 +39,7 @@ public partial class EquilibratePage : PageBase
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunEquilibrate();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelEquilibrate();
+    private async void OnCbmc(object? s, RoutedEventArgs e) => await Vm.RunCbmc();
     private async void OnExtend(object? s, RoutedEventArgs e) => await Vm.ExtendEquilibrate();
     private void OnAccept(object? s, RoutedEventArgs e) => Vm.AcceptEquilibration();
     private async void OnLoadTarget(object? s, RoutedEventArgs e)

@@ -490,6 +490,42 @@
    ]
   },
   {
+   "id": "cbmc-regrowth",
+   "group": "Growth",
+   "title": "Configurational-bias regrowth of chain ends",
+   "summary": "A Monte Carlo move that samples chain conformations of a built, typed cell. It picks a chain, one of its free ends and one to a few of the rotatable backbone bonds nearest that end, and regrows the end bond by bond from the inside out: at each bond k torsion angles are drawn uniformly on the circle, each weighted by the Boltzmann factor of the energy of the atoms it places, and one is chosen by its weight. The old end is retraced the same way (its own torsion counted as one of the trials) and the new end is accepted with probability min(1, W_new/W_old). Trial energies are the assigned force field's: van der Waals (shifted to zero at the cut-off, 1-4 pairs scaled), damped shifted force electrostatics and the torsion terms about each regrown bond, class II cross terms included. Bond lengths, angles, impropers and every stereo configuration are untouched; ring, double, aromatic and carbonyl C–N/C–O bonds are held.",
+   "equation": "W = Π_i Σ_j exp(−β u_ij),   P_acc = min(1, W_new / W_old)",
+   "equation_note": "Siepmann & Frenkel 1992; Rosenbluth & Rosenbluth 1955",
+   "symbols": [
+    [
+     "k",
+     "torsion trials per bond",
+     "8"
+    ],
+    [
+     "torsions per move",
+     "rotatable backbone bonds regrown at most",
+     "4"
+    ],
+    [
+     "cut-off",
+     "pair energies (at most half the cell's narrowest width)",
+     "9 Å"
+    ]
+   ],
+   "when": "After growth and a first minimisation, before dynamics: it relaxes chain-end conformations and local packing far faster than MD at the same temperature. It does not move chain interiors (double-bridging and end-bridging moves would) and does not change the density.",
+   "cites": [
+    "siepmann1992",
+    "rosenbluth1955"
+   ],
+   "source": "core/src/cbmc.cpp (cbmc_regrow)",
+   "tested": "Cbmc.ButaneTorsionsFollowBoltzmann (trans population equals the grid-integrated Boltzmann one), Cbmc.MeltKeepsGeometryAndCountsEnergy (energy change equals the Evaluator's to 1e-6; bond lengths kept to 1e-9 Å)",
+   "deviation": "uniform torsion trials at fixed bond lengths and angles (the rigid-geometry ensemble, no Fixman term); electrostatics by damped shifted force, not Ewald",
+   "engines": [
+    "cbmc.regrow"
+   ]
+  },
+  {
    "id": "trial-growth",
    "group": "Growth",
    "title": "Chain growth by trial placement",

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "caps/analysis.hpp"
+#include "caps/cbmc.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
 #include "caps/elements.hpp"
@@ -1475,6 +1476,78 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     r["error"] = std::string(ex.what());
   }
   return report_out(r.dump(), out, cap);
+}
+
+int32_t caps_cbmc(caps_doc* d, const caps_cbmc_opts* o, caps_cbmc_progress_fn progress, void* user, char* report, int32_t cap) {
+  return guard([&] {
+    if (!d || !o) throw std::invalid_argument("no document or options");
+    caps::System s = d->traj.frame(d->current);
+    const auto fp = field_for_run(d);
+    const caps::ForceField ff = fp ? *fp : default_ff(s);
+    caps::CbmcOptions c;
+    if (o->moves > 0) c.moves = o->moves;
+    if (o->trials > 0) c.trials = o->trials;
+    if (o->max_torsions > 0) c.max_torsions = o->max_torsions;
+    if (o->temperature > 0) c.temperature = o->temperature;
+    if (o->cutoff > 0) c.cutoff = o->cutoff;
+    c.coulomb = o->coulomb != 0;
+    c.seed = o->seed ? o->seed : 1;
+    bool cancelled = false;
+    if (progress) c.progress = [&](int done, int acc) { cancelled = progress(done, c.moves, acc, user) != 0; return !cancelled; };
+    caps::Trajectory out;
+    int every = 0;
+    c.snapshot = [&](const std::vector<caps::Vec3>& x) {   // about every 5 % of the run
+      if (++every % 5 != 0) return;
+      out.positions.push_back(x);
+      out.cells.push_back(s.cell);
+      out.timesteps.push_back(int64_t(out.timesteps.size()));
+    };
+    caps::make_molecules_whole(s);
+    out.topology = s;
+    {
+      std::vector<caps::Vec3> p;
+      for (const auto& a : s.atoms) p.push_back(a.pos);
+      out.positions.push_back(p), out.cells.push_back(s.cell), out.timesteps.push_back(0);
+    }
+    caps::CbmcReport rep;
+    caps::cbmc_regrow(s, ff, c, &rep);
+    if (cancelled) throw std::runtime_error("CBMC cancelled");
+    {
+      std::vector<caps::Vec3> p;
+      for (const auto& a : s.atoms) p.push_back(a.pos);
+      out.positions.push_back(p), out.cells.push_back(s.cell), out.timesteps.push_back(int64_t(out.timesteps.size()));
+    }
+    caps::KeyValues pr = {{"moves", std::to_string(rep.attempted) + " end regrowths, " + std::to_string(rep.accepted) + " accepted (" + g6(std::round(1000 * rep.acceptance) / 10) + " %)"},
+                          {"trials", std::to_string(c.trials) + " torsions per bond, up to " + std::to_string(c.max_torsions) + " bonds per move"},
+                          {"temperature", g6(c.temperature) + " K"},
+                          {"trial energies", std::string("van der Waals") + (c.coulomb ? ", DSF electrostatics" : "") + ", torsions · cut-off " + g6(rep.cutoff) + " Å"},
+                          {"⟨R²⟩ end-to-end", g6(rep.r2_before) + " → " + g6(rep.r2_after) + " Å²"},
+                          {"force field", ff_label(d)}};
+    prov_step(d, "cbmc.regrow", "Configurational-bias Monte Carlo regrowth of chain ends", std::move(pr), seeded(c.seed), {"siepmann1992", "rosenbluth1955"},
+              energy_approx(rep.cutoff, c.coulomb, false, 1));
+    out.topology.atoms = s.atoms;
+    out.topology.velocities.clear();
+    out.topology.unwrapped = true;
+    out.topology.notes = rep.notes;
+    d->traj = std::move(out);
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    caps::Json r = caps::Json::object();
+    r["attempted"] = double(rep.attempted);
+    r["accepted"] = double(rep.accepted);
+    r["acceptance"] = rep.acceptance;
+    r["chains"] = double(rep.chains);
+    r["r2_before"] = rep.r2_before;
+    r["r2_after"] = rep.r2_after;
+    r["energy_change"] = rep.energy_change;
+    r["cutoff"] = rep.cutoff;
+    r["seconds"] = rep.seconds;
+    caps::Json nt = caps::Json::array();
+    for (const auto& x : rep.notes) nt.push_back(x);
+    r["notes"] = std::move(nt);
+    report_out(r.dump(), report, cap);
+    return 0;
+  });
 }
 
 int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn progress, void* user, char* report, int32_t cap) {

@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 32, "native ABI version 32");
+        Check(Native.AbiVersion() == 33, "native ABI version 33");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2131,6 +2131,12 @@ internal static class SelfTest
             pe.Dispose();
             vm.Open(peFile);
             var risOk = vm.RisCurve.Length > 5 && vm.ChainNote.Contains("RIS polyethylene");
+            // Equilibrate › Chain ends: CBMC regrowth with the built-in force field; a new frame, the provenance step
+            vm.CbMovesD = 60;
+            var framesBefore = vm.Frames;
+            vm.RunCbmc().GetAwaiter().GetResult();
+            Check(vm.CbNote.Contains("regrowths accepted") && vm.Frames > framesBefore && vm.Document!.Provenance().Contains("cbmc.regrow"),
+                  $"CBMC: {vm.CbNote} · frames {framesBefore} → {vm.Frames}");
             vm.EqTarget = 1;
             var risTarget = vm.EqTargetNote.Contains("Flory");
             var tf = Path.Combine(outDir, "target.dat");

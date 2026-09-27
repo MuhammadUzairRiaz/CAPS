@@ -109,6 +109,29 @@
 
           <Border Classes="card">
             <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Chain ends · configurational-bias Monte Carlo" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,10,16,14" Spacing="8">
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="Regrows chain ends torsion by torsion with trial energies from the assigned force field (van der Waals, electrostatics as in Relax, torsions), each new end accepted by its Rosenbluth weight (Siepmann &amp; Frenkel 1992). Bond lengths, angles and every configuration stay as they are. Useful before MD on a freshly grown cell." />
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Moves" Classes="label" /><TextBlock Grid.Column="1" Text="Trials per torsion" Classes="label" />
+                  <TextBlock Grid.Column="2" Text="Torsions per move" Classes="label" /><TextBlock Grid.Column="3" Text="T (K)" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding CbMovesD}" Minimum="10" Increment="500" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding CbTrialsD}" Minimum="2" Maximum="64" Increment="2" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding CbTorsionsD}" Minimum="1" Maximum="12" Increment="1" FormatString="0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="3" Value="{Binding CbTempD}" Minimum="1" Increment="10" FormatString="0" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Button Content="Regrow chain ends" Click="OnCbmc" IsEnabled="{Binding CanEquilibrate}"
+                          ToolTip.Tip="Runs on the current frame; the result becomes a new frame (undo with the frame slider or Keep the original)" />
+                  <TextBlock Text="{Binding CbNote}" Classes="dim" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="520" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
               <Border Classes="phead"><TextBlock Text="Criteria" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,10,16,14" Spacing="8">
                 <TextBlock Text="Switch on production blocks: after the protocol, CAPS runs NPT blocks and stops when density, energy and Rg change less than the tolerance twice in a row." Classes="muted" TextWrapping="Wrap"
