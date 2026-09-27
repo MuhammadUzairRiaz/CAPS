@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 33, "native ABI version 33");
+        Check(Native.AbiVersion() == 34, "native ABI version 34");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2184,6 +2184,24 @@ internal static class SelfTest
             pe.Dispose();
             vm.Open(peFile);
             var risOk = vm.RisCurve.Length > 5 && vm.ChainNote.Contains("RIS polyethylene");
+            // Analyze › Adsorption locator: two waters annealed on the PE cell (the built-in force field); the adsorbates are
+            // added after the substrate, the lowest configuration shown, the energy negative, dE/dN for the component
+            {
+                var atoms0 = vm.Document!.Summary().Atoms;
+                vm.OpenAdsorption();
+                vm.AdsRows.Clear();
+                vm.AdsRows.Add(new AdsorbateRow { Smiles = "O", Count = 2 });
+                vm.AdsRegion = 0;
+                vm.AdsCyclesD = 1;
+                vm.AdsStepsD = 600;
+                vm.RunAdsorption().GetAwaiter().GetResult();
+                var added = vm.Document!.Summary().Atoms - atoms0;
+                Check(vm.IsAdsorption && !vm.AdsHasError && added == 6 && vm.AdsEnergy.EndsWith("kcal/mol") && !vm.AdsEnergy.StartsWith("0") && vm.AdsComponents.Count == 1
+                      && vm.AdsComponents[0].Name == "H2O" && vm.AdsConfigs.Count >= 1 && vm.Document!.Provenance().Contains("adsorption.locator"),
+                      $"adsorption locator: {vm.AdsEnergy} · {vm.AdsSplit} · {added} atoms added · {vm.AdsError}");
+                vm.UndoEdit(false);
+                vm.SetModule(4);
+            }
             // Equilibrate › Chain ends: CBMC regrowth with the built-in force field; a new frame, the provenance step
             vm.CbMovesD = 60;
             var framesBefore = vm.Frames;

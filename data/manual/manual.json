@@ -910,6 +910,41 @@
    "engines": []
   },
   {
+   "id": "adsorption-locator",
+   "group": "Analysis",
+   "title": "Adsorption locator",
+   "summary": "Low-energy places of adsorbate molecules on a fixed substrate (a crystal surface, a filler, a polymer surface or cell) by Monte Carlo simulated annealing, as Materials Studio's Adsorption Locator does. The adsorbates, built from SMILES and added after the substrate, move as rigid bodies: translations, rotations about their centre and jumps to a random place and orientation, accepted by the Metropolis rule at a temperature falling geometrically from the start to the end value within each cycle; jumps fade out as it cools, and each cycle ends with a downhill polish of its lowest configuration with shrinking steps; later cycles restart from the best so far. The energy is the assigned force field's non-bonded interaction between molecules.",
+   "equation": "E_ads = Σ_adsorbates E(adsorbate, substrate) + Σ_pairs E(adsorbate, adsorbate),   dE/dN_i = ⟨E(one molecule of i, everything else)⟩,   P_acc = min(1, e^(−ΔE/kT))",
+   "equation_note": "Kirkpatrick, Gelatt & Vecchi 1983; Metropolis et al. 1953",
+   "symbols": [
+    [
+     "T",
+     "annealing temperature, start → end",
+     "10⁴ → 100 K"
+    ],
+    [
+     "cycles",
+     "annealing cycles",
+     "3"
+    ],
+    [
+     "steps",
+     "Monte Carlo steps per cycle",
+     "20 000"
+    ]
+   ],
+   "when": "Binding sites and energies of small molecules on surfaces and fillers: coupling agents or sizing molecules on silica, carbon or cellulose; gases, water and plasticisers on or in a polymer; comparing adsorbates by E_ads. Rigid molecules: no deformation energy; relax the result with Minimise for that.",
+   "cites": [
+    "kirkpatrick1983"
+   ],
+   "source": "core/src/adsorption.cpp (locate_adsorption), core/src/pairmodel.cpp",
+   "tested": "Adsorption.FindsTheScanMinimum (the lowest energy of an atom over a lattice equals a fine grid scan's, −0.8980 kcal/mol at the hollow site); Adsorption.RigidMoleculesAndDeDn",
+   "deviation": "damped shifted force electrostatics, not Ewald; rigid adsorbates (one conformer each)",
+   "engines": [
+    "adsorption.locator"
+   ]
+  },
+  {
    "id": "green-kubo",
    "group": "Analysis",
    "title": "Shear viscosity by Green–Kubo",
