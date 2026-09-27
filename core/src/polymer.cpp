@@ -368,6 +368,7 @@ Architecture architecture_from_string(const std::string& s) {
   if (s == "star") return Architecture::Star;
   if (s == "comb") return Architecture::Comb;
   if (s == "branched") return Architecture::Branched;
+  if (s == "dendrimer") return Architecture::Dendrimer;
   throw std::invalid_argument("unknown architecture '" + s + "' (linear, star, comb, branched)");
 }
 
@@ -376,6 +377,7 @@ const char* to_string(Architecture a) {
     case Architecture::Star: return "star";
     case Architecture::Comb: return "comb";
     case Architecture::Branched: return "branched";
+    case Architecture::Dendrimer: return "dendrimer";
     default: return "linear";
   }
 }
@@ -613,15 +615,28 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ++n_arms;
       return idx;
     };
-    if (arch == Architecture::Star && (spec.arms < 3 || spec.arms > 4)) throw GrowError("a star has 3 or 4 arms on its core carbon");
+    const bool cored = arch == Architecture::Star || arch == Architecture::Dendrimer;
+    if (cored && (spec.arms < 3 || spec.arms > 4)) throw GrowError("a star has 3 or 4 arms on its core carbon");
+    if (arch == Architecture::Dendrimer && (spec.generations < 1 || spec.generations > 6)) throw GrowError("a dendrimer has 1 to 6 generations");
     for (int m = 0; m < nchains; ++m) {
       const int len = int(C[size_t(m)].seq.size());
       int prev = -1;
-      if (arch == Architecture::Star)
+      if (cored)
         for (int j = 1; j < spec.arms; ++j) prev = add_arm(m, 0, true, int(C[size_t(m)].seq.size()), prev);
-      else if (arch == Architecture::Comb)
+      if (arch == Architecture::Dendrimer) {
+        // the core's arms, then each generation's ends, split in two on their last unit
+        std::vector<int> ends{m};
+        for (size_t e = size_t(m) + 1; e < C.size(); ++e)
+          if (C[e].parent == m) ends.push_back(int(e));
+        for (int g = 0; g < spec.generations; ++g) {
+          std::vector<int> next;
+          for (int e : ends)
+            for (int b = 0; b < 2; ++b) next.push_back(prev = add_arm(e, int(C[size_t(e)].seq.size()) - 1, false, std::max(1, spec.arm_dp), prev));
+          ends = std::move(next);
+        }
+      } else if (arch == Architecture::Comb)
         for (int u = std::max(1, spec.spacing) - 1; u < len; u += std::max(1, spec.spacing)) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
-      else
+      else if (arch == Architecture::Branched)
         for (int u = 1; u + 1 < len; ++u)
           if (std::uniform_real_distribution<double>(0, 1)(brng) < spec.branch_probability) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
     }
@@ -769,7 +784,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       double best_room = -1e9;
       int best_unit = ch.anchor_unit;
       for (int u : units) {
-        if (!ch.core && taken.count(u)) continue;
+        if (!ch.core && arch != Architecture::Dendrimer && taken.count(u)) continue;   // a dendrimer's end unit carries both branches
         const int base = par.unit_start[size_t(u)];
         const Template& tp = T[size_t(par.seq[size_t(u)])];
         for (int cand : ch.core ? std::vector<int>{base} : std::vector<int>{base, base + tp.tail})
@@ -796,9 +811,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   };
   // all of a parent's arms at once when it is complete, so stand-in carbons keep each head's place and the arms grown
   // first leave room for those after them
-  auto resolve_anchors = [&](int parent) {
+  auto resolve_anchors = [&](int parent, bool core_only = false) {
     for (size_t e = 0; e < C.size(); ++e)
-      if (C[e].parent == parent && !C[e].resolved) resolve_one(int(e));
+      if (C[e].parent == parent && !C[e].resolved && (C[e].core || !core_only)) resolve_one(int(e));
   };
   // the parent lost the atoms its arms hang on (it backed up or restarted): the arms' places are chosen again later
   auto unresolve_arms = [&](int parent) {
@@ -1278,7 +1293,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     for (const auto& b : t.bonds) ch.adj[size_t(base + b[0])].push_back(base + b[1]), ch.adj[size_t(base + b[1])].push_back(base + b[0]);
     if (k > 0) ch.adj[size_t(base)].push_back(pt), ch.adj[size_t(pt)].push_back(base);
-    if (k == 0 && arch == Architecture::Star && ch.parent < 0) resolve_anchors(ci);   // the core's places, before the chain folds back
+    if (k == 0 && (arch == Architecture::Star || arch == Architecture::Dendrimer) && ch.parent < 0) resolve_anchors(ci, true);   // the core's places, before the chain folds back
     if (int(ch.unit_start.size()) == int(ch.seq.size())) {
       ch.done = true;
       if (n_arms) resolve_anchors(ci);   // its arms' places are kept from now on
@@ -1449,6 +1464,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   else std::snprintf(cb, sizeof cb, "box %.3f Å", L);
   std::string units_text = std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units";
   if (arch == Architecture::Star) units_text = std::to_string(nchains) + " stars of " + std::to_string(spec.arms) + " arms × " + std::to_string(spec.dp) + " units";
+  else if (arch == Architecture::Dendrimer)
+    units_text = std::to_string(nchains) + " dendrimers of generation " + std::to_string(spec.generations) + ": " + std::to_string(spec.arms) + " core arms × " +
+                 std::to_string(spec.dp) + " units, " + std::to_string(n_arms - nchains * (spec.arms - 1)) + " branches of " + std::to_string(std::max(1, spec.arm_dp)) + " units";
   else if (arch != Architecture::Linear)
     units_text = std::to_string(nchains) + (arch == Architecture::Comb ? " combs" : " branched chains") + ": backbones of " + std::to_string(spec.dp) + " units, " +
                  std::to_string(n_arms) + " side chains of " + std::to_string(std::max(1, spec.arm_dp)) + " units";

@@ -40,9 +40,12 @@ const char* to_string(Sequence s);
 //             3 or 4 arms, as star SBR and BR coupled on silicon or tin
 //   comb      a backbone of dp units with a side chain of arm_dp units on every `spacing`-th unit
 //   branched  side chains of arm_dp units on backbone units drawn with probability branch_probability (long-chain branches)
+//   dendrimer a star core of `arms` arms of dp units; every free end then splits in two segments of arm_dp units, for
+//             `generations` generations (arms · (2^(G+1) − 1) segments in all; both new segments hang on the end unit,
+//             the second on the unit before it when the end has no room)
 // A side chain replaces a hydrogen on its unit's head atom (else its tail atom) and repeats the chain's units, sequence
 // kind and tacticity. Arms grow one after another once the chain they hang on is complete, with the same trial placement.
-enum class Architecture { Linear, Star, Comb, Branched };
+enum class Architecture { Linear, Star, Comb, Branched, Dendrimer };
 Architecture architecture_from_string(const std::string& s);
 const char* to_string(Architecture a);
 
@@ -61,7 +64,8 @@ struct ChainSpec {
   std::vector<int> chain_dp;       // per chain (polydispersity): overrides dp for chain k when given
   Architecture architecture = Architecture::Linear;
   int arms = 4;                    // Star: arms on the core (3 or 4), each of dp units
-  int arm_dp = 5;                  // Comb, Branched: units per side chain
+  int arm_dp = 5;                  // Comb, Branched, Dendrimer: units per side chain (per branch segment)
+  int generations = 2;             // Dendrimer: generations of branching beyond the core (1 … 6)
   int spacing = 4;                 // Comb: a side chain on every spacing-th backbone unit
   double branch_probability = 0.1; // Branched: chance that a backbone unit carries a side chain
   // Keep every unit's configuration as written (no mirrored units): chiral units such as nucleotides and sugars, whose
