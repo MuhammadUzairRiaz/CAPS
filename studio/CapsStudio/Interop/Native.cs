@@ -412,6 +412,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_adsorption")] public static extern int Adsorption(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_coverage")] public static extern int FieldCoverage(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_export_engines")] public static extern int ExportEngines(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_chi_contacts")] public static extern int ChiContacts([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -1520,6 +1521,21 @@ public sealed class CapsDocument : IDisposable
     public string Charges(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Charges(H, json, b, c)); } }
     /// <summary>Snapshots and history branches (caps_snapshot): take, restore, delete, save, branch, drop_branch.</summary>
     public void Snapshot(string json) { using (Hold()) { Alive(); Check(Native.Snapshot(H, json)); } }
+    /// <summary>Adsorption locator (caps_adsorption): adsorbates added, annealed on the substrate; JSON report.
+    /// Progress gets (stage, fraction), false stops. The document gets the configurations as frames.</summary>
+    public string Adsorption(string json, Func<string, double, bool>? progress = null)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+            var buf = new byte[1 << 20];
+            var n = Native.Adsorption(H, json, cb, IntPtr.Zero, buf, buf.Length);
+            GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
+
     /// <summary>Which library force fields describe this structure (caps_field_coverage), JSON; progress gets (force field, fraction), false stops.</summary>
     public string FieldCoverage(string dir, Func<string, double, bool>? progress = null)
     {

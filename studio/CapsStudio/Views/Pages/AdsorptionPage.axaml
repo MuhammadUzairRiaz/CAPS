@@ -1,0 +1,116 @@
+<!-- CAPS Studio › Analyze › Adsorption locator: adsorbate molecules (SMILES, counts) added to the open structure (the
+     substrate) and annealed on it by Monte Carlo with the assigned force field; the lowest configurations, the adsorption
+     energy, dE/dN per component and the energy distribution. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.AdsorptionPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding AdsRunning}" />
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Locate" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Adsorption locator" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Where molecules sit on the open structure: Monte Carlo simulated annealing with the assigned force field" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding AdsProgress}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+    </Border>
+    <Grid ColumnDefinitions="*,440" ColumnSpacing="14" Margin="22,18">
+      <Border Classes="pcard" Padding="0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold" />
+          </Border>
+          <Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="View" /></Panel>
+        </DockPanel>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Add" Click="OnAdd" />
+                <TextBlock Text="Adsorbates" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <ItemsControl ItemsSource="{Binding AdsRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AdsorbateRow">
+                    <Grid ColumnDefinitions="*,90,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                      <TextBox Text="{Binding Smiles}" Classes="mono" Watermark="SMILES, e.g. O=C=O" />
+                      <NumericUpDown Grid.Column="1" Value="{Binding Count}" Minimum="1" Maximum="500" FormatString="0" ToolTip.Tip="Molecules" />
+                      <Button Grid.Column="2" Classes="small" Content="×" Click="OnRemove" ToolTip.Tip="Remove" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="The open structure is the substrate and stays fixed; the adsorbates are built from SMILES, added after it and move as rigid molecules. The Field assignment is applied to the whole (else the built-in force field)." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Search" FontSize="13.5" FontWeight="SemiBold" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.AdsRegions}" SelectedIndex="{Binding AdsRegion}" HorizontalAlignment="Stretch" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Cycles" Classes="label" /><TextBlock Grid.Column="1" Text="Steps per cycle" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding AdsCyclesD}" Minimum="1" Maximum="100" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding AdsStepsD}" Minimum="100" Increment="5000" FormatString="0" />
+                <TextBlock Grid.Row="2" Text="T start (K)" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="T end (K)" Classes="label" />
+                <NumericUpDown Grid.Row="3" Value="{Binding AdsTHighD}" Minimum="1" Increment="1000" FormatString="0" />
+                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding AdsTLowD}" Minimum="1" Increment="10" FormatString="0" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Each cycle cools geometrically from the start to the end temperature (translations, rotations, jumps to random places under the Metropolis rule), then polishes downhill; later cycles restart from the best so far. Kirkpatrick, Gelatt &amp; Vecchi, Science 220, 671 (1983)." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding AdsHasError}">
+            <TextBlock Text="{Binding AdsError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Adsorption energy" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding AdsEnergy}" Classes="mono" FontSize="20" />
+              <TextBlock Text="{Binding AdsSplit}" Classes="dim" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,70,110">
+                <TextBlock Text="COMPONENT" Classes="h3" /><TextBlock Grid.Column="1" Text="N" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="dE/dN (kcal/mol)" Classes="h3" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding AdsComponents}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AdsComponentRow">
+                    <Grid ColumnDefinitions="*,70,110" Margin="0,2">
+                      <TextBlock Text="{Binding Name}" Classes="mono" /><TextBlock Grid.Column="1" Text="{Binding Molecules}" Classes="mono" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Column="2" Text="{Binding DeDn}" Classes="mono" HorizontalAlignment="Right" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Energies sampled at the cold end" Classes="label" Margin="0,6,0,0" />
+              <v:LinePlot x:Name="Hist" Height="120" XLabel="E (kcal/mol)" YLabel="samples" AutoRange="True" Bars="True" />
+              <TextBlock Text="Lowest configurations (frames: the lowest is shown, earlier ones before it)" Classes="label" Margin="0,6,0,0" />
+              <ItemsControl ItemsSource="{Binding AdsConfigs}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AdsConfigRow">
+                    <Grid ColumnDefinitions="40,*,80" Margin="0,1">
+                      <TextBlock Text="{Binding Rank}" Classes="mono dim" /><TextBlock Grid.Column="1" Text="{Binding Energy}" Classes="mono" />
+                      <TextBlock Grid.Column="2" Text="{Binding Cycle, StringFormat='cycle {0}'}" Classes="dim" HorizontalAlignment="Right" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding AdsNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -12,7 +12,9 @@
 #include <string>
 
 #include "caps/analysis.hpp"
+#include "caps/adsorption.hpp"
 #include "caps/cbmc.hpp"
+#include "caps/molecule.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
@@ -1568,6 +1570,130 @@ int32_t caps_cbmc(caps_doc* d, const caps_cbmc_opts* o, caps_cbmc_progress_fn pr
     report_out(r.dump(), report, cap);
     return 0;
   });
+}
+
+namespace { void push_undo(caps_doc* d, const std::string& what); }   // with the edits, below
+
+// Adsorption locator (ABI 34): adsorbates from SMILES added after the substrate, the Field assignment applied to the
+// whole (or the built-in force field), Monte Carlo simulated annealing (adsorption.hpp).
+extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::System s = d->traj.frame(d->current);
+    const size_t substrate_atoms = s.atoms.size();
+    int first = -1;
+    int64_t next_mol = 0;
+    for (const auto& a : s.atoms) next_mol = std::max(next_mol, a.mol);
+    int added = 0;
+    if (j.has("adsorbates") && j["adsorbates"].is_array()) {
+      for (const auto& a : j["adsorbates"].items()) {
+        const std::string smi = a.text("smiles");
+        const int count = int(a.num("count", 1));
+        if (smi.empty() || count < 1) continue;
+        const caps::System m = caps::build_molecule(smi).system;
+        for (int k = 0; k < count; ++k) {
+          const uint32_t off = uint32_t(s.atoms.size());
+          ++next_mol;
+          for (auto at : m.atoms) { at.mol = next_mol; at.id = int64_t(s.atoms.size() + 1); s.atoms.push_back(at); }
+          for (auto b : m.bonds) { b.i += off; b.j += off; s.bonds.push_back(b); }
+          ++added;
+        }
+      }
+      if (added) first = int(substrate_atoms);
+    }
+    if (j.has("first_atom")) first = int(j.num("first_atom", -1));
+    if (added) {   // the structure with its adsorbates becomes the document (undoable)
+      push_undo(d, "Adsorption locator");
+      caps::Trajectory t;
+      t.topology = s;
+      std::vector<caps::Vec3> p;
+      for (const auto& a : s.atoms) p.push_back(a.pos);
+      t.positions.push_back(p), t.cells.push_back(s.cell), t.timesteps.push_back(0);
+      d->traj = std::move(t);
+      d->current = 0;
+      refresh(d);
+      if (d->field) field_run(d);   // the same assignment, now over the adsorbates too
+    }
+    const auto fp = field_for_run(d);
+    const caps::ForceField ff = fp ? *fp : default_ff(s);
+    caps::AdsorptionOptions o;
+    o.first_mobile_atom = first;
+    o.cycles = int(j.num("cycles", 3));
+    o.steps = int(j.num("steps", 20000));
+    o.t_high = j.num("t_high", 1e4);
+    o.t_low = j.num("t_low", 100);
+    o.cutoff = j.num("cutoff", 12.0);
+    o.coulomb = !(j.has("coulomb") && j["coulomb"].kind() == caps::Json::Bool && !j["coulomb"].boolean());
+    o.keep = int(j.num("keep", 10));
+    o.seed = uint64_t(j.num("seed", 1));
+    const std::string side = j.text("region", "cell");   // cell | above (over the substrate's top face)
+    if (j.has("z_lo") || j.has("z_hi")) o.z_lo = j.num("z_lo", 0), o.z_hi = j.num("z_hi", 0);
+    else if (side == "above" && substrate_atoms > 0 && s.cell.valid()) {
+      double top = -1e30;
+      for (size_t i = 0; i < substrate_atoms; ++i) top = std::max(top, s.atoms[i].pos[2]);
+      o.z_lo = top + 1.0;
+      o.z_hi = s.cell.origin[2] + s.cell.c[2];
+      if (o.z_hi <= o.z_lo + 2) throw std::invalid_argument("no vacuum above the substrate: add vacuum along z (Surface builder) or search the whole cell");
+    }
+    bool cancelled = false;
+    if (progress)
+      o.progress = [&](int cyc, int step, double best) {
+        char b[96];
+        std::snprintf(b, sizeof b, "cycle %d · step %d · lowest %.2f kcal/mol", cyc + 1, step, best);
+        cancelled = progress(b, (cyc + double(step) / o.steps) / o.cycles, user) != 0;
+        return !cancelled;
+      };
+    caps::AdsorptionReport rep;
+    caps::locate_adsorption(s, ff, o, &rep);
+    if (cancelled) throw std::runtime_error("adsorption locator cancelled");
+    // frames: the kept configurations, the lowest last (shown)
+    caps::Trajectory t;
+    t.topology = s;
+    for (auto it = rep.configs.rbegin(); it != rep.configs.rend(); ++it) {
+      t.positions.push_back(it->positions), t.cells.push_back(s.cell), t.timesteps.push_back(int64_t(t.timesteps.size()));
+    }
+    t.topology.notes = rep.notes;
+    d->traj = std::move(t);
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    caps::KeyValues pr = {{"adsorbates", std::to_string(rep.components.size()) + " components"},
+                          {"annealing", std::to_string(o.cycles) + " cycles of " + std::to_string(o.steps) + " steps, " + g6(o.t_high) + " → " + g6(o.t_low) + " K"},
+                          {"adsorption energy", g6(rep.adsorption_energy) + " kcal/mol (rigid)"},
+                          {"force field", ff_label(d)}};
+    prov_step(d, "adsorption.locator", "Adsorption sites by Monte Carlo simulated annealing", std::move(pr), seeded(o.seed), {"kirkpatrick1983"},
+              energy_approx(o.cutoff, o.coulomb, false, 1));
+    r["ok"] = true;
+    r["adsorption_energy"] = rep.adsorption_energy;
+    r["adsorbate_substrate"] = rep.adsorbate_substrate;
+    r["adsorbate_adsorbate"] = rep.adsorbate_adsorbate;
+    caps::Json comps = caps::Json::array();
+    for (const auto& c : rep.components) {
+      caps::Json x = caps::Json::object();
+      x["name"] = c.name, x["molecules"] = double(c.molecules), x["de_dn"] = c.de_dn;
+      comps.push_back(std::move(x));
+    }
+    r["components"] = std::move(comps);
+    caps::Json cf = caps::Json::array();
+    for (const auto& c : rep.configs) { caps::Json x = caps::Json::object(); x["energy"] = c.energy, x["cycle"] = double(c.cycle); cf.push_back(std::move(x)); }
+    r["configs"] = std::move(cf);
+    caps::Json he = caps::Json::array(), hc = caps::Json::array();
+    for (double x : rep.hist_edges) he.push_back(x);
+    for (double x : rep.hist_counts) hc.push_back(x);
+    r["hist_edges"] = std::move(he), r["hist_counts"] = std::move(hc);
+    r["acceptance"] = rep.acceptance, r["steps"] = double(rep.steps), r["seconds"] = rep.seconds;
+    r["z_lo"] = o.z_lo, r["z_hi"] = o.z_hi;
+    r["forcefield"] = ff.name;
+    caps::Json nt = caps::Json::array();
+    for (const auto& x : rep.notes) nt.push_back(x);
+    r["notes"] = std::move(nt);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn progress, void* user, char* report, int32_t cap) {
