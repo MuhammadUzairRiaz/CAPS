@@ -1556,6 +1556,18 @@
                   <CheckBox Classes="toggle" Content="Measurements only inside" IsChecked="{Binding LensMeasureInside}" />
                 </StackPanel>
               </Border>
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <DockPanel><ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding ClipOn}" OnContent="" OffContent="" /><TextBlock Text="CLIP SLAB" Classes="h3" VerticalAlignment="Center" /></DockPanel>
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" IsEnabled="{Binding ClipOn}">
+                    <StackPanel Spacing="4"><TextBlock Text="Normal to" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ClipAxes}" SelectedIndex="{Binding ClipAxis}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="From" Classes="label" /><NumericUpDown Value="{Binding ClipFrom}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="To" Classes="label" /><NumericUpDown Value="{Binding ClipTo}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                  </Grid>
+                  <CheckBox Classes="toggle" Content="Show the rest instead" IsChecked="{Binding ClipInvert}" IsEnabled="{Binding ClipOn}" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="12" Text="Fractions of the cell along the axis (of the structure's extent without a cell). Atoms outside are hidden in the view and in images; the structure is not changed — the Slice step in Visualize removes them." />
+                </StackPanel>
+              </Border>
               <Border Classes="section" BorderThickness="0">
                 <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="12" Text="The lens is how large systems stay readable without losing atoms: detail where you look, tubes elsewhere, every atom still in the model." />
               </Border>

@@ -94,7 +94,8 @@ public partial class MainViewModel
                 ["on"] = _lensOn, ["radius"] = (double)_lensRadius, ["inside"] = StyleOf(_lensInside), ["outside"] = StyleOf(_lensOutside), ["dim"] = _lensDim,
             };
             if (_lensCentre >= 0) lens["centre"] = _lensCentre;
-            _doc.SetDisplay(new JsonObject { ["polar_h_only"] = _dsPolarOnly, ["selection_full"] = _dsSelectionFull, ["lens"] = lens }.ToJsonString());
+            var clip = new JsonObject { ["on"] = _clipOn, ["axis"] = _clipAxis, ["from"] = (double)_clipFrom, ["to"] = (double)_clipTo, ["invert"] = _clipInvert };
+            _doc.SetDisplay(new JsonObject { ["polar_h_only"] = _dsPolarOnly, ["selection_full"] = _dsSelectionFull, ["lens"] = lens, ["clip"] = clip }.ToJsonString());
             if (_lensOn) RefreshLensCounts();
         }
         catch (Exception e) { Status = "Display: " + e.Message; }
@@ -135,6 +136,18 @@ public partial class MainViewModel
         Changed("Default display style");
         Status = $"New documents open as {DisplayNames[DsStyle]} (below the automatic thresholds)";
     }
+
+    // ---------------------------------------------------------------- clip slab (design/boards/Appearance "Clip planes")
+    // only the atoms between two planes normal to x, y or z are drawn (fractions of the cell); view only
+    private bool _clipOn, _clipInvert;
+    private int _clipAxis = 2;
+    private decimal _clipFrom, _clipTo = 0.5m;
+    public static readonly string[] ClipAxes = ["x", "y", "z"];
+    public bool ClipOn { get => _clipOn; set { if (Set(ref _clipOn, value)) ApplyDisplay(); } }
+    public int ClipAxis { get => _clipAxis; set { if (Set(ref _clipAxis, Math.Clamp(value, 0, 2))) ApplyDisplay(); } }
+    public decimal ClipFrom { get => _clipFrom; set { if (Set(ref _clipFrom, Math.Clamp(value, 0m, 1m))) ApplyDisplay(); } }
+    public decimal ClipTo { get => _clipTo; set { if (Set(ref _clipTo, Math.Clamp(value, 0m, 1m))) ApplyDisplay(); } }
+    public bool ClipInvert { get => _clipInvert; set { if (Set(ref _clipInvert, value)) ApplyDisplay(); } }
 
     // ---------------------------------------------------------------- all-atom lens (design/boards/LensView)
     private bool _lensOpen, _lensOn, _lensDim, _lensMeasureInside, _lensHold;

@@ -306,6 +306,13 @@ internal static class Screenshot
                         if (parts.Length > 1) vm.LensRadius = decimal.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
                         vm.LensOpen = true;
                         break;
+                    case "clip":   // clip[:FROM:TO]: the Studio view with a clip slab normal to z
+                        vm.SetModule(8);
+                        vm.LensOpen = true;
+                        vm.LensOn = false;
+                        if (parts.Length > 2) { vm.ClipFrom = decimal.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture); vm.ClipTo = decimal.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture); }
+                        vm.ClipOn = true;
+                        break;
                     case "pd":   // pd:grow — use the lengths, grow the cell, come back
                         vm.OpenPolydispersity();
                         if (parts.Length > 1)
