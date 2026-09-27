@@ -97,7 +97,8 @@ class _MdOpts(C.Structure):
     _fields_ = [("dt", C.c_double), ("steps", C.c_int64), ("temperature", C.c_double), ("thermostat", C.c_int32), ("tau_t", C.c_double),
                 ("barostat", C.c_int32), ("pressure", C.c_double), ("tau_p", C.c_double), ("new_velocities", C.c_int32),
                 ("seed", C.c_uint64), ("thermo_every", C.c_int32), ("frame_every", C.c_int32), ("cutoff", C.c_double),
-                ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32)]
+                ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
+                ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64)]
 
 
 class _BuildOpts(C.Structure):

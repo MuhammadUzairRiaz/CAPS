@@ -237,6 +237,9 @@ public sealed partial class MainViewModel
                 job.Error = string.Join("\n", job.Log.SkipWhile(l => !l.Text.StartsWith("Could not")).Select(l => l.Text));
                 if (job.Error.Length == 0) job.Error = last;
                 (job.Suggestion, job.SuggestModule) = Suggest(kind, job.Error);
+                if (kind == "Dynamics" && MdCanContinue)   // FailedJob: nothing is lost — the checkpoint is intact
+                    (job.Suggestion, job.SuggestModule) = ($"{MdCheckpointText}. {MdContinueLabel} on the Dynamics page" +
+                        (job.Suggestion.Length > 0 ? " — " + char.ToLowerInvariant(job.Suggestion[0]) + job.Suggestion[1..] : "."), 3);
             }
             else if (all.Contains("not reached") || all.Contains("did not pass")) job.Status = "stopped";
             else job.Status = "done";

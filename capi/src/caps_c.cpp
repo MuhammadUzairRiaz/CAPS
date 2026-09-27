@@ -151,6 +151,14 @@ struct caps_doc {
   std::vector<caps::Segment> checks;               // caps_interactions: H-bonds, contacts, clashes drawn in the view
   caps::Manifest prov;                             // provenance: the steps that produced this structure
   std::vector<caps::VoidSphere> voids;             // caps_voids: the largest empty spheres of the frame
+  struct Checkpoint {                              // the last checkpoint of an MD / equilibration run (caps_checkpoint)
+    bool has = false;
+    std::string kind, ended, error;
+    std::vector<caps::Vec3> x, v;
+    caps::Cell cell;
+    int64_t step = 0, steps = 0;
+    double dt = 1;
+  } checkpoint;
   std::unique_ptr<caps::Mesh> void_mesh;           // … drawn translucent when shown
   std::array<int, 3> images{1, 1, 1};              // caps_set_images: periodic images drawn around the cell (faded)
   float image_fade = 0.7f;
@@ -1495,6 +1503,21 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy.threads = o->threads;
     m.respa = std::clamp(o->respa, 1, 16);
     m.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
+    m.step_offset = std::max<int64_t>(0, o->step_offset);
+    m.checkpoint_every = o->checkpoint_every > 0 ? o->checkpoint_every : o->checkpoint_every < 0 ? 0 : std::max<int64_t>(100, m.steps / 50);
+    d->checkpoint = {};
+    d->checkpoint.kind = "md";
+    d->checkpoint.steps = m.step_offset + m.steps;
+    d->checkpoint.dt = m.dt;
+    m.checkpoint = [d](const std::vector<double>& x, const std::vector<double>& v, const caps::Cell& c, int64_t step) {
+      auto& k = d->checkpoint;
+      k.x.resize(x.size() / 3);
+      k.v.resize(v.size() / 3);
+      for (size_t i = 0; i < k.x.size(); ++i) k.x[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]}, k.v[i] = {v[3 * i], v[3 * i + 1], v[3 * i + 2]};
+      k.cell = c;
+      k.step = step;
+      k.has = true;
+    };
     if (progress)
       m.progress = [&](const caps::ThermoRow& r) {
         caps_thermo t{r.step, r.time_ps, r.temperature, r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density};
@@ -1519,7 +1542,17 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     if (m.frame_every <= 0) m.frame_every = int(std::max<int64_t>(1, m.steps));   // at least the start and the end
     m.each_step = live_hook(d, s, m.dt);
     caps::DynamicsReport rep;
-    caps::run_dynamics(s, m, &rep);
+    try {
+      caps::run_dynamics(s, m, &rep);
+    } catch (const caps::DynamicsCancelled&) {
+      d->checkpoint.ended = "stopped";
+      throw;
+    } catch (const std::exception& e) {
+      d->checkpoint.ended = "failed";
+      d->checkpoint.error = e.what();
+      throw;
+    }
+    d->checkpoint.ended = "finished";
     {
       const bool nvt = m.thermostat != caps::Thermostat::None, npt = nvt && m.barostat != caps::Barostat::None;
       std::vector<std::string> c = {"swope1982"};
@@ -1593,6 +1626,19 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     if (o->tau_t > 0) e.md.tau_t = o->tau_t;
     if (o->tau_p > 0) e.md.tau_p = o->tau_p;
     e.md.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
+    d->checkpoint = {};
+    d->checkpoint.kind = "equilibrate";
+    d->checkpoint.dt = e.md.dt;
+    e.md.checkpoint_every = 1000;
+    e.md.checkpoint = [d](const std::vector<double>& x, const std::vector<double>& v, const caps::Cell& c, int64_t step) {
+      auto& k = d->checkpoint;
+      k.x.resize(x.size() / 3);
+      k.v.resize(v.size() / 3);
+      for (size_t i = 0; i < k.x.size(); ++i) k.x[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]}, k.v[i] = {v[3 * i], v[3 * i + 1], v[3 * i + 2]};
+      k.cell = c;
+      k.step = step;
+      k.has = true;
+    };
     e.md.seed = o->seed;
     if (o->cutoff > 0) e.md.energy.cutoff = o->cutoff;
     e.md.energy.coulomb = o->coulomb != 0;
@@ -1630,7 +1676,17 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     };
     e.md.each_step = live_hook(d, s, e.md.dt);
     caps::EquilibrateReport rep;
-    caps::equilibrate(s, e, &rep);
+    try {
+      caps::equilibrate(s, e, &rep);
+    } catch (const caps::DynamicsCancelled&) {
+      d->checkpoint.ended = "stopped";
+      throw;
+    } catch (const std::exception& ex) {
+      d->checkpoint.ended = "failed";
+      d->checkpoint.error = ex.what();
+      throw;
+    }
+    d->checkpoint.ended = "finished";
     {
       const bool l21 = e.stages.size() == 21 && e.stages.back().label.find("final") != std::string::npos;
       double pmax = 0;
@@ -5742,6 +5798,46 @@ extern "C" int32_t caps_provenance_note(caps_doc* d, const char* json) {
     prov_step(d, engine, o.text("summary"), kv);
     return 0;
   });
+}
+
+extern "C" int32_t caps_checkpoint(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::runtime_error("no document");
+    const caps::Json o = caps::Json::parse(json && *json ? json : "{}");
+    const std::string op = o.text("op", "info");
+    auto& k = d->checkpoint;
+    if (op == "clear") k = {};
+    else if (op == "restore") {
+      if (!k.has) throw std::runtime_error("no checkpoint to continue from");
+      if (k.x.size() != d->traj.topology.atoms.size()) throw std::runtime_error("the structure changed since the checkpoint");
+      d->traj.positions.push_back(k.x);
+      d->traj.cells.push_back(k.cell);
+      d->traj.timesteps.push_back(k.step);
+      d->traj.topology.velocities = k.v;
+      d->traj.topology.unwrapped = true;
+      d->current = d->traj.frames() - 1;
+      refresh(d);
+      prov_step(d, "md.checkpoint", "continued from the checkpoint at step " + std::to_string(k.step) + " (the run " + k.ended + ")",
+                {{"step", std::to_string(k.step) + " of " + std::to_string(k.steps)}, {"time", g6(double(k.step) * k.dt / 1000.0) + " ps"}});
+    } else if (op != "info") throw std::runtime_error("checkpoint op info, restore or clear");
+    r["ok"] = true;
+    r["has"] = k.has;
+    if (k.has) {
+      r["kind"] = k.kind;
+      r["step"] = double(k.step);
+      r["steps"] = double(k.steps);
+      r["time_ps"] = double(k.step) * k.dt / 1000.0;
+      r["atoms"] = double(k.x.size());
+      r["ended"] = k.ended.empty() ? std::string("running") : k.ended;
+      if (!k.error.empty()) r["reason"] = k.error;
+    }
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = e.what();
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 extern "C" int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap) {

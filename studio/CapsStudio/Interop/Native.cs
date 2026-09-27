@@ -179,6 +179,8 @@ public struct CapsMdOpts
     public int Coulomb, Tail, Threads;
     public int Respa;             // r-RESPA inner steps (0 or 1: off)
     public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
+    public long StepOffset;       // added to reported steps (a run continued from a checkpoint)
+    public long CheckpointEvery;  // steps between checkpoints (0: about 50 per run; < 0: none)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -421,6 +423,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_edit")] public static extern int Edit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
     [DllImport(Lib, EntryPoint = "caps_undo")] public static extern int Undo(IntPtr doc, int redo);
     [DllImport(Lib, EntryPoint = "caps_history")] public static extern int History(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_checkpoint")] public static extern int Checkpoint(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_note")] public static extern int ProvenanceNote(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_compare_states")] public static extern int CompareStates(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_select")] public static extern int Select(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outp, int cap);
@@ -1352,6 +1355,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Undo (redo = false) or redo the last edit; false when there is none.</summary>
     public bool Undo(bool redo) { using (Hold()) { Alive(); return Native.Undo(H, redo ? 1 : 0) == 0; } }
     public string History() { using (Hold()) return JsonCall((b, c) => Native.History(H, b, c)); }
+    /// <summary>The last checkpoint of an MD or equilibration run (caps_checkpoint): info, restore, clear.</summary>
+    public string Checkpoint(string op) { using (Hold()) return JsonCall((b, c) => Native.Checkpoint(H, "{\"op\":\"" + op + "\"}", b, c)); }
     /// <summary>A decision recorded as a provenance step ({engine, summary, params}).</summary>
     public void ProvenanceNote(string json) { using (Hold()) { Alive(); Check(Native.ProvenanceNote(H, json)); } }
     /// <summary>Two states of the structure superposed (caps_compare_states): RMSD, per-atom shifts, the largest ones.</summary>
