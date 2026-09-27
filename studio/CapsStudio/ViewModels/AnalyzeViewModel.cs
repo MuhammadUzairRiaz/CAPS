@@ -126,7 +126,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Mechanics", [StrainChip, FluctChip, TensileChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), ViscChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
-            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), PullShearChip, PullNormalChip]),
+            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), Chip("interaction", "Filler–matrix"), PullShearChip, PullNormalChip]),
             new("Rubber network", [Chip("crosslinks", "Crosslink density")]),
         ];
         LoadReferences();
@@ -175,6 +175,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["crosslinks"] = "Sulfur bridges (mono-, di-, polysulfidic), pendant groups, crosslink density ν and strand mass Mc = ρ/2ν",
         ["zprofile"] = "Mass density along z for the surface (molecule 1) and the film: first-layer peak and the film's own density",
         ["adhesion"] = "Work of adhesion −(E all − E surface − E film)/area between the surface (molecule 1) and the film, with the force field",
+        ["interaction"] = "Filler–matrix interaction energy E all − E filler − E matrix (kcal/mol; the filler is molecule 1: a functionalised tube, sheet or particle in its matrix), with the van der Waals and Coulomb parts",
     };
 
     public CalcGroup[] Groups { get; }

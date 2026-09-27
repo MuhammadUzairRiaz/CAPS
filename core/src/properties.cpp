@@ -892,6 +892,59 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   return p;
 }
 
+// E_all − E_part1 − E_part2 of each frame (the interaction between molecule 1 and the rest), with its van der Waals and
+// Coulomb parts, each part evaluated alone in the same cell with the force field (no tail correction)
+struct Interaction { std::vector<double> total, vdw, coul; };
+Interaction interaction_series(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o, const std::vector<uint32_t>& a1,
+                               const std::vector<uint32_t>& a2, const char* stage) {
+  const ForceField& ff = *o.ff;
+  const ForceField f1 = subset_forcefield(ff, a1), f2 = subset_forcefield(ff, a2);
+  EnergyOptions e = o.energy;
+  e.tail = false;   // the tail correction assumes a homogeneous fluid
+  Evaluator eall(ff, e), e1(f1, e), e2(f2, e);
+  Interaction r;
+  for (size_t q = 0; q < fr.size(); ++q) {
+    if (cancelled(o, stage, double(q) / fr.size())) throw Cancel();
+    const System f = t.frame(fr[q]);
+    std::vector<double> x, x1, x2, g;
+    for (const auto& a : f.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    for (uint32_t i : a1) x1.insert(x1.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
+    for (uint32_t i : a2) x2.insert(x2.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
+    const EnergyTerms ta = eall.compute(x, f.cell, g), t1 = e1.compute(x1, f.cell, g), t2 = e2.compute(x2, f.cell, g);
+    r.total.push_back(ta.total() - t1.total() - t2.total());
+    r.vdw.push_back(ta.vdw - t1.vdw - t2.vdw);
+    r.coul.push_back(ta.coulomb - t1.coulomb - t2.coulomb);
+  }
+  return r;
+}
+
+// The interaction energy of the filler (molecule 1) with everything else — a functionalised nanotube, sheet or particle
+// with its polymer matrix: more negative binds more strongly.
+Property filler_interaction_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"interaction", "Filler–matrix interaction energy", "kcal/mol", "", NaN, NaN, {}, {}, {}};
+  if (!o.ff) { p.notes.push_back("needs a force field (assign one in Field, or --ff)"); return p; }
+  std::vector<uint32_t> filler, rest;
+  for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (t.topology.atoms[i].mol == 1 ? filler : rest).push_back(i);
+  if (filler.empty() || rest.empty()) { p.notes.push_back("needs the filler as molecule 1 and a matrix of other molecules"); return p; }
+  const auto r = interaction_series(t, fr, o, filler, rest, "interaction");
+  std::tie(p.value, p.error) = block_mean(r.total, o.blocks);
+  auto mean = [](const std::vector<double>& v) { return std::accumulate(v.begin(), v.end(), 0.0) / double(v.size()); };
+  int heavy = 0;
+  for (uint32_t i : filler) heavy += t.topology.atoms[i].element != 1;
+  p.extra["van der Waals part (kcal/mol)"] = mean(r.vdw);
+  p.extra["Coulomb part (kcal/mol)"] = mean(r.coul);
+  p.extra["per filler heavy atom (kcal/mol)"] = heavy ? p.value / heavy : 0.0;
+  p.extra["filler atoms"] = double(filler.size());
+  p.method = "E_int = E_all − E_filler − E_matrix, each part in the same periodic cell with " + o.ff->name + " (no tail correction), over " +
+             std::to_string(fr.size()) + " frames";
+  Series s{"E_int", "time (ps)", "interaction (kcal/mol)", {}, {}};
+  const auto times = frame_times(t, o);
+  for (size_t q = 0; q < fr.size(); ++q) s.x.push_back(times[fr[q]] - times[fr[0]]), s.y.push_back(r.total[q]);
+  p.series.push_back(std::move(s));
+  if (p.value > 0) p.notes.push_back("positive: the matrix is pressed into the filler (close contacts); relax, the filler held, before comparing");
+  return p;
+}
+
 Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
   Property p{"adhesion", "Adhesion (surface–film interaction)", "mJ/m²", "", NaN, NaN, {}, {}, {}};
   if (!o.ff) { p.notes.push_back("needs a force field (assign one in Field, or --ff)"); return p; }
@@ -901,38 +954,28 @@ Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (t.topology.atoms[i].mol == 1 ? sub : film).push_back(i);
   if (sub.empty() || film.empty()) { p.notes.push_back("needs the surface as molecule 1 and a film of other molecules"); return p; }
   const ForceField& ff = *o.ff;
-  const ForceField fs = subset_forcefield(ff, sub), fl = subset_forcefield(ff, film);
-  EnergyOptions e = o.energy;
-  e.tail = false;   // the tail correction assumes a homogeneous fluid
-  Evaluator eall(ff, e), esub(fs, e), efilm(fl, e);
   const double area = norm(cross(c0.a, c0.b)), Lz = std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b))));
-  std::vector<double> w, ev, ec;
+  const auto r = interaction_series(t, fr, o, sub, film, "adhesion");
+  // a film between the surface and the surface's periodic image touches it on both sides
+  int faces = 1;
+  {
+    const System f = t.frame(fr[0]);
+    double stop = -1e300, sbot = 1e300, ftop = -1e300;
+    for (uint32_t i : sub) { const double z = cell_height(f.cell, f.atoms[i].pos); stop = std::max(stop, z); sbot = std::min(sbot, z); }
+    for (uint32_t i : film) ftop = std::max(ftop, cell_height(f.cell, f.atoms[i].pos));
+    if (ftop > stop && Lz + sbot - ftop < 8.0) faces = 2;
+  }
+  std::vector<double> w;
   Series s{"W", "time (ps)", "adhesion (mJ/m²)", {}, {}};
   const auto times = frame_times(t, o);
-  int faces = 1;
   for (size_t q = 0; q < fr.size(); ++q) {
-    if (cancelled(o, "adhesion", double(q) / fr.size())) throw Cancel();
-    const System f = t.frame(fr[q]);
-    std::vector<double> x, xs, xf, g;
-    for (const auto& a : f.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
-    for (uint32_t i : sub) xs.insert(xs.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
-    for (uint32_t i : film) xf.insert(xf.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
-    const EnergyTerms ta = eall.compute(x, f.cell, g), ts = esub.compute(xs, f.cell, g), tf = efilm.compute(xf, f.cell, g);
-    const double eint = ta.total() - ts.total() - tf.total();   // kcal/mol, negative when the film sticks
-    if (q == 0) {
-      // a film between the surface and the surface's periodic image touches it on both sides
-      double stop = -1e300, sbot = 1e300, ftop = -1e300;
-      for (uint32_t i : sub) { const double z = cell_height(f.cell, f.atoms[i].pos); stop = std::max(stop, z); sbot = std::min(sbot, z); }
-      for (uint32_t i : film) ftop = std::max(ftop, cell_height(f.cell, f.atoms[i].pos));
-      if (ftop > stop && Lz + sbot - ftop < 8.0) faces = 2;
-    }
-    const double wad = -eint / (faces * area) * 694.77;   // kcal/mol/Å² → mJ/m²
+    const double wad = -r.total[q] / (faces * area) * 694.77;   // kcal/mol/Å² → mJ/m²
     w.push_back(wad);
-    ev.push_back(ta.vdw - ts.vdw - tf.vdw);
-    ec.push_back(ta.coulomb - ts.coulomb - tf.coulomb);
     s.x.push_back(times[fr[q]] - times[fr[0]]);
     s.y.push_back(wad);
   }
+  const std::vector<double>& ev = r.vdw;
+  const std::vector<double>& ec = r.coul;
   std::tie(p.value, p.error) = block_mean(w, o.blocks);
   p.extra["interaction energy (kcal/mol)"] = -std::accumulate(w.begin(), w.end(), 0.0) / w.size() * faces * area / 694.77;
   p.extra["van der Waals part (kcal/mol)"] = std::accumulate(ev.begin(), ev.end(), 0.0) / ev.size();
@@ -1620,7 +1663,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
-                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "orientation", "crosslinks",
+                                              "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
                                               "entanglements"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
@@ -1717,6 +1760,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     if (want("crosslinks")) out.push_back(crosslinks_prop(t, o));
     if (want("entanglements")) out.push_back(entanglements_prop(t, fr, o));
     if (want("adhesion")) out.push_back(adhesion_prop(t, fr, o));
+    if (want("interaction")) out.push_back(filler_interaction_prop(t, fr, o));
     if (want("ffv")) out.push_back(ffv_prop(t, fr, o));
     if (want("psd")) out.push_back(psd_prop(t, fr, o));
   });
