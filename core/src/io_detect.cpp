@@ -15,6 +15,15 @@ namespace caps {
 std::string detect_format(const std::string& path) {
   std::ifstream in(path);
   if (!in) throw ReadError("cannot open " + path);
+  {   // binary trajectories and names that say what they are
+    const std::string e = lower(std::filesystem::path(path).extension().string());
+    const std::string stem = lower(std::filesystem::path(path).filename().string());
+    if (e == ".xtc") return "xtc";
+    if (e == ".trr") return "trr";
+    if (e == ".dcd") return "dcd";
+    if (e == ".sdf" || e == ".sd" || e == ".mol" || e == ".mdl") return "sdf";
+    if (e == ".poscar" || e == ".vasp" || stem.rfind("poscar", 0) == 0 || stem.rfind("contcar", 0) == 0) return "poscar";
+  }
   std::string l1, l2, l3;
   std::getline(in, l1);
   std::getline(in, l2);
@@ -52,7 +61,13 @@ std::string detect_format(const std::string& path) {
     auto t = split(line);
     if (t.size() >= 2 && t[1] == "atoms") return "lammps-data";
   }
-  throw ReadError(path + ": format not recognised (supported: LAMMPS data and dump, GROMACS .gro, PDB, mol2, XYZ, CIF, Materials Studio .car/.mdf)");
+  // an MDL molfile: the counts line (fourth) ends with V2000 or V3000
+  if (l1.size() || l2.size()) {
+    std::string l4;
+    std::getline(in, l4);
+    if (l4.find("V2000") != std::string::npos || l4.find("V3000") != std::string::npos) return "sdf";
+  }
+  throw ReadError(path + ": format not recognised (supported: LAMMPS data, dump and DCD, GROMACS .gro/.top, .xtc and .trr, PDB, mol2, SDF/MOL, XYZ, CIF, VASP POSCAR, Materials Studio .car/.mdf)");
 }
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) { return open_file(path, topology_path, OpenProgress{}); }
@@ -66,6 +81,11 @@ const char* format_name(const std::string& f) {
   if (f == "mol2") return "Tripos mol2";
   if (f == "cif") return "CIF";
   if (f == "car") return "Materials Studio .car";
+  if (f == "xtc") return "GROMACS .xtc";
+  if (f == "trr") return "GROMACS .trr";
+  if (f == "dcd") return "DCD";
+  if (f == "sdf") return "MDL molfile / SD";
+  if (f == "poscar") return "VASP POSCAR";
   return "XYZ";
 }
 }  // namespace
@@ -125,6 +145,33 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr.positions.push_back(std::move(p));
     tr.cells.push_back(tr.topology.cell);
     tr.timesteps.push_back(0);
+  } else if (fmt == "xtc" || fmt == "trr" || fmt == "dcd") {
+    // coordinates only: the atoms from the structure or topology given with them
+    if (topology_path.empty())
+      throw ReadError(path + ": a " + format_name(fmt) + " trajectory holds coordinates only — open it with its structure (.gro, .pdb, .data, .top …)");
+    const std::string tl0 = lower(std::filesystem::path(topology_path).extension().string());
+    System top;
+    if (tl0 == ".top" || tl0 == ".itp") top = read_gromacs_topology(topology_path);
+    else {
+      const Trajectory st = open_file(topology_path);
+      top = st.frame(0);
+      top.bonds = st.topology.bonds;
+    }
+    const auto prog = [&](double f, const Trajectory& t) {
+      if (!told) tell(t, true);
+      return report(3, f, std::to_string(t.frames()) + " frames");
+    };
+    tr = fmt == "xtc" ? read_xtc(path, top, progress.max_frames, prog) : fmt == "trr" ? read_trr(path, top, progress.max_frames, prog)
+                      : read_dcd(path, top, progress.max_frames, prog);
+    for (size_t i = 0; i < tr.topology.atoms.size(); ++i) tr.topology.atoms[i].pos = tr.positions.front()[i];
+    if (!top.bonds.empty()) tr.topology.bonds_from_file = true;
+  } else if (fmt == "sdf" || fmt == "poscar") {
+    tr.topology = fmt == "sdf" ? read_sdf(path) : read_poscar(path);
+    std::vector<Vec3> p;
+    for (const auto& a : tr.topology.atoms) p.push_back(a.pos);
+    tr.positions.push_back(std::move(p));
+    tr.cells.push_back(tr.topology.cell);
+    tr.timesteps.push_back(0);
   } else if (fmt == "gro") {
     tr = read_gro(path);
   } else if (fmt == "pdb") {
@@ -171,6 +218,12 @@ FileInspection inspect_file(const std::string& path, const std::string& topology
   r.bytes = size_t(std::filesystem::file_size(path));
   std::ifstream in(path, std::ios::binary);
   std::string line;
+  const bool binary = r.format == "xtc" || r.format == "trr" || r.format == "dcd";
+  if (binary) {
+    r.notes.push_back(std::string(format_name(r.format)) + " holds coordinates only: the atoms, bonds and types come from the topology or structure given with it" +
+                      (topology_path.empty() ? " (none chosen yet)" : ""));
+    head_lines = 0;
+  }
   // first lines, and the dump's header for its columns
   for (int k = 0; k < head_lines && std::getline(in, line); ++k) {
     if (!line.empty() && line.back() == '\r') line.pop_back();

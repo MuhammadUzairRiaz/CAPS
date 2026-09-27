@@ -18,8 +18,12 @@ public partial class OpenPage : PageBase
         if (top == null) return;
         var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Topology (LAMMPS data)", AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("LAMMPS data") { Patterns = ["*.data", "*.lmp"] }],
+            Title = "Topology or structure (LAMMPS data, GROMACS .top/.gro, PDB …)", AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Topologies and structures") { Patterns = ["*.data", "*.lmp", "*.top", "*.itp", "*.gro", "*.pdb", "*.mol2", "*.xyz"] },
+                new FilePickerFileType("All files") { Patterns = ["*"] },
+            ],
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) Vm.SetOpenTopology(p);
     }
