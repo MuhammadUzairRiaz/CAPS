@@ -37,6 +37,7 @@ public partial class MainWindow
             Cmd("Open with preview…", "document.open preview"),
             Item("Open most recent", OpenMostRecent),
             Page("Project home…", 42),
+            Item("Open in Jupyter notebook…", () => _vm.OpenInNotebook()),
             Sep(),
             Sub("Save as",
                 Cmd("LAMMPS data…", "document.save data"),

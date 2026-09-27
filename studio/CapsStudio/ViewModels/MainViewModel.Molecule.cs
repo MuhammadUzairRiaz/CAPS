@@ -36,7 +36,7 @@ public sealed partial class MainViewModel
     public string MolSmiles
     {
         get => _molSmiles;
-        set { if (Set(ref _molSmiles, value)) OnSmilesTyped(); }
+        set { if (Set(ref _molSmiles, value)) { OnSmilesTyped(); Raise(nameof(MolIsRepeatUnit)); } }
     }
     public string MolFormula { get => _molFormula; private set => Set(ref _molFormula, value); }
     public string MolMass { get => _molMass; private set => Set(ref _molMass, value); }
@@ -152,6 +152,18 @@ public sealed partial class MainViewModel
     public CapsDocument? MolDoc { get => _molDoc; private set { if (Set(ref _molDoc, value)) { Raise(nameof(MolHasDoc)); Raise(nameof(MolCanUse)); } } }
     public bool MolHasDoc => _molDoc != null;
     public bool MolCanUse => _molDoc != null && !_molBuilding;
+    /// <summary>A SMILES with two attachment points (*) is a repeat unit: head first, tail second.</summary>
+    public bool MolIsRepeatUnit => _molSmiles.Count(c => c == '*') == 2;
+
+    /// <summary>Molecule builder › Use as repeat unit: the sketch becomes unit A of the Polymer builder.</summary>
+    public void UseSketchAsRepeatUnit()
+    {
+        if (!MolIsRepeatUnit) { Status = "A repeat unit needs two attachment points: write * at the head and the tail (e.g. *CC(*)c1ccccc1)"; return; }
+        GoModule(13);   // the Polymer builder (its opener runs first)
+        if (PolyUnits.Count > 0) { PolyUnits[0].Name = "From the sketch"; PolyUnits[0].Smiles = _molSmiles; PolyChanged(); }
+        else AddPolyUnit("From the sketch", _molSmiles);
+        Status = "The sketch is unit A of the polymer builder";
+    }
     private int _molConf;
     public int MolConf
     {

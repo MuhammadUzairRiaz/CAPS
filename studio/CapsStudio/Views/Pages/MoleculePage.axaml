@@ -131,7 +131,11 @@
           <TextBlock Text="Structure" Classes="h2" VerticalAlignment="Center" />
         </Border>
         <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="8">
+            <Button Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" Click="OnUseAsUnit" IsEnabled="{Binding MolIsRepeatUnit}" ToolTip.ShowOnDisabled="True"
+                    ToolTip.Tip="A SMILES with two * (head, then tail) becomes unit A of the Polymer builder">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="16" VerticalAlignment="Center" /><TextBlock Text="Use as repeat unit" VerticalAlignment="Center" /></StackPanel>
+            </Button>
             <Button Click="OnSave" IsEnabled="{Binding MolCanUse}" ToolTip.Tip="Save the chosen conformer (mol2, PDB, XYZ or LAMMPS data)">
               <v:Icon Kind="save" Size="16" />
             </Button>
