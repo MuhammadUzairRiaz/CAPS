@@ -163,6 +163,21 @@
                 </StackPanel>
               </Border>
 
+              <!-- silane coupling agents on the silanols of the structure shown (silica in rubber: TESPT couples it to the sulfur network) -->
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsParticle}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="SILANE COUPLING AGENT" Classes="h3" />
+                  <TextBlock Text="Grafted onto the surface silanols (Si–O–H) of the structure shown: build the silica passivated first. Each graft bonds the silane's silicon to a surface oxygen (one ethanol released); undo with ⌘Z."
+                             Classes="dim" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Silane" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.SilaneChoices}" SelectedIndex="{Binding SilanePick}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Share of silanols" Classes="label" /><NumericUpDown Value="{Binding SilaneFractionD}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Spacing · Å" Classes="label" /><NumericUpDown Value="{Binding SilaneSpacingD}" Minimum="2" Maximum="30" Increment="0.5" FormatString="0.0" ToolTip.Tip="Grafted oxygens at least this far apart" /></StackPanel>
+                  </Grid>
+                  <Button Classes="small" Click="OnGraftSilane" IsEnabled="{Binding HasDocument}" HorizontalAlignment="Left" Content="Graft on the structure shown" />
+                </StackPanel>
+              </Border>
+
               <!-- pore (design/boards/SlitPore) -->
               <Border Classes="section" Padding="16,14" IsVisible="{Binding NanoIsPore}">
                 <StackPanel Spacing="10">

@@ -435,6 +435,43 @@ std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::
       }
     }
   }
+  // Each direction above was chosen from its own atom's bonds only: a hydrogen can land on a neighbour's (two silanols
+  // on adjacent oxygens). Every added hydrogen closer than 1.7 Å to an atom it is not bonded to turns about its
+  // parent's bond axis (length and angle kept) to the position farthest from the others.
+  const auto nb = s.neighbours();
+  auto closest = [&](uint32_t h, const Vec3& p) {
+    double m = 1e300;
+    for (uint32_t k = 0; k < s.atoms.size(); ++k) {
+      if (k == h || (nb[h].size() == 1 && k == nb[h][0])) continue;
+      Vec3 d = p - s.atoms[k].pos;
+      if (s.cell.valid()) d = s.cell.minimum_image(d);
+      m = std::min(m, norm(d));
+    }
+    return m;
+  };
+  for (uint32_t h = uint32_t(n0); h < s.atoms.size(); ++h) {
+    if (s.atoms[h].element != 1 || nb[h].size() != 1) continue;
+    if (closest(h, s.atoms[h].pos) >= 1.7) continue;
+    const uint32_t par = nb[h][0];
+    int anchor = -1;
+    for (uint32_t q : nb[par]) if (q != h) { anchor = int(q); break; }
+    if (anchor < 0) continue;
+    Vec3 axis = s.atoms[par].pos - s.atoms[uint32_t(anchor)].pos;
+    if (s.cell.valid()) axis = s.cell.minimum_image(axis);
+    axis = axis * (1 / norm(axis));
+    Vec3 arm = s.atoms[h].pos - s.atoms[par].pos;
+    if (s.cell.valid()) arm = s.cell.minimum_image(arm);
+    Vec3 best = s.atoms[h].pos;
+    double bd = closest(h, best);
+    for (int k = 1; k < 36; ++k) {
+      const double t = k * 10.0 * kDeg, c = std::cos(t), sn = std::sin(t);
+      const Vec3 r = arm * c + cross(axis, arm) * sn + axis * (dot(axis, arm) * (1 - c));
+      const Vec3 p = s.atoms[par].pos + r;
+      const double dd = closest(h, p);
+      if (dd > bd) bd = dd, best = p;
+    }
+    s.atoms[h].pos = best;
+  }
   return {added_h, added_oh};
 }
 

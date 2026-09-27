@@ -9,7 +9,22 @@ namespace CapsStudio.ViewModels;
 public sealed partial class MainViewModel
 {
     public bool IsNano => _module == 15;
-    public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre"];
+    // silane coupling agents (silica fillers in rubber), grafted as an undoable edit
+    public static readonly string[] SilaneChoices = ["TESPT (Si69, tetrasulfide)", "TESPD (Si75, disulfide)", "MPTES (mercaptopropyl)", "APTES (aminopropyl)", "VTES (vinyl)", "OCTEO (octyl, hydrophobic)"];
+    private static readonly string[] SilaneIds = ["TESPT", "TESPD", "MPTES", "APTES", "VTES", "OCTEO"];
+    private int _silanePick;
+    private double _silaneFraction = 0.25, _silaneSpacing = 5;
+    public int SilanePick { get => _silanePick; set => Set(ref _silanePick, Math.Clamp(value, 0, SilaneIds.Length - 1)); }
+    public decimal? SilaneFractionD { get => (decimal)_silaneFraction; set { _silaneFraction = Math.Clamp((double)(value ?? 0.25m), 0.01, 1); Raise(); } }
+    public decimal? SilaneSpacingD { get => (decimal)_silaneSpacing; set { _silaneSpacing = Math.Clamp((double)(value ?? 5m), 2, 30); Raise(); } }
+    public void GraftSilane()
+    {
+        if (_doc == null) return;
+        if (RunEdit(new { op = "graft", silane = SilaneIds[_silanePick], fraction = _silaneFraction, min_spacing = _silaneSpacing, seed = 1 }) is { } r)
+            Status = (r["what"]?.GetValue<string>() ?? "Grafted") + " · relax before dynamics";
+    }
+
+    public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre", "Truncated octahedron", "Icosahedron"];
 
     public void OpenNano()
     {
