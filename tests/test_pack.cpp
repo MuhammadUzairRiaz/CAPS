@@ -7,6 +7,7 @@
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "caps/pack.hpp"
+#include "caps/molecule.hpp"
 
 using namespace caps;
 
@@ -182,4 +183,27 @@ TEST(Pack, ReadsPackmolInput) {
     f << "structure w.xyz\n  number 3\n  inside ellipsoid 0 0 0 1 1 1 2\nend structure\n";
   }
   EXPECT_THROW(read_packmol_input((dir / "bad.inp").string(), o, &out), PackError);
+}
+
+// Stage 3: hexane packed loosely, then compressed to 0.6 g/cm³ with push-off: the density reached, molecules whole
+// and no atoms of different molecules closer than 1.5 Å
+TEST(Pack, CompressionToTargetDensity) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  const System hex = build_molecule("CCCCCC", bo).system;
+  const auto dir = std::filesystem::temp_directory_path();
+  write_xyz(hex, (dir / "caps_hexane.xyz").string());
+  PackOptions o;
+  const auto items = parse_packmol_input("tolerance 2.0\nseed 3\npbc 30 30 30\ncompress 0.6\nstructure caps_hexane.xyz\n  number 40\n  inside box 0 0 0 30 30 30\nend structure\n",
+                                         dir.string(), o, nullptr);
+  EXPECT_DOUBLE_EQ(o.compress_to, 0.6);
+  PackReport r;
+  const System s = pack(items, o, &r);
+  EXPECT_NEAR(s.density(), 0.6, 1e-6);
+  EXPECT_TRUE(std::any_of(r.notes.begin(), r.notes.end(), [](const std::string& n) { return n.rfind("compressed from", 0) == 0; }));
+  double dmin = 1e9;
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    for (size_t j = i + 1; j < s.atoms.size(); ++j)
+      if (s.atoms[i].mol != s.atoms[j].mol) dmin = std::min(dmin, norm(s.cell.minimum_image(s.atoms[i].pos - s.atoms[j].pos)));
+  EXPECT_GT(dmin, 1.5);
 }
