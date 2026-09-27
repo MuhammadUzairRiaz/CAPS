@@ -420,14 +420,24 @@
    "id": "pushoff",
    "group": "Minimisers",
    "title": "Capped-force push-off",
-   "summary": "Overlapping atoms (from growth with lowered contact limits, or packing) make Lennard-Jones forces explode. The push-off caps them: inside the radius where the force would exceed the cap the potential becomes linear, and the cap is raised stage by stage while minimising.",
-   "equation": "F_LJ(r) → sign(F) · min(|F_LJ(r)|, F_cap),   F_cap = 5, 20, 100, 500 kcal/mol/Å",
+   "summary": "Overlapping atoms (from growth with lowered contact limits, or packing) make Lennard-Jones forces explode. The push-off caps them: inside the radius where the force would exceed the cap the potential becomes linear, and the cap is raised stage by stage while minimising. Optionally the push-off runs first as NVT dynamics, as in the paper: the cap is raised geometrically over a set time (the λ ramp) so chains move apart by motion before the minimisation stages.",
+   "equation": "F_LJ(r) → sign(F) · min(|F_LJ(r)|, F_cap),   F_cap = 5, 20, 100 … F_final kcal/mol/Å;   MD: F_cap,k = 5 (F_final/5)^(k/9), k = 0 … 9, each for t_ramp/10",
    "equation_note": "after Auhl et al. 2003",
    "symbols": [
     [
      "F_cap",
      "cap of each stage",
-     "5, 20, 100, 500 kcal/mol/Å"
+     "5, 20, 100, then the chosen final cap (500 by default)"
+    ],
+    [
+     "t_ramp",
+     "λ ramp: the time of the MD push-off",
+     "20 ps on the Relax board; 0 = minimisation stages only"
+    ],
+    [
+     "T",
+     "NVT temperature of the MD push-off (Bussi thermostat, 1 fs)",
+     "300 K"
     ]
    ],
    "when": "Always before minimising a grown or packed cell; Relax does it by default.",
@@ -435,8 +445,8 @@
     "auhl2003"
    ],
    "source": "core/src/relax.cpp · core/src/field.cpp (force_cap)",
-   "tested": "Equilibrate.PushoffTamesOverlaps",
-   "deviation": "capped-force minimisation stages rather than the capped-force dynamics of the paper",
+   "tested": "Equilibrate.PushoffTamesOverlaps · Relax.PushoffByMdRampsTheCap",
+   "deviation": "the cap is raised in ten NVT segments rather than continuously; Coulomb terms are off during the push-off",
    "engines": [
     "relax.lbfgs",
     "relax.fire"
@@ -957,6 +967,165 @@
    "deviation": "rigid molecules with one conformer each; one molecule per lattice site of either kind, with no correction for their different sizes; coordination numbers by random sequential packing",
    "engines": [
     "chi.contacts"
+   ]
+  },
+  {
+   "id": "ptm",
+   "group": "Analysis",
+   "title": "Polyhedral template matching",
+   "summary": "Each particle's nearest neighbours, with the particle itself, are compared with ideal FCC, HCP, BCC, icosahedral and simple-cubic neighbourhoods. Both point sets are centred and scaled to unit mean distance; neighbours are matched to template points from anchor pairs whose angles agree, and the optimal rotation (Horn's quaternion) gives the RMSD. The template with the least RMSD below the cutoff is the particle's structure; its rotation is the lattice orientation, and the deformation left after it gives a shear strain.",
+   "equation": "RMSD = min_R √(Σ_k |R v̂_k − t̂_π(k)|² / (N + 1)),   F = (Σ x tᵀ)(Σ t tᵀ)⁻¹,   E = ½(FᵀF − I),   ε_shear = √(½ Σ dev(E)²)",
+   "equation_note": "Larsen, Schmidt & Schiøtz 2016",
+   "symbols": [
+    [
+     "v̂, t̂",
+     "neighbour vectors and template points, centred and scaled",
+     "12 (FCC, HCP, ICO), 14 (BCC), 6 (SC) neighbours"
+    ],
+    [
+     "RMSD cutoff",
+     "above it the particle is 'other'",
+     "0.1"
+    ],
+    [
+     "Interatomic Distance",
+     "mean neighbour distance over the template's",
+     "the nearest-neighbour distance of the local lattice"
+    ]
+   ],
+   "when": "Crystalline fillers and metal particles in a composite: grains, surfaces, stacking faults and local strain; the RMSD table shows where to set the cutoff.",
+   "cites": [
+    "larsen2016"
+   ],
+   "source": "core/src/pipeline.cpp (step_ptm) · core/src/superpose.cpp",
+   "tested": "Structure.PolyhedralTemplateMatching",
+   "deviation": "correspondences from anchor pairs and nearest-point assignment, not the paper's graph-canonical search; the shear strain is relative to the particle's own lattice scale",
+   "engines": [
+    "pipeline.ptm"
+   ]
+  },
+  {
+   "id": "voronoi-exact",
+   "group": "Analysis",
+   "title": "Voronoi and radical tessellation",
+   "summary": "Each atom's cell is built on its own: a box around it is clipped by the bisecting plane of every neighbour, nearest first, until no farther neighbour can reach the cell (periodic images included). The radical (power) variant moves each plane so that atoms with larger van der Waals radii get larger cells. The cells tile the box exactly; their volumes, faces and the Voronoi index ⟨n3 n4 n5 n6⟩ (faces with 3, 4, 5, 6 edges) follow.",
+   "equation": "plane between i and j at distance d = (r² + R_i² − R_j²) / (2r) from i (R = 0: Voronoi);   V_i = Σ_faces ⅓ A_f d_f",
+   "equation_note": "cell-by-cell construction as in Rycroft 2009; radical planes Gellatly & Finney 1982",
+   "symbols": [
+    [
+     "r",
+     "distance between the atoms (minimum image or any image)",
+     ""
+    ],
+    [
+     "R",
+     "van der Waals radius (Bondi) in the radical variant",
+     ""
+    ],
+    [
+     "⟨n3 n4 n5 n6⟩",
+     "faces with 3 … 6 edges",
+     "FCC ⟨0 12 0 0⟩, BCC ⟨0 6 0 8⟩, icosahedral ⟨0 0 12 0⟩"
+    ]
+   ],
+   "when": "Free volume per atom in a polymer (radical), local packing in amorphous metals and fillers; the grid methods remain for a quick look.",
+   "cites": [
+    "rycroft2009",
+    "gellatly1982"
+   ],
+   "source": "core/src/voronoi.cpp · core/src/pipeline.cpp (step_voronoi)",
+   "tested": "Structure.ExactVoronoiCells",
+   "deviation": "none known; cells of atoms without a periodic cell around them may be open (reported)",
+   "engines": [
+    "pipeline.voronoi"
+   ]
+  },
+  {
+   "id": "wigner-seitz",
+   "group": "Analysis",
+   "title": "Wigner–Seitz defect analysis",
+   "summary": "Every particle is assigned to the reference site nearest to it — the site whose Wigner–Seitz cell holds it. A site without a particle is a vacancy; each particle beyond the first on a site is an interstitial. The reference is a frame of the trajectory (the undamaged lattice) or a file.",
+   "equation": "site(i) = argmin_k |r_i − R_k| (minimum image),   vacancies = #{k : n_k = 0},   interstitials = Σ_k max(0, n_k − 1)",
+   "equation_note": "",
+   "symbols": [
+    [
+     "R_k",
+     "reference sites",
+     "a frame of the trajectory or a file"
+    ],
+    [
+     "n_k",
+     "particles on site k",
+     "Occupancy"
+    ]
+   ],
+   "when": "Damage in crystalline fillers or substrates: after deformation, irradiation or cutting.",
+   "cites": [],
+   "source": "core/src/pipeline.cpp (step_wigner_seitz)",
+   "tested": "Structure.WignerSeitzDefects",
+   "deviation": "none known",
+   "engines": [
+    "pipeline.wigner_seitz"
+   ]
+  },
+  {
+   "id": "thiolates",
+   "group": "Growth",
+   "title": "Thiolate ligands on metal particles",
+   "summary": "Surface atoms of a gold (silver, copper, platinum, palladium) particle are those with fewer neighbours than the bulk. Sulfur sits in three-fold hollows of three mutually neighbouring surface atoms, 2.45 Å from each (on top of an atom where the surface has no hollow), sites at least √3 times the metal's nearest-neighbour distance apart — the √3 × √3 R30° packing of thiolates on Au(111). Each ligand's chain is straightened (all anti) and points out of the surface, rolled about its axis away from the others.",
+   "equation": "h = √(d_MS² − R²) above the hollow's centre (R: its distance to the three atoms),   d_SS ≥ √3 d_MM",
+   "equation_note": "packing as reviewed by Love et al. 2005",
+   "symbols": [
+    [
+     "d_MS",
+     "metal–sulfur distance",
+     "2.45 Å"
+    ],
+    [
+     "d_MM",
+     "nearest-neighbour distance of the metal",
+     "2.88 Å in gold"
+    ]
+   ],
+   "when": "Model a capped nanoparticle to embed or solvate; relax with a force field that has metal–sulfur terms before dynamics (no metal–S bonds are written).",
+   "cites": [
+    "love2005"
+   ],
+   "source": "core/src/edit.cpp (cap_thiolates) · core/src/nano.cpp",
+   "tested": "Nano.GoldParticleCappedWithThiolates",
+   "deviation": "a geometric placement, not an equilibrated monolayer; adatom (staple) motifs of small clusters are not built",
+   "engines": [
+    "nano.particle"
+   ]
+  },
+  {
+   "id": "opls-bci",
+   "group": "Force fields",
+   "title": "OPLS charges from bond increments",
+   "summary": "OPLS 2005 gives each atom a charge key (an OPLS number chosen by its chemical environment) and each bonded pair of keys an increment that moves charge from one atom to the other. Summing over the bonds gives charges that balance bond by bond, so every molecule keeps its formal charge. OPLS-AA 2024's fixed per-type charges sometimes do not add up where two groups meet (a substituted ring, a benzylic junction); CAPS then uses OPLS 2005's typing and increments for the charges, and OPLS-AA 2024's types for everything else, and says so.",
+   "equation": "q_i = Σ_{j bonded to i} δ_ij,   δ_ji = −δ_ij,   δ from the OPLS2005 table by the pair's keys (the first entry for a pair)",
+   "equation_note": "OPLS 2005 as in Banks et al. 2005",
+   "symbols": [
+    [
+     "key",
+     "the atom's OPLS number from its environment",
+     "charge rules in the OPLS 2005 typing file"
+    ],
+    [
+     "δ_ij",
+     "bond charge increment",
+     "6179 pairs"
+    ]
+   ],
+   "when": "Automatic whenever OPLS-AA 2024's own charges miss the formal charge; by hand with Field › Use OPLS 2005's charges or charges \"increments\" in recipes and Python.",
+   "cites": [
+    "banks2005"
+   ],
+   "source": "core/src/ffdef.cpp (parameterize, companion_charges)",
+   "tested": "Typing.Opls2005ChargesFromBondIncrements · Typing.CompanionChargesFromOpls2005",
+   "deviation": "charges verified against the reference program's OPLS 2005 on 110 polymers; the combination with OPLS-AA 2024 parameters is CAPS's choice",
+   "engines": [
+    "field.assign"
    ]
   }
  ]
