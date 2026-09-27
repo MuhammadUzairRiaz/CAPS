@@ -731,6 +731,85 @@ TEST(Structure, PolyhedralTemplateMatching) {
   EXPECT_EQ(st.attribute("CombineDatasets.added"), 13.0);
 }
 
+// Wigner–Seitz defects: a Frenkel pair in FCC gold (an atom moved from its site into an octahedral hole) is one vacancy
+// and one interstitial; per site, the vacant site has occupancy 0 and the doubly occupied one 2
+TEST(Structure, WignerSeitzDefects) {
+  caps::CrystalSpec spec;
+  spec.space_group = "Fm-3m";
+  spec.a = spec.b = spec.c = 4.078;
+  spec.sites = {{"Au", 79, {0, 0, 0}}};
+  spec.supercell = {4, 4, 4};
+  const caps::System au = caps::build_crystal(spec);
+  const std::string ref = (std::filesystem::temp_directory_path() / "caps_ws_ref.xyz").string();
+  caps::write_xyz(au, ref);
+  caps::System d = au;
+  // the atom nearest the cell centre goes to the octahedral hole half a lattice constant along x from a corner atom
+  const caps::Vec3 centre = au.cell.origin + (au.cell.a + au.cell.b + au.cell.c) * 0.5;
+  size_t mover = 0;
+  for (size_t i = 0; i < au.atoms.size(); ++i)
+    if (caps::norm(au.atoms[i].pos - centre) < caps::norm(au.atoms[mover].pos - centre)) mover = i;
+  d.atoms[mover].pos = au.atoms[0].pos + caps::Vec3{4.078 / 2, 0, 0} + caps::Vec3{0.05, 0.03, 0.02};
+  auto run = [](const caps::System& f, const std::string& json) { return caps::run_pipeline(f, caps::pipeline_from_json(caps::Json::parse(json)), 0, 0); };
+  auto st = run(d, R"([{"type":"wigner_seitz","reference":"file","path":")" + ref + R"("}])");
+  EXPECT_EQ(st.attribute("WignerSeitz.vacancy_count"), 1.0);
+  EXPECT_EQ(st.attribute("WignerSeitz.interstitial_count"), 1.0);
+  int twos = 0;
+  for (double o : st.props.at("Occupancy")) twos += o == 2;
+  EXPECT_EQ(twos, 2);   // the interstitial and the atom sharing its site
+  st = run(d, R"([{"type":"wigner_seitz","reference":"file","path":")" + ref + R"(","output":"sites"}])");
+  ASSERT_EQ(st.system.atoms.size(), au.atoms.size());
+  EXPECT_EQ(st.props.at("Occupancy")[mover], 0.0);
+  // the perfect crystal: no defects
+  st = run(au, R"([{"type":"wigner_seitz","reference":"file","path":")" + ref + R"("}])");
+  EXPECT_EQ(st.attribute("WignerSeitz.vacancy_count"), 0.0);
+  EXPECT_EQ(st.attribute("WignerSeitz.interstitial_count"), 0.0);
+}
+
+// Exact Voronoi cells: FCC's rhombic dodecahedra (a³/4, twelve four-edged faces), BCC's truncated octahedra (a³/2,
+// ⟨0 6 0 8⟩), the icosahedron's centre ⟨0 0 12 0⟩ (its surface atoms open), and a polymer melt's cells filling the box
+TEST(Structure, ExactVoronoiCells) {
+  auto crystal = [](const std::string& sg, double a, std::vector<caps::CrystalSite> sites, std::array<int, 3> sc) {
+    caps::CrystalSpec spec;
+    spec.space_group = sg;
+    spec.a = spec.b = spec.c = a;
+    spec.sites = std::move(sites);
+    spec.supercell = sc;
+    return caps::build_crystal(spec);
+  };
+  auto run = [](const caps::System& f, const std::string& json) { return caps::run_pipeline(f, caps::pipeline_from_json(caps::Json::parse(json)), 0, 0); };
+  const auto au = crystal("Fm-3m", 4.078, {{"Au", 79, {0, 0, 0}}}, {3, 3, 3});
+  auto st = run(au, R"([{"type":"voronoi","method":"exact"}])");
+  for (size_t i = 0; i < au.atoms.size(); ++i) {
+    EXPECT_NEAR(st.props.at("AtomicVolume")[i], std::pow(4.078, 3) / 4, 1e-6);
+    EXPECT_EQ(st.props.at("Coordination")[i], 12.0);
+    EXPECT_EQ(st.props.at("Voronoi Index.4")[i], 12.0);
+  }
+  const auto fe = crystal("Im-3m", 2.8665, {{"Fe", 26, {0, 0, 0}}}, {3, 3, 3});
+  st = run(fe, R"([{"type":"voronoi","method":"exact"}])");
+  for (size_t i = 0; i < fe.atoms.size(); ++i) {
+    EXPECT_NEAR(st.props.at("AtomicVolume")[i], std::pow(2.8665, 3) / 2, 1e-6);
+    EXPECT_EQ(st.props.at("Voronoi Index.4")[i], 6.0);
+    EXPECT_EQ(st.props.at("Voronoi Index.6")[i], 8.0);
+  }
+  caps::System ico;
+  const double g = (1 + std::sqrt(5.0)) / 2, r = 2.88 / std::sqrt(1 + g * g);
+  std::vector<caps::Vec3> v{{0, 0, 0}};
+  for (int s1 : {-1, 1})
+    for (int s2 : {-1, 1}) v.push_back({0, s1 * r, s2 * g * r}), v.push_back({s1 * r, s2 * g * r, 0}), v.push_back({s2 * g * r, 0, s1 * r});
+  for (const auto& x : v) { caps::Atom a; a.element = 79; a.pos = x; a.id = int64_t(ico.atoms.size() + 1); ico.atoms.push_back(a); }
+  st = run(ico, R"([{"type":"voronoi","method":"exact"}])");
+  EXPECT_EQ(st.props.at("Voronoi Index.5")[0], 12.0);
+  EXPECT_EQ(st.props.at("Coordination")[0], 12.0);
+  EXPECT_EQ(st.attribute("Voronoi.open_cells"), 12.0);
+  // a polystyrene melt: the cells tile the box exactly, plain or radical
+  const caps::Trajectory t = caps::open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const caps::System melt = t.frame(0);
+  for (const char* m : {"exact", "exact_radical"}) {
+    st = run(melt, std::string(R"([{"type":"voronoi","method":")") + m + R"("}])");
+    EXPECT_NEAR(st.attribute("Voronoi.sum"), melt.cell.volume(), 1e-6 * melt.cell.volume()) << m;
+  }
+}
+
 TEST(Recipe, CheckedWithoutRunning) {
   const auto ok = caps::check_recipe(caps::yaml_parse(
       "recipe: 1\nbuild: {polymer: {smiles: \"*CC(*)c1ccccc1\", dp: 40, chains: 20}}\ntype: {forcefield: gaff2}\ngrow: {density: 0.5}\n"
