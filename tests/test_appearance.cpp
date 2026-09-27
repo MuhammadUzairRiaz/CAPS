@@ -7,6 +7,7 @@
 #include "caps/molecule.hpp"
 #include "caps/peptide.hpp"
 #include "caps/render.hpp"
+#include "caps/polymer.hpp"
 
 using namespace caps;
 
@@ -114,4 +115,34 @@ TEST(Appearance, RendersMixedStylesAndMeshes) {
   for (size_t k = 0; k < img.rgba.size(); k += 4) lit += img.rgba[k] + img.rgba[k + 1] + img.rgba[k + 2] > 90;
   EXPECT_GT(lit, 1000u);
   EXPECT_FALSE(ribbon_paths(pep, {}).empty());
+}
+
+// E/Z of double bonds from the 3D geometry and CIP ranks: trans- and cis-2-butene, and every backbone double bond of a
+// grown cis-1,4-polyisoprene chain Z (natural rubber)
+TEST(Appearance, EzLabelsOfDoubleBonds) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  const System e = build_molecule("C/C=C/C", bo).system;
+  const System z = build_molecule("C/C=C\\C", bo).system;
+  std::vector<std::pair<uint32_t, uint32_t>> be, bz;
+  const auto le = ez_labels(e, &be), lz = ez_labels(z, &bz);
+  ASSERT_EQ(be.size(), 1u);
+  ASSERT_EQ(bz.size(), 1u);
+  EXPECT_EQ(le[be[0].first], "E");
+  EXPECT_EQ(lz[bz[0].first], "Z");
+  // isobutylene has two methyls on one end: no E/Z
+  EXPECT_TRUE(ez_labels(build_molecule("CC(C)=CC", bo).system).at(1).empty());
+  ChainSpec spec;
+  spec.units = {RepeatUnit{"isoprene", "[*]C/C=C(C)\\C[*]"}};
+  spec.dp = 4;
+  GrowOptions g;
+  g.chains = 1;
+  g.dp = 0;
+  g.density = 0.05;
+  g.seed = 1;
+  const System nr = grow_chains(spec, g);
+  std::vector<std::pair<uint32_t, uint32_t>> bn;
+  const auto ln = ez_labels(nr, &bn);
+  ASSERT_EQ(bn.size(), 3u);   // the tail unit's double bond carries two methyls at its capped end: not stereogenic
+  for (const auto& [a, b] : bn) EXPECT_EQ(ln[a], "Z");
 }
