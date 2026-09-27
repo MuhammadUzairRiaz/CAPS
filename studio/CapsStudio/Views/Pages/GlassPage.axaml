@@ -66,7 +66,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="Volume against temperature" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="280">
-                <v:LinePlot x:Name="Vt" XLabel="temperature (K)" YLabel="specific volume (cm³/g)" AutoRange="True" />
+                <v:LinePlot x:Name="Vt" XLabel="temperature (K)" YLabel="specific volume (cm³/g)" AutoRange="True" EmptyText="" />
                 <TextBlock IsVisible="{Binding !GtHasPoints}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
                            Text="Run the cooling scan: the replica means are plotted with their spread and fitted with two lines; the crossing is Tg." />
               </Panel>

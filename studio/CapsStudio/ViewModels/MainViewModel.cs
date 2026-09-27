@@ -375,6 +375,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// command palette, a Back button — so no page shows empty because it was not opened through its button.</summary>
     private static readonly Dictionary<int, Action<MainViewModel>> PageOpeners = new()
     {
+        [9] = v => v.OpenBuilder(),
+        [13] = v => { if (v._polyDoc == null) _ = v.BuildPolyPreview(); },   // the one-chain preview, once
         [14] = v => v.OpenSurface(),
         [15] = v => v.OpenNano(),
         [16] = v => v.OpenBlend(),
@@ -395,13 +397,17 @@ public sealed partial class MainViewModel : ObservableObject
         [32] = v => v.OpenTrajectory(),
         [33] = v => v.OpenTorsion(),
         [34] = v => v.OpenSplit(),
+        [35] = v => v.OpenFragments(),
         [36] = v => v.OpenMacro(),
         [37] = v => v.OpenProvenance(),
         [38] = v => v.OpenMechanics(),
         [39] = v => v.OpenScattering(),
         [40] = v => v.OpenFreeVolume(),
+        [41] = v => v.OpenManual(),
+        [42] = v => v.OpenProject(),
         [43] = v => v.OpenSweep(),
         [44] = v => v.OpenCg(),
+        [45] = v => v.OpenTemplateEditor(),
         [46] = v => v.OpenColourVision(),
         [47] = v => v.OpenGlass(),
         [48] = v => v.OpenInterface(),

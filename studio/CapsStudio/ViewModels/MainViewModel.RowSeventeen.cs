@@ -80,9 +80,9 @@ public partial class MainViewModel
     public decimal DcB { get => _dcB; set { if (Set(ref _dcB, Math.Clamp(value, 1, 10000))) Recalculate(); } }
     public decimal DcC { get => _dcC; set { if (Set(ref _dcC, Math.Clamp(value, 1, 10000))) Recalculate(); } }
     public decimal DcTarget { get => _dcTarget; set { if (Set(ref _dcTarget, Math.Clamp(value, 0.01m, 30m))) Recalculate(); } }
-    public int DcSolvent { get => _dcSolvent; set { if (Set(ref _dcSolvent, Math.Max(0, value))) Recalculate(); } }
+    public int DcSolvent { get => _dcSolvent; set { if (value >= 0 && Set(ref _dcSolvent, value)) Recalculate(); } }   // −1: a list being replaced
     public decimal DcN { get => _dcN; set { if (Set(ref _dcN, Math.Clamp(value, 1, 1e9m))) Recalculate(); } }
-    public int DcBoxSpecies { get => _dcBoxSpecies; set { if (Set(ref _dcBoxSpecies, Math.Max(0, value))) Recalculate(); } }
+    public int DcBoxSpecies { get => _dcBoxSpecies; set { if (value >= 0 && Set(ref _dcBoxSpecies, value)) Recalculate(); } }
     public ObservableCollection<SpeciesRow> DcSpecies { get; } = new();
     private string _dcVolume = "", _dcPolymer = "", _dcSolventN = "—", _dcFraction = "—", _dcEdge = "—", _dcNewSmiles = "", _dcError = "";
     public string DcVolume { get => _dcVolume; private set => Set(ref _dcVolume, value); }
@@ -92,7 +92,19 @@ public partial class MainViewModel
     public string DcEdge { get => _dcEdge; private set => Set(ref _dcEdge, value); }
     public string DcNewSmiles { get => _dcNewSmiles; set => Set(ref _dcNewSmiles, value ?? ""); }
     public string DcError { get => _dcError; private set => Set(ref _dcError, value); }
-    public string[] DcSpeciesNames => DcSpecies.Select(s => s.Name).ToArray();
+    private string[] _dcNames = [];
+    /// <summary>The species' names; a new list only when they change, with the two choices put back (a replaced list clears a
+    /// ComboBox's selection).</summary>
+    public string[] DcSpeciesNames => _dcNames;
+    private void RaiseSpeciesNames()
+    {
+        var names = DcSpecies.Select(s => s.Name).ToArray();
+        if (names.SequenceEqual(_dcNames)) return;
+        _dcNames = names;
+        Raise(nameof(DcSpeciesNames));
+        Raise(nameof(DcSolvent));
+        Raise(nameof(DcBoxSpecies));
+    }
 
     public void OpenDensityCalc()
     {
@@ -115,7 +127,7 @@ public partial class MainViewModel
         var row = new SpeciesRow { Name = name, Smiles = smiles, Mass = mass, Rho = rho };
         row.Changed = Recalculate;
         DcSpecies.Add(row);
-        Raise(nameof(DcSpeciesNames));
+        RaiseSpeciesNames();
     }
 
     public void AddSpeciesFromSmiles()
@@ -162,7 +174,7 @@ public partial class MainViewModel
             var vol = (double)_dcN * s.Mass / Avogadro / (double)s.Rho * 1e24;          // Å³
             DcEdge = Math.Cbrt(vol).ToString("0.000", inv) + " Å";
         }
-        Raise(nameof(DcSpeciesNames));
+        RaiseSpeciesNames();
     }
 
     /// <summary>The box and every species (built from its SMILES) into a new Pack input.</summary>
