@@ -526,7 +526,8 @@ public sealed partial class MainViewModel
             case "assign_colour": Text("colour", "Colour (#RRGGBB)", "text"); Bool("keep_selection", "Keep selection"); break;
             case "cluster":
                 Choice("mode", "Neighbours", ["bonds", "cutoff"]); Text("cutoff", "Cutoff (Å)", "number"); Choice("unit", "Unit", ["atoms", "molecules"]);
-                Bool("heavy_only", "Cutoff between heavy atoms"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour by cluster"); Bool("sweep", "Cutoff sweep (cutoff mode)"); Bool("only_selected", "Only selected"); break;
+                Bool("heavy_only", "Cutoff between heavy atoms"); Bool("sort_by_size", "Sort by size"); Bool("colour", "Colour by cluster"); Bool("sweep", "Cutoff sweep (cutoff mode)"); Bool("only_selected", "Only selected");
+                Bool("periodic", "Periodic (links across the cell's faces, minimum image)", true); Bool("unwrap", "Unwrap clusters (made whole through their links, shown whole)"); break;
             case "coordination":
                 Text("element_a", "A · element number (0: any)", "number"); Text("element_b", "B · element number (0: any)", "number"); Bool("inter_only", "Only different molecules");
                 Text("rmax", "g(r) out to r max (Å)", "number"); Text("bins", "Bins", "number"); Text("cutoff", "Coordination cutoff (Å)", "number");
@@ -542,9 +543,12 @@ public sealed partial class MainViewModel
             case "msd":
                 Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");
                 Text("fit_from", "Fit from lag (frames)", "number", "blank: a quarter of the lags"); Text("fit_to", "Fit to lag (frames)", "number", "blank: the longest");
-                Text("timestep_fs", "Timestep (fs) for D in cm²/s", "number"); break;
+                Text("timestep_fs", "Timestep (fs) for D in cm²/s", "number");
+                Bool("remove_drift", "Remove system drift (paths relative to the system's centre of mass)");
+                Bool("per_molecule", "Per molecule curves (the first twelve centres)"); break;
             case "scatter": Choice("x", "x", props); Choice("y", "y", props); Bool("only_selected", "Only selected"); break;
-            case "voids": Text("probe", "Probe radius (Å)", "number"); Text("grid", "Grid (Å)", "number"); Bool("show", "Show void points, coloured by void"); break;
+            case "voids": Text("probe", "Probe radius (Å)", "number"); Text("grid", "Grid (Å)", "number"); Text("min_volume", "Only voids above (Å³)", "number", "blank or 0: every void");
+                Bool("show", "Show void points, coloured by void"); Note("The void surface as a mesh: Free volume page"); break;
             case "voronoi":
                 Choice("method", "Method", ["exact", "exact_radical", "grid", "radical"]);
                 Text("face_area_min", "Smallest face counted (Å²)", "number", "exact: faces below this stay in the volume, not in the index");
@@ -560,7 +564,8 @@ public sealed partial class MainViewModel
                 Text("radius", "Arrow radius (Å)", "number"); Bool("flip", "Flip direction (end-to-end)"); break;
             case "trajectory_lines":
                 Choice("particles", "Trace", ["centres", "selected"]); Text("from", "From frame", "number"); Text("to", "To frame", "number", "blank: the last");
-                Text("stride", "Every n-th frame", "number", "blank: about 200 steps"); Text("radius", "Line radius (Å)", "number"); break;
+                Text("stride", "Every n-th frame", "number", "blank: about 200 steps"); Text("radius", "Line radius (Å)", "number");
+                Choice("colour", "Colour", ["molecule", "time"]); Bool("fade", "Fade with age"); Bool("up_to_current", "Show only up to the current frame"); break;
             case "create_bonds":
                 Choice("mode", "Mode", ["pairs", "perceive", "cutoff"]); Text("pairs", "Cutoff by pair (Å)", "text", "C-C 1.70, C-H 1.25 (a pair not listed: never bonded)");
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
