@@ -120,3 +120,40 @@ TEST(Functionalize, EndsAndHelix) {
   }
   EXPECT_THROW(functionalize(hx, FunctionalizeOptions{"CO"}), std::invalid_argument);
 }
+
+#include "caps/properties.hpp"
+#include "caps/uff.hpp"
+
+// A carboxylated (6,6) tube in a polyethylene matrix: its interaction with the matrix is attractive, and all of it is
+// non-bonded (van der Waals plus Coulomb: the filler and the matrix share no bonded term)
+TEST(Functionalize, FillerMatrixInteraction) {
+  NanotubeOptions t;
+  t.n = 6, t.m = 6;
+  t.length = 12;
+  System tube = nanotube(t);
+  FunctionalizeOptions o;
+  o.group = "carboxyl";
+  o.fraction = 0.05;
+  functionalize(tube, o);
+  ChainSpec c;
+  c.units.push_back({"*CC*", "*CC*"});
+  c.dp = 8;
+  FillerMatrixOptions fo;
+  fo.chains = 4;
+  fo.density = 0.5;
+  fo.keep_axis = {false, false, true};
+  const System comp = embed_filler(tube, c, fo);
+  const ForceField ff = default_forcefield(comp);
+  Trajectory tr;
+  tr.topology = comp;
+  std::vector<Vec3> p;
+  for (const auto& a : comp.atoms) p.push_back(a.pos);
+  tr.positions.push_back(p), tr.cells.push_back(comp.cell), tr.timesteps.push_back(0);
+  AnalyzeOptions ao;
+  ao.ff = &ff;
+  const auto props = analyze(tr, {"interaction"}, ao);
+  ASSERT_EQ(props.size(), 1u);
+  const auto& e = props[0];
+  EXPECT_LT(e.value, 0.0);
+  EXPECT_NEAR(e.value, e.extra.at("van der Waals part (kcal/mol)") + e.extra.at("Coulomb part (kcal/mol)"), 1e-6 * std::max(1.0, std::fabs(e.value)));
+}
