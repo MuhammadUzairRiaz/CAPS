@@ -85,6 +85,7 @@ const Cite kCites[] = {
     {"everaers2004", "@article{everaers2004,\n  author = {Everaers, R. and Sukumaran, S. K. and Grest, G. S. and Svaneborg, C. and Sivasubramanian, A. and Kremer, K.},\n  title = {Rheology and microscopic topology of entangled polymeric liquids},\n  journal = {Science}, volume = {303}, pages = {823--826}, year = {2004}, doi = {10.1126/science.1091215}\n}"},
     {"martyna1992", "@article{martyna1992,\n  author = {Martyna, G. J. and Klein, M. L. and Tuckerman, M.},\n  title = {{N}os{\\'e}--{H}oover chains: the canonical ensemble via continuous dynamics},\n  journal = {J. Chem. Phys.}, volume = {97}, pages = {2635--2643}, year = {1992}, doi = {10.1063/1.463940}\n}"},
     {"martyna1994", "@article{martyna1994,\n  author = {Martyna, G. J. and Tobias, D. J. and Klein, M. L.},\n  title = {Constant pressure molecular dynamics algorithms},\n  journal = {J. Chem. Phys.}, volume = {101}, pages = {4177--4189}, year = {1994}, doi = {10.1063/1.467468}\n}"},
+    {"daivis1994", "@article{daivis1994,\n  author = {Daivis, P. J. and Evans, D. J.},\n  title = {Comparison of constant pressure and constant volume nonequilibrium simulations of sheared model decane},\n  journal = {J. Chem. Phys.}, volume = {100}, pages = {541--547}, year = {1994}, doi = {10.1063/1.466970}\n}"},
 };
 
 }  // namespace

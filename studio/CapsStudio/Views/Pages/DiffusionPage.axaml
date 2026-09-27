@@ -72,7 +72,7 @@
                 <TextBlock DockPanel.Dock="Right" Text="{Binding DfCorrectionText}" Classes="mono" FontSize="13" />
                 <TextBlock Text="Correction k_B T ξ / 6πηL" Classes="muted" FontSize="12" VerticalAlignment="Center" />
               </DockPanel>
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="L defaults to the edge of a cube with the cell's volume. η is the solvent's or melt's shear viscosity at T; CAPS does not compute it here, so enter a measured or Green–Kubo value." />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="L defaults to the edge of a cube with the cell's volume. η is the solvent's or melt's shear viscosity at T: a measured value, or Analyze › Dynamics › Viscosity (Green–Kubo), which fills it in here when it runs." />
               <TextBlock Text="Yeh &amp; Hummer, J. Phys. Chem. B 108, 15873 (2004)." FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
             </StackPanel>
           </Border>

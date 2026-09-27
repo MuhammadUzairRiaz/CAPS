@@ -848,6 +848,42 @@
    "engines": []
   },
   {
+   "id": "green-kubo",
+   "group": "Analysis",
+   "title": "Shear viscosity by Green–Kubo",
+   "summary": "The shear viscosity is the time integral of the pressure tensor's autocorrelation in equilibrium. CAPS runs NVT dynamics of a copy of the frame (Nosé–Hoover, weakly coupled so the dynamics are nearly Newtonian), samples the full pressure tensor (kinetic and virial) every few femtoseconds, and averages the autocorrelation of all five independent components of its traceless symmetric part. The running integral should level off; its mean over the last third of the window is the value, and blocks of the run give the error. The result feeds the Yeh–Hummer finite-size correction of diffusion coefficients.",
+   "equation": "η = V / (10 k_B T) ∫₀^∞ Σ_αβ ⟨P°_αβ(0) P°_αβ(t)⟩ dt,   P°_αβ = (P_αβ + P_βα)/2 − δ_αβ tr P / 3",
+   "equation_note": "Daivis & Evans 1994",
+   "symbols": [
+    [
+     "P°",
+     "traceless symmetric pressure tensor",
+     "kinetic plus virial, atm"
+    ],
+    [
+     "window",
+     "correlation time integrated",
+     "10 ps"
+    ],
+    [
+     "sampling",
+     "between pressure samples",
+     "4 fs"
+    ]
+   ],
+   "when": "Solvents and small molecules converge in 100–200 ps; polymer melts relax over nanoseconds to microseconds, and the report says when the integral has not levelled off (then the value is at best a lower bound).",
+   "cites": [
+    "daivis1994",
+    "martyna1992"
+   ],
+   "source": "core/src/mechanics.cpp (green_kubo_viscosity, viscosity_green_kubo)",
+   "tested": "Mechanics.GreenKuboViscosity (an Ornstein–Uhlenbeck stress with a known integral, within 6 %)",
+   "deviation": "one long run split in blocks rather than independent replicas; no time decomposition of the integral",
+   "engines": [
+    "analyze.viscosity"
+   ]
+  },
+  {
    "id": "elastic-static",
    "group": "Analysis",
    "title": "Elastic constants by static strain",

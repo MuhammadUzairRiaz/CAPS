@@ -406,6 +406,131 @@ ElasticResult fluctuation_elastic(const Trajectory& t, const std::vector<size_t>
   return res;
 }
 
+ViscosityResult green_kubo_viscosity(const std::vector<std::array<double, 6>>& p, double dt_fs, double volume, double temperature,
+                                     double corr_ps, int blocks) {
+  ViscosityResult r;
+  const size_t n = p.size();
+  if (n < 10) throw std::invalid_argument("too few pressure samples for Green–Kubo");
+  const size_t L = std::min(n / 2, size_t(std::max(2.0, corr_ps * 1000 / dt_fs)));
+  // the traceless symmetric tensor: off-diagonals, and the diagonal minus its trace/3
+  std::vector<std::array<double, 6>> q(n);
+  for (size_t k = 0; k < n; ++k) {
+    const double tr = (p[k][0] + p[k][1] + p[k][2]) / 3;
+    q[k] = {p[k][0] - tr, p[k][1] - tr, p[k][2] - tr, p[k][3], p[k][4], p[k][5]};
+  }
+  // Σ_αβ P°αβ(0) P°αβ(t) over all nine elements: the diagonal once, each off-diagonal twice
+  auto acf_of = [&](size_t from, size_t to) {
+    std::vector<double> c(L, 0.0);
+    for (size_t lag = 0; lag < L; ++lag) {
+      double sum = 0;
+      size_t m = 0;
+      for (size_t k = from; k + lag < to; ++k, ++m) {
+        const auto& a = q[k];
+        const auto& b = q[k + lag];
+        sum += a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + 2 * (a[3] * b[3] + a[4] * b[4] + a[5] * b[5]);
+      }
+      c[lag] = m ? sum / double(m) : 0;
+    }
+    return c;
+  };
+  // atm² · Å³ · fs / (J) → Pa·s: (101325 Pa)² · 1e-30 m³ · 1e-15 s / (kB T); ×1000 for mPa·s
+  const double kT = 1.380649e-23 * temperature;
+  const double to_mpas = 101325.0 * 101325.0 * volume * 1e-30 * dt_fs * 1e-15 / kT / 10.0 * 1000.0;
+  auto integrate = [&](const std::vector<double>& c) {
+    std::vector<double> run(L, 0.0);
+    for (size_t k = 1; k < L; ++k) run[k] = run[k - 1] + 0.5 * (c[k - 1] + c[k]) * to_mpas;   // trapezoid
+    return run;
+  };
+  auto plateau = [&](const std::vector<double>& run) {
+    double m = 0;
+    size_t c = 0;
+    for (size_t k = 2 * L / 3; k < L; ++k) m += run[k], ++c;
+    return c ? m / double(c) : run.back();
+  };
+  const auto c = acf_of(0, n);
+  r.running = integrate(c);
+  r.eta = plateau(r.running);
+  for (size_t k = 0; k < L; ++k) r.t_ps.push_back(double(k) * dt_fs / 1000), r.acf.push_back(c[0] != 0 ? c[k] / c[0] : 0);
+  // blocks of the run, each integrated alone: the spread of their plateaus
+  const int nb = std::max(2, blocks);
+  std::vector<double> e;
+  for (int b = 0; b < nb; ++b) {
+    const size_t from = n * size_t(b) / size_t(nb), to = n * size_t(b + 1) / size_t(nb);
+    if (to - from < 2 * L) continue;
+    e.push_back(plateau(integrate(acf_of(from, to))));
+  }
+  if (e.size() >= 2) {
+    double m = 0, v = 0;
+    for (double x : e) m += x;
+    m /= double(e.size());
+    for (double x : e) v += (x - m) * (x - m);
+    r.error = std::sqrt(v / double(e.size() - 1) / double(e.size()));
+  } else {
+    r.error = std::numeric_limits<double>::quiet_NaN();
+    r.notes.push_back("the run is shorter than " + std::to_string(2 * nb) + " correlation windows: no block error");
+  }
+  // levelled off: the last third varies by less than a fifth of its mean
+  double lo = 1e300, hi = -1e300;
+  for (size_t k = 2 * L / 3; k < L; ++k) lo = std::min(lo, r.running[k]), hi = std::max(hi, r.running[k]);
+  r.plateau = std::fabs(r.eta) > 0 && (hi - lo) < 0.2 * std::fabs(r.eta);
+  if (!r.plateau)
+    r.notes.push_back("the running integral has not levelled off within " + fmt(corr_ps, 3) +
+                      " ps: the stress has not relaxed (a polymer melt needs far longer runs and correlation windows); the value is a lower bound at best");
+  return r;
+}
+
+ViscosityResult viscosity_green_kubo(System& s, const ViscosityOptions& o) {
+  if (!s.cell.valid()) throw std::invalid_argument("viscosity needs a periodic cell");
+  const ForceField ff = o.field ? *o.field : default_forcefield(s);
+  DynamicsOptions d;
+  d.field = std::make_shared<const ForceField>(ff);
+  d.energy = o.energy;
+  d.dt = o.dt;
+  d.temperature = o.temperature;
+  d.thermostat = Thermostat::NoseHoover;   // deterministic and weakly coupled: the dynamics the correlations need
+  d.tau_t = o.tau_t;
+  d.seed = o.seed;
+  d.frame_every = 0;
+  d.new_velocities = o.new_velocities || s.velocities.size() != s.atoms.size();
+  const int64_t neq = std::llround(o.equilibrate_ps * 1000 / o.dt), nrun = std::llround(o.ps * 1000 / o.dt);
+  if (neq > 0) {
+    d.steps = neq;
+    d.thermo_every = 1000;
+    d.progress = [&](const ThermoRow& r) { return !cancelled(o.progress, "equilibrating at " + fmt(o.temperature, 4) + " K", double(r.step) / double(neq + nrun)); };
+    run_dynamics(s, d);
+    d.new_velocities = false;
+  }
+  std::vector<std::array<double, 6>> p;
+  d.steps = nrun;
+  d.step_offset = neq;
+  d.thermo_every = std::max(1, o.sample_every);
+  d.progress = [&](const ThermoRow& r) {
+    if (r.step > neq) p.push_back({r.p[0], r.p[1], r.p[2], r.p[3], r.p[4], r.p[5]});
+    return !cancelled(o.progress, "sampling the pressure tensor", double(r.step) / double(neq + nrun));
+  };
+  DynamicsReport rep;
+  run_dynamics(s, d, &rep);
+  ViscosityResult r = green_kubo_viscosity(p, o.dt * std::max(1, o.sample_every), s.cell.volume(), o.temperature, o.corr_ps, o.blocks);
+  r.notes.insert(r.notes.begin(), fmt(o.ps, 4) + " ps NVT (Nosé–Hoover, τ " + fmt(o.tau_t, 4) + " fs) after " + fmt(o.equilibrate_ps, 4) +
+                                  " ps; the pressure tensor every " + fmt(o.dt * std::max(1, o.sample_every), 3) + " fs (" + std::to_string(p.size()) + " samples)");
+  return r;
+}
+
+std::vector<Property> viscosity_properties(const ViscosityResult& r) {
+  Property q;
+  q.id = "viscosity";
+  q.name = "Shear viscosity (Green–Kubo)";
+  q.unit = "mPa·s";
+  q.value = r.eta;
+  q.error = r.error;
+  q.method = "Green–Kubo integral of the traceless pressure tensor's autocorrelation (Daivis & Evans 1994), the plateau of the running integral";
+  q.notes = r.notes;
+  Series run{"running integral", "t (ps)", "η (mPa·s)", r.t_ps, r.running};
+  Series acf{"stress autocorrelation", "t (ps)", "⟨P°P°⟩(t)/⟨P°P°⟩(0)", r.t_ps, r.acf};
+  q.series = {run, acf};
+  return {q};
+}
+
 ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o) {
   ElasticResult res;
   if (!s.cell.valid()) throw std::invalid_argument("elastic constants need a periodic cell");
