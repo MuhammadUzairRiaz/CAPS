@@ -1527,6 +1527,11 @@ internal static class SelfTest
             vm.ClearPipeline();
             vm.AddStep("affine_transform");
             var ratio = vm.PipeAttributes.FirstOrDefault(a => a.Key == "AffineTransformation.volume_ratio")?.Value;
+            // freeze: frame-0 heights on the shown frame
+            vm.ClearPipeline();
+            vm.AddStep("freeze_property");
+            var frozen = vm.PipeProperties().Contains("Position.Z frozen") && vm.PipelineRows.Last().Level == "ok";
+            Check(frozen, $"freeze property: {vm.PipelineRows.LastOrDefault()?.Summary}");
             Check(orS != null && double.Parse(orS, System.Globalization.CultureInfo.InvariantCulture) is > 0 and < 0.5 && hasProps && ratio == "1.1",
                   $"orientation step: S {orS}, properties {hasProps} · affine: volume × {ratio}");
             vm.ClearPipeline();

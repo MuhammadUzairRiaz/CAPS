@@ -1024,3 +1024,23 @@ TEST(Pipeline, WrapModesAndUnwrapMethods) {
   const auto plain = run(hop.frame(4), R"([{"type":"unwrap","method":"bonds"}])", 4, &hop);
   EXPECT_NEAR(plain.system.atoms[0].pos[0], 7.0, 1e-6);
 }
+
+// Freeze property: frame-0 values on a later frame, matched by identifier, including a property made by a step below
+TEST(Pipeline, FreezePropertyAtAReferenceFrame) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  ASSERT_GE(t.frames(), 2u);
+  const int last = int(t.frames()) - 1;
+  const System f0 = t.frame(0), fl = t.frame(size_t(last));
+  const auto st = run_pipeline(fl, pipeline_from_json(Json::parse(
+      R"([{"type":"freeze_property","property":"Custom"},{"type":"compute_property","name":"Custom","expression":"Position.X + 2"}])")), last, 0, &t);
+  ASSERT_EQ(st.steps[0].level, "ok") << st.steps[0].summary;
+  const auto& fr = st.props.at("Custom frozen");
+  const auto& now = st.props.at("Custom");
+  bool moved = false;
+  for (size_t i = 0; i < fl.atoms.size(); ++i) {
+    EXPECT_NEAR(fr[i], f0.atoms[i].pos[0] + 2, 1e-9) << i;
+    EXPECT_NEAR(now[i], fl.atoms[i].pos[0] + 2, 1e-9) << i;
+    moved |= std::fabs(fr[i] - now[i]) > 1e-3;
+  }
+  EXPECT_TRUE(moved);
+}

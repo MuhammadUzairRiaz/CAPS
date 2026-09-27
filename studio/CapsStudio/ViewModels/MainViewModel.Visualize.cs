@@ -128,6 +128,7 @@ public sealed partial class MainViewModel
         new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", "Modify", "move"),
+        new("freeze_property", "Freeze property", "values at a reference frame, on every frame", "Trajectory", "pin"),
         new("orientation", "Chain orientation", "P₂ per atom, S, director, local crystallinity", "Structure", "grow"),
         new("cna", "Common neighbour analysis", "FCC, HCP, BCC, icosahedral (adaptive CNA)", "Structure", "atom"),
         new("centrosymmetry", "Centrosymmetry", "Kelchner's parameter: defects, surfaces", "Structure", "atom"),
@@ -426,6 +427,7 @@ public sealed partial class MainViewModel
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "wrap" => new JsonObject { ["mode"] = "atoms" },
+        "freeze_property" => new JsonObject { ["property"] = "Position.Z", ["frame"] = 0 },
         "cna" => new JsonObject { ["only_selected"] = false },
         "centrosymmetry" => new JsonObject { ["neighbours"] = 12 },
         "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8 },
@@ -537,6 +539,9 @@ public sealed partial class MainViewModel
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
+            case "freeze_property":
+                Choice("property", "Property", props); Text("frame", "Reference frame", "number"); Text("output", "Output property", "text", "blank: <property> frozen");
+                Note("The steps below this one run on the reference frame; particles are matched by identifier. Colour by the frozen property to follow where atoms started."); break;
             case "cna": Bool("only_selected", "Only selected"); Note("Adds Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 icosahedral): colour by it to see grains, stacking faults and surfaces"); break;
             case "centrosymmetry": Text("neighbours", "Nearest neighbours (12 FCC, 8 BCC)", "number"); Note("Adds Centrosymmetry (Å²): zero in a perfect lattice, large at surfaces and defects"); break;
             case "orientation":
