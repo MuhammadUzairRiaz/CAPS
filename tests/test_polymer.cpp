@@ -244,6 +244,36 @@ TEST(Polymer, StarsOfFourArmsOnOneCarbon) {
   EXPECT_NE(rep.notes.front().find("3 stars of 4 arms"), std::string::npos) << rep.notes.front();
 }
 
+// A dendrimer: a star core of 3 arms, every end splitting in two for 2 generations (3 + 6 + 12 segments)
+TEST(Polymer, DendrimerGenerations) {
+  GrowOptions o;
+  o.chains = 2;
+  o.density = 0.2;
+  o.seed = 4;
+  o.auto_scale = true;
+  ChainSpec c = spec({"*CC*"}, Sequence::Homopolymer, 4);
+  c.architecture = Architecture::Dendrimer;
+  c.arms = 3;
+  c.arm_dp = 3;
+  c.generations = 2;
+  GrowReport rep;
+  const System s = grow_chains(c, o, &rep);
+  // core: 3 arms × 4 C₂H₄ with 2 hydrogens net; 18 branches × 3 C₂H₄, each a tail cap for the hydrogen it replaced
+  EXPECT_EQ(s.atoms.size(), size_t(2 * (3 * 4 * 6 + 2 + 18 * 3 * 6)));
+  expect_sound(s, 2, 0.6);
+  std::vector<int> heavy(s.atoms.size(), 0), all(s.atoms.size(), 0);
+  for (const auto& b : s.bonds) {
+    ++all[b.i], ++all[b.j];
+    if (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 6) ++heavy[b.i], ++heavy[b.j];
+  }
+  for (size_t i = 0; i < s.atoms.size(); ++i) EXPECT_EQ(all[i], s.atoms[i].element == 6 ? 4 : 1) << i;
+  // chain ends: 12 outer branch ends per dendrimer, each a CH₃
+  int ends = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) ends += s.atoms[i].element == 6 && heavy[i] == 1;
+  EXPECT_EQ(ends, 2 * 12);
+  EXPECT_NE(rep.notes.front().find("dendrimers of generation 2"), std::string::npos) << rep.notes.front();
+}
+
 TEST(Polymer, CombsAndRandomBranches) {
   GrowOptions o;
   o.chains = 2;

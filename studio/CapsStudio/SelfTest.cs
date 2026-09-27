@@ -471,7 +471,19 @@ internal static class SelfTest
             var sm = vm.PolyDoc?.Summary();
             Check(est.Success && sm != null && sm.Value.Molecules == 1 && sm.Value.Atoms == int.Parse(est.Groups[1].Value.Replace(",", "")),
                   $"star NR: {vm.PolyPreview.Replace('\n', ' ')} · built {sm?.Atoms} atoms in {sm?.Molecules} molecule {vm.PolyError}");
+            // a generation-2 dendrimer of the same unit: 3 core arms, 18 branches of 2 units
+            vm.GrowDpD = 3;
+            vm.PolyArch = 4;
+            vm.PolyArms = 3;
+            vm.PolyArmDp = 2;
+            vm.PolyGenerations = 2;
+            var dest = System.Text.RegularExpressions.Regex.Match(vm.PolyPreview, @"per molecule: 18 branches on 3 core arms · ([\d,]+) atoms");
+            vm.BuildPolyPreview().GetAwaiter().GetResult();
+            var dsm = vm.PolyDoc?.Summary();
+            Check(dest.Success && dsm != null && dsm.Value.Molecules == 1 && dsm.Value.Atoms == int.Parse(dest.Groups[1].Value.Replace(",", "")),
+                  $"dendrimer NR: {vm.PolyPreview.Replace('\n', ' ')} · built {dsm?.Atoms} atoms in {dsm?.Molecules} molecule {vm.PolyError}");
             vm.PolyArch = 0;
+            vm.PolyArmDp = 5;
         }
 
         // Surface builder: quartz (001) terminations, a hydroxylated slab, and a thin rubber film grown on it
