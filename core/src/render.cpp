@@ -84,11 +84,13 @@ View fit_view(const System& s, const Camera& cam, const RenderOptions& opt, cons
 const Vec3 kLight = [] { Vec3 l{-0.45, 0.6, 1.0}; return l * (1.0 / norm(l)); }();
 const Vec3 kHalf = [] { Vec3 h = kLight + Vec3{0, 0, 1}; return h * (1.0 / norm(h)); }();
 
+// Blinn–Phong, as OVITO's and VMD's default materials: an ambient floor, a key light from the upper left and a white
+// highlight, so spheres read as glossy balls rather than flat discs.
 RGB shade(RGB base, const Vec3& n) {
   const float diff = static_cast<float>(std::max(0.0, dot(n, kLight)));
-  const float spec = static_cast<float>(std::pow(std::max(0.0, dot(n, kHalf)), 48.0));
-  const float k = 0.38f + 0.62f * diff;
-  return {std::min(1.f, base.r * k + 0.28f * spec), std::min(1.f, base.g * k + 0.28f * spec), std::min(1.f, base.b * k + 0.28f * spec)};
+  const float spec = static_cast<float>(std::pow(std::max(0.0, dot(n, kHalf)), 40.0));
+  const float k = 0.32f + 0.72f * diff;
+  return {std::min(1.f, base.r * k + 0.5f * spec), std::min(1.f, base.g * k + 0.5f * spec), std::min(1.f, base.b * k + 0.5f * spec)};
 }
 
 struct Buffers {
@@ -650,7 +652,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       }
     const RGB ink = dark_bg ? RGB{0.04f, 0.045f, 0.05f} : RGB{0.08f, 0.08f, 0.08f};
     for (size_t k = 0; k < edge.size(); ++k)
-      if (edge[k] && B.id[k] >= 0) B.col[k] = mixc(B.col[k], ink, 0.8f);
+      if (edge[k] && B.id[k] >= 0) B.col[k] = mixc(B.col[k], ink, 0.5f);   // a light edge: separates atoms without a cartoon rim
   }
 
   // Selection rings.
