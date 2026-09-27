@@ -30,6 +30,17 @@ public partial class MainViewModel
     private int _chgFormal;
     public string ChargeTarget => _chgFormal == 0 ? "0 (neutral)" : _chgFormal.ToString("+0;−0", CultureInfo.InvariantCulture) + " (formal charges)";
     public ObservableCollection<ChargeGroupRow> ChargeGroups { get; } = new();
+    /// <summary>The computed charges the view shows while the Charges page is open (none once applied or left).</summary>
+    private double[]? _chgPreview;
+    public bool ChargePreviewing => _chgPreview != null;
+    private void SetChargePreview(double[]? q)
+    {
+        _chgPreview = q;
+        Raise(nameof(ChargePreviewing));
+        ApplyAppearance();
+    }
+    /// <summary>Leaving the Charges page: the view shows the structure's own charges again.</summary>
+    private void EndChargePreview() { if (_chgPreview != null) SetChargePreview(null); }
     public (double X, double Y)[] ChargeHistogram { get; private set; } = [];
     public string ChargeRange { get; private set; } = "";
     public event Action? ChargesChanged;
@@ -59,6 +70,7 @@ public partial class MainViewModel
             ChargeError = r["error"]?.GetValue<string>() ?? "cannot compute charges";
             ChargeNet = ChargeMax = "—";
             ChargeHistogram = [];
+            EndChargePreview();
             ChargesChanged?.Invoke();
             return;
         }
@@ -77,7 +89,8 @@ public partial class MainViewModel
         var c = ((JsonArray)r["counts"]!).Select(x => x!.GetValue<double>()).ToArray();
         ChargeHistogram = c.Select((n, i) => ((e[i] + e[i + 1]) / 2, n)).ToArray();
         ChargeNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? ""));
-        ChargeStatus = $"{_doc.Summary().Atoms:N0} atoms · net {net.ToString("0.0e0", inv)} e · {MethodName(_chgMethod)} · not applied";
+        ChargeStatus = $"{_doc.Summary().Atoms:N0} atoms · net {net.ToString("0.0e0", inv)} e · {MethodName(_chgMethod)} · shown in the view, not applied";
+        if (IsCharges && r["q"] is JsonArray qa) SetChargePreview(qa.Select(x => x!.GetValue<double>()).ToArray());
         Raise(nameof(ChargeTarget)); Raise(nameof(ChargeRange));
         ChargesChanged?.Invoke();
     }
@@ -90,6 +103,8 @@ public partial class MainViewModel
         if (_doc == null) return;
         var r = JsonNode.Parse(_doc.Charges(ChargeRequest(true).ToJsonString()))!;
         if (r["ok"]?.GetValue<bool>() != true) { ChargeError = r["error"]?.GetValue<string>() ?? "cannot apply"; return; }
+        _chgPreview = null;
+        Raise(nameof(ChargePreviewing));
         AfterEdit($"Charges applied · {MethodName(_chgMethod)} (undo with ⌘Z)");
         ApplyAppearance();
         ChargeStatus = $"Applied · {MethodName(_chgMethod)}";

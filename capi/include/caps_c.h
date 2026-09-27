@@ -815,8 +815,10 @@ caps_doc* caps_solvate(caps_doc* solute, const char* options_json, caps_stage_pr
    "polyhedra" | "ribbon" | "hidden" | "no_hydrogens"}] applied in order (atoms no layer names keep the view's style),
    colour: "" (the view's) | "element" | "molecule" | "type" | "distance" | "charge", ramp: "blue_orange" | "viridis" |
    "red_white_blue", surface: {kind: "none" | "accessible" | "vdw" | "excluded", probe, spacing (Å), opacity,
-   expression (the atoms it wraps), colour: "potential" | "atom" | "uniform"}}; 0 or −1 (caps_last_error).
-   caps_appearance_info: {active, error, styles: {style: count}, charge: [min, max], surface: {area, vertices,
+   expression (the atoms it wraps), colour: "potential" | "atom" | "uniform"}, charges: [one per atom] (optional: colour
+   "charge" shows these instead of the structure's, a preview)}; 0 or −1 (caps_last_error).
+   caps_appearance_info: {active, error, styles: {style: count}, charge: [min, max], preview (charges shown are the
+   preview's), surface: {area, vertices,
    triangles, potential: [min, max] kcal/mol/e}, polyhedra: triangles}.
    caps_atom_labels: a JSON array with one label per atom of the frame; kind "element" | "rs" (CIP) | "type" | "charge" |
    "name".
