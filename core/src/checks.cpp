@@ -94,6 +94,28 @@ std::vector<FileCheck> file_checks(const Trajectory& t) {
       if (cell && norm(raw) > r + 1e-6) ++across;
     }
     std::string d = num(s.bonds.size()) + " bonds " + (s.bonds_from_file ? "from the file" : "perceived from distances") + "; the longest is " + fmt("%.2f", longest) + " Å.";
+    // a bond longer than half the cell's narrowest width cannot be read by the minimum-image convention: the engines
+    // (and CAPS) would join the wrong images of its atoms. Only unwrapped positions (whole molecules, from image flags
+    // or a builder) show the bond's real length; the minimum image of a wrapped pair is never longer than half the box.
+    if (cell && s.unwrapped) {
+      const double v = s.cell.volume();
+      const double w = std::min({v / norm(cross(s.cell.b, s.cell.c)), v / norm(cross(s.cell.c, s.cell.a)), v / norm(cross(s.cell.a, s.cell.b))});
+      size_t ambiguous = 0;
+      for (const auto& b : s.bonds)
+      {
+        // a plausible bond (within 0.8 Å of the covalent sum) longer than half the width: the cell is narrower than
+        // twice the bond. A raw vector far longer than any bond is a bond across the boundary of a periodic network
+        // (a sheet, a crystal): its image is the bond, and that is fine.
+        const double raw = norm(s.atoms[b.j].pos - s.atoms[b.i].pos);
+        const double ref = element(s.atoms[b.i].element).covalent + element(s.atoms[b.j].element).covalent;
+        if (raw > 0.5 * w && raw <= ref + 0.8) ++ambiguous;
+      }
+      if (ambiguous)
+        out.push_back({"error", num(ambiguous) + " bonds longer than half the box",
+                       "The narrowest cell width is " + fmt("%.2f", w) + " Å: a bond longer than " + fmt("%.2f", 0.5 * w) +
+                           " Å has no unique nearest image, so LAMMPS, GROMACS and CAPS join the wrong copies of its atoms. Make the cell larger (a supercell) or check the topology.",
+                       ""});
+    }
     if (across) d += " " + num(across) + " cross the box boundary (molecules are made whole for analysis).";
     if (stretched)
       out.push_back({"warn", num(stretched) + " bonds are stretched", d + " Bonds more than 0.8 Å beyond the covalent sum are kept; relax the structure or check the topology.", "relax"});
