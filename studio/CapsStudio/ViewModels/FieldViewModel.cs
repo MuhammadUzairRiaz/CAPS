@@ -8,9 +8,9 @@ using CapsStudio.Interop;
 namespace CapsStudio.ViewModels;
 
 /// <summary>A force field of the CAPS library (data/forcefields/catalogue.json).</summary>
-public sealed record FfEntry(string Id, string Name, string Version, string Status, string File, bool AutoTyping)
+public sealed record FfEntry(string Id, string Name, string Version, string Status, string File, bool AutoTyping, string Key = "")
 {
-    public string Label => AutoTyping ? $"{Name}" : $"{Name} · types from the file";
+    public string Label => (Key.Length > 0 ? $"{Name}  [{Key}]" : Name) + (AutoTyping ? "" : " · types from the file");
     public override string ToString() => Label;
 }
 
@@ -94,8 +94,8 @@ public sealed partial class FieldViewModel : ObservableObject
     private int _chargeMode;
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 
-    /// <summary>The force fields most polymer work uses, in this order at the top of the list.</summary>
-    internal static readonly string[] PolymerFirst = ["pcff-frc", "compass-frc", "oplsaa2024-moltemplate", "opls2005", "pcff", "compass"];
+    /// <summary>Kept for callers that rank force fields: the list's own order (catalogue "list.order") now decides.</summary>
+    internal static readonly string[] PolymerFirst = ["pcff", "compass", "opls2005", "oplsaa2024-moltemplate"];
 
     private void LoadCatalogue()
     {
@@ -104,20 +104,21 @@ public sealed partial class FieldViewModel : ObservableObject
         try
         {
             using var js = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "catalogue.json")));
-            var list = new List<FfEntry>();
+            var list = new List<(int Order, FfEntry E)>();
             foreach (var e in js.RootElement.GetProperty("forcefields").EnumerateArray())
             {
+                // one entry per force field: the catalogue marks the ones listed ("list": label, key, order); the others
+                // (other copies of the same force field) stay loadable by id for recipes and scripts
+                if (!e.TryGetProperty("list", out var l) || l.ValueKind != JsonValueKind.Object) continue;
                 if (!e.TryGetProperty("file", out var f) || f.ValueKind != JsonValueKind.String) continue;
                 var typing = e.TryGetProperty("typing", out var t) && t.ValueKind == JsonValueKind.Object;
-                list.Add(new FfEntry(Str(e, "id"), Str(e, "name"), Str(e, "version"), Str(e, "status"), Path.Combine(dir, f.GetString()!), typing));
+                list.Add((l.TryGetProperty("order", out var o) ? o.GetInt32() : 999,
+                          new FfEntry(Str(e, "id"), Str(l, "label"), Str(e, "version"), Str(e, "status"), Path.Combine(dir, f.GetString()!), typing, Str(l, "key"))));
             }
-            // the polymer workhorses first (PCFF and COMPASS in full class II from their .frc files, OPLS-AA), then the
-            // force fields that type automatically, the validated ones, the rest
-            int Rank(FfEntry x) { var k = Array.IndexOf(PolymerFirst, x.Id); return k < 0 ? PolymerFirst.Length : k; }
-            foreach (var x in list.OrderBy(Rank).ThenByDescending(x => x.AutoTyping).ThenByDescending(x => x.Status == "validated").ThenBy(x => x.Name))
-                Library.Add(x);
-            // UFF (built into the core): every element, typed from bonds, hybridisation and oxidation state
-            Library.Insert(Math.Min(PolymerFirst.Count(id => list.Any(x => x.Id == id)), Library.Count), new FfEntry("uff", "UFF (Rappé 1992) · every element", "1992", "validated", "uff", true));
+            foreach (var (_, x) in list.OrderBy(x => x.Order)) Library.Add(x);
+            // UFF (built into the core): every element, typed from bonds, hybridisation and oxidation state — before the inorganic ones
+            var inorganic = Library.ToList().FindIndex(x => x.Id.StartsWith("inorganic", StringComparison.Ordinal));
+            Library.Insert(inorganic < 0 ? Library.Count : inorganic, new FfEntry("uff", "UFF · every element", "1992", "validated", "uff", true, "uff"));
             LibraryNote = $"{Library.Count} force fields · {Library.Count(x => x.AutoTyping)} with automatic typing";
             FfIndex = Library.Count > 0 ? 0 : -1;
         }

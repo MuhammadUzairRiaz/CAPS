@@ -127,13 +127,14 @@ public sealed partial class MainViewModel
             try
             {
                 using var js = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "catalogue.json")));
-                var order = new[] { "gaff-amber25", "gaff-amber16", "opls2005", "cgenff", "pcff-frc", "cvff-frc" };
+                var order = new[] { "gaff-amber25", "gaff-amber16", "opls2005", "cgenff", "pcff", "cvff" };
                 var found = new Dictionary<string, CleanChoice>();
                 foreach (var e in js.RootElement.GetProperty("forcefields").EnumerateArray())
                 {
                     if (!e.TryGetProperty("typing", out var t) || t.ValueKind != JsonValueKind.Object) continue;
+                    if (!e.TryGetProperty("list", out var l) || l.ValueKind != JsonValueKind.Object) continue;   // one per force field, as Field lists them
                     var id = e.GetProperty("id").GetString() ?? "";
-                    var name = id == "gaff-amber25" ? "CAPS Field · GAFF2" : "CAPS Field · " + (e.GetProperty("name").GetString() ?? id);
+                    var name = id == "gaff-amber25" ? "CAPS Field · GAFF2" : "CAPS Field · " + (l.TryGetProperty("label", out var lb) ? lb.GetString() : e.GetProperty("name").GetString() ?? id);
                     found[id] = new CleanChoice(name, Path.Combine(dir, e.GetProperty("file").GetString()!));
                 }
                 foreach (var id in order) if (found.Remove(id, out var c)) list.Add(c);
