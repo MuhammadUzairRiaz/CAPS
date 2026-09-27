@@ -31,6 +31,8 @@ public sealed class StepField : INotifyPropertyChanged
     public bool IsFile => Kind == "file";
     public bool IsBool => Kind == "bool";
     public bool IsChoice => Kind == "choice";
+    public bool IsNote => Kind == "note";                 // a line of explanation under the fields (Hint)
+    public bool ShowLabel => Kind is not ("bool" or "note");
     public bool IsMono => Kind is "expression" or "number" or "vector" or "file";
 }
 
@@ -172,7 +174,7 @@ public sealed partial class MainViewModel
         var name = type switch
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
-            "molecule_shape" => "molecules", "wrap" => "outside", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "molecule_shape" => "molecules", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", "primitive_paths" => "primitive_paths", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
@@ -408,6 +410,8 @@ public sealed partial class MainViewModel
         "coordination" => new JsonObject { ["cutoff"] = 5.0, ["rmax"] = 10.0, ["bins"] = 200, ["element_a"] = 6, ["element_b"] = 6, ["inter_only"] = true, ["only_selected"] = false, ["average_frames"] = false, ["every"] = 1 },
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
+        "wrap" => new JsonObject { ["mode"] = "atoms" },
+        "unwrap" => new JsonObject { ["method"] = "bonds" },
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
         "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["stack_by"] = "none", ["only_selected"] = false },
         "molecule_shape" => new JsonObject { ["glyphs"] = true },
@@ -442,6 +446,7 @@ public sealed partial class MainViewModel
             StepFields.Add(f);
         }
         void Text(string key, string label, string kind = "text", string hint = "") => Add(new StepField { Key = key, Label = label, Kind = kind, Hint = hint, Text = S(key) });
+        void Note(string text) => StepFields.Add(new StepField { Kind = "note", Hint = text });
         void Bool(string key, string label) => Add(new StepField { Key = key, Label = label, Kind = "bool", On = B(key) });
         void Choice(string key, string label, string[] choices)
         {
@@ -496,6 +501,10 @@ public sealed partial class MainViewModel
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
+            case "wrap": Choice("mode", "Fold", ["atoms", "molecules"]); Note("atoms: each atom into the cell (bonds cross faces) · molecules: each molecule whole, its centre of mass in the cell"); break;
+            case "unwrap":
+                Choice("method", "Method", ["bonds", "images", "nojump"]);
+                Note("bonds: molecules whole along their bonds · images: the file's image flags · nojump: each atom followed through the frames (MSD, diffusion)"); break;
             case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); break;
             case "primitive_paths": Bool("show_chains", "Show the chains too"); Text("radius", "Line radius (Å)", "number"); Text("max_steps", "Minimisation steps at most", "number", "blank: 200 000"); break;
             case "molecule_shape": Bool("glyphs", "Principal-axis glyphs (±√(3λ))"); break;

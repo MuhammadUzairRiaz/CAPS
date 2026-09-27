@@ -479,8 +479,70 @@ void step_compute_property(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = name + " · " + (lo <= hi ? fmt("%.4g", lo) + " … " + fmt("%.4g", hi) : std::string("no finite values"));
 }
 
-void step_wrap(PipelineState& st, const Json&, StepStatus& out) {
+// Positions folded back by whole lattice vectors: the shift of each atom as integer images (for the tables)
+std::array<double, 3> lattice_shift(const Cell& c, const Vec3& from, const Vec3& to) {
+  const Vec3 f = c.to_fractional(to) - c.to_fractional(from);
+  return {std::round(f[0]), std::round(f[1]), std::round(f[2])};
+}
+
+// bonds still longer than half the narrowest cell width (a molecule left split across a face)
+size_t split_bonds(const System& s) {
+  const double half = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
+  size_t n = 0;
+  for (const auto& b : s.bonds) n += norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half ? 1 : 0;
+  return n;
+}
+
+// mode molecules: each molecule made whole and moved by lattice vectors so its centre of mass lies in the cell (no
+// bond is cut, as for pictures and for engines that want whole molecules); atoms: every atom folded in
+void step_wrap_molecules(PipelineState& st, StepStatus& out) {
+  System& s = st.system;
+  if (!s.unwrapped) make_molecules_whole(s);
+  int nm = 0;
+  const auto mol = s.molecules(&nm);
+  std::vector<Vec3> com(size_t(nm), Vec3{0, 0, 0});
+  std::vector<double> mass(size_t(nm), 0);
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    const double m = s.mass_of(s.atoms[i]);
+    com[size_t(mol[i])] = com[size_t(mol[i])] + s.atoms[i].pos * m;
+    mass[size_t(mol[i])] += m;
+  }
+  std::vector<Vec3> shift(size_t(nm), Vec3{0, 0, 0});
+  int moved = 0;
+  for (int m = 0; m < nm; ++m) {
+    const Vec3 c = mass[size_t(m)] > 0 ? com[size_t(m)] * (1.0 / mass[size_t(m)]) : Vec3{0, 0, 0};
+    shift[size_t(m)] = s.cell.wrap(c) - c;
+    moved += norm(shift[size_t(m)]) > 1e-9;
+  }
+  DataTable t;
+  t.name = "outside";
+  t.title = "Image shifts · molecules folded in by their centre of mass";
+  t.columns = {"Molecule", "Atoms", "na", "nb", "nc"};
+  std::vector<int> count(size_t(nm), 0);
+  for (int m : mol) ++count[size_t(m)];
+  for (int m = 0; m < nm && t.rows.size() < 200; ++m)
+    if (norm(shift[size_t(m)]) > 1e-9) {
+      const auto n = lattice_shift(s.cell, {0, 0, 0}, shift[size_t(m)]);
+      t.rows.push_back({double(m + 1), double(count[size_t(m)]), n[0], n[1], n[2]});
+    }
+  size_t outside = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    s.atoms[i].pos = s.atoms[i].pos + shift[size_t(mol[i])];
+    outside += norm(s.cell.wrap(s.atoms[i].pos) - s.atoms[i].pos) > 1e-9;
+  }
+  s.unwrapped = false;   // folded by molecule: follow atoms between frames by minimum image
+  st.tables.push_back(std::move(t));
+  st.set_attribute("Wrap.molecules_moved", double(moved));
+  st.set_attribute("Wrap.atoms_outside", double(outside));
+  st.set_attribute("Wrap.bonds_across_faces", double(split_bonds(s)));
+  out.summary = std::to_string(moved) + " of " + std::to_string(nm) + " molecules folded in whole · " + std::to_string(outside) + " atoms stick out of the cell";
+}
+
+void step_wrap(PipelineState& st, const Json& p, StepStatus& out) {
   if (!st.system.cell.valid()) { out.level = "warning"; out.summary = "no cell: nothing to wrap"; return; }
+  const std::string mode = p.text("mode", "atoms");
+  if (mode == "molecules") return step_wrap_molecules(st, out);
+  if (mode != "atoms") throw std::invalid_argument("wrap mode is atoms or molecules");
   System& s = st.system;
   const auto mol = s.molecules();
   std::set<int> crossing;
@@ -745,14 +807,75 @@ void step_create_bonds(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = std::to_string(s.bonds.size()) + " bonds (" + (s.bonds.size() >= before ? "+" : "") + std::to_string(long(s.bonds.size()) - long(before)) + ")";
 }
 
-void step_unwrap(PipelineState& st, const Json&, StepStatus& out) {
+std::vector<Vec3> frame_positions(const PipelineState& st, size_t k);
+
+// method bonds: molecules made whole by following their bonds (minimum image along each bond); images: the file's
+// image flags (LAMMPS ix iy iz), as read; nojump: each atom followed from frame 0 (made whole) through the frames by
+// its shortest step, so nothing jumps by a box length (MSD and diffusion)
+void step_unwrap(PipelineState& st, const Json& p, StepStatus& out) {
   if (!st.system.cell.valid()) { out.level = "warning"; out.summary = "no cell: nothing to unwrap"; return; }
-  const auto before = st.system.atoms;
-  make_molecules_whole(st.system);
-  st.system.unwrapped = true;
+  System& s = st.system;
+  const std::string method = p.text("method", "bonds");
+  const auto before = s.atoms;
+  std::string how;
+  if (method == "bonds") {
+    make_molecules_whole(s);
+    how = "molecules whole along their bonds";
+  } else if (method == "images") {
+    size_t flagged = 0;
+    for (const auto& a : s.atoms) flagged += a.image[0] || a.image[1] || a.image[2];
+    if (!s.unwrapped)
+      for (auto& a : s.atoms) a.pos = a.pos + s.cell.a * a.image[0] + s.cell.b * a.image[1] + s.cell.c * a.image[2];
+    how = flagged ? std::to_string(flagged) + " atoms with image flags" + (s.unwrapped ? " (applied when the file was read)" : "")
+                  : "no image flags in the file";
+    if (!flagged && !s.unwrapped) { out.level = "warning"; how += ": positions as read"; }
+  } else if (method == "nojump") {
+    if (!st.traj || st.traj->frames() < 2) {
+      make_molecules_whole(s);
+      how = "one frame: molecules whole along their bonds";
+    } else {
+      auto raw = [&](size_t k) {
+        const System f = st.traj->frame(k);
+        std::vector<Vec3> r(st.origin.size());
+        for (size_t i = 0; i < r.size(); ++i) {
+          const int o = st.origin[i];
+          r[i] = o >= 0 && size_t(o) < f.atoms.size() ? f.atoms[size_t(o)].pos : s.atoms[i].pos;
+        }
+        return r;
+      };
+      std::vector<Vec3> x = frame_positions(st, 0), prev = raw(0);
+      for (size_t k = 1; k <= size_t(std::max(0, st.frame)); ++k) {
+        auto cur = raw(k);
+        for (size_t i = 0; i < x.size(); ++i) x[i] = x[i] + s.cell.minimum_image(cur[i] - prev[i]);
+        prev = std::move(cur);
+      }
+      for (size_t i = 0; i < x.size(); ++i) s.atoms[i].pos = x[i];
+      how = "atoms followed through " + std::to_string(st.frame + 1) + " frames without jumps";
+    }
+  } else throw std::invalid_argument("unwrap method is bonds, images or nojump");
+  s.unwrapped = true;
+  DataTable t;   // what moved, by how many cells
+  t.name = "images";
+  t.title = "Image shifts · atoms moved by unwrapping";
+  t.columns = {"Identifier", "Molecule", "na", "nb", "nc"};
   size_t k = 0;
-  for (size_t i = 0; i < before.size(); ++i) k += norm(before[i].pos - st.system.atoms[i].pos) > 1e-6;
-  out.summary = std::to_string(k) + " moved · molecules whole";
+  for (size_t i = 0; i < before.size(); ++i)
+    if (norm(before[i].pos - s.atoms[i].pos) > 1e-6) {
+      ++k;
+      if (t.rows.size() < 200) {
+        const auto n = lattice_shift(s.cell, before[i].pos, s.atoms[i].pos);
+        t.rows.push_back({double(s.atoms[i].id), double(s.atoms[i].mol), n[0], n[1], n[2]});
+      }
+    }
+  const size_t split = split_bonds(s);
+  st.tables.push_back(std::move(t));
+  st.set_attribute("Unwrap.atoms_moved", double(k));
+  st.set_attribute("Unwrap.bonds_split", double(split));
+  out.summary = std::to_string(k) + " moved · " + how;
+  if (split) {
+    out.level = "warning";
+    out.summary += " · " + std::to_string(split) + " bonds still span half the cell" + (method == "images" ? " (inconsistent image flags: unwrap along bonds)" : "");
+  }
 }
 
 void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {

@@ -16,13 +16,15 @@
 //   coordination        cutoff, rmax, bins, element_a, element_b (0: any), inter_only, only_selected, average_frames,
 //                       every → Coordination (within cutoff), table rdf (to rmax; averaged over frames when asked)
 //   compute_property    name, expression, only_selected (Position.X/Y/Z, Charge and Selection write through)
-//   wrap                positions folded into the cell
+//   wrap                mode atoms (each atom folded into the cell) | molecules (each molecule whole, moved by
+//                       lattice vectors so its centre of mass is inside)   → table outside (image shifts)
 //   replicate           nx, ny, nz, adjust_cell
 //   histogram           property, bins, start, end, only_selected, stack_by (Type, Element …) → table histogram
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
 //   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
 //                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace
-//   unwrap              molecules made whole across the cell boundary
+//   unwrap              method bonds (whole along bonds) | images (the file's image flags) | nojump (each atom
+//                       followed through the frames by its shortest step)  → table images, Unwrap.bonds_split
 //   molecule_shape      per molecule: Rg, κ², asphericity, mass → properties and table molecules
 //   topology            bond lengths, bond angles and dihedrals as histograms          → tables bonds, angles, dihedrals
 //   displacements       reference first|previous|frame, frame, subtract_drift   → Displacement(.X .Y .Z), MSD, table
