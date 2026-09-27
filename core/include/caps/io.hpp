@@ -11,7 +11,8 @@ struct ReadError : std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-// Formats: "lammps-data", "lammps-dump", "gro", "xyz", "pdb", "mol2". Detected from content, then extension.
+// Formats: "lammps-data", "lammps-dump", "gro", "xyz", "pdb", "mol2", "cif", "car", "sdf", "poscar", and the binary
+// trajectories "xtc", "trr", "dcd" (by extension). Detected from content, then extension.
 std::string detect_format(const std::string& path);
 
 System read_lammps_data(const std::string& path);
@@ -27,6 +28,20 @@ Trajectory read_gro(const std::string& path);
 // System::topology. No coordinates: open_file(COORDS, TOP) joins them.
 System read_gromacs_topology(const std::string& path, std::vector<std::string>* notes = nullptr);
 Trajectory read_xyz(const std::string& path);
+// Binary trajectories (coordinates only; the atoms come from topology, which must have as many): GROMACS .xtc
+// (compressed; nm → Å) and .trr (single or double precision; velocities of the first frame kept), CHARMM / NAMD / LAMMPS
+// .dcd (either byte order; the cell of each frame when the file has it). max_frames and progress as read_lammps_dump.
+Trajectory read_xtc(const std::string& path, const System& topology, size_t max_frames = 0,
+                    const std::function<bool(double, const Trajectory&)>& progress = {});
+Trajectory read_trr(const std::string& path, const System& topology, size_t max_frames = 0,
+                    const std::function<bool(double, const Trajectory&)>& progress = {});
+Trajectory read_dcd(const std::string& path, const System& topology, size_t max_frames = 0,
+                    const std::function<bool(double, const Trajectory&)>& progress = {});
+// MDL molfile / SD file (V2000 and V3000): atoms, bonds with orders, formal charges (M  CHG); each record a molecule.
+System read_sdf(const std::string& path);
+// VASP POSCAR / CONTCAR (VASP 5 species line, or VASP 4 with the species in the title): cell (scale or volume),
+// direct or Cartesian positions, selective dynamics skipped.
+System read_poscar(const std::string& path);
 Trajectory read_pdb(const std::string& path);
 // Tripos mol2: atoms with their type (Atom::name: SYBYL "C.ar" or a force-field type such as GAFF "ca"), atom
 // name kept in Atom::resname's companion field label, charges, substructures as molecules, bonds with orders,

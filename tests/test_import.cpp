@@ -8,6 +8,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/import.hpp"
+#include "caps/io.hpp"
 
 using namespace caps;
 
@@ -167,4 +168,93 @@ TEST(Import, PerceptionLeavesRingContacts) {
     c.atoms.push_back(a);
   }
   EXPECT_EQ(perceive_bonds(c).size(), 3u);
+}
+
+namespace {
+const std::string kTraj = std::string(CAPS_SOURCE_DIR) + "/tests/data/traj/";
+
+// frames of a multi-frame .gro as written by gmx (nm → Å)
+std::vector<std::vector<caps::Vec3>> gro_frames(const std::string& path) {
+  std::ifstream in(path);
+  std::vector<std::string> L;
+  for (std::string l; std::getline(in, l);) L.push_back(l);
+  std::vector<std::vector<caps::Vec3>> out;
+  for (size_t k = 0; k + 1 < L.size();) {
+    const size_t n = std::stoul(L[k + 1]);
+    std::vector<caps::Vec3> f;
+    for (size_t i = 0; i < n; ++i) {
+      const auto& a = L[k + 2 + i];
+      f.push_back({std::stod(a.substr(20, 8)) * 10, std::stod(a.substr(28, 8)) * 10, std::stod(a.substr(36, 8)) * 10});
+    }
+    out.push_back(f);
+    k += n + 3;
+  }
+  return out;
+}
+}  // namespace
+
+// GROMACS xtc (compressed, with water's run-length coding) and trr from gmx trjconv: every coordinate back to the .gro's
+TEST(Import, XtcAndTrrMatchGromacs) {
+  const auto ref = gro_frames(kTraj + "water3.gro");
+  ASSERT_EQ(ref.size(), 3u);
+  for (const char* ext : {"xtc", "trr"}) {
+    const caps::Trajectory t = caps::open_file(kTraj + "water3." + ext, kTraj + "water3.gro");
+    ASSERT_EQ(t.frames(), 3u) << ext;
+    ASSERT_EQ(t.topology.atoms.size(), ref[0].size());
+    EXPECT_NEAR(caps::norm(t.cells[0].a), 16.0, 1e-4);
+    double worst = 0;
+    for (size_t f = 0; f < 3; ++f)
+      for (size_t i = 0; i < ref[f].size(); ++i) worst = std::max(worst, caps::norm(t.positions[f][i] - ref[f][i]));
+    EXPECT_LT(worst, 1e-4) << ext;
+    EXPECT_EQ(t.topology.atoms[0].element, 8);
+  }
+  EXPECT_THROW(caps::open_file(kTraj + "water3.xtc"), caps::ReadError);   // coordinates only: needs its structure
+}
+
+// DCD from LAMMPS (dump dcd, a tilted cell): coordinates and cell as LAMMPS's own text dump of the same steps
+TEST(Import, DcdMatchesLammps) {
+  const caps::Trajectory t = caps::open_file(kTraj + "water.dcd", kTraj + "water.data");
+  const caps::Trajectory d = caps::open_file(kTraj + "water.lammpstrj", kTraj + "water.data");
+  ASSERT_EQ(t.frames(), d.frames());
+  ASSERT_EQ(t.frames(), 3u);
+  EXPECT_NEAR(t.cells[0].volume(), d.cells[0].volume(), 1e-3);
+  double worst = 0;
+  for (size_t f = 0; f < t.frames(); ++f)
+    for (size_t i = 0; i < t.topology.atoms.size(); ++i)
+      worst = std::max(worst, caps::norm(t.cells[f].minimum_image(t.positions[f][i] - d.positions[f][i])));
+  EXPECT_LT(worst, 1e-4);
+}
+
+// MDL molfile V2000 (charges from M  CHG) and V3000, and a VASP 5 POSCAR in direct coordinates
+TEST(Import, SdfAndPoscar) {
+  const auto dir = std::filesystem::temp_directory_path();
+  {
+    std::ofstream o(dir / "caps_acetate.sdf");
+    o << "acetate\n  test\n\n  4  3  0  0  0  0  0  0  0  0999 V2000\n"
+         "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+         "    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+         "    2.1000    1.1000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+         "    2.1000   -1.1000    0.0000 O   0  5  0  0  0  0  0  0  0  0  0  0\n"
+         "  1  2  1  0\n  2  3  2  0\n  2  4  1  0\nM  CHG  1   4  -1\nM  END\n$$$$\n"
+         "methane\n  test\n\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\n"
+         "M  V30 1 C 5.0 5.0 5.0 0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n$$$$\n";
+  }
+  const caps::System s = caps::open_file((dir / "caps_acetate.sdf").string()).topology;
+  ASSERT_EQ(s.atoms.size(), 5u);
+  EXPECT_EQ(s.bonds.size(), 3u);
+  EXPECT_EQ(s.bonds[1].order, 2);
+  EXPECT_DOUBLE_EQ(s.atoms[3].charge, -1.0);
+  EXPECT_EQ(s.atoms[4].mol, 2);
+  EXPECT_DOUBLE_EQ(s.atoms[4].pos[2], 5.0);
+  {
+    std::ofstream o(dir / "POSCAR");
+    o << "rutile\n1.0\n4.594 0 0\n0 4.594 0\n0 0 2.959\nTi O\n2 4\nDirect\n0 0 0\n0.5 0.5 0.5\n0.3048 0.3048 0\n0.6952 0.6952 0\n"
+         "0.8048 0.1952 0.5\n0.1952 0.8048 0.5\n";
+  }
+  const caps::Trajectory p = caps::open_file((dir / "POSCAR").string());
+  ASSERT_EQ(p.topology.atoms.size(), 6u);
+  EXPECT_EQ(p.topology.atoms[0].element, 22);
+  EXPECT_EQ(p.topology.atoms[5].element, 8);
+  EXPECT_NEAR(p.topology.atoms[1].pos[2], 1.4795, 1e-9);
+  EXPECT_NEAR(p.topology.cell.volume(), 4.594 * 4.594 * 2.959, 1e-9);
 }
