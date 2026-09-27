@@ -391,6 +391,9 @@ public sealed partial class MainViewModel
         Status = $"Saved the pipeline ({PipelineRows.Count} steps) to {path}";
     }
 
+    /// <summary>Python steps a loaded pipeline brought in switched off (they run code from the file).</summary>
+    public int PipelineHeldPython { get; private set; }
+
     public void LoadPipeline(string path)
     {
         try
@@ -400,6 +403,7 @@ public sealed partial class MainViewModel
             var j = JsonNode.Parse(text)!;
             var steps = j is JsonArray a ? a : (JsonArray)j["steps"]!;
             PipelineRows.Clear();
+            var held = 0;
             foreach (var st in steps)
             {
                 if (st is not JsonObject o) continue;
@@ -407,6 +411,8 @@ public sealed partial class MainViewModel
                 var kind = StepLibrary.FirstOrDefault(k => k.Type == type);
                 var prm = (JsonObject)JsonNode.Parse(o.ToJsonString())!;
                 var enabled = (bool?)prm["enabled"] ?? true;
+                // a Python step runs the file's code (or a .py it names): it arrives switched off until you turn it on
+                if (type == "python" && enabled) { enabled = false; ++held; }
                 prm.Remove("type");
                 prm.Remove("enabled");
                 var row = new PipelineRow { Type = type, Title = kind?.Title ?? type, Icon = kind?.Icon ?? "sliders", Params = prm };
@@ -417,7 +423,10 @@ public sealed partial class MainViewModel
             PipeSelected = PipelineRows.FirstOrDefault();
             _showTableAfterApply = true;
             ApplyPipeline();
-            Status = $"Loaded {PipelineRows.Count} steps from {path}";
+            Status = $"Loaded {PipelineRows.Count} steps from {path}" +
+                     (held == 1 ? " · its Python step is switched off: it runs code from the file — read it, then switch it on"
+                      : held > 1 ? $" · its {held} Python steps are switched off: they run code from the file — read them, then switch them on" : "");
+            PipelineHeldPython = held;
         }
         catch (Exception e) { Status = "Could not load the pipeline: " + e.Message; }
     }
