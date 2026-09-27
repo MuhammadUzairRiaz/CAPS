@@ -1607,6 +1607,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy.threads = o->threads;
     m.respa = std::clamp(o->respa, 1, 16);
     m.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
+    m.constraint_algorithm = o->constraint_algorithm == 1 ? caps::ConstraintAlgorithm::Lincs : caps::ConstraintAlgorithm::Shake;
     m.step_offset = std::max<int64_t>(0, o->step_offset);
     m.checkpoint_every = o->checkpoint_every > 0 ? o->checkpoint_every : o->checkpoint_every < 0 ? 0 : std::max<int64_t>(100, m.steps / 50);
     d->checkpoint = {};
@@ -1662,7 +1663,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       std::vector<std::string> c = {"swope1982"};
       if (m.thermostat == caps::Thermostat::NoseHoover) c.push_back("martyna1992");
       if (m.barostat == caps::Barostat::MTK) c.push_back("martyna1994");
-      if (m.constraints != caps::ConstraintMode::None) c.push_back("ryckaert1977"), c.push_back("andersen1983");
+      if (m.constraints != caps::ConstraintMode::None) c.push_back(m.constraint_algorithm == caps::ConstraintAlgorithm::Lincs ? "hess1997" : "ryckaert1977"), c.push_back("andersen1983");
       if (m.thermostat == caps::Thermostat::Bussi) c.push_back("bussi2007");
       if (npt && m.barostat == caps::Barostat::CRescale) c.push_back("bernetti2020");
       if (npt && m.barostat == caps::Barostat::Berendsen) c.push_back("berendsen1984");
@@ -1670,7 +1671,10 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       caps::KeyValues pr = {{"length", g6(m.dt * double(m.steps) / 1000.0) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs"},
                             {"temperature", g6(m.temperature) + " K"}, {"thermostat", std::string(caps::to_string(m.thermostat)) + (nvt ? " · τ " + g6(m.tau_t) + " fs" : "")}};
       if (npt) pr.push_back({"barostat", std::string(caps::to_string(m.barostat)) + " · " + g6(m.pressure) + " atm · τ " + g6(m.tau_p) + " fs"});
-      if (m.constraints != caps::ConstraintMode::None) pr.push_back({"constraints", caps::to_string(m.constraints)});
+      if (m.constraints != caps::ConstraintMode::None) {
+        pr.push_back({"constraints", caps::to_string(m.constraints)});
+        pr.push_back({"constraint solver", m.constraint_algorithm == caps::ConstraintAlgorithm::Lincs ? "LINCS" : "SHAKE"});
+      }
       pr.push_back({"force field", ff_label(d)});
       const bool drew = m.new_velocities || s.velocities.empty();
       prov_step(d, npt ? "dynamics.npt" : nvt ? "dynamics.nvt" : "dynamics.nve", npt ? "NPT molecular dynamics" : nvt ? "NVT molecular dynamics" : "NVE molecular dynamics",
@@ -1733,6 +1737,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     if (o->tau_t > 0) e.md.tau_t = o->tau_t;
     if (o->tau_p > 0) e.md.tau_p = o->tau_p;
     e.md.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
+    e.md.constraint_algorithm = o->constraint_algorithm == 1 ? caps::ConstraintAlgorithm::Lincs : caps::ConstraintAlgorithm::Shake;
     d->checkpoint = {};
     d->checkpoint.kind = "equilibrate";
     d->checkpoint.dt = e.md.dt;
@@ -1800,7 +1805,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
       double pmax = 0;
       for (const auto& st : e.stages) pmax = std::max(pmax, st.pressure);
       std::vector<std::string> c = {"swope1982", e.md.thermostat == caps::Thermostat::Bussi ? "bussi2007" : e.md.thermostat == caps::Thermostat::NoseHoover ? "martyna1992" : ""};
-      if (e.md.constraints != caps::ConstraintMode::None) c.push_back("ryckaert1977"), c.push_back("andersen1983");
+      if (e.md.constraints != caps::ConstraintMode::None) c.push_back(e.md.constraint_algorithm == caps::ConstraintAlgorithm::Lincs ? "hess1997" : "ryckaert1977"), c.push_back("andersen1983");
       c.push_back(e.md.barostat == caps::Barostat::CRescale ? "bernetti2020" : e.md.barostat == caps::Barostat::MTK ? "martyna1994" : "berendsen1984");
       if (l21) c.insert(c.begin(), "larsen2011");
       elec_cites(c, e.md.energy.coulomb);

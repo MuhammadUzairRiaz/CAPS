@@ -48,6 +48,7 @@ struct DynamicsOptions {
   // Bond constraints (SHAKE/RATTLE): bonds to hydrogen with rigid water (2 fs steps), or every bond. Each constraint
   // takes one degree of freedom out of the temperature; its forces are in the virial (pressure, barostat).
   ConstraintMode constraints = ConstraintMode::None;
+  ConstraintAlgorithm constraint_algorithm = ConstraintAlgorithm::Shake;
   int64_t steps = 10000;
   double temperature = 300.0;       // K, thermostat target and initial velocities
   double temperature_end = -1.0;    // K; ≥ 0 ramps the thermostat target linearly to this over the run

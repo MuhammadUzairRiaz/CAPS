@@ -122,8 +122,10 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   // bond constraints (SHAKE/RATTLE), one degree of freedom each
   ConstraintSet cset = make_constraints(s, ff, o.constraints, held);
   for (const auto& note : cset.notes) rep.notes.push_back(note);
+  if (!cset.c.empty()) rep.notes.push_back(o.constraint_algorithm == ConstraintAlgorithm::Lincs ? "constraint solver: LINCS (order 4) for positions, RATTLE for velocities"
+                                                                                                   : "constraint solver: SHAKE for positions, RATTLE for velocities");
   const size_t ncons = cset.c.size();
-  ConstraintSolver cons(std::move(cset), m, s.cell);
+  ConstraintSolver cons(std::move(cset), m, s.cell, 1e-8, 1000, o.constraint_algorithm);
   // with held atoms momentum is not conserved: every free coordinate counts
   const double ndof = (nheld ? 3.0 * double(n - nheld) : 3.0 * n - 3.0) - double(ncons);
   if (ndof < 1) throw std::invalid_argument("the constraints leave no degree of freedom");
@@ -561,7 +563,8 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   std::snprintf(b, sizeof b, "thermostat %s (τ %.0f fs) · barostat %s", to_string(o.thermostat), o.tau_t, to_string(o.barostat));
   rep.notes.insert(rep.notes.begin() + 1, b);
   if (ncons) {
-    std::snprintf(b, sizeof b, "constraints: %s, %zu in all; %.0f degrees of freedom", to_string(o.constraints), ncons, ndof);
+    std::snprintf(b, sizeof b, "constraints: %s, %zu in all (%s); %.0f degrees of freedom", to_string(o.constraints), ncons,
+                  o.constraint_algorithm == ConstraintAlgorithm::Lincs ? "LINCS positions, RATTLE velocities" : "SHAKE/RATTLE", ndof);
     rep.notes.insert(rep.notes.begin() + 2, b);
   }
   if (respa > 1) {
