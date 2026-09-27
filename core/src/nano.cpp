@@ -1,5 +1,6 @@
 // CAPS nanostructures (see caps/nano.hpp).
 #include "caps/nano.hpp"
+#include "caps/edit.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -402,6 +403,25 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
   double rmax = 0;
   for (const auto& at : s.atoms) rmax = std::max(rmax, norm(at.pos - mid));
   r.diameter = 2 * rmax;
+  if (!o.thiolate.empty()) {
+    ThiolateOptions to;
+    to.smiles = o.thiolate[0] == '*' ? o.thiolate : thiolate_smiles(o.thiolate);
+    to.name = o.thiolate[0] == '*' ? std::string("thiolate") : o.thiolate + " thiolate";
+    to.fraction = o.thiolate_fraction;
+    const ThiolateReport tr = cap_thiolates(s, to);
+    for (const auto& n : tr.notes) r.notes.push_back(n);
+    // the cell around particle and ligands, the same vacuum on every side
+    double reach = 0;
+    for (const auto& at : s.atoms) reach = std::max(reach, norm(at.pos - mid));
+    const double nb = 2 * reach + 2 * vac + 4;
+    if (nb > box) {
+      const Vec3 shift{(nb - box) / 2, (nb - box) / 2, (nb - box) / 2};
+      for (auto& at : s.atoms) at.pos = at.pos + shift;
+      s.cell.a = {nb, 0, 0};
+      s.cell.b = {0, nb, 0};
+      s.cell.c = {0, 0, nb};
+    }
+  }
   const std::string name = bulk.title.empty() ? std::string("crystal") : bulk.title;
   finish(s, name + " " + to_string(o.shape));
   std::vector<size_t> all(s.atoms.size());

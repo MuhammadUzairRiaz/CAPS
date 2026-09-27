@@ -943,7 +943,17 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly List<(double X, double Y)> _relaxEnergy = new(), _relaxForce = new();
 
     public int RelaxMethod { get => _relaxMethod; set => Set(ref _relaxMethod, value); }
-    public bool RelaxPushoff { get => _relaxPushoff; set => Set(ref _relaxPushoff, value); }
+    public bool RelaxPushoff { get => _relaxPushoff; set { if (Set(ref _relaxPushoff, value)) Raise(nameof(RelaxPushoffMdEnabled)); } }
+    // push-off by MD first, the LJ force cap ramped (Auhl et al. 2003): the board's "Force cap" and "λ ramp over … ps"
+    private bool _relaxPushoffMd;
+    private decimal _relaxCap = 500, _relaxRampPs = 20, _relaxPushoffT = 300;
+    public bool RelaxPushoffMd { get => _relaxPushoffMd; set { if (Set(ref _relaxPushoffMd, value)) Raise(nameof(RelaxPushoffMdEnabled)); } }
+    public bool RelaxPushoffMdEnabled => _relaxPushoff && _relaxPushoffMd;
+    public decimal RelaxCap { get => _relaxCap; set { if (Set(ref _relaxCap, Math.Clamp(value, 5, 5000))) Raise(nameof(RelaxPushoffText)); } }
+    public decimal RelaxRampPs { get => _relaxRampPs; set { if (Set(ref _relaxRampPs, Math.Clamp(value, 1, 1000))) Raise(nameof(RelaxPushoffText)); } }
+    public decimal RelaxPushoffT { get => _relaxPushoffT; set => Set(ref _relaxPushoffT, Math.Clamp(value, 10, 2000)); }
+    public string RelaxPushoffText => $"Auhl et al., J. Chem. Phys. 119, 12718 (2003): LJ forces capped, the cap raised to {_relaxCap:0} kcal/mol/Å" +
+                                      $" (minimisation stages 5 → 20 → 100 → {_relaxCap:0}); with MD first, NVT with the cap raised over {_relaxRampPs:0.#} ps";
     public bool RelaxCompress { get => _relaxCompress; set => Set(ref _relaxCompress, value); }
     public bool RelaxBox { get => _relaxBox; set => Set(ref _relaxBox, value); }
     // how the box relaxes: every axis together (the volume), each on its own, only z (a film's thickness), only x and y
@@ -1013,6 +1023,7 @@ public sealed partial class MainViewModel : ObservableObject
             TargetDensity = _relaxCompress ? _relaxDensity : 0, CompressStep = _relaxStep,
             Pushoff = _relaxPushoff ? 1 : 0, RelaxBox = _relaxBox ? 1 : 0, Pressure = _relaxPressure,
             BoxAnisotropic = _relaxBoxMode > 0 ? 1 : 0, BoxAxes = _relaxBoxMode switch { 2 => 4, 3 => 3, _ => 7 },
+            PushoffRampPs = _relaxPushoff && _relaxPushoffMd ? (double)_relaxRampPs : 0, PushoffCap = (double)_relaxCap, PushoffTemperature = (double)_relaxPushoffT,
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
         };
         _relaxEnergy.Clear();

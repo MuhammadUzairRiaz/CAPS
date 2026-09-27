@@ -111,7 +111,7 @@ public sealed partial class MainViewModel
     private int _particleCrystal, _particleShape;
     private decimal _particleRadius = 12;
     private bool _particleOnAtom = true, _particlePassivate = true;
-    public int ParticleCrystal { get => _particleCrystal; set { if (Set(ref _particleCrystal, value)) NanoPreview(); } }
+    public int ParticleCrystal { get => _particleCrystal; set { if (Set(ref _particleCrystal, value)) { Raise(nameof(ParticleIsMetal)); NanoPreview(); } } }
     public int ParticleShape { get => _particleShape; set { if (Set(ref _particleShape, value)) { Raise(nameof(ParticleIsFibre)); RaiseNano(); NanoPreview(); } } }
     public bool ParticleIsFibre => _particleShape == 4;
     private decimal _fibreLength = 22;
@@ -119,6 +119,18 @@ public sealed partial class MainViewModel
     public decimal ParticleRadius { get => _particleRadius; set { if (Set(ref _particleRadius, Math.Clamp(value, 3, 60))) NanoPreview(); } }
     public int ParticleCentre { get => _particleOnAtom ? 0 : 1; set { _particleOnAtom = value == 0; Raise(); NanoPreview(); } }
     public bool ParticlePassivate { get => _particlePassivate; set { if (Set(ref _particlePassivate, value)) NanoPreview(); } }
+    // a metal particle (gold, silver, copper, platinum, palladium): thiolate ligands instead of H/OH passivation
+    private static readonly string[] MetalCrystals = ["gold", "silver", "copper", "platinum", "palladium"];
+    public bool ParticleIsMetal => _particleCrystal < Crystals.Count && MetalCrystals.Contains(Crystals[_particleCrystal].Id);
+    public static readonly string[] ThiolateNames = ["Hexanethiolate (C6)", "Dodecanethiolate (C12)", "Octadecanethiolate (C18)", "3-Mercaptopropionic acid (MPA)",
+                                                     "11-Mercaptoundecanoic acid (MUA)", "6-Mercaptohexanol (MHA)"];
+    private static readonly string[] ThiolateIds = ["C6", "C12", "C18", "MPA", "MUA", "MHA"];
+    private bool _particleThiolate = true;
+    private int _thiolatePick;
+    private decimal _thiolateFraction = 1;
+    public bool ParticleThiolate { get => _particleThiolate; set { if (Set(ref _particleThiolate, value)) NanoPreview(); } }
+    public int ThiolatePick { get => _thiolatePick; set { if (Set(ref _thiolatePick, Math.Clamp(value, 0, ThiolateIds.Length - 1))) NanoPreview(); } }
+    public decimal ThiolateFraction { get => _thiolateFraction; set { if (Set(ref _thiolateFraction, Math.Clamp(value, 0.05m, 1m))) NanoPreview(); } }
     public static readonly string[] ParticleCentres = ["On an atom", "On the cell centre"];
 
     // matrix
@@ -167,7 +179,8 @@ public sealed partial class MainViewModel
                 o["shape"] = ParticleShapes[_particleShape].ToLowerInvariant();
                 o["radius"] = (double)_particleRadius;
                 o["on_atom"] = _particleOnAtom ? 1 : 0;
-                o["passivate"] = _particlePassivate ? 1 : 0;
+                o["passivate"] = _particlePassivate && !ParticleIsMetal ? 1 : 0;
+                if (ParticleIsMetal && _particleThiolate) { o["thiolate"] = ThiolateIds[_thiolatePick]; o["thiolate_fraction"] = (double)_thiolateFraction; }
                 o["length"] = (double)_fibreLength;
                 break;
         }

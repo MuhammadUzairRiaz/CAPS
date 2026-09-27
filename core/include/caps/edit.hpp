@@ -82,6 +82,24 @@ struct GraftReport { size_t silanols = 0, grafted = 0, added_atoms = 0; std::vec
 // the preset silanes by name: TESPT (Si69), TESPD (Si75), MPTES, APTES, VTES, OCTEO
 std::string silane_smiles(const std::string& name);
 GraftReport graft_silanes(System& s, const GraftOptions& o);
+// Thiolate capping of a metal particle or surface (gold, silver, copper, platinum, palladium): alkanethiolates bound
+// through S in three-fold hollow sites of the surface metal atoms (2.45 Å from each of the three; on top of an atom where
+// the surface has no hollow), sites at least min_spacing apart (0: √3 × the metal's nearest-neighbour distance, the
+// √3 × √3 R30° packing of thiolates on Au(111)), the tail pointing out of the surface. No metal–S bonds are written:
+// the S carries the thiolate; relax with a force field that has metal–S terms (INTERFACE) before dynamics.
+struct ThiolateOptions {
+  std::string smiles = "*SCCCCCC";   // the ligand with * where it binds (hexanethiolate)
+  std::string name = "hexanethiolate";
+  double fraction = 1.0;             // of the sites that fit at the spacing
+  double min_spacing = 0.0;          // Å between S atoms, 0 = √3 · d(M–M)
+  uint64_t seed = 1;
+};
+struct ThiolateReport { size_t surface_atoms = 0, ligands = 0, hollow = 0, on_top = 0, added_atoms = 0; std::vector<std::string> notes; };
+// the preset ligands by name: C6 (hexanethiolate), C12 (dodecanethiolate), C18, MPA (3-mercaptopropionate, acid form),
+// MUA (11-mercaptoundecanoic acid), MHA (6-mercaptohexanol)
+std::string thiolate_smiles(const std::string& name);
+ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o);
+
 // Attachment points of a fragment's SMILES: for each *, the index (among the written atoms) of the atom it hangs on.
 std::vector<int> fragment_attach_atoms(const std::string& smiles);
 
