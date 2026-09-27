@@ -156,6 +156,15 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             }
         }
         FramebufferSize = (pw, ph);
+        // standard-DPI screens: draw at twice the size into our own framebuffer and filter it down (the CPU view's
+        // 2 × 2 supersampling); Retina screens already have two samples per point
+        var ss = (scale < 1.5 || Environment.GetEnvironmentVariable("CAPS_GL_SS") == "2") && gl.IsBlitFramebufferAvailable ? 2 : 1;   // CAPS_GL_SS=2: also on Retina
+        var target = fb;
+        if (ss > 1 && EnsureSupersample(gl, pw * ss, ph * ss)) target = _ssFbo;
+        else ss = 1;
+        var outW = pw; var outH = ph;
+        pw *= ss; ph *= ss;
+        gl.BindFramebuffer(GL_FRAMEBUFFER, target);
         gl.Viewport(0, 0, pw, ph);
         gl.Disable(GL_SCISSOR_TEST);
         var sc = _scene;
@@ -165,7 +174,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.ClearDepth(1);
         gl.DepthMask(1);
         gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (sc == null || !_haveFit) { LastFrameMs = sw.Elapsed.TotalMilliseconds; return; }
+        if (sc == null || !_haveFit) { Resolve(gl, target, fb, pw, ph, outW, outH); LastFrameMs = sw.Elapsed.TotalMilliseconds; return; }
         gl.Enable(GL_DEPTH_TEST);
         gl.DepthFunc(GL_LESS);
         gl.Disable(GL_BLEND);
@@ -173,7 +182,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         var f = _fit;
         // the fit was made for this framebuffer's size; if it lags a resize, scale it across and ask for a new one
         var sx = (float)Math.Min(pw / Math.Max(1, f.W), ph / Math.Max(1, f.H));
-        if (Math.Abs(f.W - pw) > 1 || Math.Abs(f.H - ph) > 1) Avalonia.Threading.Dispatcher.UIThread.Post(() => FitStale?.Invoke());
+        if (Math.Abs(f.W - outW) > 1 || Math.Abs(f.H - outH) > 1) Avalonia.Threading.Dispatcher.UIThread.Post(() => FitStale?.Invoke());
         // the depth range covers the whole scene in its current orientation
         var cz = RotZ(f, _bounds.X, _bounds.Y, _bounds.Z);
         var pad = _bounds.R + (sc.MaxRadius * 2 + 2);
@@ -195,7 +204,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uCue"), sc.DepthCue ? 1f : 0f);
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uTransparent"), sc.Transparent ? 1f : 0f);
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uOutline"), sc.Outlines ? 1f : 0f);
-            gl.Uniform1f(gl.GetUniformLocationString(prog, "uPx"), 1f);
+            gl.Uniform1f(gl.GetUniformLocationString(prog, "uPx"), ss);   // edge, ring and line widths in drawn pixels
             var ink = sc.Dark ? (0.04f, 0.045f, 0.05f) : (0.08f, 0.08f, 0.08f);
             _u3f(gl.GetUniformLocationString(prog, "uInk"), ink.Item1, ink.Item2, ink.Item3);
         }
@@ -220,7 +229,38 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.BindVertexArray(0);
         gl.UseProgram(0);
         gl.Disable(GL_DEPTH_TEST);
+        Resolve(gl, target, fb, pw, ph, outW, outH);
         LastFrameMs = sw.Elapsed.TotalMilliseconds;
+    }
+
+    // ---- supersampling on standard-DPI screens
+    private int _ssFbo, _ssColour, _ssDepth, _ssW, _ssH;
+
+    private bool EnsureSupersample(GlInterface gl, int w, int h)
+    {
+        if (_ssFbo != 0 && _ssW == w && _ssH == h) return true;
+        if (_ssFbo == 0) { _ssFbo = gl.GenFramebuffer(); _ssColour = gl.GenRenderbuffer(); _ssDepth = gl.GenRenderbuffer(); }
+        gl.BindRenderbuffer(0x8D41, _ssColour);
+        gl.RenderbufferStorage(0x8D41, 0x8058, w, h);   // GL_RGBA8
+        gl.BindRenderbuffer(0x8D41, _ssDepth);
+        gl.RenderbufferStorage(0x8D41, 0x81A6, w, h);   // GL_DEPTH_COMPONENT24
+        gl.BindRenderbuffer(0x8D41, 0);
+        gl.BindFramebuffer(GL_FRAMEBUFFER, _ssFbo);
+        gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, 0x8CE0, 0x8D41, _ssColour);   // GL_COLOR_ATTACHMENT0
+        gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0x8D41, _ssDepth);
+        var ok = gl.CheckFramebufferStatus(GL_FRAMEBUFFER) == 0x8CD5;   // GL_FRAMEBUFFER_COMPLETE
+        _ssW = w; _ssH = h;
+        if (!ok) { _ssW = _ssH = -1; }
+        return ok;
+    }
+
+    private static void Resolve(GlInterface gl, int from, int to, int w, int h, int outW, int outH)
+    {
+        if (from == to) return;
+        gl.BindFramebuffer(0x8CA8, from);   // GL_READ_FRAMEBUFFER
+        gl.BindFramebuffer(0x8CA9, to);     // GL_DRAW_FRAMEBUFFER
+        gl.BlitFramebuffer(0, 0, w, h, 0, 0, outW, outH, GL_COLOR_BUFFER_BIT, 0x2601);   // GL_LINEAR: a 2 × 2 box
+        gl.BindFramebuffer(GL_FRAMEBUFFER, to);
     }
 
     private static double RotZ(in CapsViewFit f, double x, double y, double z)
