@@ -163,6 +163,9 @@ public sealed partial class MainViewModel
             AddCommand(new PaletteCommand { Title = $"Make the picked stereocentre {c}", Id = "edit.make " + c, Icon = "atom", Section = "Edit",
                 Keywords = "stereo chirality configuration cip set r s centre", Enabled = () => _doc != null && _selection.Count == 1, Run = () => MakePicked(c) });
         }
+        AddCommand(new PaletteCommand { Title = "Full-screen view", Id = "view.fullscreen", Icon = "expand", Section = "View",
+            Keywords = "full screen presentation screenshot clean view only visualization window big", Enabled = () => _doc != null || RunLiveDoc != null,
+            Run = () => FullViewRequested?.Invoke(RunLiveDoc != null) });
         AddCommand(new PaletteCommand { Title = "Auto-clean while editing", Id = "edit.autoclean", Icon = "wand", Shortcut = "A", Section = "Edit",
             Keywords = "auto clean uff relax geometry while building toggle", Run = ToggleAutoClean });
         AddCommand(new PaletteCommand { Title = "Reduce motion", Id = "settings.motion", Icon = "gear", Section = "Settings",

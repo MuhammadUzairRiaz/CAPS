@@ -381,6 +381,9 @@
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
+            <Button Classes="tool" Click="OnFullView" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Full-screen view: the structure alone, for clean screenshots, with its own style, colour, background and a show-only expression (Esc closes)">
+              <local:Icon Kind="expand" Size="18" />
+            </Button>
             <Rectangle Classes="vsep" />
             <ToggleButton Classes="tool" IsChecked="{Binding ShowRdf}" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Analysis dock: g(r), thermo, minimisation, molecules, chains">
               <local:Icon Kind="chart" Size="18" />

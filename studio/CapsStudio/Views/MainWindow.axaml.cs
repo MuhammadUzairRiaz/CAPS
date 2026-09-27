@@ -103,6 +103,7 @@ public partial class MainWindow : Window
         RenderGuide.Vm = _vm;
         PipeTablePlot.Brushable = true;
         PipeTablePlot.Brushed += (x0, x1, y0, y1) => _vm.ApplyBrush(x0, x1, y0, y1);
+        _vm.FullViewRequested += live => OpenFullView(live);
         _vm.PipeTableChanged += () =>
         {
             PipeTablePlot.XLabel = _vm.PipeTableXLabel;
@@ -494,6 +495,13 @@ public partial class MainWindow : Window
     }
 
     private void OnSetMeasured(object? s, RoutedEventArgs e) => _vm.SetMeasured();
+    private void OnFullView(object? s, RoutedEventArgs e) => OpenFullView(false);
+    /// <summary>The structure (or the running job's live snapshots) alone in a full-screen window.</summary>
+    public void OpenFullView(bool live)
+    {
+        if (_vm.Document == null && _vm.RunLiveDoc == null) return;
+        new VisualizationWindow(_vm, live).Show(this);
+    }
 
     private async void OnExportGrid(object? s, RoutedEventArgs e)
     {
