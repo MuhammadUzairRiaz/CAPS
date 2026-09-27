@@ -423,6 +423,25 @@ TEST(Recipe, SulfurCureTypedWithPcff) {
                caps::RecipeError);
 }
 
+// type.fill_from: OPLS-AA 2024 lacks the CM–CT–CT–CM torsion of polyisoprene; OPLS 2005's fills it (and only where
+// 2024 has none), the provenance says how many terms; without it the recipe stops with missing parameters (exit 3)
+TEST(Recipe, FillGapsFromAnotherForceField) {
+  const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
+  auto yaml = [&](const std::string& fill) {
+    return caps::yaml_parse("build:\n  polymer: { smiles: \"[*]C/C=C(C)\\\\C[*]\", dp: 6, chains: 1 }\ntype: { forcefield: " + lib + "oplsaa2024-moltemplate.json" + fill + " }\n");
+  };
+  caps::RecipeOptions o;
+  int code = 0;
+  try { caps::run_recipe(yaml(""), o); } catch (const caps::RecipeError& e) { code = e.code; }
+  EXPECT_EQ(code, 3);
+  const auto res = caps::run_recipe(yaml(", fill_from: " + lib + "opls2005.json"), o);
+  bool said = false;
+  for (const auto& st : res.manifest.steps)
+    if (st.engine == "field.assign")
+      for (const auto& [k, v] : st.params) said |= k == "gaps filled from" && v.find("OPLS 2005") != std::string::npos && v.find(" terms") != std::string::npos;
+  EXPECT_TRUE(said);
+}
+
 TEST(Recipe, ExitCodes) {
   caps::RecipeOptions o;
   auto code = [&](const std::string& y) {

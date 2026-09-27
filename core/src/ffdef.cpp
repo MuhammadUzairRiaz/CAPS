@@ -2424,3 +2424,59 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
 }
 
 }  // namespace caps
+
+namespace caps {
+
+bool opls_classes(const std::string& n, std::array<std::string, 4>& c) {
+  const auto b = n.find("_b"), a = n.find("_a", b == std::string::npos ? 0 : b), dd = n.find("_d", a == std::string::npos ? 0 : a),
+             i = n.find("_i", dd == std::string::npos ? 0 : dd);
+  if (b == std::string::npos || a == std::string::npos || dd == std::string::npos || i == std::string::npos) return false;
+  c = {n.substr(b + 2, a - b - 2), n.substr(a + 2, dd - a - 2), n.substr(dd + 2, i - dd - 2), n.substr(i + 2)};
+  return true;
+}
+
+GapFill gap_fill_rules(const FFDef& base, const FFDef& donor, const std::string& source) {
+  GapFill g;
+  std::array<std::set<std::string>, 4> have;
+  bool opls = false;
+  for (const auto& t : base.types) {
+    std::array<std::string, 4> c;
+    if (opls_classes(t.name, c)) { opls = true; for (int k = 0; k < 4; ++k) have[size_t(k)].insert(c[size_t(k)]); }
+  }
+  auto cls = [&](const std::string& x, int kind) -> std::string {
+    if (x == "*" || x == "X") return "*";
+    if (!opls) return x;
+    for (const std::string& y : {x, x + "~"})
+      if (have[size_t(kind)].count(y)) {
+        static const char* pre[4] = {"*_b", "*_b*_a", "*_b*_a*_d", "*_b*_a*_d*_i"};
+        static const char* post[4] = {"_a*_d*_i*", "_d*_i*", "_i*", ""};
+        return std::string(pre[kind]) + y + post[kind];
+      }
+    return "";
+  };
+  auto take = [&](const std::vector<FFRule>& from, std::vector<FFRule>& to, int kind) {
+    for (auto r : from) {
+      bool ok = true;
+      for (auto& m : r.match) { m = cls(m, kind); if (m.empty()) ok = false; }
+      if (!ok) { ++g.dropped; continue; }
+      const std::string nm = r.name.rfind("imported: ", 0) == 0 ? r.name.substr(10) : r.name;
+      r.name = "filled: " + nm;
+      r.comment = "from " + source + " where " + base.name + " has none" + (r.comment.empty() ? "" : "; " + r.comment);
+      to.push_back(std::move(r));
+      ++g.kept;
+    }
+  };
+  take(donor.bonds, g.rules.bonds, 0);
+  take(donor.angles, g.rules.angles, 1);
+  take(donor.dihedrals, g.rules.dihedrals, 2);
+  return g;
+}
+
+void prepend_fill(FFDef& def, const FFDef& fill) {
+  auto front = [](std::vector<FFRule>& a, const std::vector<FFRule>& b) { a.insert(a.begin(), b.begin(), b.end()); };
+  front(def.bonds, fill.bonds);
+  front(def.angles, fill.angles);
+  front(def.dihedrals, fill.dihedrals);
+}
+
+}  // namespace caps
