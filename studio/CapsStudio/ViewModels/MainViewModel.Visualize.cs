@@ -27,7 +27,7 @@ public sealed class StepField : INotifyPropertyChanged
         get => Math.Max(0, Array.IndexOf(Choices, _text));
         set { if (value >= 0 && value < Choices.Length) Text = Choices[value]; Raise(nameof(ChoiceIndex)); }
     }
-    public bool IsText => Kind is "text" or "expression" or "number" or "vector" or "file";
+    public bool IsText => Kind is "text" or "expression" or "number" or "vector" or "file" or "matrix";
     public bool IsFile => Kind == "file";
     public bool IsBool => Kind == "bool";
     public bool IsChoice => Kind == "choice";
@@ -38,7 +38,7 @@ public sealed class StepField : INotifyPropertyChanged
     public bool DraftChanged => _draft != _text;
     public void Commit() { Text = _draft; Raise(nameof(DraftChanged)); }                 // a line of explanation under the fields (Hint)
     public bool ShowLabel => Kind is not ("bool" or "note");
-    public bool IsMono => Kind is "expression" or "number" or "vector" or "file";
+    public bool IsMono => Kind is "expression" or "number" or "vector" or "file" or "matrix";
 }
 
 /// <summary>A step in the pipeline list.</summary>
@@ -121,6 +121,8 @@ public sealed partial class MainViewModel
         new("scatter", "Scatter plot", "one property against another · Pearson r", "Measure", "chart"),
         new("smooth", "Smooth trajectory", "positions averaged over frames", "Trajectory", "history"),
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
+        new("affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", "Modify", "move"),
+        new("orientation", "Chain orientation", "P₂ per atom, S, director, local crystallinity", "Structure", "grow"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
         new("python", "Python step", "your script with an @step function (caps.pipeline API)", "Automate", "terminal"),
         new("primitive_paths", "Primitive paths", "chains pulled tight without crossing · N_e", "Structure", "bond"),
@@ -416,6 +418,8 @@ public sealed partial class MainViewModel
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "wrap" => new JsonObject { ["mode"] = "atoms" },
+        "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8 },
+        "affine_transform" => new JsonObject { ["strain"] = new JsonArray(0.1, 0.0, 0.0), ["target"] = "all" },
         "unwrap" => new JsonObject { ["method"] = "bonds" },
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
         "histogram" => new JsonObject { ["property"] = "Charge", ["bins"] = 40, ["stack_by"] = "none", ["only_selected"] = false },
@@ -522,6 +526,15 @@ public sealed partial class MainViewModel
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
+            case "orientation":
+                Choice("axis", "P₂ against", ["director", "x", "y", "z"]); Text("radius", "Neighbour radius (Å)", "number"); Text("angle", "Aligned within (°)", "number");
+                Text("neighbours", "Aligned neighbours for crystalline", "number");
+                Note("Adds Orientation (P₂ of the backbone chord through each atom) and Crystalline (1/0) — colour by either"); break;
+            case "affine_transform":
+                Add(new StepField { Key = "strain", Label = "Strain (εxx εyy εzz)", Kind = "vector", Hint = "0.1 0 0", Text = p["strain"] is JsonArray st ? string.Join(" ", st.Select(x => x?.ToString())) : "" });
+                Add(new StepField { Key = "matrix", Label = "Matrix (9 numbers, row by row; blank: identity)", Kind = "matrix", Hint = "1 0.2 0  0 1 0  0 0 1",
+                                    Text = p["matrix"] is JsonArray mt ? string.Join(" ", mt.Select(x => x?.ToString())) : "" });
+                Choice("target", "Transform", ["all", "particles", "cell"]); Bool("only_selected", "Only selected particles"); break;
             case "wrap": Choice("mode", "Fold", ["atoms", "molecules"]); Note("atoms: each atom into the cell (bonds cross faces) · molecules: each molecule whole, its centre of mass in the cell"); break;
             case "unwrap":
                 Choice("method", "Method", ["bonds", "images", "nojump"]);
@@ -543,7 +556,7 @@ public sealed partial class MainViewModel
         StepFields.Add(f);
     }
 
-    private string[] PipeProperties()
+    internal string[] PipeProperties()
     {
         var list = new List<string> { "Molecule", "Type", "Element", "Charge", "Mass", "Position.X", "Position.Y", "Position.Z", "DistanceToCOM", "Identifier", "Selection",
                                       "Cluster", "Coordination", "Displacement", "MoleculeRg", "MoleculeKappa2" };
@@ -569,7 +582,13 @@ public sealed partial class MainViewModel
                 if (parts.Length != 3 || parts.Any(double.IsNaN)) return;
                 p[f.Key] = new JsonArray(parts.Select(x => (JsonNode)x).ToArray());
                 break;
-            case "choice" when f.Key == "axis": p[f.Key] = int.Parse(f.Text, CultureInfo.InvariantCulture); break;
+            case "choice" when f.Key == "axis" && int.TryParse(f.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var axis): p[f.Key] = axis; break;
+            case "matrix":
+                var m = f.Text.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries).Select(x => double.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : double.NaN).ToArray();
+                if (m.Length == 0) { p.Remove(f.Key); break; }
+                if (m.Length != 9 || m.Any(double.IsNaN)) return;
+                p[f.Key] = new JsonArray(m.Select(x => (JsonNode)x).ToArray());
+                break;
             case "text" when f.Key == "group" && f.Text.Trim().Length == 0: p.Remove("group"); break;
             default: p[f.Key] = f.Text; break;
         }
