@@ -11,6 +11,7 @@ namespace CapsStudio.ViewModels;
 public sealed partial class MainViewModel
 {
     public const int LodAutoAtoms = 200_000;
+    private CapsDocument? _lodAutoDoc;
     private bool _lodOpen, _lodOn, _lodAoNear = true, _lodAdaptive = true, _perfHud;
     private decimal _lodNear = 40, _lodFar = 80;
     private double _lodNearNow = 40, _frameMs;
@@ -45,6 +46,13 @@ public sealed partial class MainViewModel
     {
         _frameMs = ms;
         Raise(nameof(FrameText));
+        // a large structure that turns slowly: level of detail on, once per document (the user may switch it off again)
+        if (!_lodOn && ms > 30 && _doc != null && _doc != _lodAutoDoc && _doc.Summary().Atoms >= 20_000)
+        {
+            _lodAutoDoc = _doc;
+            LodOn = true;
+            Status = $"{ms:0} ms per frame: level of detail on to keep the view smooth (Performance panel; exports stay in full detail)";
+        }
         if (_lodOn && _lodAdaptive)
         {
             var target = (double)_lodNear;
