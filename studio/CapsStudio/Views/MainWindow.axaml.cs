@@ -715,6 +715,10 @@ public partial class MainWindow : Window
         if (!_busy) _ = RenderLoop();
     }
 
+    private byte[] _frameBuf = [];
+    private readonly WriteableBitmap?[] _frames = new WriteableBitmap?[3];   // main view A/B, Field view
+    private bool _frameFlip;
+
     private async Task RenderLoop()
     {
         _busy = true;
@@ -739,19 +743,30 @@ public partial class MainWindow : Window
                 var cam = _vm.ViewCamera(w, h);
                 // Retina already gives 2 samples per point; supersample only on 1× screens.
                 var opt = field ? _vm.FieldViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2) : _vm.ViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2);
-                var buf = new byte[pw * ph * 4];
+                // the pixel buffer and two bitmaps are kept while the size holds (a drag renders tens of frames a second;
+                // new 6 MB buffers each time would keep the garbage collector busy and the rotation uneven)
+                if (_frameBuf.Length != pw * ph * 4) _frameBuf = new byte[pw * ph * 4];
+                var buf = _frameBuf;
                 var sw = Stopwatch.StartNew();
                 await Task.Run(() => doc.Render(cam, opt, buf));
                 sw.Stop();
-                var bmp = new WriteableBitmap(new PixelSize(pw, ph), new Vector(96 * _scaling, 96 * _scaling), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
+                var slot = field ? 2 : _frameFlip ? 1 : 0;
+                _frameFlip = !_frameFlip;
+                var bmp = _frames[slot];
+                if (bmp == null || bmp.PixelSize.Width != pw || bmp.PixelSize.Height != ph || Math.Abs(bmp.Dpi.X - 96 * _scaling) > 1e-6)
+                {
+                    if (bmp != null && !ReferenceEquals(image.Source, bmp)) bmp.Dispose();
+                    bmp = _frames[slot] = new WriteableBitmap(new PixelSize(pw, ph), new Vector(96 * _scaling, 96 * _scaling), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
+                }
                 using (var fb = bmp.Lock())
                 {
-                    for (var y = 0; y < ph; y++)
-                        System.Runtime.InteropServices.Marshal.Copy(buf, y * pw * 4, fb.Address + y * fb.RowBytes, pw * 4);
+                    if (fb.RowBytes == pw * 4) System.Runtime.InteropServices.Marshal.Copy(buf, 0, fb.Address, pw * ph * 4);
+                    else
+                        for (var y = 0; y < ph; y++)
+                            System.Runtime.InteropServices.Marshal.Copy(buf, y * pw * 4, fb.Address + y * fb.RowBytes, pw * 4);
                 }
-                var old = image.Source as IDisposable;
-                image.Source = bmp;
-                old?.Dispose();
+                if (ReferenceEquals(image.Source, bmp)) image.InvalidateVisual();
+                else image.Source = bmp;
                 _pixW = pw; _pixH = ph;
                 RenderStat.Text = $"{pw}×{ph} px · {sw.ElapsedMilliseconds} ms";
                 if (!field) _vm.ReportFrame(sw.Elapsed.TotalMilliseconds);
