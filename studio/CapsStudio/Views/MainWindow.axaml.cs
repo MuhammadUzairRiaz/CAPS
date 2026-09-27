@@ -241,7 +241,7 @@ public partial class MainWindow : Window
             Title = "Open a structure or trajectory", AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.gro", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.cif", "*.car"] },
+                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });
@@ -256,7 +256,7 @@ public partial class MainWindow : Window
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.gro", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.cif", "*.car"] },
+                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });

@@ -86,11 +86,24 @@ public sealed partial class MainViewModel
         BatchState = $"{BatchInputs.Count} inputs";
     }
 
-    private static string TopologyFor(string f)
+    /// <summary>The file that gives a trajectory its atoms, found beside it: a LAMMPS dump or DCD its .data; a GROMACS
+    /// .xtc or .trr its .top (types, charges, bonds) or .gro (the same stem first, then the folder's only one, then
+    /// topol.top / conf.gro); a .gro its own .top. "" when there is none or the choice is not clear.</summary>
+    internal static string TopologyFor(string f)
     {
-        if (!(f.EndsWith(".lammpstrj") || f.EndsWith(".dump"))) return "";
-        var data = Path.ChangeExtension(f, ".data");
-        return File.Exists(data) ? data : "";
+        var ext = Path.GetExtension(f).ToLowerInvariant();
+        var dir = Path.GetDirectoryName(Path.GetFullPath(f)) ?? ".";
+        string Same(string e) { var p = Path.ChangeExtension(f, e); return File.Exists(p) ? p : ""; }
+        string Only(string pattern) { try { var m = Directory.GetFiles(dir, pattern); return m.Length == 1 ? m[0] : ""; } catch { return ""; } }
+        string Named(params string[] names) => names.Select(n => Path.Combine(dir, n)).FirstOrDefault(File.Exists) ?? "";
+        string First(params string[] c) => c.FirstOrDefault(x => x.Length > 0) ?? "";
+        return ext switch
+        {
+            ".lammpstrj" or ".dump" or ".dcd" => First(Same(".data"), Only("*.data"), ext == ".dcd" ? Same(".pdb") : ""),
+            ".xtc" or ".trr" => First(Same(".top"), Same(".gro"), Named("topol.top"), Only("*.top"), Only("*.gro"), Named("conf.gro", "confout.gro")),
+            ".gro" => Same(".top"),
+            _ => "",
+        };
     }
 
     internal static IEnumerable<string> Glob(string pattern)
