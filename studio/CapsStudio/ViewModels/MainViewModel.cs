@@ -1912,7 +1912,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- React
     public static readonly string[] ReactionSets = ["C–C crosslink (saturated carbons, H₂ leaves)", "Epoxy–amine (primary + secondary)",
-        "Sulfur cure of diene rubber (H–S–S–H donors → C–S–S–C)", "Peroxide cure of diene rubber (allylic C–C)", "Custom (edit the text)"];
+        "Sulfur cure of diene rubber (H–S–S–H donors → C–S–S–C)", "Peroxide cure of diene rubber (allylic C–C)",
+        "Silane coupling to diene rubber (TESPT / TESPD polysulfide → C–S)", "Custom (edit the text)"];
     private int _rxSet, _rxCycles = 50, _rxPerCycle = 5, _rxSeed = 1, _rxRelaxIt = 500;
     private double _rxTarget = 1.0, _rxCapture, _rxMdPs = 2, _rxTemp = 500, _rxFa = 2, _rxFb = 4, _rxRatio = 1;
     private bool _rxRelax = true, _reacting;
@@ -2019,6 +2020,7 @@ public sealed partial class MainViewModel : ObservableObject
                 1 => CapsDocument.ReactionTemplate("epoxy_amine_primary") + "\n" + CapsDocument.ReactionTemplate("epoxy_amine_secondary"),
                 2 => CapsDocument.ReactionTemplate("sulfur_allylic"),
                 3 => CapsDocument.ReactionTemplate("peroxide_allylic"),
+                4 => CapsDocument.ReactionTemplate("polysulfide_allylic"),
                 _ => _rxText,
             };
         }
