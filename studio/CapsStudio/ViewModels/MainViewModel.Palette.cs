@@ -39,6 +39,31 @@ public sealed partial class MainViewModel
 
     public void AddCommand(PaletteCommand c) => _commands.Add(c);
 
+    /// <summary>Runs the command with this id (the menu bar and the palette share them); false when there is none or it
+    /// is not available now.</summary>
+    public bool RunCommand(string id)
+    {
+        var c = _commands.FirstOrDefault(x => x.Id == id);
+        if (c == null || !c.Enabled()) return false;
+        c.Run();
+        return true;
+    }
+
+    /// <summary>A page by its module number, as the rail, the palette and the menu bar reach it (each page's own set-up
+    /// runs through SetModule's openers).</summary>
+    public void GoModule(int m)
+    {
+        switch (m)
+        {
+            case 9: OpenBuilder(); break;
+            case 66: _ = OpenAddHydrogens(); break;
+            case 90: OpenExportDialog(); break;
+            case 91: OpenExportDialog(1); break;
+            case 92: StartTour(); break;
+            default: SetModule(m); break;
+        }
+    }
+
     /// <summary>Commands that only need the view model (the window adds those that need dialogs).</summary>
     private void AddModelCommands()
     {

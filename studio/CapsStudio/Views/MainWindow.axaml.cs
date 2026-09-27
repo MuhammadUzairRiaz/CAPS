@@ -201,6 +201,7 @@ public partial class MainWindow : Window
         AddHandler(KeyUpEvent, (_, e) => { if (e.Key == Key.L) _vm.LensHold = false; }, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(ViewHost, true);
         ViewHost.AddHandler(DragDrop.DropEvent, OnDrop);
+        NativeMenu.SetMenu(this, BuildMenu());   // the menu bar: the palette's commands and the pages
     }
 
     public void RunPackExampleForTest() { if (_samples != null) _vm.AddPackExample(_samples); }
