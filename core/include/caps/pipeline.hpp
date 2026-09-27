@@ -23,6 +23,10 @@
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
 //   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
 //                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace
+//   orientation         axis director|x|y|z, radius, angle, neighbours → Orientation (P₂ per atom), Crystalline, Orientation.S
+//   affine_transform    strain [εxx εyy εzz] or matrix (9, row-major), translation, target all|particles|cell, only_selected
+//   cna                 adaptive common neighbour analysis → Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 ICO), table structures
+//   centrosymmetry      neighbours (even; 12 FCC, 8 BCC) → Centrosymmetry (Å²)
 //   unwrap              method bonds (whole along bonds) | images (the file's image flags) | nojump (each atom
 //                       followed through the frames by its shortest step)  → table images, Unwrap.bonds_split
 //   molecule_shape      per molecule: Rg, κ², asphericity, mass → properties and table molecules
