@@ -631,6 +631,24 @@ internal static class SelfTest
         vm.BuildBlend().GetAwaiter().GetResult();
         var bsum = vm.Document?.Summary();
         Check(vm.BlendRows.Count == 2 && bsum is { } blendSum && blendSum.Molecules >= 5 && vm.Title.Contains("blend"), $"blend: {vm.Title} · {bsum?.Molecules} chains · {vm.BlendError}");
+        // by chain count: exactly the counts given; by volume: the densities turn volume shares into weight shares
+        vm.OpenBlend();
+        vm.BlendMode = 2;
+        vm.BlendRows[0].Count = 3;
+        vm.BlendRows[1].Count = 2;
+        vm.BuildBlend().GetAwaiter().GetResult();
+        var counted = vm.Document?.Summary().Molecules;
+        vm.OpenBlend();
+        vm.BlendMode = 1;
+        vm.BlendRows[0].Weight = 50;
+        vm.BlendRows[1].Weight = 50;
+        vm.BlendRows[0].Density = 0.92m;
+        vm.BlendRows[1].Density = 0.92m;
+        var sameDensity = vm.BlendRows[0].ChainsText;
+        vm.BlendRows[1].Density = 1.84m;   // twice as dense: twice the mass for the same volume
+        Check(counted == 5 && sameDensity.Contains("vol %") && vm.BlendRows[0].ChainsText.Contains("33.") && vm.BlendRows[1].ChainsText.Contains("66."),
+              $"blend by chain count: {counted} chains · by volume: '{sameDensity}' then '{vm.BlendRows[0].ChainsText}' / '{vm.BlendRows[1].ChainsText}'");
+        vm.BlendMode = 0;
 
         // Crystal builder: polyethylene (Pnam) to start, rutile's space group found from its CIF, a supercell built
         vm.OpenCrystal();
