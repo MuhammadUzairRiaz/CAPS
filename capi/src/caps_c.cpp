@@ -1429,6 +1429,9 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     r.target_density = o->target_density;
     if (o->compress_step > 0) r.compress_step = o->compress_step;
     r.pushoff = o->pushoff != 0;
+    r.pushoff_ramp_ps = std::max(0.0, o->pushoff_ramp_ps);
+    if (o->pushoff_cap > 0) r.pushoff_cap = o->pushoff_cap;
+    if (o->pushoff_temperature > 0) r.pushoff_temperature = o->pushoff_temperature;
     r.relax_box = o->relax_box != 0;
     r.box_anisotropic = o->box_anisotropic != 0;
     if (o->box_axes & 7)
@@ -1481,7 +1484,10 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
       if (r.pushoff) c.push_back("auhl2003");
       elec_cites(c, r.energy.coulomb);
       caps::KeyValues pr = {{"minimiser", titles[mth]}, {"|F|max", g6(r.ftol) + " kcal/mol/Å"}, {"max iterations", std::to_string(r.max_iterations)},
-                            {"push-off", r.pushoff ? "on" : "off"}, {"force field", ff_label(d)}};
+                            {"push-off", !r.pushoff ? "off" : r.pushoff_ramp_ps > 0 ? "MD " + g6(r.pushoff_ramp_ps) + " ps at " + g6(r.pushoff_temperature) +
+                                                                  " K, cap ramped to " + g6(r.pushoff_cap > 0 ? r.pushoff_cap : 500) + " kcal/mol/Å, then minimised"
+                                                                : "on"},
+                            {"force field", ff_label(d)}};
       if (r.target_density > 0) pr.push_back({"target density", g6(r.target_density) + " g/cm³"});
       if (r.relax_box) pr.push_back({"box relaxation", g6(r.pressure) + " atm"});
       if (d->held_mol > 0) pr.push_back({"held molecule", std::to_string(d->held_mol)});
@@ -3495,6 +3501,8 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     po.radius = j.num("radius", 12);
     po.on_atom = j.num("on_atom", 1) != 0;
     po.passivate = j.num("passivate", 0) != 0;
+    po.thiolate = j.text("thiolate", "");
+    po.thiolate_fraction = j.num("thiolate_fraction", 1.0);
     po.length = j.num("length", 20);
     f = caps::nanoparticle(caps::read_cif(j.text("crystal")), po, &r);
     keep = {false, false, po.shape == caps::ParticleShape::Fibre};

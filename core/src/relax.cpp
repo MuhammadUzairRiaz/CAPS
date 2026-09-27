@@ -7,6 +7,7 @@
 // minimisation stages rather than capped-force dynamics.
 #include "caps/uff.hpp"
 #include "caps/relax.hpp"
+#include "caps/dynamics.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -281,6 +282,66 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
     return c.valid() ? mass / kNA / (c.volume() * 1e-24) : 0.0;
   };
 
+  // the minimisation caps up to the chosen final cap
+  std::vector<double> caps_list;
+  const double cap_final = o.pushoff_cap > 0 ? o.pushoff_cap : (o.pushoff_caps.empty() ? 500.0 : o.pushoff_caps.back());
+  for (double c : o.pushoff_caps)
+    if (c < cap_final * (1 - 1e-9)) caps_list.push_back(c);
+  caps_list.push_back(cap_final);
+
+  // push-off by MD with the cap ramped (λ ramp): before the minimisation stages
+  if (o.pushoff && o.pushoff_ramp_ps > 0) {
+    const int segs = std::max(1, o.pushoff_ramp_segments);
+    const double c0 = std::min(caps_list.front(), cap_final);
+    DynamicsOptions md;
+    md.field = std::make_shared<const ForceField>(ff);
+    md.dt = 1.0;
+    md.temperature = o.pushoff_temperature;
+    md.thermostat = Thermostat::Bussi;
+    md.tau_t = 100.0;
+    md.steps = std::max<int64_t>(1, int64_t(std::llround(o.pushoff_ramp_ps * 1000.0 / md.dt / segs)));
+    md.frame_every = 0;
+    md.thermo_every = int(std::max<int64_t>(1, md.steps / 5));
+    md.fixed = o.fixed;
+    md.energy = o.energy;
+    md.energy.coulomb = false;
+    md.seed = 1;
+    for (int k = 0; k < segs; ++k) {
+      const double cap = segs == 1 ? cap_final : c0 * std::pow(cap_final / c0, double(k) / double(segs - 1));
+      md.energy.force_cap = cap;
+      md.new_velocities = k == 0;
+      md.step_offset = md.steps * k;
+      char nm[80];
+      std::snprintf(nm, sizeof nm, "push-off MD, force cap %.3g", cap);
+      md.progress = [&, k, nm = std::string(nm)](const ThermoRow& row) {
+        if (!o.progress) return true;
+        RelaxProgress q;
+        q.stage = nm;
+        q.stage_index = k + 1;
+        q.stages = segs;
+        q.iteration = int(row.step);
+        q.energy = row.potential;
+        q.density = row.density;
+        if (!o.progress(q)) throw RelaxCancelled();
+        return true;
+      };
+      DynamicsReport dr;
+      run_dynamics(s, md, &dr);
+      RelaxStage st;
+      st.name = nm;
+      st.iterations = int(dr.steps);
+      st.energy = dr.thermo.empty() ? 0 : dr.thermo.back().potential;
+      st.stopped_by = "time";
+      rep.stages.push_back(st);
+      if (o.snapshot) o.snapshot(flat(s), s.cell, nm);
+    }
+    s.velocities.clear();
+    char note[160];
+    std::snprintf(note, sizeof note, "push-off MD: %g ps NVT at %g K, LJ force cap raised from %g to %g kcal/mol/Å in %d steps", o.pushoff_ramp_ps,
+                  o.pushoff_temperature, c0, cap_final, segs);
+    rep.notes.push_back(note);
+  }
+
   Cell cell = s.cell;
   std::vector<double> x = flat(s), f;
   if (cell.valid()) {
@@ -302,7 +363,7 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
 
   // Plan the stages so progress can show "k of n".
   int stages = 1;
-  if (o.pushoff) stages += static_cast<int>(o.pushoff_caps.size());
+  if (o.pushoff) stages += static_cast<int>(caps_list.size());
   std::vector<double> dens;
   if (o.target_density > 0 && rep.density_initial > 0) {
     double d = rep.density_initial;
@@ -354,7 +415,7 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   quick.max_iterations = std::min(o.max_iterations, 400);
 
   if (o.pushoff)
-    for (double cap : o.pushoff_caps) {
+    for (double cap : caps_list) {
       char nm[64];
       std::snprintf(nm, sizeof nm, "push-off, force cap %g", cap);
       run(nm, soft(cap), quick);

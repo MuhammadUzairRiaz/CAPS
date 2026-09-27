@@ -67,6 +67,10 @@ struct ParticleOptions {
   double length = 20.0;           // fibre: length along the axis, Å (whole cells; the fibre is periodic along it)
   bool on_atom = true;            // centre on the atom nearest the cell centre; false: on the cell centre
   bool passivate = false;
+  // a metal particle capped with thiolates (cap_thiolates in edit.hpp): a preset name (C6, C12, C18, MPA, MUA, MHA) or
+  // a SMILES starting *S; "" none. The cell grows so the ligands keep the vacuum around them.
+  std::string thiolate;
+  double thiolate_fraction = 1.0;
   double vacuum = 10.0;
 };
 System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* rep = nullptr);

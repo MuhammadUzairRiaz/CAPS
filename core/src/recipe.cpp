@@ -574,6 +574,9 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           ro.ftol = num(J, "fmax", 0.5);
           ro.max_iterations = int(num(J, "max_iterations", 5000));
           ro.pushoff = flag(J, "pushoff", true);
+          ro.pushoff_ramp_ps = num(J, "pushoff_md_ps", 0);   // push-off by MD with the force cap ramped (Auhl et al.)
+          ro.pushoff_cap = num(J, "pushoff_cap", 0);
+          ro.pushoff_temperature = num(J, "pushoff_temperature", 300);
           ro.target_density = num(J, "target_density", 0);
           ro.progress = [&](const RelaxProgress& p) {
             report(k, st, p.stage + " · |F|max " + g6(p.fmax), "running", p.stages ? double(p.stage_index) / p.stages : 0);
@@ -586,7 +589,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           elec_cite(c, energy);
           res.manifest.steps.push_back(step(std::string("relax.") + (ro.method == Minimiser::LBFGS ? "lbfgs" : ro.method == Minimiser::FIRE ? "fire" : ro.method == Minimiser::ConjugateGradient ? "cg" : "sd"),
                                             std::string(to_string(ro.method)) + (rr.converged ? ", converged" : ", stopped before the tolerance"),
-                                            {{"minimiser", to_string(ro.method)}, {"|F|max", g6(ro.ftol) + " kcal/mol/Å"}, {"push-off", ro.pushoff ? "on" : "off"}, {"force field", ffname}}, "",
+                                            {{"minimiser", to_string(ro.method)}, {"|F|max", g6(ro.ftol) + " kcal/mol/Å"}, {"push-off", !ro.pushoff ? "off" : ro.pushoff_ramp_ps > 0 ? "MD " + g6(ro.pushoff_ramp_ps) + " ps, cap ramped, then minimised" : "on"}, {"force field", ffname}}, "",
                                             c, approx(energy, o.threads)));
           report(k, st, std::string(to_string(ro.method)) + " · |F|max " + g6(ro.ftol) + (rr.converged ? "" : " · not reached"), "done", 1);
         } else if (st == "md") {

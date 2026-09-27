@@ -213,3 +213,40 @@ TEST(Nano, SilaneGraftOnSilica) {
   EXPECT_GT(dmin, 0.9);
   EXPECT_THROW(graft_silanes(p, GraftOptions{"CCC", "bad"}), EditError);
 }
+
+// A gold sphere capped with dodecanethiolates: the 429-atom particle of the Nanoparticle board, each S 2.45 Å from its
+// nearest gold, S atoms at least √3 · d(Au–Au) apart, tails all-trans and clear of the gold and of each other
+TEST(Nano, GoldParticleCappedWithThiolates) {
+  const System bulk = read_cif(kCrystals + "gold.cif");
+  ParticleOptions o;
+  o.radius = 12;
+  o.thiolate = "C12";
+  const System p = nanoparticle(bulk, o);
+  std::vector<Vec3> au, sulfur;
+  for (const auto& a : p.atoms) {
+    if (a.element == 79) au.push_back(a.pos);
+    if (a.element == 16) sulfur.push_back(a.pos);
+  }
+  EXPECT_EQ(au.size(), 429u);
+  ASSERT_GT(sulfur.size(), 30u);
+  EXPECT_EQ(p.atoms.size(), au.size() + sulfur.size() * (1 + 12 + 25));   // S, C12H25
+  const double dnn = 4.0782 / std::sqrt(2.0);
+  for (size_t i = 0; i < sulfur.size(); ++i) {
+    double dmin = 1e9;
+    for (const auto& g : au) dmin = std::min(dmin, norm(sulfur[i] - g));
+    EXPECT_NEAR(dmin, 2.45, 0.02);
+    for (size_t j = i + 1; j < sulfur.size(); ++j) EXPECT_GE(norm(sulfur[i] - sulfur[j]), std::sqrt(3.0) * dnn - 1e-6);
+  }
+  // no ligand atom closer than 3 Å to the gold (besides its S), none of two ligands closer than 2.5 Å
+  for (const auto& a : p.atoms) {
+    if (a.element == 79 || a.element == 16) continue;
+    for (const auto& g : au) EXPECT_GT(norm(a.pos - g), 3.0);
+  }
+  for (size_t i = 0; i < p.atoms.size(); ++i)
+    for (size_t j = i + 1; j < p.atoms.size(); ++j)
+      if (p.atoms[i].element != 79 && p.atoms[j].element != 79 && p.atoms[i].mol != p.atoms[j].mol)
+        EXPECT_GT(norm(p.atoms[i].pos - p.atoms[j].pos), 2.5);
+  // every ligand inside the cell with vacuum around it
+  for (const auto& a : p.atoms)
+    for (int k = 0; k < 3; ++k) { EXPECT_GT(a.pos[k], 5.0); EXPECT_LT(a.pos[k], p.cell.a[0] - 5.0); }
+}
