@@ -988,6 +988,38 @@ int32_t caps_adopt_frames(caps_doc* dst, caps_doc* src) {
   return static_cast<int32_t>(dst->traj.frames());
 }
 
+caps_doc* caps_shadow(caps_doc* d) {
+  if (!d) return nullptr;
+  try {
+    auto* sd = new caps_doc;
+    sd->traj.topology = d->traj.topology;
+    const size_t k = d->current;
+    if (k < d->traj.positions.size()) sd->traj.positions.push_back(d->traj.positions[k]);
+    if (k < d->traj.cells.size()) sd->traj.cells.push_back(d->traj.cells[k]);
+    if (k < d->traj.timesteps.size()) sd->traj.timesteps.push_back(d->traj.timesteps[k]);
+    sd->wrap = d->wrap;
+    sd->look.active = d->look.active;   // the look's settings; its surface meshes are not carried
+    sd->look.layers = d->look.layers;
+    sd->look.colour = d->look.colour;
+    sd->look.ramp = d->look.ramp;
+    sd->selection = d->selection;
+    sd->cell_repeats = d->cell_repeats;
+    sd->ph = d->ph;
+    sd->held_mol = d->held_mol;
+    sd->restraints = d->restraints;
+    sd->analysis = d->analysis;
+    sd->eq_checks = d->eq_checks;
+    if (d->field) sd->field = std::make_unique<FieldState>(*d->field);
+    refresh(sd);
+    return sd;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
+
 void caps_close(caps_doc* d) { delete d; }
 
 caps_doc* caps_grow(const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report, int32_t cap) {
@@ -2289,6 +2321,10 @@ int32_t caps_render_scene(caps_doc* d, const caps_render_opts* opt, caps_scene* 
     out->cpu_only = sc.has_meshes || d->vision ? 1 : 0;   // surfaces, polyhedra and the colour-vision preview are drawn on the CPU
     out->background = sc.background;
     out->transparent = sc.transparent, out->dark = sc.dark, out->depth_cue = sc.depth_cue, out->outlines = sc.outlines;
+    out->fit_cx = sc.fit_centre[0], out->fit_cy = sc.fit_centre[1], out->fit_cz = sc.fit_centre[2];
+    out->fit_pad = sc.fit_pad, out->fov_deg = sc.fov_deg;
+    out->n_fit_corners = int32_t(sc.fit_corners.size() / 3), out->fit_corners = sc.fit_corners.data();
+    out->n_fit_points = int32_t(sc.fit_points.size() / 3), out->fit_points = sc.fit_points.data();
     return 0;
   });
 }

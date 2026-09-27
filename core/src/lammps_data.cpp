@@ -111,11 +111,12 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
         for (uint32_t i : nb[j])
           for (uint32_t k : nb[j])
             if (i < k) can.insert({i, k});
+    std::set<std::pair<uint32_t, uint32_t>> p14;   // looked up, not scanned: a 180 000-atom melt has half a million 1-4 pairs
+    for (const auto& p : ff.pairs14) p14.insert({std::min(p[0], p[1]), std::max(p[0], p[1])});
     for (uint32_t i = 0; i < ff.excluded.size(); ++i)
       for (uint32_t j : ff.excluded[i])
         if (i < j && !can.count({i, j})) {
-          bool is14 = false;
-          for (const auto& p : ff.pairs14) is14 = is14 || (std::min(p[0], p[1]) == i && std::max(p[0], p[1]) == j);
+          const bool is14 = p14.count({i, j}) > 0;
           if (!is14)
             throw FieldError(ff.name + ": explicit exclusions between atoms that are not bonded (Martini 3's aromatic side chains, ...) have no "
                              "LAMMPS form; export to GROMACS instead");

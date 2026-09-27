@@ -98,6 +98,12 @@ struct Scene {
   std::vector<uint32_t> line_rgb;
   std::vector<float> line_width;       // pixels at 1×
   bool has_meshes = false;             // surfaces or polyhedra: a view that needs them draws on the CPU
+  // What the camera fit uses (view_fit from these alone, without the structure): its centre, the cell corners when the
+  // cell frames the view, the shown atoms' positions, the pad around them (Å), the perspective field of view.
+  Vec3 fit_centre{0, 0, 0};
+  std::vector<float> fit_corners;      // 8 × xyz, or none
+  std::vector<float> fit_points;       // xyz per shown atom
+  double fit_pad = 1.0, fov_deg = 35.0;
   uint32_t background = 0;             // 0xRRGGBB
   bool transparent = false, dark = true, depth_cue = true, outlines = true;
 };

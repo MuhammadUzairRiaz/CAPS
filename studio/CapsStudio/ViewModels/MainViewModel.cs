@@ -617,6 +617,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(CanRun));
         Raise(nameof(CanEquilibrate));
         Raise(nameof(CanReact));
+        if (!Busy && _leavePeriodicPending) LeavePeriodic();
     }
     public string GrowLog { get => _growLog; private set => Set(ref _growLog, value); }
     // live statistics (Grow board: chains grown, restarts, elapsed, overall progress)
@@ -1147,20 +1148,57 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The LAMMPS input for this run (setup from the core, ensemble lines from the settings).</summary>
     public string MdDeck { get => _mdDeck; private set => Set(ref _mdDeck, value); }
 
+    private Avalonia.Threading.DispatcherTimer? _preflightTimer;
+    private int _preflightTicket;
+
+    /// <summary>The Dynamics pre-flight and the LAMMPS / GROMACS input for these settings: asked for often (every setting
+    /// change), done once the settings rest, off the UI thread (typing and writing the input of a 180 000-atom cell
+    /// takes seconds), and never while a run holds the document.</summary>
     public void RefreshPreflight()
     {
-        MdPreflight.Clear();
-        if (_doc == null) { MdPreflightSummary = ""; MdDeck = ""; return; }
+        if (_doc == null) { MdPreflight.Clear(); MdPreflightSummary = ""; MdDeck = ""; return; }
+        if (Busy) return;
+        if (_preflightTimer == null)
+        {
+            _preflightTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _preflightTimer.Tick += (_, _) => { _preflightTimer!.Stop(); _ = RefreshPreflightNow(); };
+        }
+        _preflightTimer.Stop();
+        _preflightTimer.Start();
+    }
+
+    /// <summary>The pre-flight at once (tests).</summary>
+    public Task PreflightNow() { _preflightTimer?.Stop(); return RefreshPreflightNow(); }
+
+    private async Task RefreshPreflightNow()
+    {
+        var doc = _doc;
+        if (doc == null || Busy) return;
+        var ticket = ++_preflightTicket;
         var inv = CultureInfo.InvariantCulture;
-        var s = _doc.Summary();
+        var s = doc.Summary();
+        var assigned = Field.Assigned;
+        var gromacs = _mdGromacs;
+        if (MdPreflight.Count == 0) MdPreflightSummary = "checking…";
+        if (MdDeck.Length == 0) MdDeck = gromacs ? "; writing the GROMACS run parameters…" : "# writing the LAMMPS input…";
+        var (ff, deck) = await Task.Run(() =>
+        {
+            var f = "";
+            if (!assigned)
+                try { f = doc.FieldInfo(); } catch (Exception e) { f = "error: " + e.Message; }
+            string d;
+            try { d = gromacs ? GromacsDeck(doc) : LammpsDeck(doc); }
+            catch (Exception e) { d = gromacs ? "; cannot write the GROMACS files: " + e.Message : "# cannot write the LAMMPS input: " + e.Message; }
+            return (f, d);
+        });
+        if (ticket != _preflightTicket || !ReferenceEquals(doc, _doc)) return;   // superseded
+        MdPreflight.Clear();
         // force field
-        if (Field.Assigned)
+        if (assigned)
             MdPreflight.Add(new CheckRow(Field.Complete ? "All atoms typed, no missing parameters" : "The Field assignment is incomplete: runs are blocked",
                 Field.Complete ? "ok" : "fail"));
         else
         {
-            string ff;
-            try { ff = _doc.FieldInfo(); } catch (Exception e) { ff = "error: " + e.Message; }
             var ok = !ff.StartsWith("error", StringComparison.Ordinal) && !ff.Contains("Cannot", StringComparison.Ordinal);
             var name = ok ? ff.Split('\n')[0] : "";
             MdPreflight.Add(new CheckRow(ok ? $"All atoms typed with {name} (none assigned in Field)" : "The built-in force fields cannot type this structure: assign one in Field", ok ? "ok" : "fail"));
@@ -1189,33 +1227,29 @@ public sealed partial class MainViewModel : ObservableObject
         var fails = MdPreflight.Count(r => r.State == "fail");
         var checks = MdPreflight.Count(r => r.State == "check");
         MdPreflightSummary = $"{MdPreflight.Count - fails - checks} / {MdPreflight.Count} ok";
-        if (_mdGromacs)
+        MdDeck = deck;
+    }
+
+    /// <summary>The LAMMPS input for this run (setup from the core, ensemble lines from the settings).</summary>
+    private string LammpsDeck(CapsDocument doc)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var setup = doc.LammpsInput("system.data");
+        var steps = _mdSteps;
+        var ens = _mdEnsemble switch
         {
-            try { MdDeck = GromacsDeck(); }
-            catch (Exception e) { MdDeck = "; cannot write the GROMACS files: " + e.Message; }
-            return;
-        }
-        // LAMMPS deck
-        try
-        {
-            var setup = _doc.LammpsInput("system.data");
-            var steps = _mdSteps;
-            var ens = _mdEnsemble switch
-            {
-                0 => "fix 1 all nve",
-                1 => _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
-                                         : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1),
-                3 => string.Format(inv, "fix 1 all nve\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),
-                _ => string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}\nfix 3 all press/berendsen iso {3:0.##} {3:0.##} {4:0.##} modulus 22222",
-                    _mdTemp, _mdTauT, _mdSeed + 1, _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
-            };
-            MdDeck = "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
-                     (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
-                     (RespaSteps > 1 ? $"run_style respa 2 {RespaSteps} bond 1 angle 1 dihedral 1 improper 1 pair 2 kspace 2\n" : "") +
-                     string.Format(inv, "timestep {0:0.###}\n{1}\nthermo {2}\ndump d all custom {3} traj.lammpstrj id mol type xu yu zu\nrun {4}\n",
-                         _mdDt, ens, Math.Max(1, _mdFrameEvery / 10), _mdFrameEvery, steps);
-        }
-        catch (Exception e) { MdDeck = "# cannot write the LAMMPS input: " + e.Message; }
+            0 => "fix 1 all nve",
+            1 => _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
+                                     : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1),
+            3 => string.Format(inv, "fix 1 all nve\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),
+            _ => string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}\nfix 3 all press/berendsen iso {3:0.##} {3:0.##} {4:0.##} modulus 22222",
+                _mdTemp, _mdTauT, _mdSeed + 1, _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
+        };
+        return "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
+               (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
+               (RespaSteps > 1 ? $"run_style respa 2 {RespaSteps} bond 1 angle 1 dihedral 1 improper 1 pair 2 kspace 2\n" : "") +
+               string.Format(inv, "timestep {0:0.###}\n{1}\nthermo {2}\ndump d all custom {3} traj.lammpstrj id mol type xu yu zu\nrun {4}\n",
+                   _mdDt, ens, Math.Max(1, _mdFrameEvery / 10), _mdFrameEvery, steps);
     }
 
     public string MdEstimate => string.Format(CultureInfo.InvariantCulture, "{0:0.###} ps · {1:N0} frames recorded",

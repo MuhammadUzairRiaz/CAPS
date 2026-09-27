@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 26  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit) */
+#define CAPS_ABI_VERSION 28  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -77,6 +77,9 @@ caps_doc* caps_import_fragment(const char* path, const char* options_json);
 /* Moves the frames of src (the same file read in full) into dst, keeping dst's selection, field and current frame.
    Returns dst's frame count, or -1 when the atom counts differ. src is left empty. */
 int32_t caps_adopt_frames(caps_doc* dst, caps_doc* src);
+/* A new document holding d's shown frame (topology, positions, cell), its wrap, appearance, selection, supercell and
+   field: what the window reads while a run holds d. NULL on error. */
+caps_doc* caps_shadow(caps_doc* d);
 void caps_close(caps_doc* d);
 
 /* Grow polystyrene chains in a periodic cell; the result is a new document. NULL on error or cancel.
@@ -370,6 +373,15 @@ typedef struct {
   int32_t cpu_only;
   uint32_t background;
   int32_t transparent, dark, depth_cue, outlines;
+  /* v27: the camera fit's inputs, so a view can fit (caps_view_fit's numbers) without the document, e.g. while a run
+     holds it: centre, cell corners (8 × xyz, or 0 when the atoms frame the view), shown atoms' positions, the pad (Å)
+     and the perspective field of view. The fit: e = max over corners and points of |R(p − c)| per axis;
+     ex, ey = max(e + pad, 2.5); scale = min(0.45 w / ex, 0.45 h / ey) · zoom; dist = ez / tan(fov/2) + ez. */
+  double fit_cx, fit_cy, fit_cz, fit_pad, fov_deg;
+  int32_t n_fit_corners;
+  const float* fit_corners;
+  int32_t n_fit_points;
+  const float* fit_points;
 } caps_scene;
 typedef struct {
   double cos_yaw, sin_yaw, cos_pitch, sin_pitch, cx, cy, cz, scale, w, h, pan_x, pan_y;
