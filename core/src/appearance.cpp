@@ -104,6 +104,70 @@ void edt1(const std::vector<double>& f, std::vector<double>& d, std::vector<int>
 
 }  // namespace
 
+namespace {
+// neighbours with bond orders for the CIP digraph (aromatic bonds: one Kekulé double bond each)
+std::vector<std::vector<Neighbour>> cip_neighbours(const System& s) {
+  std::vector<std::vector<Neighbour>> nb(s.atoms.size());
+  for (const auto& b : s.bonds) {
+    const int order = b.order == 2 ? 2 : b.order == 3 ? 3 : 1;
+    nb[b.i].push_back({b.j, order}), nb[b.j].push_back({b.i, order});
+  }
+  for (const auto& b : s.bonds)
+    if (b.order == 4) {
+      auto dup = [&](uint32_t a, uint32_t other) {
+        for (auto& e : nb[a]) if (e.atom == other && e.order == 1) { bool has2 = false; for (auto& f : nb[a]) has2 |= f.order == 2; if (!has2) e.order = 2; }
+      };
+      dup(b.i, b.j), dup(b.j, b.i);
+    }
+  return nb;
+}
+}  // namespace
+
+std::vector<std::string> ez_labels(const System& s, std::vector<std::pair<uint32_t, uint32_t>>* bonds) {
+  const size_t n = s.atoms.size();
+  std::vector<std::string> out(n);
+  const auto nb = cip_neighbours(s);
+  // bonds in a ring: both ends still connected without the bond
+  auto in_ring = [&](uint32_t a, uint32_t b) {
+    std::vector<char> seen(n, 0);
+    std::vector<uint32_t> st{a};
+    seen[a] = 1;
+    while (!st.empty()) {
+      const uint32_t x = st.back();
+      st.pop_back();
+      for (const auto& e : nb[x]) {
+        if ((x == a && e.atom == b) || (x == b && e.atom == a)) continue;
+        if (e.atom == b) return true;
+        if (!seen[e.atom]) seen[e.atom] = 1, st.push_back(e.atom);
+      }
+    }
+    return false;
+  };
+  for (const auto& bd : s.bonds) {
+    if (bd.order != 2) continue;
+    const uint32_t a = bd.i, b = bd.j;
+    if (nb[a].size() != 3 || nb[b].size() != 3) continue;   // both ends sp² with two substituents
+    if (in_ring(a, b)) continue;
+    auto top = [&](uint32_t end, uint32_t other) -> int {
+      std::vector<int> r;
+      for (const auto& e : nb[end]) if (e.atom != other) r.push_back(int(e.atom));
+      if (r.size() != 2) return -1;
+      const int k = compare_branches(s, nb, int(end), r[0], r[1]);
+      return k == 0 ? -1 : k > 0 ? r[0] : r[1];
+    };
+    const int ta = top(a, b), tb = top(b, a);
+    if (ta < 0 || tb < 0) continue;
+    auto rel = [&](uint32_t from, int to) { Vec3 d = s.atoms[size_t(to)].pos - s.atoms[from].pos; return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+    const Vec3 ab = rel(a, int(b)), u = rel(a, ta), w = rel(b, tb);
+    const Vec3 e = ab * (1 / norm(ab));
+    const Vec3 up = u - e * dot(u, e), wp = w - e * dot(w, e);   // each group's offset across the double bond
+    const std::string lab = dot(up, wp) > 0 ? "Z" : "E";          // the higher-ranked groups on one side: Z (cis)
+    out[a] = out[b] = lab;
+    if (bonds) bonds->push_back({a, b});
+  }
+  return out;
+}
+
 std::vector<std::string> stereo_labels(const System& s, const std::vector<char>& only) {
   const size_t n = s.atoms.size();
   std::vector<std::string> out(n);

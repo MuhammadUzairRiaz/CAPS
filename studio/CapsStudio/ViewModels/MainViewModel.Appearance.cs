@@ -127,7 +127,7 @@ public sealed partial class MainViewModel
         if (_labelTexts != null && ReferenceEquals(_labelDoc, _doc) && _labelFrame == _frame) return _labelTexts;
         var kinds = new List<string>();
         if (_lblElement) kinds.Add("element");
-        if (_lblRs) kinds.Add("rs");
+        if (_lblRs) kinds.Add("stereo");   // R/S on centres, E/Z on double bonds
         if (_lblType) kinds.Add("type");
         if (_lblCharge) kinds.Add("charge");
         var cols = kinds.Select(k => JsonNode.Parse(_doc.AtomLabels(k))!.AsArray().Select(x => x?.GetValue<string>() ?? "").ToArray()).ToList();
@@ -136,8 +136,8 @@ public sealed partial class MainViewModel
         for (var i = 0; i < n; i++)
         {
             var parts = cols.Select(c => i < c.Length ? c[i] : "").Where(x => x.Length > 0).ToList();
-            // R/S alone labels only the stereocentres
-            texts[i] = kinds.Count == 1 && kinds[0] == "rs" ? parts.FirstOrDefault() ?? "" : parts.Count == 0 ? "" : string.Join(" ", parts);
+            // stereo alone labels only the stereocentres and stereogenic double bonds
+            texts[i] = kinds.Count == 1 && kinds[0] == "stereo" ? parts.FirstOrDefault() ?? "" : parts.Count == 0 ? "" : string.Join(" ", parts);
         }
         _labelTexts = texts;
         _labelDoc = _doc;

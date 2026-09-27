@@ -22,6 +22,9 @@ namespace caps {
 
 // "R", "S" or "" for every atom; `only` (when not empty) limits the centres considered.
 std::vector<std::string> stereo_labels(const System& s, const std::vector<char>& only = {});
+// "E" or "Z" on both atoms of every stereogenic acyclic double bond (CIP ranks of the two substituents at each end, the
+// configuration read off the 3D geometry); bonds, when given, receives the double bonds labelled.
+std::vector<std::string> ez_labels(const System& s, std::vector<std::pair<uint32_t, uint32_t>>* bonds = nullptr);
 
 struct Mesh {
   std::vector<Vec3> vertices, normals;
