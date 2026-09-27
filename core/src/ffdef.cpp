@@ -124,6 +124,10 @@ void load_typing(FFDef& ff, const std::string& path) {
   if (!unknown.empty() && j.text("unknown_types") != "untyped")
     throw FFError(path + ": rules for types not in " + ff.name + ":" + unknown.substr(0, unknown.size() - 1));
   ff.typing.insert(ff.typing.end(), rules.begin(), rules.end());
+  if (j.has("charge_rules")) {
+    auto cr = typing_from(j["charge_rules"], path);
+    ff.charge_typing.insert(ff.charge_typing.end(), cr.begin(), cr.end());
+  }
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
   ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
   ff.united_atom = ff.united_atom || (j.has("united_atom") && j["united_atom"].boolean());
@@ -1577,10 +1581,26 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     ff.charge.assign(n, 0.0);
     for (size_t i = 0; i < n; ++i)
       if (!std::isnan(FT[i]->charge)) ff.charge[i] = FT[i]->charge;
+    // charge keys finer than the types (the typing file's charge_rules), else the types' increment names
+    std::vector<std::string> Nk = Nq;
+    if (!def.charge_typing.empty()) {
+      FFDef keys;
+      keys.name = def.name + " charge keys";
+      keys.typing = def.charge_typing;
+      keys.typing_unknown_untyped = true;
+      const TypingResult kr = assign_types(s, keys, &T);   // %TYPE in a charge rule: the atom's assigned type
+      int unkeyed = 0;
+      for (size_t i = 0; i < n; ++i) {
+        if (kr.types[i].empty()) { ++unkeyed; continue; }
+        Nk[i] = kr.types[i];
+      }
+      if (unkeyed) rep.notes.push_back(std::to_string(unkeyed) + " atoms without a charge key: their type's increments were used");
+      rep.charge_keys = Nk;
+    }
     int unmatched = 0;
     for (const auto& b : s.bonds) {
       bool rev = false;
-      const FFRule* r = lookup(def.bond_increments, Nq, {b.i, b.j}, &rev);
+      const FFRule* r = lookup(def.bond_increments, Nk, {b.i, b.j}, &rev);
       // then the bond equivalents, as COMPASS's tools match increments (c43, c44, c4o are c4 for bonds: c4-c43 is c4-c4)
       if (!r) r = lookup(def.bond_increments, Nb, {b.i, b.j}, &rev);
       if (!r || r->params.size() < 2) {

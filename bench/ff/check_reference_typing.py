@@ -7,8 +7,13 @@ it with its own chemical-group recognition and writes a DL_POLY FIELD file: per 
 CAPS types the same atoms (same order) with its library force field. Reported per polymer: types that agree, the
 largest charge difference, and the first disagreements.
 
+With --energies, both sides also write LAMMPS files for the same structure and LAMMPS (LMP, default
+~/lammps/build-class2/lmp) evaluates them in one common setting (a 400 Å box, Coulomb and van der Waals cut off at
+25 Å, no k-space), each with its own styles, coefficients and 1-4 scaling: every bond, angle, dihedral, improper,
+van der Waals and Coulomb term must give the same energy.
+
 usage: python3 bench/ff/check_reference_typing.py --ff opls2005 [--caps-ff opls2005] [--polymer substring] [--dp 3]
-                                                   [--jobs 8] [--keep DIR] [--json OUT]
+                                                   [--energies] [--jobs 8] [--keep DIR] [--json OUT]
 """
 import json, os, re, subprocess, sys, tempfile
 from concurrent.futures import ProcessPoolExecutor
@@ -25,9 +30,49 @@ ONLY = arg("--polymer", "")
 DP = int(arg("--dp", "3"))
 JOBS = int(arg("--jobs", "8"))
 WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_reftype_")
+ENERGIES = "--energies" in sys.argv
+LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
+CAPS_CLI = os.path.join(ROOT, "build", "cli", "caps")
+TERMS = ["E_bond", "E_angle", "E_dihed", "E_impro", "E_vdwl", "E_coul"]
 
 
-def reference(xyz, work):
+def lammps_terms(infile, work):
+    """Every energy term of an input, in the common setting (its own styles and coefficients)."""
+    src = open(infile).read().split("\n")
+    out = []
+    for l in src:
+        w = l.split()
+        if not w:
+            out.append(l); continue
+        k = w[0]
+        if k in ("kspace_style", "kspace_modify", "run", "minimize", "fix", "velocity", "dump", "thermo", "thermo_style", "thermo_modify", "timestep", "neighbor", "neigh_modify", "comm_modify"):
+            continue
+        if k == "pair_style":
+            # the same potential without long-range Coulomb: coul/long → coul/cut, one cut-off for all
+            l = re.sub(r"coul/long", "coul/cut", l)
+            l = re.sub(r"(lj/[a-z0-9/]*coul/cut|lj/class2/coul/cut|lj/cut)\s+[0-9.]+(\s+[0-9.]+)?", lambda m: m.group(1) + " 25.0", l)
+        if k == "pair_coeff":
+            l = l.replace("coul/long", "coul/cut")
+        out.append(l)
+        if k == "read_data":
+            out.append("change_box all x final -200 200 y final -200 200 z final -200 200 units box")
+            out.append("boundary f f f") if False else None
+    out += ["neighbor 2.0 bin", "neigh_modify one 10000 page 200000", "thermo_style custom step " + " ".join(t.lower().replace("e_", "e") for t in TERMS),
+            "thermo_modify format float %.10f", "run 0"]
+    txt = "\n".join(x for x in out if x is not None)
+    txt = txt.replace("thermo_style custom step ebond eangle edihed eimpro evdwl ecoul", "thermo_style custom step ebond eangle edihed eimp evdwl ecoul")
+    path = os.path.join(work, "common.in")
+    open(path, "w").write(txt)
+    r = subprocess.run([LMP, "-in", "common.in", "-log", "none"], cwd=work, capture_output=True, text=True, timeout=600)
+    lines = r.stdout.split("\n")
+    for i, l in enumerate(lines):
+        if l.split()[:1] == ["Step"]:
+            vals = lines[i + 1].split()
+            return [float(v) for v in vals[1:7]]
+    raise RuntimeError("LAMMPS: " + " | ".join((r.stdout + r.stderr).strip().split("\n")[-3:]))
+
+
+def reference(xyz, work, lammps=False):
     """Types and charges from DL_FIELD for one .xyz (its atom order)."""
     os.makedirs(work, exist_ok=True)
     import shutil
@@ -41,8 +86,10 @@ def reference(xyz, work):
             l = f"{REF_FF}  * Type of force field require"
         elif "* Configuration file" in l:
             l = f"{os.path.basename(xyz)}  * Configuration file."
+        elif "* Periodic condition" in l and lammps:
+            l = "1        * Periodic condition ? 0=no, other number = type of box (see below)"
         elif "* Seconday output files" in l:
-            l = "none * Seconday output files"
+            l = ("lammps" if lammps else "none") + " * Seconday output files"
         out.append(l)
     open(os.path.join(work, "run.control"), "w").write("\n".join(out))
     r = subprocess.run([os.path.join(DLF, "dl_field")], cwd=work, capture_output=True, text=True, timeout=600)
@@ -97,13 +144,39 @@ def one(job):
     except Exception as e:
         return (pid, name, "caps", str(e)[:200], None)
     ct = [a.get("type") or "?" for a in rep["atoms"]]
+    energies = None
+    if ENERGIES:
+        try:
+            rw = os.path.join(d, "ref_lmp")
+            reference(xyz, rw, lammps=True)
+            re_ = lammps_terms(os.path.join(rw, "dlf_output1", "lammps.in"), os.path.join(rw, "dlf_output1"))
+            cw = os.path.join(d, "caps_lmp")
+            os.makedirs(cw, exist_ok=True)
+            ffp = CAPS_FF if os.path.exists(CAPS_FF) else os.path.join(ROOT, "data", "forcefields", CAPS_FF + ".json")
+            r2 = subprocess.run([CAPS_CLI, "ff", "apply", xyz, "--ff", ffp, "-o", os.path.join(cw, "caps.data"), "--lammps-input", os.path.join(cw, "caps.in")],
+                                capture_output=True, text=True, timeout=600)
+            if not os.path.exists(os.path.join(cw, "caps.in")):
+                raise RuntimeError("caps ff apply: " + (r2.stdout + r2.stderr).strip()[-200:])
+            ce = lammps_terms(os.path.join(cw, "caps.in"), cw)
+            energies = {t: (a, b) for t, a, b in zip(TERMS, re_, ce)}
+        except Exception as e:
+            energies = {"error": str(e)[:200]}
     cq = [a.get("q", 0.0) for a in rep["atoms"]]
     # CAPS types may be named for their parameter class through aliases: compare by the reference's names
     diffs = [(i, rt[i], ct[i], rq[i], cq[i]) for i in range(n) if rt[i].lower() != ct[i].lower()]
     dq = max(abs(rq[i] - cq[i]) for i in range(n))
     worst = sorted(range(n), key=lambda i: -abs(rq[i] - cq[i]))[:3]
-    return (pid, name, "ok" if not diffs and dq < 1e-3 else "differs",
-            f"types {n - len(diffs)}/{n} · max |Δq| {dq:.3f}", {"type_diffs": diffs[:8], "charge_worst": [(i, rt[i], rq[i], cq[i]) for i in worst],
+    ediff = ""
+    eok = True
+    if energies is not None:
+        if "error" in energies:
+            ediff, eok = " · energies: " + energies["error"], False
+        else:
+            eworst = max(abs(a - b) / max(1.0, abs(a)) for a, b in energies.values())
+            eok = eworst < 1e-4
+            ediff = f" · energy terms {eworst:.1e}" + ("" if eok else " (" + ", ".join(f"{t[2:]} {a:.3f}/{b:.3f}" for t, (a, b) in energies.items() if abs(a - b) / max(1.0, abs(a)) >= 1e-4) + ")")
+    return (pid, name, "ok" if not diffs and dq < 1e-3 and eok else "differs",
+            f"types {n - len(diffs)}/{n} · max |Δq| {dq:.3f}" + ediff, {"type_diffs": diffs[:8], "charge_worst": [(i, rt[i], rq[i], cq[i]) for i in worst],
                                                                  "caps_complete": rep.get("complete"), "charges": rep.get("charges")})
 
 

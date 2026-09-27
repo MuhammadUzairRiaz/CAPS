@@ -767,6 +767,7 @@ void field_run(caps_doc* d) {
       a["q"] = F.ff->charge[i];
       qsum += F.ff->charge[i];
     }
+    if (i < F.rep.charge_keys.size()) a["ck"] = F.rep.charge_keys[i];   // the charge key its increments were looked up by
     atoms.push_back(a);
   }
   r["atoms"] = atoms;

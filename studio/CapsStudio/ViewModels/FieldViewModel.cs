@@ -95,7 +95,7 @@ public sealed partial class FieldViewModel : ObservableObject
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 
     /// <summary>Kept for callers that rank force fields: the list's own order (catalogue "list.order") now decides.</summary>
-    internal static readonly string[] PolymerFirst = ["pcff", "compass", "opls2005", "oplsaa2024-moltemplate"];
+    internal static readonly string[] PolymerFirst = ["pcff-frc", "compass-frc", "opls2005", "oplsaa2024-moltemplate"];
 
     private void LoadCatalogue()
     {
