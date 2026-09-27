@@ -183,6 +183,12 @@ struct caps_doc {
     double lens_radius = 10;
     int lens_inside = 0, lens_outside = 4;
     bool lens_dim = false;
+    // clip slab (design/boards/Appearance "Clip planes"): only atoms whose fractional coordinate along the axis (the cell's,
+    // else the structure's extent) lies in [clip_from, clip_to] are drawn; clip_invert draws the rest instead
+    bool clip = false;
+    int clip_axis = 2;
+    double clip_from = 0.0, clip_to = 0.5;
+    bool clip_invert = false;
   } display;
   int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
   double vision_severity = 1.0;
@@ -527,6 +533,25 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     if (r.colour_by == caps::ColourBy::Property) caps::property_values(st, "DistanceToCOM", r.property);
   } else if (r.colour_by == caps::ColourBy::Property && r.property.size() != d->frame.atoms.size()) {
     r.property = d->dcom;
+  }
+  if (D.clip) {   // the clip slab hides what lies outside it, whatever the styles
+    const caps::System& sys = d->pstate ? d->pstate->system : d->frame;
+    const size_t n = sys.atoms.size();
+    if (r.atom_style.size() != n) r.atom_style.assign(n, uint8_t(r.style));
+    const int ax = std::clamp(D.clip_axis, 0, 2);
+    double lo = 0, hi = 1;
+    if (!sys.cell.valid()) {
+      lo = 1e300, hi = -1e300;
+      for (const auto& a : sys.atoms) lo = std::min(lo, a.pos[size_t(ax)]), hi = std::max(hi, a.pos[size_t(ax)]);
+      if (hi - lo < 1e-9) hi = lo + 1;
+    }
+    for (size_t i = 0; i < n; ++i) {
+      double f;
+      if (sys.cell.valid()) { f = sys.cell.to_fractional(sys.atoms[i].pos)[size_t(ax)]; f -= std::floor(f); }
+      else f = (sys.atoms[i].pos[size_t(ax)] - lo) / (hi - lo);
+      const bool in = f >= D.clip_from && f <= D.clip_to;
+      if (in == D.clip_invert) r.atom_style[i] = uint8_t(caps::Style::Hidden);
+    }
   }
   return r;
 }
@@ -7182,6 +7207,15 @@ extern "C" int32_t caps_set_display(caps_doc* d, const char* json) {
     auto& D = d->display;
     D.polar_h_only = flag(j, "polar_h_only", D.polar_h_only);
     D.selection_full = flag(j, "selection_full", D.selection_full);
+    if (j.has("clip")) {
+      const caps::Json& C = j["clip"];
+      D.clip = flag(C, "on", D.clip);
+      D.clip_axis = std::clamp(int(C.num("axis", D.clip_axis)), 0, 2);
+      D.clip_from = std::clamp(C.num("from", D.clip_from), 0.0, 1.0);
+      D.clip_to = std::clamp(C.num("to", D.clip_to), 0.0, 1.0);
+      if (D.clip_to < D.clip_from) std::swap(D.clip_from, D.clip_to);
+      D.clip_invert = flag(C, "invert", D.clip_invert);
+    }
     if (j.has("lens")) {
       const caps::Json& L = j["lens"];
       D.lens = flag(L, "on", D.lens);

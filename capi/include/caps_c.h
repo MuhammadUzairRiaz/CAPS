@@ -888,7 +888,8 @@ int32_t caps_ewald_params(caps_doc* d, const char* json, char* out, int32_t cap)
 int32_t caps_atom_residues(caps_doc* d, int32_t* out, int32_t cap);
 /* v20 display (design/boards DisplayStyles, LensView, AddHydrogens, ModelResolution). The Backbone style draws tubes
    through each chain's main-chain atoms (side groups hidden, small molecules without H).
-   caps_set_display {polar_h_only, selection_full, lens: {on, centre (atom), radius Å, inside, outside (styles 0–4), dim}}:
+   caps_set_display {polar_h_only, selection_full, lens: {on, centre (atom), radius Å, inside, outside (styles 0–4), dim},
+   clip: {on, axis (0 x, 1 y, 2 z), from, to (fractions of the cell along the axis, else of the structure's extent), invert}}:
      view only, the structure is untouched. caps_lens_inside: 1 when the atom is inside the lens (or no lens).
    caps_display_counts → {atoms, h, heavy, polar_h, chains, backbone_atoms, lens_atoms, lens_h}.
    caps_hydrogen_plan → {rows: [{label, atoms, hydrogens}], heavy, h, add, net_charge, aromatic_bonds, selection}: what
