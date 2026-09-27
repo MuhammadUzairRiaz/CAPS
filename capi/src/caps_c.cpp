@@ -112,6 +112,7 @@ struct AppearanceState {
   float opacity = 0.6f;
   std::string surface_expr;        // atoms the surface wraps ("" all)
   int surface_colour = 1;          // 0 one colour, 1 electrostatic potential, 2 nearest atom
+  std::vector<double> preview_q;   // colour by these charges instead of the structure's (Charges page, before Apply)
   // for the current frame
   std::vector<uint8_t> style;      // 255: the view's style
   std::unique_ptr<caps::Mesh> mesh, poly;
@@ -505,7 +506,8 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     if (L.colour == 4) {
       r.colour_by = caps::ColourBy::Property;
       r.property.clear();
-      for (const auto& a : d->frame.atoms) r.property.push_back(a.charge);
+      if (L.preview_q.size() == d->frame.atoms.size()) r.property = L.preview_q;
+      else for (const auto& a : d->frame.atoms) r.property.push_back(a.charge);
       r.ramp = L.ramp;
       r.symmetric = true;
     } else if (L.colour >= 0) {
@@ -1096,6 +1098,7 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->look.active = d->look.active;   // the look's settings; its surface meshes are not carried
     sd->look.layers = d->look.layers;
     sd->look.colour = d->look.colour;
+    sd->look.preview_q = d->look.preview_q;
     sd->look.ramp = d->look.ramp;
     sd->selection = d->selection;
     sd->cell_repeats = d->cell_repeats;
@@ -4613,6 +4616,9 @@ extern "C" int32_t caps_set_appearance(caps_doc* d, const char* json) {
       }
     const std::string colour = j.text("colour", "");
     L.colour = colour == "element" ? 0 : colour == "molecule" ? 1 : colour == "type" ? 2 : colour == "distance" ? 3 : colour == "charge" ? 4 : -1;
+    L.preview_q.clear();
+    if (j.has("charges") && j["charges"].is_array())
+      for (const auto& x : j["charges"].items()) L.preview_q.push_back(x.number());
     const std::string ramp = j.text("ramp", "blue_orange");
     L.ramp = ramp == "viridis" ? caps::Ramp::Viridis : ramp == "red_white_blue" ? caps::Ramp::RedWhiteBlue : caps::Ramp::BlueOrange;
     const caps::Json sf = j.has("surface") ? j["surface"] : caps::Json::object();
@@ -4642,7 +4648,9 @@ extern "C" int32_t caps_appearance_info(caps_doc* d, char* json, int32_t cap) {
   for (const auto& [k, v] : c) counts[k] = v;
   j["styles"] = counts;
   double qlo = 0, qhi = 0;
-  for (const auto& a : d->frame.atoms) qlo = std::min(qlo, a.charge), qhi = std::max(qhi, a.charge);
+  if (L.preview_q.size() == d->frame.atoms.size()) for (double x : L.preview_q) qlo = std::min(qlo, x), qhi = std::max(qhi, x);
+  else for (const auto& a : d->frame.atoms) qlo = std::min(qlo, a.charge), qhi = std::max(qhi, a.charge);
+  j["preview"] = L.preview_q.size() == d->frame.atoms.size();
   caps::Json q = caps::Json::array();
   q.push_back(qlo), q.push_back(qhi);
   j["charge"] = q;

@@ -482,6 +482,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (was is 20 or 21 && m != 20) SuspendPipeline();
         if (m == 20) ApplyPipeline();
         if (m == 19 || was == 19) RenderRequested?.Invoke();   // the view takes (or gives back) the render background
+        if (was == 50) EndChargePreview();   // the view shows the structure's own charges again
         if (was == 40 && _doc != null) { try { _doc.Voids("{\"clear\":true}"); _fvVoids = 0; Raise(nameof(FvHasVoids)); RenderRequested?.Invoke(); } catch { } }
         Raise(nameof(IsGrow));
         Raise(nameof(IsAnalyze));

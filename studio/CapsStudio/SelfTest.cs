@@ -933,7 +933,10 @@ internal static class SelfTest
             var ok = vm.IsCharges && !vm.ChargeHasError && vm.ChargeNet.Contains("0.000000") && groups.Contains("C aromatic") && groups.Contains("H on sp³ C") && vm.ChargeHistogram.Length == 21;
             var q0 = vm.Document!.Atom(0).Charge;
             vm.ChargeMethod = 1;   // QEq differs from the Gasteiger charges the melt carries
+            vm.WaitAppearance();
+            var previewOk = vm.ChargePreviewing && vm.Document!.AppearanceInfo().Contains("\"preview\":true") && Math.Abs(vm.Document!.Atom(0).Charge - q0) < 1e-12;
             vm.ApplyCharges();
+            previewOk &= !vm.ChargePreviewing;
             var q1 = vm.Document!.Atom(0).Charge;
             vm.UndoEdit(false);
             var q2 = vm.Document!.Atom(0).Charge;
@@ -944,6 +947,9 @@ internal static class SelfTest
                   $"charges: {vm.ChargeNet} · largest {vm.ChargeMax} · {string.Join(", ", groups)} · applied {q0:0.000}→{q1:0.000}, undone {q2:0.000} · no field: {refused}");
             vm.AppColour = 0;
             vm.SetModule(8);
+            vm.WaitAppearance();
+            Check(previewOk && !vm.ChargePreviewing && !vm.Document!.AppearanceInfo().Contains("\"preview\":true"),
+                  $"charges preview: the view shows the computed QEq charges before Apply, the structure's after ({previewOk})");
         }
 
         // Periodic box: the melt's crossing chains, pieces when wrapped, a crossing bond measured three ways, images, centring
