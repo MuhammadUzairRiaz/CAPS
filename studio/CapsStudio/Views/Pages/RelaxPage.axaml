@@ -64,7 +64,9 @@
                   <NumericUpDown Grid.Row="1" Value="{Binding RelaxDensityD}" Minimum="0.05" Maximum="3" Increment="0.05" FormatString="0.000" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RelaxStepD}" Minimum="0.005" Maximum="0.5" Increment="0.01" FormatString="0.000" />
                 </Grid>
-                <CheckBox Classes="toggle" Content="Relax box volume (isotropic)" IsChecked="{Binding RelaxBox}" />
+                <CheckBox Classes="toggle" Content="Relax the box towards a pressure" IsChecked="{Binding RelaxBox}" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.RelaxBoxModes}" SelectedIndex="{Binding RelaxBoxMode}" HorizontalAlignment="Stretch" IsEnabled="{Binding RelaxBox}"
+                          ToolTip.Tip="Each axis on its own follows its diagonal pressure (orthorhombic cells): a film or slab relaxes its thickness alone, or its area at a fixed thickness" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
                   <TextBlock Text="Pressure (atm)" Classes="label" /><TextBlock Grid.Column="1" Text="Cut-off (Å)" Classes="label" />
                   <NumericUpDown Grid.Row="1" Value="{Binding RelaxPressureD}" Increment="1" FormatString="0.0" IsEnabled="{Binding RelaxBox}" />
@@ -118,9 +120,9 @@
               <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                   <v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="Distance restraints" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="k (r − r₀)², added to the energy that is minimised" />
-                  <Button Grid.Column="2" Classes="small" Content="Add measured pair" Click="OnAddRestraint" IsEnabled="{Binding CanAddRestraint}"
-                          ToolTip.Tip="Shift-click two atoms in the view, then add: the pair is pulled to the target while minimising" ToolTip.ShowOnDisabled="True" />
+                  <TextBlock Grid.Column="1" Text="Restraints" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="k (r − r₀)² for a pair, k (φ − φ₀)² for a dihedral, added to the energy that is minimised" />
+                  <Button Grid.Column="2" Classes="small" Content="Add measured" Click="OnAddRestraint" IsEnabled="{Binding CanAddRestraint}"
+                          ToolTip.Tip="Shift-click two atoms (a distance) or four (a dihedral) in the view, then add: held at the target while minimising" ToolTip.ShowOnDisabled="True" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding RelaxRestraints}">
                   <ItemsControl.ItemTemplate>
@@ -130,11 +132,11 @@
                           <TextBlock Text="{Binding Atoms}" Classes="mono" FontSize="11.5" />
                           <TextBlock Text="{Binding MeasuredText}" Classes="dim" FontSize="10.5" />
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="r₀ Å" Classes="dim" VerticalAlignment="Center" />
-                        <NumericUpDown Grid.Column="2" Value="{Binding R0D}" Minimum="0" Maximum="100" Increment="0.1" FormatString="0.00" ShowButtonSpinner="False" />
+                        <TextBlock Grid.Column="1" Text="{Binding TargetLabel}" Classes="dim" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="2" Value="{Binding R0D}" Minimum="-180" Maximum="180" Increment="0.1" FormatString="0.##" ShowButtonSpinner="False" />
                         <TextBlock Grid.Column="3" Text="k" Classes="dim" VerticalAlignment="Center" />
                         <NumericUpDown Grid.Column="4" Value="{Binding KD}" Minimum="0" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False"
-                                       ToolTip.Tip="kcal/mol/Å²" />
+                                       ToolTip.Tip="{Binding KTip}" />
                         <Button Grid.Column="5" Classes="ghost" Content="×" Click="OnRemoveRestraint" Tag="{Binding}" ToolTip.Tip="Remove" />
                       </Grid>
                     </DataTemplate>

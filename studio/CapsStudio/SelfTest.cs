@@ -1978,6 +1978,25 @@ internal static class SelfTest
             vm.PackStart = 0;
         }
         {
+            // a dihedral restraint: a backbone torsion held at +60° (gauche; the sign as the measurement gives it) while the cell relaxes, measured the same way
+            using var dr = CapsDocument.Open(Path.Combine(dir, "ps_melt.data"));
+            int[] Heavy(int a) => System.Text.Json.Nodes.JsonNode.Parse(dr.AtomProperties(a))!["neighbours"]!.AsArray()
+                .Where(n => (string?)n!["element"] == "C").Select(n => (int)n!["index"]!.GetValue<double>()).ToArray();
+            int[]? quad = null;
+            for (var j = 0; j < 200 && quad == null; j++)
+                foreach (var k in Heavy(j))
+                {
+                    var i = Heavy(j).FirstOrDefault(x => x != k, -1);
+                    var l = Heavy(k).FirstOrDefault(x => x != j && x != i, -1);
+                    if (i >= 0 && l >= 0) { quad = [i, j, k, l]; break; }
+                }
+            var phiBefore = dr.Measure(quad!);
+            dr.SetRestraints($"[{{\"i\":{quad![0]},\"j\":{quad[1]},\"k\":{quad[2]},\"l\":{quad[3]},\"phi0\":60,\"kphi\":200}}]");
+            dr.Relax(new CapsRelaxOpts { Method = 2, Ftol = 1, MaxIterations = 2000, Pushoff = 1, Cutoff = 10, Coulomb = 1 }, null);
+            var after = dr.Measure(quad);
+            Check(Math.Abs(after - 60) < 6, $"dihedral restraint: torsion {string.Join("-", quad.Select(x => x + 1))} {phiBefore:F1}° → {after:F1}° (target +60°, the measured sign)");
+        }
+        {
             // the Properties explorer: the structure in numbers, then a picked atom with its bonded neighbours
             vm.Open(Path.Combine(dir, "ps_melt.data"));
             vm.RefreshProperties();

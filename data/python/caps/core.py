@@ -90,7 +90,7 @@ class _RenderOpts(C.Structure):
 class _RelaxOpts(C.Structure):
     _fields_ = [("method", C.c_int32), ("ftol", C.c_double), ("max_iterations", C.c_int32), ("target_density", C.c_double),
                 ("compress_step", C.c_double), ("pushoff", C.c_int32), ("relax_box", C.c_int32), ("pressure", C.c_double),
-                ("cutoff", C.c_double), ("coulomb", C.c_int32), ("threads", C.c_int32)]
+                ("cutoff", C.c_double), ("coulomb", C.c_int32), ("threads", C.c_int32), ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32)]
 
 
 class _MdOpts(C.Structure):
@@ -300,16 +300,22 @@ class Document:
     # engines
     def relax(self, ftol: float = 0.5, method: str = "lbfgs", max_iterations: int = 5000, density: float = 0.0, pushoff: bool = True,
               box: bool = False, pressure: float = 1.0, cutoff: float = 10.0, coulomb: bool = True, threads: int = 0,
-              restraints: Optional[list] = None) -> int:
+              restraints: Optional[list] = None, box_axes: str = "") -> int:
         """Minimises the current frame with the Field assignment (else the built-in GAFF): 0 converged, 1 not quite.
         restraints: [(i, j, r0), …] or [(i, j, r0, k), …] — k (r − r0)² between atoms i and j (indices from 0, Å,
-        k kcal/mol/Å², default 10); they stay set for later relaxations until relax(restraints=[]) clears them."""
+        k kcal/mol/Å², default 10); dihedral ones as {"i", "j", "k", "l", "phi0", "kphi"} dicts; they stay set for later
+        relaxations until relax(restraints=[]) clears them. box_axes: "z", "xy" … relaxes the box axis by axis (only
+        those axes move); "" keeps the isotropic box relaxation (box=True)."""
         if restraints is not None:
-            rs = [{"i": int(r[0]), "j": int(r[1]), "r0": float(r[2]), "k": float(r[3]) if len(r) > 3 else 10.0} for r in restraints]
+            rs = [dict(r) if isinstance(r, dict) else {"i": int(r[0]), "j": int(r[1]), "r0": float(r[2]), "k": float(r[3]) if len(r) > 3 else 10.0}
+                  for r in restraints]
             if library().caps_set_restraints(self._h, _enc(json.dumps(rs))) < 0:
                 raise _error()
         o = _RelaxOpts({"sd": 0, "cg": 1, "lbfgs": 2, "fire": 3}[method], ftol, max_iterations, density, 0.06, int(pushoff), int(box),
-                       pressure, cutoff, int(coulomb), threads)
+                       pressure, cutoff, int(coulomb), threads, int(bool(box_axes)),
+                       sum({"x": 1, "y": 2, "z": 4}[a] for a in set(box_axes)))
+        if box_axes:
+            o.relax_box = 1
         rep = _report()
         rc = library().caps_relax(self._h, C.byref(o), None, None, rep, len(rep))
         if rc < 0:

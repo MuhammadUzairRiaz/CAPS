@@ -38,6 +38,10 @@ struct RelaxOptions {
   // (pull two groups to a contact distance, hold a hydrogen bond, close a gap). Reported at the end.
   struct Restraint { uint32_t i = 0, j = 0; double r0 = 0, k = 10; };   // Å, kcal/mol/Å²
   std::vector<Restraint> restraints;
+  // Dihedral restraints: k (φ − φ0)² on the i-j-k-l dihedral (IUPAC sign, φ0 in degrees, k in kcal/mol/rad²): hold a
+  // backbone torsion trans or gauche, set a side group's orientation while the rest relaxes.
+  struct DihedralRestraint { uint32_t i = 0, j = 0, k = 0, l = 0; double phi0 = 180, kphi = 50; };
+  std::vector<DihedralRestraint> dihedral_restraints;
 
   // Soft push-off before minimising (Auhl et al., J. Chem. Phys. 119, 12718 (2003)): LJ forces capped, the cap raised
   // stage by stage. Needed after Grow with a contact scale below 1, or for any structure with overlaps.
@@ -53,6 +57,10 @@ struct RelaxOptions {
   double pressure = 1.0;          // atm
   double pressure_tol = 100.0;    // atm
   int box_cycles = 40;
+  // Anisotropic: each Cartesian axis with box_axes[k] set follows its own diagonal pressure P_kk (a film or slab: z
+  // alone, or x and y at a fixed thickness); the others keep their length. Orthorhombic cells.
+  bool box_anisotropic = false;
+  bool box_axes[3] = {true, true, true};
 
   // Called often; return false to cancel (throws RelaxCancelled).
   std::function<bool(const RelaxProgress&)> progress;

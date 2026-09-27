@@ -77,6 +77,29 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
       const double g = 2 * rs.k * (r - rs.r0) / r;   // −dE/dx_j = −g d
       for (int c = 0; c < 3; ++c) out[3 * rs.j + c] -= g * dv[c], out[3 * rs.i + c] += g * dv[c];
     }
+    for (const auto& dr : o.dihedral_restraints) {   // k (φ − φ0)², Blondel & Karplus, J. Comput. Chem. 17, 1132 (1996)
+      if (3 * size_t(std::max({dr.i, dr.j, dr.k, dr.l})) + 2 >= p.size()) continue;
+      auto at = [&](uint32_t a) { return Vec3{p[3 * a], p[3 * a + 1], p[3 * a + 2]}; };
+      auto mi = [&](Vec3 v) { return cell.valid() ? cell.minimum_image(v) : v; };
+      const Vec3 b1 = mi(at(dr.j) - at(dr.i)), b2 = mi(at(dr.k) - at(dr.j)), b3 = mi(at(dr.l) - at(dr.k));
+      const Vec3 m = cross(b1, b2), nn = cross(b2, b3);
+      const double m2 = dot(m, m), n2 = dot(nn, nn), lb2 = norm(b2);
+      if (m2 < 1e-12 || n2 < 1e-12 || lb2 < 1e-9) continue;   // collinear: no dihedral
+      const double phi = std::atan2(lb2 * dot(b1, nn), dot(m, nn));
+      double dphi = phi - dr.phi0 * M_PI / 180.0;
+      dphi -= 2 * M_PI * std::round(dphi / (2 * M_PI));
+      en += dr.kphi * dphi * dphi;
+      const double dE = 2 * dr.kphi * dphi;   // dE/dφ
+      const Vec3 gi = m * (-lb2 / m2), gl = nn * (lb2 / n2);
+      const double s1 = dot(b1, b2) / (lb2 * lb2), s3 = dot(b3, b2) / (lb2 * lb2);
+      const Vec3 gj = gi * (s1 - 1) - gl * s3, gk = gl * (s3 - 1) - gi * s1;
+      for (int c = 0; c < 3; ++c) {
+        out[3 * dr.i + c] -= dE * gi[c];
+        out[3 * dr.j + c] -= dE * gj[c];
+        out[3 * dr.k + c] -= dE * gk[c];
+        out[3 * dr.l + c] -= dE * gl[c];
+      }
+    }
     for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < out.size(); ++i)
       if (o.fixed[i]) out[3 * i] = out[3 * i + 1] = out[3 * i + 2] = 0;   // held atoms feel no force and do not move
     return en;
@@ -352,7 +375,79 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
 
   RelaxStage last = run("minimise", o.energy, o);
 
-  if (o.relax_box) {
+  if (o.relax_box && o.box_anisotropic) {
+    // each chosen axis on its own: a secant iteration on ln L_k towards the target P_kk, positions minimised between
+    if (std::fabs(cell.a[1]) + std::fabs(cell.a[2]) + std::fabs(cell.b[0]) + std::fabs(cell.b[2]) + std::fabs(cell.c[0]) + std::fabs(cell.c[1]) > 1e-6)
+      throw FieldError("relaxing the box axis by axis needs an orthorhombic cell (right angles, axes along x, y and z)");
+    double bulk[3] = {3.0e4, 3.0e4, 3.0e4}, lnl_prev[3] = {0, 0, 0}, p_prev[3] = {0, 0, 0}, max_step[3] = {0.02, 0.02, 0.02};
+    bool have_prev = false;
+    int cycles = 0;
+    RelaxStage st = last;
+    auto diag = [&](double out[3]) {
+      const EnergyTerms t = ev.compute(x, cell, f);
+      ++rep.evaluations;
+      for (int k = 0; k < 3; ++k) out[k] = t.w[k] / cell.volume() * 68568.415;   // atm (0 K: no kinetic part)
+      st.pressure = (out[0] + out[1] + out[2]) / 3;
+    };
+    double pk[3];
+    diag(pk);
+    for (; cycles < o.box_cycles; ++cycles) {
+      bool done = true;
+      for (int k = 0; k < 3; ++k)
+        if (o.box_axes[k] && std::fabs(pk[k] - o.pressure) >= o.pressure_tol) done = false;
+      if (done) break;
+      for (int k = 0; k < 3; ++k) {
+        if (!o.box_axes[k]) continue;
+        const double lnl = std::log(std::fabs(k == 0 ? cell.a[0] : k == 1 ? cell.b[1] : cell.c[2]));
+        if (have_prev && std::fabs(lnl - lnl_prev[k]) > 1e-9) {
+          const double b = -(pk[k] - p_prev[k]) / (lnl - lnl_prev[k]);
+          if (b > 1e3 && b < 5e6) bulk[k] = b;
+          if ((pk[k] - o.pressure) * (p_prev[k] - o.pressure) < 0) max_step[k] *= 0.5;
+        }
+        lnl_prev[k] = lnl;
+        p_prev[k] = pk[k];
+        const double dl = std::clamp((pk[k] - o.pressure) / bulk[k], -max_step[k], max_step[k]);
+        const double mu = std::exp(dl);
+        for (size_t i = 0; i < x.size(); i += 3) x[i + k] = cell.origin[k] + mu * (x[i + k] - cell.origin[k]);
+        cell.a[k] *= mu;
+        cell.b[k] *= mu;
+        cell.c[k] *= mu;
+      }
+      have_prev = true;
+      ev.set_options(o.energy);
+      RelaxOptions mo = o;
+      auto user = o.progress;
+      const double rho = density_of(cell);
+      const double pnow = st.pressure;
+      mo.progress = [&, user, rho, pnow](const RelaxProgress& q0) {
+        if (!user) return true;
+        RelaxProgress q = q0;
+        q.stage = "box (each axis)";
+        q.stage_index = stages;
+        q.stages = stages;
+        q.density = rho;
+        q.pressure = pnow;
+        return user(q);
+      };
+      st = minimise(ev, x, cell, mo, "box", &rep.evaluations);
+      rep.iterations += st.iterations;
+      st.density = rho;
+      diag(pk);
+    }
+    char nm[160];
+    std::snprintf(nm, sizeof nm, "box relaxed axis by axis to Pxx %.0f · Pyy %.0f · Pzz %.0f atm in %d cycles%s", pk[0], pk[1], pk[2], cycles,
+                  o.box_axes[0] && o.box_axes[1] && o.box_axes[2] ? "" : " (only the chosen axes moved)");
+    st.name = nm;
+    rep.stages.push_back(st);
+    if (o.snapshot) o.snapshot(x, cell, "box");
+    for (int k = 0; k < 3; ++k)
+      if (o.box_axes[k] && std::fabs(pk[k] - o.pressure) >= o.pressure_tol) {
+        rep.notes.push_back("the box's axis pressures did not all reach the tolerance in " + std::to_string(o.box_cycles) + " cycles");
+        break;
+      }
+    rep.notes.push_back("box relaxation is 0 K mechanical equilibrium; the density at a temperature needs Dynamics (NPT)");
+    last = st;
+  } else if (o.relax_box) {
     // Secant iteration on ln V towards the target pressure, minimising positions at each volume.
     double bulk = 3.0e4;   // atm, first guess (about 3 GPa)
     double lnv_prev = 0, p_prev = 0;
