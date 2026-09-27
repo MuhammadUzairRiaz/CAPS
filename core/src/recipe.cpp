@@ -12,6 +12,7 @@
 #include "caps/config.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/equilibrate.hpp"
+#include "caps/polystats.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
@@ -693,6 +694,22 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             e.md.constraint_algorithm = constraint_algorithm_from_string(text(J, "constraint_solver", "shake"));
           } catch (const std::exception& ex) { throw RecipeError(2, std::string("equilibrate: ") + ex.what()); }
           e.until_converged = flag(J, "until_converged", false);
+          if (J.has("block_ps")) e.block_ps = num(J, "block_ps", e.block_ps);
+          if (J.has("max_blocks")) e.max_blocks = int(num(J, "max_blocks", e.max_blocks));
+          if (J.has("tol_internal")) e.tol_internal = num(J, "tol_internal", e.tol_internal);
+          // internal_target: "ris-pe" (Flory's polyethylene C_n at t_final, for alkane cells) or [value at n = 0, 1, 2 …]
+          if (J.has("internal_target")) {
+            const Json& it = J["internal_target"];
+            if (it.is_string() && it.str() == "ris-pe") {
+              const auto c = ris_cn(RisModel{}, pp.t_final, 2000);
+              e.internal_target.assign(1, 0.0);
+              e.internal_target.insert(e.internal_target.end(), c.begin(), c.end());
+            } else if (it.is_array()) {
+              for (const auto& x : it.items()) e.internal_target.push_back(x.number());
+            } else {
+              throw RecipeError(2, "equilibrate: internal_target is \"ris-pe\" or an array of values indexed by n");
+            }
+          }
           e.progress = [&](int si, int sn, const std::string& label, const ThermoRow&) {
             report(k, st, proto + " · step " + std::to_string(si + 1) + "/" + std::to_string(sn) + " · " + label, "running", sn ? double(si) / sn : 0);
             return true;

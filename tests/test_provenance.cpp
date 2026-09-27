@@ -443,6 +443,31 @@ TEST(Recipe, FillGapsFromAnotherForceField) {
   EXPECT_TRUE(said);
 }
 
+// md with bonds to hydrogen held by LINCS: the manifest names the solver and cites Hess et al.; an unknown solver is an
+// input error; equilibrate takes an internal-distance target (the RIS polyethylene curve)
+TEST(Recipe, ConstraintSolverAndInternalTarget) {
+  caps::RecipeOptions o;
+  const auto res = caps::run_recipe(caps::yaml_parse(
+      "build: {polymer: {smiles: \"*CC*\", dp: 6, chains: 2}}\ntype: {forcefield: default}\ngrow: {density: 0.4, seed: 2}\nrelax: {fmax: 5}\n"
+      "md: {ensemble: nvt, ps: 0.1, dt: 2, constraints: h-bonds, constraint_solver: lincs, seed: 3}\n"), o);
+  bool named = false, cited = false;
+  for (const auto& st : res.manifest.steps)
+    if (st.engine == "dynamics.nvt") {
+      for (const auto& [k, v] : st.params) named |= k == "constraint solver" && v == "LINCS";
+      for (const auto& c : st.cites) cited |= c == "hess1997";
+    }
+  EXPECT_TRUE(named);
+  EXPECT_TRUE(cited);
+  EXPECT_NE(caps::methods_text(res.manifest).find("LINCS"), std::string::npos);
+  int code = 0;
+  try { caps::run_recipe(caps::yaml_parse("build: {molecule: CCO}\ntype: {forcefield: uff}\nmd: {ps: 0.01, constraints: h-bonds, constraint_solver: nope}\n"), o); }
+  catch (const caps::RecipeError& e) { code = e.code; }
+  EXPECT_EQ(code, 2);
+  EXPECT_NO_THROW(caps::run_recipe(caps::yaml_parse(
+      "build: {polymer: {smiles: \"*CC*\", dp: 6, chains: 2}}\ntype: {forcefield: default}\ngrow: {density: 0.4, seed: 2}\nrelax: {fmax: 5}\n"
+      "equilibrate: {protocol: larsen21, time_scale: 0.002, until_converged: true, block_ps: 0.2, max_blocks: 2, internal_target: ris-pe}\n"), o));
+}
+
 TEST(Recipe, ExitCodes) {
   caps::RecipeOptions o;
   auto code = [&](const std::string& y) {

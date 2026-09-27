@@ -396,6 +396,17 @@ internal static class SelfTest
         try { cell.Equilibrate("npt 5 ps T 300", eqOpts, null); }
         catch (InvalidOperationException e) { badText = e.Message.Contains("pressure"); }
         Check(badText, "equilibrate: a protocol line without a pressure is reported");
+        {
+            // an internal-distance target far from the cell's curve: the blocks never converge, and the check names the curve
+            var far = Enumerable.Range(0, 30).Select(k => k == 0 ? 0.0 : 50.0).ToArray();
+            var h = System.Runtime.InteropServices.GCHandle.Alloc(far, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try
+            {
+                var (farConv, farRep) = cell.Equilibrate("nvt 0.3 ps T 300 # hold", eqOpts with { MaxBlocks = 2, InternalTarget = h.AddrOfPinnedObject(), InternalTargetN = far.Length }, null);
+                Check(!farConv && farRep.Contains("of the target curve"), $"equilibrate: a far internal-distance target keeps it unconverged ({farConv})");
+            }
+            finally { h.Free(); }
+        }
         // React: C–C crosslinks through the React panel's interop (two cycles, relaxed, no dynamics).
         var atomsBefore = cell.Summary().Atoms;
         var rxRows = 0;
@@ -2120,8 +2131,17 @@ internal static class SelfTest
             pe.Dispose();
             vm.Open(peFile);
             var risOk = vm.RisCurve.Length > 5 && vm.ChainNote.Contains("RIS polyethylene");
+            vm.EqTarget = 1;
+            var risTarget = vm.EqTargetNote.Contains("Flory");
+            var tf = Path.Combine(outDir, "target.dat");
+            File.WriteAllText(tf, "# n  C(n)\n1 1.0\n2 1.9\n3, 2.6\nbad line\n10 4.8\n");
+            vm.LoadEqTarget(tf);
+            var fileOk = vm.EqTarget == 2 && vm.ChainReference.Length == 4 && vm.ChainReference[^1] == (10.0, 4.8);
+            vm.EqTarget = 1;
             vm.Open(Path.Combine(dir, "ps_melt.data"));
-            Check(risOk && vm.RisCurve.Length == 0, $"RIS reference: {vm.RisCurve.Length} on PS · alkane note ok {risOk}");
+            Check(risOk && vm.RisCurve.Length == 0 && risTarget && fileOk && vm.EqTargetNote.Contains("no target"),
+                  $"RIS reference: {vm.RisCurve.Length} on PS · alkane note ok {risOk} · RIS target {risTarget} · file target {fileOk} · {vm.EqTargetNote}");
+            vm.EqTarget = 0;
         }
 
         // Field › Fill from OPLS 2005: natural rubber under OPLS-AA 2024 lacks the CM-CT-CT-CM torsion; one click borrows
