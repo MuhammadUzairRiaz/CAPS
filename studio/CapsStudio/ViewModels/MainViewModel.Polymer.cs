@@ -238,6 +238,12 @@ public sealed partial class MainViewModel
         PolyChanged();
     }
 
+    // end groups in place of the chain ends' hydrogens (core chain_end_smiles)
+    public static readonly string[] EndGroups = ["hydrogen", "methyl", "ethyl", "tert-butyl", "sec-butyl", "phenyl", "hydroxyl", "carboxyl", "vinyl", "amine"];
+    private int _headCap, _tailCap;
+    public int HeadCap { get => _headCap; set { if (Set(ref _headCap, Math.Clamp(value, 0, EndGroups.Length - 1))) PolyChanged(); } }
+    public int TailCap { get => _tailCap; set { if (Set(ref _tailCap, Math.Clamp(value, 0, EndGroups.Length - 1))) PolyChanged(); } }
+
     /// <summary>The chain as the core reads it (caps_chain_preview / caps_grow_chains).</summary>
     public string PolySpecJson(int? dp = null)
     {
@@ -250,6 +256,8 @@ public sealed partial class MainViewModel
             ["blocks"] = new JsonArray(PolyUnits.Select(u => (JsonNode)(int)u.Block).ToArray()),
             ["pattern"] = _polyPattern,
         };
+        if (_headCap > 0) o["head_cap"] = EndGroups[_headCap];
+        if (_tailCap > 0) o["tail_cap"] = EndGroups[_tailCap];
         if (_polyArch != 0)
         {
             o["architecture"] = ArchIds[_polyArch];

@@ -71,7 +71,15 @@ struct ChainSpec {
   // Keep every unit's configuration as written (no mirrored units): chiral units such as nucleotides and sugars, whose
   // stereocentres are fixed (D-ribose), not a tacticity. Tacticity settings are then ignored.
   bool keep_configuration = false;
+  // End groups in place of the chain ends' hydrogens: a SMILES with one * where it bonds ("*C" methyl, "*C(C)(C)C"
+  // tert-butyl from an initiator, "*c1ccccc1" phenyl, "*O" hydroxyl) or a preset name (chain_end_smiles); "" hydrogen.
+  // Each goes along its cap's bond, turned to keep clear of the chain; relax before dynamics.
+  std::string head_cap, tail_cap;
 };
+// The preset end groups: hydrogen, methyl, ethyl, tert-butyl, sec-butyl, phenyl, hydroxyl, carboxyl, vinyl, amine;
+// any other string with a * is taken as SMILES ("" and "hydrogen": none).
+std::string chain_end_smiles(const std::string& name);
+const std::vector<std::string>& chain_end_names();
 
 // Chain lengths drawn from a distribution (design/boards/Polydispersity): "monodisperse", "schulz-zimm" (Gamma with
 // k = 1/(Đ − 1)), "flory" (most probable, geometric), "poisson" (Đ ≈ 1 + 1/Nn). Deterministic for a seed on every

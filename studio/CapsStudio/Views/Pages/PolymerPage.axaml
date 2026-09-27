@@ -211,8 +211,11 @@
                     <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Head-to-tail" /></ComboBox>
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="6">
-                    <TextBlock Text="Caps" Classes="label" />
-                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="H / H" /></ComboBox>
+                    <TextBlock Text="End groups (head / tail)" Classes="label" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.EndGroups}" SelectedIndex="{Binding HeadCap}" HorizontalAlignment="Stretch" ToolTip.Tip="The group on the chain's first unit (e.g. an initiator fragment); hydrogen by default" />
+                      <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.EndGroups}" SelectedIndex="{Binding TailCap}" HorizontalAlignment="Stretch" ToolTip.Tip="The group on the chain's last unit" />
+                    </Grid>
                   </StackPanel>
                 </Grid>
                 <TextBlock Classes="dim" TextWrapping="Wrap"
