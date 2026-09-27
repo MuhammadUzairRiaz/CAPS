@@ -2870,6 +2870,27 @@ std::vector<std::array<std::string, 3>> pipeline_step_catalogue() {
   for (const auto& s : kSteps) out.push_back({s.type, s.title, s.about});
   return out;
 }
+std::vector<std::string> pipeline_citations(const Pipeline& p) {
+  std::vector<std::string> out;
+  auto add = [&](const char* k) { if (std::find(out.begin(), out.end(), k) == out.end()) out.push_back(k); };
+  for (const auto& st : p.steps) {
+    if (!st.enabled) continue;
+    const std::string& t = st.type;
+    if (t == "cna") add("honeycutt1987"), add("stukowski2012");
+    else if (t == "ptm") add("larsen2016");
+    else if (t == "centrosymmetry") add("kelchner1998");
+    else if (t == "primitive_paths") add("everaers2004");
+    else if (t == "msd") add("einstein1905");
+    else if (t == "voronoi") {
+      const std::string m = st.params.text("method", "grid");
+      if (m == "exact" || m == "exact_radical") add("rycroft2009");
+      if (m == "exact_radical" || m == "radical") add("gellatly1982");
+      add("bondi1964");
+    } else if (t == "voids") add("bondi1964");
+  }
+  return out;
+}
+
 std::string step_title(const std::string& type) {
   for (const auto& s : kSteps) if (type == s.type) return s.title;
   return type;
