@@ -171,7 +171,8 @@ RecipeCheck check_recipe(const Json& r) {
         if (J.is_array()) for (const auto& x : J.items()) f.push_back(x.str());
         else if (J.is_string()) f.push_back(J.str());
         for (const auto& x : f)
-          if (x != "lammps" && x != "gromacs" && x != "gro" && x != "pdb" && x != "xyz" && x != "mol2") throw RecipeError(2, "export: unknown format '" + x + "'");
+          if (x != "lammps" && x != "moltemplate" && x != "gromacs" && x != "gro" && x != "pdb" && x != "xyz" && x != "mol2" && x != "sdf" && x != "cif")
+            throw RecipeError(2, "export: unknown format '" + x + "'");
         info.summary = list(J.is_array() ? J : Json::array());
       }
     } catch (const RecipeError& e) {
@@ -736,6 +737,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         report(k, st, d, "done", 1);
       } else if (st == "export") {
         report(k, st, "", "running", 0);
+        if (!ff && r.has("type")) type_now(s);   // the recipe's force field for the engine files, even without a run before
         std::vector<std::string> formats;
         if (J.is_array()) for (const auto& f : J.items()) formats.push_back(f.str());
         else if (J.is_string()) formats.push_back(J.str());
@@ -757,6 +759,17 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             } else {
               write_lammps_data(s, path);
             }
+          } else if (f == "moltemplate") {   // the LAMMPS system as moltemplate input (the same energies through moltemplate.sh -overlay-all)
+            if (!ff) throw RecipeError(3, "export moltemplate: type the structure first (a type stage)");
+            LammpsStyle ls;
+            ls.native = text(J, "lammps_styles", "native") != "exact";
+            const std::string dp = stem + ".lt.data", ip = stem + ".lt.in";
+            write_lammps_data_ff(s, *ff, energy, dp, false, ls);
+            write_lammps_input(s, *ff, energy, std::filesystem::path(dp).filename().string(), ip, 0, true, {}, ls);
+            path = stem + ".lt";
+            std::ofstream(path) << lammps_to_moltemplate(dp, ip, ff->name);
+            std::filesystem::remove(dp);
+            std::filesystem::remove(ip);
           } else if (f == "gromacs" && ff) {   // topology, coordinates and a single-point .mdp with the same force field
             write_gromacs(s, *ff, energy, stem);
             res.files.push_back(stem + ".top");
@@ -766,7 +779,9 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           else if (f == "pdb") { path = stem + ".pdb"; write_pdb(s, path); }
           else if (f == "xyz") { path = stem + ".xyz"; write_xyz(s, path); }
           else if (f == "mol2") { path = stem + ".mol2"; write_mol2(s, path); }
-          else throw RecipeError(2, "export: unknown format '" + f + "' (lammps, gromacs, pdb, xyz, mol2)");
+          else if (f == "sdf") { path = stem + ".sdf"; write_sdf(s, path); }
+          else if (f == "cif") { path = stem + ".cif"; write_cif(s, path); }
+          else throw RecipeError(2, "export: unknown format '" + f + "' (lammps, moltemplate, gromacs, pdb, xyz, mol2, sdf, cif)");
           res.files.push_back(path);
           if (first.empty()) first = path;
         }
