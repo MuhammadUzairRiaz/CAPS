@@ -130,6 +130,7 @@ struct caps_doc {
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
+  std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
   double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
@@ -1029,6 +1030,7 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->ph = d->ph;
     sd->held_mol = d->held_mol;
     sd->restraints = d->restraints;
+    sd->dihedral_restraints = d->dihedral_restraints;
     sd->analysis = d->analysis;
     sd->eq_checks = d->eq_checks;
     if (d->field) sd->field = std::make_unique<FieldState>(*d->field);
@@ -1407,6 +1409,10 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     if (o->compress_step > 0) r.compress_step = o->compress_step;
     r.pushoff = o->pushoff != 0;
     r.relax_box = o->relax_box != 0;
+    r.box_anisotropic = o->box_anisotropic != 0;
+    if (o->box_axes & 7)
+      for (int k = 0; k < 3; ++k) r.box_axes[k] = (o->box_axes >> k) & 1;
+    r.dihedral_restraints = d->dihedral_restraints;
     r.pressure = o->pressure;
     if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
     r.energy.coulomb = o->coulomb != 0;
@@ -3924,9 +3930,18 @@ extern "C" int32_t caps_set_restraints(caps_doc* d, const char* json) {
   int32_t n = 0;
   const int32_t rc = guard([&] {
     std::vector<caps::RelaxOptions::Restraint> v;
+    std::vector<caps::RelaxOptions::DihedralRestraint> dv;
     if (json && *json) {
       const caps::Json j = caps::Json::parse(json);
       for (const auto& e : j.items()) {
+        if (e.has("l")) {   // four atoms: a dihedral restraint {i, j, k, l, phi0 (°), kphi (kcal/mol/rad²)}
+          caps::RelaxOptions::DihedralRestraint q;
+          q.i = uint32_t(e.num("i", 0)), q.j = uint32_t(e.num("j", 0)), q.k = uint32_t(e.num("k", 0)), q.l = uint32_t(e.num("l", 0));
+          q.phi0 = e.num("phi0", 180), q.kphi = e.num("kphi", 50);
+          if (q.kphi < 0) throw std::invalid_argument("a dihedral restraint needs kphi ≥ 0");
+          dv.push_back(q);
+          continue;
+        }
         caps::RelaxOptions::Restraint r;
         r.i = uint32_t(e.num("i", 0)), r.j = uint32_t(e.num("j", 0)), r.r0 = e.num("r0", 0), r.k = e.num("k", 10);
         if (r.r0 < 0 || r.k < 0) throw std::invalid_argument("a restraint needs r0 ≥ 0 and k ≥ 0");
@@ -3934,7 +3949,8 @@ extern "C" int32_t caps_set_restraints(caps_doc* d, const char* json) {
       }
     }
     d->restraints = std::move(v);
-    n = int32_t(d->restraints.size());
+    d->dihedral_restraints = std::move(dv);
+    n = int32_t(d->restraints.size() + d->dihedral_restraints.size());
     return 0;
   });
   return rc < 0 ? -1 : n;

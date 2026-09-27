@@ -943,6 +943,10 @@ public sealed partial class MainViewModel : ObservableObject
     public bool RelaxPushoff { get => _relaxPushoff; set => Set(ref _relaxPushoff, value); }
     public bool RelaxCompress { get => _relaxCompress; set => Set(ref _relaxCompress, value); }
     public bool RelaxBox { get => _relaxBox; set => Set(ref _relaxBox, value); }
+    // how the box relaxes: every axis together (the volume), each on its own, only z (a film's thickness), only x and y
+    public static readonly string[] RelaxBoxModes = ["Isotropic (the volume)", "Each axis on its own", "Only z (a film or slab)", "Only x and y (fixed thickness)"];
+    private int _relaxBoxMode;
+    public int RelaxBoxMode { get => _relaxBoxMode; set => Set(ref _relaxBoxMode, Math.Clamp(value, 0, 3)); }
     public bool RelaxCoulomb { get => _relaxCoulomb; set => Set(ref _relaxCoulomb, value); }
     public bool Relaxing { get => _relaxing; private set { if (Set(ref _relaxing, value)) RaiseBusy(); } }
     public bool CanRelax => _doc != null && Idle;
@@ -1005,6 +1009,7 @@ public sealed partial class MainViewModel : ObservableObject
             Method = _relaxMethod, Ftol = _relaxFtol, MaxIterations = _relaxIterations,
             TargetDensity = _relaxCompress ? _relaxDensity : 0, CompressStep = _relaxStep,
             Pushoff = _relaxPushoff ? 1 : 0, RelaxBox = _relaxBox ? 1 : 0, Pressure = _relaxPressure,
+            BoxAnisotropic = _relaxBoxMode > 0 ? 1 : 0, BoxAxes = _relaxBoxMode switch { 2 => 4, 3 => 3, _ => 7 },
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
         };
         _relaxEnergy.Clear();

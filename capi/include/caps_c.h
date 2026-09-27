@@ -98,6 +98,8 @@ typedef struct {
   double cutoff;                   /* Å, LJ and Coulomb */
   int32_t coulomb;                 /* damped shifted force electrostatics */
   int32_t threads;                 /* 0 = automatic */
+  int32_t box_anisotropic;         /* ABI 29: 1 each axis follows its own diagonal pressure (orthorhombic cells) */
+  int32_t box_axes;                /* ABI 29: axes that move, bits 1 x, 2 y, 4 z (0 = all) */
 } caps_relax_opts;
 
 /* Relax progress: (stage, stages, iteration, energy kcal/mol, largest force, density, user) -> non-zero cancels. */
@@ -694,7 +696,8 @@ int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap);
    an interface. A document from caps_interface_build holds molecule 1. */
 void caps_set_held_molecule(caps_doc* d, int64_t mol);
 /* Distance restraints for caps_relax, as JSON: [{"i": 0, "j": 5, "r0": 3.0, "k": 10}, …] (atom indices from 0, Å,
-   kcal/mol/Å²); "[]" or NULL clears them. Returns the number set, or -1 on a malformed list. */
+   kcal/mol/Å²); entries with "l" are dihedral restraints (ABI 29): {"i", "j", "k", "l", "phi0": degrees, "kphi":
+   kcal/mol/rad²}; "[]" or NULL clears them. Returns the number set, or -1 on a malformed list. */
 int32_t caps_set_restraints(caps_doc* d, const char* json);
 /* Add hydrogens by pH (v21): amino-acid residues protonated at `ph` (model pKa values) before the "add_h" edit and
    in caps_hydrogen_plan; a negative pH goes back to neutral valences. "add_h" also takes {ph} for one edit. */
