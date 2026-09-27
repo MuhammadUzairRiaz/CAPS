@@ -10,6 +10,8 @@
 #include "caps/import.hpp"
 #include "caps/io.hpp"
 #include "caps/checks.hpp"
+#include "caps/edit.hpp"
+#include "caps/molecule.hpp"
 #include <zlib.h>
 
 using namespace caps;
@@ -340,4 +342,33 @@ TEST(Import, WritersRoundTrip) {
   const caps::Trajectory z = caps::open_file((dir / "caps_rt.lammpstrj.gz").string(), kTraj + "water.data");
   ASSERT_EQ(z.frames(), melt.frames());
   EXPECT_EQ(z.positions.back()[5][0], melt.positions.back()[5][0]);
+}
+
+// Structure checks: a squeezed bond angle, a cut aromatic ring; clean molecules pass without them
+TEST(Import, AngleAndRingChecks) {
+  auto titles = [](const caps::System& s) {
+    caps::Trajectory t;
+    t.topology = s;
+    std::vector<caps::Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    t.positions.push_back(p);
+    t.cells.push_back(s.cell);
+    t.timesteps.push_back(0);
+    std::string all;
+    for (const auto& c : caps::file_checks(t)) all += c.title + "|";
+    return all;
+  };
+  caps::BuildOptions bo;
+  bo.forcefield = "uff";
+  caps::System butane = caps::build_molecule("CCCC", bo).system;
+  EXPECT_EQ(titles(butane).find("bond angles below"), std::string::npos);
+  caps::set_bond_angle(butane, 0, 1, 2, 55.0);
+  EXPECT_NE(titles(butane).find("1 bond angles below 70°"), std::string::npos);
+  caps::System benzene = caps::build_molecule("c1ccccc1", bo).system;
+  for (auto& b : benzene.bonds) if (benzene.atoms[b.i].element == 6 && benzene.atoms[b.j].element == 6) b.order = 4;
+  EXPECT_EQ(titles(benzene).find("aromatic atoms"), std::string::npos);
+  std::vector<char> del(benzene.atoms.size(), 0);
+  del[0] = 1;
+  caps::delete_atoms(benzene, del);
+  EXPECT_NE(titles(benzene).find("2 aromatic atoms with a single aromatic bond"), std::string::npos);
 }
