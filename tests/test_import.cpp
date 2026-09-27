@@ -10,6 +10,7 @@
 #include "caps/import.hpp"
 #include "caps/io.hpp"
 #include "caps/checks.hpp"
+#include <zlib.h>
 
 using namespace caps;
 
@@ -279,4 +280,64 @@ TEST(Import, ChecksFlagBondsLongerThanHalfTheBox) {
   t.timesteps.push_back(0);
   const auto checks = caps::file_checks(t);
   EXPECT_TRUE(std::any_of(checks.begin(), checks.end(), [](const caps::FileCheck& c) { return c.level == "error" && c.title.find("half the box") != std::string::npos; }));
+}
+
+// The writers read back: SD file (V2000, and V3000 above 999 atoms), CIF in P 1, DCD with its cells (against the
+// trajectory it was written from, to single precision), and a gzip-compressed dump opened directly
+TEST(Import, WritersRoundTrip) {
+  const auto dir = std::filesystem::temp_directory_path();
+  const caps::Trajectory melt = caps::open_file(kTraj + "water.lammpstrj", kTraj + "water.data");
+  const caps::System s = melt.frame(0);
+  // SDF
+  caps::write_sdf(s, (dir / "caps_rt.sdf").string());
+  const caps::System r = caps::open_file((dir / "caps_rt.sdf").string()).topology;
+  ASSERT_EQ(r.atoms.size(), s.atoms.size());
+  ASSERT_EQ(r.bonds.size(), s.bonds.size());
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    EXPECT_EQ(r.atoms[i].element, s.atoms[i].element);
+    EXPECT_LT(caps::norm(r.atoms[i].pos - s.atoms[i].pos), 1e-4);
+  }
+  {
+    caps::System big;
+    for (int k = 0; k < 1200; ++k) { caps::Atom a; a.element = 6; a.pos = {1.5 * (k % 20), 1.5 * (k / 20 % 20), 1.5 * (k / 400)}; a.id = k + 1; big.atoms.push_back(a); }
+    for (uint32_t k = 0; k + 1 < 1200; ++k) big.bonds.push_back({k, k + 1, 1});
+    caps::write_sdf(big, (dir / "caps_big.sdf").string());
+    std::ifstream in(dir / "caps_big.sdf");
+    std::string l1, l2, l3, counts;
+    std::getline(in, l1), std::getline(in, l2), std::getline(in, l3), std::getline(in, counts);
+    EXPECT_NE(counts.find("V3000"), std::string::npos);
+    const caps::System rb = caps::open_file((dir / "caps_big.sdf").string()).topology;
+    EXPECT_EQ(rb.atoms.size(), 1200u);
+    EXPECT_EQ(rb.bonds.size(), 1199u);
+  }
+  // CIF
+  caps::write_cif(s, (dir / "caps_rt.cif").string());
+  const caps::System c = caps::open_file((dir / "caps_rt.cif").string()).topology;
+  ASSERT_EQ(c.atoms.size(), s.atoms.size());
+  EXPECT_NEAR(c.cell.volume(), s.cell.volume(), 1e-3);
+  double worst = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) worst = std::max(worst, caps::norm(s.cell.minimum_image(c.atoms[i].pos - s.atoms[i].pos)));
+  EXPECT_LT(worst, 1e-4);
+  // DCD
+  caps::write_dcd(melt, (dir / "caps_rt.dcd").string());
+  const caps::Trajectory d = caps::open_file((dir / "caps_rt.dcd").string(), kTraj + "water.data");
+  ASSERT_EQ(d.frames(), melt.frames());
+  worst = 0;
+  for (size_t f = 0; f < d.frames(); ++f) {
+    EXPECT_NEAR(d.cells[f].volume(), melt.cells[f].volume(), 1e-2);
+    for (size_t i = 0; i < s.atoms.size(); ++i) worst = std::max(worst, caps::norm(d.positions[f][i] - melt.positions[f][i]));
+  }
+  EXPECT_LT(worst, 1e-4);
+  EXPECT_EQ(d.timesteps, melt.timesteps);
+  // gzip
+  {
+    std::ifstream in(kTraj + "water.lammpstrj", std::ios::binary);
+    const std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    gzFile g = gzopen((dir / "caps_rt.lammpstrj.gz").string().c_str(), "wb");
+    gzwrite(g, bytes.data(), unsigned(bytes.size()));
+    gzclose(g);
+  }
+  const caps::Trajectory z = caps::open_file((dir / "caps_rt.lammpstrj.gz").string(), kTraj + "water.data");
+  ASSERT_EQ(z.frames(), melt.frames());
+  EXPECT_EQ(z.positions.back()[5][0], melt.positions.back()[5][0]);
 }
