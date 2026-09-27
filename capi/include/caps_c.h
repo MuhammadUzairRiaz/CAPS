@@ -735,6 +735,10 @@ caps_doc* caps_interface_build(const char* options_json, const char* spec_json, 
    polymer chains grown around it; options add matrix: {chains, density}; the chain spec as caps_grow_chains; the filler
    is molecule 1 and is held in Relax / Dynamics. */
 caps_doc* caps_nano_build(const char* options_json, char* report, int32_t cap);
+/* The same around the document's structure (v34: a filler built and functionalised in the Studio): options {matrix:
+   {chains, density}}; the directions the structure spans across its cell stay periodic; its history comes along. */
+caps_doc* caps_embed_document(caps_doc* filler, const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user,
+                              char* report, int32_t cap);
 caps_doc* caps_nano_embed(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
                           int32_t cap);
 /* Polymer blends (v17): options JSON {components: [{spec: {as caps_grow_chains}, weight, chains}], chains (of the first

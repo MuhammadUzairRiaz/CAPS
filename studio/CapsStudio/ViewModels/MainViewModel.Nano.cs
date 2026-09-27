@@ -197,6 +197,9 @@ public sealed partial class MainViewModel
     private decimal _matrixChains = 10, _matrixDp = 20, _matrixDensity = 0.9m;
     private FilmPolymer? _matrixPolymer;
     public bool NanoMatrix { get => _nanoMatrix; set { if (Set(ref _nanoMatrix, value)) RaiseNano(); } }
+    /// <summary>The matrix grows around the structure shown (e.g. a filler just functionalised) instead of a new one.</summary>
+    private bool _nanoAroundShown;
+    public bool NanoAroundShown { get => _nanoAroundShown; set { if (Set(ref _nanoAroundShown, value)) RaiseNano(); } }
     public decimal MatrixChains { get => _matrixChains; set => Set(ref _matrixChains, Math.Clamp(Math.Round(value), 1, 2000)); }
     public decimal MatrixDp { get => _matrixDp; set => Set(ref _matrixDp, Math.Clamp(Math.Round(value), 2, 2000)); }
     public decimal MatrixDensity { get => _matrixDensity; set => Set(ref _matrixDensity, Math.Clamp(value, 0.1m, 2.0m)); }
@@ -326,12 +329,19 @@ public sealed partial class MainViewModel
                 spec["dp"] = (int)_matrixDp;
                 var g = new CapsGrowOpts { Chains = (int)_matrixChains, Dp = (int)_matrixDp, Tacticity = 0, Seed = 1, Density = 0, ContactScale = 1.0, Curve = 1 };
                 var (optsText, specText) = (o.ToJsonString(), spec.ToJsonString());
-                var (doc, rep) = await Task.Run(() => CapsDocument.NanoEmbed(optsText, specText, g, (d, t, r) =>
+                bool Progress(int d, int t, int r)
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Growing the matrix · {d} of {t} chains · {r} restarts");
                     return true;
-                }, title + " composite"));
-                Show(doc, $"{title} in {poly.Name.Split(" (")[0]}");
+                }
+                // around the structure shown (a filler built and functionalised here), or around a new filler from the options
+                var shown = _nanoAroundShown ? _doc : null;
+                if (_nanoAroundShown && shown == null) throw new InvalidOperationException("open or build the filler first");
+                var fillerName = shown != null ? Title.Replace(" (unsaved)", "") : title;
+                var (doc, rep) = shown != null
+                    ? await Task.Run(() => shown.EmbedInMatrix(optsText, specText, g, Progress, fillerName + " composite"))
+                    : await Task.Run(() => CapsDocument.NanoEmbed(optsText, specText, g, Progress, title + " composite"));
+                Show(doc, $"{fillerName} in {poly.Name.Split(" (")[0]}");
                 GrownUnsaved = true;
                 RelaxCompress = false;   // compression would scale the filler with the matrix
                 NanoLog = rep;
