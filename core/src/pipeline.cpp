@@ -879,6 +879,182 @@ void step_unwrap(PipelineState& st, const Json& p, StepStatus& out) {
   }
 }
 
+Vec3 unit_or_zero(const Vec3& v) { const double n = norm(v); return n > 0 ? v * (1 / n) : v; }
+
+// Largest eigenvalue and its vector of a symmetric 3 × 3 matrix (Jacobi)
+std::pair<double, Vec3> largest_eigen(double A[3][3]) {
+  double V[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  for (int sweep = 0; sweep < 50; ++sweep) {
+    int p = 0, q = 1;
+    for (int i = 0; i < 3; ++i)
+      for (int j = i + 1; j < 3; ++j)
+        if (std::fabs(A[i][j]) > std::fabs(A[p][q])) p = i, q = j;
+    if (std::fabs(A[p][q]) < 1e-14) break;
+    const double th = 0.5 * std::atan2(2 * A[p][q], A[q][q] - A[p][p]), c = std::cos(th), sn = std::sin(th);
+    for (int k = 0; k < 3; ++k) {
+      const double akp = A[k][p], akq = A[k][q];
+      A[k][p] = c * akp - sn * akq, A[k][q] = sn * akp + c * akq;
+    }
+    for (int k = 0; k < 3; ++k) {
+      const double apk = A[p][k], aqk = A[q][k];
+      A[p][k] = c * apk - sn * aqk, A[q][k] = sn * apk + c * aqk;
+    }
+    for (int k = 0; k < 3; ++k) {
+      const double vkp = V[k][p], vkq = V[k][q];
+      V[k][p] = c * vkp - sn * vkq, V[k][q] = sn * vkp + c * vkq;
+    }
+  }
+  int im = 0;
+  for (int i = 1; i < 3; ++i) if (A[i][i] > A[im][im]) im = i;
+  return {A[im][im], Vec3{V[0][im], V[1][im], V[2][im]}};
+}
+
+// Chain orientation per atom (design/boards/PipelineSteps "Chain orientation", "Crystallinity (polymer)"): the backbone
+// chord through each backbone atom (its neighbours i−1 → i+1), P₂ of its angle to the axis (the director, or x, y, z),
+// and crystalline where at least `neighbours` other chords with midpoints within `radius` are aligned within `angle`
+// degrees; hydrogens and side groups take their backbone atom's values
+void step_orientation(PipelineState& st, const Json& p, StepStatus& out) {
+  System whole = st.system;
+  if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
+  const auto bb = backbones(whole, 3);
+  const size_t n = whole.atoms.size();
+  std::vector<Vec3> u, mid;
+  std::vector<uint32_t> at;   // the atom each chord is centred on
+  for (const auto& b : bb)
+    for (size_t i = 1; i + 1 < b.size(); ++i) {
+      const Vec3 d = whole.atoms[b[i + 1]].pos - whole.atoms[b[i - 1]].pos;
+      const double l = norm(d);
+      if (l < 1e-9) continue;
+      u.push_back(d * (1 / l));
+      mid.push_back(whole.atoms[b[i]].pos);
+      at.push_back(b[i]);
+    }
+  if (u.empty()) { out.level = "warning"; out.summary = "no chain backbones of three or more heavy atoms"; return; }
+  double Q[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  for (const Vec3& v : u)
+    for (int a = 0; a < 3; ++a)
+      for (int b = 0; b < 3; ++b) Q[a][b] += (1.5 * v[a] * v[b] - (a == b ? 0.5 : 0)) / double(u.size());
+  auto [S, director] = largest_eigen(Q);
+  const std::string axis = p.text("axis", "director");
+  Vec3 ax = director;
+  if (axis == "x") ax = {1, 0, 0};
+  else if (axis == "y") ax = {0, 1, 0};
+  else if (axis == "z") ax = {0, 0, 1};
+  else if (axis != "director") throw std::invalid_argument("axis is director, x, y or z");
+  const double radius = std::max(1.0, p.num("radius", 5.0)), cosa = std::cos(std::clamp(p.num("angle", 10.0), 0.0, 90.0) * M_PI / 180);
+  const int need = std::max(1, int(p.num("neighbours", 8)));
+  // chords binned by midpoint (fractional in a cell, else a box around them) for the neighbour search
+  const Cell& c = whole.cell;
+  const bool per = c.valid();
+  Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
+  for (const Vec3& m : mid)
+    for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], m[k]), hi[k] = std::max(hi[k], m[k]);
+  std::array<int, 3> nb{1, 1, 1};
+  const double width[3] = {per ? 1.0 / std::fabs(dot(c.a, unit_or_zero(cross(c.b, c.c)))) : 0, per ? 1.0 / std::fabs(dot(c.b, unit_or_zero(cross(c.c, c.a)))) : 0,
+                           per ? 1.0 / std::fabs(dot(c.c, unit_or_zero(cross(c.a, c.b)))) : 0};
+  for (int k = 0; k < 3; ++k) nb[k] = std::max(1, int((per ? 1.0 / width[k] : hi[k] - lo[k] + 1e-6) / radius));
+  auto bin = [&](const Vec3& m, int k) {
+    double f = per ? c.to_fractional(m)[k] : (m[k] - lo[k]) / (hi[k] - lo[k] + 1e-6);
+    if (per) f -= std::floor(f);
+    return std::clamp(int(f * nb[k]), 0, nb[k] - 1);
+  };
+  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::array<int, 3>> where(u.size());
+  for (size_t i = 0; i < u.size(); ++i) {
+    where[i] = {bin(mid[i], 0), bin(mid[i], 1), bin(mid[i], 2)};
+    grid[(size_t(where[i][0]) * nb[1] + where[i][1]) * nb[2] + where[i][2]].push_back(uint32_t(i));
+  }
+  std::vector<double> p2(n, std::nan("")), cr(n, 0), chordp2(u.size()), chordcr(u.size());
+  size_t crystalline = 0;
+  double f_axis = 0;
+  for (size_t i = 0; i < u.size(); ++i) {
+    const double ct = dot(u[i], ax);
+    chordp2[i] = 1.5 * ct * ct - 0.5;
+    f_axis += chordp2[i];
+    int aligned = 0;
+    std::set<size_t> seen;
+    for (int dx = -1; dx <= 1 && aligned < need; ++dx)
+      for (int dy = -1; dy <= 1 && aligned < need; ++dy)
+        for (int dz = -1; dz <= 1 && aligned < need; ++dz) {
+          int bx = where[i][0] + dx, by = where[i][1] + dy, bz = where[i][2] + dz;
+          if (per) bx = (bx + nb[0]) % nb[0], by = (by + nb[1]) % nb[1], bz = (bz + nb[2]) % nb[2];
+          else if (bx < 0 || by < 0 || bz < 0 || bx >= nb[0] || by >= nb[1] || bz >= nb[2]) continue;
+          const size_t cellid = (size_t(bx) * nb[1] + by) * nb[2] + bz;
+          if (!seen.insert(cellid).second) continue;
+          for (uint32_t j : grid[cellid]) {
+            if (j == i) continue;
+            const Vec3 d = per ? c.minimum_image(mid[j] - mid[i]) : mid[j] - mid[i];
+            if (dot(d, d) <= radius * radius && std::fabs(dot(u[i], u[j])) >= cosa && ++aligned >= need) break;
+          }
+        }
+    chordcr[i] = aligned >= need;
+    crystalline += aligned >= need;
+    p2[at[i]] = chordp2[i];
+    cr[at[i]] = chordcr[i];
+  }
+  // the rest of each molecule: its nearest backbone atom's values (along bonds)
+  const auto nbrs = whole.neighbours();
+  std::vector<uint32_t> q;
+  std::vector<char> done(n, 0);
+  for (size_t i = 0; i < n; ++i) if (!std::isnan(p2[i])) done[i] = 1, q.push_back(uint32_t(i));
+  for (size_t h = 0; h < q.size(); ++h)
+    for (uint32_t w : nbrs[q[h]])
+      if (!done[w]) done[w] = 1, p2[w] = p2[q[h]], cr[w] = cr[q[h]], q.push_back(w);
+  for (size_t i = 0; i < n; ++i) if (!done[i]) p2[i] = 0;
+  st.props["Orientation"] = p2;
+  st.props["Crystalline"] = cr;
+  const double frac = double(crystalline) / double(u.size());
+  st.set_attribute("Orientation.S", S);
+  st.set_attribute("Orientation.P2_axis", f_axis / double(u.size()));
+  st.set_attribute("Orientation.director_x", director[0]);
+  st.set_attribute("Orientation.director_y", director[1]);
+  st.set_attribute("Orientation.director_z", director[2]);
+  st.set_attribute("Crystallinity.fraction", frac);
+  char buf[200];
+  std::snprintf(buf, sizeof buf, "S %.3f · ⟨P₂⟩ along %s %.3f · %.1f %% of %zu chords crystalline", S, axis.c_str(), f_axis / double(u.size()), 100 * frac, u.size());
+  out.summary = buf;
+}
+
+// Affine transformation (shear, strain, rotation): positions and/or the cell mapped by the 3 × 3 matrix (row-major,
+// x' = M x) and shifted by the translation; `strain` (exx eyy ezz) is the diagonal shortcut, about the cell centre
+void step_affine(PipelineState& st, const Json& p, StepStatus& out) {
+  double M[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  if (p.has("matrix") && p["matrix"].is_array()) {
+    if (p["matrix"].size() != 9) throw std::invalid_argument("the matrix needs nine numbers (row by row)");
+    for (int k = 0; k < 9; ++k) M[k / 3][k % 3] = p["matrix"][size_t(k)].number();
+  }
+  if (p.has("strain") && p["strain"].is_array() && p["strain"].size() == 3)
+    for (int k = 0; k < 3; ++k) M[k][k] *= 1 + p["strain"][size_t(k)].number();
+  Vec3 t{0, 0, 0};
+  if (p.has("translation") && p["translation"].is_array() && p["translation"].size() == 3) t = {p["translation"][0].number(), p["translation"][1].number(), p["translation"][2].number()};
+  const std::string target = p.text("target", "all");
+  if (target != "all" && target != "particles" && target != "cell") throw std::invalid_argument("target is all, particles or cell");
+  System& s = st.system;
+  // about the cell's centre (or the particles' centre), so a strain keeps the sample in place
+  Vec3 o{0, 0, 0};
+  if (s.cell.valid()) o = s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5;
+  else if (!s.atoms.empty()) { for (const auto& a : s.atoms) o = o + a.pos; o = o * (1.0 / double(s.atoms.size())); }
+  auto apply = [&](const Vec3& v) { return Vec3{M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2], M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2], M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2]}; };
+  const bool only_sel = flag(p, "only_selected", false);
+  size_t moved = 0;
+  if (target != "cell")
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      if (only_sel && !st.selected[i]) continue;
+      s.atoms[i].pos = o + apply(s.atoms[i].pos - o) + t;
+      ++moved;
+    }
+  const double det = M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+  if (target != "particles" && s.cell.valid() && !only_sel) {
+    const Vec3 corner = o + apply(s.cell.origin - o) + t;
+    s.cell.a = apply(s.cell.a), s.cell.b = apply(s.cell.b), s.cell.c = apply(s.cell.c);
+    s.cell.origin = corner;
+  }
+  st.set_attribute("AffineTransformation.volume_ratio", det);
+  char buf[160];
+  std::snprintf(buf, sizeof buf, "%zu particles%s · volume × %.4f", moved, target != "particles" && s.cell.valid() && !only_sel ? " and the cell" : "", det);
+  out.summary = buf;
+}
+
 void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {
   System whole = st.system;
   if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
@@ -1874,6 +2050,8 @@ const StepDef kSteps[] = {
     {"binning", "Spatial binning", "1-D profile along an axis", step_binning},
     {"create_bonds", "Create bonds", "perceived from distances, or by cutoff", step_create_bonds},
     {"unwrap", "Unwrap", "molecules made whole across the boundary", step_unwrap},
+    {"orientation", "Chain orientation", "backbone chords: P₂ per atom, S, director, local crystallinity", step_orientation},
+    {"affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", step_affine},
     {"molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", step_molecule_shape},
     {"topology", "Topology distributions", "bond lengths, angles, dihedrals", step_topology},
     {"displacements", "Displacements", "vs a reference frame, MSD", step_displacements},

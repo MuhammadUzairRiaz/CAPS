@@ -525,6 +525,8 @@ TEST(Charges, GasteigerReportByGroupAndChgFiles) {
 }
 
 #include "caps/spacegroup.hpp"
+#include "caps/pipeline.hpp"
+#include "caps/io.hpp"
 
 TEST(Orientation, PolyethyleneCrystalIsPerfectlyOrdered) {
   // Bunn's orthorhombic PE, 3 × 4 × 8 cells: 24 chains bonded through the cell; the estimator must give S = 1 exactly
@@ -547,6 +549,37 @@ TEST(Orientation, PolyethyleneCrystalIsPerfectlyOrdered) {
   EXPECT_EQ(props[0].extra.at("chord vectors per frame"), 336.0);
   EXPECT_NEAR(std::fabs(props[0].extra.at("director z")), 1.0, 1e-9);
   EXPECT_NEAR(props[0].extra.at("local crystallinity (fraction)"), 1.0, 1e-9);
+}
+
+// The pipeline step gives the same order per atom: every PE atom crystalline, P₂ = 1 along z; the amorphous melt is
+// nearly isotropic; an affine strain scales positions and cell about the centre
+TEST(Orientation, PipelineStepPerAtomAndAffineStrain) {
+  caps::CrystalSpec spec;
+  spec.space_group = "Pnam";
+  spec.a = 7.40, spec.b = 4.93, spec.c = 2.534;
+  spec.sites = {{"C1", 6, {0.0380, 0.0650, 0.25}}, {"H1", 1, {0.1848, 0.0466, 0.25}}, {"H2", 1, {0.0068, 0.2811, 0.25}}};
+  spec.supercell = {3, 4, 8};
+  const caps::System s = caps::build_crystal(spec);
+  auto run = [](const caps::System& f, const std::string& json) { return caps::run_pipeline(f, caps::pipeline_from_json(caps::Json::parse(json)), 0, 0); };
+  auto st = run(s, R"([{"type":"orientation","axis":"z"}])");
+  EXPECT_NEAR(st.attribute("Orientation.S"), 1.0, 1e-9);
+  EXPECT_NEAR(st.attribute("Orientation.P2_axis"), 1.0, 1e-9);
+  EXPECT_NEAR(st.attribute("Crystallinity.fraction"), 1.0, 1e-9);
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    EXPECT_NEAR(st.props.at("Orientation")[i], 1.0, 1e-9) << i;   // hydrogens take their carbon's value
+    EXPECT_EQ(st.props.at("Crystalline")[i], 1.0) << i;
+  }
+  const caps::Trajectory t = caps::open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const caps::System melt = t.frame(0);
+  st = run(melt, R"([{"type":"orientation"}])");
+  EXPECT_LT(st.attribute("Orientation.S"), 0.3);
+  EXPECT_LT(st.attribute("Crystallinity.fraction"), 0.2);
+  st = run(melt, R"([{"type":"affine_transform","strain":[0.1,0,0]}])");
+  EXPECT_NEAR(st.attribute("AffineTransformation.volume_ratio"), 1.1, 1e-12);
+  EXPECT_NEAR(st.system.cell.a[0], 1.1 * melt.cell.a[0], 1e-9);
+  const caps::Vec3 c0 = melt.cell.origin + (melt.cell.a + melt.cell.b + melt.cell.c) * 0.5, c1 = st.system.cell.origin + (st.system.cell.a + st.system.cell.b + st.system.cell.c) * 0.5;
+  EXPECT_NEAR(caps::norm(c1 - c0), 0.0, 1e-9);
+  EXPECT_NEAR(st.system.atoms[0].pos[0] - c0[0], 1.1 * (melt.atoms[0].pos[0] - c0[0]), 1e-9);
 }
 
 TEST(Recipe, CheckedWithoutRunning) {
