@@ -116,7 +116,9 @@ public sealed partial class MainViewModel
     public bool IsExportCenter => _module == 68;
     public static readonly string[] EngineRuns = ["Check (single point)", "Minimise", "NVT", "NPT"];
     private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt"];
-    private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy;
+    private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy, _engMoltemplate;
+    /// <summary>Also the same system as a moltemplate .lt (with the LAMMPS files; the same energies through moltemplate.sh -overlay-all).</summary>
+    public bool EngineMoltemplate { get => _engMoltemplate; set { if (Set(ref _engMoltemplate, value)) RefreshEngines(); } }
     private int _engRun = 3;
     private double _engTemp = 300, _engPress = 1, _engDt = 0;
     private long _engSteps = 100000;
@@ -200,7 +202,7 @@ public sealed partial class MainViewModel
 
     private string EngineOptions(bool preview) => new JsonObject
     {
-        ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
+        ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["moltemplate"] = _engLammps && _engMoltemplate, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
         ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps, ["constraints"] = _engConstraints switch { 1 => "h-bonds", 2 => "all-bonds", _ => "none" },
         ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
         ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace,

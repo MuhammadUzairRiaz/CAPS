@@ -1339,6 +1339,11 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
       written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
+      if (flag("moltemplate", false)) {   // the same as a moltemplate system (moltemplate.sh -overlay-all system.lt)
+        std::ofstream lt(base + ".lt");
+        lt << caps::lammps_to_moltemplate(base + ".data", base + ".in", ff.name);
+        written.push_back({stem + ".lt", "the same system for moltemplate (moltemplate.sh -overlay-all " + stem + ".lt)"});
+      }
     } catch (const std::exception& ex) {
       lammps_error = ex.what();   // refused before its files (prepare checks the force field first)
       if (!gromacs) throw;

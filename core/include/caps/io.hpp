@@ -98,5 +98,10 @@ void write_sdf(const System& s, const std::string& path);
 void write_cif(const System& s, const std::string& path);
 // DCD as LAMMPS writes it (every frame with its cell); dt_fs is the time step recorded in the header
 void write_dcd(const Trajectory& t, const std::string& path, double dt_fs = 1.0);
+// A moltemplate system (.lt text) from the LAMMPS data and input files CAPS writes for a structure with its force field:
+// In Init (units, styles, special bonds), Data Masses, In Settings (pair and every coefficient, class II cross terms as
+// bb / ba / mbt / ebt / at / aat / bb13 / aa), Data Boundary, and the atoms (unwrapped), bonds, angles, dihedrals and
+// impropers, the types named after the force field's. moltemplate.sh gives back the same energies.
+std::string lammps_to_moltemplate(const std::string& data_path, const std::string& input_path, const std::string& title = "");
 
 }  // namespace caps
