@@ -1,5 +1,6 @@
 // CAPS figure bundles (see caps/bundle.hpp).
 #include "caps/bundle.hpp"
+#include "caps/provenance.hpp"
 
 #include <zlib.h>
 
@@ -254,6 +255,14 @@ std::vector<BundleFile> bundle_files(const Trajectory& traj, const Pipeline& pip
   Json pp = Json::object();
   pp["steps"] = double(pipeline.steps.size());
   pp["sha256"] = sha256_hex(pj);
+  // the methods the steps use: their references beside the data
+  const auto refs = pipeline_citations(pipeline);
+  if (!refs.empty()) {
+    Json ra = Json::array();
+    for (const auto& k : refs) ra.push_back(k);
+    pp["references"] = std::move(ra);
+    files.push_back({"references.bib", "the references of the methods the pipeline uses", bibtex(refs)});
+  }
   prov["pipeline"] = std::move(pp);
   Json fig = Json::array();
   fig.push_back(double(opt.width));
@@ -269,7 +278,9 @@ std::vector<BundleFile> bundle_files(const Trajectory& traj, const Pipeline& pip
     r += "data/*.csv               the data behind each plot, one file per table\n";
     r += "pipeline.json            the steps as run (caps pipeline FILE --steps pipeline.json)\n";
     r += "input/                   the structure, when included\n";
-    r += "provenance.json          CAPS version, input hash, pipeline hash and the sha256 of every file\n\n";
+    r += "provenance.json          CAPS version, input hash, pipeline hash and the sha256 of every file\n";
+    if (!refs.empty()) r += "references.bib           the references of the methods the pipeline uses\n";
+    r += "\n";
     r += "Reproduce: caps reproduce " + opt.name + ".caps-bundle.zip\n";
     r += "  rebuilds the data files from input/ and pipeline.json and compares their sha256 with provenance.json.\n";
     files.push_back({"README.txt", "what is inside, how to reproduce it", r});
