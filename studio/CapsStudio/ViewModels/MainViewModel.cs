@@ -1722,6 +1722,67 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void CancelEquilibrate() => _eqCancel?.Cancel();
 
+    // ---- configurational-bias Monte Carlo (Equilibrate › Chain ends): Siepmann & Frenkel regrowth with the Field assignment
+    private int _cbMoves = 2000, _cbTrials = 8, _cbTorsions = 4;
+    private double _cbTemp = 300;
+    private string _cbNote = "";
+    public decimal CbMovesD { get => _cbMoves; set => Set(ref _cbMoves, (int)Math.Clamp(value, 10, 10_000_000)); }
+    public decimal CbTrialsD { get => _cbTrials; set => Set(ref _cbTrials, (int)Math.Clamp(value, 2, 64)); }
+    public decimal CbTorsionsD { get => _cbTorsions; set => Set(ref _cbTorsions, (int)Math.Clamp(value, 1, 12)); }
+    public decimal CbTempD { get => (decimal)_cbTemp; set => Set(ref _cbTemp, Math.Clamp((double)value, 1, 5000)); }
+    public string CbNote { get => _cbNote; private set => Set(ref _cbNote, value); }
+
+    public async Task RunCbmc()
+    {
+        if (_doc == null || !Idle || BlockedByField("CBMC")) return;
+        PrepareRunTarget("regrown");
+        var doc = _doc!;
+        EqRunning = true;
+        IsPlaying = false;
+        _eqCancel = new CancellationTokenSource();
+        var token = _eqCancel.Token;
+        var inv = CultureInfo.InvariantCulture;
+        var o = new CapsCbmcOpts
+        {
+            Moves = _cbMoves, Trials = _cbTrials, MaxTorsions = _cbTorsions, Temperature = _cbTemp,
+            Cutoff = Math.Min(9.0, _relaxCutoff), Coulomb = _relaxCoulomb ? 1 : 0, Seed = (ulong)_mdSeed,
+        };
+        CbNote = "Starting…";
+        Status = $"Regrowing chain ends of {Title} (CBMC)…";
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        long lastUi = 0;
+        try
+        {
+            var json = await Task.Run(() => doc.Cbmc(o, (done, n, acc) =>
+            {
+                if (sw.ElapsedMilliseconds - lastUi > 150)
+                {
+                    lastUi = sw.ElapsedMilliseconds;
+                    var t = string.Format(inv, "{0} of {1} moves · {2} accepted ({3:F0} %) · {4:F0} s", done, n, acc, 100.0 * acc / Math.Max(1, done), sw.Elapsed.TotalSeconds);
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => CbNote = t);
+                }
+                return !token.IsCancellationRequested;
+            }));
+            using var j = System.Text.Json.JsonDocument.Parse(json);
+            var r = j.RootElement;
+            double D(string k) => r.TryGetProperty(k, out var v) ? v.GetDouble() : 0;
+            CbNote = string.Format(inv, "{0:F0} of {1:F0} regrowths accepted ({2:F1} %) · {3:F0} chain ends · ⟨R²⟩ {4:F0} → {5:F0} Å² · ΔE {6:F1} kcal/mol · {7:F1} s",
+                                   D("accepted"), D("attempted"), 100 * D("acceptance"), D("chains"), D("r2_before"), D("r2_after"), D("energy_change"), D("seconds"));
+            AfterRun(doc, " · CBMC");
+            Status = "Chain ends regrown · " + CbNote;
+        }
+        catch (Exception e)
+        {
+            var cancelled = e.Message.Contains("cancelled");
+            CbNote = cancelled ? "Cancelled; the structure is unchanged." : "Could not run CBMC: " + e.Message;
+            Status = cancelled ? "CBMC cancelled" : "Could not run CBMC — see the Equilibrate panel";
+        }
+        finally
+        {
+            EqRunning = false;
+        }
+    }
+
     // ---- the internal-distance target: production blocks also stop only when ⟨R²(n)⟩/(n⟨b²⟩) is within the tolerance of it
     public static readonly string[] EqTargetChoices = ["None: between blocks only", "RIS polyethylene (alkane cells)", "A curve from a file (n, value)"];
     private int _eqTarget;

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 32  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target) */
+#define CAPS_ABI_VERSION 33  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -108,6 +108,24 @@ typedef struct {
 /* Relax progress: (stage, stages, iteration, energy kcal/mol, largest force, density, user) -> non-zero cancels. */
 typedef int32_t (*caps_relax_progress_fn)(int32_t stage, int32_t stages, int32_t iteration, double energy, double fmax, double density,
                                           void* user);
+
+/* Configurational-bias Monte Carlo regrowth of chain ends (v33; Siepmann & Frenkel 1992): moves attempted, torsion trials
+   per bond, rotatable backbone bonds regrown per move at most, temperature (K), pair cut-off (Å), damped shifted force
+   electrostatics, seed. Trial energies come from the Field assignment (or the built-in force field). */
+typedef struct caps_cbmc_opts {
+  int32_t moves, trials, max_torsions;
+  double temperature, cutoff;
+  int32_t coulomb;
+  uint64_t seed;
+} caps_cbmc_opts;
+
+/* CBMC progress: (moves done, moves, accepted, user) -> non-zero cancels. */
+typedef int32_t (*caps_cbmc_progress_fn)(int32_t done, int32_t moves, int32_t accepted, void* user);
+
+/* Regrow chain ends of the current frame. On success the document holds the start and snapshots through the run (the
+   last is the result) and report gets JSON {attempted, accepted, acceptance, chains, r2_before, r2_after, energy_change,
+   cutoff, seconds, notes[]}. Returns 0, or -1 on error / cancel (the document is unchanged). */
+int32_t caps_cbmc(caps_doc* d, const caps_cbmc_opts* o, caps_cbmc_progress_fn progress, void* user, char* report, int32_t report_cap);
 
 /* Relax the current frame with GAFF (C/H in this version). On success the document holds one frame per stage
    (the start, each push-off / compression stage, the final structure) and shows the last one. Returns 0, 1 when

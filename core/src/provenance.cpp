@@ -370,6 +370,9 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
           cite(only(s, {"soldera2006"})) + "; simulated cooling rates are many orders of magnitude faster than calorimetry, so Tg is expected above experiment.";
     } else if (e == "equilibrate.larsen21") {
       t = "The cell was equilibrated with the 21-step compression–decompression protocol (P_max = " + param(s, "Pmax") + ")" + cite({"larsen2011"}) + ", " + param(s, "length") + " of dynamics in all.";
+    } else if (e == "cbmc.regrow") {
+      t = "Chain conformations were sampled by configurational-bias Monte Carlo regrowth of chain ends" + cite({"siepmann1992", "rosenbluth1955"}) + " (" +
+          param(s, "moves") + "; " + param(s, "trials") + "; " + param(s, "temperature") + "), the trial energies being the force field's " + param(s, "trial energies") + ".";
     } else if (e == "equilibrate.protocol") {
       t = "The cell was equilibrated with a " + param(s, "stages") + "-stage protocol, " + param(s, "length") + " of dynamics in all.";
     } else if (e == "pack.lbfgs" || e == "pack.insert" || e == "solvate.pack") {

@@ -204,7 +204,7 @@
                     <Border Classes="radio" Classes.on="{Binding GrowMethodIs2}" VerticalAlignment="Center"><Ellipse /></Border>
                     <StackPanel Grid.Column="1" Spacing="2">
                       <TextBlock Text="Configurational-bias growth, Lennard-Jones" FontWeight="SemiBold" />
-                      <TextBlock Text="Siepmann &amp; Frenkel's trial selection with UFF Lennard-Jones by element (not the Field assignment) · no Monte Carlo acceptance · Mol. Phys. 75, 59 (1992)" Classes="dim" TextWrapping="Wrap" />
+                      <TextBlock Text="Siepmann &amp; Frenkel's trial selection with UFF Lennard-Jones by element (not the Field assignment) · regrowth with the Field assignment and acceptance: Equilibrate › Chain ends · Mol. Phys. 75, 59 (1992)" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                   </Grid>
                 </Border>
