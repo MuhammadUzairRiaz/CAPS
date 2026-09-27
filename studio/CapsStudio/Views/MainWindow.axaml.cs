@@ -503,6 +503,18 @@ public partial class MainWindow : Window
         new VisualizationWindow(_vm, live).Show(this);
     }
 
+    private async void OnExportInspectorCsv(object? s, RoutedEventArgs e)
+    {
+        var name = _vm.InspectorTab switch { 0 => "particles.csv", 1 => "bonds.csv", 2 => "attributes.csv", _ => (_vm.PipeTableName ?? "table") + ".csv" };
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export as CSV",
+            SuggestedFileName = string.Concat(name.Select(c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-' ? c : '_')),
+            FileTypeChoices = [new FilePickerFileType("CSV") { Patterns = ["*.csv"] }],
+        });
+        if (file?.TryGetLocalPath() is { } path) _vm.ExportInspectorCsv(path);
+    }
+
     private async void OnExportGrid(object? s, RoutedEventArgs e)
     {
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
