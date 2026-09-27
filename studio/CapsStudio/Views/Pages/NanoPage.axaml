@@ -278,6 +278,8 @@
                       <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Units per chain" Classes="label" /><NumericUpDown Value="{Binding MatrixDp}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" /></StackPanel>
                       <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding MatrixDensity}" Minimum="0.1" Maximum="2" Increment="0.05" FormatString="0.00" /></StackPanel>
                     </Grid>
+                    <CheckBox Classes="toggle" Content="Around the structure shown (the filler as built and functionalised)" IsChecked="{Binding NanoAroundShown}"
+                              ToolTip.Tip="Off: a new filler from the settings above. On: the structure in the view — build the filler, graft its groups, then grow the matrix around it" />
                     <TextBlock Classes="dim" TextWrapping="Wrap" Text="The filler is held at the centre of a periodic cell (a tube keeps its axis, a sheet its plane) while the chains grow around it; it stays held in Relax and Dynamics." />
                   </StackPanel>
                 </StackPanel>

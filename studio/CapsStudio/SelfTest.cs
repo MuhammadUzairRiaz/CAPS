@@ -589,6 +589,20 @@ internal static class SelfTest
             Check(grafted > 0 && grafted % 4 == 0 && vm.Status.Contains("carboxyl groups"), $"functional groups on a BN tube: +{grafted} atoms · {vm.Status}");
             vm.UndoEdit(false);
             Check(vm.Document!.Summary().Atoms == bare, "functional groups undone");
+            vm.UndoEdit(true);   // redo: the groups back for the composite
+            // the functionalised tube in a natural-rubber matrix: the matrix grows around the structure shown
+            var withGroups = vm.Document!.Summary().Atoms;
+            vm.NanoMatrix = true;
+            vm.NanoAroundShown = true;
+            vm.MatrixChains = 3;
+            vm.MatrixDp = 6;
+            vm.MatrixDensity = 0.5m;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var composite = vm.Document!.Summary();
+            Check(composite.Atoms > withGroups && composite.Molecules == 4 && vm.HoldOn && vm.Document!.Provenance().Contains("nano.embed"),
+                  $"composite around the functionalised tube: {composite.Atoms} atoms, {composite.Molecules} molecules · {vm.NanoError} {vm.Status}");
+            vm.NanoAroundShown = false;
+            vm.NanoMatrix = false;
             vm.NanoMaterial = 0;
         }
 

@@ -426,6 +426,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_embed_document")] public static extern IntPtr EmbedDocument(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_embed")] public static extern IntPtr NanoEmbed([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_blend")] public static extern IntPtr GrowBlend([MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_file_checks")] public static extern int FileChecks(IntPtr doc, byte[]? json, int cap);
@@ -912,6 +913,22 @@ public sealed class CapsDocument : IDisposable
         GC.KeepAlive(cb);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>This structure (a filler, functionalised or not) held at the centre with a polymer matrix grown around it
+    /// (caps_embed_document): a new document.</summary>
+    public (CapsDocument Doc, string Report) EmbedInMatrix(string options, string spec, CapsGrowOpts o, Func<int, int, int, bool>? progress, string label)
+    {
+        using (Hold())
+        {
+            Alive();
+            var report = new byte[8192];
+            CapsProgress? cb = progress == null ? null : (d, t, r, _) => progress(d, t, r) ? 0 : 1;
+            var h = Native.EmbedDocument(H, options, spec, o, cb, IntPtr.Zero, report, report.Length);
+            GC.KeepAlive(cb);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+        }
     }
 
     /// <summary>A polymer blend grown component after component (caps_grow_blend).</summary>
