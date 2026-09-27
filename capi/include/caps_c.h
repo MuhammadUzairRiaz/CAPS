@@ -604,6 +604,9 @@ int32_t caps_pipeline_from_yaml(const char* yaml, char* json, int32_t cap);
    sections in LAMMPS data)}. The preview writes to a scratch file and returns {"lines":[first n],"bytes","atoms","bonds",
    "angles","dihedrals","atom_types","bond_types","angle_types","dihedral_types","notes":[…]}. */
 int32_t caps_export_data(caps_doc* d, const char* path, const char* format, const char* options);
+/* v30 the Visualize pipeline's last grid (the density field step's) written by extension: .cube (Gaussian cube, with the
+   atoms), .vtk (legacy structured grid), .npy (NumPy float64 n0 × n1 × n2). Returns 0, or −1 (no grid; caps_last_error). */
+int32_t caps_pipeline_export_grid(caps_doc* d, const char* path);
 int32_t caps_export_preview(caps_doc* d, const char* format, const char* options, int32_t lines, char* json, int32_t cap);
 /* v19 figure bundles (design/boards/FigureBundle): options JSON {"name","input","topology","frame","width","height",
    "include_input","include_pipeline","include_data","include_readme","pipeline":{"steps":[…]}}. The preview lists
