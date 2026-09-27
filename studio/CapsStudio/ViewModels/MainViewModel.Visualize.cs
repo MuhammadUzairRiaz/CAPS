@@ -135,12 +135,13 @@ public sealed partial class MainViewModel
         new("cna", "Common neighbour analysis", "FCC, HCP, BCC, icosahedral (adaptive CNA)", "Structure", "atom"),
         new("ptm", "Polyhedral template matching", "structure, orientation and strain per particle", "Structure", "atom"),
         new("combine", "Combine datasets", "add the particles of a second file", "Modify", "layers"),
+        new("wigner_seitz", "Wigner–Seitz defects", "vacancies and interstitials against a reference lattice", "Measure", "atom"),
         new("centrosymmetry", "Centrosymmetry", "Kelchner's parameter: defects, surfaces", "Structure", "atom"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
         new("python", "Python step", "your script with an @step function (caps.pipeline API)", "Automate", "terminal"),
         new("primitive_paths", "Primitive paths", "chains pulled tight without crossing · N_e", "Structure", "bond"),
         new("voids", "Voids & pores", "accessible volume for a probe, voids by size", "Structure", "atom"),
-        new("voronoi", "Voronoi volumes", "volume per atom (grid or radical)", "Structure", "hex"),
+        new("voronoi", "Voronoi analysis", "exact cells: volumes, faces, Voronoi index", "Structure", "hex"),
         new("density_field", "Density field", "smoothed mass density, profile, slice", "Structure", "layers"),
         new("vectors", "Vectors", "end-to-end, dipoles, displacements, velocities", "Visual", "move"),
         new("trajectory_lines", "Trajectory lines", "paths of chain centres or particles", "Visual", "history"),
@@ -194,7 +195,7 @@ public sealed partial class MainViewModel
         var name = type switch
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
-            "molecule_shape" => "molecules", "cna" => "structures", "ptm" => "structures", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "molecule_shape" => "molecules", "cna" => "structures", "ptm" => "structures", "wigner_seitz" => "defects", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => (_pipeSel != null && ((string?)_pipeSel.Params["method"] ?? "").StartsWith("exact", StringComparison.Ordinal) ? "voronoi_indices" : "voronoi"), "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", "primitive_paths" => "primitive_paths", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
@@ -437,6 +438,7 @@ public sealed partial class MainViewModel
         "cna" => new JsonObject { ["only_selected"] = false },
         "ptm" => new JsonObject { ["rmsd_max"] = 0.1, ["fcc"] = true, ["hcp"] = true, ["bcc"] = true, ["ico"] = true, ["sc"] = false, ["only_selected"] = false },
         "combine" => new JsonObject { ["path"] = "", ["frame"] = 0 },
+        "wigner_seitz" => new JsonObject { ["reference"] = "frame", ["frame"] = 0, ["path"] = "", ["output"] = "particles" },
         "centrosymmetry" => new JsonObject { ["neighbours"] = 12 },
         "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8 },
         "affine_transform" => new JsonObject { ["strain"] = new JsonArray(0.1, 0.0, 0.0), ["target"] = "all" },
@@ -453,7 +455,7 @@ public sealed partial class MainViewModel
         "msd" => new JsonObject { ["heavy_only"] = true, ["every"] = 1, ["timestep_fs"] = 1.0 },
         "scatter" => new JsonObject { ["x"] = "DistanceToCOM", ["y"] = "Charge", ["only_selected"] = false },
         "voids" => new JsonObject { ["probe"] = 1.4, ["grid"] = 0.5, ["show"] = true },
-        "voronoi" => new JsonObject { ["method"] = "grid", ["grid"] = 0.5 },
+        "voronoi" => new JsonObject { ["method"] = "exact", ["grid"] = 0.5, ["face_area_min"] = 0.0, ["only_selected"] = false },
         "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5 },
         "trajectory_lines" => new JsonObject { ["particles"] = "centres", ["from"] = 0, ["radius"] = 0.12 },
         "primitive_paths" => new JsonObject { ["radius"] = 0.3, ["show_chains"] = false },
@@ -532,7 +534,13 @@ public sealed partial class MainViewModel
                 Text("timestep_fs", "Timestep (fs) for D in cm²/s", "number"); break;
             case "scatter": Choice("x", "x", props); Choice("y", "y", props); Bool("only_selected", "Only selected"); break;
             case "voids": Text("probe", "Probe radius (Å)", "number"); Text("grid", "Grid (Å)", "number"); Bool("show", "Show void points, coloured by void"); break;
-            case "voronoi": Choice("method", "Method", ["grid", "radical"]); Text("grid", "Grid (Å)", "number"); break;
+            case "voronoi":
+                Choice("method", "Method", ["exact", "exact_radical", "grid", "radical"]);
+                Text("face_area_min", "Smallest face counted (Å²)", "number", "exact: faces below this stay in the volume, not in the index");
+                Text("grid", "Grid (Å)", "number", "grid methods only");
+                Bool("only_selected", "Only selected (exact)");
+                Note("Exact: each atom's cell clipped by the bisecting planes of its neighbours (radical: the power planes weighted by van der Waals radii, Gellatly & Finney 1982) — AtomicVolume, Coordination (faces), Max Face Order, Cell Surface Area and Voronoi Index.3–6; the cells tile the box exactly. Grid: voxels to the nearest atom");
+                break;
             case "density_field":
                 Text("grid", "Grid (Å)", "number"); Text("sigma", "Smoothing σ (Å)", "number"); Choice("axis", "Slice normal (0 x · 1 y · 2 z)", ["0", "1", "2"]);
                 Text("position", "Slice position (0–1 of the cell)", "number"); break;
@@ -564,6 +572,13 @@ public sealed partial class MainViewModel
                 Text("rmsd_max", "RMSD cutoff", "number", "larger admits more distorted neighbourhoods", "0.1");   // the core's defaults when a loaded step leaves them out
                 Bool("fcc", "FCC", true); Bool("hcp", "HCP", true); Bool("bcc", "BCC", true); Bool("ico", "Icosahedral", true); Bool("sc", "Simple cubic"); Bool("only_selected", "Only selected");
                 Note("Larsen, Schmidt & Schiøtz, Modelling Simul. Mater. Sci. Eng. 24, 055007 (2016). Adds Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 icosahedral, 5 SC), RMSD, Interatomic Distance, Shear Strain and Orientation.W/X/Y/Z (lattice → template quaternion); the RMSD table shows where to set the cutoff");
+                break;
+            case "wigner_seitz":
+                Choice("reference", "Reference lattice", ["frame", "file"]);
+                Text("frame", "Reference frame", "number");
+                Text("path", "Reference file", "text", "the perfect lattice (reference: file)");
+                Choice("output", "Output", ["particles", "sites"]);
+                Note("Each particle belongs to its nearest reference site (minimum image): an empty site is a vacancy, each particle beyond the first on a site an interstitial. Particles: Site Index and Occupancy of their site; sites: the reference sites with their Occupancy (0 = vacancy) — select Occupancy == 0 to see the vacancies");
                 break;
             case "combine":
                 Text("path", "File", "text", "a LAMMPS data/dump, .gro, .pdb, .xyz, mol2 or CIF file");

@@ -44,6 +44,7 @@ add_library(caps_core STATIC
   src/import.cpp
   src/provenance.cpp
   src/voids.cpp
+  src/voronoi.cpp
   src/kremer_grest.cpp
   src/react_view.cpp
   src/yaml.cpp
