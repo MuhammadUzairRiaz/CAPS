@@ -473,6 +473,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
+    [DllImport(Lib, EntryPoint = "caps_field_type_by_example")] public static extern int FieldTypeByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_equivalent_atoms")] public static extern int EquivalentAtoms(IntPtr doc, int atom, int radius, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_add_rule")] public static extern int FieldAddRule(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, [MarshalAs(UnmanagedType.LPUTF8Str)] string types,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string style, [MarshalAs(UnmanagedType.LPUTF8Str)] string pars);
     [DllImport(Lib, EntryPoint = "caps_field_import")] public static extern int FieldImport(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
@@ -1178,6 +1180,34 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Types and parameterises the structure with a library force field. charges: 0 force field, 1 Gasteiger, 2 file.</summary>
     public bool FieldAssign(string ffPath, string? rulesPath, int charges) { using (Hold()) { Alive(); return CheckField(Native.FieldAssign(H, ffPath, rulesPath, charges)); } }
     public bool FieldOverride(int index, string? type) { using (Hold()) { Alive(); return CheckField(Native.FieldOverride(H, index, type)); } }
+    /// <summary>Types learned from a typed example (head, body and tail units …) set on every atom with the same
+    /// environment (caps_field_type_by_example). Returns (complete, report JSON).</summary>
+    public (bool Complete, string Report) FieldTypeByExample(CapsDocument example, string typesJson)
+    {
+        using (Hold())
+        {
+            Alive();
+            var rep = new byte[16384];
+            int rc;
+            using (example.Hold()) rc = Native.FieldTypeByExample(H, example.H, typesJson, rep, rep.Length);
+            if (rc < 0) throw new InvalidOperationException(Native.LastError());
+            return (rc == 0, System.Text.Encoding.UTF8.GetString(rep, 0, Math.Max(0, Array.IndexOf(rep, (byte)0))));
+        }
+    }
+    /// <summary>Atoms with the same chemical environment as `atom` to `radius` bonds (itself included).</summary>
+    public int[] EquivalentAtoms(int atom, int radius)
+    {
+        using (Hold())
+        {
+            Alive();
+            var n = Native.EquivalentAtoms(H, atom, radius, null, 0);
+            if (n <= 0) return [atom];
+            var buf = new byte[n];
+            Native.EquivalentAtoms(H, atom, radius, buf, n);
+            var j = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Encoding.UTF8.GetString(buf, 0, n - 1)) as System.Text.Json.Nodes.JsonArray;
+            return j?.Select(x => (int)(double)x!).ToArray() ?? [atom];
+        }
+    }
     public bool FieldAddRule(string kind, string types, string style, string pars) { using (Hold()) { Alive(); return CheckField(Native.FieldAddRule(H, kind, types, style, pars)); } }
     public bool FieldImport(string path) { using (Hold()) { Alive(); return CheckField(Native.FieldImport(H, path)); } }
     /// <summary>Borrows another file's bonds, angles and torsions only where the assigned force field defines none.</summary>

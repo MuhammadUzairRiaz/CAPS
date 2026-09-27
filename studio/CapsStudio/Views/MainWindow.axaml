@@ -2270,6 +2270,7 @@
       <pages:DisplayStylesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDisplayStyles}" />
       <pages:AddHydrogensPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsAddHydrogens}" />
       <pages:ModelResolutionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsModelResolution}" />
+      <pages:UnitTypingPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsUnitTyping}" />
       <!-- Coarse-grained melts (design/boards/CoarseGrained) -->
       <pages:CgPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCg}" />
       <!-- Parameter sweep (design/boards/ParameterSweep) -->
@@ -2728,6 +2729,8 @@
                 <ComboBox Width="170" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" />
               </StackPanel>
               <Button Classes="primary" Content="Assign · retype all" Click="OnFieldAssign" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom" />
+              <Button Content="Type by hand…" Click="OnUnitTyping" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom"
+                      ToolTip.Tip="The repeat unit as head, body and tail (a copolymer's units and junctions) in 3D: give any atom its type by hand, then apply to the whole structure" />
               <Button Content="Export ▾" VerticalAlignment="Bottom" IsEnabled="{Binding Field.Assigned}">
                 <Button.Flyout>
                   <MenuFlyout>

@@ -348,6 +348,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
     if (ff.constraint_kj != 1e6) j["constraint_k"] = ff.constraint_kj;
   }
   j["improper_order"] = ff.improper_order;
+  if (!ff.improper_written.empty()) j["improper_written"] = ff.improper_written;
   j["equivalence"] = ff.equivalence;
   if (ff.improper_matched_order) j["improper_matched_order"] = true;
   if (ff.improper_reversible) j["improper_reversible"] = true;
@@ -498,6 +499,7 @@ FFDef load_forcefield(const std::string& path) {
     }
   }
   ff.improper_order = j.text("improper_order", ff.improper_order);
+  ff.improper_written = j.text("improper_written", ff.improper_written);
   ff.equivalence = j.text("equivalence", ff.equivalence);
   ff.improper_matched_order = j.has("improper_matched_order") && j["improper_matched_order"].boolean();
   ff.improper_reversible = j.has("improper_reversible") && j["improper_reversible"].boolean();
@@ -1368,15 +1370,33 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       if (const FFRule* r = last_match(rules, raw, true, rev)) return r;
     return last_match(rules, eq, true, rev);
   };
-  // with second-choice names (DL_FIELD): exact rules by the first names, exact by the second, then wildcard rules
+  // with second-choice names (the DL-derived files): exact rules by the first names, exact by the second; then wildcard
+  // rules by the second names, then by the first — the most specific wildcard rule (fewest X) first, ties the last in
+  // file order. (Checked term by term against the reference's own output: an ether C whose dihedral equivalent is
+  // second-tier only takes X-OS-CT-X, not X-OS-CO-X; N-CYA-CYA-HC takes HC-CT-CT-X, not X-CYA-CYA-X.)
+  auto most_specific = [&](const std::vector<FFRule>& rules, const std::vector<const std::string*>& ty, bool* rev) -> const FFRule* {
+    std::vector<const std::string*> rv(ty.rbegin(), ty.rend());
+    const FFRule* best = nullptr;
+    long bestw = 1 << 30;
+    bool bestrev = false;
+    for (auto it = rules.rbegin(); it != rules.rend(); ++it) {
+      const long w = std::count(it->match.begin(), it->match.end(), std::string("*"));
+      if (w == 0 || w >= bestw) continue;
+      if (match_fw(it->match, ty)) best = &*it, bestw = w, bestrev = false;
+      else if (match_fw(it->match, rv)) best = &*it, bestw = w, bestrev = true;
+    }
+    if (best && rev) *rev = bestrev;
+    return best;
+  };
   auto lookup12 = [&](const std::vector<FFRule>& rules, const std::vector<std::string>& N1, const std::vector<std::string>& N2,
                       std::initializer_list<uint32_t> atoms, bool* rev = nullptr) -> const FFRule* {
     if (N2.empty()) return lookup(rules, N1, atoms, rev);
     std::vector<const std::string*> a1, a2;
     for (uint32_t a : atoms) { a1.push_back(&N1[a]); a2.push_back(&N2[a]); }
-    for (int wild : {1, 2})
-      for (const auto* names : {&a1, &a2})
-        if (const FFRule* r = last_match(rules, *names, true, rev, wild)) return r;
+    for (const auto* names : {&a1, &a2})
+      if (const FFRule* r = last_match(rules, *names, true, rev, 1)) return r;
+    for (const auto* names : {&a2, &a1})
+      if (const FFRule* r = most_specific(rules, *names, rev)) return r;
     return nullptr;
   };
   auto shown = [&](const std::vector<std::string>& N, std::initializer_list<uint32_t> atoms) {
@@ -1880,10 +1900,20 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           // msi2lmp / DL_FIELD (CVFF): a wildcard end spreads the barrier over the torsions about the central bond
           double scale = 1;
           // automatic (cvff_auto) torsions already hold per-torsion values: not scaled
-          if (def.wildcard_torsion_scaling == "msi2lmp" && r->match.size() == 4 && r->name.rfind("auto", 0) != 0) {
+          if (def.wildcard_torsion_scaling != "none" && r->match.size() == 4 && r->name.rfind("auto", 0) != 0) {
             const uint32_t end0 = rev ? k : j, end3 = rev ? j : k;   // central atom next to the rule's first / last position
-            if (r->match[0] == "*") scale /= std::max<size_t>(1, nb[end0].size() - 1);
-            if (r->match[3] == "*") scale /= std::max<size_t>(1, nb[end3].size() - 1);
+            if (def.wildcard_torsion_scaling == "torsions" && r->match[0] == "*" && r->match[3] == "*") {
+              // over the torsions that exist about the bond: in a three-membered ring the two ends can be one atom
+              size_t n = 0;
+              for (uint32_t a : nb[j])
+                if (a != k)
+                  for (uint32_t b : nb[k])
+                    if (b != j && b != a) ++n;
+              scale /= std::max<size_t>(1, n);
+            } else {
+              if (r->match[0] == "*") scale /= std::max<size_t>(1, nb[end0].size() - 1);
+              if (r->match[3] == "*") scale /= std::max<size_t>(1, nb[end3].size() - 1);
+            }
           }
           auto term = [&](double v, int nn, double d) { if (v != 0) ff.dihedrals.push_back({i, j, k, l, v * scale, nn, d * kDeg}); };
           if (st == "opls") {
@@ -2097,8 +2127,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           const FFRule* best = nullptr;
           std::array<uint32_t, 3> matched = o;   // the outer atoms in the order the rule matched them
           // find the last rule (in file order) that matches any ordering of the outer atoms
+          int found_pass = -1;
           for (int pass = fallback ? 0 : 1; pass < 3 && !best; ++pass) {
             if (pass == 2 && Ni2.empty()) break;
+            found_pass = pass;
             const std::vector<std::string>& N = pass == 0 ? T : pass == 1 ? Ni : Ni2;
             for (size_t ri = def.impropers.size(); ri-- > 0 && !best;) {
               const auto& r = def.impropers[ri];
@@ -2117,6 +2149,32 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
                 if (hit) { best = &r; matched = pm; break; }
               }
             }
+          }
+          // written with the centre second (the DL-derived OPLS files): the neighbour with the highest index goes last
+          // when a rule allows it there, the other two in ascending order — the order those files' terms are written in
+          if (best && def.improper_written == "center2" && cpos == 2) {
+            const std::vector<std::string>& N = found_pass == 0 ? T : found_pass == 1 ? Ni : Ni2;
+            std::array<uint32_t, 3> srt = o;
+            std::sort(srt.begin(), srt.end());
+            const FFRule* b2 = nullptr;
+            std::array<uint32_t, 3> m2{};
+            for (int li = 2; li >= 0 && !b2; --li) {
+              const uint32_t l = srt[size_t(li)], a = srt[li == 0 ? 1u : 0u], b = srt[li == 2 ? 1u : 2u];
+              for (size_t ri = def.impropers.size(); ri-- > 0 && !b2;) {
+                const auto& r = def.impropers[ri];
+                if (r.match.size() != 4) continue;
+                for (const auto& xy : {std::array<uint32_t, 2>{a, b}, std::array<uint32_t, 2>{b, a}}) {
+                  std::vector<const std::string*> ty = {&N[xy[0]], &N[xy[1]], &N[c], &N[l]};
+                  bool hit = match_fw(r.match, ty);
+                  if (!hit && def.improper_reversible) {
+                    std::vector<const std::string*> rv(ty.rbegin(), ty.rend());
+                    hit = match_fw(r.match, rv);
+                  }
+                  if (hit) { b2 = &r; m2 = {a, b, l}; break; }
+                }
+              }
+            }
+            if (b2) best = b2, matched = m2;
           }
           if (!best) continue;   // impropers are only where a rule asks for one
           // CHARMM: every explicit rule that matches applies, each in its own atom order (its topologies list e.g.
@@ -2153,6 +2211,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             // class II angle-angle terms depend on the order of the outer atoms: keep the matched order
             const auto& outer = st == "class2" || (def.improper_matched_order && !by_type) ? matched : o;
             for (int pos = 0; pos < 4; ++pos) q4[pos] = pos == cpos ? c : outer[q++];
+            if (def.improper_written == "center2" && cpos == 2) std::swap(q4[1], q4[2]);
             const auto& p = best->params;
             if (st == "fourier") {   // m (K n d)×m, each K [1 + cos(nφ − d)] on the i-j-k-l torsion
               const int m = p.empty() ? 0 : int(p[0]);
