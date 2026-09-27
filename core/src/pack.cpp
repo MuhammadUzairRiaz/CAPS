@@ -647,25 +647,34 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
     }
     toff += tmax;
   }
+  // molecules: each placed structure keeps its own (a fixed host of ten chains stays ten molecules); the contact check
+  // below is between placed structures
+  std::vector<int> placed;
+  int64_t next_mol = 1;
   for (size_t m = 0; m < inst.size(); ++m) {
     const auto& mol = items[inst[m].item].molecule;
     const uint32_t base = uint32_t(out.atoms.size());
+    int nmol = 0;
+    const auto inner = mol.molecules(&nmol);
     for (size_t k = 0; k < mol.atoms.size(); ++k) {
       Atom a = mol.atoms[k];
       a.pos = x[first_atom[m] + k];
       a.id = int64_t(out.atoms.size() + 1);
-      a.mol = int64_t(m + 1);
+      a.mol = next_mol + (k < inner.size() ? inner[k] : 0);
+      placed.push_back(int(m));
       if (a.type > 0) a.type += type_offset[inst[m].item];
       a.image = {0, 0, 0};
       out.atoms.push_back(a);
       if (mol.has_charges) out.has_charges = true;
     }
-    for (const auto& b : mol.bonds) out.bonds.push_back({base + b.i, base + b.j});
+    for (const auto& b : mol.bonds) out.bonds.push_back({base + b.i, base + b.j, b.order});
+    next_mol += std::max(1, nmol);
   }
   out.bonds_from_file = !out.bonds.empty();
+  rep.molecules = int(next_mol - 1);   // molecules in the cell (a fixed host keeps its own), not placed structures
 
   // Verification with the requested tolerance.
-  const auto [dmin, close] = intermolecular_contacts(out, o.tolerance, o.periodic);
+  const auto [dmin, close] = intermolecular_contacts(out, o.tolerance, o.periodic, placed);
   rep.dmin = dmin;
   rep.close_pairs = close;
   double rv = 0;
@@ -696,9 +705,11 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
   return out;
 }
 
-std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic) {
+std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic) { return intermolecular_contacts(s, tolerance, periodic, {}); }
+
+std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic, const std::vector<int>& group) {
   const size_t n = s.atoms.size();
-  const auto mol = s.molecules();
+  const auto mol = group.size() == n ? group : s.molecules();
   const double rs = tolerance + 1.0;   // search radius: distances beyond it are reported as ≥ rs
   Grid g;
   Vec3 lo, L;

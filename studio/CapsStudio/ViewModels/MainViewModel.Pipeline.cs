@@ -67,9 +67,11 @@ public sealed partial class MainViewModel
             ("Structure", Shorten(Title.Replace(" (unsaved)", ""), 26), "done", -1, false),
             ("Made by", made.Length > 0 ? made : Shorten(_pipeBuild, 22), "done", made == "Polymer cell" ? 0 : made == "Packing" ? 5 : 13, false),
             ("Force field", ffDetail, ffState, 7, _module == 7),
-            ("Minimise", Did("Relax", "minimised"), _pipeDone.Contains("Relax") ? "done" : "todo", 2, _module == 2),
-            ("Equilibrate", Did("Equilibrate", "equilibrated"), _pipeDone.Contains("Equilibrate") ? "done" : "todo", 4, _module == 4),
-            ("Dynamics", Did("Dynamics", "run"), _pipeDone.Contains("Dynamics") ? "done" : "todo", 3, _module == 3),
+            // optional in CAPS: a built cell can go straight to LAMMPS or GROMACS
+            ("Minimise", Did("Relax", "minimised").Replace("not yet", "optional"), _pipeDone.Contains("Relax") ? "done" : "todo", 2, _module == 2),
+            ("Equilibrate", Did("Equilibrate", "equilibrated").Replace("not yet", "optional"), _pipeDone.Contains("Equilibrate") ? "done" : "todo", 4, _module == 4),
+            ("Dynamics", Did("Dynamics", "run").Replace("not yet", "optional"), _pipeDone.Contains("Dynamics") ? "done" : "todo", 3, _module == 3),
+            ("Export", Did("Export", "written"), _pipeDone.Contains("Export") ? "done" : "todo", 68, _module == 68),
         };
         foreach (var r in rows) PipelineSteps.Add(new PipelineStep(0, r.Name, r.Detail, r.State, r.Module, r.Current));
         if (_activeItem != null) UpdateItemInfo(_activeItem);
@@ -100,24 +102,13 @@ public sealed partial class MainViewModel
 
     // ---------------------------------------------------------------- the force field in Grow and Pack
     private bool _growAssignFf = true, _pipeAutoFf;
-    /// <summary>Assign the force field chosen here (Field's choice) as soon as Grow or Pack finishes.</summary>
+    /// <summary>Assign Grow's own force field choice as soon as growing finishes (Pack has its own).</summary>
     public bool GrowAssignField { get => _growAssignFf; set => Set(ref _growAssignFf, value); }
     public string GrowFieldLine => !Field.Assigned ? (_growAssignFf ? "Assigned when growing finishes" : "Not assigned: choose one in the Force field step")
         : Field.Complete ? $"{Field.ForceFieldName}: every atom typed, every term found"
         : $"{Field.ForceFieldName}: {Field.UntypedText}, {Field.MissingText}";
     public bool GrowFieldOk => Field.Assigned && Field.Complete;
     public bool GrowFieldWarn => Field.Assigned && !Field.Complete;
-
-    /// <summary>After Grow or Pack made a new cell: the chosen force field, typed and checked (the Force field step says
-    /// why when it cannot describe the structure, and which can).</summary>
-    private async Task AutoAssignAfterBuild()
-    {
-        if (!_growAssignFf || _doc == null || Field.Selected == null) return;
-        await Field.Assign();
-        _pipeAutoFf = true;
-        RaiseGrowField();
-        RefreshSteps();
-    }
 
     private void RaiseGrowField() { Raise(nameof(GrowFieldLine)); Raise(nameof(GrowFieldOk)); Raise(nameof(GrowFieldWarn)); }
 
@@ -315,6 +306,7 @@ public sealed partial class MainViewModel
             if (j["ok"]?.GetValue<bool>() != true) { EngineError = (string?)j["error"] ?? "export failed"; Status = "Export failed: " + EngineError; return; }
             var n = ((JsonArray)j["files"]!).Count;
             Status = $"Wrote {n} files to {dir}" + (_engLammps ? $" · lmp -in {_engStem}.in" : "") + (_engGromacs ? $" · gmx grompp -f {_engStem}.mdp -c {_engStem}.gro -p {_engStem}.top" : "");
+            MarkPipeline("Export");
             Record($"doc.export_engines({PyStr(dir)}, stem={PyStr(_engStem)}, lammps={(_engLammps ? "True" : "False")}, gromacs={(_engGromacs ? "True" : "False")}, run={PyStr(EngineRunIds[_engRun])})");
         }
         catch (Exception e) { EngineError = e.Message; Status = "Export failed: " + e.Message; }

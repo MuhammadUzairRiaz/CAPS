@@ -6,7 +6,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="Packing · CAPS Pack" Classes="title" />
-        <TextBlock Text="Places copies of molecules you already have — solvents, additives, fillers, crosslinkers, pre-built chains — into a box or region without overlaps, like Packmol. It does not make polymer chains: use Polymer cell for that." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
+        <TextBlock Text="Places copies of molecules you already have — solvents, gases, additives, fillers, curatives, pre-built chains — as rigid bodies into an empty box or around the current structure, without overlaps (as Packmol and Materials Studio's Amorphous Cell Packing). It does not make polymer chains: Polymer cell grows those. The packed cell can go straight to Export; Minimise and Dynamics are optional." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSave" IsVisible="{Binding GrownUnsaved}" ToolTip.Tip="Save the packed cell">
@@ -27,6 +27,56 @@
     <Grid Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
       <ScrollViewer>
         <StackPanel Spacing="16">
+          <!-- what comes after packing: straight to the engines, or minimise / run dynamics in CAPS first -->
+          <Border Classes="card" IsVisible="{Binding PackDone}" BorderBrush="{DynamicResource OkB}">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Packed · next" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <TextBlock Text="The cell is ready for LAMMPS or GROMACS. Minimising or running dynamics in CAPS first is optional." Classes="muted" TextWrapping="Wrap" />
+                <WrapPanel>
+                  <Button Classes="primary" Margin="0,0,8,6" Click="OnExportEngines">
+                    <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="Export to LAMMPS / GROMACS…" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,6" Click="OnMinimise" Content="Minimise (optional)" ToolTip.Tip="Remove the last close contacts before dynamics" />
+                  <Button Margin="0,0,8,6" Click="OnDynamics" Content="Dynamics (optional)" />
+                </WrapPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- start from an empty box, or around the current structure (Amorphous Cell's Packing) -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Pack into" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="8" IsEnabled="{Binding Idle}">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.PackStartModes}" SelectedIndex="{Binding PackStart}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="Around the current structure: a grown polymer cell, a surface slab … stays fixed and the molecules fill its free space (it needs a rectangular cell)" />
+                <TextBlock Text="{Binding PackStartNote}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Pack's own force field -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Force field" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="Force field" Classes="muted" FontSize="11.5" />
+                    <ComboBox ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding PackFfIndex}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="Charges" Classes="muted" FontSize="11.5" />
+                    <ComboBox ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding PackChargeMode}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                </Grid>
+                <CheckBox Classes="toggle" Content="Assign when packing finishes" IsChecked="{Binding PackAssignField}" />
+                <TextBlock Text="Pack keeps its own choice: Grow and the Force field step have theirs." Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
           <!-- Molecules & regions -->
           <Border Classes="card">
             <StackPanel>

@@ -923,7 +923,7 @@ public sealed partial class MainViewModel : ObservableObject
             GrowLiveDoc = null;   // the finished cell is the document now
             old?.Dispose();
         }
-        if (grown) await AutoAssignAfterBuild();
+        if (grown) await AssignForBuilder(pack: false);
     }
 
     public void CancelGrow() => _growCancel?.Cancel();
@@ -1833,11 +1833,14 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task RunPack()
     {
         if (!Idle || _packText.Trim().Length == 0) return;
+        string text;
+        try { text = PackTextToRun(); }
+        catch (Exception e) { PackLog = "Could not pack.\n" + e.Message; Status = "Could not pack — see the Pack panel"; return; }
+        PackDone = false;
         Packing = true;
         var packed = false;
         _packCancel = new CancellationTokenSource();
         var token = _packCancel.Token;
-        var text = _packText;
         var baseDir = _packBaseDir;
         PackLog = "Packing…";
         Status = "Packing…";
@@ -1881,9 +1884,10 @@ public sealed partial class MainViewModel : ObservableObject
             PackBad = 0;
             var m = System.Text.RegularExpressions.Regex.Match(report, @"smallest distance between molecules ([0-9.]+) Å");
             if (m.Success) PackDmin = m.Groups[1].Value + " Å";
-            Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms) · save it, or relax and run dynamics";
+            Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms) · export it to LAMMPS or GROMACS, or minimise / run dynamics first";
             MarkPipeline("Pack");
             packed = true;
+            PackDone = true;
         }
         catch (Exception e)
         {
@@ -1896,7 +1900,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Packing = false;
         }
-        if (packed) await AutoAssignAfterBuild();
+        if (packed) await AssignForBuilder(pack: true);
     }
 
     public void CancelPack() => _packCancel?.Cancel();

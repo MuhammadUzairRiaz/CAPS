@@ -1841,13 +1841,13 @@ internal static class SelfTest
             vm.GrowChainsD = 3;
             vm.GrowDpD = 6;
             vm.GrowDensityD = 0.3m;
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");
-            vm.Field.ChargeMode = 0;
+            vm.GrowFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");   // Grow's own choice
+            vm.GrowChargeMode = 0;
             vm.GrowAssignField = true;
             vm.Grow().GetAwaiter().GetResult();
             var steps = string.Join(" · ", vm.PipelineSteps.Select(s => $"{s.Name} {s.State}"));
             // the strip states what the active structure is and what was done to it, in no imposed order
-            Check(vm.Field.Assigned && vm.Field.Complete && vm.PipelineSteps.Count == 6 && vm.PipelineSteps[1].Detail == "Polymer cell"
+            Check(vm.Field.Assigned && vm.Field.Complete && vm.PipelineSteps.Count == 7 && vm.PipelineSteps[1].Detail == "Polymer cell"
                   && vm.PipelineSteps[2].State == "done" && vm.PipelineSteps[2].Detail.StartsWith("GAFF") && vm.PipelineNextLabel == ""
                   && vm.ActiveItem?.Origin == "Polymer cell",
                   $"structure status after Grow: force field assigned · {steps}");
@@ -1953,6 +1953,25 @@ internal static class SelfTest
                   $"nucleic acid: DNA {dna.Atoms} atoms ({oDna} O), RNA {rnaSeq} {rna.Atoms} atoms ({oRna} O) · {vm.Status}");
             vm.BioNucleic = false;
             vm.NaRna = false;
+        }
+
+        {
+            // Pack on its own: 40 waters packed around the polystyrene melt, which stays fixed in its periodic cell; Pack's
+            // own force field is assigned; the next step offered is the export (minimise / dynamics optional)
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.SetModule(5);
+            vm.NewPackInput();
+            vm.PackStart = 1;
+            vm.PackCountD = 40;
+            vm.PackAssignField = false;
+            vm.AddPackStructure(Path.Combine(dir, "water.pdb"));
+            vm.RunPack().GetAwaiter().GetResult();
+            var packCell = vm.Document!.Summary();
+            var export = vm.PipelineSteps.Any(p => p.Name == "Export");
+            var optional = vm.PipelineSteps.First(p => p.Name == "Minimise").Detail == "optional";
+            Check(packCell.Molecules == 50 && packCell.Atoms == 1300 + 120 && vm.PackDone && export && optional,
+                  $"pack around the current structure: {packCell.Molecules} molecules, {packCell.Atoms} atoms · next: export (minimise {(optional ? "optional" : "?")}) · {vm.PackLog.Split('\n')[0]}");
+            vm.PackStart = 0;
         }
 
         // Close goes back to Start
