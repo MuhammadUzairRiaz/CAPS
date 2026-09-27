@@ -670,6 +670,15 @@ void field_run(caps_doc* d) {
                                 "): QEq charges were used instead (charges: automatic)" + opls_hint(def.name));
         }
       }
+    } else if (F.charges == "increments") {
+      // another force field's bond-increment charges (OPLS 2005's for OPLS-AA 2024) with this one's types
+      std::string note;
+      caps::System sq = s;
+      const auto q = caps::companion_charges(s, def, F.ff_path, &note);
+      for (size_t i = 0; i < n; ++i) sq.atoms[i].charge = q[i];
+      sq.has_charges = true;
+      F.ff = std::make_shared<caps::ForceField>(caps::parameterize(sq, def, F.types, "keep", &F.rep, true));
+      F.rep.notes.push_back(note);
     } else {
       F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
     }
@@ -1946,7 +1955,7 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       F->base.typing.clear();
       caps::load_typing(F->base, rules_path);
     }
-    F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : charges == 3 ? "qeq" : "types";
+    F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : charges == 3 ? "qeq" : charges == 5 ? "increments" : "types";
     F->auto_charges = charges == 4;
     // keep the file's types to restore them on clear (and the previous assignment's, if any)
     if (d->field) {

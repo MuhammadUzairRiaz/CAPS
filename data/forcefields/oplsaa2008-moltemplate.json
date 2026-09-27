@@ -2,6 +2,7 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "OPLS-AA (BOSS 4.8, 2008)",
+ "charge_increments_from": "opls2005.json",
  "source": "moltemplate: oplsaa2008.lt",
  "references": [
   "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"

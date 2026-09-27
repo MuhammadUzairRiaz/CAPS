@@ -120,6 +120,9 @@ struct FFDef {
   // per wildcard end (msi2lmp): "msi2lmp"; "torsions": a rule with both ends wild over the torsions that exist about
   // the bond (a three-membered ring has fewer); "none".
   std::string wildcard_torsion_scaling = "none";
+  // Charges "increments": the force field named here (a file beside this one, e.g. "opls2005.json") types the
+  // structure and gives its bond-increment charges, used with this force field's types (see companion_charges).
+  std::string charge_increments_from;
   // "dreiding1990": a torsion no rule lists takes DREIDING's own rule by the hybridisation of its central atoms (Mayo,
   // Olafson, Goddard 1990, cases a-j), its barrier divided over the torsions about the bond
   std::string torsion_rules;
@@ -230,6 +233,11 @@ struct FFDef {
 };
 
 FFDef load_forcefield(const std::string& path);
+// Charges "increments" for a force field whose charge_increments_from names another (a file beside ff_path): that
+// force field types the structure by its own rules and gives its charges from its bond increments, which balance bond
+// by bond; they are used with this force field's types and parameters (OPLS-AA 2024 with OPLS 2005's charges). Throws
+// FFError with the reason when it cannot (atoms it cannot type, a bond without an increment).
+std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note = nullptr);
 // Reads a "caps-typing" rules file and appends its rules to the force field (types must exist in it).
 void load_typing(FFDef& ff, const std::string& path);
 void save_forcefield(const FFDef& ff, const std::string& path);

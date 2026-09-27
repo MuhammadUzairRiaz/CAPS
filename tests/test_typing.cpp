@@ -331,3 +331,33 @@ TEST(Typing, Opls2005ChargesFromBondIncrements) {
   EXPECT_NEAR(f.charge[0], 0.16, 1e-9);   // the methoxy C (charge key 181)
   EXPECT_EQ(rep.charge_keys[0], "181");
 }
+
+// OPLS-AA 2024 with OPLS 2005's charges: 2-ethylpyridine's fixed OPLS-AA 2024 charges do not balance (the ring C1 at
+// +0.473 expects a substituent worth an H); OPLS 2005 types the same molecule and its bond increments give charges that
+// add up to zero, used with OPLS-AA 2024's own types
+TEST(Typing, CompanionChargesFromOpls2005) {
+  const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
+  FFDef ff = load_forcefield(lib + "oplsaa2024-moltemplate.json");
+  load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024-moltemplate.typing.json");
+  ASSERT_EQ(ff.charge_increments_from, "opls2005.json");
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  const System s = build_molecule("CC(C)c1ccccn1", bo).system;   // 2-isopropylpyridine
+  const TypingResult tr = assign_types(s, ff);
+  ASSERT_EQ(tr.untyped, 0);
+  EXPECT_EQ(std::count_if(tr.types.begin(), tr.types.end(), [](const std::string& t) { return t.rfind("520_", 0) == 0; }), 1);
+  std::string note;
+  const std::vector<double> q = companion_charges(s, ff, lib + "oplsaa2024-moltemplate.json", &note);
+  ASSERT_EQ(q.size(), s.atoms.size());
+  double net = 0;
+  for (double v : q) net += v;
+  EXPECT_NEAR(net, 0.0, 1e-9);
+  EXPECT_NE(note.find("OPLS 2005"), std::string::npos) << note;
+  // the same charges OPLS 2005 gives on its own
+  FFDef o5 = load_forcefield(lib + "opls2005.json");
+  load_typing(o5, std::string(CAPS_SOURCE_DIR) + "/data/typing/opls2005.typing.json");
+  const TypingResult t5 = assign_types(s, o5);
+  ParamReport r5;
+  const ForceField f5 = parameterize(s, o5, t5.types, "types", &r5, false);
+  for (size_t i = 0; i < q.size(); ++i) EXPECT_NEAR(q[i], f5.charge[i], 1e-12);
+}

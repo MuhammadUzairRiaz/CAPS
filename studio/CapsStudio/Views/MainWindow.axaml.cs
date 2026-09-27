@@ -487,6 +487,16 @@ public partial class MainWindow : Window
     private async void OnFieldAddRule(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AddRule(); }
     private async void OnFieldRemoveRules(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.RemoveRules(); }
 
+    private async void OnFieldCompanionCharges(object? s, RoutedEventArgs e)
+    {
+        if (!_vm.Busy) await _vm.Field.UseCompanionCharges();
+    }
+
+    private async void OnFieldFillSuggested(object? s, RoutedEventArgs e)
+    {
+        if (!_vm.Busy) await _vm.Field.FillSuggested();
+    }
+
     private async void OnFieldFill(object? s, RoutedEventArgs e)
     {
         if (_vm.Busy) return;
