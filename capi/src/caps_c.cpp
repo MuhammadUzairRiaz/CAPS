@@ -15,6 +15,7 @@
 #include "caps/adsorption.hpp"
 #include "caps/cbmc.hpp"
 #include "caps/molecule.hpp"
+#include "caps/sorption.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
@@ -1572,7 +1573,47 @@ int32_t caps_cbmc(caps_doc* d, const caps_cbmc_opts* o, caps_cbmc_progress_fn pr
   });
 }
 
-namespace { void push_undo(caps_doc* d, const std::string& what); }   // with the edits, below
+namespace {
+void push_undo(caps_doc* d, const std::string& what);   // with the edits, below
+caps_doc* doc_of_system(caps::System sys, const caps_doc* from, const std::string& engine, const std::string& summary, caps::KeyValues params);
+
+// The force field for s — the document's structure with molecules added after it: the document's Field assignment
+// applied to s (on a scratch document; this one is not changed), else the built-in force field.
+caps::ForceField field_for_extended(caps_doc* d, const caps::System& s) {
+  if (!d->field) return default_ff(s);
+  std::unique_ptr<caps_doc> t(doc_of_system(s, d, "scratch", "", {}));
+  t->field = std::make_unique<FieldState>(*d->field);
+  field_run(t.get());
+  if (!t->field->complete || !t->field->ff) {
+    int untyped = 0;
+    for (const auto& x : t->field->types) untyped += x.empty();
+    throw std::invalid_argument(d->field->base.name + " does not describe the added molecules (" + std::to_string(untyped) + " atoms untyped, " +
+                                std::to_string(t->field->rep.missing.size()) + " parameters missing): choose a force field that covers them in Field, or clear the assignment");
+  }
+  return *t->field->ff;
+}
+
+// the structure's molecules from SMILES, count copies of each, added after its atoms (positions as built)
+caps::System with_molecules(caps::System s, const caps::Json& list, int* added) {
+  int64_t next_mol = 0;
+  for (const auto& a : s.atoms) next_mol = std::max(next_mol, a.mol);
+  *added = 0;
+  for (const auto& a : list.items()) {
+    const std::string smi = a.text("smiles");
+    const int count = int(a.num("count", 1));
+    if (smi.empty() || count < 1) continue;
+    const caps::System m = caps::build_molecule(smi).system;
+    for (int k = 0; k < count; ++k) {
+      const uint32_t off = uint32_t(s.atoms.size());
+      ++next_mol;
+      for (auto at : m.atoms) { at.mol = next_mol; at.id = int64_t(s.atoms.size() + 1); s.atoms.push_back(at); }
+      for (auto b : m.bonds) { b.i += off; b.j += off; s.bonds.push_back(b); }
+      ++*added;
+    }
+  }
+  return s;
+}
+}  // namespace
 
 // Adsorption locator (ABI 34): adsorbates from SMILES added after the substrate, the Field assignment applied to the
 // whole (or the built-in force field), Monte Carlo simulated annealing (adsorption.hpp).
@@ -1583,41 +1624,13 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
     caps::System s = d->traj.frame(d->current);
     const size_t substrate_atoms = s.atoms.size();
-    int first = -1;
-    int64_t next_mol = 0;
-    for (const auto& a : s.atoms) next_mol = std::max(next_mol, a.mol);
-    int added = 0;
+    int first = -1, added = 0;
     if (j.has("adsorbates") && j["adsorbates"].is_array()) {
-      for (const auto& a : j["adsorbates"].items()) {
-        const std::string smi = a.text("smiles");
-        const int count = int(a.num("count", 1));
-        if (smi.empty() || count < 1) continue;
-        const caps::System m = caps::build_molecule(smi).system;
-        for (int k = 0; k < count; ++k) {
-          const uint32_t off = uint32_t(s.atoms.size());
-          ++next_mol;
-          for (auto at : m.atoms) { at.mol = next_mol; at.id = int64_t(s.atoms.size() + 1); s.atoms.push_back(at); }
-          for (auto b : m.bonds) { b.i += off; b.j += off; s.bonds.push_back(b); }
-          ++added;
-        }
-      }
+      s = with_molecules(std::move(s), j["adsorbates"], &added);
       if (added) first = int(substrate_atoms);
     }
     if (j.has("first_atom")) first = int(j.num("first_atom", -1));
-    if (added) {   // the structure with its adsorbates becomes the document (undoable)
-      push_undo(d, "Adsorption locator");
-      caps::Trajectory t;
-      t.topology = s;
-      std::vector<caps::Vec3> p;
-      for (const auto& a : s.atoms) p.push_back(a.pos);
-      t.positions.push_back(p), t.cells.push_back(s.cell), t.timesteps.push_back(0);
-      d->traj = std::move(t);
-      d->current = 0;
-      refresh(d);
-      if (d->field) field_run(d);   // the same assignment, now over the adsorbates too
-    }
-    const auto fp = field_for_run(d);
-    const caps::ForceField ff = fp ? *fp : default_ff(s);
+    const caps::ForceField ff = added ? field_for_extended(d, s) : [&] { const auto fp = field_for_run(d); return fp ? *fp : default_ff(s); }();
     caps::AdsorptionOptions o;
     o.first_mobile_atom = first;
     o.cycles = int(j.num("cycles", 3));
@@ -1648,6 +1661,7 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     caps::AdsorptionReport rep;
     caps::locate_adsorption(s, ff, o, &rep);
     if (cancelled) throw std::runtime_error("adsorption locator cancelled");
+    push_undo(d, "Adsorption locator");
     // frames: the kept configurations, the lowest last (shown)
     caps::Trajectory t;
     t.topology = s;
@@ -1658,6 +1672,7 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     d->traj = std::move(t);
     d->current = d->traj.frames() - 1;
     refresh(d);
+    if (added && d->field) field_run(d);   // the assignment now over the adsorbates too
     caps::KeyValues pr = {{"adsorbates", std::to_string(rep.components.size()) + " components"},
                           {"annealing", std::to_string(o.cycles) + " cycles of " + std::to_string(o.steps) + " steps, " + g6(o.t_high) + " → " + g6(o.t_low) + " K"},
                           {"adsorption energy", g6(rep.adsorption_energy) + " kcal/mol (rigid)"},
@@ -1685,6 +1700,65 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     r["acceptance"] = rep.acceptance, r["steps"] = double(rep.steps), r["seconds"] = rep.seconds;
     r["z_lo"] = o.z_lo, r["z_hi"] = o.z_hi;
     r["forcefield"] = ff.name;
+    caps::Json nt = caps::Json::array();
+    for (const auto& x : rep.notes) nt.push_back(x);
+    r["notes"] = std::move(nt);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// Sorption (ABI 34): Widom insertion and GCMC of a rigid sorbate in the document's structure held fixed (sorption.hpp).
+extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System host = d->traj.frame(d->current);
+    caps::Json one = caps::Json::array();
+    caps::Json sb = caps::Json::object();
+    sb["smiles"] = j.text("sorbate", "C");
+    sb["count"] = 1.0;
+    one.push_back(std::move(sb));
+    int added = 0;
+    const caps::System s = with_molecules(host, one, &added);   // the host, then one sorbate as the template
+    if (!added) throw std::invalid_argument("give the sorbate as SMILES");
+    const caps::ForceField ff = field_for_extended(d, s);
+    caps::SorptionOptions o;
+    o.template_first_atom = int(host.atoms.size());
+    o.temperature = j.num("temperature", 300);
+    o.insertions = int(j.num("insertions", 100000));
+    if (j.has("pressures_kpa") && j["pressures_kpa"].is_array())
+      for (const auto& x : j["pressures_kpa"].items()) if (x.number() > 0) o.pressures_kpa.push_back(x.number());
+    o.steps = int(j.num("steps", 200000));
+    o.cutoff = j.num("cutoff", 12.0);
+    o.coulomb = !(j.has("coulomb") && j["coulomb"].kind() == caps::Json::Bool && !j["coulomb"].boolean());
+    o.seed = uint64_t(j.num("seed", 1));
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& st, double f) { cancelled = progress(st.c_str(), f, user) != 0; return !cancelled; };
+    const auto rep = caps::sorption(s, ff, o);
+    if (cancelled) throw std::runtime_error("sorption cancelled");
+    caps::KeyValues pr = {{"sorbate", sb.text("smiles")}, {"temperature", g6(o.temperature) + " K"},
+                          {"Widom", std::to_string(o.insertions) + " insertions · S " + g6(rep.solubility) + " cm³(STP)/(cm³ atm)"},
+                          {"GCMC", std::to_string(o.pressures_kpa.size()) + " pressures × " + std::to_string(o.steps) + " steps"},
+                          {"force field", ff.name}};
+    prov_step(d, "sorption.widom_gcmc", "Sorption by test-particle insertion and grand-canonical Monte Carlo", std::move(pr), seeded(o.seed),
+              {"widom1963", "frenkel2002"}, energy_approx(o.cutoff, o.coulomb, false, 1));
+    r["ok"] = true;
+    r["widom_w"] = rep.widom_w, r["widom_error"] = rep.widom_error, r["mu_ex"] = rep.mu_ex;
+    r["henry_mol_kg_kpa"] = rep.henry_mol_kg_kpa, r["solubility"] = rep.solubility;
+    r["host_mass"] = rep.host_mass, r["volume"] = rep.volume, r["forcefield"] = ff.name;
+    caps::Json iso = caps::Json::array();
+    for (const auto& p : rep.isotherm) {
+      caps::Json x = caps::Json::object();
+      x["pressure_kpa"] = p.pressure_kpa, x["loading"] = p.loading, x["loading_error"] = p.loading_error, x["mol_per_kg"] = p.mol_per_kg;
+      x["cm3stp_per_cm3"] = p.cm3stp_per_cm3, x["heat"] = p.heat, x["acceptance_insert"] = p.acceptance_insert, x["acceptance_delete"] = p.acceptance_delete;
+      iso.push_back(std::move(x));
+    }
+    r["isotherm"] = std::move(iso);
     caps::Json nt = caps::Json::array();
     for (const auto& x : rep.notes) nt.push_back(x);
     r["notes"] = std::move(nt);

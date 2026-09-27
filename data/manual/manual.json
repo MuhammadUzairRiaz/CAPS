@@ -945,6 +945,42 @@
    ]
   },
   {
+   "id": "sorption",
+   "group": "Analysis",
+   "title": "Sorption: Widom insertion and grand-canonical Monte Carlo",
+   "summary": "How much of a gas or small molecule a fixed host takes up — a polymer or rubber cell, a filler, a porous crystal — as Materials Studio's Sorption computes it. The sorbate is a rigid molecule typed with the host's force field. Widom test-particle insertion averages the Boltzmann factor of one molecule placed at random places and orientations: the excess chemical potential, the Henry constant and the solubility coefficient follow. Grand-canonical Monte Carlo at each pressure (insertions, deletions, translations and rotations; an ideal-gas reservoir, fugacity = pressure) gives the loading, its error from ten blocks, and the isosteric heat from the fluctuations of energy and number.",
+   "equation": "μ_ex = −kT ln⟨e^(−βΔU)⟩,   K_H = ⟨W⟩ V / (R T m_host),   S = ⟨W⟩ T₀/T,   P_ins = min(1, βfV/(N+1) e^(−βΔU)),   Q_st = kT − (⟨UN⟩ − ⟨U⟩⟨N⟩)/(⟨N²⟩ − ⟨N⟩²)",
+   "equation_note": "Widom 1963; Frenkel & Smit 2002",
+   "symbols": [
+    [
+     "S",
+     "solubility coefficient",
+     "cm³(STP)/(cm³ atm)"
+    ],
+    [
+     "K_H",
+     "Henry constant",
+     "mol/(kg kPa)"
+    ],
+    [
+     "Q_st",
+     "isosteric heat",
+     "kcal/mol"
+    ]
+   ],
+   "when": "Gas solubility in rubbers and polymers (CO₂, CH₄, N₂, O₂, water) for barrier and permeability estimates (P = D·S with D from Diffusion), uptake of fillers and porous crystals. The host is rigid: swelling and the host's relaxation around the gas are not included; equilibrated, full-density cells are needed for polymer solubilities.",
+   "cites": [
+    "widom1963",
+    "frenkel2002"
+   ],
+   "source": "core/src/sorption.cpp (sorption)",
+   "tested": "Sorption.WidomEqualsTheGridIntegral (⟨e^(−βU)⟩ 0.03985 ± 0.00055 against the exact grid average 0.03995); Sorption.GcmcIdealGasAndHenryLimit (⟨N⟩ = βpV for an ideal gas; the Henry regime equals Widom's)",
+   "deviation": "ideal-gas fugacity (no equation of state); rigid host and sorbate; damped shifted force electrostatics",
+   "engines": [
+    "sorption.widom_gcmc"
+   ]
+  },
+  {
    "id": "green-kubo",
    "group": "Analysis",
    "title": "Shear viscosity by Green–Kubo",

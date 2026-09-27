@@ -402,7 +402,7 @@ public sealed partial class MainViewModel : ObservableObject
     private static readonly string[] Crumbs = ["Polymer cell › Amorphous cell", "Analyze › Properties", "Minimise", "Dynamics › Run",
         "Equilibrate › Protocol", "Packing › Molecules & regions", "React › Crosslinking", "Force field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Packing › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
         "Polymer cell › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
-        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator"];
+        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator", "Analyze › Sorption"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -472,6 +472,7 @@ public sealed partial class MainViewModel : ObservableObject
         [68] = v => v.OpenExportCenter(),
         [69] = v => v.OpenUnitTyping(),
         [70] = v => v.OpenAdsorption(),
+        [71] = v => v.OpenSorption(),
     };
 
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
@@ -540,6 +541,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsDiffusion));
         Raise(nameof(IsCharges));
         Raise(nameof(IsAdsorption));
+        Raise(nameof(IsSorption));
         Raise(nameof(IsPeriodic));
         Raise(nameof(IsOrientation));
         Raise(nameof(IsRecipes));
@@ -648,9 +650,9 @@ public sealed partial class MainViewModel : ObservableObject
     public bool Growing { get => _growing; private set { if (Set(ref _growing, value)) { Raise(nameof(NotGrowing)); RaiseBusy(); } } }
     public bool NotGrowing => !_growing;
     /// <summary>No build or minimisation is running (the document can be replaced or edited).</summary>
-    public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing && !_adsRunning;
+    public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing && !_adsRunning && !_sorbRunning;
     /// <summary>The core is working on the open document (Relax or Dynamics): no rendering or edits until it is done.</summary>
-    public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing || _recipeRunning || _adsRunning;
+    public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing || _recipeRunning || _adsRunning || _sorbRunning;
     private bool _analyzing;
     private void RaiseBusy()
     {
