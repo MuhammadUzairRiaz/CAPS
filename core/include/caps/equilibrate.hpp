@@ -73,6 +73,10 @@ struct EquilibrateOptions {
   double tol_density = 0.005;   // relative change of block means
   double tol_energy = 0.005;    // kcal/mol per atom
   double tol_rg = 0.02;         // relative
+  // internal distances ⟨R²(n)⟩/(n⟨b²⟩) along the backbones (Theodorou & Suter): every n within tol_internal between the
+  // last blocks, and of internal_target when one is given (indexed by n, e.g. a RIS C_n curve; 0 entries skipped)
+  double tol_internal = 0.05;
+  std::vector<double> internal_target;
   std::function<bool(int stage, int stages, const std::string& label, const ThermoRow& row)> progress;
   std::function<void(const std::vector<double>& x, const Cell& c, int64_t step)> frame;
 };
