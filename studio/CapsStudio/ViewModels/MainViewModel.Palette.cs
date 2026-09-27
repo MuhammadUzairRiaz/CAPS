@@ -163,6 +163,8 @@ public sealed partial class MainViewModel
             AddCommand(new PaletteCommand { Title = $"Make the picked stereocentre {c}", Id = "edit.make " + c, Icon = "atom", Section = "Edit",
                 Keywords = "stereo chirality configuration cip set r s centre", Enabled = () => _doc != null && _selection.Count == 1, Run = () => MakePicked(c) });
         }
+        AddCommand(new PaletteCommand { Title = "Auto-clean while editing", Id = "edit.autoclean", Icon = "wand", Shortcut = "A", Section = "Edit",
+            Keywords = "auto clean uff relax geometry while building toggle", Run = ToggleAutoClean });
         AddCommand(new PaletteCommand { Title = "Reduce motion", Id = "settings.motion", Icon = "gear", Section = "Settings",
             Keywords = "motion animation reduce accessibility camera fly cut vestibular", Run = () => SetReduceMotion = Motion.Reduced ? "off" : "on" });
         for (var k = 0; k < Styles.Length; k++)

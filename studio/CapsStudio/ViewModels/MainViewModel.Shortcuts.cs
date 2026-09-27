@@ -37,7 +37,7 @@ public sealed partial class MainViewModel
     [
         ("Meta+K", "the command palette"), ("Meta+O", "Open"), ("Meta+S", "Save"), ("Meta+W", "Close"), ("Meta+Shift+O", "the most recent file"),
         ("Meta+Z", "Undo"), ("Meta+Shift+Z", "Redo"), ("Meta+F", "Select by query"), ("Meta+I", "Invert the selection"), ("Meta+H", "Add hydrogens"),
-        ("Meta+Shift+C", "Clean the geometry"), ("Alt+I", "Invert the picked stereocentre"), ("Shift+E", "the periodic table"), ("Meta+E", "Export an image"),
+        ("Meta+Shift+C", "Clean the geometry"), ("A", "Auto-clean while editing"), ("Alt+I", "Invert the picked stereocentre"), ("Shift+E", "the periodic table"), ("Meta+E", "Export an image"),
         ("Meta+Shift+A", "Announce the selection"), ("Ctrl+Tab", "Next structure"), ("F1", "Theory manual"), ("R", "Reset the view"), ("F", "Frame the selection"),
         ("D1", "Front view"), ("D2", "Top view"), ("D3", "Side view"), ("D5", "Perspective"), ("Space", "Play"), ("Left", "Previous frame"), ("Right", "Next frame"),
         ("Escape", "Clear the selection"), ("OemCloseBrackets", "Grow the selection"), ("Delete", "Delete the picked atoms"), ("Back", "Delete the picked atoms"),

@@ -14,6 +14,7 @@ public sealed class AppSettings
     public int Background { get; set; }                   // view background: 0 dark, 1 white
     public bool Outlines { get; set; } = true;
     public bool DepthCue { get; set; } = true;
+    public bool AutoClean { get; set; }                     // a UFF clean-up of the edited atoms after every builder edit (A)
     public bool GpuView { get; set; } = true;             // the 3D view on the GPU (OpenGL) where available
     public int Style { get; set; }                        // ball & stick …
     public bool AutoStyle { get; set; } = true;           // display style by model size (design/boards/DisplayStyles)
