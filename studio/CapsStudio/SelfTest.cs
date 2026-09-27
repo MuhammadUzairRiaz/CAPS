@@ -2030,6 +2030,19 @@ internal static class SelfTest
             Check(formula == "C640H660" && lattice == "90.00  90.00  90.00" && filtered == 1 && bonded.Length > 0 && vm.PropertyTitle.StartsWith("Atom 1"),
                   $"properties: {formula} · angles {lattice} · filter density → {filtered} row · {vm.PropertyTitle} · {bonded}");
         }
+        {
+            // the keyboard map: ] grows the picked atom's selection one bond (a CH carbon and its four neighbours), ⌘I inverts, ⌘8 is Dynamics
+            vm.SetModule(8);
+            vm.Pick(0);
+            vm.GrowSelectionKey();
+            var grownSel = vm.SelectedCount;
+            vm.InvertSelectionKey();
+            var inverted = vm.SelectedCount;
+            vm.ClearDocSelection();
+            vm.GoRailPage(8);
+            Check(grownSel == 5 && inverted == 1300 - 5 && vm.IsDynamics, $"keys: ] selects {grownSel}, ⌘I {inverted}, ⌘8 Dynamics {vm.IsDynamics}");
+            vm.SetModule(8);
+        }
 
         // Close goes back to Start
         vm.SetModule(1);
