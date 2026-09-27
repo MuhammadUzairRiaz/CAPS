@@ -3554,6 +3554,8 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.branch_probability = j.num("branch_probability", 0.1);
   c.generations = int(j.num("generations", 2));
   c.keep_configuration = j.num("keep_configuration", 0) != 0 || (j.has("keep_configuration") && j["keep_configuration"].kind() == caps::Json::Bool && j["keep_configuration"].boolean());
+  c.head_cap = j.text("head_cap", "");   // end groups: a preset or a SMILES with *
+  c.tail_cap = j.text("tail_cap", "");
   return c;
 }
 }  // namespace

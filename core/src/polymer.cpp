@@ -1,5 +1,6 @@
 // CAPS polymer builder: chains of any repeat unit grown into a periodic cell (see polymer.hpp).
 #include "caps/polymer.hpp"
+#include "caps/edit.hpp"
 #include "caps/uff.hpp"
 
 #include <algorithm>
@@ -586,6 +587,31 @@ double chain_mass(const ChainSpec& spec, const std::vector<int>& seq) {
 }
 
 namespace {
+// The end groups: each cap hydrogen replaced by the group along its bond (smiles "" keeps the hydrogen); returns the
+// ends changed
+int replace_end_caps(System& s, const std::vector<uint32_t>& heads, const std::string& head, const std::vector<uint32_t>& tails, const std::string& tail) {
+  std::vector<std::pair<uint32_t, std::string>> jobs;
+  if (!head.empty()) for (uint32_t h : heads) jobs.push_back({h, head});
+  if (!tail.empty()) for (uint32_t h : tails) jobs.push_back({h, tail});
+  if (jobs.empty()) return 0;
+  std::vector<uint32_t> parent(s.atoms.size(), UINT32_MAX);
+  for (const auto& b : s.bonds) {
+    if (s.atoms[b.i].element == 1) parent[b.i] = b.j;
+    if (s.atoms[b.j].element == 1) parent[b.j] = b.i;
+  }
+  std::vector<std::pair<uint32_t, Vec3>> where;
+  for (const auto& [h, smi] : jobs) {
+    Vec3 d = s.atoms[h].pos - s.atoms[parent[h]].pos;
+    if (s.cell.valid()) d = s.cell.minimum_image(d);
+    where.push_back({parent[h], d});
+  }
+  for (size_t k = 0; k < jobs.size(); ++k) attach_fragment(s, where[k].first, jobs[k].second, 0, false, &where[k].second);
+  std::vector<char> del(s.atoms.size(), 0);
+  for (const auto& [h, smi] : jobs) del[h] = 1;
+  delete_atoms(s, del);
+  return int(jobs.size());
+}
+
 System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
   if (spec.units.empty()) throw GrowError("no repeat unit");
   GrowReport rep;
@@ -1393,6 +1419,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   }
 
   // assemble: per chain its atoms (without the ghosts), the bonds, and a hydrogen cap on each end
+  std::vector<uint32_t> head_caps, tail_caps;   // the cap hydrogens of the main chains (end groups replace them)
   System s;
   s.title = "CAPS Grow: " + std::to_string(nchains) + " chains × " + std::to_string(spec.dp) + " units";
   s.cell.origin = {0, 0, 0};
@@ -1484,6 +1511,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       const Vec3 hp = ch.pos[size_t(head)] + unitv(ch.pos[2] - ch.pos[size_t(head)]) * 1.09;
       s.bonds.push_back({map[size_t(head)], add(1, hp, molid), 1});
       s.atoms.back().resid = roff + 1, s.atoms.back().resname = unit_code[size_t(ch.seq.front())];
+      head_caps.push_back(uint32_t(s.atoms.size() - 1));
     }
     const Template& tl = T[size_t(ch.seq.back())];
     const int tail = ch.unit_start.back() + tl.tail;
@@ -1492,6 +1520,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     const Vec3 tpos = fv ? ch.pos[size_t(tail)] + *fv * 1.09 : place(ch.pos[size_t(tgp)], ch.pos[size_t(tp)], ch.pos[size_t(tail)], 1.09, tl.tail_angle, kPi);
     s.bonds.push_back({map[size_t(tail)], add(1, tpos, molid), 1});
     s.atoms.back().resid = roff + int64_t(ch.seq.size()), s.atoms.back().resname = unit_code[size_t(ch.seq.back())];
+    if (ch.parent < 0) tail_caps.push_back(uint32_t(s.atoms.size() - 1));
     resid_off[size_t(ch.mol)] += int(ch.seq.size());
   }
   s.bonds_from_file = true;
@@ -1542,11 +1571,37 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
                                                   : "chains inside a cylinder of radius %.1f Å along z (periodic along z)", R);
     rep.notes.push_back(b);
   }
+  if (!spec.head_cap.empty() || !spec.tail_cap.empty()) {
+    const int n = replace_end_caps(s, head_caps, chain_end_smiles(spec.head_cap), tail_caps, chain_end_smiles(spec.tail_cap));
+    rep.notes.push_back(std::to_string(n) + " chain ends capped with " + (spec.head_cap.empty() ? "H" : spec.head_cap) + " / " + (spec.tail_cap.empty() ? "H" : spec.tail_cap) +
+                        " (head / tail) · relax before dynamics");
+  }
   if (report) *report = rep;
   return s;
 }
 
 }  // namespace
+
+namespace {
+const std::vector<std::pair<std::string, std::string>>& end_groups() {
+  static const std::vector<std::pair<std::string, std::string>> g = {
+      {"hydrogen", ""}, {"methyl", "*C"}, {"ethyl", "*CC"}, {"tert-butyl", "*C(C)(C)C"}, {"sec-butyl", "*C(C)CC"}, {"phenyl", "*c1ccccc1"},
+      {"hydroxyl", "*O"}, {"carboxyl", "*C(=O)O"}, {"vinyl", "*C=C"}, {"amine", "*N"}};
+  return g;
+}
+}  // namespace
+
+std::string chain_end_smiles(const std::string& name) {
+  if (name.empty()) return "";
+  for (const auto& [k, v] : end_groups()) if (k == name) return v;
+  if (name.find('*') == std::string::npos) throw std::invalid_argument("end group '" + name + "': a preset or a SMILES with one *");
+  return name;
+}
+
+const std::vector<std::string>& chain_end_names() {
+  static const std::vector<std::string> n = [] { std::vector<std::string> v; for (const auto& [k, s] : end_groups()) v.push_back(k); return v; }();
+  return n;
+}
 
 System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
   if (!o.auto_scale) return grow_chains_once(spec, o, report);

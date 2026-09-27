@@ -405,3 +405,31 @@ TEST(Polymer, DnaStrandKeepsDSugars) {
   EXPECT_EQ(r, 16);   // C4′ and C1′ of eight sugars
   EXPECT_EQ(sl, 8);   // C3′
 }
+
+// End groups: methyl heads and tert-butyl tails on polyethylene chains — each chain gains 1 + 4 carbons, loses no
+// hydrogen count beyond the two caps replaced, and stays one molecule
+TEST(Polymer, EndGroupsReplaceTheCaps) {
+  GrowOptions o;
+  o.chains = 2;
+  o.density = 0.3;
+  o.seed = 3;
+  ChainSpec c = spec({"*CC*"}, Sequence::Homopolymer, 5);
+  const System plain = grow_chains(c, o);
+  c.head_cap = "methyl";
+  c.tail_cap = "tert-butyl";
+  GrowReport rep;
+  const System capped = grow_chains(c, o, &rep);
+  auto count = [](const System& s, int z) { int n = 0; for (const auto& a : s.atoms) n += a.element == z; return n; };
+  EXPECT_EQ(count(capped, 6), count(plain, 6) + 2 * 5);
+  EXPECT_EQ(count(capped, 1), count(plain, 1) - 4 + 2 * (3 + 9));
+  int nm = 0;
+  capped.molecules(&nm);
+  EXPECT_EQ(nm, 2);
+  bool said = false;
+  for (const auto& n : rep.notes) said |= n.find("chain ends capped") != std::string::npos;
+  EXPECT_TRUE(said);
+  EXPECT_EQ(chain_end_smiles("hydrogen"), "");
+  ChainSpec bad = c;
+  bad.head_cap = "nonsense";
+  EXPECT_THROW(grow_chains(bad, o), std::invalid_argument);
+}

@@ -486,6 +486,11 @@ internal static class SelfTest
         {
             vm.UseLibrary(enr, null);
             Check(!vm.PolyHasError && vm.PolyUnits.Count == 2 && vm.PolyStripUnits.Length == vm.GrowDpD, $"ENR-50 chain: {vm.PolyPreview} {vm.PolyError}");
+            // end groups: a tert-butyl head (an initiator fragment) and a hydroxyl tail travel with the chain spec
+            vm.HeadCap = 3; vm.TailCap = 6;
+            var capped = vm.PolySpecJson();
+            Check(capped.Contains("\"head_cap\":\"tert-butyl\"") && capped.Contains("\"tail_cap\":\"hydroxyl\"") && !vm.PolyHasError, $"end groups: {capped} {vm.PolyError}");
+            vm.HeadCap = 0; vm.TailCap = 0;
             vm.GrowChainsD = 4;
             vm.GrowDensityD = 0.3m;
             vm.SendPolymerToGrow();
