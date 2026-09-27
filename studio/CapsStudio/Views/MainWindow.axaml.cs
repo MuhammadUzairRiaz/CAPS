@@ -661,6 +661,29 @@ public partial class MainWindow : Window
             if (e.Key == Key.F && e.KeyModifiers == cmd && _vm.HasDocument) { OpenQuery(); e.Handled = true; return; }
             if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasPicked) { _vm.DeletePicked(); e.Handled = true; return; }
         }
+        // the keyboard map (design/boards/InteractionMap)
+        {
+            var cmd = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
+            if (e.KeyModifiers == cmd && e.Key >= Key.D1 && e.Key <= Key.D9) { _vm.GoRailPage(e.Key - Key.D0); e.Handled = true; return; }
+            if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.Control) { _vm.NextStructure(); e.Handled = true; return; }
+            if (e.Key == Key.F1) { _vm.GoModule(41); e.Handled = true; return; }
+            if (_vm.IsStudio)
+            {
+                if (e.Key == Key.I && e.KeyModifiers == cmd) { _vm.InvertSelectionKey(); e.Handled = true; return; }
+                if (e.Key == Key.H && e.KeyModifiers == cmd) { _vm.AddHydrogensAll(); e.Handled = true; return; }
+                if (e.Key == Key.C && e.KeyModifiers == (cmd | KeyModifiers.Shift)) { _ = _vm.AutoClean(); e.Handled = true; return; }
+                if (e.Key == Key.I && e.KeyModifiers == KeyModifiers.Alt) { _vm.InvertPicked(); e.Handled = true; return; }
+                if (e.KeyModifiers == KeyModifiers.None)
+                    switch (e.Key)
+                    {
+                        case Key.D1: _vm.SetView(0, 0); e.Handled = true; return;               // front
+                        case Key.D2: _vm.SetView(0, Math.PI / 2); e.Handled = true; return;     // top
+                        case Key.D3: _vm.SetView(Math.PI / 2, 0); e.Handled = true; return;     // side
+                        case Key.D5: _vm.Perspective = !_vm.Perspective; e.Handled = true; return;
+                        case Key.OemCloseBrackets when !_vm.HasFocusAtom: _vm.GrowSelectionKey(); e.Handled = true; return;
+                    }
+            }
+        }
         if (_vm.QueryOpen && e.Key == Key.Escape) { _vm.QueryOpen = false; ViewHost.Focus(); e.Handled = true; return; }
         if (_vm.UpdateOpen && e.Key == Key.Escape) { _vm.CloseUpdate(); e.Handled = true; return; }
         if (_vm.ImportOpen && e.Key == Key.Escape) { _vm.CloseImport(); e.Handled = true; return; }
