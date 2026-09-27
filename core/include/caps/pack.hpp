@@ -93,5 +93,7 @@ System insert_molecules(const System& host, const System& guest, int count, cons
 // Smallest distance between atoms of different molecules (minimum image when the cell is periodic) and the number of
 // such pairs closer than `tolerance`. Uses a cell list.
 std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic);
+// The same between groups (one int per atom; pairs within a group are not counted), e.g. the structures Pack placed.
+std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic, const std::vector<int>& group);
 
 }  // namespace caps

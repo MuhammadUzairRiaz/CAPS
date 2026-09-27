@@ -24,5 +24,8 @@ public partial class PackPage : PageBase
     private void OnExample(object? s, RoutedEventArgs e) => Window?.PackExample();
     private async void OnAddMolecule(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackAddAsync(); }
     private async void OnOpenInput(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackOpenAsync(); }
+    private void OnExportEngines(object? s, RoutedEventArgs e) => Vm.PackExport();
+    private void OnMinimise(object? s, RoutedEventArgs e) => Vm.SetModule(2);
+    private void OnDynamics(object? s, RoutedEventArgs e) => Vm.SetModule(3);
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
 }
