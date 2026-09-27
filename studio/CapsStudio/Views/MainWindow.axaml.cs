@@ -81,6 +81,11 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
         _vm.ViewRequested += RequestViewRender;
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ViewModels.MainViewModel.RunLiveDoc) && _vm.RunLiveDoc != null && _vm.Busy) RequestRender();
+            else if (e.PropertyName == nameof(ViewModels.MainViewModel.Busy)) RequestRender();
+        };
         ViewGl.FitStale += RequestViewRender;
         ViewGl.ReadyChanged += () => Dispatcher.UIThread.Post(() =>
         {
@@ -790,6 +795,16 @@ public partial class MainWindow : Window
     private static bool SameCamera(in CapsStudio.Interop.CapsCamera a, in CapsStudio.Interop.CapsCamera b) =>
         a.Yaw == b.Yaw && a.Pitch == b.Pitch && a.Zoom == b.Zoom && a.PanX == b.PanX && a.PanY == b.PanY && a.Perspective == b.Perspective;
 
+    private CapsStudio.Interop.CapsSceneData? _gpuScene;
+    private double _panSpan = 30;
+
+    private void ClearOverlays()
+    {
+        Labels.SetLabels(new List<ViewModels.ViewLabel>());
+        Labels.SetLens(null);
+        Labels.SetMonitors(new List<ViewModels.MonitorMark>());
+    }
+
     /// <summary>Atom labels, the lens and pinned monitors over the view for this camera.</summary>
     private void UpdateOverlays(CapsStudio.Interop.CapsCamera cam, CapsStudio.Interop.CapsRenderOpts opt)
     {
@@ -821,39 +836,53 @@ public partial class MainWindow : Window
                 var h = (int)Math.Max(16, host.Bounds.Height);
                 _scaling = VisualRoot?.RenderScaling ?? 1;
                 if (doc == null) { image.Source = null; _rendered = ticket; break; }
-                if (_vm.Busy) { _rendered = ticket; break; }   // the core is busy with this document; keep the last image
+                // While a run holds the document: its live snapshots (MD, equilibration) are drawn instead, and the GPU
+                // view turns the scene it has; nothing here waits on the document.
+                var busy = _vm.Busy;
+                var src = busy ? _vm.RunLiveDoc : doc;
+                var gpu = !field && GpuPath();
+                if (busy && (field || (src == null && !(gpu && _gpuScene != null && !_gpuCpuOnly)))) { _rendered = ticket; break; }
                 var pw = (int)(w * _scaling);
                 var ph = (int)(h * _scaling);
-                var cam = _vm.ViewCamera(w, h);
-                if (!field && GpuPath())
+                var cam = busy ? _vm.Camera : _vm.ViewCamera(w, h);
+                if (gpu)
                 {
                     var gopt = _vm.ViewOptions(pw, ph, 1);
-                    if (_sceneDirty || !ReferenceEquals(_sceneDoc, doc))
+                    if (src != null && (_sceneDirty || !ReferenceEquals(_sceneDoc, src)))
                     {
                         _sceneDirty = false;   // a change during the build marks it again
                         CapsStudio.Interop.CapsSceneData? sc;
-                        try { sc = await Task.Run(() => doc.RenderScene(gopt)); } catch { sc = null; }
-                        _gpuCpuOnly = sc == null || sc.CpuOnly;   // surfaces, polyhedra, colour-vision preview: the CPU draws them
-                        if (!_gpuCpuOnly) { ViewGl.SetScene(sc!); _sceneDoc = doc; }
-                        else _sceneDoc = null;
+                        try { sc = await Task.Run(() => src.RenderScene(gopt)); } catch { sc = null; }   // a snapshot may be replaced meanwhile
+                        if (sc != null)
+                        {
+                            _gpuCpuOnly = sc.CpuOnly;   // surfaces, polyhedra, colour-vision preview: the CPU draws them
+                            if (!_gpuCpuOnly) { ViewGl.SetScene(sc); _gpuScene = sc; _sceneDoc = src; }
+                            else { _gpuScene = null; _sceneDoc = null; }
+                        }
+                        else if (!busy) _sceneDirty = true;
                     }
-                    if (!_gpuCpuOnly && ReferenceEquals(doc, _vm.Document))
+                    if (!_gpuCpuOnly && _gpuScene != null && ReferenceEquals(doc, _vm.Document))
                     {
                         var gsw = Stopwatch.StartNew();
-                        var fit = doc.ViewFit(cam, gopt);
+                        var fit = _gpuScene.Fit(cam, pw, ph);   // from the scene: no call into the document
                         ViewGl.SetView(fit);
                         if (!ViewGl.IsVisible) ViewGl.IsVisible = true;
                         if (ViewImage.IsVisible) ViewImage.IsVisible = false;
-                        var cpuOpt = _vm.ViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2);   // what picks and overlays are made with
-                        _pixW = pw; _pixH = ph;
-                        _lastCam = cam; _lastOpt = cpuOpt; _haveLast = true;
-                        _cpuStale = true;
-                        UpdateOverlays(cam, cpuOpt);
-                        RenderStat.Text = $"{pw}×{ph} px · GPU · {gsw.Elapsed.TotalMilliseconds + ViewGl.LastFrameMs:0} ms";
-                        RestartIdle();
+                        if (!busy)
+                        {
+                            var cpuOpt = _vm.ViewOptions(pw, ph, _scaling >= 1.5 ? 1 : 2);   // what picks and overlays are made with
+                            _pixW = pw; _pixH = ph;
+                            _lastCam = cam; _lastOpt = cpuOpt; _haveLast = true;
+                            _cpuStale = true;
+                            UpdateOverlays(cam, cpuOpt);
+                            RestartIdle();
+                        }
+                        else if (_haveLast) { _cpuStale = true; ClearOverlays(); }   // picks and labels wait for the run to end
+                        RenderStat.Text = $"{pw}×{ph} px · GPU{(busy ? src != null ? " · live" : " · run" : "")} · {gsw.Elapsed.TotalMilliseconds + ViewGl.LastFrameMs:0} ms";
                         _rendered = ticket;
                         continue;
                     }
+                    if (busy && src == null) { _rendered = ticket; break; }
                 }
                 if (!field && ViewGl.IsVisible && ViewGl.Ready) { ViewGl.IsVisible = false; }
                 if (!field && !ViewImage.IsVisible) ViewImage.IsVisible = true;
@@ -864,7 +893,9 @@ public partial class MainWindow : Window
                 if (_frameBuf.Length != pw * ph * 4) _frameBuf = new byte[pw * ph * 4];
                 var buf = _frameBuf;
                 var sw = Stopwatch.StartNew();
-                await Task.Run(() => doc.Render(cam, opt, buf));
+                var rdoc = src!;   // the document, or during a run its live snapshot
+                try { await Task.Run(() => rdoc.Render(cam, opt, buf)); }
+                catch (ObjectDisposedException) when (busy) { _rendered = ticket; continue; }   // a snapshot replaced meanwhile
                 sw.Stop();
                 var slot = field ? 2 : _frameFlip ? 1 : 0;
                 _frameFlip = !_frameFlip;
@@ -885,7 +916,8 @@ public partial class MainWindow : Window
                 else image.Source = bmp;
                 _pixW = pw; _pixH = ph;
                 RenderStat.Text = $"{pw}×{ph} px · {sw.ElapsedMilliseconds} ms";
-                if (!field) _vm.ReportFrame(sw.Elapsed.TotalMilliseconds);
+                if (!field && !busy) _vm.ReportFrame(sw.Elapsed.TotalMilliseconds);
+                if (busy) { ClearOverlays(); _rendered = ticket; continue; }   // a snapshot: no labels or picks from it
                 // atom labels (Appearance): the visible atoms' screen positions from this render
                 if (!field)
                 {
@@ -1053,7 +1085,7 @@ public partial class MainWindow : Window
             if (hit >= 0) { _vm.MoveLens(hit); RequestRender(); }
             return;
         }
-        if (!_dragging || _vm.Document == null || _vm.Busy) return;
+        if (!_dragging || _vm.Document == null) return;   // the camera also turns while a run goes (tools wait for it)
         var pos = e.GetPosition(_host);
         if (_lassoPts != null || _moveAtoms != null)   // the lasso or move tool owns the drag: the camera stays
         {
@@ -1074,8 +1106,8 @@ public partial class MainWindow : Window
         if (_pan)
         {
             // Pan in Å: approximate px→Å from the current fit (view height ≈ 2.2 × half-extent at zoom 1).
-            var s = Summary();
-            var span = Math.Max(1.0, Math.Max(s.CellA, Math.Max(s.CellB, s.CellC)));
+            if (!_vm.Busy) { var s = Summary(); _panSpan = Math.Max(1.0, Math.Max(s.CellA, Math.Max(s.CellB, s.CellC))); }   // a run holds the document: the last span
+            var span = _panSpan;
             var perPx = span * 1.6 / Math.Max(1, _host.Bounds.Height) / _vm.Camera.Zoom;
             _vm.Camera.PanX += d.X * perPx;
             _vm.Camera.PanY -= d.Y * perPx;
@@ -1144,7 +1176,7 @@ public partial class MainWindow : Window
 
     private void OnWheel(object? sender, PointerWheelEventArgs e)
     {
-        if (_vm.Document == null || _vm.Busy) return;
+        if (_vm.Document == null) return;
         _vm.StopFly();
         _vm.Camera.Zoom = Math.Clamp(_vm.Camera.Zoom * Math.Pow(1.12, e.Delta.Y), 0.1, 40);
         RequestViewRender();

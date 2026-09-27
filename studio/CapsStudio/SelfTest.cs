@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 26, "native ABI version 26");
+        Check(Native.AbiVersion() == 28, "native ABI version 28");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -65,6 +65,16 @@ internal static class SelfTest
             }
             Check(sc.SphereId.Length == 1300 && sc.CapsuleRgb.Length == 2 * 1370 && sc.LineRgb.Length == 12 && !sc.CpuOnly && worst < 1e-3,
                   $"GPU scene: {sc.SphereId.Length} spheres, {sc.CapsuleRgb.Length} half-bonds, {sc.LineRgb.Length} cell edges; projected as the CPU image to {worst:G2} px");
+            // the view's own fit from the scene (used while a run holds the document) equals the core's
+            double fitWorst = 0;
+            foreach (var c in new[] { gcam, new CapsCamera { Yaw = -2.1, Pitch = 1.2, Zoom = 0.7 }, new CapsCamera { Yaw = 0.3, Pitch = -0.4, Zoom = 2.5, PanX = -3, Perspective = 1 } })
+            {
+                var fa = vm.Document!.ViewFit(c, gopt);
+                var fb = sc.Fit(c, 800, 500);
+                fitWorst = Math.Max(fitWorst, Math.Max(Math.Abs(fa.Scale - fb.Scale) / fa.Scale, Math.Max(Math.Abs(fa.Dist - fb.Dist) / fa.Dist,
+                    Math.Max(Math.Abs(fa.Cx - fb.Cx) + Math.Abs(fa.Cy - fb.Cy) + Math.Abs(fa.Cz - fb.Cz), Math.Abs(fa.ZMin - fb.ZMin) + Math.Abs(fa.ZMax - fb.ZMax)))));
+            }
+            Check(fitWorst < 1e-5, $"GPU view's own camera fit equals the core's (worst {fitWorst:G2})");
         }
         Check(s.Format == "lammps-dump", $"format '{s.Format}'");
 
@@ -278,6 +288,21 @@ internal static class SelfTest
         var liveN = 0; var liveAtoms = 0L; var liveStats = "";
         cell.Md(mdOpts with { Steps = 50 }, null, (snap, stats) => { liveN++; liveAtoms = snap.Summary().Atoms; liveStats = stats; snap.Dispose(); });
         Check(liveN >= 1 && liveAtoms == cell.Summary().Atoms && liveStats.Contains("density"), $"live MD view: {liveN} snapshot(s) of {liveAtoms} atoms · {liveStats}");
+        {
+            // while a run holds the structure the window's own calls read a shadow of the shown frame and never wait
+            var started = new ManualResetEventSlim();
+            var stop = false;
+            var run = Task.Run(() => cell.Md(mdOpts with { Steps = 10_000_000 }, (r, n) => { started.Set(); return !Volatile.Read(ref stop); }));
+            started.Wait(20000);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var during = cell.Summary();
+            var readMs = sw.Elapsed.TotalMilliseconds;
+            var longRun = cell.LongRunning;
+            Volatile.Write(ref stop, true);
+            try { run.Wait(); } catch { }
+            Check(longRun && readMs < 200 && during.Atoms == cell.Summary().Atoms && during.Frames == 1,
+                  $"a run holds the structure: the window reads its shadow in {readMs:F1} ms ({during.Atoms} atoms)");
+        }
         var cont = cell.Md(mdOpts with { Steps = 100 }, null);
         Check(cont.Contains("velocities taken"), "md: a second run continues with the same velocities");
         var respaRows = new List<CapsThermo>();
@@ -1678,6 +1703,7 @@ internal static class SelfTest
             vm.MdEnsemble = 2;
             vm.MdRespa = 1;
             vm.MdGromacs = true;
+            vm.PreflightNow().GetAwaiter().GetResult();
             var deck = vm.MdDeck;
             var gdir = Path.Combine(outDir, "gmx-selftest");
             Directory.CreateDirectory(gdir);
@@ -1699,6 +1725,7 @@ internal static class SelfTest
             vm.MdGromacs = false;
             vm.MdRespa = 0;
             vm.MdEnsemble = 1;
+            vm.PreflightNow().GetAwaiter().GetResult();
             Check(vm.MdDeck.Contains("read_data"), "LAMMPS deck back");
         }
 

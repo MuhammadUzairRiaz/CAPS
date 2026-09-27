@@ -20,10 +20,10 @@ public sealed partial class MainViewModel
         : "Energies and forces of the data file match CAPS in LAMMPS (bench/ff/check_data_lammps.py)";
 
     /// <summary>The GROMACS .mdp for this run: the core's non-bonded settings, then the integrator and coupling.</summary>
-    private string GromacsDeck()
+    private string GromacsDeck(Interop.CapsDocument doc)
     {
         var inv = CultureInfo.InvariantCulture;
-        var nb = _doc!.Gromacs(null);
+        var nb = doc.Gromacs(null);
         var respa = RespaSteps > 1 && !(MdHasThermostat && _mdThermostat == 1);
         var dtPs = _mdDt / 1000 / (respa ? RespaSteps : 1);
         var steps = (long)_mdSteps * (respa ? RespaSteps : 1);
@@ -60,6 +60,6 @@ public sealed partial class MainViewModel
     {
         var stem = System.IO.Path.Combine(dir, "system");
         _doc!.Gromacs(stem);
-        System.IO.File.WriteAllText(stem + ".mdp", GromacsDeck());
+        System.IO.File.WriteAllText(stem + ".mdp", GromacsDeck(_doc!));
     }
 }

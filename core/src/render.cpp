@@ -469,6 +469,31 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
   sc.transparent = opt.background == Background::Transparent;
   sc.dark = P.dark_bg, sc.depth_cue = opt.depth_cue, sc.outlines = opt.outlines;
   sc.has_meshes = !opt.meshes.empty();
+  {   // the camera fit's inputs, as fit_view takes them
+    bool any_shown = false;
+    for (size_t i = 0; i < n && !any_shown; ++i) any_shown = P.show[i];
+    if (s.cell.valid() && (opt.show_cell || !any_shown)) {
+      for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 2; ++j)
+          for (int k = 0; k < 2; ++k) {
+            const Vec3 c = s.cell.origin + s.cell.a * i + s.cell.b * j + s.cell.c * k;
+            sc.fit_corners.insert(sc.fit_corners.end(), {float(c[0]), float(c[1]), float(c[2])});
+          }
+      sc.fit_centre = s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5;
+    } else {
+      Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
+      for (size_t i = 0; i < n; ++i)
+        if (P.show[i] || !any_shown)
+          for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], s.atoms[i].pos[k]); hi[k] = std::max(hi[k], s.atoms[i].pos[k]); }
+      if (!n) lo = hi = {0, 0, 0};
+      sc.fit_centre = (lo + hi) * 0.5;
+    }
+    sc.fit_points.reserve(3 * n);
+    for (size_t i = 0; i < n; ++i)
+      if (P.show[i]) sc.fit_points.insert(sc.fit_points.end(), {float(s.atoms[i].pos[0]), float(s.atoms[i].pos[1]), float(s.atoms[i].pos[2])});
+    sc.fit_pad = opt.style == Style::SpaceFilling ? 2.0 : 1.0;
+    sc.fov_deg = Camera{}.fov_deg;
+  }
   auto pack = [](RGB c) {
     auto q = [](float x) { return uint32_t(std::clamp(x, 0.f, 1.f) * 255 + .5f); };
     return (q(c.r) << 16) | (q(c.g) << 8) | q(c.b);
