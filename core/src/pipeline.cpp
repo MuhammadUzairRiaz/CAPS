@@ -1055,6 +1055,199 @@ void step_affine(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = buf;
 }
 
+// The k nearest neighbours of every particle (vectors from it, shortest first), periodic in a cell: particles binned
+// by a radius from the number density, widened for a particle that finds fewer than k
+std::vector<std::vector<Vec3>> nearest_neighbours(const System& s, int k) {
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<Vec3>> out(n);
+  if (n < 2) return out;
+  const Cell& c = s.cell;
+  const bool per = c.valid();
+  Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
+  for (const auto& a : s.atoms)
+    for (int d = 0; d < 3; ++d) lo[d] = std::min(lo[d], a.pos[d]), hi[d] = std::max(hi[d], a.pos[d]);
+  double vol = per ? c.volume() : std::max(1.0, (hi[0] - lo[0] + 1) * (hi[1] - lo[1] + 1) * (hi[2] - lo[2] + 1));
+  const double rk = std::cbrt(3.0 * k * vol / (4 * M_PI * double(n)));
+  double width[3];
+  for (int d = 0; d < 3; ++d) width[d] = per ? 1.0 / norm(cross(d == 0 ? c.b : d == 1 ? c.c : c.a, d == 0 ? c.c : d == 1 ? c.a : c.b)) * c.volume() : hi[d] - lo[d] + 1e-6;
+  const double bin = std::max(1.0, 0.8 * rk);
+  int nb[3];
+  for (int d = 0; d < 3; ++d) nb[d] = std::max(1, int(width[d] / bin));
+  auto frac = [&](const Vec3& x, int d) {
+    double f = per ? c.to_fractional(x)[d] : (x[d] - lo[d]) / width[d];
+    if (per) f -= std::floor(f);
+    return std::clamp(int(f * nb[d]), 0, nb[d] - 1);
+  };
+  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::array<int, 3>> where(n);
+  for (size_t i = 0; i < n; ++i) {
+    where[i] = {frac(s.atoms[i].pos, 0), frac(s.atoms[i].pos, 1), frac(s.atoms[i].pos, 2)};
+    grid[(size_t(where[i][0]) * nb[1] + where[i][1]) * nb[2] + where[i][2]].push_back(uint32_t(i));
+  }
+  for (size_t i = 0; i < n; ++i) {
+    std::vector<std::pair<double, Vec3>> cand;
+    for (int reach = 1;; ++reach) {
+      cand.clear();
+      std::set<size_t> seen;
+      const bool all = 2 * reach + 1 >= nb[0] && 2 * reach + 1 >= nb[1] && 2 * reach + 1 >= nb[2];
+      for (int dx = -reach; dx <= reach; ++dx)
+        for (int dy = -reach; dy <= reach; ++dy)
+          for (int dz = -reach; dz <= reach; ++dz) {
+            int b[3] = {where[i][0] + dx, where[i][1] + dy, where[i][2] + dz};
+            bool skip = false;
+            for (int d = 0; d < 3; ++d) {
+              if (per) b[d] = ((b[d] % nb[d]) + nb[d]) % nb[d];
+              else if (b[d] < 0 || b[d] >= nb[d]) skip = true;
+            }
+            if (skip) continue;
+            const size_t id = (size_t(b[0]) * nb[1] + b[1]) * nb[2] + b[2];
+            if (!seen.insert(id).second) continue;
+            for (uint32_t j : grid[id]) {
+              if (j == i) continue;
+              const Vec3 v = per ? c.minimum_image(s.atoms[j].pos - s.atoms[i].pos) : s.atoms[j].pos - s.atoms[i].pos;
+              cand.push_back({dot(v, v), v});
+            }
+          }
+      // enough, and the k-th is closer than the searched shell's inner reach (else a nearer one may lie beyond)
+      if (int(cand.size()) >= k) {
+        std::partial_sort(cand.begin(), cand.begin() + k, cand.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+        double shell = 1e30;
+        for (int d = 0; d < 3; ++d) shell = std::min(shell, reach * width[d] / nb[d]);
+        if (all || std::sqrt(cand[size_t(k - 1)].first) <= shell) break;
+      } else if (all) break;
+    }
+    const size_t m = std::min<size_t>(size_t(k), cand.size());
+    std::partial_sort(cand.begin(), cand.begin() + long(m), cand.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (size_t q = 0; q < m; ++q) out[i].push_back(cand[q].second);
+  }
+  return out;
+}
+
+// One CNA signature per neighbour: common neighbours (within rc of both), bonds among them, the largest connected set
+// of those bonds (Honeycutt & Andersen 1987; a-CNA's local cutoff, Stukowski 2012)
+std::array<int, 3> cna_signature(const std::vector<Vec3>& nb, size_t j, double rc2) {
+  std::vector<size_t> common;
+  for (size_t k = 0; k < nb.size(); ++k)
+    if (k != j) { const Vec3 d = nb[k] - nb[j]; if (dot(d, d) < rc2) common.push_back(k); }
+  std::vector<std::pair<size_t, size_t>> bonds;
+  for (size_t a = 0; a < common.size(); ++a)
+    for (size_t b = a + 1; b < common.size(); ++b) {
+      const Vec3 d = nb[common[a]] - nb[common[b]];
+      if (dot(d, d) < rc2) bonds.push_back({a, b});
+    }
+  // largest set of bonds connected through shared atoms
+  std::vector<int> comp(bonds.size(), -1);
+  int longest = 0;
+  for (size_t b0 = 0; b0 < bonds.size(); ++b0) {
+    if (comp[b0] >= 0) continue;
+    comp[b0] = int(b0);
+    std::vector<size_t> q{b0};
+    int size = 0;
+    while (!q.empty()) {
+      const size_t b = q.back();
+      q.pop_back();
+      ++size;
+      for (size_t o = 0; o < bonds.size(); ++o)
+        if (comp[o] < 0 && (bonds[o].first == bonds[b].first || bonds[o].first == bonds[b].second || bonds[o].second == bonds[b].first || bonds[o].second == bonds[b].second))
+          comp[o] = int(b0), q.push_back(o);
+    }
+    longest = std::max(longest, size);
+  }
+  return {int(common.size()), int(bonds.size()), longest};
+}
+
+// Adaptive common neighbour analysis (Stukowski, Modelling Simul. Mater. Sci. Eng. 20, 045021 (2012)): FCC, HCP, BCC,
+// icosahedral or other, per particle → Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 ICO)
+void step_cna(PipelineState& st, const Json& p, StepStatus& out) {
+  const System& s = st.system;
+  const size_t n = s.atoms.size();
+  const auto nn = nearest_neighbours(s, 14);
+  auto& type = st.props["Structure Type"];
+  type.assign(n, 0);
+  const bool only_sel = flag(p, "only_selected", false);
+  std::array<size_t, 5> count{0, 0, 0, 0, 0};
+  const double f = (1 + std::sqrt(2.0)) / 2;
+  for (size_t i = 0; i < n; ++i) {
+    if (only_sel && !st.selected[i]) continue;
+    const auto& all = nn[i];
+    int t = 0;
+    if (all.size() >= 12) {
+      std::vector<Vec3> n12(all.begin(), all.begin() + 12);
+      double mean = 0;
+      for (const Vec3& v : n12) mean += norm(v);
+      const double rc = f * mean / 12;
+      int s421 = 0, s422 = 0, s555 = 0;
+      for (size_t j = 0; j < 12; ++j) {
+        const auto sig = cna_signature(n12, j, rc * rc);
+        if (sig == std::array<int, 3>{4, 2, 1}) ++s421;
+        else if (sig == std::array<int, 3>{4, 2, 2}) ++s422;
+        else if (sig == std::array<int, 3>{5, 5, 5}) ++s555;
+      }
+      if (s421 == 12) t = 1;
+      else if (s421 == 6 && s422 == 6) t = 2;
+      else if (s555 == 12) t = 4;
+    }
+    if (t == 0 && all.size() >= 14) {
+      double m8 = 0, m6 = 0;
+      for (size_t j = 0; j < 8; ++j) m8 += norm(all[j]);
+      for (size_t j = 8; j < 14; ++j) m6 += norm(all[j]);
+      const double rc = f * 0.5 * (2 / std::sqrt(3.0) * m8 / 8 + m6 / 6);
+      int s444 = 0, s666 = 0;
+      for (size_t j = 0; j < 14; ++j) {
+        const auto sig = cna_signature(all, j, rc * rc);
+        if (sig == std::array<int, 3>{4, 4, 4}) ++s444;
+        else if (sig == std::array<int, 3>{6, 6, 6}) ++s666;
+      }
+      if (s444 == 6 && s666 == 8) t = 3;
+    }
+    type[i] = t;
+    ++count[size_t(t)];
+  }
+  static const char* names[5] = {"Other", "FCC", "HCP", "BCC", "ICO"};
+  DataTable tab;
+  tab.name = "structures";
+  tab.title = "Common neighbour analysis · particles per structure";
+  tab.columns = {"Type", "Count", "Fraction"};
+  const double tot = double(std::max<size_t>(1, only_sel ? st.selected_count() : n));
+  std::string sum;
+  for (int t = 0; t < 5; ++t) {
+    tab.rows.push_back({double(t), double(count[size_t(t)]), count[size_t(t)] / tot});
+    st.set_attribute(std::string("CommonNeighborAnalysis.counts.") + names[t], double(count[size_t(t)]));
+    if (count[size_t(t)]) sum += (sum.empty() ? "" : " · ") + std::string(names[t]) + " " + std::to_string(count[size_t(t)]);
+  }
+  st.tables.push_back(std::move(tab));
+  out.summary = sum.empty() ? "no particles" : sum;
+}
+
+// Centrosymmetry parameter (Kelchner, Plimpton & Hamilton, Phys. Rev. B 58, 11085 (1998)), as LAMMPS computes it: the
+// sum of the N/2 smallest |r_i + r_j|² over pairs of the N nearest neighbours (0 in a perfect centrosymmetric lattice)
+void step_centrosymmetry(PipelineState& st, const Json& p, StepStatus& out) {
+  const int N = int(p.num("neighbours", 12));
+  if (N < 2 || N > 32 || N % 2) throw std::invalid_argument("the neighbour count is even, 2 to 32 (12 for FCC, 8 for BCC)");
+  const size_t n = st.system.atoms.size();
+  const auto nn = nearest_neighbours(st.system, N);
+  auto& csp = st.props["Centrosymmetry"];
+  csp.assign(n, 0);
+  double mx = 0, mean = 0;
+  for (size_t i = 0; i < n; ++i) {
+    const auto& v = nn[i];
+    std::vector<double> sums;
+    for (size_t a = 0; a < v.size(); ++a)
+      for (size_t b = a + 1; b < v.size(); ++b) { const Vec3 q = v[a] + v[b]; sums.push_back(dot(q, q)); }
+    const size_t half = std::min(sums.size(), v.size() / 2);
+    std::partial_sort(sums.begin(), sums.begin() + long(half), sums.end());
+    csp[i] = std::accumulate(sums.begin(), sums.begin() + long(half), 0.0);
+    mx = std::max(mx, csp[i]);
+    mean += csp[i];
+  }
+  mean /= double(std::max<size_t>(1, n));
+  st.set_attribute("Centrosymmetry.mean", mean);
+  st.set_attribute("Centrosymmetry.max", mx);
+  char buf[120];
+  std::snprintf(buf, sizeof buf, "%d neighbours · mean %.3g Å² · max %.3g Å²", N, mean, mx);
+  out.summary = buf;
+}
+
 void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {
   System whole = st.system;
   if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
@@ -2052,6 +2245,8 @@ const StepDef kSteps[] = {
     {"unwrap", "Unwrap", "molecules made whole across the boundary", step_unwrap},
     {"orientation", "Chain orientation", "backbone chords: P₂ per atom, S, director, local crystallinity", step_orientation},
     {"affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", step_affine},
+    {"cna", "Common neighbour analysis", "adaptive CNA: FCC, HCP, BCC, icosahedral, other", step_cna},
+    {"centrosymmetry", "Centrosymmetry", "Kelchner's parameter from the N nearest neighbours", step_centrosymmetry},
     {"molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", step_molecule_shape},
     {"topology", "Topology distributions", "bond lengths, angles, dihedrals", step_topology},
     {"displacements", "Displacements", "vs a reference frame, MSD", step_displacements},

@@ -123,6 +123,8 @@ public sealed partial class MainViewModel
         new("unwrap", "Unwrap", "molecules whole across the boundary", "Modify", "cube"),
         new("affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", "Modify", "move"),
         new("orientation", "Chain orientation", "P₂ per atom, S, director, local crystallinity", "Structure", "grow"),
+        new("cna", "Common neighbour analysis", "FCC, HCP, BCC, icosahedral (adaptive CNA)", "Structure", "atom"),
+        new("centrosymmetry", "Centrosymmetry", "Kelchner's parameter: defects, surfaces", "Structure", "atom"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
         new("python", "Python step", "your script with an @step function (caps.pipeline API)", "Automate", "terminal"),
         new("primitive_paths", "Primitive paths", "chains pulled tight without crossing · N_e", "Structure", "bond"),
@@ -181,7 +183,7 @@ public sealed partial class MainViewModel
         var name = type switch
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
-            "molecule_shape" => "molecules", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "molecule_shape" => "molecules", "cna" => "structures", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", "primitive_paths" => "primitive_paths", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
@@ -418,6 +420,8 @@ public sealed partial class MainViewModel
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "wrap" => new JsonObject { ["mode"] = "atoms" },
+        "cna" => new JsonObject { ["only_selected"] = false },
+        "centrosymmetry" => new JsonObject { ["neighbours"] = 12 },
         "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8 },
         "affine_transform" => new JsonObject { ["strain"] = new JsonArray(0.1, 0.0, 0.0), ["target"] = "all" },
         "unwrap" => new JsonObject { ["method"] = "bonds" },
@@ -526,6 +530,8 @@ public sealed partial class MainViewModel
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
+            case "cna": Bool("only_selected", "Only selected"); Note("Adds Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 icosahedral): colour by it to see grains, stacking faults and surfaces"); break;
+            case "centrosymmetry": Text("neighbours", "Nearest neighbours (12 FCC, 8 BCC)", "number"); Note("Adds Centrosymmetry (Å²): zero in a perfect lattice, large at surfaces and defects"); break;
             case "orientation":
                 Choice("axis", "P₂ against", ["director", "x", "y", "z"]); Text("radius", "Neighbour radius (Å)", "number"); Text("angle", "Aligned within (°)", "number");
                 Text("neighbours", "Aligned neighbours for crystalline", "number");

@@ -582,6 +582,48 @@ TEST(Orientation, PipelineStepPerAtomAndAffineStrain) {
   EXPECT_NEAR(st.system.atoms[0].pos[0] - c0[0], 1.1 * (melt.atoms[0].pos[0] - c0[0]), 1e-9);
 }
 
+// Adaptive CNA and centrosymmetry: FCC gold, BCC iron, HCP magnesium each whole; a 13-atom icosahedron's centre;
+// centrosymmetry zero in FCC, not at a vacancy's neighbours
+TEST(Structure, CommonNeighbourAnalysisAndCentrosymmetry) {
+  auto crystal = [](const std::string& sg, double a, double c, std::vector<caps::CrystalSite> sites, std::array<int, 3> sc) {
+    caps::CrystalSpec spec;
+    spec.space_group = sg;
+    spec.a = a, spec.b = a, spec.c = c;
+    if (sg == "P63/mmc") spec.gamma = 120;
+    spec.sites = std::move(sites);
+    spec.supercell = sc;
+    return caps::build_crystal(spec);
+  };
+  auto run = [](const caps::System& f, const std::string& json) { return caps::run_pipeline(f, caps::pipeline_from_json(caps::Json::parse(json)), 0, 0); };
+  const auto au = crystal("Fm-3m", 4.078, 4.078, {{"Au", 79, {0, 0, 0}}}, {4, 4, 4});
+  auto st = run(au, R"([{"type":"centrosymmetry"},{"type":"cna"}])");
+  EXPECT_EQ(st.attribute("CommonNeighborAnalysis.counts.FCC"), double(au.atoms.size()));
+  EXPECT_LT(st.attribute("Centrosymmetry.max"), 1e-9);
+  const auto fe = crystal("Im-3m", 2.8665, 2.8665, {{"Fe", 26, {0, 0, 0}}}, {5, 5, 5});
+  st = run(fe, R"([{"type":"cna"}])");
+  EXPECT_EQ(st.attribute("CommonNeighborAnalysis.counts.BCC"), double(fe.atoms.size()));
+  const auto mg = crystal("P63/mmc", 3.209, 5.211, {{"Mg", 12, {1.0 / 3, 2.0 / 3, 0.25}}}, {5, 5, 3});
+  st = run(mg, R"([{"type":"cna"}])");
+  EXPECT_EQ(st.attribute("CommonNeighborAnalysis.counts.HCP"), double(mg.atoms.size()));
+  // a vacancy: its twelve neighbours lose their centrosymmetry and their FCC signature
+  caps::System vac = au;
+  vac.atoms.erase(vac.atoms.begin() + 100);
+  st = run(vac, R"([{"type":"centrosymmetry"},{"type":"cna"}])");
+  EXPECT_EQ(st.attribute("CommonNeighborAnalysis.counts.FCC"), double(vac.atoms.size() - 12));
+  int high = 0;
+  for (double v : st.props.at("Centrosymmetry")) high += v > 1.0;
+  EXPECT_EQ(high, 12);
+  // a Mackay icosahedron of 13 atoms (no cell): the centre is icosahedral
+  caps::System ico;
+  const double g = (1 + std::sqrt(5.0)) / 2, r = 2.88 / std::sqrt(1 + g * g);
+  std::vector<caps::Vec3> v{{0, 0, 0}};
+  for (int s1 : {-1, 1})
+    for (int s2 : {-1, 1}) v.push_back({0, s1 * r, s2 * g * r}), v.push_back({s1 * r, s2 * g * r, 0}), v.push_back({s2 * g * r, 0, s1 * r});
+  for (const auto& x : v) { caps::Atom a; a.element = 79; a.pos = x; a.id = int64_t(ico.atoms.size() + 1); ico.atoms.push_back(a); }
+  st = run(ico, R"([{"type":"cna"}])");
+  EXPECT_EQ(st.props.at("Structure Type")[0], 4.0);
+}
+
 TEST(Recipe, CheckedWithoutRunning) {
   const auto ok = caps::check_recipe(caps::yaml_parse(
       "recipe: 1\nbuild: {polymer: {smiles: \"*CC(*)c1ccccc1\", dp: 40, chains: 20}}\ntype: {forcefield: gaff2}\ngrow: {density: 0.5}\n"
