@@ -14,11 +14,17 @@
       </Border>
       <Panel Grid.Row="1" Background="{DynamicResource Bg0B}">
         <v:MolView x:Name="View" IsVisible="False" />
-        <TextBlock x:Name="Hint" Text="The atoms move here while the run goes (drag rotates, the wheel zooms)" Classes="dim"
+        <TextBlock x:Name="Hint" Text="The atoms move here while the run goes (drag rotates, ⇧ drag pans, the wheel zooms)" Classes="dim"
                    HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="20" />
         <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Classes="chip" IsVisible="{Binding RunLiveShown}" IsHitTestVisible="False">
           <TextBlock Text="{Binding RunLiveText}" Foreground="{DynamicResource MutedB}" />
         </Border>
+        <StackPanel x:Name="Tools" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+          <Button x:Name="ZoomOut" Classes="small" Content="−" Width="30" Padding="0" HorizontalContentAlignment="Center" FontSize="15" ToolTip.Tip="Zoom out (or the wheel / a pinch over the view)" />
+          <Button x:Name="ZoomIn" Classes="small" Content="+" Width="30" Padding="0" HorizontalContentAlignment="Center" FontSize="15" ToolTip.Tip="Zoom in" />
+          <Button x:Name="ResetBtn" Classes="small" ToolTip.Tip="Reset the view (or double-click)"><v:Icon Kind="rotate" Size="13" /></Button>
+          <Button x:Name="FullBtn" Classes="small" ToolTip.Tip="Full screen: the live structure alone, with its own style, colour and background (Esc closes)"><v:Icon Kind="expand" Size="13" /></Button>
+        </StackPanel>
       </Panel>
     </Grid>
   </Border>

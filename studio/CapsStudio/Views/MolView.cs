@@ -45,6 +45,54 @@ public sealed class MolView : Control
     {
         ClipToBounds = true;
         Focusable = true;
+        // a trackpad pinch zooms (macOS magnify gesture)
+        AddHandler(Gestures.PointerTouchPadGestureMagnifyEvent, (_, e) =>
+        {
+            ZoomBy(1 + e.Delta.X);
+            e.Handled = true;
+        });
+    }
+
+    /// <summary>Background: −1 the theme's, 0 dark, 1 white, 2 transparent (a saved image).</summary>
+    public int Backdrop { get; set; } = -1;
+
+    /// <summary>Zoom in (factor above 1) or out.</summary>
+    public void ZoomBy(double f)
+    {
+        if (!double.IsFinite(f) || f <= 0) return;
+        _cam.Zoom = Math.Clamp(_cam.Zoom * f, 0.1, 40);
+        Refresh();
+        CameraChanged?.Invoke(_cam);
+    }
+
+    /// <summary>The view as a PNG at `scale` × its size on screen (supersampled), with the chosen background.</summary>
+    public async Task<bool> SavePng(string path, double scale = 2)
+    {
+        var doc = _doc;
+        if (doc == null) return false;
+        var w = (int)(Math.Max(16, Bounds.Width) * scale);
+        var h = (int)(Math.Max(16, Bounds.Height) * scale);
+        var opt = Options(w, h, 2);
+        var cam = _cam;
+        var buf = new byte[w * h * 4];
+        try { await Task.Run(() => doc.Render(cam, opt, buf)); } catch { return false; }
+        using var bmp = new WriteableBitmap(new PixelSize(w, h), new Vector(96 * scale, 96 * scale), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
+        using (var fb = bmp.Lock())
+            for (var y = 0; y < h; y++)
+                System.Runtime.InteropServices.Marshal.Copy(buf, y * w * 4, fb.Address + y * fb.RowBytes, w * 4);
+        bmp.Save(path);
+        return true;
+    }
+
+    private CapsRenderOpts Options(int w, int h, int supersample)
+    {
+        var light = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
+        return new CapsRenderOpts
+        {
+            Width = w, Height = h, Supersample = supersample, Background = Backdrop >= 0 ? Backdrop : light ? 1 : 0, Style = DrawStyle, ColourBy = ColourMode,
+            Outlines = 1, DepthCue = 1, ShowCell = ShowCell ? 1 : 0, Highlight0 = Highlights.Length > 0 ? Highlights[0] : -1, Highlight1 = Highlights.Length > 1 ? Highlights[1] : -1,
+            Highlight2 = Highlights.Length > 2 ? Highlights[2] : -1, Highlight3 = Highlights.Length > 3 ? Highlights[3] : -1,
+        };
     }
 
     public CapsDocument? Document
@@ -106,13 +154,7 @@ public sealed class MolView : Control
                 var w = (int)(Math.Max(16, Bounds.Width) * scale);
                 var h = (int)(Math.Max(16, Bounds.Height) * scale);
                 if (doc == null || Bounds.Width < 16) { _bmp = null; InvalidateVisual(); _rendered = ticket; break; }
-                var light = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
-                var opt = new CapsRenderOpts
-                {
-                    Width = w, Height = h, Supersample = scale >= 1.5 ? 1 : 2, Background = light ? 1 : 0, Style = DrawStyle, ColourBy = ColourMode,
-                    Outlines = 1, DepthCue = 1, ShowCell = ShowCell ? 1 : 0, Highlight0 = Highlights.Length > 0 ? Highlights[0] : -1, Highlight1 = Highlights.Length > 1 ? Highlights[1] : -1,
-                    Highlight2 = Highlights.Length > 2 ? Highlights[2] : -1, Highlight3 = Highlights.Length > 3 ? Highlights[3] : -1,
-                };
+                var opt = Options(w, h, scale >= 1.5 ? 1 : 2);
                 var cam = _cam;
                 var buf = new byte[w * h * 4];
                 try { await Task.Run(() => doc.Render(cam, opt, buf)); }
@@ -168,6 +210,9 @@ public sealed class MolView : Control
         if (e.ClickCount == 2) { Reset(); return; }
         _last = e.GetPosition(this);
         _drag = true;
+        // ⇧ drag, or the right or middle button: pan
+        var props = e.GetCurrentPoint(this).Properties;
+        _pan = e.KeyModifiers.HasFlag(KeyModifiers.Shift) || props.IsRightButtonPressed || props.IsMiddleButtonPressed;
         e.Pointer.Capture(this);
     }
 
@@ -176,8 +221,18 @@ public sealed class MolView : Control
         base.OnPointerMoved(e);
         if (!_drag) return;
         var p = e.GetPosition(this);
-        _cam.Yaw += (p.X - _last.X) * 0.01;
-        _cam.Pitch = Math.Clamp(_cam.Pitch + (p.Y - _last.Y) * 0.01, -1.5, 1.5);
+        if (_pan)
+        {
+            // Å per pixel: the structure's extent over the view, shrinking as the view zooms in
+            var perPx = PanScale() / Math.Max(1, Math.Min(Bounds.Width, Bounds.Height)) / Math.Max(0.05, _cam.Zoom);
+            _cam.PanX -= (p.X - _last.X) * perPx;
+            _cam.PanY += (p.Y - _last.Y) * perPx;
+        }
+        else
+        {
+            _cam.Yaw += (p.X - _last.X) * 0.01;
+            _cam.Pitch = Math.Clamp(_cam.Pitch + (p.Y - _last.Y) * 0.01, -1.5, 1.5);
+        }
         _last = p;
         _moved = true;
         Refresh();
@@ -201,8 +256,20 @@ public sealed class MolView : Control
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        _cam.Zoom = Math.Clamp(_cam.Zoom * Math.Pow(1.12, e.Delta.Y), 0.3, 6);
-        Refresh();
-        CameraChanged?.Invoke(_cam);
+        // the wheel zooms this view and stops here (a page around it does not scroll)
+        ZoomBy(Math.Pow(1.12, e.Delta.Y));
+        e.Handled = true;
+    }
+
+    private bool _pan;
+    private double PanScale()
+    {
+        try
+        {
+            var s = _doc?.Summary();
+            if (s is { } sm && sm.CellA > 0) return Math.Max(sm.CellA, Math.Max(sm.CellB, sm.CellC));
+        }
+        catch { }
+        return 40;
     }
 }
