@@ -490,7 +490,8 @@ int main(int argc, char** argv) {
       else if (ends(".xyz")) write_xyz(s, out);
       else write_lammps_data(s, out);
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
-      std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), out.c_str());
+      std::printf("%zu atoms · %zu bonds · %d restarts · %d backtracks · closest contact margin %.2f Å · wrote %s\n", s.atoms.size(),
+                  s.bonds.size(), rep.restarts, rep.backtracks, rep.worst_margin, out.c_str());
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
