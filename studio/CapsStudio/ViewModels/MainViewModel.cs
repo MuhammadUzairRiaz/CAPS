@@ -1103,8 +1103,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- Dynamics
     public static readonly string[] Ensembles = ["NVE (no thermostat)", "NVT", "NPT (isotropic)", "NPH (Berendsen, no thermostat)"];
-    public static readonly string[] Thermostats = ["Bussi velocity rescaling", "Langevin (BAOAB)"];
-    public static readonly string[] Barostats = ["Stochastic cell rescaling", "Berendsen (early relaxation only)"];
+    public static readonly string[] Thermostats = ["Bussi velocity rescaling", "Langevin (BAOAB)", "Nosé–Hoover chain (as LAMMPS fix nvt)"];
+    public static readonly string[] Barostats = ["Stochastic cell rescaling", "Berendsen (early relaxation only)", "MTK · Nosé–Hoover (as LAMMPS fix npt)"];
     private int _mdEnsemble = 1, _mdThermostat, _mdBarostat, _mdSeed = 1;
     private double _mdDt = 1.0, _mdTemp = 300, _mdTauT = 100, _mdPressure = 1, _mdTauP = 1000;
     private long _mdSteps = 20000;
@@ -1130,8 +1130,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The papers behind the chosen thermostat and barostat.</summary>
     public string MdCitation => string.Join("; ", new[]
     {
-        MdHasThermostat ? (_mdThermostat == 1 ? "Leimkuhler & Matthews, Appl. Math. Res. Express 2013, 34 (BAOAB)" : "Bussi et al., J. Chem. Phys. 126, 014101 (2007)") : null,
-        MdHasBarostat ? (_mdEnsemble == 3 || _mdBarostat == 1 ? "Berendsen et al., J. Chem. Phys. 81, 3684 (1984)" : "Bernetti & Bussi, J. Chem. Phys. 153, 114107 (2020)") : null,
+        MdHasThermostat ? (_mdThermostat == 1 ? "Leimkuhler & Matthews, Appl. Math. Res. Express 2013, 34 (BAOAB)" : _mdThermostat == 2 ? "Martyna, Klein & Tuckerman, J. Chem. Phys. 97, 2635 (1992)" : "Bussi et al., J. Chem. Phys. 126, 014101 (2007)") : null,
+        MdHasBarostat ? (_mdEnsemble == 3 || _mdBarostat == 1 ? "Berendsen et al., J. Chem. Phys. 81, 3684 (1984)" : _mdBarostat == 2 ? "Martyna, Tobias & Klein, J. Chem. Phys. 101, 4177 (1994)" : "Bernetti & Bussi, J. Chem. Phys. 153, 114107 (2020)") : null,
         _mdEnsemble == 0 ? "Swope et al., J. Chem. Phys. 76, 637 (1982)" : null,
         _mdRespa > 0 ? "r-RESPA: Tuckerman, Berne & Martyna, J. Chem. Phys. 97, 1990 (1992)" : null,
         _mdConstraints > 0 ? "SHAKE/RATTLE: Ryckaert et al., J. Comput. Phys. 23, 327 (1977); Andersen, J. Comput. Phys. 52, 24 (1983)" : null,
@@ -1143,13 +1143,19 @@ public sealed partial class MainViewModel : ObservableObject
     public int MdThermostat
     {
         get => _mdThermostat;
-        set { if (!Set(ref _mdThermostat, value)) return; if (value == 1) MdRespa = 0; Raise(nameof(MdCitation)); Raise(nameof(MdRespaAllowed)); }
+        set
+        {
+            if (!Set(ref _mdThermostat, value)) return;
+            if (value is 1 or 2) MdRespa = 0;
+            if (value != 2 && _mdBarostat == 2) MdBarostat = 0;   // MTK is the pressure half of Nosé–Hoover
+            Raise(nameof(MdCitation)); Raise(nameof(MdRespaAllowed)); RefreshPreflight();
+        }
     }
     // r-RESPA: 0 off, 1 two inner steps, 2 four (bonded forces every Δt/2 or Δt/4); with Bussi or no thermostat
     public static readonly string[] RespaChoices = ["r-RESPA · off", "r-RESPA · bonded ×2", "r-RESPA · bonded ×4"];
     private int _mdRespa;
     public int MdRespa { get => _mdRespa; set { if (Set(ref _mdRespa, Math.Clamp(value, 0, 2))) { Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed)); RefreshPreflight(); } } }
-    public bool MdRespaAllowed => !(MdHasThermostat && _mdThermostat == 1) && _mdConstraints == 0;
+    public bool MdRespaAllowed => !(MdHasThermostat && _mdThermostat is 1 or 2) && _mdConstraints == 0;
     // bond constraints (SHAKE/RATTLE): 0 none, 1 bonds to hydrogen with rigid water, 2 every bond; r-RESPA is the alternative
     public static readonly string[] ConstraintChoices = ["None: every bond flexible", "Bonds to hydrogen (SHAKE), rigid water", "All bonds (SHAKE)"];
     private int _mdConstraints;
@@ -1159,14 +1165,23 @@ public sealed partial class MainViewModel : ObservableObject
         set
         {
             if (!Set(ref _mdConstraints, Math.Clamp(value, 0, 2))) return;
-            if (value > 0) { MdRespa = 0; if (_mdDt < 2) MdDtD = 2; }   // what constraints are for: 2 fs steps
+            if (value > 0) { MdRespa = 0; if (_mdDt < 2) MdDtD = 2; if (_mdBarostat == 2) MdBarostat = 0; }   // what constraints are for: 2 fs steps; MTK runs without them
             Raise(nameof(MdRespaAllowed)); Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed));
             RefreshPreflight();
         }
     }
     public bool MdConstraintsAllowed => _mdRespa == 0;
     private int RespaSteps => _mdRespa == 0 ? 1 : _mdRespa == 1 ? 2 : 4;
-    public int MdBarostat { get => _mdBarostat; set { if (Set(ref _mdBarostat, value)) Raise(nameof(MdCitation)); } }
+    public int MdBarostat
+    {
+        get => _mdBarostat;
+        set
+        {
+            if (!Set(ref _mdBarostat, value)) return;
+            if (value == 2) { if (_mdThermostat != 2) MdThermostat = 2; if (_mdConstraints > 0) MdConstraints = 0; }   // MTK: Nosé–Hoover, no constraints
+            Raise(nameof(MdCitation)); RefreshPreflight();
+        }
+    }
     public bool MdNewVelocities { get => _mdNewVelocities; set => Set(ref _mdNewVelocities, value); }
     public bool MdRunning { get => _mdRunning; private set { if (Set(ref _mdRunning, value)) RaiseBusy(); } }
     public bool CanRun => _doc != null && Idle;
@@ -1317,10 +1332,14 @@ public sealed partial class MainViewModel : ObservableObject
         {
             0 => "fix 1 all nve",
             1 => _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
+               : _mdThermostat == 2 ? string.Format(inv, "fix 1 all nvt temp {0:0.##} {0:0.##} {1:0.##}", _mdTemp, _mdTauT)
                                      : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1),
+            2 when _mdBarostat == 2 => string.Format(inv, "fix 1 all npt temp {0:0.##} {0:0.##} {1:0.##} iso {2:0.##} {2:0.##} {3:0.##}", _mdTemp, _mdTauT, _mdPressure, _mdTauP),
             3 => string.Format(inv, "fix 1 all nve\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),
-            _ => string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}\nfix 3 all press/berendsen iso {3:0.##} {3:0.##} {4:0.##} modulus 22222",
-                _mdTemp, _mdTauT, _mdSeed + 1, _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
+            _ => (_mdThermostat == 2 ? string.Format(inv, "fix 1 all nvt temp {0:0.##} {0:0.##} {1:0.##}", _mdTemp, _mdTauT)
+                  : _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
+                  : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)) +
+                 string.Format(inv, "\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
         };
         return "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
                (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
