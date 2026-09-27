@@ -18,7 +18,9 @@
 #include "caps/io.hpp"
 #include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
+#include "caps/pack.hpp"
 #include "caps/polymer.hpp"
+#include "caps/react.hpp"
 #include "caps/relax.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
@@ -27,8 +29,8 @@ namespace caps {
 
 namespace {
 
-const std::vector<std::string> kStages = {"build", "type", "grow", "relax", "md", "equilibrate", "analyze", "export"};
-const std::set<std::string> kTop = {"recipe", "name", "build", "type", "grow", "relax", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
+const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "md", "equilibrate", "analyze", "export"};
+const std::set<std::string> kTop = {"recipe", "name", "build", "type", "grow", "react", "relax", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
 
 std::string g6(double x) { char b[32]; std::snprintf(b, sizeof b, "%.6g", x); return b; }
 double num(const Json& j, const char* k, double def) { return j.is_object() && j.has(k) && j[k].is_number() ? j[k].number() : def; }
@@ -78,13 +80,31 @@ Trajectory as_trajectory(const System& s) {
 std::vector<std::string> recipe_stages(const Json& r) {
   if (!r.is_object()) throw RecipeError(2, "a recipe is a mapping of stages");
   for (const auto& [k, v] : r.members())
-    if (!kTop.count(k)) throw RecipeError(2, "unknown key '" + k + "' (stages: build, type, grow, relax, md, equilibrate, analyze, export)");
+    if (!kTop.count(k)) throw RecipeError(2, "unknown key '" + k + "' (stages: build, type, grow, react, relax, md, equilibrate, analyze, export)");
   if (r.has("recipe") && r["recipe"].is_number() && r["recipe"].number() != 1) throw RecipeError(2, "this CAPS reads recipe version 1");
   if (!r.has("build")) throw RecipeError(2, "a recipe needs a build stage (polymer, molecule or file)");
   std::vector<std::string> out;
   for (const auto& s : kStages) if (r.has(s)) out.push_back(s);
   if (r.has("grow") && !(r["build"].is_object() && r["build"].has("polymer"))) throw RecipeError(2, "grow needs build: { polymer: … }");
   return out;
+}
+
+// react.templates: built-in names or template text (one string or a list)
+static std::vector<ReactionTemplate> react_templates_of(const Json& J) {
+  std::vector<std::string> items;
+  if (J.has("templates") && J["templates"].is_array()) for (const auto& t : J["templates"].items()) items.push_back(t.str());
+  else if (J.has("templates") && J["templates"].is_string()) items.push_back(J["templates"].str());
+  if (items.empty()) throw RecipeError(2, "react needs templates (" + [] { std::string n; for (const auto& x : builtin_template_names()) n += (n.empty() ? "" : ", ") + x; return n; }() + " or template text)");
+  std::string text;
+  for (const auto& it : items) {
+    const auto names = builtin_template_names();
+    if (std::find(names.begin(), names.end(), it) != names.end()) text += builtin_template(it) + "\n";
+    else if (it.find('\n') != std::string::npos) text += it + "\n";
+    else throw RecipeError(2, "react: no built-in template '" + it + "'");
+  }
+  auto t = parse_templates(text);
+  if (t.empty()) throw RecipeError(2, "react: the templates hold no reaction");
+  return t;
 }
 
 RecipeCheck check_recipe(const Json& r) {
@@ -121,6 +141,11 @@ RecipeCheck check_recipe(const Json& r) {
       } else if (st == "grow") {
         info.summary = (J.has("box") ? "box " + g6(num(J, "box", 0)) + " Å" : "ρ " + g6(num(J, "density", 0.5)) + " g/cm³") + " · seed " + g6(num(J, "seed", 1)) +
                        " · best of " + g6(num(J, "trials", 120)) + " trials";
+      } else if (st == "react") {
+        const auto T = react_templates_of(J);
+        std::string names;
+        for (const auto& t : T) names += (names.empty() ? "" : ", ") + t.name;
+        info.summary = names + " · target " + g6(num(J, "target", 1.0)) + (J.has("insert") ? " · insert " + g6(num(J["insert"], "count", 10)) + " × " + text(J["insert"], "smiles", "") : "");
       } else if (st == "relax") {
         const Minimiser m = minimiser_from_string(text(J, "method", "lbfgs"));
         info.summary = std::string(to_string(m)) + " · |F|max " + g6(num(J, "fmax", 0.5));
@@ -445,6 +470,57 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
                                                           g.method == 1 ? std::vector<std::string>{"rosenbluth1955", "theodorou1985", "jorgensen1984"}
                                                                         : std::vector<std::string>{"rosenbluth1955", "siepmann1992", "rappe1992", "jorgensen1984"}));
         report(k, st, "best of " + std::to_string(g.trials) + " trials · " + std::to_string(chains) + " chains · " + std::to_string(s.atoms.size()) + " atoms · box " + g6(gr.box) + " Å", "done", 1);
+      } else if (st == "react") {
+        // react: {templates: [sulfur_allylic] | text, insert: {smiles: SS, count: 12, tolerance: 2}, target, cycles, per_cycle,
+        //         capture, relax, md_ps, temperature, during_md, seed} — curatives packed into the cell, then cure cycles; the
+        // network is typed again with the recipe's force field (a term it lacks stops the run here)
+        report(k, st, "", "running", 0);
+        if (J.has("insert")) {
+          const Json& I = J["insert"];
+          BuildOptions bo;
+          bo.forcefield = "uff";
+          const BuildResult br = build_molecule(text(I, "smiles", ""), bo);
+          PackOptions po;
+          po.tolerance = num(I, "tolerance", po.tolerance);
+          po.seed = seed_of(I);
+          PackReport pr;
+          const int n = std::max(1, int(num(I, "count", 10)));
+          try { s = insert_molecules(s, br.system, n, po, &pr); } catch (const std::exception& e) { throw RecipeError(4, std::string("react.insert: ") + e.what()); }
+          res.manifest.steps.push_back(step("pack.insert", std::to_string(n) + " × " + text(I, "smiles", "") + " inserted into the free space",
+                                            {{"smiles", text(I, "smiles", "")}, {"count", std::to_string(n)}, {"tolerance", g6(po.tolerance) + " Å"}}, seeded(po.seed),
+                                            {"martinez2009", "rappe1992"}));
+        }
+        ReactOptions ro;
+        ro.templates = react_templates_of(J);
+        if (J.has("capture")) for (auto& t : ro.templates) t.capture = J["capture"].number();
+        ro.seed = seed_of(J);
+        ro.max_cycles = int(num(J, "cycles", 50));
+        ro.max_per_cycle = int(num(J, "per_cycle", 5));
+        ro.target_conversion = num(J, "target", 1.0);
+        ro.relax = flag(J, "relax", true);
+        ro.md_ps = num(J, "md_ps", 0);
+        ro.temperature = num(J, "temperature", 500);
+        ro.during_md = flag(J, "during_md", false);
+        ro.energy = energy;
+        ro.progress = [&](const CycleRow& c) {
+          report(k, st, "cycle " + std::to_string(c.cycle) + " · " + std::to_string(c.total) + " reactions · conversion " + g6(c.conversion), "running",
+                 std::min(1.0, c.conversion / std::max(1e-9, ro.target_conversion)));
+          return true;
+        };
+        if (!s.unwrapped && s.cell.valid()) make_molecules_whole(s);
+        ReactReport rr;
+        try { react(s, ro, &rr); } catch (const std::exception& e) { throw RecipeError(4, std::string("react: ") + e.what()); }
+        std::string names;
+        for (const auto& t : ro.templates) names += (names.empty() ? "" : ", ") + t.name;
+        const double conv = rr.cycles.empty() ? 0 : rr.cycles.back().conversion;
+        res.manifest.steps.push_back(step("react.templates", std::to_string(rr.reactions) + " reactions · conversion " + g6(conv),
+                                          {{"templates", names}, {"target conversion", g6(ro.target_conversion)}, {"cycles", std::to_string(rr.cycles.size())},
+                                           {"relax between cycles", ro.relax ? "yes" : "no"}, {"MD between cycles", g6(ro.md_ps) + " ps"}},
+                                          seeded(ro.seed), {"matsumoto1998"}));
+        ff.reset();
+        if (r.has("type")) type_now(s);   // the network in the recipe's force field
+        report(k, st, std::to_string(rr.reactions) + " reactions · conversion " + g6(conv) + (rr.gel_conversion >= 0 ? " · gel at " + g6(rr.gel_conversion) : "") +
+                          (r.has("type") ? " · typed again: " + ffname : ""), "done", 1);
       } else if (st == "relax" || st == "md" || st == "equilibrate") {
         if (!ff) type_now(s);
         if (st == "relax") {
