@@ -912,6 +912,44 @@ std::pair<double, Vec3> largest_eigen(double A[3][3]) {
   return {A[im][im], Vec3{V[0][im], V[1][im], V[2][im]}};
 }
 
+std::string num_text(double v) { char b[32]; std::snprintf(b, sizeof b, "%.4g", v); return b; }
+
+// Transparency or radius by property (design/boards/PipelineSteps): the selected particles set to one value, or a
+// property mapped linearly from [start, end] onto [low, high]; written as the Transparency (0 … 1) or Radius (Å)
+// property, which the view draws (a particle not set keeps 0: opaque, or its style's radius)
+void appearance_by(PipelineState& st, const Json& p, StepStatus& out, const std::string& target, double lo_def, double hi_def, double clamp_hi) {
+  const size_t n = st.system.atoms.size();
+  auto& dst = st.props[target];
+  if (dst.size() != n) dst.assign(n, 0.0);
+  const std::string mode = p.text("mode", "selected");
+  size_t set = 0;
+  if (mode == "selected") {
+    const double v = std::clamp(p.num("value", hi_def), 0.0, clamp_hi);
+    for (size_t i = 0; i < n; ++i) if (st.selected[i]) dst[i] = v, ++set;
+    if (!flag(p, "keep_selection", false)) std::fill(st.selected.begin(), st.selected.end(), 0);   // used up, as Assign colour
+    out.summary = std::to_string(set) + " selected particles · " + target + " " + num_text(v);
+    if (!set) out.level = "warning", out.summary = "nothing selected: select particles first (a selection step below this one)";
+    return;
+  }
+  if (mode != "property") throw std::invalid_argument("mode is selected or property");
+  const std::string prop = p.text("property", "Position.Z");
+  std::vector<double> v;
+  if (!property_values(st, prop, v)) throw std::invalid_argument("no property " + prop);
+  double a = p.has("start") && p["start"].is_number() ? p["start"].number() : *std::min_element(v.begin(), v.end());
+  double b = p.has("end") && p["end"].is_number() ? p["end"].number() : *std::max_element(v.begin(), v.end());
+  if (!(b > a)) b = a + 1;
+  const double lo = std::clamp(p.num("low", lo_def), 0.0, clamp_hi), hi = std::clamp(p.num("high", hi_def), 0.0, clamp_hi);
+  const bool only = flag(p, "only_selected", false);
+  for (size_t i = 0; i < n; ++i) {
+    if (only && !st.selected[i]) continue;
+    dst[i] = lo + (hi - lo) * std::clamp((v[i] - a) / (b - a), 0.0, 1.0);
+    ++set;
+  }
+  out.summary = prop + " " + num_text(a) + " … " + num_text(b) + " → " + target + " " + num_text(lo) + " … " + num_text(hi) + " · " + std::to_string(set) + " particles";
+}
+void step_transparency(PipelineState& st, const Json& p, StepStatus& out) { appearance_by(st, p, out, "Transparency", 0.0, 0.7, 1.0); }
+void step_radius(PipelineState& st, const Json& p, StepStatus& out) { appearance_by(st, p, out, "Radius", 0.3, 1.2, 10.0); }
+
 // Freeze property: the property as it was at a reference frame (the steps below this one run on that frame), matched
 // to this frame's particles by identifier — colour by starting height to see flow, or keep frame-0 clusters
 void step_freeze(PipelineState& st, const Json& p, StepStatus& out) {
@@ -2279,6 +2317,8 @@ const StepDef kSteps[] = {
     {"binning", "Spatial binning", "1-D profile along an axis", step_binning},
     {"create_bonds", "Create bonds", "perceived from distances, or by cutoff", step_create_bonds},
     {"unwrap", "Unwrap", "molecules made whole across the boundary", step_unwrap},
+    {"transparency", "Transparency", "the selection, or by property: see through fillers and walls", step_transparency},
+    {"particle_radius", "Particle radius", "the selection, or by property", step_radius},
     {"freeze_property", "Freeze property", "a property's values at a reference frame, on every frame", step_freeze},
     {"orientation", "Chain orientation", "backbone chords: P₂ per atom, S, director, local crystallinity", step_orientation},
     {"affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", step_affine},

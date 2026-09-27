@@ -3,6 +3,15 @@
              x:Class="CapsStudio.App"
              Name="CAPS Studio"
              RequestedThemeVariant="Dark">
+  <!-- the application menu (macOS): set here so it replaces Avalonia's default at start-up; Hide and Quit are the system's -->
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="About CAPS Studio" Click="OnAbout" />
+      <NativeMenuItemSeparator />
+      <NativeMenuItem Header="Settings…" Gesture="Meta+OemComma" Click="OnSettings" />
+    </NativeMenu>
+  </NativeMenu.Menu>
+
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>

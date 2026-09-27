@@ -65,6 +65,8 @@ struct RenderOptions {
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
   std::vector<unsigned> colours;       // per atom 0xRRGGBB overriding colour_by (a pipeline's colours); 0xFFFFFFFF keeps it
+  std::vector<float> radius;           // per atom: drawn radius (Å) overriding the style's; 0 keeps it
+  std::vector<float> transparency;     // per atom: 0 opaque … 1 invisible (a pipeline's Transparency)
   std::vector<Segment> segments;       // tubes and arrows drawn with the atoms
   std::vector<uint8_t> atom_style;     // per atom (Style values) overriding `style`: mixed styles; Ribbon and Hidden hide the atom
   Ramp ramp = Ramp::Viridis;           // ColourBy::Property
@@ -89,7 +91,7 @@ struct RenderStats {
 // atoms, styles, colours and radii as render(). Level of detail is not applied; meshes are not included (has_meshes).
 struct Scene {
   std::vector<float> spheres;          // x y z r per sphere (Å)
-  std::vector<uint32_t> sphere_rgb;    // 0xRRGGBB
+  std::vector<uint32_t> sphere_rgb;    // 0xAARRGGBB: AA the transparency (0 opaque), as capsule_rgb
   std::vector<int32_t> sphere_id;      // atom index
   std::vector<uint8_t> sphere_ring;    // 1 selection ring, 2 keyboard-focus ring, 3 both
   std::vector<float> capsules;         // ax ay az bx by bz r per capsule (Å)
