@@ -2216,8 +2216,12 @@ int32_t caps_field_import(caps_doc* d, const char* path) {
   return guard([&] {
     if (!d->field) throw caps::FFError("assign a force field first");
     const std::string p = path ? path : "";
-    const bool lt = p.size() > 3 && p.compare(p.size() - 3, 3, ".lt") == 0;
-    caps::FFDef imp = lt ? caps::import_moltemplate(p) : caps::load_forcefield(p);
+    auto ends = [&](const char* e) { const std::string x = e; return p.size() > x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
+    std::string lower_p = p;
+    for (auto& ch : lower_p) ch = char(std::tolower(static_cast<unsigned char>(ch)));
+    const bool frcmod = lower_p.find("frcmod") != std::string::npos || ends(".dat");
+    const bool gmx = ends(".itp") || ends(".top");
+    caps::FFDef imp = ends(".lt") ? caps::import_moltemplate(p) : frcmod ? caps::import_frcmod(p) : gmx ? caps::import_gromacs_params(p) : caps::load_forcefield(p);
     // parameters only: types the force field already has keep their definitions, typing rules stay the library's
     std::vector<caps::FFType> fresh;
     for (auto& t : imp.types)

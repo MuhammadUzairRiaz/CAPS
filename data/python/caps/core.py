@@ -133,7 +133,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_report": ([P, B, I], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -201,6 +201,16 @@ class _Field:
         path = _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
+        if rc < 0:
+            raise _error()
+        rep = _json_call(library().caps_field_report, self._doc._h)
+        rep["complete"] = rc == 0
+        return rep
+
+    def import_params(self, path: str) -> dict:
+        """Adds parameters from a file over the assigned force field: caps-forcefield JSON, moltemplate .lt, AMBER frcmod
+        or the [ *types ] sections of a GROMACS .itp / .top."""
+        rc = library().caps_field_import(self._doc._h, _enc(str(path)))
         if rc < 0:
             raise _error()
         rep = _json_call(library().caps_field_report, self._doc._h)

@@ -2852,7 +2852,7 @@
                       <TextBlock Text="{Binding Field.EntryHint}" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Button Content="Import parameters…" Click="OnFieldImport" ToolTip.Tip="caps-forcefield JSON or moltemplate .lt; its rules are added over the force field" />
+                      <Button Content="Import parameters…" Click="OnFieldImport" ToolTip.Tip="caps-forcefield JSON, moltemplate .lt, AMBER frcmod or a GROMACS .itp/.top ([ *types ] sections); its rules are added over the force field" />
                       <Button Content="Enter manually (estimated)" Click="OnFieldAddRule" IsEnabled="{Binding Field.CanEnterRule}" />
                       <Button Content="Remove added" Click="OnFieldRemoveRules" IsVisible="{Binding Field.HasEntered}" />
                     </StackPanel>
