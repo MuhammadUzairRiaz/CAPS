@@ -119,6 +119,7 @@ public sealed partial class MainViewModel
             ("Biomolecule builder", 30, "hex", "peptide protein sequence fasta helix sheet amino acid residue biomolecule"),
             ("Nanostructure builder", 15, "atom", "nanotube cnt graphene sheet nanoparticle filler composite carbon black silica"),
             ("Blend builder", 16, "grow", "blend mixture nr br sbr tyre compound two polymers"),
+            ("Adsorption locator", 70, "layers", "adsorption adsorbate substrate surface binding site simulated annealing monte carlo filler gas coupling agent sizing"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),
             ("Figure bundle", 26, "download", "bundle zip reproduce provenance sha256 hash data csv figure paper supplementary"),
             ("Four views", 25, "cube", "viewports top front left side perspective ortho orthographic quad layout"),
