@@ -20,7 +20,8 @@
 //                       lattice vectors so its centre of mass is inside)   → table outside (image shifts)
 //   replicate           nx, ny, nz, adjust_cell
 //   histogram           property, bins, start, end, only_selected, stack_by (Type, Element …) → table histogram
-//   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
+//   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning;
+//                       axis2 (0|1|2), bins2: a map over two axes → table binning2d (x, y, value, count)
 //   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
 //                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace
 //   transparency        mode selected (value) | property (property, start, end → low … high), only_selected → Transparency
@@ -31,6 +32,11 @@
 //   affine_transform    strain [εxx εyy εzz] or matrix (9, row-major), translation, target all|particles|cell, only_selected
 //   cna                 adaptive common neighbour analysis → Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 ICO), table structures
 //   centrosymmetry      neighbours (even; 12 FCC, 8 BCC) → Centrosymmetry (Å²)
+//   ptm                 rmsd_max, fcc|hcp|bcc|ico|sc     polyhedral template matching (Larsen 2016) → Structure Type (as cna,
+//                       5 SC), RMSD, Interatomic Distance, Shear Strain, Orientation.W/X/Y/Z, tables structures, rmsd
+//   wigner_seitz        reference frame|file, frame, path, output particles|sites → Site Index, Occupancy; attributes
+//                       WignerSeitz.vacancy_count, .interstitial_count; table defects
+//   combine             path, frame                      the particles and bonds of a second file appended
 //   unwrap              method bonds (whole along bonds) | images (the file's image flags) | nojump (each atom
 //                       followed through the frames by its shortest step)  → table images, Unwrap.bonds_split
 //   molecule_shape      per molecule: Rg, κ², asphericity, mass → properties and table molecules
