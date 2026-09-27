@@ -2031,6 +2031,31 @@ internal static class SelfTest
                   $"properties: {formula} · angles {lattice} · filter density → {filtered} row · {vm.PropertyTitle} · {bonded}");
         }
         {
+            // a sketch with two attachment points becomes unit A of the polymer builder
+            vm.MolSmiles = "*CC(*)C(=O)OC";
+            var unitOk = vm.MolIsRepeatUnit;
+            vm.UseSketchAsRepeatUnit();
+            Check(unitOk && vm.PolyUnits.Count > 0 && vm.PolyUnits[0].Smiles == "*CC(*)C(=O)OC", $"sketch → repeat unit: {vm.PolyUnits.FirstOrDefault()?.Smiles} · {vm.Status}");
+            vm.MolSmiles = "";
+        }
+        {
+            // Open in notebook: the notebook's code (all but the view) runs as written with the shipped caps package
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            var nbPath = vm.WriteNotebook()!;
+            var nbj = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(nbPath))!;
+            var code = nbj["cells"]!.AsArray().Where(c => (string?)c!["cell_type"] == "code").Select(c => (string)c!["source"]!).ToList();
+            var script = Path.Combine(outDir, "caps-notebook-check.py");
+            File.WriteAllText(script, string.Join("\n\n", code.Where(c => !c.Contains("doc.view"))) + "\nprint('NOTEBOOK OK', doc.summary()['atoms'])\n");
+            var psi = new System.Diagnostics.ProcessStartInfo("python3", $"\"{script}\"") { RedirectStandardOutput = true, RedirectStandardError = true };
+            var run = System.Diagnostics.Process.Start(psi)!;
+            var stdout = run.StandardOutput.ReadToEnd();
+            var stderr = run.StandardError.ReadToEnd();
+            run.WaitForExit(120000);
+            Check(code.Count == 4 && run.ExitCode == 0 && stdout.Contains("NOTEBOOK OK 1300"),
+                  $"notebook: {Path.GetFileName(nbPath)} · {code.Count} code cells · runs: {(run.ExitCode == 0 ? "yes" : stderr.Split('\n').LastOrDefault(l => l.Length > 0))}");
+            try { File.Delete(nbPath); } catch { }
+        }
+        {
             // the keyboard map: ] grows the picked atom's selection one bond (a CH carbon and its four neighbours), ⌘I inverts, ⌘8 is Dynamics
             vm.SetModule(8);
             vm.Pick(0);
