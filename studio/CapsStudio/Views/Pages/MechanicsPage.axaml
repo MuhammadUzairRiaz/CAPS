@@ -55,7 +55,7 @@
               <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="linear fit window" /></StackPanel></Border>
             </StackPanel>
             <Panel>
-              <v:LinePlot x:Name="Curve" XLabel="engineering strain (%)" YLabel="true stress (GPa)" AutoRange="True" MinHeight="240" />
+              <v:LinePlot x:Name="Curve" XLabel="engineering strain (%)" YLabel="true stress (GPa)" AutoRange="True" MinHeight="240" EmptyText="" />
               <TextBlock IsVisible="{Binding !MechHasCurve}" Classes="dim" FontSize="12.5" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" TextAlignment="Center"
                          Text="Run with “Stress–strain” on: the current frame is equilibrated at 1 atm, then stretched along the axis at the chosen rate while the stress is sampled." />
             </Panel>

@@ -958,6 +958,13 @@ internal static class SelfTest
             fragCopy.Edit("{\"op\":\"add_h\",\"atoms\":\"\"}");
             ahOk = ahOk && fragCopy.Summary().Atoms == 66 && frag.Summary().Atoms == 32;
             fragCopy.Dispose(); frag.Dispose();
+            // a hydrogenated LAMMPS data file (no bond orders in it): the rings are aromatic from the geometry, nothing is missing
+            using (var melt = CapsDocument.Open(Path.Combine(dir, "ps_melt.data")))
+            {
+                var mp = System.Text.Json.Nodes.JsonNode.Parse(melt.HydrogenPlan())!;
+                var meltOk = (double?)mp["add"] == 0 && (double?)mp["aromatic_bonds"] == 480;
+                Check(meltOk, $"add hydrogens on a complete LAMMPS data file: {mp["add"]} to add, {mp["aromatic_bonds"]} aromatic bonds from the geometry");
+            }
             var res = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.ResolutionSummary("{\"per_bead\":5}"))!;
             var mOk = Math.Abs((double)res["all_atom"]!["mass"]! - (double)res["coarse_grained"]!["mass"]!) < 1e-6 && (double)res["united_atom"]!["sites"]! == 640 && (double)res["united_atom"]!["hydrogens"]! == 0;
             // a live grow: snapshots arrive while growing and the finished cell replaces them

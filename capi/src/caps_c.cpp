@@ -4400,11 +4400,32 @@ void store(caps_doc* d, const caps::System& s) {
 namespace {
 // No hydrogen and not one multiple bond: the orders were never assigned (a PDB opened directly), so read them from the
 // geometry before counting what is missing.
+// A structure whose bonds carry no orders (a LAMMPS data file, an XYZ): all single, so aromatic rings and double bonds
+// would read as missing hydrogens.
 bool needs_geometry_orders(const caps::System& s) {
   if (s.atoms.size() < 3 || s.bonds.empty()) return false;
-  for (const auto& a : s.atoms) if (a.element == 1) return false;
   for (const auto& b : s.bonds) if (b.order >= 2) return false;
   return true;
+}
+
+// Bond orders from the geometry of the heavy atoms (orders_from_geometry works on them), mapped back; bonds to
+// hydrogen stay single. Polystyrene from a LAMMPS data file: aromatic rings, sp³ backbone — no hydrogen missing.
+void geometry_orders(caps::System& s) {
+  caps::System heavy;
+  heavy.cell = s.cell;
+  std::vector<int64_t> to(s.atoms.size(), -1);
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element != 1) { to[i] = int64_t(heavy.atoms.size()); heavy.atoms.push_back(s.atoms[i]); }
+  std::vector<size_t> which;
+  for (size_t k = 0; k < s.bonds.size(); ++k) {
+    const auto& b = s.bonds[k];
+    if (to[b.i] < 0 || to[b.j] < 0) continue;
+    heavy.bonds.push_back({uint32_t(to[b.i]), uint32_t(to[b.j]), 1});
+    which.push_back(k);
+  }
+  if (heavy.atoms.size() == s.atoms.size()) { caps::orders_from_geometry(s); return; }
+  caps::orders_from_geometry(heavy);
+  for (size_t m = 0; m < which.size(); ++m) s.bonds[which[m]].order = heavy.bonds[m].order;
 }
 }  // namespace
 
@@ -4468,7 +4489,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       std::vector<char> m;
       if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
       const size_t before = s.atoms.size();
-      if (needs_geometry_orders(s)) caps::orders_from_geometry(s);   // heavy atoms only, orders never assigned
+      if (needs_geometry_orders(s)) geometry_orders(s);   // orders never assigned: from the heavy atoms' geometry
       const double ph = j.has("ph") ? j["ph"].number() : d->ph;
       const int k = ph >= 0 ? caps::add_hydrogens_at_ph(s, ph, m) : caps::add_hydrogens(s, m);
       if (k == 0) throw std::invalid_argument("no atom lacks hydrogens");
@@ -6512,7 +6533,7 @@ extern "C" int32_t caps_hydrogen_plan(caps_doc* d, char* out, int32_t cap) {
   try {
     caps::System perceived;
     const bool geo = needs_geometry_orders(d->frame);
-    if (geo) perceived = d->frame, caps::orders_from_geometry(perceived);
+    if (geo) perceived = d->frame, geometry_orders(perceived);
     if (d->ph >= 0) {   // residues protonated at the pH first: their formal charges change what each atom lacks
       if (!geo) perceived = d->frame;
       caps::protonate_residues(perceived, d->ph);

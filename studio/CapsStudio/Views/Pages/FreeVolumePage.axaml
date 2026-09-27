@@ -69,7 +69,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="Pore size distribution" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="200">
-                <v:LinePlot x:Name="Psd" XLabel="pore diameter (Å)" YLabel="fraction of free volume per Å" AutoRange="True" Bars="True" />
+                <v:LinePlot x:Name="Psd" XLabel="pore diameter (Å)" YLabel="fraction of free volume per Å" AutoRange="True" Bars="True" EmptyText="" />
                 <TextBlock IsVisible="{Binding !FvHasPsd}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Text="Run to compute" />
               </Panel>
               <TextBlock FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" Text="Each free point takes the diameter of the largest atom-free sphere containing it (Gelb &amp; Gubbins)." />

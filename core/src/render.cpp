@@ -55,15 +55,19 @@ View fit_view(const System& s, const Camera& cam, const RenderOptions& opt, cons
   View v;
   v.cy = std::cos(cam.yaw); v.sy = std::sin(cam.yaw); v.cp = std::cos(cam.pitch); v.sp = std::sin(cam.pitch);
   std::vector<Vec3> corners;
-  if (s.cell.valid()) {
+  // the cell frames the view when it is drawn; hidden, the atoms do (a chain in a large sparse cell stays centred)
+  bool any_shown = false;
+  for (size_t i = 0; i < n && !any_shown; ++i) any_shown = show[i];
+  if (s.cell.valid() && (opt.show_cell || !any_shown)) {
     for (int i = 0; i < 2; ++i)
       for (int j = 0; j < 2; ++j)
         for (int k = 0; k < 2; ++k) corners.push_back(s.cell.origin + s.cell.a * i + s.cell.b * j + s.cell.c * k);
     v.centre = s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5;
   } else {
     Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
-    for (const auto& a : s.atoms)
-      for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], a.pos[k]); hi[k] = std::max(hi[k], a.pos[k]); }
+    for (size_t i = 0; i < n; ++i)
+      if (show[i] || !any_shown)
+        for (int k = 0; k < 3; ++k) { lo[k] = std::min(lo[k], s.atoms[i].pos[k]); hi[k] = std::max(hi[k], s.atoms[i].pos[k]); }
     if (!n) lo = hi = {0, 0, 0};
     v.centre = (lo + hi) * 0.5;
   }

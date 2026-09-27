@@ -24,7 +24,7 @@
         <Border DockPanel.Dock="Bottom" Padding="18,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
             <Button Content="Undo" Click="OnUndo" IsEnabled="{Binding AhCanUndo}" />
-            <Button Classes="primary" Click="OnApply" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add hydrogens" VerticalAlignment="Center" /></StackPanel></Button>
+            <Button Classes="primary" Click="OnApply" IsEnabled="{Binding AhCanAdd}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add hydrogens" VerticalAlignment="Center" /></StackPanel></Button>
           </StackPanel>
         </Border>
         <ScrollViewer>
