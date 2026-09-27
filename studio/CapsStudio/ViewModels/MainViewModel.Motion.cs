@@ -30,6 +30,9 @@ public partial class MainViewModel
         ? $"Camera moves are cuts; progress bars stay; nothing loops ({(Motion.Mode == "on" ? "reduced here" : Motion.SystemText)})."
         : $"Camera moves fly for 450 ms with the standard easing ({(Motion.Mode == "off" ? "full motion here" : Motion.SystemText)}).";
 
+    /// <summary>Only the camera changed (a flight): the view turns what it has, nothing is rebuilt.</summary>
+    public event Action? ViewRequested;
+
     /// <summary>Moves the camera to target: a 450 ms flight, or a cut when motion is reduced. Returns at once.</summary>
     public void FlyTo(CapsCamera target)
     {
@@ -66,7 +69,7 @@ public partial class MainViewModel
         c.PanY = Lerp(_flyFrom.PanY, _flyTo.PanY, e);
         Camera = c;
         if (done) _fly?.Stop();
-        RenderRequested?.Invoke();
+        if (ViewRequested != null) ViewRequested.Invoke(); else RenderRequested?.Invoke();   // only the camera moved
         return done;
     }
 

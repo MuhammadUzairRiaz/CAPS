@@ -134,6 +134,7 @@ struct caps_doc {
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
   std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
+  caps::Scene scene;                               // caps_render_scene: the arrays the caller reads until the next call
   caps_live_fn live_fn = nullptr;             // caps_set_live: snapshots of a running caps_md / caps_equilibrate
   void* live_user = nullptr;
   AppearanceState look;                            // caps_set_appearance
@@ -2233,32 +2234,76 @@ int32_t caps_atom(caps_doc* d, int32_t i, caps_atom_info* o) {
 int32_t caps_note_count(caps_doc* d) { return int32_t(d->frame.notes.size()); }
 const char* caps_note(caps_doc* d, int32_t k) { return (k >= 0 && size_t(k) < d->frame.notes.size()) ? d->frame.notes[size_t(k)].c_str() : ""; }
 
+extern "C++" {
+// What the view draws: the shown frame (with periodic images around the cell when asked, faded) and its options.
+const caps::System& view_system(caps_doc* d, caps::RenderOptions& ro, caps::System& imaged) {
+  const caps::System& base = shown(d);
+  const bool images = (d->images[0] * d->images[1] * d->images[2] > 1) && base.cell.valid() && !d->pstate;
+  if (!images) return base;
+  // copies of the frame around the cell, faded; picks map back to the original atoms
+  imaged = base;
+  const size_t n = base.atoms.size();
+  ro.faded.assign(n, 0);
+  for (int a = 0; a < d->images[0]; ++a)
+    for (int b = 0; b < d->images[1]; ++b)
+      for (int c = 0; c < d->images[2]; ++c) {
+        const int ia = a - (d->images[0] - 1) / 2, ib = b - (d->images[1] - 1) / 2, ic = c - (d->images[2] - 1) / 2;
+        if (!ia && !ib && !ic) continue;
+        const caps::Vec3 t = base.cell.a * double(ia) + base.cell.b * double(ib) + base.cell.c * double(ic);
+        const uint32_t off = uint32_t(imaged.atoms.size());
+        for (const auto& at : base.atoms) { imaged.atoms.push_back(at); imaged.atoms.back().pos = at.pos + t; }
+        for (const auto& bd : base.bonds) imaged.bonds.push_back({bd.i + off, bd.j + off, bd.order});
+        ro.faded.insert(ro.faded.end(), n, 1);
+      }
+  ro.fade = d->image_fade;
+  return imaged;
+}
+}  // extern "C++"
+
 int32_t caps_render(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, uint8_t* rgba) {
   return guard([&] {
     auto ro = opts_of(d, opt);
-    const caps::System& base = shown(d);
     caps::System imaged;
-    const bool images = (d->images[0] * d->images[1] * d->images[2] > 1) && base.cell.valid() && !d->pstate;
-    if (images) {   // copies of the frame around the cell, faded; picks map back to the original atoms
-      imaged = base;
-      const size_t n = base.atoms.size();
-      ro.faded.assign(n, 0);
-      for (int a = 0; a < d->images[0]; ++a)
-        for (int b = 0; b < d->images[1]; ++b)
-          for (int c = 0; c < d->images[2]; ++c) {
-            const int ia = a - (d->images[0] - 1) / 2, ib = b - (d->images[1] - 1) / 2, ic = c - (d->images[2] - 1) / 2;
-            if (!ia && !ib && !ic) continue;
-            const caps::Vec3 t = base.cell.a * double(ia) + base.cell.b * double(ib) + base.cell.c * double(ic);
-            const uint32_t off = uint32_t(imaged.atoms.size());
-            for (const auto& at : base.atoms) { imaged.atoms.push_back(at); imaged.atoms.back().pos = at.pos + t; }
-            for (const auto& bd : base.bonds) imaged.bonds.push_back({bd.i + off, bd.j + off, bd.order});
-            ro.faded.insert(ro.faded.end(), n, 1);
-          }
-      ro.fade = d->image_fade;
-    }
-    auto img = d->renderer.render(images ? imaged : base, cam_of(cam), ro);
+    const caps::System& sys = view_system(d, ro, imaged);
+    auto img = d->renderer.render(sys, cam_of(cam), ro);
     if (d->vision) caps::simulate_vision(img, caps::Vision(d->vision), d->vision_severity);
     std::memcpy(rgba, img.rgba.data(), img.rgba.size());
+    return 0;
+  });
+}
+
+int32_t caps_render_scene(caps_doc* d, const caps_render_opts* opt, caps_scene* out) {
+  return guard([&] {
+    auto ro = opts_of(d, opt);
+    caps::System imaged;
+    const caps::System& sys = view_system(d, ro, imaged);
+    d->scene = d->renderer.scene(sys, ro);
+    const auto& sc = d->scene;
+    std::memset(out, 0, sizeof *out);
+    out->n_spheres = int32_t(sc.sphere_id.size());
+    out->spheres = sc.spheres.data(), out->sphere_rgb = sc.sphere_rgb.data(), out->sphere_id = sc.sphere_id.data(), out->sphere_ring = sc.sphere_ring.data();
+    out->n_capsules = int32_t(sc.capsule_rgb.size());
+    out->capsules = sc.capsules.data(), out->capsule_rgb = sc.capsule_rgb.data();
+    out->n_lines = int32_t(sc.line_rgb.size());
+    out->lines = sc.lines.data(), out->line_rgb = sc.line_rgb.data(), out->line_width = sc.line_width.data();
+    out->cpu_only = sc.has_meshes || d->vision ? 1 : 0;   // surfaces, polyhedra and the colour-vision preview are drawn on the CPU
+    out->background = sc.background;
+    out->transparent = sc.transparent, out->dark = sc.dark, out->depth_cue = sc.depth_cue, out->outlines = sc.outlines;
+    return 0;
+  });
+}
+
+int32_t caps_view_fit(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, caps_view_fit_t* out) {
+  return guard([&] {
+    auto ro = opts_of(d, opt);
+    caps::System imaged;
+    const caps::System& sys = view_system(d, ro, imaged);
+    const caps::ViewFit f = caps::view_fit(sys, cam_of(cam), ro);
+    out->cos_yaw = f.cos_yaw, out->sin_yaw = f.sin_yaw, out->cos_pitch = f.cos_pitch, out->sin_pitch = f.sin_pitch;
+    out->cx = f.centre[0], out->cy = f.centre[1], out->cz = f.centre[2];
+    out->scale = f.scale, out->w = f.w, out->h = f.h, out->pan_x = f.pan_x, out->pan_y = f.pan_y;
+    out->perspective = f.perspective ? 1 : 0;
+    out->dist = f.dist, out->zmin = f.zmin, out->zmax = f.zmax;
     return 0;
   });
 }
