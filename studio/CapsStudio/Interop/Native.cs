@@ -528,7 +528,9 @@ public sealed class CapsDocument : IDisposable
     [ThreadStatic] private static CapsDocument? t_shadowOf;   // the document whose shadow this thread's call works on
     [ThreadStatic] private static CapsDocument? t_shadow;     // that shadow
 
-    /// <summary>A run (dynamics, minimisation, a protocol, reactions, a long analysis) holds the document.</summary>
+    /// <summary>A run (dynamics, minimisation, a protocol, reactions, an analysis) holds the document. Only runs during
+    /// which the Studio locks editing are long runs: the window's calls then go to a shadow, and an edit made there would
+    /// be lost — background work that runs beside editing (coverage, series, scans, movies) waits on the document instead.</summary>
     public bool LongRunning => _longRun;
 
     /// <summary>The native handle a call works on: the shadow while a run holds the document.</summary>
@@ -951,7 +953,7 @@ public sealed class CapsDocument : IDisposable
     public string PipelineSeries(int stride, Func<double, bool>? progress)
     {
         CapsAnalyzeProgress? cb = progress == null ? null : (_, f, _) => progress(f) ? 0 : 1;
-        using (Hold(longRun: true))
+        using (Hold())
         {
             Alive();
             // one run fills a generous buffer; a second only if it was too small
@@ -1444,7 +1446,7 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Which library force fields describe this structure (caps_field_coverage), JSON; progress gets (force field, fraction), false stops.</summary>
     public string FieldCoverage(string dir, Func<string, double, bool>? progress = null)
     {
-        using (Hold(longRun: true))
+        using (Hold())
         {
             Alive();
             CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
@@ -1477,7 +1479,7 @@ public sealed class CapsDocument : IDisposable
     {
         CapsSeriesProgress? cb = progress == null ? null : (d, t, _) => progress(d, t) ? 0 : 1;
         string r;
-        using (Hold(longRun: true)) { Alive(); r = JsonCallOnce((b, c) => Native.TorsionScan(H, options, cb, IntPtr.Zero, b, c)); }
+        using (Hold()) { Alive(); r = JsonCallOnce((b, c) => Native.TorsionScan(H, options, cb, IntPtr.Zero, b, c)); }
         GC.KeepAlive(cb);
         return r;
     }
@@ -1524,7 +1526,7 @@ public sealed class CapsDocument : IDisposable
     {
         CapsSeriesProgress? cb = progress == null ? null : (d, t, _) => progress(d, t) ? 0 : 1;
         int n;
-        using (Hold(longRun: true)) { Alive(); n = Native.ExportMovie(H, cam, opt, path, options, cb, IntPtr.Zero); }
+        using (Hold()) { Alive(); n = Native.ExportMovie(H, cam, opt, path, options, cb, IntPtr.Zero); }
         GC.KeepAlive(cb);
         if (n < 0) throw new InvalidOperationException(Native.LastError());
         return n;
