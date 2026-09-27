@@ -1504,7 +1504,7 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     g.contact_scale = scales[k];
     if (k + 1 < scales.size()) {   // give up early on the stricter limits: the next scale is quick where these jam
       g.max_restarts = std::min(o.max_restarts, 5);
-      if (g.max_backtracks <= 0) g.max_backtracks = 20 * std::max(1, spec.dp);
+      if (g.max_backtracks <= 0) g.max_backtracks = std::min(1500, 20 * std::max(1, spec.dp));
     }
     try {
       System s = grow_chains_once(spec, g, report);
