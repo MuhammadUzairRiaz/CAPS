@@ -320,6 +320,23 @@ internal static class SelfTest
             var line = cell.LammpsShake(1);
             Check(shk.Contains("SHAKE/RATTLE") && line.Contains("shake") && line.Contains(" m 1."), $"bond constraints: {shk.Split('\n').FirstOrDefault(l => l.Contains("SHAKE"))} · {line.Trim()}");
         }
+        {
+            // checkpoints: an NVE run stopped at step 350 continues from its checkpoint at 300 to the same end as one
+            // uninterrupted run (same state and velocities; NVE has no random numbers)
+            var nve = mdOpts with { Thermostat = 0, Steps = 1000, CheckpointEvery = 100, FrameEvery = 1000, NewVelocities = 0 };
+            using var a1 = cell.Copy("checkpoint a");
+            using var b1 = cell.Copy("checkpoint b");
+            a1.Md(nve, null);
+            var endA = a1.Summary().Frames;
+            var posA = Enumerable.Range(0, 50).Select(i => a1.Atom(i)).ToArray();
+            try { b1.Md(nve, (r, n) => r.Step < 350); } catch (InvalidOperationException) { }
+            var ckpt = System.Text.Json.Nodes.JsonNode.Parse(b1.Checkpoint("info"))!;
+            b1.Checkpoint("restore");
+            b1.Md(nve with { Steps = 700, StepOffset = 300 }, null);
+            var worst = Enumerable.Range(0, 50).Max(i => { var p = b1.Atom(i); return Math.Max(Math.Abs(p.X - posA[i].X), Math.Max(Math.Abs(p.Y - posA[i].Y), Math.Abs(p.Z - posA[i].Z))); });
+            Check((string?)ckpt["ended"] == "stopped" && ckpt["step"]!.GetValue<double>() == 300 && worst < 1e-6,
+                  $"checkpoint: stopped at 350, continued from step {ckpt["step"]} to 1000; positions agree with an uninterrupted run to {worst:0.0e+0} Å");
+        }
         var cont = cell.Md(mdOpts with { Steps = 100 }, null);
         Check(cont.Contains("velocities taken"), "md: a second run continues with the same velocities");
         var respaRows = new List<CapsThermo>();

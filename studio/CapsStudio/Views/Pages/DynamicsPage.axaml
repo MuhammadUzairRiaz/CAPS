@@ -16,6 +16,9 @@
         <Button Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}" ToolTip.Tip="Save every frame as a LAMMPS dump">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save trajectory…" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnContinue" IsVisible="{Binding MdCanContinue}" IsEnabled="{Binding Idle}" ToolTip.Tip="{Binding MdCheckpointText}">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding MdContinueLabel}" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanRun}" IsVisible="{Binding !MdRunning}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel>
         </Button>

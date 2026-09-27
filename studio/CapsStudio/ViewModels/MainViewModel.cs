@@ -1314,10 +1314,50 @@ public sealed partial class MainViewModel : ObservableObject
     public string MdEstimate => string.Format(CultureInfo.InvariantCulture, "{0:0.###} ps · {1:N0} frames recorded",
         _mdSteps * _mdDt / 1000, _mdSteps / Math.Max(1, _mdFrameEvery) + 1);
 
-    public async Task RunMd()
+    public async Task RunMd() => await RunMd(null);
+
+    // checkpoints (design/boards/FailedJob): a run that failed or was stopped keeps its last checkpoint
+    private bool _mdCanContinue;
+    private string _mdCheckpointText = "";
+    private long _mdCheckpointStep, _mdCheckpointSteps;
+    public bool MdCanContinue { get => _mdCanContinue; private set => Set(ref _mdCanContinue, value); }
+    public string MdCheckpointText { get => _mdCheckpointText; private set => Set(ref _mdCheckpointText, value); }
+    public string MdContinueLabel => string.Format(CultureInfo.InvariantCulture, "Continue from step {0:N0}", _mdCheckpointStep);
+
+    private void RefreshMdCheckpoint(CapsDocument doc)
+    {
+        MdCanContinue = false;
+        MdCheckpointText = "";
+        try
+        {
+            var c = System.Text.Json.Nodes.JsonNode.Parse(doc.Checkpoint("info"))!;
+            if (c["has"]?.GetValue<bool>() != true || (string?)c["kind"] != "md" || (string?)c["ended"] == "finished") return;
+            _mdCheckpointStep = (long)c["step"]!.GetValue<double>();
+            _mdCheckpointSteps = (long)c["steps"]!.GetValue<double>();
+            MdCheckpointText = string.Format(CultureInfo.InvariantCulture, "The run {0} after its checkpoint at step {1:N0} of {2:N0} ({3:0.##} ps): that state and its velocities are kept",
+                (string?)c["ended"] == "failed" ? "failed" : "was stopped", _mdCheckpointStep, _mdCheckpointSteps, c["time_ps"]!.GetValue<double>());
+            MdCanContinue = _mdCheckpointSteps > _mdCheckpointStep;
+            Raise(nameof(MdContinueLabel));
+        }
+        catch { /* no checkpoint */ }
+    }
+
+    /// <summary>Continue from the checkpoint: its state becomes the last frame and the remaining steps run from it with
+    /// the same velocities (a run that failed can be continued with a smaller time step).</summary>
+    public async Task ContinueMd()
+    {
+        if (_doc == null || !Idle || !_mdCanContinue) return;
+        try { _doc.Checkpoint("restore"); }
+        catch (Exception e) { Status = "Could not continue: " + e.Message; MdCanContinue = false; return; }
+        await RunMd((_mdCheckpointStep, _mdCheckpointSteps - _mdCheckpointStep));
+    }
+
+    private async Task RunMd((long Offset, long Steps)? resume)
     {
         if (_doc == null || !Idle || BlockedByField("Dynamics")) return;
-        PrepareRunTarget("MD");
+        if (resume == null) PrepareRunTarget("MD");
+        MdCanContinue = false;
+        MdCheckpointText = "";
         var doc = _doc!;
         MdRunning = true;
         IsPlaying = false;
@@ -1325,10 +1365,10 @@ public sealed partial class MainViewModel : ObservableObject
         var token = _mdCancel.Token;
         var o = new CapsMdOpts
         {
-            Dt = _mdDt, Steps = _mdSteps, Temperature = _mdTemp,
+            Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,
             Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,
             Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
-            NewVelocities = _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
+            NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
             ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
             Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints,
         };
@@ -1365,10 +1405,10 @@ public sealed partial class MainViewModel : ObservableObject
                     if (sw.ElapsedMilliseconds - lastUi > 150)
                     {
                         lastUi = sw.ElapsedMilliseconds;
-                        var frac = n > 0 ? (double)row.Step / n : 1;
+                        var frac = n > 0 ? (double)(row.Step - o.StepOffset) / n : 1;
                         var eta = frac > 0.001 ? sw.Elapsed.TotalSeconds * (1 - frac) / frac : 0;
                         Publish(string.Format(inv, "step {0:N0} of {1:N0} · {2:F2} ps · T {3:F1} K · P {4:F0} atm · ρ {5:F4} g/cm³ · E {6:F1} kcal/mol · {7:F0} s left",
-                            row.Step, n, row.TimePs, row.Temperature, row.Pressure, row.Density, row.Total, eta));
+                            row.Step, n + o.StepOffset, row.TimePs, row.Temperature, row.Pressure, row.Density, row.Total, eta));
                     }
                     return !token.IsCancellationRequested;
                 }, live);
@@ -1385,8 +1425,10 @@ public sealed partial class MainViewModel : ObservableObject
         {
             finished = true;
             var cancelled = e.Message.Contains("cancelled");
-            MdLog = cancelled ? "Cancelled; the structure is unchanged." : "Could not run dynamics.\n" + e.Message;
-            Status = cancelled ? "Dynamics cancelled" : "Could not run dynamics — see the Dynamics panel";
+            RefreshMdCheckpoint(doc);
+            var kept = MdCanContinue ? "\n" + MdCheckpointText + " — Continue runs the remaining steps from it." : "";
+            MdLog = (cancelled ? "Cancelled; the structure is unchanged." : "Could not run dynamics.\n" + e.Message) + kept;
+            Status = cancelled ? "Dynamics cancelled" + (MdCanContinue ? $" · {MdContinueLabel} is ready" : "") : "Could not run dynamics — see the Dynamics panel";
         }
         finally
         {

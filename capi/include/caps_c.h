@@ -124,6 +124,8 @@ typedef struct {
   int32_t coulomb, tail, threads;
   int32_t respa;                   /* r-RESPA inner steps: bonded forces every dt / respa (0 or 1: off) */
   int32_t constraints;             /* 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE) */
+  int64_t step_offset;             /* added to reported steps and times (a run continued from a checkpoint) */
+  int64_t checkpoint_every;        /* steps between checkpoints (0: automatic, about 50 per run; < 0: none) */
 } caps_md_opts;
 
 typedef struct {
@@ -139,6 +141,11 @@ typedef int32_t (*caps_md_progress_fn)(const caps_thermo* row, int64_t steps, vo
    frames (start, every frame_every steps, end) and shows the last one. Returns 0, or -1 on error / cancel (the
    document is unchanged). */
 int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress, void* user, char* report, int32_t report_cap);
+/* The last checkpoint of a caps_md / caps_equilibrate run in this document, kept when the run fails or is stopped
+   (ABI 29): JSON {op: "info" | "restore" | "clear"} → {ok, has, kind: "md" | "equilibrate", step, steps, time_ps,
+   atoms, ended: "failed" | "stopped" | "finished", error}. restore appends the checkpoint's positions and cell as the
+   last frame with its velocities, so a caps_md with new_velocities 0 continues the run exactly. */
+int32_t caps_checkpoint(caps_doc* d, const char* json, char* out, int32_t cap);
 
 /* Write every frame of the document as a LAMMPS text dump (id mol type xu yu zu). */
 int32_t caps_save_trajectory(caps_doc* d, const char* path);
