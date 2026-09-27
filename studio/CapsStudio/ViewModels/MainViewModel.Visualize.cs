@@ -133,6 +133,8 @@ public sealed partial class MainViewModel
         new("freeze_property", "Freeze property", "values at a reference frame, on every frame", "Trajectory", "pin"),
         new("orientation", "Chain orientation", "P₂ per atom, S, director, local crystallinity", "Structure", "grow"),
         new("cna", "Common neighbour analysis", "FCC, HCP, BCC, icosahedral (adaptive CNA)", "Structure", "atom"),
+        new("ptm", "Polyhedral template matching", "structure, orientation and strain per particle", "Structure", "atom"),
+        new("combine", "Combine datasets", "add the particles of a second file", "Modify", "layers"),
         new("centrosymmetry", "Centrosymmetry", "Kelchner's parameter: defects, surfaces", "Structure", "atom"),
         new("create_bonds", "Create bonds", "from distances or a cutoff", "Visual", "link"),
         new("python", "Python step", "your script with an @step function (caps.pipeline API)", "Automate", "terminal"),
@@ -192,7 +194,7 @@ public sealed partial class MainViewModel
         var name = type switch
         {
             "scatter" => "scatter", "coordination" => "rdf", "cluster" => "clusters", "histogram" => "histogram", "binning" => "binning",
-            "molecule_shape" => "molecules", "cna" => "structures", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
+            "molecule_shape" => "molecules", "cna" => "structures", "ptm" => "structures", "wrap" => "outside", "unwrap" => "images", "topology" => "ranges", "voids" => "voids", "voronoi" => "voronoi", "density_field" => "density_profile",
             "msd" => "msd", "vectors" => "vectors", "displacements" => "displacements", "trajectory_lines" => "paths", "primitive_paths" => "primitive_paths", _ => null,
         };
         if (name == null || _pipeResult?["tables"] is not JsonArray ts) return;
@@ -433,6 +435,8 @@ public sealed partial class MainViewModel
         "particle_radius" => new JsonObject { ["mode"] = "selected", ["value"] = 1.2 },
         "freeze_property" => new JsonObject { ["property"] = "Position.Z", ["frame"] = 0 },
         "cna" => new JsonObject { ["only_selected"] = false },
+        "ptm" => new JsonObject { ["rmsd_max"] = 0.1, ["fcc"] = true, ["hcp"] = true, ["bcc"] = true, ["ico"] = true, ["sc"] = false, ["only_selected"] = false },
+        "combine" => new JsonObject { ["path"] = "", ["frame"] = 0 },
         "centrosymmetry" => new JsonObject { ["neighbours"] = 12 },
         "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8 },
         "affine_transform" => new JsonObject { ["strain"] = new JsonArray(0.1, 0.0, 0.0), ["target"] = "all" },
@@ -478,16 +482,16 @@ public sealed partial class MainViewModel
         if (_pipeSel == null) return;
         var p = _pipeSel.Params;
         string S(string k, string d = "") => p[k] is JsonValue v ? (v.TryGetValue<string>(out var s) ? s : v.ToJsonString()) : d;
-        bool B(string k) => p[k] is JsonValue v && v.TryGetValue<bool>(out var b) && b;
+        bool B(string k, bool d = false) => p[k] is JsonValue v ? v.TryGetValue<bool>(out var b) && b : d;
         var props = PipeProperties();
         void Add(StepField f)
         {
             f.Changed = () => WriteField(f);
             StepFields.Add(f);
         }
-        void Text(string key, string label, string kind = "text", string hint = "") => Add(new StepField { Key = key, Label = label, Kind = kind, Hint = hint, Text = S(key) });
+        void Text(string key, string label, string kind = "text", string hint = "", string d = "") => Add(new StepField { Key = key, Label = label, Kind = kind, Hint = hint, Text = S(key, d) });
         void Note(string text) => StepFields.Add(new StepField { Kind = "note", Hint = text });
-        void Bool(string key, string label) => Add(new StepField { Key = key, Label = label, Kind = "bool", On = B(key) });
+        void Bool(string key, string label, bool d = false) => Add(new StepField { Key = key, Label = label, Kind = "bool", On = B(key, d) });
         void Choice(string key, string label, string[] choices)
         {
             var value = S(key, choices[0]);
@@ -556,6 +560,16 @@ public sealed partial class MainViewModel
             case "freeze_property":
                 Choice("property", "Property", props); Text("frame", "Reference frame", "number"); Text("output", "Output property", "text", "blank: <property> frozen");
                 Note("The steps below this one run on the reference frame; particles are matched by identifier. Colour by the frozen property to follow where atoms started."); break;
+            case "ptm":
+                Text("rmsd_max", "RMSD cutoff", "number", "larger admits more distorted neighbourhoods", "0.1");   // the core's defaults when a loaded step leaves them out
+                Bool("fcc", "FCC", true); Bool("hcp", "HCP", true); Bool("bcc", "BCC", true); Bool("ico", "Icosahedral", true); Bool("sc", "Simple cubic"); Bool("only_selected", "Only selected");
+                Note("Larsen, Schmidt & Schiøtz, Modelling Simul. Mater. Sci. Eng. 24, 055007 (2016). Adds Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 icosahedral, 5 SC), RMSD, Interatomic Distance, Shear Strain and Orientation.W/X/Y/Z (lattice → template quaternion); the RMSD table shows where to set the cutoff");
+                break;
+            case "combine":
+                Text("path", "File", "text", "a LAMMPS data/dump, .gro, .pdb, .xyz, mol2 or CIF file");
+                Text("frame", "Frame of that file", "number");
+                Note("The second file's particles and bonds are appended as they are in it (same coordinates); they are not selected and take zeros for properties set above");
+                break;
             case "cna": Bool("only_selected", "Only selected"); Note("Adds Structure Type (0 other, 1 FCC, 2 HCP, 3 BCC, 4 icosahedral): colour by it to see grains, stacking faults and surfaces"); break;
             case "centrosymmetry": Text("neighbours", "Nearest neighbours (12 FCC, 8 BCC)", "number"); Note("Adds Centrosymmetry (Å²): zero in a perfect lattice, large at surfaces and defects"); break;
             case "orientation":

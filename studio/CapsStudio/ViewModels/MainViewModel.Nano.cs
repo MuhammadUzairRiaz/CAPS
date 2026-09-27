@@ -125,7 +125,7 @@ public sealed partial class MainViewModel
     public static readonly string[] ThiolateNames = ["Hexanethiolate (C6)", "Dodecanethiolate (C12)", "Octadecanethiolate (C18)", "3-Mercaptopropionic acid (MPA)",
                                                      "11-Mercaptoundecanoic acid (MUA)", "6-Mercaptohexanol (MHA)"];
     private static readonly string[] ThiolateIds = ["C6", "C12", "C18", "MPA", "MUA", "MHA"];
-    private bool _particleThiolate = true;
+    private bool _particleThiolate;
     private int _thiolatePick;
     private decimal _thiolateFraction = 1;
     public bool ParticleThiolate { get => _particleThiolate; set { if (Set(ref _particleThiolate, value)) NanoPreview(); } }

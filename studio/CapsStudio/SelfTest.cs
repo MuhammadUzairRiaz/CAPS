@@ -1307,6 +1307,7 @@ internal static class SelfTest
             vm.ParticleCrystal = Math.Max(0, vm.Crystals.ToList().FindIndex(c => c.Name.Contains("copper", StringComparison.OrdinalIgnoreCase)));
             vm.ParticleRadius = 12;
             vm.ParticlePassivate = false;
+            vm.ParticleThiolate = false;
             vm.BuildNano().GetAwaiter().GetResult();
             var cuAtoms = vm.Document!.Summary().Atoms;
             vm.OpenVisualize();
@@ -1319,6 +1320,28 @@ internal static class SelfTest
             vm.InspectorTab = 0;   // the step opened its table: back to the particles
             vm.SetModule(8);
             Check(fcc > cuAtoms / 2 && fcc + other == cuAtoms && other > 0, $"CNA on a copper particle: {fcc} FCC, {other} other of {cuAtoms}");
+            // a gold particle capped with hexanethiolates; PTM finds the FCC core under the ligands
+            vm.OpenNano();
+            vm.NanoKind = 2;
+            vm.ParticleCrystal = Math.Max(0, vm.Crystals.ToList().FindIndex(c => c.Id == "gold"));
+            vm.ParticleRadius = 12;
+            vm.ParticleThiolate = true;
+            vm.ThiolatePick = 0;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var auAll = vm.Document!.Summary().Atoms;
+            var auS = Enumerable.Range(0, (int)auAll).Count(i => vm.Document.Atom(i).Element == 16);
+            var auAu = Enumerable.Range(0, (int)auAll).Count(i => vm.Document.Atom(i).Element == 79);
+            vm.ParticleThiolate = false;
+            vm.OpenVisualize();
+            vm.ClearPipeline();
+            vm.AddStep("ptm");
+            var ptmFcc = long.Parse(A("PolyhedralTemplateMatching.counts.FCC"));
+            var ptmOther = long.Parse(A("PolyhedralTemplateMatching.counts.Other"));
+            vm.ClearPipeline();
+            vm.InspectorTab = 0;
+            vm.SetModule(8);
+            Check(auAu == 429 && auS > 30 && auAll == auAu + auS * 20 && ptmFcc > 150 && ptmFcc + ptmOther == auAll,
+                  $"gold particle with thiolates: {auAu} Au, {auS} C6 thiolates · PTM {ptmFcc} FCC, {ptmOther} other of {auAll}");
             vm.NanoKind = 1;
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
