@@ -101,6 +101,12 @@ class _MdOpts(C.Structure):
                 ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64)]
 
 
+class _ReactOpts(C.Structure):
+    _fields_ = [("seed", C.c_uint64), ("max_cycles", C.c_int32), ("max_per_cycle", C.c_int32), ("target_conversion", C.c_double),
+                ("capture", C.c_double), ("relax", C.c_int32), ("relax_iterations", C.c_int32), ("md_ps", C.c_double),
+                ("temperature", C.c_double), ("cutoff", C.c_double), ("coulomb", C.c_int32), ("during_md", C.c_int32)]
+
+
 class _BuildOpts(C.Structure):
     _fields_ = [("conformers", C.c_int32), ("seed", C.c_uint64)]
 
@@ -147,6 +153,8 @@ def _declare(L: C.CDLL) -> None:
         "caps_analyze_report": ([P, B, I], I),
         "caps_hydrogen_plan": ([P, B, I], I), "caps_resolution_summary": ([P, S, B, I], I), "caps_resolution_convert": ([P, S, B, I], P),
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
+        "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
+        "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
     for name, (args, res) in sig.items():
@@ -334,6 +342,34 @@ class Document:
                     cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints])
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:
+            raise _error()
+        self.report = rep.value.decode()
+        return self.report
+
+    def insert(self, smiles: str, count: int, tolerance: float = 2.0, seed: int = 1) -> str:
+        """Inserts count copies of a molecule (SMILES; hydrogens added, UFF-cleaned) into the free space of the current
+        frame — curatives before a cure, e.g. insert("SS", 40) for the sulfur_allylic template. The document becomes that
+        frame and its force-field assignment is cleared (assign again after)."""
+        rep = _report()
+        if library().caps_insert_molecules(self._h, _enc(smiles), int(count), float(tolerance), int(seed), rep, len(rep)) < 0:
+            raise _error()
+        self.report = rep.value.decode()
+        return self.report
+
+    def react(self, templates, cycles: int = 50, per_cycle: int = 5, target: float = 1.0, capture: float = 0.0, relax: bool = True,
+              relax_iterations: int = 500, md_ps: float = 0.0, temperature: float = 500.0, cutoff: float = 10.0, seed: int = 1,
+              during_md: bool = False) -> str:
+        """Crosslinks the current frame cycle by cycle (Polymatic-style; REACTER-style capture and probability) with
+        reaction templates: built-in names ("cc_crosslink", "sulfur_allylic", "peroxide_allylic", "polysulfide_allylic",
+        "epoxy_amine_primary", …; see reaction_templates()) or template text, one or a list. target is the conversion to
+        stop at (0 … 1); relax minimises after each cycle, md_ps runs NVT at temperature between cycles. The force-field
+        assignment is cleared (the topology changed): assign again to type the network. Returns the report."""
+        names = [templates] if isinstance(templates, str) else list(templates)
+        text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
+        o = _ReactOpts(int(seed), int(cycles), int(per_cycle), float(target), float(capture), int(relax), int(relax_iterations),
+                       float(md_ps), float(temperature), float(cutoff), 1, int(during_md))
+        rep = _report()
+        if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
         self.report = rep.value.decode()
         return self.report
@@ -834,6 +870,24 @@ def ewald_params(cutoff: float = 12.0, tolerance: float = 1e-5, spacing: float =
     if edges is not None:
         q["edges"] = list(edges)
     return _json_call(library().caps_ewald_params, doc._h if doc is not None else None, _enc(json.dumps(q)))
+
+
+def reaction_templates() -> list:
+    """The names of the built-in reaction templates (Document.react)."""
+    n = library().caps_reaction_template(b"", None, 0)
+    buf = C.create_string_buffer(max(1, n + 1))
+    library().caps_reaction_template(b"", buf, len(buf))
+    return [x for x in buf.value.decode().split("\n") if x.strip()]
+
+
+def reaction_template(name: str) -> str:
+    """The text of a built-in reaction template (edit it and pass the text to Document.react)."""
+    n = library().caps_reaction_template(_enc(name), None, 0)
+    if n < 0:
+        raise _error()
+    buf = C.create_string_buffer(n + 1)
+    library().caps_reaction_template(_enc(name), buf, len(buf))
+    return buf.value.decode()
 
 
 def space_groups() -> list:

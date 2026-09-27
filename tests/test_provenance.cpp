@@ -399,6 +399,30 @@ TEST(Recipe, BuildsGrowsRelaxesAndExportsWithProvenance) {
   std::filesystem::remove_all(dir);
 }
 
+// A sulfur cure in a recipe: H–S–S–H donors packed into a natural-rubber cell, cured, and the network typed again with
+// PCFF (every crosslink atom typed, no missing term); an unknown template is an input error
+TEST(Recipe, SulfurCureTypedWithPcff) {
+  const caps::Json r = caps::yaml_parse(
+      "recipe: 1\nname: nr\nbuild:\n  polymer: { smiles: \"[*]C/C=C(C)\\\\C[*]\", dp: 10, chains: 3 }\ntype: { forcefield: " + std::string(CAPS_SOURCE_DIR) + "/data/forcefields/pcff-frc.json }\n"
+      "grow: { density: 0.5, seed: 2 }\nreact:\n  insert: { smiles: SS, count: 6 }\n  templates: [sulfur_allylic]\n  relax: false\n  seed: 3\n");
+  EXPECT_EQ(caps::recipe_stages(r), (std::vector<std::string>{"build", "type", "grow", "react"}));
+  caps::RecipeOptions o;
+  std::string react_summary;
+  o.progress = [&](const caps::RecipeEvent& e) { if (e.status == "done" && e.name == "react") react_summary = e.detail; };
+  const auto res = caps::run_recipe(r, o);
+  EXPECT_NE(react_summary.find("typed again: PCFF"), std::string::npos) << react_summary;
+  int ss = 0, cs = 0;
+  for (const auto& b : res.system.bonds) {
+    const int ei = res.system.atoms[b.i].element, ej = res.system.atoms[b.j].element;
+    ss += ei == 16 && ej == 16;
+    cs += (ei == 16 && ej == 6) || (ei == 6 && ej == 16);
+  }
+  EXPECT_EQ(ss, 6);    // every donor keeps its S–S bond
+  EXPECT_GT(cs, 0);    // and some are bonded to the rubber
+  EXPECT_THROW(caps::run_recipe(caps::yaml_parse("build: {polymer: {smiles: \"*CC*\", dp: 3, chains: 1}}\ngrow: {density: 0.3}\nreact: {templates: [nope]}\n"), o),
+               caps::RecipeError);
+}
+
 TEST(Recipe, ExitCodes) {
   caps::RecipeOptions o;
   auto code = [&](const std::string& y) {

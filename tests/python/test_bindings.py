@@ -242,4 +242,12 @@ ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
 check(abs(ctl["chi"]) < 3 * ctl["chi_error"] + 0.05 and wat["chi"] > 2 and len(ctl["kinds"]) == 4,
       f"chi_by_contacts: control {ctl['chi']:.3f} ± {ctl['chi_error']:.3f}, water {wat['chi']:.2f}")
+# a sulfur cure: H–S–S–H donors inserted into a natural-rubber cell, cured, then the network typed with PCFF
+nr = caps.polymer("[*]C/C=C(C)\\C[*]", dp=8, chains=3, density=0.5, seed=2)
+n0 = nr.atoms
+nr.insert("SS", 6)
+cure = nr.react("sulfur_allylic", relax=False, seed=3)
+rn = nr.field.assign("pcff-frc")
+check("sulfur_allylic" in caps.reaction_templates() and "reactions" in cure and nr.atoms < n0 + 24 and rn["complete"],
+      f"react: sulfur cure {n0} -> {nr.atoms} atoms · {cure.splitlines()[0] if cure else ''} · PCFF complete {rn['complete']}")
 print("all python checks passed")

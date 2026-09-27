@@ -551,6 +551,12 @@ caps::ProtocolParams protocol_params(const caps_protocol_params* p) {
 // The force field used when none is assigned in Field: the built-in GAFF for C/H structures, UFF for any other.
 caps::ForceField default_ff(const caps::System& s) { return caps::default_forcefield(s); }
 
+// an OPLS file whose types are classes (CT, CA …) has no OPLS charges; the files with OPLS's own numbered types do
+std::string opls_hint(const std::string& ff_name) {
+  if (ff_name.find("OPLS") == std::string::npos) return "";
+  return ". OPLS-AA's own charges come with its numbered types: choose OPLS-AA (2024 parameter file) or OPLS-AA (BOSS 4.8, 2008) to use them";
+}
+
 std::shared_ptr<const caps::ForceField> field_for_run(const caps_doc* d) {
   if (!d->field) {
     // no force field assigned: the built-in GAFF covers C and H; anything else runs with UFF (every element)
@@ -656,13 +662,14 @@ void field_run(caps_doc* d) {
         try {
           F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "gasteiger", &F.rep, true));
           F.charges = "gasteiger";
-          F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + why + "): Gasteiger–Marsili charges were used instead (charges: automatic)");
+          F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + why + "): Gasteiger–Marsili charges were used instead (charges: automatic)" +
+                                opls_hint(def.name));
         } catch (const std::exception& g) {   // Gasteiger–Marsili has no parameters for some groups (S=O, most metals): QEq
           F.rep = caps::ParamReport{};
           F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "qeq", &F.rep, true));
           F.charges = "qeq";
           F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + why + ") and Gasteiger–Marsili has none for this structure (" + g.what() +
-                                "): QEq charges were used instead (charges: automatic)");
+                                "): QEq charges were used instead (charges: automatic)" + opls_hint(def.name));
         }
       }
     } else {
