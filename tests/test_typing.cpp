@@ -253,3 +253,51 @@ TEST(Typing, CgenffAndOpls) {
   EXPECT_EQ(o.types[3], "OES");
   EXPECT_EQ(o.types[4], "CT");
 }
+
+#include "caps/example_typing.hpp"
+#include "caps/io.hpp"
+#include "caps/polymer.hpp"
+
+// Typing by example: a polystyrene trimer typed with OPLS-AA 2024's rules teaches the types; the whole melt (ten
+// chains of another length, other conformations) gets exactly the types the rules give it; a type changed by hand on
+// one body-unit atom reaches every atom of that environment
+TEST(Typing, ByExampleFromATrimer) {
+  FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024-moltemplate.json");
+  load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024-moltemplate.typing.json");
+  ChainSpec c;
+  RepeatUnit u;
+  u.smiles = "*CC(*)c1ccccc1";
+  u.name = "styrene";
+  c.units = {u};
+  c.dp = 3;
+  GrowOptions g;
+  g.chains = 1;
+  g.density = 0.05;
+  g.seed = 1;
+  g.auto_scale = true;
+  const System tri = grow_chains(c, g);
+  const TypingResult tt = assign_types(tri, ff);
+  ASSERT_EQ(tt.untyped, 0);
+  const ExampleTypes learned = learn_types(tri, tt.types);
+  EXPECT_TRUE(learned.conflicts.empty());
+  const Trajectory melt = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const System m = melt.frame(0);
+  const TypingResult mt = assign_types(m, ff);
+  const ExampleMatch em = apply_types(m, learned);
+  EXPECT_EQ(em.unmatched, 0u);
+  size_t same = 0;
+  for (size_t i = 0; i < m.atoms.size(); ++i) same += em.types[i] == mt.types[i];
+  EXPECT_EQ(same, m.atoms.size());
+  // by hand: the body unit's backbone CH carbon (a unit with neighbours on both sides) given another type
+  std::vector<std::string> edited = tt.types;
+  uint32_t ch = 0;
+  for (uint32_t i = 0; i < tri.atoms.size(); ++i)
+    if (tri.atoms[i].resid == 2 && tri.atoms[i].element == 6 && tt.types[i].rfind("515_", 0) == 0) ch = i;
+  ASSERT_NE(ch, 0u);
+  const auto eq = equivalent_atoms(tri, ch, learned.radius);
+  for (uint32_t i : eq) edited[i] = "CUSTOM";
+  const ExampleMatch em2 = apply_types(m, learn_types(tri, edited));
+  size_t custom = 0;
+  for (const auto& t : em2.types) custom += t == "CUSTOM";
+  EXPECT_EQ(custom, 10u * 6);   // every backbone CH with a unit on both sides: six in each 8-unit chain
+}
