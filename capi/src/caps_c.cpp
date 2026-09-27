@@ -14,6 +14,7 @@
 #include "caps/analysis.hpp"
 #include "caps/adsorption.hpp"
 #include "caps/cbmc.hpp"
+#include "caps/dpd.hpp"
 #include "caps/functionalize.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
@@ -3986,6 +3987,70 @@ extern "C" caps_doc* caps_embed_document(caps_doc* filler, const char* options_j
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
+    return nullptr;
+  }
+}
+
+// DPD (ABI 34, dpd.hpp): a new document with the run's frames (beads as atoms) and a JSON report.
+extern "C" caps_doc* caps_dpd(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::DpdOptions o;
+    if (j.has("species") && j["species"].is_array())
+      for (const auto& sp : j["species"].items()) o.species.push_back({sp.text("name", "molecule"), sp.text("sequence", "A"), int(sp.num("count", 0))});
+    o.density = j.num("density", 3.0);
+    if (j.has("chi") && j["chi"].is_object())
+      for (const auto& [k, v] : j["chi"].members()) o.chi[k] = v.number();
+    if (j.has("a") && j["a"].is_object())
+      for (const auto& [k, v] : j["a"].members()) o.a[k] = v.number();
+    o.gamma = j.num("gamma", 4.5);
+    o.dt = j.num("dt", 0.04);
+    o.bond_k = j.num("bond_k", 4.0);
+    o.steps = long(j.num("steps", 20000));
+    o.equilibration = long(j.num("equilibration", double(o.steps) / 4));
+    o.frame_every = int(j.num("frame_every", std::max(1.0, double(o.steps) / 40)));
+    o.rc_angstrom = j.num("rc_angstrom", 6.46);
+    o.seed = uint64_t(j.num("seed", 1));
+    bool cancelled = false;
+    if (progress)
+      o.progress = [&](long step, double kT) {
+        char b[80];
+        std::snprintf(b, sizeof b, "step %ld · kT %.3f", step, kT);
+        cancelled = progress(b, double(step) / double(o.steps), user) != 0;
+        return !cancelled;
+      };
+    const auto rep = caps::run_dpd(o);
+    if (cancelled) throw std::runtime_error("DPD cancelled");
+    auto* d = new caps_doc;
+    d->traj = rep.frames;
+    d->current = d->traj.frames() - 1;
+    refresh(d);
+    caps::KeyValues pr = {{"beads", std::to_string(rep.beads) + " in " + std::to_string(rep.molecules) + " molecules, box " + g6(rep.box) + " r_c"},
+                          {"steps", std::to_string(o.steps) + " of " + g6(o.dt) + " (equilibration " + std::to_string(o.equilibration) + ")"},
+                          {"result", "ψ " + g6(rep.order) + " · domain spacing " + g6(rep.spacing) + " r_c"}};
+    prov_step(d, "dpd.run", "Dissipative particle dynamics (Groot–Warren)", std::move(pr), seeded(o.seed), {"groot1997", "hoogerbrugge1992"});
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    r["beads"] = double(rep.beads), r["molecules"] = double(rep.molecules), r["box"] = rep.box;
+    r["kT"] = rep.kT, r["kT_error"] = rep.kT_error, r["pressure"] = rep.pressure, r["pressure_error"] = rep.pressure_error;
+    r["order"] = rep.order, r["q_peak"] = rep.q_peak, r["spacing"] = rep.spacing, r["seconds"] = rep.seconds;
+    caps::Json q = caps::Json::array(), sq = caps::Json::array(), os = caps::Json::array();
+    for (double x : rep.q) q.push_back(x);
+    for (double x : rep.sq) sq.push_back(x);
+    for (const auto& [st, v] : rep.order_series) { caps::Json p = caps::Json::array(); p.push_back(st); p.push_back(v); os.push_back(std::move(p)); }
+    r["q"] = std::move(q), r["sq"] = std::move(sq), r["order_series"] = std::move(os);
+    r["types"] = rep.types;
+    caps::Json nt = caps::Json::array();
+    for (const auto& x : rep.notes) nt.push_back(x);
+    r["notes"] = std::move(nt);
+    report_out(r.dump(0), out, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    caps::Json r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+    report_out(r.dump(0), out, cap);
     return nullptr;
   }
 }

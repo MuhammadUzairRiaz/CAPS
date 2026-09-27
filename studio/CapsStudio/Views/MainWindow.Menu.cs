@@ -114,6 +114,7 @@ public partial class MainWindow
             Page("React (crosslink, cure)…", 6),
             Page("Reaction templates…", 45),
             Page("Torsion scan…", 33),
+            Page("Mesoscale (DPD)…", 72),
             Sep(),
             Sub("Analysis",
                 Page("Properties…", 1),
