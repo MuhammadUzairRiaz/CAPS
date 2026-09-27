@@ -847,6 +847,14 @@ TEST(Pipeline, PythonStep) {
   ASSERT_EQ(c.steps[0].level, "ok") << c.steps[0].summary;
   EXPECT_EQ(c.steps[0].title, "Typed");
   EXPECT_EQ(c.attribute("N"), 1300.0);
+  // what it prints is its console; a failure keeps the traceback there
+  typed["code"] = std::string("from caps.pipeline import step\n\n@step()\ndef modify(frame, data):\n    print('hello from the step')\n    raise KeyError('Nope')\n");
+  Json arr3 = Json::array();
+  arr3.push_back(typed);
+  const auto f = run_pipeline(t.frame(0), pipeline_from_json(arr3), 0, 0, &t);
+  EXPECT_EQ(f.steps[0].level, "error");
+  EXPECT_NE(f.steps[0].output.find("hello from the step"), std::string::npos) << f.steps[0].output;
+  EXPECT_NE(f.steps[0].output.find("KeyError"), std::string::npos) << f.steps[0].output;
 }
 
 TEST(Io, FileWithoutAtomsIsAnError) {

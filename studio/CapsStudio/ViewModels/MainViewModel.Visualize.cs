@@ -36,7 +36,11 @@ public sealed class StepField : INotifyPropertyChanged
     private string _draft = "";
     public string Draft { get => _draft; set { if (_draft == value) return; _draft = value; Raise(nameof(Draft)); Raise(nameof(DraftChanged)); } }
     public bool DraftChanged => _draft != _text;
-    public void Commit() { Text = _draft; Raise(nameof(DraftChanged)); }                 // a line of explanation under the fields (Hint)
+    public void Commit() { Text = _draft; Raise(nameof(DraftChanged)); }
+    private string _output = "";
+    /// <summary>A code field's console: what the last run printed.</summary>
+    public string Output { get => _output; set { if (_output == value) return; _output = value; Raise(nameof(Output)); Raise(nameof(HasOutput)); } }
+    public bool HasOutput => _output.Length > 0;                 // a line of explanation under the fields (Hint)
     public bool ShowLabel => Kind is not ("bool" or "note");
     public bool IsMono => Kind is "expression" or "number" or "vector" or "file" or "matrix";
 }
@@ -56,6 +60,8 @@ public sealed class PipelineRow : INotifyPropertyChanged
     public bool Enabled { get => _enabled; set { if (_enabled == value) return; _enabled = value; Raise(nameof(Enabled)); Toggled?.Invoke(); } }
     public bool Selected { get => _selected; set { _selected = value; Raise(nameof(Selected)); } }
     public string Summary { get => _summary; set { _summary = value; Raise(nameof(Summary)); } }
+    /// <summary>What the step printed (a Python step's console).</summary>
+    public string Output { get; set; } = "";
     public string Level { get => _level; set { _level = value; Raise(nameof(Level)); Raise(nameof(SummaryBrush)); } }
     public IBrush SummaryBrush => Tokens.Brush(_level switch { "error" => "ErrB", "warning" => "WarnB", _ => "DimB" });
 
@@ -456,7 +462,8 @@ public sealed partial class MainViewModel
         "        per[int(m)] = per.get(int(m), 0) + h\n" +
         "    data.particles[\"Heavy\"] = heavy          # a new property, for colour coding and expressions\n" +
         "    data.attributes[\"Heavy atoms\"] = sum(heavy)\n" +
-        "    data.tables[\"heavy_per_molecule\"] = per\n";
+        "    data.tables[\"heavy_per_molecule\"] = per\n" +
+        "    print(f\"frame {frame}: {sum(heavy)} heavy atoms in {len(per)} molecules\")   # shows in the console\n";
 
     /// <summary>The fields of the selected step's editor, from its parameters.</summary>
     private void BuildStepFields()
@@ -507,7 +514,7 @@ public sealed partial class MainViewModel
             case "python":
                 Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "blank: the step typed below", Text = S("file") });
                 var code = S("code", PythonStepTemplate);
-                Add(new StepField { Key = "code", Label = "Or type the step (Run sends it; a file above takes precedence)", Kind = "code", Text = code, Draft = code });
+                Add(new StepField { Key = "code", Label = "Or type the step (Run sends it; a file above takes precedence)", Kind = "code", Text = code, Draft = code, Output = _pipeSel.Output.TrimEnd() });
                 break;
             case "msd":
                 Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");
@@ -650,7 +657,10 @@ public sealed partial class MainViewModel
             {
                 PipelineRows[k].Summary = (string?)steps[k]?["summary"] ?? "";
                 PipelineRows[k].Level = (string?)steps[k]?["level"] ?? "ok";
+                PipelineRows[k].Output = (string?)steps[k]?["output"] ?? "";
             }
+        if (_pipeSel != null)
+            foreach (var f in StepFields.Where(f => f.IsCode)) f.Output = _pipeSel.Output.TrimEnd();
         if (_pipeResult?["attributes"] is JsonArray attrs)
             foreach (var a in attrs)
             {
