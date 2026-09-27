@@ -948,7 +948,7 @@
                 <local:LinePlot x:Name="RdfPlot" XLabel="r (Å)" YLabel="g(r)" />
                 <StackPanel Grid.Column="1" Spacing="8">
                   <TextBlock Text="RADIAL DISTRIBUTION" Classes="h3" />
-                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.RdfPairs}" SelectedIndex="{Binding RdfPairIndex}" HorizontalAlignment="Stretch" />
+                  <ComboBox ItemsSource="{Binding RdfPairs}" SelectedIndex="{Binding RdfPairIndex}" HorizontalAlignment="Stretch" />
                   <CheckBox Content="Only between molecules" IsChecked="{Binding RdfInter}" />
                   <TextBlock Text="{Binding RdfNote}" Classes="dim" TextWrapping="Wrap" />
                 </StackPanel>

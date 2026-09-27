@@ -334,6 +334,13 @@ internal static class SelfTest
                                          FramePs = 0.5, ThermoPs = 0.1, UntilConverged = 1, BlockPs = 0.3, MaxBlocks = 3, TolDensity = 0.5, TolEnergy = 5, TolRg = 0.5 };
         var (eqConv, eqRep) = cell.Equilibrate("nvt 0.5 ps T 450 # warm\nnpt 0.5 ps T 300 P 1 atm # settle", eqOpts, (st, n, label, r) => { eqRows++; return true; });
         Check(eqConv && eqRows > 5 && eqRep.Contains("warm") && eqRep.Contains("check density"), $"equilibrate: 2 stages + blocks, {eqRows} rows, converged {eqConv}");
+        {
+            // Convergence board: Extend runs at the protocol's final NPT conditions; Accept now is recorded in the provenance
+            var (tf, pf) = vm.FinalNpt("nvt 5 ps T 600\nnpt 800 ps T 310 P 2.5 atm # final\nnvt 1 ps T 900");
+            cell.ProvenanceNote("{\"engine\":\"equilibrate.accepted\",\"summary\":\"accepted with 2 of 3 criteria met\",\"params\":{\"not met\":\"Rg\"}}");
+            var prov = cell.Provenance();
+            Check(tf == 310 && pf == 2.5 && prov.Contains("equilibrate.accepted") && prov.Contains("not met"), $"convergence: extend at T {tf} K, P {pf} atm; the acceptance is in the provenance");
+        }
         var chainsInfo = cell.InternalDistances();
         Check(chainsInfo.Chains == 4 && chainsInfo.N.Length > 5 && Math.Abs(chainsInfo.Ratio[0] - 1) < 1e-9, $"chains: {chainsInfo.Chains} backbones, {chainsInfo.N.Length} separations");
         var badText = false;
