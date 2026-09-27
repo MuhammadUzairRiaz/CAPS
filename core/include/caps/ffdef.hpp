@@ -164,6 +164,10 @@ struct FFDef {
   // Typing rules (caps/typing.hpp). In the JSON file "typing" is either the rules or the name of a "caps-typing" file
   // next to the force field; types' own "smarts" become rules after them.
   std::vector<TypingRule> typing;
+  // Charge keys (typing file "charge_rules"): where a force field's charges come from bond increments between keys finer
+  // than its types (OPLS 2005: the ether C and the alcohol C are both CT, but their increments are keyed 181 and 157),
+  // each atom gets a key by these rules (same matching as the typing rules) and bond_increments are looked up by keys
+  std::vector<TypingRule> charge_typing;
   std::vector<std::pair<std::string, std::string>> typing_pairs;   // conjugated pairs (GAFF cc/cd, ...), see typing.hpp
   bool typing_ordered = false;
   bool typing_unknown_untyped = false;   // rules may name types this file lacks: their atoms end up untyped
@@ -268,6 +272,7 @@ struct ParamReport {
   std::vector<std::string> estimated;  // interactions given the parameters of analogous types (FFDef::analogies), each once
   int estimated_terms = 0;             // how many interactions (all of them, not each kind once)
   std::map<std::string, int> used;     // rule name → interactions
+  std::vector<std::string> charge_keys;   // per atom, when the charges came from bond increments between charge keys
   std::vector<std::string> notes;
   bool complete() const { return missing.empty(); }
 };

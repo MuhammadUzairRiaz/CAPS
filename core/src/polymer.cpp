@@ -1143,12 +1143,15 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           }
       }
       // look ahead: the next unit's head must have room at this unit's free valence (else the chain folds into itself)
-      if (worst > best_m && t.tail_fixed && k + 1 < int(ch.seq.size())) {
+      // the last unit: its tail cap (a hydrogen at 1.09 Å) goes there, and needs room as well
+      const bool last = k + 1 == int(ch.seq.size());
+      if (worst > best_m && t.tail_fixed) {
         auto tp = [&](int local) { return local >= 0 ? trial[size_t(local)] : ch.pos[size_t(pt)]; };
         Vec3 e1, e2, e3;
         frame(trial[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
         const Vec3 dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
-        const Vec3 nx = trial[size_t(t.tail)] + dir * 1.53;
+        const Vec3 nx = trial[size_t(t.tail)] + dir * (last ? 1.09 : 1.53);
+        const int probe = last ? 1 : 6;
         worst = std::min(worst, region(nx));
         cell.near(nx, [&](int id) {
           double f = 1.0;
@@ -1166,12 +1169,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
               f = tot == 4 ? 0.85 : 0.9;
             }
           }
-          const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limitc(6, cell.z[size_t(id)]);
+          const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limitc(probe, cell.z[size_t(id)]);
           if (m < worst) worst = m;
         });
         for (int b = 0; b < t.n; ++b)
           if (const int dd = int(ntl[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
-            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : 0.85) * limitc(6, t.z[size_t(b)]);
+            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : 0.85) * limitc(probe, t.z[size_t(b)]);
             if (m < worst) worst = m;
           }
       }
