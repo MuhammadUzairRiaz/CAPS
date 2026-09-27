@@ -667,6 +667,70 @@ TEST(Structure, CommonNeighbourAnalysisAndCentrosymmetry) {
   EXPECT_EQ(st.props.at("Structure Type")[0], 4.0);
 }
 
+// Polyhedral template matching: FCC gold, BCC iron, HCP magnesium, the icosahedron's centre, each with RMSD ≈ 0; the
+// nearest-neighbour distance recovered; a rotated crystal stays FCC without strain; a simple shear γ leaves γ/2
+TEST(Structure, PolyhedralTemplateMatching) {
+  auto crystal = [](const std::string& sg, double a, double c, std::vector<caps::CrystalSite> sites, std::array<int, 3> sc) {
+    caps::CrystalSpec spec;
+    spec.space_group = sg;
+    spec.a = a, spec.b = a, spec.c = c;
+    if (sg == "P63/mmc") spec.gamma = 120;
+    spec.sites = std::move(sites);
+    spec.supercell = sc;
+    return caps::build_crystal(spec);
+  };
+  auto run = [](const caps::System& f, const std::string& json) { return caps::run_pipeline(f, caps::pipeline_from_json(caps::Json::parse(json)), 0, 0); };
+  const auto au = crystal("Fm-3m", 4.078, 4.078, {{"Au", 79, {0, 0, 0}}}, {4, 4, 4});
+  auto st = run(au, R"([{"type":"ptm"}])");
+  EXPECT_EQ(st.attribute("PolyhedralTemplateMatching.counts.FCC"), double(au.atoms.size()));
+  for (size_t i = 0; i < au.atoms.size(); ++i) {
+    EXPECT_LT(st.props.at("RMSD")[i], 1e-6);
+    EXPECT_NEAR(st.props.at("Interatomic Distance")[i], 4.078 / std::sqrt(2.0), 1e-6);
+    EXPECT_LT(st.props.at("Shear Strain")[i], 1e-6);
+  }
+  const auto fe = crystal("Im-3m", 2.8665, 2.8665, {{"Fe", 26, {0, 0, 0}}}, {5, 5, 5});
+  st = run(fe, R"([{"type":"ptm"}])");
+  EXPECT_EQ(st.attribute("PolyhedralTemplateMatching.counts.BCC"), double(fe.atoms.size()));
+  EXPECT_NEAR(st.props.at("Interatomic Distance")[0], 2.8665 * std::sqrt(3.0) / 2, 1e-6);
+  const auto mg = crystal("P63/mmc", 3.209, 5.211, {{"Mg", 12, {1.0 / 3, 2.0 / 3, 0.25}}}, {5, 5, 3});
+  st = run(mg, R"([{"type":"ptm"}])");
+  EXPECT_EQ(st.attribute("PolyhedralTemplateMatching.counts.HCP"), double(mg.atoms.size()));
+  // rotated by 30° about [1 2 3] (cell and all): still FCC, no strain
+  {
+    caps::System r = au;
+    const caps::Vec3 ax = caps::Vec3{1, 2, 3} * (1 / std::sqrt(14.0));
+    const double c = std::cos(0.5236), sn = std::sin(0.5236);
+    auto rot = [&](const caps::Vec3& p) { return p * c + caps::cross(ax, p) * sn + ax * (caps::dot(ax, p) * (1 - c)); };
+    for (auto& a : r.atoms) a.pos = rot(a.pos);
+    r.cell.a = rot(r.cell.a), r.cell.b = rot(r.cell.b), r.cell.c = rot(r.cell.c), r.cell.origin = rot(r.cell.origin);
+    st = run(r, R"([{"type":"ptm"}])");
+    EXPECT_EQ(st.attribute("PolyhedralTemplateMatching.counts.FCC"), double(r.atoms.size()));
+    for (double v : st.props.at("Shear Strain")) EXPECT_LT(v, 1e-6);
+  }
+  // simple shear γ = 0.02 (x += γ y): the shear strain measure is γ/2 to first order
+  {
+    st = run(au, R"([{"type":"ptm"},{"type":"affine_transform","matrix":[1,0.02,0,0,1,0,0,0,1]}])");
+    EXPECT_EQ(st.attribute("PolyhedralTemplateMatching.counts.FCC"), double(au.atoms.size()));
+    EXPECT_NEAR(st.props.at("Shear Strain")[7], 0.01, 5e-4);
+  }
+  // a Mackay icosahedron of 13 atoms: the centre is icosahedral
+  caps::System ico;
+  const double g = (1 + std::sqrt(5.0)) / 2, r = 2.88 / std::sqrt(1 + g * g);
+  std::vector<caps::Vec3> v{{0, 0, 0}};
+  for (int s1 : {-1, 1})
+    for (int s2 : {-1, 1}) v.push_back({0, s1 * r, s2 * g * r}), v.push_back({s1 * r, s2 * g * r, 0}), v.push_back({s2 * g * r, 0, s1 * r});
+  for (const auto& x : v) { caps::Atom a; a.element = 79; a.pos = x; a.id = int64_t(ico.atoms.size() + 1); ico.atoms.push_back(a); }
+  st = run(ico, R"([{"type":"ptm"}])");
+  EXPECT_EQ(st.props.at("Structure Type")[0], 4.0);
+  EXPECT_LT(st.props.at("RMSD")[0], 1e-6);
+  // Combine datasets: a second file's particles appended
+  const std::string f2 = (std::filesystem::temp_directory_path() / "caps_combine.xyz").string();
+  caps::write_xyz(ico, f2);
+  st = run(au, R"([{"type":"combine","path":")" + f2 + R"("}])");
+  EXPECT_EQ(st.system.atoms.size(), au.atoms.size() + 13);
+  EXPECT_EQ(st.attribute("CombineDatasets.added"), 13.0);
+}
+
 TEST(Recipe, CheckedWithoutRunning) {
   const auto ok = caps::check_recipe(caps::yaml_parse(
       "recipe: 1\nbuild: {polymer: {smiles: \"*CC(*)c1ccccc1\", dp: 40, chains: 20}}\ntype: {forcefield: gaff2}\ngrow: {density: 0.5}\n"

@@ -17,6 +17,8 @@
 #include "caps/bundle.hpp"
 #include "caps/elements.hpp"
 #include "caps/entangle.hpp"
+#include "caps/io.hpp"
+#include "caps/superpose.hpp"
 #include "cell_list.hpp"
 
 namespace caps {
@@ -1291,6 +1293,288 @@ void step_cna(PipelineState& st, const Json& p, StepStatus& out) {
   out.summary = sum.empty() ? "no particles" : sum;
 }
 
+// Polyhedral template matching (Larsen, Schmidt & Schiøtz, Modelling Simul. Mater. Sci. Eng. 24, 055007 (2016)): each
+// particle's nearest neighbours (and itself) against ideal FCC, HCP, BCC, icosahedral and simple-cubic templates, after
+// centring and scaling both sets and rotating optimally (Horn's quaternion); the template with the least RMSD, if under
+// the cutoff, is its structure — with the orientation of its lattice and the shear left in its neighbourhood.
+namespace {
+struct PtmTemplate { int type; const char* name; std::vector<Vec3> pts; };
+const std::vector<PtmTemplate>& ptm_templates() {
+  static const std::vector<PtmTemplate> T = [] {
+    std::vector<PtmTemplate> t;
+    const double r2 = 1 / std::sqrt(2.0);
+    PtmTemplate fcc{1, "FCC", {}};
+    for (int a = 0; a < 3; ++a)
+      for (int sa : {-1, 1})
+        for (int sb : {-1, 1}) {
+          Vec3 v{0, 0, 0};
+          v[size_t(a)] = sa * r2;
+          v[size_t((a + 1) % 3)] = sb * r2;
+          fcc.pts.push_back(v);
+        }
+    t.push_back(fcc);
+    // HCP: a hexagon in the basal plane, a triangle above and the same triangle below (FCC's lower one is turned 60°)
+    PtmTemplate hcp{2, "HCP", {}};
+    const double pi = 3.14159265358979323846;
+    for (int k = 0; k < 6; ++k) hcp.pts.push_back({std::cos(k * pi / 3), std::sin(k * pi / 3), 0});
+    for (int sz : {1, -1})
+      for (int k = 0; k < 3; ++k) {
+        const double ang = pi / 6 + k * 2 * pi / 3;
+        hcp.pts.push_back({std::cos(ang) / std::sqrt(3.0), std::sin(ang) / std::sqrt(3.0), sz * std::sqrt(2.0 / 3.0)});
+      }
+    t.push_back(hcp);
+    PtmTemplate bcc{3, "BCC", {}};
+    const double h = 1 / std::sqrt(3.0);
+    for (int x : {-1, 1}) for (int y : {-1, 1}) for (int z : {-1, 1}) bcc.pts.push_back({x * h, y * h, z * h});
+    for (int a = 0; a < 3; ++a)
+      for (int sa : {-1, 1}) { Vec3 v{0, 0, 0}; v[size_t(a)] = sa * 2 / std::sqrt(3.0); bcc.pts.push_back(v); }
+    t.push_back(bcc);
+    PtmTemplate ico{4, "ICO", {}};
+    const double g = (1 + std::sqrt(5.0)) / 2, l = std::sqrt(1 + g * g);
+    for (int sa : {-1, 1})
+      for (int sb : {-1, 1}) {
+        ico.pts.push_back({0, sa / l, sb * g / l});
+        ico.pts.push_back({sa / l, sb * g / l, 0});
+        ico.pts.push_back({sb * g / l, 0, sa / l});
+      }
+    t.push_back(ico);
+    PtmTemplate sc{5, "SC", {}};
+    for (int a = 0; a < 3; ++a)
+      for (int sa : {-1, 1}) { Vec3 v{0, 0, 0}; v[size_t(a)] = sa; sc.pts.push_back(v); }
+    t.push_back(sc);
+    return t;
+  }();
+  return T;
+}
+
+struct PtmFit { double rmsd = 1e30; std::array<std::array<double, 3>, 3> rot{}; std::vector<int> map; double scale = 1; };
+
+// the best fit of neighbour vectors v (as many as the template has points) to template t
+PtmFit ptm_fit(const std::vector<Vec3>& v, const std::vector<Vec3>& t) {
+  PtmFit best;
+  const size_t n = t.size();
+  if (v.size() < n) return best;
+  // both sets centred (the central particle included at the origin) and scaled to unit mean distance from the centre
+  auto normalised = [&](const std::vector<Vec3>& p, double* sc) {
+    Vec3 c{0, 0, 0};
+    for (size_t k = 0; k < n; ++k) c = c + p[k];
+    c = c * (1.0 / double(n + 1));
+    std::vector<Vec3> q{c * -1.0};
+    double m = 0;
+    for (size_t k = 0; k < n; ++k) q.push_back(p[k] - c), m += norm(p[k] - c);
+    m += norm(c);
+    m /= double(n + 1);
+    for (auto& x : q) x = x * (1 / m);
+    if (sc) *sc = m;
+    return q;
+  };
+  double sv = 1;
+  const auto V = normalised(v, &sv);
+  const auto Tn = normalised(t, nullptr);
+  // anchors: the nearest neighbour and the next that is not (anti)parallel to it
+  const size_t a = 1;
+  size_t b = 2;
+  for (size_t k = 2; k <= n; ++k) {
+    const double c = dot(V[a], V[k]) / (norm(V[a]) * norm(V[k]));
+    if (std::fabs(c) < 0.95) { b = k; break; }
+  }
+  const double cab = dot(V[a], V[b]) / (norm(V[a]) * norm(V[b]));
+  auto frame = [](const Vec3& x, const Vec3& y) {
+    const Vec3 e1 = unit_or_zero(x), e3 = unit_or_zero(cross(x, y)), e2 = cross(e3, e1);
+    return std::array<Vec3, 3>{e1, e2, e3};
+  };
+  const auto Fs = frame(V[a], V[b]);
+  for (size_t p = 1; p <= n; ++p)
+    for (size_t q = 1; q <= n; ++q) {
+      if (p == q) continue;
+      const double ct = dot(Tn[p], Tn[q]) / (norm(Tn[p]) * norm(Tn[q]));
+      if (std::fabs(ct - cab) > 0.35) continue;
+      const auto Ft = frame(Tn[p], Tn[q]);
+      // R maps sample frame onto template frame: R = Σ Ft_k ⊗ Fs_k
+      std::array<std::array<double, 3>, 3> R{};
+      for (int r = 0; r < 3; ++r)
+        for (int c = 0; c < 3; ++c)
+          for (int k = 0; k < 3; ++k) R[size_t(r)][size_t(c)] += Ft[size_t(k)][size_t(r)] * Fs[size_t(k)][size_t(c)];
+      // each rotated neighbour to its nearest template point; a one-to-one assignment only
+      std::vector<int> map(n + 1, -1);
+      std::vector<char> used(n + 1, 0);
+      map[0] = 0;
+      used[0] = 1;
+      bool ok = true;
+      for (size_t k = 1; k <= n && ok; ++k) {
+        Vec3 x{0, 0, 0};
+        for (int r = 0; r < 3; ++r) x[size_t(r)] = R[size_t(r)][0] * V[k][0] + R[size_t(r)][1] * V[k][1] + R[size_t(r)][2] * V[k][2];
+        int bj = -1;
+        double bd = 1e30;
+        for (size_t j = 1; j <= n; ++j) {
+          const double d = norm(x - Tn[j]);
+          if (d < bd) bd = d, bj = int(j);
+        }
+        if (used[size_t(bj)]) ok = false;
+        else used[size_t(bj)] = 1, map[k] = bj;
+      }
+      if (!ok) continue;
+      std::vector<Vec3> ref, mov;
+      for (size_t k = 0; k <= n; ++k) ref.push_back(Tn[size_t(map[k])]), mov.push_back(V[k]);
+      const Superposition fit = superpose(ref, mov);
+      if (fit.rmsd < best.rmsd) best.rmsd = fit.rmsd, best.rot = fit.rot, best.map = map, best.scale = sv;
+    }
+  return best;
+}
+
+std::array<double, 4> quaternion_of(const std::array<std::array<double, 3>, 3>& m) {
+  const double tr = m[0][0] + m[1][1] + m[2][2];
+  std::array<double, 4> q{};
+  if (tr > 0) {
+    const double s = std::sqrt(tr + 1) * 2;
+    q = {0.25 * s, (m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s};
+  } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+    const double s = std::sqrt(1 + m[0][0] - m[1][1] - m[2][2]) * 2;
+    q = {(m[2][1] - m[1][2]) / s, 0.25 * s, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s};
+  } else if (m[1][1] > m[2][2]) {
+    const double s = std::sqrt(1 + m[1][1] - m[0][0] - m[2][2]) * 2;
+    q = {(m[0][2] - m[2][0]) / s, (m[0][1] + m[1][0]) / s, 0.25 * s, (m[1][2] + m[2][1]) / s};
+  } else {
+    const double s = std::sqrt(1 + m[2][2] - m[0][0] - m[1][1]) * 2;
+    q = {(m[1][0] - m[0][1]) / s, (m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, 0.25 * s};
+  }
+  if (q[0] < 0) for (auto& x : q) x = -x;
+  return q;
+}
+}  // namespace
+
+void step_ptm(PipelineState& st, const Json& p, StepStatus& out) {
+  const System& s = st.system;
+  const size_t n = s.atoms.size();
+  const double cutoff = p.num("rmsd_max", 0.1);
+  const bool use[6] = {false, flag(p, "fcc", true), flag(p, "hcp", true), flag(p, "bcc", true), flag(p, "ico", true), flag(p, "sc", false)};
+  const bool only_sel = flag(p, "only_selected", false);
+  const auto nn = nearest_neighbours(s, 14);
+  auto& type = st.props["Structure Type"];
+  auto& rmsd = st.props["RMSD"];
+  auto& dist = st.props["Interatomic Distance"];
+  auto& shear = st.props["Shear Strain"];
+  auto& qw = st.props["Orientation.W"];
+  auto& qx = st.props["Orientation.X"];
+  auto& qy = st.props["Orientation.Y"];
+  auto& qz = st.props["Orientation.Z"];
+  for (auto* v : {&type, &rmsd, &dist, &shear, &qw, &qx, &qy, &qz}) v->assign(n, 0);
+  std::array<size_t, 6> count{};
+  std::vector<double> all_rmsd;
+  for (size_t i = 0; i < n; ++i) {
+    if (only_sel && !st.selected[i]) continue;
+    PtmFit best;
+    const PtmTemplate* bt = nullptr;
+    for (const auto& T : ptm_templates()) {
+      if (!use[T.type] || nn[i].size() < T.pts.size()) continue;
+      const std::vector<Vec3> v(nn[i].begin(), nn[i].begin() + long(T.pts.size()));
+      const PtmFit f = ptm_fit(v, T.pts);
+      if (f.rmsd < best.rmsd) best = f, bt = &T;
+    }
+    if (!bt) { ++count[0]; continue; }   // no template fits at all (a molecule's atoms): other
+    all_rmsd.push_back(best.rmsd);
+    rmsd[i] = best.rmsd;
+    if (best.rmsd > cutoff) { ++count[0]; continue; }
+    type[i] = bt->type;
+    ++count[size_t(bt->type)];
+    const auto q = quaternion_of(best.rot);
+    qw[i] = q[0], qx[i] = q[1], qy[i] = q[2], qz[i] = q[3];
+    // the nearest-neighbour distance: the neighbours' mean distance over the template's (BCC's second shell is longer)
+    const size_t m = bt->pts.size();
+    double sm = 0, tm = 0;
+    for (size_t k = 0; k < m; ++k) sm += norm(nn[i][k]), tm += norm(bt->pts[k]);
+    dist[i] = sm / tm;
+    // shear left after the best rotation and scale: the deviatoric part of the least-squares deformation gradient
+    // F = (Σ x tᵀ)(Σ t tᵀ)⁻¹, x the rotated neighbours in template units; von Mises of E = ½(FᵀF − I)
+    double A[3][3] = {}, B[3][3] = {};
+    for (size_t k = 1; k <= m; ++k) {
+      const Vec3 t = bt->pts[size_t(best.map[k]) - 1];
+      const Vec3 v0 = nn[i][k - 1] * (1.0 / dist[i]);
+      Vec3 x{0, 0, 0};
+      for (int r = 0; r < 3; ++r) x[size_t(r)] = best.rot[size_t(r)][0] * v0[0] + best.rot[size_t(r)][1] * v0[1] + best.rot[size_t(r)][2] * v0[2];
+      for (int r = 0; r < 3; ++r)
+        for (int c = 0; c < 3; ++c) A[r][c] += x[size_t(r)] * t[size_t(c)], B[r][c] += t[size_t(r)] * t[size_t(c)];
+    }
+    const double det = B[0][0] * (B[1][1] * B[2][2] - B[1][2] * B[2][1]) - B[0][1] * (B[1][0] * B[2][2] - B[1][2] * B[2][0]) +
+                       B[0][2] * (B[1][0] * B[2][1] - B[1][1] * B[2][0]);
+    if (std::fabs(det) < 1e-12) continue;
+    double Bi[3][3];
+    for (int r = 0; r < 3; ++r)
+      for (int c = 0; c < 3; ++c) {
+        const int r1 = (c + 1) % 3, r2 = (c + 2) % 3, c1 = (r + 1) % 3, c2 = (r + 2) % 3;
+        Bi[r][c] = (B[r1][c1] * B[r2][c2] - B[r1][c2] * B[r2][c1]) / det;
+      }
+    double F[3][3] = {}, E[3][3] = {};
+    for (int r = 0; r < 3; ++r) for (int c = 0; c < 3; ++c) for (int k = 0; k < 3; ++k) F[r][c] += A[r][k] * Bi[k][c];
+    for (int r = 0; r < 3; ++r)
+      for (int c = 0; c < 3; ++c) {
+        for (int k = 0; k < 3; ++k) E[r][c] += 0.5 * F[k][r] * F[k][c];
+        if (r == c) E[r][c] -= 0.5;
+      }
+    const double tr = (E[0][0] + E[1][1] + E[2][2]) / 3;
+    double j2 = 0;
+    for (int r = 0; r < 3; ++r) for (int c = 0; c < 3; ++c) { const double d = E[r][c] - (r == c ? tr : 0); j2 += d * d; }
+    shear[i] = std::sqrt(0.5 * j2);
+  }
+  static const char* names[6] = {"Other", "FCC", "HCP", "BCC", "ICO", "SC"};
+  DataTable tab;
+  tab.name = "structures";
+  tab.title = "Polyhedral template matching · particles per structure";
+  tab.columns = {"Type", "Count", "Fraction"};
+  const double tot = double(std::max<size_t>(1, only_sel ? st.selected_count() : n));
+  std::string sum;
+  for (int t = 0; t < 6; ++t) {
+    tab.rows.push_back({double(t), double(count[size_t(t)]), count[size_t(t)] / tot});
+    st.set_attribute(std::string("PolyhedralTemplateMatching.counts.") + names[t], double(count[size_t(t)]));
+    if (count[size_t(t)]) sum += (sum.empty() ? "" : " · ") + std::string(names[t]) + " " + std::to_string(count[size_t(t)]);
+  }
+  st.tables.push_back(std::move(tab));
+  // the RMSD histogram: where to set the cutoff
+  if (!all_rmsd.empty()) {
+    DataTable h;
+    h.name = "rmsd";
+    h.title = "PTM · RMSD distribution (the cutoff separates matched from other)";
+    h.columns = {"RMSD", "Count"};
+    const double hi = std::max(0.3, *std::max_element(all_rmsd.begin(), all_rmsd.end()));
+    const int bins = 60;
+    std::vector<double> c(bins, 0);
+    for (double r : all_rmsd) c[size_t(std::min(bins - 1, int(r / hi * bins)))] += 1;
+    for (int k = 0; k < bins; ++k) h.rows.push_back({(k + 0.5) * hi / bins, c[size_t(k)]});
+    st.tables.push_back(std::move(h));
+  }
+  out.summary = sum.empty() ? "no particles" : sum + " · RMSD ≤ " + num_text(cutoff);
+}
+
+// Combine datasets: the particles (and bonds) of a second file added to the pipeline's, as they are in that file
+void step_combine(PipelineState& st, const Json& p, StepStatus& out) {
+  const std::string path = p.text("path", "");
+  if (path.empty()) throw std::invalid_argument("choose the file to add");
+  const Trajectory t = open_file(path, p.text("topology", ""));
+  if (t.frames() == 0) throw std::invalid_argument(path + ": no frame");
+  const System add = t.frame(std::min<size_t>(size_t(std::max(0.0, p.num("frame", 0))), t.frames() - 1));
+  System& s = st.system;
+  const uint32_t off = uint32_t(s.atoms.size());
+  auto mol_off = decltype(Atom::mol){0};
+  for (const auto& a : s.atoms) mol_off = std::max(mol_off, a.mol);
+  int64_t id_off = s.atoms.empty() ? 0 : s.atoms.back().id;
+  for (auto a : add.atoms) {
+    a.mol += mol_off;
+    a.id += id_off;
+    s.atoms.push_back(a);
+  }
+  for (auto b : add.bonds) { b.i += off; b.j += off; s.bonds.push_back(b); }
+  // per-particle arrays follow: new particles take zeros and are not selected
+  st.selected.resize(s.atoms.size(), 0);
+  for (auto& [name, v] : st.props) v.resize(s.atoms.size(), 0);
+  if (!s.velocities.empty() || !add.velocities.empty()) {
+    s.velocities.resize(off, Vec3{0, 0, 0});
+    if (add.velocities.size() == add.atoms.size()) s.velocities.insert(s.velocities.end(), add.velocities.begin(), add.velocities.end());
+    else s.velocities.resize(s.atoms.size(), Vec3{0, 0, 0});
+  }
+  st.set_attribute("CombineDatasets.added", double(add.atoms.size()));
+  out.summary = "+" + std::to_string(add.atoms.size()) + " particles from " + std::filesystem::path(path).filename().string();
+}
+
 // Centrosymmetry parameter (Kelchner, Plimpton & Hamilton, Phys. Rev. B 58, 11085 (1998)), as LAMMPS computes it: the
 // sum of the N/2 smallest |r_i + r_j|² over pairs of the N nearest neighbours (0 in a perfect centrosymmetric lattice)
 void step_centrosymmetry(PipelineState& st, const Json& p, StepStatus& out) {
@@ -2323,6 +2607,8 @@ const StepDef kSteps[] = {
     {"orientation", "Chain orientation", "backbone chords: P₂ per atom, S, director, local crystallinity", step_orientation},
     {"affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", step_affine},
     {"cna", "Common neighbour analysis", "adaptive CNA: FCC, HCP, BCC, icosahedral, other", step_cna},
+    {"ptm", "Polyhedral template matching", "structure, orientation and strain per particle (RMSD to ideal templates)", step_ptm},
+    {"combine", "Combine datasets", "add the particles of a second file", step_combine},
     {"centrosymmetry", "Centrosymmetry", "Kelchner's parameter from the N nearest neighbours", step_centrosymmetry},
     {"molecule_shape", "Molecule shape", "Rg, κ², asphericity per molecule", step_molecule_shape},
     {"topology", "Topology distributions", "bond lengths, angles, dihedrals", step_topology},
