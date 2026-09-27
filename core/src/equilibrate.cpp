@@ -258,6 +258,9 @@ void equilibrate(System& s, const EquilibrateOptions& o, EquilibrateReport* rep_
     ConvergenceCheck cd{"density", {}, 0, o.tol_density, false};
     ConvergenceCheck ce{"potential energy per atom", {}, 0, o.tol_energy, false};
     ConvergenceCheck cr{"mean Rg", {}, 0, o.tol_rg, false};
+    ConvergenceCheck ci{"internal distances", {}, 0, o.tol_internal, false};
+    std::vector<std::vector<double>> profiles;   // ⟨R²(n)⟩/(n⟨b²⟩) of each block, by n
+    bool chains = true;
     for (int b = 1; b <= o.max_blocks; ++b) {
       const auto [from, to] = run_stage(prod, nstages + b, "production block " + std::to_string(b), o.md.seed + 7919ull * b);
       double dm = 0, em = 0;
@@ -268,6 +271,18 @@ void equilibrate(System& s, const EquilibrateOptions& o, EquilibrateReport* rep_
       double rg = 0;
       for (const auto& m : shapes) rg += m.rg;
       cr.blocks.push_back(shapes.empty() ? 0 : rg / shapes.size());
+      {
+        System whole = s;
+        if (!whole.unwrapped) make_molecules_whole(whole);
+        const auto id = internal_distances(whole);
+        chains = id.chains > 0 && id.n.size() >= 3;
+        std::vector<double> prof(id.n.empty() ? 0 : size_t(id.n.back()) + 1, 0.0);
+        for (size_t k = 0; k < id.n.size(); ++k) prof[size_t(id.n[k])] = id.ratio[k];
+        profiles.push_back(prof);
+        double mean = 0;
+        for (double r : id.ratio) mean += r;
+        ci.blocks.push_back(id.ratio.empty() ? 0 : mean / double(id.ratio.size()));
+      }
       rep.blocks = b;
       if (b < 2) continue;
       // the last two changes between consecutive blocks must both be within tolerance
@@ -283,12 +298,29 @@ void equilibrate(System& s, const EquilibrateOptions& o, EquilibrateReport* rep_
       check(cd, true);
       check(ce, false);
       check(cr, true);
-      if (b >= o.min_blocks && cd.ok && ce.ok && cr.ok) { rep.converged = true; break; }
+      // the internal distances: the largest relative change at any n between the last two blocks, and from the target
+      if (chains && profiles.size() >= 2) {
+        auto dev = [&](const std::vector<double>& a, const std::vector<double>& ref) {
+          double m = 0;
+          for (size_t k = 2; k < std::min(a.size(), ref.size()); ++k)
+            if (ref[k] > 0 && a[k] > 0) m = std::max(m, std::fabs(a[k] / ref[k] - 1));
+          return m;
+        };
+        const auto& now = profiles.back();
+        ci.change = dev(now, profiles[profiles.size() - 2]);
+        if (!o.internal_target.empty()) ci.change = std::max(ci.change, dev(now, o.internal_target));
+        ci.ok = profiles.size() >= 3 && ci.change <= ci.tolerance;
+      } else {
+        ci.ok = true;   // no chains: nothing to check
+      }
+      if (b >= o.min_blocks && cd.ok && ce.ok && cr.ok && ci.ok) { rep.converged = true; break; }
     }
     rep.checks = {cd, ce, cr};
+    if (chains) rep.checks.push_back(ci);
     char b[200];
-    std::snprintf(b, sizeof b, "%s after %d production blocks of %g ps (density ±%.1f%%, energy ±%.3g kcal/mol per atom, Rg ±%.0f%%)",
-                  rep.converged ? "converged" : "not converged", rep.blocks, o.block_ps, 100 * o.tol_density, o.tol_energy, 100 * o.tol_rg);
+    std::snprintf(b, sizeof b, "%s after %d production blocks of %g ps (density ±%.1f%%, energy ±%.3g kcal/mol per atom, Rg ±%.0f%%, internal distances ±%.0f%%%s)",
+                  rep.converged ? "converged" : "not converged", rep.blocks, o.block_ps, 100 * o.tol_density, o.tol_energy, 100 * o.tol_rg,
+                  100 * o.tol_internal, o.internal_target.empty() ? "" : " and of the target curve");
     rep.notes.push_back(b);
     rep.notes.push_back("the checks catch drift in density, energy and chain size over the run; long chains relax far more slowly than any "
                         "MD run, so a passed Rg check is necessary, not sufficient");

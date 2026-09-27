@@ -218,6 +218,7 @@ public struct CapsEquilOpts
     public int MaxBlocks;
     public double TolDensity, TolEnergy, TolRg;
     public int Constraints;       // 0 none, 1 bonds to hydrogen and rigid water, 2 all bonds (SHAKE/RATTLE)
+    public double TolInternal;    // internal distances: relative change at any n (0: 5 %)
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
