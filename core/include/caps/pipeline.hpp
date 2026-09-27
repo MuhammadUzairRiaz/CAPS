@@ -23,6 +23,8 @@
 //   binning             property, axis 0|1|2, bins, reduction mean|sum|density             → table binning
 //   create_bonds        mode perceive|cutoff|pairs, cutoff, pairs {"C-C": 1.7, …}, tolerance, inter_only, only_selected,
 //                       keep_file (default: a file's bonds stay and the new ones are compared with them), replace
+//   transparency        mode selected (value) | property (property, start, end → low … high), only_selected → Transparency
+//   particle_radius     the same → Radius (Å); the view draws both
 //   freeze_property     property, frame (reference, default 0), output (default "<property> frozen"): the values it had
 //                       at the reference frame, after the steps below this one, matched by particle identifier
 //   orientation         axis director|x|y|z, radius, angle, neighbours → Orientation (P₂ per atom), Crystalline, Orientation.S

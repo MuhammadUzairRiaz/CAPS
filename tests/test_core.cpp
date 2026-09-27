@@ -1044,3 +1044,46 @@ TEST(Pipeline, FreezePropertyAtAReferenceFrame) {
   }
   EXPECT_TRUE(moved);
 }
+
+// Translucent atoms blend over what is behind them (the background here); a radius override draws bigger atoms; the
+// transparency step writes the property the view draws
+TEST(Render, TransparencyAndRadiusPerAtom) {
+  System s;
+  Atom a;
+  a.element = 6, a.id = 1, a.pos = {0, 0, 0};
+  s.atoms.push_back(a);
+  a.id = 2, a.pos = {4, 0, 0};
+  s.atoms.push_back(a);
+  Renderer R;
+  RenderOptions o;
+  o.width = 120, o.height = 80, o.supersample = 1, o.outlines = false, o.depth_cue = false;
+  Camera cam;
+  auto px = [](const Image& im, int x, int y) { const size_t k = (size_t(y) * im.width + x) * 4; return std::array<int, 3>{im.rgba[k], im.rgba[k + 1], im.rgba[k + 2]}; };
+  const Image opaque = R.render(s, cam, o);
+  const auto bg = px(opaque, 1, 1);
+  // find the two atoms' centres: columns where the middle row differs from the background
+  std::vector<int> cols;
+  for (int x = 0; x < opaque.width; ++x) if (px(opaque, x, opaque.height / 2) != bg) cols.push_back(x);
+  ASSERT_FALSE(cols.empty());
+  const int left = cols.front() + 2, row = opaque.height / 2;
+  o.transparency = {0.5f, 0.f};
+  const Image half = R.render(s, cam, o);
+  o.transparency = {1.f, 0.f};
+  const Image gone = R.render(s, cam, o);
+  for (int c = 0; c < 3; ++c) {
+    const int lo = std::min(bg[size_t(c)], px(opaque, left, row)[size_t(c)]), hi = std::max(bg[size_t(c)], px(opaque, left, row)[size_t(c)]);
+    EXPECT_GE(px(half, left, row)[size_t(c)], lo - 1);
+    EXPECT_LE(px(half, left, row)[size_t(c)], hi + 1);
+    EXPECT_NEAR(px(gone, left, row)[size_t(c)], bg[size_t(c)], 1);
+  }
+  EXPECT_NE(px(half, left, row), px(opaque, left, row));
+  o.transparency.clear();
+  auto covered = [&](const Image& im) { int k = 0; for (int y = 0; y < im.height; ++y) for (int x = 0; x < im.width; ++x) k += px(im, x, y) != bg; return k; };
+  o.radius = {1.5f, 0.f};
+  const Image big = R.render(s, cam, o);
+  EXPECT_GT(covered(big), covered(opaque));
+  // the step: the selection translucent
+  const auto st = run_pipeline(s, pipeline_from_json(Json::parse(R"([{"type":"transparency","value":0.6},{"type":"select_expression","expression":"Identifier == 1"}])")), 0, 0);
+  EXPECT_NEAR(st.props.at("Transparency")[0], 0.6, 1e-12);
+  EXPECT_EQ(st.props.at("Transparency")[1], 0.0);
+}

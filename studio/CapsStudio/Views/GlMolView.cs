@@ -396,6 +396,13 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           return uTransparent > 0.5 ? mix(c, vec3(0.0), t * 0.6) : mix(c, uBg, t);
         }
         float fragDepth(float z) { return ndcDepth(z) * 0.5 + 0.5; }
+        // screen-door transparency: a 4 × 4 ordered-dither share of the fragments dropped (supersampling blends them)
+        bool doorShut(float t) {
+          if (t <= 0.0) return false;
+          ivec2 q = ivec2(gl_FragCoord.xy) & 3;
+          int b[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
+          return (float(b[q.y * 4 + q.x]) + 0.5) / 16.0 < t;
+        }
 
         """;
 
@@ -404,9 +411,10 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         layout(location = 1) in vec4 aSphere;
         layout(location = 2) in vec4 aColour;
         layout(location = 3) in float aRing;
-        out vec2 vOff; out float vR; out float vZ; out float vRw; out vec3 vCol; flat out int vRing;
+        out vec2 vOff; out float vR; out float vZ; out float vRw; out vec3 vCol; flat out int vRing; flat out float vT;
         void main() {
           vec3 r = rotv(aSphere.xyz);
+          vT = aColour.w;
           float k = kOf(r.z);
           vec2 c = screenOf(r, k);
           float R = aSphere.w * uScale * k;
@@ -419,10 +427,11 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         """;
 
     private const string SphereFs = """
-        in vec2 vOff; in float vR; in float vZ; in float vRw; in vec3 vCol; flat in int vRing;
+        in vec2 vOff; in float vR; in float vZ; in float vRw; in vec3 vCol; flat in int vRing; flat in float vT;
         out vec4 frag;
         void main() {
           float d = length(vOff);
+          if (d <= vR && doorShut(vT)) discard;
           if (d > vR) {   // outside the atom: its selection and focus rings, drawn over everything
             if (vRing == 0) discard;
             bool on = false; vec3 rc = vec3(0.0);
@@ -449,9 +458,10 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         layout(location = 1) in vec3 aA;
         layout(location = 2) in vec4 aBR;
         layout(location = 3) in vec4 aColour;
-        out vec2 vP; flat out vec2 vPa; flat out vec2 vPb; flat out vec2 vZab; flat out float vR; flat out float vRw; flat out vec3 vCol;
+        out vec2 vP; flat out vec2 vPa; flat out vec2 vPb; flat out vec2 vZab; flat out float vR; flat out float vRw; flat out vec3 vCol; flat out float vT;
         void main() {
           vec3 ra = rotv(aA), rb = rotv(aBR.xyz);
+          vT = aColour.w;
           float ka = kOf(ra.z), kb = kOf(rb.z);
           vec2 pa = screenOf(ra, ka), pb = screenOf(rb, kb);
           float R = aBR.w * uScale * (ka + kb) * 0.5;
@@ -468,9 +478,10 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         """;
 
     private const string CapsuleFs = """
-        in vec2 vP; flat in vec2 vPa; flat in vec2 vPb; flat in vec2 vZab; flat in float vR; flat in float vRw; flat in vec3 vCol;
+        in vec2 vP; flat in vec2 vPa; flat in vec2 vPb; flat in vec2 vZab; flat in float vR; flat in float vRw; flat in vec3 vCol; flat in float vT;
         out vec4 frag;
         void main() {
+          if (doorShut(vT)) discard;
           vec2 e = vPb - vPa;
           float L2 = dot(e, e);
           float t = L2 > 1e-9 ? clamp(dot(vP - vPa, e) / L2, 0.0, 1.0) : 0.0;

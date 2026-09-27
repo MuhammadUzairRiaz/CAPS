@@ -368,6 +368,7 @@ struct Prep {
   double bond_r = 0.14;
   Style style_of(size_t i) const { return mixed ? Style(opt->atom_style[i]) : opt->style; }
   double radius(size_t i) const {
+    if (opt->radius.size() == s->atoms.size() && opt->radius[i] > 0) return opt->radius[i];
     const double vdw = element(s->atoms[i].element).vdw;
     switch (style_of(i)) {
       case Style::SpaceFilling: return vdw;
@@ -498,6 +499,9 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
     auto q = [](float x) { return uint32_t(std::clamp(x, 0.f, 1.f) * 255 + .5f); };
     return (q(c.r) << 16) | (q(c.g) << 8) | q(c.b);
   };
+  // the transparency in the top byte (the GPU view discards a share of the fragments)
+  const bool trans = opt.transparency.size() == n;
+  auto tbyte = [&](size_t i) { return trans ? uint32_t(std::clamp(opt.transparency[i], 0.f, 1.f) * 255 + .5f) << 24 : 0u; };
   // ambient occlusion per atom (as render(), all atoms in full detail), multiplied into the colours
   std::vector<RGB> colour = P.colour;
   if (opt.ambient_occlusion && n) {
@@ -538,7 +542,7 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
         const Vec3& p0 = h ? m : a;
         const Vec3& p1 = h ? c : m;
         sc.capsules.insert(sc.capsules.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2]), float(br)});
-        sc.capsule_rgb.push_back(pack(colour[h ? b.j : b.i]));
+        sc.capsule_rgb.push_back(pack(colour[h ? b.j : b.i]) | tbyte(h ? b.j : b.i));
       }
     }
   }
@@ -552,7 +556,7 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
     if (r <= 0 && !ring[i]) continue;   // wireframe: bonds only
     const Vec3& p = s.atoms[i].pos;
     sc.spheres.insert(sc.spheres.end(), {float(p[0]), float(p[1]), float(p[2]), float(std::max(r, 0.0))});
-    sc.sphere_rgb.push_back(pack(colour[i]));
+    sc.sphere_rgb.push_back(pack(colour[i]) | tbyte(i));
     sc.sphere_id.push_back(int32_t(i));
     sc.sphere_ring.push_back(ring[i]);
   }
@@ -638,6 +642,11 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   }
   for (size_t i = 0; i < n; ++i) if (show[i]) (tier[i] == 0 ? stats.near : tier[i] == 1 ? stats.mid : stats.far)++;
 
+  // Translucent atoms (and their half-bonds) go to a second layer, composited over the opaque one (its nearest surface)
+  const bool has_trans = opt.transparency.size() == n && std::any_of(opt.transparency.begin(), opt.transparency.end(), [](float t) { return t > 0.f; });
+  Buffers TB(has_trans ? W : 1, has_trans ? H : 1);
+  auto layer = [&](size_t i) -> Buffers& { return has_trans && opt.transparency[i] > 0.f ? TB : B; };
+
   // Bonds (two half-capsules, each in its atom's colour; wireframe as lines). Bonds longer than half the cell are not drawn.
   if (opt.style != Style::SpaceFilling || mixed) {
     double half_cell = 1e300;
@@ -656,8 +665,8 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       }
       const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : bond_r;   // tubes between backbone atoms
       const double R = br * v.scale * (pk[b.i] + pk[b.j]) / 2;
-      capsule(B, px[b.i], py[b.i], pz[b.i], mx, my, mz, R, br, colour[b.i], int32_t(b.i));
-      capsule(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
+      capsule(layer(b.i), px[b.i], py[b.i], pz[b.i], mx, my, mz, R, br, colour[b.i], int32_t(b.i));
+      capsule(layer(b.j), mx, my, mz, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
     }
   }
   // Atoms.
@@ -679,7 +688,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       continue;
     }
     if (r <= 0) continue;   // wireframe: bonds only
-    sphere(B, px[i], py[i], pz[i], r * v.scale * pk[i], r, colour[i], int32_t(i));
+    sphere(layer(i), px[i], py[i], pz[i], r * v.scale * pk[i], r, colour[i], int32_t(i));
   }
   // Segments: tubes, and arrows whose last part is a stepped cone (not pickable).
   for (const auto& sg : opt.segments) {
@@ -783,6 +792,16 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       if (B.id[k] == -1) { B.id[k] = -4; B.z[k] = sz[k]; }
     }
   }
+
+  // The translucent layer over what it covers (picking and outlines keep the atoms behind it)
+  if (has_trans)
+    for (size_t k = 0; k < B.col.size(); ++k) {
+      const int32_t t = TB.id[k];
+      if (t < 0 || (B.id[k] != -1 && TB.z[k] <= B.z[k])) continue;
+      const float a = 1.f - std::clamp(opt.transparency[size_t(t)], 0.f, 1.f);
+      B.col[k] = mixc(B.id[k] == -1 ? bg : B.col[k], TB.col[k], a);
+      if (B.id[k] == -1) B.id[k] = -5, B.z[k] = TB.z[k];   // covered by a translucent atom only: not pickable
+    }
 
   // Cell edges.
   if (opt.show_cell && s.cell.valid()) {

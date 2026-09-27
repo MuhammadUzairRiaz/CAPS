@@ -107,6 +107,8 @@ public sealed partial class MainViewModel
     [
         new("colour_coding", "Colour coding", "any property, categorical or continuous", "Colour & style", "eye"),
         new("assign_colour", "Assign colour", "to the selection", "Colour & style", "eye"),
+        new("transparency", "Transparency", "the selection or by property: see through fillers", "Colour & style", "eye"),
+        new("particle_radius", "Particle radius", "the selection or by property", "Colour & style", "atom"),
         new("select_expression", "Expression selection", "Type == 2 && Position.Z > 13", "Select", "filter"),
         new("expand_selection", "Expand selection", "by bonds or distance", "Select", "filter"),
         new("invert_selection", "Invert selection", "selected ↔ not selected", "Select", "filter"),
@@ -427,6 +429,8 @@ public sealed partial class MainViewModel
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
         "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
         "wrap" => new JsonObject { ["mode"] = "atoms" },
+        "transparency" => new JsonObject { ["mode"] = "selected", ["value"] = 0.7 },
+        "particle_radius" => new JsonObject { ["mode"] = "selected", ["value"] = 1.2 },
         "freeze_property" => new JsonObject { ["property"] = "Position.Z", ["frame"] = 0 },
         "cna" => new JsonObject { ["only_selected"] = false },
         "centrosymmetry" => new JsonObject { ["neighbours"] = 12 },
@@ -539,6 +543,16 @@ public sealed partial class MainViewModel
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
             case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
+            case "transparency" or "particle_radius":
+                var what = _pipeSel.Type == "transparency" ? "Transparency (0 opaque … 1 invisible)" : "Radius (Å)";
+                Choice("mode", "Set", ["selected", "property"]);
+                if (S("mode", "selected") == "selected") { Text("value", what, "number"); Bool("keep_selection", "Keep the selection"); Note("Select the particles with a step below this one (e.g. Expression selection: Element == \"Si\")"); }
+                else
+                {
+                    Choice("property", "Property", props); Text("start", "From value", "number", "blank: minimum"); Text("end", "To value", "number", "blank: maximum");
+                    Text("low", what + " at the start", "number"); Text("high", what + " at the end", "number"); Bool("only_selected", "Only selected");
+                }
+                break;
             case "freeze_property":
                 Choice("property", "Property", props); Text("frame", "Reference frame", "number"); Text("output", "Output property", "text", "blank: <property> frozen");
                 Note("The steps below this one run on the reference frame; particles are matched by identifier. Colour by the frozen property to follow where atoms started."); break;
@@ -611,6 +625,8 @@ public sealed partial class MainViewModel
             default: p[f.Key] = f.Text; break;
         }
         ApplyPipeline();
+        if (f.Key == "mode" && _pipeSel.Type is "transparency" or "particle_radius")   // other fields for the other mode
+            Avalonia.Threading.Dispatcher.UIThread.Post(BuildStepFields);
     }
 
     public string PipelineJson() => new JsonObject
