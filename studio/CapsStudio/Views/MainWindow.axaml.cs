@@ -644,8 +644,10 @@ public partial class MainWindow : Window
     // Viewer keys; ignored while typing in a text box or choosing in a list.
     private void OnKey(object? sender, KeyEventArgs e)
     {
+        if (_vm.RecordingShortcut && _vm.RecordShortcutKey(e.Key, e.KeyModifiers)) { e.Handled = true; return; }   // Settings › Your shortcuts
         if (e.Key == Key.K && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control) { TogglePalette(); e.Handled = true; return; }
         if (_vm.PaletteOpen) return;
+        if (_vm.TryUserShortcut(e.Key, e.KeyModifiers, FocusManager?.GetFocusedElement() is TextBox)) { e.Handled = true; return; }
         if (e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control)
         {
             if (e.Key is Key.OemPlus or Key.Add) { _vm.StepScale(1); e.Handled = true; return; }
