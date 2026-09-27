@@ -3142,6 +3142,7 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.arm_dp = int(j.num("arm_dp", 5));
   c.spacing = int(j.num("spacing", 4));
   c.branch_probability = j.num("branch_probability", 0.1);
+  c.generations = int(j.num("generations", 2));
   c.keep_configuration = j.num("keep_configuration", 0) != 0 || (j.has("keep_configuration") && j["keep_configuration"].kind() == caps::Json::Bool && j["keep_configuration"].boolean());
   return c;
 }
@@ -3187,8 +3188,13 @@ extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char
       double arms = 0;
       caps::ChainSpec a = c;
       a.architecture = caps::Architecture::Linear;
+      double core_arms = 0;   // a dendrimer: the core's arms of dp units besides its arm_dp branches
       if (c.architecture == caps::Architecture::Star) arms = c.arms - 1;
-      else {
+      else if (c.architecture == caps::Architecture::Dendrimer) {
+        a.dp = std::max(1, c.arm_dp);
+        core_arms = c.arms - 1;
+        arms = c.arms * (std::pow(2.0, std::clamp(c.generations, 1, 6) + 1) - 2);
+      } else {
         a.dp = std::max(1, c.arm_dp);
         arms = c.architecture == caps::Architecture::Comb ? double(c.dp / std::max(1, c.spacing)) : c.branch_probability * std::max(0, c.dp - 2);
       }
@@ -3196,8 +3202,9 @@ extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char
       caps::Json mo = caps::Json::object();
       mo["architecture"] = std::string(caps::to_string(c.architecture));
       mo["arms"] = arms;
-      mo["atoms"] = double(m.atoms) + arms * (am.atoms - 2);
-      mo["mass"] = m.mass + arms * (am.mass - 2 * 1.008);
+      mo["atoms"] = double(m.atoms) + arms * (am.atoms - 2) + core_arms * (m.atoms - 2);
+      mo["mass"] = m.mass + arms * (am.mass - 2 * 1.008) + core_arms * (m.mass - 2 * 1.008);
+      if (core_arms > 0) mo["arms"] = arms + core_arms, mo["branches"] = arms;
       j["molecule"] = mo;
     }
   } catch (const std::exception& e) {

@@ -140,22 +140,28 @@
                                 IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
                   <ToggleButton Classes="chip" Content="Comb" Tag="3" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="A side chain on every n-th backbone unit"
                                 IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" />
+                  <ToggleButton Classes="chip" Content="Dendrimer" Tag="4" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="A star core whose ends split in two, generation after generation"
+                                IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=4}" />
                   <Button Classes="chip" Content="Network →" Click="OnNetwork" Margin="0,0,6,6" ToolTip.Tip="Networks are made by crosslinking a grown cell: React (C–C, sulfur or peroxide cures, epoxy–amine)" />
                 </WrapPanel>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyIsStar}">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyHasCore}">
                   <StackPanel Spacing="6">
-                    <TextBlock Text="Arms" Classes="label" />
+                    <TextBlock Text="Arms on the core" Classes="label" />
                     <NumericUpDown Value="{Binding PolyArms}" Minimum="3" Maximum="4" Increment="1" FormatString="0" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="6">
-                    <TextBlock Text="Units per arm" Classes="label" />
+                    <TextBlock Text="Units per core arm" Classes="label" />
                     <TextBlock Text="{Binding GrowDpD, StringFormat='{}{0:0} (the DP below)'}" Classes="mono" VerticalAlignment="Center" Margin="0,6,0,0" />
                   </StackPanel>
                 </Grid>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyHasSideChains}">
                   <StackPanel Spacing="6">
-                    <TextBlock Text="Units per side chain" Classes="label" />
+                    <TextBlock Text="{Binding PolySideLabel}" Classes="label" />
                     <NumericUpDown Value="{Binding PolyArmDp}" Minimum="1" Maximum="500" Increment="1" FormatString="0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PolyIsDendrimer}">
+                    <TextBlock Text="Generations" Classes="label" />
+                    <NumericUpDown Value="{Binding PolyGenerations}" Minimum="1" Maximum="6" Increment="1" FormatString="0" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PolyIsComb}">
                     <TextBlock Text="Every n-th backbone unit" Classes="label" />

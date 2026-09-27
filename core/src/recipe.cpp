@@ -341,12 +341,14 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
               spec.chain_dp = draw_chain_lengths(text(L, "distribution", "schulz-zimm"), num(L, "nn", spec.dp), num(L, "pdi", 1.1), chains, uint64_t(num(L, "seed", 1)));
             } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.lengths: ") + e.what()); }
           }
-          // architecture: linear (default), star {arms}, comb {arm_dp, spacing}, branched {arm_dp, branch_probability}
+          // architecture: linear (default), star {arms}, comb {arm_dp, spacing}, branched {arm_dp, branch_probability},
+          // dendrimer {arms, arm_dp, generations}
           try { spec.architecture = architecture_from_string(text(P, "architecture", "linear")); } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.architecture: ") + e.what()); }
           if (P.has("arms")) spec.arms = int(P["arms"].number());
           if (P.has("arm_dp")) spec.arm_dp = int(P["arm_dp"].number());
           if (P.has("spacing")) spec.spacing = int(P["spacing"].number());
           if (P.has("branch_probability")) spec.branch_probability = P["branch_probability"].number();
+          if (P.has("generations")) spec.generations = int(P["generations"].number());
           report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + (spec.architecture == Architecture::Linear ? " chains" : std::string(" ") + to_string(spec.architecture) + " molecules") +
                             " · unit " + info.formula + " · " + tac, "done", 1);
         } else if (J.has("molecule")) {
@@ -430,6 +432,9 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           gp.push_back({"architecture", "comb, side chains of " + std::to_string(spec.arm_dp) + " units on every " + std::to_string(spec.spacing) + "th unit (or the one beside it with more room)"});
         else if (spec.architecture == Architecture::Branched)
           gp.push_back({"architecture", "branched, side chains of " + std::to_string(spec.arm_dp) + " units with probability " + g6(spec.branch_probability) + " per backbone unit"});
+        else if (spec.architecture == Architecture::Dendrimer)
+          gp.push_back({"architecture", "dendrimer, generation " + std::to_string(spec.generations) + ": " + std::to_string(spec.arms) +
+                                            " core arms of DP units, each end splitting in two branches of " + std::to_string(spec.arm_dp) + " units"});
         if (!gr.notes.empty()) gp.push_back({"built", gr.notes.front()});
         if (g.method > 0) gp.push_back({"method", (g.method == 1 ? "Rosenbluth, soft spheres" : "Rosenbluth, UFF Lennard-Jones") + std::string(" at ") + g6(g.method_temperature) +
                                                " K; ln W per chain " + g6(gr.ln_rosenbluth)});

@@ -81,8 +81,8 @@ public sealed partial class MainViewModel
     public bool PolyShowWeights => _polySeq == 3;
     public bool PolyShowBlocks => _polySeq == 2;
     public bool PolyShowPattern => _polySeq == 5;
-    // ---- architecture: linear, branched (random side chains), star, comb
-    private static readonly string[] ArchIds = ["linear", "branched", "star", "comb"];
+    // ---- architecture: linear, branched (random side chains), star, comb, dendrimer
+    private static readonly string[] ArchIds = ["linear", "branched", "star", "comb", "dendrimer"];
     private int _polyArch;
     private decimal _polyArms = 4, _polyArmDp = 5, _polySpacing = 4, _polyBranchP = 0.1m;
     public int PolyArch
@@ -90,8 +90,8 @@ public sealed partial class MainViewModel
         get => _polyArch;
         set
         {
-            if (!Set(ref _polyArch, Math.Clamp(value, 0, 3))) return;
-            Raise(nameof(PolyIsLinear)); Raise(nameof(PolyIsStar)); Raise(nameof(PolyHasSideChains)); Raise(nameof(PolyIsComb)); Raise(nameof(PolyIsBranched));
+            if (!Set(ref _polyArch, Math.Clamp(value, 0, 4))) return;
+            Raise(nameof(PolyIsLinear)); Raise(nameof(PolyIsStar)); Raise(nameof(PolyHasCore)); Raise(nameof(PolyIsDendrimer)); Raise(nameof(PolySideLabel)); Raise(nameof(PolyHasSideChains)); Raise(nameof(PolyIsComb)); Raise(nameof(PolyIsBranched));
             Raise(nameof(PolyArchNote)); Raise(nameof(PolyPreviewCaption));
             PolyChanged();
         }
@@ -101,8 +101,13 @@ public sealed partial class MainViewModel
     public bool PolyIsBranched => _polyArch == 1;
     public bool PolyIsStar => _polyArch == 2;
     public bool PolyIsComb => _polyArch == 3;
-    public bool PolyHasSideChains => _polyArch is 1 or 3;
-    public decimal PolyArms { get => _polyArms; set { if (Set(ref _polyArms, Math.Clamp(value, 3, 4))) PolyChanged(); } }
+    public bool PolyIsDendrimer => _polyArch == 4;
+    public bool PolyHasCore => _polyArch is 2 or 4;
+    public bool PolyHasSideChains => _polyArch is 1 or 3 or 4;
+    public string PolySideLabel => _polyArch == 4 ? "Units per branch" : "Units per side chain";
+    private decimal _polyGenerations = 2;
+    public decimal PolyGenerations { get => _polyGenerations; set { if (Set(ref _polyGenerations, Math.Clamp(value, 1, 6))) { Raise(nameof(PolyArchNote)); PolyChanged(); } } }
+    public decimal PolyArms { get => _polyArms; set { if (Set(ref _polyArms, Math.Clamp(value, 3, 4))) { Raise(nameof(PolyArchNote)); PolyChanged(); } } }
     public decimal PolyArmDp { get => _polyArmDp; set { if (Set(ref _polyArmDp, Math.Clamp(value, 1, 500))) PolyChanged(); } }
     public decimal PolySpacing { get => _polySpacing; set { if (Set(ref _polySpacing, Math.Clamp(value, 1, 500))) PolyChanged(); } }
     public decimal PolyBranchP { get => _polyBranchP; set { if (Set(ref _polyBranchP, Math.Clamp(value, 0, 1))) PolyChanged(); } }
@@ -111,6 +116,9 @@ public sealed partial class MainViewModel
         2 => "Arms of DP units on one core carbon, the first arm's head atom (star SBR and BR are coupled on silicon or tin: here the core is carbon). Four arms need a CH₂ or CH₃ head.",
         3 => "A side chain of the chain's own units on every n-th backbone unit, on a hydrogen of its head or tail atom (or of the unit beside it when that has clearly more room).",
         1 => "Long-chain branches: each backbone unit carries a side chain with this probability.",
+        4 => string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                 "A star core of {0} arms of DP units; every free end splits in two branches, generation after generation: {1} branches, {2} end groups per molecule. Both branches hang on the end unit (the second on the unit before it when the end is crowded).",
+                 (int)_polyArms, (int)_polyArms * ((1 << ((int)_polyGenerations + 1)) - 2), (int)_polyArms * (1 << (int)_polyGenerations)),
         _ => "",
     } + (_polyArch == 0 ? "" : " Branch points are crowded: they may grow at a reduced contact scale; relax with push-off before dynamics.");
     private string _polyPattern = "AB";
@@ -248,6 +256,7 @@ public sealed partial class MainViewModel
             o["arm_dp"] = (int)_polyArmDp;
             o["spacing"] = (int)_polySpacing;
             o["branch_probability"] = (double)_polyBranchP;
+            o["generations"] = (int)_polyGenerations;
         }
         // unit templates cleaned with the default force field when it types them (GAFF2 unless Settings says otherwise)
         if (CleanChoices.FirstOrDefault(c => c.File != null && Path.GetFileNameWithoutExtension(c.File) == _settings.ForceField)?.File is { } clean) o["forcefield"] = clean;
@@ -273,12 +282,12 @@ public sealed partial class MainViewModel
             _polyMass = (double?)r["mass"] ?? 0;
             if (r["molecule"] is JsonObject m)   // a branched molecule: its arms, atoms and mass
             {
-                var arms = (double?)m["arms"] ?? 0;
+                var arms = (double?)m["branches"] ?? (double?)m["arms"] ?? 0;   // a dendrimer: its branches besides the core arms
                 _polyAtoms = (int)Math.Round((double?)m["atoms"] ?? _polyAtoms);
                 _polyMass = (double?)m["mass"] ?? _polyMass;
                 PolyPreview += string.Format(CultureInfo.InvariantCulture, "\nper molecule: {0} {1} · {4}{2:N0} atoms · {4}{3:N0} g/mol",
                     _polyArch == 1 ? "≈ " + arms.ToString("0.#", CultureInfo.InvariantCulture) : arms.ToString("0", CultureInfo.InvariantCulture),
-                    _polyArch == 2 ? "more arms" : "side chains", _polyAtoms, _polyMass, PolyUnits.Count > 1 || _polyArch == 1 ? "≈ " : "");   // each arm draws its own sequence
+                    _polyArch switch { 2 => "more arms", 4 => $"branches on {(int)_polyArms} core arms", _ => "side chains" }, _polyAtoms, _polyMass, PolyUnits.Count > 1 || _polyArch == 1 ? "≈ " : "");   // each arm draws its own sequence
             }
             PolyStripChanged?.Invoke();
         }
