@@ -387,8 +387,8 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap);
    dump_every, seed, lammps_styles: "native" (the force field's own styles: OPLS dihedrals, PPPM …) | "exact" (CAPS's
    energy exactly), hybrid: bool (every style as hybrid), coulomb: "auto" | "pppm" | "ewald" | "dsf" | "cut",
    kspace_accuracy (1e-4), cutoff (Å, 0 the force field's), tail: bool, head_lines: N (each file's first N lines in the
-   reply), preview: true (written to a scratch folder,
-   read and removed)} → {ok, error, folder, files: [{name, what, bytes, head[]}], notes[], checks: {atoms, typed, types,
+   reply), preview: true (written to a scratch folder, read and removed), dlpoly: true (also STEM_dlpoly/FIELD, CONFIG,
+   CONTROL for DL_POLY 4)} → {ok, error, gromacs_error, dlpoly_error, folder, files: [{name, what, bytes, head[]}], notes[], checks: {atoms, typed, types,
    type_pairs, bonds, angles, dihedrals, impropers, missing, net_charge, charges, forcefield, density}}. */
 int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);

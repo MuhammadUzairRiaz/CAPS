@@ -12,6 +12,7 @@
 #include "caps/config.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/cbmc.hpp"
+#include "caps/dlpoly.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/polystats.hpp"
 #include "caps/ffdef.hpp"
@@ -175,7 +176,7 @@ RecipeCheck check_recipe(const Json& r) {
         if (J.is_array()) for (const auto& x : J.items()) f.push_back(x.str());
         else if (J.is_string()) f.push_back(J.str());
         for (const auto& x : f)
-          if (x != "lammps" && x != "moltemplate" && x != "gromacs" && x != "gro" && x != "pdb" && x != "xyz" && x != "mol2" && x != "sdf" && x != "cif")
+          if (x != "lammps" && x != "moltemplate" && x != "dlpoly" && x != "gromacs" && x != "gro" && x != "pdb" && x != "xyz" && x != "mol2" && x != "sdf" && x != "cif")
             throw RecipeError(2, "export: unknown format '" + x + "'");
         info.summary = list(J.is_array() ? J : Json::array());
       }
@@ -830,6 +831,16 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             std::ofstream(path) << lammps_to_moltemplate(dp, ip, ff->name);
             std::filesystem::remove(dp);
             std::filesystem::remove(ip);
+          } else if (f == "dlpoly") {   // STEM_dlpoly/FIELD, CONFIG, CONTROL (DL_POLY 4)
+            if (!ff) throw RecipeError(3, "export dlpoly: type the structure first (a type stage)");
+            DlpolyOptions dop;
+            dop.title = text(J, "name", res.name);
+            dop.cutoff = energy.cutoff;
+            const std::string dir = stem + "_dlpoly";
+            write_dlpoly(s, *ff, dir, dop);
+            res.files.push_back(dir + "/CONFIG");
+            res.files.push_back(dir + "/CONTROL");
+            path = dir + "/FIELD";
           } else if (f == "gromacs" && ff) {   // topology, coordinates and a single-point .mdp with the same force field
             write_gromacs(s, *ff, energy, stem);
             res.files.push_back(stem + ".top");

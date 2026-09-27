@@ -15,6 +15,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/cbmc.hpp"
+#include "caps/dlpoly.hpp"
 #include "caps/bench.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
@@ -142,7 +143,7 @@ int usage() {
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
-               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
+               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
                "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
@@ -191,7 +192,7 @@ const std::set<std::string>& known_options() {
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
     "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--cys",
     "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump", "--ea",
-    "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--es",
+    "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--dlpoly", "--es",
     "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
     "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
     "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
@@ -1677,6 +1678,13 @@ int main(int argc, char** argv) {
           for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = f.charge[i];
           for (const auto& n : write_gromacs(s, f, eo, o["--gromacs"])) std::printf("gromacs: %s\n", n.c_str());
           std::printf("wrote %s.top, %s.gro and %s.mdp\n", o["--gromacs"].c_str(), o["--gromacs"].c_str(), o["--gromacs"].c_str());
+        }
+        if (o.count("--dlpoly")) {   // DIR/FIELD, CONFIG and CONTROL
+          DlpolyOptions dop;
+          dop.title = std::filesystem::path(pos[1]).stem().string();
+          if (o.count("--cutoff")) dop.cutoff = std::stod(o["--cutoff"]);
+          for (const auto& n : write_dlpoly(s, f, o["--dlpoly"], dop)) std::printf("dlpoly: %s\n", n.c_str());
+          std::printf("wrote %s/FIELD, CONFIG and CONTROL\n", o["--dlpoly"].c_str());
         }
         return rep.missing.empty() ? 0 : 3;
       }
