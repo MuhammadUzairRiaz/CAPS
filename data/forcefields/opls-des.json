@@ -27,6 +27,7 @@
  ],
  "cutoff": 12,
  "improper_order": "center3_sorted",
+ "improper_written": "center2",
  "equivalence": "replace",
  "improper_matched_order": true,
  "improper_reversible": true,

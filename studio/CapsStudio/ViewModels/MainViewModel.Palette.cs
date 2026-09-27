@@ -92,6 +92,7 @@ public sealed partial class MainViewModel
             ("Electrostatics", 64, "dyn", "electrostatics ewald pme beta cut-off tolerance mesh fft grid spacing"),
             ("Display styles", 65, "eye", "display style all atoms no hydrogens backbone tubes polar h automatic by size"),
             ("Add hydrogens", 66, "plus", "add hydrogens protonate valence heavy atoms pdb missing h"),
+            ("Type by hand", 69, "tag", "type by hand manual atom types head body tail repeat unit copolymer junction oplsaa assign override force field example"),
             ("Model resolution", 67, "layers", "model resolution united atom coarse grained beads convert backmap trappe"),
             ("Figure composer", 54, "layers", "figure composer panels layout multi panel journal column svg tiff pdf paper"),
             ("Recipes", 53, "file", "recipe yaml pipeline steps reusable run caps run protocol schedule larsen hash template"),

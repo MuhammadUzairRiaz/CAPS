@@ -15,6 +15,7 @@
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
 #include "caps/elements.hpp"
+#include "caps/example_typing.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/grow.hpp"
@@ -832,6 +833,7 @@ void field_run(caps_doc* d) {
     u["name"] = t.name;
     u["el"] = std::string(caps::element(t.element).symbol);
     u["desc"] = t.description;
+    if (!std::isnan(t.charge)) u["q"] = t.charge;
     all.push_back(u);
   }
   r["fftypes"] = all;
@@ -2181,6 +2183,56 @@ int32_t caps_field_override(caps_doc* d, int32_t index, const char* type) {
     field_run(d);
     return d->field->complete ? 0 : 1;
   });
+}
+
+int32_t caps_field_type_by_example(caps_doc* d, caps_doc* example, const char* types_json, char* report, int32_t cap) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    if (!example) throw caps::FFError("no example");
+    const caps::Json tj = caps::Json::parse(types_json ? types_json : "[]");
+    std::vector<std::string> types;
+    for (const auto& x : tj.items()) types.push_back(x.is_string() ? x.str() : "");
+    const caps::System& ex = example->frame;
+    if (types.size() != ex.atoms.size()) throw caps::FFError("one type per example atom (" + std::to_string(ex.atoms.size()) + "), " + std::to_string(types.size()) + " given");
+    // types the force field does not have are not learned (and reported)
+    caps::Json unknown = caps::Json::array();
+    std::set<std::string> said;
+    for (auto& t : types)
+      if (!t.empty() && !d->field->base.type(t) && !d->field->extra.type(t)) {
+        if (said.insert(t).second) unknown.push_back(t);
+        t.clear();
+      }
+    const caps::ExampleTypes learned = caps::learn_types(ex, types);
+    const caps::ExampleMatch m = caps::apply_types(d->frame, learned);
+    size_t set = 0;
+    for (size_t i = 0; i < m.types.size(); ++i)
+      if (!m.types[i].empty()) d->field->overrides[int32_t(i)] = m.types[i], ++set;
+    field_run(d);
+    caps::Json r = caps::Json::object();
+    r["radius"] = double(learned.radius);
+    r["environments"] = double(learned.environments);
+    r["exact"] = double(m.exact);
+    r["shorter"] = double(m.shorter);
+    r["unmatched"] = double(m.unmatched);
+    r["set"] = double(set);
+    caps::Json c = caps::Json::array();
+    for (const auto& x : learned.conflicts) c.push_back(x);
+    r["conflicts"] = c;
+    r["unknown_types"] = unknown;
+    report_out(r.dump(), report, cap);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_equivalent_atoms(caps_doc* d, int32_t atom, int32_t radius, char* json, int32_t cap) {
+  int32_t n = -1;
+  guard([&] {
+    caps::Json a = caps::Json::array();
+    for (uint32_t i : caps::equivalent_atoms(d->frame, uint32_t(std::max(0, atom)), std::clamp(radius, 0, 8))) a.push_back(double(i));
+    n = report_out(a.dump(), json, cap);
+    return 0;
+  });
+  return n;
 }
 
 int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, const char* style, const char* params) {

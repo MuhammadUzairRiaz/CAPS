@@ -102,6 +102,9 @@ struct FFDef {
   //   "center2_sorted"  centre in position 2 (class II, cenJsortIKL); the outer atoms keep the order of the
   //                     matching rule, since the angle-angle terms depend on it
   std::string improper_order = "center3_sorted";
+  // How a matched improper is written (and evaluated): "" as matched; "center2": the matched quartet i j C l written
+  // i C j l (the DL-derived OPLS files: their rules put the centre third, their LAMMPS / DL_POLY terms second)
+  std::string improper_written;
   // How equivalences are used: "replace" (DL_FIELD: look up by the equivalent name only) or "fallback"
   // (msi2lmp: the type's own name first, then the equivalent).
   std::string equivalence = "replace";
@@ -114,7 +117,8 @@ struct FFDef {
   // Only centres with at most this many neighbours get impropers (3: planar centres); 0 = any.
   int improper_max_neighbours = 0;
   // Torsions whose rule has a wildcard end get K divided by (connections − 1) of the neighbouring central atom,
-  // per wildcard end (msi2lmp and DL_FIELD for CVFF): "none" or "msi2lmp".
+  // per wildcard end (msi2lmp): "msi2lmp"; "torsions": a rule with both ends wild over the torsions that exist about
+  // the bond (a three-membered ring has fewer); "none".
   std::string wildcard_torsion_scaling = "none";
   // "dreiding1990": a torsion no rule lists takes DREIDING's own rule by the hybridisation of its central atoms (Mayo,
   // Olafson, Goddard 1990, cases a-j), its barrier divided over the torsions about the bond

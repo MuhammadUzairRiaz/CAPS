@@ -1,0 +1,84 @@
+<!-- CAPS Force field › Type by hand: the repeat unit as head, body and tail (a copolymer's units and junctions) in a live
+     3D view; types from the force field's rules, any atom (with every atom of the same surroundings) given a type by
+     hand, the result carried to the whole structure by each atom's chemical environment. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.UnitTypingPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding UtCounts}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding UtStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+    <!-- the force field's types -->
+    <Border DockPanel.Dock="Right" Width="380" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="18,13" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Type by hand" FontSize="14" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding UtFfName}" Classes="dim" FontSize="12" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="18,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Classes="small" Content="Types from the rules" Click="OnAuto" HorizontalAlignment="Stretch"
+                      ToolTip.Tip="The force field's own typing rules on the example; hand-given types are kept" />
+              <Button Grid.Column="1" Classes="small" Content="Rebuild example" Click="OnRebuild" HorizontalAlignment="Stretch"
+                      ToolTip.Tip="Head, body and tail again from the polymer (for a copolymer: every unit and junction)" />
+            </Grid>
+            <Button Classes="primary" Content="Apply to the structure" Click="OnApply" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Every atom of the structure takes the type of the example atom with the same surroundings" />
+          </StackPanel>
+        </Border>
+        <StackPanel DockPanel.Dock="Top" Margin="18,12,18,6" Spacing="8">
+          <TextBlock Text="{Binding UtSelectedText}" TextWrapping="Wrap" FontSize="12.5" />
+          <CheckBox Classes="toggle" Content="Also every atom with the same surroundings" IsChecked="{Binding UtEquivalents}" />
+          <TextBox Text="{Binding UtFilter}" Watermark="Search types (number, class, description)" FontSize="12.5" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary small" Content="Assign" Click="OnAssign" ToolTip.Tip="The chosen type on the picked atom (double-click a type does the same)" />
+            <Button Classes="small" Content="Back to the rules' type" Click="OnClear" />
+          </StackPanel>
+        </StackPanel>
+        <ListBox x:Name="Types" ItemsSource="{Binding UtTypes}" SelectedItem="{Binding UtTypeSelected}" DoubleTapped="OnTypeDouble" Margin="8,0,8,8">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:UtType">
+              <Grid ColumnDefinitions="92,58,*" ColumnSpacing="8" ToolTip.Tip="{Binding Name}">
+                <TextBlock Text="{Binding Short}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Charge}" FontFamily="{DynamicResource Mono}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding Text}" FontSize="11.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Text}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+    <!-- the example in 3D and its atoms -->
+    <Grid RowDefinitions="Auto,3*,5,2*">
+      <Border Padding="22,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding UtSource}" FontSize="13" FontWeight="SemiBold" />
+          <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap"
+                     Text="Pick an atom in the view or the table, choose its type on the right, Assign. The head and tail units carry the chain ends; the body unit is the repeat unit between neighbours." />
+        </StackPanel>
+      </Border>
+      <v:MolView x:Name="View" Grid.Row="1" />
+      <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="{DynamicResource LineB}" />
+      <ListBox x:Name="Atoms" Grid.Row="3" ItemsSource="{Binding UtAtoms}" SelectedItem="{Binding UtSelected}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:UtAtom">
+            <Grid ColumnDefinitions="60,110,*,150" ColumnSpacing="10">
+              <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding Role}" FontSize="11.5" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding Neighbours}" FontFamily="{DynamicResource Mono}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="3" Text="{Binding Shown}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AccB}" IsVisible="{Binding IsHand}" />
+              <TextBlock Grid.Column="3" Text="{Binding Shown}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" IsVisible="{Binding !IsHand}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

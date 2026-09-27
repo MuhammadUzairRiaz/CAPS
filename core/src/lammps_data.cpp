@@ -795,7 +795,18 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   out << "\n";
   const Cell& c = s.cell;
   Vec3 lo = c.origin, a = c.a, b = c.b, cc = c.c;
-  if (!c.valid()) { lo = {-50, -50, -50}; a = {100, 0, 0}; b = {0, 100, 0}; cc = {0, 0, 100}; }
+  if (!c.valid()) {   // no cell: a box around the atoms, 25 Å of vacuum on every side (more than any cut-off), at least 100 Å
+    Vec3 mn{1e30, 1e30, 1e30}, mx{-1e30, -1e30, -1e30};
+    for (const auto& at : s.atoms)
+      for (int k = 0; k < 3; ++k) mn[k] = std::min(mn[k], at.pos[k]), mx[k] = std::max(mx[k], at.pos[k]);
+    if (s.atoms.empty()) mn = {0, 0, 0}, mx = {0, 0, 0};
+    Vec3 w;
+    for (int k = 0; k < 3; ++k) {
+      w[k] = std::max(100.0, mx[k] - mn[k] + 50.0);
+      lo[k] = 0.5 * (mn[k] + mx[k]) - 0.5 * w[k];
+    }
+    a = {w[0], 0, 0}, b = {0, w[1], 0}, cc = {0, 0, w[2]};
+  }
   std::snprintf(buf, sizeof buf, "%.8f %.8f xlo xhi\n%.8f %.8f ylo yhi\n%.8f %.8f zlo zhi\n", lo[0], lo[0] + a[0], lo[1], lo[1] + b[1], lo[2],
                 lo[2] + cc[2]);
   out << buf;

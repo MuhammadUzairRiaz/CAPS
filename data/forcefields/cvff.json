@@ -30,7 +30,7 @@
  "equivalence": "replace",
  "improper_matched_order": true,
  "improper_max_neighbours": 3,
- "wildcard_torsion_scaling": "msi2lmp",
+ "wildcard_torsion_scaling": "torsions",
  "atom_types": [
   {
    "name": "c",

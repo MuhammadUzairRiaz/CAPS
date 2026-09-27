@@ -938,15 +938,15 @@
   },
   {
    "type": "HAE",
-   "smarts": "[H][CX4][CX3](=O)[OX2;!H1]",
+   "smarts": "[H][CX4;!$(*[OX2][CX3]=O)][CX3](=O)[OX2;!H1]",
    "priority": 3,
-   "description": "H on the C alpha to an ester / anhydride carbonyl (an acid's alpha H stays HC)"
+   "description": "H on the C alpha to an ester / anhydride carbonyl (an acid's alpha H stays HC, as does a C that is also an ester's alkoxy C)"
   },
   {
    "type": "HAE",
-   "smarts": "[H][CX4][OX2][CX3]=O",
+   "smarts": "[H][CX4;!$(*[CX3](=O)[OX2;!H1])][OX2][CX3]=O",
    "priority": 3,
-   "description": "H on the alkoxy C of an ester, carbonate or carbamate"
+   "description": "H on the alkoxy C of an ester, carbonate or carbamate (a C that is also alpha to an ester carbonyl, as in lactide and glycolide units, stays HC)"
   },
   {
    "type": "HANI",
@@ -1922,14 +1922,14 @@
   },
   {
    "type": "140",
-   "smarts": "[H][CX4][CX3](=O)[OX2;!H1]",
+   "smarts": "[H][CX4;!$(*[OX2][CX3]=O)][CX3](=O)[OX2;!H1]",
    "description": "HAE: H on the C alpha to an ester / anhydride carbonyl (an acid's alpha H stays HC)",
    "priority": 3
   },
   {
    "type": "140",
-   "smarts": "[H][CX4][OX2][CX3]=O",
-   "description": "HAE: H on the alkoxy C of an ester, carbonate or carbamate",
+   "smarts": "[H][CX4;!$(*[CX3](=O)[OX2;!H1])][OX2][CX3]=O",
+   "description": "HAE: H on the alkoxy C of an ester, carbonate or carbamate (not alpha to an ester carbonyl as well)",
    "priority": 3
   },
   {

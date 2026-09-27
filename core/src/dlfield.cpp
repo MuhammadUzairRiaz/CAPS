@@ -633,7 +633,7 @@ FFDef import_dlfield(const std::string& par, const std::string& sf, const std::s
     ff.special_lj[2] = ff.special_coul[2] = 1.0;
     ff.improper_order = "center2_sorted";
     ff.improper_matched_order = true;
-    ff.wildcard_torsion_scaling = "msi2lmp";
+    ff.wildcard_torsion_scaling = "torsions";
     for (const auto& r : rows("BOND")) { need(r, 2, "BOND"); ff.bonds.push_back(rule(r, "harmonic", {r.v[1] * E, r.v[0]})); }
     for (const auto& r : rows("ANGLE")) { need(r, 2, "ANGLE"); ff.angles.push_back(rule(r, "harmonic", {r.v[1] * E, r.v[0]})); }
     for (const auto& g : torsion_groups(rows("DIHEDRAL"))) {
