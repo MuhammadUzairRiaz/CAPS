@@ -223,6 +223,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     // library ids before the force fields got CAPS's own names ("opls2005-dlfield" is now "opls2005")
     if (name.size() > 8 && name.compare(name.size() - 8, 8, "-dlfield") == 0) name.resize(name.size() - 8);
     std::string charges = text(T, "charges", "auto");
+    std::string companion_note;   // charges "increments": whose charges they are
     ff.reset();
     try {
       if (name == "default") {
@@ -318,6 +319,12 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           for (const auto& a : sys.atoms) types.push_back(a.name);
         }
         ParamReport rep;
+        if (charges == "increments") {   // another force field's bond-increment charges with these types
+          const auto q = companion_charges(sys, def, path, &companion_note);
+          for (size_t i = 0; i < sys.atoms.size(); ++i) sys.atoms[i].charge = q[i];
+          sys.has_charges = true;
+          charges = "keep";
+        }
         const bool auto_charges = charges == "auto";
         if (charges == "auto") {   // the force field's charges, the file's, or (GAFF-like fields have none per type) Gasteiger, else QEq
           charges = sys.has_charges && !polymer ? "keep" : "types";
@@ -346,7 +353,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (!filled_from.empty()) ffname += " (gaps filled from " + filled_from + ": " + std::to_string(filled_terms) + " terms)";
       }
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
-    const std::string ch = charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : "from the force field";
+    const std::string ch = !companion_note.empty() ? companion_note.substr(9) : charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : "from the force field";
     std::vector<std::string> c;
     if (ffname == "UFF") c.push_back("rappe1992");
     else if (ffname.find("GAFF") != std::string::npos) c.push_back("wang2004");

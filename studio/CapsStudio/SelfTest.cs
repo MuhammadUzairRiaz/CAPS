@@ -2060,6 +2060,45 @@ internal static class SelfTest
             Check(risOk && vm.RisCurve.Length == 0, $"RIS reference: {vm.RisCurve.Length} on PS · alkane note ok {risOk}");
         }
 
+        // Field › Fill from OPLS 2005: natural rubber under OPLS-AA 2024 lacks the CM-CT-CT-CM torsion; one click borrows
+        // it (and only what is missing) from OPLS 2005 by the shared OPLS classes
+        {
+            var (nrDoc, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"isoprene\",\"smiles\":\"[*]C/C(C)=C\\\\C[*]\"}],\"dp\":4}",
+                new CapsGrowOpts { Chains = 1, Dp = 0, Seed = 1, Density = 0.02, ContactScale = -0.8, Curve = 1 }, null, "nr");
+            var nrFile = Path.Combine(outDir, "nr_fill.data");
+            nrDoc.Save(nrFile);
+            nrDoc.Dispose();
+            vm.Open(nrFile);
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var fillBefore = (vm.Field.Complete, vm.Field.CanFillSuggested, vm.Field.FillSuggestedText);
+            vm.Field.FillSuggested().GetAwaiter().GetResult();
+            Check(!fillBefore.Complete && fillBefore.CanFillSuggested && fillBefore.FillSuggestedText == "Fill from OPLS 2005" && vm.Field.Complete && !vm.Field.CanFillSuggested,
+                  $"fill from OPLS 2005: before complete {fillBefore.Complete}, offered '{fillBefore.FillSuggestedText}' · after complete {vm.Field.Complete} · {vm.Field.EstimatedText}");
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+        }
+
+        // Field › Use OPLS 2005's charges: poly(2-vinylpyridine) under OPLS-AA 2024 — the substituted pyridine's fixed
+        // charges do not balance; OPLS 2005's bond-increment charges do, with OPLS-AA 2024's types kept
+        {
+            var (pvp, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"2-vinylpyridine\",\"smiles\":\"[*]CC([*])c1ccccn1\"}],\"dp\":4}",
+                new CapsGrowOpts { Chains = 1, Dp = 0, Seed = 1, Density = 0.02, ContactScale = -0.8, Curve = 1 }, null, "p2vp");
+            var pvpFile = Path.Combine(outDir, "p2vp_charges.data");
+            pvp.Save(pvpFile);
+            pvp.Dispose();
+            vm.Open(pvpFile);
+            vm.Field.ChargeMode = 1;
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var chBefore = (vm.Field.Complete, vm.Field.CanUseCompanionCharges, vm.Field.CompanionChargesText);
+            vm.Field.UseCompanionCharges().GetAwaiter().GetResult();
+            var pvpRep = vm.Document!.FieldReport();
+            Check(!chBefore.Complete && chBefore.CanUseCompanionCharges && vm.Field.Complete && pvpRep.Contains("OPLS 2005's own, from its bond increments") && pvpRep.Contains("\"520_"),
+                  $"OPLS 2005 charges with OPLS-AA 2024 types: before complete {chBefore.Complete}, offered '{chBefore.CompanionChargesText}' · after complete {vm.Field.Complete}");
+            vm.Field.ChargeMode = 0;
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+        }
+
         // Biomolecule › nucleic acid: a DNA strand of 6 nt (D-sugars kept, 3′ phosphate), then RNA
         {
             vm.OpenBio();

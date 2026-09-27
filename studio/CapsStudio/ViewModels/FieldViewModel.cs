@@ -89,8 +89,9 @@ public sealed partial class FieldViewModel : ObservableObject
     public FfEntry? Selected => _ffIndex >= 0 && _ffIndex < Library.Count ? Library[_ffIndex] : null;
     public string FfNote => Selected is { } e ? $"{e.Version} · {e.Status}" + (e.AutoTyping ? " · automatic typing" : " · types must be the atom names in the file") : "";
     /// <summary>Index 0 is automatic (core mode 4); the others are core modes 0–3 in order.</summary>
-    public static readonly string[] ChargeModes = ["Automatic (force field, else Gasteiger)", "From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)"];
-    private static int CoreCharges(int ui) => ui == 0 ? 4 : ui - 1;
+    public static readonly string[] ChargeModes = ["Automatic (force field, else Gasteiger)", "From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)",
+                                                   "Bond increments (OPLS numbers)"];
+    private static int CoreCharges(int ui) => ui == 0 ? 4 : ui == 5 ? 5 : ui - 1;
     private int _chargeMode;
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 
@@ -347,8 +348,39 @@ public sealed partial class FieldViewModel : ObservableObject
     {
         if (Selected is not { } e) { Log = "Choose a force field."; return Task.CompletedTask; }
         var mode = _chargeMode;
-        Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "forcefield", 2 => "gasteiger", 3 => "keep", 4 => "qeq", _ => "auto" })}\")");
+        Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "forcefield", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" })}\")");
+        _assignedId = e.Id;
         return Do("Assigned", d => d.FieldAssign(e.File, null, CoreCharges(mode)));
+    }
+
+    private string _assignedId = "";
+    /// <summary>The OPLS force fields share OPLS 2005's atom classes: their missing bonds, angles and torsions can be
+    /// borrowed from it (only where they define none, each borrowed term listed).</summary>
+    private FfEntry? FillSource => HasMissing && _assignedId != "opls2005" && _assignedId.Contains("opls", StringComparison.Ordinal)
+        ? Library.FirstOrDefault(x => x.Id == "opls2005") : null;
+    public bool CanFillSuggested => FillSource != null;
+    public string FillSuggestedText => FillSource is { } f ? $"Fill from {f.Name}" : "";
+    public string FillSuggestedTip => FillSource is { } f
+        ? $"Bonds, angles and torsions {ForceFieldName} lacks, taken from {f.Name} by the atom classes they share — only where {ForceFieldName} defines none; every borrowed term is listed and counted in the provenance"
+        : "";
+    public Task FillSuggested() => FillSource is { } f ? FillGaps(f.File) : Task.CompletedTask;
+
+    /// <summary>OPLS-AA's fixed per-type charges leave a group unbalanced (a substituted ring, a junction between two
+    /// groups): OPLS 2005 types the same structure and gives its own charges from bond increments, which balance bond by
+    /// bond; this force field's types and parameters stay.</summary>
+    private bool _chargeImbalance;
+    private FfEntry? ChargeSource => _chargeImbalance && _chargeMode != 5 && _assignedId != "opls2005" && _assignedId.Contains("opls", StringComparison.Ordinal)
+        ? Library.FirstOrDefault(x => x.Id == "opls2005") : null;
+    public bool CanUseCompanionCharges => ChargeSource != null;
+    public string CompanionChargesText => ChargeSource is { } f ? $"Use {f.Name}'s charges" : "";
+    public string CompanionChargesTip => ChargeSource is { } f
+        ? $"{ForceFieldName}'s fixed charges do not add up to the formal charge here. {f.Name} types the same structure and gives its own charges from bond increments (they balance bond by bond); {ForceFieldName}'s types and parameters stay."
+        : "";
+    public Task UseCompanionCharges()
+    {
+        if (ChargeSource == null) return Task.CompletedTask;
+        ChargeMode = 5;
+        return Assign();
     }
 
     public Task ApplyOverride()
@@ -434,6 +466,9 @@ public sealed partial class FieldViewModel : ObservableObject
         EstimatedText = $"{estimated:N0} estimated" + (imported > 0 ? $" · {imported:N0} imported" : "") + (filled > 0 ? $" · {filled:N0} filled from another force field" : "");
         HasUntyped = untyped > 0;
         HasMissing = missing.Count > 0;
+        _chargeImbalance = missing.Any(m => m.StartsWith("charges:", StringComparison.Ordinal));
+        Raise(nameof(CanFillSuggested)); Raise(nameof(FillSuggestedText)); Raise(nameof(FillSuggestedTip));
+        Raise(nameof(CanUseCompanionCharges)); Raise(nameof(CompanionChargesText)); Raise(nameof(CompanionChargesTip));
         HasEstimated = estimated > 0;
         if (r.GetProperty("has_charges").GetBoolean())
         {
