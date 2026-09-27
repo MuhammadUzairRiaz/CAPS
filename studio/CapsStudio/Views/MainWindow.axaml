@@ -2664,8 +2664,8 @@
                       <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.CijConfigsD}" Minimum="1" Maximum="50" Increment="1" FormatString="0" />
                     </Grid>
                   </StackPanel>
-                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.FluctChip.IsOn}">
-                    <TextBlock Text="STRESS FLUCTUATIONS" Classes="h3" Margin="0,6,0,0" />
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.NvtRunOn}">
+                    <TextBlock Text="NVT RUN · STRESS FLUCTUATIONS, VISCOSITY" Classes="h3" Margin="0,6,0,0" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
                       <TextBlock Text="NVT temperature (K)" Classes="dim" /><TextBlock Grid.Column="1" Text="Sampled (ps)" Classes="dim" />
                       <NumericUpDown Grid.Row="1" Value="{Binding Analyze.FluctTD}" Minimum="1" Increment="10" FormatString="0" />

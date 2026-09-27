@@ -80,6 +80,35 @@ struct FluctuationRunOptions {
 };
 ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o);
 
+// Shear viscosity by Green–Kubo: NVT dynamics (Nosé–Hoover, weakly coupled) after an equilibration, the pressure tensor
+// (kinetic and virial) sampled every `sample_every` steps; η = V/(10 kT) ∫ Σ_αβ ⟨P°_αβ(0) P°_αβ(t)⟩ dt over the traceless
+// symmetric tensor P° (Daivis & Evans 1994: the five independent components averaged), integrated to `corr_ps`; the
+// value is the running integral's mean over its last third, the error from blocks of the run. Viscous polymers need
+// runs far longer than their stress relaxation: the report says when the integral has not levelled off.
+struct ViscosityOptions {
+  std::shared_ptr<const ForceField> field;
+  EnergyOptions energy;
+  double temperature = 300.0, ps = 200.0, equilibrate_ps = 20.0, dt = 1.0, tau_t = 1000.0;
+  int sample_every = 4;
+  double corr_ps = 10.0;
+  int blocks = 5;
+  uint64_t seed = 1;
+  bool new_velocities = false;
+  std::function<bool(const std::string& what, double fraction)> progress;
+};
+struct ViscosityResult {
+  double eta = 0, error = 0;                 // mPa·s (cP)
+  std::vector<double> t_ps, running;         // the running integral η(t), mPa·s
+  std::vector<double> acf;                   // ⟨P°P°⟩(t) normalised to 1 at t = 0
+  bool plateau = true;                       // the running integral levels off over the last third
+  std::vector<std::string> notes;
+};
+ViscosityResult viscosity_green_kubo(System& s, const ViscosityOptions& o);
+// The Green–Kubo integral of pressure-tensor samples (atm; xx yy zz xy xz yz), dt_fs apart, in a cell of volume V (Å³).
+ViscosityResult green_kubo_viscosity(const std::vector<std::array<double, 6>>& p, double dt_fs, double volume, double temperature,
+                                     double corr_ps, int blocks);
+std::vector<Property> viscosity_properties(const ViscosityResult& r);
+
 // Born matrix of one configuration (GPa), as fluctuation_elastic computes it (tests and benches).
 Mat6 born_matrix(Evaluator& ev, const std::vector<double>& x, const Cell& cell, double strain);
 // Virial stress σ = −W / V of one configuration, Voigt, kcal/mol/Å³.

@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "caps/mechanics.hpp"
+#include "caps/grow.hpp"
+#include "caps/relax.hpp"
 
 using namespace caps;
 
@@ -236,4 +238,44 @@ TEST(Mechanics, TensileModulusOfColdCrystal) {
   EXPECT_NEAR(r.modulus, E, 0.12 * E);
   EXPECT_NEAR(r.poisson, nu, 0.1);
   EXPECT_GT(r.curve.size(), 50u);
+}
+
+// Green–Kubo viscosity: an Ornstein–Uhlenbeck stress (variance σ², relaxation τ) in the three off-diagonal components
+// integrates to η = V/(10 kT) · 6 σ² τ; the full protocol runs on a small cell and gives a positive viscosity
+TEST(Mechanics, GreenKuboViscosity) {
+  std::mt19937_64 rng(7);
+  std::normal_distribution<double> g(0, 1);
+  const double sigma = 300.0, tau = 50.0, dt = 4.0, V = 30000.0, T = 300.0;   // atm, fs, fs, Å³, K
+  const double a = std::exp(-dt / tau), b = sigma * std::sqrt(1 - a * a);
+  std::vector<std::array<double, 6>> p(400000);
+  double x[3] = {0, 0, 0};
+  for (auto& row : p) {
+    for (double& xi : x) xi = a * xi + b * g(rng);
+    row = {0, 0, 0, x[0], x[1], x[2]};
+  }
+  const ViscosityResult r = green_kubo_viscosity(p, dt, V, T, 1.0, 5);
+  const double expect = 101325.0 * 101325.0 * V * 1e-30 * 6 * sigma * sigma * tau * 1e-15 / (1.380649e-23 * T) / 10 * 1000;
+  EXPECT_NEAR(r.eta, expect, 0.06 * expect);
+  EXPECT_TRUE(r.plateau);
+  EXPECT_GT(r.error, 0);
+  EXPECT_LT(r.error, 0.1 * expect);
+  EXPECT_NEAR(r.acf.front(), 1.0, 1e-12);
+  // the protocol, briefly
+  GrowOptions go;
+  go.chains = 3;
+  go.dp = 4;
+  go.density = 0.5;
+  go.seed = 2;
+  System s = grow(go);
+  RelaxOptions ro;
+  ro.ftol = 2;
+  relax(s, ro);
+  ViscosityOptions vo;
+  vo.ps = 4;
+  vo.equilibrate_ps = 1;
+  vo.corr_ps = 0.5;
+  vo.sample_every = 2;
+  const ViscosityResult m = viscosity_green_kubo(s, vo);
+  EXPECT_TRUE(std::isfinite(m.eta));
+  EXPECT_EQ(m.t_ps.size(), m.running.size());
 }
