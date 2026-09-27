@@ -912,6 +912,37 @@ std::pair<double, Vec3> largest_eigen(double A[3][3]) {
   return {A[im][im], Vec3{V[0][im], V[1][im], V[2][im]}};
 }
 
+// Freeze property: the property as it was at a reference frame (the steps below this one run on that frame), matched
+// to this frame's particles by identifier — colour by starting height to see flow, or keep frame-0 clusters
+void step_freeze(PipelineState& st, const Json& p, StepStatus& out) {
+  const std::string prop = p.text("property", "Position.Z");
+  const std::string name = p.text("output", prop + " frozen");
+  const int nframes = st.traj ? int(st.traj->frames()) : 1;
+  const int ref = std::clamp(int(p.num("frame", 0)), 0, std::max(0, nframes - 1));
+  std::vector<double> refv;
+  std::vector<int64_t> refid;
+  if (ref == st.frame || !st.traj) {   // this frame is the reference
+    if (!property_values(st, prop, refv)) throw std::invalid_argument("no property " + prop);
+    for (const auto& a : st.system.atoms) refid.push_back(a.id);
+  } else {
+    Pipeline up;   // the steps below this one, as they run on the reference frame
+    if (st.pipeline)
+      for (size_t k = st.step_index + 1; k < st.pipeline->steps.size(); ++k) up.steps.push_back(st.pipeline->steps[k]);
+    const PipelineState rs = run_pipeline(st.traj->frame(size_t(ref)), up, ref, 0, st.traj);
+    if (!property_values(rs, prop, refv)) throw std::invalid_argument("no property " + prop + " at frame " + std::to_string(ref));
+    for (const auto& a : rs.system.atoms) refid.push_back(a.id);
+  }
+  std::unordered_map<int64_t, double> by_id;
+  for (size_t i = 0; i < refid.size(); ++i) by_id[refid[i]] = refv[i];
+  auto& dst = st.props[name];
+  dst.assign(st.system.atoms.size(), std::nan(""));
+  size_t found = 0;
+  for (size_t i = 0; i < dst.size(); ++i)
+    if (auto it = by_id.find(st.system.atoms[i].id); it != by_id.end()) dst[i] = it->second, ++found;
+  out.summary = prop + " at frame " + std::to_string(ref) + " → " + name + (found < dst.size() ? " · " + std::to_string(dst.size() - found) + " particles not there" : "");
+  if (found < dst.size()) out.level = "warning";
+}
+
 // Chain orientation per atom (design/boards/PipelineSteps "Chain orientation", "Crystallinity (polymer)"): the backbone
 // chord through each backbone atom (its neighbours i−1 → i+1), P₂ of its angle to the axis (the director, or x, y, z),
 // and crystalline where at least `neighbours` other chords with midpoints within `radius` are aligned within `angle`
@@ -2248,6 +2279,7 @@ const StepDef kSteps[] = {
     {"binning", "Spatial binning", "1-D profile along an axis", step_binning},
     {"create_bonds", "Create bonds", "perceived from distances, or by cutoff", step_create_bonds},
     {"unwrap", "Unwrap", "molecules made whole across the boundary", step_unwrap},
+    {"freeze_property", "Freeze property", "a property's values at a reference frame, on every frame", step_freeze},
     {"orientation", "Chain orientation", "backbone chords: P₂ per atom, S, director, local crystallinity", step_orientation},
     {"affine_transform", "Affine transformation", "strain, shear or rotate particles and cell", step_affine},
     {"cna", "Common neighbour analysis", "adaptive CNA: FCC, HCP, BCC, icosahedral, other", step_cna},
@@ -2335,9 +2367,11 @@ PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_ind
   st.frame = frame_index;
   st.timestep = timestep;
   st.steps.resize(p.steps.size());
+  st.pipeline = &p;
   for (size_t k = p.steps.size(); k-- > 0;) {   // bottom to top
     const auto& step = p.steps[k];
     StepStatus& out = st.steps[k];
+    st.step_index = k;
     out.type = step.type;
     out.title = step_title(step.type);
     if (!step.enabled) { out.level = "off"; out.summary = "off"; continue; }
