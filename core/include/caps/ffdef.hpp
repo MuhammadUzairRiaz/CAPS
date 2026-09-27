@@ -232,6 +232,13 @@ void merge_forcefield(FFDef& base, const FFDef& overlay);
 // pair / bond / angle / dihedral / improper coefficients, the "By Type" rules and their symmetry plugins, "replace"
 // aliases, and the type descriptions from the comments.
 FFDef import_moltemplate(const std::string& path);
+// AMBER frcmod (MASS, BOND, ANGL, DIHE with multi-term dihedrals, IMPR, NONB as R*/2 and ε): rules in CAPS's styles,
+// X as the wildcard. Throws FFError when nothing is found.
+FFDef import_frcmod(const std::string& path);
+// GROMACS [ atomtypes ] (σ ε, or C6 C12 with combination rule 1), [ bondtypes ] 1, [ angletypes ] 1 and 5 (the
+// Urey–Bradley part noted), [ dihedraltypes ] 1, 9 (fourier), 4 (periodic improper) and 2 (harmonic improper) of a
+// .itp or .top, in kcal/mol and Å; other functions are listed in references as not imported.
+FFDef import_gromacs_params(const std::string& path);
 
 // DL_FIELD force-field libraries: NAME.par (parameters), NAME.sf (atom types; templates are not converted yet)
 // and NAME.bci (bond charge increments), as shipped in DL_FIELD's lib/ directory. Parameters are converted to

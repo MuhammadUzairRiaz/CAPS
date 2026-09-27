@@ -260,7 +260,8 @@ int32_t caps_field_override(caps_doc* d, int32_t index, const char* type);
    separated, as the missing-term list names them), a style ("" for the force field's default) and the parameters in
    that style's order. Such terms are reported as estimated. Returns as caps_field_assign. */
 int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, const char* style, const char* params);
-/* Merges parameters from another file (caps-forcefield .json or moltemplate .lt) over the force field. */
+/* Merges parameters from another file over the force field: caps-forcefield .json, moltemplate .lt, AMBER frcmod (any
+   name containing frcmod, or .dat) or the [ *types ] sections of a GROMACS .itp / .top. */
 int32_t caps_field_import(caps_doc* d, const char* path);
 /* Removes every imported and hand-entered parameter. */
 int32_t caps_field_remove_rules(caps_doc* d);

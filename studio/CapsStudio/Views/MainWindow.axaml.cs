@@ -491,7 +491,11 @@ public partial class MainWindow : Window
         {
             Title = "Import force-field parameters",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("CAPS force field or moltemplate") { Patterns = ["*.json", "*.lt"] }],
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Parameters (CAPS .json, moltemplate .lt, AMBER frcmod, GROMACS .itp/.top)") { Patterns = ["*.json", "*.lt", "*.frcmod", "frcmod*", "*.dat", "*.itp", "*.top"] },
+                new FilePickerFileType("All files") { Patterns = ["*"] },
+            ],
         });
         var path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
         if (path != null) await _vm.Field.Import(path);
