@@ -227,7 +227,7 @@ public sealed partial class MainViewModel
             PaletteRows.Add(new PaletteRow(section.ToUpperInvariant(), "", "", "", true, null));
             foreach (var (c, _) in (q.Length == 0 ? items.AsEnumerable() : items.OrderByDescending(x => x.Score)).Take(q.Length == 0 ? 8 : 12))
             {
-                PaletteRows.Add(new PaletteRow(c.Title, c.Id, c.Icon, c.Shortcut, false, c));
+                PaletteRows.Add(new PaletteRow(c.Title, c.Id, c.Icon, ShortcutShown(c), false, c));
                 shown++;
             }
         }

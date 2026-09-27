@@ -2105,6 +2105,30 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Your shortcuts: a key for a palette command runs it; a key the Studio uses is flagged; Reset clears them
+        {
+            var cmdMod = OperatingSystem.IsMacOS() ? Avalonia.Input.KeyModifiers.Meta : Avalonia.Input.KeyModifiers.Control;
+            vm.ShortcutFilter = "perspective orthographic";
+            var row = vm.ShortcutRows.FirstOrDefault(r => r.Id == "view.projection");
+            var persp = vm.Perspective;
+            if (row != null)
+            {
+                vm.BeginRecordShortcut(row);
+                vm.RecordShortcutKey(Avalonia.Input.Key.P, cmdMod | Avalonia.Input.KeyModifiers.Shift);
+            }
+            var ran = vm.TryUserShortcut(Avalonia.Input.Key.P, cmdMod | Avalonia.Input.KeyModifiers.Shift, false);
+            var toggled = vm.Perspective != persp;
+            var shown = vm.PaletteRowsFor("perspective").FirstOrDefault(r => r.Id == "view.projection")?.Shortcut ?? "";
+            if (row != null) { vm.BeginRecordShortcut(row); vm.RecordShortcutKey(Avalonia.Input.Key.I, cmdMod); }
+            var conflict = vm.ShortcutNote;
+            vm.ResetShortcuts();
+            var cleared = !vm.TryUserShortcut(Avalonia.Input.Key.I, cmdMod, false);
+            if (toggled) vm.Perspective = persp;
+            Check(row != null && ran && toggled && shown.Contains('P') && conflict.Contains("Invert the selection") && cleared,
+                  $"shortcuts: ran {ran}, toggled {toggled}, palette shows '{shown}', conflict: {conflict}, cleared {cleared}");
+            vm.ShortcutFilter = "";
+        }
+
         // The session: the project tree kept on quitting and restored from Start, with its job folders
         var keptItems = vm.ProjectItems.Select(p => p.Name.Replace(" (unsaved)", "")).ToList();
         var keptJobs = vm.ProjectItems.Sum(p => p.Jobs.Count);
