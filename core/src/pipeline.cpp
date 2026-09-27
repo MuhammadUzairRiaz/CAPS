@@ -2487,6 +2487,13 @@ void step_density_field(PipelineState& st, const Json& p, StepStatus& out) {
     for (const auto& [k, w] : kernel) rho[k] += m * w / (sum * g.voxel);
   }
   (void)norm3;
+  auto gf = std::make_shared<GridField>();
+  gf->name = "mass density";
+  gf->unit = "g/cm³";
+  gf->cell = s.cell;
+  for (int k = 0; k < 3; ++k) gf->n[k] = g.n[k];
+  gf->values = rho;
+  st.grid = gf;
   double mean = 0, empty = 0;
   for (double x : rho) { mean += x; empty += x < 0.05; }
   mean /= g.size();
@@ -2528,6 +2535,80 @@ void step_density_field(PipelineState& st, const Json& p, StepStatus& out) {
   st.has_legend = true;
   out.summary = "mean " + fmt("%.3f g/cm³", mean) + " (cell " + fmt("%.3f", s.density()) + ") · " + fmt("%.0f %%", 100 * empty / g.size()) + " below 0.05 · σ " +
                 fmt("%.2g Å", sigma);
+}
+
+void write_grid_file(const GridField& g, const System& atoms, const std::string& path) {
+  if (g.values.size() != size_t(g.n[0]) * size_t(g.n[1]) * size_t(g.n[2]) || g.values.empty()) throw std::invalid_argument("no grid to write");
+  auto ends = [&](const char* e) { const std::string x = e; return path.size() >= x.size() && path.compare(path.size() - x.size(), x.size(), x) == 0; };
+  const Vec3 ax[3] = {g.cell.a * (1.0 / g.n[0]), g.cell.b * (1.0 / g.n[1]), g.cell.c * (1.0 / g.n[2])};
+  const Vec3 first = g.cell.origin + (ax[0] + ax[1] + ax[2]) * 0.5;   // the first voxel's centre
+  if (ends(".cube")) {
+    constexpr double bohr = 0.529177210903;   // Å
+    std::ofstream out(path);
+    if (!out) throw std::runtime_error("cannot write " + path);
+    char b[200];
+    out << "CAPS " << g.name << " (" << g.unit << ")\nvoxel values; lengths in bohr\n";
+    std::snprintf(b, sizeof b, "%5zu %12.6f %12.6f %12.6f\n", atoms.atoms.size(), first[0] / bohr, first[1] / bohr, first[2] / bohr);
+    out << b;
+    for (int k = 0; k < 3; ++k) {
+      std::snprintf(b, sizeof b, "%5d %12.6f %12.6f %12.6f\n", g.n[k], ax[k][0] / bohr, ax[k][1] / bohr, ax[k][2] / bohr);
+      out << b;
+    }
+    for (const auto& a : atoms.atoms) {
+      std::snprintf(b, sizeof b, "%5d %12.6f %12.6f %12.6f %12.6f\n", a.element, 0.0, a.pos[0] / bohr, a.pos[1] / bohr, a.pos[2] / bohr);
+      out << b;
+    }
+    size_t col = 0;
+    for (int i = 0; i < g.n[0]; ++i)
+      for (int j = 0; j < g.n[1]; ++j) {
+        for (int k = 0; k < g.n[2]; ++k) {
+          std::snprintf(b, sizeof b, " %12.5e", g.values[(size_t(i) * g.n[1] + j) * g.n[2] + k]);
+          out << b;
+          if (++col % 6 == 0) out << "\n";
+        }
+        if (col % 6) out << "\n";
+        col = 0;
+      }
+  } else if (ends(".vtk")) {
+    std::ofstream out(path);
+    if (!out) throw std::runtime_error("cannot write " + path);
+    out << "# vtk DataFile Version 3.0\nCAPS " << g.name << " (" << g.unit << ")\nASCII\nDATASET STRUCTURED_GRID\n";
+    out << "DIMENSIONS " << g.n[0] << " " << g.n[1] << " " << g.n[2] << "\nPOINTS " << g.values.size() << " double\n";
+    // VTK runs x fastest: i innermost
+    char b[120];
+    for (int k = 0; k < g.n[2]; ++k)
+      for (int j = 0; j < g.n[1]; ++j)
+        for (int i = 0; i < g.n[0]; ++i) {
+          const Vec3 p = first + ax[0] * i + ax[1] * j + ax[2] * k;
+          std::snprintf(b, sizeof b, "%.5f %.5f %.5f\n", p[0], p[1], p[2]);
+          out << b;
+        }
+    std::string nm = g.name;
+    for (char& ch : nm) if (ch == ' ') ch = '_';
+    out << "POINT_DATA " << g.values.size() << "\nSCALARS " << nm << " double 1\nLOOKUP_TABLE default\n";
+    for (int k = 0; k < g.n[2]; ++k)
+      for (int j = 0; j < g.n[1]; ++j)
+        for (int i = 0; i < g.n[0]; ++i) {
+          std::snprintf(b, sizeof b, "%.6e\n", g.values[(size_t(i) * g.n[1] + j) * g.n[2] + k]);
+          out << b;
+        }
+  } else if (ends(".npy")) {
+    std::ofstream out(path, std::ios::binary);
+    if (!out) throw std::runtime_error("cannot write " + path);
+    std::string h = "{'descr': '<f8', 'fortran_order': False, 'shape': (" + std::to_string(g.n[0]) + ", " + std::to_string(g.n[1]) + ", " +
+                    std::to_string(g.n[2]) + "), }";
+    const size_t total = 10 + h.size() + 1;
+    h += std::string((64 - total % 64) % 64, ' ') + "\n";
+    const unsigned char magic[8] = {0x93, 'N', 'U', 'M', 'P', 'Y', 1, 0};
+    out.write(reinterpret_cast<const char*>(magic), 8);
+    const uint16_t hl = uint16_t(h.size());
+    const unsigned char l2[2] = {uint8_t(hl & 0xFF), uint8_t(hl >> 8)};
+    out.write(reinterpret_cast<const char*>(l2), 2);
+    out.write(h.data(), std::streamsize(h.size()));
+    out.write(reinterpret_cast<const char*>(g.values.data()), std::streamsize(g.values.size() * sizeof(double)));
+  } else {
+    throw std::invalid_argument("write the grid as .cube, .vtk or .npy");
+  }
 }
 
 void step_msd(PipelineState& st, const Json& p, StepStatus& out) {
@@ -3096,6 +3177,14 @@ Json pipeline_result_json(const PipelineState& st) {
     tables.push_back(std::move(o));
   }
   j["tables"] = std::move(tables);
+  if (st.grid) {   // a grid to export (.cube, .vtk, .npy)
+    Json gj = Json::object();
+    gj["name"] = st.grid->name;
+    Json nn = Json::array();
+    for (int k = 0; k < 3; ++k) nn.push_back(double(st.grid->n[k]));
+    gj["n"] = std::move(nn);
+    j["grid"] = std::move(gj);
+  }
   if (st.has_legend) {
     Json l = Json::object();
     l["property"] = st.legend.property;
@@ -3193,5 +3282,7 @@ Json bonds_json(const PipelineState& st, size_t offset, size_t count) {
   j["rows"] = std::move(out);
   return j;
 }
+
+void write_grid(const GridField& g, const System& atoms, const std::string& path) { write_grid_file(g, atoms, path); }
 
 }  // namespace caps

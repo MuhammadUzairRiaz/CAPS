@@ -973,6 +973,9 @@
                           ToolTip.Tip="Run the pipeline on every frame and tabulate its attributes (cluster count, MSD, density …)">
                     <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="13" VerticalAlignment="Center" /><TextBlock Text="Over all frames" VerticalAlignment="Center" /></StackPanel>
                   </Button>
+                  <Button Classes="small" Click="OnExportGrid" IsVisible="{Binding PipeHasGrid}" ToolTip.Tip="The density field's grid as a Gaussian cube (with the atoms), a VTK structured grid or a NumPy array">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export grid…" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
                 </StackPanel>
                 <TabStrip SelectedIndex="{Binding InspectorTab}" Classes="small">
                   <TabStripItem Content="Particles" /><TabStripItem Content="Bonds" /><TabStripItem Content="Global attributes" /><TabStripItem Content="Data tables" />

@@ -495,6 +495,18 @@ public partial class MainWindow : Window
 
     private void OnSetMeasured(object? s, RoutedEventArgs e) => _vm.SetMeasured();
 
+    private async void OnExportGrid(object? s, RoutedEventArgs e)
+    {
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export the grid",
+            SuggestedFileName = "density.cube",
+            FileTypeChoices = [new FilePickerFileType("Gaussian cube") { Patterns = ["*.cube"] }, new FilePickerFileType("VTK structured grid") { Patterns = ["*.vtk"] },
+                               new FilePickerFileType("NumPy array") { Patterns = ["*.npy"] }],
+        });
+        if (file?.TryGetLocalPath() is { } path) _vm.ExportGrid(path);
+    }
+
     private async void OnFieldFillSuggested(object? s, RoutedEventArgs e)
     {
         if (!_vm.Busy) await _vm.Field.FillSuggested();

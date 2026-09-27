@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 
@@ -824,6 +825,39 @@ TEST(Structure, BinningMap) {
   for (const auto& r : map->rows) rho += r[2], count += r[3];
   EXPECT_NEAR(rho / 40, melt.density(), 1e-9);
   EXPECT_EQ(count, double(melt.atoms.size()));
+}
+
+// The density field's grid written as CUBE, VTK and NumPy: the NumPy array holds the cell's mass (Σ ρ · voxel), the
+// cube header gives the grid and every atom, the VTK file every point
+TEST(Structure, DensityGridExport) {
+  const caps::Trajectory t = caps::open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const caps::System melt = t.frame(0);
+  const auto st = caps::run_pipeline(melt, caps::pipeline_from_json(caps::Json::parse(R"([{"type":"density_field","grid":1.5}])")), 0, 0);
+  ASSERT_TRUE(st.grid);
+  const auto& g = *st.grid;
+  const auto dir = std::filesystem::temp_directory_path();
+  caps::write_grid(g, st.system, (dir / "caps_rho.npy").string());
+  caps::write_grid(g, st.system, (dir / "caps_rho.cube").string());
+  caps::write_grid(g, st.system, (dir / "caps_rho.vtk").string());
+  std::ifstream npy(dir / "caps_rho.npy", std::ios::binary);
+  std::string bytes((std::istreambuf_iterator<char>(npy)), std::istreambuf_iterator<char>());
+  ASSERT_EQ(bytes.substr(1, 5), "NUMPY");
+  const size_t hl = size_t(uint8_t(bytes[8])) | (size_t(uint8_t(bytes[9])) << 8);
+  EXPECT_EQ((10 + hl) % 64, 0u);
+  const size_t nv = size_t(g.n[0]) * g.n[1] * g.n[2];
+  ASSERT_EQ(bytes.size(), 10 + hl + 8 * nv);
+  double sum = 0;
+  for (size_t k = 0; k < nv; ++k) { double v; std::memcpy(&v, bytes.data() + 10 + hl + 8 * k, 8); sum += v; }
+  const double voxel = melt.cell.volume() / double(nv);
+  EXPECT_NEAR(sum * voxel / 1.66053906660, melt.total_mass(), 1e-6 * melt.total_mass());
+  std::ifstream cube(dir / "caps_rho.cube");
+  std::string l1, l2, l3, lx;
+  std::getline(cube, l1), std::getline(cube, l2), std::getline(cube, l3), std::getline(cube, lx);
+  EXPECT_EQ(std::stoi(l3), int(melt.atoms.size()));
+  EXPECT_EQ(std::stoi(lx), g.n[0]);
+  std::ifstream vtk(dir / "caps_rho.vtk");
+  std::string all((std::istreambuf_iterator<char>(vtk)), std::istreambuf_iterator<char>());
+  EXPECT_NE(all.find("POINTS " + std::to_string(nv) + " double"), std::string::npos);
 }
 
 TEST(Recipe, CheckedWithoutRunning) {

@@ -70,6 +70,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -106,6 +107,18 @@ struct StepStatus {
   std::string output;         // what the step printed (a Python step's console)
 };
 
+// A scalar field on a grid spanning the cell (the density field step's): values[(i·n1 + j)·n2 + k] at the voxel centre
+// origin + a (i + ½)/n0 + b (j + ½)/n1 + c (k + ½)/n2
+struct GridField {
+  std::string name, unit;
+  Cell cell;
+  int n[3] = {0, 0, 0};
+  std::vector<double> values;
+};
+// Writes a grid by the file's extension: .cube (Gaussian cube, bohr, with the atoms), .vtk (legacy structured grid,
+// Å), .npy (NumPy float64, shape n0 × n1 × n2, C order).
+void write_grid(const GridField& g, const System& atoms, const std::string& path);
+
 struct PipelineState {
   System system;                                       // the particles after the steps
   std::vector<int> origin;                             // index in the source frame of each particle
@@ -127,6 +140,7 @@ struct PipelineState {
   double attribute(const std::string& name, double def = 0) const;
   void set_attribute(const std::string& name, double v);
   size_t selected_count() const;
+  std::shared_ptr<GridField> grid;                     // the last grid a step made (density field), for export
 };
 
 struct PipelineStep {
