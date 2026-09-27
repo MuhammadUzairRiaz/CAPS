@@ -682,6 +682,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     a = std::abs(a), b = std::abs(b);
     return scale * (0.88 * (element(a).vdw + element(b).vdw) - 0.08 * ((a == 1) + (b == 1)) + extra);
   };
+  // the same limits cached by element pair (the growth step's inner loop asks millions of times)
+  std::vector<double> limit_cache(256 * 256, -1.0);
+  auto limitc = [&](int a, int b) {
+    double& r = limit_cache[size_t((a + 128) & 255) * 256 + size_t((b + 128) & 255)];
+    if (r < 0) r = limit(a, b);
+    return r;
+  };
   Cell3 cell;
   cell.init(Lv, o.method == 2 ? std::max(6.0, scale * 0.86 * 2 * 2.3) : scale * 0.86 * 2 * 2.3);   // LJ energies reach 6 Å
   // Rosenbluth methods: UFF van der Waals by element (method 2), kT
@@ -1006,6 +1013,16 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           if (d <= 3) near_tail[w] = d + 1;
       excl[size_t(a)] = std::move(dist);
     }
+    // the same as flat tables by chain-local index (bond distance + 1, 0: more than four bonds apart) for the inner loops
+    const size_t nloc = size_t(base + t.n);
+    std::vector<std::vector<uint8_t>> exl(size_t(t.n), std::vector<uint8_t>(nloc, 0));
+    for (int a = 0; a < t.n; ++a)
+      for (const auto& [w, d] : excl[size_t(a)])
+        if (w >= 0 && size_t(w) < nloc) exl[size_t(a)][size_t(w)] = uint8_t(d + 1);
+    std::vector<uint8_t> ntl(nloc, 0);
+    for (const auto& [w, d] : near_tail)
+      if (w >= 0 && size_t(w) < nloc) ntl[size_t(w)] = uint8_t(d + 1);
+    auto lut = [](const std::vector<uint8_t>& v, int loc) { return loc >= 0 && size_t(loc) < v.size() ? int(v[size_t(loc)]) : 0; };
     // an arm: bond distance from each new atom to the arm's head (then + 1 to the anchor), for the parent's atoms nearby
     std::vector<int> dhead(size_t(t.n), 99);
     int dhead_next = 99;
@@ -1044,12 +1061,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       for (int a = 0; a < t.n && worst > best_m; ++a) {
         const Vec3& x = trial[size_t(a)];
         worst = std::min(worst, region(x));
+        const auto& ea = exl[size_t(a)];
+        const int za = t.z[size_t(a)];
         cell.near(x, [&](int id) {
           double f = 1.0;
           if (cell.chain[size_t(id)] == ci) {
-            const auto it = excl[size_t(a)].find(cell.local[size_t(id)]);
-            if (it != excl[size_t(a)].end()) {
-              if (it->second <= 3) return;
+            const int dd = lut(ea, cell.local[size_t(id)]);
+            if (dd) {
+              if (dd - 1 <= 3) return;
               f = 0.85;
             }
           } else if (dhead[size_t(a)] <= 3) {   // across an arm's junction
@@ -1060,14 +1079,17 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
               f = tot == 4 ? 0.85 : 0.9;
             }
           }
-          const double d = norm(cell.mi(x - cell.x[size_t(id)]));
-          const double m = d - f * limit(t.z[size_t(a)], cell.z[size_t(id)]);
+          const double reach = worst + f * limitc(za, cell.z[size_t(id)]);   // farther pairs cannot lower the margin
+          const Vec3 dv = cell.mi(x - cell.x[size_t(id)]);
+          const double d2 = dot(dv, dv);
+          if (reach > 0 && d2 >= reach * reach) return;
+          const double m = std::sqrt(d2) - f * limitc(za, cell.z[size_t(id)]);
           if (m < worst) worst = m;
         });
         for (int b = a + 1; b < t.n; ++b)
-          if (auto it = excl[size_t(a)].find(base + b); it == excl[size_t(a)].end() || it->second > 3) {
-            const double f = it == excl[size_t(a)].end() ? 1.0 : 0.85;
-            const double m = norm(cell.mi(x - trial[size_t(b)])) - f * limit(t.z[size_t(a)], t.z[size_t(b)]);
+          if (const int dd = int(ea[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
+            const double f = dd == 0 ? 1.0 : 0.85;
+            const double m = norm(cell.mi(x - trial[size_t(b)])) - f * limitc(za, t.z[size_t(b)]);
             if (m < worst) worst = m;
           }
       }
@@ -1079,13 +1101,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         const Vec3 dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
         const Vec3 nx = trial[size_t(t.tail)] + dir * 1.53;
         worst = std::min(worst, region(nx));
-        const auto& ex = near_tail;
         cell.near(nx, [&](int id) {
           double f = 1.0;
           if (cell.chain[size_t(id)] == ci) {
-            const auto it = ex.find(cell.local[size_t(id)]);
-            if (it != ex.end()) {
-              if (it->second <= 3) return;
+            const int dd = lut(ntl, cell.local[size_t(id)]);
+            if (dd) {
+              if (dd - 1 <= 3) return;
               f = 0.85;
             }
           } else if (dhead_next <= 3) {
@@ -1096,12 +1117,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
               f = tot == 4 ? 0.85 : 0.9;
             }
           }
-          const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limit(6, cell.z[size_t(id)]);
+          const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limitc(6, cell.z[size_t(id)]);
           if (m < worst) worst = m;
         });
         for (int b = 0; b < t.n; ++b)
-          if (auto it = ex.find(base + b); it == ex.end() || it->second > 3) {
-            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (it == ex.end() ? 1.0 : 0.85) * limit(6, t.z[size_t(b)]);
+          if (const int dd = int(ntl[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
+            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : 0.85) * limitc(6, t.z[size_t(b)]);
             if (m < worst) worst = m;
           }
       }
@@ -1481,7 +1502,10 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     GrowOptions g = o;
     g.auto_scale = false;
     g.contact_scale = scales[k];
-    if (k + 1 < scales.size()) g.max_restarts = std::min(o.max_restarts, 10);   // give up early on the stricter limits
+    if (k + 1 < scales.size()) {   // give up early on the stricter limits: the next scale is quick where these jam
+      g.max_restarts = std::min(o.max_restarts, 5);
+      if (g.max_backtracks <= 0) g.max_backtracks = 20 * std::max(1, spec.dp);
+    }
     try {
       System s = grow_chains_once(spec, g, report);
       if (k > 0 && report) {
