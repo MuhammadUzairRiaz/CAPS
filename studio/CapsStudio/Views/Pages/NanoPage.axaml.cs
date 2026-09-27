@@ -9,6 +9,7 @@ namespace CapsStudio.Views.Pages;
 public partial class NanoPage : PageBase
 {
     private void OnGraftSilane(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.GraftSilane();
+    private void OnFunctionalize(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.Functionalize();
     public NanoPage()
     {
         AvaloniaXamlLoader.Load(this);

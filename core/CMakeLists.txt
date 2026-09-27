@@ -50,6 +50,7 @@ add_library(caps_core STATIC
   src/pairmodel.cpp
   src/adsorption.cpp
   src/sorption.cpp
+  src/functionalize.cpp
   src/moltemplate_export.cpp
   src/kremer_grest.cpp
   src/react_view.cpp
