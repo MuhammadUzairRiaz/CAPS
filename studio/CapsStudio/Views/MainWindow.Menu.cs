@@ -129,6 +129,7 @@ public partial class MainWindow
                 Page("Surface area…", 57),
                 Page("Interface…", 48),
                 Page("Adsorption locator…", 70),
+                Page("Sorption (gas uptake)…", 71),
                 Page("Solvent screen…", 61),
                 Page("Blend phase diagram…", 63),
                 Page("File checks…", 17))));
