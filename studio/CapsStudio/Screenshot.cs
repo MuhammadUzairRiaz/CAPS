@@ -675,6 +675,9 @@ internal static class Screenshot
             }
             if (kv[0] == "eqprotocol") w.ViewModel.EqProtocol = int.Parse(kv[1]);
             if (kv[0] == "equntil") w.ViewModel.EqUntilConverged = kv[1] == "1";
+            if (kv[0] == "eqtarget") w.ViewModel.EqTarget = int.Parse(kv[1]);
+            if (kv[0] == "mdcons") w.ViewModel.MdConstraints = int.Parse(kv[1]);
+            if (kv[0] == "mdsolver") w.ViewModel.MdConstraintSolver = int.Parse(kv[1]);
             if (kv[0] == "eqblock") w.ViewModel.EqBlockD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "eqmax") w.ViewModel.EqMaxBlocksD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "eqscale") w.ViewModel.EqScaleD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
