@@ -66,8 +66,18 @@
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="8">
                   <TextBlock Text="COMPONENTS" Classes="h3" />
+                  <Border Classes="seg" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="seg" Content="Weight %" GroupName="bmode" IsChecked="{Binding BlendMode, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                      <RadioButton Classes="seg" Content="Volume %" GroupName="bmode" IsChecked="{Binding BlendMode, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" ToolTip.Tip="Volume shares, with each component's density" />
+                      <RadioButton Classes="seg" Content="Chain count" GroupName="bmode" IsChecked="{Binding BlendMode, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                    </StackPanel>
+                  </Border>
                   <Grid ColumnDefinitions="*,64,56,Auto" ColumnSpacing="6">
-                    <TextBlock Text="Component" Classes="label" /><TextBlock Grid.Column="1" Text="wt %" Classes="label" /><TextBlock Grid.Column="2" Text="DP" Classes="label" />
+                    <TextBlock Text="Component" Classes="label" />
+                    <TextBlock Grid.Column="1" Text="{Binding BlendShareLabel}" Classes="label" IsVisible="{Binding BlendByShare}" />
+                    <TextBlock Grid.Column="1" Text="chains" Classes="label" IsVisible="{Binding BlendByCount}" />
+                    <TextBlock Grid.Column="2" Text="DP" Classes="label" />
                   </Grid>
                   <ItemsControl ItemsSource="{Binding BlendRows}">
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -79,10 +89,18 @@
                             <ComboBox Grid.Column="1" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendLibrary}" SelectedItem="{Binding Polymer}" HorizontalAlignment="Stretch">
                               <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
                             </ComboBox>
-                            <NumericUpDown Grid.Column="2" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="5" FormatString="0.#" ShowButtonSpinner="False" />
+                            <NumericUpDown Grid.Column="2" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="5" FormatString="0.#" ShowButtonSpinner="False"
+                                           IsVisible="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendByShare}" />
+                            <NumericUpDown Grid.Column="2" Value="{Binding Count}" Minimum="1" Maximum="10000" Increment="1" FormatString="0" ShowButtonSpinner="False"
+                                           IsVisible="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendByCount}" />
                             <NumericUpDown Grid.Column="3" Value="{Binding Dp}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" />
                             <Button Grid.Column="4" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnRemove" Tag="{Binding}" ToolTip.Tip="Remove"><v:Icon Kind="close" Size="12" /></Button>
                           </Grid>
+                          <StackPanel Orientation="Horizontal" Spacing="6" Margin="16,0,0,0" IsVisible="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendByVolume}">
+                            <TextBlock Text="density g/cm³" Classes="label" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding Density}" Minimum="0.3" Maximum="5" Increment="0.01" FormatString="0.000" Width="110" ShowButtonSpinner="False"
+                                           ToolTip.Tip="This polymer's density: volume shares become weight shares through it" />
+                          </StackPanel>
                           <TextBlock Text="{Binding ChainsText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" Margin="16,0,0,0" />
                         </StackPanel>
                       </DataTemplate>
