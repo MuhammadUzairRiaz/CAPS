@@ -61,6 +61,17 @@ public sealed partial class MainViewModel
         catch (Exception e) { SplitError = $"Could not open {Path.GetFileName(path)}: {e.Message}"; }
     }
 
+    /// <summary>A document already open (a state of the left one) on the right.</summary>
+    public void SetSplitBDocument(CapsDocument doc, string label)
+    {
+        _splitB?.Dispose();
+        _splitB = doc;
+        _splitPathB = label;
+        SplitError = "";
+        foreach (var n in new[] { nameof(SplitDocB), nameof(SplitTitleB), nameof(SplitHasB), nameof(SplitStatus) }) Raise(n);
+        RefreshSplit();
+    }
+
     /// <summary>The right document at the left one's frame (when it has that many).</summary>
     public void SplitFrameB()
     {

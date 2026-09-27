@@ -1432,6 +1432,7 @@
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Classes="small" Content="Export CSV…" Click="OnStatesCsv" ToolTip.Tip="Atom, element, molecule and shift of every atom" />
+                <Button Classes="small" Content="Open both in split view" Click="OnStatesSplit" ToolTip.Tip="The reference on the right, the moving state on the left, cameras synced" />
                 <Button Classes="small" Content="Take snapshot" Click="OnTakeSnapshot" ToolTip.Tip="Keep the structure now under a name, to compare later" />
               </StackPanel>
             </StackPanel>

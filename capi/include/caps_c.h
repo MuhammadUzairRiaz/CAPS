@@ -551,6 +551,8 @@ int32_t caps_set_atom_values(caps_doc* d, const double* values, int32_t n, int32
    heavy, backbone}, fit, fitted, atoms, reference, moving, max, mean, largest: [{atom, label, element, molecule,
    backbone, shift}], shifts}. The moving state is superposed on the reference (Horn 1987 quaternions). */
 int32_t caps_compare_states(caps_doc* d, const char* json, char* out, int32_t cap);
+/* One state of the document ({kind: current | start | frame | snapshot, index}) as a new document (v34), for the split view. */
+caps_doc* caps_state_document(caps_doc* d, const char* json);
 /* The Properties explorer (ABI 29). caps_structure_info: {ok, formula (Hill), composition {symbol: count}, title, format,
    atoms, bonds, molecules, frames, frame, timestep, mass (g/mol), charge, has_charges, unwrapped, bonds_from_file,
    cell {a, b, c, alpha, beta, gamma, volume, density, periodic [3]}, forcefield {name, complete, missing, types},

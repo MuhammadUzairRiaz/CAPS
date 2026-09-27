@@ -257,6 +257,11 @@ internal static class SelfTest
             var panel = vm.CompareRmsdAll;
             vm.StatesOpen = false;
             Check(rf < 1e-6 && Math.Abs(rr - (f2.X - f0.X)) < 1e-3 && panel.EndsWith("Å"), $"compare states: frame 3 on frame 1 RMSD {rf:0.######} Å after the fit, {rr:0.###} Å without · panel {panel}");
+            // both in the split view: frame 1 on the right, frame 3 on the left
+            var st = vm.Document.StateDocument("{\"kind\":\"frame\",\"index\":0}", "frame 1");
+            var right10 = st.Atom(10);
+            st.Dispose();
+            Check(Math.Abs(right10.X - f0.X) < 1e-9, $"state document: frame 1's atom 11 at x {right10.X:F3}");
         }
 
         foreach (var (bg, name) in new[] { (0, "dark"), (1, "white"), (2, "transparent") })

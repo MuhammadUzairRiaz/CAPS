@@ -92,6 +92,29 @@ public partial class MainViewModel
         if (pick != null) CompareReference = pick;
     }
 
+    /// <summary>Compare › both states side by side: the reference on the right of the split view, the moving state on the
+    /// left (the structure shown, at that frame when it is one).</summary>
+    public void OpenStatesInSplit()
+    {
+        if (_doc == null || _stRef == null || _stMov == null) return;
+        try
+        {
+            var right = _doc.StateDocument(_stRef.Json().ToJsonString(), "reference");
+            if (_stMov.Kind == "frame") Frame = _stMov.Index;
+            else if (_stMov.Kind != "current")
+            {
+                right.Dispose();
+                CompareError = "the split view shows the structure itself on the left: choose Now or a frame as the moving state";
+                return;
+            }
+            OpenSplit();
+            SetSplitBDocument(right, $"{_stRef.Label} (reference)");
+            SyncCamera = true;
+            Status = $"Split view: {_stMov.Label} (left) against {_stRef.Label} (right), cameras synced";
+        }
+        catch (Exception e) { CompareError = e.Message; }
+    }
+
     public void CompareStates()
     {
         if (_doc == null || !_stOpen || _stRef == null || _stMov == null) return;
