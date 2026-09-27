@@ -94,6 +94,29 @@ bool inside(ParticleShape sh, const Vec3& r, double R) {
       return std::max({ax, ay, az}) <= a && ax + ay + az <= 2 * a;
     }
     case ParticleShape::Fibre: return std::hypot(r[0], r[1]) <= R;
+    case ParticleShape::TruncatedOctahedron: {
+      const double s = R / std::sqrt(5.0);   // vertices at the permutations of (0, ±s, ±2s): squares at 2s, hexagons at 3s
+      return std::max({ax, ay, az}) <= 2 * s && ax + ay + az <= 3 * s;
+    }
+    case ParticleShape::Icosahedron: {
+      // inside every face: the face normals are the dodecahedron's vertex directions; inradius / circumradius 0.794654
+      static const std::vector<Vec3> normals = [] {
+        const double p = (1 + std::sqrt(5.0)) / 2, q = 1 / p;
+        std::vector<Vec3> v;
+        for (int a : {-1, 1})
+          for (int b : {-1, 1}) {
+            for (int c : {-1, 1}) v.push_back(Vec3{double(a), double(b), double(c)} * (1 / std::sqrt(3.0)));
+            v.push_back(Vec3{0, a * q, b * p} * (1 / std::sqrt(3.0)));
+            v.push_back(Vec3{a * q, b * p, 0} * (1 / std::sqrt(3.0)));
+            v.push_back(Vec3{a * p, 0, b * q} * (1 / std::sqrt(3.0)));
+          }
+        return v;
+      }();
+      const double ri = R * 0.7946544722917661;
+      for (const auto& nrm : normals)
+        if (dot(r, nrm) > ri) return false;
+      return true;
+    }
   }
   return false;
 }
@@ -107,6 +130,8 @@ const char* to_string(ParticleShape s) {
     case ParticleShape::Octahedron: return "octahedron";
     case ParticleShape::Cuboctahedron: return "cuboctahedron";
     case ParticleShape::Fibre: return "fibre";
+    case ParticleShape::TruncatedOctahedron: return "truncated octahedron";
+    case ParticleShape::Icosahedron: return "icosahedron";
   }
   return "sphere";
 }
@@ -117,7 +142,9 @@ ParticleShape particle_shape_from_string(const std::string& s) {
   if (s == "cuboctahedron") return ParticleShape::Cuboctahedron;
   if (s == "sphere") return ParticleShape::Sphere;
   if (s == "fibre" || s == "fiber" || s == "cylinder") return ParticleShape::Fibre;
-  throw std::invalid_argument("shape must be sphere, cube, octahedron, cuboctahedron or fibre");
+  if (s == "truncated octahedron" || s == "truncated-octahedron" || s == "truncated_octahedron") return ParticleShape::TruncatedOctahedron;
+  if (s == "icosahedron") return ParticleShape::Icosahedron;
+  throw std::invalid_argument("shape must be sphere, cube, octahedron, cuboctahedron, truncated octahedron, icosahedron or fibre");
 }
 
 // ---------------------------------------------------------------- graphene

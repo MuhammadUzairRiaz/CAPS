@@ -1240,6 +1240,25 @@ internal static class SelfTest
             vm.HoldOn = false;
             vm.NanoKind = 1;
         }
+        {
+            // silica for rubber: a passivated quartz sphere, TESPT grafted on its silanols (four sulfurs each), undone with Undo
+            vm.OpenNano();
+            vm.NanoKind = 2;
+            vm.ParticleCrystal = Math.Max(0, vm.Crystals.ToList().FindIndex(c => c.Name.Contains("quartz", StringComparison.OrdinalIgnoreCase)));
+            vm.ParticleRadius = 10;
+            vm.ParticlePassivate = true;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var bare = vm.Document!.Summary().Atoms;
+            vm.SilanePick = 0;
+            vm.SilaneFractionD = 0.2m;
+            vm.GraftSilane();
+            var grafted = vm.Document!.Summary().Atoms;
+            var sulfur = Enumerable.Range(0, (int)grafted).Count(i => vm.Document.Atom(i).Element == 16);
+            vm.UndoEdit(false);
+            Check(grafted > bare && sulfur > 0 && sulfur % 4 == 0 && (grafted - bare) == sulfur / 4 * 63 && vm.Document!.Summary().Atoms == bare,
+                  $"silane: TESPT on silica · {bare} → {grafted} atoms, {sulfur / 4} grafts · undone · {vm.Status}");
+            vm.NanoKind = 1;
+        }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
 
         // First-run tour: starts once with the first structure (not in self-tests), steps, remembers it was done

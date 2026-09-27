@@ -55,7 +55,14 @@ void Json::push_back(Json v) {
   if (kind_ != Array) throw JsonError("not an array");
   a_.push_back(std::move(v));
 }
-double Json::num(const std::string& k, double def) const { return has(k) && (*this)[k].is_number() ? (*this)[k].number() : def; }
+// a number, or true / false as 1 / 0 (options written from Python or by hand say passivate: true)
+double Json::num(const std::string& k, double def) const {
+  if (!has(k)) return def;
+  const Json& v = (*this)[k];
+  if (v.is_number()) return v.number();
+  if (v.kind() == Bool) return v.boolean() ? 1.0 : 0.0;
+  return def;
+}
 std::string Json::text(const std::string& k, const std::string& def) const {
   return has(k) && (*this)[k].is_string() ? (*this)[k].str() : def;
 }
