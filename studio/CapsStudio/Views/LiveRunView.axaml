@@ -13,8 +13,8 @@
         </DockPanel>
       </Border>
       <Panel Grid.Row="1" Background="{DynamicResource Bg0B}">
-        <v:MolView x:Name="View" IsVisible="{Binding RunLiveShown}" />
-        <TextBlock IsVisible="{Binding !RunLiveShown}" Text="The atoms move here while the run goes (drag rotates, the wheel zooms)" Classes="dim"
+        <v:MolView x:Name="View" IsVisible="False" />
+        <TextBlock x:Name="Hint" Text="The atoms move here while the run goes (drag rotates, the wheel zooms)" Classes="dim"
                    HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="20" />
         <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Classes="chip" IsVisible="{Binding RunLiveShown}" IsHitTestVisible="False">
           <TextBlock Text="{Binding RunLiveText}" Foreground="{DynamicResource MutedB}" />
