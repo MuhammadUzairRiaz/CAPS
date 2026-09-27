@@ -733,6 +733,7 @@ public partial class MainWindow : Window
             case Key.Right: _vm.StepFrame(1); e.Handled = true; break;
             case Key.Space: TogglePlay(); e.Handled = true; break;
             case Key.R when e.KeyModifiers == KeyModifiers.None: _vm.ResetView(); e.Handled = true; break;
+            case Key.A when e.KeyModifiers == KeyModifiers.None: _vm.ToggleAutoClean(); e.Handled = true; break;
             case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
             case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.LensOn: _vm.LensHold = true; e.Handled = true; break;
             case Key.Escape: _vm.ClearSelection(); e.Handled = true; break;

@@ -3026,6 +3026,7 @@
         <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center"
                    Margin="18,0" TextTrimming="CharacterEllipsis" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+          <TextBlock Text="{Binding AutoCleanText}" IsVisible="{Binding AutoCleanOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" />
           <TextBlock Text="Mouse: pick · drag rotates · ⇧ drag pans" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock Text="Double precision" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock x:Name="RenderStat" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
