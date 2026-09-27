@@ -2652,7 +2652,7 @@
                     <TextBlock Classes="dim" TextWrapping="Wrap" Text="Bonded systems converge slowly: the fluctuation term cancels most of the Born term. Check the block errors; the static method is cheaper." />
                   </StackPanel>
                   <TextBlock Classes="dim" TextWrapping="Wrap"
-                             Text="Energies use the force field assigned in Field; without one, the built-in GAFF typing of C and H. Protocols (Tg, stress–strain, static Cij) run on a copy of the current frame. Grey calculations are not built yet." />
+                             Text="Energies use the force field assigned in Field; without one, the built-in GAFF typing of C and H. Protocols (Tg, stress–strain, static Cij) run on a copy of the current frame." />
                 </StackPanel>
               </ScrollViewer>
             </Border>
