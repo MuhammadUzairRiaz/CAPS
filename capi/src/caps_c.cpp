@@ -13,6 +13,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/cbmc.hpp"
+#include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
 #include "caps/elements.hpp"
@@ -1427,6 +1428,21 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       if (!lammps_error.empty()) throw std::runtime_error("LAMMPS: " + lammps_error + "; GROMACS: " + gromacs_error);
       if (!lammps) throw;
     }
+    std::string dlpoly_error;
+    if (flag("dlpoly", false)) try {   // STEM_dlpoly/FIELD, CONFIG, CONTROL (DL_POLY 4, units kcal)
+      caps::DlpolyOptions dop;
+      dop.title = stem;
+      dop.cutoff = e.cutoff;
+      dop.temperature = run.temperature;
+      dop.steps = long(run.steps);
+      dop.timestep_fs = caps::lammps_timestep(run, ff);
+      for (const auto& n : caps::write_dlpoly(s, ff, (folder / (stem + "_dlpoly")).string(), dop)) notes.push_back("DL_POLY: " + n);
+      written.push_back({stem + "_dlpoly/FIELD", "DL_POLY force field (units kcal): molecular types, every term, van der Waals pairs"});
+      written.push_back({stem + "_dlpoly/CONFIG", "DL_POLY coordinates about the cell centre"});
+      written.push_back({stem + "_dlpoly/CONTROL", "a generic DL_POLY NVT run with the same cut-off (edit before use)"});
+    } catch (const std::exception& ex) {
+      dlpoly_error = ex.what();
+    }
     if (d->field->rep.estimated_terms) {
       std::string ex;
       for (size_t k = 0; k < d->field->rep.estimated.size() && k < 3; ++k) ex += (k ? "; " : "") + d->field->rep.estimated[k];
@@ -1469,6 +1485,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     checks["density"] = s.density();
     r["ok"] = true;
     if (!gromacs_error.empty()) r["gromacs_error"] = gromacs_error;
+    if (!dlpoly_error.empty()) r["dlpoly_error"] = dlpoly_error;
     if (!lammps_error.empty()) r["lammps_error"] = lammps_error;
     r["files"] = std::move(files);
     r["notes"] = std::move(notes);

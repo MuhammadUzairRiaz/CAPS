@@ -103,7 +103,8 @@ struct FFDef {
   //                     matching rule, since the angle-angle terms depend on it
   std::string improper_order = "center3_sorted";
   // How a matched improper is written (and evaluated): "" as matched; "center2": the matched quartet i j C l written
-  // i C j l (the DL-derived OPLS files: their rules put the centre third, their LAMMPS / DL_POLY terms second)
+  // i C j l (the DL-derived OPLS files: their rules put the centre third, their LAMMPS terms second; their DL_POLY
+  // FIELD terms are j i C l, which write_dlpoly reproduces)
   std::string improper_written;
   // How equivalences are used: "replace" (DL_FIELD: look up by the equivalent name only) or "fallback"
   // (msi2lmp: the type's own name first, then the equivalent).

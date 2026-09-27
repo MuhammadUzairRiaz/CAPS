@@ -10,6 +10,7 @@
 #include <memory>
 #include <tuple>
 #include <algorithm>
+#include <cstdlib>
 #include <cmath>
 #include <fstream>
 #include <functional>
@@ -1282,6 +1283,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   ff.native_pair = def.pair_style;
   ff.native_dihedral = def.dihedral_style;
   ff.native_improper = def.improper_style;
+  ff.improper_written = def.improper_written;
   ff.native_cutoff = def.cutoff;
   ff.native_timestep = def.timestep;
   ff.native_special = def.special_style;
@@ -2166,6 +2168,53 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
                 if (hit) { best = &r; matched = pm; break; }
               }
             }
+          }
+          // The DL_POLY files of the DL-derived force fields (equivalences replace names, impropers keep the rule's atom
+          // order): explicit rules before wildcard ones; the outer atoms read by index, backwards, then in any other
+          // order, each against the rules from the last; the first fit is written in the rule's order (a wildcard rule
+          // with the outer atoms by index). Their LAMMPS files may use another order, sometimes from another rule.
+          const bool dl_derived = def.improper_matched_order && def.equivalence == "replace" && !by_type;
+          if (best && dl_derived && ff.impropers_dlpoly_ok) {
+            std::array<uint32_t, 3> sa = o;
+            std::sort(sa.begin(), sa.end());
+            static constexpr int kPermF[6][3] = {{0, 1, 2}, {2, 1, 0}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}};
+            const FFRule* dr = nullptr;
+            std::array<uint32_t, 4> dq{};
+            auto wild = [](const FFRule& r) { return std::any_of(r.match.begin(), r.match.end(), [](const std::string& m) { return m == "*" || m == "X"; }); };
+            for (int want_wild = 0; want_wild < 2 && !dr; ++want_wild)   // explicit rules first, in any order of the atoms
+              for (const auto& pi : kPermF) {
+                std::vector<std::vector<const std::string*>> tys;   // the types' own names, then their equivalents
+                for (const std::vector<std::string>* NN : {static_cast<const std::vector<std::string>*>(&T), static_cast<const std::vector<std::string>*>(&Ni), static_cast<const std::vector<std::string>*>(&Ni2)})
+                  if (!NN->empty()) {
+                    std::vector<const std::string*> ty(4);
+                    for (int pos = 0, q = 0; pos < 4; ++pos) ty[size_t(pos)] = pos == cpos ? &(*NN)[c] : &(*NN)[sa[pi[q++]]];
+                    tys.push_back(std::move(ty));
+                  }
+                for (size_t ri = def.impropers.size(); ri-- > 0 && !dr;) {
+                  const auto& r = def.impropers[ri];
+                  if (r.match.size() != 4 || wild(r) != bool(want_wild)) continue;
+                  for (const auto& ty : tys)
+                    if (match_fw(r.match, ty)) {
+                      dr = &r;
+                      for (int pos = 0, q = 0; pos < 4; ++pos) dq[size_t(pos)] = pos == cpos ? c : sa[pi[q++]];
+                      break;
+                    }
+                }
+                if (dr) break;
+              }
+            if (dr && wild(*dr))   // a wildcard rule: written with the outer atoms by index
+              for (int pos = 0, q = 0; pos < 4; ++pos) dq[size_t(pos)] = pos == cpos ? c : sa[q++];
+            const std::string dst = dr ? (dr->style.empty() ? def.improper_style : dr->style) : "";
+            const auto& dp = dr ? dr->params : std::vector<double>{};
+            if (dr && dst == "cvff" && dp.size() >= 3) {
+              if (dp[0] != 0) ff.impropers_dlpoly.push_back({dq[0], dq[1], dq[2], dq[3], dp[0], int(dp[2]), dp[1] >= 0 ? 0.0 : kPi});
+            } else if (dr && dst == "fourier" && !dp.empty()) {
+              for (int q = 0; q < int(dp[0]); ++q)
+                if (dp.at(1 + 3 * q) != 0) ff.impropers_dlpoly.push_back({dq[0], dq[1], dq[2], dq[3], dp.at(1 + 3 * q), int(dp.at(2 + 3 * q)), dp.at(3 + 3 * q) * kDeg});
+            } else if (dst == "cvff" || dst == "fourier" || !dr) {
+              ff.impropers_dlpoly_ok = false;   // a miss this path does not follow: the writer falls back
+            }   // other forms (inversions, class II, harmonic) are not in ff.impropers: written from their own lists
+            ff.impropers_dlpoly_set = true;
           }
           // written with the centre second (the DL-derived OPLS files): the neighbour with the highest index goes last
           // when a rule allows it there, the other two in ascending order — the order those files' terms are written in
