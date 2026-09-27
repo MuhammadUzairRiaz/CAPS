@@ -2012,6 +2012,14 @@
                           </Grid>
                           <ComboBox ItemsSource="{Binding Choices}" SelectedIndex="{Binding ChoiceIndex}" IsVisible="{Binding IsChoice}" HorizontalAlignment="Stretch" />
                           <CheckBox Classes="toggle" Content="{Binding Label}" IsChecked="{Binding On}" IsVisible="{Binding IsBool}" />
+                          <StackPanel Spacing="6" IsVisible="{Binding IsCode}">
+                            <TextBox Text="{Binding Draft}" Classes="mono" FontSize="11.5" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                                     MinHeight="170" MaxHeight="340" ScrollViewer.HorizontalScrollBarVisibility="Auto" KeyDown="OnStepCodeKey" Tag="{Binding}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                              <Button Classes="primary small" Content="Run step" Click="OnStepCodeRun" Tag="{Binding}" ToolTip.Tip="Runs the step on the shown frame (⌘↵)" />
+                              <TextBlock Text="edited · not run yet" Classes="dim" FontSize="11.5" VerticalAlignment="Center" IsVisible="{Binding DraftChanged}" />
+                            </StackPanel>
+                          </StackPanel>
                         </StackPanel>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
