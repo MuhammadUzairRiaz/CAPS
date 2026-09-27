@@ -856,6 +856,57 @@ public sealed partial class MainViewModel
         PipeTableChanged?.Invoke();
     }
 
+    /// <summary>Every row of the inspector's tab as CSV: the particles matching the filter, the bonds, the attributes, or
+    /// the chosen data table (all its rows, not the page shown).</summary>
+    public void ExportInspectorCsv(string path)
+    {
+        if (_doc == null) return;
+        var inv = CultureInfo.InvariantCulture;
+        static string Q(string v) => v.IndexOfAny([',', '"', '\n', '\r']) >= 0 ? "\"" + v.Replace("\"", "\"\"") + "\"" : v;
+        var sb = new System.Text.StringBuilder();
+        var n = 0;
+        try
+        {
+            if (_inspectorTab == 2)
+            {
+                sb.Append("Attribute,Value\n");
+                foreach (var a in PipeAttributes) { sb.Append(Q(a.Key)).Append(',').Append(Q(a.Value)).Append('\n'); ++n; }
+            }
+            else if (_inspectorTab == 3)
+            {
+                var coreTables = _pipeResult?["tables"] as JsonArray;
+                var ncore = coreTables?.Count ?? 0;
+                var t = _pipeTable < ncore ? coreTables![_pipeTable] as JsonObject : _pipeTable == ncore ? _series : null;
+                if (t?["rows"] is not JsonArray rows || t["columns"] is not JsonArray cols) { Status = "No table to export"; return; }
+                var labels = t["labels"] as JsonArray;
+                var head = cols.Select(c => (string?)c ?? "").ToList();
+                if (labels != null) head.Insert(1, (string?)t["label_column"] ?? "Label");
+                sb.Append(string.Join(",", head.Select(Q))).Append('\n');
+                var ri = 0;
+                foreach (var r in rows)
+                {
+                    var cells = ((JsonArray)r!).Select(x => x is null ? "" : ((double?)x ?? 0).ToString("R", inv)).ToList();
+                    if (labels != null) cells.Insert(1, (string?)labels[ri] ?? "");
+                    sb.Append(string.Join(",", cells.Select(Q))).Append('\n');
+                    ++ri; ++n;
+                }
+            }
+            else
+            {
+                var j = JsonNode.Parse(_inspectorTab == 0 ? _doc.PipelineParticles(_inspectorFilter, 0, int.MaxValue / 2) : _doc.PipelineBonds(0, int.MaxValue / 2))!;
+                sb.Append(string.Join(",", ((JsonArray)j["columns"]!).Select(c => Q((string?)c ?? "")))).Append('\n');
+                foreach (var r in (JsonArray)j["rows"]!)
+                {
+                    sb.Append(string.Join(",", ((JsonArray)r!["cells"]!).Select(x => Q((string?)x ?? "")))).Append('\n');
+                    ++n;
+                }
+            }
+            System.IO.File.WriteAllText(path, sb.ToString());
+            Status = $"Wrote {n:N0} rows to {System.IO.Path.GetFileName(path)}";
+        }
+        catch (Exception e) { Status = "Could not export: " + e.Message; }
+    }
+
     /// <summary>The data inspector's current tab: particles (filtered), bonds, attributes or a data table.</summary>
     public void LoadInspector()
     {

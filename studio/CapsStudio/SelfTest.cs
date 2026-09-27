@@ -921,6 +921,19 @@ internal static class SelfTest
             Check(vm.HasTimeline && spark.Length == 3 && mean.Length == 3 && inRange && Math.Abs(mean[1].Y - spark.Average(p => p.Y)) < 1e-9,
                   $"timeline running mean: {spark.Length} frames of {vm.SparkAttribute}, mean {mean.Length}");
             vm.SeriesWindow = 1;
+            // the inspector as CSV: every particle matching the filter (not only the page), and a data table
+            vm.InspectorTab = 0;
+            vm.InspectorFilter = "Molecule == 1";
+            var csv = Path.Combine(outDir, "caps-selftest-particles.csv");
+            vm.ExportInspectorCsv(csv);
+            var lines = File.Exists(csv) ? File.ReadAllLines(csv) : [];
+            vm.InspectorTab = 3;
+            var tcsv = Path.Combine(outDir, "caps-selftest-table.csv");
+            vm.ExportInspectorCsv(tcsv);
+            var tlines = File.Exists(tcsv) ? File.ReadAllLines(tcsv) : [];
+            Check(lines.Length == 131 && lines[0].Contains("Molecule") && tlines.Length > 2, $"inspector CSV: {lines.Length - 1} particles of molecule 1 · table {tlines.Length - 1} rows · {vm.Status}");
+            vm.InspectorFilter = "";
+            vm.InspectorTab = 0;
             vm.ClearPipeline();
             vm.SetModule(8);
         }
