@@ -33,7 +33,7 @@ public partial class MainViewModel
         Code($"import sys\nsys.path.insert(0, {R(py)})   # the caps package shipped with the Studio\nimport caps\n\ndoc = caps.open({R(file)})\ndoc.summary()");
         var fieldLine = Field.Assigned && Field.Selected is { } fe && fe.File.Length > 0
             ? $"report = doc.field.assign({R(fe.File)})\nprint(report[\"complete\"], report.get(\"missing\", [])[:5])"
-            : "# a force field from the library: pcff-frc, compass-frc, oplsaa2024-moltemplate, gaff2, uff …\nreport = doc.field.assign(\"uff\")\nprint(report[\"complete\"])";
+            : "# a force field from the library: pcff, compass, opls2005, oplsaa2024-moltemplate, gaff2, uff …\nreport = doc.field.assign(\"uff\")\nprint(report[\"complete\"])";
         Code(fieldLine);
         Code("props = doc.analyze(\"density,rdf\")\nprops");
         Code("doc.view(style=\"ball-and-stick\")");

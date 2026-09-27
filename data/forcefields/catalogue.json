@@ -101,6 +101,11 @@
     "angles": 541,
     "dihedrals": 586,
     "impropers": 70
+   },
+   "list": {
+    "label": "INTERFACE (IFF, PCFF)",
+    "key": "iff_pcff",
+    "order": 33
    }
   },
   {
@@ -126,6 +131,11 @@
     "angles": 362,
     "dihedrals": 118,
     "impropers": 36
+   },
+   "list": {
+    "label": "INTERFACE (IFF, CVFF)",
+    "key": "iff_cvff",
+    "order": 34
    }
   },
   {
@@ -151,6 +161,11 @@
     "angles": 289,
     "dihedrals": 436,
     "impropers": 93
+   },
+   "list": {
+    "label": "PCFF",
+    "key": "pcff",
+    "order": 0
    }
   },
   {
@@ -176,6 +191,11 @@
    "typing": {
     "rules": "typing/compass.typing.json",
     "evidence": "CAPS COMPASS rules from the published type definitions (bench/typing/make_compass_rules.py)"
+   },
+   "list": {
+    "label": "COMPASS",
+    "key": "compass",
+    "order": 1
    }
   },
   {
@@ -201,6 +221,11 @@
     "angles": 134,
     "dihedrals": 59,
     "impropers": 44
+   },
+   "list": {
+    "label": "CVFF",
+    "key": "cvff",
+    "order": 2
    }
   },
   {
@@ -227,6 +252,11 @@
     "angles": 3565,
     "dihedrals": 2847,
     "impropers": 330
+   },
+   "list": {
+    "label": "OPLS 2005",
+    "key": "opls2005",
+    "order": 3
    }
   },
   {
@@ -250,6 +280,11 @@
    "typing": {
     "rules": "typing/opls2005.typing.json",
     "evidence": "OPLS 2005's CAPS rules; the supplement adds bonds and angles only"
+   },
+   "list": {
+    "label": "OPLS-2020",
+    "key": "opls2020",
+    "order": 9
    }
   },
   {
@@ -275,6 +310,11 @@
    "typing": {
     "rules": "typing/opls-aam.typing.json",
     "evidence": "CAPS rules from OPLS-AA/M's type definitions (bench/typing/make_opls_family_rules.py)"
+   },
+   "list": {
+    "label": "OPLS-AA/M",
+    "key": "opls_aam",
+    "order": 10
    }
   },
   {
@@ -300,6 +340,11 @@
    "typing": {
     "rules": "typing/opls-clp.typing.json",
     "evidence": "CAPS rules from CL&P ionic liquids (OPLS-AA based)'s type definitions (bench/typing/make_opls_family_rules.py)"
+   },
+   "list": {
+    "label": "OPLS ionic liquids",
+    "key": "opls_cl_p",
+    "order": 11
    }
   },
   {
@@ -325,6 +370,11 @@
    "typing": {
     "rules": "typing/opls-des.typing.json",
     "evidence": "CAPS rules from OPLS-DES deep eutectic solvents's type definitions (bench/typing/make_opls_family_rules.py)"
+   },
+   "list": {
+    "label": "OPLS deep-eutectic solvents",
+    "key": "opls_des",
+    "order": 12
    }
   },
   {
@@ -350,6 +400,11 @@
    "typing": {
     "rules": "typing/amber.typing.json",
     "evidence": "CAPS rules from AMBER (Cornell et al. 1995 family)'s type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "AMBER",
+    "key": "amber",
+    "order": 16
    }
   },
   {
@@ -375,6 +430,11 @@
     "angles": 4642,
     "dihedrals": 1075,
     "impropers": 185
+   },
+   "list": {
+    "label": "AMBER GAFF",
+    "key": "amber_gaff",
+    "order": 7
    }
   },
   {
@@ -400,6 +460,11 @@
     "angles": 9731,
     "dihedrals": 2322,
     "impropers": 252
+   },
+   "list": {
+    "label": "GAFF / AMBER25",
+    "key": "amber25_gaff",
+    "order": 17
    }
   },
   {
@@ -425,6 +490,11 @@
    "typing": {
     "rules": "typing/charmm.typing.json",
     "evidence": "CAPS rules from CHARMM (library set)'s type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "CHARMM",
+    "key": "charmm",
+    "order": 18
    }
   },
   {
@@ -450,6 +520,11 @@
    "typing": {
     "rules": "typing/charmm19.typing.json",
     "evidence": "CAPS rules from CHARMM19 united atom's type definitions (bench/typing/make_biomolecular_rules.py); united atom"
+   },
+   "list": {
+    "label": "CHARMM19",
+    "key": "charmm19",
+    "order": 19
    }
   },
   {
@@ -475,6 +550,11 @@
    "typing": {
     "rules": "typing/charmm22-prot.typing.json",
     "evidence": "CAPS rules from CHARMM22 proteins's type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "CHARMM22 protein",
+    "key": "charmm22_prot",
+    "order": 20
    }
   },
   {
@@ -500,6 +580,11 @@
    "typing": {
     "rules": "typing/charmm36-carb.typing.json",
     "evidence": "CAPS rules from CHARMM36 carbohydrates's type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "CHARMM36 carbohydrate",
+    "key": "charmm36_carb",
+    "order": 21
    }
   },
   {
@@ -525,6 +610,11 @@
     "angles": 1587,
     "dihedrals": 3272,
     "impropers": 127
+   },
+   "list": {
+    "label": "CHARMM36 CGenFF",
+    "key": "charmm36_cgenff",
+    "order": 22
    }
   },
   {
@@ -550,6 +640,11 @@
    "typing": {
     "rules": "typing/charmm36-lipid.typing.json",
     "evidence": "CAPS rules from CHARMM36 lipids's type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "CHARMM36 lipid",
+    "key": "charmm36_lipid",
+    "order": 23
    }
   },
   {
@@ -575,6 +670,11 @@
    "typing": {
     "rules": "typing/charmm36-nucl.typing.json",
     "evidence": "CAPS rules from CHARMM36 nucleic acids's type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "CHARMM36 nucleic acid",
+    "key": "charmm36_nucl",
+    "order": 24
    }
   },
   {
@@ -600,6 +700,11 @@
    "typing": {
     "rules": "typing/charmm36-prot.typing.json",
     "evidence": "CAPS rules from CHARMM36 proteins's type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "CHARMM36",
+    "key": "charmm36",
+    "order": 6
    }
   },
   {
@@ -625,6 +730,11 @@
    "typing": {
     "rules": "typing/dreiding.typing.json",
     "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py); this file lists torsions for common neighbourhoods with the barrier already divided; a torsion it does not list takes DREIDING's own rule by the hybridisation of its central atoms (Mayo, Olafson, Goddard 1990, cases a–j), its barrier divided over the torsions about the bond"
+   },
+   "list": {
+    "label": "DREIDING",
+    "key": "dreiding",
+    "order": 13
    }
   },
   {
@@ -650,6 +760,11 @@
    "typing": {
     "rules": "typing/gromos-54a7.typing.json",
     "evidence": "CAPS rules from GROMOS 54A7 (united atom)'s type definitions (bench/typing/make_biomolecular_rules.py); united atom"
+   },
+   "list": {
+    "label": "GROMOS 54A7",
+    "key": "gromos_54a7",
+    "order": 8
    }
   },
   {
@@ -675,6 +790,11 @@
    "typing": {
     "rules": "typing/trappe-ua.typing.json",
     "evidence": "CAPS rules from TraPPE-UA's type definitions (bench/typing/make_biomolecular_rules.py); united atom"
+   },
+   "list": {
+    "label": "TraPPE united-atom",
+    "key": "trappe_ua",
+    "order": 15
    }
   },
   {
@@ -700,6 +820,11 @@
    "typing": {
     "rules": "typing/trappe-eh.typing.json",
     "evidence": "CAPS rules from TraPPE-EH (explicit-hydrogen aromatics)'s type definitions (bench/typing/make_biomolecular_rules.py)"
+   },
+   "list": {
+    "label": "TraPPE-EH",
+    "key": "trappe_eh",
+    "order": 5
    }
   },
   {
@@ -728,6 +853,11 @@
    "typing": {
     "rules": "typing/misc.typing.json",
     "evidence": "CAPS rules (bench/typing/make_misc_rules.py): 16 rules"
+   },
+   "list": {
+    "label": "Miscellaneous",
+    "key": "misc_ff",
+    "order": 14
    }
   },
   {
@@ -751,6 +881,11 @@
    "typing": {
     "rules": "typing/inorganic-binary-halides.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 32 rules, 16 compounds"
+   },
+   "list": {
+    "label": "Binary halides",
+    "key": "inorganic_binary_halide",
+    "order": 25
    }
   },
   {
@@ -774,6 +909,11 @@
    "typing": {
     "rules": "typing/inorganic-binary-misc.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 2 rules, 1 compounds"
+   },
+   "list": {
+    "label": "Binary miscellaneous",
+    "key": "inorganic_binary_misc",
+    "order": 26
    }
   },
   {
@@ -797,6 +937,11 @@
    "typing": {
     "rules": "typing/inorganic-binary-oxides.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 82 rules, 23 compounds, 20 shelled cores"
+   },
+   "list": {
+    "label": "Binary oxides",
+    "key": "inorganic_binary_oxide",
+    "order": 27
    }
   },
   {
@@ -822,6 +967,11 @@
    "typing": {
     "rules": "typing/inorganic-clay.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 26 rules"
+   },
+   "list": {
+    "label": "Clay",
+    "key": "inorganic_clay",
+    "order": 28
    }
   },
   {
@@ -845,6 +995,11 @@
    "typing": {
     "rules": "typing/inorganic-glass.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 22 rules, 5 compounds, 1 shelled cores"
+   },
+   "list": {
+    "label": "Glass",
+    "key": "inorganic_glass",
+    "order": 29
    }
   },
   {
@@ -868,6 +1023,11 @@
    "typing": {
     "rules": "typing/inorganic-ternary-oxides.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 70 rules, 13 compounds, 18 shelled cores"
+   },
+   "list": {
+    "label": "Ternary oxides",
+    "key": "inorganic_ternary_oxide",
+    "order": 30
    }
   },
   {
@@ -891,6 +1051,11 @@
    "typing": {
     "rules": "typing/inorganic-zeolite.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 11 rules, 3 compounds"
+   },
+   "list": {
+    "label": "Zeolite",
+    "key": "inorganic_zeolite",
+    "order": 31
    }
   },
   {
@@ -914,6 +1079,11 @@
    "typing": {
     "rules": "typing/inorganic-zeolite-hill-sauer.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 10 rules"
+   },
+   "list": {
+    "label": "Zeolite Hill-Sauer",
+    "key": "inorganic_zeolite_hs",
+    "order": 32
    }
   },
   {
@@ -1014,6 +1184,11 @@
    "typing": {
     "rules": "typing/oplsaa2024-moltemplate.typing.json",
     "evidence": "CAPS OPLS-AA number rules (bench/typing/make_oplsaa_rules.py); on the polymer library every fully typed oligomer is neutral and its charges agree with an independent OPLS bond-increment assignment (bench/typing/check_oplsaa_numbers.py)"
+   },
+   "list": {
+    "label": "OPLS-AA 2024",
+    "key": "oplsaa2024",
+    "order": 4
    }
   },
   {
@@ -1268,6 +1443,11 @@
    "typing": {
     "rules": "typing/martini3.typing.json",
     "evidence": "beads typed by name; molecules from the Martini 3 parameter files"
+   },
+   "list": {
+    "label": "Martini 3",
+    "key": "martini3",
+    "order": 35
    }
   },
   {
@@ -1797,5 +1977,6 @@
    "notes": "the same parameters as tip3p_2004 (style or comment variant)",
    "file": null
   }
- ]
+ ],
+ "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"
 }
