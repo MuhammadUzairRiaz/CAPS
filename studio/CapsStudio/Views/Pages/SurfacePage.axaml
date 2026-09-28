@@ -180,23 +180,32 @@
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="8">
                   <DockPanel>
-                    <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0"><TextBlock Text="max strain 2.0 %" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="max strain %" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                      <NumericUpDown Value="{Binding SurfMaxStrain}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.0" Width="96"
+                                     ToolTip.Tip="The largest shear the slab's rectangular cell may take, and the strain above which a stacked layer is flagged" />
+                    </StackPanel>
                     <TextBlock Text="LATTICE MATCHING" Classes="h3" VerticalAlignment="Center" />
                   </DockPanel>
-                  <Grid ColumnDefinitions="*,80,70,70" RowDefinitions="Auto,Auto,Auto" Margin="0,2,0,0">
+                  <Grid ColumnDefinitions="*,80,80,80" Margin="0,2,0,0">
                     <TextBlock Text="Layer" Classes="label" />
                     <TextBlock Grid.Column="1" Text="Supercell" Classes="label" />
-                    <TextBlock Grid.Column="2" Text="Shear" Classes="label" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="2" Text="Strain a · shear" Classes="label" HorizontalAlignment="Right" />
                     <TextBlock Grid.Column="3" Text="Strain b" Classes="label" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Row="1" Text="{Binding SurfTitle}" FontSize="12.5" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SurfMatchCell}" Classes="mono" FontSize="12" Margin="0,6,0,0" />
-                    <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SurfShear}" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Row="1" Grid.Column="3" Text="0.00 %" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Row="2" Text="{Binding FilmName}" FontSize="12.5" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" IsVisible="{Binding SurfFilm}" />
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FilmMatchText}" Classes="mono" FontSize="12" Margin="0,6,0,0" IsVisible="{Binding SurfFilm}" />
-                    <TextBlock Grid.Row="2" Grid.Column="2" Text="—" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" IsVisible="{Binding SurfFilm}" />
-                    <TextBlock Grid.Row="2" Grid.Column="3" Text="—" Classes="mono" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Right" IsVisible="{Binding SurfFilm}" />
                   </Grid>
+                  <ItemsControl ItemsSource="{Binding SurfMatchRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:MatchRow">
+                        <Grid ColumnDefinitions="*,80,80,80" Margin="0,4,0,0">
+                          <TextBlock Text="{Binding Layer}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="1" Text="{Binding Supercell}" Classes="mono" FontSize="12" />
+                          <TextBlock Grid.Column="2" Text="{Binding StrainA}" Classes="mono" FontSize="12" HorizontalAlignment="Right" Classes.err="{Binding TooStrained}" />
+                          <TextBlock Grid.Column="3" Text="{Binding StrainB}" Classes="mono" FontSize="12" HorizontalAlignment="Right" Classes.err="{Binding TooStrained}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{Binding SurfMatchNote}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding SurfMatchNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
               </Border>
 
