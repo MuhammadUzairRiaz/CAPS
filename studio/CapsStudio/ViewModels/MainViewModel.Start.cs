@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CapsStudio.Interop;
@@ -133,7 +134,7 @@ public sealed partial class MainViewModel
     public int QuickKind { get; private set; }
     public string QuickBadge { get; private set; } = "";
     public string QuickAction { get; private set; } = "Open";
-    public bool QuickReady => QuickKind is 1 or 2 or 3;
+    public bool QuickReady => QuickKind is 1 or 2 or 3 or 5;
     public bool QuickHasBadge => QuickBadge.Length > 0;
     private int _quickModule = -1;
 
@@ -148,6 +149,9 @@ public sealed partial class MainViewModel
             if (t.Length == 0) (QuickKind, QuickBadge, QuickAction) = (0, "", "Open");
             else if (LooksLikePath(t) && File.Exists(ExpandHome(t))) (QuickKind, QuickBadge, QuickAction) = (1, "File found", "Open");
             else if (FindModule(t) is { } m) { _quickModule = m.Module; (QuickKind, QuickBadge, QuickAction) = (3, m.Name, "Go"); }
+            else if (IsSmiles(t) && (t.Any(ch => "=#()[]@/\\0123456789".Contains(ch)) || t.All(ch => !char.IsLower(ch))))
+                (QuickKind, QuickBadge, QuickAction) = (2, "SMILES detected", "Build 3D");   // CCO, c1ccccc1 … are SMILES, not names
+            else if (FindNamed(t) is { } named) { _quickNamed = named; (QuickKind, QuickBadge, QuickAction) = (5, named.Badge, named.Polymer ? "Build polymer" : "Build 3D"); }
             else if (IsSmiles(t)) (QuickKind, QuickBadge, QuickAction) = (2, "SMILES detected", "Build 3D");
             else if (LooksLikePath(t)) (QuickKind, QuickBadge, QuickAction) = (4, "No such file", "Open");
             else (QuickKind, QuickBadge, QuickAction) = (4, "Not recognised", "Open");
@@ -155,7 +159,7 @@ public sealed partial class MainViewModel
             Raise(nameof(QuickOk)); Raise(nameof(QuickBad));
         }
     }
-    public bool QuickOk => QuickKind is 1 or 2 or 3;
+    public bool QuickOk => QuickKind is 1 or 2 or 3 or 5;
     public bool QuickBad => QuickKind == 4;
 
     /// <summary>Acts on the quick-start box; returns the file to open (the window opens it), or null.</summary>
@@ -166,8 +170,46 @@ public sealed partial class MainViewModel
             case 1: return ExpandHome(_quick.Trim().Trim('"', '\''));
             case 3: SetModule(_quickModule); return null;
             case 2: OpenBuilder(_quick.Trim()); return null;
+            case 5 when _quickNamed is { } n:
+                if (n.Polymer && n.Library != null) { UseLibrary(n.Library, null); SetModule(13); }
+                else OpenBuilder(n.Smiles);
+                return null;
             default: return null;
         }
+    }
+
+    // names CAPS knows from its own libraries: the polymer library, the solvents, the fragments (their attachment points
+    // capped with hydrogen)
+    private sealed record Named(string Badge, string Smiles, bool Polymer, LibraryEntry? Library);
+    private Named? _quickNamed;
+    private List<(string Name, string Smiles)>? _molNames;
+    private Named? FindNamed(string t)
+    {
+        if (t.Length < 3) return null;
+        var w = t.ToLowerInvariant();
+        LoadPolymerLibrary();
+        var poly = PolymerLibrary.FirstOrDefault(e => !e.Copolymer && e.Name.Equals(t, StringComparison.OrdinalIgnoreCase))
+                   ?? PolymerLibrary.FirstOrDefault(e => !e.Copolymer && e.Name.ToLowerInvariant().StartsWith(w, StringComparison.Ordinal))
+                   ?? (w.Length >= 5 ? PolymerLibrary.FirstOrDefault(e => !e.Copolymer && e.Name.ToLowerInvariant().Contains(w, StringComparison.Ordinal)) : null);
+        if (_molNames == null)
+        {
+            _molNames = new();
+            try
+            {
+                if (Paths.Solvents is { } sp && JsonNode.Parse(File.ReadAllText(sp))?["solvents"] is JsonArray sa)
+                    foreach (var x in sa) if ((string?)x?["name"] is { } n && (string?)x["smiles"] is { Length: > 0 } smi) _molNames.Add((n, smi));
+                if (Paths.Fragments is { } fp && JsonNode.Parse(File.ReadAllText(fp))?["fragments"] is JsonArray fa)
+                    foreach (var x in fa)
+                        if ((string?)x?["name"] is { } n && (string?)x["smiles"] is { Length: > 0 } smi)
+                            _molNames.Add((n, smi.Replace("[*]", "[H]").Replace("*", "[H]")));
+            }
+            catch { }
+        }
+        var mol = _molNames.FirstOrDefault(m => m.Name.Equals(t, StringComparison.OrdinalIgnoreCase));
+        if (mol.Name != null) return new Named($"{mol.Name} · molecule", mol.Smiles, false, null);
+        if (poly != null) return new Named($"{poly.Name} · polymer library", poly.Smiles, true, poly);
+        mol = _molNames.FirstOrDefault(m => m.Name.ToLowerInvariant().StartsWith(w, StringComparison.Ordinal));
+        return mol.Name != null ? new Named($"{mol.Name} · molecule", mol.Smiles, false, null) : null;
     }
 
     private static string ExpandHome(string p) =>
