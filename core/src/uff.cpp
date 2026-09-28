@@ -232,6 +232,8 @@ double equation17(double bo, const UffParam& a, const UffParam& b) { return 5 * 
 }  // namespace
 
 ForceField default_forcefield(const System& s) {
+  // the force field the file carries (an AMBER topology), while its atoms are the structure's
+  if (s.forcefield && s.forcefield->charge.size() == s.atoms.size()) return *s.forcefield;
   const bool ch = std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
   if (ch) {
     try {

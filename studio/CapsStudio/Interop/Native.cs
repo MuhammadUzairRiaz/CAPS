@@ -505,6 +505,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_reaction_template")] public static extern int ReactionTemplate([MarshalAs(UnmanagedType.LPUTF8Str)] string name, byte[] text, int cap);
     [DllImport(Lib, EntryPoint = "caps_react")] public static extern int React(IntPtr doc, byte[] templates, in CapsReactOpts o, CapsReactProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_info")] public static extern int FieldInfo(IntPtr doc, byte[] text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_field_file_available")] public static extern int FieldFileAvailable(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_field_assign_groups")] public static extern int FieldAssignGroups(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_field_assign")] public static extern int FieldAssign(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string ff, [MarshalAs(UnmanagedType.LPUTF8Str)] string? rules, int charges);
     [DllImport(Lib, EntryPoint = "caps_analyze")] public static extern int Analyze(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, CapsAnalyzeProgress? progress, IntPtr user);
@@ -1322,6 +1323,8 @@ public sealed class CapsDocument : IDisposable
     public bool FieldAssign(string ffPath, string? rulesPath, int charges) { using (Hold()) { Alive(); return CheckField(Native.FieldAssign(H, ffPath, rulesPath, charges)); } }
     /// <summary>A force field (or a literature many-body potential) per group of molecules, the cross pairs by the rule given
     /// (caps_field_assign_groups).</summary>
+    /// <summary>The structure's own file carried a force field (an AMBER prmtop) that still fits it: FieldAssign("file", …) assigns it.</summary>
+    public bool FieldFileAvailable { get { using (Hold()) { Alive(); return Native.FieldFileAvailable(H) == 1; } } }
     public bool FieldAssignGroups(string json) { using (Hold()) { Alive(); return CheckField(Native.FieldAssignGroups(H, json)); } }
     public bool FieldOverride(int index, string? type) { using (Hold()) { Alive(); return CheckField(Native.FieldOverride(H, index, type)); } }
     /// <summary>Types learned from a typed example (head, body and tail units …) set on every atom with the same

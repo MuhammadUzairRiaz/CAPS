@@ -147,7 +147,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -214,8 +214,9 @@ class _Field:
 
     def assign(self, forcefield: str = "uff", charges: str = "auto") -> dict:
         """Types every atom and looks up every parameter: a force-field id from the library (gaff2, opls2005 …), a path
-        to a caps-forcefield JSON, or "uff". charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond increments by the types' numbers: OPLS-AA 2024 with OPLS 2005's)."""
-        path = _forcefield_path(forcefield)
+        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond increments by the types' numbers: OPLS-AA 2024 with OPLS 2005's)."""
+        # "file": the force field the structure's own file carried (an AMBER prmtop), every term as the file gives it
+        path = "file" if forcefield == "file" else _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
         if rc < 0:
@@ -257,6 +258,18 @@ class _Field:
         rep = _json_call(library().caps_field_report, self._doc._h)
         rep["complete"] = rc == 0
         return rep
+
+    @property
+    def file_available(self) -> bool:
+        """True when the structure's own file carried a force field (an AMBER prmtop) that still fits it: assign("file")."""
+        return library().caps_field_file_available(self._doc._h) == 1
+
+    def report(self) -> dict:
+        """The current assignment's report (types, charges, notes, energy terms); {} when nothing is assigned."""
+        try:
+            return _json_call(library().caps_field_report, self._doc._h)
+        except CapsError:
+            return {}
 
     def import_params(self, path: str, fill_gaps: bool = False) -> dict:
         """Adds parameters from a file over the assigned force field: caps-forcefield JSON, moltemplate .lt, AMBER frcmod
