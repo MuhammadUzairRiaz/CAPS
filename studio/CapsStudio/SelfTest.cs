@@ -654,6 +654,17 @@ internal static class SelfTest
                 var result = rj?.Remote is { } rr ? Path.Combine(rr.Local, "out", rr.Stem + ".data") : "";
                 Check(sent && back && rj!.IsDone && File.Exists(result) && File.Exists(result + ".provenance.json") && rj.CanOpenRemote,
                       $"remote job: sent {sent} · {rj?.Status} · {rj?.Where} · {string.Join(" | ", rj?.Log.Select(l => l.Text) ?? [])}");
+                // the same for Relax (the open structure) and Grow (a new cell from its recipe)
+                var others = new List<string>();
+                foreach (var kind in new[] { "Relax", "Grow" })
+                {
+                    vm.GrowChainsD = 1; vm.GrowDpD = 3; vm.GrowDensityD = 0.3m;
+                    vm.SubmitRemote(kind).GetAwaiter().GetResult();
+                    var job = vm.Jobs.FirstOrDefault(j => j.IsRemote && j.Kind == kind);
+                    Until(() => { if (job is { IsRunning: true }) vm.CheckRemote(job).GetAwaiter().GetResult(); return job is { IsRunning: false }; }, 120000);
+                    others.Add($"{kind} {job?.Status}");
+                }
+                Check(others.All(o => o.EndsWith("done")), "remote relax and grow: " + string.Join(" · ", others));
                 vm.RunWhereIndex = 0;
                 vm.RemoveHost();
                 Environment.SetEnvironmentVariable("PATH", path);
@@ -685,6 +696,26 @@ internal static class SelfTest
                 }
                 Check(results.All(r => r.Split(' ')[1] == "0") && scripts[0].Item2.Contains("doc.relax(") && scripts[1].Item2.Contains("doc.md(steps=50"),
                       "copy as Python: " + string.Join(" · ", results));
+                vm.MdStepsD = steps;
+            }
+
+            // the queue beyond Dynamics: a Relax on this structure and a Grow (as its recipe) behind a running MD; stopping
+            // the MD starts them one after the other
+            {
+                vm.MdStepsD = 5_000_000;
+                var md = vm.RunMd();
+                Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 30000);
+                vm.QueueRelax();
+                vm.GrowChainsD = 1; vm.GrowDpD = 3; vm.GrowDensityD = 0.3m;
+                vm.QueueGrow();
+                var both = vm.QueuedCount == 2;
+                vm.CancelMd();
+                Until(() => md.IsCompleted, 30000);
+                var relaxJob = vm.Jobs.FirstOrDefault(j => j.Kind == "Relax" && j.Title.StartsWith("Relax"));
+                var growJob = vm.Jobs.FirstOrDefault(j => j.Kind == "Recipe");
+                var ran = Until(() => relaxJob is { IsDone: true } && growJob is { IsQueued: false, IsRunning: false } && vm.Idle, 180000);
+                Check(both && ran && growJob!.IsDone && vm.Title.Contains("cell"),
+                      $"queue: relax {relaxJob?.Status} · grow {growJob?.Status} · {vm.Title} · {growJob?.Log.LastOrDefault()?.Text}");
                 vm.MdStepsD = steps;
             }
             vm.SetModule(8);

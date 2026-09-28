@@ -207,7 +207,27 @@ public sealed partial class MainViewModel
             ["thermostat"] = th[Math.Clamp(_mdThermostat, 0, 2)], ["barostat"] = ba[Math.Clamp(_mdBarostat, 0, 2)], ["tau_t"] = _mdTauT, ["tau_p"] = _mdTauP,
             ["constraints"] = cons[Math.Clamp(_mdConstraints, 0, 2)], ["constraint_solver"] = solver[Math.Clamp(_mdConstraintSolver, 0, 1)], ["seed"] = _mdSeed,
         };
-        if (kind == "Dynamics")
+        if (kind == "Relax")
+        {
+            var rx = new JsonObject
+            {
+                ["method"] = _relaxMethod switch { 0 => "sd", 1 => "cg", 3 => "fire", _ => "lbfgs" }, ["fmax"] = _relaxFtol, ["max_iterations"] = _relaxIterations,
+                ["pushoff"] = _relaxPushoff,
+            };
+            if (_relaxCompress) rx["target_density"] = _relaxDensity;
+            if (_relaxPushoff && _relaxPushoffMd) { rx["pushoff_md_ps"] = (double)_relaxRampPs; rx["pushoff_cap"] = (double)_relaxCap; rx["pushoff_temperature"] = (double)_relaxPushoffT; }
+            r["relax"] = rx;
+        }
+        else if (kind == "React")
+        {
+            r["react"] = new JsonObject
+            {
+                ["templates"] = _rxText, ["cycles"] = _rxCycles, ["per_cycle"] = _rxPerCycle, ["target"] = _rxTarget, ["relax"] = _rxRelax,
+                ["md_ps"] = _rxMdPs, ["temperature"] = _rxTemp, ["seed"] = _rxSeed,
+            };
+            if (_rxCapture > 0) ((JsonObject)r["react"]!)["capture"] = _rxCapture;
+        }
+        else if (kind == "Dynamics")
         {
             var md = (JsonObject)common.DeepClone();
             md["ensemble"] = new[] { "nve", "nvt", "npt", "nph" }[Math.Clamp(_mdEnsemble, 0, 3)];
@@ -235,16 +255,19 @@ public sealed partial class MainViewModel
     /// <summary>Sends the open structure and the page's run (Dynamics or Equilibrate) to the chosen host.</summary>
     public async Task SubmitRemote(string kind)
     {
-        if (_doc == null || RunWhereIndex == 0) return;
+        var grow = kind == "Grow";   // a new cell from the Grow recipe: no structure goes up
+        if ((_doc == null && !grow) || RunWhereIndex == 0) return;
         var h = _settings.Hosts[RunWhereIndex - 1];
         if (h.Hostname.Length == 0) { Status = "The host has no hostname: set it in Settings › Compute & remote"; return; }
         var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
         var id = $"{kind.ToLowerInvariant()}-{k}";
-        var stem = string.Concat(Title.Replace(" (unsaved)", "").Where(char.IsLetterOrDigit).Take(24)) is { Length: > 0 } t ? t : "structure";
+        var growRecipe = grow ? GrowRecipe() : "";
+        var stem = grow ? growRecipe.Split('\n').FirstOrDefault(l => l.StartsWith("name:"))?[5..].Trim().Trim('"') ?? "cell"
+                 : string.Concat(Title.Replace(" (unsaved)", "").Where(char.IsLetterOrDigit).Take(24)) is { Length: > 0 } t ? t : "structure";
         var job = new Job
         {
-            Id = id, Kind = kind, Module = kind == "Dynamics" ? 3 : 4, Title = $"{kind} · on {h.Name}", Document = Title, Atoms = _doc.Summary().Atoms,
-            Provenance = Manifest(kind),
+            Id = id, Kind = kind, Module = kind switch { "Dynamics" => 3, "Equilibrate" => 4, "Relax" => 2, "React" => 6, _ => 0 }, Title = $"{kind} · on {h.Name}",
+            Document = grow ? "new cell" : Title, Atoms = grow ? 0 : _doc!.Summary().Atoms, Provenance = Manifest(kind),
         };
         job.Status = "queued";
         job.Remote = new RemoteRun { Host = h.Name, Scheduler = h.Scheduler, Local = Path.Combine(RemoteFolder, $"{id}-{DateTime.Now:yyyyMMdd-HHmmss}"), Stem = stem };
@@ -255,20 +278,26 @@ public sealed partial class MainViewModel
         {
             var local = job.Remote.Local;
             Directory.CreateDirectory(local);
-            _doc.Save(Path.Combine(local, "structure.data"));
-            File.WriteAllText(Path.Combine(local, "recipe.json"), RemoteRecipe(kind, stem).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-            if (!_relaxCoulomb) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
-            var script = _settings.JobTemplate.Replace("{job}", id).Replace("{partition}", h.Partition).Replace("{recipe}", "recipe.json --out out");
-            job.Add($"Prepared {local}: structure.data, recipe.json, job.sh");
+            var recipeFile = grow ? "recipe.yaml" : "recipe.json";
+            if (grow) File.WriteAllText(Path.Combine(local, recipeFile), growRecipe);
+            else
+            {
+                _doc!.Save(Path.Combine(local, "structure.data"));
+                File.WriteAllText(Path.Combine(local, recipeFile), RemoteRecipe(kind, stem).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            }
+            if (!_relaxCoulomb && !grow) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
+            var script = _settings.JobTemplate.Replace("{job}", id).Replace("{partition}", h.Partition).Replace("{recipe}", recipeFile + " --out out");
+            job.Add($"Prepared {local}: {(grow ? "" : "structure.data, ")}{recipeFile}, job.sh");
             // the host's folder (the template's {workdir} is expanded there: $USER, ~)
             var mk = await Tool("ssh", SshArgs(h, $"mkdir -p \"{h.WorkDir}/{id}\" && cd \"{h.WorkDir}/{id}\" && pwd"), 30000);
             if (mk.Code != 0) throw new InvalidOperationException("ssh: " + (mk.Err.Length > 0 ? mk.Err.Split('\n')[0] : $"exit {mk.Code}"));
             var dir = mk.Out.Split('\n').Last().Trim();
             job.Remote.Dir = dir;
             script = script.Replace("{workdir}/" + id, dir).Replace("{workdir}", Path.GetDirectoryName(dir.Replace('\\', '/'))?.Replace('\\', '/') ?? dir);
-            if (h.Scheduler == "none" && !script.Contains("caps run")) script += "\ncaps run recipe.json --out out\n";
+            if (h.Scheduler == "none" && !script.Contains("caps run")) script += $"\ncaps run {recipeFile} --out out\n";
             File.WriteAllText(Path.Combine(local, "job.sh"), script.Replace("\r\n", "\n"));
-            var up = await Tool("scp", ScpArgs(h, new[] { "structure.data", "recipe.json", "job.sh" }.Select(f => Path.Combine(local, f)), $"{Target(h)}:{dir}/"), 120000);
+            var files = grow ? new[] { recipeFile, "job.sh" } : new[] { "structure.data", recipeFile, "job.sh" };
+            var up = await Tool("scp", ScpArgs(h, files.Select(f => Path.Combine(local, f)), $"{Target(h)}:{dir}/"), 120000);
             if (up.Code != 0) throw new InvalidOperationException("scp: " + (up.Err.Length > 0 ? up.Err.Split('\n')[0] : $"exit {up.Code}"));
             job.Add($"Uploaded to {h.Name}:{dir}");
             var submit = h.Scheduler switch

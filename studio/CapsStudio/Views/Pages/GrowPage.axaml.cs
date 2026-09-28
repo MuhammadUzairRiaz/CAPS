@@ -40,7 +40,7 @@ public partial class GrowPage : PageBase
     /// <summary>Where the 3D view goes while this page shows.</summary>
     public Decorator Slot => this.FindControl<Decorator>("ViewSlot")!;
 
-    private async void OnGrow(object? s, RoutedEventArgs e) => await Vm.Grow();
+    private async void OnGrow(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitRemote("Grow"); else await Vm.Grow(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelGrow();
     private void OnDensityMode(object? s, RoutedEventArgs e) => Vm.GrowUseBox = false;
     private void OnDisplay(object? s, RoutedEventArgs e) { if (s is Control { Tag: string t }) Vm.StyleIndex = int.Parse(t); }
@@ -93,4 +93,5 @@ public partial class GrowPage : PageBase
         Vm.SetModule(7);
         await Vm.Field.CheckCoverage(auto: false);
     }
+    private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueGrow();
 }

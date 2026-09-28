@@ -24,7 +24,7 @@ public partial class RelaxPage : PageBase
         };
     }
 
-    private async void OnRelax(object? s, RoutedEventArgs e) => await Vm.Relax();
+    private async void OnRelax(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitRemote("Relax"); else await Vm.Relax(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelRelax();
     private void OnAddRestraint(object? s, RoutedEventArgs e) => Vm.AddMeasuredRestraint();
     private void OnRemoveRestraint(object? s, RoutedEventArgs e) { if (s is Control { Tag: CapsStudio.ViewModels.RestraintRow r }) Vm.RemoveRestraint(r); }
@@ -36,4 +36,5 @@ public partial class RelaxPage : PageBase
         if (clip != null) await clip.SetTextAsync(Vm.RelaxPython());
         Vm.Status = "Copied the minimisation as Python (import caps; doc = caps.open(…))";
     }
+    private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueRelax();
 }

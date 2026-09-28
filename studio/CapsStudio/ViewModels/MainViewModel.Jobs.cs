@@ -221,9 +221,11 @@ public sealed partial class MainViewModel
     private void OnRunProperty(object? s, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(MdRunning) or nameof(EqRunning) or nameof(Relaxing)) Raise(nameof(CanPause));
+        if (e.PropertyName == nameof(RecipeRunning) && !RecipeRunning && _live.TryGetValue("Recipe", out var rj)) rj.Add(RecipeLog.Trim() + (Status.Length > 0 ? "\n" + Status : ""));
         switch (e.PropertyName)
         {
             case nameof(Growing): Track("Grow", Growing, 0, "Grow · amorphous cell"); break;
+            case nameof(RecipeRunning): Track("Recipe", RecipeRunning, 0, "Recipe"); break;
             case nameof(Relaxing): Track("Relax", Relaxing, 2, "Relax · " + Minimisers[Math.Clamp(RelaxMethod, 0, Minimisers.Length - 1)]); break;
             case nameof(MdRunning): Track("Dynamics", MdRunning, 3, "Dynamics · " + Ensembles[Math.Clamp(MdEnsemble, 0, Ensembles.Length - 1)]); break;
             case nameof(EqRunning): Track("Equilibrate", EqRunning, 4, "Equilibrate · " + Protocols[Math.Clamp(EqProtocol, 0, Protocols.Length - 1)]); break;
@@ -446,24 +448,27 @@ public sealed partial class MainViewModel
     // ---------------------------------------------------------------- queue (design/boards/Jobs "queued")
     // Dynamics and Equilibrate runs queued while another run goes, with their settings as they were when queued; each
     // starts when the one before it ends, on the structure it was queued on.
-    private sealed record QueuedRun(Job Job, CapsDocument Doc, Func<Task> Start);
+    private sealed record QueuedRun(Job Job, CapsDocument? Doc, Func<Task> Start);   // Doc null: the run makes a new structure
     private readonly List<QueuedRun> _queue = new();
     private Job? _starting;
     public int QueuedCount => _queue.Count;
     public string QueueText => _queue.Count == 0 ? "" : $"{_queue.Count} queued";
 
-    private void Enqueue(string kind, int module, string title, Func<Task> start)
+    private void EnqueueNew(string kind, int module, string title, Func<Task> start) => Enqueue(kind, module, title, start, newStructure: true);
+
+    private void Enqueue(string kind, int module, string title, Func<Task> start, bool newStructure = false)
     {
-        if (_doc == null) return;
+        if (_doc == null && !newStructure) return;
         var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
         var job = new Job
         {
-            Id = $"{kind.ToLowerInvariant()}-{k}", Kind = kind, Module = module, Title = title, Document = Title, Atoms = _doc.Summary().Atoms,
-            Provenance = Manifest(kind),
+            Id = $"{kind.ToLowerInvariant()}-{k}", Kind = kind, Module = module, Title = title, Document = newStructure ? "new cell" : Title,
+            Atoms = newStructure ? 0 : _doc!.Summary().Atoms, Provenance = Manifest(kind),
         };
         job.Status = "queued";
-        job.Add($"{title} queued on {job.Document}; it starts when the current run ends, with the settings as they are now");
-        _queue.Add(new QueuedRun(job, _doc, start));
+        job.Add(newStructure ? $"{title} queued; it builds a new structure when the current run ends, with the settings as they are now"
+                             : $"{title} queued on {job.Document}; it starts when the current run ends, with the settings as they are now");
+        _queue.Add(new QueuedRun(job, newStructure ? null : _doc, start));
         Jobs.Insert(0, job);
         Raise(nameof(HasJobs)); Raise(nameof(JobsSummary)); Raise(nameof(QueuedCount)); Raise(nameof(QueueText));
         Status = $"{title} queued · {_queue.Count} in the queue";
@@ -486,6 +491,31 @@ public sealed partial class MainViewModel
         Enqueue("Equilibrate", 4, "Equilibrate · " + Protocols[Math.Clamp(EqProtocol, 0, Protocols.Length - 1)], () => RunEquilibrate(text, until, opts, target));
     }
 
+    public void QueueRelax()
+    {
+        var opts = RelaxOptions();
+        Enqueue("Relax", 2, "Relax · " + Minimisers[Math.Clamp(RelaxMethod, 0, Minimisers.Length - 1)], () => Relax(opts));
+    }
+
+    public void QueueReact()
+    {
+        var opts = ReactOptions();
+        var text = _rxText;
+        Enqueue("React", 6, "React · crosslinking", () => RunReact(opts, text));
+    }
+
+    /// <summary>Grow queued as its recipe (the settings as they are now): it builds a new cell when its turn comes, with
+    /// the files the recipe exports in the queue folder.</summary>
+    public void QueueGrow()
+    {
+        var text = GrowRecipe();
+        var dir = Path.Combine(QueueFolder, $"grow-{DateTime.Now:yyyyMMdd-HHmmss}");
+        var named = text.Split('\n').FirstOrDefault(l => l.StartsWith("name:"))?[5..].Trim().Trim('"') ?? "";
+        var label = named.Length > 0 ? named + " cell" : "grown cell";
+        EnqueueNew("Recipe", 0, "Grow · " + label + " (recipe)", () => { Directory.CreateDirectory(dir); return RunRecipeText(text, label, dir); });
+    }
+    public static string QueueFolder => AppSettings.Override != null ? Path.Combine(Path.GetDirectoryName(AppSettings.Override)!, "caps-queue") : Path.Combine(AppSettings.Folder, "queue");
+
     private async Task StartNextQueued()
     {
         while (_queue.Count > 0 && Idle)
@@ -493,7 +523,7 @@ public sealed partial class MainViewModel
             var q = _queue[0];
             _queue.RemoveAt(0);
             Raise(nameof(QueuedCount)); Raise(nameof(QueueText));
-            if (!ReferenceEquals(q.Doc, _doc))
+            if (q.Doc != null && !ReferenceEquals(q.Doc, _doc))
             {
                 q.Job.Status = "cancelled";
                 q.Job.Add("Not started: the structure it was queued on is no longer the open one");
