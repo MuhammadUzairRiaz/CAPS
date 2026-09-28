@@ -17,7 +17,7 @@
         </StackPanel>
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,340" ColumnSpacing="16" Margin="22,16">
+    <Grid ColumnDefinitions="*,360" ColumnSpacing="16" Margin="22,16">
       <Border Classes="card" CornerRadius="10">
         <DockPanel>
           <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -31,7 +31,7 @@
           <ScrollViewer HorizontalScrollBarVisibility="Auto"><SelectableTextBlock Text="{Binding PipelineYaml}" FontFamily="{DynamicResource Mono}" FontSize="12" LineHeight="19" Margin="16,10" /></ScrollViewer>
         </DockPanel>
       </Border>
-      <StackPanel Grid.Column="1" Spacing="14">
+      <ScrollViewer Grid.Column="1"><StackPanel Spacing="14">
         <Border Classes="card" CornerRadius="10">
           <StackPanel>
             <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -54,6 +54,55 @@
         <Border Classes="card" CornerRadius="10">
           <StackPanel>
             <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small ghost" VerticalAlignment="Center" ToolTip.Tip="A file each run writes">
+                  <StackPanel Orientation="Horizontal" Spacing="5"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add" VerticalAlignment="Center" /></StackPanel>
+                  <Button.Flyout>
+                    <MenuFlyout>
+                      <MenuItem Header="A table as CSV" Click="OnAddOutput" Tag="table" />
+                      <MenuItem Header="A table as an SVG plot" Click="OnAddOutput" Tag="plot" />
+                      <MenuItem Header="The global attributes as CSV" Click="OnAddOutput" Tag="attributes" />
+                      <MenuItem Header="A render of the view (PNG or SVG)" Click="OnAddOutput" Tag="render" />
+                      <MenuItem Header="The grid (.cube, .vtk or .npy)" Click="OnAddOutput" Tag="grid" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+                <TextBlock Text="Outputs" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <StackPanel Margin="16,10" Spacing="8">
+              <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding !HasPipelineOutputs}"
+                         Text="None: a run gives one row of attributes. Add the tables, plots and renders each run should write." />
+              <ItemsControl ItemsSource="{Binding PipelineOutputs}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PipelineOutputRow">
+                    <StackPanel Spacing="4">
+                      <DockPanel>
+                        <Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Padding="6,0" Click="OnRemoveOutput" Tag="{Binding}" ToolTip.Tip="Remove this output" />
+                        <TextBlock Text="{Binding KindText}" Classes="label" VerticalAlignment="Center" />
+                      </DockPanel>
+                      <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                        <TextBox Text="{Binding What}" Watermark="table name" Classes="mono" FontSize="11.5" IsVisible="{Binding HasWhat}" />
+                        <TextBox Grid.Column="1" Text="{Binding Path}" Watermark="file" Classes="mono" FontSize="11.5" />
+                      </Grid>
+                      <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsRender}">
+                        <NumericUpDown Value="{Binding Width}" Minimum="64" Maximum="8192" Increment="10" FormatString="0" Width="110" />
+                        <TextBlock Text="×" VerticalAlignment="Center" />
+                        <NumericUpDown Value="{Binding Height}" Minimum="64" Maximum="8192" Increment="10" FormatString="0" Width="110" />
+                      </StackPanel>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding PipelineTableNames}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+              <Button Classes="small" Content="Write them now…" Click="OnWriteOutputs" IsVisible="{Binding HasPipelineOutputs}" ToolTip.Tip="From the shown frame's result, into a folder" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" CornerRadius="10">
+          <StackPanel>
+            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
               <TextBlock Text="Run it elsewhere" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             </Border>
             <StackPanel Margin="16,12" Spacing="8">
@@ -62,7 +111,7 @@
             </StackPanel>
           </StackPanel>
         </Border>
-      </StackPanel>
+      </StackPanel></ScrollViewer>
     </Grid>
   </DockPanel>
 </p:PageBase>

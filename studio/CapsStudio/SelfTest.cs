@@ -1029,6 +1029,19 @@ internal static class SelfTest
                   $"manual selection: '{manual?.Params["atoms"]}' · {manual?.Summary}");
             if (manual != null) vm.PipelineRows.Remove(manual);
             vm.ClearDocSelection();
+            // outputs: the rdf table as CSV and a plot, in the saved YAML and written now
+            vm.ApplyPipeline();
+            vm.OpenSavePipeline();
+            vm.AddPipelineOutput("table");
+            vm.AddPipelineOutput("plot");
+            var outDirP = Path.Combine(outDir, "caps-selftest-outputs");
+            vm.WritePipelineOutputs(outDirP);
+            var wroteCsv = vm.PipelineOutputs.Count == 2 && File.Exists(Path.Combine(outDirP, vm.PipelineOutputs[0].Path));
+            var wroteSvg = vm.PipelineOutputs.Count == 2 && File.Exists(Path.Combine(outDirP, vm.PipelineOutputs[1].Path));
+            Check(vm.PipelineYaml.Contains("outputs:") && vm.PipelineYaml.Contains("- plot: rdf -> rdf.svg") && wroteCsv && wroteSvg,
+                  $"pipeline outputs: {string.Join(", ", vm.PipelineOutputs.Select(o => $"{o.Kind} {o.What} -> {o.Path}"))} · {vm.Status}");
+            while (vm.PipelineOutputs.Count > 0) vm.RemovePipelineOutput(vm.PipelineOutputs[0]);
+            vm.SetModule(20);
             // the inspector as CSV: every particle matching the filter (not only the page), and a data table
             vm.InspectorTab = 0;
             vm.InspectorFilter = "Molecule == 1";

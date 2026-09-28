@@ -142,6 +142,18 @@ std::string pipeline_to_yaml(const Pipeline& p, const std::string& name, const s
     if (!s.enabled) out += std::string(first ? "" : ", ") + "enabled: false";
     out += "}\n";
   }
+  if (!p.outputs.empty()) {
+    out += "outputs:\n";
+    for (const auto& o : p.outputs) {
+      if (o.kind == "render") {
+        char b[80];
+        std::snprintf(b, sizeof b, ", size: [%d, %d]}\n", o.width, o.height);
+        out += "  - render: {file: " + yaml_scalar(Json(o.path)) + b;
+      } else {
+        out += "  - " + o.kind + ": " + (o.what.empty() ? "" : o.what + " ") + "-> " + o.path + "\n";
+      }
+    }
+  }
   return out;
 }
 
@@ -150,7 +162,7 @@ Pipeline pipeline_from_yaml(const std::string& text, std::string* name, std::str
   std::string line;
   Pipeline p;
   std::vector<PipelineStep> in_order;
-  bool steps = false, source = false, seen = false;
+  bool steps = false, source = false, seen = false, outputs = false;
   while (std::getline(in, line)) {
     if (!line.empty() && line.back() == '\r') line.pop_back();
     const std::string t = trim_line(line);
@@ -158,7 +170,7 @@ Pipeline pipeline_from_yaml(const std::string& text, std::string* name, std::str
     const bool indented = t[0] == ' ';
     const std::string body = t.substr(t.find_first_not_of(' '));
     if (!indented) {
-      steps = source = false;
+      steps = source = outputs = false;
       const auto c = body.find(':');
       const std::string key = body.substr(0, c), val = c == std::string::npos ? "" : trim_line(body.substr(c + 1));
       if (key == "caps_pipeline") seen = true;
@@ -168,6 +180,34 @@ Pipeline pipeline_from_yaml(const std::string& text, std::string* name, std::str
       }
       else if (key == "source") source = true;
       else if (key == "steps") steps = true;
+      else if (key == "outputs") outputs = true;
+      continue;
+    }
+    if (outputs) {   // - table: Ree -> ree.csv · - render: {file: view.png, size: [w, h]}
+      if (body.rfind("- ", 0) != 0) throw std::invalid_argument("pipeline YAML: an output is \"- kind: what -> file\", not \"" + body + "\"");
+      const std::string item = body.substr(2);
+      const auto c = item.find(':');
+      if (c == std::string::npos) throw std::invalid_argument("pipeline YAML: an output needs a kind: \"" + body + "\"");
+      PipelineOutput o;
+      o.kind = trim_line(item.substr(0, c));
+      std::string rest = trim_line(item.substr(c + 1));
+      while (!rest.empty() && rest.front() == ' ') rest.erase(rest.begin());
+      if (!rest.empty() && rest.front() == '{') {
+        Flow f{rest};
+        const Json m = f.mapping();
+        o.path = m.text("file", "");
+        o.what = m.text("what", "");
+        if (m.has("size") && m["size"].is_array() && m["size"].size() == 2) o.width = int(m["size"][0].number()), o.height = int(m["size"][1].number());
+      } else {
+        const auto arrow = rest.find("->");
+        if (arrow == std::string::npos) throw std::invalid_argument("pipeline YAML: an output is \"kind: what -> file\": \"" + body + "\"");
+        o.what = trim_line(rest.substr(0, arrow));
+        std::string f = rest.substr(arrow + 2);
+        while (!f.empty() && f.front() == ' ') f.erase(f.begin());
+        o.path = trim_line(f);
+      }
+      if (o.path.empty()) throw std::invalid_argument("pipeline YAML: the output has no file: \"" + body + "\"");
+      p.outputs.push_back(std::move(o));
       continue;
     }
     if (source) {

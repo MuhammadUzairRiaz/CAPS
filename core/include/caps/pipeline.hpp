@@ -158,8 +158,22 @@ struct PipelineStep {
   Json params = Json::object();
 };
 
+// A file the pipeline writes when run from a saved pipeline (design/boards/SavePipeline "outputs:"):
+//   table       a data table as CSV            - table: Ree -> ree.csv
+//   plot        a data table as an SVG plot    - plot: rdf -> rdf.svg
+//   attributes  the global attributes as CSV   - attributes: -> attributes.csv
+//   render      the view as PNG or SVG         - render: {file: view.png, size: [1920, 1080]}
+//   grid        the last grid a step made       - grid: -> density.cube   (.cube, .vtk, .npy)
+struct PipelineOutput {
+  std::string kind;                  // table | plot | attributes | render | grid
+  std::string what;                  // the table's name (table, plot)
+  std::string path;                  // relative to the output folder
+  int width = 1920, height = 1080;   // render
+};
+
 struct Pipeline {
   std::vector<PipelineStep> steps;   // top first, as listed; evaluated bottom to top
+  std::vector<PipelineOutput> outputs;
 };
 
 // {"steps": [{"type": …, "enabled": …, <parameters>}]} or the bare array.
@@ -181,6 +195,15 @@ PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_ind
 // global attribute (Frame, Timestep, then the attributes in order). progress(done, total) returns false to stop.
 DataTable pipeline_series(const Trajectory& traj, const Pipeline& p, int stride = 1, bool wrap = false,
                           const std::function<bool(int, int)>& progress = {});
+
+// The outputs of a pipeline for one run, written under dir (made when missing); returns a line per file ("wrote …" or
+// why not: a table no step made). A render uses the camera given and the state's colours, paths and surfaces.
+std::vector<std::string> write_pipeline_outputs(const PipelineState& st, const Pipeline& p, const std::string& dir, const Camera& cam = {});
+// A data table as an SVG line (or point) plot: the first column along x, the others as series.
+std::string table_svg(const DataTable& t, int width = 640, int height = 400);
+// The render options that draw a pipeline's result as the Studio shows it: its colours (the selection in red), paths,
+// surfaces, radii and transparency; base supplies style, size and background.
+RenderOptions pipeline_render_options(const PipelineState& st, const RenderOptions& base);
 
 // Per-particle property names available to expressions and colour coding.
 std::vector<std::string> property_names(const PipelineState& st);

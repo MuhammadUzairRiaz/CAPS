@@ -879,6 +879,36 @@ TEST(Pipeline, YamlRoundTrip) {
   EXPECT_THROW(pipeline_from_yaml("caps_pipeline: 1\nsteps:\n  - wrap: {a: [1, 2}\n"), std::invalid_argument);
 }
 
+TEST(Pipeline, OutputsBlock) {
+  // the outputs: block survives YAML and JSON, and writes the files it names
+  const std::string y = "caps_pipeline: 1\nsteps:\n  - coordination: {cutoff: 3.0, rmax: 8}\noutputs:\n  - table: rdf -> rdf.csv\n"
+                        "  - plot: rdf -> plots/rdf.svg\n  - attributes: -> attributes.csv\n  - render: {file: view.png, size: [320, 240]}\n"
+                        "  - table: missing -> missing.csv\n";
+  const Pipeline p = pipeline_from_yaml(y);
+  ASSERT_EQ(p.outputs.size(), 5u);
+  EXPECT_EQ(p.outputs[1].kind, "plot");
+  EXPECT_EQ(p.outputs[1].what, "rdf");
+  EXPECT_EQ(p.outputs[1].path, "plots/rdf.svg");
+  EXPECT_EQ(p.outputs[3].width, 320);
+  const Pipeline q = pipeline_from_yaml(pipeline_to_yaml(p));
+  EXPECT_EQ(pipeline_to_json(q).dump(0), pipeline_to_json(p).dump(0));
+  EXPECT_EQ(pipeline_to_json(pipeline_from_json(pipeline_to_json(p))).dump(0), pipeline_to_json(p).dump(0));
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const auto st = run_pipeline(t.frame(0), p, 0, 0, &t);
+  const auto dir = std::filesystem::temp_directory_path() / "caps_outputs_test";
+  std::filesystem::remove_all(dir);
+  const auto log = write_pipeline_outputs(st, p, dir.string());
+  ASSERT_EQ(log.size(), 5u);
+  EXPECT_EQ(log[4].rfind("not written: missing.csv", 0), 0u) << log[4];
+  EXPECT_TRUE(std::filesystem::file_size(dir / "rdf.csv") > 100);
+  std::ifstream svg(dir / "plots" / "rdf.svg");
+  const std::string sv((std::istreambuf_iterator<char>(svg)), {});
+  EXPECT_NE(sv.find("<path d=\"M"), std::string::npos);
+  EXPECT_TRUE(std::filesystem::file_size(dir / "view.png") > 1000);
+  std::filesystem::remove_all(dir);
+  EXPECT_THROW(pipeline_from_yaml("caps_pipeline: 1\noutputs:\n  - table: rdf\n"), std::invalid_argument);
+}
+
 TEST(Pipeline, PythonStep) {
 #ifdef _WIN32
   const char* python = "python";
