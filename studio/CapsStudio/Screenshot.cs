@@ -58,6 +58,13 @@ internal static class Screenshot
                 Console.WriteLine(t.IsFaulted ? "figure export failed: " + t.Exception?.InnerException?.Message : "figure: " + t.Result);
             }
             if (kv[0] == "render") { w.ViewModel.OpenRender(); for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
+            if (kv[0] == "overlay")   // overlay=SCRIPT.py: the Python render overlay on (the guide's drawing worked out first)
+            {
+                w.ViewModel.OvScript = kv[1];
+                w.ViewModel.OvPython = true;
+                for (int k = 0; k < 150; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                Console.WriteLine("overlay: " + w.ViewModel.OvPythonNote + " · " + w.ViewModel.OvConsole);
+            }
             if (kv[0] == "renderout")   // renderout=PATH: render the image with its overlays
             {
                 var t = w.ViewModel.RenderOut(_ => kv[1], false, CapsStudio.Views.FigureDrawing.SaveRenderPng);

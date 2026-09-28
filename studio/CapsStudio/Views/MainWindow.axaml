@@ -2225,6 +2225,22 @@
                       <StackPanel><TextBlock Text="Axis tripod" FontSize="12" /><TextBlock Text="bottom right · follows the camera" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" /></StackPanel>
                     </DockPanel>
                   </Border>
+                  <Border Padding="0,5" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="6">
+                      <DockPanel>
+                        <CheckBox DockPanel.Dock="Right" Classes="toggle" IsChecked="{Binding OvPython}" />
+                        <StackPanel><TextBlock Text="Python overlay" FontSize="12" /><TextBlock Text="{Binding OvScriptName}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" /></StackPanel>
+                      </DockPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Classes="small" Content="Choose…" Click="OnOverlayChoose" ToolTip.Tip="A .py file with a function marked @overlay: draw(canvas, data)" />
+                        <Button Classes="small" Content="New from template" Click="OnOverlayNew" ToolTip.Tip="~/.caps/overlays/overlay.py: text, an inset plot of a pipeline table" />
+                        <Button Classes="small ghost" Content="Edit" Click="OnOverlayEdit" IsEnabled="{Binding OvPython}" ToolTip.Tip="Opens the script in your editor; saving it redraws" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding OvPythonNote}" Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding OvPython}" />
+                      <TextBlock Text="{Binding OvConsole}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" MaxHeight="90"
+                                 IsVisible="{Binding OvConsole, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                  </Border>
                 </StackPanel>
               </Border>
             </StackPanel>
