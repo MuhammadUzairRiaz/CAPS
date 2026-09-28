@@ -306,4 +306,20 @@ with _tf.TemporaryDirectory() as tmp:
 # pack: SMILES and a document with counts, in a box, no contact closer than the tolerance
 mix = caps.pack([("Cc1ccccc1", 12), ("O", 20)], box=22, tolerance=2.0, seed=3)
 check(mix.atoms == 12 * 15 + 20 * 3 and mix.summary()["molecules"] == 32, f"pack: {mix.atoms} atoms, {mix.summary()['molecules']} molecules")
+# force fields by group: two GAFF2 halves equal one GAFF2 assignment; GAFF + OPLS-AA refused for their 1-4 scalings
+# unless asked, then merged with explicit cross pairs
+g1 = caps.open(os.path.join(samples, "ps_melt.data"))
+e_one = g1.field.assign("gaff2", charges="gasteiger")["energy"]
+g2 = caps.open(os.path.join(samples, "ps_melt.data"))
+e_two = g2.field.assign_groups([{"name": "A", "molecules": "1-5", "forcefield": "gaff2", "charges": "gasteiger"},
+                                {"name": "B", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])["energy"]
+refused = False
+try:
+    g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}])
+except caps.CapsError:
+    refused = True
+mixed = g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}],
+                               scaling14="first")
+check(all(abs(e_one[k] - e_two[k]) < 1e-6 for k in e_one) and refused and mixed["complete"] and len(mixed["groups"]) == 2,
+      f"force fields by group: halves equal ({e_two['total']:.4f} kcal/mol) · GAFF+OPLS refused {refused}, merged {mixed['forcefield']}")
 print("all python checks passed")
