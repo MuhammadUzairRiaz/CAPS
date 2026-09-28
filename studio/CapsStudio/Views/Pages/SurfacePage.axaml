@@ -146,12 +146,33 @@
                             <TextBlock Text="{Binding Number}" Classes="mono" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
                             <Border Grid.Column="1" Width="10" Height="22" CornerRadius="2" Background="{Binding Colour}" />
                             <TextBlock Grid.Column="2" Text="{Binding Title}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="3" Text="{Binding Height}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Height}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                              <Button Classes="small ghost" Content="×" Padding="6,0" IsVisible="{Binding Removable}" Click="OnRemoveLayer" Tag="{Binding Extra}" ToolTip.Tip="Remove this layer" />
+                            </StackPanel>
                           </Grid>
                         </Border>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                    <Button Classes="small" ToolTip.Tip="Another layer on top: this slab again (a film between two surfaces) or a structure file with a rectangular cell">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add layer" VerticalAlignment="Center" /></StackPanel>
+                      <Button.Flyout>
+                        <MenuFlyout>
+                          <MenuItem Header="This slab again (a sandwich)" Click="OnAddSlabLayer" />
+                          <MenuItem Header="A structure file…" Click="OnAddLayerFile" />
+                        </MenuFlyout>
+                      </Button.Flyout>
+                    </Button>
+                    <Button Classes="small" Click="OnLayerFromGrow" ToolTip.Tip="The open structure (a cell grown in CAPS Grow) goes on the surface in place of a film grown here">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="grow" Size="14" VerticalAlignment="Center" /><TextBlock Text="From CAPS Grow cell" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
+                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,90" ColumnSpacing="10" IsVisible="{Binding SurfHasExtra}">
+                    <TextBlock Text="Gap between layers (Å)" Classes="label" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding SurfStackGap}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.0" />
+                  </Grid>
                 </StackPanel>
               </Border>
 
