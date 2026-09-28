@@ -80,14 +80,14 @@ int usage() {
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
-               "  caps pipeline FILE [--topology DATA] --steps STEPS.json|'[…]' [--frame N] [--table NAME] [--particles EXPR]\n"
+               "  caps pipeline FILE [--topology DATA] --steps STEPS.json|STEPS.yaml|'[…]' [--frame N] [--table NAME] [--particles EXPR] [--out DIR]\n"
                "                                   visualize pipeline on one frame: step status, attributes, a table as CSV\n"
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
                "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
                "  caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json]   build → type → grow → relax → md →\n"
                "               equilibrate → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)\n"
-               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT]\n"
+               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block]\n"
                "                                   a saved pipeline over many inputs: one row of attributes per input\n"
                "  caps crystal --group 'P 42/m n m' --cell a,b,c[,α,β,γ] --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' -o OUT\n"
                "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
@@ -1030,7 +1030,7 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
-  if (cmd == "run") {   // a saved pipeline over many inputs: caps run PIPE.yaml --input 'runs/*/X.lammpstrj' [--frame first|last] [--csv OUT]
+  if (cmd == "run") {   // a saved pipeline over many inputs: caps run PIPE.yaml --input 'runs/*/X.lammpstrj' [--frame first|last] [--csv OUT] [--out DIR]
     if (pos.empty()) return usage();
     std::ifstream pf(pos[0]);
     if (!pf) throw std::runtime_error("cannot read " + pos[0]);
@@ -1054,7 +1054,11 @@ int main(int argc, char** argv) {
     const bool last = !o.count("--frame") || o["--frame"] != "first";
     std::vector<std::string> keys;
     std::vector<std::pair<std::string, std::map<std::string, double>>> rows;
+    // the pipeline's outputs: under --out (default outputs/), one folder per input when there are several
+    const std::string out_root = o.count("--out") ? o["--out"] : "outputs";
+    size_t idx = 0;
     for (const auto& in : inputs) {
+      ++idx;
       try {
         std::string tp = o.count("--topology") ? o["--topology"] : "";
         if (tp.empty() && (in.size() > 10 && (in.rfind(".lammpstrj") == in.size() - 10 || in.rfind(".dump") == in.size() - 5))) {
@@ -1072,6 +1076,12 @@ int main(int argc, char** argv) {
           if (std::find(keys.begin(), keys.end(), k) == keys.end()) keys.push_back(k);
         }
         rows.push_back({in, m});
+        if (!pl.outputs.empty()) {
+          std::string sub = std::filesystem::path(in).parent_path().filename().string();
+          if (sub.empty() || sub == ".") sub = std::filesystem::path(in).stem().string();
+          const std::string dir = inputs.size() == 1 ? out_root : out_root + "/" + std::to_string(idx) + "_" + sub;
+          for (const auto& line : write_pipeline_outputs(st, pl, dir)) std::fprintf(stderr, "        %s\n", line.c_str());
+        }
         std::fprintf(stderr, "done    %s\n", in.c_str());
       } catch (const std::exception& e) {
         rows.push_back({in, {}});
@@ -2127,6 +2137,8 @@ int main(int argc, char** argv) {
         }
       }
       if (o.count("--particles")) std::printf("%s\n", particles_json(st, o["--particles"], 0, 50).dump(2).c_str());
+      if (!pl.outputs.empty() || o.count("--out"))   // the pipeline's outputs block
+        for (const auto& line : write_pipeline_outputs(st, pl, o.count("--out") ? o["--out"] : ".")) std::printf("%s\n", line.c_str());
       int errors = 0;
       for (const auto& s2 : st.steps) errors += s2.level == "error";
       return errors ? 2 : 0;

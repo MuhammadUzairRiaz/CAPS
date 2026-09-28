@@ -4333,6 +4333,27 @@ extern "C" int32_t caps_pipeline_export_grid(caps_doc* d, const char* path) {
   });
 }
 
+extern "C" int32_t caps_pipeline_write_outputs(caps_doc* d, const char* pipeline_json, const char* dir, char* report, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Pipeline p = caps::pipeline_from_json(caps::Json::parse(pipeline_json && *pipeline_json ? pipeline_json : "{\"steps\": []}"));
+    const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
+    const caps::PipelineState st = caps::run_pipeline(d->frame, p, int(d->current), ts, &d->traj);
+    caps::Json lines = caps::Json::array();
+    for (const auto& l : caps::write_pipeline_outputs(st, p, dir ? dir : ".")) lines.push_back(caps::Json(l));
+    r["ok"] = true;
+    r["lines"] = lines;
+    report_out(r.dump(0), report, cap);
+    return 0;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    r["ok"] = false, r["error"] = std::string(e.what());
+    report_out(r.dump(0), report, cap);
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_export_data(caps_doc* d, const char* path, const char* format, const char* options) {
   return guard([&] {
     std::vector<std::string> notes;

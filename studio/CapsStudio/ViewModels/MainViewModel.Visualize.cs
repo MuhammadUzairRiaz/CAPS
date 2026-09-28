@@ -423,6 +423,10 @@ public sealed partial class MainViewModel
                 WireRow(row);
                 PipelineRows.Add(row);
             }
+            PipelineOutputs.Clear();
+            if (j is JsonObject jo && jo["outputs"] is JsonArray outs)
+                foreach (var x in outs.OfType<JsonObject>()) { var row = PipelineOutputRow.From(x); WireOutput(row); PipelineOutputs.Add(row); }
+            Raise(nameof(HasPipelineOutputs));
             PipeSelected = PipelineRows.FirstOrDefault();
             _showTableAfterApply = true;
             ApplyPipeline();
@@ -744,6 +748,7 @@ public sealed partial class MainViewModel
             o["enabled"] = r.Enabled;
             return (JsonNode)o;
         }).ToArray()),
+        ["outputs"] = PipelineOutputsJson(),
     }.ToJsonString();
 
     /// <summary>Sends the steps to the core, which runs them on the shown frame; then the list, legend and inspector refresh.</summary>
