@@ -80,14 +80,14 @@ int usage() {
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
-               "  caps pipeline FILE [--topology DATA] --steps STEPS.json|STEPS.yaml|'[…]' [--frame N] [--table NAME] [--particles EXPR] [--out DIR]\n"
+               "  caps pipeline FILE [--topology DATA] --steps STEPS.json|STEPS.yaml|'[…]' [--frame N] [--table NAME] [--particles EXPR] [--out DIR] [--branch NAME]\n"
                "                                   visualize pipeline on one frame: step status, attributes, a table as CSV\n"
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
                "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
                "  caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json]   build → type → grow → relax → md →\n"
                "               equilibrate → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)\n"
-               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block]\n"
+               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]\n"
                "                                   a saved pipeline over many inputs: one row of attributes per input\n"
                "  caps crystal --group 'P 42/m n m' --cell a,b,c[,α,β,γ] --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' -o OUT\n"
                "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
@@ -1047,7 +1047,8 @@ int main(int argc, char** argv) {
       if (r.is_object() && (r.has("recipe") || r.has("build"))) return cli_recipe(r, pos[0], o);
     }
     std::string name, file, topo;
-    const Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
+    Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
+    if (o.count("--branch")) pl.branch = o["--branch"];   // the branch to run (steps of the others are skipped)
     const std::string pattern = o.count("--input") ? o["--input"] : file;
     const auto inputs = glob_files(pattern);
     if (inputs.empty()) throw std::runtime_error("no files match " + pattern);
@@ -2120,7 +2121,8 @@ int main(int argc, char** argv) {
       const int fr = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
       if (fr < 0 || size_t(fr) >= t.frames()) throw std::runtime_error("frame out of range");
       const System f0 = t.frame(size_t(fr));
-      const Pipeline pl = text.rfind("caps_pipeline", 0) == 0 || text.find("\ncaps_pipeline") != std::string::npos ? pipeline_from_yaml(text) : pipeline_from_json(Json::parse(text));
+      Pipeline pl = text.rfind("caps_pipeline", 0) == 0 || text.find("\ncaps_pipeline") != std::string::npos ? pipeline_from_yaml(text) : pipeline_from_json(Json::parse(text));
+      if (o.count("--branch")) pl.branch = o["--branch"];
       const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
       for (size_t k = st.steps.size(); k-- > 0;)
         std::printf("%-8s %-22s %s\n", st.steps[k].level.c_str(), st.steps[k].title.c_str(), st.steps[k].summary.c_str());

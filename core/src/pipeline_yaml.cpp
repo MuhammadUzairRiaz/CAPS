@@ -130,6 +130,7 @@ std::string pipeline_to_yaml(const Pipeline& p, const std::string& name, const s
     out += "source:\n  file: " + yaml_scalar(Json(file)) + "\n";
     if (!topology.empty()) out += "  topology: " + yaml_scalar(Json(topology)) + "\n";
   }
+  if (!p.branch.empty()) out += "branch: " + yaml_scalar(Json(p.branch)) + "        # the branch a run shows (steps of others are skipped)\n";
   out += "steps:                 # in the order they run\n";
   for (size_t k = p.steps.size(); k-- > 0;) {
     const auto& s = p.steps[k];
@@ -178,6 +179,7 @@ Pipeline pipeline_from_yaml(const std::string& text, std::string* name, std::str
         if (val.empty()) *name = "";
         else { Flow f{val}; const Json v = f.value(); *name = v.kind() == Json::String ? v.str() : val; }
       }
+      else if (key == "branch" && !val.empty()) { Flow f{val}; const Json v = f.value(); p.branch = v.kind() == Json::String ? v.str() : val; }
       else if (key == "source") source = true;
       else if (key == "steps") steps = true;
       else if (key == "outputs") outputs = true;

@@ -879,6 +879,39 @@ TEST(Pipeline, YamlRoundTrip) {
   EXPECT_THROW(pipeline_from_yaml("caps_pipeline: 1\nsteps:\n  - wrap: {a: [1, 2}\n"), std::invalid_argument);
 }
 
+TEST(Pipeline, BranchesShareTheTrunk) {
+  const Trajectory t = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.lammpstrj", std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  Pipeline p = pipeline_from_json(Json::parse(R"([
+    {"type":"colour_coding","property":"Molecule","branch":"Figure"},
+    {"type":"compute_property","name":"X","expression":"Position.X","branch":"Numbers"},
+    {"type":"coordination","cutoff":3.0,"rmax":8}])"));
+  EXPECT_EQ(pipeline_trunk(p), 2u);
+  p.branch = "Numbers";
+  auto st = run_pipeline(t.frame(0), p, 0, 0, &t);
+  EXPECT_TRUE(st.props.count("X"));
+  EXPECT_EQ(st.steps[0].level, "off");
+  EXPECT_NE(st.steps[0].summary.find("branch Figure"), std::string::npos);
+  EXPECT_GT(st.attribute("CoordinationAnalysis.mean"), 0.0);
+  p.branch = "";
+  st = run_pipeline(t.frame(0), p, 0, 0, &t);
+  EXPECT_FALSE(st.props.count("X"));
+  EXPECT_EQ(st.steps[1].level, "off");
+  // the trunk run once, each branch on a copy of it: the same result as the whole run
+  p.branch = "Numbers";
+  PipelineState trunk = pipeline_begin(t.frame(0), p, 0, 0, &t);
+  pipeline_run_steps(trunk, p, 3, 2);
+  PipelineState a = trunk;
+  pipeline_run_steps(a, p, 2, 0);
+  pipeline_finish(a);
+  const auto whole = run_pipeline(t.frame(0), p, 0, 0, &t);
+  ASSERT_EQ(a.attributes.size(), whole.attributes.size());
+  for (size_t k = 0; k < a.attributes.size(); ++k) EXPECT_EQ(a.attributes[k], whole.attributes[k]);
+  EXPECT_EQ(a.props.at("X"), whole.props.at("X"));
+  EXPECT_EQ(pipeline_from_json(pipeline_to_json(p)).branch, "Numbers");
+  EXPECT_EQ(pipeline_from_yaml(pipeline_to_yaml(p)).branch, "Numbers");
+  EXPECT_EQ(pipeline_to_json(pipeline_from_yaml(pipeline_to_yaml(p))).dump(0), pipeline_to_json(p).dump(0));
+}
+
 TEST(Pipeline, OutputsBlock) {
   // the outputs: block survives YAML and JSON, and writes the files it names
   const std::string y = "caps_pipeline: 1\nsteps:\n  - coordination: {cutoff: 3.0, rmax: 8}\noutputs:\n  - table: rdf -> rdf.csv\n"
