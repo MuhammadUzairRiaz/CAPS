@@ -2,6 +2,45 @@
  "about": "Literature many-body potentials for crystal and filler groups of composites (Field · by group). Each file is LAMMPS's own, copied unchanged from the potentials folder of the LAMMPS distribution with its header (date, units, contributor, citation); CAPS writes it beside the LAMMPS inputs of a system that uses it. Cite the paper given with each.",
  "potentials": [
   {
+   "id": "ch-airebo-stuart2000",
+   "name": "C–H AIREBO (Stuart 2000)",
+   "style": "airebo",
+   "file": "lammps/CH.airebo",
+   "elements": [
+    "C",
+    "H"
+   ],
+   "for": "carbon nanotubes, graphene, graphite, hydrocarbons (REBO bonding with Lennard-Jones and torsion terms); written in metal units",
+   "citation": "Stuart, Tutein and Harrison, J Chem Phys, 112, 6472-6486 (2000)",
+   "units": "metal"
+  },
+  {
+   "id": "ch-airebo-m-oconnor2015",
+   "name": "C–H AIREBO-M (O'Connor 2015)",
+   "style": "airebo/morse",
+   "file": "lammps/CH.airebo-m",
+   "elements": [
+    "C",
+    "H"
+   ],
+   "for": "carbon nanotubes, graphene and hydrocarbons under pressure and large strain (Morse in place of Lennard-Jones); written in metal units",
+   "citation": "O'Connor, Andzelm, Robbins, J. Chem. Phys. 142, 024903 (2015)",
+   "units": "metal"
+  },
+  {
+   "id": "ch-rebo-brenner2002",
+   "name": "C–H REBO (Brenner 2002)",
+   "style": "rebo",
+   "file": "lammps/CH.rebo",
+   "elements": [
+    "C",
+    "H"
+   ],
+   "for": "carbon nanotubes, graphene and hydrocarbons, covalent bonding only (no dispersion inside the filler); written in metal units",
+   "citation": "Brenner, Shenderova, Harrison, Stuart, Ni and Sinnott, J. Phys. Cond. Mat. 14, 783 (2002)",
+   "units": "metal"
+  },
+  {
    "id": "bnc-kinaci2012",
    "name": "B–N–C Tersoff (Kinaci 2012)",
    "style": "tersoff",

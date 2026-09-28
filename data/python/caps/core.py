@@ -578,7 +578,8 @@ class Document:
         """The simulation files for LAMMPS (stem.data, stem.in with every pair_coeff and the run) and GROMACS (stem.top,
         stem.itp, stem.gro, stem.mdp; stem_em.mdp when a run minimises first) from the assigned force field, which must be
         complete. run: check | none | minimize | nvt | npt; opts: minimize_first, temperature (K), pressure (atm), dt (fs),
-        steps, thermo_every, dump_every, seed. Returns {folder, files, notes, checks}; raises CapsError when refused."""
+        steps, thermo_every, dump_every, seed, units (auto | real | metal: LAMMPS in eV, ps, bar — automatic for AIREBO /
+        REBO, which LAMMPS reads in metal units only). Returns {folder, files, notes, checks}; raises CapsError when refused."""
         o = dict(opts, stem=stem, lammps=lammps, gromacs=gromacs, run=run)
         r = _json_call(library().caps_export_engines, self._h, _enc(str(folder)), _enc(json.dumps(o)))
         if not r.get("ok"):

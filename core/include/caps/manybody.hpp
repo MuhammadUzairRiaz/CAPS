@@ -10,8 +10,10 @@
 //
 // LAMMPS reads Tersoff, Stillinger–Weber, Vashishta, Gao–Weber and EAM files in metal units (eV) and converts them to the
 // real units (kcal/mol) CAPS writes, when the file says its units on its first line ("UNITS: metal"); a file that does not
-// say is read as it stands, so its units must be given (the copy written with the inputs then says them). AIREBO, REBO,
-// MEAM, BOP and COMB are read in metal units only: they are refused, with the reason, since CAPS's inputs are in real units.
+// say is read as it stands, so its units must be given (the copy written with the inputs then says them). AIREBO, AIREBO-M
+// and REBO (carbon and hydrogen: nanotubes, graphene) are read in metal units only: a system with one is written in metal
+// units (eV, ps, bar), every parameter of the force field converted. MEAM (its library names entries, not elements), BOP
+// and COMB (charge equilibration) are refused with the reason.
 #pragma once
 
 #include <string>
@@ -29,6 +31,7 @@ struct ManyBodySpec {
   // the Lennard-Jones form of the cross pairs, the other groups' own: lj12-6 (σ = x / 2^(1/6)) or lj9-6 (class II, PCFF /
   // COMPASS: σ = the minimum x), UFF's well depth D and minimum x either way
   std::string pair_form = "lj12-6";
+  std::string args;    // the pair style's arguments; "" the usual ones (airebo, airebo/morse: 3.0 1 1 — LJ cut-off 3σ, LJ and torsion on)
 };
 
 // The styles CAPS writes (the file format of each is checked), and whether a style is one LAMMPS reads in metal units only.

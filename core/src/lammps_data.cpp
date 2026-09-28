@@ -530,13 +530,16 @@ std::vector<std::string> hbond_lines(const ForceField& ff) {
 bool pme(const EnergyOptions& e, const Layout& L) { return e.electrostatics == EnergyOptions::Electrostatics::PME && L.periodic && !L.gromacs; }
 
 // The LAMMPS commands (after units / atom_style) that reproduce CAPS's energy with the data file.
+// The many-body style as pair_style names it, with its arguments (airebo 3.0 1 1).
+std::string mb_style_word(const ForceField& ff) { return ff.manybody.style + (ff.manybody.args.empty() ? "" : " " + ff.manybody.args); }
+
 std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, const EnergyOptions& e) {
   std::vector<std::string> r;
   char b[400];
   if (L.native && !L.pair_combined.empty()) {
     // the force field's own form: one pair style (hybrid when asked), its long-range sum by PPPM or Ewald
     const std::string args = L.charmm ? fmt_args({ff.lj_inner, e.cutoff}) : L.coul == "dsf" ? fmt_args({e.dsf_alpha, e.cutoff}) : fmt_args({e.cutoff});
-    const std::string mb = L.mb_types.empty() ? "" : " " + ff.manybody.style;   // a many-body potential overlaid
+    const std::string mb = L.mb_types.empty() ? "" : " " + mb_style_word(ff);   // a many-body potential overlaid
     if (L.hbond || !mb.empty()) {   // DREIDING: the hydrogen bond overlaid on the Lennard-Jones and Coulomb pairs
       r.push_back("pair_style hybrid/overlay " + (L.hbond ? hbond_style(ff) + " " : std::string()) + L.pair_combined + args + mb);
       if (e.tail && L.periodic) r.push_back("pair_modify pair " + L.pair_combined + " tail yes");
@@ -602,7 +605,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       p += b;
     }
     if (!L.sw_types.empty()) p += " sw";
-    if (!L.mb_types.empty()) p += " " + ff.manybody.style;
+    if (!L.mb_types.empty()) p += " " + mb_style_word(ff);
     r.push_back(p);
   }
   // CAPS: with tail corrections the potentials are truncated at the cut-off (plus the tail when there is a cell);
@@ -791,6 +794,51 @@ Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const La
 
 }  // namespace
 
+bool lammps_metal_units(const ForceField& ff, const LammpsStyle& st) {
+  if (st.units != "auto" && st.units != "real" && st.units != "metal") throw FieldError("LAMMPS units " + st.units + ": real, metal or auto");
+  const bool need = ff.manybody.on() && ff.manybody.metal_only;
+  if (need && st.units == "real")
+    throw FieldError(ff.manybody.style + " is read by LAMMPS in metal units only: write this system in metal units (eV, ps, bar)");
+  return st.units == "metal" || (st.units == "auto" && need);
+}
+
+ForceField forcefield_in_metal_units(const ForceField& ff0) {
+  constexpr double f = 1.0 / 23.060549;   // kcal/mol → eV, as LAMMPS converts potential files
+  ForceField ff = ff0;
+  for (auto& p : ff.lj) p.eps *= f;
+  for (auto& p : ff.lj14_types) p.eps *= f;
+  for (auto& [k, p] : ff.pair_override) p.eps *= f;
+  for (auto& [k, p] : ff.pair_func) {
+    if (p.form == 1) p.a *= f, p.c *= f;   // Buckingham A, C
+    else p.a *= f;                         // Morse D0; SDK, lj/gromacs and cosine/squared ε
+  }
+  for (auto& t : ff.lj_pairs) t.eps *= f;
+  for (auto& t : ff.bonds) t.k *= f;
+  for (auto& t : ff.angles) t.kt *= f;
+  for (auto& t : ff.dihedrals) t.v *= f;
+  for (auto& t : ff.impropers) t.v *= f;
+  for (auto& t : ff.impropers_dlpoly) t.v *= f;
+  for (auto& t : ff.impropers_harmonic) t.k2 *= f;
+  for (auto& t : ff.inversions) t.kw *= f;
+  for (auto& t : ff.bonds_x) {
+    t.a *= f;                        // Morse D, GROMOS K, FENE K
+    if (t.form == 3) t.c *= f;       // FENE's WCA ε
+  }
+  for (auto& t : ff.angles_x) t.a *= f;
+  for (auto& t : ff.urey_bradley) t.kub *= f;
+  for (auto& t : ff.cbt) for (double& a : t.a) a *= f;
+  for (auto& t : ff.bonds2) t.k2 *= f, t.k3 *= f, t.k4 *= f;
+  for (auto& t : ff.angles2) t.k2 *= f, t.k3 *= f, t.k4 *= f, t.bb_m *= f, t.ba_n1 *= f, t.ba_n2 *= f;
+  for (auto& t : ff.dihedrals2) {
+    t.k1 *= f, t.k2 *= f, t.k3 *= f, t.aat_m *= f, t.bb13_n *= f;
+    for (int n = 0; n < 3; ++n) t.mbt[n] *= f, t.ebt_b[n] *= f, t.ebt_c[n] *= f, t.at_d[n] *= f, t.at_e[n] *= f;
+  }
+  for (auto& t : ff.impropers2) t.kchi *= f, t.m1 *= f, t.m2 *= f, t.m3 *= f;
+  for (auto& [k, p] : ff.hbond.param) p[0] *= f;   // ε
+  ff.sw.eps *= f;
+  return ff;
+}
+
 std::string write_lammps_data_or_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path) {
   try {
     write_lammps_data_ff(s, ff, e, path);
@@ -801,8 +849,11 @@ std::string write_lammps_data_or_structure(const System& s, const ForceField& ff
   }
 }
 
-void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
+void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
                           const LammpsStyle& st) {
+  const bool metal = lammps_metal_units(ff0, st);
+  const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
+  const ForceField& ff = metal ? mff : ff0;
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
   std::ofstream out(path);
@@ -813,7 +864,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
 
   // the LAMMPS data format: one title line, the counts, the box, then the sections (atom_style full, units real)
-  out << "CAPS · " << clean_title(s.title, ff.name) << " · " << ff.name << "\n\n";
+  out << "CAPS · " << clean_title(s.title, ff.name) << " · " << ff.name << (metal ? " · units metal (eV)" : "") << "\n\n";
   out << s.atoms.size() << " atoms\n";
   const char* plural[] = {"bonds", "angles", "dihedrals", "impropers"};
   for (int k = 0; k < 4; ++k)
@@ -939,15 +990,23 @@ std::string shake_fix(const System& s, const ForceField& ff, const Layout& L, Co
   return b + what + "\n";
 }
 
-std::string lammps_shake_fix(const System& s, const ForceField& ff, const EnergyOptions& e0, ConstraintMode mode, const std::string& group,
+std::string lammps_shake_fix(const System& s, const ForceField& ff0, const EnergyOptions& e0, ConstraintMode mode, const std::string& group,
                              const LammpsStyle& st) {
+  const bool metal = lammps_metal_units(ff0, st);
+  const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
+  const ForceField& ff = metal ? mff : ff0;
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
   return shake_fix(s, ff, L, mode, group);
 }
 
-void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
+void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run, const LammpsStyle& st, std::vector<std::string>* notes) {
+  const bool metal = lammps_metal_units(ff0, st);
+  const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
+  const ForceField& ff = metal ? mff : ff0;
+  const double tu = metal ? 1e-3 : 1.0;          // fs → ps
+  const double pu = metal ? 1.01325 : 1.0;       // atm → bar
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
   if (notes) notes->insert(notes->end(), L.notes.begin(), L.notes.end());
@@ -960,10 +1019,13 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   else
     out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n\n";
   // a structure without a cell sits in a 100 Å box (as in the data file): periodic, but too large for images to interact
-  out << "units           real\natom_style      full\nboundary        p p p\n";
+  if (metal)
+    out << "# units metal: energies in eV (every parameter of the force field divided by 23.060549, LAMMPS's own factor), time in ps,\n"
+           "# pressure in bar" << (ff.manybody.on() ? ", as LAMMPS reads " + ff.manybody.style + "'s file" : std::string()) << "\n";
+  out << (metal ? "units           metal\n" : "units           real\n") << "atom_style      full\nboundary        p p p\n";
   {
-    char t[64];   // in fs, with the other settings at the top, as force-field input files give it
-    std::snprintf(t, sizeof t, "timestep        %.6g\n\n", lammps_timestep(run, ff));
+    char t[64];   // in fs (ps in metal units), with the other settings at the top, as force-field input files give it
+    std::snprintf(t, sizeof t, "timestep        %.6g\n\n", lammps_timestep(run, ff) * tu);
     out << t;
   }
   auto aligned = [](const std::string& l) {   // "keyword       arguments", as the rest of the script
@@ -990,7 +1052,11 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   }
   if (!L.mb_types.empty())
     out << "\n# " << ff.manybody.style << " (" << ff.manybody.file.substr(ff.manybody.file.find_last_of('/') + 1) << (ff.manybody.citation.empty() ? "" : "; " + ff.manybody.citation)
-        << ") for its elements, Lennard-Jones between them and the rest; " << (ff.manybody.units == "metal" ? "LAMMPS converts the file from metal to real units" : "the file is in real units") << "\n";
+        << ") for its elements, Lennard-Jones between them and the rest; "
+        << (metal ? (ff.manybody.units == "metal" ? "the file in metal units, as this input" : "LAMMPS converts the file from real to metal units")
+                  : (ff.manybody.units == "metal" ? "LAMMPS converts the file from metal to real units" : "the file is in real units")) << "\n";
+  if (!L.mb_types.empty() && !L.bonds.term_type.empty())
+    out << "# (LAMMPS warns of a many-body potential beside bonds: its atoms have none, the special_bonds exclusions act on the other groups only)\n";
   for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
@@ -1016,7 +1082,10 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   std::snprintf(b, sizeof b, "\nthermo          %d\nthermo_style    custom step temp press pe ke etotal density vol\n", std::max(1, run.thermo_every));
   out << b;
   if (run.minimize_first || run.kind == K::Minimize)
-    out << "\n# 1. energy minimisation\nmin_style       cg\nminimize        1.0e-4 1.0e-6 5000 50000\nreset_timestep  0\n";
+  {
+    std::snprintf(b, sizeof b, "\n# 1. energy minimisation\nmin_style       cg\nminimize        1.0e-4 %s 5000 50000\nreset_timestep  0\n", metal ? "4.34e-8" : "1.0e-6");
+    out << b;   // the force tolerance 1e-6 kcal/mol/Å, in eV/Å in metal units
+  }
   if (run.kind == K::Minimize) {
     out << "\nwrite_data      minimized.data\n";
     return;
@@ -1052,9 +1121,9 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
   out << b;
   if (npt)
     std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature,
-                  run.tdamp, run.pressure, run.pressure, run.pdamp);
+                  run.tdamp * tu, run.pressure * pu, run.pressure * pu, run.pdamp * tu);
   else
-    std::snprintf(b, sizeof b, "fix             integrate %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature, run.tdamp);
+    std::snprintf(b, sizeof b, "fix             integrate %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature, run.tdamp * tu);
   out << b;
   if (L.coreshell) out << "fix_modify      integrate temp CSequ\n";
 

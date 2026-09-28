@@ -193,6 +193,9 @@ public sealed partial class MainViewModel
     private static readonly string[] EngineCoulombIds = ["auto", "pppm", "ewald", "dsf", "cut"];
     private int _engStyle, _engCoulomb;
     private bool _engHybrid;
+    private int _engUnits;
+    public static readonly string[] EngineUnitModes = ["Automatic (metal only when a potential needs it)", "real · kcal/mol, fs, atm", "metal · eV, ps, bar"];
+    public int EngineUnits { get => _engUnits; set { if (Set(ref _engUnits, Math.Clamp(value, 0, 2))) RefreshEngines(); } }
     private double _engCutoff, _engKspace = 1e-4;
     public int EngineStyle { get => _engStyle; set { if (Set(ref _engStyle, Math.Clamp(value, 0, 1))) { Raise(nameof(EngineNative)); RefreshEngines(); } } }
     public bool EngineNative => _engStyle == 0;
@@ -207,7 +210,7 @@ public sealed partial class MainViewModel
         ["lammps"] = _engLammps, ["gromacs"] = _engGromacs, ["moltemplate"] = _engLammps && _engMoltemplate, ["dlpoly"] = _engDlpoly, ["stem"] = _engStem, ["run"] = EngineRunIds[_engRun],
         ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps, ["constraints"] = _engConstraints switch { 1 => "h-bonds", 2 => "all-bonds", _ => "none" },
         ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
-        ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace,
+        ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace, ["units"] = _engUnits switch { 1 => "real", 2 => "metal", _ => "auto" },
         ["preview"] = preview, ["head_lines"] = preview ? 60 : 0,
     }.ToJsonString();
 

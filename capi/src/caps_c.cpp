@@ -1484,6 +1484,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     ls.kspace_accuracy = o.num("kspace_accuracy", 1e-4);
     ls.cutoff = o.num("cutoff", 0);
     if (o.has("tail") && o["tail"].kind() == caps::Json::Bool) ls.tail = o["tail"].boolean() ? 1 : 0;
+    ls.units = o.text("units", "auto");   // real | metal | auto (metal when a potential is read in metal units only)
     if (ls.kspace_accuracy <= 0 || ls.cutoff < 0) throw std::runtime_error("the k-space accuracy and the cut-off must be positive");
     // a force field LAMMPS cannot express (GROMOS's reaction field …) refuses the LAMMPS files only: the GROMACS files
     // are still written, and the reason goes back as lammps_error
@@ -1499,8 +1500,13 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       if (ff.manybody.on()) {
         written.push_back({caps::manybody_file_name(ff.manybody), "the " + ff.manybody.style + " potential file (" +
                                                                       (ff.manybody.tagged ? "as given" : "as given, with its units on the first line") + ")"});
-        notes.push_back(caps::Json("LAMMPS: " + ff.manybody.style + " overlays the pair terms for its elements (pair_style hybrid/overlay); in " +
-                                   (ff.manybody.units == "metal" ? "metal units, which LAMMPS converts to real" : "real units")));
+        const bool metal = caps::lammps_metal_units(ff, ls);
+        notes.push_back(caps::Json("LAMMPS: " + ff.manybody.style + " overlays the pair terms for its elements (pair_style hybrid/overlay); the file in " + ff.manybody.units +
+                                   " units" + (ff.manybody.units == (metal ? "metal" : "real") ? "" : ", which LAMMPS converts")));
+      }
+      if (caps::lammps_metal_units(ff, ls)) {
+        notes.push_back(caps::Json("LAMMPS: written in metal units (eV, ps, bar)" + std::string(ff.manybody.metal_only ? ", as " + ff.manybody.style + " requires" : ", as asked") +
+                                   ": every energy parameter of the force field divided by 23.060549 (LAMMPS's own factor)"));
       }
       if (flag("moltemplate", false)) {   // the same as a moltemplate system (moltemplate.sh -overlay-all system.lt)
         std::ofstream lt(base + ".lt");
