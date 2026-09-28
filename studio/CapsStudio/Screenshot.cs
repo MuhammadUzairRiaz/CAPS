@@ -721,6 +721,25 @@ internal static class Screenshot
                 if (k >= 0) w.ViewModel.Field.FfIndex = k;
             }
             if (kv[0] == "charges") w.ViewModel.Field.ChargeMode = int.Parse(kv[1]);
+            // fieldgroups=1: Field · by group open with the suggested groups; fieldgroups=PATH: the first group a literature
+            // potential from that file, the others GAFF2, assigned
+            if (kv[0] == "fieldgroups")
+            {
+                var F = w.ViewModel.Field;
+                w.ViewModel.SetModule(7);
+                F.GroupMode = true;
+                F.SuggestGroups();
+                if (kv[1] != "1" && F.Groups.Count > 1)
+                {
+                    F.Groups[0].Kind = 1;
+                    F.Groups[0].File = kv[1];
+                    var gaff = F.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+                    foreach (var g in F.Groups.Skip(1)) { g.FfIndex = gaff; g.Charges = 2; }
+                    var t = F.AssignGroups();
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                }
+            }
+            if (kv[0] == "hold") w.ViewModel.Document?.SetHeldMolecule(long.Parse(kv[1]));
             if (kv[0] == "compress") w.ViewModel.RelaxCompress = kv[1] == "1";
             if (kv[0] == "field")
             {

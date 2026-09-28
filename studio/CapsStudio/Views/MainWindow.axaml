@@ -2771,20 +2771,22 @@
           <!-- header -->
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Spacing="3">
-              <TextBlock Text="Force field · typing report" FontSize="20" FontWeight="SemiBold" />
-              <TextBlock Classes="muted" Text="Explain every type, override with provenance, and block runs with missing parameters" />
+              <TextBlock Text="Force field · typing report" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Classes="muted" Text="Explain every type, override with provenance, and block runs with missing parameters" TextTrimming="CharacterEllipsis" />
               <local:StructurePicker Margin="0,8,0,0" HorizontalAlignment="Left" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" IsEnabled="{Binding Field.NotWorking}">
               <StackPanel Spacing="3">
                 <TextBlock Text="Force field" Classes="dim" />
-                <ComboBox Width="300" ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding Field.FfIndex}" ToolTip.Tip="{Binding Field.FfNote}" />
+                <ComboBox Width="264" ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding Field.FfIndex}" ToolTip.Tip="{Binding Field.FfNote}" />
               </StackPanel>
               <StackPanel Spacing="3">
                 <TextBlock Text="Charges" Classes="dim" />
                 <ComboBox Width="170" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" />
               </StackPanel>
               <Button Classes="primary" Content="Assign · retype all" Click="OnFieldAssign" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom" />
+              <ToggleButton Content="By group" IsChecked="{Binding Field.GroupMode}" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom"
+                            ToolTip.Tip="A force field per group of molecules (a filler and its matrix, each component of a blend), or a literature potential (Tersoff, EAM …) for a crystal; the cross pairs by the rule you choose" />
               <Button Content="Type by hand…" Click="OnUnitTyping" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom"
                       ToolTip.Tip="The repeat unit as head, body and tail (a copolymer's units and junctions) in 3D: give any atom its type by hand, then apply to the whole structure" />
               <Button Content="Export ▾" VerticalAlignment="Bottom" IsEnabled="{Binding Field.Assigned}">
@@ -2801,7 +2803,84 @@
           </Grid>
 
           <!-- chips -->
-          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,14,0,12" IsVisible="{Binding Field.Assigned}">
+          <StackPanel Grid.Row="1">
+          <!-- force fields by group -->
+          <Border IsVisible="{Binding Field.GroupMode}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}"
+                  Padding="14,12" Margin="0,14,0,0" IsEnabled="{Binding Field.NotWorking}">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Force fields by group" FontWeight="SemiBold" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap"
+                             Text="Each group is typed and parameterised by its own force field, with its own charges and mixing rule; the pairs between groups follow the rule below (or the pairs you give), written out explicitly in every engine file. A crystal can take a literature potential instead: LAMMPS reads it from its file, CAPS holds those atoms still." />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top" Margin="12,0,0,0">
+                  <Button Content="Suggest groups" Click="OnFieldGroupSuggest" ToolTip.Tip="From what CAPS knows: the held filler and the rest, or a blend's components" />
+                  <Button Content="+ Group" Click="OnFieldGroupAdd" />
+                  <Button Classes="primary" Content="Assign by group" Click="OnFieldAssignGroups" IsEnabled="{Binding HasDocument}" />
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="120,130,160,*,30" ColumnSpacing="8">
+                <TextBlock Text="Group" Classes="dim" />
+                <TextBlock Grid.Column="1" Text="Molecules" Classes="dim" />
+                <TextBlock Grid.Column="2" Text="Takes" Classes="dim" />
+                <TextBlock Grid.Column="3" Text="Force field and charges · or potential style, file and its units" Classes="dim" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Field.Groups}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FieldGroupRow">
+                    <Grid ColumnDefinitions="120,130,160,*,30" ColumnSpacing="8">
+                      <TextBox Text="{Binding Name}" />
+                      <TextBox Grid.Column="1" Text="{Binding Molecules}" Watermark="1, 2-10 or rest" ToolTip.Tip="Molecule numbers (1, 2-10, 12) or rest: every molecule no other group names" />
+                      <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:FieldViewModel.GroupKinds}" SelectedIndex="{Binding Kind}" HorizontalAlignment="Stretch" />
+                      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsForceField}">
+                        <ComboBox Width="300" ItemsSource="{Binding Library}" SelectedIndex="{Binding FfIndex}" />
+                        <ComboBox Width="200" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Charges}" />
+                      </StackPanel>
+                      <Grid Grid.Column="3" ColumnDefinitions="120,*,Auto,150" ColumnSpacing="6" IsVisible="{Binding IsPotential}">
+                        <ComboBox ItemsSource="{x:Static vm:FieldViewModel.PotentialStyles}" SelectedIndex="{Binding Style}" HorizontalAlignment="Stretch"
+                                  ToolTip.Tip="The LAMMPS pair style the file is for (LAMMPS converts these from metal to real units)" />
+                        <TextBox Grid.Column="1" Text="{Binding File}" Watermark="the potential file (Si.tersoff, CuNi.eam.alloy …)" />
+                        <Button Grid.Column="2" Content="…" Click="OnFieldGroupBrowse" Tag="{Binding}" ToolTip.Tip="Choose the file: LAMMPS's potentials folder, the NIST Interatomic Potentials Repository, a paper's supplement" />
+                        <ComboBox Grid.Column="3" ItemsSource="{x:Static vm:FieldViewModel.PotentialUnits}" SelectedIndex="{Binding Units}" HorizontalAlignment="Stretch"
+                                  ToolTip.Tip="What the file's energies are in: most published files say it on their first line (UNITS: metal); if yours does not, say it here" />
+                      </Grid>
+                      <Button Grid.Column="4" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnFieldGroupRemove" Tag="{Binding}" ToolTip.Tip="Remove the group">
+                        <local:Icon Kind="close" Size="12" />
+                      </Button>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <WrapPanel Orientation="Horizontal">
+                <StackPanel Spacing="3" Margin="0,0,10,6">
+                  <TextBlock Text="Between groups · ε" Classes="dim" />
+                  <ComboBox Width="190" ItemsSource="{x:Static vm:FieldViewModel.EpsRules}" SelectedIndex="{Binding Field.EpsRule}" IsEnabled="{Binding Field.EpsRuleEnabled}" />
+                </StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,10,6">
+                  <TextBlock Text="σ" Classes="dim" />
+                  <ComboBox Width="190" ItemsSource="{x:Static vm:FieldViewModel.SigmaRules}" SelectedIndex="{Binding Field.SigmaRule}" />
+                </StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,10,6">
+                  <TextBlock Text="1-4 pairs" Classes="dim" />
+                  <ComboBox Width="210" ItemsSource="{x:Static vm:FieldViewModel.Scaling14Modes}" SelectedIndex="{Binding Field.Scaling14}"
+                            ToolTip.Tip="LAMMPS and GROMACS hold one 1-4 scaling for the whole system: groups whose force fields scale 1-4 pairs differently (GAFF 0.5 / 0.833, OPLS-AA 0.5 / 0.5) are refused unless you take the first group's for all" />
+                </StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,10,6">
+                  <TextBlock Text="9-6 with 12-6" Classes="dim" />
+                  <ComboBox Width="250" ItemsSource="{x:Static vm:FieldViewModel.Cross96Modes}" SelectedIndex="{Binding Field.Cross96}"
+                            ToolTip.Tip="A class II group (PCFF, COMPASS: Lennard-Jones 9-6) with a 12-6 group: the cross pairs need one form. 12-6 with the 9-6 site's own well depth and minimum, said in the notes" />
+                </StackPanel>
+              </WrapPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Cross pairs given explicitly (they replace the rule): type_a type_b ε (kcal/mol) σ (Å), one per line" Classes="dim" />
+                <TextBox Classes="mono" Text="{Binding Field.PairsText}" AcceptsReturn="True" MinHeight="32" MaxHeight="90" FontSize="11.5"
+                         Watermark="Si c3 0.2081 3.6121" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,14,0,12" IsVisible="{Binding Field.Assigned}">
             <Border Background="{DynamicResource Bg2B}" CornerRadius="11" Padding="9,3">
               <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" /><TextBlock Text="{Binding Field.TypedText}" FontSize="11.5" /></StackPanel>
             </Border>
@@ -2828,6 +2907,7 @@
                 <TextBlock Text="{Binding Field.ChargeText}" Classes="mono" FontSize="11" />
               </StackPanel>
             </Border>
+          </StackPanel>
           </StackPanel>
 
           <!-- body -->

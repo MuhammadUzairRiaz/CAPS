@@ -2555,7 +2555,9 @@ int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
     const caps::Json G = caps::Json::parse(d->field->groups);
     caps::KeyValues pr;
     for (const auto& g : G["groups"].items())
-      pr.push_back({g.text("name", "group"), std::filesystem::path(g.text("forcefield", "")).filename().string() + " · molecules " + g.text("molecules", "")});
+      pr.push_back({g.text("name", "group"), (g.has("potential") && g["potential"].is_object()
+                                                   ? g["potential"].text("style", "") + " potential " + std::filesystem::path(g["potential"].text("file", "")).filename().string()
+                                                   : std::filesystem::path(g.text("forcefield", "")).filename().string()) + " · molecules " + g.text("molecules", "")});
     pr.push_back({"between groups", "ε " + G.text("eps_rule", "geometric") + ", σ " + G.text("sigma_rule", "arithmetic")});
     if (G.text("scaling14", "refuse") == "first") pr.push_back({"1-4 scaling", "the first group's for all (asked)"});
     if (G.text("cross96", "refuse") == "rmin") pr.push_back({"9-6 sites in cross pairs", "12-6 with the same ε and r_min (asked)"});
@@ -2723,6 +2725,8 @@ int32_t caps_field_report(caps_doc* d, char* json, int32_t cap) {
 int32_t caps_field_override(caps_doc* d, int32_t index, const char* type) {
   return guard([&] {
     if (!d->field) throw caps::FFError("assign a force field first");
+    if (!d->field->groups.empty())
+      throw caps::FFError("the force field is assigned by group: overrides, entered and imported parameters apply to one force field. Change the group's force field, or give its pairs in the group settings");
     if (index < 0 || size_t(index) >= d->frame.atoms.size()) throw caps::FFError("atom " + std::to_string(index + 1) + " out of range");
     const std::string t = type ? type : "";
     if (t.empty()) d->field->overrides.erase(index);
@@ -2789,6 +2793,8 @@ int32_t caps_equivalent_atoms(caps_doc* d, int32_t atom, int32_t radius, char* j
 int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, const char* style, const char* params) {
   return guard([&] {
     if (!d->field) throw caps::FFError("assign a force field first");
+    if (!d->field->groups.empty())
+      throw caps::FFError("the force field is assigned by group: overrides, entered and imported parameters apply to one force field. Change the group's force field, or give its pairs in the group settings");
     const std::string k = kind ? kind : "";
     std::vector<caps::FFRule>* dst = k == "pair" ? &d->field->extra.pairs : k == "bond" ? &d->field->extra.bonds
                                    : k == "angle" ? &d->field->extra.angles : k == "dihedral" ? &d->field->extra.dihedrals
@@ -2853,6 +2859,8 @@ int32_t caps_field_import_ex(caps_doc* d, const char* path, const char* options)
     const caps::Json opt = caps::Json::parse(options && *options ? options : "{}");
     const bool fill = opt.text("mode", "override") == "fill";
     if (!d->field) throw caps::FFError("assign a force field first");
+    if (!d->field->groups.empty())
+      throw caps::FFError("the force field is assigned by group: overrides, entered and imported parameters apply to one force field. Change the group's force field, or give its pairs in the group settings");
     const std::string p = path ? path : "";
     auto ends = [&](const char* e) { const std::string x = e; return p.size() > x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
     std::string lower_p = p;
@@ -4086,6 +4094,8 @@ void field_run_groups(caps_doc* d) {
         a["ov"] = false;
         a["rule"] = mf->why[k];
         a["src"] = std::string("potential file");
+        a["q"] = 0.0;
+        a["cands"] = caps::Json::array();
         ra.push_back(a);
       }
       for (const auto& x : mb_notes) rn.push_back(x);
@@ -4628,6 +4638,9 @@ extern "C" caps_doc* caps_grow_blend(const char* options_json, const caps_grow_o
     const caps::System s = caps::grow_blend(comps, bo, &br);
     std::string t;
     for (const auto& n : br.notes) t += n + "\n";
+    // each component's molecules (for a force field per component: Field · by group)
+    for (size_t k = 0; k < br.molecules.size(); ++k)
+      t += "component " + std::to_string(k + 1) + " · molecules " + std::to_string(br.molecules[k].first) + "-" + std::to_string(br.molecules[k].second) + "\n";
     report_out(t, report, cap);
     caps_doc* d = doc_of(s);
     prov_step(d, "grow.blend", "polymer blend grown in a periodic cell", json_params(options_json), seeded(o ? o->seed : 0), {"matsumoto1998"});

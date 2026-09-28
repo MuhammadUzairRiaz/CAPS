@@ -484,6 +484,35 @@ public partial class MainWindow : Window
     // ---------------------------------------------------------------- Field
     private async void OnFieldAssign(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Assign(); }
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
+    private async void OnFieldAssignGroups(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AssignGroups(); }
+    private void OnFieldGroupAdd(object? s, RoutedEventArgs e) => _vm.Field.AddGroup();
+    private void OnFieldGroupSuggest(object? s, RoutedEventArgs e) => _vm.Field.SuggestGroups();
+    private void OnFieldGroupRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is FieldGroupRow g) _vm.Field.RemoveGroup(g); }
+
+    /// <summary>A literature potential's file for a group (Tersoff, EAM …).</summary>
+    private async void OnFieldGroupBrowse(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not FieldGroupRow g) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "The potential file (" + FieldViewModel.PotentialStyles[Math.Clamp(g.Style, 0, FieldViewModel.PotentialStyles.Length - 1)] + ")", AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("LAMMPS potential files") { Patterns = ["*.tersoff", "*.tersoff.*", "*.sw", "*.vashishta", "*.gw", "*.eam.alloy", "*.eam.fs", "*.setfl"] },
+                new FilePickerFileType("All files") { Patterns = ["*"] },
+            ],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p)
+        {
+            g.File = p;
+            // the style from the file's name when it says (Si.tersoff, CuNi.eam.alloy)
+            var n = Path.GetFileName(p).ToLowerInvariant();
+            var k = n.EndsWith(".eam.alloy") ? "eam/alloy" : n.EndsWith(".eam.fs") ? "eam/fs" : n.EndsWith(".sw") ? "sw" : n.EndsWith(".vashishta") ? "vashishta"
+                  : n.EndsWith(".gw") ? "gw" : n.Contains(".tersoff") ? (n.Contains("zbl") ? "tersoff/zbl" : n.Contains(".mod.c") ? "tersoff/mod/c" : n.Contains(".mod") ? "tersoff/mod" : "tersoff") : "";
+            var i = Array.IndexOf(FieldViewModel.PotentialStyles, k);
+            if (i >= 0) g.Style = i;
+        }
+    }
     private async void OnFieldOverride(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.ApplyOverride(); }
     private async void OnFieldResetOverride(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.ResetOverride(); }
     private async void OnFieldAddRule(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AddRule(); }

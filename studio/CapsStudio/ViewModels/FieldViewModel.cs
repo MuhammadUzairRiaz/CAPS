@@ -444,6 +444,7 @@ public sealed partial class FieldViewModel : ObservableObject
         _fftypes.Clear();
         SelectedRow = null;
         ForceFieldName = "";
+        IsGrouped = false;
         EnergyText = "";
         Log = "Choose a force field and assign it. CAPS types every atom from its rules, sets the charges and looks up every parameter; nothing is guessed.";
         Raise(nameof(RunLine));
@@ -457,6 +458,7 @@ public sealed partial class FieldViewModel : ObservableObject
         using var js = JsonDocument.Parse(json);
         var r = js.RootElement;
         ForceFieldName = Str(r, "forcefield");
+        IsGrouped = r.TryGetProperty("groups", out _);
         MixingRule = Str(r, "mixing") switch
         {
             "arithmetic" => "Lorentz–Berthelot (arithmetic σ)", "geometric" => "geometric σ and ε (OPLS)", "sixthpower" => "sixth power (class II)",

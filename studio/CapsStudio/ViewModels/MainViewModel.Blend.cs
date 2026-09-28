@@ -24,6 +24,9 @@ public sealed class BlendRow : INotifyPropertyChanged
     public decimal Weight { get => _weight; set { _weight = Math.Clamp(value, 0, 100); Raise(nameof(Weight)); Changed?.Invoke(); } }
     public decimal Dp { get => _dp; set { _dp = Math.Clamp(Math.Round(value), 2, 2000); Raise(nameof(Dp)); Changed?.Invoke(); } }
     public string ChainsText { get => _chains; set { _chains = value; Raise(nameof(ChainsText)); } }
+    private FfEntry? _ff;
+    /// <summary>The component's own force field (Field · by group after the build); the first entry: choose later.</summary>
+    public FfEntry? ForceField { get => _ff; set { _ff = value; Raise(nameof(ForceField)); } }
     internal double Mass;   // g/mol of one chain
 }
 
@@ -53,10 +56,14 @@ public sealed partial class MainViewModel
         BlendRecount();
     }
 
+    private List<FfEntry>? _blendFfs;
+    /// <summary>A force field per component: "choose later" first, then the library.</summary>
+    public List<FfEntry> BlendForceFields => _blendFfs ??= [new FfEntry("", "Force field: choose later in Field", "", "", "", true), .. Field.Library];
+
     public void AddBlendRow(LibraryEntry? p = null, decimal weight = 50)
     {
         if (BlendRows.Count >= 5) return;
-        var r = new BlendRow { Polymer = p ?? BlendLibrary.FirstOrDefault(), Weight = weight, Dot = BlendDots[BlendRows.Count % BlendDots.Length] };
+        var r = new BlendRow { Polymer = p ?? BlendLibrary.FirstOrDefault(), Weight = weight, Dot = BlendDots[BlendRows.Count % BlendDots.Length], ForceField = BlendForceFields[0] };
         r.Changed = BlendRecount;
         BlendRows.Add(r);
         BlendRecount();
@@ -144,6 +151,27 @@ public sealed partial class MainViewModel
         BlendSummary = string.Format(CultureInfo.InvariantCulture, "{0} components · {1} chains · {2:N0} g/mol in the cell", BlendRows.Count, counts.Sum(), total);
     }
 
+    /// <summary>The last blend built: its document and each component's molecules.</summary>
+    private (CapsDocument? Doc, List<(string Name, string Molecules, bool Crystal)> Groups) _blendGroups = (null, new());
+
+    /// <summary>Field · by group: the parts of the open structure CAPS knows (the held filler and the rest, a blend's
+    /// components).</summary>
+    private List<(string Name, string Molecules, bool Crystal)> FieldGroupSuggestions()
+    {
+        var r = new List<(string, string, bool)>();
+        if (_doc == null) return r;
+        long held = 0;
+        try { held = _doc.HeldMolecule(); } catch { }
+        if (held > 0)
+        {
+            r.Add(("filler", held.ToString(CultureInfo.InvariantCulture), true));
+            r.Add(("matrix", "rest", false));
+            return r;
+        }
+        if (ReferenceEquals(_blendGroups.Doc, _doc) && _blendGroups.Groups.Count > 0) return new(_blendGroups.Groups);
+        return r;
+    }
+
     public async Task BuildBlend()
     {
         if (BlendBuilding || BlendRows.Any(r => r.Polymer == null)) return;
@@ -165,10 +193,38 @@ public sealed partial class MainViewModel
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Growing the blend · {d} of {t} chains · {r} restarts");
                 return true;
             }, "blend"));
+            // each component's molecules, for a force field per component (Field · by group)
+            var parts = new List<(string, string, bool)>();
+            foreach (var line in rep.Split('\n'))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(line, @"^component (\d+) · molecules (\d+)-(\d+)$");
+                if (m.Success && int.Parse(m.Groups[1].Value) - 1 is var k && k < BlendRows.Count)
+                    parts.Add((BlendRows[k].Polymer!.Name.Split(" (")[0], $"{m.Groups[2].Value}-{m.Groups[3].Value}", false));
+            }
+            _blendGroups = (doc, parts);
             Show(doc, name + " blend");
             GrownUnsaved = true;
             BlendLog = rep;
             Status = "Blend built · compress it in Relax (target density), then equilibrate";
+            // a force field per component: the groups set up in Field, assigned when every component has one
+            var chosen = BlendRows.Select(r => r.ForceField is { Id.Length: > 0 } f ? f : null).ToList();
+            if (chosen.Any(f => f != null) && parts.Count == BlendRows.Count)
+            {
+                Field.Groups.Clear();
+                for (int k = 0; k < parts.Count; ++k)
+                {
+                    var grp = Field.AddGroup(parts[k].Item1, parts[k].Item2);
+                    if (chosen[k] is { } f) grp.FfIndex = Field.Library.IndexOf(f);
+                }
+                Field.GroupMode = true;
+                if (chosen.All(f => f != null))
+                {
+                    await Field.AssignGroups();
+                    SetModule(7);   // Field: the typing report of every group
+                    return;
+                }
+                Status = "Blend built · choose the remaining components' force fields in Field · by group";
+            }
             SetModule(8);
         }
         catch (Exception e) { BlendError = e.Message; Status = "Could not build the blend: " + e.Message; }
