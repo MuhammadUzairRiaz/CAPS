@@ -532,6 +532,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_property_range")] public static extern int PropertyRange(IntPtr doc, out double lo, out double hi);
     [DllImport(Lib, EntryPoint = "caps_pipeline_set")] public static extern int PipelineSet(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? json);
     [DllImport(Lib, EntryPoint = "caps_pipeline_result")] public static extern int PipelineResult(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pipeline_write_outputs")] public static extern int PipelineWriteOutputs(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string outputs, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_export_grid")] public static extern int PipelineExportGrid(IntPtr doc, string path);
     [DllImport(Lib, EntryPoint = "caps_pipeline_particles")] public static extern int PipelineParticles(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? filter, int offset, int count, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pipeline_bonds")] public static extern int PipelineBonds(IntPtr doc, int offset, int count, byte[]? json, int cap);
@@ -1006,6 +1007,16 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Sets the visualize pipeline (JSON steps; null or "" clears it) and runs it on the shown frame.</summary>
     public void SetPipeline(string? json) { using (Hold()) { if (Native.PipelineSet(H, json) != 0) throw new InvalidOperationException(Native.LastError()); } }
     public string PipelineResult() { using (Hold()) return Sized((b, c) => Native.PipelineResult(H, b, c)); }
+    /// <summary>Writes the pipeline outputs (JSON list) under dir from the current result; the JSON report.</summary>
+    public string PipelineWriteOutputs(string outputs, string dir)
+    {
+        using (Hold())
+        {
+            var buf = new byte[1 << 16];
+            Native.PipelineWriteOutputs(H, outputs, dir, buf, buf.Length);
+            return System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0').Trim();
+        }
+    }
     public void PipelineExportGrid(string path) { using (Hold()) { if (Native.PipelineExportGrid(H, path) != 0) throw new InvalidOperationException(Native.LastError()); } }
     public string PipelineParticles(string filter, int offset, int count) { using (Hold()) return Sized((b, c) => Native.PipelineParticles(H, filter, offset, count, b, c)); }
     public string PipelineBonds(int offset, int count) { using (Hold()) return Sized((b, c) => Native.PipelineBonds(H, offset, count, b, c)); }

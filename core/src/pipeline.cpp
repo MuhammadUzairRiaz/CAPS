@@ -3231,6 +3231,17 @@ Pipeline pipeline_from_json(const Json& j) {
       if (k != "type" && k != "enabled") st.params[k] = v;
     p.steps.push_back(std::move(st));
   }
+  if (j.is_object() && j.has("outputs") && j["outputs"].is_array())
+    for (const auto& o : j["outputs"].items()) {
+      if (!o.is_object()) continue;
+      PipelineOutput out;
+      out.kind = o.text("kind", "");
+      out.what = o.text("what", "");
+      out.path = o.text("path", "");
+      out.width = int(o.num("width", 1920)), out.height = int(o.num("height", 1080));
+      if (out.kind.empty() || out.path.empty()) throw std::invalid_argument("an output needs a kind and a path");
+      p.outputs.push_back(std::move(out));
+    }
   return p;
 }
 
@@ -3245,6 +3256,17 @@ Json pipeline_to_json(const Pipeline& p) {
   }
   Json j = Json::object();
   j["steps"] = std::move(arr);
+  if (!p.outputs.empty()) {
+    Json outs = Json::array();
+    for (const auto& o : p.outputs) {
+      Json x = Json::object();
+      x["kind"] = o.kind, x["path"] = o.path;
+      if (!o.what.empty()) x["what"] = o.what;
+      if (o.kind == "render") x["width"] = double(o.width), x["height"] = double(o.height);
+      outs.push_back(std::move(x));
+    }
+    j["outputs"] = std::move(outs);
+  }
   return j;
 }
 

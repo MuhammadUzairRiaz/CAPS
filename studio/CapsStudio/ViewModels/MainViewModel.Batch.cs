@@ -147,6 +147,10 @@ public sealed partial class MainViewModel
         BatchErrors = "";
         var sw = Stopwatch.StartNew();
         var queue = new Queue<BatchInput>(BatchInputs);
+        // results.csv next to the inputs (batch/results.csv), or where asked; each input's pipeline outputs under outputs/
+        var dir = outDir ?? Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(BatchInputs[0].Path) ?? "") ?? ".", "batch");
+        var writeOutputs = PipelineOutputs.Count > 0 && pipeline.Length > 0;
+        var index = BatchInputs.Select((b, k) => (b, k)).ToDictionary(x => x.b, x => x.k + 1);
         var gate = new object();
         async Task Worker()
         {
@@ -165,6 +169,11 @@ public sealed partial class MainViewModel
                         if (last && frames > 1) doc.SetFrame(frames - 1);
                         doc.SetPipeline(pipeline);
                         var result = doc.PipelineResult();
+                        if (writeOutputs)
+                        {
+                            var sub = Path.GetFileName(Path.GetDirectoryName(b.Path)) is { Length: > 0 } d ? d : Path.GetFileNameWithoutExtension(b.Path);
+                            doc.PipelineWriteOutputs(pipeline, Path.Combine(dir, "outputs", $"{index[b]}_{sub}"));
+                        }
                         var map = new Dictionary<string, double>();
                         if (result.Length > 0 && JsonNode.Parse(result)?["attributes"] is JsonArray a)
                             foreach (var x in a) map[(string?)x?["name"] ?? ""] = (double?)x?["value"] ?? double.NaN;
@@ -193,8 +202,6 @@ public sealed partial class MainViewModel
         RefreshBatchTable();
         var done = BatchInputs.Count(b => b.State == "done");
         var failed = BatchInputs.Count(b => b.State == "failed");
-        // results.csv next to the inputs (batch/results.csv), or where asked
-        var dir = outDir ?? Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(BatchInputs[0].Path) ?? "") ?? ".", "batch");
         try
         {
             Directory.CreateDirectory(dir);
