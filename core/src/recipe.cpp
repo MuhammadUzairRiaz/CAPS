@@ -574,6 +574,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (g.orient_strength < 0) throw RecipeError(2, "grow.orientation.strength must be ≥ 0");
         }
         g.curve = flag(J, "curve", true);
+        g.lookahead = std::clamp(int(num(J, "lookahead", 1)), 1, 4);
         const std::string method = text(J, "method", "trials");
         if (method != "trials" && method != "rosenbluth" && method != "rosenbluth_lj")
           throw RecipeError(2, "grow.method: trials (best of k by contact margin), rosenbluth (soft spheres) or rosenbluth_lj (UFF Lennard-Jones); "

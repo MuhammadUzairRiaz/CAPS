@@ -31,6 +31,7 @@ struct GrowOptions {
   int max_backtracks = 0;                // per chain start; 0 = 400, or 40 × dp when escalating
   int max_restarts = 400;                // new start points per chain before giving up
   double accept = -0.05;                 // worst allowed (distance − limit), Å
+  int lookahead = 1;                     // grow_chains: bonds ahead that need room (1: the next head; 2–4 also points further along)
   // Called once per growth round with (chains finished, chains, restarts so far); return false to cancel.
   std::function<bool(int, int, int)> progress;
   double contact_scale = 1.0;            // scales the contact limits (C–C 3.0, C–H 2.45, H–H 2.0 Å); < 1 needs Relax afterwards

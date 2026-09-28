@@ -767,6 +767,9 @@ public partial class MainViewModel
     public bool GrowLiveShown => _growLiveDoc != null;
     public bool GrowLiveView { get => _growLiveView; set => Set(ref _growLiveView, value); }
     public decimal GrowTrialsD { get => _growTrials; set { _growTrials = (int)Math.Clamp(value, 4, 5000); Raise(); } }
+    private int _growLookahead = 1;
+    /// <summary>Bonds ahead that need room while growing (core GrowOptions::lookahead).</summary>
+    public decimal GrowLookaheadD { get => _growLookahead; set { _growLookahead = (int)Math.Clamp(value, 1, 4); Raise(); } }
     public string GrowCleanFf => DefaultCleanForceField() is { } f ? Path.GetFileNameWithoutExtension(f) : "UFF";
     private string _growUnitsText = "—", _growMarginText = "—", _growDensityNowText = "—", _growLiveAtoms = "";
     public string GrowUnitsText { get => _growUnitsText; private set => Set(ref _growUnitsText, value); }
