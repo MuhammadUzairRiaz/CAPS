@@ -268,12 +268,28 @@ uint64_t steps_key(const caps::Pipeline& p, size_t lo) {
   return std::hash<std::string>{}(caps::pipeline_to_json(part).dump(0));
 }
 
+// Molecule numbers as CAPS counts them everywhere (groups, the held molecule, the LAMMPS molecule column): the file's
+// own when it has them, else the bonded fragments in order (1-based); a PDB's chain ids are not molecules.
+std::vector<int64_t> molecule_ids(const caps::System& s) {
+  std::vector<int64_t> r(s.atoms.size());
+  if (s.has_mol) {
+    for (size_t i = 0; i < r.size(); ++i) r[i] = s.atoms[i].mol;
+    return r;
+  }
+  const auto c = s.molecules();
+  for (size_t i = 0; i < r.size(); ++i) r[i] = int64_t(c[i]) + 1;
+  return r;
+}
+
 // the atoms held in place: the held molecule and the fixed atoms (empty: none)
 std::vector<char> fixed_mask(const caps_doc* d, const caps::System& s) {
   std::vector<char> m;
   if (d->held_mol <= 0 && d->fixed_atoms.empty()) return m;
   m.assign(s.atoms.size(), 0);
-  if (d->held_mol > 0) for (size_t i = 0; i < s.atoms.size(); ++i) m[i] = s.atoms[i].mol == d->held_mol;
+  if (d->held_mol > 0) {
+    const auto ids = molecule_ids(s);
+    for (size_t i = 0; i < s.atoms.size(); ++i) m[i] = ids[i] == d->held_mol;
+  }
   for (uint32_t i : d->fixed_atoms) if (i < m.size()) m[i] = 1;
   return m;
 }
@@ -3466,6 +3482,14 @@ int32_t caps_bonded(caps_doc* d, int32_t i, int32_t* idx, int32_t cap) {
       ++n;
     }
     return n;
+  });
+}
+
+int32_t caps_molecule_ids(caps_doc* d, int64_t* out, int32_t cap) {
+  return guard([&] {
+    const auto ids = molecule_ids(d->frame);
+    for (size_t j = 0; j < ids.size() && j < size_t(std::max(0, cap)); ++j) out[j] = ids[j];
+    return int32_t(ids.size());
   });
 }
 

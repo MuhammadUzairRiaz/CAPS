@@ -350,4 +350,12 @@ with tempfile.TemporaryDirectory() as td:
     mb.relax()
     check(rep["complete"] and "Si.tersoff" in [x["name"] for x in out["files"]] and "tersoff Si.tersoff Si NULL NULL" in lin and loose,
           f"many-body group: {rep['forcefield']} · LAMMPS overlay and file · CAPS runs need the crystal held")
+# the potential library: a group takes one by its id; the file goes with the LAMMPS inputs
+lib_ids = [p["id"] for p in caps.potentials()]
+with tempfile.TemporaryDirectory() as td:
+    mb.field.assign_groups([{"name": "Si", "molecules": "1", "potential": {"id": "si-tersoff1988"}},
+                            {"name": "methane", "molecules": "rest", "forcefield": "pcff", "charges": "auto"}], sigma_rule="sixthpower")
+    out = mb.export_engines(td, gromacs=False)
+    check("sio2-munetoh2007" in lib_ids and "Si.tersoff" in [x["name"] for x in out["files"]] and os.path.exists(os.path.join(td, "Si.tersoff")),
+          f"potential library: {len(lib_ids)} potentials · PCFF methane on the library's Si Tersoff exported with its file")
 print("all python checks passed")

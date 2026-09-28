@@ -9,6 +9,8 @@
 #include "caps/ffdef.hpp"
 #include "caps/ffmerge.hpp"
 #include "caps/io.hpp"
+#include "caps/json.hpp"
+#include "caps/elements.hpp"
 #include "caps/manybody.hpp"
 #include "caps/relax.hpp"
 #include "caps/uff.hpp"
@@ -175,4 +177,28 @@ TEST(FFMerge, ManyBodyGroup) {
   EXPECT_EQ(c.str().rfind("# Tersoff silicon UNITS: metal\n", 0), 0u);
   EXPECT_THROW(write_gromacs(s, m, e, (dir / "sys").string()), FieldError);
   fs::remove_all(dir);
+}
+
+// Every potential of the library (data/potentials) reads as its style says and covers the elements it lists.
+TEST(FFMerge, PotentialLibrary) {
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/potentials/";
+  std::ifstream f(dir + "catalogue.json");
+  std::stringstream ss;
+  ss << f.rdbuf();
+  const Json cat = Json::parse(ss.str());
+  ASSERT_GE(cat["potentials"].size(), 10u);
+  for (const auto& p : cat["potentials"].items()) {
+    System g;
+    for (const auto& e : p["elements"].items()) {
+      Atom a;
+      a.element = element_from_symbol(e.str());
+      a.pos = {double(g.atoms.size()) * 3.0, 0, 0};
+      g.atoms.push_back(a);
+    }
+    std::vector<std::string> notes;
+    ForceField mf;
+    EXPECT_NO_THROW(mf = manybody_part(g, {p.text("style", ""), dir + p.text("file", ""), ""}, &notes)) << p.text("id", "");
+    EXPECT_EQ(mf.manybody.units, "metal") << p.text("id", "");
+    EXPECT_FALSE(mf.manybody.citation.empty()) << p.text("id", "");
+  }
 }

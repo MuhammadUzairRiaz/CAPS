@@ -4,6 +4,14 @@ using System.Text.Json.Nodes;
 
 namespace CapsStudio.ViewModels;
 
+/// <summary>A literature potential of the library (data/potentials/catalogue.json).</summary>
+public sealed record PotentialEntry(string Id, string Name, string Style, string File, string[] Elements, string For, string Citation)
+{
+    public string Label => Id.Length == 0 ? Name : $"{Name} · {string.Join(" ", Elements)}";
+    public string Tip => Id.Length == 0 ? "" : $"{For} · {Style} · {Citation}";
+    public override string ToString() => Label;
+}
+
 /// <summary>One group of Field · by group: molecules, and the force field (or the literature many-body potential) they take.</summary>
 public sealed class FieldGroupRow : ObservableObject
 {
@@ -19,13 +27,30 @@ public sealed class FieldGroupRow : ObservableObject
     public int Kind { get => _kind; set { if (Set(ref _kind, value)) { Raise(nameof(IsForceField)); Raise(nameof(IsPotential)); } } }
     public bool IsForceField => _kind == 0;
     public bool IsPotential => _kind == 1;
-    public int FfIndex { get => _ffIndex; set => Set(ref _ffIndex, value); }
+    public int FfIndex { get => _ffIndex; set { if (Set(ref _ffIndex, value)) Owner.GroupForceFieldChosen(ForceField); } }
     public int Charges { get => _charges; set => Set(ref _charges, value); }
     public int Style { get => _style; set => Set(ref _style, value); }
     public string File { get => _file; set => Set(ref _file, value); }
     /// <summary>0 the file says (its first line's UNITS:), 1 metal (eV), 2 real (kcal/mol).</summary>
     public int Units { get => _units; set => Set(ref _units, value); }
     public FfEntry? ForceField => _ffIndex >= 0 && _ffIndex < Library.Count ? Library[_ffIndex] : null;
+    public List<PotentialEntry> Potentials => Owner.PotentialLibrary;
+    private int _pick;
+    /// <summary>A potential of the library (0: the user's own file); choosing one sets the style and the file.</summary>
+    public int Pick
+    {
+        get => _pick;
+        set
+        {
+            if (!Set(ref _pick, value) || value <= 0 || value >= Potentials.Count) return;
+            var e = Potentials[value];
+            Style = Math.Max(0, Array.IndexOf(FieldViewModel.PotentialStyles, e.Style));
+            File = e.File;
+            Units = 0;
+            Raise(nameof(PickTip));
+        }
+    }
+    public string PickTip => _pick > 0 && _pick < Potentials.Count ? Potentials[_pick].Tip : "Your own file: the NIST Interatomic Potentials Repository, a paper's supplement …";
 }
 
 public sealed partial class FieldViewModel
@@ -40,6 +65,39 @@ public sealed partial class FieldViewModel
     public static readonly string[] Cross96Modes = ["refuse 9-6 with 12-6", "12-6 with the 9-6 site's ε and r_min"];
 
     public ObservableCollection<FieldGroupRow> Groups { get; } = new();
+    private List<PotentialEntry>? _potentials;
+    /// <summary>The potentials of the library, "own file" first.</summary>
+    public List<PotentialEntry> PotentialLibrary => _potentials ??= LoadPotentials();
+
+    private static List<PotentialEntry> LoadPotentials()
+    {
+        var r = new List<PotentialEntry> { new("", "Own file (choose below)", "", "", [], "", "") };
+        if (Paths.Potentials is not { } dir) return r;
+        try
+        {
+            using var js = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(Path.Combine(dir, "catalogue.json")));
+            foreach (var p in js.RootElement.GetProperty("potentials").EnumerateArray())
+            {
+                string S(string k) => p.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()! : "";
+                r.Add(new PotentialEntry(S("id"), S("name"), S("style"), Path.Combine(dir, S("file")),
+                                         p.GetProperty("elements").EnumerateArray().Select(x => x.GetString()!).ToArray(), S("for"), S("citation")));
+            }
+        }
+        catch { }
+        return r;
+    }
+
+    /// <summary>The library potential for a crystal of these elements: the one covering them with the fewest others
+    /// (the first listed on a tie), or none.</summary>
+    public int PotentialFor(IReadOnlyCollection<string> elements)
+    {
+        if (elements.Count == 0) return -1;
+        var best = -1;
+        for (var k = 1; k < PotentialLibrary.Count; ++k)
+            if (elements.All(e => PotentialLibrary[k].Elements.Contains(e)) && (best < 0 || PotentialLibrary[k].Elements.Length < PotentialLibrary[best].Elements.Length))
+                best = k;
+        return best;
+    }
     private bool _groupMode;
     /// <summary>The by-group editor is open.</summary>
     public bool GroupMode { get => _groupMode; set { if (Set(ref _groupMode, value) && value && Groups.Count == 0) SuggestGroups(); } }
@@ -59,7 +117,15 @@ public sealed partial class FieldViewModel
 
     /// <summary>What the rest of the Studio knows about the structure's parts: the held filler, a blend's components
     /// (name, molecules). Set by the main view model.</summary>
-    public Func<List<(string Name, string Molecules, bool Crystal)>>? GroupSuggestions { get; set; }
+    public Func<List<(string Name, string Molecules, bool Crystal, string[] Elements)>>? GroupSuggestions { get; set; }
+
+    /// <summary>A class II force field (PCFF, COMPASS: 9-6) in a group: the cross pairs by its own sixth-power rule
+    /// unless another rule was chosen.</summary>
+    internal void GroupForceFieldChosen(FfEntry? e)
+    {
+        if (e != null && _sigmaRule == 0 && (e.Id.Contains("pcff", StringComparison.Ordinal) || e.Id.Contains("compass", StringComparison.Ordinal)))
+            SigmaRule = 2;
+    }
 
     public FieldGroupRow AddGroup(string name = "", string molecules = "rest", bool potential = false)
     {
@@ -75,15 +141,15 @@ public sealed partial class FieldViewModel
     {
         Groups.Clear();
         var s = GroupSuggestions?.Invoke() ?? new();
-        if (s.Count == 0) s.Add(("all", "rest", false));
-        foreach (var (name, mols, crystal) in s)
+        if (s.Count == 0) s.Add(("all", "rest", false, []));
+        foreach (var (name, mols, crystal, elements) in s)
         {
             var g = AddGroup(name, mols, false);
-            if (crystal)   // a crystal filler: UFF covers every element (or a literature potential for it)
-            {
-                var k = Library.ToList().FindIndex(e => e.Id == "uff");
-                if (k >= 0) g.FfIndex = k;
-            }
+            if (!crystal) continue;
+            // a crystal filler: the library's literature potential for its elements, else UFF (every element)
+            if (PotentialFor(elements) is var pk && pk > 0) { g.Kind = 1; g.Pick = pk; continue; }
+            var k = Library.ToList().FindIndex(e => e.Id == "uff");
+            if (k >= 0) g.FfIndex = k;
         }
     }
 
