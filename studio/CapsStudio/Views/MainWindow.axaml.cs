@@ -1359,6 +1359,7 @@ public partial class MainWindow : Window
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) { _vm.OvScript = p; _vm.OvPython = true; }
     }
     private void OnOverlayNew(object? s, RoutedEventArgs e) => _vm.NewOverlayScript();
+    private void OnComputeSettings(object? s, RoutedEventArgs e) => _vm.OpenComputeSettings();
     private void OnOverlayEdit(object? s, RoutedEventArgs e)
     {
         if (_vm.OvScript.Length == 0) return;

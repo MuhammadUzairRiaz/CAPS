@@ -211,7 +211,7 @@
             <TextBlock Grid.Row="1" Text="Rendering" Classes="muted" FontSize="12" VerticalAlignment="Center" />
             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MachineRender}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
             <TextBlock Grid.Row="2" Text="Remote hosts" Classes="muted" FontSize="12" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="2" Grid.Column="1" Text="none" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RemoteHostsText}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </Grid>
         </StackPanel>
       </Border>

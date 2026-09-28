@@ -296,7 +296,7 @@ public sealed partial class MainViewModel
             Status = "Could not send the job: " + e.Message;
         }
         SaveJobs();
-        Raise(nameof(JobsSummary));
+        Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
     }
 
     private void StartRemotePoll()
@@ -351,7 +351,7 @@ public sealed partial class MainViewModel
                 j.Add(j.Error);
             }
             SaveJobs();
-            Raise(nameof(JobsSummary));
+            Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
         }
         catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message} (the job keeps running there; checked again in a minute)"); }
         finally { r.Checking = false; }

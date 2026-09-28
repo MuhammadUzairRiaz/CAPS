@@ -130,7 +130,7 @@
               </Border>
             </Grid>
           </Button>
-          <Button Classes="ghost" Height="30" MinHeight="30" Padding="10,0" FontWeight="Normal" FontSize="12" ToolTip.Tip="Where calculations run">
+          <Button Classes="ghost" Height="30" MinHeight="30" Padding="10,0" FontWeight="Normal" FontSize="12" ToolTip.Tip="Where calculations run · Settings › Compute &amp; remote" Click="OnComputeSettings">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Ellipse Width="8" Height="8" Fill="{DynamicResource OkB}" VerticalAlignment="Center" />
               <TextBlock Text="{Binding ComputeText}" VerticalAlignment="Center" />
