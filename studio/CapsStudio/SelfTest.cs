@@ -29,6 +29,12 @@ internal static class SelfTest
         var k1 = vm.QuickKind;
         vm.QuickText = Path.Combine(dir, "ps_melt.data");
         var k2 = vm.QuickKind;
+        vm.QuickText = "toluene";
+        var namedMol = vm.QuickKind == 5 && vm.QuickBadge.StartsWith("Toluene");
+        vm.QuickText = "polystyrene";
+        var namedPoly = vm.QuickKind == 5 && vm.QuickBadge.Contains("polymer library");
+        vm.QuickText = "CCO";
+        Check(namedMol && namedPoly && vm.QuickKind == 2, $"quick start names: toluene {namedMol} · polystyrene {namedPoly} · CCO as SMILES {vm.QuickKind == 2}");
         vm.QuickText = "equil";
         var k3 = vm.QuickKind;
         vm.QuickGo();
