@@ -6204,6 +6204,13 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
         throw std::invalid_argument("pick two, three or four atoms: a bond, an angle or a dihedral");
       }
       what = b;
+    } else if (op == "set_coordination") {   // {atom, geometry}: its neighbours at the ideal directions of the geometry
+      const uint32_t c = uint32_t(j.num("atom", -1));
+      const std::string g = j.text("geometry", "");
+      const double moved = caps::set_coordination(s, c, g);
+      char b[160];
+      std::snprintf(b, sizeof b, "Atom %u made %s (ligands moved up to %.1f°)", c + 1, g.c_str(), moved);
+      what = b;
     } else if (op == "rotate" || op == "mirror") {   // {atoms | "selection", axis: [x, y, z], degrees} / {…, normal: [x, y, z]}
       const auto at = atoms_of(d, j);
       if (at.empty()) throw std::invalid_argument("pick or select the atoms to " + op);

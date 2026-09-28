@@ -12,6 +12,7 @@
 #include "caps/peptide.hpp"
 #include "caps/polymer.hpp"
 #include "caps/torsion.hpp"
+#include "caps/typing.hpp"
 
 using namespace caps;
 
@@ -273,4 +274,58 @@ TEST(Edit, ExactGeometryRotateMirrorAndConfiguration) {
   // a bond in a ring cannot be stretched by moving one side
   System ring = build_molecule("C1CCCCC1", bo).system;
   EXPECT_THROW(set_bond_length(ring, 0, 1, 1.7), EditError);
+}
+
+// Coordination geometries: an octahedral Fe made exact from a distorted start (cis 90°, trans 180°, bond lengths kept, a
+// hydroxo ligand's hydrogen carried along); square planar from a tetrahedral start; a dative bond in no atom's valence.
+TEST(Edit, CoordinationGeometryAndDativeBonds) {
+  System s;
+  auto add = [&](int z, Vec3 p) { Atom a; a.element = z; a.pos = p; s.atoms.push_back(a); return uint32_t(s.atoms.size() - 1); };
+  const uint32_t fe = add(26, {0, 0, 0});
+  const Vec3 start[6] = {{2.3, 0.3, 0.1}, {-2.2, 0.2, -0.4}, {0.4, 2.1, 0.3}, {-0.2, -2.4, 0.5}, {0.3, -0.2, 2.2}, {0.5, 0.4, -2.0}};
+  std::vector<uint32_t> lig;
+  for (const auto& p : start) { lig.push_back(add(17, p)); s.bonds.push_back({fe, lig.back(), 1}); }
+  // one ligand a hydroxo: O on the Fe, its H bonded to it
+  s.atoms[lig[0]].element = 8;
+  const uint32_t h = add(1, s.atoms[lig[0]].pos + Vec3{0.6, 0.7, 0});
+  s.bonds.push_back({lig[0], h, 1});
+  std::vector<double> len;
+  for (uint32_t l : lig) len.push_back(norm(s.atoms[l].pos - s.atoms[fe].pos));
+  const double oh = norm(s.atoms[h].pos - s.atoms[lig[0]].pos);
+  set_coordination(s, fe, "octahedral");
+  for (size_t a = 0; a < lig.size(); ++a) {
+    EXPECT_NEAR(norm(s.atoms[lig[a]].pos - s.atoms[fe].pos), len[a], 1e-9);
+    for (size_t b = a + 1; b < lig.size(); ++b) {
+      const Vec3 u = s.atoms[lig[a]].pos - s.atoms[fe].pos, v = s.atoms[lig[b]].pos - s.atoms[fe].pos;
+      const double ang = std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI;
+      EXPECT_TRUE(std::fabs(ang - 90) < 1e-6 || std::fabs(ang - 180) < 1e-6) << a << " " << b << " " << ang;
+    }
+  }
+  EXPECT_NEAR(norm(s.atoms[h].pos - s.atoms[lig[0]].pos), oh, 1e-9);   // the hydroxo's H came with its O
+  EXPECT_THROW(set_coordination(s, fe, "tetrahedral"), EditError);   // six neighbours, four sites
+  // square planar from a tetrahedral start
+  System p;
+  p.atoms.push_back(s.atoms[fe]);
+  const double r3 = 1 / std::sqrt(3.0);
+  for (Vec3 d : {Vec3{r3, r3, r3}, Vec3{r3, -r3, -r3}, Vec3{-r3, r3, -r3}, Vec3{-r3, -r3, r3}}) {
+    Atom a; a.element = 17; a.pos = d * 2.3; p.atoms.push_back(a);
+    p.bonds.push_back({0, uint32_t(p.atoms.size() - 1), 1});
+  }
+  set_coordination(p, 0, "square_planar");
+  double sum = 0;
+  for (uint32_t a = 1; a <= 4; ++a)
+    for (uint32_t b = a + 1; b <= 4; ++b) {
+      const Vec3 u = p.atoms[a].pos - p.atoms[0].pos, v = p.atoms[b].pos - p.atoms[0].pos;
+      sum += std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI;
+    }
+  EXPECT_NEAR(sum, 4 * 90 + 2 * 180, 1e-6);
+  // a water on a metal: dative, no formal charge on O; a plain single bond would make it +1
+  System w;
+  auto addw = [&](int z, Vec3 q) { Atom a; a.element = z; a.pos = q; w.atoms.push_back(a); };
+  addw(29, {0, 0, 0}), addw(8, {2.0, 0, 0}), addw(1, {2.6, 0.75, 0}), addw(1, {2.6, -0.75, 0});
+  w.bonds = {{0, 1, kBondDative}, {1, 2, 1}, {1, 3, 1}};
+  EXPECT_EQ(perceive(w).charge[1], 0);
+  EXPECT_EQ(add_hydrogens(w), 0);
+  w.bonds[0].order = 1;
+  EXPECT_EQ(perceive(w).charge[1], 1);
 }

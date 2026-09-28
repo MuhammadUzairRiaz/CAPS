@@ -930,7 +930,8 @@ int32_t caps_default_torsion(caps_doc* d, int32_t* atoms);
 /* Structure editing (v20, the Studio's builder tools, design/boards/ElementPicker, SelectionStereo, AddHydrogens) of a
    single-frame document, with undo. caps_edit JSON {op, …}: "element" {atoms: [i…] | "selection", element: "N"},
    "charge" {atoms, charge}, "add_atom" {to (−1: beside the structure), element, order, geometry (0 auto, 3 sp³, 2 sp²,
-   1 sp), charge}, "bond" {i, j, order}, "unbond" {i, j}, "delete" {atoms}, "add_h" {atoms (absent: all)}, "invert"
+   1 sp), charge}, "bond" {i, j, order (9: coordinate / dative)}, "unbond" {i, j}, "set_coordination" {atom, geometry: linear |
+   trigonal | tetrahedral | square_planar | trigonal_bipyramidal | square_pyramidal | octahedral}, "delete" {atoms}, "add_h" {atoms (absent: all)}, "invert"
    {centre}, "tacticity" {to: "isotactic" | "syndiotactic", clean}, "clean" {atoms, ftol}, "attach" {target, smiles (with *
    attachment points), which, clean, name}, "place" {smiles, name, resname}, "translate" {atoms | "selection", by: [dx, dy,
    dz]}, "fuse_ring" {i, j, clean} (a benzene ring onto the bond i–j), "set_geometry" {atoms: [i, j (, k (, l))], value (Å or

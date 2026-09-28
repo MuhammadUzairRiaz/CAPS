@@ -48,8 +48,11 @@ struct Atom {
 
 struct Bond {
   uint32_t i, j;
-  int order = 0;   // 0 unknown, 1 single, 2 double, 3 triple, 4 aromatic, 5 amide (Tripos mol2 codes)
+  int order = 0;   // 0 unknown, 1 single, 2 double, 3 triple, 4 aromatic, 5 amide (Tripos mol2 codes), 9 coordinate (dative)
 };
+// A coordinate (dative) bond, a ligand donor's lone pair to a metal (MDL V3000 bond type 9): connectivity, but no share in
+// either atom's valence (hydrogens, bond orders and formal charges ignore it).
+constexpr int kBondDative = 9;
 
 struct TypeInfo {
   int type = 0;

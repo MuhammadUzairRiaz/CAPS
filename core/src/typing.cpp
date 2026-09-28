@@ -162,6 +162,7 @@ Perception perceive(const System& s) {
   std::vector<E> edges;
   for (const auto& b : s.bonds) {
     if (b.i == b.j || b.i >= n || b.j >= n) continue;
+    if (b.order == kBondDative) { edges.push_back({b.i, b.j, 0, true, false}); continue; }   // a coordinate bond: no valence
     const bool fixed = any_order && (b.order == 1 || b.order == 2 || b.order == 3 || b.order == 5);
     edges.push_back({b.i, b.j, fixed ? (b.order == 5 ? 1 : b.order) : 1, fixed, b.order == 4});
   }
