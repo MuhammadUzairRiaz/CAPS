@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <algorithm>
+#include <deque>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -144,6 +145,12 @@ struct caps_doc {
   double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
+  // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
+  // frame's contents (a fingerprint of positions, bonds, cell and the trajectory's length) are unchanged
+  struct PipeCached { size_t frame; uint64_t fp; std::shared_ptr<const caps::PipelineState> st; };
+  std::string pipe_key;
+  std::deque<PipeCached> pcache;
+  bool pstate_cached = false;
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
   std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
@@ -234,12 +241,50 @@ int32_t guard(F&& f) {
   return -1;
 }
 
+// what the pipeline's result on this frame depends on besides the steps: FNV-1a over positions, bonds, cell and the
+// trajectory's length (steps read other frames)
+uint64_t frame_fingerprint(const caps_doc* d) {
+  uint64_t h = 1469598103934665603ull;
+  auto mix = [&](const void* p, size_t n) {
+    const auto* b = static_cast<const unsigned char*>(p);
+    for (size_t k = 0; k < n; ++k) h = (h ^ b[k]) * 1099511628211ull;
+  };
+  const size_t n = d->frame.atoms.size(), nb = d->frame.bonds.size(), nf = d->traj.frames();
+  mix(&n, sizeof n), mix(&nb, sizeof nb), mix(&nf, sizeof nf);
+  for (const auto& a : d->frame.atoms) mix(a.pos.data(), sizeof(double) * 3), mix(&a.element, sizeof a.element), mix(&a.charge, sizeof a.charge);
+  for (const auto& b : d->frame.bonds) mix(&b.i, sizeof b.i), mix(&b.j, sizeof b.j);
+  for (const auto* v : {&d->frame.cell.a, &d->frame.cell.b, &d->frame.cell.c, &d->frame.cell.origin}) mix(v->data(), sizeof(double) * 3);
+  return h;
+}
+
 void run_doc_pipeline(caps_doc* d) {
   d->pstate.reset();
   d->shown_of.clear();
-  if (!d->pipeline) return;
-  const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
-  d->pstate = std::make_unique<caps::PipelineState>(caps::run_pipeline(d->frame, *d->pipeline, int(d->current), ts, &d->traj));
+  d->pstate_cached = false;
+  if (!d->pipeline) { d->pcache.clear(); return; }
+  const uint64_t fp = frame_fingerprint(d);
+  for (const auto& e : d->pcache)
+    if (e.frame == d->current && e.fp == fp) {
+      d->pstate = std::make_unique<caps::PipelineState>(*e.st);
+      d->pstate->traj = &d->traj;
+      d->pstate->pipeline = nullptr;
+      d->pstate_cached = true;
+      break;
+    }
+  if (!d->pstate) {
+    const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
+    d->pstate = std::make_unique<caps::PipelineState>(caps::run_pipeline(d->frame, *d->pipeline, int(d->current), ts, &d->traj));
+    d->pstate->pipeline = nullptr;
+    // an older entry of this frame goes; the cache holds up to 256 frames and 4 million particles, oldest out first
+    for (auto it = d->pcache.begin(); it != d->pcache.end();) it = it->frame == d->current ? d->pcache.erase(it) : it + 1;
+    d->pcache.push_back({d->current, fp, std::make_shared<const caps::PipelineState>(*d->pstate)});
+    size_t total = 0;
+    for (const auto& e : d->pcache) total += e.st->system.atoms.size();
+    while (d->pcache.size() > 1 && (d->pcache.size() > 256 || total > 4000000)) {
+      total -= d->pcache.front().st->system.atoms.size();
+      d->pcache.pop_front();
+    }
+  }
   d->shown_of.assign(d->frame.atoms.size(), -1);
   for (size_t k = 0; k < d->pstate->origin.size(); ++k) {
     const int o = d->pstate->origin[k];
@@ -4223,6 +4268,10 @@ extern "C" int32_t caps_pipeline_set(caps_doc* d, const char* json) {
       if (p.steps.empty()) d->pipeline.reset();
       else d->pipeline = std::make_unique<caps::Pipeline>(std::move(p));
     }
+    // other steps (or settings): the cached frames no longer hold (outputs do not change the results)
+    std::string key;
+    if (d->pipeline) { caps::Pipeline steps_only = *d->pipeline; steps_only.outputs.clear(); key = caps::pipeline_to_json(steps_only).dump(0); }
+    if (key != d->pipe_key) d->pcache.clear(), d->pipe_key = key;
     run_doc_pipeline(d);
     return 0;
   });
@@ -4231,7 +4280,12 @@ extern "C" int32_t caps_pipeline_set(caps_doc* d, const char* json) {
 extern "C" int32_t caps_pipeline_result(caps_doc* d, char* json, int32_t cap) {
   try {
     if (!d->pstate) return report_out("", json, cap);
-    return report_out(caps::pipeline_result_json(*d->pstate).dump(0), json, cap);
+    caps::Json j = caps::pipeline_result_json(*d->pstate);
+    caps::Json c = caps::Json::object();
+    c["hit"] = d->pstate_cached;
+    c["frames"] = double(d->pcache.size());
+    j["cache"] = c;
+    return report_out(j.dump(0), json, cap);
   } catch (const std::exception& e) {
     g_error = e.what();
     return -1;

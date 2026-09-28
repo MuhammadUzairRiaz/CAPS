@@ -1029,8 +1029,14 @@ internal static class SelfTest
                   $"manual selection: '{manual?.Params["atoms"]}' · {manual?.Summary}");
             if (manual != null) vm.PipelineRows.Remove(manual);
             vm.ClearDocSelection();
-            // outputs: the rdf table as CSV and a plot, in the saved YAML and written now
+            // the per-frame cache: back on a frame, its result comes from the cache; a new setting empties it
             vm.ApplyPipeline();
+            vm.Frame = 1;
+            var computed = vm.PipeCacheText;
+            vm.Frame = 0;
+            var hit = vm.PipeCacheText;
+            Check(computed.StartsWith("computed") && hit.StartsWith("from the cache") && hit.Contains("2 frames"), $"pipeline cache: '{computed}' then '{hit}'");
+            // outputs: the rdf table as CSV and a plot, in the saved YAML and written now
             vm.OpenSavePipeline();
             vm.AddPipelineOutput("table");
             vm.AddPipelineOutput("plot");
