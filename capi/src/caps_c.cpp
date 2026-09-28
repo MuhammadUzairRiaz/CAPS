@@ -18,6 +18,7 @@
 #include "caps/dpd.hpp"
 #include "caps/functionalize.hpp"
 #include "caps/layers.hpp"
+#include "caps/ffmerge.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
 #include "caps/dlpoly.hpp"
@@ -107,6 +108,7 @@ struct FieldState {
   std::vector<caps::TypeInfo> file_type_table;
   std::vector<double> file_charges;
   bool file_has_charges = false;
+  std::string groups;                        // v36: a force field per group (caps_field_assign_groups), as JSON; "" one for all
 };
 
 // Styles, colours, surfaces and polyhedra of the Studio view (caps_set_appearance), prepared for the current frame.
@@ -727,7 +729,10 @@ std::string hex_colour(unsigned c) {
 
 // Types and parameterises the current structure with the field state, writes the types (and charges) into the
 // document so the viewer colours by force-field type, and builds the JSON report.
+void field_run_groups(caps_doc* d);
+
 void field_run(caps_doc* d) {
+  if (!d->field->groups.empty()) { field_run_groups(d); return; }
   FieldState& F = *d->field;
   caps::FFDef def = F.base;
   // gap fillers first: the last matching rule wins, so the force field's own rules (and the imported ones) come later
@@ -2502,6 +2507,40 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
   });
 }
 
+int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
+  return guard([&] {
+    auto F = std::make_unique<FieldState>();
+    F->groups = json && *json ? json : "{}";
+    caps::Json::parse(F->groups);   // well-formed before anything changes
+    if (d->field) {
+      F->file_types = d->field->file_types, F->file_type_table = d->field->file_type_table;
+      F->file_charges = d->field->file_charges, F->file_has_charges = d->field->file_has_charges;
+    } else {
+      for (const auto& a : d->traj.topology.atoms) F->file_types.push_back({a.type, a.name}), F->file_charges.push_back(a.charge);
+      F->file_type_table = d->traj.topology.types;
+      F->file_has_charges = d->traj.topology.has_charges;
+    }
+    auto old = std::move(d->field);
+    d->field = std::move(F);
+    try {
+      field_run(d);
+    } catch (...) {
+      d->field = std::move(old);   // the previous assignment stays
+      throw;
+    }
+    const caps::Json G = caps::Json::parse(d->field->groups);
+    caps::KeyValues pr;
+    for (const auto& g : G["groups"].items())
+      pr.push_back({g.text("name", "group"), std::filesystem::path(g.text("forcefield", "")).filename().string() + " · molecules " + g.text("molecules", "")});
+    pr.push_back({"between groups", "ε " + G.text("eps_rule", "geometric") + ", σ " + G.text("sigma_rule", "arithmetic")});
+    if (G.text("scaling14", "refuse") == "first") pr.push_back({"1-4 scaling", "the first group's for all (asked)"});
+    if (G.text("cross96", "refuse") == "rmin") pr.push_back({"9-6 sites in cross pairs", "12-6 with the same ε and r_min (asked)"});
+    prov_step(d, "field.assign.groups", "force fields by group: " + d->field->ff->name, std::move(pr), "", {},
+              {{"Cross interactions", "Lennard-Jones by the stated mixing rule between the groups' parameters"}});
+    return d->field->complete ? 0 : 1;
+  });
+}
+
 // Which library force fields can describe the current structure (caps_field_coverage): each one's typing tried, then
 // its parameters looked up, with the untyped atoms grouped by chemical environment and the net charge its own charges
 // give. Force-field definitions are cached (the library does not change while the Studio runs).
@@ -3939,6 +3978,186 @@ caps_doc* doc_of(const caps::System& s) {
   d->traj.timesteps.push_back(0);
   refresh(d);
   return d;
+}
+
+// Force fields by group (v36, ffmerge.hpp): each group's atoms assigned on their own (typing, parameters and charges as
+// caps_field_assign does), then merged into one force field with the cross pairs by the chosen rule; the report is the
+// groups' reports joined, atoms renumbered to the structure.
+void field_run_groups(caps_doc* d) {
+  FieldState& F = *d->field;
+  const caps::Json G = caps::Json::parse(F.groups);
+  const caps::System& s = d->frame;
+  const size_t n = s.atoms.size();
+  const auto molx = s.molecules();
+  auto mol_of = [&](size_t i) { return s.has_mol ? s.atoms[i].mol : int64_t(molx[i]) + 1; };
+  if (!G.has("groups") || !G["groups"].is_array() || G["groups"].size() == 0) throw caps::FFError("groups: [{name, molecules, forcefield, charges}]");
+  // which atoms each group holds: molecule ids ("1", "2-10, 12") or the rest
+  std::vector<int> owner(n, -1);
+  const size_t ng = G["groups"].size();
+  int rest = -1;
+  for (size_t g = 0; g < ng; ++g) {
+    const caps::Json& J = G["groups"][g];
+    std::string m = J.text("molecules", "");
+    if (m == "rest" || m == "*") { rest = int(g); continue; }
+    for (auto& c : m) if (c == ',' || c == ';') c = ' ';
+    std::istringstream is(m);
+    std::set<int64_t> want;
+    for (std::string w; is >> w;) {
+      const auto dash = w.find('-', 1);
+      const int64_t a = std::stoll(w.substr(0, dash)), b = dash == std::string::npos ? a : std::stoll(w.substr(dash + 1));
+      for (int64_t k = a; k <= b && k - a < 10000000; ++k) want.insert(k);
+    }
+    for (size_t i = 0; i < n; ++i)
+      if (want.count(mol_of(i))) {
+        if (owner[i] >= 0) throw caps::FFError("molecule " + std::to_string(mol_of(i)) + " is in two groups");
+        owner[i] = int(g);
+      }
+  }
+  for (size_t i = 0; i < n; ++i)
+    if (owner[i] < 0) {
+      if (rest < 0) throw caps::FFError("atom " + std::to_string(i + 1) + " (molecule " + std::to_string(mol_of(i)) + ") is in no group: add it, or a group for the rest");
+      owner[i] = rest;
+    }
+  std::vector<std::shared_ptr<const caps::ForceField>> keep;
+  std::vector<caps::FFPart> parts;
+  std::vector<caps::Json> reports;
+  std::vector<std::string> names, paths;
+  bool complete = true;
+  for (size_t g = 0; g < ng; ++g) {
+    const caps::Json& J = G["groups"][g];
+    std::vector<uint32_t> atoms;
+    for (size_t i = 0; i < n; ++i) if (owner[i] == int(g)) atoms.push_back(uint32_t(i));
+    if (atoms.empty()) continue;
+    const std::string name = J.text("name", "group " + std::to_string(g + 1));
+    const std::string path = J.text("forcefield", "");
+    if (path.empty()) throw caps::FFError(name + ": no force field");
+    // the group alone: its atoms, the bonds among them, the cell, the charges the structure has
+    caps::System sub;
+    sub.cell = s.cell;
+    sub.has_charges = s.has_charges;
+    sub.has_mol = s.has_mol;
+    sub.bonds_from_file = true;
+    std::vector<int64_t> at(n, -1);
+    for (size_t k = 0; k < atoms.size(); ++k) at[atoms[k]] = int64_t(k), sub.atoms.push_back(s.atoms[atoms[k]]);
+    for (const auto& b : s.bonds)
+      if (at[b.i] >= 0 && at[b.j] >= 0) sub.bonds.push_back({uint32_t(at[b.i]), uint32_t(at[b.j]), b.order});
+    std::unique_ptr<caps_doc> tmp(doc_of(sub));
+    const int rc = caps_field_assign(tmp.get(), path.c_str(), nullptr, int32_t(J.num("charges", 4)));
+    if (rc < 0) throw caps::FFError(name + ": " + g_error);
+    if (!tmp->field->ff) throw caps::FFError(name + ": " + std::to_string(size_t(caps::Json::parse(tmp->field->report)["untyped"].number())) + " atoms untyped by " + tmp->field->base.name);
+    complete = complete && tmp->field->complete;
+    keep.push_back(tmp->field->ff);
+    parts.push_back({keep.back().get(), atoms, name});
+    reports.push_back(caps::Json::parse(tmp->field->report));
+    names.push_back(name), paths.push_back(path);
+    if (g == 0 || F.base.name.empty()) F.base = tmp->field->base, F.ff_path = path;
+  }
+  caps::MergeOptions mo;
+  mo.eps_rule = G.text("eps_rule", mo.eps_rule);
+  mo.sigma_rule = G.text("sigma_rule", mo.sigma_rule);
+  mo.scaling14 = G.text("scaling14", mo.scaling14);
+  mo.cross96 = G.text("cross96", mo.cross96);
+  if (G.has("pairs") && G["pairs"].is_array())
+    for (const auto& x : G["pairs"].items()) mo.explicit_pairs.push_back({x.text("a", ""), x.text("b", ""), x.num("eps", 0), x.num("sigma", 0)});
+  std::vector<std::string> merge_notes;
+  auto M = std::make_shared<caps::ForceField>(caps::merge_forcefields(n, parts, mo, &merge_notes));
+  F.ff = M;
+  F.types = M->atom_type;
+  F.complete = complete;
+  F.rep = caps::ParamReport{};
+  // types into the document
+  for (size_t i = 0; i < n; ++i) {
+    d->traj.topology.atoms[i].type = M->type_index[i] + 1;
+    d->traj.topology.atoms[i].name = M->atom_type[i];
+    d->traj.topology.atoms[i].charge = M->charge[i];
+  }
+  d->traj.topology.types.clear();
+  for (size_t t = 0; t < M->type_names.size(); ++t) {
+    caps::TypeInfo ti;
+    ti.type = int(t) + 1;
+    ti.label = M->type_names[t];
+    for (size_t i = 0; i < n; ++i) if (M->type_index[i] == int(t)) { ti.mass = M->mass[i]; break; }
+    d->traj.topology.types.push_back(ti);
+  }
+  d->traj.topology.has_charges = true;
+  refresh(d);
+  // the report: the groups' joined
+  caps::Json r = caps::Json::object();
+  r["forcefield"] = M->name;
+  r["mixing"] = "by group · between groups ε " + (mo.sigma_rule == "sixthpower" ? std::string("and σ sixth-power") : mo.eps_rule + ", σ " + mo.sigma_rule);
+  r["version"] = std::string("");
+  r["source"] = std::string("");
+  r["file"] = F.ff_path;
+  r["typing"] = std::string("each group by its own force field");
+  r["charges"] = std::string("by group");
+  caps::Json atoms_out = caps::Json::array(), miss = caps::Json::array(), refs = caps::Json::array(), notes = caps::Json::array(), fftypes = caps::Json::array(), groups = caps::Json::array();
+  std::set<std::string> ref_seen;
+  double typed = 0, untyped = 0, overridden = 0, ambiguous = 0, filled = 0, estimated = 0, imported = 0, rules = 0;
+  std::vector<caps::Json> atom_rows(n);
+  for (size_t g = 0; g < parts.size(); ++g) {
+    const caps::Json& R = reports[g];
+    const std::string tag = names[g];
+    typed += R.num("typed", 0), untyped += R.num("untyped", 0), overridden += R.num("overridden", 0), ambiguous += R.num("ambiguous", 0);
+    filled += R.num("filled", 0), estimated += R.num("estimated", 0), imported += R.num("imported", 0), rules += R.num("rules", 0);
+    if (R.has("atoms"))
+      for (const auto& a : R["atoms"].items()) {
+        const size_t k = size_t(a.num("i", 1)) - 1;
+        if (k >= parts[g].atoms.size()) continue;
+        const uint32_t gi = parts[g].atoms[k];
+        caps::Json x = a;
+        x["i"] = double(gi + 1);
+        x["type"] = M->atom_type[gi];
+        x["src"] = tag + " · " + a.text("src", "");
+        atom_rows[gi] = x;
+      }
+    for (const char* key : {"missing", "notes"})
+      if (R.has(key)) for (const auto& m : R[key].items()) (std::string(key) == "missing" ? miss : notes).push_back(caps::Json(tag + ": " + m.str()));
+    if (R.has("references")) for (const auto& x : R["references"].items()) if (ref_seen.insert(x.dump(0)).second) refs.push_back(x);
+    if (R.has("fftypes")) for (const auto& x : R["fftypes"].items()) fftypes.push_back(x);
+    caps::Json gj = caps::Json::object();
+    gj["name"] = tag, gj["forcefield"] = R.text("forcefield", ""), gj["file"] = paths[g], gj["atoms"] = double(parts[g].atoms.size());
+    gj["complete"] = R.has("complete") && R["complete"].kind() == caps::Json::Bool && R["complete"].boolean();
+    groups.push_back(gj);
+  }
+  for (auto& a : atom_rows) atoms_out.push_back(a);
+  for (const auto& m : merge_notes) notes.push_back(caps::Json(m));
+  double qsum = 0;
+  for (double q : M->charge) qsum += q;
+  r["atoms"] = atoms_out;
+  r["typed"] = typed, r["untyped"] = untyped, r["overridden"] = overridden, r["ambiguous"] = ambiguous, r["rules"] = rules;
+  r["net_charge"] = qsum;
+  r["has_charges"] = true;
+  r["missing"] = miss;
+  r["filled"] = filled, r["filled_terms"] = caps::Json::array(), r["estimated"] = estimated, r["imported"] = imported;
+  r["by_analogy"] = caps::Json::array(), r["entered"] = caps::Json::array(), r["imported_files"] = caps::Json::array();
+  r["references"] = refs;
+  caps::Json used = caps::Json::array();
+  std::map<int, int> count;
+  for (int t : M->type_index) ++count[t];
+  for (size_t t = 0; t < M->type_names.size(); ++t) {
+    caps::Json u = caps::Json::object();
+    u["name"] = M->type_names[t];
+    u["count"] = double(count[int(t)]);
+    u["colour"] = hex_colour(caps::molecule_colour(int(t)));
+    used.push_back(u);
+  }
+  r["used"] = used;
+  r["fftypes"] = fftypes;
+  r["styles"] = reports.empty() || !reports[0].has("styles") ? caps::Json::object() : reports[0]["styles"];
+  r["notes"] = notes;
+  r["groups"] = groups;
+  r["complete"] = F.complete;
+  {
+    caps::Evaluator ev(*M, elec());
+    std::vector<double> x, f;
+    for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, s.cell, f);
+    caps::Json en = caps::Json::object();
+    en["bond"] = e.bond; en["angle"] = e.angle; en["dihedral"] = e.dihedral; en["improper"] = e.improper;
+    en["vdw"] = e.vdw; en["coulomb"] = e.coulomb; en["total"] = e.total();
+    r["energy"] = en;
+  }
+  F.report = r.dump(0);
 }
 }  // namespace
 
