@@ -284,7 +284,12 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
    | sixthpower, scaling14: refuse | first, cross96: refuse | rmin, pairs: [{a, b, eps, sigma}] (merged type names)}.
    Each group is typed and parameterised on its own, the parts merged with the cross pairs written out explicitly (the
    LAMMPS, GROMACS and DL_POLY files carry them). The report is as caps_field_report's, with "groups". Returns as
-   caps_field_assign; what one simulation cannot hold (different 1-4 scalings, 9-6 with 12-6) is refused with the reason. */
+   caps_field_assign; what one simulation cannot hold (different 1-4 scalings, 9-6 with 12-6) is refused with the reason.
+   A group may take a literature many-body potential instead of a force field (manybody.hpp): potential: {style: tersoff |
+   tersoff/mod | tersoff/mod/c | tersoff/zbl | sw | vashishta | gw | gw/zbl | eam/alloy | eam/fs, file: path, units: metal |
+   real (only when the file's first line does not say)} — one type per element, standard masses, no charge, UFF
+   Lennard-Jones across; LAMMPS files only (pair_style hybrid/overlay, the file written beside them), GROMACS and DL_POLY
+   refused; CAPS's relax / MD / equilibrate refuse until those atoms are held. */
 int32_t caps_field_assign_groups(caps_doc* d, const char* json);
 /* The assignment as JSON (atoms with type, rule, candidates, charge; counts; missing terms; types present with the
    viewer's colours; all types of the force field; notes; energy). Returns the length needed including the final NUL;

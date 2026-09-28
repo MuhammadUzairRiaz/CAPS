@@ -39,6 +39,8 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
   if (ff.type_index.size() != n) throw std::invalid_argument("DL_POLY: the force field was assigned to another structure");
   if (!ff.vsites.empty()) throw std::invalid_argument("DL_POLY: virtual sites are not written");
   if (ff.sw.on || ff.hbond.on()) throw std::invalid_argument("DL_POLY: Stillinger–Weber and DREIDING hydrogen-bond terms are not written");
+  if (ff.manybody.on())
+    throw std::invalid_argument("DL_POLY: the " + ff.manybody.style + " potential is a LAMMPS file; DL_POLY takes its own TERSOFF / METAL tables, which CAPS does not convert. Export to LAMMPS");
   if (!ff.lj_pairs.empty()) throw std::invalid_argument("DL_POLY: explicit [ pairs ] Lennard-Jones terms are not written");
   if (ff.keep13) throw std::invalid_argument("DL_POLY: force fields where 1-3 pairs interact (special_bonds 0 1 1) are not written");
   std::vector<std::string> notes;

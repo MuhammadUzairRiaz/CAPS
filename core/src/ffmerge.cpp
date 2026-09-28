@@ -41,11 +41,17 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   }
   for (size_t i = 0; i < natoms; ++i)
     if (owner[i] < 0) throw FieldError("atom " + std::to_string(i + 1) + " is in no part: give every atom a force field");
-  const ForceField& F0 = *parts[0].ff;
+  size_t first = 0;   // the settings everybody shares come from the first part a force field types (not a many-body group)
+  while (first + 1 < parts.size() && parts[first].ff->manybody.on()) ++first;
+  const ForceField& F0 = *parts[first].ff;
   // what one simulation holds for everybody
   bool mixed_forms = false;
   for (const auto& P : parts) {
     const ForceField& F = *P.ff;
+    if (F.manybody.on()) {   // a many-body group: no 1-4 pairs, and the non-bonded settings of the rest
+      if (F.pair_form != F0.pair_form) mixed_forms = true;   // its cross Lennard-Jones is 12-6 (UFF)
+      continue;
+    }
     if (!same(F.lj14, F0.lj14) || !same(F.coul14, F0.coul14) || F.keep13 != F0.keep13) {
       const std::string why = F.name + " scales 1-4 pairs by LJ " + fmt(F.lj14) + ", Coulomb " + fmt(F.coul14) + ", " + F0.name + " by LJ " + fmt(F0.lj14) +
                               ", Coulomb " + fmt(F0.coul14);
@@ -60,9 +66,11 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   }
   if (mixed_forms && o.cross96 != "rmin")
     throw FieldError("one part uses Lennard-Jones 9-6 (class II) and another 12-6: the cross pairs need one form. Use force fields of one class (IFF-PCFF covers minerals with PCFF polymers), or give the 9-6 sites a 12-6 form with the same well depth and minimum (cross96: rmin)");
-  int sw_parts = 0;
-  for (const auto& P : parts) sw_parts += P.ff->sw.on;
+  int sw_parts = 0, mb_parts = 0;
+  for (const auto& P : parts) sw_parts += P.ff->sw.on, mb_parts += P.ff->manybody.on();
   if (sw_parts > 1) throw FieldError("Stillinger–Weber in more than one part: one parameter set only");
+  if (mb_parts > 1) throw FieldError("a many-body potential file in more than one group: one per system (a file that covers every element, e.g. SiC.tersoff for Si and C, serves several)");
+  if (mb_parts && sw_parts) throw FieldError("a many-body potential file together with the mW Stillinger–Weber water: not written together");
 
   ForceField M;
   M.pair_form = mixed_forms ? "lj9-6" : F0.pair_form;
@@ -75,7 +83,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   // the engine styles: kept only when every part declares the same
   bool same_native = true;
   for (const auto& P : parts)
-    same_native = same_native && P.ff->native_pair == F0.native_pair && P.ff->native_dihedral == F0.native_dihedral && P.ff->native_improper == F0.native_improper &&
+    if (!P.ff->manybody.on()) same_native = same_native && P.ff->native_pair == F0.native_pair && P.ff->native_dihedral == F0.native_dihedral && P.ff->native_improper == F0.native_improper &&
                   P.ff->native_special == F0.native_special;
   if (same_native) M.native_pair = F0.native_pair, M.native_dihedral = F0.native_dihedral, M.native_improper = F0.native_improper, M.native_special = F0.native_special;
   M.native_timestep = F0.native_timestep;
@@ -135,6 +143,14 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       v.site = A(v.site);
       for (auto& f : v.from) f = A(f);
       M.vsites.push_back(v);
+    }
+    if (F.manybody.on()) {   // the element of each merged type ("" for the other groups' types: NULL)
+      M.manybody = F.manybody;
+      M.manybody.element.clear();
+      for (size_t t = 0; t < F.type_names.size(); ++t) {
+        if (M.manybody.element.size() < size_t(tmap[p][t]) + 1) M.manybody.element.resize(size_t(tmap[p][t]) + 1);
+        M.manybody.element[size_t(tmap[p][t])] = F.manybody.element[t];
+      }
     }
     if (F.sw.on) {
       M.sw = F.sw;
@@ -198,6 +214,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       if (mixed_forms) M.pair_func[key] = PairFunc{kPairSdk126, pt.eps, pt.sigma, 0};
       else M.pair_override[key] = pt;
     }
+  if (M.manybody.on()) M.manybody.element.resize(M.type_names.size());
   // names and notes
   std::string name;
   for (size_t p = 0; p < parts.size(); ++p) name += (p ? " + " : "") + parts[p].ff->name + (parts.size() > 1 ? " (" + parts[p].tag + ")" : "");

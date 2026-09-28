@@ -19,6 +19,7 @@
 #include "caps/functionalize.hpp"
 #include "caps/layers.hpp"
 #include "caps/ffmerge.hpp"
+#include "caps/manybody.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
 #include "caps/dlpoly.hpp"
@@ -275,6 +276,20 @@ std::vector<char> fixed_mask(const caps_doc* d, const caps::System& s) {
   if (d->held_mol > 0) for (size_t i = 0; i < s.atoms.size(); ++i) m[i] = s.atoms[i].mol == d->held_mol;
   for (uint32_t i : d->fixed_atoms) if (i < m.size()) m[i] = 1;
   return m;
+}
+
+// CAPS does not evaluate a literature many-body potential (Tersoff, EAM …): its atoms must be held for CAPS's own runs
+void require_manybody_held(const caps_doc* d, const std::vector<char>& m) {
+  if (!d->field || !d->field->ff || !d->field->ff->manybody.on()) return;
+  const caps::ForceField& ff = *d->field->ff;
+  size_t loose = 0;
+  for (size_t i = 0; i < ff.type_index.size(); ++i) {
+    const size_t t = size_t(ff.type_index[i]);
+    if (t < ff.manybody.element.size() && !ff.manybody.element[t].empty() && (i >= m.size() || !m[i])) ++loose;
+  }
+  if (loose)
+    throw std::runtime_error(std::to_string(loose) + " atoms are under the " + ff.manybody.style + " potential, which CAPS does not evaluate (LAMMPS does): hold them "
+                             "(Hold the filler, or hold the selection) to run in CAPS, or run the LAMMPS files");
 }
 
 // GROMACS: the held atoms as an index group (STEM.ndx: System and Frozen) and freezegrps / freezedim in STEM.mdp
@@ -1465,6 +1480,12 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       if (!d->fixed_atoms.empty()) notes.push_back(caps::Json("LAMMPS: the " + std::to_string(d->fixed_atoms.size()) + " fixed atoms besides the held molecule are not held in this input (the GROMACS files freeze them)"));
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
       written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
+      if (ff.manybody.on()) {
+        written.push_back({caps::manybody_file_name(ff.manybody), "the " + ff.manybody.style + " potential file (" +
+                                                                      (ff.manybody.tagged ? "as given" : "as given, with its units on the first line") + ")"});
+        notes.push_back(caps::Json("LAMMPS: " + ff.manybody.style + " overlays the pair terms for its elements (pair_style hybrid/overlay); in " +
+                                   (ff.manybody.units == "metal" ? "metal units, which LAMMPS converts to real" : "real units")));
+      }
       if (flag("moltemplate", false)) {   // the same as a moltemplate system (moltemplate.sh -overlay-all system.lt)
         std::ofstream lt(base + ".lt");
         lt << caps::lammps_to_moltemplate(base + ".data", base + ".in", ff.name);
@@ -1920,6 +1941,7 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     caps::System s = d->traj.frame(d->current);
     if (!s.unwrapped) caps::make_molecules_whole(s);
     r.fixed = fixed_mask(d, s);
+    require_manybody_held(d, r.fixed);
     for (const auto& rs : d->restraints)
       if (rs.i < s.atoms.size() && rs.j < s.atoms.size() && rs.i != rs.j) r.restraints.push_back(rs);
     caps::Trajectory out;
@@ -2047,6 +2069,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     caps::System s = d->traj.frame(d->current);
     if (d->current + 1 != d->traj.frames()) s.velocities.clear();   // velocities belong to the last frame only
     m.fixed = fixed_mask(d, s);
+    require_manybody_held(d, m.fixed);
     if (!s.unwrapped) caps::make_molecules_whole(s);
     caps::Trajectory out;
     out.topology = s;
@@ -2189,6 +2212,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     if (d->current + 1 != d->traj.frames()) s.velocities.clear();
     if (!s.unwrapped) caps::make_molecules_whole(s);
     e.md.fixed = fixed_mask(d, s);
+    require_manybody_held(d, e.md.fixed);
     caps::Trajectory out;
     out.topology = s;
     e.frame = [&](const std::vector<double>& x, const caps::Cell& c, int64_t step) {
@@ -4022,15 +4046,16 @@ void field_run_groups(caps_doc* d) {
   std::vector<caps::FFPart> parts;
   std::vector<caps::Json> reports;
   std::vector<std::string> names, paths;
-  bool complete = true;
+  bool complete = true, based = false;
   for (size_t g = 0; g < ng; ++g) {
     const caps::Json& J = G["groups"][g];
     std::vector<uint32_t> atoms;
     for (size_t i = 0; i < n; ++i) if (owner[i] == int(g)) atoms.push_back(uint32_t(i));
     if (atoms.empty()) continue;
     const std::string name = J.text("name", "group " + std::to_string(g + 1));
-    const std::string path = J.text("forcefield", "");
-    if (path.empty()) throw caps::FFError(name + ": no force field");
+    const bool potential = J.has("potential") && J["potential"].is_object();
+    const std::string path = potential ? J["potential"].text("file", "") : J.text("forcefield", "");
+    if (path.empty()) throw caps::FFError(name + (potential ? ": no potential file" : ": no force field"));
     // the group alone: its atoms, the bonds among them, the cell, the charges the structure has
     caps::System sub;
     sub.cell = s.cell;
@@ -4041,6 +4066,37 @@ void field_run_groups(caps_doc* d) {
     for (size_t k = 0; k < atoms.size(); ++k) at[atoms[k]] = int64_t(k), sub.atoms.push_back(s.atoms[atoms[k]]);
     for (const auto& b : s.bonds)
       if (at[b.i] >= 0 && at[b.j] >= 0) sub.bonds.push_back({uint32_t(at[b.i]), uint32_t(at[b.j]), b.order});
+    if (potential) {   // a literature many-body potential (Tersoff, EAM …) read by LAMMPS from its file
+      caps::ManyBodySpec spec;
+      spec.style = J["potential"].text("style", "");
+      spec.file = path;
+      spec.units = J["potential"].text("units", "");
+      std::vector<std::string> mb_notes;
+      auto mf = std::make_shared<caps::ForceField>(caps::manybody_part(sub, spec, &mb_notes));
+      keep.push_back(mf);
+      parts.push_back({keep.back().get(), atoms, name});
+      caps::Json R = caps::Json::object();
+      R["forcefield"] = mf->name;
+      caps::Json ra = caps::Json::array(), rn = caps::Json::array(), rr = caps::Json::array();
+      for (size_t k = 0; k < atoms.size(); ++k) {
+        caps::Json a = caps::Json::object();
+        a["i"] = double(k + 1);
+        a["el"] = mf->atom_type[k];
+        a["type"] = mf->atom_type[k];
+        a["ov"] = false;
+        a["rule"] = mf->why[k];
+        a["src"] = std::string("potential file");
+        ra.push_back(a);
+      }
+      for (const auto& x : mb_notes) rn.push_back(x);
+      if (!mf->manybody.citation.empty()) rr.push_back(mf->manybody.citation);
+      R["atoms"] = ra, R["notes"] = rn, R["references"] = rr;
+      R["typed"] = double(atoms.size());
+      R["complete"] = true;
+      reports.push_back(R);
+      names.push_back(name), paths.push_back(path);
+      continue;
+    }
     std::unique_ptr<caps_doc> tmp(doc_of(sub));
     const int rc = caps_field_assign(tmp.get(), path.c_str(), nullptr, int32_t(J.num("charges", 4)));
     if (rc < 0) throw caps::FFError(name + ": " + g_error);
@@ -4050,8 +4106,9 @@ void field_run_groups(caps_doc* d) {
     parts.push_back({keep.back().get(), atoms, name});
     reports.push_back(caps::Json::parse(tmp->field->report));
     names.push_back(name), paths.push_back(path);
-    if (g == 0 || F.base.name.empty()) F.base = tmp->field->base, F.ff_path = path;
+    if (!based) F.base = tmp->field->base, F.ff_path = path, based = true;
   }
+  if (!based) throw caps::FFError("every group has a potential file: give the rest of the system a force field");
   caps::MergeOptions mo;
   mo.eps_rule = G.text("eps_rule", mo.eps_rule);
   mo.sigma_rule = G.text("sigma_rule", mo.sigma_rule);

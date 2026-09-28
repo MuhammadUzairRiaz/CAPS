@@ -226,7 +226,11 @@ class _Field:
     def assign_groups(self, groups, eps_rule: str = "geometric", sigma_rule: str = "arithmetic", scaling14: str = "refuse",
                       cross96: str = "refuse", pairs: Optional[list] = None) -> dict:
         """A force field per group of molecules: groups = [{"name": "filler", "molecules": "1", "forcefield": "iff-cvff"},
-        {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. Between groups the Lennard-Jones
+        {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. A crystal group may instead take
+        a literature many-body potential that LAMMPS reads from its file: {"name": "Si", "molecules": "1", "potential":
+        {"style": "tersoff", "file": "Si.tersoff", "units": "metal"}} (units only when the file does not say them); its
+        atoms get one type per element, standard masses, no charge, UFF Lennard-Jones for the cross pairs, and CAPS runs
+        need them held (LAMMPS evaluates the potential). Between groups the Lennard-Jones
         pairs follow eps_rule (geometric | arithmetic) and sigma_rule (arithmetic | geometric | sixthpower), or pairs =
         [{"a": type, "b": type, "eps": kcal/mol, "sigma": Å}]. Different 1-4 scalings are refused unless scaling14="first";
         9-6 with 12-6 unless cross96="rmin" (the 9-6 sites keep ε and r_min)."""
@@ -234,8 +238,11 @@ class _Field:
         gs = []
         for g in groups:
             g = dict(g)
-            g["forcefield"] = _forcefield_path(g["forcefield"])
-            g["charges"] = codes[g.get("charges", "auto")]
+            if "potential" in g:   # a literature many-body potential: {"style": "tersoff", "file": PATH, "units": "metal"}
+                g["potential"] = dict(g["potential"], file=os.path.abspath(os.path.expanduser(g["potential"]["file"])))
+            else:
+                g["forcefield"] = _forcefield_path(g["forcefield"])
+                g["charges"] = codes[g.get("charges", "auto")]
             gs.append(g)
         spec = {"groups": gs, "eps_rule": eps_rule, "sigma_rule": sigma_rule, "scaling14": scaling14, "cross96": cross96, "pairs": pairs or []}
         rc = library().caps_field_assign_groups(self._doc._h, _enc(json.dumps(spec)))
