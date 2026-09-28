@@ -233,7 +233,7 @@ public sealed partial class MainViewModel
             case nameof(Reacting): Track("React", Reacting, 6, "React · crosslinking"); break;
             case nameof(BenchRunning): Track("Bench", BenchRunning, 12, "Bench · validation suite"); break;
             case nameof(BenchProgress): Line("Bench", BenchProgress); break;
-            case nameof(GrowLog): Line("Grow", GrowLog); if (_live.TryGetValue("Grow", out var g)) g.Progress = GrowProgress; break;
+            case nameof(GrowLog): Line("Grow", GrowLog); if (_live.TryGetValue("Grow", out var g)) { g.Progress = GrowProgress; AnnounceProgress(g); } break;
             case nameof(RelaxLog): Line("Relax", RelaxLog); break;
             case nameof(MdLog): Line("Dynamics", MdLog); break;
             case nameof(PackLog): Line("Pack", PackLog); break;
@@ -243,7 +243,7 @@ public sealed partial class MainViewModel
                 if (_live.TryGetValue("Equilibrate", out var q))
                 {
                     var m = System.Text.RegularExpressions.Regex.Match(EqLog, @"stage (\d+) of (\d+)");
-                    if (m.Success) { q.Stage = int.Parse(m.Groups[1].Value); q.Stages = int.Parse(m.Groups[2].Value); q.Progress = (q.Stage - 1.0) / Math.Max(1, q.Stages); }
+                    if (m.Success) { q.Stage = int.Parse(m.Groups[1].Value); q.Stages = int.Parse(m.Groups[2].Value); q.Progress = (q.Stage - 1.0) / Math.Max(1, q.Stages); AnnounceProgress(q); }
                 }
                 break;
         }
@@ -338,7 +338,7 @@ public sealed partial class MainViewModel
             j.A.Clear();
             j.B.Clear();
             foreach (var r in _thermo) { if (r.Density > 0) j.A.Add((r.TimePs, r.Density)); j.B.Add((r.TimePs, r.Temperature)); }
-            if (kind == "Dynamics" && _thermo.Count > 0 && _mdSteps > 0) j.Progress = (double)_thermo[^1].Step / _mdSteps;
+            if (kind == "Dynamics" && _thermo.Count > 0 && _mdSteps > 0) { j.Progress = (double)_thermo[^1].Step / _mdSteps; AnnounceProgress(j); }
             j.CurvesChanged();
             if (j == _job) JobCurvesChanged?.Invoke();
         }

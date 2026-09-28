@@ -202,6 +202,86 @@
           </StackPanel>
 
           <!-- 3D view -->
+          <!-- Accessibility (design/boards/Settings) -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=6}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Accessibility" Classes="title" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left"
+                         Text="Motion, contrast, focus and what a screen reader hears. Changes apply at once and are saved per user." />
+            </StackPanel>
+            <StackPanel Spacing="12">
+              <TextBlock Text="Motion" Classes="h2" />
+              <StackPanel Orientation="Horizontal">
+                <RadioButton Classes="seg" GroupName="motion2" Content="Follow system" IsChecked="{Binding SetReduceMotion, Converter={x:Static v:StringEqualsConverter.Instance}, ConverterParameter=system}" />
+                <RadioButton Classes="seg" GroupName="motion2" Content="Reduce" IsChecked="{Binding SetReduceMotion, Converter={x:Static v:StringEqualsConverter.Instance}, ConverterParameter=on}" />
+                <RadioButton Classes="seg" GroupName="motion2" Content="Full" IsChecked="{Binding SetReduceMotion, Converter={x:Static v:StringEqualsConverter.Instance}, ConverterParameter=off}" />
+              </StackPanel>
+              <TextBlock Text="{Binding MotionText}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left" />
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <TextBlock Text="Seeing and focus" Classes="h2" />
+              <CheckBox Classes="toggle" Content="High-contrast outlines" IsChecked="{Binding SetHighContrast}"
+                        ToolTip.Tip="Atom outlines in the view twice as wide and near-black (near-white on light), panel borders and secondary text firmer" />
+              <CheckBox Classes="toggle" Content="Always show focus rings" IsChecked="{Binding SetFocusRings}"
+                        ToolTip.Tip="An accent ring on the focused control after a click too, not only when Tab moved the focus" />
+              <CheckBox Classes="toggle" Content="Show announcements in the view" IsChecked="{Binding ShowAnnouncement}"
+                        ToolTip.Tip="What a screen reader hears while walking the atoms, also shown as a bar in the view for sighted keyboard users" />
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <TextBlock Text="Screen readers" Classes="h2" />
+              <CheckBox Classes="toggle" Content="Announce job progress to screen readers" IsChecked="{Binding SetAnnounceProgress}"
+                        ToolTip.Tip="A running job (Grow, Dynamics, Equilibrate) is read out politely at 25, 50 and 75 %; a job that ends is always announced" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left"
+                         Text="Announcements are polite: they wait for the reader to finish. The 3D view is walked with the arrow keys ([ and ] the molecules, B the bonds)." />
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <TextBlock Text="Shortcut conflicts" Classes="h2" />
+              <TextBlock Classes="muted" FontSize="12" Text="None: your shortcuts leave the Studio's own keys as they are." IsVisible="{Binding !HasShortcutConflicts}" />
+              <ItemsControl ItemsSource="{Binding ShortcutConflicts}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ShortcutConflict">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="8" Padding="12,8" MaxWidth="620" HorizontalAlignment="Left">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Classes="small" Content="Resolve" Click="OnResolveConflict" Tag="{Binding}"
+                                ToolTip.Tip="Your key goes; the Studio's own comes back" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Classes="small" Content="Open shortcut editor" Click="OnOpenShortcuts" HorizontalAlignment="Left" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Python & scripting (design/boards/Settings) -->
+          <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=7}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Python &amp; scripting" Classes="title" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left"
+                         Text="The interpreter macros, render overlays and Python pipeline steps run with, and how your own scripts and notebooks reach this Studio's caps package." />
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Interpreter" Classes="h2" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Width="620" HorizontalAlignment="Left">
+                <TextBox Text="{Binding SetPythonExe}" Classes="mono" Watermark="python3 (or CAPS_PYTHON)" />
+                <Button Grid.Column="1" Content="Check" Click="OnCheckPython" IsEnabled="{Binding !PythonChecking}" />
+              </Grid>
+              <TextBlock Classes="muted" FontSize="12"><Run Text="In use: " /><Run Text="{Binding PythonSource}" /></TextBlock>
+              <TextBlock Text="{Binding PythonCheck}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left" />
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Your own scripts and notebooks" Classes="h2" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left"
+                         Text="These two lines in a shell (or a notebook's environment) make import caps use this Studio's package and library; nothing is installed into the interpreter." />
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="8" Padding="12,8" MaxWidth="620" HorizontalAlignment="Left" Background="{DynamicResource Bg0B}">
+                <SelectableTextBlock Text="{Binding PythonShellLines}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+              </Border>
+              <Button Classes="small" Content="Copy" Click="OnCopyPythonLines" HorizontalAlignment="Left" />
+            </StackPanel>
+          </StackPanel>
+
           <StackPanel Spacing="22" IsVisible="{Binding SettingsTab, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}">
             <StackPanel Spacing="6">
               <TextBlock Text="3D view" Classes="title" />

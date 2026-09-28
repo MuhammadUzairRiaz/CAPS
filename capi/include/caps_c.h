@@ -23,7 +23,7 @@ typedef struct {
   uint32_t custom_rgb;
   int32_t colour_by;      /* 0 element, 1 molecule, 2 type, 3 property (distance to own molecule's centre) */
   int32_t style;          /* 0 ball & stick, 1 space filling, 2 sticks, 3 no hydrogens, 4 backbone */
-  int32_t outlines, depth_cue, show_cell;
+  int32_t outlines, depth_cue, show_cell;   /* outlines: 0 none, 1 light, 2 high contrast */
   int32_t highlight[4];   /* up to four selected atom indices, -1 for unused */
   int32_t focus;          /* v18: atom index + 1 drawn with the keyboard-focus ring, 0 for none */
   int32_t ambient_occlusion;   /* v19: darken atoms by the open sky they see */

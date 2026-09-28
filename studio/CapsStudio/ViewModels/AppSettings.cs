@@ -46,6 +46,10 @@ public sealed class AppSettings
     /// <summary>Keys the user gave palette commands: command id → gesture ("Meta+Shift+G").</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = new();
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
+    public bool HighContrast { get; set; }                  // Accessibility: strong outlines in the view, firmer borders and secondary text
+    public bool FocusRingsAlways { get; set; }              // Accessibility: a focus ring on every focused control, not only after Tab
+    public bool AnnounceProgress { get; set; }              // Accessibility: job progress read out at each quarter
+    public string PythonExe { get; set; } = "";             // Python & scripting: the interpreter ("" CAPS_PYTHON, else python3)
     public int UnitSystem { get; set; }                    // Settings › Units: 0 CAPS, 1 SI-derived, 2 LAMMPS metal
     public string UnitEnergy { get; set; } = "kcal/mol";
     public string UnitLength { get; set; } = "Å";

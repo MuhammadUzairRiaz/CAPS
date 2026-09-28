@@ -845,7 +845,8 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   // Outlines where depth jumps or coverage ends.
   if (opt.outlines) {
     const float jump = 0.6f;
-    const int rpx = std::max(1, ss);
+    const bool strong = opt.outline_strength >= 2;   // high contrast (Settings › Accessibility)
+    const int rpx = std::max(1, ss) * (strong ? 2 : 1);
     std::vector<char> edge(B.col.size(), 0);
     for (int y = 0; y < H; ++y)
       for (int x = 0; x < W; ++x) {
@@ -864,7 +865,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       }
     const RGB ink = dark_bg ? RGB{0.04f, 0.045f, 0.05f} : RGB{0.08f, 0.08f, 0.08f};
     for (size_t k = 0; k < edge.size(); ++k)
-      if (edge[k] && B.id[k] >= 0) B.col[k] = mixc(B.col[k], ink, 0.5f);   // a light edge: separates atoms without a cartoon rim
+      if (edge[k] && B.id[k] >= 0) B.col[k] = mixc(B.col[k], ink, strong ? 0.95f : 0.5f);   // a light edge: separates atoms without a cartoon rim
   }
 
   // Selection rings.
