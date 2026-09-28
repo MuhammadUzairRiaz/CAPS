@@ -35,7 +35,7 @@ std::vector<std::vector<uint32_t>> neighbours(const System& s) {
 double bond_order_sum(const System& s, uint32_t a) {
   double v = 0;
   for (const auto& b : s.bonds)
-    if (b.i == a || b.j == a) v += b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;
+    if (b.i == a || b.j == a) v += b.order == kBondDative ? 0 : b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;
   return v;
 }
 
@@ -250,7 +250,7 @@ int missing_h(const System& s, uint32_t i, const std::vector<double>& order_sum)
 std::vector<double> order_sums(const System& s) {
   std::vector<double> v(s.atoms.size(), 0.0);
   for (const auto& b : s.bonds) {
-    const double o = b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;
+    const double o = b.order == kBondDative ? 0 : b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;   // coordinate: no valence
     v[b.i] += o, v[b.j] += o;
   }
   return v;
@@ -590,6 +590,102 @@ void rotate_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& axi
   for (uint32_t a : atoms) c = c + s.atoms[a].pos;
   c = c * (1.0 / double(atoms.size()));
   for (uint32_t a : atoms) s.atoms[a].pos = rotate_about(s.atoms[a].pos, c, axis, degrees * M_PI / 180);
+}
+
+std::vector<Vec3> coordination_directions(const std::string& g) {
+  const double r3 = 1 / std::sqrt(3.0), c120 = -0.5, s120 = std::sqrt(3.0) / 2;
+  if (g == "linear") return {{0, 0, 1}, {0, 0, -1}};
+  if (g == "trigonal" || g == "trigonal_planar") return {{1, 0, 0}, {c120, s120, 0}, {c120, -s120, 0}};
+  if (g == "tetrahedral") return {{r3, r3, r3}, {r3, -r3, -r3}, {-r3, r3, -r3}, {-r3, -r3, r3}};
+  if (g == "square_planar") return {{1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0}};
+  if (g == "trigonal_bipyramidal") return {{0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {c120, s120, 0}, {c120, -s120, 0}};
+  if (g == "square_pyramidal") return {{0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0}};
+  if (g == "octahedral") return {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+  return {};
+}
+
+namespace {
+// the rotation taking unit a to unit b (Rodrigues), applied to v
+Vec3 turn(const Vec3& v, const Vec3& a, const Vec3& b) {
+  Vec3 k = cross(a, b);
+  const double sn = norm(k), cs = dot(a, b);
+  if (sn < 1e-12) {
+    if (cs > 0) return v;
+    k = unitv(perpendicular(a));   // opposite: half a turn about any perpendicular
+    return v * -1.0 + k * (2 * dot(k, v));
+  }
+  k = k * (1 / sn);
+  return v * cs + cross(k, v) * sn + k * (dot(k, v) * (1 - cs));
+}
+}  // namespace
+
+double set_coordination(System& s, uint32_t centre, const std::string& geometry) {
+  if (centre >= s.atoms.size()) throw EditError("pick the centre atom");
+  const std::vector<Vec3> ideal = coordination_directions(geometry);
+  if (ideal.empty())
+    throw EditError("geometry " + geometry + ": linear, trigonal, tetrahedral, square_planar, trigonal_bipyramidal, square_pyramidal or octahedral");
+  std::vector<uint32_t> lig;
+  for (const auto& b : s.bonds)
+    if (b.i == centre) lig.push_back(b.j);
+    else if (b.j == centre) lig.push_back(b.i);
+  if (lig.empty()) throw EditError("atom " + std::to_string(centre + 1) + " has no bonded neighbours to place");
+  if (lig.size() > ideal.size())
+    throw EditError("atom " + std::to_string(centre + 1) + " has " + std::to_string(lig.size()) + " neighbours; " + geometry + " has " + std::to_string(ideal.size()) + " sites");
+  const Vec3 c = s.atoms[centre].pos;
+  std::vector<Vec3> u;
+  for (uint32_t l : lig) {
+    const Vec3 d = s.cell.valid() ? s.cell.minimum_image(s.atoms[l].pos - c) : s.atoms[l].pos - c;
+    if (norm(d) < 1e-9) throw EditError("a neighbour sits on the centre");
+    u.push_back(unitv(d));
+  }
+  // the ideal set turned so its site p lies on ligand 0 and site q in the plane of ligands 0 and 1; the rest assigned
+  // greedily to the nearest free site; the turn and assignment that move the ligands least win
+  double best = 1e300;
+  std::vector<Vec3> best_dir;
+  for (size_t p = 0; p < ideal.size(); ++p)
+    for (size_t q = 0; q < ideal.size(); ++q) {
+      if (q == p && ideal.size() > 1) continue;
+      auto R = [&](const Vec3& v) {   // v in the turned frame
+        Vec3 w = turn(v, ideal[p], u[0]);
+        if (u.size() < 2) return w;
+        // then about u[0] so that site q's image lies in the plane of u[0], u[1] on u[1]'s side
+        const Vec3 qa = turn(ideal[q], ideal[p], u[0]);
+        Vec3 a = qa - u[0] * dot(qa, u[0]), b = u[1] - u[0] * dot(u[1], u[0]);
+        if (norm(a) < 1e-9 || norm(b) < 1e-9) return w;
+        a = unitv(a), b = unitv(b);
+        const double ang = std::atan2(dot(cross(a, b), u[0]), dot(a, b));
+        return rotate_about(w, {0, 0, 0}, u[0], ang);
+      };
+      std::vector<Vec3> sites;
+      for (const auto& v : ideal) sites.push_back(R(v));
+      std::vector<char> used(sites.size(), 0);
+      std::vector<Vec3> dir(u.size());
+      double cost = 0;
+      for (size_t k = 0; k < u.size(); ++k) {
+        size_t bk = sites.size();
+        double bd = -2;
+        for (size_t m = 0; m < sites.size(); ++m)
+          if (!used[m] && dot(sites[m], u[k]) > bd) bd = dot(sites[m], u[k]), bk = m;
+        used[bk] = 1;
+        dir[k] = sites[bk];
+        cost += std::acos(std::clamp(bd, -1.0, 1.0));
+      }
+      if (cost < best) best = cost, best_dir = dir;
+    }
+  // each ligand turned about the centre onto its site, with its substituents (a chelate's ligand alone)
+  double moved = 0;
+  for (size_t k = 0; k < lig.size(); ++k) {
+    auto side = side_of(s, centre, lig[k]);
+    bool shared = std::find(side.begin(), side.end(), centre) != side.end();
+    for (size_t m = 0; m < lig.size() && !shared; ++m) shared = m != k && std::find(side.begin(), side.end(), lig[m]) != side.end();
+    if (shared) side = {lig[k]};
+    moved = std::max(moved, std::acos(std::clamp(dot(u[k], best_dir[k]), -1.0, 1.0)) * 180 / M_PI);
+    for (uint32_t a : side) {
+      const Vec3 d = s.cell.valid() ? s.cell.minimum_image(s.atoms[a].pos - c) : s.atoms[a].pos - c;
+      s.atoms[a].pos = c + turn(d, u[k], best_dir[k]);
+    }
+  }
+  return moved;
 }
 
 void mirror_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& normal) {

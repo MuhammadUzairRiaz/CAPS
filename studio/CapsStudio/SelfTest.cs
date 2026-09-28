@@ -111,7 +111,7 @@ internal static class SelfTest
         for (var y = 150; y < 250; y += 5) for (var x = 250; x < 390; x += 5) hits += vm.Document.Pick(x, y) >= 0 ? 1 : 0;
         Check(hits > 0, $"picking finds atoms near the centre ({hits} hits)");
         vm.Pick(vm.Document.Pick(320, 200) is var p && p >= 0 ? p : 40);
-        Check(vm.PickedRows.Count == 4 && vm.NeighbourRows.Count == 4, $"inspector: {vm.PickedTitle}");
+        Check(vm.PickedRows.Count >= 4 && vm.NeighbourRows.Count == 4, $"inspector: {vm.PickedTitle} · {string.Join(", ", vm.PickedRows.Select(r => r.Key))}");
 
         // CAPS Field: assign GAFF2 from the library, override one atom, clear
         var gaff = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
@@ -216,6 +216,18 @@ internal static class SelfTest
             cc.Append("END\n");
             var ccPath = Path.Combine(mbDir, "cc_methane.pdb");
             File.WriteAllText(ccPath, cc.ToString());
+            // coordination: methane's carbon read as tetrahedral, made square planar exactly, back with undo; out-of-plane angle
+            vm.Open(pdbPath);
+            vm.Pick(2);
+            var coordRow = vm.PickedRows.FirstOrDefault(r => r.Key == "Coordination")?.Value ?? "";
+            vm.Pick(3, true); vm.Pick(4, true); vm.Pick(5, true);
+            var oop = vm.MeasureText.Contains("Out of plane", StringComparison.Ordinal);
+            vm.Pick(2);
+            vm.CoordinationIndex = 3;
+            vm.ApplyCoordination();
+            var planar = vm.PickedRows.FirstOrDefault(r => r.Key == "Coordination")?.Value ?? "";
+            Check(coordRow.Contains("4 neighbours · tetrahedral", StringComparison.Ordinal) && oop && planar.Contains("square planar (RMS 0.0°)", StringComparison.Ordinal),
+                  $"coordination: {coordRow} → {planar} · out-of-plane shown {oop}");
             vm.Field.Clear().GetAwaiter().GetResult();
             vm.Open(ccPath);
             vm.Document!.SetHeldMolecule(1);

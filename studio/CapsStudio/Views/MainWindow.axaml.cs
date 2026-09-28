@@ -484,6 +484,7 @@ public partial class MainWindow : Window
     // ---------------------------------------------------------------- Field
     private async void OnFieldAssign(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Assign(); }
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
+    private void OnApplyCoordination(object? s, RoutedEventArgs e) => _vm.ApplyCoordination();
     private async void OnFieldAssignGroups(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AssignGroups(); }
     private void OnFieldGroupAdd(object? s, RoutedEventArgs e) => _vm.Field.AddGroup();
     private void OnFieldGroupSuggest(object? s, RoutedEventArgs e) => _vm.Field.SuggestGroups();
