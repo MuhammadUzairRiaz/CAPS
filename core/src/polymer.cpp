@@ -986,6 +986,11 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     ch.started = true;
   };
 
+  // the aligning field's axis (z for the report when none is given)
+  Vec3 orient{o.orient_axis[0], o.orient_axis[1], o.orient_axis[2]};
+  const bool orienting = o.orient_strength > 0 && norm(orient) > 1e-9;
+  orient = norm(orient) > 1e-9 ? unitv(orient) : Vec3{0, 0, 1};
+
   auto start_chain = [&](int ci) {
     auto& ch = C[size_t(ci)];
     if (n_arms) unresolve_arms(ci);
@@ -1026,6 +1031,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       s = {U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
     Vec3 u{Nd(rng), Nd(rng), Nd(rng)};
     u = unitv(u);
+    // the start direction under the aligning field too: drawn with probability ∝ exp(s P₂) (rejection)
+    for (int tries = 0; orienting && tries < 500; ++tries) {
+      const double c = dot(u, orient);
+      if (U(rng) < std::exp(o.orient_strength * (1.5 * c * c - 1.5))) break;
+      u = unitv(Vec3{Nd(rng), Nd(rng), Nd(rng)});
+    }
     Vec3 w{Nd(rng), Nd(rng), Nd(rng)};
     w = unitv(w - u * dot(w, u));
     const Vec3 g2 = s, g1 = s + u * 1.53, g0 = g1 + unitv(u * 0.4 + w) * 1.53;
@@ -1160,6 +1171,23 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     std::vector<Vec3> best, trial(size_t(t.n));
     double best_m = -1e9;
+    // orientation: P₂ of this unit's backbone chord (the previous tail to the new tail) against the axis
+    // (with the tail's free valence known: the head to where the next head goes, a chord through the tail that the
+    // next unit's fixed first bond is part of, so a greedy choice does not paint the chain into a helix)
+    auto chord_p2 = [&](const std::vector<Vec3>& tr) {
+      Vec3 d = tr[size_t(t.tail)] - ch.pos[size_t(pt)];
+      if (t.tail_fixed) {
+        auto tp = [&](int local) { return local >= 0 ? tr[size_t(local)] : ch.pos[size_t(pt)]; };
+        Vec3 e1, e2, e3;
+        frame(tr[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
+        const Vec3 dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
+        d = tr[size_t(t.tail)] + dir * 1.53 - (t.tail == 0 ? ch.pos[size_t(pt)] : tr[0]);
+      }
+      const double l = norm(d);
+      if (l < 1e-9) return 0.0;
+      const double c = dot(d, orient) / l;
+      return 1.5 * c * c - 0.5;
+    };
     std::vector<double> gv(t.group_kind.size()), best_gv;
     double best_root = 0;
     // places the unit's atoms for a root torsion and group torsions, and returns the worst contact margin (Å); stops
@@ -1260,19 +1288,24 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     };
     double step_lnw = 0;
     if (o.method == 0) {
+      // with an orienting field a trial within the limits ranks by margin + bonus · P₂ (every one above any trial outside)
+      const double bonus = orienting ? 0.25 * o.orient_strength : 0.0;
+      double best_j = -1e9;
       for (int tr = 0; tr < trials; ++tr) {
         const double root_t = draw(root_kind, 0);
         for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
         // the template's own torsion is the reference for groups next to an sp2 atom
         for (int a = 1; a < t.n; ++a)
           if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
-        const double worst = score(root_t, gv, best_m);
-        if (worst > best_m) {
+        const double worst = score(root_t, gv, best_j - bonus);
+        const double j = !orienting ? worst : worst >= o.accept ? worst + bonus * chord_p2(trial) : worst - bonus;
+        if (j > best_j) {
+          best_j = j;
           best_m = worst;
           best = trial;
           best_gv = gv;
           best_root = root_t;
-          if (o.comfortable > 0 && worst >= o.comfortable) break;
+          if (!orienting && o.comfortable > 0 && worst >= o.comfortable) break;
         }
       }
       // just short of the limits (long flexible units, crowded junctions): nudge single torsions of the best trial
@@ -1346,7 +1379,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         return 0.5 * 1.411 * (1 + std::cos(phi)) - 0.5 * 0.271 * (1 - std::cos(2 * phi)) + 0.5 * 3.145 * (1 + std::cos(3 * phi));
       };
       std::vector<std::vector<Vec3>> kept;
-      std::vector<double> kept_e, kept_m, kept_root;
+      std::vector<double> kept_e, kept_m, kept_root, kept_p2;
       std::vector<std::vector<double>> kept_gv;
       for (int tr = 0; tr < trials; ++tr) {
         const double root_t = draw(root_kind, 0);
@@ -1358,17 +1391,19 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         double E = trial_energy() + (next_dir ? 0.0 : tors_energy(root_kind, root_t));
         for (size_t gi = 0; gi < gv.size(); ++gi) E += tors_energy(int(gi) == t.link_group ? link_kind : t.group_kind[gi], gv[gi]);
         kept.push_back(trial), kept_e.push_back(E), kept_m.push_back(m), kept_root.push_back(root_t), kept_gv.push_back(gv);
+        kept_p2.push_back(orienting ? chord_p2(trial) : 0.0);
       }
       if (!kept.empty()) {
         const double emin = *std::min_element(kept_e.begin(), kept_e.end());
         std::vector<double> w(kept.size());
         double sw = 0;
-        for (size_t i = 0; i < kept.size(); ++i) sw += (w[i] = std::exp(-(kept_e[i] - emin) / kT));
+        // the aligning field: exp(s (P₂ − 1)) keeps the largest factor at 1
+        for (size_t i = 0; i < kept.size(); ++i) sw += (w[i] = std::exp(-(kept_e[i] - emin) / kT + o.orient_strength * (kept_p2[i] - 1) * (orienting ? 1 : 0)));
         double r = U(rng) * sw;
         size_t pick = 0;
         while (pick + 1 < kept.size() && (r -= w[pick]) > 0) ++pick;
         best = kept[pick], best_m = kept_m[pick], best_gv = kept_gv[pick], best_root = kept_root[pick];
-        step_lnw = std::log(sw) - emin / kT - std::log(double(trials));
+        step_lnw = std::log(sw) - emin / kT - std::log(double(trials)) + (orienting ? o.orient_strength : 0.0);   // the field's weight included
       }
     }
     if (best_m < o.accept) {
@@ -1598,6 +1633,25 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   rep.notes.insert(rep.notes.begin(), units_text + " · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
                                           " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
+  {   // ⟨P₂⟩ of the backbone chords (tail to tail of successive units) against the axis
+    double sp = 0;
+    long np = 0;
+    for (const auto& ch : C)
+      for (size_t k = 1; k < ch.unit_start.size(); ++k) {
+        const Vec3 d = ch.pos[size_t(ch.unit_start[k] + T[size_t(ch.seq[k])].tail)] - ch.pos[size_t(ch.unit_start[k - 1] + T[size_t(ch.seq[k - 1])].tail)];
+        const double l = norm(d);
+        if (l < 1e-9) continue;
+        const double c = dot(d, orient) / l;
+        sp += 1.5 * c * c - 0.5, ++np;
+      }
+    rep.orientation = np ? sp / double(np) : 0.0;
+    if (orienting) {
+      char b[200];
+      std::snprintf(b, sizeof b, "oriented growth: field s = %.2g kT along (%.2f, %.2f, %.2f) · backbone ⟨P₂⟩ = %.3f (isotropic 0, aligned 1)", o.orient_strength, orient[0],
+                    orient[1], orient[2], rep.orientation);
+      rep.notes.push_back(b);
+    }
+  }
   if (o.method > 0) {   // each molecule's ln W: the sum over its chains' growth steps
     std::vector<double> lw(size_t(nchains), 0.0);
     for (const auto& ch : C)

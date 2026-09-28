@@ -3670,6 +3670,17 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
       const std::string meth = sj.text("method", "trials");
       g.method = meth == "rosenbluth" ? 1 : meth == "rosenbluth_lj" ? 2 : 0;
       g.method_temperature = sj.num("temperature", 450);
+      // orientation: {axis: "x" | "y" | "z" | [x, y, z], strength: s in kT} (an aligning field on the backbone)
+      if (sj.has("orientation") && sj["orientation"].is_object()) {
+        const caps::Json& O = sj["orientation"];
+        if (O.has("axis") && O["axis"].is_array() && O["axis"].size() == 3)
+          for (size_t k = 0; k < 3; ++k) g.orient_axis[k] = O["axis"][k].number();
+        else {
+          const std::string ax = O.text("axis", "z");
+          g.orient_axis = ax == "x" ? std::array<double, 3>{1, 0, 0} : ax == "y" ? std::array<double, 3>{0, 1, 0} : std::array<double, 3>{0, 0, 1};
+        }
+        g.orient_strength = std::max(0.0, O.num("strength", 0));
+      }
       // region: {shape: slab, thickness, vacuum} | {shape: cylinder | around_cylinder, radius, length}
       if (sj.has("region") && sj["region"].is_object()) {
         const caps::Json& R = sj["region"];

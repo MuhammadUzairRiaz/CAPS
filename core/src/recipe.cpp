@@ -503,6 +503,18 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             g.cylinder_radius = num(R, "radius", 10), g.cylinder_length = num(R, "length", 0), g.cylinder_outside = shape == "around_cylinder";
           else if (shape != "cubic") throw RecipeError(2, "grow.region.shape: cubic, slab, cylinder or around_cylinder");
         }
+        if (J.has("orientation") && J["orientation"].is_object()) {   // {axis: x | y | z | [x, y, z], strength: s (kT)}
+          const Json& O = J["orientation"];
+          if (O.has("axis") && O["axis"].is_array() && O["axis"].size() == 3)
+            for (size_t k = 0; k < 3; ++k) g.orient_axis[k] = O["axis"][k].number();
+          else {
+            const std::string ax = text(O, "axis", "z");
+            if (ax != "x" && ax != "y" && ax != "z") throw RecipeError(2, "grow.orientation.axis: x, y, z or [x, y, z]");
+            g.orient_axis = {ax == "x" ? 1.0 : 0.0, ax == "y" ? 1.0 : 0.0, ax == "z" ? 1.0 : 0.0};
+          }
+          g.orient_strength = num(O, "strength", 4);
+          if (g.orient_strength < 0) throw RecipeError(2, "grow.orientation.strength must be ≥ 0");
+        }
         g.curve = flag(J, "curve", true);
         const std::string method = text(J, "method", "trials");
         if (method != "trials" && method != "rosenbluth" && method != "rosenbluth_lj")
