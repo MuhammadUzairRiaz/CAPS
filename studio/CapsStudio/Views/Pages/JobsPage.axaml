@@ -98,6 +98,12 @@
             <Button Click="OnGoModule" ToolTip.Tip="The page this job runs from">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="sliders" Size="15" VerticalAlignment="Center" /><TextBlock Text="Settings" VerticalAlignment="Center" /></StackPanel>
             </Button>
+            <Button Click="OnCheckRemote" IsVisible="{Binding CanCheckRemote}" ToolTip.Tip="Ask the host now (it is asked every minute)">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="server" Size="15" VerticalAlignment="Center" /><TextBlock Text="Check now" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Classes="primary" Click="OnOpenRemote" IsVisible="{Binding CanOpenRemote}" ToolTip.Tip="Open the structure the host sent back">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Open result" VerticalAlignment="Center" /></StackPanel>
+            </Button>
             <Button Click="OnPause" IsVisible="{Binding ShowPause}" ToolTip.Tip="Hold the run at its next report; Resume carries on from the same step">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="pause" Size="15" VerticalAlignment="Center" /><TextBlock Text="Pause" VerticalAlignment="Center" /></StackPanel>
             </Button>

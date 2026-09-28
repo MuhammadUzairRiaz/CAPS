@@ -727,7 +727,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (J.has("p_max")) pp.p_max = J["p_max"].number() / 1.01325;   // bar → atm
           pp.time_scale = num(J, "time_scale", 1.0);
           const std::string proto = text(J, "protocol", "larsen21");
-          try { e.stages = protocol_by_name(proto, pp); } catch (const std::exception& ex) { throw RecipeError(2, ex.what()); }
+          try {
+            // protocol_text: the stages written out (the Equilibrate page's text: "nvt 50 ps T 600" …) in place of a name
+            e.stages = J.has("protocol_text") && J["protocol_text"].is_string() ? parse_protocol(J["protocol_text"].str()) : protocol_by_name(proto, pp);
+            if (e.stages.empty()) throw std::invalid_argument("the protocol has no stages");
+          } catch (const std::exception& ex) { throw RecipeError(2, std::string("equilibrate: ") + ex.what()); }
           e.md.field = ff;
           e.md.energy = energy;
           e.md.seed = seed_of(J);

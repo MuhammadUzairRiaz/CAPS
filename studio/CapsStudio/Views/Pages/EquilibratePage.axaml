@@ -22,6 +22,8 @@
         <Button Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" IsEnabled="{Binding Idle}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save trajectory…" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
+                  ToolTip.Tip="Where Run goes: this machine, or a host from Settings › Compute &amp; remote (the structure and a recipe of these settings go up; the result comes back to Jobs)" />
         <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanEquilibrate}" IsVisible="{Binding !EqRunning}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="equil" Size="16" VerticalAlignment="Center" /><TextBlock Text="Equilibrate" VerticalAlignment="Center" /></StackPanel>
         </Button>
