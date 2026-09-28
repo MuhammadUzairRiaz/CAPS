@@ -303,4 +303,7 @@ with _tf.TemporaryDirectory() as tmp:
     steps = [st for st in man.get("steps", []) if st.get("engine") == "analyze.properties"]
     check(steps and any(k.startswith("Characteristic ratio") for k in steps[-1]["params"]) and "Density" in steps[-1]["params"],
           "analyze provenance: " + (", ".join(f"{k} = {v}" for k, v in steps[-1]["params"].items()) if steps else "none"))
+# pack: SMILES and a document with counts, in a box, no contact closer than the tolerance
+mix = caps.pack([("Cc1ccccc1", 12), ("O", 20)], box=22, tolerance=2.0, seed=3)
+check(mix.atoms == 12 * 15 + 20 * 3 and mix.summary()["molecules"] == 32, f"pack: {mix.atoms} atoms, {mix.summary()['molecules']} molecules")
 print("all python checks passed")

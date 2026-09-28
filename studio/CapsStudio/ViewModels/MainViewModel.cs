@@ -2100,18 +2100,21 @@ public sealed partial class MainViewModel : ObservableObject
         PackBaseDir = Path.GetDirectoryName(path) ?? ".";
     }
 
-    public async Task RunPack()
+    public async Task RunPack() => await RunPack(null, null);
+
+    /// <summary>Packs the page's input (or a captured one: a queued run keeps the input as it was when queued).</summary>
+    private async Task RunPack(string? presetText, string? presetBase)
     {
-        if (!Idle || _packText.Trim().Length == 0) return;
+        if (!Idle || (presetText ?? _packText).Trim().Length == 0) return;
         string text;
-        try { text = PackTextToRun(); }
+        try { text = presetText ?? PackTextToRun(); }
         catch (Exception e) { PackLog = "Could not pack.\n" + e.Message; Status = "Could not pack — see the Pack panel"; return; }
         PackDone = false;
         Packing = true;
         var packed = false;
         _packCancel = new CancellationTokenSource();
         var token = _packCancel.Token;
-        var baseDir = _packBaseDir;
+        var baseDir = presetBase ?? _packBaseDir;
         PackLog = "Packing…";
         Status = "Packing…";
         PackCurve.Clear();

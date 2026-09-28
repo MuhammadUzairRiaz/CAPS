@@ -28,4 +28,11 @@ public partial class PackPage : PageBase
     private void OnMinimise(object? s, RoutedEventArgs e) => Vm.SetModule(2);
     private void OnDynamics(object? s, RoutedEventArgs e) => Vm.SetModule(3);
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
+    private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueuePack();
+    private async void OnCopyPython(object? s, RoutedEventArgs e)
+    {
+        var clip = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clip != null) await clip.SetTextAsync(Vm.PackPython());
+        Vm.Status = "Copied the packing as Python (caps.pack with this input)";
+    }
 }

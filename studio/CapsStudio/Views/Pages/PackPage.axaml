@@ -15,6 +15,12 @@
         <Button Click="OnOpenInput" IsEnabled="{Binding Idle}" ToolTip.Tip="Open a packmol-format input (.inp)">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="16" VerticalAlignment="Center" /><TextBlock Text="Open input…" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnCopyPython" ToolTip.Tip="This packing as a Python script (caps.pack with this input)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnQueue" IsVisible="{Binding !Idle}" ToolTip.Tip="Queue this packing with its input as it is now; it packs a new cell when the current run ends (Jobs lists it)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="15" VerticalAlignment="Center" /><TextBlock Text="Queue packing" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Classes="primary" Click="OnPack" IsEnabled="{Binding Idle}" IsVisible="{Binding !Packing}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Pack" VerticalAlignment="Center" /></StackPanel>
         </Button>
