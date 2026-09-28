@@ -623,6 +623,42 @@ internal static class SelfTest
             Check(started && still && queued && moved && second && !vm.RunPaused,
                   $"jobs: started {started} · paused and held {still} · queued {queued} · resumed {moved} · queued run started {second} · {vm.JobsSummary}");
             vm.MdStepsD = steps;
+
+            // a remote job, end to end against stand-ins on this machine: ssh runs the command in a shell, scp copies, the
+            // scheduler is none (the job runs in the background) and caps is the command-line tool of this build
+            var cli = Path.GetFullPath(Path.Combine(dir, "..", "build", "cli", "caps"));
+            if (!OperatingSystem.IsWindows() && File.Exists(cli))
+            {
+                var shim = Path.Combine(outDir, "remote-shim");
+                var work = Path.Combine(outDir, "remote-work");
+                Directory.CreateDirectory(shim);
+                if (Directory.Exists(work)) Directory.Delete(work, true);
+                File.WriteAllText(Path.Combine(shim, "ssh"), "#!/bin/bash\nwhile [[ \"$1\" == -* ]]; do case \"$1\" in -o|-p) shift 2;; *) shift;; esac; done\nshift\nexec bash -c \"$*\"\n");
+                File.WriteAllText(Path.Combine(shim, "scp"), "#!/bin/bash\nargs=()\nwhile [ $# -gt 0 ]; do case \"$1\" in -P) shift 2;; -*) shift;; *) args+=(\"$1\"); shift;; esac; done\n" +
+                                                            "dst=\"${args[${#args[@]}-1]}\"; dst=\"${dst#*:}\"\nfor a in \"${args[@]:0:${#args[@]}-1}\"; do src=\"${a#*:}\"; cp -R $src \"$dst\" || exit 1; done\n");
+                File.WriteAllText(Path.Combine(shim, "caps"), $"#!/bin/bash\nexec \"{cli}\" \"$@\"\n");
+                foreach (var f in new[] { "ssh", "scp", "caps" }) File.SetUnixFileMode(Path.Combine(shim, f), (UnixFileMode)0b111_101_101);
+                var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+                Environment.SetEnvironmentVariable("PATH", shim + ":" + path);
+                vm.AddHost();
+                vm.HostName = "stand-in";
+                vm.HostHostname = "localhost";
+                vm.HostScheduler = "none";
+                vm.HostWorkDir = work;
+                vm.RunWhereIndex = vm.RunWhereChoices.Count - 1;
+                vm.MdStepsD = 200;
+                vm.SubmitRemote("Dynamics").GetAwaiter().GetResult();
+                var rj = vm.Jobs.FirstOrDefault(j => j.IsRemote);
+                var sent = rj is { IsRunning: true } && rj.Where.Contains("stand-in");
+                var back = Until(() => { if (rj is { IsRunning: true }) vm.CheckRemote(rj).GetAwaiter().GetResult(); return rj is { IsRunning: false }; }, 120000);
+                var result = rj?.Remote is { } rr ? Path.Combine(rr.Local, "out", rr.Stem + ".data") : "";
+                Check(sent && back && rj!.IsDone && File.Exists(result) && File.Exists(result + ".provenance.json") && rj.CanOpenRemote,
+                      $"remote job: sent {sent} · {rj?.Status} · {rj?.Where} · {string.Join(" | ", rj?.Log.Select(l => l.Text) ?? [])}");
+                vm.RunWhereIndex = 0;
+                vm.RemoveHost();
+                Environment.SetEnvironmentVariable("PATH", path);
+                vm.MdStepsD = steps;
+            }
             vm.SetModule(8);
         }
 

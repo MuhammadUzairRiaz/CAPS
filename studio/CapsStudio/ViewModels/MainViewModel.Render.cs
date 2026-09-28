@@ -153,7 +153,8 @@ public sealed partial class MainViewModel
     public string OvScriptName => _ovScript.Length == 0 ? "no script yet" : System.IO.Path.GetFileName(_ovScript);
     public string OvPythonNote { get => _ovPythonNote; private set => Set(ref _ovPythonNote, value); }
     public string OvConsole { get => _ovConsole; private set => Set(ref _ovConsole, value); }
-    public static string OverlayFolder => System.IO.Path.Combine(AppSettings.Folder, "overlays");
+    public static string OverlayFolder => AppSettings.Override != null ? System.IO.Path.Combine(System.IO.Path.GetDirectoryName(AppSettings.Override)!, "caps-overlays")
+                                                                      : System.IO.Path.Combine(AppSettings.Folder, "overlays");
 
     private const string OverlayTemplate = """
         # A CAPS render overlay: draw on the image with the canvas (pixels, y down from the top left).

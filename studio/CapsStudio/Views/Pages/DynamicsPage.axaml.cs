@@ -31,7 +31,7 @@ public partial class DynamicsPage : PageBase
         };
     }
 
-    private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunMd();
+    private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitRemote("Dynamics"); else await Vm.RunMd(); }
     private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueMd();
     private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelMd();
