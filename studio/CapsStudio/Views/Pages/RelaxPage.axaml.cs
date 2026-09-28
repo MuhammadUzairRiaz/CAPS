@@ -29,4 +29,11 @@ public partial class RelaxPage : PageBase
     private void OnAddRestraint(object? s, RoutedEventArgs e) => Vm.AddMeasuredRestraint();
     private void OnRemoveRestraint(object? s, RoutedEventArgs e) { if (s is Control { Tag: CapsStudio.ViewModels.RestraintRow r }) Vm.RemoveRestraint(r); }
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
+
+    private async void OnCopyPython(object? s, RoutedEventArgs e)
+    {
+        var clip = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clip != null) await clip.SetTextAsync(Vm.RelaxPython());
+        Vm.Status = "Copied the minimisation as Python (import caps; doc = caps.open(…))";
+    }
 }

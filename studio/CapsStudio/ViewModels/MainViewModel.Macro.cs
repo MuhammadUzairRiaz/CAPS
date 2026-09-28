@@ -166,7 +166,7 @@ public sealed partial class MainViewModel
     private Process? _macroProc;
 
     /// <summary>The native library this Studio loaded (for the script's caps package).</summary>
-    private static string NativeLibraryPath =>
+    internal static string NativeLibraryPath =>
         Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsMacOS() ? "libcaps.dylib" : OperatingSystem.IsWindows() ? "caps.dll" : "libcaps.so");
 
     /// <summary>Runs the script with python3 (CAPS_PYTHON overrides), the caps package and this Studio's library.</summary>

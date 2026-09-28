@@ -659,6 +659,34 @@ internal static class SelfTest
                 Environment.SetEnvironmentVariable("PATH", path);
                 vm.MdStepsD = steps;
             }
+
+            // Copy as Python: the Relax and Dynamics scripts run with python3 on the saved structure; the React one compiles
+            {
+                var pySaved = Path.Combine(outDir, "caps-selftest-py.data");
+                vm.Document!.Save(pySaved);
+                vm.MdStepsD = 50;
+                var scripts = new[] { ("relax", vm.RelaxPython()), ("md", vm.MdPython()), ("react", vm.ReactPython()) };
+                var results = new List<string>();
+                foreach (var (name, text) in scripts)
+                {
+                    var file = Path.Combine(outDir, $"caps-selftest-{name}.py");
+                    var body = System.Text.RegularExpressions.Regex.Replace(text, @"caps\.open\([^\n]*\)", $"caps.open(\"{pySaved}\")");
+                    File.WriteAllText(file, body);
+                    var psi = new System.Diagnostics.ProcessStartInfo("python3") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
+                    if (name == "react") { psi.ArgumentList.Add("-m"); psi.ArgumentList.Add("py_compile"); }
+                    psi.ArgumentList.Add(file);
+                    if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg;
+                    psi.Environment["CAPS_LIB"] = MainViewModel.NativeLibraryPath;
+                    using var proc = System.Diagnostics.Process.Start(psi)!;
+                    var err = proc.StandardError.ReadToEndAsync();
+                    proc.StandardOutput.ReadToEnd();
+                    proc.WaitForExit(120000);
+                    results.Add($"{name} {proc.ExitCode}{(proc.ExitCode != 0 ? " " + err.Result.Trim().Split('\n').LastOrDefault() : "")}");
+                }
+                Check(results.All(r => r.Split(' ')[1] == "0") && scripts[0].Item2.Contains("doc.relax(") && scripts[1].Item2.Contains("doc.md(steps=50"),
+                      "copy as Python: " + string.Join(" · ", results));
+                vm.MdStepsD = steps;
+            }
             vm.SetModule(8);
         }
 

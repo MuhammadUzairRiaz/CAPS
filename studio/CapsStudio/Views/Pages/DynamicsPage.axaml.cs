@@ -64,4 +64,11 @@ public partial class DynamicsPage : PageBase
         }
         catch (Exception ex) { Vm.Status = "Could not write the deck: " + ex.Message; }
     }
+
+    private async void OnCopyPython(object? s, RoutedEventArgs e)
+    {
+        var clip = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clip != null) await clip.SetTextAsync(Vm.MdPython());
+        Vm.Status = "Copied the dynamics run as Python (import caps; doc = caps.open(…))";
+    }
 }

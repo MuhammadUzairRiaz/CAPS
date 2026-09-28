@@ -67,6 +67,7 @@ public sealed partial class MainViewModel
     private void Changed(string what)
     {
         _settings.Save();
+        Raise(nameof(ComputeText)); Raise(nameof(MachineRender)); Raise(nameof(MachineThreads)); Raise(nameof(RemoteHostsText));
         Status = $"{what} · saved to {AppSettings.DisplayPath}";
     }
 
