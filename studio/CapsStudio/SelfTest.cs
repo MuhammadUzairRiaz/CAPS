@@ -1807,6 +1807,16 @@ internal static class SelfTest
             var results = File.Exists(Path.Combine(vm.SweepFolder, "results.json")) && File.ReadAllText(Path.Combine(vm.SweepFolder, "results.json")).Contains("caps-sweep/1");
             Check(files == 4 && sides == 4 && results && vm.SweepResults.Count == 2 && vm.SweepResults.All(r => r.Seeds.StartsWith("2 / 2")) && (vm.SweepPolymer?.Name.StartsWith("Polystyrene") ?? false),
                   $"sweep: {files} cells · {sides} manifests · {string.Join(" | ", vm.SweepResults.Select(r => $"{r.Condition} Rg {r.Rg}"))} · {vm.SweepError}");
+            // combining: 2 tacticities × 3 lengths × 1 seed is 6 runs as a grid, 4 one factor at a time, 2 paired
+            vm.SweepDps = "3, 4, 5";
+            vm.SweepSeeds = "1";
+            var grid = vm.SweepSubtitle;
+            vm.SweepCombine = 1;
+            var ofat = vm.SweepSubtitle;
+            vm.SweepCombine = 2;
+            var paired = vm.SweepSubtitle;
+            vm.SweepCombine = 0;
+            Check(grid.StartsWith("6 runs") && ofat.StartsWith("4 runs") && paired.StartsWith("2 runs"), $"sweep combine: {grid} | {ofat} | {paired}");
             vm.SetModule(8);
         }
 
