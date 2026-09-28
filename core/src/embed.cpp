@@ -704,10 +704,68 @@ bool minimise_molecule(const MolGraph& g, const std::shared_ptr<const ForceField
   return true;
 }
 
+namespace {
+// p turned by rad about the axis through o along a (Rodrigues)
+Vec3 rotate_point(const Vec3& p, const Vec3& o, const Vec3& a, double rad) {
+  const Vec3 k = a * (1.0 / norm(a)), v = p - o;
+  const double c = std::cos(rad), s = std::sin(rad);
+  return o + v * c + cross(k, v) * s + k * (dot(k, v) * (1 - c));
+}
+// Greedy rotor search with the force field: each rotatable bond turned to its three staggered positions (the side of
+// its second atom), the lowest energy kept; two passes. Returns the number of bonds turned.
+int rotor_search(const MolGraph& g, const std::shared_ptr<const ForceField>& ff, std::vector<Vec3>& pos) {
+  const size_t n = g.atoms.size();
+  std::vector<std::vector<int>> nb(n);
+  for (const auto& b : g.bonds) nb[size_t(b.a)].push_back(b.b), nb[size_t(b.b)].push_back(b.a);
+  auto heavy_deg = [&](int a) { int k = 0; for (int w : nb[size_t(a)]) k += g.atoms[size_t(w)].element != 1; return k; };
+  struct Rotor { int a, b; std::vector<int> side; };
+  std::vector<Rotor> rotors;
+  for (const auto& b : g.bonds) {
+    if (b.order != 1 || heavy_deg(b.a) < 2 || heavy_deg(b.b) < 2) continue;
+    std::vector<int> side{b.b};
+    std::vector<char> seen(n, 0);
+    seen[size_t(b.a)] = seen[size_t(b.b)] = 1;
+    bool ring = false;
+    for (size_t k = 0; k < side.size() && !ring; ++k)
+      for (int w : nb[size_t(side[k])]) {
+        if (w == b.a && side[k] != b.b) { ring = true; break; }
+        if (!seen[size_t(w)]) seen[size_t(w)] = 1, side.push_back(w);
+      }
+    if (!ring) rotors.push_back({b.a, b.b, side});
+  }
+  if (rotors.empty()) return 0;
+  EnergyOptions eo;
+  Evaluator ev(*ff, eo);
+  std::vector<double> x(3 * n), f;
+  auto energy = [&](const std::vector<Vec3>& p) {
+    for (size_t i = 0; i < n; ++i) x[3 * i] = p[i][0], x[3 * i + 1] = p[i][1], x[3 * i + 2] = p[i][2];
+    return ev.compute(x, Cell{}, f).total();
+  };
+  int turned = 0;
+  double e0 = energy(pos);
+  for (int pass = 0; pass < 2; ++pass)
+    for (const auto& r : rotors) {
+      const Vec3 o = pos[size_t(r.a)], axis = pos[size_t(r.b)] - o;
+      if (norm(axis) < 1e-9) continue;
+      std::vector<Vec3> best = pos;
+      double be = e0;
+      for (double deg : {120.0, 240.0}) {
+        std::vector<Vec3> t = pos;
+        for (int a : r.side) t[size_t(a)] = rotate_point(pos[size_t(a)], o, axis, deg * M_PI / 180);
+        const double e = energy(t);
+        if (e < be - 1e-6) be = e, best = std::move(t);
+      }
+      if (be < e0 - 1e-6) { pos = std::move(best); e0 = be; ++turned; }
+    }
+  return turned;
+}
+}  // namespace
+
 BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
   BuildResult R;
   R.graph = parse_smiles(smiles);
-  add_hydrogens(R.graph);
+  if (o.implicit_hydrogens) add_hydrogens(R.graph);
+  else R.notes.push_back("hydrogens as written: heavy atoms only (a united-atom model)");
   R.info = molecule_info(R.graph);
   if (!R.info.problems.empty()) throw std::runtime_error(R.info.problems.front());
   for (const auto& a : R.graph.atoms)
@@ -729,12 +787,20 @@ BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
         ff = molecule_forcefield(R.graph, "uff", o.charges, un, &ffname, &c.pos);
         if (ff) R.notes.push_back("cleaned up with UFF instead");
       }
-      R.method = ff ? "CAPS distance-bounds embedding + " + ffname + " minimisation" : "CAPS distance-bounds embedding";
+      R.method = ff ? "CAPS distance-bounds embedding + " + ffname + " minimisation" + (o.rotor_search ? " + rotor search" : "") : "CAPS distance-bounds embedding";
     }
     if (ff) {
       std::string why;
       if (minimise_molecule(R.graph, ff, o.ftol, c.pos, &c.energy, &why)) c.minimised = true;
       else R.notes.push_back("conformer " + std::to_string(k + 1) + (why == "minimisation inverted a centre" ? ": " + why + "; kept the embedding" : " not minimised: " + why));
+      if (c.minimised && o.rotor_search) {   // the staggered positions of every rotatable bond, then minimised again
+        std::vector<Vec3> p = c.pos;
+        double e = 0;
+        if (rotor_search(R.graph, ff, p) > 0 && minimise_molecule(R.graph, ff, o.ftol, p, &e, nullptr) && e < c.energy - 1e-6) {
+          c.pos = std::move(p);
+          c.energy = e;
+        }
+      }
     }
     R.conformers.push_back(std::move(c));
   }

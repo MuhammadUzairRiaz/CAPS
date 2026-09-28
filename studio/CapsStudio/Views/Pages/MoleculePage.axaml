@@ -183,9 +183,8 @@
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
                   <StackPanel Spacing="6">
                     <TextBlock Text="Method" Classes="label" />
-                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
-                      <ComboBoxItem Content="Distance bounds" />
-                    </ComboBox>
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.MolMethods}" SelectedIndex="{Binding MolMethod}" HorizontalAlignment="Stretch"
+                              ToolTip.Tip="Distance bounds (Crippen–Havel, 4D → 3D as in ETKDG) with chirality, sp² planarity and E/Z; the rotor search then turns each rotatable bond to its staggered positions with the clean-up force field's own torsions (CAPS carries no CSD torsion table, so no ETKDG ‘ET’ term)" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="6">
                     <TextBlock Text="Conformers" Classes="label" />
@@ -201,9 +200,8 @@
                   </StackPanel>
                   <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
                     <TextBlock Text="Hydrogens" Classes="label" />
-                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
-                      <ComboBoxItem Content="Add, from valences" />
-                    </ComboBox>
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.MolHydrogenModes}" SelectedIndex="{Binding MolHydrogens}" HorizontalAlignment="Stretch"
+                              ToolTip.Tip="Add: implicit hydrogens from the organic-subset valences, placed by hybridisation. As written: only the atoms the SMILES names (for united-atom force fields such as TraPPE-UA)" />
                   </StackPanel>
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="6">
