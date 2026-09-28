@@ -701,6 +701,12 @@ internal static class SelfTest
                 vm.MdStepsD = steps;
             }
 
+            // Compare energies: the LAMMPS files run for zero steps in the LAMMPS on this machine, term by term against CAPS
+            {
+                vm.CompareEnergies().GetAwaiter().GetResult();
+                Check(vm.ParityOk || vm.ParityDetail.Contains("not found"), $"compare energies: {vm.ParityText} · {vm.ParityDetail} · mixing {vm.Field.MixingRule}\n{vm.ParityTable}");
+            }
+
             // the queue beyond Dynamics: a Relax on this structure and a Grow (as its recipe) behind a running MD; stopping
             // the MD starts them one after the other
             {
