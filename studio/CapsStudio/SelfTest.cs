@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 34, "native ABI version 34");
+        Check(Native.AbiVersion() == 35, "native ABI version 35");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -567,6 +567,25 @@ internal static class SelfTest
                   $"interface page: {string.Join(" · ", vm.IfRows.Select(r => $"{r.Quantity} {r.ThisFrame}/{r.Trajectory}"))} · {vm.IfStatus}");
         }
         vm.SetModule(8);
+
+        // Layer stack: a small grown polystyrene cell from CAPS Grow on the quartz slab, then a second slab on top
+        {
+            vm.UsePolystyreneInGrow();
+            vm.GrowChainsD = 2; vm.GrowDpD = 5; vm.GrowDensityD = 0.4m;
+            vm.Grow().GetAwaiter().GetResult();
+            var cellAtoms = vm.Document?.Summary().Atoms ?? 0;
+            vm.OpenSurface();
+            vm.AddLayerFromOpen();
+            vm.AddSlabLayer();
+            var chip = vm.SurfStackChip;
+            vm.BuildSurface().GetAwaiter().GetResult();
+            var st = vm.Document?.Summary();
+            Check(st is { } ss && ss.Atoms > cellAtoms && ss.Molecules >= 2 + 2 && vm.Document!.Provenance().Contains("build.stack") && chip.Contains("3 layers") && !vm.SurfFilm,
+                  $"layer stack: {chip} · {st?.Atoms} atoms, {st?.Molecules} molecules · {vm.SurfLog.Split('\n').FirstOrDefault()} {vm.SurfError}");
+            while (vm.SurfHasExtra) vm.RemoveSurfLayer(0);
+            vm.SurfFilm = true;
+            vm.SetModule(8);
+        }
 
         // Nanostructure builder: a (5,5) tube in a natural-rubber matrix
         vm.OpenNano();

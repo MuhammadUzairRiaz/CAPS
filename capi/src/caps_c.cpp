@@ -16,6 +16,7 @@
 #include "caps/cbmc.hpp"
 #include "caps/dpd.hpp"
 #include "caps/functionalize.hpp"
+#include "caps/layers.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
 #include "caps/dlpoly.hpp"
@@ -4004,6 +4005,76 @@ extern "C" caps_doc* caps_embed_document(caps_doc* filler, const char* options_j
     prov_step(d, "nano.embed", "the structure in a grown polymer matrix", std::move(pr), seeded(o ? o->seed : 0), {"matsumoto1998"});
     d->held_mol = 1;
     return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+// Layer stacks (ABI 35, layers.hpp)
+extern "C" caps_doc* caps_stack_documents(caps_doc* const* docs, int32_t n, const char* options_json, char* report, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!docs || n < 2) throw std::invalid_argument("a stack needs two documents or more");
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    std::vector<caps::System> frames;
+    frames.reserve(size_t(n));
+    for (int k = 0; k < n; ++k) {
+      if (!docs[k]) throw std::invalid_argument("no document for layer " + std::to_string(k + 1));
+      frames.push_back(docs[k]->traj.frame(docs[k]->current));
+    }
+    std::vector<caps::StackLayerInput> in;
+    for (int k = 0; k < n; ++k) {
+      std::string name = "layer " + std::to_string(k + 1);
+      if (j.has("names") && j["names"].is_array() && size_t(k) < j["names"].size() && j["names"][size_t(k)].is_string()) name = j["names"][size_t(k)].str();
+      in.push_back({name, &frames[size_t(k)]});
+    }
+    caps::StackOptions so;
+    so.gap = j.num("gap", so.gap);
+    so.vacuum = j.num("vacuum", so.vacuum);
+    so.match = j.text("match", so.match);
+    so.max_repeat = int(j.num("max_repeat", so.max_repeat));
+    caps::StackReport rep;
+    const caps::System s = caps::stack_layers(in, so, &rep);
+    caps_doc* d = doc_of(s);
+    d->prov = docs[0]->prov;   // the first layer's history (a cleaved slab) comes along
+    caps::KeyValues pr = json_params(options_json);
+    std::string names;
+    for (const auto& l : rep.layers) names += (names.empty() ? "" : " / ") + l.name;
+    pr.push_back({"layers", names});
+    prov_step(d, "build.stack", std::to_string(n) + " layers stacked along z", std::move(pr), "", {});
+    int nm = 0;
+    const auto mol = frames[0].molecules(&nm);
+    (void)mol;
+    if (nm == 1) d->held_mol = 1;
+    r["ok"] = true;
+    r["a"] = rep.a, r["b"] = rep.b, r["c"] = rep.c;
+    caps::Json L = caps::Json::array(), N = caps::Json::array();
+    for (const auto& l : rep.layers) {
+      caps::Json o = caps::Json::object();
+      o["name"] = l.name, o["na"] = double(l.na), o["nb"] = double(l.nb), o["strain_a"] = l.strain_a, o["strain_b"] = l.strain_b;
+      o["z_lo"] = l.z_lo, o["z_hi"] = l.z_hi, o["atoms"] = double(l.atoms);
+      L.push_back(o);
+    }
+    for (const auto& x : rep.notes) N.push_back(caps::Json(x));
+    r["layers"] = L, r["notes"] = N;
+    report_out(r.dump(0), report, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    r["ok"] = false, r["error"] = std::string(e.what());
+    report_out(r.dump(0), report, cap);
+    return nullptr;
+  }
+}
+
+extern "C" caps_doc* caps_frame_copy(caps_doc* d) {
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    caps_doc* c = doc_of(d->traj.frame(d->current));
+    c->prov = d->prov;
+    c->held_mol = d->held_mol;
+    return c;
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;
