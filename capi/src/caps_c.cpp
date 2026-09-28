@@ -147,8 +147,7 @@ struct caps_doc {
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
   // frame's contents (a fingerprint of positions, bonds, cell and the trajectory's length) are unchanged
-  struct PipeCached { size_t frame; uint64_t fp; std::shared_ptr<const caps::PipelineState> st; };
-  std::string pipe_key;
+  struct PipeCached { size_t frame; uint64_t fp, key; std::shared_ptr<const caps::PipelineState> st; };   // key: the steps it ran
   std::deque<PipeCached> pcache;
   bool pstate_cached = false;
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
@@ -257,34 +256,63 @@ uint64_t frame_fingerprint(const caps_doc* d) {
   return h;
 }
 
+// the cache's key of a pipeline's steps [lo, n) with its branch
+uint64_t steps_key(const caps::Pipeline& p, size_t lo) {
+  caps::Pipeline part;
+  part.branch = lo == 0 ? p.branch : "";
+  part.steps.assign(p.steps.begin() + long(lo), p.steps.end());
+  return std::hash<std::string>{}(caps::pipeline_to_json(part).dump(0));
+}
+
 void run_doc_pipeline(caps_doc* d) {
   d->pstate.reset();
   d->shown_of.clear();
   d->pstate_cached = false;
   if (!d->pipeline) { d->pcache.clear(); return; }
-  const uint64_t fp = frame_fingerprint(d);
-  for (const auto& e : d->pcache)
-    if (e.frame == d->current && e.fp == fp) {
-      d->pstate = std::make_unique<caps::PipelineState>(*e.st);
-      d->pstate->traj = &d->traj;
-      d->pstate->pipeline = nullptr;
-      d->pstate_cached = true;
-      break;
-    }
-  if (!d->pstate) {
-    const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
-    d->pstate = std::make_unique<caps::PipelineState>(caps::run_pipeline(d->frame, *d->pipeline, int(d->current), ts, &d->traj));
-    d->pstate->pipeline = nullptr;
-    // an older entry of this frame goes; the cache holds up to 256 frames and 4 million particles, oldest out first
-    for (auto it = d->pcache.begin(); it != d->pcache.end();) it = it->frame == d->current ? d->pcache.erase(it) : it + 1;
-    d->pcache.push_back({d->current, fp, std::make_shared<const caps::PipelineState>(*d->pstate)});
+  const caps::Pipeline& P = *d->pipeline;
+  const uint64_t fp = frame_fingerprint(d), full = steps_key(P, 0);
+  auto find = [&](uint64_t key) -> std::shared_ptr<const caps::PipelineState> {
+    for (const auto& e : d->pcache) if (e.frame == d->current && e.fp == fp && e.key == key) return e.st;
+    return nullptr;
+  };
+  auto keep = [&](uint64_t key, const caps::PipelineState& st) {
+    // an older entry of this frame and steps goes; up to 256 entries and 4 million particles, oldest out first
+    for (auto it = d->pcache.begin(); it != d->pcache.end();) it = it->frame == d->current && it->key == key ? d->pcache.erase(it) : it + 1;
+    d->pcache.push_back({d->current, fp, key, std::make_shared<const caps::PipelineState>(st)});
     size_t total = 0;
     for (const auto& e : d->pcache) total += e.st->system.atoms.size();
     while (d->pcache.size() > 1 && (d->pcache.size() > 256 || total > 4000000)) {
       total -= d->pcache.front().st->system.atoms.size();
       d->pcache.pop_front();
     }
+  };
+  if (auto hit = find(full)) {
+    d->pstate = std::make_unique<caps::PipelineState>(*hit);
+    d->pstate_cached = true;
+  } else {
+    const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
+    const size_t n = P.steps.size(), trunk = caps::pipeline_trunk(P);
+    caps::PipelineState st;
+    if (trunk > 0 && trunk < n) {   // branches: the shared steps once per frame, the shown branch on top of them
+      const uint64_t tkey = steps_key(P, trunk);
+      if (auto t = find(tkey)) st = *t;
+      else {
+        st = caps::pipeline_begin(d->frame, P, int(d->current), ts, &d->traj);
+        caps::pipeline_run_steps(st, P, n, trunk);
+        st.pipeline = nullptr;
+        keep(tkey, st);
+      }
+      st.traj = &d->traj;
+      caps::pipeline_run_steps(st, P, trunk, 0);
+      caps::pipeline_finish(st);
+    } else {
+      st = caps::run_pipeline(d->frame, P, int(d->current), ts, &d->traj);
+    }
+    keep(full, st);
+    d->pstate = std::make_unique<caps::PipelineState>(std::move(st));
   }
+  d->pstate->traj = &d->traj;
+  d->pstate->pipeline = nullptr;
   d->shown_of.assign(d->frame.atoms.size(), -1);
   for (size_t k = 0; k < d->pstate->origin.size(); ++k) {
     const int o = d->pstate->origin[k];
@@ -4268,10 +4296,19 @@ extern "C" int32_t caps_pipeline_set(caps_doc* d, const char* json) {
       if (p.steps.empty()) d->pipeline.reset();
       else d->pipeline = std::make_unique<caps::Pipeline>(std::move(p));
     }
-    // other steps (or settings): the cached frames no longer hold (outputs do not change the results)
-    std::string key;
-    if (d->pipeline) { caps::Pipeline steps_only = *d->pipeline; steps_only.outputs.clear(); key = caps::pipeline_to_json(steps_only).dump(0); }
-    if (key != d->pipe_key) d->pcache.clear(), d->pipe_key = key;
+    // entries of other steps go (a branch's trunk stays while only the branch or the steps above it change)
+    if (!d->pipeline) d->pcache.clear();
+    else {
+      std::set<uint64_t> live{steps_key(*d->pipeline, caps::pipeline_trunk(*d->pipeline))};
+      std::set<std::string> branches{""};
+      for (const auto& st : d->pipeline->steps) branches.insert(caps::step_branch(st));
+      for (const auto& b : branches) {   // every branch of these steps (switching back shows it at once)
+        caps::Pipeline q = *d->pipeline;
+        q.branch = b;
+        live.insert(steps_key(q, 0));
+      }
+      for (auto it = d->pcache.begin(); it != d->pcache.end();) it = live.count(it->key) ? it + 1 : d->pcache.erase(it);
+    }
     run_doc_pipeline(d);
     return 0;
   });

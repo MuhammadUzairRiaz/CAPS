@@ -3231,6 +3231,7 @@ Pipeline pipeline_from_json(const Json& j) {
       if (k != "type" && k != "enabled") st.params[k] = v;
     p.steps.push_back(std::move(st));
   }
+  if (j.is_object() && j.has("branch") && j["branch"].is_string()) p.branch = j["branch"].str();
   if (j.is_object() && j.has("outputs") && j["outputs"].is_array())
     for (const auto& o : j["outputs"].items()) {
       if (!o.is_object()) continue;
@@ -3256,6 +3257,7 @@ Json pipeline_to_json(const Pipeline& p) {
   }
   Json j = Json::object();
   j["steps"] = std::move(arr);
+  if (!p.branch.empty()) j["branch"] = p.branch;
   if (!p.outputs.empty()) {
     Json outs = Json::array();
     for (const auto& o : p.outputs) {
@@ -3270,7 +3272,7 @@ Json pipeline_to_json(const Pipeline& p) {
   return j;
 }
 
-PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index, int64_t timestep, const Trajectory* traj) {
+PipelineState pipeline_begin(const System& frame, const Pipeline& p, int frame_index, int64_t timestep, const Trajectory* traj) {
   PipelineState st;
   st.traj = traj;
   st.system = frame;
@@ -3282,14 +3284,26 @@ PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_ind
   st.frame = frame_index;
   st.timestep = timestep;
   st.steps.resize(p.steps.size());
+  return st;
+}
+
+std::string step_branch(const PipelineStep& s) { return s.params.has("branch") && s.params["branch"].is_string() ? s.params["branch"].str() : ""; }
+
+void pipeline_run_steps(PipelineState& st, const Pipeline& p, size_t hi, size_t lo) {
   st.pipeline = &p;
-  for (size_t k = p.steps.size(); k-- > 0;) {   // bottom to top
+  if (st.steps.size() < p.steps.size()) st.steps.resize(p.steps.size());
+  for (size_t k = std::min(hi, p.steps.size()); k-- > lo;) {   // bottom to top
     const auto& step = p.steps[k];
     StepStatus& out = st.steps[k];
     st.step_index = k;
     out.type = step.type;
     out.title = step_title(step.type);
     if (!step.enabled) { out.level = "off"; out.summary = "off"; continue; }
+    if (const std::string br = step_branch(step); !br.empty() && br != p.branch) {   // another branch: not in this view
+      out.level = "off";
+      out.summary = "branch " + br + " · not shown";
+      continue;
+    }
     const StepDef* def = nullptr;
     for (const auto& d : kSteps) if (step.type == d.type) def = &d;
     if (!def) { out.level = "error"; out.summary = "unknown step " + step.type; continue; }
@@ -3300,6 +3314,9 @@ PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_ind
       out.summary = e.what();
     }
   }
+}
+
+void pipeline_finish(PipelineState& st) {
   // global attributes of the result, ahead of the ones the steps added
   const System& s = st.system;
   int nmol = 0;
@@ -3307,11 +3324,24 @@ PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_ind
   double q = 0;
   for (const auto& a : s.atoms) q += a.charge;
   std::vector<std::pair<std::string, double>> base = {
-      {"SourceFrame", double(frame_index)}, {"Timestep", double(timestep)}, {"Particles", double(s.atoms.size())},
+      {"SourceFrame", double(st.frame)}, {"Timestep", double(st.timestep)}, {"Particles", double(s.atoms.size())},
       {"Bonds", double(s.bonds.size())}, {"Molecules", double(nmol)}, {"CellVolume", s.cell.valid() ? s.cell.volume() : 0.0},
       {"Mass", s.total_mass()}, {"Density", s.density()}, {"TotalCharge", q}, {"Selected", double(st.selected_count())}};
   base.insert(base.end(), st.attributes.begin(), st.attributes.end());
   st.attributes = std::move(base);
+  st.pipeline = nullptr;
+}
+
+size_t pipeline_trunk(const Pipeline& p) {
+  size_t t = p.steps.size();
+  while (t > 0 && step_branch(p.steps[t - 1]).empty()) --t;
+  return t;
+}
+
+PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index, int64_t timestep, const Trajectory* traj) {
+  PipelineState st = pipeline_begin(frame, p, frame_index, timestep, traj);
+  pipeline_run_steps(st, p, p.steps.size(), 0);
+  pipeline_finish(st);
   return st;
 }
 

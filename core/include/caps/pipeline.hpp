@@ -171,9 +171,14 @@ struct PipelineOutput {
   int width = 1920, height = 1080;   // render
 };
 
+// Branches (design/boards/PipelineGroups): a step with a "branch" parameter belongs to that branch only; the others are
+// shared. One run shows one branch (Pipeline::branch; "" shows the shared steps alone): the steps of other branches are
+// skipped ("off"). The shared steps below the lowest branch step are the trunk: every branch starts from its result, so
+// the trunk runs once per frame however many branches are looked at (the Studio caches it).
 struct Pipeline {
   std::vector<PipelineStep> steps;   // top first, as listed; evaluated bottom to top
   std::vector<PipelineOutput> outputs;
+  std::string branch;                // the branch this run shows
 };
 
 // {"steps": [{"type": …, "enabled": …, <parameters>}]} or the bare array.
@@ -190,6 +195,14 @@ std::vector<std::string> pipeline_citations(const Pipeline& p);
 
 // traj (optional) lets displacements and smoothing read other frames; frame is traj's frame frame_index as shown.
 PipelineState run_pipeline(const System& frame, const Pipeline& p, int frame_index = 0, int64_t timestep = 0, const Trajectory* traj = nullptr);
+// run_pipeline in parts, for a caller that caches the trunk: the state before any step, the steps with list index in
+// [lo, hi) (bottom to top), and the global attributes put in front. pipeline_trunk: the index of the trunk's top step
+// (steps [trunk, n) are shared and run first); n when there are no branch steps' results to share.
+PipelineState pipeline_begin(const System& frame, const Pipeline& p, int frame_index, int64_t timestep, const Trajectory* traj);
+void pipeline_run_steps(PipelineState& st, const Pipeline& p, size_t hi, size_t lo);
+void pipeline_finish(PipelineState& st);
+size_t pipeline_trunk(const Pipeline& p);
+std::string step_branch(const PipelineStep& s);
 
 // Time series (design/boards/TimeSeries): the pipeline on every stride-th frame, one row per frame with every numeric
 // global attribute (Frame, Timestep, then the attributes in order). progress(done, total) returns false to stop.
