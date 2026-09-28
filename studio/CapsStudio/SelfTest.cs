@@ -491,6 +491,9 @@ internal static class SelfTest
             var capped = vm.PolySpecJson();
             Check(capped.Contains("\"head_cap\":\"tert-butyl\"") && capped.Contains("\"tail_cap\":\"hydroxyl\"") && !vm.PolyHasError, $"end groups: {capped} {vm.PolyError}");
             vm.HeadCap = 0; vm.TailCap = 0;
+            vm.PolyLinkage = 1;
+            Check(vm.PolySpecJson().Contains("\"linkage\":\"head-to-head\"") && vm.PolyPreview.Contains(" reversed") && !vm.PolyHasError, $"head-to-head linkage: {vm.PolyPreview} {vm.PolyError}");
+            vm.PolyLinkage = 0;
             vm.GrowChainsD = 4;
             vm.GrowDensityD = 0.3m;
             vm.SendPolymerToGrow();

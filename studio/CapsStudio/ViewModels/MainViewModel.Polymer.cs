@@ -244,6 +244,15 @@ public sealed partial class MainViewModel
     public int HeadCap { get => _headCap; set { if (Set(ref _headCap, Math.Clamp(value, 0, EndGroups.Length - 1))) PolyChanged(); } }
     public int TailCap { get => _tailCap; set { if (Set(ref _tailCap, Math.Clamp(value, 0, EndGroups.Length - 1))) PolyChanged(); } }
 
+    // how units join (core Linkage): head-to-tail, head-to-head (every second unit reversed), random reversals
+    public static readonly string[] LinkageIds = ["head-to-tail", "head-to-head", "random"];
+    private int _polyLinkage;
+    private decimal _polyInversion = 5;
+    public int PolyLinkage { get => _polyLinkage; set { if (Set(ref _polyLinkage, Math.Clamp(value, 0, 2))) { Raise(nameof(PolyRandomLinkage)); PolyChanged(); } } }
+    public bool PolyRandomLinkage => _polyLinkage == 2;
+    /// <summary>Random linkage: the share of reversed units, % (regio-defects: PVDF ≈ 3–6 %).</summary>
+    public decimal PolyInversion { get => _polyInversion; set { if (Set(ref _polyInversion, Math.Clamp(value, 0, 100))) PolyChanged(); } }
+
     /// <summary>The chain as the core reads it (caps_chain_preview / caps_grow_chains).</summary>
     public string PolySpecJson(int? dp = null)
     {
@@ -258,6 +267,11 @@ public sealed partial class MainViewModel
         };
         if (_headCap > 0) o["head_cap"] = EndGroups[_headCap];
         if (_tailCap > 0) o["tail_cap"] = EndGroups[_tailCap];
+        if (_polyLinkage > 0)
+        {
+            o["linkage"] = LinkageIds[_polyLinkage];
+            if (_polyLinkage == 2) o["inversion"] = (double)_polyInversion / 100;
+        }
         if (_polyArch != 0)
         {
             o["architecture"] = ArchIds[_polyArch];
@@ -287,6 +301,8 @@ public sealed partial class MainViewModel
             PolyPreview = string.Format(CultureInfo.InvariantCulture, "{0} · {1:N0} g/mol · {2:N0} atoms per chain · {3}",
                 PolyUnit.Sub((string?)r["formula"] ?? ""), (double?)r["mass"] ?? 0, (int?)r["atoms"] ?? 0,
                 string.Join(" · ", PolyUnits.Select((u, k) => $"{u.Letter} {counts[k]}")));
+            var reversed = (r["inverted"] as JsonArray ?? []).Count(x => (int?)x == 1);
+            if (_polyLinkage > 0) PolyPreview += $" · {reversed} reversed";
             _polyAtoms = (int?)r["atoms"] ?? 0;
             _polyMass = (double?)r["mass"] ?? 0;
             if (r["molecule"] is JsonObject m)   // a branched molecule: its arms, atoms and mass

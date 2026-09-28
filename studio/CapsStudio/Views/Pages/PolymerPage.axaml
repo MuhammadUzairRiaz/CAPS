@@ -208,7 +208,15 @@
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                   <StackPanel Spacing="6">
                     <TextBlock Text="Linkage" Classes="label" />
-                    <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Head-to-tail" /></ComboBox>
+                    <ComboBox SelectedIndex="{Binding PolyLinkage}" HorizontalAlignment="Stretch">
+                      <ComboBoxItem Content="Head-to-tail" />
+                      <ComboBoxItem Content="Head-to-head / tail-to-tail" ToolTip.Tip="Every second unit reversed: ~CH2–CHX–CHX–CH2~ (HH-polypropylene, HH-PVC)" />
+                      <ComboBoxItem Content="Random reversals (defects)" ToolTip.Tip="Each unit reversed with the given chance: the regio-defects of PVDF, PVF, PPO" />
+                    </ComboBox>
+                    <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding PolyRandomLinkage}">
+                      <NumericUpDown Value="{Binding PolyInversion}" Minimum="0" Maximum="100" Increment="1" FormatString="0.#" Width="110" />
+                      <TextBlock Text="% of units reversed" Classes="dim" VerticalAlignment="Center" />
+                    </StackPanel>
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="6">
                     <TextBlock Text="End groups (head / tail)" Classes="label" />

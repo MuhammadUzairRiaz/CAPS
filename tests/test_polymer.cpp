@@ -433,3 +433,44 @@ TEST(Polymer, EndGroupsReplaceTheCaps) {
   bad.head_cap = "nonsense";
   EXPECT_THROW(grow_chains(bad, o), std::invalid_argument);
 }
+
+TEST(Polymer, HeadToHeadLinkageReversesEverySecondUnit) {
+  GrowOptions o;
+  o.chains = 2;
+  o.density = 0.3;
+  o.seed = 5;
+  ChainSpec c = spec({"*CC(*)Cl"}, Sequence::Homopolymer, 6);
+  // bonds between two chlorinated carbons: none head-to-tail, three per chain head-to-head (units 1–2, 3–4, 5–6)
+  auto hh_bonds = [](const System& s) {
+    std::vector<int> cl(s.atoms.size(), 0);
+    for (const auto& b : s.bonds) {
+      if (s.atoms[b.i].element == 17) cl[b.j] = 1;
+      if (s.atoms[b.j].element == 17) cl[b.i] = 1;
+    }
+    int n = 0;
+    for (const auto& b : s.bonds) n += cl[b.i] && cl[b.j];
+    return n;
+  };
+  EXPECT_EQ(hh_bonds(grow_chains(c, o)), 0);
+  c.linkage = Linkage::HeadToHead;
+  GrowReport rep;
+  const System hh = grow_chains(c, o, &rep);
+  EXPECT_EQ(hh_bonds(hh), 2 * 3);
+  bool said = false;
+  for (const auto& n : rep.notes) said |= n.find("head-to-head linkage: 6 of 12") != std::string::npos;
+  EXPECT_TRUE(said);
+  const auto inv = chain_inversions(c, 6, 1);
+  const std::string smi = chain_graph(c, {0, 0, 0, 0, 0, 0}, inv).smiles;
+  EXPECT_NE(smi, chain_graph(c, {0, 0, 0, 0, 0, 0}).smiles) << smi;
+  EXPECT_TRUE(smi.find("C(Cl)C(CC") != std::string::npos) << smi;
+  // random: a share of units reversed, the first never
+  c.linkage = Linkage::Random;
+  c.inversion = 0.5;
+  const auto r = chain_inversions(c, 400, 9);
+  int n = 0;
+  for (char x : r) n += x;
+  EXPECT_EQ(r[0], 0);
+  EXPECT_NEAR(n / 400.0, 0.5, 0.08);
+  EXPECT_EQ(linkage_from_string("head-to-head"), Linkage::HeadToHead);
+  EXPECT_THROW(linkage_from_string("sideways"), std::invalid_argument);
+}
