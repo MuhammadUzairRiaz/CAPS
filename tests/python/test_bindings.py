@@ -287,4 +287,20 @@ with _tf.TemporaryDirectory() as tmp:
     mdp = open(stem + ".mdp").read()
     check("[ Frozen ]" in ndx and ndx.split("[ Frozen ]")[1].split() == ["1", "2", "3"] and "freezegrps = Frozen" in mdp,
           "GROMACS freeze group: " + " ".join(ndx.split("[ Frozen ]")[1].split()))
+# an Analyze group: molecules 1-3 of the ten-chain melt — their density is 3/10 of the cell's, their Rg their own
+gd = caps.open(os.path.join(samples, "ps_melt.data"))
+whole = {p["id"]: p for p in gd.analyze(["density", "rg"])}
+part = {p["id"]: p for p in gd.analyze(["density", "rg"], group="molecules:1-3")}
+check(abs(part["density"]["value"] / whole["density"]["value"] - 0.3) < 1e-6 and part["rg"]["value"] != whole["rg"]["value"]
+      and any("group molecules:1-3" in n for n in part["density"].get("notes", [])),
+      f"analyze group: density {part['density']['value']:.4f} of {whole['density']['value']:.4f} · Rg {part['rg']['value']:.2f} vs {whole['rg']['value']:.2f}")
+# the results go into the provenance, and with the saved structure into its sidecar (the Project table reads them)
+with _tf.TemporaryDirectory() as tmp:
+    gd.analyze(["density", "cn"])
+    out = _os.path.join(tmp, "melt.data")
+    gd.save(out)
+    man = caps.provenance_file(out)
+    steps = [st for st in man.get("steps", []) if st.get("engine") == "analyze.properties"]
+    check(steps and any(k.startswith("Characteristic ratio") for k in steps[-1]["params"]) and "Density" in steps[-1]["params"],
+          "analyze provenance: " + (", ".join(f"{k} = {v}" for k, v in steps[-1]["params"].items()) if steps else "none"))
 print("all python checks passed")

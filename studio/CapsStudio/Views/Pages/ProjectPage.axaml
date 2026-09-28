@@ -60,21 +60,25 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Results" FontSize="13.5" FontWeight="SemiBold" />
-              <Grid ColumnDefinitions="34*,14*,18*,20*,14*" Margin="0,0,0,2">
+              <Grid ColumnDefinitions="28*,11*,13*,15*,11*,16*,12*" Margin="0,0,0,2">
                 <TextBlock Text="STRUCTURE" Classes="h3" /><TextBlock Grid.Column="1" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
-                <TextBlock Grid.Column="2" Text="ρ (G/CM³)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="LAST STEP" Classes="h3" Margin="14,0,0,0" />
-                <TextBlock Grid.Column="4" Text="STATUS" Classes="h3" />
+                <TextBlock Grid.Column="2" Text="ρ (G/CM³)" Classes="h3" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="3" Text="TG" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="C∞" Classes="h3" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="5" Text="LAST STEP" Classes="h3" Margin="14,0,0,0" />
+                <TextBlock Grid.Column="6" Text="STATUS" Classes="h3" />
               </Grid>
               <ItemsControl ItemsSource="{Binding ProjectDocs}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:ProjectDoc">
                     <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7">
-                      <Grid ColumnDefinitions="34*,14*,18*,20*,14*">
+                      <Grid ColumnDefinitions="28*,11*,13*,15*,11*,16*,12*">
                         <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="1" Text="{Binding Atoms}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
                         <TextBlock Grid.Column="2" Text="{Binding Density}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="3" Text="{Binding LastStep}" Classes="mono" FontSize="11.5" Margin="14,0,0,0" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="4" Text="{Binding Status}" FontSize="12" Classes.st0="{Binding StatusLevel, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}"
+                        <TextBlock Grid.Column="3" Text="{Binding Tg}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="4" Text="{Binding Cinf}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="5" Text="{Binding LastStep}" Classes="mono" FontSize="11.5" Margin="14,0,0,0" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="6" Text="{Binding Status}" FontSize="12" Classes.st0="{Binding StatusLevel, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}"
                                    Classes.st1="{Binding StatusLevel, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}"
                                    Classes.st2="{Binding StatusLevel, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
                       </Grid>
@@ -82,7 +86,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <TextBlock Text="Density from each file's cell; status from the last step of its provenance." FontSize="11.5" Foreground="{DynamicResource DimB}" />
+              <TextBlock Text="Density from each file's cell; Tg and C∞ from the last Analyze run its provenance records (save after analysing); status from its last step." FontSize="11.5" Foreground="{DynamicResource DimB}" />
             </StackPanel>
           </Border>
         </StackPanel>

@@ -20,6 +20,10 @@ public sealed class ProjectDoc : ObservableObject
     public string Atoms { get => _atoms; set => Set(ref _atoms, value); }
     public string Status { get => _status; set => Set(ref _status, value); }
     public string LastStep { get => _last; set => Set(ref _last, value); }
+    private string _tg = "—", _cinf = "—";
+    /// <summary>Results the structure's provenance records (its last Analyze run): Tg and C∞.</summary>
+    public string Tg { get => _tg; set => Set(ref _tg, value); }
+    public string Cinf { get => _cinf; set => Set(ref _cinf, value); }
     public Bitmap? Thumbnail { get => _thumb; set => Set(ref _thumb, value); }
     public bool Selected { get => _selected; set => Set(ref _selected, value); }
     public JsonNode? Manifest { get; set; }
@@ -76,6 +80,19 @@ public sealed partial class MainViewModel
             }
             catch { }
             var steps = d.Manifest?["steps"] as JsonArray;
+            // the latest recorded results (Analyze writes them into the provenance)
+            foreach (var st in steps?.Reverse() ?? [])
+            {
+                if ((string?)st?["engine"] != "analyze.properties") continue;
+                string? Param(string start) => st!["params"] switch
+                {
+                    JsonObject o => o.Where(kv => kv.Key.StartsWith(start, StringComparison.Ordinal)).Select(kv => (string?)kv.Value).FirstOrDefault(),
+                    JsonArray a => a.OfType<JsonArray>().Where(x => ((string?)x[0] ?? "").StartsWith(start, StringComparison.Ordinal)).Select(x => (string?)x[1]).FirstOrDefault(),
+                    _ => null,
+                };
+                if (d.Tg == "—" && Param("Glass transition") is { } tg) d.Tg = tg;
+                if (d.Cinf == "—" && Param("Characteristic ratio") is { } c) d.Cinf = c;
+            }
             var last = steps?.LastOrDefault()?["engine"]?.GetValue<string>() ?? "";
             d.LastStep = last;
             (d.Status, d.StatusLevel) = last switch
@@ -86,6 +103,7 @@ public sealed partial class MainViewModel
                 _ when last.StartsWith("relax.", StringComparison.Ordinal) => ("minimised", 1),
                 "field.assign" => ("typed", 1),
                 _ when last.StartsWith("io.", StringComparison.Ordinal) => ("read", 0),
+                "analyze.properties" => ("analysed", 2),
                 _ => ("built", 1),
             };
             var path = d.Path;
