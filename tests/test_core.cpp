@@ -10,6 +10,7 @@
 #include <set>
 
 #include "caps/analysis.hpp"
+#include "caps/appearance.hpp"
 #include "caps/checks.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
@@ -724,6 +725,17 @@ TEST(Pipeline, GridFields) {
   for (const auto& r : st.tables[0].rows) m += r[1];
   EXPECT_NEAR(m / st.tables[0].rows.size(), f.density(), 1e-9);
   EXPECT_FALSE(st.segments.empty());
+  EXPECT_TRUE(st.meshes.empty());
+  // the isosurface at the mean density: a closed surface between the dense and the sparse half of the cell
+  st = run(R"([{"type":"density_field","grid":0.9,"sigma":1.5,"isosurface":true,"slice":false}])");
+  ASSERT_EQ(st.meshes.size(), 1u);
+  EXPECT_GT(st.meshes[0].mesh->triangles.size(), 100u);
+  EXPECT_NEAR(st.attribute("DensityField.iso_level"), f.density(), 1e-9);
+  const double share = st.attribute("DensityField.iso_volume_fraction");
+  EXPECT_GT(share, 0.05);
+  EXPECT_LT(share, 0.95);
+  EXPECT_GT(st.attribute("DensityField.iso_area"), 0.0);
+  EXPECT_TRUE(st.segments.empty());
   // no cell: an error on the step, not a crash
   System open = f;
   open.cell = Cell{};

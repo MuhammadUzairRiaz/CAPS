@@ -46,6 +46,11 @@ struct SurfaceOptions {
 Mesh surface_mesh(const System& s, const SurfaceOptions& o);
 std::vector<double> surface_potential(const System& s, const Mesh& m, const std::vector<char>& atoms = {});
 
+// The isosurface value = level of a field on a cell grid (values[(i·n1 + j)·n2 + k] at the voxel centres
+// origin + ((i + ½)/n0) a + ((j + ½)/n1) b + ((k + ½)/n2) c), by marching tetrahedra; periodic: the voxels wrap across
+// the cell's faces (the surface closes there). Normals point from above the level to below it.
+Mesh isosurface(const Cell& cell, const int n[3], const std::vector<double>& values, double level, bool periodic = true);
+
 // The hull triangles (as a mesh, coloured by the centre's element) of the centres flagged in `centres` (empty: all).
 Mesh polyhedra(const System& s, const std::vector<char>& centres = {});
 

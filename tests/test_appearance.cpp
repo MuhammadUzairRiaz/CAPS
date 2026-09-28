@@ -146,3 +146,28 @@ TEST(Appearance, EzLabelsOfDoubleBonds) {
   ASSERT_EQ(bn.size(), 3u);   // the tail unit's double bond carries two methyls at its capped end: not stereogenic
   for (const auto& [a, b] : bn) EXPECT_EQ(ln[a], "Z");
 }
+
+TEST(Appearance, IsosurfaceOfASphereAndAPeriodicSlab) {
+  // a field falling off from the cell centre: the isosurface at 6 Å is a sphere of area 4πr²
+  Cell c;
+  c.a = {30, 0, 0}, c.b = {0, 30, 0}, c.c = {0, 0, 30};
+  const int n[3] = {60, 60, 60};
+  std::vector<double> v(size_t(n[0]) * n[1] * n[2]);
+  for (int i = 0; i < n[0]; ++i)
+    for (int j = 0; j < n[1]; ++j)
+      for (int k = 0; k < n[2]; ++k) {
+        const Vec3 p{30.0 * (i + 0.5) / n[0] - 15, 30.0 * (j + 0.5) / n[1] - 15, 30.0 * (k + 0.5) / n[2] - 15};
+        v[(size_t(i) * n[1] + j) * n[2] + k] = 10 - norm(p);
+      }
+  const Mesh m = isosurface(c, n, v, 4.0);
+  EXPECT_NEAR(m.area(), 4 * M_PI * 36, 0.02 * 4 * M_PI * 36);
+  for (size_t q = 0; q < m.vertices.size(); q += 97) EXPECT_NEAR(norm(m.vertices[q] - Vec3{15, 15, 15}), 6.0, 0.05);
+  // outward normals point down the field (away from the centre)
+  EXPECT_GT(dot(m.normals[0], m.vertices[0] - Vec3{15, 15, 15}), 0);
+  // a slab across the periodic cell: two faces, each the cell's cross-section, closed through the faces
+  for (int i = 0; i < n[0]; ++i)
+    for (int j = 0; j < n[1]; ++j)
+      for (int k = 0; k < n[2]; ++k) v[(size_t(i) * n[1] + j) * n[2] + k] = std::fabs(30.0 * (k + 0.5) / n[2] - 15) < 5 ? 1.0 : 0.0;
+  const Mesh slab = isosurface(c, n, v, 0.5);
+  EXPECT_NEAR(slab.area(), 2 * 30 * 30, 1.0);
+}

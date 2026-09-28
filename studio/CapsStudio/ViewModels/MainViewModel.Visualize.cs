@@ -471,7 +471,7 @@ public sealed partial class MainViewModel
         "scatter" => new JsonObject { ["x"] = "DistanceToCOM", ["y"] = "Charge", ["only_selected"] = false },
         "voids" => new JsonObject { ["probe"] = 1.4, ["grid"] = 0.5, ["show"] = true },
         "voronoi" => new JsonObject { ["method"] = "exact", ["grid"] = 0.5, ["face_area_min"] = 0.0, ["only_selected"] = false },
-        "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5 },
+        "density_field" => new JsonObject { ["grid"] = 0.8, ["sigma"] = 1.5, ["axis"] = 2, ["position"] = 0.5, ["slice"] = true, ["isosurface"] = false, ["opacity"] = 0.45, ["colour"] = "#6FA8DC" },
         "trajectory_lines" => new JsonObject { ["particles"] = "centres", ["from"] = 0, ["radius"] = 0.12 },
         "primitive_paths" => new JsonObject { ["radius"] = 0.3, ["show_chains"] = false },
         _ => new JsonObject(),
@@ -574,7 +574,11 @@ public sealed partial class MainViewModel
                 break;
             case "density_field":
                 Text("grid", "Grid (Å)", "number"); Text("sigma", "Smoothing σ (Å)", "number"); Choice("axis", "Slice normal (0 x · 1 y · 2 z)", ["0", "1", "2"]);
-                Text("position", "Slice position (0–1 of the cell)", "number"); break;
+                Text("position", "Slice position (0–1 of the cell)", "number"); Bool("slice", "Show the slice", true);
+                Bool("isosurface", "Isosurface (the boundary of the denser regions)");
+                Text("level", "Level (g/cm³)", "number", "blank: the cell's mean density"); Text("opacity", "Opacity (0–1)", "number"); Text("colour", "Colour (#RRGGBB)", "text");
+                Note("Above the level: the volume share, area and specific area are global attributes; a low level traces the free-volume network, the mean one a blend's domains.");
+                break;
             case "vectors":
                 Choice("property", "Vector", ["end_to_end", "dipole", "displacement", "velocity"]); Text("scale", "Scale (dipole, displacement, velocity)", "number");
                 Text("radius", "Arrow radius (Å)", "number"); Bool("flip", "Flip direction (end-to-end)"); break;

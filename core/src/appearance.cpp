@@ -356,6 +356,78 @@ Mesh surface_mesh(const System& s, const SurfaceOptions& o) {
   return m;
 }
 
+Mesh isosurface(const Cell& cell, const int n[3], const std::vector<double>& values, double level, bool periodic) {
+  Mesh m;
+  if (n[0] < 2 || n[1] < 2 || n[2] < 2 || values.size() != size_t(n[0]) * size_t(n[1]) * size_t(n[2])) return m;
+  const size_t N = values.size();
+  auto idx = [&](int i, int j, int k) { return (size_t(i) * size_t(n[1]) + size_t(j)) * size_t(n[2]) + size_t(k); };
+  auto point = [&](int i, int j, int k) {
+    return cell.origin + cell.a * ((i + 0.5) / n[0]) + cell.b * ((j + 0.5) / n[1]) + cell.c * ((k + 0.5) / n[2]);
+  };
+  // marching tetrahedra (six per cube along the 0–7 diagonal) on f = level − value: < 0 above the level ("inside")
+  static const int tets[6][4] = {{0, 1, 3, 7}, {0, 3, 2, 7}, {0, 2, 6, 7}, {0, 6, 4, 7}, {0, 4, 5, 7}, {0, 5, 1, 7}};
+  // vertices welded on grid edges; an edge is keyed by its two corners' unwrapped grid points (a wrapped corner keeps
+  // its own position past the face, so the surface there is continuous with the image across it)
+  std::unordered_map<uint64_t, uint32_t> edge_vertex;
+  const int ext = periodic ? 1 : 0;
+  auto key_of = [&](int i, int j, int k) { return (uint64_t(i) * uint64_t(n[1] + 1) + uint64_t(j)) * uint64_t(n[2] + 1) + uint64_t(k); };
+  const uint64_t NK = uint64_t(n[0] + 1) * uint64_t(n[1] + 1) * uint64_t(n[2] + 1);
+  auto tri = [&](uint32_t a, uint32_t b, uint32_t c, const Vec3& outward) {
+    Vec3 nrm = cross(m.vertices[b] - m.vertices[a], m.vertices[c] - m.vertices[a]);
+    if (dot(nrm, outward) < 0) { std::swap(b, c); nrm = nrm * -1.0; }
+    if (norm(nrm) < 1e-14) return;
+    m.triangles.push_back({a, b, c});
+    for (uint32_t q : {a, b, c}) m.normals[q] = m.normals[q] + nrm;
+  };
+  (void)N;
+  for (int x = 0; x + 1 < n[0] + ext; ++x)
+    for (int y = 0; y + 1 < n[1] + ext; ++y)
+      for (int z = 0; z + 1 < n[2] + ext; ++z) {
+        uint64_t ck[8];
+        double cf[8];
+        Vec3 cp[8];
+        bool any_in = false, any_out = false;
+        for (int c = 0; c < 8; ++c) {
+          const int i = x + (c & 1), j = y + ((c >> 1) & 1), k = z + ((c >> 2) & 1);
+          ck[c] = key_of(i, j, k);
+          cf[c] = level - values[idx(i % n[0], j % n[1], k % n[2])];
+          if (cf[c] == 0) cf[c] = -1e-12;
+          cp[c] = point(i, j, k);
+          (cf[c] < 0 ? any_in : any_out) = true;
+        }
+        if (!any_in || !any_out) continue;
+        auto V = [&](int a, int b) {
+          const uint64_t key = std::min(ck[a], ck[b]) * NK + std::max(ck[a], ck[b]);
+          auto it = edge_vertex.find(key);
+          if (it != edge_vertex.end()) return it->second;
+          const double t = std::clamp(cf[a] / (cf[a] - cf[b]), 0.0, 1.0);
+          m.vertices.push_back(cp[a] + (cp[b] - cp[a]) * t);
+          m.normals.push_back({0, 0, 0});
+          const uint32_t id = uint32_t(m.vertices.size() - 1);
+          edge_vertex.emplace(key, id);
+          return id;
+        };
+        for (const auto& t : tets) {
+          int in[4], out[4], ni = 0, no = 0;
+          for (int q : t) (cf[q] < 0 ? in[ni++] : out[no++]) = q;
+          if (ni == 0 || no == 0) continue;
+          Vec3 cin{0, 0, 0}, cout{0, 0, 0};
+          for (int q = 0; q < ni; ++q) cin = cin + cp[in[q]];
+          for (int q = 0; q < no; ++q) cout = cout + cp[out[q]];
+          const Vec3 outward = cout * (1.0 / no) - cin * (1.0 / ni);
+          if (ni == 1) tri(V(in[0], out[0]), V(in[0], out[1]), V(in[0], out[2]), outward);
+          else if (ni == 3) tri(V(out[0], in[0]), V(out[0], in[1]), V(out[0], in[2]), outward);
+          else {
+            const uint32_t a = V(in[0], out[0]), b = V(in[0], out[1]), c = V(in[1], out[1]), d = V(in[1], out[0]);
+            tri(a, b, c, outward);
+            tri(a, c, d, outward);
+          }
+        }
+      }
+  for (auto& v : m.normals) v = unitv(v);
+  return m;
+}
+
 std::vector<double> surface_potential(const System& s, const Mesh& m, const std::vector<char>& atoms) {
   std::vector<double> phi(m.vertices.size(), 0.0);
   std::vector<size_t> charged;

@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include "caps/analysis.hpp"
+#include "caps/appearance.hpp"
 #include "caps/bundle.hpp"
 #include "caps/elements.hpp"
 #include "caps/entangle.hpp"
@@ -2640,6 +2641,7 @@ void step_density_field(PipelineState& st, const Json& p, StepStatus& out) {
   if (!s.cell.valid()) throw std::invalid_argument("a density field needs a periodic cell");
   const double sigma = std::clamp(p.num("sigma", 1.5), 0.3, 6.0);
   const CellGrid g(s.cell, std::clamp(p.num("grid", 0.8), 0.2, 3.0));
+  std::string out_iso;
   std::vector<double> rho(g.size(), 0);
   const double norm3 = 1.0 / std::pow(2 * M_PI * sigma * sigma, 1.5);
   // each atom's Gaussian is normalised on the grid, so the field holds exactly the cell's mass
@@ -2693,14 +2695,37 @@ void step_density_field(PipelineState& st, const Json& p, StepStatus& out) {
         const Vec3 pt = g.point(i, j, k);
         st.segments.push_back({pt, pt, ramp(kViridis, 9, hi > 0 ? x / hi : 0), r, false});
       }
+  // the isosurface at a density level (the cell's mean by default): the boundary of the dense regions, their volume
+  // share and area — domains of a blend, a filler's interphase, the free-volume network (a low level)
+  if (flag(p, "isosurface", false)) {
+    const double level = p.has("level") && p["level"].is_number() ? p["level"].number() : mean;
+    auto mesh = std::make_shared<Mesh>(isosurface(s.cell, g.n, rho, level, true));
+    size_t above = 0;
+    for (double x : rho) above += x > level;
+    const double share = double(above) / double(g.size());
+    const double area = mesh->area();
+    st.set_attribute("DensityField.iso_level", level);
+    st.set_attribute("DensityField.iso_volume_fraction", share);
+    st.set_attribute("DensityField.iso_volume", share * s.cell.volume());
+    st.set_attribute("DensityField.iso_area", area);
+    st.set_attribute("DensityField.iso_specific_area", share > 0 ? area / (share * s.cell.volume()) : 0.0);
+    unsigned rgb = 0x6FA8DC;
+    if (p.has("colour")) {
+      const std::string c = p.text("colour", "#6FA8DC");
+      if (c.size() == 7 && c[0] == '#') rgb = unsigned(std::stoul(c.substr(1), nullptr, 16));
+    }
+    st.meshes.push_back({mesh, rgb, float(std::clamp(p.num("opacity", 0.45), 0.05, 1.0))});
+    out_iso = " · isosurface at " + fmt("%.3g g/cm³", level) + ": " + fmt("%.1f %%", 100 * share) + " of the cell above it, area " + fmt("%.0f Å²", area);
+    if (!flag(p, "slice", true)) st.segments.clear();
+  }
   st.legend = PipelineLegend{};
   st.legend.property = "Density (g/cm³)";
   st.legend.continuous = true;
   st.legend.lo = 0;
   st.legend.hi = hi;
-  st.has_legend = true;
+  st.has_legend = flag(p, "slice", true);   // the legend is the slice's
   out.summary = "mean " + fmt("%.3f g/cm³", mean) + " (cell " + fmt("%.3f", s.density()) + ") · " + fmt("%.0f %%", 100 * empty / g.size()) + " below 0.05 · σ " +
-                fmt("%.2g Å", sigma);
+                fmt("%.2g Å", sigma) + out_iso;
 }
 
 void write_grid_file(const GridField& g, const System& atoms, const std::string& path) {
