@@ -4,6 +4,7 @@
 // "skip" lines for the types of the other sub-styles, as LAMMPS reads them.
 //
 // Checked term by term, energies and forces, against LAMMPS for each force-field family (bench/ff/check_data_lammps.py).
+#include <filesystem>
 #include <cstdio>
 #include <algorithm>
 #include <array>
@@ -13,6 +14,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/manybody.hpp"
 #include "caps/io.hpp"
 #include "caps/relax.hpp"
 
@@ -86,6 +88,7 @@ struct Layout {
   bool coreshell = false;                  // core-shell pairs (a shell on its core): the long-range Coulomb as .../cs
   bool cs_buck = false;                    // …with only Buckingham (and empty) pairs: one CORESHELL style for all of them
   std::vector<std::string> sw_types;       // per atom type: its Stillinger–Weber element name, or NULL (pair_style sw)
+  std::vector<std::string> mb_types;       // per atom type: its element in the many-body potential file, or NULL
   // how the files are written (exact CAPS styles, or the force field's native ones)
   bool native = false, force_hybrid = false;
   std::string coul = "none";               // resolved Coulomb: none, dsf, long (with kspace), cut
@@ -154,8 +157,14 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
     else throw FieldError("bond form " + std::to_string(b.form) + " has no LAMMPS style");
     mark(b.i, b.j);
   }
+  // (not between atoms of a many-body potential: special_bonds would take the pair out of the neighbour list it reads)
+  auto many_body = [&](uint32_t i) {
+    if (!ff.manybody.on() || i >= ff.type_index.size()) return false;
+    const size_t t = size_t(ff.type_index[i]);
+    return t < ff.manybody.element.size() && !ff.manybody.element[t].empty();
+  };
   for (const auto& b : s.bonds)
-    if (b.i != b.j && !have.count({std::min(b.i, b.j), std::max(b.i, b.j)})) {
+    if (b.i != b.j && !have.count({std::min(b.i, b.j), std::max(b.i, b.j)}) && !(many_body(b.i) && many_body(b.j))) {
       L.bonds.add("zero", "", {}, {b.i, b.j}, lab({b.i, b.j}) + " (no term)");
       mark(b.i, b.j);
     }
@@ -391,6 +400,13 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       if (i < ff.sw.atom.size() && ff.sw.atom[i]) L.sw_types[size_t(ff.type_index[i])] = ff.type_names[size_t(ff.type_index[i])];
     L.pair_hybrid = true;
   }
+  if (ff.manybody.on()) {   // a literature many-body potential overlays the pair terms (its types' Lennard-Jones among themselves is zero)
+    if (L.gromacs) throw FieldError(ff.name + ": lj/gromacs beside a many-body potential has no LAMMPS style");
+    L.mb_types.assign(size_t(nt), "NULL");
+    for (size_t t = 0; t < size_t(nt) && t < ff.manybody.element.size(); ++t)
+      if (!ff.manybody.element[t].empty()) L.mb_types[t] = ff.manybody.element[t];
+    L.pair_hybrid = true;
+  }
   L.periodic = s.cell.valid();
   if (st.hybrid && !L.gromacs) L.pair_hybrid = true;
   // shell models: a core and its shell bonded at (nearly) the same place; coul/long would evaluate their excluded pair's
@@ -438,14 +454,14 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
     if (L.coul == "cut" || L.coul == "none") L.notes.push_back("shell model without long-range Coulomb: born/coul/dsf/cs (DSF)");
     if (L.coul != "long") L.coul = "dsf";
     L.pair_styles = {L.pair_combined};
-    L.pair_hybrid = st.hybrid;
+    L.pair_hybrid = st.hybrid || !L.mb_types.empty();
     return;
   }
   if (L.charmm) {   // CHARMM: the force-switched LJ with its long-range sum, else CHARMM's force-shifted Coulomb
     L.pair_combined = std::string("lj/charmmfsw/coul/") + (L.coul == "long" ? "long" : "charmmfsh");
     if (L.coul == "dsf" || L.coul == "cut") L.notes.push_back("Coulomb: CHARMM's force shift (coul/charmmfsh), not " + c);
     L.pair_styles = {L.pair_combined};
-    L.pair_hybrid = st.hybrid;
+    L.pair_hybrid = st.hybrid || !L.mb_types.empty();
     return;
   }
   // SDK / SPICA: every pair lj/sdk, with its long-range Coulomb as the one style lj/sdk/coul/long (as its own inputs write
@@ -453,14 +469,14 @@ void resolve_native(Layout& L, const ForceField& ff, const LammpsStyle& st, bool
   if (L.sdk && L.pair_styles.size() == 1 && L.sw_types.empty() && (L.coul == "long" || L.coul == "none")) {
     L.pair_combined = L.coul == "long" ? "lj/sdk/coul/long" : "lj/sdk";
     L.pair_styles = {L.pair_combined};
-    L.pair_hybrid = st.hybrid || L.hbond;
+    L.pair_hybrid = st.hybrid || L.hbond || !L.mb_types.empty();
     return;
   }
   // one style for all pairs: lj/cut or lj/class2 with its Coulomb (lj/class2 has no DSF form)
   if (ff.pair_func.empty() && L.sw_types.empty() && !L.gromacs && !(L.pair_base == "lj/class2" && L.coul == "dsf")) {
     L.pair_combined = L.pair_base + (L.coul == "none" ? "" : "/coul/" + L.coul);
     L.pair_styles = {L.pair_combined};
-    L.pair_hybrid = st.hybrid || L.hbond;   // one style (lj/class2/coul/long too): hybrid only when asked or overlaid
+    L.pair_hybrid = st.hybrid || L.hbond || !L.mb_types.empty();   // one style (lj/class2/coul/long too): hybrid only when asked or overlaid
   }
 }
 
@@ -520,8 +536,9 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   if (L.native && !L.pair_combined.empty()) {
     // the force field's own form: one pair style (hybrid when asked), its long-range sum by PPPM or Ewald
     const std::string args = L.charmm ? fmt_args({ff.lj_inner, e.cutoff}) : L.coul == "dsf" ? fmt_args({e.dsf_alpha, e.cutoff}) : fmt_args({e.cutoff});
-    if (L.hbond) {   // DREIDING: the hydrogen bond overlaid on the Lennard-Jones and Coulomb pairs
-      r.push_back("pair_style hybrid/overlay " + hbond_style(ff) + " " + L.pair_combined + args);
+    const std::string mb = L.mb_types.empty() ? "" : " " + ff.manybody.style;   // a many-body potential overlaid
+    if (L.hbond || !mb.empty()) {   // DREIDING: the hydrogen bond overlaid on the Lennard-Jones and Coulomb pairs
+      r.push_back("pair_style hybrid/overlay " + (L.hbond ? hbond_style(ff) + " " : std::string()) + L.pair_combined + args + mb);
       if (e.tail && L.periodic) r.push_back("pair_modify pair " + L.pair_combined + " tail yes");
       else if (!e.tail) r.push_back("pair_modify pair " + L.pair_combined + " shift yes");
     } else {
@@ -585,6 +602,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       p += b;
     }
     if (!L.sw_types.empty()) p += " sw";
+    if (!L.mb_types.empty()) p += " " + ff.manybody.style;
     r.push_back(p);
   }
   // CAPS: with tail corrections the potentials are truncated at the cut-off (plus the tail when there is a cell);
@@ -679,8 +697,14 @@ std::string sw_path(const std::string& data_path) {
 }
 
 // Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
+// The many-body potential file next to a data file.
+std::string mb_path(const ForceField& ff, const std::string& data_path) {
+  const size_t slash = data_path.find_last_of('/');
+  return (slash == std::string::npos ? std::string() : data_path.substr(0, slash + 1)) + manybody_file_name(ff.manybody);
+}
+
 std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path,
-                                    const std::set<std::pair<int, int>>& ff_excl = {}) {
+                                    const std::set<std::pair<int, int>>& ff_excl = {}, const ForceField* ff = nullptr) {
   std::vector<std::string> r;
   if (L.pair_hybrid && e.coulomb && L.pair_combined.empty())
     r.push_back(pme(e, L) ? (L.coreshell ? "pair_coeff * * coul/long/cs" : "pair_coeff * * coul/long") : "pair_coeff * * coul/dsf");
@@ -688,6 +712,11 @@ std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, con
   if (!L.sw_types.empty()) {
     std::string l = "pair_coeff * * sw " + sw_path(data_path);
     for (const auto& t : L.sw_types) l += " " + t;
+    r.push_back(l);
+  }
+  if (!L.mb_types.empty() && ff) {   // every type mapped: its element in the file, or NULL
+    std::string l = "pair_coeff * * " + ff->manybody.style + " " + mb_path(*ff, data_path);
+    for (const auto& t : L.mb_types) l += " " + t;
     r.push_back(l);
   }
   return r;
@@ -779,6 +808,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   if (!L.sw_types.empty()) write_sw_file(L, ff, sw_path(path));
+  if (!L.mb_types.empty()) write_manybody_file(ff.manybody, std::filesystem::path(path).parent_path().string());
   char buf[512];
   const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
 
@@ -955,7 +985,10 @@ void write_lammps_input(const System& s, const ForceField& ff, const EnergyOptio
     out << "\n# DREIDING hydrogen bonds: donor-acceptor type pairs, the hydrogen type\n";
     for (const auto& l : hbond_lines(ff)) out << "pair_coeff      " << l << "\n";
   }
-  for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs)) out << aligned(l) << "\n";
+  if (!L.mb_types.empty())
+    out << "\n# " << ff.manybody.style << " (" << ff.manybody.file.substr(ff.manybody.file.find_last_of('/') + 1) << (ff.manybody.citation.empty() ? "" : "; " + ff.manybody.citation)
+        << ") for its elements, Lennard-Jones between them and the rest; " << (ff.manybody.units == "metal" ? "LAMMPS converts the file from metal to real units" : "the file is in real units") << "\n";
+  for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (held_mol > 0)

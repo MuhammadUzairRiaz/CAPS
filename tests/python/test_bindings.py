@@ -322,4 +322,32 @@ mixed = g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": 
                                scaling14="first")
 check(all(abs(e_one[k] - e_two[k]) < 1e-6 for k in e_one) and refused and mixed["complete"] and len(mixed["groups"]) == 2,
       f"force fields by group: halves equal ({e_two['total']:.4f} kcal/mol) · GAFF+OPLS refused {refused}, merged {mixed['forcefield']}")
+# a crystal group under a literature many-body potential (Tersoff's silicon as LAMMPS's Si.tersoff gives it): LAMMPS
+# files with the overlay and the file beside them; CAPS runs refused until the silicon is held
+import tempfile
+with tempfile.TemporaryDirectory() as td:
+    with open(os.path.join(td, "Si.tersoff"), "w") as f:
+        f.write("# UNITS: metal CITATION: Tersoff, Phys Rev B, 37, 6991 (1988)\n"
+                "Si Si Si 3.0 1.0 1.3258 4.8381 2.0417 0.0000 22.956 0.33675 1.3258 95.373 3.0 0.2 3.2394 3264.7\n")
+    with open(os.path.join(td, "sim.pdb"), "w") as f:
+        f.write("CRYST1   30.000   30.000   30.000  90.00  90.00  90.00 P 1           1\n")
+        rows = [("SI", 1, 10, 10, 10, "Si"), ("SI", 1, 12.35, 10, 10, "Si"), ("MET", 2, 11, 10, 14, "C"), ("MET", 2, 11, 10, 15.09, "H"),
+                ("MET", 2, 12.03, 10, 13.64, "H"), ("MET", 2, 10.49, 10.89, 13.64, "H"), ("MET", 2, 10.49, 9.11, 13.64, "H")]
+        for k, (rn, res, x, y, z, el) in enumerate(rows):
+            f.write("HETATM%5d %-4s %3s A%4d    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n" % (k + 1, el, rn, res, x, y, z, el))
+        f.write("END\n")
+    mb = caps.open(os.path.join(td, "sim.pdb"))
+    rep = mb.field.assign_groups([{"name": "Si", "molecules": "1", "potential": {"style": "tersoff", "file": os.path.join(td, "Si.tersoff")}},
+                                  {"name": "methane", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])
+    out = mb.export_engines(os.path.join(td, "out"), gromacs=False)
+    lin = open(os.path.join(td, "out", "system.in")).read()
+    loose = False
+    try:
+        mb.relax()
+    except caps.CapsError:
+        loose = True
+    mb.hold(1)
+    mb.relax()
+    check(rep["complete"] and "Si.tersoff" in [x["name"] for x in out["files"]] and "tersoff Si.tersoff Si NULL NULL" in lin and loose,
+          f"many-body group: {rep['forcefield']} · LAMMPS overlay and file · CAPS runs need the crystal held")
 print("all python checks passed")

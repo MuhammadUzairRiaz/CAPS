@@ -1,11 +1,17 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 
 #include "caps/analysis.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/ffmerge.hpp"
 #include "caps/io.hpp"
+#include "caps/manybody.hpp"
+#include "caps/relax.hpp"
+#include "caps/uff.hpp"
 #include "caps/typing.hpp"
 
 using namespace caps;
@@ -101,4 +107,64 @@ TEST(FFMerge, DifferentFamiliesAreRefusedOrMergedAsAsked) {
   // an atom left out
   std::vector<uint32_t> short_b(b.begin(), b.end() - 1);
   EXPECT_THROW(merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, short_b, "OPLS"}}, o), FieldError);
+}
+
+// A crystal group under a literature many-body potential (Tersoff's silicon, Phys. Rev. B 37, 6991 (1988), as LAMMPS's
+// potentials/Si.tersoff gives it): one type per element, no charge, zero Lennard-Jones inside, UFF across; the file's units
+// checked; the LAMMPS files overlay the style and carry a copy that says its units.
+TEST(FFMerge, ManyBodyGroup) {
+  namespace fs = std::filesystem;
+  const fs::path dir = fs::temp_directory_path() / "caps_manybody_test";
+  fs::create_directories(dir);
+  const std::string entry = "Si Si Si 3.0 1.0 1.3258 4.8381 2.0417 0.0000 22.956\n  0.33675 1.3258 95.373 3.0 0.2 3.2394 3264.7\n";
+  { std::ofstream(dir / "tagged.tersoff") << "# DATE: 2007-10-25 UNITS: metal CITATION: Tersoff, Phys Rev B, 37, 6991 (1988)\n" << entry; }
+  { std::ofstream(dir / "bare.tersoff") << "# Tersoff silicon\n" << entry; }
+  // a silicon dimer below a methane
+  System s;
+  s.cell.a = {30, 0, 0}, s.cell.b = {0, 30, 0}, s.cell.c = {0, 0, 30};
+  auto add = [&](int z, double x, double y, double w, int64_t mol) {
+    Atom a;
+    a.element = z, a.pos = {x, y, w}, a.mol = mol;
+    s.atoms.push_back(a);
+  };
+  add(14, 10, 10, 10, 1), add(14, 12.35, 10, 10, 1);
+  add(6, 11, 10, 14, 2), add(1, 11, 10, 15.09, 2), add(1, 12.03, 10, 13.64, 2), add(1, 10.49, 10.89, 13.64, 2), add(1, 10.49, 9.11, 13.64, 2);
+  s.has_mol = true;
+  s.bonds = {{0, 1, 1}, {2, 3, 1}, {2, 4, 1}, {2, 5, 1}, {2, 6, 1}};
+  const std::vector<uint32_t> si = {0, 1}, me = {2, 3, 4, 5, 6};
+  EXPECT_THROW(manybody_part(part_of(s, si), {"tersoff", (dir / "bare.tersoff").string(), ""}), FieldError);        // units unsaid
+  EXPECT_THROW(manybody_part(part_of(s, si), {"tersoff", (dir / "tagged.tersoff").string(), "real"}), FieldError);   // units contradicted
+  EXPECT_THROW(manybody_part(part_of(s, si), {"airebo", (dir / "tagged.tersoff").string(), ""}), FieldError);        // metal units only
+  EXPECT_THROW(manybody_part(part_of(s, si), {"sw", (dir / "tagged.tersoff").string(), ""}), FieldError);            // not an sw file
+  EXPECT_THROW(manybody_part(part_of(s, me), {"tersoff", (dir / "tagged.tersoff").string(), ""}), FieldError);       // no C or H entries
+  const ForceField fs_ = manybody_part(part_of(s, si), {"tersoff", (dir / "bare.tersoff").string(), "metal"});
+  EXPECT_EQ(fs_.type_names, std::vector<std::string>{"Si"});
+  EXPECT_NEAR(fs_.mass[0], 28.085, 0.01);
+  EXPECT_EQ(fs_.charge[0], 0.0);
+  const FFDef gaff = load_forcefield(kFF + "gaff-amber25.json");
+  const ForceField fm = typed(part_of(s, me), gaff);
+  const ForceField m = merge_forcefields(s.atoms.size(), {{&fs_, si, "Si"}, {&fm, me, "methane"}}, MergeOptions{});
+  ASSERT_TRUE(m.manybody.on());
+  EXPECT_EQ(m.manybody.element[size_t(m.type_index[0])], "Si");
+  EXPECT_EQ(m.manybody.element[size_t(m.type_index[2])], "");
+  EXPECT_EQ(mixed_pair(m, m.type_index[0], m.type_index[0]).eps, 0.0);   // the potential does Si-Si
+  double x = 0, d = 0;
+  ASSERT_TRUE(uff_vdw(14, x, d));
+  const PairType sc = mixed_pair(m, m.type_index[0], m.type_index[2]);
+  EXPECT_NEAR(sc.eps, std::sqrt(d * m.lj[size_t(m.type_index[2])].eps), 1e-12);
+  EXPECT_NEAR(sc.sigma, 0.5 * (x / std::pow(2.0, 1.0 / 6) + m.lj[size_t(m.type_index[2])].sigma), 1e-12);
+  EXPECT_EQ(m.lj14, fm.lj14);   // the force field's settings, not the potential group's
+  // LAMMPS: overlay, the element map, no Si-Si bond (special_bonds would hide the pair from Tersoff), the copy says its units
+  EnergyOptions e;
+  write_lammps_data_ff(s, m, e, (dir / "sys.data").string(), false);
+  write_lammps_input(s, m, e, "sys.data", (dir / "sys.in").string());
+  std::ifstream in(dir / "sys.in"), data(dir / "sys.data"), copy(dir / "bare-metal.tersoff");
+  std::stringstream a, b, c;
+  a << in.rdbuf(), b << data.rdbuf(), c << copy.rdbuf();
+  EXPECT_NE(a.str().find(" tersoff\n"), std::string::npos);
+  EXPECT_NE(a.str().find("* * tersoff bare-metal.tersoff Si NULL NULL"), std::string::npos);
+  EXPECT_NE(b.str().find("4 bonds"), std::string::npos);
+  EXPECT_EQ(c.str().rfind("# Tersoff silicon UNITS: metal\n", 0), 0u);
+  EXPECT_THROW(write_gromacs(s, m, e, (dir / "sys").string()), FieldError);
+  fs::remove_all(dir);
 }
