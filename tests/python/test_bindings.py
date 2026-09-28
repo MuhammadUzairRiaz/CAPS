@@ -267,4 +267,24 @@ with _tf.TemporaryDirectory() as tmp:
     ops = [c["op"] for c in cmds]
     check(out.returncode == 0 and cmds[0]["s"] == "rho = 1.05" and "polyline" in ops and ops.count("rect") == 2 and "frame 4" in out.stderr,
           f"render overlay: {len(cmds)} commands ({', '.join(sorted(set(ops)))}) · console {out.stderr.strip()!r}")
+# held atoms: three atoms stay put through a relaxation (energy criterion given); z-only pressure coupling keeps x and y
+hd = caps.open(os.path.join(samples, "ps_melt.data"))
+p0 = hd.positions()[:3]
+hd.hold(atoms=[0, 1, 2])
+hd.relax(ftol=5.0, max_iterations=60, etol=1e-6, pushoff=False)
+p1 = hd.positions()[:3]
+moved = max(abs(a - b) for u, v in zip(p0, p1) for a, b in zip(u, v))
+s0 = hd.summary()
+hd.md(steps=200, dt=1.0, thermostat="bussi", barostat="crescale", pressure=1000.0, frame_every=100, couple_axes="z")
+s1 = hd.summary()
+check(moved < 1e-9 and abs(s1["cell_a"] - s0["cell_a"]) < 1e-9 and abs(s1["cell_b"] - s0["cell_b"]) < 1e-9 and abs(s1["cell_c"] - s0["cell_c"]) > 1e-6,
+      f"hold and per-axis coupling: held atoms moved {moved:.1e} Å · cell {s0['cell_a']:.3f} {s0['cell_c']:.3f} -> {s1['cell_a']:.3f} {s1['cell_c']:.3f}")
+# the held atoms as a GROMACS freeze group
+with _tf.TemporaryDirectory() as tmp:
+    stem = _os.path.join(tmp, "held")
+    hd.save_gromacs(stem)
+    ndx = open(stem + ".ndx").read()
+    mdp = open(stem + ".mdp").read()
+    check("[ Frozen ]" in ndx and ndx.split("[ Frozen ]")[1].split() == ["1", "2", "3"] and "freezegrps = Frozen" in mdp,
+          "GROMACS freeze group: " + " ".join(ndx.split("[ Frozen ]")[1].split()))
 print("all python checks passed")

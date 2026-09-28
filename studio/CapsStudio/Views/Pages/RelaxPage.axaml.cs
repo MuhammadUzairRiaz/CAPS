@@ -37,4 +37,6 @@ public partial class RelaxPage : PageBase
         Vm.Status = "Copied the minimisation as Python (import caps; doc = caps.open(…))";
     }
     private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueRelax();
+    private void OnHoldSelection(object? s, RoutedEventArgs e) => Vm.HoldSelection();
+    private void OnFreeAtoms(object? s, RoutedEventArgs e) => Vm.FreeFixedAtoms();
 }

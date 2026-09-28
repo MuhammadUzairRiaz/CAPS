@@ -140,6 +140,7 @@ struct caps_doc {
   std::string analysis;   // last caps_analyze result (JSON)
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
+  std::vector<uint32_t> fixed_atoms;   // v36: atoms held in place besides the held molecule (frame indices)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
   double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
@@ -262,6 +263,37 @@ uint64_t steps_key(const caps::Pipeline& p, size_t lo) {
   part.branch = lo == 0 ? p.branch : "";
   part.steps.assign(p.steps.begin() + long(lo), p.steps.end());
   return std::hash<std::string>{}(caps::pipeline_to_json(part).dump(0));
+}
+
+// the atoms held in place: the held molecule and the fixed atoms (empty: none)
+std::vector<char> fixed_mask(const caps_doc* d, const caps::System& s) {
+  std::vector<char> m;
+  if (d->held_mol <= 0 && d->fixed_atoms.empty()) return m;
+  m.assign(s.atoms.size(), 0);
+  if (d->held_mol > 0) for (size_t i = 0; i < s.atoms.size(); ++i) m[i] = s.atoms[i].mol == d->held_mol;
+  for (uint32_t i : d->fixed_atoms) if (i < m.size()) m[i] = 1;
+  return m;
+}
+
+// GROMACS: the held atoms as an index group (STEM.ndx: System and Frozen) and freezegrps / freezedim in STEM.mdp
+bool write_gromacs_freeze(const caps_doc* d, const caps::System& s, const std::string& stem) {
+  const auto m = fixed_mask(d, s);
+  size_t n = 0;
+  for (char c : m) n += c != 0;
+  if (n == 0) return false;
+  std::ofstream ndx(stem + ".ndx");
+  auto group = [&](const char* name, bool frozen_only) {
+    ndx << "[ " << name << " ]\n";
+    int col = 0;
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      if (!frozen_only || m[i]) { ndx << (i + 1) << (++col % 15 == 0 ? "\n" : " "); }
+    ndx << "\n";
+  };
+  group("System", false);
+  group("Frozen", true);
+  std::ofstream mdp(stem + ".mdp", std::ios::app);
+  mdp << "\n; atoms held in place in CAPS (index group in " << std::filesystem::path(stem).filename().string() << ".ndx: grompp -n)\nfreezegrps = Frozen\nfreezedim = Y Y Y\n";
+  return true;
 }
 
 void run_doc_pipeline(caps_doc* d) {
@@ -1185,6 +1217,7 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->cell_repeats = d->cell_repeats;
     sd->ph = d->ph;
     sd->held_mol = d->held_mol;
+    sd->fixed_atoms = d->fixed_atoms;
     sd->restraints = d->restraints;
     sd->dihedral_restraints = d->dihedral_restraints;
     sd->analysis = d->analysis;
@@ -1357,7 +1390,8 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
     std::string out;
     std::vector<std::string> notes;
     notes = stem && *stem ? caps::write_gromacs(d->frame, ff, elec(), stem) : caps::gromacs_notes(d->frame, ff, elec());
-    if (d->held_mol > 0) notes.push_back("the held molecule is not frozen here: give it an index group and freezegrps / freezedim");
+    if (stem && *stem && write_gromacs_freeze(d, d->frame, stem)) notes.push_back("the held atoms are a freeze group: " + std::string(stem) + ".ndx and freezegrps in the .mdp (grompp -n)");
+    else if (!(stem && *stem) && !fixed_mask(d, d->frame).empty()) notes.push_back("the held atoms go into STEM.ndx as a freeze group when the files are written");
     for (const auto& n : notes) out += "; note: " + n + "\n";
     out += caps::gromacs_mdp(d->frame, ff, elec());
     const int32_t need = int32_t(out.size() + 1);
@@ -1422,6 +1456,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
+      if (!d->fixed_atoms.empty()) notes.push_back(caps::Json("LAMMPS: the " + std::to_string(d->fixed_atoms.size()) + " fixed atoms besides the held molecule are not held in this input (the GROMACS files freeze them)"));
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
       written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
       if (flag("moltemplate", false)) {   // the same as a moltemplate system (moltemplate.sh -overlay-all system.lt)
@@ -1438,7 +1473,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     std::string gromacs_error;
     if (gromacs) try {
       for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
-      if (d->held_mol > 0) notes.push_back("GROMACS: the held molecule is not frozen: give it an index group and freezegrps / freezedim");
+      if (write_gromacs_freeze(d, s, base)) notes.push_back("GROMACS: the held atoms are a freeze group (" + std::filesystem::path(base).filename().string() + ".ndx, freezegrps in the .mdp; grompp -n)");
       if (run.constraints == caps::ConstraintMode::HBonds && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT)) {
         const auto nb = s.neighbours();
         size_t waters = 0;
@@ -1860,6 +1895,8 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     r.pushoff_ramp_ps = std::max(0.0, o->pushoff_ramp_ps);
     if (o->pushoff_cap > 0) r.pushoff_cap = o->pushoff_cap;
     if (o->pushoff_temperature > 0) r.pushoff_temperature = o->pushoff_temperature;
+    if (o->etol > 0) r.etol = o->etol;
+    if (o->pressure_tol > 0) r.pressure_tol = o->pressure_tol;
     r.relax_box = o->relax_box != 0;
     r.box_anisotropic = o->box_anisotropic != 0;
     if (o->box_axes & 7)
@@ -1876,10 +1913,7 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
       };
     caps::System s = d->traj.frame(d->current);
     if (!s.unwrapped) caps::make_molecules_whole(s);
-    if (d->held_mol > 0) {
-      r.fixed.assign(s.atoms.size(), 0);
-      for (size_t i = 0; i < s.atoms.size(); ++i) r.fixed[i] = s.atoms[i].mol == d->held_mol;
-    }
+    r.fixed = fixed_mask(d, s);
     for (const auto& rs : d->restraints)
       if (rs.i < s.atoms.size() && rs.j < s.atoms.size() && rs.i != rs.j) r.restraints.push_back(rs);
     caps::Trajectory out;
@@ -1965,6 +1999,12 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     if (o->tau_t > 0) m.tau_t = o->tau_t;
     m.barostat = static_cast<caps::Barostat>(std::clamp(o->barostat, 0, 3));
     m.pressure = o->pressure;
+    if (o->box_anisotropic && m.barostat != caps::Barostat::None) {   // per axis: Berendsen scales each axis from P_kk
+      m.anisotropic = true;
+      m.barostat = caps::Barostat::Berendsen;
+      const int ax = o->box_axes & 7 ? o->box_axes & 7 : 7;
+      for (int k = 0; k < 3; ++k) m.couple_axis[k] = (ax >> k) & 1;
+    }
     if (o->tau_p > 0) m.tau_p = o->tau_p;
     m.new_velocities = o->new_velocities != 0;
     m.seed = o->seed;
@@ -2000,10 +2040,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       };
     caps::System s = d->traj.frame(d->current);
     if (d->current + 1 != d->traj.frames()) s.velocities.clear();   // velocities belong to the last frame only
-    if (d->held_mol > 0) {
-      m.fixed.assign(s.atoms.size(), 0);
-      for (size_t i = 0; i < s.atoms.size(); ++i) m.fixed[i] = s.atoms[i].mol == d->held_mol;
-    }
+    m.fixed = fixed_mask(d, s);
     if (!s.unwrapped) caps::make_molecules_whole(s);
     caps::Trajectory out;
     out.topology = s;
@@ -2145,10 +2182,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     caps::System s = d->traj.frame(d->current);
     if (d->current + 1 != d->traj.frames()) s.velocities.clear();
     if (!s.unwrapped) caps::make_molecules_whole(s);
-    if (d->held_mol > 0) {
-      e.md.fixed.assign(s.atoms.size(), 0);
-      for (size_t i = 0; i < s.atoms.size(); ++i) e.md.fixed[i] = s.atoms[i].mol == d->held_mol;
-    }
+    e.md.fixed = fixed_mask(d, s);
     caps::Trajectory out;
     out.topology = s;
     e.frame = [&](const std::vector<double>& x, const caps::Cell& c, int64_t step) {
@@ -4147,6 +4181,7 @@ extern "C" caps_doc* caps_frame_copy(caps_doc* d) {
     caps_doc* c = doc_of(d->traj.frame(d->current));
     c->prov = d->prov;
     c->held_mol = d->held_mol;
+    c->fixed_atoms = d->fixed_atoms;
     return c;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -4717,6 +4752,24 @@ extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {
 }
 
 extern "C" int64_t caps_held_molecule(const caps_doc* d) { return d ? d->held_mol : 0; }
+
+extern "C" int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32_t n) {
+  return guard([&] {
+    d->fixed_atoms.clear();
+    const size_t na = d->frame.atoms.size();
+    for (int32_t k = 0; k < n && atoms; ++k)
+      if (atoms[k] >= 0 && size_t(atoms[k]) < na) d->fixed_atoms.push_back(uint32_t(atoms[k]));
+    std::sort(d->fixed_atoms.begin(), d->fixed_atoms.end());
+    d->fixed_atoms.erase(std::unique(d->fixed_atoms.begin(), d->fixed_atoms.end()), d->fixed_atoms.end());
+    return int32_t(d->fixed_atoms.size());
+  });
+}
+
+extern "C" int32_t caps_fixed_atoms(const caps_doc* d, int32_t* atoms, int32_t cap) {
+  if (!d) return 0;
+  for (int32_t k = 0; k < cap && size_t(k) < d->fixed_atoms.size(); ++k) atoms[k] = int32_t(d->fixed_atoms[size_t(k)]);
+  return int32_t(d->fixed_atoms.size());
+}
 
 extern "C" void caps_set_electrostatics(int32_t mode, double ewald_rtol, double pme_spacing, int32_t pme_order) {
   g_elec.mode = mode == 1 ? 1 : 0;
@@ -7874,6 +7927,7 @@ extern "C" caps_doc* caps_doc_copy(caps_doc* src) {
     // the same atoms: the force-field assignment (types set by hand, entered parameters, charges) holds for the copy
     if (src->field) d->field = std::make_unique<FieldState>(*src->field);
     d->held_mol = src->held_mol;
+    d->fixed_atoms = src->fixed_atoms;
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
