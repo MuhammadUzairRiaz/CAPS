@@ -129,7 +129,8 @@
                 <StackPanel Spacing="6"><TextBlock Text="Chains per cell" Classes="label" /><NumericUpDown Value="{Binding SweepChains}" Minimum="1" Maximum="500" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Grow at · g/cm³" Classes="label" /><NumericUpDown Value="{Binding SweepDensity}" Minimum="0.05" Maximum="1.5" Increment="0.05" FormatString="0.00" ShowButtonSpinner="False" /></StackPanel>
               </Grid>
-              <StackPanel Spacing="6"><TextBlock Text="Combine as" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Full grid" /></ComboBox></StackPanel>
+              <StackPanel Spacing="6"><TextBlock Text="Combine as" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.SweepCombines}" SelectedIndex="{Binding SweepCombine}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="Full grid: every combination. One factor at a time: vary tacticity at the first length and length at the first tacticity. Paired: the i-th tacticity with the i-th length" /></StackPanel>
             </StackPanel>
           </Border>
           <Border Classes="pcard">
