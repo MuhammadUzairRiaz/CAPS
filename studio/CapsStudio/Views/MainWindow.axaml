@@ -623,6 +623,9 @@
                   <TextBlock Text="DATA SOURCE" FontSize="11" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" />
                   <TextBlock Text="{Binding PipeSourceTitle}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
                   <TextBlock Text="{Binding PipeSourceDetail}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Text="{Binding PipeCacheText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}"
+                             IsVisible="{Binding PipeCacheText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             ToolTip.Tip="Results are kept per frame while the steps and the frame are unchanged: going back to a frame shows it at once" />
                 </StackPanel>
               </Button>
             </Border>
