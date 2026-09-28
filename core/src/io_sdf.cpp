@@ -28,7 +28,7 @@ double num(const std::string& s, const std::string& what) {
 std::string field(const std::string& l, size_t from, size_t len) { return l.size() > from ? trim(l.substr(from, len)) : std::string(); }
 
 // MDL bond type → CAPS order (1, 2, 3 single to triple; 4 aromatic)
-int mdl_order(int t) { return t >= 1 && t <= 4 ? t : 0; }
+int mdl_order(int t) { return t >= 1 && t <= 4 ? t : t == 9 ? kBondDative : 0; }   // V3000 9: coordination
 
 }  // namespace
 
@@ -143,7 +143,8 @@ void write_sdf(const System& s, const std::string& path) {
   // formal charges (MDL keeps formal charges, not partial ones): from the structure's perceived chemistry
   std::vector<int> formal(na, 0);
   try { formal = perceive(s).charge; } catch (...) {}
-  auto order = [](int o) { return o >= 1 && o <= 4 ? o : 1; };
+  auto order = [](int o) { return o >= 1 && o <= 4 ? o : 1; };   // V2000 has no coordination type: a single bond
+  auto order3 = [](int o) { return o >= 1 && o <= 4 ? o : o == kBondDative ? 9 : 1; };   // V3000: 9 coordination
   const bool v3000 = na > 999 || nb > 999;
   out << (s.title.empty() ? std::string("CAPS") : s.title.substr(0, 80)) << "\n  CAPS      3D\n\n";
   char b[160];
@@ -182,7 +183,7 @@ void write_sdf(const System& s, const std::string& path) {
     }
     out << "M  V30 END ATOM\nM  V30 BEGIN BOND\n";
     for (size_t k = 0; k < nb; ++k) {
-      std::snprintf(b, sizeof b, "M  V30 %zu %d %u %u\n", k + 1, order(s.bonds[k].order), s.bonds[k].i + 1, s.bonds[k].j + 1);
+      std::snprintf(b, sizeof b, "M  V30 %zu %d %u %u\n", k + 1, order3(s.bonds[k].order), s.bonds[k].i + 1, s.bonds[k].j + 1);
       out << b;
     }
     out << "M  V30 END BOND\nM  V30 END CTAB\n";

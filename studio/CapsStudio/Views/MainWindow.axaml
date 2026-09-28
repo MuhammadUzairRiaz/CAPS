@@ -796,6 +796,13 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+            <Border Classes="hud" Padding="10,8" Margin="14,12" HorizontalAlignment="Center" VerticalAlignment="Top" IsVisible="{Binding IsBondTool}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="BOND" Classes="h3" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.BondKinds}" SelectedIndex="{Binding BondKind}" MinWidth="170"
+                          ToolTip.Tip="The bond the next two clicks draw; a coordinate (dative) bond joins a ligand's donor to a metal without counting in either atom's valence" />
+              </StackPanel>
+            </Border>
             <Border Classes="hud" Width="230" Padding="12,10" Margin="14,12" HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding HasMeasure}">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -1790,13 +1797,17 @@
                     <ItemsControl ItemsSource="{Binding PickedRows}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:Row">
-                          <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,2">
                             <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12.5" />
-                            <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12.5" />
+                            <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12.5" TextAlignment="Right" TextWrapping="Wrap" />
                           </Grid>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" ToolTip.Tip="Place the picked atom's bonded neighbours at the ideal directions of a geometry: bond lengths kept, each ligand with its substituents (a chelate's donor alone); undo with ⌘Z">
+                      <ComboBox ItemsSource="{x:Static vm:MainViewModel.CoordinationNames}" SelectedIndex="{Binding CoordinationIndex}" HorizontalAlignment="Stretch" />
+                      <Button Grid.Column="1" Classes="small" Content="Make exact" Click="OnApplyCoordination" />
+                    </Grid>
                   </StackPanel>
                 </Border>
                 <Border Classes="section" IsVisible="{Binding HasAtom}">

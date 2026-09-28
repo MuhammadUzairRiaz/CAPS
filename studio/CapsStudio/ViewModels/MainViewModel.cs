@@ -2550,6 +2550,7 @@ public sealed partial class MainViewModel : ObservableObject
         PickedRows.Add(new("Type", a.Type.ToString(inv)));
         PickedRows.Add(new("Charge", string.Format(inv, "{0:+0.0000;-0.0000;0} e", a.Charge)));
         PickedRows.Add(new("Position", string.Format(inv, "{0:F2}  {1:F2}  {2:F2} Å", a.X, a.Y, a.Z)));
+        if (CoordinationOf(index) is { Length: > 0 } coord) PickedRows.Add(new("Coordination", coord));
         foreach (var (i, d) in _doc.Neighbours(index, 4))
         {
             var b = _doc.Atom(i);
@@ -2566,6 +2567,7 @@ public sealed partial class MainViewModel : ObservableObject
                 3 => string.Format(inv, "Angle {0}: {1:F2}°", ids, v),
                 _ => string.Format(inv, "Dihedral {0}: {1:F2}°", ids, v),
             };
+            if (_selection.Count == 4 && OutOfPlane(_selection.ToArray()) is { Length: > 0 } oop) MeasureText += "\n" + oop;
             MeasureTarget = _selection.Count == 2 ? v.ToString("F3", inv) : v.ToString("F2", inv);
             Raise(nameof(CanSetMeasure));
             Status = MeasureText;

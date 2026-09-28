@@ -55,6 +55,13 @@ void set_torsion(System& s, uint32_t i, uint32_t j, uint32_t k, uint32_t l, doub
 // Rigid rotation of the atoms by `degrees` about `axis` through their centre; reflection of the atoms through the
 // plane with normal `normal` through their centre (a mirror image: every stereocentre among them inverts).
 void rotate_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& axis, double degrees);
+// The bonded neighbours of `centre` placed at the ideal directions of a coordination geometry — linear, trigonal
+// (planar), tetrahedral, square_planar, trigonal_bipyramidal, square_pyramidal, octahedral — each keeping its bond length
+// and carrying its own substituents (a ligand in a chelate ring moves alone). The ideal set is turned to move the
+// ligands least; fewer ligands than sites fill the sites nearest them. Returns the largest angle a ligand moved (degrees).
+double set_coordination(System& s, uint32_t centre, const std::string& geometry);
+// The ideal unit directions of a coordination geometry (empty for an unknown name).
+std::vector<Vec3> coordination_directions(const std::string& geometry);
 void mirror_atoms(System& s, const std::vector<uint32_t>& atoms, const Vec3& normal);
 // The centre made R or S (CIP, from the 3D geometry) by inverting it when it is the other; false when it is not a
 // stereocentre.

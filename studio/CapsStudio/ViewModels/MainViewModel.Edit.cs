@@ -170,7 +170,7 @@ public sealed partial class MainViewModel
             case 2:
                 if (atom < 0) return;
                 if (_bondFirst < 0) { _bondFirst = atom; Pick(atom); Raise(nameof(EditHint)); return; }
-                if (atom != _bondFirst) RunEdit(new { op = "bond", i = _bondFirst, j = atom, order = 1 });
+                if (atom != _bondFirst) RunEdit(new { op = "bond", i = _bondFirst, j = atom, order = BondOrderCode });
                 _bondFirst = -1;
                 Raise(nameof(EditHint));
                 break;
