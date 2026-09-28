@@ -606,6 +606,18 @@ TEST(Pipeline, TopologyShapeAndFrames) {
   for (size_t k = 0; k < 3; ++k) mean = mean + t.positions[k][0];
   mean = mean * (1.0 / 3);
   EXPECT_NEAR(norm(st.system.atoms[0].pos - mean), 0.0, 1e-9);
+  EXPECT_EQ(st.attribute("Smoothed"), 1.0);
+  // trailing: frames 0–1 only; per-atom properties made below are averaged too (the stored x over the window)
+  st = run(R"([{"type":"smooth","window":5,"kind":"trailing","properties":true,"positions":false,"mark":false},
+               {"type":"compute_property","name":"X","expression":"Position.X"}])", 1);
+  const double x01 = 0.5 * (t.positions[0][0][0] + t.positions[1][0][0]);
+  EXPECT_NEAR(st.props.at("X")[0], x01, 1e-9);
+  EXPECT_NEAR(st.system.atoms[0].pos[0], t.positions[1][0][0], 1e-9);   // positions left alone
+  EXPECT_EQ(st.attribute("Smoothed", 0), 0.0);
+  EXPECT_NE(st.steps[0].summary.find("1 per-atom property averaged"), std::string::npos) << st.steps[0].summary;
+  // Gaussian weights favour the frame itself: between it and the plain mean
+  st = run(R"([{"type":"smooth","window":5,"kind":"gaussian"}])", 1);
+  EXPECT_LT(norm(st.system.atoms[0].pos - t.positions[1][0]), norm(mean - t.positions[1][0]) + 1e-12);
   // clusters of whole molecules joined through heavy atoms within 6 Å: the melt percolates
   st = run(R"([{"type":"cluster","mode":"cutoff","cutoff":6,"heavy_only":true,"unit":"molecules"}])", 0);
   EXPECT_EQ(st.attribute("ClusterAnalysis.cluster_count"), 1.0);
