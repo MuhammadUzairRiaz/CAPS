@@ -441,7 +441,13 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           } else if (P.has("lengths") && P["lengths"].is_object()) {
             const Json& L = P["lengths"];
             try {
-              spec.chain_dp = draw_chain_lengths(text(L, "distribution", "schulz-zimm"), num(L, "nn", spec.dp), num(L, "pdi", 1.1), chains, uint64_t(num(L, "seed", 1)));
+              if (L.has("histogram") && L["histogram"].is_array()) {   // [[length, weight], …]
+                std::vector<std::pair<int, double>> h;
+                for (const auto& b : L["histogram"].items()) if (b.is_array() && b.size() == 2) h.push_back({int(b[0].number()), b[1].number()});
+                spec.chain_dp = draw_chain_lengths(h, chains, uint64_t(num(L, "seed", 1)));
+              } else {
+                spec.chain_dp = draw_chain_lengths(text(L, "distribution", "schulz-zimm"), num(L, "nn", spec.dp), num(L, "pdi", 1.1), chains, uint64_t(num(L, "seed", 1)));
+              }
             } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.lengths: ") + e.what()); }
           }
           // architecture: linear (default), star {arms}, comb {arm_dp, spacing}, branched {arm_dp, branch_probability},

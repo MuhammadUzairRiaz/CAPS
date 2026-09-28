@@ -1369,6 +1369,14 @@ internal static class SelfTest
             vm.UsePdLengths();
             var pdUsed = vm.GrowPolydisperse && vm.GrowDispersityText.StartsWith("Đ 1.", StringComparison.Ordinal);
             vm.ClearPdLengths();
+            // log-normal and a measured histogram
+            vm.PdDist = 4;
+            var logNormal = vm.PdK.StartsWith("ln N normal") && vm.PdLengths.Length == vm.GrowChains;
+            vm.PdDist = 5;
+            vm.PdHistogram = "10:1, 30:1";
+            var hist = vm.PdLengths.All(x => x is "10" or "30") && vm.PdK.Contains("Nₙ 20");
+            Check(logNormal && hist, $"polydispersity log-normal {logNormal} · histogram {hist}: {string.Join(",", vm.PdLengths)} · {vm.PdK}");
+            vm.PdDist = 0;
             // per-chain lengths reach the core: 3 styrene chains of 5, 7 and 9 units → 21 × 16 + 3 × 2 atoms
             var (pdDoc, pdReport) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"styrene\",\"smiles\":\"[*]CC([*])C1=CC=CC=C1\"}],\"dp\":5,\"chain_dp\":[5,7,9]}",
                 new CapsGrowOpts { Chains = 3, Dp = 0, Seed = 3, Density = 0.1, ContactScale = 0.8, Curve = 1 }, null, "pd");

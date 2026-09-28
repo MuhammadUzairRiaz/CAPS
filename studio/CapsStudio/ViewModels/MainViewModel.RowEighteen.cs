@@ -46,16 +46,32 @@ public partial class MainViewModel
 
     // ---------------------------------------------------------------- Grow › Polydispersity (design/boards/Polydispersity)
     public bool IsPolydispersity => _module == 59;
-    public static readonly string[] PdDistIds = ["schulz-zimm", "flory", "poisson", "monodisperse"];
-    public string[] PdDistNames { get; } = ["Schulz–Zimm", "Most probable (Flory)", "Poisson", "Monodisperse"];
+    public static readonly string[] PdDistIds = ["schulz-zimm", "flory", "poisson", "monodisperse", "log-normal", "histogram"];
+    public string[] PdDistNames { get; } = ["Schulz–Zimm", "Most probable (Flory)", "Poisson", "Monodisperse", "Log-normal", "Measured histogram"];
+    // a measured distribution: "length:weight" pairs (number weights), e.g. binned from a GPC trace
+    private string _pdHistogram = "20:1, 40:3, 60:2, 80:1";
+    public string PdHistogram { get => _pdHistogram; set { if (Set(ref _pdHistogram, value ?? "")) PdRecompute(); } }
+    public bool PdIsHistogram => _pdDist == 5;
+    public bool PdShowNn => _pdDist != 5;
+    private System.Text.Json.Nodes.JsonArray PdHistogramJson()
+    {
+        var a = new System.Text.Json.Nodes.JsonArray();
+        foreach (var part in _pdHistogram.Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split(':');
+            if (kv.Length == 2 && int.TryParse(kv[0].Trim(), NumberStyles.Integer, Inv, out var n) && double.TryParse(kv[1].Trim(), NumberStyles.Float, Inv, out var w))
+                a.Add(new System.Text.Json.Nodes.JsonArray(n, w));
+        }
+        return a;
+    }
     public string[] PdMatchNames { get; } = ["draw, then report the sample", "best of 100 draws (closest Đ)"];
     private int _pdDist, _pdMatch, _pdSeed = 2026;
     private decimal _pdNn = 40, _pdPdi = 1.10m;
-    public int PdDist { get => _pdDist; set { if (Set(ref _pdDist, Math.Clamp(value, 0, 3))) { Raise(nameof(PdShowPdi)); PdRecompute(); } } }
+    public int PdDist { get => _pdDist; set { if (Set(ref _pdDist, Math.Clamp(value, 0, 5))) { Raise(nameof(PdShowPdi)); Raise(nameof(PdIsHistogram)); Raise(nameof(PdShowNn)); PdRecompute(); } } }
     public int PdMatch { get => _pdMatch; set { if (Set(ref _pdMatch, Math.Clamp(value, 0, 1))) PdRecompute(); } }
     public decimal PdNn { get => _pdNn; set { if (Set(ref _pdNn, Math.Clamp(value, 2, 100000))) PdRecompute(); } }
     public decimal PdPdi { get => _pdPdi; set { if (Set(ref _pdPdi, Math.Clamp(value, 1.001m, 10))) PdRecompute(); } }
-    public bool PdShowPdi => _pdDist == 0;
+    public bool PdShowPdi => _pdDist is 0 or 4;
     public ObservableCollection<ModelRow> PdRows { get; } = new();
     public string[] PdLengths { get; private set; } = [];
     private int[] _pdLengths = [];
@@ -94,6 +110,7 @@ public partial class MainViewModel
                 ["distribution"] = PdDistIds[_pdDist], ["nn"] = (double)_pdNn, ["pdi"] = (double)_pdPdi, ["count"] = _growChains,
                 ["seed"] = _pdSeed, ["m0"] = m0, ["best_of"] = _pdMatch == 1 ? 100 : 1,
             };
+            if (_pdDist == 5) j["histogram"] = PdHistogramJson();
             var r = JsonNode.Parse(CapsDocument.ChainLengths(j.ToJsonString()))!;
             if ((bool?)r["ok"] != true) { PdNote = (string?)r["error"] ?? "cannot draw"; return; }
             _pdLengths = (r["lengths"] as JsonArray ?? []).Select(x => (int)(double)x!).ToArray();
@@ -117,6 +134,8 @@ public partial class MainViewModel
                 0 => $"k = 1/(Đ − 1) = {k.ToString(k >= 100 ? "0" : "0.##", Inv)}",
                 1 => $"Đ → 2 − 1/Nₙ = {D(t, "pdi"):0.000}",
                 2 => $"Đ ≈ 1 + 1/Nₙ = {D(t, "pdi"):0.000}",
+                4 => $"ln N normal: σ² = ln Đ = {Math.Log((double)_pdPdi):0.###}",
+                5 => $"the histogram's Nₙ {D(t, "nn"):0.#} and Đ {D(t, "pdi"):0.000}",
                 _ => "every chain Nₙ units",
             };
             PdSeedText = $"seed {_pdSeed}";
