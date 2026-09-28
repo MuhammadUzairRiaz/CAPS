@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 35  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs) */
+#define CAPS_ABI_VERSION 36  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms) */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -103,6 +103,8 @@ typedef struct {
   double pushoff_ramp_ps;          /* ABI 30: > 0 push-off by NVT MD first, the LJ force cap raised over this time (λ ramp) */
   double pushoff_cap;              /* ABI 30: final force cap, kcal/mol/Å (0 = 500) */
   double pushoff_temperature;      /* ABI 30: K (0 = 300) */
+  double etol;                     /* ABI 36: stop when the relative energy change per step is below this (0 = 1e-8) */
+  double pressure_tol;             /* ABI 36: box relaxation stops when |P − pressure| is below this, atm (0 = 100) */
 } caps_relax_opts;
 
 /* Relax progress: (stage, stages, iteration, energy kcal/mol, largest force, density, user) -> non-zero cancels. */
@@ -151,6 +153,8 @@ typedef struct {
   int64_t step_offset;             /* added to reported steps and times (a run continued from a checkpoint) */
   int64_t checkpoint_every;        /* steps between checkpoints (0: automatic, about 50 per run; < 0: none) */
   int32_t constraint_algorithm;    /* ABI 32: 0 SHAKE (positions) / RATTLE, 1 LINCS (positions) / RATTLE */
+  int32_t box_anisotropic;         /* ABI 36: 1 each axis in box_axes scaled on its own from P_kk (Berendsen barostat) */
+  int32_t box_axes;                /* ABI 36: bits 1 x, 2 y, 4 z (0 = all) */
 } caps_md_opts;
 
 typedef struct {
@@ -799,6 +803,11 @@ int32_t caps_ris_cn(double temperature, int32_t nmax, double* out);
    bead's atoms carried along and turned with it, then relaxed when relax is set. A new document, or NULL. */
 caps_doc* caps_backmap(caps_doc* d, const char* beads_path, int32_t per_bead, int32_t relax, char* report, int32_t cap);
 int64_t caps_held_molecule(const caps_doc* d);
+/* Atoms held in place besides the held molecule (v36; indices from 0 in the current frame): no force or motion in Relax,
+   Dynamics and Equilibrate, a freeze group in the GROMACS files. n = 0 clears them. Returns the number set, -1 on error.
+   caps_fixed_atoms copies up to cap indices and returns how many there are. */
+int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32_t n);
+int32_t caps_fixed_atoms(const caps_doc* d, int32_t* atoms, int32_t cap);
 
 /* Crystals from space groups (v20, design/boards/CrystalBuilder). A spec is JSON {space_group (key "227:2", number or
    Hermann–Mauguin symbol), a, b, c (Å), alpha, beta, gamma (°), sites: [{label, element (symbol), x, y, z (fractional),

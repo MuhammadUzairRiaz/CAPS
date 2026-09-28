@@ -84,6 +84,13 @@
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdPressureD}" Increment="1" FormatString="0.##" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding MdTauPD}" Minimum="10" Increment="100" FormatString="0" />
                 </Grid>
+                <Grid ColumnDefinitions="2*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Pressure coupling" Classes="label" /><TextBlock Grid.Column="1" Text="Checkpoint every (ps)" Classes="label" />
+                  <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.MdCouplings}" SelectedIndex="{Binding MdCoupling}" HorizontalAlignment="Stretch" IsEnabled="{Binding MdHasBarostat}"
+                            ToolTip.Tip="Isotropic: one scale for the cell. Per axis: each chosen axis follows its own diagonal pressure (Berendsen), the others keep their length — a film relaxing its thickness, a stretched sample's lateral axes" ToolTip.ShowOnDisabled="True" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdCheckpointPsD}" Minimum="0" Increment="10" FormatString="0.#"
+                                 ToolTip.Tip="How often the run keeps a checkpoint to continue from (0: about 50 per run)" />
+                </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
                   <TextBlock Text="{Binding MdCitation}" Classes="dim" TextWrapping="Wrap" MaxWidth="520" />
