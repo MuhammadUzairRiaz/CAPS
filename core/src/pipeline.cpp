@@ -2023,52 +2023,110 @@ void step_displacements(PipelineState& st, const Json& p, StepStatus& out) {
   if (!st.system.unwrapped && ref != "previous") { out.level = "warning"; out.summary += " · wrapped input: long runs need unwrapped coordinates"; }
 }
 
+// Smooth trajectory (design/boards/SmoothTrajectory): a window of frames averaged — centred on the frame, trailing it
+// (the frames up to it, as a live view would) or Gaussian-weighted (σ = window / 4) — positions (each atom followed by
+// minimum image to this frame's image, unless unwrap is off) and, on request, every per-atom property the steps below
+// make, run again on each frame of the window and matched by atom id. Smoothed frames are marked so bond and angle
+// analysis can tell.
 void step_smooth(PipelineState& st, const Json& p, StepStatus& out) {
   if (!st.traj || st.traj->frames() < 2) { out.level = "warning"; out.summary = "one frame: nothing to average"; return; }
   const int w = std::clamp(int(p.num("window", 5)), 1, 1001);
-  const int f0 = std::max(0, st.frame - w / 2), f1 = std::min(int(st.traj->frames()) - 1, st.frame + w / 2);
+  const std::string kind = p.text("kind", "centred");
+  if (kind != "centred" && kind != "trailing" && kind != "gaussian") throw std::invalid_argument("kind: centred, trailing or gaussian");
+  const bool unwrap = flag(p, "unwrap", true), do_pos = flag(p, "positions", true), do_props = flag(p, "properties", false), mark = flag(p, "mark", true);
+  const int last = int(st.traj->frames()) - 1;
+  const int f0 = kind == "trailing" ? std::max(0, st.frame - w + 1) : std::max(0, st.frame - w / 2);
+  const int f1 = kind == "trailing" ? st.frame : std::min(last, st.frame + w / 2);
+  const double sigma = std::max(0.5, w / 4.0);
+  std::vector<double> wt;
+  for (int f = f0; f <= f1; ++f) wt.push_back(kind == "gaussian" ? std::exp(-0.5 * (f - st.frame) * (f - st.frame) / (sigma * sigma)) : 1.0);
+  const double wsum = std::accumulate(wt.begin(), wt.end(), 0.0);
   const size_t n = st.system.atoms.size();
-  std::vector<Vec3> sum(n, Vec3{0, 0, 0});
-  const auto here = frame_positions(st, size_t(st.frame));
-  for (int f = f0; f <= f1; ++f) {
-    const auto r = frame_positions(st, size_t(f));
+  std::string what;
+  if (do_pos) {
+    std::vector<Vec3> sum(n, Vec3{0, 0, 0});
+    auto raw = [&](size_t k) {   // this frame's stored coordinates, as they are
+      const System f = st.traj->frame(k);
+      std::vector<Vec3> r(n);
+      for (size_t i = 0; i < n; ++i) {
+        const int o = st.origin[i];
+        r[i] = o >= 0 && size_t(o) < f.atoms.size() ? f.atoms[size_t(o)].pos : st.system.atoms[i].pos;
+      }
+      return r;
+    };
+    const auto here = unwrap ? frame_positions(st, size_t(st.frame)) : raw(size_t(st.frame));
+    for (int f = f0; f <= f1; ++f) {
+      const auto r = unwrap ? frame_positions(st, size_t(f)) : raw(size_t(f));
+      const double k = wt[size_t(f - f0)];
+      for (size_t i = 0; i < n; ++i) {
+        Vec3 d = r[i] - here[i];
+        if (unwrap && st.system.cell.valid() && !st.system.unwrapped) d = st.system.cell.minimum_image(d);
+        sum[i] = sum[i] + d * k;
+      }
+    }
+    // what averaging does to geometry: C–C bond lengths stored and averaged, and how far the atoms moved
+    auto cc = [&](const std::function<Vec3(size_t)>& pos) {
+      double sm = 0, s2 = 0;
+      int c = 0;
+      for (const auto& b : st.system.bonds) {
+        if (st.system.atoms[b.i].element != 6 || st.system.atoms[b.j].element != 6) continue;
+        Vec3 d = pos(b.j) - pos(b.i);
+        if (st.system.cell.valid()) d = st.system.cell.minimum_image(d);
+        const double l = norm(d);
+        sm += l, s2 += l * l, ++c;
+      }
+      const double m = c ? sm / c : 0;
+      return std::pair{m, c ? std::sqrt(std::max(0.0, s2 / c - m * m)) : 0.0};
+    };
+    const auto before = cc([&](size_t i) { return here[i]; });
+    double rms = 0;
     for (size_t i = 0; i < n; ++i) {
-      Vec3 d = r[i] - here[i];
-      if (st.system.cell.valid() && !st.system.unwrapped) d = st.system.cell.minimum_image(d);
-      sum[i] = sum[i] + d;
+      const Vec3 shift = sum[i] * (1.0 / wsum);
+      rms += dot(shift, shift);
+      st.system.atoms[i].pos = here[i] + shift;
     }
+    rms = n ? std::sqrt(rms / n) : 0;
+    const auto after = cc([&](size_t i) { return st.system.atoms[i].pos; });
+    st.set_attribute("Smooth.cc_stored_mean", before.first), st.set_attribute("Smooth.cc_stored_sd", before.second);
+    st.set_attribute("Smooth.cc_averaged_mean", after.first), st.set_attribute("Smooth.cc_averaged_sd", after.second);
+    st.set_attribute("Smooth.rms_shift", rms);
+    what = " · C–C " + fmt("%.3f", before.first) + " ± " + fmt("%.3f", before.second) + " → " + fmt("%.3f", after.first) + " ± " + fmt("%.3f Å", after.second) +
+           " · RMS shift " + fmt("%.3f Å", rms);
   }
-  const double k = 1.0 / (f1 - f0 + 1);
-  // what averaging does to geometry: C–C bond lengths stored and averaged, and how far the atoms moved
-  auto cc = [&](const std::function<Vec3(size_t)>& pos) {
-    double sm = 0, s2 = 0;
-    int c = 0;
-    for (const auto& b : st.system.bonds) {
-      if (st.system.atoms[b.i].element != 6 || st.system.atoms[b.j].element != 6) continue;
-      Vec3 d = pos(b.j) - pos(b.i);
-      if (st.system.cell.valid()) d = st.system.cell.minimum_image(d);
-      const double l = norm(d);
-      sm += l, s2 += l * l, ++c;
+  if (do_props) {
+    Pipeline below;   // the steps below this one, run again on every frame of the window
+    if (st.pipeline)
+      for (size_t k = st.step_index + 1; k < st.pipeline->steps.size(); ++k) below.steps.push_back(st.pipeline->steps[k]);
+    std::unordered_map<int64_t, size_t> at;
+    for (size_t i = 0; i < n; ++i) at[st.system.atoms[i].id] = i;
+    std::map<std::string, std::pair<std::vector<double>, std::vector<double>>> acc;   // name → (Σ w·v, Σ w)
+    for (const auto& [name, v] : st.props) acc[name] = {std::vector<double>(n, 0.0), std::vector<double>(n, 0.0)};
+    for (int f = f0; f <= f1; ++f) {
+      const PipelineState fs = f == st.frame ? PipelineState{} : run_pipeline(st.traj->frame(size_t(f)), below, f, 0, st.traj);
+      const PipelineState& src = f == st.frame ? st : fs;
+      const double k = wt[size_t(f - f0)];
+      for (auto& [name, sums] : acc) {
+        auto it = src.props.find(name);
+        if (it == src.props.end()) continue;
+        for (size_t j = 0; j < it->second.size() && j < src.system.atoms.size(); ++j) {
+          auto a = at.find(src.system.atoms[j].id);
+          const double v = it->second[j];
+          if (a == at.end() || !std::isfinite(v)) continue;
+          sums.first[a->second] += k * v, sums.second[a->second] += k;
+        }
+      }
     }
-    const double m = c ? sm / c : 0;
-    return std::pair{m, c ? std::sqrt(std::max(0.0, s2 / c - m * m)) : 0.0};
-  };
-  const auto before = cc([&](size_t i) { return here[i]; });
-  double rms = 0;
-  for (size_t i = 0; i < n; ++i) {
-    const Vec3 shift = sum[i] * k;
-    rms += dot(shift, shift);
-    st.system.atoms[i].pos = here[i] + shift;
+    for (auto& [name, sums] : acc) {
+      auto& dst = st.props[name];
+      for (size_t i = 0; i < n && i < dst.size(); ++i) if (sums.second[i] > 0) dst[i] = sums.first[i] / sums.second[i];
+    }
+    what += " · " + std::to_string(acc.size()) + " per-atom propert" + (acc.size() == 1 ? "y" : "ies") + " averaged";
+    if (acc.empty()) out.level = "warning", what += " (no step below makes one)";
   }
-  rms = n ? std::sqrt(rms / n) : 0;
-  const auto after = cc([&](size_t i) { return st.system.atoms[i].pos; });
   st.set_attribute("Smooth.window_frames", double(f1 - f0 + 1));
-  st.set_attribute("Smooth.cc_stored_mean", before.first), st.set_attribute("Smooth.cc_stored_sd", before.second);
-  st.set_attribute("Smooth.cc_averaged_mean", after.first), st.set_attribute("Smooth.cc_averaged_sd", after.second);
-  st.set_attribute("Smooth.rms_shift", rms);
-  st.set_attribute("Smoothed", 1);   // smoothed frames are labelled: bond and angle analysis should not read them unasked
-  out.summary = "frames " + std::to_string(f0) + "–" + std::to_string(f1) + " averaged · C–C " + fmt("%.3f", before.first) + " ± " + fmt("%.3f", before.second) + " → " +
-                fmt("%.3f", after.first) + " ± " + fmt("%.3f Å", after.second) + " · RMS shift " + fmt("%.3f Å", rms);
+  if (mark) st.set_attribute("Smoothed", 1);   // smoothed frames are labelled: bond and angle analysis should not read them unasked
+  out.summary = "frames " + std::to_string(f0) + "–" + std::to_string(f1) + " " + (kind == "gaussian" ? "Gaussian-weighted" : kind == "trailing" ? "averaged (trailing)" : "averaged") +
+                (unwrap ? "" : " without unwrapping") + what;
 }
 
 void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {

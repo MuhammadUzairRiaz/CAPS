@@ -460,7 +460,7 @@ public sealed partial class MainViewModel
         "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density", ["axis2"] = -1, ["bins2"] = 50 },
         "topology" => new JsonObject { ["bins"] = 60, ["colour_states"] = true },
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
-        "smooth" => new JsonObject { ["window"] = 5 },
+        "smooth" => new JsonObject { ["window"] = 5, ["kind"] = "centred", ["unwrap"] = true, ["positions"] = true, ["properties"] = false, ["mark"] = true },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
         "python" => new JsonObject { ["file"] = "", ["code"] = PythonStepTemplate },
         "msd" => new JsonObject { ["heavy_only"] = true, ["every"] = 1, ["timestep_fs"] = 1.0 },
@@ -534,7 +534,13 @@ public sealed partial class MainViewModel
                 Bool("average_frames", "Average g(r) over the frames"); Text("every", "Every n-th frame", "number"); Bool("only_selected", "Only selected"); break;
             case "topology": Text("bins", "Bins", "number"); Bool("colour_states", "Colour the backbone by dihedral state (t · g+ · g−)"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); Bool("subtract_drift", "Subtract system drift"); break;
-            case "smooth": Text("window", "Window (frames, centred)", "number"); break;
+            case "smooth":
+                Text("window", "Window (frames)", "number"); Choice("kind", "Kind", ["centred", "trailing", "gaussian"]);
+                Bool("unwrap", "Unwrap before averaging (each atom followed to this frame's image)", true);
+                Bool("positions", "Apply to positions", true); Bool("properties", "Apply to per-atom properties (the steps below, run on each frame of the window)");
+                Bool("mark", "Mark frames as smoothed", true);
+                Note("Averaging removes vibration, but chains that turn within the window average to slightly shrunken shapes; smoothed frames are marked so bond and angle analysis can tell.");
+                break;
             case "python":
                 Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "blank: the step typed below", Text = S("file") });
                 var code = S("code", PythonStepTemplate);
