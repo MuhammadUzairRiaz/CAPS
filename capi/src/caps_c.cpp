@@ -3556,6 +3556,8 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.keep_configuration = j.num("keep_configuration", 0) != 0 || (j.has("keep_configuration") && j["keep_configuration"].kind() == caps::Json::Bool && j["keep_configuration"].boolean());
   c.head_cap = j.text("head_cap", "");   // end groups: a preset or a SMILES with *
   c.tail_cap = j.text("tail_cap", "");
+  c.linkage = caps::linkage_from_string(j.text("linkage", "head-to-tail"));
+  c.inversion = j.num("inversion", c.inversion);
   return c;
 }
 }  // namespace
@@ -3588,12 +3590,15 @@ extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char
     const caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
     if (c.units.empty()) throw std::runtime_error("no repeat unit");
     const auto seq = caps::chain_sequence(c, seed);
-    const caps::MolGraph g = caps::chain_graph(c, seq);
+    const auto inv = caps::chain_inversions(c, seq.size(), seed);
+    const caps::MolGraph g = caps::chain_graph(c, seq, inv);
     const caps::MolInfo m = caps::molecule_info(g);
-    caps::Json s = caps::Json::array();
+    caps::Json s = caps::Json::array(), r = caps::Json::array();
     for (int k : seq) s.push_back(double(k));
+    for (char x : inv) r.push_back(double(x));
     j["ok"] = true;
     j["sequence"] = s;
+    j["inverted"] = r;   // units written backwards (head-to-head and random linkage)
     j["formula"] = m.formula;
     j["mass"] = m.mass;
     j["atoms"] = double(m.atoms);

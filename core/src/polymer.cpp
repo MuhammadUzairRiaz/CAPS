@@ -91,7 +91,8 @@ struct Parsed {
   int d1 = -1, d2 = -1, head = -1, tail = -1;
 };
 
-Parsed parse_unit(const std::string& smiles) {
+// reversed: the unit written backwards (tail first), for head-to-head and tail-to-tail links
+Parsed parse_unit(const std::string& smiles, bool reversed = false) {
   Parsed p;
   p.g = parse_smiles(smiles);
   std::vector<int> dummies;
@@ -119,6 +120,7 @@ Parsed parse_unit(const std::string& smiles) {
   p.head = n1[0];
   p.tail = n2[0];
   if (p.g.parts != 1) throw std::runtime_error("a repeat unit must be one connected piece");
+  if (reversed) std::swap(p.d1, p.d2), std::swap(p.head, p.tail);
   return p;
 }
 
@@ -137,8 +139,9 @@ MolGraph capped(const Parsed& p) {
   return g;
 }
 
-Template make_template(const std::string& name, const std::string& smiles, const std::string& ff, uint64_t seed, std::vector<std::string>& notes) {
-  const Parsed P = parse_unit(smiles);
+Template make_template(const std::string& name, const std::string& smiles, const std::string& ff, uint64_t seed, std::vector<std::string>& notes,
+                       bool reversed = false) {
+  const Parsed P = parse_unit(smiles, reversed);
   MolGraph g = capped(P);
   const auto problems = valence_problems(g);
   if (!problems.empty()) throw std::runtime_error(name + ": " + problems.front());
@@ -550,13 +553,45 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
   return s;
 }
 
-MolGraph chain_graph(const ChainSpec& spec, const std::vector<int>& seq) {
-  std::vector<Parsed> units;
+Linkage linkage_from_string(const std::string& s) {
+  if (s.empty() || s == "head-to-tail" || s == "ht") return Linkage::HeadToTail;
+  if (s == "head-to-head" || s == "hh" || s == "head-to-head/tail-to-tail") return Linkage::HeadToHead;
+  if (s == "random" || s == "inversions" || s == "defects") return Linkage::Random;
+  throw std::invalid_argument("unknown linkage '" + s + "' (head-to-tail, head-to-head, random)");
+}
+
+const char* to_string(Linkage l) {
+  switch (l) {
+    case Linkage::HeadToHead: return "head-to-head";
+    case Linkage::Random: return "random";
+    default: return "head-to-tail";
+  }
+}
+
+std::vector<char> chain_inversions(const ChainSpec& spec, size_t n, uint64_t seed) {
+  std::vector<char> inv;
+  if (spec.linkage == Linkage::HeadToTail || n == 0) return inv;
+  inv.assign(n, 0);
+  if (spec.linkage == Linkage::HeadToHead) {
+    for (size_t k = 1; k < n; k += 2) inv[k] = 1;   // A→ ←A A→ ←A: head-to-head, then tail-to-tail
+    return inv;
+  }
+  std::mt19937_64 rng(seed * 0x2545F4914F6CDD1Dull + 13);
+  std::uniform_real_distribution<double> U(0, 1);
+  const double p = std::clamp(spec.inversion, 0.0, 1.0);
+  for (size_t k = 1; k < n; ++k) inv[k] = U(rng) < p;   // the first unit sets the direction
+  return inv;
+}
+
+MolGraph chain_graph(const ChainSpec& spec, const std::vector<int>& seq, const std::vector<char>& inverted) {
+  std::vector<Parsed> units, backwards;
   for (const auto& u : spec.units) units.push_back(parse_unit(u.smiles));
+  if (!inverted.empty())
+    for (const auto& u : spec.units) backwards.push_back(parse_unit(u.smiles, true));
   MolGraph g;
   int prev_tail = -1;
   for (size_t k = 0; k < seq.size(); ++k) {
-    const Parsed& P = units.at(size_t(seq[k]));
+    const Parsed& P = (k < inverted.size() && inverted[k] ? backwards : units).at(size_t(seq[k]));
     std::vector<int> map(P.g.atoms.size(), -1);
     for (size_t i = 0; i < P.g.atoms.size(); ++i) {
       if (int(i) == P.d1 || int(i) == P.d2) continue;
@@ -624,6 +659,19 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       throw GrowError(e.what());
     }
   }
+  // head-to-head and random linkage: each unit also written backwards, as template nU + k
+  const int nU = int(spec.units.size());
+  if (spec.linkage != Linkage::HeadToTail) {
+    for (size_t k = 0; k < spec.units.size(); ++k) {
+      try {
+        T.push_back(make_template(spec.units[k].name.empty() ? spec.units[k].smiles : spec.units[k].name, spec.units[k].smiles, spec.forcefield,
+                                  o.seed + k, rep.notes, true));
+      } catch (const std::exception& e) {
+        throw GrowError(e.what());
+      }
+    }
+  }
+  size_t n_inverted = 0, n_linked = 0;
   const int nchains = std::max(1, o.chains);
   std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 7);
   std::uniform_real_distribution<double> U(0, 1);
@@ -654,6 +702,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       } else ch.mirror[k] = U(rng) < std::clamp(spec.pm, 0.0, 1.0) ? ch.mirror[k - 1] : !ch.mirror[k - 1];
     }
     mass += chain_mass(spec, ch.seq);
+    const auto inv = chain_inversions(spec, ch.seq.size(), o.seed + uint64_t(c) * 101 + 7);
+    for (size_t k = 0; k < inv.size(); ++k)
+      if (inv[k]) ch.seq[k] += nU, ++n_inverted;
+    n_linked += ch.seq.size();
   };
   for (int c = 0; c < nchains; ++c) {
     C[size_t(c)].mol = c;
@@ -1462,6 +1514,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       if (std::isalnum(static_cast<unsigned char>(ch)) && code.size() < 3) code += char(std::toupper(static_cast<unsigned char>(ch)));
     unit_code.push_back(code.empty() ? std::string("U") + char('A' + int(u % 26)) : code);
   }
+  for (int u = 0; u < nU && T.size() > size_t(nU); ++u) unit_code.push_back(unit_code[size_t(u)]);   // reversed units
   int mol0 = 0;
   if (o.substrate) {
     int64_t top = 0;
@@ -1575,6 +1628,11 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     const int n = replace_end_caps(s, head_caps, chain_end_smiles(spec.head_cap), tail_caps, chain_end_smiles(spec.tail_cap));
     rep.notes.push_back(std::to_string(n) + " chain ends capped with " + (spec.head_cap.empty() ? "H" : spec.head_cap) + " / " + (spec.tail_cap.empty() ? "H" : spec.tail_cap) +
                         " (head / tail) · relax before dynamics");
+  }
+  if (spec.linkage != Linkage::HeadToTail && n_linked > 0) {
+    char b[160];
+    std::snprintf(b, sizeof b, "%s linkage: %zu of %zu units reversed (%.1f %%)", to_string(spec.linkage), n_inverted, n_linked, 100.0 * double(n_inverted) / double(n_linked));
+    rep.notes.push_back(b);
   }
   if (report) *report = rep;
   return s;

@@ -427,6 +427,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (P.has("p_mr") && P.has("p_rm")) spec.p_mr = P["p_mr"].number(), spec.p_rm = P["p_rm"].number();   // Markov tacticity
           if (P.has("r1")) spec.r1 = P["r1"].number();                                                        // terminal model
           if (P.has("r2")) spec.r2 = P["r2"].number();
+          // end groups (a preset or a SMILES with *) and the linkage of the units
+          spec.head_cap = text(P, "head_cap", "");
+          spec.tail_cap = text(P, "tail_cap", "");
+          try { spec.linkage = linkage_from_string(text(P, "linkage", "head-to-tail")); } catch (const std::exception& e) { throw RecipeError(2, std::string("build.polymer.linkage: ") + e.what()); }
+          spec.inversion = num(P, "inversion", spec.inversion);
           // per-chain lengths: given (chain_dp: [..]) or drawn (lengths: {distribution, nn, pdi, seed})
           if (P.has("chain_dp") && P["chain_dp"].is_array()) {
             for (const auto& x : P["chain_dp"].items()) spec.chain_dp.push_back(int(x.number()));

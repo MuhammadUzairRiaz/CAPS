@@ -49,6 +49,13 @@ enum class Architecture { Linear, Star, Comb, Branched, Dendrimer };
 Architecture architecture_from_string(const std::string& s);
 const char* to_string(Architecture a);
 
+// How units join: head-to-tail (the usual, ~CH2–CHX–CH2–CHX~), head-to-head (every second unit reversed: regular
+// head-to-head / tail-to-tail links, ~CH2–CHX–CHX–CH2~, as HH-polypropylene or HH-PVC), or random (each unit after the
+// first reversed with probability `inversion`: the regio-defects of PVDF, PVF, PPO, a few per cent).
+enum class Linkage { HeadToTail, HeadToHead, Random };
+Linkage linkage_from_string(const std::string& s);
+const char* to_string(Linkage l);
+
 struct ChainSpec {
   std::vector<RepeatUnit> units;   // A, B, …
   Sequence sequence = Sequence::Homopolymer;
@@ -75,6 +82,8 @@ struct ChainSpec {
   // tert-butyl from an initiator, "*c1ccccc1" phenyl, "*O" hydroxyl) or a preset name (chain_end_smiles); "" hydrogen.
   // Each goes along its cap's bond, turned to keep clear of the chain; relax before dynamics.
   std::string head_cap, tail_cap;
+  Linkage linkage = Linkage::HeadToTail;
+  double inversion = 0.05;         // Random: the chance that a unit is reversed
 };
 // The preset end groups: hydrogen, methyl, ethyl, tert-butyl, sec-butyl, phenyl, hydroxyl, carboxyl, vinyl, amine;
 // any other string with a * is taken as SMILES ("" and "hydrogen": none).
@@ -107,8 +116,11 @@ UnitInfo repeat_unit_info(const std::string& smiles);
 // Unit index for each position of a chain (the sequence kind; Random draws from the seed).
 std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed);
 
-// The chain as a molecule graph with hydrogen end caps (for its formula, mass and SMILES).
-MolGraph chain_graph(const ChainSpec& spec, const std::vector<int>& sequence);
+// Which positions of an n-unit chain are reversed under spec.linkage (empty for head-to-tail); Random draws from the seed.
+std::vector<char> chain_inversions(const ChainSpec& spec, size_t n, uint64_t seed);
+
+// The chain as a molecule graph with hydrogen end caps (for its formula, mass and SMILES); `inverted` from chain_inversions.
+MolGraph chain_graph(const ChainSpec& spec, const std::vector<int>& sequence, const std::vector<char>& inverted = {});
 double chain_mass(const ChainSpec& spec, const std::vector<int>& sequence);
 
 // Grows o.chains chains of spec (spec.dp units each) into a periodic cubic cell of edge o.box, or at o.density.
