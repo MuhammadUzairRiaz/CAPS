@@ -501,6 +501,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_analyze")] public static extern int Analyze(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, CapsAnalyzeProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_analyze_ex")] public static extern int AnalyzeEx(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string props, in CapsAnalyzeOpts o, in CapsMechOpts m, CapsAnalyzeProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_lammps_shake")] public static extern int LammpsShake(IntPtr doc, int mode, [MarshalAs(UnmanagedType.LPUTF8Str)] string group, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_energy_terms")] public static extern int EnergyTerms(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_lammps_input")] public static extern int LammpsInput(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string dataName, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_gromacs")] public static extern int Gromacs(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? stem, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
@@ -1336,6 +1337,9 @@ public sealed class CapsDocument : IDisposable
     public bool FieldRemoveRules() { using (Hold()) { Alive(); return CheckField(Native.FieldRemoveRules(H)); } }
     public void FieldClear() { using (Hold()) { Alive(); Check(Native.FieldClear(H)); } }
     public void FieldTypesFile(string path) { using (Hold()) { Alive(); Check(Native.FieldTypesFile(H, path)); } }
+
+    /// <summary>The current frame's energy by term (caps_energy_terms), JSON.</summary>
+    public string EnergyTerms() { using (Hold()) { Alive(); return Sized((b, c) => Native.EnergyTerms(H, b, c)); } }
 
     /// <summary>The assignment as JSON, or "" when there is none.</summary>
     public string FieldReport()

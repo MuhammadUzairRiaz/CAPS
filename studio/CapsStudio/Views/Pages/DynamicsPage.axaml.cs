@@ -71,4 +71,5 @@ public partial class DynamicsPage : PageBase
         if (clip != null) await clip.SetTextAsync(Vm.MdPython());
         Vm.Status = "Copied the dynamics run as Python (import caps; doc = caps.open(…))";
     }
+    private async void OnCompareEnergies(object? s, RoutedEventArgs e) => await Vm.CompareEnergies();
 }
