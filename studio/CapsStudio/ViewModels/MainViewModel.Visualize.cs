@@ -216,6 +216,9 @@ public sealed partial class MainViewModel
         "cif" => "CIF", "xyz" => "XYZ", "" => "Built in CAPS", _ => f,
     };
     public string PipeSourceDetail => _doc == null ? "" : string.Format(CultureInfo.InvariantCulture, "{0:N0} particles · frame {1} / {2}", _doc.Summary().Atoms, _frame, Math.Max(0, _frames - 1));
+    /// <summary>The per-frame cache: this frame from it or computed, and how many frames it holds.</summary>
+    public string PipeCacheText => _pipeResult?["cache"] is JsonObject c
+        ? $"{((bool?)c["hit"] == true ? "from the cache" : "computed")} · {(int?)c["frames"] ?? 0} frame{((int?)c["frames"] == 1 ? "" : "s")} cached" : "";
     public string PipeStatus { get; private set; } = "";
 
     public bool StepLibraryOpen { get => _stepLibraryOpen; set { if (Set(ref _stepLibraryOpen, value)) { StepSearch = ""; Raise(nameof(StepLibraryRows)); } } }
@@ -792,7 +795,7 @@ public sealed partial class MainViewModel
         string text;
         try { text = _doc.PipelineResult(); } catch { text = ""; }
         _pipeResult = text.Length > 0 ? JsonNode.Parse(text) : null;
-        Raise(nameof(PipeHasGrid));
+        Raise(nameof(PipeHasGrid)); Raise(nameof(PipeCacheText));
         var inv = CultureInfo.InvariantCulture;
         if (_pipeResult?["steps"] is JsonArray steps)
             for (int k = 0; k < steps.Count && k < PipelineRows.Count; ++k)
