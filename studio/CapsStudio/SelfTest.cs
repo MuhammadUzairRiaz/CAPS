@@ -2164,6 +2164,14 @@ internal static class SelfTest
             var mols = vm.Document?.Summary().Molecules ?? 0;
             Check(mols == 3 + 5 && vm.GrowLog.Contains("5 × Toluene"), $"grow with solvent: {mols} molecules · {vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("Toluene"))}");
             vm.RemoveGrowSmall(vm.GrowSmall[0]);
+            // oriented growth: chains drawn along z, the report gives their ⟨P₂⟩
+            vm.GrowOrient = 3;
+            vm.GrowOrientStrengthD = 4;
+            vm.Grow().GetAwaiter().GetResult();
+            var p2line = vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("oriented growth")) ?? "";
+            var p2 = double.TryParse(p2line.Split("⟨P₂⟩ = ").LastOrDefault()?.Split(" ")[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pv) ? pv : double.NaN;
+            Check(p2 > 0.3 && vm.GrowRecipe().Contains("orientation: { axis: z"), $"oriented growth: {p2line}");
+            vm.GrowOrient = 0;
         }
 
         // The pipeline in order (design/boards/PipelineGrow, ExportCenter): the force field chosen in Grow is assigned when

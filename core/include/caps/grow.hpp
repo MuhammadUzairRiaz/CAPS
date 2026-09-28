@@ -59,6 +59,12 @@ struct GrowOptions {
   // Trials under the contact limits still fail. The chains' Rosenbluth weights are reported.
   int method = 0;
   double method_temperature = 450;       // K, of the Boltzmann factors
+  // Orientation (grow_chains; design/boards/Grow "Orientation"): an aligning field on each unit's backbone chord (the
+  // previous unit's tail to this one's), energy −s P₂(cos θ) in kT with θ its angle to orient_axis — drawn chains, fibres,
+  // an oriented amorphous start. Rosenbluth methods weight each trial by exp(s P₂) besides exp(−E/kT); the best-of-k
+  // method adds 0.25 s P₂ Å to a trial's contact margin (among trials within the limits). s = 0 (or no axis): isotropic.
+  std::array<double, 3> orient_axis{0, 0, 0};
+  double orient_strength = 0;
   // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
   // (quaternary backbones such as polyisobutylene and methacrylates, dense films); Relax with push-off afterwards
   bool auto_scale = false;
@@ -83,6 +89,7 @@ struct GrowReport {
   double box = 0.0;
   double density = 0.0;
   double ln_rosenbluth = 0.0;            // Rosenbluth methods: mean over chains of ln W (W = Π_steps Σ w / k)
+  double orientation = 0.0;              // ⟨P₂⟩ of the units' backbone chords against orient_axis (z when none is given)
   std::vector<std::string> notes;
 };
 

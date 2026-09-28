@@ -474,3 +474,25 @@ TEST(Polymer, HeadToHeadLinkageReversesEverySecondUnit) {
   EXPECT_EQ(linkage_from_string("head-to-head"), Linkage::HeadToHead);
   EXPECT_THROW(linkage_from_string("sideways"), std::invalid_argument);
 }
+
+TEST(Polymer, OrientedGrowthAlignsTheBackbone) {
+  GrowOptions o;
+  o.chains = 4;
+  o.density = 0.3;
+  o.seed = 2;
+  const ChainSpec c = spec({"*CC*"}, Sequence::Homopolymer, 30);
+  GrowReport iso, best, ros;
+  grow_chains(c, o, &iso);
+  EXPECT_LT(std::fabs(iso.orientation), 0.2);   // isotropic: ⟨P₂⟩ about 0 (z for the report)
+  o.orient_axis = {0, 0, 1};
+  o.orient_strength = 4;
+  grow_chains(c, o, &best);
+  EXPECT_GT(best.orientation, 0.5) << "best-of-k with the field";
+  o.method = 1;
+  grow_chains(c, o, &ros);
+  EXPECT_GT(ros.orientation, 0.4) << "Rosenbluth with the field";
+  bool said = false;
+  for (const auto& n : ros.notes) said |= n.find("oriented growth") != std::string::npos;
+  EXPECT_TRUE(said);
+  std::printf("orientation: isotropic %.3f · best-of-k %.3f · Rosenbluth %.3f\n", iso.orientation, best.orientation, ros.orientation);
+}

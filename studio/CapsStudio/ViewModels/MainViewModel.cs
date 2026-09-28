@@ -621,6 +621,15 @@ public sealed partial class MainViewModel : ObservableObject
     public bool GrowMethodIs2 => _growMethod == 2;
     public decimal GrowMethodTempD { get => (decimal)_growMethodT; set { _growMethodT = Math.Clamp((double)value, 100, 2000); Raise(); } }
     private static readonly string[] GrowMethodIds = ["trials", "rosenbluth", "rosenbluth_lj"];
+    // orientation (design/boards/Grow): isotropic, or an aligning field along x, y or z of strength s (kT)
+    public static readonly string[] GrowOrientations = ["Isotropic", "Oriented along x", "Oriented along y", "Oriented along z"];
+    private int _growOrient;
+    private double _growOrientS = 4;
+    public int GrowOrient { get => _growOrient; set { if (Set(ref _growOrient, Math.Clamp(value, 0, 3))) Raise(nameof(GrowOriented)); } }
+    public bool GrowOriented => _growOrient > 0;
+    public decimal GrowOrientStrengthD { get => (decimal)_growOrientS; set { _growOrientS = Math.Clamp((double)value, 0, 50); Raise(); } }
+    private System.Text.Json.Nodes.JsonObject? GrowOrientationJson() =>
+        _growOrient == 0 ? null : new() { ["axis"] = "xyz"[_growOrient - 1].ToString(), ["strength"] = _growOrientS };
     public string GrowRegionALabel => _growShape == 1 ? "Film thickness (Å)" : "Cylinder radius (Å)";
     public string GrowRegionBLabel => _growShape == 1 ? "Vacuum, above + below (Å)" : "Length along z (Å, 0: from the density)";
     public decimal GrowRegionAD
@@ -721,6 +730,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (GrowRegionJson() is { } region) sb.Append("  region: ").Append(region.ToJsonString().Replace("\"", "").Replace(",", ", ").Replace(":", ": ")).Append('\n');
         sb.Append(inv, $"  seed: {_growSeed}\n  contact_scale: {(_growAutoScale ? "auto" : _growScale.ToString(inv))}\n  curve: {(_growCurve ? "true" : "false")}\n");
         if (_growMethod > 0) sb.Append(inv, $"  method: {GrowMethodIds[_growMethod]}\n  temperature: {_growMethodT}\n");
+        if (_growOrient > 0) sb.Append(inv, $"  orientation: {{ axis: {"xyz"[_growOrient - 1]}, strength: {_growOrientS} }}\n");
         sb.Append("relax: { method: lbfgs, fmax: 1.0 }\nexport: [lammps, pdb]\n");
         return sb.ToString();
     }
@@ -740,6 +750,7 @@ public sealed partial class MainViewModel : ObservableObject
                    : string.Format(inv, ", architecture=\"{0}\", arm_dp={1}{2}", arch, (int?)j!["arm_dp"] ?? 5,
                                    arch == "comb" ? $", spacing={(int?)j["spacing"] ?? 4}" : string.Format(inv, ", branch_probability={0}", (double?)j["branch_probability"] ?? 0.1));
         if (_growMethod > 0) extra += string.Format(inv, ", method=\"{0}\", method_temperature={1}", GrowMethodIds[_growMethod], _growMethodT);
+        if (_growOrient > 0) extra += string.Format(inv, ", orientation={{\"axis\": \"{0}\", \"strength\": {1}}}", "xyz"[_growOrient - 1], _growOrientS);
         if (GrowRegionJson() is { } region)
             extra += ", region={" + string.Join(", ", region.Select(kv => $"\"{kv.Key}\": " + (kv.Value is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var sv) ? $"\"{sv}\"" : kv.Value!.ToJsonString()))) + "}";
         return "import caps\n\n" + string.Format(inv, "cell = caps.polymer({0}, dp={1}, chains={2}, tacticity=\"{3}\", seed={4}, density={5}{6})\n",
@@ -835,6 +846,7 @@ public sealed partial class MainViewModel : ObservableObject
             sj["trials"] = _growTrials;
             if (GrowRegionJson() is { } region) { sj["region"] = region; o.Box = 0; o.Density = _growDensity; }
             if (_growMethod > 0) { sj["method"] = GrowMethodIds[_growMethod]; sj["temperature"] = _growMethodT; }
+            if (GrowOrientationJson() is { } orient) sj["orientation"] = orient;
             spec = sj.ToJsonString();
         }
         var stem = spec == null ? "PS" : string.Concat(_growSpecName.Where(char.IsLetterOrDigit).Take(16));
