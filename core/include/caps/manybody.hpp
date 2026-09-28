@@ -26,6 +26,9 @@ struct ManyBodySpec {
   std::string style;   // LAMMPS pair style
   std::string file;    // the potential file
   std::string units;   // metal | real; "" to take the file's own "UNITS:" tag
+  // the Lennard-Jones form of the cross pairs, the other groups' own: lj12-6 (σ = x / 2^(1/6)) or lj9-6 (class II, PCFF /
+  // COMPASS: σ = the minimum x), UFF's well depth D and minimum x either way
+  std::string pair_form = "lj12-6";
 };
 
 // The styles CAPS writes (the file format of each is checked), and whether a style is one LAMMPS reads in metal units only.

@@ -4055,8 +4055,16 @@ void field_run_groups(caps_doc* d) {
   std::vector<caps::Json> reports;
   std::vector<std::string> names, paths;
   bool complete = true, based = false;
+  // the force-field groups first: a potential group's cross Lennard-Jones takes their form (12-6, or class II's 9-6)
+  std::vector<std::shared_ptr<const caps::ForceField>> slot_ff(ng);
+  std::vector<std::vector<uint32_t>> slot_atoms(ng);
+  std::vector<caps::Json> slot_rep(ng);
+  std::vector<std::string> slot_name(ng), slot_path(ng);
+  std::string cross_form = "lj12-6";
+  for (int pass = 0; pass < 2; ++pass)
   for (size_t g = 0; g < ng; ++g) {
     const caps::Json& J = G["groups"][g];
+    if ((J.has("potential") && J["potential"].is_object()) != (pass == 1)) continue;
     std::vector<uint32_t> atoms;
     for (size_t i = 0; i < n; ++i) if (owner[i] == int(g)) atoms.push_back(uint32_t(i));
     if (atoms.empty()) continue;
@@ -4079,10 +4087,16 @@ void field_run_groups(caps_doc* d) {
       spec.style = J["potential"].text("style", "");
       spec.file = path;
       spec.units = J["potential"].text("units", "");
+      {   // class II's 9-6 when every force-field group is 9-6 (PCFF, COMPASS), else 12-6
+        bool all96 = false, any = false;
+        for (size_t h = 0; h < ng; ++h)
+          if (slot_ff[h] && !slot_ff[h]->manybody.on()) all96 = (any ? all96 : true) && slot_ff[h]->pair_form == "lj9-6", any = true;
+        cross_form = any && all96 ? "lj9-6" : "lj12-6";
+      }
+      spec.pair_form = cross_form;
       std::vector<std::string> mb_notes;
       auto mf = std::make_shared<caps::ForceField>(caps::manybody_part(sub, spec, &mb_notes));
-      keep.push_back(mf);
-      parts.push_back({keep.back().get(), atoms, name});
+      slot_ff[g] = mf, slot_atoms[g] = atoms;
       caps::Json R = caps::Json::object();
       R["forcefield"] = mf->name;
       caps::Json ra = caps::Json::array(), rn = caps::Json::array(), rr = caps::Json::array();
@@ -4103,8 +4117,7 @@ void field_run_groups(caps_doc* d) {
       R["atoms"] = ra, R["notes"] = rn, R["references"] = rr;
       R["typed"] = double(atoms.size());
       R["complete"] = true;
-      reports.push_back(R);
-      names.push_back(name), paths.push_back(path);
+      slot_rep[g] = R, slot_name[g] = name, slot_path[g] = path;
       continue;
     }
     std::unique_ptr<caps_doc> tmp(doc_of(sub));
@@ -4112,13 +4125,18 @@ void field_run_groups(caps_doc* d) {
     if (rc < 0) throw caps::FFError(name + ": " + g_error);
     if (!tmp->field->ff) throw caps::FFError(name + ": " + std::to_string(size_t(caps::Json::parse(tmp->field->report)["untyped"].number())) + " atoms untyped by " + tmp->field->base.name);
     complete = complete && tmp->field->complete;
-    keep.push_back(tmp->field->ff);
-    parts.push_back({keep.back().get(), atoms, name});
-    reports.push_back(caps::Json::parse(tmp->field->report));
-    names.push_back(name), paths.push_back(path);
+    slot_ff[g] = tmp->field->ff, slot_atoms[g] = atoms;
+    slot_rep[g] = caps::Json::parse(tmp->field->report), slot_name[g] = name, slot_path[g] = path;
     if (!based) F.base = tmp->field->base, F.ff_path = path, based = true;
   }
   if (!based) throw caps::FFError("every group has a potential file: give the rest of the system a force field");
+  for (size_t g = 0; g < ng; ++g)   // the groups in their order
+    if (slot_ff[g]) {
+      keep.push_back(slot_ff[g]);
+      parts.push_back({keep.back().get(), slot_atoms[g], slot_name[g]});
+      reports.push_back(slot_rep[g]);
+      names.push_back(slot_name[g]), paths.push_back(slot_path[g]);
+    }
   caps::MergeOptions mo;
   mo.eps_rule = G.text("eps_rule", mo.eps_rule);
   mo.sigma_rule = G.text("sigma_rule", mo.sigma_rule);
