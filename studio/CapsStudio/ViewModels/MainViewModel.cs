@@ -2605,7 +2605,7 @@ public sealed partial class MainViewModel : ObservableObject
         Width = w, Height = h, Supersample = supersample,
         Background = _module == 19 ? _renderBg : _viewBackground,   // Render: the preview on the image's own background
         ColourBy = _colour, Style = _style,
-        Outlines = _outlines ? 1 : 0, ShowCell = _showCell ? 1 : 0,
+        Outlines = OutlineLevel, ShowCell = _showCell ? 1 : 0,
         Highlight0 = _selection.Count > 0 ? _selection[0] : -1,
         Highlight1 = _selection.Count > 1 ? _selection[1] : -1,
         Highlight2 = _selection.Count > 2 ? _selection[2] : -1,
@@ -2624,7 +2624,7 @@ public sealed partial class MainViewModel : ObservableObject
         Width = w, Height = h, Supersample = supersample,
         Background = _viewBackground,
         ColourBy = 2, Style = _style == 3 ? 0 : _style,
-        Outlines = _outlines ? 1 : 0, DepthCue = _depthCue ? 1 : 0, ShowCell = 0,
+        Outlines = OutlineLevel, DepthCue = _depthCue ? 1 : 0, ShowCell = 0,
         Highlight0 = Field.SelectedRow?.Index ?? -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1,
     };
 

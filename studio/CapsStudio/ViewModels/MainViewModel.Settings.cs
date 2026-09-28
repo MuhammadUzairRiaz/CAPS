@@ -17,10 +17,10 @@ public sealed partial class MainViewModel
     /// <summary>The window scales the interface when this changes.</summary>
     public event Action<double>? ScaleChanged;
 
-    public static readonly string[] SettingsTabs = ["Appearance", "3D view", "Force fields", "Compute & remote", "Files", "Units"];
-    public static readonly string[] SettingsIcons = ["eye", "cube", "tag", "server", "folder", "sliders"];
+    public static readonly string[] SettingsTabs = ["Appearance", "3D view", "Force fields", "Compute & remote", "Files", "Units", "Accessibility", "Python & scripting"];
+    public static readonly string[] SettingsIcons = ["eye", "cube", "tag", "server", "folder", "sliders", "cursor", "terminal"];
     private int _settingsTab;
-    public int SettingsTab { get => _settingsTab; set => Set(ref _settingsTab, value); }
+    public int SettingsTab { get => _settingsTab; set { if (Set(ref _settingsTab, value) && value == 6) FillShortcutConflicts(); } }
 
     public PaletteChoice[] PaletteChoices { get; } =
     [
@@ -39,6 +39,9 @@ public sealed partial class MainViewModel
     private void ApplyAll()
     {
         Tokens.UseTheme(_settings.Theme);
+        Tokens.UseHighContrast(_settings.HighContrast);
+        Tokens.UseFocusRings(_settings.FocusRingsAlways);
+        ApplyPython();
         Motion.Mode = _settings.ReduceMotion;
         (DisplayUnits.Energy, DisplayUnits.Length, DisplayUnits.Pressure, DisplayUnits.Time) = (_settings.UnitEnergy, _settings.UnitLength, _settings.UnitPressure, _settings.UnitTime);
         DisplayUnits.Density = _settings.UnitSystem == 1 ? "kg/m³" : "g/cm³";

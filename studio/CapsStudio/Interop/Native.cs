@@ -323,6 +323,9 @@ public delegate int CapsRelaxProgress(int stage, int stages, int iteration, doub
 internal static class Native
 {
     private const string Lib = "caps";
+    /// <summary>The library file this Studio loads (beside the executable), for scripts run outside it (CAPS_LIB).</summary>
+    public static string? LibraryPath =>
+        new[] { "libcaps.dylib", "libcaps.so", "caps.dll" }.Select(n => Path.Combine(AppContext.BaseDirectory, n)).FirstOrDefault(File.Exists);
 
     [DllImport(Lib, EntryPoint = "caps_abi_version")] public static extern int AbiVersion();
     [DllImport(Lib, EntryPoint = "caps_last_error")] private static extern IntPtr LastErrorPtr();

@@ -203,7 +203,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             _u3f(gl.GetUniformLocationString(prog, "uBg"), ((bg >> 16) & 255) / 255f, ((bg >> 8) & 255) / 255f, (bg & 255) / 255f);
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uCue"), sc.DepthCue ? 1f : 0f);
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uTransparent"), sc.Transparent ? 1f : 0f);
-            gl.Uniform1f(gl.GetUniformLocationString(prog, "uOutline"), sc.Outlines ? 1f : 0f);
+            gl.Uniform1f(gl.GetUniformLocationString(prog, "uOutline"), sc.Outlines ? (Tokens.HighContrast ? 2f : 1f) : 0f);   // 2: high contrast
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uPx"), ss);   // edge, ring and line widths in drawn pixels
             var ink = sc.Dark ? (0.04f, 0.045f, 0.05f) : (0.08f, 0.08f, 0.08f);
             _u3f(gl.GetUniformLocationString(prog, "uInk"), ink.Item1, ink.Item2, ink.Item3);
@@ -446,7 +446,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           vec3 n = vec3(vOff.x / vR, -vOff.y / vR, nz);
           float z = vZ + vRw * nz;
           vec3 c = cue(shade(vCol, n), z);
-          if (uOutline > 0.5 && vR - d < uPx) c = mix(c, uInk, 0.5);
+          if (uOutline > 0.5 && vR - d < uPx * uOutline) c = mix(c, uInk, uOutline > 1.5 ? 0.95 : 0.5);
           frag = vec4(c, 1.0);
           gl_FragDepth = fragDepth(z);
         }
@@ -491,7 +491,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           float nz = sqrt(max(0.0, 1.0 - d2 / (vR * vR)));
           float z = vZab.x + t * (vZab.y - vZab.x) + vRw * nz;
           vec3 c = cue(shade(vCol, vec3(dv.x / vR, -dv.y / vR, nz)), z);
-          if (uOutline > 0.5 && vR - sqrt(d2) < uPx) c = mix(c, uInk, 0.5);
+          if (uOutline > 0.5 && vR - sqrt(d2) < uPx * uOutline) c = mix(c, uInk, uOutline > 1.5 ? 0.95 : 0.5);
           frag = vec4(c, 1.0);
           gl_FragDepth = fragDepth(z);
         }

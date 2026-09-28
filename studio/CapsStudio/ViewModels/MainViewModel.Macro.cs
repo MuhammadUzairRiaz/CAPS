@@ -196,7 +196,7 @@ public sealed partial class MainViewModel
             Directory.CreateDirectory(runDir);
             if (File.Exists(result)) File.Delete(result);
             if (_macroTarget == 1) _doc!.Save(Path.Combine(runDir, "current.data"));
-            var python = Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } p ? p : "python3";
+            var python = PythonExe;   // Settings › Python & scripting, else CAPS_PYTHON, else python3
             ProcessStartInfo psi;
             if (host == null)
             {
@@ -255,7 +255,7 @@ public sealed partial class MainViewModel
             });
             Status = code == 0 ? $"{_macroName} finished{(opened ? " · its result is open" : "")}" : $"{_macroName} stopped with exit code {code}";
         }
-        catch (Exception e) { MacroOutput += e.Message + "\n(set CAPS_PYTHON to a Python 3 interpreter; hosts: Settings › Compute & remote)\n"; }
+        catch (Exception e) { MacroOutput += e.Message + "\n(choose a Python 3 interpreter in Settings › Python & scripting; hosts: Settings › Compute & remote)\n"; }
         finally { MacroRunning = false; _macroProc = null; }
     }
 

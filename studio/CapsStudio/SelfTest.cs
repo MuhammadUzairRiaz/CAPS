@@ -976,6 +976,24 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Settings › Accessibility and Python & scripting
+        {
+            vm.SetHighContrast = true;
+            var strong = vm.ViewOptions(64, 64, 1).Outlines;
+            var hcBuf = new byte[160 * 120 * 4];
+            vm.Document?.Render(vm.Camera, vm.ViewOptions(160, 120, 1), hcBuf);
+            vm.SetHighContrast = false;
+            var light = vm.ViewOptions(64, 64, 1).Outlines;
+            vm.CheckPython().GetAwaiter().GetResult();
+            var py = vm.PythonCheck;
+            vm.Settings.Shortcuts[vm.PaletteRowsFor("theory manual").FirstOrDefault(r => !r.IsHeader && r.Id.Length > 0)?.Id ?? "x"] = OperatingSystem.IsMacOS() ? "Meta+K" : "Ctrl+K";
+            vm.FillShortcutConflicts();
+            var conflicts = vm.ShortcutConflicts.Count;
+            if (vm.ShortcutConflicts.FirstOrDefault() is { } sc) vm.ResolveShortcutConflict(sc);
+            Check(strong == 2 && light == 1 && py.StartsWith("✓", StringComparison.Ordinal) && py.Contains("caps package: ABI", StringComparison.Ordinal) && conflicts == 1 && vm.ShortcutConflicts.Count == 0,
+                  $"settings: outlines {strong}/{light} · python {py.Split('\n')[0]} · conflicts {conflicts} → {vm.ShortcutConflicts.Count}");
+        }
+
         // Crystal builder: polyethylene (Pnam) to start, rutile's space group found from its CIF, a supercell built
         vm.OpenCrystal();
         Check(vm.CrystalGroup?.Number == 62 && vm.CrystalSites.Count == 3 && vm.CrystalGroups.Count >= 8 && vm.CrystalBFree,

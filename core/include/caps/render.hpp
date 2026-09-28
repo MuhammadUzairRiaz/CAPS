@@ -56,6 +56,7 @@ struct RenderOptions {
   double atom_scale = 0.28;            // × vdW radius for ball-and-stick
   double bond_radius = 0.14;           // Å
   bool outlines = true;
+  int outline_strength = 1;            // 1 a light edge; 2 high contrast (twice as wide, near-black / near-white ink)
   bool depth_cue = true;
   bool show_cell = true;
   std::array<int, 3> cell_repeats{1, 1, 1};   // the cell is a supercell of these unit cells: its box dashed, one unit cell in the accent
