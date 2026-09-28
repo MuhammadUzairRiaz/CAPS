@@ -587,6 +587,45 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // Jobs: a Dynamics run paused (it holds its step), a second run queued behind it with its settings, resumed,
+        // stopped, and the queued run starting by itself when the first ends
+        {
+            bool Until(Func<bool> c, int ms)
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                while (!c() && sw.ElapsedMilliseconds < ms) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                return c();
+            }
+            vm.UsePolystyreneInGrow();
+            vm.GrowChainsD = 1; vm.GrowDpD = 3; vm.GrowDensityD = 0.3m;
+            vm.GrowAssignField = true;
+            vm.Grow().GetAwaiter().GetResult();
+            vm.SetModule(3);
+            var steps = vm.MdStepsD;
+            vm.MdStepsD = 5_000_000;
+            var run = vm.RunMd();
+            var started = Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 30000);
+            vm.PauseRun();
+            Until(() => false, 500);
+            var held = vm.MdLog;
+            Until(() => false, 800);
+            var still = vm.MdLog == held && vm.RunPaused && vm.Jobs.FirstOrDefault(j => j.IsRunning)?.StatusText == "paused";
+            vm.MdStepsD = 3_000_000;
+            vm.QueueMd();
+            var queued = vm.QueuedCount == 1 && vm.Jobs[0].IsQueued && vm.JobsSummary.Contains("1 queued");
+            vm.ResumeRun();
+            var moved = Until(() => vm.MdLog != held, 10000);
+            vm.CancelMd();
+            Until(() => run.IsCompleted, 30000);
+            var second = Until(() => vm.MdRunning && vm.QueuedCount == 0 && vm.MdLog.Contains("of 3,000,000"), 30000);
+            vm.CancelMd();
+            Until(() => !vm.MdRunning, 30000);
+            Check(started && still && queued && moved && second && !vm.RunPaused,
+                  $"jobs: started {started} · paused and held {still} · queued {queued} · resumed {moved} · queued run started {second} · {vm.JobsSummary}");
+            vm.MdStepsD = steps;
+            vm.SetModule(8);
+        }
+
         // Nanostructure builder: a (5,5) tube in a natural-rubber matrix
         vm.OpenNano();
         vm.NanoKind = 1;

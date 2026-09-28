@@ -117,6 +117,7 @@ public partial class JobsPage : PageBase
     private void OnGoModule(object? s, RoutedEventArgs e) { if (Vm.SelectedJob is { } j) Vm.SetModule(j.Module); }
     private void OnSuggest(object? s, RoutedEventArgs e) { if (Vm.SelectedJob is { SuggestModule: >= 0 } j) Vm.SetModule(j.SuggestModule); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelJob(Vm.SelectedJob);
+    private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
     private void OnClear(object? s, RoutedEventArgs e) => Vm.ClearJobs();
     private void OnNew(object? s, RoutedEventArgs e) { if ((s as MenuItem)?.Tag is string t && int.TryParse(t, out var m)) Vm.SetModule(m); }
 

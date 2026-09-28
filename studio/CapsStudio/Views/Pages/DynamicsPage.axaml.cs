@@ -32,6 +32,8 @@ public partial class DynamicsPage : PageBase
     }
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunMd();
+    private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueMd();
+    private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelMd();
     private async void OnContinue(object? s, RoutedEventArgs e) => await Vm.ContinueMd();
     private async void OnSaveTrajectory(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveTrajectoryAsync(); }
