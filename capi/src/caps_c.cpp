@@ -3846,6 +3846,7 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
       const caps::Json sj = caps::Json::parse(spec_json ? spec_json : "{}");
       if (sj.has("trials")) g.trials = std::clamp(int(sj["trials"].number()), 4, 5000);
       if (sj.has("lookahead")) g.lookahead = std::clamp(int(sj["lookahead"].number()), 1, 4);
+      if (sj.has("threads")) g.threads = std::max(0, int(sj["threads"].number()));
       // method: trials (best by contact margin) | rosenbluth (soft spheres) | rosenbluth_lj (UFF Lennard-Jones); temperature K
       const std::string meth = sj.text("method", "trials");
       g.method = meth == "rosenbluth" ? 1 : meth == "rosenbluth_lj" ? 2 : 0;

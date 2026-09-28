@@ -14,9 +14,12 @@
 #include <numeric>
 #include <random>
 #include <set>
+#include <thread>
+#include <memory>
 #include <sstream>
 
 #include "caps/elements.hpp"
+#include "parallel.hpp"
 
 namespace caps {
 namespace {
@@ -816,6 +819,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (r < 0) r = limit(a, b);
     return r;
   };
+  // trials scored in parallel (GrowOptions::threads): the limit cache is filled first, the scoring only reads it
+  const int nthreads = o.threads > 0 ? o.threads : std::min(8, int(std::max(1u, std::thread::hardware_concurrency())));
+  std::unique_ptr<ThreadPool> pool;
+  if (nthreads > 1 && o.method == 0 && o.trials >= 32) {
+    for (int a = -118; a <= 118; ++a)
+      for (int b = -118; b <= 118; ++b) limitc(a, b);
+    pool = std::make_unique<ThreadPool>(nthreads);
+  }
   Cell3 cell;
   cell.init(Lv, o.method == 2 ? std::max(6.0, scale * 0.86 * 2 * 2.3) : scale * 0.86 * 2 * 2.3);   // LJ energies reach 6 Å
   // Rosenbluth methods: UFF van der Waals by element (method 2), kT
@@ -1192,7 +1203,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     double best_root = 0;
     // places the unit's atoms for a root torsion and group torsions, and returns the worst contact margin (Å); stops
     // counting once the margin is below `floor`
-    auto score = [&](double root_t, const std::vector<double>& gv, double floor) {
+    auto score = [&](double root_t, const std::vector<double>& gv, double floor, std::vector<Vec3>& trial) {   // trial: the buffer placed into
       const double best_m = floor;
       auto P = [&](int local) -> Vec3 {
         const int a = absref(local);
@@ -1307,13 +1318,45 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       // with an orienting field a trial within the limits ranks by margin + bonus · P₂ (every one above any trial outside)
       const double bonus = orienting ? 0.25 * o.orient_strength : 0.0;
       double best_j = -1e9;
+      // many trials, no early stop: the torsions drawn first (the same draws as one at a time), the trials placed and
+      // scored in parallel, the first best kept — the same step as the serial loop, faster
+      if (pool && trials >= 32 && o.comfortable <= 0) {
+        std::vector<double> roots(static_cast<size_t>(trials));
+        std::vector<std::vector<double>> gvs(static_cast<size_t>(trials), gv);
+        for (int tr = 0; tr < trials; ++tr) {
+          roots[size_t(tr)] = draw(root_kind, 0);
+          auto& g = gvs[size_t(tr)];
+          for (size_t gi = 0; gi < g.size(); ++gi) g[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+          for (int a = 1; a < t.n; ++a)
+            if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) g[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+        }
+        struct Best { double j = -1e9, worst = -1e9; int index = -1; std::vector<Vec3> x; };
+        std::vector<Best> slices(size_t(pool->size()));
+        pool->run(size_t(trials), [&](int w, size_t b, size_t e) {
+          Best& B = slices[size_t(w)];
+          B = Best{};
+          std::vector<Vec3> buf(size_t(t.n));
+          for (size_t q = b; q < e; ++q) {
+            const double worst = score(roots[q], gvs[q], B.j - bonus, buf);
+            const double j = !orienting ? worst : worst >= o.accept ? worst + bonus * chord_p2(buf) : worst - bonus;
+            if (j > B.j) B.j = j, B.worst = worst, B.index = int(q), B.x = buf;
+          }
+        });
+        const Best* win = nullptr;
+        for (const auto& B : slices)
+          if (B.index >= 0 && (!win || B.j > win->j || (B.j == win->j && B.index < win->index))) win = &B;
+        if (win) {
+          best_j = win->j, best_m = win->worst, best = win->x;
+          best_gv = gvs[size_t(win->index)], best_root = roots[size_t(win->index)];
+        }
+      } else
       for (int tr = 0; tr < trials; ++tr) {
         const double root_t = draw(root_kind, 0);
         for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
         // the template's own torsion is the reference for groups next to an sp2 atom
         for (int a = 1; a < t.n; ++a)
           if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
-        const double worst = score(root_t, gv, best_j - bonus);
+        const double worst = score(root_t, gv, best_j - bonus, trial);
         const double j = !orienting ? worst : worst >= o.accept ? worst + bonus * chord_p2(trial) : worst - bonus;
         if (j > best_j) {
           best_j = j;
@@ -1336,7 +1379,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             if (pick >= g.size()) r += step;
             else g[pick] += step;
           }
-          const double worst = score(r, g, best_m);
+          const double worst = score(r, g, best_m, trial);
           if (worst > best_m) {
             best_m = worst;
             best = trial;
@@ -1402,7 +1445,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
         for (int a = 1; a < t.n; ++a)
           if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
-        const double m = score(root_t, gv, o.accept);
+        const double m = score(root_t, gv, o.accept, trial);
         if (m < o.accept) continue;
         double E = trial_energy() + (next_dir ? 0.0 : tors_energy(root_kind, root_t));
         for (size_t gi = 0; gi < gv.size(); ++gi) E += tors_energy(int(gi) == t.link_group ? link_kind : t.group_kind[gi], gv[gi]);
