@@ -406,7 +406,19 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
-    public string ComputeText { get; } = $"Local · {Environment.ProcessorCount} threads · CPU";
+    public string ComputeText
+    {
+        get
+        {
+            var threads = _settings.Threads > 0 ? _settings.Threads : Math.Min(16, Environment.ProcessorCount);
+            var hosts = _settings.Hosts.Count;
+            var remote = Jobs.Count(j => j.IsRemote && j.IsRunning);
+            return $"Local · {threads} threads · {(_settings.GpuView ? "GPU view" : "CPU")}" +
+                   (hosts > 0 ? $" · {hosts} host{(hosts == 1 ? "" : "s")}" : "") + (remote > 0 ? $" · {remote} remote job{(remote == 1 ? "" : "s")}" : "");
+        }
+    }
+    /// <summary>The top bar's compute button: Settings › Compute &amp; remote.</summary>
+    public void OpenComputeSettings() { SettingsTab = 3; SetModule(10); }
     /// <summary>Kept for scripts and tests: the property calculations are the Analyze module.</summary>
     public bool AnalyzeProperties { get => _module == 1; set { if (value) SetModule(1); else if (_module == 1) SetModule(8); } }
     public bool IsProperties => _module == 1;

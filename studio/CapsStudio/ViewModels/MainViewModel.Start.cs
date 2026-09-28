@@ -59,8 +59,10 @@ public sealed partial class MainViewModel
         new("Density, g(r), Tg and moduli", "Analyze", 1, true),
     ];
 
-    public string MachineThreads { get; } = Environment.ProcessorCount.ToString(CultureInfo.InvariantCulture);
-    public string MachineRender { get; } = "CPU · software renderer";
+    public string MachineThreads => _settings.Threads > 0 ? $"{_settings.Threads} of {Environment.ProcessorCount}"
+                                                          : $"auto · {Math.Min(16, Environment.ProcessorCount)} of {Environment.ProcessorCount}";
+    public string MachineRender => _settings.GpuView ? "GPU view (OpenGL) · CPU for exports" : "CPU · software renderer";
+    public string RemoteHostsText => _settings.Hosts.Count == 0 ? "none" : string.Join(", ", _settings.Hosts.Select(h => h.Name.Length > 0 ? h.Name : h.Hostname));
     public string MachineOs { get; } = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
     public string VersionText { get; } = $"CAPS {typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)} · ABI {Native.AbiVersion()}";
 

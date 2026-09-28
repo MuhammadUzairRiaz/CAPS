@@ -13,6 +13,9 @@
         <Button Click="OnSave" IsEnabled="{Binding HasDocument}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save network…" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnCopyPython" ToolTip.Tip="This run on the open structure as a Python script (the caps package), with these settings">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanReact}" IsVisible="{Binding !Reacting}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="react" Size="16" VerticalAlignment="Center" /><TextBlock Text="Crosslink" VerticalAlignment="Center" /></StackPanel>
         </Button>

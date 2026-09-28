@@ -19,8 +19,9 @@
         <Button Click="OnContinue" IsVisible="{Binding MdCanContinue}" IsEnabled="{Binding Idle}" ToolTip.Tip="{Binding MdCheckpointText}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding MdContinueLabel}" VerticalAlignment="Center" /></StackPanel>
         </Button>
-        <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
-                  ToolTip.Tip="Where Run goes: this machine, or a host from Settings › Compute &amp; remote (the structure and a recipe of these settings go up; the result comes back to Jobs)" />
+        <Button Click="OnCopyPython" ToolTip.Tip="This run on the open structure as a Python script (the caps package), with these settings">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanRun}" IsVisible="{Binding !MdRunning}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel>
         </Button>
@@ -157,7 +158,8 @@
                   <TextBlock Text="Steps" Classes="label" /><TextBlock Grid.Column="1" Text="Frame every (steps)" Classes="label" /><TextBlock Grid.Column="2" Text="Run on" Classes="label" />
                   <NumericUpDown Grid.Row="1" Value="{Binding MdStepsD}" Minimum="0" Increment="1000" FormatString="0" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdFrameEveryD}" Minimum="1" Increment="100" FormatString="0" />
-                  <ComboBox Grid.Row="1" Grid.Column="2" SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="{Binding ComputeText}" /></ComboBox>
+                  <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="This machine, or a host from Settings › Compute &amp; remote (the structure and a recipe of these settings go up; the result comes back to Jobs)" />
                 </Grid>
                 <Grid ColumnDefinitions="*,Auto,70" ColumnSpacing="10" IsEnabled="{Binding !MdRunning}">
                   <CheckBox Classes="toggle" Content="Hold a molecule in place" IsChecked="{Binding HoldOn}" ToolTip.Tip="No force, no velocity, not in the temperature (an interface's surface is molecule 1)" />

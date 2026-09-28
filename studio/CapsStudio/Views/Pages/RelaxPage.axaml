@@ -16,6 +16,9 @@
         <Button Click="OnSave" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Save the structure (LAMMPS data carries the force field)">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save…" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnCopyPython" ToolTip.Tip="This run on the open structure as a Python script (the caps package), with these settings">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Classes="primary" Click="OnRelax" IsEnabled="{Binding CanRelax}" IsVisible="{Binding !Relaxing}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="relax" Size="16" VerticalAlignment="Center" /><TextBlock Text="Minimise" VerticalAlignment="Center" /></StackPanel>
         </Button>
