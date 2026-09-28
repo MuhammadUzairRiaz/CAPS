@@ -179,6 +179,10 @@ std::vector<std::string> property_names(const PipelineState& st);
 bool property_values(const PipelineState& st, const std::string& name, std::vector<double>& out);
 // One value per particle; throws std::invalid_argument with the position of a syntax error or an unknown name.
 std::vector<double> evaluate_expression(const PipelineState& st, const std::string& expr);
+// A neighbour term, one value per pair k: names are the neighbour's (neighbour[k]) properties; Distance and Delta
+// (Delta.X, .Y, .Z: from the atom to the neighbour, minimum image) are the pair's. Compute property sums it per atom.
+std::vector<double> evaluate_pair_expression(const PipelineState& st, const std::string& expr, const std::vector<uint32_t>& neighbour,
+                                             const std::vector<Vec3>& delta);
 
 // Result for the Studio: attributes, step status, tables, legend, property names, counts.
 Json pipeline_result_json(const PipelineState& st);
