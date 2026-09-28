@@ -33,6 +33,7 @@ public sealed class StepField : INotifyPropertyChanged
     public bool IsChoice => Kind == "choice";
     public bool IsNote => Kind == "note";
     public bool IsCode => Kind == "code";                 // several lines, sent with Run (not per keystroke)
+    public bool IsAction => Kind == "action";             // a button (Label) that fills the step from the view
     private string _draft = "";
     public string Draft { get => _draft; set { if (_draft == value) return; _draft = value; Raise(nameof(Draft)); Raise(nameof(DraftChanged)); } }
     public bool DraftChanged => _draft != _text;
@@ -41,7 +42,7 @@ public sealed class StepField : INotifyPropertyChanged
     /// <summary>A code field's console: what the last run printed.</summary>
     public string Output { get => _output; set { if (_output == value) return; _output = value; Raise(nameof(Output)); Raise(nameof(HasOutput)); } }
     public bool HasOutput => _output.Length > 0;                 // a line of explanation under the fields (Hint)
-    public bool ShowLabel => Kind is not ("bool" or "note");
+    public bool ShowLabel => Kind is not ("bool" or "note" or "action");
     public bool IsMono => Kind is "expression" or "number" or "vector" or "file" or "matrix";
 }
 
@@ -110,6 +111,7 @@ public sealed partial class MainViewModel
         new("transparency", "Transparency", "the selection or by property: see through fillers", "Colour & style", "eye"),
         new("particle_radius", "Particle radius", "the selection or by property", "Colour & style", "atom"),
         new("select_expression", "Expression selection", "Type == 2 && Position.Z > 13", "Select", "filter"),
+        new("manual_selection", "Manual selection", "atoms picked or lassoed in the view", "Select", "filter"),
         new("expand_selection", "Expand selection", "by bonds or distance", "Select", "filter"),
         new("invert_selection", "Invert selection", "selected ↔ not selected", "Select", "filter"),
         new("clear_selection", "Clear selection", "nothing selected", "Select", "filter"),
@@ -305,6 +307,7 @@ public sealed partial class MainViewModel
         var kind = StepLibrary.FirstOrDefault(k => k.Type == type);
         if (kind == null) return;
         var row = new PipelineRow { Type = type, Title = kind.Title, Icon = kind.Icon, Params = DefaultParams(type) };
+        if (type == "manual_selection") row.Params["atoms"] = ViewSelectionText();   // what is selected in the view now
         if (_pipeSel?.Group is { Length: > 0 } g) row.Params["group"] = g;   // a new step joins the selected step's group
         WireRow(row);
         // inserted above the selected step, so it runs after it (the list runs bottom to top)
@@ -460,6 +463,7 @@ public sealed partial class MainViewModel
         "binning" => new JsonObject { ["property"] = "Mass", ["axis"] = 2, ["bins"] = 50, ["reduction"] = "density", ["axis2"] = -1, ["bins2"] = 50 },
         "topology" => new JsonObject { ["bins"] = 60, ["colour_states"] = true },
         "displacements" => new JsonObject { ["reference"] = "first", ["frame"] = 0 },
+        "manual_selection" => new JsonObject { ["atoms"] = "", ["mode"] = "replace" },
         "smooth" => new JsonObject { ["window"] = 5, ["kind"] = "centred", ["unwrap"] = true, ["positions"] = true, ["properties"] = false, ["mark"] = true },
         "vectors" => new JsonObject { ["property"] = "end_to_end", ["scale"] = 1.0, ["radius"] = 0.3 },
         "python" => new JsonObject { ["file"] = "", ["code"] = PythonStepTemplate },
@@ -534,6 +538,12 @@ public sealed partial class MainViewModel
                 Bool("average_frames", "Average g(r) over the frames"); Text("every", "Every n-th frame", "number"); Bool("only_selected", "Only selected"); break;
             case "topology": Text("bins", "Bins", "number"); Bool("colour_states", "Colour the backbone by dihedral state (t · g+ · g−)"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); Bool("subtract_drift", "Subtract system drift"); break;
+            case "manual_selection":
+                Text("atoms", "Atoms (indices in the frame: 0 5 12-40)", "text", "click, ⇧-click or lasso atoms in the view");
+                Add(new StepField { Key = "use_view", Label = "Use the view's selection", Kind = "action" });
+                Choice("mode", "Mode", ["replace", "add", "subtract"]);
+                Note("The same atoms on every frame. Lasso: the view toolbar's lasso tool (⇧ adds).");
+                break;
             case "smooth":
                 Text("window", "Window (frames)", "number"); Choice("kind", "Kind", ["centred", "trailing", "gaussian"]);
                 Bool("unwrap", "Unwrap before averaging (each atom followed to this frame's image)", true);
@@ -688,6 +698,37 @@ public sealed partial class MainViewModel
         ApplyPipeline();
         if (f.Key == "mode" && _pipeSel.Type is "transparency" or "particle_radius")   // other fields for the other mode
             Avalonia.Threading.Dispatcher.UIThread.Post(BuildStepFields);
+    }
+
+    /// <summary>The view's selection (lassoed and clicked atoms, frame indices) as text with ranges: "0 5 12-40".</summary>
+    public string ViewSelectionText()
+    {
+        var set = new SortedSet<int>(_selection);
+        try
+        {
+            if (_doc != null && JsonNode.Parse(_doc.SelectionJson())?["indices"] is JsonArray a)
+                foreach (var x in a) set.Add((int)((double?)x ?? -1));
+        }
+        catch (Exception) { }
+        set.Remove(-1);
+        var parts = new List<string>();
+        int? start = null, prev = null;
+        foreach (var i in set.Append(int.MinValue))
+        {
+            if (start != null && i == prev + 1) { prev = i; continue; }
+            if (start != null) parts.Add(prev == start ? $"{start}" : prev == start + 1 ? $"{start} {prev}" : $"{start}-{prev}");
+            start = prev = i;
+        }
+        return string.Join(" ", parts);
+    }
+
+    /// <summary>A step's action button: Manual selection takes the view's selection.</summary>
+    public void StepAction(StepField f)
+    {
+        if (f.Key != "use_view") return;
+        var text = ViewSelectionText();
+        if (StepFields.FirstOrDefault(x => x.Key == "atoms") is { } atoms) atoms.Text = text;
+        Status = text.Length == 0 ? "Nothing selected in the view: click, ⇧-click or lasso atoms first" : $"Manual selection: {text.Split(' ').Length} ranges from the view";
     }
 
     public string PipelineJson() => new JsonObject

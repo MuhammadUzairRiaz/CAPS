@@ -615,6 +615,14 @@ TEST(Pipeline, TopologyShapeAndFrames) {
   EXPECT_NEAR(st.system.atoms[0].pos[0], t.positions[1][0][0], 1e-9);   // positions left alone
   EXPECT_EQ(st.attribute("Smoothed", 0), 0.0);
   EXPECT_NE(st.steps[0].summary.find("1 per-atom property averaged"), std::string::npos) << st.steps[0].summary;
+  // manual selection: indices of the source frame, as text with ranges or an array; add and subtract
+  st = run(R"([{"type":"manual_selection","atoms":"0 5 10-14"}])", 0);
+  EXPECT_EQ(st.selected_count(), 7u);
+  EXPECT_TRUE(st.selected[12] && !st.selected[6]);
+  st = run(R"([{"type":"manual_selection","atoms":[11, 12],"mode":"subtract"},{"type":"manual_selection","atoms":"10-14"}])", 0);
+  EXPECT_EQ(st.selected_count(), 3u);
+  st = run(R"([{"type":"manual_selection","atoms":"0 x"}])", 0);
+  EXPECT_EQ(st.steps[0].level, "error");
   // neighbour terms: Σ 1 over bonded neighbours is the degree; Σ Distance over them the summed bond lengths; the
   // neighbour's own properties are read (Σ Element over bonded neighbours of a CH₂ carbon: 6 + 6 + 1 + 1)
   st = run(R"([{"type":"compute_property","name":"Deg","expression":"0","neighbours":true,"neighbour_mode":"bonds","neighbour_expression":"1"},
