@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Nodes;
 
 namespace CapsStudio.ViewModels;
 
@@ -58,6 +59,7 @@ public sealed partial class MainViewModel
         if (_host?.Host is not { } h) return;
         _host.Name = h.Name;
         _host.Detail = HostDetail(h);
+        Raise(nameof(RunWhereChoices));
         _host.State = "not tested";
         _host.Level = 0;
         foreach (var n in new[] { nameof(HostTitle), nameof(HostName), nameof(HostHostname), nameof(HostUser), nameof(HostPort), nameof(HostScheduler), nameof(HostPartition), nameof(HostWorkDir) })
@@ -81,6 +83,7 @@ public sealed partial class MainViewModel
         Hosts.Add(row);
         SelectedHost = row;
         Changed("Host added");
+        Raise(nameof(RunWhereChoices)); Raise(nameof(HasHosts)); Raise(nameof(RunWhereIndex));
     }
 
     public void RemoveHost()
@@ -90,6 +93,7 @@ public sealed partial class MainViewModel
         Hosts.Remove(_host);
         SelectedHost = Hosts.LastOrDefault();
         Changed("Host removed");
+        Raise(nameof(RunWhereChoices)); Raise(nameof(HasHosts)); Raise(nameof(RunWhereIndex));
     }
 
     private string _hostTest = "";
@@ -157,6 +161,209 @@ public sealed partial class MainViewModel
                 });
             else Dismiss("host." + h.Name);
         }
+    }
+
+    // ---------------------------------------------------------------- remote jobs (design/boards/RemoteCompute, Jobs)
+    // A Dynamics or Equilibrate run sent to a host: the structure and a recipe of the page's settings go up with scp, the
+    // job template (filled) is submitted to the host's scheduler over ssh, its state is polled, and the result comes back
+    // with its provenance. Keys stay in the SSH agent; nothing is stored but the host's name and the job's folder.
+    public List<string> RunWhereChoices => new[] { "This machine" }.Concat(_settings.Hosts.Select(h => h.Name.Length > 0 ? h.Name : h.Hostname)).ToList();
+    private int _runWhere;
+    public int RunWhereIndex { get => Math.Min(_runWhere, _settings.Hosts.Count); set { if (Set(ref _runWhere, Math.Clamp(value, 0, _settings.Hosts.Count))) Raise(nameof(RunsRemote)); } }
+    public bool RunsRemote => RunWhereIndex > 0;
+    public bool HasHosts => _settings.Hosts.Count > 0;
+    public static string RemoteFolder => AppSettings.Override != null ? Path.Combine(Path.GetDirectoryName(AppSettings.Override)!, "caps-remote") : Path.Combine(AppSettings.Folder, "remote");
+    private Avalonia.Threading.DispatcherTimer? _remotePoll;
+
+    /// <summary>ssh / scp with the agent's keys (batch mode: no prompts); exit code, stdout and stderr.</summary>
+    private static async Task<(int Code, string Out, string Err)> Tool(string exe, IEnumerable<string> args, int timeoutMs = 60000)
+    {
+        var psi = new ProcessStartInfo(exe) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        foreach (var a in args) psi.ArgumentList.Add(a);
+        using var p = Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + exe);
+        var o = p.StandardOutput.ReadToEndAsync();
+        var e = p.StandardError.ReadToEndAsync();
+        if (!await Task.Run(() => p.WaitForExit(timeoutMs))) { try { p.Kill(true); } catch { } throw new TimeoutException($"{exe}: no answer in {timeoutMs / 1000} s"); }
+        return (p.ExitCode, (await o).Trim(), (await e).Trim());
+    }
+    private static string Target(RemoteHost h) => h.User.Length > 0 ? $"{h.User}@{h.Hostname}" : h.Hostname;
+    private static string[] SshArgs(RemoteHost h, string command) =>
+        ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-p", h.Port.ToString(CultureInfo.InvariantCulture), Target(h), command];
+    private static IEnumerable<string> ScpArgs(RemoteHost h, IEnumerable<string> from, string to, bool recursive = false) =>
+        new[] { "-B", "-q", "-P", h.Port.ToString(CultureInfo.InvariantCulture) }.Concat(recursive ? ["-r"] : Array.Empty<string>()).Concat(from).Append(to);
+    private static string Q(string s) => "'" + s.Replace("'", "'\\''") + "'";   // a single-quoted shell word
+
+    /// <summary>The page's run as a recipe for caps run on the host: the structure from the file, typed with the Field's
+    /// force field, the run, and the result exported.</summary>
+    private JsonObject RemoteRecipe(string kind, string stem)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var r = new JsonObject { ["recipe"] = 1, ["name"] = stem, ["build"] = new JsonObject { ["file"] = "structure.data" }, ["cutoff"] = _relaxCutoff, ["seed"] = _mdSeed };
+        var ff = Field.Assigned && Field.FfIndex >= 0 && Field.FfIndex < Field.Library.Count ? Field.Library[Field.FfIndex].Id : "default";
+        r["type"] = new JsonObject { ["forcefield"] = ff };
+        string[] th = ["bussi", "langevin", "nose-hoover"], ba = ["crescale", "berendsen", "mtk"], cons = ["none", "h-bonds", "all-bonds"], solver = ["shake", "lincs"];
+        var common = new JsonObject
+        {
+            ["thermostat"] = th[Math.Clamp(_mdThermostat, 0, 2)], ["barostat"] = ba[Math.Clamp(_mdBarostat, 0, 2)], ["tau_t"] = _mdTauT, ["tau_p"] = _mdTauP,
+            ["constraints"] = cons[Math.Clamp(_mdConstraints, 0, 2)], ["constraint_solver"] = solver[Math.Clamp(_mdConstraintSolver, 0, 1)], ["seed"] = _mdSeed,
+        };
+        if (kind == "Dynamics")
+        {
+            var md = (JsonObject)common.DeepClone();
+            md["ensemble"] = new[] { "nve", "nvt", "npt", "nph" }[Math.Clamp(_mdEnsemble, 0, 3)];
+            md["ps"] = _mdSteps * _mdDt / 1000.0;
+            md["dt"] = _mdDt;
+            md["temperature"] = _mdTemp;
+            md["pressure"] = _mdPressure;
+            if (RespaSteps > 1) md["respa"] = RespaSteps;
+            r["md"] = md;
+        }
+        else
+        {
+            var eq = (JsonObject)common.DeepClone();
+            eq["protocol_text"] = _eqText;
+            eq["until_converged"] = _eqUntil;
+            eq["block_ps"] = _eqBlock;
+            eq["max_blocks"] = _eqMaxBlocks;
+            r["equilibrate"] = eq;
+        }
+        r["export"] = new JsonArray("lammps", "pdb");
+        _ = inv;
+        return r;
+    }
+
+    /// <summary>Sends the open structure and the page's run (Dynamics or Equilibrate) to the chosen host.</summary>
+    public async Task SubmitRemote(string kind)
+    {
+        if (_doc == null || RunWhereIndex == 0) return;
+        var h = _settings.Hosts[RunWhereIndex - 1];
+        if (h.Hostname.Length == 0) { Status = "The host has no hostname: set it in Settings › Compute & remote"; return; }
+        var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
+        var id = $"{kind.ToLowerInvariant()}-{k}";
+        var stem = string.Concat(Title.Replace(" (unsaved)", "").Where(char.IsLetterOrDigit).Take(24)) is { Length: > 0 } t ? t : "structure";
+        var job = new Job
+        {
+            Id = id, Kind = kind, Module = kind == "Dynamics" ? 3 : 4, Title = $"{kind} · on {h.Name}", Document = Title, Atoms = _doc.Summary().Atoms,
+            Provenance = Manifest(kind),
+        };
+        job.Status = "queued";
+        job.Remote = new RemoteRun { Host = h.Name, Scheduler = h.Scheduler, Local = Path.Combine(RemoteFolder, $"{id}-{DateTime.Now:yyyyMMdd-HHmmss}"), Stem = stem };
+        Jobs.Insert(0, job);
+        SelectedJob = job;
+        Raise(nameof(HasJobs)); Raise(nameof(JobsSummary));
+        try
+        {
+            var local = job.Remote.Local;
+            Directory.CreateDirectory(local);
+            _doc.Save(Path.Combine(local, "structure.data"));
+            File.WriteAllText(Path.Combine(local, "recipe.json"), RemoteRecipe(kind, stem).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            if (!_relaxCoulomb) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
+            var script = _settings.JobTemplate.Replace("{job}", id).Replace("{partition}", h.Partition).Replace("{recipe}", "recipe.json --out out");
+            job.Add($"Prepared {local}: structure.data, recipe.json, job.sh");
+            // the host's folder (the template's {workdir} is expanded there: $USER, ~)
+            var mk = await Tool("ssh", SshArgs(h, $"mkdir -p \"{h.WorkDir}/{id}\" && cd \"{h.WorkDir}/{id}\" && pwd"), 30000);
+            if (mk.Code != 0) throw new InvalidOperationException("ssh: " + (mk.Err.Length > 0 ? mk.Err.Split('\n')[0] : $"exit {mk.Code}"));
+            var dir = mk.Out.Split('\n').Last().Trim();
+            job.Remote.Dir = dir;
+            script = script.Replace("{workdir}/" + id, dir).Replace("{workdir}", Path.GetDirectoryName(dir.Replace('\\', '/'))?.Replace('\\', '/') ?? dir);
+            if (h.Scheduler == "none" && !script.Contains("caps run")) script += "\ncaps run recipe.json --out out\n";
+            File.WriteAllText(Path.Combine(local, "job.sh"), script.Replace("\r\n", "\n"));
+            var up = await Tool("scp", ScpArgs(h, new[] { "structure.data", "recipe.json", "job.sh" }.Select(f => Path.Combine(local, f)), $"{Target(h)}:{dir}/"), 120000);
+            if (up.Code != 0) throw new InvalidOperationException("scp: " + (up.Err.Length > 0 ? up.Err.Split('\n')[0] : $"exit {up.Code}"));
+            job.Add($"Uploaded to {h.Name}:{dir}");
+            var submit = h.Scheduler switch
+            {
+                "SLURM" => $"cd {Q(dir)} && sbatch --parsable job.sh",
+                "PBS" => $"cd {Q(dir)} && qsub job.sh",
+                _ => $"cd {Q(dir)} && (nohup bash job.sh > caps.log 2>&1 & echo $!)",
+            };
+            var sub = await Tool("ssh", SshArgs(h, submit), 60000);
+            if (sub.Code != 0 || sub.Out.Length == 0) throw new InvalidOperationException("submit: " + (sub.Err.Length > 0 ? sub.Err.Split('\n')[0] : $"exit {sub.Code}"));
+            job.Remote.JobId = sub.Out.Split('\n').Last().Split(';')[0].Trim();
+            job.Status = "running";
+            job.Add($"Submitted · {(h.Scheduler == "none" ? "process" : h.Scheduler + " job")} {job.Remote.JobId}");
+            Status = $"{kind} sent to {h.Name} · {h.Scheduler} {job.Remote.JobId} · Jobs follows it";
+            StartRemotePoll();
+        }
+        catch (Exception e)
+        {
+            job.Status = "failed";
+            job.Error = e.Message;
+            job.Add("Could not send the job: " + e.Message);
+            job.Suggestion = "Test the host in Settings › Compute & remote (keys come from your SSH agent; caps must be on the host's PATH).";
+            job.SuggestModule = 10;
+            job.Ended = DateTime.Now;
+            Status = "Could not send the job: " + e.Message;
+        }
+        SaveJobs();
+        Raise(nameof(JobsSummary));
+    }
+
+    private void StartRemotePoll()
+    {
+        if (_remotePoll != null) return;
+        _remotePoll = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+        _remotePoll.Tick += (_, _) => { foreach (var j in Jobs.Where(j => j.IsRemote && j.IsRunning).ToList()) _ = CheckRemote(j); };
+        _remotePoll.Start();
+    }
+
+    /// <summary>Asks the host where the job stands; when it has ended, brings the result and its log back.</summary>
+    public async Task CheckRemote(Job? j)
+    {
+        if (j?.Remote is not { } r || !j.IsRunning || r.Checking) return;
+        var h = _settings.Hosts.FirstOrDefault(x => x.Name == r.Host);
+        if (h == null) { j.Add($"The host {r.Host} is no longer in Settings"); return; }
+        r.Checking = true;
+        try
+        {
+            var probe = r.Scheduler switch
+            {
+                "SLURM" => $"squeue -h -j {Q(r.JobId)} -o %T 2>/dev/null",
+                "PBS" => $"qstat {Q(r.JobId)} >/dev/null 2>&1 && echo RUNNING",
+                _ => $"kill -0 {Q(r.JobId)} 2>/dev/null && echo RUNNING",
+            };
+            var st = await Tool("ssh", SshArgs(h, probe), 30000);
+            var state = st.Out.Trim();
+            if (state.Length > 0)
+            {
+                if (state != r.LastState) j.Add($"{r.Host}: {state.ToLowerInvariant()}");
+                r.LastState = state;
+                return;
+            }
+            // ended: the results, the log and the recipe's provenance come back
+            Directory.CreateDirectory(r.Local);
+            var back = await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/out"], r.Local, true), 600000);
+            await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/*.log"], r.Local), 60000);
+            var result = Path.Combine(r.Local, "out", r.Stem + ".data");
+            j.Ended = DateTime.Now;
+            if (back.Code == 0 && File.Exists(result))
+            {
+                j.Status = "done";
+                j.Progress = 1;
+                j.Add($"Finished on {r.Host}; the result is in {Path.Combine(r.Local, "out")}");
+                j.Outputs.Add(new JobOutput($"Result · {r.Stem}.data", "cube", () => Open(result)));
+            }
+            else
+            {
+                var log = Directory.Exists(r.Local) ? Directory.GetFiles(r.Local, "*.log").Select(File.ReadAllText).FirstOrDefault() ?? "" : "";
+                j.Status = "failed";
+                j.Error = "No result came back" + (log.Length > 0 ? ":\n" + string.Join("\n", log.Split('\n').TakeLast(8)) : $" ({(back.Err.Length > 0 ? back.Err.Split('\n')[0] : "no out folder on the host")})");
+                j.Add(j.Error);
+            }
+            SaveJobs();
+            Raise(nameof(JobsSummary));
+        }
+        catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message} (the job keeps running there; checked again in a minute)"); }
+        finally { r.Checking = false; }
+    }
+
+    /// <summary>Opens the structure a remote job brought back.</summary>
+    public void OpenRemoteResult(Job? j)
+    {
+        if (j?.Remote is not { } r) return;
+        var result = Path.Combine(r.Local, "out", r.Stem + ".data");
+        if (!File.Exists(result)) { Status = "No result yet"; return; }
+        Open(result);
     }
 
     /// <summary>The batch-job template ({job}, {partition}, {workdir}, {recipe} are filled per job).</summary>

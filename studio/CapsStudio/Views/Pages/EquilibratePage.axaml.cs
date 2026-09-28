@@ -37,7 +37,7 @@ public partial class EquilibratePage : PageBase
         };
     }
 
-    private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunEquilibrate();
+    private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitRemote("Equilibrate"); else await Vm.RunEquilibrate(); }
     private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueEquilibrate();
     private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelEquilibrate();

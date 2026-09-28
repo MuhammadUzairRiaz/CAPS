@@ -8,6 +8,25 @@ using CapsStudio.Interop;
 
 namespace CapsStudio.ViewModels;
 
+/// <summary>Where a remote job runs: the host, its scheduler and job id, the folder there and the one here.</summary>
+public sealed class RemoteRun
+{
+    public string Host { get; set; } = "";
+    public string Scheduler { get; set; } = "SLURM";
+    public string JobId { get; set; } = "";
+    public string Dir { get; set; } = "";
+    public string Local { get; set; } = "";
+    public string Stem { get; set; } = "structure";
+    public string LastState { get; set; } = "";
+    public bool Checking { get; set; }
+    public JsonObject Json() => new() { ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem };
+    public static RemoteRun From(JsonObject o) => new()
+    {
+        Host = (string?)o["host"] ?? "", Scheduler = (string?)o["scheduler"] ?? "SLURM", JobId = (string?)o["job_id"] ?? "", Dir = (string?)o["dir"] ?? "",
+        Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure",
+    };
+}
+
 /// <summary>One line of a job's log.</summary>
 public sealed record JobLine(string Time, string Text);
 
@@ -46,7 +65,8 @@ public sealed class Job : INotifyPropertyChanged
         set
         {
             _status = value;
-            foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel) }) Raise(n);
+            foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel),
+                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where) }) Raise(n);
         }
     }
     public bool IsRunning => _status == "running";
@@ -55,7 +75,7 @@ public sealed class Job : INotifyPropertyChanged
     /// <summary>A running job held at its next report (Pause); nothing is lost.</summary>
     public bool Paused { get => _paused; set { _paused = value; Raise(nameof(Paused)); Raise(nameof(StatusText)); Raise(nameof(ShowPause)); } }
     public bool ShowPause => IsRunning && !_paused && Kind is "Dynamics" or "Equilibrate" or "Relax";
-    public bool CanCancel => IsRunning || IsQueued;
+    public bool CanCancel => (IsRunning || IsQueued) && !IsRemote;
     public bool IsFailed => _status == "failed";
     public bool IsDone => _status == "done";
     public bool IsQuiet => _status is "cancelled" or "stopped";
@@ -79,7 +99,12 @@ public sealed class Job : INotifyPropertyChanged
     public bool HasSuggestion => Suggestion.Length > 0;
     public string SuggestButton => SuggestModule switch { 7 => "Open Field", 2 => "Open Relax", 3 => "Open Dynamics", 5 => "Open Pack", _ => "Open" };
     public string Subtitle => $"{Document} · {Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · started {Started:HH:mm}";
-    public string Where => $"{Id} · Local · {Environment.ProcessorCount} threads";
+    public string Where => Remote is { } r ? $"{Id} · {r.Host} · {(r.Scheduler == "none" ? "process" : r.Scheduler)} {r.JobId}" : $"{Id} · Local · {Environment.ProcessorCount} threads";
+    /// <summary>A job sent to a host (Settings › Compute &amp; remote); null for this machine.</summary>
+    public RemoteRun? Remote { get; set; }
+    public bool IsRemote => Remote != null;
+    public bool CanCheckRemote => IsRemote && IsRunning;
+    public bool CanOpenRemote => IsRemote && IsDone;
     public string Duration => Ended is { } e ? Seconds(e - Started) : Seconds(DateTime.Now - Started) + " so far";
 
     private static string Seconds(TimeSpan t) => t.TotalSeconds < 90 ? $"{t.TotalSeconds:F1} s" : t.TotalMinutes < 90 ? $"{t.TotalMinutes:F1} min" : $"{t.TotalHours:F1} h";
@@ -115,6 +140,7 @@ public sealed class Job : INotifyPropertyChanged
             ["provenance"] = new JsonObject(Provenance.Select(f => KeyValuePair.Create(f.Key, (JsonNode?)f.Value))),
         };
         o["log"] = new JsonArray(Log.TakeLast(full ? 400 : 60).Select(l => (JsonNode)new JsonObject { ["t"] = l.Time, ["text"] = l.Text }).ToArray());
+        if (Remote != null) o["remote"] = Remote.Json();
         return o;
     }
 
@@ -129,7 +155,8 @@ public sealed class Job : INotifyPropertyChanged
         };
         if (DateTime.TryParse((string?)n["ended"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var e)) j.Ended = e;
         var st = (string?)n["status"] ?? "done";
-        j.Status = st == "running" ? "stopped" : st;   // a job running when the Studio closed did not finish
+        if (n["remote"] is JsonObject ro) j.Remote = RemoteRun.From(ro);
+        j.Status = st == "running" && j.Remote == null ? "stopped" : st;   // a local job running when the Studio closed did not finish; a remote one goes on
         if (n["provenance"] is JsonObject p) foreach (var kv in p) j.Provenance.Add(new JobFact(kv.Key, (string?)kv.Value ?? ""));
         if (n["log"] is JsonArray log) foreach (var l in log) if (l != null) j.Log.Add(new JobLine((string?)l["t"] ?? "", (string?)l["text"] ?? ""));
         j.Progress = st == "done" ? 1 : 0;
@@ -178,6 +205,7 @@ public sealed partial class MainViewModel
                 if (int.TryParse(j.Id.Split('-').LastOrDefault(), out var k)) _jobCounters[j.Kind] = Math.Max(_jobCounters.GetValueOrDefault(j.Kind), k);
         }
         catch { /* a broken history is left behind */ }
+        if (Jobs.Any(j => j.IsRemote && j.IsRunning)) Avalonia.Threading.Dispatcher.UIThread.Post(StartRemotePoll);   // remote jobs sent before
         PropertyChanged += OnRunProperty;
         Analyze.PropertyChanged += (_, e) =>
         {
@@ -378,7 +406,7 @@ public sealed partial class MainViewModel
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(JobsFile)!);
-            var arr = new JsonArray(Jobs.Where(j => !j.IsRunning && !j.IsQueued).Take(40).Select(j => (JsonNode)j.ToJson(false)).ToArray());
+            var arr = new JsonArray(Jobs.Where(j => (!j.IsRunning || j.IsRemote) && !j.IsQueued).Take(40).Select(j => (JsonNode)j.ToJson(false)).ToArray());
             File.WriteAllText(JobsFile, arr.ToJsonString(JsonOut));
         }
         catch { }
