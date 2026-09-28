@@ -147,7 +147,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -217,6 +217,28 @@ class _Field:
         path = _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
+        if rc < 0:
+            raise _error()
+        rep = _json_call(library().caps_field_report, self._doc._h)
+        rep["complete"] = rc == 0
+        return rep
+
+    def assign_groups(self, groups, eps_rule: str = "geometric", sigma_rule: str = "arithmetic", scaling14: str = "refuse",
+                      cross96: str = "refuse", pairs: Optional[list] = None) -> dict:
+        """A force field per group of molecules: groups = [{"name": "filler", "molecules": "1", "forcefield": "iff-cvff"},
+        {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. Between groups the Lennard-Jones
+        pairs follow eps_rule (geometric | arithmetic) and sigma_rule (arithmetic | geometric | sixthpower), or pairs =
+        [{"a": type, "b": type, "eps": kcal/mol, "sigma": Å}]. Different 1-4 scalings are refused unless scaling14="first";
+        9-6 with 12-6 unless cross96="rmin" (the 9-6 sites keep ε and r_min)."""
+        codes = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}
+        gs = []
+        for g in groups:
+            g = dict(g)
+            g["forcefield"] = _forcefield_path(g["forcefield"])
+            g["charges"] = codes[g.get("charges", "auto")]
+            gs.append(g)
+        spec = {"groups": gs, "eps_rule": eps_rule, "sigma_rule": sigma_rule, "scaling14": scaling14, "cross96": cross96, "pairs": pairs or []}
+        rc = library().caps_field_assign_groups(self._doc._h, _enc(json.dumps(spec)))
         if rc < 0:
             raise _error()
         rep = _json_call(library().caps_field_report, self._doc._h)
