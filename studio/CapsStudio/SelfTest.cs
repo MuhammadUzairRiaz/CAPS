@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 37, "native ABI version 37");
+        Check(Native.AbiVersion() == 39, "native ABI version 39");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -941,6 +941,41 @@ internal static class SelfTest
               $"blend by chain count: {counted} chains · by volume: '{sameDensity}' then '{vm.BlendRows[0].ChainsText}' / '{vm.BlendRows[1].ChainsText}'");
         vm.BlendMode = 0;
 
+        // Coarse-grained Kremer–Grest melt: reduced units, then mapped to real units by σ, T and the bead mass
+        {
+            vm.CgChains = 10;
+            vm.CgBeads = 20;
+            vm.OpenCg();
+            for (var i = 0; i < 200 && vm.CgDoc == null; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            var cgStem = Path.Combine(outDir, "caps-selftest-kg");
+            vm.CgUnits = 0;
+            vm.ExportCg(cgStem);
+            var lj = File.Exists(cgStem + ".in") ? File.ReadAllText(cgStem + ".in") : "";
+            vm.CgUnits = 1;
+            vm.CgSigma = 5m; vm.CgTemp = 300m; vm.CgMass = 50m;
+            vm.ExportCg(cgStem + "-real");
+            var real = File.Exists(cgStem + "-real.in") ? File.ReadAllText(cgStem + "-real.in") : "";
+            Check(lj.Contains("units lj") && real.Contains("units real") && real.Contains("bond_coeff 1 " + (30 * 0.0019872067 * 300 / 25).ToString("0.########", System.Globalization.CultureInfo.InvariantCulture)) &&
+                  vm.CgMapText.StartsWith("ε = k_B T = 0.5962", StringComparison.Ordinal),
+                  $"CG units: reduced and mapped · {vm.CgMapText[..Math.Min(90, vm.CgMapText.Length)]}");
+            vm.CgUnits = 0;
+            // the melt as the Studio structure comes with its own force field: nothing to assign before exporting
+            vm.BuildCg();
+            var kgAssigned = vm.Field.Assigned && vm.Field.Complete && vm.Field.ForceFieldName.StartsWith("Kremer–Grest", StringComparison.Ordinal);
+            Check(kgAssigned, $"Kremer–Grest melt assigned on its own: {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            // MARTINI: PEO chains of SN0 beads with the library's MARTINI 2 polymers, packed and compressed to 1.1 g/cm³
+            vm.OpenCg();
+            vm.CgModel = 1;
+            vm.MtExample = 1;
+            vm.MtRepeats = 10; vm.MtChains = 12; vm.MtDensity = 1.1m;
+            vm.BuildMartini().GetAwaiter().GetResult();
+            var mtDensity = vm.Document?.Summary().Density ?? 0;
+            Check(vm.Field.Complete && vm.Field.ForceFieldName.Contains("MARTINI", StringComparison.Ordinal) && Math.Abs(mtDensity - 1.1) < 0.01,
+                  $"MARTINI melt: {vm.Field.ForceFieldName} · {mtDensity:0.000} g/cm³ · {vm.Status} {vm.CgError}");
+            vm.CgModel = 0;
+            vm.SetModule(8);
+        }
+
         // Crystal builder: polyethylene (Pnam) to start, rutile's space group found from its CIF, a supercell built
         vm.OpenCrystal();
         Check(vm.CrystalGroup?.Number == 62 && vm.CrystalSites.Count == 3 && vm.CrystalGroups.Count >= 8 && vm.CrystalBFree,
@@ -1749,6 +1784,16 @@ internal static class SelfTest
             Check(vm.IsScattering && vm.ScatterXrayCurve.Length > 10 && vm.ScatterNeutronCurve.Length > 10 && deut > 0 && vm.ScatterLengths.Any(r => r.Key == "²H (D)"),
                   $"scattering: x-ray {vm.ScatterXrayCurve.Length} pts · neutron {vm.ScatterNeutronCurve.Length} pts · {deut} H deuterated · {vm.ScatterText[..Math.Min(60, vm.ScatterText.Length)]}");
             vm.IsotopePattern = 0;
+            // electron diffraction: Peng 1996 scattering factors, a 200 kV source for the angles
+            var xrayPeak = vm.ScatterPeaks.FirstOrDefault()?.Key ?? "";
+            vm.FormFactorMode = 1;
+            vm.RunScattering().GetAwaiter().GetResult();
+            var electron = vm.Analyze.Results.FirstOrDefault(r => r.Id == "electron");
+            var electronCurve = vm.ScatterXrayCurve.Length;
+            vm.FormFactorMode = 0;
+            vm.RunScattering().GetAwaiter().GetResult();   // the X-ray curve back for the overlay below
+            Check(electron != null && electronCurve > 10 && vm.ScatterXrayCurve.Length > 10,
+                  $"electron scattering: {electronCurve} pts (Peng 1996 factors, TEM 200 kV) · X-ray back {vm.ScatterXrayCurve.Length} pts{(xrayPeak.Length > 0 ? " · X-ray peak " + xrayPeak : "")}");
             var exp = Path.Combine(outDir, "caps-selftest-self-overlay.csv");
             File.WriteAllLines(exp, new[] { "q,I" }.Concat(vm.ScatterXrayCurve.Select(p => $"{p.X.ToString(System.Globalization.CultureInfo.InvariantCulture)},{p.Y.ToString(System.Globalization.CultureInfo.InvariantCulture)}")));
             var why = vm.LoadExperiment(exp);

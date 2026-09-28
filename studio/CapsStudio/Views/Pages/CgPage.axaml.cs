@@ -26,7 +26,7 @@ public partial class CgPage : PageBase
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
     private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
-    private void OnBuild(object? s, RoutedEventArgs e) => Vm.BuildCg();
+    private async void OnBuild(object? s, RoutedEventArgs e) { if (Vm.CgIsMartini) await Vm.BuildMartini(); else Vm.BuildCg(); }
 
     private async void OnExport(object? s, RoutedEventArgs e)
     {

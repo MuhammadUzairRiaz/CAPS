@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 37  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids */
+#define CAPS_ABI_VERSION 39  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -351,7 +351,7 @@ int32_t caps_field_clear(caps_doc* d);
 /* Writes the assigned types, one per line (for caps ff apply --types). */
 int32_t caps_field_types_file(caps_doc* d, const char* path);
 
-/* Analyze: properties over the frames of the document (ids as for caps analyze: density, rdf, sq, xray, neutron, rg,
+/* Analyze: properties over the frames of the document (ids as for caps analyze: density, rdf, sq, xray, electron, neutron, rg,
    ree, cn, persistence, msd, diffusion, relaxation, ced, delta, ffv, psd; comma-separated). Zero or negative fields
    of the options take the defaults. Cohesive energy uses the Field assignment when there is one (it must be complete),
    else the built-in GAFF typing of C and H. The progress callback gets what is being computed and the fraction done;
@@ -371,6 +371,8 @@ typedef struct {
                                         "molecules:1-4,7" molecule ids; "exclude-held" all but the held molecule. The
                                         properties see those atoms alone (density: theirs in the whole cell); the
                                         mechanics and Tg protocols always use the whole cell */
+  const char* radii;                 /* v38 free volume and pores: NULL / "bondi" (Bondi 1964), "uff" (x/2), "forcefield" (half
+                                        the assigned Lennard-Jones minimum) */
 } caps_analyze_opts;
 typedef int32_t (*caps_analyze_progress_fn)(const char* what, double fraction, void* user);
 /* v20: coherent neutron scattering length (fm) of element z (1001 = ²H); NaN when unknown. */
@@ -534,6 +536,13 @@ caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
    report {box, closest, r2_per_bond}. caps_kg_lammps writes STEM.data and STEM.in (push-off, then FENE + WCA; steps ≤ 0:
    20 000 and 100 000). */
 caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap);
+/* v39 MARTINI polymer melt: {forcefield: path (MARTINI), repeat: bead SMILES of the repeat unit ([SN0], [C1] …), repeats,
+   chains, density (g/cm³), tolerance (Å, 3), seed}. One chain built from the repeat, `chains` copies packed at a quarter
+   of the density, the MARTINI force field assigned, the cell compressed to the density with it; the melt comes back
+   assigned (ready for Relax, Dynamics, GROMACS and LAMMPS). progress gets (stage, stages, 0). Report: {beads,
+   beads_per_chain, chain_mass, density, loose_density, forcefield, complete}. A Kremer–Grest melt (caps_kg_build) also
+   comes back with its own force field (FENE + WCA; v39). */
+caps_doc* caps_martini_melt(const char* options_json, caps_progress_fn progress, void* user, char* report, int32_t cap);
 int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps);
 /* v20 colour vision (design/boards/ColourVision): palettes {"Elements": {"labels": [...], "colours": ["#909090", ...]}, ...}
    → {"palettes": [{name, labels, normal[], protanopia[], deuteranopia[], tritanopia[]}], "pairs": [{palette, vision,

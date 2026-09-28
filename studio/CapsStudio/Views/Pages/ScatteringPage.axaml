@@ -58,16 +58,17 @@
                 <StackPanel Spacing="6"><TextBlock Text="Plot to · Å⁻¹" Classes="label" /><NumericUpDown Value="{Binding ScatterPlotTo}" Minimum="1" Maximum="40" Increment="1" FormatString="0.0" ShowButtonSpinner="False" /></StackPanel>
               </Grid>
               <StackPanel Orientation="Horizontal" Spacing="16">
-                <CheckBox Content="X-ray" IsChecked="{Binding ScatterXray}" />
+                <CheckBox Content="{Binding BeamLabel}" IsChecked="{Binding ScatterXray}" />
                 <CheckBox Content="Neutron" IsChecked="{Binding ScatterNeutron}" />
               </StackPanel>
             </StackPanel>
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="10">
-              <TextBlock Text="X-ray" FontSize="13.5" FontWeight="SemiBold" />
-              <StackPanel Spacing="6"><TextBlock Text="Form factors" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Cromer–Mann, International Tables Vol. C" /></ComboBox></StackPanel>
-              <StackPanel Spacing="6"><TextBlock Text="Source (for 2θ)" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.XraySources}" SelectedIndex="{Binding XraySourceIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+              <TextBlock Text="{Binding BeamLabel}" FontSize="13.5" FontWeight="SemiBold" />
+              <StackPanel Spacing="6"><TextBlock Text="Form factors" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.FormFactorModes}" SelectedIndex="{Binding FormFactorMode}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="X-ray: Cromer–Mann form factors of the neutral atoms (every element to Cf except Tm). Electron: Peng et al. 1996 elastic scattering factors, for electron diffraction (SAED) of amorphous and crystalline films" /></StackPanel>
+              <StackPanel Spacing="6"><TextBlock Text="Source (for 2θ)" Classes="label" /><ComboBox ItemsSource="{Binding BeamSources}" SelectedIndex="{Binding XraySourceIndex}" HorizontalAlignment="Stretch" /></StackPanel>
               <ItemsControl ItemsSource="{Binding ScatterPeaks}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:ProvRow">

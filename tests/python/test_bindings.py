@@ -1,4 +1,5 @@
 """The Python bindings (data/python/caps/core.py) against the built library: run by ctest as python_bindings."""
+import json
 import os
 import sys
 import tempfile
@@ -384,4 +385,14 @@ with tempfile.TemporaryDirectory() as td:
     mdeck = open(os.path.join(td, "out3", "system.in")).read()
     check("* * meam library.meam Si C SiC.meam C NULL NULL" in mdeck and {"library.meam", "SiC.meam"} <= {x["name"] for x in out["files"]},
           "MEAM: library entries mapped to elements, the parameter file's order kept, both files beside the inputs")
+# coarse-grained melts: Kremer–Grest with its own force field (LAMMPS deck, GROMACS refused with the reason); MARTINI PEO
+kg = caps.build.kremer_grest(chains=8, beads=20, k_theta=1.5)
+kg_rep = kg.field.report() if hasattr(kg.field, "report") else caps.core._json_call(caps.library().caps_field_report, kg._h)
+with tempfile.TemporaryDirectory() as td:
+    ko = kg.export_engines(td, run="nvt", steps=1000)
+    kg_deck = open(os.path.join(td, "system.in")).read()
+mt = caps.build.martini_melt("[SN0]", repeats=10, chains=10, density=1.1, forcefield="martini-polymers")
+mt_rep = caps.core._json_call(caps.library().caps_field_report, mt._h)
+check(kg_rep["complete"] and "units lj" in kg_deck and "gromacs_error" in ko and mt_rep["complete"] and abs(json.loads(mt.report)["density"] - 1.1) < 1e-6,
+      f"CG melts: {kg_rep['forcefield']} · {mt_rep['forcefield']} at {json.loads(mt.report)['density']:.3f} g/cm³")
 print("all python checks passed")

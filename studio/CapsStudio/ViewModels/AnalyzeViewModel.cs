@@ -119,7 +119,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         _running = running;
         Groups =
         [
-            new("Structure", [Chip("density", "Density", on: true), Chip("rdf", "RDF", on: true), Chip("sq", "S(q)"), Chip("xray", "X-ray"), Chip("neutron", "Neutron")]),
+            new("Structure", [Chip("density", "Density", on: true), Chip("rdf", "RDF", on: true), Chip("sq", "S(q)"), Chip("xray", "X-ray"), Chip("electron", "Electron"), Chip("neutron", "Neutron")]),
             new("Chains", [Chip("rg", "Rg", on: true), Chip("ree", "Ree"), Chip("cn", "Cn, C∞"), Chip("persistence", "Persistence"), Chip("orientation", "Orientation"),
                 Chip("entanglements", "Entanglements")]),
             new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), TgChip]),
@@ -157,6 +157,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["rdf"] = "g(r) of the chosen pair, averaged over the frames; first peak and coordination number",
         ["sq"] = "Total structure factor: direct reciprocal-lattice sum at low q, g(r) transform above",
         ["xray"] = "X-ray I(q) with Cromer–Mann form factors (Faber–Ziman)",
+        ["electron"] = "Electron-diffraction I(q) with Peng et al. 1996 elastic scattering factors (Faber–Ziman)",
         ["neutron"] = "Neutron S(q) with coherent scattering lengths (Faber–Ziman)",
         ["rg"] = "Radius of gyration of the chains, √⟨Rg²⟩",
         ["ree"] = "Backbone end-to-end distance, √⟨R²⟩",
@@ -200,6 +201,9 @@ public sealed class AnalyzeViewModel : ObservableObject
     public decimal QDirectD { get => (decimal)_qDirect; set => Set(ref _qDirect, (double)Math.Clamp(value, 0m, 10m), nameof(QDirectD)); }
     /// <summary>Neutron contrast: 0 none, 1 every H → D, 2 aliphatic H (d-backbone), 3 aromatic H (d-ring), 4 H on O/N.</summary>
     public int Deuterate { get => _deuterate; set => Set(ref _deuterate, Math.Clamp(value, 0, 4)); }
+    private string _radii = "bondi";
+    /// <summary>Free volume and pore radii: bondi, uff or forcefield (the Field assignment).</summary>
+    public string Radii { get => _radii; set => Set(ref _radii, value); }
     public decimal ProbeD { get => (decimal)_probe; set => Set(ref _probe, (double)Math.Max(0, value), nameof(ProbeD)); }
     public decimal GridD { get => (decimal)_grid; set => Set(ref _grid, (double)Math.Clamp(value, 0.1m, 2m), nameof(GridD)); }
     public decimal FitFromD { get => (decimal)_fitFrom; set => Set(ref _fitFrom, (double)Math.Clamp(value, 0m, 0.95m), nameof(FitFromD)); }
@@ -353,7 +357,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         {
             First = _first, Last = _last < 0 ? -1 : _last, Stride = _stride, FramePs = _framePs, TimestepFs = _timestepFs, Blocks = 5,
             ElemA = a, ElemB = b, InterOnly = _inter ? 1 : 0, FitFrom = _fitFrom, FitTo = _fitTo, Probe = _probe, Grid = _grid,
-            Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate, Group = GroupSpec,
+            Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate, Group = GroupSpec, Radii = _radii,
         };
     }
 
@@ -443,7 +447,7 @@ public sealed class AnalyzeViewModel : ObservableObject
                 {
                     var x = s.GetProperty("x").EnumerateArray().Select(v => v.ValueKind == JsonValueKind.Number ? v.GetDouble() : double.NaN).ToArray();
                     var y = s.GetProperty("y").EnumerateArray().Select(v => v.ValueKind == JsonValueKind.Number ? v.GetDouble() : double.NaN).ToArray();
-                    double? refY = id is "rdf" or "sq" or "xray" or "neutron" ? 1.0 : id is "relaxation" ? 0.0 : null;
+                    double? refY = id is "rdf" or "sq" or "xray" or "electron" or "neutron" ? 1.0 : id is "relaxation" ? 0.0 : null;
                     list.Add(new SeriesItem(card.Name, Str(s, "label"), Str(s, "x_label"), Str(s, "y_label"), x, y, id == "msd", refY));
                 }
                 if (id == "tg" && list.Count >= 2)          // specific volume as points, the two-line fit through them
