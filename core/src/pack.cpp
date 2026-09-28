@@ -148,6 +148,33 @@ double region_penalty(const Region& R, const Vec3& x, double m, Vec3* grad) {
       if (v > 0) { p = v * v; g = R.a * (2 * v); }
       break;
     }
+    case Region::InsideEllipsoid:
+    case Region::OutsideEllipsoid: {
+      // packmol's f = Σ((x−a)/b)² − d, scaled to Å by the smallest semi-axis (√d b_min is the reach along it); the margin
+      // shrinks (inside) or grows (outside) the ellipsoid by m along that axis
+      const double bmin = std::max(1e-9, std::min({R.b[0], R.b[1], R.b[2]}));
+      const double sd = std::sqrt(std::max(0.0, R.r));
+      double q = 0;
+      Vec3 dq{0, 0, 0};
+      for (int k = 0; k < 3; ++k) {
+        const double u = (x[k] - R.a[k]) / R.b[k];
+        q += u * u;
+        dq[k] = 2 * u / R.b[k];
+      }
+      const double rq = std::sqrt(q);
+      const bool inside = R.kind == Region::InsideEllipsoid;
+      const double lim = inside ? sd - m / bmin : sd + m / bmin;
+      const double v = (inside ? rq - lim : lim - rq) * bmin;   // Å
+      if (v > 0 && rq > 1e-12) {
+        p = v * v;
+        const Vec3 drq = dq * (0.5 / rq);   // ∇√q
+        g = drq * (2 * v * bmin * (inside ? 1.0 : -1.0));
+      } else if (v > 0) {
+        p = v * v;   // at the centre of an outside ellipsoid: any direction
+        g = Vec3{-2 * v, 0, 0};
+      }
+      break;
+    }
   }
   if (grad) *grad = g;
   return p;
@@ -273,6 +300,11 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
       }
       bool bounded = false;
       for (const auto& r : it.regions) {
+        if (!r.atoms.empty()) continue;
+        if (r.kind == Region::InsideEllipsoid) {
+          const double sd = std::sqrt(std::max(0.0, r.r));
+          grow(r.a - r.b * sd); grow(r.a + r.b * sd); bounded = true;
+        }
         if (r.kind == Region::InsideBox) { grow(r.a); grow(r.b); bounded = true; }
         if (r.kind == Region::InsideSphere) { grow(r.a - Vec3{r.r, r.r, r.r}); grow(r.a + Vec3{r.r, r.r, r.r}); bounded = true; }
         if (r.kind == Region::InsideCylinder) {
@@ -346,6 +378,7 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
   auto sample_centre = [&](int t) {
     Vec3 a = lo, b = lo + L;
     for (const auto& r : items[t].regions) {
+      if (!r.atoms.empty()) continue;   // a region of some atoms does not bound the centre
       Vec3 ra, rb;
       bool box = true;
       if (r.kind == Region::InsideBox) { ra = r.a; rb = r.b; }
@@ -358,7 +391,7 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
     for (int tries = 0; tries < 500; ++tries) {
       for (int k = 0; k < 3; ++k) c[k] = a[k] + uni(rng) * std::max(0.0, b[k] - a[k]);
       bool ok = true;
-      for (const auto& r : items[t].regions) ok = ok && region_penalty(r, c, 0.0, nullptr) == 0.0;
+      for (const auto& r : items[t].regions) ok = ok && (!r.atoms.empty() || region_penalty(r, c, 0.0, nullptr) == 0.0);
       if (ok) break;
     }
     return c;
@@ -380,7 +413,8 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
           if (r2 < tol2) s += (tol2 - r2) * (tol2 - r2);
         }
       });
-      for (const auto& r : items[inst[m].item].regions) s += wreg * region_penalty(r, xi, margin, nullptr);
+      for (const auto& r : items[inst[m].item].regions)
+        if (r.applies(int(i) - first_atom[m])) s += wreg * region_penalty(r, xi, margin, nullptr);
     }
     return s;
   };
@@ -481,6 +515,7 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
           Vec3 gi{0, 0, 0};
           for (int w = 0; w < nth; ++w) gi = gi + Vec3{tg[w][3 * i], tg[w][3 * i + 1], tg[w][3 * i + 2]};
           for (const auto& r : regs) {
+            if (!r.applies(i - first_atom[m])) continue;
             Vec3 rg;
             const double pr = wreg * region_penalty(r, x[i], margin, &rg);
             if (pr > 0) { pm += pr; gi = gi + rg * wreg; }
@@ -682,7 +717,8 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
   for (size_t m = 0; m < inst.size(); ++m) {
     if (inst[m].fixed) continue;
     for (const auto& r : items[inst[m].item].regions)
-      for (int i = first_atom[m]; i < first_atom[m + 1]; ++i) rv = std::max(rv, r.violation(x[i]));
+      for (int i = first_atom[m]; i < first_atom[m + 1]; ++i)
+        if (r.applies(i - first_atom[m])) rv = std::max(rv, r.violation(x[i]));
   }
   rep.region_violation = rv;
   rep.success = close == 0 && rv <= 1e-6;
@@ -799,6 +835,8 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
   const std::string path = name;
   std::vector<PackItem> items;
   PackItem* cur = nullptr;
+  std::vector<int> block_atoms;   // inside "atoms … end atoms"
+  auto lower = [](std::string w) { std::transform(w.begin(), w.end(), w.begin(), [](unsigned char c) { return char(std::tolower(c)); }); return w; };
   std::string line;
   int lineno = 0;
   o.periodic = false;
@@ -827,7 +865,9 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
       items.push_back(std::move(it));
       cur = &items.back();
     } else if (k == "end") {
+      if (t.size() > 1 && lower(t[1]) == "atoms") { block_atoms.clear(); continue; }   // end of an atoms block
       cur = nullptr;
+      block_atoms.clear();
     } else if (!cur) {
       if (k == "tolerance") o.tolerance = num(1);
       else if (k == "compress") o.compress_to = num(1);   // CAPS: pack loosely, then compress the cell to this density (g/cm³)
@@ -871,7 +911,13 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
           g.kind = inside ? Region::InsideSphere : Region::OutsideSphere;
           g.a = {num(2), num(3), num(4)};
           g.r = num(5);
-          if (t.size() > 6) throw bad("ellipsoid-style spheres are not supported");
+          if (t.size() > 6) throw bad("a sphere takes a centre and a radius (inside ellipsoid for semi-axes)");
+        } else if ((k == "inside" || k == "outside") && r == "ellipsoid") {
+          g.kind = inside ? Region::InsideEllipsoid : Region::OutsideEllipsoid;
+          g.a = {num(2), num(3), num(4)};
+          g.b = {num(5), num(6), num(7)};
+          g.r = num(8);
+          if (g.b[0] <= 0 || g.b[1] <= 0 || g.b[2] <= 0 || g.r <= 0) throw bad("ellipsoid semi-axes and d must be positive");
         } else if ((k == "inside" || k == "outside") && r == "cylinder") {
           g.kind = inside ? Region::InsideCylinder : Region::OutsideCylinder;
           g.a = {num(2), num(3), num(4)};
@@ -891,6 +937,7 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
         } else {
           throw bad("region '" + t[0] + " " + t[1] + "' is not supported by caps pack");
         }
+        g.atoms = block_atoms;   // inside "atoms … end atoms": those atoms only
         cur->regions.push_back(g);
       } else if (k == "fixed") {
         cur->fixed = true;
@@ -898,8 +945,17 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
         cur->angles = {num(4), num(5), num(6)};
       } else if (k == "center" || k == "centerofmass") {
         cur->center = true;
-      } else if (k == "atoms") {
-        throw bad("per-atom constraints ('atoms') are not supported by caps pack yet");
+      } else if (k == "atoms") {   // the regions until "end atoms" hold for these atoms (1-based in the file)
+        block_atoms.clear();
+        for (size_t q = 1; q < t.size(); ++q) {
+          const int a = int(num(q)) - 1;
+          if (a < 0 || size_t(a) >= cur->molecule.atoms.size()) throw bad("atoms: " + t[q] + " is not an atom of " + cur->name);
+          block_atoms.push_back(a);
+        }
+        if (block_atoms.empty()) throw bad("atoms needs atom numbers");
+        std::sort(block_atoms.begin(), block_atoms.end());
+      } else if (k == "constrain_rotation") {
+        throw bad("constrain_rotation is not supported by caps pack: orient the molecule with regions on some of its atoms (atoms … end atoms)");
       } else if (k == "resnumbers" || k == "chain" || k == "segid" || k == "changechains" || k == "radius" || k == "discale" ||
                  k == "maxmove" || k == "nloop" || k == "movebadrandom") {
         continue;
