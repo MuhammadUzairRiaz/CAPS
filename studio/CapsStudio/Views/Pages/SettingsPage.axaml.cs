@@ -78,6 +78,13 @@ public partial class SettingsPage : PageBase
     private void OnRecordShortcut(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutRow r) Vm.BeginRecordShortcut(r); }
     private void OnClearShortcut(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutRow r) Vm.ClearShortcut(r); }
     private void OnResetShortcuts(object? s, RoutedEventArgs e) => Vm.ResetShortcuts();
+    private void OnResolveConflict(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutConflict c) Vm.ResolveShortcutConflict(c); }
+    private void OnOpenShortcuts(object? s, RoutedEventArgs e) => Vm.SettingsTab = 4;   // Files: your shortcuts
+    private async void OnCheckPython(object? s, RoutedEventArgs e) => await Vm.CheckPython();
+    private async void OnCopyPythonLines(object? s, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this)?.Clipboard is { } cb) { await cb.SetTextAsync(Vm.PythonShellLines); Vm.Status = "Copied the two lines for your shell"; }
+    }
 
     private bool _marked;
 

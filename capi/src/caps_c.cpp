@@ -576,6 +576,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.colour_by = static_cast<caps::ColourBy>(std::clamp(o->colour_by, 0, 3));
   r.style = static_cast<caps::Style>(std::clamp(o->style, 0, 4));
   r.outlines = o->outlines != 0;
+  r.outline_strength = o->outlines >= 2 ? 2 : 1;   // 2: high-contrast outlines
   r.depth_cue = o->depth_cue != 0;
   r.show_cell = o->show_cell != 0;
   r.cell_repeats = d->cell_repeats;

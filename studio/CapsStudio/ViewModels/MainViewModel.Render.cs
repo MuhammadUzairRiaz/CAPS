@@ -216,7 +216,7 @@ public sealed partial class MainViewModel
     {
         try
         {
-            var python = Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } py ? py : "python3";
+            var python = PythonExe;   // Settings › Python & scripting, else CAPS_PYTHON, else python3
             var psi = new System.Diagnostics.ProcessStartInfo(python)
             {
                 RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
@@ -240,7 +240,7 @@ public sealed partial class MainViewModel
             var j = System.Text.Json.Nodes.JsonNode.Parse(outText);
             return (j?["commands"] as System.Text.Json.Nodes.JsonArray ?? [], console, "");
         }
-        catch (Exception e) { return (null, "", e.Message + " (set CAPS_PYTHON to a Python 3 interpreter)"); }
+        catch (Exception e) { return (null, "", e.Message + " (choose a Python 3 interpreter in Settings › Python & scripting)"); }
     }
 
     /// <summary>The overlay's drawing for the guide in the view: from the cache, else worked out in the background.</summary>
