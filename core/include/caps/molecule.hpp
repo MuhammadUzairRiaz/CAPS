@@ -94,6 +94,11 @@ struct BuildOptions {
   std::string forcefield;   // caps-forcefield JSON with typing rules, or "uff"; empty: embedding only
   std::string charges = "gasteiger";
   double ftol = 0.05;       // kcal/mol/Å
+  // after each minimisation, a rotor search: every rotatable bond (acyclic single, a heavy neighbour on both ends) tried
+  // at its three staggered positions with the force field's own torsions and contacts, greedily over two passes, then
+  // minimised again; kept when lower. A force-field alternative to ETKDG's CSD torsion table, which CAPS does not carry.
+  bool rotor_search = false;
+  bool implicit_hydrogens = true;   // false: the SMILES as written, heavy atoms only (united-atom models)
 };
 
 struct Conformer {
