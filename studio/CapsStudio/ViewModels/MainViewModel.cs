@@ -742,6 +742,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (GrowRegionJson() is { } region) sb.Append("  region: ").Append(region.ToJsonString().Replace("\"", "").Replace(",", ", ").Replace(":", ": ")).Append('\n');
         sb.Append(inv, $"  seed: {_growSeed}\n  contact_scale: {(_growAutoScale ? "auto" : _growScale.ToString(inv))}\n  curve: {(_growCurve ? "true" : "false")}\n");
         if (_growMethod > 0) sb.Append(inv, $"  method: {GrowMethodIds[_growMethod]}\n  temperature: {_growMethodT}\n");
+        if (_growLookahead > 1) sb.Append(inv, $"  lookahead: {_growLookahead}\n");
         if (_growOrient > 0) sb.Append(inv, $"  orientation: {{ axis: {"xyz"[_growOrient - 1]}, strength: {_growOrientS} }}\n");
         sb.Append("relax: { method: lbfgs, fmax: 1.0 }\nexport: [lammps, pdb]\n");
         return sb.ToString();
@@ -856,6 +857,7 @@ public sealed partial class MainViewModel : ObservableObject
             var sj = System.Text.Json.Nodes.JsonNode.Parse(spec)!.AsObject();
             sj["dp"] = _growDp;
             sj["trials"] = _growTrials;
+            if (_growLookahead > 1) sj["lookahead"] = _growLookahead;
             if (GrowRegionJson() is { } region) { sj["region"] = region; o.Box = 0; o.Density = _growDensity; }
             if (_growMethod > 0) { sj["method"] = GrowMethodIds[_growMethod]; sj["temperature"] = _growMethodT; }
             if (GrowOrientationJson() is { } orient) sj["orientation"] = orient;

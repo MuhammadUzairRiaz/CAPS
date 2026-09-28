@@ -1283,6 +1283,22 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : 0.85) * limitc(probe, t.z[size_t(b)]);
             if (m < worst) worst = m;
           }
+        // deeper look-ahead (GrowOptions::lookahead bonds): points further along the free valence need room too — against
+        // other chains and this chain's atoms before the last two units — at 80 % of a carbon's limits, so a chain does
+        // not step into a pocket it cannot leave
+        if (!last && o.lookahead > 1) {
+          const int recent = k >= 2 ? ch.unit_start[size_t(k - 2)] : 0;
+          for (int j = 2; j <= o.lookahead && worst > best_m; ++j) {
+            const Vec3 q = nx + dir * (1.53 * (j - 1));
+            worst = std::min(worst, region(q));
+            cell.near(q, [&](int id) {
+              if (cell.chain[size_t(id)] == ci && cell.local[size_t(id)] >= recent) return;
+              if (ch.parent >= 0 && ch.pdist.count(id)) return;   // an arm's junction
+              const double m = norm(cell.mi(q - cell.x[size_t(id)])) - 0.8 * limitc(6, cell.z[size_t(id)]);
+              if (m < worst) worst = m;
+            });
+          }
+        }
       }
       return worst;
     };

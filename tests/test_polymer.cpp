@@ -496,3 +496,19 @@ TEST(Polymer, OrientedGrowthAlignsTheBackbone) {
   EXPECT_TRUE(said);
   std::printf("orientation: isotropic %.3f · best-of-k %.3f · Rosenbluth %.3f\n", iso.orientation, best.orientation, ros.orientation);
 }
+
+TEST(Polymer, DeeperLookAheadGrows) {
+  GrowOptions o;
+  o.chains = 6;
+  o.density = 0.6;
+  o.seed = 4;
+  const ChainSpec c = spec({"*CC(*)c1ccccc1"}, Sequence::Homopolymer, 12);
+  GrowReport r1, r3;
+  const System a = grow_chains(c, o, &r1);
+  o.lookahead = 3;
+  const System b = grow_chains(c, o, &r3);
+  EXPECT_EQ(a.atoms.size(), b.atoms.size());
+  EXPECT_GE(r3.worst_margin, o.accept);
+  EXPECT_LT(r3.backtracks, r1.backtracks);   // seeing further, fewer dead ends
+  std::printf("look-ahead 1: %d backtracks, %d restarts · look-ahead 3: %d backtracks, %d restarts\n", r1.backtracks, r1.restarts, r3.backtracks, r3.restarts);
+}
