@@ -96,6 +96,9 @@
                             <NumericUpDown Grid.Column="3" Value="{Binding Dp}" Minimum="2" Maximum="2000" Increment="1" FormatString="0" ShowButtonSpinner="False" />
                             <Button Grid.Column="4" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnRemove" Tag="{Binding}" ToolTip.Tip="Remove"><v:Icon Kind="close" Size="12" /></Button>
                           </Grid>
+                          <ComboBox Margin="16,0,0,0" HorizontalAlignment="Stretch" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendForceFields}"
+                                    SelectedItem="{Binding ForceField}"
+                                    ToolTip.Tip="This component's own force field: after the build Field assigns one per component (by group), the pairs between components by the mixing rule chosen there" />
                           <StackPanel Orientation="Horizontal" Spacing="6" Margin="16,0,0,0" IsVisible="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendByVolume}">
                             <TextBlock Text="density g/cm³" Classes="label" VerticalAlignment="Center" />
                             <NumericUpDown Value="{Binding Density}" Minimum="0.3" Maximum="5" Increment="0.01" FormatString="0.000" Width="110" ShowButtonSpinner="False"

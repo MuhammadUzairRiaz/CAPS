@@ -131,6 +131,7 @@ public sealed partial class MainViewModel : ObservableObject
             RaiseGrowField();
             RefreshSteps();
         });
+        Field.GroupSuggestions = FieldGroupSuggestions;
         Analyze = new AnalyzeViewModel(() => _doc, s => Status = s, running => { _analyzing = running; RaiseBusy(); });
         Analyze.ViscosityComputed += eta => DfEta = (decimal)eta;   // the Yeh–Hummer correction takes the Green–Kubo η
         Field.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(FieldViewModel.RunLine)) Raise(nameof(ForceFieldLine)); };

@@ -142,6 +142,72 @@ internal static class SelfTest
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
         }
+        // Force fields by group: the melt's first five chains and the rest, each GAFF2; then OPLS 2005 for the rest, refused
+        // for its 1-4 scaling until the first group's is taken; a crystal under Tersoff's silicon (a literature potential)
+        if (gaff >= 0)
+        {
+            vm.Field.GroupMode = true;
+            vm.Field.Groups.Clear();
+            var ga = vm.Field.AddGroup("A", "1-5");
+            ga.FfIndex = gaff; ga.Charges = 2;
+            var gb = vm.Field.AddGroup("B", "rest");
+            gb.FfIndex = gaff; gb.Charges = 2;
+            vm.Field.AssignGroups().GetAwaiter().GetResult();
+            var halves = vm.Field.IsGrouped && vm.Field.Complete;
+            var oplsIx = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005");
+            var refused = false;
+            var mixedName = "";
+            if (oplsIx >= 0)
+            {
+                gb.FfIndex = oplsIx; gb.Charges = 0;
+                vm.Field.Scaling14 = 0;
+                vm.Field.AssignGroups().GetAwaiter().GetResult();
+                refused = vm.Field.Log.Contains("1-4", StringComparison.Ordinal);
+                vm.Field.Scaling14 = 1;
+                vm.Field.AssignGroups().GetAwaiter().GetResult();
+                mixedName = vm.Field.Complete ? vm.Field.ForceFieldName : vm.Field.Log;
+            }
+            vm.Field.PairsText = "c3 bad";
+            vm.Field.AssignGroups().GetAwaiter().GetResult();
+            var badPairs = vm.Field.Log.StartsWith("Cross pair line", StringComparison.Ordinal);
+            vm.Field.PairsText = "";
+            Check(halves && refused && mixedName.Contains(" + ") && badPairs, $"Field by group: halves {halves} · OPLS refused {refused} · {mixedName} · bad pairs refused {badPairs}");
+            // a silicon crystal (molecule 1, held) under Tersoff below methane typed by GAFF2
+            var mbDir = Path.Combine(Path.GetTempPath(), "caps_selftest_manybody");
+            Directory.CreateDirectory(mbDir);
+            File.WriteAllText(Path.Combine(mbDir, "Si.tersoff"), "# UNITS: metal CITATION: Tersoff, Phys Rev B, 37, 6991 (1988)\n" +
+                              "Si Si Si 3.0 1.0 1.3258 4.8381 2.0417 0.0000 22.956 0.33675 1.3258 95.373 3.0 0.2 3.2394 3264.7\n");
+            var pdb = new System.Text.StringBuilder("CRYST1   30.000   30.000   30.000  90.00  90.00  90.00 P 1           1\n");
+            (string Rn, int Res, double X, double Y, double Z, string El)[] siRows =
+                [("SI", 1, 10, 10, 10, "Si"), ("SI", 1, 12.35, 10, 10, "Si"), ("MET", 2, 11, 10, 14, "C"), ("MET", 2, 11, 10, 15.09, "H"),
+                 ("MET", 2, 12.03, 10, 13.64, "H"), ("MET", 2, 10.49, 10.89, 13.64, "H"), ("MET", 2, 10.49, 9.11, 13.64, "H")];
+            for (var k = 0; k < siRows.Length; ++k)
+                pdb.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, "HETATM{0,5} {1,-4} {2,3} A{3,4}    {4,8:F3}{5,8:F3}{6,8:F3}  1.00  0.00          {7,2}\n",
+                                         k + 1, siRows[k].El, siRows[k].Rn, siRows[k].Res, siRows[k].X, siRows[k].Y, siRows[k].Z, siRows[k].El));
+            pdb.Append("END\n");
+            var pdbPath = Path.Combine(mbDir, "si_methane.pdb");
+            File.WriteAllText(pdbPath, pdb.ToString());
+            vm.Open(pdbPath);
+            vm.Document!.SetHeldMolecule(1);
+            vm.Field.SuggestGroups();
+            var suggested = vm.Field.Groups.Count == 2 && vm.Field.Groups[0].Molecules == "1" && vm.Field.Groups[1].Molecules == "rest";
+            if (vm.Field.Groups.Count == 2)
+            {
+                vm.Field.Groups[0].Kind = 1;
+                vm.Field.Groups[0].Style = 0;
+                vm.Field.Groups[0].File = Path.Combine(mbDir, "Si.tersoff");
+                vm.Field.Groups[1].FfIndex = gaff;
+                vm.Field.Groups[1].Charges = 2;
+                vm.Field.AssignGroups().GetAwaiter().GetResult();
+            }
+            var notes = string.Join(" ", vm.Field.Notes);
+            Check(suggested && vm.Field.Complete && vm.Field.IsGrouped && notes.Contains("tersoff", StringComparison.Ordinal) && vm.Field.Swatches.Any(x => x.Name == "Si"),
+                  $"Field by group with Tersoff silicon: suggested {suggested} · {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.Field.GroupMode = false;
+            vm.Field.Groups.Clear();
+            vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+        }
         // Type by hand: polystyrene's head, body and tail typed by OPLS-AA 2024's rules, one body CH changed by hand
         // (with every equivalent atom), applied to the whole melt by environment; an SBR copolymer example holds every junction
         {
@@ -813,6 +879,21 @@ internal static class SelfTest
         vm.BlendRows[1].Count = 2;
         vm.BuildBlend().GetAwaiter().GetResult();
         var counted = vm.Document?.Summary().Molecules;
+        // a force field per component: both GAFF2 here; after the build Field assigns them by group, one group per component
+        {
+            vm.OpenBlend();
+            var gaffEntry = vm.BlendForceFields.FirstOrDefault(f => f.Id == "gaff-amber25");
+            foreach (var r in vm.BlendRows) r.ForceField = gaffEntry;
+            vm.BuildBlend().GetAwaiter().GetResult();
+            for (int k = 0; k < 200 && vm.Field.Working; ++k) { Thread.Sleep(25); }
+            var blendGroups = string.Join(" | ", vm.Field.Groups.Select(g => $"{g.Name}: {g.Molecules}"));
+            Check(gaffEntry != null && vm.Field.IsGrouped && vm.Field.Complete && vm.Field.Groups.Count == 2 && vm.Field.Groups[1].Molecules == "4-5" && vm.IsField,
+                  $"blend with a force field per component: {blendGroups} · ff {gaffEntry?.Id} · log {vm.BlendLog.Replace("\n", " / ")} · {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            foreach (var r in vm.BlendRows) r.ForceField = vm.BlendForceFields[0];
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.Field.Groups.Clear();
+            vm.Field.GroupMode = false;
+        }
         vm.OpenBlend();
         vm.BlendMode = 1;
         vm.BlendRows[0].Weight = 50;
