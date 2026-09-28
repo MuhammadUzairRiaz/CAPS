@@ -152,20 +152,28 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>The last blend built: its document and each component's molecules.</summary>
-    private (CapsDocument? Doc, List<(string Name, string Molecules, bool Crystal)> Groups) _blendGroups = (null, new());
+    private (CapsDocument? Doc, List<(string Name, string Molecules, bool Crystal, string[] Elements)> Groups) _blendGroups = (null, new());
 
     /// <summary>Field · by group: the parts of the open structure CAPS knows (the held filler and the rest, a blend's
     /// components).</summary>
-    private List<(string Name, string Molecules, bool Crystal)> FieldGroupSuggestions()
+    private List<(string Name, string Molecules, bool Crystal, string[] Elements)> FieldGroupSuggestions()
     {
-        var r = new List<(string, string, bool)>();
+        var r = new List<(string, string, bool, string[])>();
         if (_doc == null) return r;
         long held = 0;
         try { held = _doc.HeldMolecule(); } catch { }
         if (held > 0)
         {
-            r.Add(("filler", held.ToString(CultureInfo.InvariantCulture), true));
-            r.Add(("matrix", "rest", false));
+            // the filler's elements (a literature potential for them, when the library has one)
+            var els = new HashSet<string>();
+            try
+            {
+                var ids = _doc.MoleculeIds();
+                for (var i = 0; i < ids.Length; ++i) if (ids[i] == held) els.Add(_doc.Atom(i).ElementSymbol);
+            }
+            catch { }
+            r.Add(("filler", held.ToString(CultureInfo.InvariantCulture), true, els.ToArray()));
+            r.Add(("matrix", "rest", false, []));
             return r;
         }
         if (ReferenceEquals(_blendGroups.Doc, _doc) && _blendGroups.Groups.Count > 0) return new(_blendGroups.Groups);
@@ -194,12 +202,12 @@ public sealed partial class MainViewModel
                 return true;
             }, "blend"));
             // each component's molecules, for a force field per component (Field · by group)
-            var parts = new List<(string, string, bool)>();
+            var parts = new List<(string, string, bool, string[])>();
             foreach (var line in rep.Split('\n'))
             {
                 var m = System.Text.RegularExpressions.Regex.Match(line, @"^component (\d+) · molecules (\d+)-(\d+)$");
                 if (m.Success && int.Parse(m.Groups[1].Value) - 1 is var k && k < BlendRows.Count)
-                    parts.Add((BlendRows[k].Polymer!.Name.Split(" (")[0], $"{m.Groups[2].Value}-{m.Groups[3].Value}", false));
+                    parts.Add((BlendRows[k].Polymer!.Name.Split(" (")[0], $"{m.Groups[2].Value}-{m.Groups[3].Value}", false, []));
             }
             _blendGroups = (doc, parts);
             Show(doc, name + " blend");

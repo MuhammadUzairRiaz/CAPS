@@ -228,7 +228,8 @@ class _Field:
         """A force field per group of molecules: groups = [{"name": "filler", "molecules": "1", "forcefield": "iff-cvff"},
         {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. A crystal group may instead take
         a literature many-body potential that LAMMPS reads from its file: {"name": "Si", "molecules": "1", "potential":
-        {"style": "tersoff", "file": "Si.tersoff", "units": "metal"}} (units only when the file does not say them); its
+        {"style": "tersoff", "file": "Si.tersoff", "units": "metal"}} (units only when the file does not say them), or one
+        of the library by its id: {"potential": {"id": "sio2-munetoh2007"}} (caps.potentials() lists them); its
         atoms get one type per element, standard masses, no charge, UFF Lennard-Jones for the cross pairs, and CAPS runs
         need them held (LAMMPS evaluates the potential). Between groups the Lennard-Jones
         pairs follow eps_rule (geometric | arithmetic) and sigma_rule (arithmetic | geometric | sixthpower), or pairs =
@@ -239,7 +240,7 @@ class _Field:
         for g in groups:
             g = dict(g)
             if "potential" in g:   # a literature many-body potential: {"style": "tersoff", "file": PATH, "units": "metal"}
-                g["potential"] = dict(g["potential"], file=os.path.abspath(os.path.expanduser(g["potential"]["file"])))
+                g["potential"] = _potential(g["potential"])
             else:
                 g["forcefield"] = _forcefield_path(g["forcefield"])
                 g["charges"] = codes[g.get("charges", "auto")]
@@ -278,6 +279,27 @@ def _forcefield_path(ff: str) -> str:
     if p.exists():
         return str(p)
     raise CapsError(f"unknown force field {ff!r} (a library id such as gaff2, a caps-forcefield JSON path, or uff)")
+
+
+def potentials() -> list:
+    """The library of literature many-body potentials (data/potentials): [{id, name, style, file, elements, for,
+    citation, units}], file as an absolute path. A group of Field.assign_groups takes one by its id."""
+    lib = Path(__file__).resolve().parents[1].parent / "potentials"
+    try:
+        cat = json.loads((lib / "catalogue.json").read_text())
+    except OSError:
+        return []
+    return [dict(p, file=str(lib / p["file"])) for p in cat.get("potentials", [])]
+
+
+def _potential(p: dict) -> dict:
+    """A group's potential: {"id": library id} or {"style", "file", "units"}."""
+    if "id" in p and "file" not in p:
+        for e in potentials():
+            if e["id"] == p["id"]:
+                return {"style": e["style"], "file": e["file"]}
+        raise CapsError(f"unknown potential {p['id']!r}: " + ", ".join(e["id"] for e in potentials()))
+    return dict(p, file=os.path.abspath(os.path.expanduser(p["file"])))
 
 
 class Document:
