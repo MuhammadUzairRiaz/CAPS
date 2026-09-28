@@ -3632,6 +3632,8 @@ extern "C" caps_doc* caps_build_smiles(const char* smiles, const char* ff_path, 
     if (o) {
       b.conformers = o->conformers > 0 ? o->conformers : 1;
       b.seed = o->seed ? o->seed : 1;
+      b.rotor_search = o->rotor_search != 0;
+      b.implicit_hydrogens = o->heavy_only == 0;
     }
     b.forcefield = ff_path ? ff_path : "";
     const caps::BuildResult r = caps::build_molecule(smiles ? smiles : "", b);

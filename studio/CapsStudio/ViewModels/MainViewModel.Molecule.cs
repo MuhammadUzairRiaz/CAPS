@@ -116,7 +116,7 @@ public sealed partial class MainViewModel
     public int MolClean { get => _molClean; set { if (Set(ref _molClean, value)) ScheduleBuild(); } }
     private decimal _molConfCount = 5;
     public decimal MolConfCount { get => _molConfCount; set { if (Set(ref _molConfCount, Math.Clamp(value, 1, 50))) ScheduleBuild(); } }
-    public string MolMethod => "Distance bounds (CAPS)";
+    public string MolMethodText => _molMethod == 1 ? "Distance bounds + rotor search (CAPS)" : "Distance bounds (CAPS)";
 
     private static CleanChoice[] LoadCleanChoices()
     {
@@ -209,7 +209,8 @@ public sealed partial class MainViewModel
         MolBuilding = true;
         try
         {
-            var (doc, report) = await Task.Run(() => CapsDocument.BuildSmiles(smiles, ff, n, 1, "molecule"));
+            var (rotor, heavy) = (_molMethod == 1, _molHydrogens == 1);
+            var (doc, report) = await Task.Run(() => CapsDocument.BuildSmiles(smiles, ff, n, 1, "molecule", rotor, heavy));
             if (ticket != _buildTicket) { doc.Dispose(); return; }
             var old = _molDoc;
             MolDoc = doc;
@@ -285,6 +286,15 @@ public sealed partial class MainViewModel
         set { if (Set(ref _cgTemplate, value ?? "") && _cgTemplateText.TryGetValue(_cgTemplate, out var t)) CgBeadText = t.StartsWith('[') ? t : _cgTemplate; }
     }
     public string CgBeadText { get => _cgBeadText; set => Set(ref _cgBeadText, value ?? ""); }
+
+    /// <summary>3D embedding method: 0 distance bounds, 1 distance bounds + a force-field rotor search.</summary>
+    public static readonly string[] MolMethods = ["Distance bounds", "Distance bounds + rotor search (force-field torsions)"];
+    private int _molMethod;
+    public int MolMethod { get => _molMethod; set { if (Set(ref _molMethod, Math.Clamp(value, 0, 1))) Raise(nameof(MolMethodText)); } }
+    /// <summary>Hydrogens: 0 added from valences, 1 as written (heavy atoms only, united-atom models).</summary>
+    public static readonly string[] MolHydrogenModes = ["Add, from valences", "As written (heavy atoms only, united atom)"];
+    private int _molHydrogens;
+    public int MolHydrogens { get => _molHydrogens; set => Set(ref _molHydrogens, Math.Clamp(value, 0, 1)); }
 
     /// <summary>Builds the bead SMILES (or the chosen template) into the preview; Open in Studio takes it from there.</summary>
     public async Task BuildBeadsMolecule()

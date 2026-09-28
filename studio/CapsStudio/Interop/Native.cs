@@ -134,6 +134,8 @@ public struct CapsBuildOpts
 {
     public int Conformers;
     public ulong Seed;
+    public int RotorSearch;     // ABI 40: the rotatable bonds tried at their staggered positions after minimising
+    public int HeavyOnly;       // ABI 40: no implicit hydrogens (united-atom models)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -1137,10 +1139,10 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>A 3D molecule from SMILES, one frame per conformer (lowest energy first); ff: a caps-forcefield JSON
     /// with typing rules for the clean-up, or null. Returns the document and the JSON report.</summary>
-    public static (CapsDocument Doc, string Report) BuildSmiles(string smiles, string? ff, int conformers, ulong seed, string label)
+    public static (CapsDocument Doc, string Report) BuildSmiles(string smiles, string? ff, int conformers, ulong seed, string label, bool rotorSearch = false, bool heavyOnly = false)
     {
         var report = new byte[65536];
-        var h = Native.BuildSmiles(smiles, ff, new CapsBuildOpts { Conformers = conformers, Seed = seed }, report, report.Length);
+        var h = Native.BuildSmiles(smiles, ff, new CapsBuildOpts { Conformers = conformers, Seed = seed, RotorSearch = rotorSearch ? 1 : 0, HeavyOnly = heavyOnly ? 1 : 0 }, report, report.Length);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0'));
     }

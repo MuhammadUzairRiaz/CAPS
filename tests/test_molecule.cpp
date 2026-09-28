@@ -270,3 +270,23 @@ TEST(Bench, PropertiesAndChainsAgainstReference) {
   EXPECT_EQ(t7.rows[0].cells[4].rfind("9.5 – 10", 0), 0u);
   fs::remove_all(cells);
 }
+
+// Rotor search: every conformer of octane with it is at least as low as without; heavy atoms only when asked.
+TEST(Molecule, RotorSearchAndHydrogensAsWritten) {
+  BuildOptions o;
+  o.forcefield = "uff";
+  o.conformers = 4;
+  o.seed = 3;
+  const BuildResult plain = build_molecule("CCCCCCCC", o);
+  o.rotor_search = true;
+  const BuildResult rot = build_molecule("CCCCCCCC", o);
+  EXPECT_LE(rot.conformers.front().energy, plain.conformers.front().energy + 1e-6);
+  // all-trans: the end-to-end C1–C8 distance of the lowest conformer near the extended chain's (≈ 8.8 Å)
+  const double ee = norm(rot.system.atoms[7].pos - rot.system.atoms[0].pos);
+  EXPECT_GT(ee, 8.3);
+  EXPECT_NE(rot.method.find("rotor search"), std::string::npos);
+  BuildOptions ua;
+  ua.implicit_hydrogens = false;
+  const BuildResult h = build_molecule("CCCC", ua);
+  EXPECT_EQ(h.system.atoms.size(), 4u);
+}

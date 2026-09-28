@@ -114,7 +114,7 @@ class _ReactOpts(C.Structure):
 
 
 class _BuildOpts(C.Structure):
-    _fields_ = [("conformers", C.c_int32), ("seed", C.c_uint64)]
+    _fields_ = [("conformers", C.c_int32), ("seed", C.c_uint64), ("rotor_search", C.c_int32), ("heavy_only", C.c_int32)]
 
 
 class _AnalyzeOpts(C.Structure):
@@ -920,8 +920,12 @@ class build:
     """The builders: each returns a new Document."""
 
     @staticmethod
-    def smiles(smiles: str, forcefield: str = "uff", conformers: int = 1, seed: int = 1) -> Document:
-        o = _BuildOpts(conformers, seed)
+    def smiles(smiles: str, forcefield: str = "uff", conformers: int = 1, seed: int = 1, rotor_search: bool = False,
+               hydrogens: str = "add") -> Document:
+        """A 3D molecule from SMILES (one frame per conformer, lowest first). rotor_search: each minimised conformer's
+        rotatable bonds tried at their staggered positions with the force field; hydrogens: "add" (from valences) or
+        "as_written" (heavy atoms only, united-atom models)."""
+        o = _BuildOpts(conformers, seed, int(bool(rotor_search)), int(hydrogens == "as_written"))
         rep = _report()
         ff = None if forcefield in ("", None) else ("uff" if forcefield == "uff" else _forcefield_path(forcefield))
         d = Document(library().caps_build_smiles(_enc(smiles), _enc(ff), C.byref(o), rep, len(rep)), smiles)
