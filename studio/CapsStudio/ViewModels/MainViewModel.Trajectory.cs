@@ -64,11 +64,26 @@ public sealed partial class MainViewModel
         set
         {
             if (!Set(ref _trajSmooth, value) || _doc == null) return;
-            _doc.SetSmoothing(value ? 5 : 1);
+            _doc.SetSmoothing(value ? _trajSmoothWindow : 1);
             RenderRequested?.Invoke();
             TrajectoryChanged?.Invoke();
         }
     }
+    private int _trajSmoothWindow = 5;
+    /// <summary>Frames the positions are averaged over while smoothing is on (odd: centred on the shown frame).</summary>
+    public decimal TrajSmoothWindowD
+    {
+        get => _trajSmoothWindow;
+        set
+        {
+            var w = (int)Math.Clamp(value, 3, 101);
+            if (w % 2 == 0) w++;
+            if (!Set(ref _trajSmoothWindow, w)) return;
+            Raise(nameof(TrajSmoothText));
+            if (_trajSmooth && _doc != null) { _doc.SetSmoothing(w); RenderRequested?.Invoke(); TrajectoryChanged?.Invoke(); }
+        }
+    }
+    public string TrajSmoothText => $"smoothed over {_trajSmoothWindow} frames";
     public string TrajError { get => _trajError; private set { if (Set(ref _trajError, value)) Raise(nameof(TrajHasError)); } }
     public bool TrajHasError => _trajError.Length > 0;
     public string TrajNote { get => _trajNote; private set => Set(ref _trajNote, value); }

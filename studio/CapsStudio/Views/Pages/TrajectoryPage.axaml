@@ -55,7 +55,9 @@
                   </StackPanel>
                 </Border>
                 <ToggleButton Classes="small" Content="Loop" IsChecked="{Binding PlaybackLoop}" />
-                <ToggleButton Classes="small" Content="Smooth" IsChecked="{Binding TrajSmooth}" ToolTip.Tip="Positions averaged over 5 frames" />
+                <ToggleButton Classes="small" Content="Smooth" IsChecked="{Binding TrajSmooth}" ToolTip.Tip="Positions averaged over a window of frames centred on the shown one" />
+                <NumericUpDown Value="{Binding TrajSmoothWindowD}" Minimum="3" Maximum="101" Increment="2" FormatString="0" Width="92" IsVisible="{Binding TrajSmooth}"
+                               ToolTip.Tip="Frames in the smoothing window (odd)" />
                 <Button Classes="small" Click="OnMovie">
                   <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export movie" VerticalAlignment="Center" /></StackPanel>
                 </Button>
@@ -79,7 +81,7 @@
           <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Border Classes="hud" Padding="10,4"><TextBlock Text="{Binding TrajHudTitle}" FontSize="12" /></Border>
             <Border Classes="hud" Padding="10,4"><TextBlock Text="backbone · colour: molecule" FontSize="12" Foreground="{DynamicResource MutedB}" /></Border>
-            <Border Classes="hud" Padding="10,4" IsVisible="{Binding TrajSmooth}"><TextBlock Text="smoothed over 5 frames" FontSize="12" Foreground="{DynamicResource SelB}" /></Border>
+            <Border Classes="hud" Padding="10,4" IsVisible="{Binding TrajSmooth}"><TextBlock Text="{Binding TrajSmoothText}" FontSize="12" Foreground="{DynamicResource SelB}" /></Border>
           </StackPanel>
         </Panel>
       </DockPanel>
