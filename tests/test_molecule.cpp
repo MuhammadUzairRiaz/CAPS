@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <filesystem>
 
 #include <cmath>
 #include <string>
@@ -246,4 +247,26 @@ TEST(Molecule, UnspecifiedStereoIsReported) {
   EXPECT_TRUE(has(build_molecule("CC=CC", bo), "1 double bond without"));
   EXPECT_FALSE(has(build_molecule("C/C=C/C", bo), "double bond without"));
   EXPECT_FALSE(has(build_molecule("CC(C)=CC", bo), "double bond without"));   // not stereogenic
+}
+
+// Bench T6 / T7: the user's cells named by reference id measured against data/reference/polymers.json; no cells, not run.
+TEST(Bench, PropertiesAndChainsAgainstReference) {
+  namespace fs = std::filesystem;
+  const std::string root = CAPS_SOURCE_DIR;
+  BenchOptions o;
+  o.samples = root + "/samples";
+  o.reference = root + "/data/reference/polymers.json";
+  o.cells = (fs::temp_directory_path() / "caps_bench_cells_none").string();
+  EXPECT_EQ(run_bench("T6", o).status, "not run");
+  const fs::path cells = fs::temp_directory_path() / "caps_bench_cells";
+  fs::create_directories(cells);
+  fs::copy_file(root + "/samples/ps_melt.data", cells / "ps-atactic.data", fs::copy_options::overwrite_existing);
+  o.cells = cells.string();
+  const BenchTable t6 = run_bench("T6", o), t7 = run_bench("T7", o);
+  ASSERT_GE(t6.rows.size(), 2u);
+  EXPECT_EQ(t6.rows[0].cells[0], "Polystyrene, atactic");
+  EXPECT_EQ(t6.rows[0].status, "fail");   // the sample is a small unequilibrated cell far below 1.04 g/cm³
+  EXPECT_EQ(t6.rows[1].cells[1], "no cell");
+  EXPECT_EQ(t7.rows[0].cells[4].rfind("9.5 – 10", 0), 0u);
+  fs::remove_all(cells);
 }

@@ -5,6 +5,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -16,6 +18,8 @@
 #include "caps/dynamics.hpp"
 #include "caps/field.hpp"
 #include "caps/io.hpp"
+#include "caps/properties.hpp"
+#include "caps/json.hpp"
 #include "caps/kspace.hpp"
 #include "caps/molecule.hpp"
 #include "caps/pack.hpp"
@@ -66,8 +70,8 @@ const std::vector<Meta>& metas() {
       {"T3", "Amorphous cell builders", "vs Materials Studio, Polymatic, PySIMM, RadonPy", {}, "needs the other builders installed; compare their cells with CAPS Grow outside the Studio"},
       {"T4", "MD throughput", "ns/day, NVT with Bussi", {"System", "Atoms", "Threads", "ns/day", "Status"}, nullptr},
       {"T5", "NVE energy conservation", "drift, kT/ns/atom", {"System", "dt (fs)", "Length (ps)", "Drift (kT/ns/atom)", "RMS fluct. (kcal/mol)", "Status"}, nullptr},
-      {"T6", "Properties vs experiment", "PE PP PS PMMA PET PC PA6 PDMS", {}, "needs equilibrated cells (hours per polymer); Analyze compares each cell with the experimental ranges"},
-      {"T7", "Chain statistics", "C∞ vs literature", {}, "needs long equilibrated melts; Analyze reports C∞ from the internal distances"},
+      {"T6", "Properties vs experiment", "your equilibrated cells against data/reference/polymers.json", {"Material", "Cell", "Frames", "Density (g/cm³)", "Experiment", "Status"}, nullptr},
+      {"T7", "Chain statistics", "C∞ of the same cells vs literature", {"Material", "Cell", "Chains", "C∞", "Literature", "Status"}, nullptr},
       {"T8", "Parallel scaling", "force evaluation, threads", {"System", "Threads", "ms / evaluation", "Speed-up", "Efficiency"}, nullptr},
       {"T9", "Reproducibility", "the same run twice", {"Run", "Steps", "Max |Δx| (Å)", "Status"}, nullptr},
       {"T10", "Builder feature coverage", "against vendor documentation", {}, "a written comparison, not a measurement"},
@@ -433,6 +437,81 @@ void t9(BenchTable& t, const BenchOptions& o) {
            "for a given thread count; another thread count sums in another order and differs in the last bits, which dynamics amplifies.";
 }
 
+// ---- T6 / T7: the user's equilibrated cells against the reference ranges
+struct RefCell { std::string id, name, file; Json values; };
+
+std::vector<RefCell> reference_cells(const BenchOptions& o, std::vector<std::string>& missing) {
+  std::vector<RefCell> r;
+  if (o.reference.empty()) throw std::runtime_error("no reference file (data/reference/polymers.json)");
+  std::ifstream in(o.reference);
+  if (!in) throw std::runtime_error("cannot read " + o.reference);
+  std::stringstream ss;
+  ss << in.rdbuf();
+  const Json ref = Json::parse(ss.str());
+  for (const auto& m : ref["materials"].items()) {
+    const std::string id = m.text("id", "");
+    const std::string f = o.cells.empty() ? "" : o.cells + "/" + id + ".data";
+    if (!f.empty() && std::filesystem::exists(f)) r.push_back({id, m.text("name", id), f, m["values"]});
+    else missing.push_back(m.text("name", id) + " (" + id + ".data)");
+  }
+  return r;
+}
+
+Trajectory cell_frames(const RefCell& c) {
+  const std::string stem = c.file.substr(0, c.file.size() - 5);
+  for (const char* ext : {".lammpstrj", ".dump", ".dcd", ".xtc"})
+    if (std::filesystem::exists(stem + ext)) return open_file(stem + ext, c.file);
+  return open_file(c.file);
+}
+
+void t67(BenchTable& t, const BenchOptions& o, bool chains) {
+  if (o.reference.empty() || !std::filesystem::exists(o.reference)) {
+    t.note = "No reference ranges (data/reference/polymers.json) given to the suite: nothing to compare with.";
+    throw Cancelled();   // reported as not run
+  }
+  std::vector<std::string> missing;
+  const auto cells = reference_cells(o, missing);
+  const std::string prop = chains ? "cn" : "density";
+  size_t k = 0;
+  for (const auto& c : cells) {
+    step(o, t.id, c.name, double(k++) / std::max<size_t>(1, cells.size()));
+    if (!c.values.has(prop)) {
+      t.rows.push_back({{c.name, std::filesystem::path(c.file).filename().string(), "—", "—", "no reference value", "info"}, "info"});
+      continue;
+    }
+    const Json& rv = c.values[prop];
+    const double lo = rv.num("lo", 0), hi = rv.num("hi", 0);
+    const Trajectory tr = cell_frames(c);
+    AnalyzeOptions ao;
+    ao.blocks = 5;
+    const auto ps = analyze(tr, {prop}, ao);
+    const Property& p = ps.front();
+    const bool ok = std::isfinite(p.value) && p.value >= lo && p.value <= hi;
+    std::string counted = std::to_string(tr.frames());
+    if (chains) {
+      int nm = 0;
+      tr.topology.molecules(&nm);
+      counted = std::to_string(nm);
+    }
+    const std::string val = std::isfinite(p.value) ? num(p.value, 4) + (std::isfinite(p.error) && p.error > 0 ? " ± " + num(p.error, 2) : "") : "—";
+    t.rows.push_back({{c.name, std::filesystem::path(c.file).filename().string(), counted, val, num(lo, 4) + " – " + num(hi, 4) + " (" + rv.text("source", "") + ")",
+                       std::isfinite(p.value) ? (ok ? "pass" : "fail") : "info"},
+                      std::isfinite(p.value) ? (ok ? "pass" : "fail") : "info"});
+  }
+  for (const auto& m : missing) t.rows.push_back({{m, "no cell", "—", "—", "—", "info"}, "info"});
+  if (cells.empty()) {
+    t.rows.clear();
+    t.status = "not run";
+    t.note = "No equilibrated cells in " + (o.cells.empty() ? std::string("the cells folder") : o.cells) + ": put a relaxed, equilibrated cell per material there, named by its "
+             "reference id (" + [&] { std::string l; for (const auto& m : missing) l += (l.empty() ? "" : ", ") + m; return l; }() +
+             "), with its trajectory of the same name for frame averages; CAPS then measures " + (chains ? "C∞ (Analyze cn)" : "the density") +
+             " and compares it with the range in data/reference/polymers.json. Materials without reference values there are not judged (add them with their source).";
+    throw Cancelled();   // reported as not run
+  }
+  t.note = chains ? "C∞ from the internal distances ⟨R²(n)⟩/(n⟨b²⟩) extrapolated in 1/n (Analyze cn), over the cell's chains and frames; pass when inside the literature range."
+                  : "Density averaged over the cell's frames (block errors, Analyze density); pass when inside the experimental range. The cells are yours: their equilibration is what is judged.";
+}
+
 // ---- T11: rendering
 void t11(BenchTable& t, const BenchOptions& o) {
   const System base = relaxed_sample(o);
@@ -595,6 +674,8 @@ BenchTable run_bench(const std::string& id, const BenchOptions& o) {
     else if (id == "T2") t2(t, o);
     else if (id == "T4") t4(t, o);
     else if (id == "T5") t5(t, o);
+    else if (id == "T6") t67(t, o, false);
+    else if (id == "T7") t67(t, o, true);
     else if (id == "T8") t8(t, o);
     else if (id == "T9") t9(t, o);
     else if (id == "T11") t11(t, o);
@@ -602,7 +683,7 @@ BenchTable run_bench(const std::string& id, const BenchOptions& o) {
   } catch (const Cancelled&) {
     t.rows.clear();
     t.status = "not run";
-    t.note = "cancelled";
+    if (t.note.empty()) t.note = "cancelled";
     return t;
   } catch (const std::exception& e) {
     t.status = "fail";

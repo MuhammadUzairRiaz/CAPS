@@ -6,6 +6,8 @@
 //   T2  Pack on water boxes: wall time, closest contact, success
 //   T4  molecular-dynamics throughput (ns/day)
 //   T5  NVE energy conservation (drift, kT/ns/atom)
+//   T6  properties of equilibrated cells (the user's) against experiment: density
+//   T7  chain statistics of the same cells against the literature: C∞
 //   T8  thread scaling of the force evaluation
 //   T9  reproducibility: the same run twice is bit-identical
 //   T11 rendering time
@@ -36,6 +38,10 @@ struct BenchOptions {
   std::string forcefields;      // data/forcefields (T12 cleans molecules up with GAFF2 when given)
   int repeats = 3;
   bool quick = false;           // shorter runs (tests, a first look)
+  // T6 / T7: equilibrated cells to measure, named by their reference id (ps-atactic.data, with ps-atactic.lammpstrj or
+  // .dcd beside it for frames), and the reference ranges (data/reference/polymers.json)
+  std::string cells;
+  std::string reference;
   // (table id, what, fraction of the table done) → false cancels
   std::function<bool(const std::string&, const std::string&, double)> progress;
 };
