@@ -131,7 +131,18 @@ struct LammpsStyle {
   double cutoff = 0;              // native: Å; 0 the force field's
   double kspace_accuracy = 1e-4;  // native: relative accuracy of PPPM / Ewald
   int tail = -1;                  // native: 1 pair_modify tail yes, 0 no, −1 as the energy options say
+  // LAMMPS units: real (kcal/mol, fs, atm), metal (eV, ps, bar: every energy parameter divided by 23.060549, LAMMPS's own
+  // factor), or auto: metal when the force field has a many-body potential LAMMPS reads in metal units only (AIREBO,
+  // REBO), else real
+  std::string units = "auto";
 };
+
+// Whether a LAMMPS export of this force field is written in metal units (see LammpsStyle::units); throws when real units
+// are asked for a potential LAMMPS reads in metal units only.
+bool lammps_metal_units(const ForceField& ff, const LammpsStyle& style = {});
+// The force field with every energy parameter in eV (kcal/mol ÷ 23.060549): pair ε and the other pair forms' energies,
+// bond, angle, torsion, improper and class II cross-term constants, DREIDING hydrogen bonds, Stillinger–Weber ε.
+ForceField forcefield_in_metal_units(const ForceField& ff);
 
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true,
                           const LammpsStyle& style = {});

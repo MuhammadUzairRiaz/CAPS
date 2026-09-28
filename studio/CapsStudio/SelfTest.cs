@@ -202,6 +202,31 @@ internal static class SelfTest
             var notes = string.Join(" ", vm.Field.Notes);
             Check(suggested && vm.Field.Complete && vm.Field.IsGrouped && notes.Contains("tersoff", StringComparison.Ordinal) && vm.Field.Swatches.Any(x => x.Name == "Si"),
                   $"Field by group with Tersoff silicon: suggested {suggested} (library {vm.Field.PotentialLibrary.Count}, pick {vm.Field.Groups.FirstOrDefault()?.Pick}, kind {vm.Field.Groups.FirstOrDefault()?.Kind}) · {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            // LAMMPS agrees term by term once the Tersoff energy (which CAPS does not compute) is taken out
+            vm.CompareEnergies().GetAwaiter().GetResult();
+            Check(vm.ParityOk || vm.ParityDetail.Contains("not found"), $"compare energies beside Tersoff: {vm.ParityText}\n{vm.ParityTable}");
+            // a carbon filler: the library's AIREBO suggested; LAMMPS reads it in metal units only, so the deck is in metal units
+            var cc = new System.Text.StringBuilder("CRYST1   30.000   30.000   30.000  90.00  90.00  90.00 P 1           1\n");
+            (string Rn, int Res, double X, double Y, double Z, string El)[] ccRows =
+                [("CC", 1, 10, 10, 10, "C"), ("CC", 1, 11.42, 10, 10, "C"), ("MET", 2, 11, 10, 14, "C"), ("MET", 2, 11, 10, 15.09, "H"),
+                 ("MET", 2, 12.03, 10, 13.64, "H"), ("MET", 2, 10.49, 10.89, 13.64, "H"), ("MET", 2, 10.49, 9.11, 13.64, "H")];
+            for (var k = 0; k < ccRows.Length; ++k)
+                cc.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, "HETATM{0,5} {1,-4} {2,3} A{3,4}    {4,8:F3}{5,8:F3}{6,8:F3}  1.00  0.00          {7,2}\n",
+                                        k + 1, ccRows[k].El, ccRows[k].Rn, ccRows[k].Res, ccRows[k].X, ccRows[k].Y, ccRows[k].Z, ccRows[k].El));
+            cc.Append("END\n");
+            var ccPath = Path.Combine(mbDir, "cc_methane.pdb");
+            File.WriteAllText(ccPath, cc.ToString());
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.Open(ccPath);
+            vm.Document!.SetHeldMolecule(1);
+            vm.Field.SuggestGroups();
+            var airebo = vm.Field.Groups.Count == 2 && vm.Field.Groups[0].IsPotential && vm.Field.PotentialLibrary[vm.Field.Groups[0].Pick].Style == "airebo";
+            if (vm.Field.Groups.Count == 2) { vm.Field.Groups[1].FfIndex = gaff; vm.Field.Groups[1].Charges = 2; }
+            vm.Field.AssignGroups().GetAwaiter().GetResult();
+            var metalDeck = vm.Field.Complete && vm.Document!.LammpsInput("system.data").Contains("units           metal", StringComparison.Ordinal);
+            vm.CompareEnergies().GetAwaiter().GetResult();
+            Check(airebo && metalDeck && (vm.ParityOk || vm.ParityDetail.Contains("not found")),
+                  $"carbon filler under AIREBO: suggested {airebo} · metal units {metalDeck} · {vm.ParityText}\n{vm.ParityTable}");
             vm.Field.Clear().GetAwaiter().GetResult();
             vm.Field.GroupMode = false;
             vm.Field.Groups.Clear();

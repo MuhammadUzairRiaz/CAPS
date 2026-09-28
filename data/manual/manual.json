@@ -1405,7 +1405,7 @@
    "id": "ff-by-group",
    "group": "Force fields",
    "title": "Force fields by group and crystal potentials",
-   "summary": "Each group of molecules (a filler and its matrix, each component of a blend) is typed and parameterised by its own force field with its own charges and mixing rule; the Lennard-Jones pairs between groups follow a cross rule chosen for them, or pairs given explicitly, and every cross pair is written out in the engine files. A crystal group can instead take a literature many-body potential (Tersoff, Stillinger–Weber, Vashishta, EAM) that LAMMPS reads from its file.",
+   "summary": "Each group of molecules (a filler and its matrix, each component of a blend) is typed and parameterised by its own force field with its own charges and mixing rule; the Lennard-Jones pairs between groups follow a cross rule chosen for them, or pairs given explicitly, and every cross pair is written out in the engine files. A crystal group can instead take a literature many-body potential (Tersoff, Stillinger–Weber, Vashishta, EAM) that LAMMPS reads from its file. AIREBO, AIREBO-M and REBO (nanotubes, graphene) are read by LAMMPS in metal units only: such a system is written in metal units (eV, ps, bar), every energy parameter of the force field divided by 23.060549, LAMMPS's own factor.",
    "equation": "ε_ab = √(ε_a ε_b) or (ε_a+ε_b)/2;  σ_ab = (σ_a+σ_b)/2 or √(σ_a σ_b);  sixth power: σ_ab = [(σ_a⁶+σ_b⁶)/2]^(1/6), ε_ab = 2√(ε_a ε_b) σ_a³σ_b³/(σ_a⁶+σ_b⁶)",
    "equation_note": "between groups; inside a group its force field's own rule",
    "symbols": [
@@ -1425,13 +1425,13 @@
      "the library (data/potentials) or the user's"
     ]
    ],
-   "when": "Composites and blends where one force field cannot describe every part: silica, SiC, graphene / CNT or a metal in a PCFF, COMPASS, OPLS or GAFF polymer; blend components parameterised by different force fields. What one simulation cannot hold is refused with the reason: different 1-4 scalings (unless the first group's is taken for all), 9-6 with 12-6 (unless 9-6 sites enter cross pairs as 12-6 with the same ε and minimum), AIREBO / REBO / MEAM (LAMMPS reads them in metal units only). A crystal under a literature potential runs in LAMMPS; CAPS's own runs hold it still.",
+   "when": "Composites and blends where one force field cannot describe every part: silica, SiC, graphene / CNT or a metal in a PCFF, COMPASS, OPLS or GAFF polymer; blend components parameterised by different force fields. What one simulation cannot hold is refused with the reason: different 1-4 scalings (unless the first group's is taken for all), 9-6 with 12-6 (unless 9-6 sites enter cross pairs as 12-6 with the same ε and minimum), MEAM (its library names entries, not elements). A crystal under a literature potential runs in LAMMPS; CAPS's own runs hold it still.",
    "cites": [
     "rappe1992"
    ],
    "source": "core/src/ffmerge.cpp · core/src/manybody.cpp · capi caps_field_assign_groups · data/potentials",
-   "tested": "FFMerge.SameForceFieldInTwoPartsIsExact · FFMerge.DifferentFamiliesAreRefusedOrMergedAsAsked · FFMerge.ManyBodyGroup · FFMerge.PotentialLibrary",
-   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), OPLS 2005 (296.6776), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol",
+   "tested": "FFMerge.SameForceFieldInTwoPartsIsExact · FFMerge.DifferentFamiliesAreRefusedOrMergedAsAsked · FFMerge.ManyBodyGroup · FFMerge.PotentialLibrary · FFMerge.AireboWritesMetalUnits",
+   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), OPLS 2005 (296.6776), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol; (6,6) nanotube under AIREBO in hexane, metal units: van der Waals beside AIREBO GAFF2 3.49464, PCFF 16.67939, COMPASS 1.26178, OPLS 2005 −2.13761 kcal/mol in LAMMPS and CAPS; PS melt real vs metal export identical to 1e-9 in bonded and van der Waals terms",
    "engines": [
     "field.assign.groups"
    ]
