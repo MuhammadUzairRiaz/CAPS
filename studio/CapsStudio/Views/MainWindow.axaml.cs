@@ -1349,6 +1349,7 @@ public partial class MainWindow : Window
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) f.Text = p;
     }
+    private void OnStepAction(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is StepField f) _vm.StepAction(f); }
     private void OnInspectorPrev(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(-1);
     private void OnInspectorNext(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(1);
 
