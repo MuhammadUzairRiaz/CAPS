@@ -482,7 +482,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!Set(ref _module, m, nameof(Module))) return;
         if (!caller.StartsWith("Open", StringComparison.Ordinal) && PageOpeners.TryGetValue(m, out var open))
             Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_module == m) open(this); });
-        if (was is 20 or 21 && m != 20) SuspendPipeline();
+        if (was is 19 or 20 or 21 && m is not (19 or 20)) SuspendPipeline();   // Render (Visualize › Render) keeps the pipeline
         if (m == 20) ApplyPipeline();
         if (m == 19 || was == 19) RenderRequested?.Invoke();   // the view takes (or gives back) the render background
         if (was == 50) EndChargePreview();   // the view shows the structure's own charges again

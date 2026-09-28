@@ -7,7 +7,8 @@ namespace CapsStudio.ViewModels;
 /// <summary>What the render overlays draw on an image of Width × Height: a text label (lines filled from live
 /// attributes), a vertical colour legend, a true scale bar and an axis tripod.</summary>
 public sealed record RenderSpec(string[] Lines, bool LabelBox, bool Legend, string LegendLo, string LegendHi, string LegendName,
-                                double BarAngstrom, double BarPx, bool Tripod, double Yaw, double Pitch, uint Ink, bool Dark, double Width, double Height)
+                                double BarAngstrom, double BarPx, bool Tripod, double Yaw, double Pitch, uint Ink, bool Dark, double Width, double Height,
+                                System.Text.Json.Nodes.JsonArray? Custom = null)   // a Python overlay's drawing (caps.overlay commands)
 {
     public double Unit => Width / 900.0;                         // the board draws a 1920-wide frame about 900 px across
     public string BarLabel => BarAngstrom.ToString("0.##", CultureInfo.InvariantCulture) + " Å";
@@ -110,7 +111,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>The overlay for an image of w × h pixels at pxPerAngstrom; dark marks whether the background is dark.</summary>
-    public RenderSpec RenderSpecFor(int w, int h, double pxPerAngstrom, bool dark, int frame)
+    public RenderSpec RenderSpecFor(int w, int h, double pxPerAngstrom, bool dark, int frame, System.Text.Json.Nodes.JsonArray? custom = null)
     {
         var lines = _ovLabel ? new[] { ResolveTokens(_ovText, frame), ResolveTokens(_ovSub, frame) }.Where(l => l.Length > 0).ToArray() : [];
         double barA = 0, barPx = 0;
@@ -122,7 +123,148 @@ public sealed partial class MainViewModel
             barPx = barA * pxPerAngstrom;
         }
         return new RenderSpec(lines, dark, _ovLegend && _colour == 3, LegendLo, LegendHi, "DistanceToCOM", barA, barPx, _ovTripod,
-                              Camera.Yaw, Camera.Pitch, dark ? 0xE9ECEFu : 0x141413u, dark, w, h);
+                              Camera.Yaw, Camera.Pitch, dark ? 0xE9ECEFu : 0x141413u, dark, w, h, custom ?? OverlayForGuide(frame, w, h, dark));
+    }
+
+    // ---------------------------------------------------------------- Python overlay (caps.overlay)
+    // A script draws on the render with a small canvas (text, lines, shapes, inset plots) from the frame's attributes and
+    // tables; python3 -m caps.overlay runs it and returns the drawing as commands, painted over the image and the guide.
+    private bool _ovPython;
+    private string _ovScript = "", _ovPythonNote = "", _ovConsole = "";
+    private readonly Dictionary<(int Frame, int W, int H, bool Dark), System.Text.Json.Nodes.JsonArray> _ovCache = new();
+    private readonly HashSet<(int, int, int, bool)> _ovPending = new();
+    private string _ovCacheKey = "";
+    public bool OvPython { get => _ovPython; set { if (Set(ref _ovPython, value)) { _ovCache.Clear(); RenderChanged(); } } }
+    public string OvScript { get => _ovScript; set { if (Set(ref _ovScript, value)) { _ovCache.Clear(); Raise(nameof(OvScriptName)); WatchOverlay(); RenderChanged(); } } }
+    private FileSystemWatcher? _ovWatch;
+    /// <summary>Saving the script redraws the guide (the cache is keyed by its modification time).</summary>
+    private void WatchOverlay()
+    {
+        _ovWatch?.Dispose();
+        _ovWatch = null;
+        if (_ovScript.Length == 0 || System.IO.Path.GetDirectoryName(_ovScript) is not { Length: > 0 } dir || !Directory.Exists(dir)) return;
+        try
+        {
+            _ovWatch = new FileSystemWatcher(dir, System.IO.Path.GetFileName(_ovScript)) { NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size, EnableRaisingEvents = true };
+            _ovWatch.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => RenderOverlayChanged?.Invoke());
+        }
+        catch { /* no watching on this file system: the next change of the view redraws */ }
+    }
+    public string OvScriptName => _ovScript.Length == 0 ? "no script yet" : System.IO.Path.GetFileName(_ovScript);
+    public string OvPythonNote { get => _ovPythonNote; private set => Set(ref _ovPythonNote, value); }
+    public string OvConsole { get => _ovConsole; private set => Set(ref _ovConsole, value); }
+    public static string OverlayFolder => System.IO.Path.Combine(AppSettings.Folder, "overlays");
+
+    private const string OverlayTemplate = """
+        # A CAPS render overlay: draw on the image with the canvas (pixels, y down from the top left).
+        # data.attributes: the Visualize pipeline's global attributes on this frame; data.tables: its data tables.
+        from caps.overlay import overlay
+
+
+        @overlay
+        def draw(canvas, data):
+            rho = data.attributes.get("Density", 0)
+            canvas.text(24, canvas.height - 64, f"frame {data.frame} · ρ = {rho:.3f} g/cm³", size=26)
+            # an inset plot of a pipeline table, e.g. the g(r) of Coordination & RDF
+            rdf = data.tables.get("rdf")
+            if rdf:
+                canvas.plot(rdf.column(0), rdf.column(1), box=(canvas.width - 520, 40, 480, 300), title="g(r)", xlabel="r (Å)")
+
+        """;
+
+    /// <summary>A new overlay script from the template in ~/.caps/overlays (kept when it exists), chosen.</summary>
+    public string NewOverlayScript()
+    {
+        Directory.CreateDirectory(OverlayFolder);
+        var path = System.IO.Path.Combine(OverlayFolder, "overlay.py");
+        if (!File.Exists(path)) File.WriteAllText(path, OverlayTemplate);
+        OvScript = path;
+        OvPython = true;
+        return path;
+    }
+
+    /// <summary>What the overlay script is given for a frame: size, frame, title, the pipeline's attributes and tables.</summary>
+    private static string OverlayInput(CapsDocument doc, int frame, int frames, string title, int w, int h, bool dark)
+    {
+        var o = new System.Text.Json.Nodes.JsonObject { ["width"] = w, ["height"] = h, ["dark"] = dark, ["frame"] = frame, ["frames"] = frames, ["title"] = title };
+        var attrs = new System.Text.Json.Nodes.JsonObject();
+        var tables = new System.Text.Json.Nodes.JsonObject();
+        string result;
+        try { result = doc.PipelineResult(); } catch { result = ""; }
+        if (result.Length > 0 && System.Text.Json.Nodes.JsonNode.Parse(result) is System.Text.Json.Nodes.JsonObject r)
+        {
+            if (r["attributes"] is System.Text.Json.Nodes.JsonArray a)
+                foreach (var x in a) if ((string?)x?["name"] is { } n) attrs[n] = (double?)x!["value"] ?? 0;
+            if (r["tables"] is System.Text.Json.Nodes.JsonArray ts)
+                foreach (var t in ts.OfType<System.Text.Json.Nodes.JsonObject>())
+                    if ((string?)t["name"] is { } n) tables[n] = new System.Text.Json.Nodes.JsonObject { ["columns"] = t["columns"]?.DeepClone(), ["rows"] = t["rows"]?.DeepClone() };
+        }
+        else
+        {
+            var s = doc.Summary();
+            attrs["Particles"] = s.Atoms; attrs["Molecules"] = s.Molecules; attrs["Mass"] = s.TotalMass;
+            if (s.CellValid != 0) { attrs["Density"] = s.Density; attrs["CellVolume"] = s.Volume; }
+        }
+        o["attributes"] = attrs;
+        o["tables"] = tables;
+        return o.ToJsonString();
+    }
+
+    /// <summary>Runs the overlay script on one frame's data: its commands, what it printed, and an error when it failed.</summary>
+    private static (System.Text.Json.Nodes.JsonArray? Commands, string Console, string Error) RunOverlay(string script, string input)
+    {
+        try
+        {
+            var python = Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } py ? py : "python3";
+            var psi = new System.Diagnostics.ProcessStartInfo(python)
+            {
+                RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
+                WorkingDirectory = System.IO.Path.GetDirectoryName(script) ?? ".",
+            };
+            psi.ArgumentList.Add("-m");
+            psi.ArgumentList.Add("caps.overlay");
+            psi.ArgumentList.Add(script);
+            if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg + (Environment.GetEnvironmentVariable("PYTHONPATH") is { Length: > 0 } pp ? System.IO.Path.PathSeparator + pp : "");
+            psi.Environment["CAPS_LIB"] = NativeLibraryPath;
+            psi.StandardInputEncoding = new System.Text.UTF8Encoding(false);
+            psi.StandardOutputEncoding = System.Text.Encoding.UTF8;
+            using var proc = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + python);
+            proc.StandardInput.Write(input);
+            proc.StandardInput.Close();
+            var err = proc.StandardError.ReadToEndAsync();
+            var outText = proc.StandardOutput.ReadToEnd();
+            if (!proc.WaitForExit(30000)) { try { proc.Kill(true); } catch { } return (null, "", "the overlay script took longer than 30 s"); }
+            var console = err.Result.Trim();
+            if (proc.ExitCode != 0) return (null, console, console.Split('\n').LastOrDefault(l => l.Trim().Length > 0) ?? $"exit code {proc.ExitCode}");
+            var j = System.Text.Json.Nodes.JsonNode.Parse(outText);
+            return (j?["commands"] as System.Text.Json.Nodes.JsonArray ?? [], console, "");
+        }
+        catch (Exception e) { return (null, "", e.Message + " (set CAPS_PYTHON to a Python 3 interpreter)"); }
+    }
+
+    /// <summary>The overlay's drawing for the guide in the view: from the cache, else worked out in the background.</summary>
+    private System.Text.Json.Nodes.JsonArray? OverlayForGuide(int frame, int w, int h, bool dark)
+    {
+        if (!_ovPython || _ovScript.Length == 0 || _doc == null) return null;
+        var stamp = File.Exists(_ovScript) ? File.GetLastWriteTimeUtc(_ovScript).Ticks.ToString(CultureInfo.InvariantCulture) : "";
+        var key = $"{_ovScript}|{stamp}|{_pipeGen}";
+        if (key != _ovCacheKey) { _ovCache.Clear(); _ovPending.Clear(); _ovCacheKey = key; }
+        var k = (frame, w, h, dark);
+        if (_ovCache.TryGetValue(k, out var hit)) return hit;
+        if (!_ovPending.Add(k)) return null;
+        var doc = _doc;
+        var (script, frames, title) = (_ovScript, _frames, Title);
+        var input = OverlayInput(doc, frame, frames, title, w, h, dark);
+        Task.Run(() => RunOverlay(script, input)).ContinueWith(t => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _ovPending.Remove(k);
+            var (cmds, console, error) = t.Result;
+            OvConsole = console;
+            OvPythonNote = error.Length > 0 ? "Overlay: " + error : $"{cmds?.Count ?? 0} drawing commands · frame {frame}";
+            if (cmds != null && key == _ovCacheKey) _ovCache[k] = cmds;
+            RenderOverlayChanged?.Invoke();
+        }));
+        return null;
     }
 
     /// <summary>The camera of the 3D view: in Render the view zooms so the output frame fills 86 % of it.</summary>
@@ -190,12 +332,19 @@ public sealed partial class MainViewModel
                 if (_renderStop) break;
                 RenderProgress = frames.Count > 1 ? $"frame {f} · {done + 1} of {frames.Count}" : $"rendering {w} × {h}";
                 var rgba = new byte[w * h * 4];
-                await Task.Run(() =>
+                var (py, script, title, nf) = (_ovPython && _ovScript.Length > 0, _ovScript, Title, _frames);
+                var drawn = await Task.Run(() =>
                 {
                     if (frames.Count > 1) doc.SetFrame(f);
                     doc.Render(cam, opt, rgba);
+                    return py ? RunOverlay(script, OverlayInput(doc, f, nf, title, w, h, dark)) : (null, "", "");
                 });
-                write(rgba, w, h, RenderSpecFor(w, h, scale, dark, f), pathOf(f));
+                if (py)
+                {
+                    OvConsole = drawn.Console;
+                    if (drawn.Error.Length > 0) OvPythonNote = "Overlay: " + drawn.Error;
+                }
+                write(rgba, w, h, RenderSpecFor(w, h, scale, dark, f, drawn.Commands), pathOf(f));
                 done++;
             }
         }
