@@ -1,0 +1,6 @@
+Files from InterMol (https://github.com/shirtsgroup/InterMol), MIT License (LICENSE here),
+intermol/tests/amber/unit_tests:
+  phenol.prmtop, phenol.crd   phenol/
+  znf.prmtop, znf.rst         znf/   (a zinc-finger peptide, AMBER ff99SB-family protein topology)
+Used by tests/test_amber.cpp: CAPS's AMBER reader against OpenMM 8.5.2 energies on the same files
+(Reference platform, NoCutoff, no constraints; HarmonicBond, HarmonicAngle, PeriodicTorsion, NonbondedForce).

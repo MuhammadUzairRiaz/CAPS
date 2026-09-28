@@ -764,6 +764,7 @@ std::string hex_colour(unsigned c) {
 // document so the viewer colours by force-field type, and builds the JSON report.
 void field_run_groups(caps_doc* d);
 void field_run_model(caps_doc* d);
+void install_file_field(caps_doc* d);
 
 void field_run(caps_doc* d) {
   if (!d->field->groups.empty()) { field_run_groups(d); return; }
@@ -1197,6 +1198,7 @@ caps_doc* caps_open(const char* path, const char* topology_path) {
     d->traj = caps::open_file(path, topology_path ? topology_path : "");
     refresh(d);
     prov_opened(d, path, topology_path ? topology_path : "", "io.read");
+    install_file_field(d);
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -1215,6 +1217,7 @@ caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t 
     d->traj = caps::open_file(path, topology_path ? topology_path : "", p);
     refresh(d);
     prov_opened(d, path, topology_path ? topology_path : "", "io.read");
+    install_file_field(d);
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -2510,6 +2513,18 @@ namespace { void push_undo(caps_doc* d, const std::string& what); }   // below, 
 
 int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_path, int32_t charges) {
   return guard([&] {
+    if (ff_path && std::string(ff_path) == "file") {   // back to the force field the file carried
+      if (!d->traj.topology.forcefield) throw caps::FFError("this structure's file carried no force field (an AMBER prmtop does)");
+      if (d->field) {   // the file's own types and charges, as it was opened
+        for (size_t i = 0; i < d->traj.topology.atoms.size() && i < d->field->file_types.size(); ++i)
+          d->traj.topology.atoms[i].type = d->field->file_types[i].first, d->traj.topology.atoms[i].name = d->field->file_types[i].second;
+        if (!d->field->file_type_table.empty()) d->traj.topology.types = d->field->file_type_table;
+      }
+      install_file_field(d);
+      if (!d->field || d->field->model.empty()) throw caps::FFError("the structure no longer holds the atoms its topology file describes");
+      prov_step(d, "field.assign", d->traj.topology.forcefield->name, {{"force field", "the topology file's"}, {"charges", "from the topology file"}}, "", {}, {});
+      return 0;
+    }
     auto F = std::make_unique<FieldState>();
     F->ff_path = ff_path ? ff_path : "";
     F->base = caps::is_uff(F->ff_path) ? caps::uff_definition() : caps::load_forcefield(F->ff_path);
@@ -2583,6 +2598,12 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
     }
     return d->field->complete ? 0 : 1;
   });
+}
+
+int32_t caps_field_file_available(const caps_doc* d) {
+  if (!d) return 0;
+  const auto& t = d->traj.topology;
+  return t.forcefield && t.forcefield->charge.size() == t.atoms.size() ? 1 : 0;
 }
 
 int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
@@ -4086,9 +4107,12 @@ caps_doc* doc_of(const caps::System& s) {
 // caps_field_assign does), then merged into one force field with the cross pairs by the chosen rule; the report is the
 // groups' reports joined, atoms renumbered to the structure.
 // A model's own force field (Kremer–Grest: FENE + WCA, built from the melt's options), as a complete assignment.
+void field_run_file(caps_doc* d);
+
 void field_run_model(caps_doc* d) {
   FieldState& F = *d->field;
   const caps::Json J = caps::Json::parse(F.model);
+  if (J.text("model", "") == "file") { field_run_file(d); return; }
   if (J.text("model", "") != "kremer-grest") throw caps::FFError("unknown model " + J.text("model", ""));
   caps::KgOptions o;
   o.k_theta = J.num("k_theta", 0);
@@ -4161,6 +4185,91 @@ void field_run_model(caps_doc* d) {
     r["energy"] = en;
   }
   F.report = r.dump(0);
+}
+
+// The force field the file carried (an AMBER prmtop): every term as the file gives it, nothing typed or estimated
+void field_run_file(caps_doc* d) {
+  FieldState& F = *d->field;
+  const caps::System& s = d->frame;
+  const auto M = d->traj.topology.forcefield;
+  const size_t n = s.atoms.size();
+  if (!M || M->charge.size() != n) throw caps::FFError("the structure no longer holds the atoms its topology file describes: assign a force field from the library");
+  F.ff = M;
+  F.types = M->atom_type;
+  F.complete = true;
+  F.ff_path = "file";
+  F.base = caps::FFDef{};
+  F.base.name = M->name;
+  for (size_t i = 0; i < n; ++i) d->traj.topology.atoms[i].charge = M->charge[i];
+  d->traj.topology.has_charges = true;
+  refresh(d);
+  caps::Json r = caps::Json::object();
+  r["forcefield"] = M->name;
+  r["mixing"] = std::string("arithmetic (Lorentz–Berthelot)") + (M->pair_override.empty() ? "" : ", " + std::to_string(M->pair_override.size()) + " type pairs with their own coefficients");
+  r["version"] = std::string("");
+  r["source"] = std::string("the topology file");
+  r["file"] = std::string("file");
+  r["typing"] = std::string("types from the topology file");
+  r["charges"] = std::string("from the topology file");
+  caps::Json atoms = caps::Json::array();
+  std::map<std::string, int> count;
+  double q = 0;
+  for (size_t i = 0; i < n; ++i) {
+    caps::Json a = caps::Json::object();
+    a["i"] = double(i + 1), a["el"] = std::string(caps::element(s.atoms[i].element).symbol), a["type"] = M->atom_type[i], a["ov"] = false;
+    a["rule"] = std::string("from the topology file"), a["src"] = std::string("file"), a["q"] = M->charge[i], a["cands"] = caps::Json::array();
+    atoms.push_back(a);
+    ++count[M->atom_type[i]];
+    q += M->charge[i];
+  }
+  r["atoms"] = atoms;
+  r["typed"] = double(n), r["untyped"] = 0.0, r["overridden"] = 0.0, r["ambiguous"] = 0.0, r["rules"] = 0.0;
+  r["net_charge"] = q, r["has_charges"] = true;
+  r["missing"] = caps::Json::array();
+  r["filled"] = 0.0, r["filled_terms"] = caps::Json::array(), r["estimated"] = 0.0, r["imported"] = 0.0;
+  r["by_analogy"] = caps::Json::array(), r["entered"] = caps::Json::array(), r["imported_files"] = caps::Json::array();
+  r["references"] = caps::Json::array();
+  caps::Json used = caps::Json::array();
+  int k = 0;
+  for (const auto& [t, c] : count) {
+    caps::Json u = caps::Json::object();
+    u["name"] = t, u["count"] = double(c), u["colour"] = hex_colour(caps::molecule_colour(k++));
+    used.push_back(u);
+  }
+  r["used"] = used;
+  r["fftypes"] = caps::Json::array();
+  caps::Json st = caps::Json::object();
+  st["pair"] = M->native_pair, st["bond"] = std::string("harmonic"), st["angle"] = std::string("harmonic"), st["dihedral"] = M->native_dihedral;
+  st["improper"] = M->native_improper, st["special"] = M->native_special;
+  r["styles"] = st;
+  caps::Json notes = caps::Json::array();
+  for (const auto& x : M->notes) notes.push_back(x);
+  r["notes"] = notes;
+  r["complete"] = true;
+  {
+    caps::Evaluator ev(*M, elec());
+    std::vector<double> x, f;
+    for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, s.cell, f);
+    caps::Json en = caps::Json::object();
+    en["bond"] = e.bond; en["angle"] = e.angle; en["dihedral"] = e.dihedral; en["improper"] = e.improper;
+    en["vdw"] = e.vdw; en["coulomb"] = e.coulomb; en["total"] = e.total();
+    r["energy"] = en;
+  }
+  F.report = r.dump(0);
+}
+
+// A document whose file carried its force field starts with it assigned
+void install_file_field(caps_doc* d) {
+  if (!d->traj.topology.forcefield || d->traj.topology.forcefield->charge.size() != d->traj.topology.atoms.size()) return;
+  auto F = std::make_unique<FieldState>();
+  for (const auto& a : d->traj.topology.atoms) F->file_types.push_back({a.type, a.name}), F->file_charges.push_back(a.charge);
+  F->file_type_table = d->traj.topology.types;
+  F->file_has_charges = d->traj.topology.has_charges;
+  F->charges = "keep";
+  F->model = "{\"model\":\"file\"}";
+  d->field = std::move(F);
+  field_run(d);
 }
 
 void field_run_groups(caps_doc* d) {
@@ -6022,7 +6131,13 @@ void push_undo(caps_doc* d, const std::string& what) {
 }
 
 void store(caps_doc* d, const caps::System& s) {
+  // the force field an AMBER topology carried holds while the atoms (elements) and bonds are unchanged
+  bool same = s.forcefield && s.atoms.size() == d->traj.topology.atoms.size() && s.bonds.size() == d->traj.topology.bonds.size();
+  for (size_t i = 0; same && i < s.atoms.size(); ++i) same = s.atoms[i].element == d->traj.topology.atoms[i].element;
+  for (size_t i = 0; same && i < s.bonds.size(); ++i) same = s.bonds[i].i == d->traj.topology.bonds[i].i && s.bonds[i].j == d->traj.topology.bonds[i].j;
+  const bool file_ff = same && d->field && !d->field->model.empty() && caps::Json::parse(d->field->model).text("model", "") == "file";
   d->traj.topology = s;
+  if (!same) d->traj.topology.forcefield.reset();
   std::vector<caps::Vec3> p;
   for (const auto& a : s.atoms) p.push_back(a.pos);
   d->traj.positions[d->current] = std::move(p);
@@ -6031,6 +6146,7 @@ void store(caps_doc* d, const caps::System& s) {
   d->scan_frames.clear();
   if (d->selection.size() != s.atoms.size()) d->selection.assign(s.atoms.size(), 0);
   refresh(d);
+  if (file_ff) install_file_field(d);   // moved atoms, the same molecule: its topology's force field still applies
 }
 
 }  // namespace

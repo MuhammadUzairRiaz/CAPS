@@ -89,6 +89,7 @@ add_library(caps_core STATIC
   src/martini_protein.cpp
   src/martini3_protein.cpp
   src/gromacs_top.cpp
+  src/amber.cpp
   src/kspace.cpp
   src/fortran_runtime.cpp
   fortran/caps_kspace.f90

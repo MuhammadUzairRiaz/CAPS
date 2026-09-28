@@ -246,7 +246,7 @@ public partial class MainWindow : Window
             Title = "Open a structure or trajectory", AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*", "*.gz"] },
+                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.prmtop", "*.parm7", "*.inpcrd", "*.rst7", "*.restrt", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*", "*.gz"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });
@@ -261,7 +261,7 @@ public partial class MainWindow : Window
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*", "*.gz"] },
+                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.prmtop", "*.parm7", "*.inpcrd", "*.rst7", "*.restrt", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*", "*.gz"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });
@@ -484,6 +484,7 @@ public partial class MainWindow : Window
     // ---------------------------------------------------------------- Field
     private async void OnFieldAssign(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Assign(); }
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
+    private async void OnFieldUseFile(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.UseFileForceField(); }
     private void OnApplyCoordination(object? s, RoutedEventArgs e) => _vm.ApplyCoordination();
     private async void OnFieldAssignGroups(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AssignGroups(); }
     private void OnFieldGroupAdd(object? s, RoutedEventArgs e) => _vm.Field.AddGroup();

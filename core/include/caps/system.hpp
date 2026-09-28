@@ -9,6 +9,8 @@
 
 namespace caps {
 
+struct ForceField;
+
 using Vec3 = std::array<double, 3>;
 
 inline Vec3 operator+(const Vec3& a, const Vec3& b) { return {a[0] + b[0], a[1] + b[1], a[2] + b[2]}; }
@@ -101,6 +103,7 @@ struct System {
   bool unwrapped = false;   // positions are unwrapped (xu/yu/zu or image flags applied)
   std::vector<std::string> notes;  // what the reader inferred or skipped
   std::shared_ptr<const ExplicitTopology> topology;   // bonded terms given term by term, or null
+  std::shared_ptr<const ForceField> forcefield;       // the force field the file carries for these atoms (AMBER prmtop), or null
 
   double mass_of(const Atom& a) const;
   double total_mass() const;          // g/mol

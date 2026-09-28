@@ -21,7 +21,7 @@ public partial class OpenPage : PageBase
             Title = "Topology or structure (LAMMPS data, GROMACS .top/.gro, PDB …)", AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Topologies and structures") { Patterns = ["*.data", "*.lmp", "*.top", "*.itp", "*.gro", "*.pdb", "*.mol2", "*.xyz"] },
+                new FilePickerFileType("Topologies and structures") { Patterns = ["*.data", "*.lmp", "*.top", "*.itp", "*.prmtop", "*.parm7", "*.gro", "*.pdb", "*.mol2", "*.xyz"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });

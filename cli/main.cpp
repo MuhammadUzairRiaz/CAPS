@@ -195,7 +195,7 @@ const std::set<std::string>& known_options() {
     "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--dlpoly", "--es",
     "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
     "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
-    "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
+    "--digits", "--dsf-alpha", "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
     "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl",
     "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
     "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
@@ -276,6 +276,10 @@ System load(const std::string& path, const std::map<std::string, std::string>& o
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
+  if (!o.count("--ff") && s0.forcefield && s0.forcefield->charge.size() == s0.atoms.size()) {
+    if (!quiet) std::printf("force field: %s (the file's own; give --ff for another)\n", s0.forcefield->name.c_str());
+    return *s0.forcefield;
+  }
   if (!o.count("--ff")) {
     const bool ch = std::all_of(s0.atoms.begin(), s0.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
     if (!ch) {
@@ -424,6 +428,7 @@ void electrostatics(EnergyOptions& e, std::map<std::string, std::string>& o) {
   if (o.count("--ewald-rtol")) e.ewald_rtol = std::stod(o["--ewald-rtol"]);
   if (o.count("--pme-spacing")) e.pme_spacing = std::stod(o["--pme-spacing"]);
   if (o.count("--pme-order")) e.pme_order = std::stoi(o["--pme-order"]);
+  if (o.count("--dsf-alpha")) e.dsf_alpha = std::stod(o["--dsf-alpha"]);
 }
 
 void save_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& out) {
@@ -1447,7 +1452,12 @@ int main(int argc, char** argv) {
         ForceField f;
         ParamReport rep;
         double cutoff = 10.0;
-        if (uff) {
+        const bool own = o["--ff"] == "file";   // the force field the file carries (an AMBER prmtop)
+        if (own) {
+          if (!s.forcefield || s.forcefield->charge.size() != s.atoms.size()) throw std::runtime_error("--ff file: " + pos[1] + " carries no force field (open an AMBER prmtop with its coordinates)");
+          f = *s.forcefield;
+          for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
+        } else if (uff) {
           UffOptions uo;
           uo.keep_charges = o.count("--charges") && o["--charges"] == "keep";
           uo.qeq = o.count("--charges") && o["--charges"] == "qeq";
@@ -2225,12 +2235,15 @@ int main(int argc, char** argv) {
       for (const auto& [t, w] : why) std::printf("  %-3s %s\n", t.c_str(), w.c_str());
       EnergyOptions eo;
       if (o.count("--cutoff")) eo.cutoff = std::stod(o["--cutoff"]);
+      if (o.count("--no-tail")) eo.tail = false;
+      electrostatics(eo, o);
       Evaluator ev(ff, eo);
       std::vector<double> x, f;
       for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
       const EnergyTerms e = ev.compute(x, s.cell, f);
-      std::printf("energy (kcal/mol): bond %.2f  angle %.2f  dihedral %.2f  improper %.2f  vdW %.2f  Coulomb %.2f  total %.2f\n", e.bond, e.angle,
-                  e.dihedral, e.improper, e.vdw, e.coulomb, e.total());
+      const int dg = o.count("--digits") ? std::clamp(std::stoi(o["--digits"]), 0, 10) : 2;
+      std::printf("energy (kcal/mol): bond %.*f  angle %.*f  dihedral %.*f  improper %.*f  vdW %.*f  Coulomb %.*f  total %.*f\n", dg, e.bond, dg, e.angle,
+                  dg, e.dihedral, dg, e.improper, dg, e.vdw, dg, e.coulomb, dg, e.total());
       std::printf("largest force %.3f kcal/mol/Å", max_force(f));
       if (s.cell.valid()) std::printf(" · pressure %.0f atm (0 K virial)", pressure_atm(e.virial, s.cell.volume()));
       std::printf("\n");
