@@ -631,6 +631,11 @@
             </Border>
             <ScrollViewer>
               <StackPanel Margin="8" Spacing="3">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="10,2,10,6" IsVisible="{Binding HasPipeBranches}">
+                  <TextBlock Text="Branch" Classes="label" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding PipeBranches}" SelectedIndex="{Binding PipeBranchIndex}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="The view shows one branch; the shared steps below the branches run once per frame and each branch starts from their cached result" />
+                </Grid>
                 <TextBlock Text="STEPS · RUN BOTTOM TO TOP" FontSize="11" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="10,4" />
                 <TextBlock Text="No steps: the file is shown as read. Add one with +." Classes="dim" TextWrapping="Wrap" Margin="10,4" IsVisible="{Binding !PipelineRows.Count}" />
                 <ItemsControl ItemsSource="{Binding PipelineRows}">

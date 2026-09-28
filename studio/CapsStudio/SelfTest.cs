@@ -1036,6 +1036,18 @@ internal static class SelfTest
             vm.Frame = 0;
             var hit = vm.PipeCacheText;
             Check(computed.StartsWith("computed") && hit.StartsWith("from the cache") && hit.Contains("2 frames"), $"pipeline cache: '{computed}' then '{hit}'");
+            // branches: a compute step only in "Numbers"; the shared coordination step runs once, switching back is cached
+            vm.AddStep("compute_property");
+            var numbers = vm.PipelineRows.First(r => r.Type == "compute_property");
+            numbers.Params["branch"] = "Numbers";
+            vm.ApplyPipeline();
+            var shownNumbers = vm.HasPipeBranches && vm.PipeBranchIndex == 1 && !numbers.Summary.Contains("not shown");
+            vm.PipeBranchIndex = 0;
+            var hidden = numbers.Summary.Contains("branch Numbers · not shown");
+            vm.PipeBranchIndex = 1;
+            Check(shownNumbers && hidden && vm.PipeCacheText.StartsWith("from the cache"), $"pipeline branches: {string.Join(" | ", vm.PipeBranches)} · '{numbers.Summary}' · {vm.PipeCacheText}");
+            vm.PipelineRows.Remove(numbers);
+            vm.ApplyPipeline();
             // outputs: the rdf table as CSV and a plot, in the saved YAML and written now
             vm.OpenSavePipeline();
             vm.AddPipelineOutput("table");

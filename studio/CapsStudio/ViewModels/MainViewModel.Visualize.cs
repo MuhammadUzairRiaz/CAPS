@@ -668,6 +668,40 @@ public sealed partial class MainViewModel
                                 Text = _pipeSel.Group };
         f.Changed = () => WriteField(f);
         StepFields.Add(f);
+        var b = new StepField { Key = "branch", Label = "Branch (only in that view; the shared steps below run once)", Kind = "text", Hint = "blank: shared · e.g. Figure · Numbers",
+                                Text = _pipeSel.Params["branch"] is JsonValue v && v.TryGetValue<string>(out var br) ? br : "" };
+        b.Changed = () => WriteField(b);
+        StepFields.Add(b);
+    }
+
+    // branches (design/boards/PipelineGroups): steps with a "branch" run only in that branch's view; the shared steps
+    // below them run once per frame and every branch starts from their cached result
+    private string _pipeBranch = "";
+    private bool _hadBranches;
+    public List<string> PipeBranches => PipelineRows.Select(r => r.Params["branch"] is JsonValue v && v.TryGetValue<string>(out var b) ? b : "")
+                                                    .Where(b => b.Length > 0).Distinct().Prepend("Shared steps only").ToList();
+    public bool HasPipeBranches => PipeBranches.Count > 1;
+    public int PipeBranchIndex
+    {
+        get => Math.Max(0, PipeBranches.IndexOf(_pipeBranch.Length == 0 ? "Shared steps only" : _pipeBranch));
+        set
+        {
+            var list = PipeBranches;
+            var b = value <= 0 || value >= list.Count ? "" : list[value];
+            if (b == _pipeBranch) return;
+            _pipeBranch = b;
+            Raise();
+            ApplyPipeline();
+        }
+    }
+    private void RefreshBranches()
+    {
+        // the shown branch goes when its last step leaves it; a first branch is shown as soon as it exists
+        var list = PipeBranches;
+        if (_pipeBranch.Length > 0 && !list.Contains(_pipeBranch)) _pipeBranch = "";
+        if (_pipeBranch.Length == 0 && list.Count > 1 && !_hadBranches) _pipeBranch = list[1];
+        _hadBranches = list.Count > 1;
+        Raise(nameof(PipeBranches)); Raise(nameof(HasPipeBranches)); Raise(nameof(PipeBranchIndex));
     }
 
     internal string[] PipeProperties()
@@ -704,6 +738,8 @@ public sealed partial class MainViewModel
                 p[f.Key] = new JsonArray(m.Select(x => (JsonNode)x).ToArray());
                 break;
             case "text" when f.Key == "group" && f.Text.Trim().Length == 0: p.Remove("group"); break;
+            case "text" when f.Key == "branch" && f.Text.Trim().Length == 0: p.Remove("branch"); break;
+            case "text" when f.Key == "branch": p["branch"] = f.Text.Trim(); break;
             default: p[f.Key] = f.Text; break;
         }
         ApplyPipeline();
@@ -752,6 +788,7 @@ public sealed partial class MainViewModel
             return (JsonNode)o;
         }).ToArray()),
         ["outputs"] = PipelineOutputsJson(),
+        ["branch"] = _pipeBranch,
     }.ToJsonString();
 
     /// <summary>Sends the steps to the core, which runs them on the shown frame; then the list, legend and inspector refresh.</summary>
@@ -759,6 +796,7 @@ public sealed partial class MainViewModel
     {
         if (_doc == null) return;
         ++_pipeGen;
+        RefreshBranches();
         try
         {
             _doc.SetPipeline(PipelineRows.Count == 0 ? "" : PipelineJson());
