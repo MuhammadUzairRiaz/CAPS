@@ -497,6 +497,15 @@ public sealed partial class MainViewModel
         Enqueue("Relax", 2, "Relax · " + Minimisers[Math.Clamp(RelaxMethod, 0, Minimisers.Length - 1)], () => Relax(opts));
     }
 
+    /// <summary>Pack queued with its input as it is now; the cell it packs becomes a new structure.</summary>
+    public void QueuePack()
+    {
+        string text;
+        try { text = PackTextToRun(); } catch (Exception e) { Status = "Could not queue the packing: " + e.Message; return; }
+        var baseDir = PackBaseDir;
+        EnqueueNew("Pack", 5, "Pack · molecules into a box", () => RunPack(text, baseDir));
+    }
+
     public void QueueReact()
     {
         var opts = ReactOptions();

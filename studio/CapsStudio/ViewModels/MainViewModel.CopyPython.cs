@@ -50,6 +50,19 @@ public sealed partial class MainViewModel
         return sb.ToString();
     }
 
+    /// <summary>The Pack page's input as a script: the packmol text written beside the script, packed by caps.pack.</summary>
+    public string PackPython()
+    {
+        string text;
+        try { text = PackTextToRun(); } catch (Exception e) { return "# " + e.Message + "\n"; }
+        var sb = new StringBuilder("# Pack · written by CAPS Studio · run with python3 (the caps package)\nimport caps\n\n");
+        sb.Append("packmol_input = \"\"\"\n").Append(text.Replace("\"\"\"", "\\\"\\\"\\\"").TrimEnd()).Append("\n\"\"\"\n");
+        sb.Append("with open(\"pack.inp\", \"w\") as f:\n    f.write(packmol_input)\n");
+        sb.Append($"doc = caps.pack(inp=\"pack.inp\", base_dir={PyStr(PackBaseDir)})   # the structure files are found here\n");
+        sb.Append("print(doc.atoms, \"atoms\")\ndoc.save(\"packed.data\")\n");
+        return sb.ToString();
+    }
+
     public string ReactPython()
     {
         var sb = PythonStart("React");

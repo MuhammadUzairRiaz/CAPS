@@ -132,12 +132,15 @@ RecipeCheck check_recipe(const Json& r) {
           }
           info.summary = formula + " · DP " + g6(num(P, "dp", 20)) + " × " + g6(num(P, "chains", 10)) + " chains · " + text(P, "tacticity", "atactic") +
                          (units.size() > 1 ? " · " + text(P, "sequence", "homopolymer") : "");
+        } else if (J.has("pack")) {
+          const Json& P = J["pack"];
+          info.summary = P.is_string() ? "pack " + P.str() : "pack " + g6(double(P.has("molecules") && P["molecules"].is_array() ? P["molecules"].size() : 0)) + " kinds of molecule";
         } else if (J.has("molecule")) {
           info.summary = "molecule " + (J["molecule"].is_string() ? J["molecule"].str() : text(J["molecule"], "smiles", ""));
         } else if (J.has("file")) {
           info.summary = "file " + J["file"].str();
         } else {
-          throw RecipeError(2, "build needs polymer, molecule or file");
+          throw RecipeError(2, "build needs polymer, molecule, pack or file");
         }
       } else if (st == "type") {
         info.summary = text(J, "forcefield", "default") + " · charges " + text(J, "charges", "auto");
@@ -451,6 +454,61 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (P.has("generations")) spec.generations = int(P["generations"].number());
           report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + (spec.architecture == Architecture::Linear ? " chains" : std::string(" ") + to_string(spec.architecture) + " molecules") +
                             " · unit " + info.formula + " · " + tac, "done", 1);
+        } else if (J.has("pack")) {
+          // a packmol input file, or molecules (SMILES or files) with counts in a box:
+          // pack: {box: [x, y, z] | edge, tolerance, seed, density (compress to), molecules: [{smiles | file, count}]}
+          const Json& P = J["pack"];
+          PackOptions po;
+          std::vector<PackItem> items;
+          std::string label;
+          try {
+            if (P.is_string()) {
+              const std::string p = path_of(P.str());
+              if (!std::filesystem::exists(p)) throw RecipeError(2, "pack: no file " + p);
+              items = read_packmol_input(p, po, nullptr);
+              label = std::filesystem::path(p).filename().string();
+            } else {
+              po.tolerance = num(P, "tolerance", 2.0);
+              po.seed = uint64_t(num(P, "seed", 1));
+              double L[3] = {30, 30, 30};
+              if (P.has("box") && P["box"].is_array() && P["box"].size() == 3) for (size_t q = 0; q < 3; ++q) L[q] = P["box"][q].number();
+              else if (P.has("box")) L[0] = L[1] = L[2] = P["box"].number();
+              po.cell.a = {L[0], 0, 0}, po.cell.b = {0, L[1], 0}, po.cell.c = {0, 0, L[2]};
+              if (P.has("density")) po.compress_to = P["density"].number();
+              if (!P.has("molecules") || !P["molecules"].is_array() || P["molecules"].size() == 0) throw RecipeError(2, "pack needs molecules: [{smiles | file, count}]");
+              for (const auto& m : P["molecules"].items()) {
+                PackItem it;
+                it.count = int(num(m, "count", 1));
+                if (m.has("smiles")) {
+                  BuildOptions bo;
+                  bo.forcefield = "uff";
+                  bo.seed = po.seed;
+                  it.molecule = build_molecule(m["smiles"].str(), bo).system;
+                  it.name = m["smiles"].str();
+                } else if (m.has("file")) {
+                  const std::string p = path_of(m["file"].str());
+                  if (!std::filesystem::exists(p)) throw RecipeError(2, "pack: no file " + p);
+                  it.molecule = open_file(p, "").frame(0);
+                  it.name = std::filesystem::path(p).filename().string();
+                } else {
+                  throw RecipeError(2, "pack: each molecule needs smiles or file");
+                }
+                Region box;
+                box.kind = Region::InsideBox;
+                box.a = {0, 0, 0}, box.b = {L[0], L[1], L[2]};
+                it.regions.push_back(box);
+                label += (label.empty() ? "" : " + ") + std::to_string(it.count) + " × " + it.name;
+                items.push_back(std::move(it));
+              }
+            }
+            PackReport pr;
+            s = pack(items, po, &pr);
+            std::vector<std::string> c = {"martinez2009"};
+            res.manifest.steps.push_back(step("pack.optimise", "molecules packed into a box: " + label,
+                                              {{"tolerance", g6(po.tolerance) + " Å"}, {"molecules", label}}, seeded(po.seed), c));
+            report(k, st, label + " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);
+          } catch (const RecipeError&) { throw; }
+          catch (const std::exception& e) { throw RecipeError(4, std::string("pack: ") + e.what()); }
         } else if (J.has("molecule")) {
           BuildOptions bo;
           bo.forcefield = "uff";
@@ -469,7 +527,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           res.manifest.steps.push_back(step("io.read", "read " + std::filesystem::path(p).filename().string(), {{"file", std::filesystem::path(p).filename().string()}, {"atoms", std::to_string(s.atoms.size())}}, "", {}));
           report(k, st, std::filesystem::path(p).filename().string() + " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);
         } else {
-          throw RecipeError(2, "build needs polymer, molecule or file");
+          throw RecipeError(2, "build needs polymer, molecule, pack or file");
         }
       } else if (st == "type") {
         report(k, st, "", "running", 0);
