@@ -119,7 +119,7 @@
             <StackPanel Spacing="4">
               <TextBlock Text="LAMMPS units" Classes="muted" FontSize="11.5" />
               <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineUnitModes}" SelectedIndex="{Binding EngineUnits}" HorizontalAlignment="Stretch"
-                        ToolTip.Tip="Automatic: metal (eV, ps, bar) when a potential is read by LAMMPS in metal units only (AIREBO, REBO for nanotubes and graphene), real (kcal/mol, fs, atm) otherwise. Metal divides every energy parameter by 23.060549, LAMMPS's own factor" />
+                        ToolTip.Tip="Automatic: metal (eV, ps, bar) when a potential is read by LAMMPS in metal units only (AIREBO, REBO, MEAM), keeping its published file unchanged; real (kcal/mol, fs, atm) otherwise. Metal divides every force-field energy parameter by 23.060549, LAMMPS's own factor. Real with AIREBO / REBO writes a copy of the file CAPS converts (A, B and the ε's; exact to machine precision against LAMMPS's metal run); Tersoff, SW, Vashishta and EAM files LAMMPS converts itself; MEAM stays metal" />
             </StackPanel>
             <Border Height="1" Background="{DynamicResource LineB}" />
             <TextBlock Text="RUN" FontSize="10.5" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />

@@ -489,6 +489,18 @@ public partial class MainWindow : Window
     private void OnFieldGroupSuggest(object? s, RoutedEventArgs e) => _vm.Field.SuggestGroups();
     private void OnFieldGroupRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is FieldGroupRow g) _vm.Field.RemoveGroup(g); }
 
+    /// <summary>MEAM's alloy parameter file for a group.</summary>
+    private async void OnFieldGroupBrowse2(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not FieldGroupRow g) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "The MEAM parameter file", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("MEAM parameter files") { Patterns = ["*.meam", "*"] }],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) g.File2 = p;
+    }
+
     /// <summary>A literature potential's file for a group (Tersoff, EAM …).</summary>
     private async void OnFieldGroupBrowse(object? s, RoutedEventArgs e)
     {
@@ -498,7 +510,7 @@ public partial class MainWindow : Window
             Title = "The potential file (" + FieldViewModel.PotentialStyles[Math.Clamp(g.Style, 0, FieldViewModel.PotentialStyles.Length - 1)] + ")", AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("LAMMPS potential files") { Patterns = ["*.tersoff", "*.tersoff.*", "*.sw", "*.vashishta", "*.gw", "*.eam.alloy", "*.eam.fs", "*.setfl", "*.airebo", "*.airebo-m", "*.rebo"] },
+                new FilePickerFileType("LAMMPS potential files") { Patterns = ["*.tersoff", "*.tersoff.*", "*.sw", "*.vashishta", "*.gw", "*.eam.alloy", "*.eam.fs", "*.setfl", "*.airebo", "*.airebo-m", "*.rebo", "*.meam"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });
@@ -507,7 +519,7 @@ public partial class MainWindow : Window
             g.File = p;
             // the style from the file's name when it says (Si.tersoff, CuNi.eam.alloy)
             var n = Path.GetFileName(p).ToLowerInvariant();
-            var k = n.EndsWith(".airebo") ? "airebo" : n.EndsWith(".airebo-m") ? "airebo/morse" : n.EndsWith(".rebo") ? "rebo" : n.EndsWith(".eam.alloy") ? "eam/alloy" : n.EndsWith(".eam.fs") ? "eam/fs" : n.EndsWith(".sw") ? "sw" : n.EndsWith(".vashishta") ? "vashishta"
+            var k = n == "library.meam" || n.StartsWith("library") && n.EndsWith(".meam") ? "meam" : n.EndsWith(".airebo") ? "airebo" : n.EndsWith(".airebo-m") ? "airebo/morse" : n.EndsWith(".rebo") ? "rebo" : n.EndsWith(".eam.alloy") ? "eam/alloy" : n.EndsWith(".eam.fs") ? "eam/fs" : n.EndsWith(".sw") ? "sw" : n.EndsWith(".vashishta") ? "vashishta"
                   : n.EndsWith(".gw") ? "gw" : n.Contains(".tersoff") ? (n.Contains("zbl") ? "tersoff/zbl" : n.Contains(".mod.c") ? "tersoff/mod/c" : n.Contains(".mod") ? "tersoff/mod" : "tersoff") : "";
             var i = Array.IndexOf(FieldViewModel.PotentialStyles, k);
             if (i >= 0) g.Style = i;

@@ -109,6 +109,9 @@ struct ManyBodyFile {
   std::vector<std::string> element;   // per type index: the element the file names that type by; "" not in the potential (NULL)
   std::string citation;               // from the file's first line, when it gives one
   std::string args;                   // the pair style's own arguments (AIREBO: cut-off factor, LJ and torsion flags)
+  std::string file2;                  // MEAM: the alloy parameter file ("" none: NULL)
+  std::vector<std::string> entry;     // MEAM: per type index, the library entry it takes ("" not in the potential)
+  std::vector<std::string> extract;   // MEAM: the library entries read, in the parameter file's index order
   bool metal_only = false;            // LAMMPS reads the file in metal units only (AIREBO, REBO): the export is in metal units
   bool on() const { return !style.empty(); }
 };

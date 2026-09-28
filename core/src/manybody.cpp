@@ -24,8 +24,7 @@ const std::set<std::string> kSetfl = {"eam/alloy", "eam/fs"};
 const std::set<std::string> kBrenner = {"airebo", "airebo/morse", "rebo"};
 // not written: MEAM names its library entries freely (not by element), BOP / COMB / others need what CAPS does not map
 const std::map<std::string, std::string> kRefused = {
-    {"meam", "a MEAM library names its entries freely ('SiS', 'Ni4'), not by element, so CAPS cannot map a group's elements onto it"},
-    {"meam/c", "a MEAM library names its entries freely ('SiS', 'Ni4'), not by element, so CAPS cannot map a group's elements onto it"},
+    {"meam/c", "meam/c is LAMMPS's old name: use meam"},
     {"bop", "BOP tables are not checked or mapped by CAPS"},
     {"comb", "COMB equilibrates charges itself (fix qeq/comb), which CAPS does not set up"},
     {"comb3", "COMB3 equilibrates charges itself (fix qeq/comb), which CAPS does not set up"},
@@ -77,16 +76,86 @@ std::string base_name(const std::string& p) { return std::filesystem::path(p).fi
 
 }  // namespace
 
+std::vector<MeamEntry> meam_library(const std::string& path) {
+  std::ifstream in(path);
+  if (!in) throw FieldError("cannot read the MEAM library " + path);
+  // as LAMMPS reads it: comments out, quotes as separators, 19 words per entry
+  std::vector<std::string> w;
+  for (std::string l; std::getline(in, l);) {
+    if (const size_t h = l.find('#'); h != std::string::npos) l.resize(h);
+    for (char& c : l) if (c == '\'') c = ' ';
+    std::istringstream is(l);
+    for (std::string x; is >> x;) w.push_back(x);
+  }
+  if (w.empty() || w.size() % 19 != 0)
+    throw FieldError(base_name(path) + " is not a MEAM library: its entries are 19 values each (name, lattice, z, atomic number, mass, α, b0–b3, a, Ec, A, t0–t3, ρ0, ibar)");
+  std::vector<MeamEntry> r;
+  std::set<std::string> seen;
+  for (size_t k = 0; k < w.size(); k += 19) {
+    if (!seen.insert(w[k]).second) continue;   // LAMMPS keeps the first of a repeated name
+    MeamEntry e;
+    e.name = w[k], e.lattice = w[k + 1];
+    if (!is_number(w[k + 3]) || !is_number(w[k + 4])) throw FieldError(base_name(path) + ": entry " + w[k] + " has no atomic number and mass where they belong");
+    e.z = std::stoi(w[k + 3]), e.mass = std::stod(w[k + 4]);
+    r.push_back(e);
+  }
+  return r;
+}
+
+bool manybody_caps_converts(const std::string& style) { return kBrenner.count(style) > 0; }
+
+namespace {
+
+// The Brenner family's scalars in LAMMPS's read order (pair_airebo.cpp read_file): those with energy dimension — A_CC …
+// A_HH (20–22), BIJc (23–31), the LJ ε (56–58), the torsion ε (62–64), AIREBO-M's Morse ε (65–67). The splines that
+// follow (g, P, π^rc, T) are dimensionless and stay as they are.
+bool brenner_energy(int k) { return (k >= 20 && k <= 31) || (k >= 56 && k <= 58) || (k >= 62 && k <= 67); }
+
+std::string brenner_to_real(const std::string& text, const std::string& style) {
+  const int scalars = style == "airebo/morse" ? 74 : 65;
+  std::istringstream is(text);
+  std::string out, l;
+  int line = 0, k = 0;
+  char b[64];
+  while (std::getline(is, l)) {
+    ++line;
+    if (line == 1) {   // the units LAMMPS looks for on the first line
+      const size_t u = l.find("UNITS: metal");
+      if (u != std::string::npos) l.replace(u, 12, "UNITS: real");
+      else l += " UNITS: real";
+      out += l + " (converted by CAPS: A, B and the ε's × 23.060549; the splines are dimensionless)\n";
+      continue;
+    }
+    std::string head = l.substr(0, l.find('#'));
+    std::istringstream ls(head);
+    std::string first;
+    if (k < scalars && (ls >> first) && is_number(first)) {
+      if (brenner_energy(k)) {
+        std::snprintf(b, sizeof b, "%.17g", std::stod(first) * 23.060549);
+        const size_t at = l.find(first);
+        l.replace(at, first.size(), b);
+      }
+      ++k;
+    }
+    out += l + "\n";
+  }
+  if (k < scalars) throw FieldError("the " + style + " file has " + std::to_string(k) + " parameters before its splines, not " + std::to_string(scalars));
+  return out;
+}
+
+}  // namespace
+
 const std::vector<std::string>& manybody_styles() {
   static const std::vector<std::string> s = {"tersoff", "tersoff/mod", "tersoff/mod/c", "tersoff/zbl", "sw", "vashishta", "gw", "gw/zbl", "eam/alloy", "eam/fs",
-                                             "airebo", "airebo/morse", "rebo"};
+                                             "airebo", "airebo/morse", "rebo", "meam"};
   return s;
 }
 
 ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<std::string>* notes) {
   const std::string& st = spec.style;
   if (auto it = kRefused.find(st); it != kRefused.end()) throw FieldError("pair style " + st + ": " + it->second);
-  if (!kTriplet.count(st) && !kSetfl.count(st) && !kBrenner.count(st)) {
+  const bool meam = st == "meam";
+  if (!kTriplet.count(st) && !kSetfl.count(st) && !kBrenner.count(st) && !meam) {
     std::string l;
     for (const auto& x : manybody_styles()) l += (l.empty() ? "" : ", ") + x;
     throw FieldError("pair style \"" + st + "\" is not one CAPS writes (" + l + ")");
@@ -121,8 +190,55 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
                      "say whether its energies are in eV (metal, as most published files) or kcal/mol (real)");
   if (units != "metal" && units != "real") throw FieldError(base_name(spec.file) + ": units " + units + " (CAPS converts metal or real)");
   if (kBrenner.count(st) && units != "metal") throw FieldError(st + ": LAMMPS reads its file in metal units only, and " + base_name(spec.file) + " is in " + units);
+  if (meam && units != "metal") throw FieldError("meam: LAMMPS reads MEAM files in metal units only, and " + base_name(spec.file) + " is in " + units);
   std::set<std::string> have;   // "A B C" triplets, or elements
-  if (kBrenner.count(st)) {   // CH.airebo, CH.airebo-m, CH.rebo: carbon and hydrogen
+  std::vector<std::string> meam_entry;   // per element of the group
+  std::vector<std::string> meam_extract;   // the entries read, in order
+  if (meam) {
+    const auto lib = meam_library(spec.file);
+    for (size_t t = 0; t < els.size(); ++t) {
+      const MeamEntry* e = nullptr;
+      auto it = std::find_if(spec.entries.begin(), spec.entries.end(), [&](const auto& kv) { return kv.first == els[t]; });
+      if (it != spec.entries.end()) {
+        for (const auto& x : lib) if (x.name == it->second) e = &x;
+        if (!e) throw FieldError(base_name(spec.file) + " has no entry '" + it->second + "' (for " + els[t] + ")");
+      } else {
+        for (const auto& x : lib) if (x.z == zs[t]) { e = &x; break; }
+        if (!e) throw FieldError(base_name(spec.file) + " has no entry for " + els[t] + " (atomic number " + std::to_string(zs[t]) + ")");
+      }
+      if (e->z != zs[t]) throw FieldError(base_name(spec.file) + ": entry '" + e->name + "' is atomic number " + std::to_string(e->z) + ", not " + els[t]);
+      meam_entry.push_back(e->name);
+    }
+    // the entries read: those given, in their order (the parameter file's indices), then the group's others
+    for (const auto& [el, name] : spec.entries) {
+      bool known = false;
+      for (const auto& x : lib) known = known || x.name == name;
+      if (!known) throw FieldError(base_name(spec.file) + " has no entry '" + name + "' (for " + el + ")");
+      if (std::find(meam_extract.begin(), meam_extract.end(), name) == meam_extract.end()) meam_extract.push_back(name);
+    }
+    for (const auto& n : meam_entry)
+      if (std::find(meam_extract.begin(), meam_extract.end(), n) == meam_extract.end()) meam_extract.push_back(n);
+    if (!spec.file2.empty()) {
+      std::ifstream p2(spec.file2);
+      if (!p2) throw FieldError("meam: cannot read the parameter file " + spec.file2);
+      const std::string u2 = tag(first_line(spec.file2), "UNITS:");
+      if (!u2.empty() && u2 != "metal") throw FieldError("meam: " + base_name(spec.file2) + " is in " + u2 + " units; MEAM is read in metal units only");
+      // the highest element index it names: lattce(1,2), Ec(1,2), Cmin(1,1,2) …
+      int top = 0;
+      for (std::string l; std::getline(p2, l);) {
+        if (const size_t h = l.find('#'); h != std::string::npos) l.resize(h);
+        const size_t a = l.find('('), b = l.find(')');
+        if (a == std::string::npos || b == std::string::npos || b < a) continue;
+        std::string in = l.substr(a + 1, b - a - 1);
+        for (char& c : in) if (c == ',') c = ' ';
+        std::istringstream is(in);
+        for (int k; is >> k;) top = std::max(top, k);
+      }
+      if (top > int(meam_extract.size()))
+        throw FieldError(base_name(spec.file2) + " names element " + std::to_string(top) + ", but " + std::to_string(meam_extract.size()) +
+                         " library entries are read: give every entry it refers to, in its order (SiC.meam: Si=Si C=C)");
+    }
+  } else if (kBrenner.count(st)) {   // CH.airebo, CH.airebo-m, CH.rebo: carbon and hydrogen
     std::string other;
     for (const auto& e : els) if (e != "C" && e != "H") other += (other.empty() ? "" : ", ") + e;
     if (!other.empty()) throw FieldError(st + " covers carbon and hydrogen only, not " + other);
@@ -204,7 +320,10 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
   F.manybody.tagged = !file_units.empty();
   F.manybody.element = els;
   F.manybody.citation = after(head, "CITATION:");
-  F.manybody.metal_only = kBrenner.count(st) > 0;
+  F.manybody.metal_only = kBrenner.count(st) > 0 || meam;
+  F.manybody.file2 = meam ? spec.file2 : "";
+  F.manybody.entry = meam_entry;
+  F.manybody.extract = meam_extract;
   F.manybody.args = !spec.args.empty() ? spec.args : (st == "airebo" || st == "airebo/morse") ? "3.0 1 1" : "";
   std::vector<std::string> said;
   said.push_back(std::to_string(g.atoms.size()) + " atoms by the " + st + " potential of " + base_name(spec.file) + (F.manybody.citation.empty() ? "" : " (" + F.manybody.citation + ")") +
@@ -227,23 +346,31 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
   return F;
 }
 
-std::string manybody_file_name(const ManyBodyFile& mb) {
+std::string manybody_file_name(const ManyBodyFile& mb, const std::string& units) {
   const std::filesystem::path p(mb.file);
+  if (units == "real" && kBrenner.count(mb.style)) return p.stem().string() + "-real" + p.extension().string();   // CAPS's converted copy
   if (mb.tagged) return p.filename().string();
   return p.stem().string() + "-" + mb.units + p.extension().string();
 }
 
-std::string write_manybody_file(const ManyBodyFile& mb, const std::string& dir) {
-  const std::string name = manybody_file_name(mb);
+std::string manybody_file2_name(const ManyBodyFile& mb) { return mb.file2.empty() ? "" : std::filesystem::path(mb.file2).filename().string(); }
+
+std::string write_manybody_file(const ManyBodyFile& mb, const std::string& dir, const std::string& units) {
+  const std::string name = manybody_file_name(mb, units);
   const std::filesystem::path out = std::filesystem::path(dir.empty() ? "." : dir) / name;
   std::error_code ec;
+  if (!mb.file2.empty()) {   // MEAM's parameter file, as it is
+    const std::filesystem::path o2 = std::filesystem::path(dir.empty() ? "." : dir) / manybody_file2_name(mb);
+    if (!(std::filesystem::exists(o2) && std::filesystem::equivalent(o2, mb.file2, ec))) std::filesystem::copy_file(mb.file2, o2, std::filesystem::copy_options::overwrite_existing);
+  }
   if (std::filesystem::exists(out) && std::filesystem::equivalent(out, mb.file, ec)) return name;   // the inputs are beside the file itself
   std::ifstream in(mb.file, std::ios::binary);
   if (!in) throw std::runtime_error("cannot read the potential file " + mb.file);
   std::stringstream ss;
   ss << in.rdbuf();
   std::string text = ss.str();
-  if (!mb.tagged) {   // LAMMPS looks for the units on the first line only
+  if (units == "real" && kBrenner.count(mb.style)) text = brenner_to_real(text, mb.style);
+  else if (!mb.tagged) {   // LAMMPS looks for the units on the first line only
     const size_t eol = text.find('\n');
     std::string first = text.substr(0, eol);
     const std::string add = "UNITS: " + mb.units;

@@ -1498,11 +1498,16 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
       written.push_back({stem + ".in", "styles, every pair_coeff and the run"});
       if (ff.manybody.on()) {
-        written.push_back({caps::manybody_file_name(ff.manybody), "the " + ff.manybody.style + " potential file (" +
-                                                                      (ff.manybody.tagged ? "as given" : "as given, with its units on the first line") + ")"});
+        const bool metal_in = caps::lammps_metal_units(ff, ls);
+        written.push_back({caps::manybody_file_name(ff.manybody, metal_in ? "metal" : "real"), "the " + ff.manybody.style + " potential file (" +
+                           (!metal_in && caps::manybody_caps_converts(ff.manybody.style) ? std::string("converted by CAPS to real units")
+                            : ff.manybody.tagged ? std::string("as given") : std::string("as given, with its units on the first line")) + ")"});
+        if (!ff.manybody.file2.empty()) written.push_back({caps::manybody_file2_name(ff.manybody), "the MEAM parameter file (as given)"});
         const bool metal = caps::lammps_metal_units(ff, ls);
-        notes.push_back(caps::Json("LAMMPS: " + ff.manybody.style + " overlays the pair terms for its elements (pair_style hybrid/overlay); the file in " + ff.manybody.units +
-                                   " units" + (ff.manybody.units == (metal ? "metal" : "real") ? "" : ", which LAMMPS converts")));
+        notes.push_back(caps::Json("LAMMPS: " + ff.manybody.style + " overlays the pair terms for its elements (pair_style hybrid/overlay); " +
+                                   (!metal && caps::manybody_caps_converts(ff.manybody.style)
+                                        ? std::string("real units: CAPS wrote a converted copy of the file (A, B and the ε's × 23.060549, as LAMMPS cannot convert it)")
+                                        : "the file in " + ff.manybody.units + " units" + (ff.manybody.units == (metal ? "metal" : "real") ? "" : ", which LAMMPS converts"))));
       }
       if (caps::lammps_metal_units(ff, ls)) {
         notes.push_back(caps::Json("LAMMPS: written in metal units (eV, ps, bar)" + std::string(ff.manybody.metal_only ? ", as " + ff.manybody.style + " requires" : ", as asked") +
@@ -4117,6 +4122,10 @@ void field_run_groups(caps_doc* d) {
       spec.style = J["potential"].text("style", "");
       spec.file = path;
       spec.units = J["potential"].text("units", "");
+      spec.args = J["potential"].text("args", "");
+      spec.file2 = J["potential"].text("file2", "");   // MEAM's parameter file
+      if (J["potential"].has("entries") && J["potential"]["entries"].is_object())   // MEAM: element → library entry
+        for (const auto& [k, v] : J["potential"]["entries"].members()) spec.entries.push_back({k, v.str()});
       {   // class II's 9-6 when every force-field group is 9-6 (PCFF, COMPASS), else 12-6
         bool all96 = false, any = false;
         for (size_t h = 0; h < ng; ++h)
