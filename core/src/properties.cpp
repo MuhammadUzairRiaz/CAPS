@@ -1,5 +1,6 @@
 // CAPS Analyze: properties from trajectories (see caps/properties.hpp).
 #include "caps/properties.hpp"
+#include "caps/uff.hpp"
 #include "caps/typing.hpp"
 
 #include <algorithm>
@@ -248,7 +249,7 @@ DirectSq direct_sq(const Trajectory& t, const std::vector<size_t>& fr0, const An
             double sw = 0, sw2 = 0;
             for (size_t j = 0; j < n; ++j) {
               auto it = wz.find(el[j]);
-              if (it == wz.end()) it = wz.emplace(el[j], kind == "xray" ? xray_f(el[j], kn) : neutron_b(el[j])).first;
+              if (it == wz.end()) it = wz.emplace(el[j], scatter_w(kind, el[j], kn)).first;
               A += it->second * ab[j] * E3[size_t(lm + l) * n + j];
               sw += it->second;
               sw2 += it->second * it->second;
@@ -279,7 +280,7 @@ DirectSq direct_sq(const Trajectory& t, const std::vector<size_t>& fr0, const An
 
 // Faber–Ziman total structure factor from element partials, weights w(z, q). Lorch window against truncation ripples.
 Property scattering_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o, const std::string& kind) {
-  const std::string title = kind == "sq" ? "Structure factor S(q)" : kind == "xray" ? "X-ray scattering" : "Neutron scattering";
+  const std::string title = kind == "sq" ? "Structure factor S(q)" : kind == "xray" ? "X-ray scattering" : kind == "electron" ? "Electron scattering" : "Neutron scattering";
   Property p{kind, title, "Å⁻¹", "", NaN, NaN, {}, {}, {}};
   if (!t.topology.cell.valid()) { p.notes.push_back("the structure factor needs a periodic cell"); return p; }
   const double rmax = rdf_rmax(t, o), dr = o.rdf_dr;
@@ -305,7 +306,7 @@ Property scattering_prop(const Trajectory& t, const std::vector<size_t>& fr, con
     }
     return 4 * kPi * rho * s;
   };
-  Series s{kind == "sq" ? "S(q)" : kind == "xray" ? "I(q) X-ray (Faber–Ziman)" : "S(q) neutron (Faber–Ziman)", "q (Å⁻¹)",
+  Series s{kind == "sq" ? "S(q)" : kind == "xray" ? "I(q) X-ray (Faber–Ziman)" : kind == "electron" ? "I(q) electron (Faber–Ziman)" : "S(q) neutron (Faber–Ziman)", "q (Å⁻¹)",
            kind == "sq" ? "S(q)" : "S(q), normalised", {}, {}};
   const double qmin = 2 * kPi / rmax;
   // low q: exact reciprocal-lattice sum on the cell; above it the g(r) transform (short-range order, truncation harmless)
@@ -317,11 +318,11 @@ Property scattering_prop(const Trajectory& t, const std::vector<size_t>& fr, con
     if (kind == "sq") F = partial_sq(g[{0, 0}], q);
     else {
       double wsum = 0;
-      for (int z : el) wsum += count[z] / natoms * (kind == "xray" ? xray_f(z, q) : neutron_b(z));
+      for (int z : el) wsum += count[z] / natoms * scatter_w(kind, z, q);
       for (size_t a = 0; a < el.size(); ++a)
         for (size_t b = a; b < el.size(); ++b) {
           const double ca = count[el[a]] / natoms, cb = count[el[b]] / natoms;
-          const double wa = kind == "xray" ? xray_f(el[a], q) : neutron_b(el[a]), wb = kind == "xray" ? xray_f(el[b], q) : neutron_b(el[b]);
+          const double wa = scatter_w(kind, el[a], q), wb = scatter_w(kind, el[b], q);
           // Faber–Ziman: F = Σ_ab c_a c_b w_a w_b [S_ab − 1]; g_ab is normalised by ρ_b = c_b ρ, so S_ab − 1 uses the total ρ.
           // Unlike pairs appear twice in the double sum.
           F += (a == b ? 1.0 : 2.0) * ca * cb * wa * wb * partial_sq(g[{el[a], el[b]}], q);
@@ -345,7 +346,8 @@ Property scattering_prop(const Trajectory& t, const std::vector<size_t>& fr, con
     p.extra["first peak height"] = s.y[best];
     p.extra["d-spacing 2π/q (Å)"] = 2 * kPi / s.x[best];
   }
-  const std::string w = kind == "sq" ? "number-weighted" : kind == "xray" ? "X-ray (Cromer–Mann form factors)" : "neutron (coherent scattering lengths)";
+  const std::string w = kind == "sq" ? "number-weighted" : kind == "xray" ? "X-ray (Cromer–Mann form factors, International Tables Vol. C)"
+                        : kind == "electron" ? "electron (Peng et al. 1996 elastic scattering factors, International Tables Vol. C)" : "neutron (coherent scattering lengths)";
   if (!D.q.empty())
     p.method = w + " Faber–Ziman S(q): direct sum over the cell's reciprocal lattice up to " + fmt(D.qcut, 3) + " Å⁻¹ (" +
                std::to_string(D.frames) + " frames, |k| shells of " + fmt(o.dq, 3) + " Å⁻¹ merged to ≥ 24 vectors), above it from g(r) up to " + fmt(rmax, 4) +
@@ -1281,8 +1283,45 @@ struct FreeGrid {
   double cell_volume = 0;
 };
 
+// Each atom's radius for free volume: Bondi's van der Waals radius (1964), half UFF's van der Waals distance x (Rappé 1992),
+// or half the Lennard-Jones minimum of the assigned force field (2^(1/6) σ for 12-6, σ itself for class II 9-6).
+std::vector<double> free_radii(const System& s, const AnalyzeOptions& o) { return free_volume_radii(s, o.radii, o.ff); }
+
+}  // namespace
+
+std::vector<double> free_volume_radii(const System& s, const std::string& kind, const ForceField* ff) {
+  std::vector<double> r(s.atoms.size());
+  AnalyzeOptions o;
+  o.radii = kind;
+  if (o.radii == "forcefield") {
+    if (!ff || ff->type_index.size() != s.atoms.size()) throw std::invalid_argument("free volume with force-field radii needs a force field assigned to this structure");
+    const bool c96 = ff->pair_form == "lj9-6";
+    for (size_t i = 0; i < r.size(); ++i) {
+      const PairType& p = ff->lj[size_t(ff->type_index[i])];
+      r[i] = 0.5 * (c96 ? p.sigma : p.sigma * std::pow(2.0, 1.0 / 6));
+      if (!(r[i] > 0)) r[i] = element(s.atoms[i].element).vdw;   // a site without Lennard-Jones (a hydroxyl H): Bondi's
+    }
+  } else if (o.radii == "uff") {
+    for (size_t i = 0; i < r.size(); ++i) {
+      double x = 0, d = 0;
+      r[i] = uff_vdw(s.atoms[i].element, x, d) ? 0.5 * x : element(s.atoms[i].element).vdw;
+    }
+  } else if (o.radii == "bondi" || o.radii.empty()) {
+    for (size_t i = 0; i < r.size(); ++i) r[i] = element(s.atoms[i].element).vdw;
+  } else {
+    throw std::invalid_argument("free-volume radii " + o.radii + ": bondi, uff or forcefield");
+  }
+  return r;
+}
+
+namespace {
+
+std::string radii_name(const AnalyzeOptions& o) {
+  return o.radii == "forcefield" ? "force-field radii (half the Lennard-Jones minimum)" : o.radii == "uff" ? "UFF radii (x/2, Rappé 1992)" : "Bondi van der Waals radii";
+}
+
 // Distance to the nearest atom surface at each grid point, for fractional coordinates on an n0 × n1 × n2 grid.
-FreeGrid free_grid(const System& s, double spacing, double search) {
+FreeGrid free_grid(const System& s, double spacing, double search, const std::vector<double>& radii) {
   FreeGrid G;
   const Cell& c = s.cell;
   G.cell_volume = c.volume();
@@ -1303,7 +1342,7 @@ FreeGrid free_grid(const System& s, double spacing, double search) {
     Vec3 f = c.to_fractional(s.atoms[i].pos);
     for (int k = 0; k < 3; ++k) f[k] -= std::floor(f[k]);
     frac[i] = f;
-    rad[i] = element(s.atoms[i].element).vdw;
+    rad[i] = radii[i];
     int b[3];
     for (int k = 0; k < 3; ++k) b[k] = std::min(nb[k] - 1, int(f[k] * nb[k]));
     bins[(size_t(b[0]) * nb[1] + b[1]) * nb[2] + b[2]].push_back(i);
@@ -1350,7 +1389,7 @@ Property ffv_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
   for (size_t q = 0; q < fr.size(); ++q) {
     if (cancelled(o, "free volume", double(q) / fr.size())) throw Cancel();
     const System f = t.frame(fr[q]);
-    const FreeGrid G = free_grid(f, o.grid, 4.0);
+    const FreeGrid G = free_grid(f, o.grid, 4.0, free_radii(f, o));
     const double np = double(G.dist.size());
     size_t free_p = 0, free0 = 0;
     for (float d : G.dist) { free_p += d > o.probe; free0 += d > 0; }
@@ -1367,7 +1406,9 @@ Property ffv_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
   const double vw = std::accumulate(occ.begin(), occ.end(), 0.0) / occ.size();
   p.extra["van der Waals occupied fraction"] = vw;
   p.extra["Bondi FFV = 1 − 1.3 V_w/V"] = 1 - 1.3 * vw;
-  p.method = "probe insertion on a " + std::to_string(o.grid).substr(0, 4) + " Å grid, Bondi van der Waals radii, probe radius " +
+  if (o.radii == "uff" || o.radii == "forcefield")
+    p.notes.push_back("Bondi's FFV factor 1.3 belongs to Bondi's volumes; with " + radii_name(o) + " the van der Waals occupied fraction is the direct measure");
+  p.method = "probe insertion on a " + std::to_string(o.grid).substr(0, 4) + " Å grid, " + radii_name(o) + ", probe radius " +
              std::to_string(o.probe).substr(0, 4) + " Å, " + std::to_string(fr.size()) + " frames; value: fraction of the cell a probe centre can reach";
   p.series.push_back(std::move(s));
   return p;
@@ -1383,7 +1424,8 @@ Property psd_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
   for (size_t q = 0; q < fr.size(); ++q) {
     if (cancelled(o, "pore sizes", double(q) / fr.size())) throw Cancel();
     const System f = t.frame(fr[q]);
-    const FreeGrid G = free_grid(f, o.grid, 6.0);
+    const auto rad = free_radii(f, o);
+    const FreeGrid G = free_grid(f, o.grid, 6.0, rad);
     const int n0 = G.n[0], n1 = G.n[1], n2 = G.n[2];
     // the largest sphere that contains each free point without overlapping an atom: centres in descending radius
     std::vector<size_t> order;
@@ -1415,7 +1457,7 @@ Property psd_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
       Vec3 x = c.to_cartesian({(i0 + 0.5) / n0, (i1 + 0.5) / n1, (i2 + 0.5) / n2});
       auto surface = [&](const Vec3& r) {
         double d = std::numeric_limits<double>::max();
-        for (const auto& a : f.atoms) d = std::min(d, norm(c.minimum_image(a.pos - r)) - element(a.element).vdw);
+        for (size_t ai = 0; ai < f.atoms.size(); ++ai) d = std::min(d, norm(c.minimum_image(f.atoms[ai].pos - r)) - rad[ai]);
         return d;
       };
       double fx = surface(x);
@@ -1451,7 +1493,7 @@ Property psd_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
     p.extra["most frequent diameter (Å)"] = (mode + 0.5) * bw;
     p.extra["largest diameter (Å)"] = largest;   // refined off the grid
   }
-  p.method = "each free point takes the diameter of the largest atom-free sphere containing it (Gelb & Gubbins 1999), Bondi radii, " +
+  p.method = "each free point takes the diameter of the largest atom-free sphere containing it (Gelb & Gubbins 1999), " + radii_name(o) + ", " +
              std::to_string(o.grid).substr(0, 4) + " Å grid, " + std::to_string(fr.size()) + " frames; value: volume-weighted mean diameter";
   p.series.push_back(std::move(s));
   return p;
@@ -1496,25 +1538,36 @@ std::vector<char> deuterated_hydrogens(const System& s, int pattern) {
 }
 
 double xray_f(int z, double q) {
-  // Cromer–Mann coefficients (International Tables for Crystallography, Vol. C, Table 6.1.1.4): a1 b1 a2 b2 a3 b3 a4 b4 c
+  // Cromer–Mann coefficients of the neutral atoms (International Tables for Crystallography, Vol. C, Table 6.1.1.4)
   static const std::map<int, std::array<double, 9>> cm = {
-      {1, {0.489918, 20.6593, 0.262003, 7.74039, 0.196767, 49.5519, 0.049879, 2.20159, 0.001305}},
-      {6, {2.31000, 20.8439, 1.02000, 10.2075, 1.58860, 0.568700, 0.865000, 51.6512, 0.215600}},
-      {7, {12.2126, 0.005700, 3.13220, 9.89330, 2.01250, 28.9975, 1.16630, 0.582600, -11.529}},
-      {8, {3.04850, 13.2771, 2.28680, 5.70110, 1.54630, 0.323900, 0.867000, 32.9089, 0.250800}},
-      {9, {3.53920, 10.2825, 2.64120, 4.29440, 1.51700, 0.261500, 1.02430, 26.1476, 0.277600}},
-      {11, {4.76260, 3.28500, 3.17360, 8.84220, 1.26740, 0.313600, 1.11280, 129.424, 0.676000}},
-      {14, {6.29150, 2.43860, 3.03530, 32.3337, 1.98910, 0.678500, 1.54100, 81.6937, 1.14070}},
-      {15, {6.43450, 1.90670, 4.17910, 27.1570, 1.78000, 0.526000, 1.49080, 68.1645, 1.11490}},
-      {16, {6.90530, 1.46790, 5.20340, 22.2151, 1.43790, 0.253600, 1.58630, 56.1720, 0.866900}},
-      {17, {11.4604, 0.010400, 7.19640, 1.16620, 6.25560, 18.5194, 1.64550, 47.7784, -9.5574}},
-      {35, {17.1789, 2.17230, 5.23580, 16.5796, 5.63770, 0.260900, 3.98510, 41.4328, 2.95570}},
-      {53, {20.1472, 4.34700, 18.9949, 0.381400, 7.51380, 27.7660, 2.27350, 66.8776, 4.07120}}};
+#include "xray_ff.inc"
+  };
   auto it = cm.find(z);
   if (it == cm.end()) throw std::invalid_argument(std::string("no X-ray form factor for ") + element(z).symbol);
   const auto& a = it->second;
   const double s2 = (q / (4 * kPi)) * (q / (4 * kPi));   // (sin θ / λ)²
   return a[0] * std::exp(-a[1] * s2) + a[2] * std::exp(-a[3] * s2) + a[4] * std::exp(-a[5] * s2) + a[6] * std::exp(-a[7] * s2) + a[8];
+}
+
+double electron_f(int z, double q) {
+  // Peng, Ren, Dudarev & Whelan 1996 (International Tables Vol. C): five Gaussians in s = sin θ / λ, one set to s = 2 Å⁻¹,
+  // another to s = 6 Å⁻¹
+  static const double pg[98][20] = {
+#include "electron_ff.inc"
+  };
+  if (z == kDeuterium) z = 1;
+  if (z < 1 || z > 98) throw std::invalid_argument(std::string("no electron scattering factor for ") + element(z).symbol);
+  const double s = q / (4 * kPi), s2 = s * s;
+  const double* a = pg[z - 1] + (s > 2 ? 10 : 0);
+  double f = 0;
+  for (int k = 0; k < 5; ++k) f += a[k] * std::exp(-a[5 + k] * s2);
+  return f;
+}
+
+double scatter_w(const std::string& kind, int z, double q) {
+  if (kind == "xray") return xray_f(z == kDeuterium ? 1 : z, q);
+  if (kind == "electron") return electron_f(z, q);
+  return neutron_b(z);
 }
 
 // ---------------------------------------------------------------- force-field subset
@@ -1662,7 +1715,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 }
 
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
-  static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
+  static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
                                               "entanglements"};
   for (const auto& id : ids)
@@ -1679,7 +1732,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
   run([&] {
     if (want("density")) out.push_back(density_prop(t, fr, times, o));
     if (want("rdf")) out.push_back(rdf_prop(t, fr, o));
-    for (const char* k : {"sq", "xray", "neutron"}) {
+    for (const char* k : {"sq", "xray", "electron", "neutron"}) {
       if (!want(k)) continue;
       if (std::string(k) == "neutron" && o.deuterate > 0) {
         // the chosen hydrogens scatter as deuterium: a relabelled copy of the topology

@@ -2417,6 +2417,7 @@ public sealed partial class MainViewModel : ObservableObject
         ClearFocus();
         if (IsVisualize) Avalonia.Threading.Dispatcher.UIThread.Post(ApplyPipeline);
         Field.Reset();
+        try { Field.LoadReport(doc); } catch { Field.Reset(); }   // a structure built with its own model (Kremer–Grest) comes assigned
         _pipeAutoFf = false;
         Analyze.Load("");
         SyncHeld(); SyncFixed();

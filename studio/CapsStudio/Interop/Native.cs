@@ -265,6 +265,7 @@ public struct CapsAnalyzeOpts
     public int Threads;
     public int Deuterate;       // neutron contrast (ABI 20): 0 none, 1 all H, 2 aliphatic, 3 aromatic, 4 on O/N
     [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Group;   // ABI 36: "" all, "selection", "molecules:1-4,7", "exclude-held"
+    [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Radii;   // ABI 38: free volume radii — "bondi", "uff", "forcefield"
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -429,6 +430,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_camera_focus")] public static extern int CameraFocus(IntPtr doc, in CapsCamera cam, int[] idx, int n, double fill, out CapsCamera focused);
     [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
                                                                           CapsRecipeProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_martini_melt")] public static extern IntPtr MartiniMelt([MarshalAs(UnmanagedType.LPUTF8Str)] string options, IntPtr progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -896,6 +898,15 @@ public sealed class CapsDocument : IDisposable
     {
         var report = new byte[1024];
         var h = Native.KgBuild(options, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+    /// <summary>A MARTINI polymer melt (caps_martini_melt): chains from a repeat unit's bead SMILES, packed, assigned and
+    /// compressed to the density with the MARTINI force field. Report JSON {beads, beads_per_chain, chain_mass, density, …}.</summary>
+    public static (CapsDocument Doc, string Report) MartiniMelt(string options, string label)
+    {
+        var report = new byte[2048];
+        var h = Native.MartiniMelt(options, IntPtr.Zero, IntPtr.Zero, report, report.Length);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
     }

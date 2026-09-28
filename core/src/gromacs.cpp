@@ -108,6 +108,14 @@ bool periodic_bonds(const System& s, std::vector<Vec3>& pos) {
   return false;
 }
 
+// MARTINI 2's pairs as LAMMPS lj/gromacs: Lennard-Jones with GROMACS's force switch from lj_inner to the cut-off
+bool gromacs_switch(const ForceField& ff) {
+  if (ff.pair_func.empty()) return false;
+  for (const auto& [k, p] : ff.pair_func)
+    if (p.form != kPairGromacs) return false;
+  return ff.lj_inner > 0;
+}
+
 }  // namespace
 
 std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, const EnergyOptions& e) {
@@ -115,7 +123,19 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   const size_t n = s.atoms.size();
   if (ff.atom_type.size() != n) throw FieldError("the force field does not cover every atom");
   if (ff.pair_form != "lj12-6") throw FieldError(ff.name + ": the 9-6 Lennard-Jones form (class II) has no GROMACS function");
-  if (!ff.pair_func.empty()) throw FieldError(ff.name + ": Buckingham and Morse pairs have no GROMACS form in the Verlet scheme");
+  // lj/gromacs (MARTINI 2's shifted Lennard-Jones) is GROMACS's own force switch; the other pair forms have no Verlet form
+  for (const auto& [k, p] : ff.pair_func)
+    if (p.form != kPairGromacs)
+      throw FieldError(ff.name + ": " + (p.form == 1 ? std::string("Buckingham") : p.form == 2 ? std::string("Morse") : p.form >= kPairSdk96 && p.form <= kPairSdk125 ? std::string("SDK / SPICA") : std::string("cosine-squared")) +
+                       " pairs have no GROMACS form in the Verlet scheme; export to LAMMPS instead");
+  if (gromacs_switch(ff)) {
+    bool charged = false;
+    for (double q : ff.charge) charged = charged || q != 0;
+    if (charged && ff.coul_gromacs && e.coulomb)
+      throw FieldError(ff.name + ": MARTINI 2's shifted Coulomb (ε_r " + fmt("%g", ff.dielectric) +
+                       ") has no form in GROMACS's Verlet scheme (the group scheme that had it is gone): export this charged system to LAMMPS, which keeps it exactly");
+    notes.push_back("Lennard-Jones with GROMACS's force switch from " + fmt("%g", ff.lj_inner / 10) + " nm to the cut-off (vdw-modifier Force-switch), MARTINI 2's lj/gromacs");
+  }
   if (ff.sw.on) throw FieldError(ff.name + ": the Stillinger–Weber three-body term (mW water) has no GROMACS form");
   if (ff.manybody.on())
     throw FieldError(ff.name + ": GROMACS has no " + ff.manybody.style + " (or any other many-body potential read from a file); export this system to LAMMPS, or give the crystal a force field of pair terms (IFF, INTERFACE, UFF)");
@@ -138,7 +158,9 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   std::vector<Vec3> pos;
   if (periodic_bonds(s, pos)) notes.push_back("bonds cross the cell (an infinite network): periodic-molecules = yes");
   if (!s.cell.valid()) notes.push_back("no periodic cell: the molecule is centred in a box 2 r_c larger than it is");
-  if (ff.coul_rf && e.coulomb) notes.push_back("reaction-field Coulomb (ε_r " + fmt("%g", ff.dielectric) + ", ε_rf " + (ff.eps_rf == 0 ? std::string("∞") : fmt("%g", ff.eps_rf)) + "), as in CAPS");
+  const bool any_charge = std::any_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q != 0; });
+  if (!any_charge) {
+  } else if (ff.coul_rf && e.coulomb) notes.push_back("reaction-field Coulomb (ε_r " + fmt("%g", ff.dielectric) + ", ε_rf " + (ff.eps_rf == 0 ? std::string("∞") : fmt("%g", ff.eps_rf)) + "), as in CAPS");
   else if (s.cell.valid() && e.coulomb && e.electrostatics != EnergyOptions::Electrostatics::PME)
     notes.push_back("CAPS's damped shifted force becomes PME in GROMACS (no DSF there)");
   if (s.cell.valid()) {
@@ -155,6 +177,7 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
 
 std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptions& e0) {
   EnergyOptions e = e0;
+  if (std::all_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q == 0; })) e.coulomb = false;   // no charges: no Coulomb term
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;
   const bool cell = s.cell.valid();
   const bool pme = cell && e.coulomb;
@@ -167,8 +190,8 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
   m << "rvdw                     = " << e.cutoff / 10 << "\n";
   m << "rcoulomb                 = " << e.cutoff / 10 << "\n";
   m << "vdwtype                  = Cut-off\n";
-  const bool tail = e.tail && !ff.lj_shift && !ff.lj_fsw;
-  if (ff.lj_fsw) {   // CHARMM: the force switch from lj_inner (as CHARMM-GUI writes CHARMM36 for GROMACS), no dispersion correction
+  const bool tail = e.tail && !ff.lj_shift && !ff.lj_fsw && !gromacs_switch(ff);
+  if (ff.lj_fsw || gromacs_switch(ff)) {   // CHARMM (as CHARMM-GUI writes CHARMM36) or MARTINI 2's lj/gromacs: the force switch from lj_inner
     m << "vdw-modifier             = Force-switch\n";
     m << "rvdw-switch              = " << ff.lj_inner / 10 << "\n";
   } else {
@@ -180,8 +203,7 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
     m << "coulombtype              = Reaction-Field\n";
     m << "epsilon-rf               = " << ff.eps_rf << "\n";
   } else if (!e.coulomb) {
-    m << "coulombtype              = Reaction-Field\n";
-    m << "epsilon-r                = 0             ; 0: infinite, no Coulomb\n";
+    m << "coulombtype              = Cut-off       ; no charges: no Coulomb energy\n";
   } else if (pme) {
     if (e.electrostatics != EnergyOptions::Electrostatics::PME)
       m << "; CAPS runs this with damped shifted force (α " << e.dsf_alpha << " Å⁻¹); GROMACS has no DSF, so PME: the Ewald sum DSF approximates\n";
@@ -251,7 +273,8 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   top << (c6c12 ? "\n[ nonbond_params ]\n; i  j  func  C6  C12\n" : "\n[ nonbond_params ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol)\n");
   for (int a = 0; a < nt; ++a)
     for (int c = a; c < nt; ++c) {
-      const PairType p = mixed_pair(ff, a, c);
+      PairType p = mixed_pair(ff, a, c);
+      if (auto it = ff.pair_func.find({a, c}); it != ff.pair_func.end() && it->second.form == kPairGromacs) p = {it->second.a, it->second.b};   // lj/gromacs: ε, σ
       std::snprintf(b, sizeof b, "%-16s %-16s 1 %s\n", tname[size_t(a)].c_str(), tname[size_t(c)].c_str(), lj_pair(p.sigma, p.eps).c_str());
       top << b;
     }

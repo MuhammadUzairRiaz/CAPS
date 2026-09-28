@@ -110,6 +110,7 @@ struct FieldState {
   std::vector<double> file_charges;
   bool file_has_charges = false;
   std::string groups;                        // v36: a force field per group (caps_field_assign_groups), as JSON; "" one for all
+  std::string model;                         // a model's own force field built with the structure (Kremer–Grest), as JSON
 };
 
 // Styles, colours, surfaces and polyhedra of the Studio view (caps_set_appearance), prepared for the current frame.
@@ -761,9 +762,11 @@ std::string hex_colour(unsigned c) {
 // Types and parameterises the current structure with the field state, writes the types (and charges) into the
 // document so the viewer colours by force-field type, and builds the JSON report.
 void field_run_groups(caps_doc* d);
+void field_run_model(caps_doc* d);
 
 void field_run(caps_doc* d) {
   if (!d->field->groups.empty()) { field_run_groups(d); return; }
+  if (!d->field->model.empty()) { field_run_model(d); return; }
   FieldState& F = *d->field;
   caps::FFDef def = F.base;
   // gap fillers first: the last matching rule wins, so the force field's own rules (and the imported ones) come later
@@ -1489,7 +1492,29 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     // a force field LAMMPS cannot express (GROMOS's reaction field …) refuses the LAMMPS files only: the GROMACS files
     // are still written, and the reason goes back as lammps_error
     std::string lammps_error;
-    if (lammps) try {
+    const bool kg_model = !d->field->model.empty() && caps::Json::parse(d->field->model).text("model", "") == "kremer-grest";
+    if (lammps && kg_model) try {
+      // a Kremer–Grest melt: its own LAMMPS deck (units lj, or real as mapped): push-off, then FENE + WCA under Langevin
+      const caps::Json m = caps::Json::parse(d->field->model);
+      caps::KgOptions ko;
+      ko.chains = int(m.num("chains", 0)), ko.beads = int(m.num("beads", 0)), ko.density = m.num("density", 0.85), ko.k_theta = m.num("k_theta", 0);
+      ko.seed = uint64_t(m.num("seed", 1));
+      ko.sigma = m.num("sigma", 0), ko.temperature = m.num("temperature", 0), ko.bead_mass = m.num("bead_mass", 0);
+      caps::System ks = s;
+      if (ko.sigma > 0) {
+        for (auto& a : ks.atoms) a.pos = a.pos * (1.0 / ko.sigma);
+        ks.cell.a = ks.cell.a * (1.0 / ko.sigma), ks.cell.b = ks.cell.b * (1.0 / ko.sigma), ks.cell.c = ks.cell.c * (1.0 / ko.sigma), ks.cell.origin = ks.cell.origin * (1.0 / ko.sigma);
+      }
+      caps::write_kg_lammps(ks, ko, base, o.num("pushoff_steps", 20000), double(run.steps > 0 ? run.steps : 100000));
+      written.push_back({stem + ".data", "beads, bonds (and angles), in σ units" + std::string(ko.sigma > 0 ? " scaled to Å" : "")});
+      written.push_back({stem + ".in", "Kremer–Grest deck: push-off, then FENE + WCA, Langevin thermostat"});
+      notes.push_back(caps::Json(std::string("LAMMPS: the Kremer–Grest melt's own deck (") + (ko.sigma > 0 ? "units real, as mapped" : "units lj") +
+                                 "); the run options of this page other than the steps do not apply to it"));
+    } catch (const std::exception& ex) {
+      lammps_error = ex.what();
+      if (!gromacs) throw;
+    }
+    if (lammps && !kg_model) try {
       std::vector<std::string> lnotes;
       caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
@@ -1525,7 +1550,8 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     // a force field GROMACS cannot express (class II's 9-6 Lennard-Jones and cross terms …) refuses the GROMACS files
     // only: the LAMMPS files are still written, and the reason goes back as gromacs_error
     std::string gromacs_error;
-    if (gromacs) try {
+    if (gromacs && kg_model) gromacs_error = "Kremer–Grest's FENE bond with its WCA core has no GROMACS form (GROMACS's FENE bond carries no repulsive core, and a bonded pair's WCA cannot be cut off in [ pairs ]): export to LAMMPS";
+    else if (gromacs) try {
       for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
       if (write_gromacs_freeze(d, s, base)) notes.push_back("GROMACS: the held atoms are a freeze group (" + std::filesystem::path(base).filename().string() + ".ndx, freezegrps in the .mdp; grompp -n)");
       if (run.constraints == caps::ConstraintMode::HBonds && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT)) {
@@ -3207,6 +3233,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       if (p->cutoff > 0) o.energy.cutoff = p->cutoff;
       o.energy = elec(o.energy);
       if (p->threads > 0) o.threads = p->threads;
+      if (p->radii && *p->radii) o.radii = p->radii;
     }
     caps_mech_opts mo{};
     if (m) mo = *m;
@@ -4050,6 +4077,84 @@ caps_doc* doc_of(const caps::System& s) {
 // Force fields by group (v36, ffmerge.hpp): each group's atoms assigned on their own (typing, parameters and charges as
 // caps_field_assign does), then merged into one force field with the cross pairs by the chosen rule; the report is the
 // groups' reports joined, atoms renumbered to the structure.
+// A model's own force field (Kremer–Grest: FENE + WCA, built from the melt's options), as a complete assignment.
+void field_run_model(caps_doc* d) {
+  FieldState& F = *d->field;
+  const caps::Json J = caps::Json::parse(F.model);
+  if (J.text("model", "") != "kremer-grest") throw caps::FFError("unknown model " + J.text("model", ""));
+  caps::KgOptions o;
+  o.k_theta = J.num("k_theta", 0);
+  o.density = J.num("density", 0.85);
+  o.sigma = J.num("sigma", 0), o.temperature = J.num("temperature", 0), o.bead_mass = J.num("bead_mass", 0);
+  const caps::System& s = d->frame;
+  auto M = std::make_shared<caps::ForceField>(caps::kremer_grest_forcefield(s, o));
+  F.ff = M;
+  F.types = M->atom_type;
+  F.complete = true;
+  F.ff_path = "kremer-grest";
+  F.base = caps::FFDef{};
+  F.base.name = M->name;
+  const size_t n = s.atoms.size();
+  for (size_t i = 0; i < n; ++i) {
+    d->traj.topology.atoms[i].type = 1;
+    d->traj.topology.atoms[i].name = "KG";
+    d->traj.topology.atoms[i].charge = 0;
+  }
+  d->traj.topology.types.clear();
+  caps::TypeInfo ti;
+  ti.type = 1, ti.label = "KG", ti.mass = n ? M->mass[0] : 1.0;
+  d->traj.topology.types.push_back(ti);
+  d->traj.topology.has_charges = true;
+  refresh(d);
+  caps::Json r = caps::Json::object();
+  r["forcefield"] = M->name;
+  r["mixing"] = std::string("one bead type");
+  r["version"] = std::string("1990");
+  r["source"] = std::string("Kremer & Grest, J. Chem. Phys. 92, 5057 (1990)");
+  r["file"] = std::string("kremer-grest");
+  r["typing"] = std::string("every bead of the melt");
+  r["charges"] = std::string("none");
+  caps::Json atoms = caps::Json::array();
+  for (size_t i = 0; i < n; ++i) {
+    caps::Json a = caps::Json::object();
+    a["i"] = double(i + 1), a["el"] = std::string("C"), a["type"] = std::string("KG"), a["ov"] = false;
+    a["rule"] = std::string("Kremer–Grest bead"), a["src"] = std::string("model"), a["q"] = 0.0, a["cands"] = caps::Json::array();
+    atoms.push_back(a);
+  }
+  r["atoms"] = atoms;
+  r["typed"] = double(n), r["untyped"] = 0.0, r["overridden"] = 0.0, r["ambiguous"] = 0.0, r["rules"] = 0.0;
+  r["net_charge"] = 0.0, r["has_charges"] = true;
+  r["missing"] = caps::Json::array();
+  r["filled"] = 0.0, r["filled_terms"] = caps::Json::array(), r["estimated"] = 0.0, r["imported"] = 0.0;
+  r["by_analogy"] = caps::Json::array(), r["entered"] = caps::Json::array(), r["imported_files"] = caps::Json::array();
+  caps::Json refs = caps::Json::array();
+  refs.push_back(std::string("Kremer & Grest, J. Chem. Phys. 92, 5057 (1990)"));
+  r["references"] = refs;
+  caps::Json used = caps::Json::array(), u = caps::Json::object();
+  u["name"] = std::string("KG"), u["count"] = double(n), u["colour"] = hex_colour(caps::molecule_colour(0));
+  used.push_back(u);
+  r["used"] = used;
+  r["fftypes"] = caps::Json::array();
+  r["styles"] = caps::Json::object();
+  caps::Json notes = caps::Json::array();
+  for (const auto& x : M->notes) notes.push_back(x);
+  notes.push_back(std::string("FENE bonds (K = 30 ε/σ², R₀ = 1.5 σ) with their WCA core, the WCA pair cut at 2^(1/6) σ and shifted") +
+                  (o.k_theta > 0 ? ", cosine bending k_θ = " + std::to_string(o.k_theta) + " ε" : std::string(", no bending term")) + "; special_bonds fene");
+  r["notes"] = notes;
+  r["complete"] = true;
+  {
+    caps::Evaluator ev(*M, elec());
+    std::vector<double> x, f;
+    for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, s.cell, f);
+    caps::Json en = caps::Json::object();
+    en["bond"] = e.bond; en["angle"] = e.angle; en["dihedral"] = e.dihedral; en["improper"] = e.improper;
+    en["vdw"] = e.vdw; en["coulomb"] = e.coulomb; en["total"] = e.total();
+    r["energy"] = en;
+  }
+  F.report = r.dump(0);
+}
+
 void field_run_groups(caps_doc* d) {
   FieldState& F = *d->field;
   const caps::Json G = caps::Json::parse(F.groups);
@@ -6806,6 +6911,8 @@ extern "C" int32_t caps_voids(caps_doc* d, const char* options_json, char* json,
     vo.probe = std::max(0.0, o.num("probe", 1.4));
     vo.max_count = std::clamp(int(o.num("count", 40)), 1, 2000);
     vo.min_radius = std::max(0.2, o.num("min_radius", 1.0));
+    if (const std::string rk = o.text("radii", "bondi"); rk != "bondi")   // uff | forcefield (the Field assignment)
+      vo.radii = caps::free_volume_radii(d->frame, rk, d->field && d->field->ff ? d->field->ff.get() : nullptr);
     const auto r = caps::largest_voids(d->frame, vo);
     d->voids = r.spheres;
     if (show) d->void_mesh = std::make_unique<caps::Mesh>(caps::void_mesh(r.spheres, 2));
@@ -6940,6 +7047,9 @@ caps::KgOptions kg_options(const char* options_json) {
   o.density = j.num("density", 0.85);
   o.k_theta = j.num("k_theta", 0.0);
   o.seed = uint64_t(j.num("seed", 1));
+  o.sigma = j.num("sigma", 0);             // real units: σ (Å), T (K) for ε = k_B T, bead mass (g/mol) — all three, else reduced
+  o.temperature = j.num("temperature", 0);
+  o.bead_mass = j.num("bead_mass", 0);
   return o;
 }
 }  // namespace
@@ -6948,7 +7058,13 @@ extern "C" caps_doc* caps_kg_build(const char* options_json, char* report, int32
   try {
     const caps::KgOptions o = kg_options(options_json);
     caps::KgReport r;
-    const caps::System s = caps::kremer_grest(o, &r);
+    caps::System s = caps::kremer_grest(o, &r);
+    const bool mapped = caps::kg_units(o).eps > 0;
+    if (mapped) {   // the melt in Å: σ as mapped (its density then in real g/cm³)
+      for (auto& a : s.atoms) a.pos = a.pos * o.sigma;
+      s.cell.a = s.cell.a * o.sigma, s.cell.b = s.cell.b * o.sigma, s.cell.c = s.cell.c * o.sigma, s.cell.origin = s.cell.origin * o.sigma;
+      for (auto& t : s.types) t.mass = o.bead_mass;
+    }
     caps::Json j = caps::Json::object();
     j["box"] = r.box;
     j["closest"] = r.closest;
@@ -6958,6 +7074,110 @@ extern "C" caps_doc* caps_kg_build(const char* options_json, char* report, int32
     prov_step(d, "cg.kremer_grest", std::to_string(o.chains) + " × " + std::to_string(o.beads) + " bead-spring chains as random walks",
               {{"chains", std::to_string(o.chains)}, {"beads", std::to_string(o.beads)}, {"density", g6(o.density) + " σ⁻³"}, {"k_theta", g6(o.k_theta) + " ε"},
                {"box", g6(r.box) + " σ"}}, seeded(o.seed), {"kremer1990"});
+    // its own force field: the melt is ready to run, analyse and export without a library assignment
+    caps::Json m = caps::Json::object();
+    m["model"] = std::string("kremer-grest");
+    m["k_theta"] = o.k_theta, m["density"] = o.density, m["chains"] = double(o.chains), m["beads"] = double(o.beads), m["seed"] = double(o.seed);
+    if (mapped) m["sigma"] = o.sigma, m["temperature"] = o.temperature, m["bead_mass"] = o.bead_mass;
+    d->field = std::make_unique<FieldState>();
+    for (const auto& a : d->traj.topology.atoms) d->field->file_types.push_back({a.type, a.name}), d->field->file_charges.push_back(a.charge);
+    d->field->file_type_table = d->traj.topology.types;
+    d->field->model = m.dump(0);
+    field_run(d);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" caps_doc* caps_martini_melt(const char* options_json, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    const std::string ff_path = j.text("forcefield", "");
+    const std::string repeat = j.text("repeat", "");
+    const int n = int(j.num("repeats", 20)), chains = int(j.num("chains", 20));
+    const double density = j.num("density", 1.0), tol = j.num("tolerance", 3.0);
+    const uint64_t seed = uint64_t(j.num("seed", 1));
+    if (ff_path.empty()) throw std::runtime_error("choose the MARTINI force field");
+    if (repeat.empty()) throw std::runtime_error("give the repeat unit as bead SMILES, e.g. [SN0] (PEO) or [C1] (four CH2 per bead)");
+    if (n < 1 || chains < 1 || density <= 0) throw std::runtime_error("repeats, chains and the density must be positive");
+    const caps::FFDef def = caps::load_forcefield(ff_path);
+    {   // every bead of the repeat must be a type of this force field ([SN0], [Qd+1]: the name before a charge)
+      std::string missing;
+      for (size_t a = repeat.find('['); a != std::string::npos; a = repeat.find('[', a + 1)) {
+        const size_t b = repeat.find(']', a);
+        if (b == std::string::npos) throw std::runtime_error("unclosed [ in the repeat unit " + repeat);
+        std::string name = repeat.substr(a + 1, b - a - 1);
+        const size_t q = name.find_first_of("+-", 1);
+        if (q != std::string::npos) name.resize(q);
+        bool known = def.type(name) != nullptr;   // or a moltemplate-style name built on it (SN0_bSN0_aSN0_…)
+        for (size_t t = 0; !known && t < def.types.size(); ++t) known = def.types[t].name.rfind(name + "_", 0) == 0;
+        if (!known && missing.find(" " + name + ",") == std::string::npos) missing += " " + name + ",";
+      }
+      if (!missing.empty()) {
+        missing.pop_back();
+        throw std::runtime_error(def.name + " has no bead type" + missing + " (MARTINI 2 names such as C1, SN0 are not Martini 3's; choose the force field the mapping is written for)");
+      }
+    }
+    std::string chain_text;
+    for (int k = 0; k < n; ++k) chain_text += repeat;
+    caps::System chain = caps::build_bead_molecule(chain_text, def, seed);
+    chain.title = "chain";
+    for (auto& a : chain.atoms) a.mol = 1;
+    chain.has_mol = true;
+    // pack loosely (a quarter of the target density), then compress with the MARTINI force field itself
+    double mass = 0;
+    for (const auto& a : chain.atoms) {
+      const caps::FFType* t = def.type(a.name);
+      mass += t && t->mass > 0 ? t->mass : 72.0;
+    }
+    const double loose = 0.25 * density;
+    const double L = std::cbrt(chains * mass / 6.02214076e23 / loose * 1e24);
+    caps::PackItem it;
+    it.name = "chain";
+    it.molecule = chain;
+    it.count = chains;
+    caps::PackOptions po;
+    po.cell.a = {L, 0, 0}, po.cell.b = {0, L, 0}, po.cell.c = {0, 0, L};
+    po.periodic = true;
+    po.tolerance = tol;
+    po.seed = seed;
+    caps::PackReport pr;
+    caps::System packed = caps::pack({it}, po, &pr);
+    packed.title = "MARTINI melt";
+    // the force field on the loose cell, for the compression
+    std::unique_ptr<caps_doc> tmp(doc_of(packed));
+    if (caps_field_assign(tmp.get(), ff_path.c_str(), nullptr, 2) < 0)   // the charges of the bead SMILES throw std::runtime_error(g_error);
+    if (!tmp->field->complete) throw std::runtime_error(def.name + " does not describe every bead of " + repeat + ": see Field for the untyped beads and missing terms");
+    caps::RelaxOptions ro;
+    ro.field = tmp->field->ff;
+    ro.energy = elec();
+    ro.target_density = density;
+    ro.compress_step = 0.06;
+    ro.ftol = 2.0;
+    ro.max_iterations = 2000;
+    if (progress) ro.progress = [&](const caps::RelaxProgress& p) { return progress(p.stage_index, p.stages, 0, user) == 0; };
+    caps::RelaxReport rr;
+    caps::System melt = packed;
+    caps::relax(melt, ro, &rr);
+    melt.velocities.clear();
+    caps_doc* d = doc_of(melt);
+    if (caps_field_assign(d, ff_path.c_str(), nullptr, 2) < 0) { const std::string e = g_error; delete d; throw std::runtime_error(e); }
+    char b[256];
+    std::snprintf(b, sizeof b, "%d chains of %d × %s packed at %.3f g/cm³, compressed with %s to %.3f g/cm³", chains, n, repeat.c_str(), packed.density(), def.name.c_str(),
+                  melt.density());
+    prov_step(d, "cg.martini_melt", b, {{"forcefield", def.name}, {"repeat", repeat}, {"repeats", std::to_string(n)}, {"chains", std::to_string(chains)},
+                                        {"density", g6(density) + " g/cm³"}}, seeded(seed), {});
+    caps::Json rj = caps::Json::object();
+    rj["beads"] = double(melt.atoms.size());
+    rj["beads_per_chain"] = double(chain.atoms.size());
+    rj["chain_mass"] = mass;
+    rj["density"] = melt.density();
+    rj["loose_density"] = packed.density();
+    rj["forcefield"] = def.name;
+    rj["complete"] = d->field && d->field->complete;
+    report_out(rj.dump(0), report, cap);
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -6967,7 +7187,16 @@ extern "C" caps_doc* caps_kg_build(const char* options_json, char* report, int32
 
 extern "C" int32_t caps_kg_lammps(caps_doc* d, const char* options_json, const char* stem, double pushoff_steps, double run_steps) {
   return guard([&] {
-    caps::write_kg_lammps(d->frame, kg_options(options_json), stem, pushoff_steps > 0 ? pushoff_steps : 20000, run_steps > 0 ? run_steps : 100000);
+    // the structure in σ units (a mapped melt is held in Å)
+    caps::System s = d->frame;
+    if (d->field && !d->field->model.empty()) {
+      const double sg = caps::Json::parse(d->field->model).num("sigma", 0);
+      if (sg > 0) {
+        for (auto& a : s.atoms) a.pos = a.pos * (1.0 / sg);
+        s.cell.a = s.cell.a * (1.0 / sg), s.cell.b = s.cell.b * (1.0 / sg), s.cell.c = s.cell.c * (1.0 / sg), s.cell.origin = s.cell.origin * (1.0 / sg);
+      }
+    }
+    caps::write_kg_lammps(s, kg_options(options_json), stem, pushoff_steps > 0 ? pushoff_steps : 20000, run_steps > 0 ? run_steps : 100000);
     return 0;
   });
 }

@@ -21,6 +21,7 @@ struct VoidOptions {
   int max_count = 40;        // spheres kept
   double min_radius = 1.0;   // Å
   double reach = 10.0;       // Å: distances beyond this from every surface count as this
+  std::vector<double> radii; // per atom, Å; empty: Bondi's van der Waals radii
 };
 
 struct VoidReport {

@@ -31,8 +31,9 @@ VoidReport largest_voids(const System& s, const VoidOptions& o) {
   // how many grid steps along each axis cover a distance r: perpendicular widths of the cell
   const double V = c.volume();
   const Vec3 w{V / len(cross3(c.b, c.c)), V / len(cross3(c.c, c.a)), V / len(cross3(c.a, c.b))};
-  for (const auto& a : s.atoms) {
-    const double R = element(a.element).vdw > 0 ? element(a.element).vdw : 1.7;
+  for (size_t ai = 0; ai < s.atoms.size(); ++ai) {
+    const auto& a = s.atoms[ai];
+    const double R = ai < o.radii.size() ? o.radii[ai] : element(a.element).vdw > 0 ? element(a.element).vdw : 1.7;
     const double reach = R + o.reach;
     const Vec3 f = c.to_fractional(a.pos);
     int lo[3], hi[3];
