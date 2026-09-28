@@ -154,14 +154,17 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
 
   ForceField F;
   F.name = st + " (" + base_name(spec.file) + ")";
-  F.pair_form = "lj12-6";
-  F.mixing = "geometric";   // UFF's own rule; the pairs among the group's types are zero anyway
+  const bool c96 = spec.pair_form == "lj9-6";
+  if (!c96 && spec.pair_form != "lj12-6") throw FieldError("cross-pair form " + spec.pair_form + " (lj12-6 or lj9-6)");
+  F.pair_form = spec.pair_form;
+  F.mixing = c96 ? "sixthpower" : "geometric";   // the pairs among the group's types are zero anyway
   F.type_names = els;
   F.excluded.assign(g.atoms.size(), {});
   for (size_t t = 0; t < els.size(); ++t) {
     double x = 0, d = 0;
     if (!uff_vdw(zs[t], x, d)) throw FieldError("UFF has no van der Waals parameters for " + els[t] + " (the cross pairs): give them explicitly");
-    F.lj.push_back({d, x / std::pow(2.0, 1.0 / 6)});   // UFF's x is the minimum, r_min = 2^(1/6) σ
+    // UFF's x is the minimum: 12-6 σ = x / 2^(1/6); the 9-6 form ε[2(σ/r)⁹ − 3(σ/r)⁶] has its minimum at σ itself
+    F.lj.push_back({d, c96 ? x : x / std::pow(2.0, 1.0 / 6)});
   }
   // inside the group the potential does it all: no Lennard-Jones between its types
   for (size_t a = 0; a < els.size(); ++a)
@@ -182,7 +185,8 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
   std::vector<std::string> said;
   said.push_back(std::to_string(g.atoms.size()) + " atoms by the " + st + " potential of " + base_name(spec.file) + (F.manybody.citation.empty() ? "" : " (" + F.manybody.citation + ")") +
                  ", energies in " + (units == "metal" ? "eV (LAMMPS converts them to kcal/mol)" : "kcal/mol") + "; standard atomic masses, no charges, no bonded terms");
-  said.push_back("cross pairs with the rest: Lennard-Jones from UFF (Rappé et al. 1992) for " + [&] {
+  said.push_back(std::string("cross pairs with the rest: Lennard-Jones ") + (c96 ? "9-6 (the class II form of the other groups, with UFF's well depth D and minimum x) " : "12-6 ") +
+                 "from UFF (Rappé et al. 1992) for " + [&] {
     std::string l;
     for (const auto& e : els) l += (l.empty() ? "" : ", ") + e;
     return l;
