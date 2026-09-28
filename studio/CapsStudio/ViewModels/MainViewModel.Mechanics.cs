@@ -26,7 +26,7 @@ public sealed partial class MainViewModel
     public static int FocusOf(string id) => id switch
     {
         "cij_strain" or "cij_run" or "tensile" => 38,
-        "sq" or "xray" or "neutron" => 39,
+        "sq" or "xray" or "electron" or "neutron" => 39,
         "ffv" or "psd" => 40,
         _ => 1,
     };
@@ -47,7 +47,7 @@ public sealed partial class MainViewModel
             chip.Active = _module switch
             {
                 38 => chip.Id == "tensile" && _mechTensile || chip.Id == (_mechMethod == 0 ? "cij_strain" : "cij_run"),
-                39 => chip.Id == "xray" && _scatterXray || chip.Id == "neutron" && _scatterNeutron,
+                39 => chip.Id == ScatterBeamId && _scatterXray || chip.Id == "neutron" && _scatterNeutron,
                 40 => chip.Id is "ffv" or "psd",
                 _ => false,
             };

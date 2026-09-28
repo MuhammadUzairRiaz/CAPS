@@ -50,18 +50,54 @@
         <DockPanel>
           <Border DockPanel.Dock="Top" Height="48" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
             <DockPanel>
-              <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0" VerticalAlignment="Center"><TextBlock Text="Kremer–Grest" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
+              <Border DockPanel.Dock="Right" Classes="chip" Height="20" Padding="8,0" VerticalAlignment="Center"><TextBlock Text="{Binding CgModelChip}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></Border>
               <TextBlock Text="Coarse-grained model" Classes="h2" VerticalAlignment="Center" />
             </DockPanel>
           </Border>
           <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-              <Button Click="OnExport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="LAMMPS deck…" VerticalAlignment="Center" /></StackPanel></Button>
-              <Button Classes="primary" Click="OnBuild"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build CG melt" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Click="OnExport" IsVisible="{Binding CgIsKg}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="LAMMPS deck…" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding CgIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding CgBuildText}" VerticalAlignment="Center" /></StackPanel></Button>
             </StackPanel>
           </Border>
           <ScrollViewer>
             <StackPanel>
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="MODEL" Classes="h3" />
+                  <Border Classes="seg" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="seg" Content="Kremer–Grest" GroupName="cgmodel" IsChecked="{Binding CgModel, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}"
+                                   ToolTip.Tip="Generic bead-spring chains (FENE + WCA): universal polymer physics in reduced units, or mapped to a polymer by σ, T and the bead mass" />
+                      <RadioButton Classes="seg" Content="MARTINI" GroupName="cgmodel" IsChecked="{Binding CgModel, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}"
+                                   ToolTip.Tip="Chemistry-specific beads (about four heavy atoms each) with the MARTINI force field of the library: a melt packed, assigned and compressed, ready for GROMACS or LAMMPS" />
+                    </StackPanel>
+                  </Border>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding CgIsKg}"
+                             Text="Kremer–Grest melts come with their own force field (FENE + WCA): the Field page shows it assigned, CAPS runs them, and the Export page writes their LAMMPS deck." />
+                </StackPanel>
+              </Border>
+              <StackPanel IsVisible="{Binding CgIsMartini}">
+                <Border Classes="section" Padding="16,14">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="MARTINI CHAINS" Classes="h3" />
+                    <StackPanel Spacing="6"><TextBlock Text="Force field" Classes="label" /><ComboBox ItemsSource="{Binding MtForceFields}" SelectedIndex="{Binding MtFfIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Spacing="6"><TextBlock Text="Repeat unit · bead SMILES" Classes="label" /><TextBox Text="{Binding MtRepeat}" Classes="mono" Watermark="[C1]"
+                      ToolTip.Tip="The beads of one repeat unit, as bead SMILES ([TYPE], [TYPE±q], branches in parentheses); the chain is the unit repeated" /></StackPanel>
+                    <StackPanel Spacing="6"><TextBlock Text="Examples" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.MtExamples}" SelectedIndex="{Binding MtExample}" HorizontalAlignment="Stretch" PlaceholderText="choose an example mapping" /></StackPanel>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                      <StackPanel Spacing="6"><TextBlock Text="Repeats per chain" Classes="label" /><NumericUpDown Value="{Binding MtRepeats}" Minimum="1" Maximum="5000" Increment="5" FormatString="0" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Chains" Classes="label" /><NumericUpDown Value="{Binding MtChains}" Minimum="1" Maximum="20000" Increment="5" FormatString="0" /></StackPanel>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                      <StackPanel Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding MtDensity}" Minimum="0.1" Maximum="3" Increment="0.05" FormatString="0.00" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Seed" Classes="label" /><NumericUpDown Value="{Binding MtSeed}" Minimum="1" Increment="1" FormatString="0" /></StackPanel>
+                    </Grid>
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="One chain is built from the repeat unit, the chains packed at a quarter of the density, the MARTINI force field assigned from the bead names and the cell compressed to the density with it. The melt opens in the Studio assigned: relax and equilibrate it, then export it to GROMACS (MARTINI's home: Lennard-Jones with GROMACS's force switch) or LAMMPS." />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+              <StackPanel IsVisible="{Binding CgIsKg}">
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="10">
                   <TextBlock Text="CHAINS" Classes="h3" />
@@ -83,8 +119,15 @@
                   <DockPanel><TextBlock DockPanel.Dock="Right" Text="WCA · cut at 2^1/6 σ" Classes="mono" FontSize="12" /><TextBlock Text="Non-bonded" FontSize="12.5" Foreground="{DynamicResource MutedB}" /></DockPanel>
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <StackPanel Spacing="6"><TextBlock Text="Bending k_θ · ε" Classes="label" /><NumericUpDown Value="{Binding CgKTheta}" Minimum="0" Maximum="50" Increment="0.25" FormatString="0.00" /></StackPanel>
-                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Units" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Reduced (ε, σ, m)" /></ComboBox></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Units" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.CgUnitModes}" SelectedIndex="{Binding CgUnits}" HorizontalAlignment="Stretch"
+                      ToolTip.Tip="Reduced: LAMMPS units lj. Real: the same model mapped onto a polymer by your σ, temperature (ε = k_B T) and bead mass, written in LAMMPS units real" /></StackPanel>
                   </Grid>
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" IsVisible="{Binding CgMapped}">
+                    <StackPanel Spacing="6"><TextBlock Text="σ · Å" Classes="label" /><NumericUpDown Value="{Binding CgSigma}" Minimum="0.5" Maximum="50" Increment="0.1" FormatString="0.00" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="T · K (ε = k_B T)" Classes="label" /><NumericUpDown Value="{Binding CgTemp}" Minimum="1" Maximum="5000" Increment="1" FormatString="0.#" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Bead mass · g/mol" Classes="label" /><NumericUpDown Value="{Binding CgMass}" Minimum="1" Maximum="100000" Increment="1" FormatString="0.##" /></StackPanel>
+                  </Grid>
+                  <TextBlock Text="{Binding CgMapText}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding CgMapped}" />
                   <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1">
                     <TextBlock Text="Kremer &amp; Grest, J. Chem. Phys. 92, 5057 (1990)" FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />
                   </Border>
@@ -107,6 +150,7 @@
                   <Button Classes="small ghost" Content="Model resolution › Backmap →" Click="OnModelResolution" HorizontalAlignment="Left" Foreground="{DynamicResource AccB}" />
                 </StackPanel>
               </Border>
+              </StackPanel>
               <TextBlock Text="{Binding CgError}" Foreground="{DynamicResource ErrB}" FontSize="12" Margin="16,8" TextWrapping="Wrap" />
             </StackPanel>
           </ScrollViewer>

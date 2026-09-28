@@ -122,7 +122,7 @@ class _AnalyzeOpts(C.Structure):
                 ("blocks", C.c_int32), ("elem_a", C.c_int32), ("elem_b", C.c_int32), ("inter_only", C.c_int32),
                 ("rdf_rmax", C.c_double), ("rdf_dr", C.c_double), ("qmax", C.c_double), ("dq", C.c_double), ("q_direct", C.c_double),
                 ("fit_from", C.c_double), ("fit_to", C.c_double), ("probe", C.c_double), ("grid", C.c_double), ("cutoff", C.c_double),
-                ("threads", C.c_int32), ("deuterate", C.c_int32), ("group", C.c_char_p)]
+                ("threads", C.c_int32), ("deuterate", C.c_int32), ("group", C.c_char_p), ("radii", C.c_char_p)]
 
 
 class _MechOpts(C.Structure):
@@ -151,6 +151,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
+        "caps_kg_build": ([S, B, I], P), "caps_martini_melt": ([S, P, P, B, I], P), "caps_kg_lammps": ([P, S, S, D, D], I),
         "caps_solvate": ([P, S, P, P, B, I], P),
         "caps_edit": ([P, S, B, I], I), "caps_undo": ([P, I], I), "caps_select": ([P, S, B, I], I), "caps_selection": ([P, B, I], I),
         "caps_tacticity": ([P, B, I], I), "caps_interactions": ([P, S, B, I], I), "caps_torsion_scan": ([P, S, P, P, B, I], I),
@@ -541,12 +542,13 @@ class Document:
     # analysis and viewing
     def analyze(self, properties="density", first: int = 0, last: int = -1, stride: int = 1, blocks: int = 5, threads: int = 0,
                 **options) -> list:
-        """Properties of the frames (the ids of caps analyze: density, rdf, rg, ree, cn, persistence, msd, diffusion, ced,
-        ffv …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
+        """Properties of the frames (the ids of caps analyze: density, rdf, sq, xray, electron, neutron, rg, ree, cn,
+        persistence, msd, diffusion, ced, ffv (radii="bondi" | "uff" | "forcefield") …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
         {id, name, value, error, unit, ...}."""
         ids = ",".join(_PROPERTY_ALIASES.get(p, p) for p in ([properties] if isinstance(properties, str) else properties))
         o = _AnalyzeOpts(first, last, stride, 0, 0, blocks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, threads, int(options.pop("deuterate", 0)),
-                         _enc(options.pop("group", "")))   # group: "selection", "molecules:1-4,7", "exclude-held"
+                         _enc(options.pop("group", "")),   # group: "selection", "molecules:1-4,7", "exclude-held"
+                         _enc(options.pop("radii", "")))   # free volume: bondi | uff | forcefield
         if "tg" in ids.split(","):
             m = _MechOpts()
             for k, v in options.items():
@@ -953,6 +955,32 @@ class build:
                 "supercell": list(supercell), "primitive": primitive}
         rep = _report()
         d = Document(library().caps_crystal_build(_enc(json.dumps(spec)), rep, len(rep)), space_group)
+        d.report = rep.value.decode()
+        return d
+
+    @staticmethod
+    def kremer_grest(chains: int = 50, beads: int = 100, density: float = 0.85, k_theta: float = 0.0, seed: int = 1,
+                     sigma: float = 0.0, temperature: float = 0.0, bead_mass: float = 0.0) -> Document:
+        """A Kremer–Grest bead-spring melt with its own force field (FENE + WCA; cosine bending k_theta). Reduced units, or
+        mapped to a polymer when sigma (Å), temperature (K, ε = k_B T) and bead_mass (g/mol) are all given; export_engines
+        writes its LAMMPS deck (push-off, then the run)."""
+        o = {"chains": chains, "beads": beads, "density": density, "k_theta": k_theta, "seed": seed}
+        if sigma > 0 and temperature > 0 and bead_mass > 0:
+            o.update(sigma=sigma, temperature=temperature, bead_mass=bead_mass)
+        rep = _report()
+        d = Document(library().caps_kg_build(_enc(json.dumps(o)), rep, len(rep)), "Kremer–Grest melt")
+        d.report = rep.value.decode()
+        return d
+
+    @staticmethod
+    def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini-moltemplate",
+                     seed: int = 1, tolerance: float = 3.0) -> Document:
+        """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[SN0]" …) packed, the
+        MARTINI force field (a library id or a path) assigned and the cell compressed to the density (g/cm³) with it."""
+        o = {"forcefield": _forcefield_path(forcefield), "repeat": repeat, "repeats": repeats, "chains": chains, "density": density,
+             "seed": seed, "tolerance": tolerance}
+        rep = _report()
+        d = Document(library().caps_martini_melt(_enc(json.dumps(o)), None, None, rep, len(rep)), "MARTINI melt")
         d.report = rep.value.decode()
         return d
 

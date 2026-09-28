@@ -943,3 +943,26 @@ TEST(Sasa, IsolatedAtomAndTwoTouching) {
   const double R = 3.28, h = R - 1.5, exact = 2 * (4 * M_PI * R * R - 2 * M_PI * R * h);
   EXPECT_NEAR(two.total, exact, 0.02 * exact);
 }
+
+// The Kremer–Grest force field of a melt: FENE with its WCA core on every bond, the WCA pair at 2^(1/6) σ shifted,
+// special_bonds fene; mapped by σ, T and the bead mass into Å, kcal/mol and g/mol.
+TEST(KremerGrest, OwnForceField) {
+  KgOptions o;
+  o.chains = 4, o.beads = 10, o.k_theta = 1.5;
+  const System s = kremer_grest(o);
+  const ForceField f = kremer_grest_forcefield(s, o);
+  EXPECT_EQ(f.bonds_x.size(), s.bonds.size());
+  EXPECT_EQ(f.bonds_x[0].form, 3);
+  EXPECT_DOUBLE_EQ(f.bonds_x[0].a, 30.0);
+  EXPECT_DOUBLE_EQ(f.bonds_x[0].b, 1.5);
+  EXPECT_EQ(f.angles_x.size(), size_t(4 * 8));
+  EXPECT_NEAR(f.cutoff, std::pow(2.0, 1.0 / 6), 1e-12);
+  EXPECT_TRUE(f.lj_shift && f.keep13);
+  o.sigma = 5, o.temperature = 300, o.bead_mass = 50;
+  const ForceField m = kremer_grest_forcefield(s, o);
+  const double eps = 0.0019872067 * 300;
+  EXPECT_NEAR(m.lj[0].eps, eps, 1e-12);
+  EXPECT_NEAR(m.bonds_x[0].a, 30 * eps / 25, 1e-12);
+  EXPECT_NEAR(m.mass[0], 50, 1e-12);
+  EXPECT_NEAR(kg_units(o).tau_fs, 5 * std::sqrt(50 / eps) * 48.88821291, 1e-9);
+}

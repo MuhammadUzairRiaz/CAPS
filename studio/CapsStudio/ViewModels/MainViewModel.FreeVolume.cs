@@ -14,6 +14,17 @@ public sealed partial class MainViewModel
     private int _fvCount = 40;
     public decimal FvProbe { get => _fvProbe; set { if (Set(ref _fvProbe, Math.Clamp(value, 0m, 5m))) Analyze.ProbeD = value; } }
     public decimal FvGrid { get => _fvGrid; set { if (Set(ref _fvGrid, Math.Clamp(value, 0.2m, 2m))) Analyze.GridD = value; } }
+    /// <summary>Atom radii for free volume, pores and voids: Bondi, UFF, or the assigned force field's.</summary>
+    public static readonly string[] FvRadiiModes = ["Bondi van der Waals", "UFF (x/2)", "Assigned force field (½ r_min of its Lennard-Jones)"];
+    private static readonly string[] FvRadiiIds = ["bondi", "uff", "forcefield"];
+    private int _fvRadii;
+    public int FvRadii { get => _fvRadii; set { if (Set(ref _fvRadii, Math.Clamp(value, 0, 2))) { Analyze.Radii = FvRadiiIds[_fvRadii]; Raise(nameof(FvRadiiCite)); } } }
+    public string FvRadiiCite => _fvRadii switch
+    {
+        1 => "Rappé et al., J. Am. Chem. Soc. 114, 10024 (1992): half the van der Waals distance x",
+        2 => "The Lennard-Jones minimum of each atom's type in Field, halved (2^(1/6) σ/2; σ/2 for class II 9-6); Bondi where a type has none",
+        _ => "Bondi, J. Phys. Chem. 68, 441 (1964)",
+    };
     public decimal FvCount { get => _fvCount; set => Set(ref _fvCount, (int)Math.Clamp(value, 1, 500)); }
     private string _fvChip = "", _fvStatus = "", _fvFooter = "";
     public string FvChip { get => _fvChip; private set => Set(ref _fvChip, value); }
@@ -37,7 +48,7 @@ public sealed partial class MainViewModel
         if (_doc == null || Analyze.Working) return;
         var doc = _doc;
         var inv = CultureInfo.InvariantCulture;
-        var opts = string.Format(inv, "{{\"grid\":{0},\"probe\":{1},\"count\":{2},\"show\":true}}", _fvGrid, _fvProbe, _fvCount);
+        var opts = string.Format(inv, "{{\"grid\":{0},\"probe\":{1},\"count\":{2},\"show\":true,\"radii\":\"{3}\"}}", _fvGrid, _fvProbe, _fvCount, FvRadiiIds[_fvRadii]);
         FvStatus = "Finding voids…";
         string json;
         try { json = await Task.Run(() => doc.Voids(opts)); }

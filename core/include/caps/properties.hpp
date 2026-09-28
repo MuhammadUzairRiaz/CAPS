@@ -6,8 +6,9 @@
 //   density      mass / volume over the frames                                  g/cm³
 //   rdf          g(r) between element sets, averaged over frames; first peak      Å
 //   sq           total structure factor S(q) (Faber–Ziman): direct reciprocal-lattice sum at low q, g(r) transform above; first peak   Å⁻¹
-//   xray         X-ray I(q) (Cromer–Mann form factors) ; neutron: coherent scattering lengths
-//   neutron
+//   xray         X-ray I(q) (Cromer–Mann form factors of every element to Cf, International Tables Vol. C)
+//   electron     electron-diffraction I(q) (Peng et al. 1996 elastic scattering factors, International Tables Vol. C)
+//   neutron      neutron S(q) (coherent scattering lengths)
 //   rg           radius of gyration of molecules, √⟨Rg²⟩                          Å
 //   ree          backbone end-to-end distance, √⟨R²⟩                            Å
 //   cn           characteristic ratio C_n = ⟨R²(n)⟩ / (n ⟨b²⟩) and C∞ (extrapolated in 1/n)
@@ -76,6 +77,7 @@ struct AnalyzeOptions {
   int ppa_frames = 3;           // entanglements: primitive paths of this many frames, spread over the chosen ones
   // free volume
   double probe = 0.0;           // probe radius, Å (0: points outside every van der Waals sphere)
+  std::string radii = "bondi";  // atom radii: bondi (Bondi 1964), uff (x/2, Rappé 1992), forcefield (half the assigned LJ minimum)
   double grid = 0.4;            // Å
   int threads = 0;
   std::function<bool(const std::string& what, double fraction)> progress;   // return false to cancel
@@ -96,6 +98,12 @@ constexpr int kDeuterium = 1001;
 // The hydrogens a deuteration choice (AnalyzeOptions::deuterate) marks, by atom.
 std::vector<char> deuterated_hydrogens(const System& s, int pattern);
 double xray_f(int z, double q);
+double electron_f(int z, double q);   // Å; Peng et al. 1996
+// Atom radii for free volume and voids: "bondi" (Bondi 1964), "uff" (x/2, Rappé 1992), "forcefield" (half the Lennard-Jones
+// minimum of ff, which must be assigned to s). Throws std::invalid_argument otherwise.
+std::vector<double> free_volume_radii(const System& s, const std::string& kind, const ForceField* ff = nullptr);
+// The scattering weight of element z at q for kind xray | electron | neutron.
+double scatter_w(const std::string& kind, int z, double q);
 
 // Results as JSON: [{id, name, value, error, unit, method, extra{...}, notes[...], series[{label, x_label, y_label, x[], y[]}]}]
 // (NaN as null).

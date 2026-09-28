@@ -20,6 +20,30 @@ public sealed partial class MainViewModel
     [
         new("Cu Kα", 1.5406), new("Mo Kα", 0.7107), new("Co Kα", 1.7890), new("Cr Kα", 2.2910), new("Ag Kα", 0.5594),
     ];
+    /// <summary>Electron sources: the relativistic wavelength λ = h / √(2 m e V (1 + e V / 2 m c²)) at the accelerating voltage.</summary>
+    public static readonly XraySource[] ElectronSources =
+    [
+        new("TEM 200 kV", 0.025079), new("TEM 300 kV", 0.019687), new("TEM 100 kV", 0.037014), new("TEM 80 kV", 0.041757), new("TEM 120 kV", 0.033492),
+    ];
+    /// <summary>The beam's form factors: X-ray (Cromer–Mann) or electron (Peng et al. 1996), both International Tables Vol. C.</summary>
+    public static readonly string[] FormFactorModes = ["X-ray · Cromer–Mann, International Tables Vol. C", "Electron · Peng et al. 1996, International Tables Vol. C"];
+    private int _formFactor;
+    public int FormFactorMode
+    {
+        get => _formFactor;
+        set
+        {
+            if (!Set(ref _formFactor, Math.Clamp(value, 0, 1))) return;
+            _xraySource = 0;
+            Raise(nameof(BeamSources)); Raise(nameof(XraySourceIndex)); Raise(nameof(BeamLabel));
+            SyncFocusChips();
+            FillScattering();
+        }
+    }
+    /// <summary>The analysis id of the beam curve: xray or electron.</summary>
+    private string ScatterBeamId => _formFactor == 1 ? "electron" : "xray";
+    public XraySource[] BeamSources => _formFactor == 1 ? ElectronSources : XraySources;
+    public string BeamLabel => _formFactor == 1 ? "Electron" : "X-ray";
     public static readonly string[] IsotopePatterns = ["Natural (all ¹H)", "Fully deuterated", "d-backbone, h-ring", "h-backbone, d-ring", "Exchangeable H → D (O–H, N–H)"];
     public ObservableCollection<ProvRow> ScatterLengths { get; } = new();
     public ObservableCollection<ProvRow> ScatterPeaks { get; } = new();
@@ -33,7 +57,7 @@ public sealed partial class MainViewModel
     private decimal _scatterPlotTo = 6;
     /// <summary>The plotted q range ends here (the computed range may reach further).</summary>
     public decimal ScatterPlotTo { get => _scatterPlotTo; set { if (Set(ref _scatterPlotTo, Math.Clamp(value, 1, 40))) FillScattering(); } }
-    public string XrayChip => "X-ray (" + XraySources[_xraySource].Name + ")";
+    public string XrayChip => BeamLabel + " (" + BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)].Name + ")";
     public string NeutronChip => "neutron · " + IsotopePatterns[_isotope].ToLowerInvariant();
     public string ScatterTitle => "I(q) · " + (_doc != null ? Title : "no structure");
     private string _scatterText = "", _expName = "";
@@ -60,7 +84,7 @@ public sealed partial class MainViewModel
         if (_doc == null || Analyze.Working) return;
         var chips = Analyze.Groups.SelectMany(g => g.Chips).ToList();
         var was = chips.ToDictionary(c => c, c => c.IsOn);
-        foreach (var c in chips) c.IsOn = c.Id == "xray" && _scatterXray || c.Id == "neutron" && _scatterNeutron;
+        foreach (var c in chips) c.IsOn = c.Id == ScatterBeamId && _scatterXray || c.Id == "neutron" && _scatterNeutron;
         try { await Analyze.Run(); }
         finally { foreach (var (c, on) in was) c.IsOn = on; }
         FillScattering();
@@ -98,15 +122,16 @@ public sealed partial class MainViewModel
             var max = pts.Where(p => p.First >= 0.4).Select(p => p.Second).DefaultIfEmpty(1).Max();
             return max > 0 ? pts.Select(p => (p.First, Math.Min(1.6, p.Second / max))).ToArray() : pts;
         }
-        ScatterXrayCurve = Curve("xray");
+        ScatterXrayCurve = Curve(ScatterBeamId);
         ScatterNeutronCurve = Curve("neutron");
         ScatterPeaks.Clear();
-        var lambda = XraySources[_xraySource].Lambda;
+        var src = BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)];
+        var lambda = src.Lambda;
         var basis = ScatterXrayCurve.Length > 1 ? ScatterXrayCurve : ScatterNeutronCurve;
         foreach (var (q, _) in Peaks(basis).Take(4))
         {
             var s = q * lambda / (4 * Math.PI);
-            var tth = s < 1 ? 2 * Math.Asin(s) * 180 / Math.PI : double.NaN;
+            var tth = s < 1 ? 2 * Math.Asin(s) * 180 / Math.PI : double.NaN;   // electrons: fractions of a degree (mrad-scale camera angles)
             ScatterPeaks.Add(new ProvRow(q.ToString("0.00", inv) + " Å⁻¹", (2 * Math.PI / q).ToString("0.00", inv) + " Å",
                                          double.IsNaN(tth) ? "—" : tth.ToString("0.0", inv) + "°"));
         }
@@ -115,7 +140,7 @@ public sealed partial class MainViewModel
             : ScatterPeaks.Count == 0
             ? "Run to compute the patterns. The low-q part is the exact sum over the cell's reciprocal lattice (every k-vector the box allows); above it, the partial g(r) are transformed."
             : $"Maxima at q ≈ {string.Join(", ", ScatterPeaks.Select(p => p.Key.Split(' ')[0]))} Å⁻¹ " +
-              $"(d = 2π/q ≈ {string.Join(", ", ScatterPeaks.Select(p => p.Value.Split(' ')[0]))} Å; 2θ for {XraySources[_xraySource].Name}: {string.Join(", ", ScatterPeaks.Select(p => p.Other))}). " +
+              $"(d = 2π/q ≈ {string.Join(", ", ScatterPeaks.Select(p => p.Value.Split(' ')[0]))} Å; 2θ for {src.Name}: {string.Join(", ", ScatterPeaks.Select(p => p.Other))}). " +
               "Below 2π/L the cell holds no k-vectors: the curve starts at the box's first shell.";
         ScaleExperiment();
         foreach (var n in new[] { nameof(ScatterHasCurve), nameof(XrayChip), nameof(NeutronChip), nameof(ScatterTitle), nameof(ScatterFooter) }) Raise(n);
@@ -161,7 +186,8 @@ public sealed partial class MainViewModel
         }
         if (pts.Count < 3) return "No two-column data found";
         if (!twoTheta && pts.Max(p => p.Item1) > 20) twoTheta = true;
-        var lambda = XraySources[_xraySource].Lambda;
+        var src = BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)];
+        var lambda = src.Lambda;
         _expRaw = pts.Select(p => twoTheta ? (4 * Math.PI * Math.Sin(p.Item1 * Math.PI / 360) / lambda, p.Item2) : p).OrderBy(p => p.Item1).ToArray();
         ExperimentName = Path.GetFileName(path) + (twoTheta ? $" · 2θ with {XraySources[_xraySource].Name}" : " · q");
         ScaleExperiment();
