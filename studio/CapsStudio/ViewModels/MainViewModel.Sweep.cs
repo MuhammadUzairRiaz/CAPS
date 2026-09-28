@@ -74,7 +74,9 @@ public sealed partial class MainViewModel
     public bool SweepIdle => !_swRunning;
     public string SweepPauseText => _swPaused ? "Resume sweep" : "Pause sweep";
     public string SweepTitle => $"Sweep · tacticity × chain length · {SweepPolymer?.Name.Split(" (")[0] ?? "polymer"}";
-    public string SweepSubtitle => $"{_sweepRuns.Count} runs = {SweepTacticities().Count} tacticit{(SweepTacticities().Count == 1 ? "y" : "ies")} × {ParseInts(_swDps).Count} DP × {ParseInts(_swSeeds).Count} seeds · Grow → Relax{(_swNpt ? " → NPT" : "")} → Analyze";
+    public string SweepSubtitle => (_swCombine == 0
+        ? $"{_sweepRuns.Count} runs = {SweepTacticities().Count} tacticit{(SweepTacticities().Count == 1 ? "y" : "ies")} × {ParseInts(_swDps).Count} DP × {ParseInts(_swSeeds).Count} seeds"
+        : $"{_sweepRuns.Count} runs · {SweepCombines[_swCombine].ToLowerInvariant()} × {ParseInts(_swSeeds).Count} seeds") + $" · Grow → Relax{(_swNpt ? " → NPT" : "")} → Analyze";
     public string SweepDpHeader(int k) => k < ParseInts(_swDps).Count ? "DP " + ParseInts(_swDps)[k] : "";
     public ObservableCollection<string> SweepDpHeaders { get; } = new();
 
@@ -109,7 +111,13 @@ public sealed partial class MainViewModel
         if (!_swRunning) PlanSweep();
     }
 
-    /// <summary>The full grid of runs for the parameters (nothing runs yet).</summary>
+    // Combine as: every tacticity × chain length (full grid); one factor at a time from the first of each (the first
+    // tacticity at every length, every tacticity at the first length); or paired (the i-th tacticity with the i-th length)
+    public static readonly string[] SweepCombines = ["Full grid", "One factor at a time", "Paired (i-th with i-th)"];
+    private int _swCombine;
+    public int SweepCombine { get => _swCombine; set { if (Set(ref _swCombine, Math.Clamp(value, 0, 2))) PlanSweep(); } }
+
+    /// <summary>The runs for the parameters as combined (nothing runs yet).</summary>
     private void PlanSweep()
     {
         if (_swRunning) return;
@@ -119,13 +127,18 @@ public sealed partial class MainViewModel
         var dps = ParseInts(_swDps);
         var seeds = ParseInts(_swSeeds);
         foreach (var dp in dps) SweepDpHeaders.Add("DP " + dp);
+        var ti = -1;
         foreach (var (name, code) in SweepTacticities())
         {
+            ++ti;
             var cells = new ObservableCollection<SweepCell>();
+            var di = -1;
             foreach (var dp in dps)
             {
+                ++di;
                 var runs = new ObservableCollection<SweepRun>();
-                foreach (var seed in seeds)
+                var planned = _swCombine switch { 1 => ti == 0 || di == 0, 2 => ti == di, _ => true };
+                foreach (var seed in planned ? seeds : [])
                 {
                     var run = new SweepRun { Tacticity = name, TacticityCode = code, Dp = dp, Seed = (ulong)seed,
                                              Path = System.IO.Path.Combine(_swFolder, $"{name}_dp{dp}_seed{seed}.data") };
