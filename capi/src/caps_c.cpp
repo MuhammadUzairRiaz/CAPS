@@ -3822,6 +3822,11 @@ extern "C" int32_t caps_bench_run(const char* id, const char* samples, const cha
     o.forcefields = forcefields ? forcefields : "";
     o.repeats = repeats > 0 ? repeats : 3;
     o.quick = quick != 0;
+    // T6 / T7: the reference ranges beside the force-field library; the user's equilibrated cells in CAPS_BENCH_CELLS,
+    // else ~/.caps/bench/cells
+    if (!o.forcefields.empty()) o.reference = (std::filesystem::path(o.forcefields).parent_path() / "reference" / "polymers.json").string();
+    if (const char* c = std::getenv("CAPS_BENCH_CELLS"); c && *c) o.cells = c;
+    else if (const char* h = std::getenv("HOME"); h && *h) o.cells = std::string(h) + "/.caps/bench/cells";
     if (progress) o.progress = [&](const std::string& t, const std::string& w, double f) { return progress(t.c_str(), w.c_str(), f, user) == 0; };
     return report_out(bench_json(caps::run_bench(id ? id : "", o)).dump(), json, cap);
   });
