@@ -20,8 +20,19 @@ namespace {
 const std::map<std::string, int> kTriplet = {{"tersoff", 17}, {"tersoff/mod", 20}, {"tersoff/mod/c", 21}, {"tersoff/zbl", 21}, {"sw", 14},
                                              {"vashishta", 17}, {"gw", 17}, {"gw/zbl", 21}};
 const std::set<std::string> kSetfl = {"eam/alloy", "eam/fs"};
-// read by LAMMPS in metal units only (no conversion to real)
-const std::set<std::string> kMetalOnly = {"airebo", "airebo/morse", "rebo", "meam", "meam/c", "bop", "comb", "comb3", "lcbop", "polymorphic", "edip", "extep"};
+// the Brenner family: C and H, read by LAMMPS in metal units only (the export is then in metal units)
+const std::set<std::string> kBrenner = {"airebo", "airebo/morse", "rebo"};
+// not written: MEAM names its library entries freely (not by element), BOP / COMB / others need what CAPS does not map
+const std::map<std::string, std::string> kRefused = {
+    {"meam", "a MEAM library names its entries freely ('SiS', 'Ni4'), not by element, so CAPS cannot map a group's elements onto it"},
+    {"meam/c", "a MEAM library names its entries freely ('SiS', 'Ni4'), not by element, so CAPS cannot map a group's elements onto it"},
+    {"bop", "BOP tables are not checked or mapped by CAPS"},
+    {"comb", "COMB equilibrates charges itself (fix qeq/comb), which CAPS does not set up"},
+    {"comb3", "COMB3 equilibrates charges itself (fix qeq/comb), which CAPS does not set up"},
+    {"lcbop", "LCBOP is not mapped by CAPS (use airebo or rebo for carbon)"},
+    {"polymorphic", "polymorphic tables are not checked or mapped by CAPS"},
+    {"edip", "EDIP is not mapped by CAPS"},
+    {"extep", "ExTeP is not mapped by CAPS"}};
 
 bool is_number(const std::string& w) {
   if (w.empty()) return false;
@@ -67,21 +78,15 @@ std::string base_name(const std::string& p) { return std::filesystem::path(p).fi
 }  // namespace
 
 const std::vector<std::string>& manybody_styles() {
-  static const std::vector<std::string> s = {"tersoff", "tersoff/mod", "tersoff/mod/c", "tersoff/zbl", "sw", "vashishta", "gw", "gw/zbl", "eam/alloy", "eam/fs"};
+  static const std::vector<std::string> s = {"tersoff", "tersoff/mod", "tersoff/mod/c", "tersoff/zbl", "sw", "vashishta", "gw", "gw/zbl", "eam/alloy", "eam/fs",
+                                             "airebo", "airebo/morse", "rebo"};
   return s;
 }
 
 ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<std::string>* notes) {
   const std::string& st = spec.style;
-  if (kMetalOnly.count(st))
-    throw FieldError("pair style " + st + ": LAMMPS reads its file in metal units only (it does not convert it to real units), and CAPS writes its "
-                     "inputs in real units (kcal/mol, Å, fs) for the force field of the rest. Use a potential LAMMPS converts: " +
-                     [] {
-                       std::string l;
-                       for (const auto& x : manybody_styles()) l += (l.empty() ? "" : ", ") + x;
-                       return l;
-                     }());
-  if (!kTriplet.count(st) && !kSetfl.count(st)) {
+  if (auto it = kRefused.find(st); it != kRefused.end()) throw FieldError("pair style " + st + ": " + it->second);
+  if (!kTriplet.count(st) && !kSetfl.count(st) && !kBrenner.count(st)) {
     std::string l;
     for (const auto& x : manybody_styles()) l += (l.empty() ? "" : ", ") + x;
     throw FieldError("pair style \"" + st + "\" is not one CAPS writes (" + l + ")");
@@ -115,8 +120,25 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
     throw FieldError(base_name(spec.file) + " does not say its units (no \"UNITS:\" on its first line), and LAMMPS would read it as it stands: "
                      "say whether its energies are in eV (metal, as most published files) or kcal/mol (real)");
   if (units != "metal" && units != "real") throw FieldError(base_name(spec.file) + ": units " + units + " (CAPS converts metal or real)");
+  if (kBrenner.count(st) && units != "metal") throw FieldError(st + ": LAMMPS reads its file in metal units only, and " + base_name(spec.file) + " is in " + units);
   std::set<std::string> have;   // "A B C" triplets, or elements
-  if (kTriplet.count(st)) {
+  if (kBrenner.count(st)) {   // CH.airebo, CH.airebo-m, CH.rebo: carbon and hydrogen
+    std::string other;
+    for (const auto& e : els) if (e != "C" && e != "H") other += (other.empty() ? "" : ", ") + e;
+    if (!other.empty()) throw FieldError(st + " covers carbon and hydrogen only, not " + other);
+    // the Brenner tables: a comment block, then the numbers; a Tersoff / setfl file here is a mistake
+    std::string l;
+    int numbers = 0;
+    while (numbers < 20 && std::getline(in, l)) {
+      if (l.empty() || l[0] == '#') continue;
+      std::istringstream is(l);
+      std::string w;
+      if (!(is >> w)) continue;
+      if (!is_number(w)) throw FieldError(base_name(spec.file) + " is not a " + st + " file (\"" + w + "\" where its table of numbers begins)");
+      ++numbers;
+    }
+    if (numbers < 20) throw FieldError(base_name(spec.file) + " is not a " + st + " file (too short)");
+  } else if (kTriplet.count(st)) {
     const int per = kTriplet.at(st);
     std::vector<std::string> words;
     for (std::string l; std::getline(in, l);) {
@@ -182,9 +204,13 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
   F.manybody.tagged = !file_units.empty();
   F.manybody.element = els;
   F.manybody.citation = after(head, "CITATION:");
+  F.manybody.metal_only = kBrenner.count(st) > 0;
+  F.manybody.args = !spec.args.empty() ? spec.args : (st == "airebo" || st == "airebo/morse") ? "3.0 1 1" : "";
   std::vector<std::string> said;
   said.push_back(std::to_string(g.atoms.size()) + " atoms by the " + st + " potential of " + base_name(spec.file) + (F.manybody.citation.empty() ? "" : " (" + F.manybody.citation + ")") +
-                 ", energies in " + (units == "metal" ? "eV (LAMMPS converts them to kcal/mol)" : "kcal/mol") + "; standard atomic masses, no charges, no bonded terms");
+                 ", energies in " + (F.manybody.metal_only ? "eV (LAMMPS reads it in metal units only: the LAMMPS files are written in metal units, eV, ps, bar)"
+                                                        : units == "metal" ? "eV (LAMMPS converts them to kcal/mol)" : "kcal/mol") +
+                 "; standard atomic masses, no charges, no bonded terms" + (F.manybody.args.empty() ? "" : "; pair_style " + st + " " + F.manybody.args));
   said.push_back(std::string("cross pairs with the rest: Lennard-Jones ") + (c96 ? "9-6 (the class II form of the other groups, with UFF's well depth D and minimum x) " : "12-6 ") +
                  "from UFF (Rappé et al. 1992) for " + [&] {
     std::string l;

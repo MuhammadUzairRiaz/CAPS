@@ -199,6 +199,57 @@ TEST(FFMerge, PotentialLibrary) {
     ForceField mf;
     EXPECT_NO_THROW(mf = manybody_part(g, {p.text("style", ""), dir + p.text("file", ""), ""}, &notes)) << p.text("id", "");
     EXPECT_EQ(mf.manybody.units, "metal") << p.text("id", "");
-    EXPECT_FALSE(mf.manybody.citation.empty()) << p.text("id", "");
+    EXPECT_FALSE(p.text("citation", "").empty()) << p.text("id", "");
+    EXPECT_EQ(mf.manybody.metal_only, p.text("style", "") == "airebo" || p.text("style", "") == "airebo/morse" || p.text("style", "") == "rebo") << p.text("id", "");
   }
+}
+
+// AIREBO (read by LAMMPS in metal units only) on a carbon group: the LAMMPS files in metal units, every energy parameter
+// divided by 23.060549, the times in ps; real units refused with the reason.
+TEST(FFMerge, AireboWritesMetalUnits) {
+  namespace fs = std::filesystem;
+  const fs::path dir = fs::temp_directory_path() / "caps_airebo_test";
+  fs::create_directories(dir);
+  System s;
+  s.cell.a = {30, 0, 0}, s.cell.b = {0, 30, 0}, s.cell.c = {0, 0, 30};
+  auto add = [&](int z, double x, double y, double w, int64_t mol) {
+    Atom a;
+    a.element = z, a.pos = {x, y, w}, a.mol = mol;
+    s.atoms.push_back(a);
+  };
+  add(6, 10, 10, 10, 1), add(6, 11.42, 10, 10, 1);
+  add(6, 11, 10, 14, 2), add(1, 11, 10, 15.09, 2), add(1, 12.03, 10, 13.64, 2), add(1, 10.49, 10.89, 13.64, 2), add(1, 10.49, 9.11, 13.64, 2);
+  s.has_mol = true;
+  s.bonds = {{0, 1, 1}, {2, 3, 1}, {2, 4, 1}, {2, 5, 1}, {2, 6, 1}};
+  const std::vector<uint32_t> cc = {0, 1}, me = {2, 3, 4, 5, 6};
+  const std::string file = std::string(CAPS_SOURCE_DIR) + "/data/potentials/lammps/CH.airebo";
+  EXPECT_THROW(manybody_part(part_of(s, cc), {"airebo", std::string(CAPS_SOURCE_DIR) + "/data/potentials/lammps/Si.tersoff", ""}), FieldError);   // not a Brenner file
+  const ForceField fc = manybody_part(part_of(s, cc), {"airebo", file, ""});
+  EXPECT_TRUE(fc.manybody.metal_only);
+  EXPECT_EQ(fc.manybody.args, "3.0 1 1");
+  const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff-amber25.json"));
+  const ForceField m = merge_forcefields(s.atoms.size(), {{&fc, cc, "CNT"}, {&fm, me, "methane"}}, MergeOptions{});
+  LammpsStyle real;
+  real.units = "real";
+  EXPECT_THROW(lammps_metal_units(m, real), FieldError);
+  EXPECT_TRUE(lammps_metal_units(m));
+  const ForceField mm = forcefield_in_metal_units(m);
+  for (size_t t = 0; t < m.lj.size(); ++t) EXPECT_NEAR(mm.lj[t].eps, m.lj[t].eps / 23.060549, 1e-15);
+  for (size_t k = 0; k < m.bonds.size(); ++k) EXPECT_NEAR(mm.bonds[k].k, m.bonds[k].k / 23.060549, 1e-12);
+  EnergyOptions e;
+  write_lammps_data_ff(s, m, e, (dir / "sys.data").string(), false);
+  LammpsRun run;
+  run.kind = LammpsRun::Kind::NPT;
+  write_lammps_input(s, m, e, "sys.data", (dir / "sys.in").string(), 0, true, run);
+  std::ifstream in(dir / "sys.in");
+  std::stringstream a;
+  a << in.rdbuf();
+  const std::string t = a.str();
+  EXPECT_NE(t.find("units           metal"), std::string::npos);
+  EXPECT_NE(t.find(" airebo 3.0 1 1\n"), std::string::npos);
+  EXPECT_NE(t.find("* * airebo CH.airebo C NULL NULL"), std::string::npos);
+  EXPECT_NE(t.find("timestep        0.0005"), std::string::npos);
+  EXPECT_NE(t.find("300 300 0.1 iso 1.01325 1.01325 1"), std::string::npos);   // Tdamp 100 fs, 1 atm, Pdamp 1000 fs in ps and bar
+  EXPECT_TRUE(fs::exists(dir / "CH.airebo"));
+  fs::remove_all(dir);
 }

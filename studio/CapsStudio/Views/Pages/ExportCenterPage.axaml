@@ -116,6 +116,11 @@
               <StackPanel Grid.Column="2" Spacing="4" IsVisible="{Binding EngineKspaceVisible}"><TextBlock Text="k-space accuracy" Classes="muted" FontSize="11.5" />
                 <TextBox Text="{Binding EngineKspaceText}" Classes="mono" FontSize="12" /></StackPanel>
             </Grid>
+            <StackPanel Spacing="4">
+              <TextBlock Text="LAMMPS units" Classes="muted" FontSize="11.5" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineUnitModes}" SelectedIndex="{Binding EngineUnits}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="Automatic: metal (eV, ps, bar) when a potential is read by LAMMPS in metal units only (AIREBO, REBO for nanotubes and graphene), real (kcal/mol, fs, atm) otherwise. Metal divides every energy parameter by 23.060549, LAMMPS's own factor" />
+            </StackPanel>
             <Border Height="1" Background="{DynamicResource LineB}" />
             <TextBlock Text="RUN" FontSize="10.5" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" />
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">

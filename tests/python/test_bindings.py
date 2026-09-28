@@ -358,4 +358,25 @@ with tempfile.TemporaryDirectory() as td:
     out = mb.export_engines(td, gromacs=False)
     check("sio2-munetoh2007" in lib_ids and "Si.tersoff" in [x["name"] for x in out["files"]] and os.path.exists(os.path.join(td, "Si.tersoff")),
           f"potential library: {len(lib_ids)} potentials · PCFF methane on the library's Si Tersoff exported with its file")
+# AIREBO on a carbon filler: the LAMMPS files in metal units with the library's CH.airebo beside them
+with tempfile.TemporaryDirectory() as td:
+    with open(os.path.join(td, "cc.pdb"), "w") as f:
+        f.write("CRYST1   30.000   30.000   30.000  90.00  90.00  90.00 P 1           1\n")
+        rows = [("CC", 1, 10, 10, 10, "C"), ("CC", 1, 11.42, 10, 10, "C"), ("MET", 2, 11, 10, 14, "C"), ("MET", 2, 11, 10, 15.09, "H"),
+                ("MET", 2, 12.03, 10, 13.64, "H"), ("MET", 2, 10.49, 10.89, 13.64, "H"), ("MET", 2, 10.49, 9.11, 13.64, "H")]
+        for k, (rn, res, x, y, z, el) in enumerate(rows):
+            f.write("HETATM%5d %-4s %3s A%4d    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n" % (k + 1, el, rn, res, x, y, z, el))
+        f.write("END\n")
+    cn = caps.open(os.path.join(td, "cc.pdb"))
+    cn.field.assign_groups([{"name": "CNT", "molecules": "1", "potential": {"id": "ch-airebo-stuart2000"}},
+                            {"name": "methane", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])
+    out = cn.export_engines(os.path.join(td, "out"), gromacs=False)
+    deck = open(os.path.join(td, "out", "system.in")).read()
+    refused = False
+    try:
+        cn.export_engines(os.path.join(td, "out2"), gromacs=False, units="real")
+    except caps.CapsError:
+        refused = True
+    check("units           metal" in deck and "airebo 3.0 1 1" in deck and os.path.exists(os.path.join(td, "out", "CH.airebo")) and refused,
+          "AIREBO: LAMMPS files in metal units with CH.airebo beside them; real units refused")
 print("all python checks passed")

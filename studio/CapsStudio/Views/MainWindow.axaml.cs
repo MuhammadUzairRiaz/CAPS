@@ -498,7 +498,7 @@ public partial class MainWindow : Window
             Title = "The potential file (" + FieldViewModel.PotentialStyles[Math.Clamp(g.Style, 0, FieldViewModel.PotentialStyles.Length - 1)] + ")", AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("LAMMPS potential files") { Patterns = ["*.tersoff", "*.tersoff.*", "*.sw", "*.vashishta", "*.gw", "*.eam.alloy", "*.eam.fs", "*.setfl"] },
+                new FilePickerFileType("LAMMPS potential files") { Patterns = ["*.tersoff", "*.tersoff.*", "*.sw", "*.vashishta", "*.gw", "*.eam.alloy", "*.eam.fs", "*.setfl", "*.airebo", "*.airebo-m", "*.rebo"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });
@@ -507,7 +507,7 @@ public partial class MainWindow : Window
             g.File = p;
             // the style from the file's name when it says (Si.tersoff, CuNi.eam.alloy)
             var n = Path.GetFileName(p).ToLowerInvariant();
-            var k = n.EndsWith(".eam.alloy") ? "eam/alloy" : n.EndsWith(".eam.fs") ? "eam/fs" : n.EndsWith(".sw") ? "sw" : n.EndsWith(".vashishta") ? "vashishta"
+            var k = n.EndsWith(".airebo") ? "airebo" : n.EndsWith(".airebo-m") ? "airebo/morse" : n.EndsWith(".rebo") ? "rebo" : n.EndsWith(".eam.alloy") ? "eam/alloy" : n.EndsWith(".eam.fs") ? "eam/fs" : n.EndsWith(".sw") ? "sw" : n.EndsWith(".vashishta") ? "vashishta"
                   : n.EndsWith(".gw") ? "gw" : n.Contains(".tersoff") ? (n.Contains("zbl") ? "tersoff/zbl" : n.Contains(".mod.c") ? "tersoff/mod/c" : n.Contains(".mod") ? "tersoff/mod" : "tersoff") : "";
             var i = Array.IndexOf(FieldViewModel.PotentialStyles, k);
             if (i >= 0) g.Style = i;

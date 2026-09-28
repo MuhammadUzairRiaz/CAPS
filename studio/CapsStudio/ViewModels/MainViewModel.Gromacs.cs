@@ -68,8 +68,15 @@ public sealed partial class MainViewModel
             {
                 Directory.CreateDirectory(dir);
                 doc.Save(Path.Combine(dir, "system.data"));
-                File.WriteAllText(Path.Combine(dir, "system.in"), doc.LammpsInput("system.data") +
-                    "\nthermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press\nthermo_modify format float %.10f\nrun 0\n");
+                var deck = doc.LammpsInput("system.data");
+                // a many-body potential (Tersoff, AIREBO …): LAMMPS's van der Waals includes it, CAPS does not evaluate it —
+                // its energy is computed apart and taken out of the comparison
+                var mbStyle = deck.Split('\n').Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                                  .FirstOrDefault(w => w.Length > 4 && w[0] == "pair_coeff" && w[1] == "*" && w[2] == "*" && !w[3].StartsWith("coul", StringComparison.Ordinal))?[3];
+                File.WriteAllText(Path.Combine(dir, "system.in"), deck + (mbStyle != null ? $"\ncompute mb all pair {mbStyle}" : "") +
+                    "\nthermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press" + (mbStyle != null ? " c_mb" : "") + "\nthermo_modify format float %.10f\nrun 0\n");
+                // metal units (eV): back to kcal/mol by LAMMPS's own factor
+                var metalScale = deck.Contains("\nunits           metal", StringComparison.Ordinal) ? 23.060549 : 1.0;
                 var caps = System.Text.Json.Nodes.JsonNode.Parse(doc.EnergyTerms())!;
                 var psi = new System.Diagnostics.ProcessStartInfo(lmp) { WorkingDirectory = dir, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
                 foreach (var a in new[] { "-in", "system.in", "-log", "log.lammps", "-screen", "none" }) psi.ArgumentList.Add(a);
@@ -87,7 +94,18 @@ public sealed partial class MainViewModel
                     return (false, caps, (double[]?)null, why.Trim());
                 }
                 var v = lines[h + 1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => double.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : double.NaN).ToArray();
-                return (true, caps, v, "");
+                if (v.Length >= 10)
+                {
+                    for (var k = 1; k <= 8; ++k) v[k] *= metalScale;
+                    if (mbStyle != null && v.Length >= 11)
+                    {
+                        var mb = v[10] * metalScale;
+                        v[6] -= mb;   // van der Waals and the total without the many-body energy CAPS does not compute
+                        v[1] -= mb;
+                    }
+                }
+                return (true, caps, v, (mbStyle != null ? $"{mbStyle} taken out of LAMMPS's energy (CAPS does not evaluate it)" : "") +
+                                       (metalScale != 1 ? (mbStyle != null ? "; " : "") + "LAMMPS ran in metal units, converted to kcal/mol" : ""));
             });
             if (!ok || lmpTerms == null || lmpTerms.Length < 9) { Done(3, "LAMMPS did not run the deck: " + log, ""); return; }
             double C(string k) => (double?)caps[k] ?? double.NaN;
@@ -108,6 +126,7 @@ public sealed partial class MainViewModel
                 if (r.Compare) worst = Math.Max(worst, rel);
                 sb.Append(string.Format(inv, "{0,-16}{1,16:F6}{2,16:F6}{3,14:E2}{4}\n", r.Name, r.Caps, r.Lmp, d, r.Compare ? "" : "  (PME here, PPPM there)"));
             }
+            if (log.Length > 0) sb.Append(log + "\n");
             var match = worst < 1e-4;
             Done(match ? 1 : 2, match ? $"Every term within {worst:0.0e0} (relative) of LAMMPS {Path.GetFileName(lmp)}, kcal/mol, for this frame and force field"
                                       : $"The largest difference is {worst:0.0e0} relative: see the table (a style LAMMPS computes differently, or a tail or cutoff setting)", sb.ToString());

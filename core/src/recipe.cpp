@@ -900,6 +900,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
               LammpsStyle ls;   // the force field's own styles unless the recipe says lammps_styles: exact
               ls.native = text(J, "lammps_styles", "native") != "exact";
               ls.hybrid = J.has("hybrid") && J["hybrid"].kind() == Json::Bool && J["hybrid"].boolean();
+              ls.units = text(J, "units", "auto");
               write_lammps_data_ff(s, *ff, energy, path, false, ls);
               write_lammps_input(s, *ff, energy, std::filesystem::path(path).filename().string(), stem + ".in", 0, true, {}, ls);
               res.files.push_back(stem + ".in");

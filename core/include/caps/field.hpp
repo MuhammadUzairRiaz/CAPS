@@ -102,12 +102,14 @@ struct StillingerWeber {
 // carry nothing (runs hold those atoms still), the LAMMPS export overlays the style on the other pair terms and reads the
 // file (see manybody.hpp).
 struct ManyBodyFile {
-  std::string style;                  // the LAMMPS pair style: tersoff, tersoff/mod, tersoff/mod/c, tersoff/zbl, sw, vashishta, eam/alloy, eam/fs, gw, gw/zbl
+  std::string style;                  // the LAMMPS pair style: tersoff, tersoff/mod, tersoff/mod/c, tersoff/zbl, sw, vashishta, eam/alloy, eam/fs, gw, gw/zbl, airebo, airebo/morse, rebo
   std::string file;                   // the potential file, as the user gave it
   std::string units;                  // what the file's energies are in: metal (eV) or real (kcal/mol)
   bool tagged = false;                // the file says its units on its first line (else the copy written with the inputs does)
   std::vector<std::string> element;   // per type index: the element the file names that type by; "" not in the potential (NULL)
   std::string citation;               // from the file's first line, when it gives one
+  std::string args;                   // the pair style's own arguments (AIREBO: cut-off factor, LJ and torsion flags)
+  bool metal_only = false;            // LAMMPS reads the file in metal units only (AIREBO, REBO): the export is in metal units
   bool on() const { return !style.empty(); }
 };
 

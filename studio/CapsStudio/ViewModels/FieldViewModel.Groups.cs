@@ -44,7 +44,9 @@ public sealed class FieldGroupRow : ObservableObject
         {
             if (!Set(ref _pick, value) || value <= 0 || value >= Potentials.Count) return;
             var e = Potentials[value];
-            Style = Math.Max(0, Array.IndexOf(FieldViewModel.PotentialStyles, e.Style));
+            var si = Array.IndexOf(FieldViewModel.PotentialStyles, e.Style);
+            if (si < 0) throw new InvalidOperationException($"potential style {e.Style} is not in the Studio's list");
+            Style = si;
             File = e.File;
             Units = 0;
             Raise(nameof(PickTip));
@@ -56,8 +58,10 @@ public sealed class FieldGroupRow : ObservableObject
 public sealed partial class FieldViewModel
 {
     public static readonly string[] GroupKinds = ["Force field", "Literature potential"];
-    /// <summary>The many-body styles CAPS writes (manybody.hpp): LAMMPS converts their files from metal to real units.</summary>
-    public static readonly string[] PotentialStyles = ["tersoff", "tersoff/mod", "tersoff/mod/c", "tersoff/zbl", "sw", "vashishta", "gw", "gw/zbl", "eam/alloy", "eam/fs"];
+    /// <summary>The many-body styles CAPS writes (manybody.hpp): LAMMPS converts the first ten's files between metal and real units;
+    /// AIREBO, AIREBO-M and REBO (carbon, hydrogen) are read in metal units only: the LAMMPS files are then in metal units.</summary>
+    public static readonly string[] PotentialStyles = ["tersoff", "tersoff/mod", "tersoff/mod/c", "tersoff/zbl", "sw", "vashishta", "gw", "gw/zbl", "eam/alloy", "eam/fs",
+                                                       "airebo", "airebo/morse", "rebo"];
     public static readonly string[] PotentialUnits = ["as the file says", "metal (eV)", "real (kcal/mol)"];
     public static readonly string[] EpsRules = ["geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
     public static readonly string[] SigmaRules = ["arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
