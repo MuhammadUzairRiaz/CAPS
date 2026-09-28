@@ -372,11 +372,16 @@ with tempfile.TemporaryDirectory() as td:
                             {"name": "methane", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])
     out = cn.export_engines(os.path.join(td, "out"), gromacs=False)
     deck = open(os.path.join(td, "out", "system.in")).read()
-    refused = False
-    try:
-        cn.export_engines(os.path.join(td, "out2"), gromacs=False, units="real")
-    except caps.CapsError:
-        refused = True
-    check("units           metal" in deck and "airebo 3.0 1 1" in deck and os.path.exists(os.path.join(td, "out", "CH.airebo")) and refused,
-          "AIREBO: LAMMPS files in metal units with CH.airebo beside them; real units refused")
+    real = cn.export_engines(os.path.join(td, "out2"), gromacs=False, units="real")
+    rdeck = open(os.path.join(td, "out2", "system.in")).read()
+    check("units           metal" in deck and "airebo 3.0 1 1" in deck and os.path.exists(os.path.join(td, "out", "CH.airebo")) and
+          "units           real" in rdeck and "CH-real.airebo" in [x["name"] for x in real["files"]],
+          "AIREBO: metal units with CH.airebo as published, or real units with the copy CAPS converts")
+    # MEAM: the SiC set on the carbon filler — both library entries read in SiC.meam's order, carbon mapped
+    cn.field.assign_groups([{"name": "CNT", "molecules": "1", "potential": {"id": "sic-meam"}},
+                            {"name": "methane", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])
+    out = cn.export_engines(os.path.join(td, "out3"), gromacs=False)
+    mdeck = open(os.path.join(td, "out3", "system.in")).read()
+    check("* * meam library.meam Si C SiC.meam C NULL NULL" in mdeck and {"library.meam", "SiC.meam"} <= {x["name"] for x in out["files"]},
+          "MEAM: library entries mapped to elements, the parameter file's order kept, both files beside the inputs")
 print("all python checks passed")

@@ -701,13 +701,14 @@ std::string sw_path(const std::string& data_path) {
 
 // Commands that must follow read_data (hybrid pair coefficients the data file cannot hold).
 // The many-body potential file next to a data file.
-std::string mb_path(const ForceField& ff, const std::string& data_path) {
+std::string mb_path(const ForceField& ff, const std::string& data_path, bool metal, bool second = false) {
   const size_t slash = data_path.find_last_of('/');
-  return (slash == std::string::npos ? std::string() : data_path.substr(0, slash + 1)) + manybody_file_name(ff.manybody);
+  return (slash == std::string::npos ? std::string() : data_path.substr(0, slash + 1)) +
+         (second ? manybody_file2_name(ff.manybody) : manybody_file_name(ff.manybody, metal ? "metal" : "real"));
 }
 
 std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, const std::string& data_path,
-                                    const std::set<std::pair<int, int>>& ff_excl = {}, const ForceField* ff = nullptr) {
+                                    const std::set<std::pair<int, int>>& ff_excl = {}, const ForceField* ff = nullptr, bool metal = false) {
   std::vector<std::string> r;
   if (L.pair_hybrid && e.coulomb && L.pair_combined.empty())
     r.push_back(pme(e, L) ? (L.coreshell ? "pair_coeff * * coul/long/cs" : "pair_coeff * * coul/long") : "pair_coeff * * coul/dsf");
@@ -717,8 +718,18 @@ std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, con
     for (const auto& t : L.sw_types) l += " " + t;
     r.push_back(l);
   }
-  if (!L.mb_types.empty() && ff) {   // every type mapped: its element in the file, or NULL
-    std::string l = "pair_coeff * * " + ff->manybody.style + " " + mb_path(*ff, data_path);
+  if (!L.mb_types.empty() && ff && ff->manybody.style == "meam") {
+    // MEAM: the library, the entries it extracts, the parameter file (or NULL), then each type's entry (or NULL)
+    std::vector<std::string> ents = ff->manybody.extract;   // in the parameter file's index order
+    for (const auto& e : ff->manybody.entry)
+      if (!e.empty() && std::find(ents.begin(), ents.end(), e) == ents.end()) ents.push_back(e);
+    std::string l = "pair_coeff * * meam " + mb_path(*ff, data_path, metal);
+    for (const auto& e : ents) l += " " + e;
+    l += " " + (ff->manybody.file2.empty() ? std::string("NULL") : mb_path(*ff, data_path, metal, true));
+    for (size_t t = 0; t < L.mb_types.size(); ++t) l += " " + (t < ff->manybody.entry.size() && !ff->manybody.entry[t].empty() ? ff->manybody.entry[t] : std::string("NULL"));
+    r.push_back(l);
+  } else if (!L.mb_types.empty() && ff) {   // every type mapped: its element in the file, or NULL
+    std::string l = "pair_coeff * * " + ff->manybody.style + " " + mb_path(*ff, data_path, metal);
     for (const auto& t : L.mb_types) l += " " + t;
     r.push_back(l);
   }
@@ -797,7 +808,8 @@ Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const La
 bool lammps_metal_units(const ForceField& ff, const LammpsStyle& st) {
   if (st.units != "auto" && st.units != "real" && st.units != "metal") throw FieldError("LAMMPS units " + st.units + ": real, metal or auto");
   const bool need = ff.manybody.on() && ff.manybody.metal_only;
-  if (need && st.units == "real")
+  // real units beside AIREBO / REBO: CAPS writes a converted copy of the file; MEAM has no verified conversion
+  if (need && st.units == "real" && !manybody_caps_converts(ff.manybody.style))
     throw FieldError(ff.manybody.style + " is read by LAMMPS in metal units only: write this system in metal units (eV, ps, bar)");
   return st.units == "metal" || (st.units == "auto" && need);
 }
@@ -859,7 +871,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   if (!L.sw_types.empty()) write_sw_file(L, ff, sw_path(path));
-  if (!L.mb_types.empty()) write_manybody_file(ff.manybody, std::filesystem::path(path).parent_path().string());
+  if (!L.mb_types.empty()) write_manybody_file(ff.manybody, std::filesystem::path(path).parent_path().string(), metal ? "metal" : "real");
   char buf[512];
   const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
 
@@ -1054,10 +1066,17 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     out << "\n# " << ff.manybody.style << " (" << ff.manybody.file.substr(ff.manybody.file.find_last_of('/') + 1) << (ff.manybody.citation.empty() ? "" : "; " + ff.manybody.citation)
         << ") for its elements, Lennard-Jones between them and the rest; "
         << (metal ? (ff.manybody.units == "metal" ? "the file in metal units, as this input" : "LAMMPS converts the file from real to metal units")
+                  : manybody_caps_converts(ff.manybody.style) ? "the file converted by CAPS to real units (A, B and the ε's × 23.060549; its splines are dimensionless)"
                   : (ff.manybody.units == "metal" ? "LAMMPS converts the file from metal to real units" : "the file is in real units")) << "\n";
+  if (!L.mb_types.empty() && ff.manybody.style == "meam")
+    out << "# MEAM sets the masses of its types from the library (" << [&] {
+      std::string m;
+      for (size_t t = 0; t < ff.manybody.entry.size(); ++t) if (!ff.manybody.entry[t].empty()) m += (m.empty() ? "" : ", ") + ff.type_names[t] + " ← '" + ff.manybody.entry[t] + "'";
+      return m;
+    }() << ")\n";
   if (!L.mb_types.empty() && !L.bonds.term_type.empty())
     out << "# (LAMMPS warns of a many-body potential beside bonds: its atoms have none, the special_bonds exclusions act on the other groups only)\n";
-  for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff)) out << aligned(l) << "\n";
+  for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff, metal)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (held_mol > 0)

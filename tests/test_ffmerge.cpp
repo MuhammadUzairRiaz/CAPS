@@ -197,10 +197,14 @@ TEST(FFMerge, PotentialLibrary) {
     }
     std::vector<std::string> notes;
     ForceField mf;
-    EXPECT_NO_THROW(mf = manybody_part(g, {p.text("style", ""), dir + p.text("file", ""), ""}, &notes)) << p.text("id", "");
+    ManyBodySpec sp{p.text("style", ""), dir + p.text("file", ""), ""};
+    if (!p.text("file2", "").empty()) sp.file2 = dir + p.text("file2", "");
+    if (p.has("entries")) for (const auto& [k, v] : p["entries"].members()) sp.entries.push_back({k, v.str()});
+    EXPECT_NO_THROW(mf = manybody_part(g, sp, &notes)) << p.text("id", "");
     EXPECT_EQ(mf.manybody.units, "metal") << p.text("id", "");
     EXPECT_FALSE(p.text("citation", "").empty()) << p.text("id", "");
-    EXPECT_EQ(mf.manybody.metal_only, p.text("style", "") == "airebo" || p.text("style", "") == "airebo/morse" || p.text("style", "") == "rebo") << p.text("id", "");
+    EXPECT_EQ(mf.manybody.metal_only, p.text("style", "") == "airebo" || p.text("style", "") == "airebo/morse" || p.text("style", "") == "rebo" ||
+                                          p.text("style", "") == "meam") << p.text("id", "");
   }
 }
 
@@ -229,10 +233,7 @@ TEST(FFMerge, AireboWritesMetalUnits) {
   EXPECT_EQ(fc.manybody.args, "3.0 1 1");
   const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff-amber25.json"));
   const ForceField m = merge_forcefields(s.atoms.size(), {{&fc, cc, "CNT"}, {&fm, me, "methane"}}, MergeOptions{});
-  LammpsStyle real;
-  real.units = "real";
-  EXPECT_THROW(lammps_metal_units(m, real), FieldError);
-  EXPECT_TRUE(lammps_metal_units(m));
+  EXPECT_TRUE(lammps_metal_units(m));   // automatic: metal, the published file as it is
   const ForceField mm = forcefield_in_metal_units(m);
   for (size_t t = 0; t < m.lj.size(); ++t) EXPECT_NEAR(mm.lj[t].eps, m.lj[t].eps / 23.060549, 1e-15);
   for (size_t k = 0; k < m.bonds.size(); ++k) EXPECT_NEAR(mm.bonds[k].k, m.bonds[k].k / 23.060549, 1e-12);
@@ -251,5 +252,76 @@ TEST(FFMerge, AireboWritesMetalUnits) {
   EXPECT_NE(t.find("timestep        0.0005"), std::string::npos);
   EXPECT_NE(t.find("300 300 0.1 iso 1.01325 1.01325 1"), std::string::npos);   // Tdamp 100 fs, 1 atm, Pdamp 1000 fs in ps and bar
   EXPECT_TRUE(fs::exists(dir / "CH.airebo"));
+  // real units, asked for: CAPS's converted copy (A_CC × 23.060549, a spline value untouched, the first line says real)
+  LammpsStyle rs;
+  rs.units = "real";
+  EXPECT_FALSE(lammps_metal_units(m, rs));
+  write_lammps_data_ff(s, m, e, (dir / "r.data").string(), false, rs);
+  write_lammps_input(s, m, e, "r.data", (dir / "r.in").string(), 0, true, {}, rs);
+  std::ifstream rin(dir / "r.in"), conv(dir / "CH-real.airebo");
+  std::stringstream ri, rc;
+  ri << rin.rdbuf(), rc << conv.rdbuf();
+  EXPECT_NE(ri.str().find("units           real"), std::string::npos);
+  EXPECT_NE(ri.str().find("* * airebo CH-real.airebo C NULL NULL"), std::string::npos);
+  EXPECT_NE(rc.str().find("UNITS: real"), std::string::npos);
+  EXPECT_NE(rc.str().find("252594.7418753"), std::string::npos);   // A_CC 10953.54416216992 eV × 23.060549
+  EXPECT_NE(rc.str().find("1.7\t     rcmin_CC"), std::string::npos);   // a distance as it was
+  fs::remove_all(dir);
+}
+
+// MEAM: each element mapped to a library entry (by default the first of its atomic number; a wrong element refused),
+// the parameter file beside the inputs, pair_coeff with the extracted entries and a mapping per type; metal units only.
+TEST(FFMerge, MeamMapsLibraryEntries) {
+  namespace fs = std::filesystem;
+  const fs::path dir = fs::temp_directory_path() / "caps_meam_test";
+  fs::create_directories(dir);
+  const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/potentials/lammps/library.meam", par = std::string(CAPS_SOURCE_DIR) + "/data/potentials/lammps/SiC.meam";
+  const auto entries = meam_library(lib);
+  EXPECT_EQ(entries.front().name, "AlS");
+  EXPECT_EQ(std::count_if(entries.begin(), entries.end(), [](const MeamEntry& e) { return e.name == "C"; }), 1);   // the first of a repeated name
+  System s;
+  s.cell.a = {30, 0, 0}, s.cell.b = {0, 30, 0}, s.cell.c = {0, 0, 30};
+  auto add = [&](int z, double x, double y, double w, int64_t mol) {
+    Atom a;
+    a.element = z, a.pos = {x, y, w}, a.mol = mol;
+    s.atoms.push_back(a);
+  };
+  add(14, 10, 10, 10, 1), add(6, 11.9, 10, 10, 1);
+  add(6, 11, 10, 14, 2), add(1, 11, 10, 15.09, 2), add(1, 12.03, 10, 13.64, 2), add(1, 10.49, 10.89, 13.64, 2), add(1, 10.49, 9.11, 13.64, 2);
+  s.has_mol = true;
+  s.bonds = {{2, 3, 1}, {2, 4, 1}, {2, 5, 1}, {2, 6, 1}};
+  const std::vector<uint32_t> sc = {0, 1}, me = {2, 3, 4, 5, 6};
+  ManyBodySpec sp{"meam", lib, ""};
+  const ForceField byz = manybody_part(part_of(s, sc), sp);
+  EXPECT_EQ(byz.manybody.entry, (std::vector<std::string>{"SiS", "C"}));   // the first entries of Z 14 and 6
+  sp.entries = {{"Si", "C"}};
+  EXPECT_THROW(manybody_part(part_of(s, sc), sp), FieldError);   // 'C' is carbon, not silicon
+  sp.file2 = par;
+  {   // a silicon-only group with the SiC set: SiC.meam names element 2, so C must be read too, in the file's order
+    std::vector<uint32_t> si_only = {0};
+    ManyBodySpec s2{"meam", lib, ""};
+    s2.file2 = par;
+    s2.entries = {{"Si", "Si"}};
+    EXPECT_THROW(manybody_part(part_of(s, si_only), s2), FieldError);
+    s2.entries = {{"Si", "Si"}, {"C", "C"}};
+    const ForceField f1 = manybody_part(part_of(s, si_only), s2);
+    EXPECT_EQ(f1.manybody.extract, (std::vector<std::string>{"Si", "C"}));
+  }
+  sp.entries = {{"Si", "Si"}, {"C", "C"}};
+  const ForceField fc = manybody_part(part_of(s, sc), sp);
+  const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff-amber25.json"));
+  const ForceField m = merge_forcefields(s.atoms.size(), {{&fc, sc, "SiC"}, {&fm, me, "methane"}}, MergeOptions{});
+  LammpsStyle rs;
+  rs.units = "real";
+  EXPECT_THROW(lammps_metal_units(m, rs), FieldError);
+  EnergyOptions e;
+  write_lammps_data_ff(s, m, e, (dir / "m.data").string(), false);
+  write_lammps_input(s, m, e, "m.data", (dir / "m.in").string(), 0, true);
+  std::ifstream in(dir / "m.in");
+  std::stringstream a;
+  a << in.rdbuf();
+  EXPECT_NE(a.str().find("units           metal"), std::string::npos);
+  EXPECT_NE(a.str().find("* * meam library.meam Si C SiC.meam Si C NULL NULL"), std::string::npos) << a.str();
+  EXPECT_TRUE(fs::exists(dir / "library.meam") && fs::exists(dir / "SiC.meam"));
   fs::remove_all(dir);
 }

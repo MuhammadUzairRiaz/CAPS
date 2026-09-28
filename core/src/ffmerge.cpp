@@ -147,9 +147,12 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
     if (F.manybody.on()) {   // the element of each merged type ("" for the other groups' types: NULL)
       M.manybody = F.manybody;
       M.manybody.element.clear();
+      M.manybody.entry.clear();
       for (size_t t = 0; t < F.type_names.size(); ++t) {
-        if (M.manybody.element.size() < size_t(tmap[p][t]) + 1) M.manybody.element.resize(size_t(tmap[p][t]) + 1);
-        M.manybody.element[size_t(tmap[p][t])] = F.manybody.element[t];
+        const size_t mt = size_t(tmap[p][t]);
+        if (M.manybody.element.size() < mt + 1) M.manybody.element.resize(mt + 1), M.manybody.entry.resize(mt + 1);
+        M.manybody.element[mt] = F.manybody.element[t];
+        if (t < F.manybody.entry.size()) M.manybody.entry[mt] = F.manybody.entry[t];
       }
     }
     if (F.sw.on) {
@@ -214,7 +217,10 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       if (mixed_forms) M.pair_func[key] = PairFunc{kPairSdk126, pt.eps, pt.sigma, 0};
       else M.pair_override[key] = pt;
     }
-  if (M.manybody.on()) M.manybody.element.resize(M.type_names.size());
+  if (M.manybody.on()) {
+    M.manybody.element.resize(M.type_names.size());
+    if (!M.manybody.entry.empty()) M.manybody.entry.resize(M.type_names.size());
+  }
   // names and notes
   std::string name;
   for (size_t p = 0; p < parts.size(); ++p) name += (p ? " + " : "") + parts[p].ff->name + (parts.size() > 1 ? " (" + parts[p].tag + ")" : "");
