@@ -119,7 +119,7 @@ class _AnalyzeOpts(C.Structure):
                 ("blocks", C.c_int32), ("elem_a", C.c_int32), ("elem_b", C.c_int32), ("inter_only", C.c_int32),
                 ("rdf_rmax", C.c_double), ("rdf_dr", C.c_double), ("qmax", C.c_double), ("dq", C.c_double), ("q_direct", C.c_double),
                 ("fit_from", C.c_double), ("fit_to", C.c_double), ("probe", C.c_double), ("grid", C.c_double), ("cutoff", C.c_double),
-                ("threads", C.c_int32), ("deuterate", C.c_int32)]
+                ("threads", C.c_int32), ("deuterate", C.c_int32), ("group", C.c_char_p)]
 
 
 class _MechOpts(C.Structure):
@@ -477,7 +477,8 @@ class Document:
         ffv …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
         {id, name, value, error, unit, ...}."""
         ids = ",".join(_PROPERTY_ALIASES.get(p, p) for p in ([properties] if isinstance(properties, str) else properties))
-        o = _AnalyzeOpts(first, last, stride, 0, 0, blocks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, threads, int(options.pop("deuterate", 0)))
+        o = _AnalyzeOpts(first, last, stride, 0, 0, blocks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, threads, int(options.pop("deuterate", 0)),
+                         _enc(options.pop("group", "")))   # group: "selection", "molecules:1-4,7", "exclude-held"
         if "tg" in ids.split(","):
             m = _MechOpts()
             for k, v in options.items():

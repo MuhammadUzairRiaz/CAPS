@@ -337,6 +337,15 @@ public sealed class AnalyzeViewModel : ObservableObject
 
     public string[] SelectedIds => Groups.SelectMany(g => g.Chips).Where(c => c.IsOn && c.Available).Select(c => c.Id).ToArray();
 
+    // Groups (design/boards/Analyze "Groups"): the atoms the properties see
+    public static readonly string[] GroupChoices = ["All atoms", "The selection", "Without the held molecule", "Molecules…"];
+    private int _group;
+    private string _groupMolecules = "1";
+    public int GroupIndex { get => _group; set { if (Set(ref _group, Math.Clamp(value, 0, 3))) Raise(nameof(GroupIsMolecules)); } }
+    public bool GroupIsMolecules => _group == 3;
+    public string GroupMolecules { get => _groupMolecules; set => Set(ref _groupMolecules, value ?? ""); }
+    private string GroupSpec => _group switch { 1 => "selection", 2 => "exclude-held", 3 => "molecules:" + _groupMolecules.Trim(), _ => "" };
+
     public CapsAnalyzeOpts Options()
     {
         var (a, b) = PairElements[Math.Clamp(_pair, 0, PairElements.Length - 1)];
@@ -344,7 +353,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         {
             First = _first, Last = _last < 0 ? -1 : _last, Stride = _stride, FramePs = _framePs, TimestepFs = _timestepFs, Blocks = 5,
             ElemA = a, ElemB = b, InterOnly = _inter ? 1 : 0, FitFrom = _fitFrom, FitTo = _fitTo, Probe = _probe, Grid = _grid,
-            Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate,
+            Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate, Group = GroupSpec,
         };
     }
 

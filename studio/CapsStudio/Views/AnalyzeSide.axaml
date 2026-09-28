@@ -28,6 +28,10 @@
             <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.LastD}" Minimum="-1" Increment="1" FormatString="0" />
             <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.StrideD}" Minimum="1" Increment="1" FormatString="0" />
           </Grid>
+          <TextBlock Text="Group" Classes="dim" Margin="0,4,0,0" />
+          <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.GroupChoices}" SelectedIndex="{Binding Analyze.GroupIndex}" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="The atoms the properties see: a component of a blend, the chains without a filler, the atoms you selected. Mechanics and Tg use the whole cell" />
+          <TextBox Text="{Binding Analyze.GroupMolecules}" Watermark="molecule ids: 1-4, 7" Classes="mono" FontSize="11.5" IsVisible="{Binding Analyze.GroupIsMolecules}" />
         </StackPanel>
       </Border>
       <ScrollViewer>
