@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -149,6 +150,228 @@ Cell box_cell(double a, double b, double c, double al, double be, double ga) {
   return cell;
 }
 
+// ---- NetCDF-3 (classic "CDF\1" and 64-bit offset "CDF\2"), big-endian: the header, then variables by name
+// (Unidata, "The NetCDF Classic Format Specification")
+struct NcAtt {
+  int type = 0;
+  std::string text;
+  std::vector<double> values;
+};
+struct NcVar {
+  std::string name;
+  std::vector<int> dims;
+  std::map<std::string, NcAtt> atts;
+  int type = 0;
+  uint64_t begin = 0, vsize = 0;
+  bool record = false;
+};
+struct NcFile {
+  std::string path;
+  int version = 0;
+  uint64_t numrecs = 0, recsize = 0;
+  std::vector<std::pair<std::string, uint64_t>> dims;
+  int recdim = -1;
+  std::map<std::string, NcAtt> atts;
+  std::vector<NcVar> vars;
+  std::ifstream in;
+
+  const NcVar* var(const std::string& n) const {
+    for (const auto& v : vars)
+      if (v.name == n) return &v;
+    return nullptr;
+  }
+  uint64_t dim(const std::string& n) const {
+    for (const auto& [k, v] : dims)
+      if (k == n) return v;
+    return 0;
+  }
+};
+
+int nc_size(int type) {
+  switch (type) {
+    case 1: case 2: return 1;
+    case 3: return 2;
+    case 4: case 5: return 4;
+    case 6: return 8;
+    default: return 0;
+  }
+}
+
+class NcHeader {
+ public:
+  NcHeader(std::ifstream& in, const std::string& path) : in_(in), path_(path) {}
+  uint32_t u32() { unsigned char b[4]; get(b, 4); return uint32_t(b[0]) << 24 | uint32_t(b[1]) << 16 | uint32_t(b[2]) << 8 | b[3]; }
+  uint64_t u64() { const uint64_t hi = u32(); return hi << 32 | u32(); }
+  std::string name() {
+    const uint32_t n = u32();
+    if (n > 1 << 20) throw ReadError(path_ + ": NetCDF header damaged (a name of " + std::to_string(n) + " bytes)");
+    std::string s(n, '\0');
+    get(reinterpret_cast<unsigned char*>(s.data()), n);
+    skip_pad(n);
+    return s;
+  }
+  NcAtt att_values(int type, uint32_t n) {
+    NcAtt a;
+    a.type = type;
+    const int sz = nc_size(type);
+    if (!sz) throw ReadError(path_ + ": NetCDF type " + std::to_string(type) + " is not a NetCDF-3 type");
+    std::vector<unsigned char> b(size_t(n) * size_t(sz));
+    if (!b.empty()) get(b.data(), b.size());
+    skip_pad(uint32_t(b.size()));
+    if (type == 2) a.text.assign(b.begin(), b.end());
+    else
+      for (uint32_t k = 0; k < n; ++k) a.values.push_back(decode(b.data() + size_t(k) * size_t(sz), type));
+    while (!a.text.empty() && a.text.back() == '\0') a.text.pop_back();
+    return a;
+  }
+  std::map<std::string, NcAtt> atts() {
+    std::map<std::string, NcAtt> out;
+    const uint32_t tag = u32(), n = u32();
+    if (tag == 0 && n == 0) return out;
+    if (tag != 0x0C) throw ReadError(path_ + ": NetCDF header damaged (attribute list)");
+    for (uint32_t k = 0; k < n; ++k) {
+      const std::string nm = name();
+      const int type = int(u32());
+      const uint32_t cnt = u32();
+      out[nm] = att_values(type, cnt);
+    }
+    return out;
+  }
+  static double decode(const unsigned char* b, int type) {
+    switch (type) {
+      case 1: return double(static_cast<signed char>(b[0]));
+      case 2: return double(b[0]);
+      case 3: return double(int16_t(uint16_t(b[0]) << 8 | b[1]));
+      case 4: return double(int32_t(uint32_t(b[0]) << 24 | uint32_t(b[1]) << 16 | uint32_t(b[2]) << 8 | b[3]));
+      case 5: {
+        const uint32_t u = uint32_t(b[0]) << 24 | uint32_t(b[1]) << 16 | uint32_t(b[2]) << 8 | b[3];
+        float f;
+        std::memcpy(&f, &u, 4);
+        return double(f);
+      }
+      case 6: {
+        uint64_t u = 0;
+        for (int k = 0; k < 8; ++k) u = u << 8 | b[k];
+        double d;
+        std::memcpy(&d, &u, 8);
+        return d;
+      }
+      default: return 0;
+    }
+  }
+
+ private:
+  void get(unsigned char* b, size_t n) {
+    in_.read(reinterpret_cast<char*>(b), std::streamsize(n));
+    if (size_t(in_.gcount()) != n) throw ReadError(path_ + ": NetCDF file ends inside its header");
+  }
+  void skip_pad(uint32_t n) {
+    const uint32_t pad = (4 - n % 4) % 4;
+    unsigned char b[4];
+    if (pad) get(b, pad);
+  }
+  std::ifstream& in_;
+  std::string path_;
+};
+
+void open_netcdf(NcFile& f, const std::string& path) {
+  f.path = path;
+  f.in.open(path, std::ios::binary);
+  if (!f.in) throw ReadError("cannot open " + path);
+  unsigned char m[4] = {0, 0, 0, 0};
+  f.in.read(reinterpret_cast<char*>(m), 4);
+  if (m[0] == 0x89 && m[1] == 'H' && m[2] == 'D' && m[3] == 'F')
+    throw ReadError(path + ": a NetCDF-4 (HDF5) file — write it as NetCDF-3 (cpptraj: trajout name.nc netcdf; or nccopy -k nc6 in.nc out.nc) to open it");
+  if (m[0] != 'C' || m[1] != 'D' || m[2] != 'F') throw ReadError(path + ": not a NetCDF file");
+  if (m[3] == 5) throw ReadError(path + ": a CDF-5 (64-bit data) NetCDF file — write it as NetCDF-3 64-bit offset (nccopy -k nc6) to open it");
+  if (m[3] != 1 && m[3] != 2) throw ReadError(path + ": unknown NetCDF version " + std::to_string(int(m[3])));
+  f.version = m[3];
+  NcHeader h(f.in, path);
+  f.numrecs = h.u32();
+  {   // dimensions
+    const uint32_t tag = h.u32(), n = h.u32();
+    if (!(tag == 0 && n == 0)) {
+      if (tag != 0x0A) throw ReadError(path + ": NetCDF header damaged (dimension list)");
+      for (uint32_t k = 0; k < n; ++k) {
+        const std::string nm = h.name();
+        const uint64_t len = h.u32();
+        if (len == 0) f.recdim = int(k);
+        f.dims.push_back({nm, len});
+      }
+    }
+  }
+  f.atts = h.atts();
+  {   // variables
+    const uint32_t tag = h.u32(), n = h.u32();
+    if (!(tag == 0 && n == 0)) {
+      if (tag != 0x0B) throw ReadError(path + ": NetCDF header damaged (variable list)");
+      for (uint32_t k = 0; k < n; ++k) {
+        NcVar v;
+        v.name = h.name();
+        const uint32_t nd = h.u32();
+        for (uint32_t d = 0; d < nd; ++d) {
+          const uint32_t id = h.u32();
+          if (id >= f.dims.size()) throw ReadError(path + ": NetCDF variable " + v.name + " refers to dimension " + std::to_string(id));
+          v.dims.push_back(int(id));
+        }
+        v.atts = h.atts();
+        v.type = int(h.u32());
+        v.vsize = h.u32();
+        v.begin = f.version == 2 ? h.u64() : h.u32();
+        v.record = !v.dims.empty() && v.dims.front() == f.recdim;
+        // the size per record (or of the whole variable) from the dimensions: the header's vsize saturates past 4 GiB
+        uint64_t cnt = 1;
+        for (size_t d = v.record ? 1 : 0; d < v.dims.size(); ++d) cnt *= f.dims[size_t(v.dims[d])].second;
+        const uint64_t bytes = cnt * uint64_t(nc_size(v.type));
+        v.vsize = (bytes + 3) / 4 * 4;
+        f.vars.push_back(std::move(v));
+      }
+    }
+  }
+  int nrec = 0;
+  for (const auto& v : f.vars)
+    if (v.record) f.recsize += v.vsize, ++nrec;
+  if (nrec == 1)   // one record variable: its records are not padded
+    for (const auto& v : f.vars)
+      if (v.record) {
+        uint64_t cnt = 1;
+        for (size_t d = 1; d < v.dims.size(); ++d) cnt *= f.dims[size_t(v.dims[d])].second;
+        f.recsize = cnt * uint64_t(nc_size(v.type));
+      }
+  if (f.numrecs == 0xFFFFFFFFu && f.recsize > 0) {   // streaming: the records the file holds
+    uint64_t first = UINT64_MAX;
+    for (const auto& v : f.vars)
+      if (v.record) first = std::min(first, v.begin);
+    const uint64_t size = uint64_t(std::filesystem::file_size(path));
+    f.numrecs = size > first ? (size - first) / f.recsize : 0;
+  }
+}
+
+// one record (or the whole of a non-record variable) as doubles
+std::vector<double> nc_read(NcFile& f, const NcVar& v, uint64_t rec) {
+  uint64_t cnt = 1;
+  for (size_t d = v.record ? 1 : 0; d < v.dims.size(); ++d) cnt *= f.dims[size_t(v.dims[d])].second;
+  const int sz = nc_size(v.type);
+  if (!sz) throw ReadError(f.path + ": variable " + v.name + " has NetCDF type " + std::to_string(v.type));
+  const uint64_t off = v.begin + (v.record ? rec * f.recsize : 0);
+  std::vector<unsigned char> b(size_t(cnt) * size_t(sz));
+  f.in.clear();
+  f.in.seekg(std::streamoff(off));
+  f.in.read(reinterpret_cast<char*>(b.data()), std::streamsize(b.size()));
+  if (size_t(f.in.gcount()) != b.size()) throw ReadError(f.path + ": the file ends inside " + v.name + (v.record ? " of frame " + std::to_string(rec + 1) : ""));
+  std::vector<double> out(static_cast<size_t>(cnt));
+  for (size_t k = 0; k < size_t(cnt); ++k) out[k] = NcHeader::decode(b.data() + k * size_t(sz), v.type);
+  auto it = v.atts.find("scale_factor");
+  if (it != v.atts.end() && !it->second.values.empty() && it->second.values[0] != 1)
+    for (auto& x : out) x *= it->second.values[0];
+  return out;
+}
+
+std::string nc_convention(const NcFile& f) {
+  auto it = f.atts.find("Conventions");
+  return it == f.atts.end() ? std::string() : it->second.text;
+}
+
 }  // namespace
 
 bool is_amber_topology_path(const std::string& path) {
@@ -168,11 +391,18 @@ AmberTopology read_amber_prmtop(const std::string& path) {
   const Reader R{S, path};
   const std::string name = std::filesystem::path(path).filename().string();
   auto refuse = [&](const std::string& what) { throw ReadError(path + ": " + what); };
+  // what the force field needs and CAPS cannot hold: the structure still opens, without the file's force field
+  std::string ff_off;
+  auto ff_stop = [&](const std::string& why) { if (ff_off.empty()) ff_off = why; };
   if (R.has("CTITLE") || R.has("FORCE_FIELD_TYPE") || R.has("CHARMM_UREY_BRADLEY"))
-    refuse("a CHARMM topology converted by chamber (Urey–Bradley, harmonic impropers, CHARMM 1-4 parameters): open the CHARMM files (PSF + parameters) instead");
+    ff_stop("a CHARMM topology converted by chamber (Urey–Bradley, harmonic impropers, CHARMM 1-4 parameters) — open the CHARMM files for its force field");
   for (const char* f : {"CHARMM_CMAP_COUNT", "CMAP_COUNT"})
-    if (R.has(f)) refuse("CMAP correction maps (ff19SB, CHARMM) are not read: CAPS has no CMAP term, and leaving them out would change the energy");
-  if (R.has("POLARIZABILITY") || R.has("DIPOLE_DAMP_FACTOR")) refuse("a polarisable topology (AMOEBA / induced dipoles) is not read");
+    if (R.has(f)) ff_stop("CMAP correction maps (ff19SB, CHARMM): CAPS has no CMAP term, and leaving them out would change the energy");
+  if (R.has("POLARIZABILITY") || R.has("DIPOLE_DAMP_FACTOR")) ff_stop("a polarisable topology (induced dipoles)");
+  if (R.has("LENNARD_JONES_CCOEF")) {   // 12-6-4 ions (Li & Merz): C/r⁴ on the type pairs listed
+    for (double c : R.reals("LENNARD_JONES_CCOEF", 0))
+      if (c != 0) { ff_stop("12-6-4 ion terms (LENNARD_JONES_CCOEF, C/r⁴): CAPS has no r⁻⁴ pair term, and leaving them out would change the energy"); break; }
+  }
 
   const auto P = R.ints("POINTERS", 30);
   const size_t natom = size_t(P[0]), ntypes = size_t(P[1]), nbonh = size_t(P[2]), mbona = size_t(P[3]), ntheth = size_t(P[4]),
@@ -181,7 +411,7 @@ AmberTopology read_amber_prmtop(const std::string& path) {
   const long ifpert = P[20], ifbox = P[27], ifcap = P.size() > 29 ? P[29] : 0, numextra = P.size() > 30 ? P[30] : 0;
   if (ifpert) refuse("a perturbation topology (IFPERT) is not read");
   if (ifcap) refuse("a solvent-cap topology (IFCAP) is not read");
-  if (numextra > 0) refuse(std::to_string(numextra) + " extra points (TIP4P / TIP5P virtual sites): not read");
+  if (numextra > 0) ff_stop(std::to_string(numextra) + " extra points (TIP4P / TIP5P virtual sites)");
   if (natom == 0) refuse("no atoms");
 
   const auto names = R.texts("ATOM_NAME", natom);
@@ -203,7 +433,7 @@ AmberTopology read_amber_prmtop(const std::string& path) {
   if (nphb > 0 && R.has("HBOND_ACOEF")) {
     const auto ha = R.reals("HBOND_ACOEF", 0), hb = R.reals("HBOND_BCOEF", 0);
     for (size_t k = 0; k < std::min(ha.size(), hb.size()); ++k)
-      if (ha[k] != 0 || hb[k] != 0) refuse("10-12 hydrogen-bond terms with non-zero coefficients are not read");
+      if (ha[k] != 0 || hb[k] != 0) { ff_stop("10-12 hydrogen-bond terms with non-zero coefficients"); break; }
   }
   const auto amber_type = R.has("AMBER_ATOM_TYPE") ? R.texts("AMBER_ATOM_TYPE", natom) : names;
   const auto excl = R.ints("EXCLUDED_ATOMS_LIST", nnb);
@@ -275,7 +505,7 @@ AmberTopology read_amber_prmtop(const std::string& path) {
   for (size_t t = 0; t < nt; ++t) {
     double A, B;
     ab(type_lj[t], type_lj[t], A, B);
-    if ((A > 0) != (B > 0)) refuse("type " + F.type_names[t] + ": a purely repulsive or purely attractive Lennard-Jones pair (A " + std::to_string(A) + ", B " + std::to_string(B) + ") has no ε, σ");
+    if ((A > 0) != (B > 0)) ff_stop("type " + F.type_names[t] + ": a purely repulsive or purely attractive Lennard-Jones pair (A " + std::to_string(A) + ", B " + std::to_string(B) + ") has no ε, σ");
     F.lj[t] = eps_sigma(A, B);
   }
   int overrides = 0;
@@ -288,7 +518,7 @@ AmberTopology read_amber_prmtop(const std::string& path) {
       const double Am = 4 * e * std::pow(sg, 12), Bm = 4 * e * std::pow(sg, 6);
       auto close = [](double x, double y) { return std::fabs(x - y) <= 2e-6 * std::max({std::fabs(x), std::fabs(y), 1e-30}); };
       if (close(A, Am) && close(B, Bm)) continue;
-      if ((A > 0) != (B > 0)) refuse("types " + F.type_names[a] + " and " + F.type_names[b] + ": a Lennard-Jones pair with only A or only B has no ε, σ");
+      if ((A > 0) != (B > 0)) ff_stop("types " + F.type_names[a] + " and " + F.type_names[b] + ": a Lennard-Jones pair with only A or only B has no ε, σ");
       F.pair_override[{int(a), int(b)}] = A > 0 ? eps_sigma(A, B) : PairType{0, 1};
       ++overrides;
     }
@@ -362,7 +592,7 @@ AmberTopology read_amber_prmtop(const std::string& path) {
       if (t < 0 || size_t(t) >= nptra) refuse("torsion type out of range");
       const bool no14 = v[5 * k + 2] < 0, improper = v[5 * k + 3] < 0;
       const double per = dn[size_t(t)];
-      if (std::fabs(per - std::round(per)) > 1e-6) refuse("a torsion with periodicity " + std::to_string(per) + " (not whole) is not read");
+      if (std::fabs(per - std::round(per)) > 1e-6) ff_stop("a torsion with periodicity " + std::to_string(per) + " (not whole)");
       const TorsionTerm term{i, j, c, l, dk[size_t(t)], int(std::lround(std::fabs(per))), dp[size_t(t)]};
       if (improper) {
         const double cs = std::cos(term.delta);
@@ -385,12 +615,12 @@ AmberTopology read_amber_prmtop(const std::string& path) {
   if (scales.size() > 1) {
     std::string list;
     for (const auto& [e, v] : scales) list += (list.empty() ? "" : ", ") + std::to_string(e) + "/" + std::to_string(v);
-    refuse("1-4 scaling differs between torsions (SCEE/SCNB " + list + ", e.g. GLYCAM with a protein force field): CAPS applies one 1-4 scaling to the whole structure");
+    ff_stop("1-4 scaling differs between torsions (SCEE/SCNB " + list + ", e.g. GLYCAM with a protein force field): CAPS applies one 1-4 scaling to the whole structure");
   }
   const double sc_e = scales.empty() ? 1.2 : scales.begin()->first, sc_n = scales.empty() ? 2.0 : scales.begin()->second;
-  if (sc_e <= 0 || sc_n <= 0) refuse("a 1-4 scale factor of zero");
-  F.coul14 = 1 / sc_e;
-  F.lj14 = 1 / sc_n;
+  if (sc_e <= 0 || sc_n <= 0) ff_stop("a 1-4 scale factor of zero");
+  F.coul14 = sc_e > 0 ? 1 / sc_e : 0;
+  F.lj14 = sc_n > 0 ? 1 / sc_n : 0;
   if (!has_scale) notes.push_back("no SCEE / SCNB sections (an older topology): the AMBER defaults 1.2 and 2.0");
   for (const auto& [a, b] : p14) F.pairs14.push_back({a, b});
 
@@ -476,6 +706,11 @@ AmberTopology read_amber_prmtop(const std::string& path) {
   std::snprintf(buf, sizeof buf, "%.4f", q);
   F.notes.push_back(std::string("net charge ") + buf + " e");
   for (const auto& n : notes) F.notes.push_back(n);
+  if (!ff_off.empty()) {   // the atoms, residues, bonds, charges and masses stand; the force field is not taken
+    notes.push_back("the file's force field is not taken — " + ff_off + "; assign one from the library");
+    s.notes = notes;
+    return out;
+  }
   s.notes = notes;
   out.ff = ff;
   return out;
@@ -485,9 +720,33 @@ AmberCoordinates read_amber_coordinates(const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   if (!in) throw ReadError("cannot open " + path);
   char magic[4] = {0, 0, 0, 0};
-  in.read(magic, 3);
-  if (std::string(magic, 3) == "CDF" || (magic[0] == '\x89' && magic[1] == 'H'))
-    throw ReadError(path + ": a NetCDF restart — convert it to an ASCII restart (cpptraj: trajout name.rst7 restart) to open it");
+  in.read(magic, 4);
+  if (std::string(magic, 3) == "CDF" || (magic[0] == '\x89' && magic[1] == 'H')) {   // a NetCDF restart (AMBERRESTART)
+    in.close();
+    NcFile f;
+    open_netcdf(f, path);
+    const std::string conv = nc_convention(f);
+    if (conv.find("AMBERRESTART") == std::string::npos)
+      throw ReadError(path + ": a NetCDF file without the AMBERRESTART convention (Conventions: '" + conv + "') — open a trajectory with its topology instead");
+    AmberCoordinates c;
+    const NcVar* xv = f.var("coordinates");
+    if (!xv) throw ReadError(path + ": no coordinates variable");
+    const auto x = nc_read(f, *xv, 0);
+    const size_t n = size_t(f.dim("atom"));
+    if (x.size() != 3 * n) throw ReadError(path + ": coordinates are not atom × 3");
+    for (size_t i = 0; i < n; ++i) c.positions.push_back({x[3 * i], x[3 * i + 1], x[3 * i + 2]});
+    if (const NcVar* vv = f.var("velocities")) {   // Å/ps after the file's scale factor (20.455)
+      const auto v = nc_read(f, *vv, 0);
+      for (size_t i = 0; i < n && v.size() == 3 * n; ++i) c.velocities.push_back(Vec3{v[3 * i], v[3 * i + 1], v[3 * i + 2]} * 1e-3);
+    }
+    const NcVar *lv = f.var("cell_lengths"), *av = f.var("cell_angles");
+    if (lv && av) {
+      const auto l = nc_read(f, *lv, 0), a = nc_read(f, *av, 0);
+      if (l.size() == 3 && a.size() == 3 && l[0] > 0) c.cell = box_cell(l[0], l[1], l[2], a[0], a[1], a[2]), c.has_box = true;
+    }
+    if (auto it = f.atts.find("title"); it != f.atts.end()) c.title = it->second.text;
+    return c;
+  }
   in.clear();
   in.seekg(0);
   AmberCoordinates c;
@@ -533,6 +792,478 @@ AmberCoordinates read_amber_coordinates(const std::string& path) {
     c.has_box = true;
   }
   return c;
+}
+
+// ---------------------------------------------------------------------------------------------------------------- writer
+
+namespace {
+
+class PrmtopWriter {
+ public:
+  explicit PrmtopWriter(std::ostream& o) : o_(o) {}
+  void flag(const std::string& name, const std::string& fmt) { o_ << "%FLAG " << name << "\n%FORMAT(" << fmt << ")\n"; }
+  void ints(const std::string& name, const std::vector<long>& v) {
+    flag(name, "10I8");
+    for (size_t k = 0; k < v.size(); ++k) {
+      char b[16];
+      std::snprintf(b, sizeof b, "%8ld", v[k]);
+      o_ << b << ((k + 1) % 10 == 0 || k + 1 == v.size() ? "\n" : "");
+    }
+    if (v.empty()) o_ << "\n";
+  }
+  void reals(const std::string& name, const std::vector<double>& v) {
+    flag(name, "5E16.8");
+    for (size_t k = 0; k < v.size(); ++k) {
+      char b[32];
+      std::snprintf(b, sizeof b, "%16.8E", v[k]);
+      o_ << b << ((k + 1) % 5 == 0 || k + 1 == v.size() ? "\n" : "");
+    }
+    if (v.empty()) o_ << "\n";
+  }
+  void texts(const std::string& name, const std::vector<std::string>& v) {
+    flag(name, "20a4");
+    for (size_t k = 0; k < v.size(); ++k) {
+      std::string t = v[k].substr(0, 4);
+      t.resize(4, ' ');
+      o_ << t << ((k + 1) % 20 == 0 || k + 1 == v.size() ? "\n" : "");
+    }
+    if (v.empty()) o_ << "\n";
+  }
+
+ private:
+  std::ostream& o_;
+};
+
+}  // namespace
+
+std::vector<std::string> write_amber(const System& s, const ForceField& ff, const std::string& stem) {
+  std::vector<std::string> notes;
+  const size_t n = s.atoms.size();
+  auto refuse = [&](const std::string& why) { throw FieldError("AMBER prmtop: " + why); };
+  if (ff.charge.size() != n) refuse("the force field is for another structure");
+  if (ff.pair_form != "lj12-6") refuse("the " + ff.pair_form + " pair form (class II 9-6) has no AMBER form — AMBER holds 12-6 Lennard-Jones only");
+  if (!ff.bonds2.empty() || !ff.angles2.empty() || !ff.dihedrals2.empty() || !ff.impropers2.empty()) refuse("class II cross terms have no AMBER form");
+  if (!ff.pair_func.empty()) refuse("Buckingham / Morse pairs have no AMBER form");
+  if (!ff.lj14_types.empty()) refuse("separate 1-4 Lennard-Jones parameters (CHARMM, GROMOS) need a chamber topology; export GROMACS or LAMMPS instead");
+  if (!ff.lj_pairs.empty()) refuse("explicit Lennard-Jones atom pairs have no AMBER form");
+  if (!ff.urey_bradley.empty()) refuse("Urey–Bradley terms need a chamber topology");
+  if (!ff.impropers_harmonic.empty()) refuse("harmonic impropers need a chamber topology");
+  if (!ff.inversions.empty()) refuse("inversion (umbrella) impropers have no AMBER form");
+  if (!ff.bonds_x.empty() || !ff.angles_x.empty() || !ff.cbt.empty()) refuse("Morse / cosine / bending–torsion terms have no AMBER form");
+  if (!ff.vsites.empty()) refuse("virtual sites (extra points) are not written");
+  if (ff.sw.on || ff.manybody.on() || ff.hbond.on()) refuse("many-body or hydrogen-bond terms have no AMBER form");
+  if (ff.keep13 || !ff.excluded_type_pairs.empty()) refuse("1-3 pairs in full or excluded type pairs have no AMBER form");
+  if (ff.dielectric != 1 || ff.coul_gromacs || ff.coul_rf) refuse("a relative permittivity or reaction-field Coulomb has no AMBER topology form");
+  if ((ff.lj14 == 0) != (ff.coul14 == 0)) refuse("1-4 scaling with LJ or Coulomb alone at zero has no AMBER form");
+  const bool no14 = ff.lj14 == 0 && ff.coul14 == 0;
+  if (ff.lj_shift || ff.lj_fsw) notes.push_back("the force field's own Lennard-Jones shift / switch is not in a topology: set the engine's cut-off treatment to match");
+
+  // types used, in order of first use; names of at most 4 characters (the file's field), else T1, T2 …
+  std::vector<int> tmap(ff.type_names.size(), -1), tused;
+  for (size_t i = 0; i < n; ++i)
+    if (tmap[size_t(ff.type_index[i])] < 0) tmap[size_t(ff.type_index[i])] = int(tused.size()), tused.push_back(ff.type_index[i]);
+  const size_t nt = tused.size();
+  std::vector<std::string> tname(nt);
+  {
+    std::set<std::string> seen;
+    bool fit = true;
+    for (size_t t = 0; t < nt; ++t) {
+      const std::string& nm = ff.type_names[size_t(tused[t])];
+      if (nm.empty() || nm.size() > 4 || nm.find(' ') != std::string::npos || !seen.insert(nm).second) fit = false;
+    }
+    for (size_t t = 0; t < nt; ++t) tname[t] = fit ? ff.type_names[size_t(tused[t])] : "T" + std::to_string(t + 1);
+    if (!fit) {
+      std::string m;
+      for (size_t t = 0; t < nt && t < 40; ++t) m += (m.empty() ? "" : ", ") + tname[t] + " = " + ff.type_names[size_t(tused[t])];
+      notes.push_back("AMBER atom types hold 4 characters: the types are written as " + m + (nt > 40 ? " …" : ""));
+    }
+  }
+  // Lennard-Jones A/B for every pair of used types, as the force field mixes them
+  std::vector<double> A, B;
+  std::vector<long> nbidx(nt * nt);
+  for (size_t j = 0; j < nt; ++j)
+    for (size_t i = 0; i <= j; ++i) {
+      const PairType p = mixed_pair(ff, tused[i], tused[j]);
+      const double s6 = std::pow(p.sigma, 6);
+      A.push_back(4 * p.eps * s6 * s6);
+      B.push_back(4 * p.eps * s6);
+      const long ix = long(A.size());
+      nbidx[i * nt + j] = ix, nbidx[j * nt + i] = ix;
+    }
+
+  // residues: runs of atoms with the same molecule, residue number and name
+  std::vector<std::string> reslab;
+  std::vector<long> resptr;
+  std::vector<int> resof(n);
+  for (size_t i = 0; i < n; ++i) {
+    const Atom& a = s.atoms[i];
+    const bool fresh = i == 0 || a.mol != s.atoms[i - 1].mol || a.resid != s.atoms[i - 1].resid || a.resname != s.atoms[i - 1].resname;
+    if (fresh) {
+      reslab.push_back(a.resname.empty() ? "MOL" : a.resname);
+      resptr.push_back(long(i + 1));
+    }
+    resof[i] = int(reslab.size() - 1);
+  }
+  long nmxrs = 0;
+  for (size_t r = 0; r < resptr.size(); ++r)
+    nmxrs = std::max(nmxrs, (r + 1 < resptr.size() ? resptr[r + 1] : long(n) + 1) - resptr[r]);
+  // atom names: the file's when short, else element and a count within the residue
+  std::vector<std::string> names(n);
+  {
+    std::map<std::pair<int, std::string>, int> count;
+    for (size_t i = 0; i < n; ++i) {
+      const Atom& a = s.atoms[i];
+      if (!a.name.empty() && a.name.size() <= 4 && a.name.find(' ') == std::string::npos && a.name != ff.atom_type[i]) { names[i] = a.name; continue; }
+      const std::string el = a.element > 0 ? element(a.element).symbol : "X";
+      const int k = ++count[{resof[i], el}];
+      names[i] = (el + std::to_string(k)).substr(0, 4);
+    }
+  }
+
+  // bonded terms by type (exact values), split by whether a hydrogen takes part
+  auto is_h = [&](uint32_t a) { return s.atoms[a].element == 1; };
+  auto bits = [](double x) { uint64_t u; std::memcpy(&u, &x, 8); return u; };
+  std::map<std::pair<uint64_t, uint64_t>, long> btype;
+  std::vector<double> bk, br;
+  std::vector<long> bh, bn;
+  for (const auto& b : ff.bonds) {
+    auto [it, fresh] = btype.emplace(std::make_pair(bits(b.k), bits(b.r0)), long(bk.size() + 1));
+    if (fresh) bk.push_back(b.k), br.push_back(b.r0);
+    auto& L = is_h(b.i) || is_h(b.j) ? bh : bn;
+    L.insert(L.end(), {long(3 * b.i), long(3 * b.j), it->second});
+  }
+  std::map<std::pair<uint64_t, uint64_t>, long> atype;
+  std::vector<double> ak, at;
+  std::vector<long> ah, an;
+  for (const auto& a : ff.angles) {
+    auto [it, fresh] = atype.emplace(std::make_pair(bits(a.kt), bits(a.theta0)), long(ak.size() + 1));
+    if (fresh) ak.push_back(a.kt), at.push_back(a.theta0);
+    auto& L = is_h(a.i) || is_h(a.j) || is_h(a.k) ? ah : an;
+    L.insert(L.end(), {long(3 * a.i), long(3 * a.j), long(3 * a.k), it->second});
+  }
+  // torsions: the first term reaching a 1-4 pair carries it; the other terms of the pair, and impropers, do not
+  std::set<std::pair<uint32_t, uint32_t>> p14;
+  for (const auto& p : ff.pairs14) p14.insert({std::min(p[0], p[1]), std::max(p[0], p[1])});
+  if (no14 && !p14.empty()) notes.push_back("1-4 scaling of zero: the 1-4 pairs are excluded outright");
+  std::set<std::pair<uint32_t, uint32_t>> carried;
+  std::map<std::tuple<uint64_t, int, uint64_t>, long> dtype;
+  std::vector<double> dk, dn, dp;
+  std::vector<long> dh, dnn;
+  double constant = 0;
+  int dropped0 = 0;
+  auto torsion = [&](TorsionTerm t, bool improper) {
+    if (t.n == 0) { constant += t.v * (1 + std::cos(t.delta)); ++dropped0; return; }
+    if (t.n < 0) refuse("a torsion with negative periodicity");
+    const auto key = std::make_pair(std::min(t.i, t.l), std::max(t.i, t.l));
+    bool carry = false;
+    if (!improper && !no14 && p14.count(key) && !carried.count(key)) carry = true, carried.insert(key);
+    auto [it, fresh] = dtype.emplace(std::make_tuple(bits(t.v), t.n, bits(t.delta)), long(dk.size() + 1));
+    if (fresh) dk.push_back(t.v), dn.push_back(double(t.n)), dp.push_back(t.delta);
+    uint32_t a = t.i, b = t.j, c = t.k, d = t.l;
+    if (c == 0 || d == 0) std::swap(a, d), std::swap(b, c);   // a negative flag cannot mark atom 0: the same angle read backwards
+    const long lc = long(3 * c) * (carry ? 1 : -1), ld = long(3 * d) * (improper ? -1 : 1);
+    auto& L = is_h(a) || is_h(b) || is_h(c) || is_h(d) ? dh : dnn;
+    L.insert(L.end(), {long(3 * a), long(3 * b), lc, ld, it->second});
+  };
+  for (const auto& t : ff.dihedrals) torsion(t, false);
+  for (const auto& t : ff.impropers) torsion(t, true);
+  if (dropped0) {
+    char b[160];
+    std::snprintf(b, sizeof b, "%d constant torsion terms (n = 0) left out: the energy is lower by %.6f kcal/mol, no force changes", dropped0, constant);
+    notes.push_back(b);
+  }
+  // 1-4 pairs no torsion term reaches: a zero-barrier term along the bonds carries each
+  if (!no14) {
+    const auto nb = s.neighbours();
+    int added = 0;
+    for (const auto& key : p14) {
+      if (carried.count(key)) continue;
+      const uint32_t i = key.first, l = key.second;
+      bool found = false;
+      for (uint32_t j : nb[i]) {
+        for (uint32_t k : nb[j])
+          if (k != i && std::find(nb[k].begin(), nb[k].end(), l) != nb[k].end() && l != j) {
+            torsion(TorsionTerm{i, j, k, l, 0.0, 1, 0.0}, false);
+            found = true;
+            break;
+          }
+        if (found) break;
+      }
+      if (!found) refuse("a 1-4 pair (atoms " + std::to_string(i + 1) + ", " + std::to_string(l + 1) + ") three bonds apart along no path of the structure's bonds");
+      ++added;
+    }
+    if (added) notes.push_back(std::to_string(added) + " 1-4 pairs carried by zero-barrier torsion terms (no torsion of the force field reaches them)");
+  }
+
+  // exclusions: each atom's higher-numbered partners (1-2, 1-3, 1-4), a 0 for an atom with none
+  std::vector<long> nex(n), exl;
+  for (size_t i = 0; i < n; ++i) {
+    std::vector<uint32_t> e;
+    if (i < ff.excluded.size())
+      for (uint32_t j : ff.excluded[i])
+        if (j > i) e.push_back(j);
+    for (const auto& [a, b] : p14)   // the 1-4 pairs are excluded from the ordinary pairs too
+      if (a == i && std::find(e.begin(), e.end(), b) == e.end()) e.push_back(b);
+    std::sort(e.begin(), e.end());
+    if (e.empty()) { nex[i] = 1; exl.push_back(0); continue; }
+    nex[i] = long(e.size());
+    for (uint32_t j : e) exl.push_back(long(j + 1));
+  }
+
+  // molecules (a periodic topology lists them in order: each must be a run of atoms)
+  const bool box = s.cell.valid();
+  std::vector<long> apm;
+  if (box) {
+    int nm = 0;
+    const auto m = s.molecules(&nm);
+    for (size_t i = 0; i < n; ++i) {
+      if (i == 0 || m[i] != m[i - 1]) {
+        if (m[i] != int(apm.size())) refuse("the molecules are not runs of atoms in order (AMBER's molecule list needs them so): reorder the atoms by molecule first");
+        apm.push_back(0);
+      }
+      ++apm.back();
+    }
+  }
+  auto ang = [](const Vec3& u, const Vec3& v) { return std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / kPi; };
+  const double la = norm(s.cell.a), lb = norm(s.cell.b), lc = norm(s.cell.c);
+  const double al = box ? ang(s.cell.b, s.cell.c) : 90, be = box ? ang(s.cell.a, s.cell.c) : 90, ga = box ? ang(s.cell.a, s.cell.b) : 90;
+  const bool octahedron = box && std::fabs(al - 109.4712206) < 1e-4 && std::fabs(be - 109.4712206) < 1e-4 && std::fabs(ga - 109.4712206) < 1e-4;
+
+  std::ofstream o(stem + ".prmtop");
+  if (!o) throw std::runtime_error("cannot write " + stem + ".prmtop");
+  PrmtopWriter w(o);
+  o << "%VERSION  VERSION_STAMP = V0001.000  DATE = 00/00/00  00:00:00  (CAPS)\n";
+  w.flag("TITLE", "20a4");   // one 80-column line
+  {
+    std::string t = (s.title.empty() ? std::string("CAPS ") + ff.name : s.title).substr(0, 80);
+    t.resize(80, ' ');
+    o << t << "\n";
+  }
+  const long nbonh = long(bh.size() / 3), mbona = long(bn.size() / 3), ntheth = long(ah.size() / 4), mtheta = long(an.size() / 4);
+  const long nphih = long(dh.size() / 5), mphia = long(dnn.size() / 5);
+  w.ints("POINTERS", {long(n), long(nt), nbonh, mbona, ntheth, mtheta, nphih, mphia, 0, 0, long(exl.size()), long(reslab.size()), mbona, mtheta, mphia,
+                      long(bk.size()), long(ak.size()), long(dk.size()), long(nt), 0, 0, 0, 0, 0, 0, 0, 0, box ? (octahedron ? 2 : 1) : 0, nmxrs, 0, 0, 0});
+  w.texts("ATOM_NAME", names);
+  {
+    std::vector<double> q(n);
+    for (size_t i = 0; i < n; ++i) q[i] = ff.charge[i] * kChargeUnit;
+    w.reals("CHARGE", q);
+  }
+  {
+    std::vector<long> z(n);
+    for (size_t i = 0; i < n; ++i) z[i] = s.atoms[i].element > 0 ? s.atoms[i].element : -1;
+    w.ints("ATOMIC_NUMBER", z);
+  }
+  w.reals("MASS", ff.mass);
+  {
+    std::vector<long> ti(n);
+    for (size_t i = 0; i < n; ++i) ti[i] = tmap[size_t(ff.type_index[i])] + 1;
+    w.ints("ATOM_TYPE_INDEX", ti);
+  }
+  w.ints("NUMBER_EXCLUDED_ATOMS", nex);
+  w.ints("NONBONDED_PARM_INDEX", nbidx);
+  w.texts("RESIDUE_LABEL", reslab);
+  w.ints("RESIDUE_POINTER", resptr);
+  w.reals("BOND_FORCE_CONSTANT", bk);
+  w.reals("BOND_EQUIL_VALUE", br);
+  w.reals("ANGLE_FORCE_CONSTANT", ak);
+  w.reals("ANGLE_EQUIL_VALUE", at);
+  w.reals("DIHEDRAL_FORCE_CONSTANT", dk);
+  w.reals("DIHEDRAL_PERIODICITY", dn);
+  w.reals("DIHEDRAL_PHASE", dp);
+  w.reals("SCEE_SCALE_FACTOR", std::vector<double>(dk.size(), no14 ? 1.2 : 1 / ff.coul14));
+  w.reals("SCNB_SCALE_FACTOR", std::vector<double>(dk.size(), no14 ? 2.0 : 1 / ff.lj14));
+  w.reals("SOLTY", std::vector<double>(nt, 0.0));
+  w.reals("LENNARD_JONES_ACOEF", A);
+  w.reals("LENNARD_JONES_BCOEF", B);
+  w.ints("BONDS_INC_HYDROGEN", bh);
+  w.ints("BONDS_WITHOUT_HYDROGEN", bn);
+  w.ints("ANGLES_INC_HYDROGEN", ah);
+  w.ints("ANGLES_WITHOUT_HYDROGEN", an);
+  w.ints("DIHEDRALS_INC_HYDROGEN", dh);
+  w.ints("DIHEDRALS_WITHOUT_HYDROGEN", dnn);
+  w.ints("EXCLUDED_ATOMS_LIST", exl);
+  w.reals("HBOND_ACOEF", {});
+  w.reals("HBOND_BCOEF", {});
+  w.reals("HBCUT", {});
+  {
+    std::vector<std::string> ty(n);
+    for (size_t i = 0; i < n; ++i) ty[i] = tname[size_t(tmap[size_t(ff.type_index[i])])];
+    w.texts("AMBER_ATOM_TYPE", ty);
+  }
+  w.texts("TREE_CHAIN_CLASSIFICATION", std::vector<std::string>(n, "BLA"));
+  w.ints("JOIN_ARRAY", std::vector<long>(n, 0));
+  w.ints("IROTAT", std::vector<long>(n, 0));
+  if (box) {
+    w.ints("SOLVENT_POINTERS", {long(reslab.size()), long(apm.size()), long(apm.size()) + 1});
+    w.ints("ATOMS_PER_MOLECULE", apm);
+    w.reals("BOX_DIMENSIONS", {be, la, lb, lc});
+  }
+  w.ints("IPOL", {0});
+  if (!o) throw std::runtime_error("could not write " + stem + ".prmtop");
+  o.close();
+
+  // the restart: 6F12.7, the box as lengths and angles
+  std::ofstream c(stem + ".inpcrd");
+  if (!c) throw std::runtime_error("cannot write " + stem + ".inpcrd");
+  {
+    std::string t = (s.title.empty() ? std::string("CAPS") : s.title).substr(0, 80);
+    c << t << "\n";
+    char b[64];
+    std::snprintf(b, sizeof b, "%6zu\n", n);
+    c << b;
+    size_t k = 0;
+    auto put = [&](double x) {
+      if (std::fabs(x) >= 9999.99999995) refuse("a coordinate beyond ±9999.9999999 Å does not fit the restart's F12.7");
+      std::snprintf(b, sizeof b, "%12.7f", x);
+      c << b << (++k % 6 == 0 ? "\n" : "");
+    };
+    for (const auto& a : s.atoms) put(a.pos[0]), put(a.pos[1]), put(a.pos[2]);
+    if (k % 6) c << "\n";
+    if (box) {
+      k = 0;
+      for (double x : {la, lb, lc, al, be, ga}) put(x);
+    }
+  }
+  if (!c) throw std::runtime_error("could not write " + stem + ".inpcrd");
+  if (box && (std::fabs(al - 90) > 1e-6 || std::fabs(ga - 90) > 1e-6) && !octahedron)
+    notes.push_back("a triclinic cell: its three angles are in the restart (the prmtop's BOX_DIMENSIONS holds β only)");
+  notes.push_back("no generalised-Born radii: set them (ParmEd changeRadii) before an implicit-solvent run");
+  return notes;
+}
+
+Trajectory read_amber_netcdf(const std::string& path, const System& topology, size_t max_frames,
+                             const std::function<bool(double, const Trajectory&)>& progress) {
+  NcFile f;
+  open_netcdf(f, path);
+  const std::string conv = nc_convention(f);
+  if (conv.find("AMBERRESTART") != std::string::npos) {   // one frame: a restart
+    const AmberCoordinates c = read_amber_coordinates(path);
+    if (c.positions.size() != topology.atoms.size())
+      throw ReadError(path + " has " + std::to_string(c.positions.size()) + " atoms, the topology " + std::to_string(topology.atoms.size()));
+    Trajectory t;
+    t.topology = topology;
+    t.positions.push_back(c.positions);
+    t.cells.push_back(c.has_box ? c.cell : topology.cell);
+    t.timesteps.push_back(0);
+    if (!c.velocities.empty()) t.topology.velocities = c.velocities;
+    t.topology.cell = t.cells.front();
+    return t;
+  }
+  if (conv.find("AMBER") == std::string::npos) throw ReadError(path + ": a NetCDF file without the AMBER convention (Conventions: '" + conv + "')");
+  const NcVar* xv = f.var("coordinates");
+  if (!xv || !xv->record) throw ReadError(path + ": no coordinates per frame");
+  const size_t n = size_t(f.dim("atom"));
+  if (n != topology.atoms.size())
+    throw ReadError(path + " has " + std::to_string(n) + " atoms, the topology " + std::to_string(topology.atoms.size()));
+  const NcVar *lv = f.var("cell_lengths"), *av = f.var("cell_angles"), *tv = f.var("time"), *vv = f.var("velocities");
+  Trajectory t;
+  t.topology = topology;
+  std::vector<double> times;
+  for (uint64_t r = 0; r < f.numrecs; ++r) {
+    const auto x = nc_read(f, *xv, r);
+    std::vector<Vec3> p(n);
+    for (size_t i = 0; i < n; ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+    t.positions.push_back(std::move(p));
+    Cell cell = topology.cell;
+    if (lv && av) {
+      const auto l = nc_read(f, *lv, lv->record ? r : 0), a = nc_read(f, *av, av->record ? r : 0);
+      if (l.size() == 3 && a.size() == 3 && l[0] > 0) cell = box_cell(l[0], l[1], l[2], a[0], a[1], a[2]);
+    }
+    t.cells.push_back(cell);
+    t.timesteps.push_back(int64_t(r));
+    if (tv && tv->record) times.push_back(nc_read(f, *tv, r).at(0));
+    if (r == 0 && vv && vv->record) {   // the first frame's velocities (Å/ps after the file's scale factor) as the structure's
+      const auto v = nc_read(f, *vv, 0);
+      t.topology.velocities.clear();
+      for (size_t i = 0; i < n && v.size() == 3 * n; ++i) t.topology.velocities.push_back(Vec3{v[3 * i], v[3 * i + 1], v[3 * i + 2]} * 1e-3);
+    }
+    if (progress && !progress(double(r + 1) / double(std::max<uint64_t>(1, f.numrecs)), t)) {
+      t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
+      break;
+    }
+    if (max_frames && t.frames() >= max_frames) break;
+  }
+  if (t.frames() == 0) throw ReadError(path + ": no frames");
+  t.topology.cell = t.cells.front();
+  t.topology.unwrapped = false;
+  std::string note = std::to_string(t.frames()) + " frames from " + std::filesystem::path(path).filename().string() + " (AMBER NetCDF)";
+  if (times.size() > 1) {
+    char b[96];
+    std::snprintf(b, sizeof b, ", %.4g to %.4g ps", times.front(), times.back());
+    note += b;
+  }
+  t.topology.notes.push_back(note);
+  return t;
+}
+
+Trajectory read_amber_mdcrd(const std::string& path, const System& topology, size_t max_frames,
+                            const std::function<bool(double, const Trajectory&)>& progress) {
+  std::ifstream in(path);
+  if (!in) throw ReadError("cannot open " + path);
+  const size_t n = topology.atoms.size(), n3 = 3 * n;
+  if (n == 0) throw ReadError(path + ": the topology has no atoms");
+  const bool box = topology.cell.valid();   // AMBER writes a box line after each frame of a periodic run
+  double al = 90, be = 90, ga = 90;
+  if (box) {
+    auto ang = [](const Vec3& u, const Vec3& v) { return std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / kPi; };
+    al = ang(topology.cell.b, topology.cell.c), be = ang(topology.cell.a, topology.cell.c), ga = ang(topology.cell.a, topology.cell.b);
+  }
+  const auto size = double(std::filesystem::file_size(path));
+  std::string line;
+  std::getline(in, line);   // title
+  Trajectory t;
+  t.topology = topology;
+  std::vector<double> v;
+  v.reserve(n3);
+  size_t ln = 1;
+  auto fields = [&](const std::string& l, std::vector<double>& out) {
+    for (size_t p = 0; p < l.size(); p += 8) {
+      const std::string f = trim(l.substr(p, 8));
+      if (f.empty()) continue;
+      if (f.find('*') != std::string::npos) throw ReadError(path + ":" + std::to_string(ln) + ": a coordinate overflowed its 8 columns (********)");
+      try { out.push_back(std::stod(f)); } catch (...) { throw ReadError(path + ":" + std::to_string(ln) + ": '" + f + "' is not a number"); }
+    }
+  };
+  while (std::getline(in, line)) {
+    ++ln;
+    if (!line.empty() && line.back() == '\r') line.pop_back();
+    if (trim(line).empty()) continue;
+    fields(line, v);
+    if (v.size() < n3) continue;
+    if (v.size() > n3) throw ReadError(path + ":" + std::to_string(ln) + ": a frame's coordinates run past " + std::to_string(n) + " atoms (another topology?)");
+    std::vector<Vec3> p(n);
+    for (size_t i = 0; i < n; ++i) p[i] = {v[3 * i], v[3 * i + 1], v[3 * i + 2]};
+    v.clear();
+    Cell cell = topology.cell;
+    if (box) {
+      if (!std::getline(in, line)) throw ReadError(path + ": the last frame has no box line (the topology is periodic)");
+      ++ln;
+      std::vector<double> b;
+      {   // 3F8.3 as AMBER writes it; some writers separate wider columns by spaces (mdtraj: %8.3f %8.3f %8.3f)
+        std::istringstream ws(line);
+        for (double x; ws >> x;) b.push_back(x);
+        if (!ws.eof() || (b.size() != 3 && b.size() != 6)) b.clear(), fields(line, b);
+      }
+      if (b.size() != 3 && b.size() != 6) throw ReadError(path + ":" + std::to_string(ln) + ": a box line of 3 lengths expected after the frame, found " + std::to_string(b.size()) + " values");
+      cell = b.size() == 6 ? box_cell(b[0], b[1], b[2], b[3], b[4], b[5]) : box_cell(b[0], b[1], b[2], al, be, ga);
+    }
+    t.positions.push_back(std::move(p));
+    t.cells.push_back(cell);
+    t.timesteps.push_back(int64_t(t.frames() - 1));
+    if (progress && !progress(size > 0 ? double(in.tellg()) / size : 1.0, t)) {
+      t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
+      break;
+    }
+    if (max_frames && t.frames() >= max_frames) break;
+  }
+  if (!v.empty()) throw ReadError(path + ": the file ends inside a frame (" + std::to_string(v.size() / 3) + " of " + std::to_string(n) + " atoms)");
+  if (t.frames() == 0) throw ReadError(path + ": no frames");
+  t.topology.cell = t.cells.front();
+  t.topology.unwrapped = false;
+  t.topology.notes.push_back(std::to_string(t.frames()) + " frames from " + std::filesystem::path(path).filename().string() + " (AMBER mdcrd, 0.001 Å)" +
+                             (box ? ", a box per frame" : ""));
+  return t;
 }
 
 }  // namespace caps

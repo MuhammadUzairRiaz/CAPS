@@ -25,6 +25,14 @@ std::string detect_format(const std::string& path) {
     if (e == ".trr") return "trr";
     if (e == ".dcd") return "dcd";
     if (is_amber_topology_path(path)) return "amber-prmtop";
+    {   // NetCDF: an AMBER restart (ncrst, or a NetCDF rst7) or trajectory
+      char m[4] = {0, 0, 0, 0};
+      std::ifstream b(path, std::ios::binary);
+      b.read(m, 4);
+      if ((m[0] == 'C' && m[1] == 'D' && m[2] == 'F') || (m[0] == '\x89' && m[1] == 'H' && m[2] == 'D' && m[3] == 'F'))
+        return is_amber_coordinates_path(path) ? "amber-crd" : "amber-netcdf";
+    }
+    if (e == ".mdcrd" || e == ".x" || e == ".trj") return "amber-mdcrd";
     if (e == ".sdf" || e == ".sd" || e == ".mol" || e == ".mdl") return "sdf";
     if (e == ".poscar" || e == ".vasp" || stem.rfind("poscar", 0) == 0 || stem.rfind("contcar", 0) == 0) return "poscar";
   }
@@ -38,6 +46,7 @@ std::string detect_format(const std::string& path) {
   if (is_amber_coordinates_path(path) && !l1.empty() && l1[0] != '*') {
     const auto t = split(l2);
     if (!t.empty() && t.size() <= 2 && t[0].find_first_not_of("0123456789") == std::string::npos) return "amber-crd";
+    if (lower(std::filesystem::path(path).extension().string()) == ".crd") return "amber-mdcrd";   // a trajectory: coordinates from line 2
   }
   {
     const std::string e = lower(std::filesystem::path(path).extension().string());
@@ -77,7 +86,7 @@ std::string detect_format(const std::string& path) {
     std::getline(in, l4);
     if (l4.find("V2000") != std::string::npos || l4.find("V3000") != std::string::npos) return "sdf";
   }
-  throw ReadError(path + ": format not recognised (supported: LAMMPS data, dump and DCD, GROMACS .gro/.top, .xtc and .trr, AMBER prmtop with inpcrd / rst7, PDB, mol2, SDF/MOL, XYZ, CIF, VASP POSCAR, Materials Studio .car/.mdf)");
+  throw ReadError(path + ": format not recognised (supported: LAMMPS data, dump and DCD, GROMACS .gro/.top, .xtc and .trr, AMBER prmtop with inpcrd / rst7 / NetCDF / mdcrd, PDB, mol2, SDF/MOL, XYZ, CIF, VASP POSCAR, Materials Studio .car/.mdf)");
 }
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) { return open_file(path, topology_path, OpenProgress{}); }
@@ -98,6 +107,8 @@ const char* format_name(const std::string& f) {
   if (f == "poscar") return "VASP POSCAR";
   if (f == "amber-prmtop") return "AMBER topology";
   if (f == "amber-crd") return "AMBER coordinates";
+  if (f == "amber-netcdf") return "AMBER NetCDF";
+  if (f == "amber-mdcrd") return "AMBER mdcrd";
   return "XYZ";
 }
 }  // namespace
@@ -169,7 +180,7 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     if (!C.velocities.empty()) s.velocities = C.velocities;
     if (C.has_box) s.cell = C.cell;
     s.forcefield = T.ff;
-    s.notes.push_back("topology and force field from " + std::filesystem::path(top_path).filename().string() + ", coordinates from " +
+    s.notes.push_back(std::string(T.ff ? "topology and force field from " : "topology from ") + std::filesystem::path(top_path).filename().string() + ", coordinates from " +
                       std::filesystem::path(crd_path).filename().string() + (C.velocities.empty() ? "" : " (with velocities)"));
     Trajectory t;
     std::vector<Vec3> p;
@@ -230,19 +241,22 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr.positions.push_back(std::move(p));
     tr.cells.push_back(tr.topology.cell);
     tr.timesteps.push_back(0);
-  } else if (fmt == "xtc" || fmt == "trr" || fmt == "dcd") {
-    // coordinates only: the atoms from the structure or topology given with them
-    if (topology_path.empty())
-      throw ReadError(path + ": a " + format_name(fmt) + " trajectory holds coordinates only — open it with its structure (.gro, .pdb, .data, .top …)");
-    const std::string tl0 = lower(std::filesystem::path(topology_path).extension().string());
+  } else if (fmt == "xtc" || fmt == "trr" || fmt == "dcd" || fmt == "amber-netcdf" || fmt == "amber-mdcrd") {
+    // coordinates only: the atoms from the structure or topology given with them (an AMBER trajectory's prmtop beside it)
+    const bool amb = fmt == "amber-netcdf" || fmt == "amber-mdcrd";
+    const std::string topo = !topology_path.empty() ? topology_path : amb ? sibling(path, {".prmtop", ".parm7"}) : std::string();
+    if (topo.empty())
+      throw ReadError(path + ": a " + format_name(fmt) + " trajectory holds coordinates only — open it with its " +
+                      (amb ? "topology (.prmtop / .parm7) or structure" : "structure (.gro, .pdb, .data, .top …)"));
+    const std::string tl0 = lower(std::filesystem::path(topo).extension().string());
     System top;
-    if (tl0 == ".top" || tl0 == ".itp") top = read_gromacs_topology(topology_path);
-    else if (is_amber_topology_path(topology_path)) {
-      AmberTopology T = read_amber_prmtop(topology_path);
+    if (tl0 == ".top" || tl0 == ".itp") top = read_gromacs_topology(topo);
+    else if (is_amber_topology_path(topo)) {
+      AmberTopology T = read_amber_prmtop(topo);
       top = std::move(T.system);
       top.forcefield = T.ff;
     } else {
-      const Trajectory st = open_file(topology_path);
+      const Trajectory st = open_file(topo);
       top = st.frame(0);
       top.bonds = st.topology.bonds;
     }
@@ -251,7 +265,9 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
       return report(3, f, std::to_string(t.frames()) + " frames");
     };
     tr = fmt == "xtc" ? read_xtc(path, top, progress.max_frames, prog) : fmt == "trr" ? read_trr(path, top, progress.max_frames, prog)
-                      : read_dcd(path, top, progress.max_frames, prog);
+       : fmt == "amber-netcdf" ? read_amber_netcdf(path, top, progress.max_frames, prog)
+       : fmt == "amber-mdcrd" ? read_amber_mdcrd(path, top, progress.max_frames, prog)
+                              : read_dcd(path, top, progress.max_frames, prog);
     for (size_t i = 0; i < tr.topology.atoms.size(); ++i) tr.topology.atoms[i].pos = tr.positions.front()[i];
     if (!top.bonds.empty()) tr.topology.bonds_from_file = true;
   } else if (fmt == "sdf" || fmt == "poscar") {
@@ -290,7 +306,7 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
                       std::to_string(T.topology->vsites.size()) + " virtual sites");
     tr.topology = std::move(T);
   }
-  if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top || fmt == "amber-prmtop" || fmt == "amber-crd") && !topology_path.empty());
+  if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top || fmt.rfind("amber-", 0) == 0) && !topology_path.empty());
   report(3, 1, std::to_string(tr.frames()) + " frames");
   if (tr.topology.bonds.empty() && !tr.topology.bonds_from_file) {   // a file that declares its bonds (0 too) keeps them
     System f0 = tr.frame(0);

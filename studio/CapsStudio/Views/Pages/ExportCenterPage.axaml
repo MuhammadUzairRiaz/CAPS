@@ -156,6 +156,8 @@
             <CheckBox Content="Write for GROMACS" IsChecked="{Binding EngineGromacs}" />
             <CheckBox Content="Also for DL_POLY 4 (FIELD, CONFIG, CONTROL)" IsChecked="{Binding EngineDlpoly}"
                       ToolTip.Tip="DL_POLY 4 input, units kcal, in the conventions of the DL_POLY force-field tools (for PCFF, CVFF, COMPASS and OPLS 2005 term for term the files those tools write: bench/ff/check_dlpoly.py). DL_POLY has no class II cross terms: they are named in the notes when left out" />
+            <CheckBox Content="Also for AMBER / OpenMM (prmtop, inpcrd)" IsChecked="{Binding EngineAmber}"
+                      ToolTip.Tip="An AMBER topology and restart from the assigned force field: every term, and a Lennard-Jones table with each type pair as the force field mixes it (geometric OPLS mixing too). Checked against OpenMM reading the same files. Class II, Urey–Bradley, harmonic impropers and separate 1-4 parameters have no AMBER form: the reason is given instead" />
             <!-- a force field GROMACS has no functions for (class II): said here; the LAMMPS files still export -->
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding EngineGromacsRefused}">
               <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource WarnB}" VerticalAlignment="Top" Margin="0,2,0,0" />

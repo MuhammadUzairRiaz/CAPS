@@ -92,6 +92,9 @@ struct Parser {
     if (t.compare(p, 4, "true") == 0) { p += 4; return Json(true); }
     if (t.compare(p, 5, "false") == 0) { p += 5; return Json(false); }
     if (t.compare(p, 4, "null") == 0) { p += 4; return Json(); }
+    if (t.compare(p, 3, "NaN") == 0) { p += 3; return Json(std::nan("")); }
+    if (t.compare(p, 8, "Infinity") == 0) { p += 8; return Json(HUGE_VAL); }
+    if (t.compare(p, 9, "-Infinity") == 0) { p += 9; return Json(-HUGE_VAL); }
     if (c == '-' || (c >= '0' && c <= '9')) {
       char* end = nullptr;
       const double d = std::strtod(t.c_str() + p, &end);
@@ -210,7 +213,9 @@ void Json::dump_to(std::string& out, int indent, int depth) const {
     case Bool: out += b_ ? "true" : "false"; break;
     case Number: {
       char b[32];
-      if (std::isfinite(d_) && d_ == std::floor(d_) && std::fabs(d_) < 1e15) std::snprintf(b, sizeof b, "%.0f", d_);
+      // not a JSON number: NaN / Infinity as Python's json module (and this parser) read them (overlapping atoms, 0/0)
+      if (!std::isfinite(d_)) { out += std::isnan(d_) ? "NaN" : d_ > 0 ? "Infinity" : "-Infinity"; break; }
+      if (d_ == std::floor(d_) && std::fabs(d_) < 1e15) std::snprintf(b, sizeof b, "%.0f", d_);
       else std::snprintf(b, sizeof b, "%.10g", d_);
       out += b;
       break;
