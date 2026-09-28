@@ -534,6 +534,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     r.colours = st.colour;
     for (size_t i = 0; i < r.colours.size(); ++i) if (st.selected[i]) r.colours[i] = 0xE5484D;   // selected particles in red
     r.segments = st.segments;
+    for (const auto& pm : st.meshes) if (pm.mesh) r.meshes.push_back({pm.mesh.get(), pm.rgb, pm.opacity});
     // the pipeline's Radius (Å) and Transparency (0 … 1) properties, drawn
     if (auto it = st.props.find("Radius"); it != st.props.end() && it->second.size() == st.system.atoms.size())
       r.radius.assign(it->second.begin(), it->second.end());
