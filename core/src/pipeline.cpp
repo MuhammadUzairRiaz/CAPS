@@ -486,9 +486,37 @@ void step_coordination(PipelineState& st, const Json& p, StepStatus& out) {
 void step_compute_property(PipelineState& st, const Json& p, StepStatus& out) {
   std::string name = p.text("name", "Custom");
   if (name.empty()) throw std::invalid_argument("the property needs a name");
-  const auto v = evaluate_expression(st, p.text("expression", "0"));
+  auto v = evaluate_expression(st, p.text("expression", "0"));
   const bool only_sel = flag(p, "only_selected", false);
   const size_t n = v.size();
+  // neighbour terms: Σ over the neighbours j (within the cutoff, or bonded) of the neighbour expression
+  std::string terms;
+  const std::string nexpr = p.text("neighbour_expression", "");
+  if (flag(p, "neighbours", false) && nexpr.find_first_not_of(" \t") != std::string::npos) {
+    const std::string mode = p.text("neighbour_mode", "cutoff");
+    const double rc = p.num("cutoff", 3.0);
+    std::vector<uint32_t> centre, nbr;
+    std::vector<Vec3> delta;
+    auto pair = [&](uint32_t i, uint32_t j, const Vec3& d) {
+      centre.push_back(i), nbr.push_back(j), delta.push_back(d);
+      centre.push_back(j), nbr.push_back(i), delta.push_back(d * -1.0);
+    };
+    if (mode == "bonds") {
+      for (const auto& b : st.system.bonds) {
+        Vec3 d = st.system.atoms[b.j].pos - st.system.atoms[b.i].pos;
+        if (st.system.cell.valid()) d = st.system.cell.minimum_image(d);
+        pair(b.i, b.j, d);
+      }
+    } else if (mode == "cutoff") {
+      if (rc <= 0 || rc > 30) throw std::invalid_argument("neighbour cutoff: 0 < rc ≤ 30 Å");
+      for_pairs(st.system, rc, [&](uint32_t i, uint32_t j, double, const Vec3& d) { pair(i, j, d); });
+    } else {
+      throw std::invalid_argument("neighbour_mode: cutoff or bonds");
+    }
+    const auto t = evaluate_pair_expression(st, nexpr, nbr, delta);
+    for (size_t k = 0; k < t.size(); ++k) v[centre[k]] += t[k];
+    terms = " · + Σ " + nexpr + " over " + std::to_string(centre.size()) + " neighbour pairs" + (mode == "bonds" ? " (bonded)" : " within " + fmt("%.2g Å", rc));
+  }
   auto& atoms = st.system.atoms;
   size_t k = 0;
   auto write = [&](auto&& set) { for (size_t i = 0; i < n; ++i) if (!only_sel || st.selected[i]) { set(i, v[i]); ++k; } };
@@ -504,7 +532,7 @@ void step_compute_property(PipelineState& st, const Json& p, StepStatus& out) {
   }
   double lo = 1e300, hi = -1e300;
   for (double x : v) if (std::isfinite(x)) { lo = std::min(lo, x); hi = std::max(hi, x); }
-  out.summary = name + " · " + (lo <= hi ? fmt("%.4g", lo) + " … " + fmt("%.4g", hi) : std::string("no finite values"));
+  out.summary = name + " · " + (lo <= hi ? fmt("%.4g", lo) + " … " + fmt("%.4g", hi) : std::string("no finite values")) + terms;
 }
 
 // Positions folded back by whole lattice vectors: the shift of each atom as integer images (for the tables)

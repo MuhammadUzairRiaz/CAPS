@@ -293,4 +293,36 @@ std::vector<double> evaluate_expression(const PipelineState& st, const std::stri
   return out;
 }
 
+std::vector<double> evaluate_pair_expression(const PipelineState& st, const std::string& expr, const std::vector<uint32_t>& neighbour,
+                                             const std::vector<Vec3>& delta) {
+  const size_t np = neighbour.size();
+  std::map<std::string, std::vector<double>> cache;
+  auto lookup = [&](const std::string& name) -> const std::vector<double>* {
+    auto it = cache.find(name);
+    if (it != cache.end()) return &it->second;
+    std::vector<double> v(np);
+    if (name == "Distance") {
+      for (size_t k = 0; k < np; ++k) v[k] = norm(delta[k]);
+    } else if (name == "Delta.X" || name == "Delta.Y" || name == "Delta.Z") {
+      const size_t c = size_t(name.back() - 'X');
+      for (size_t k = 0; k < np; ++k) v[k] = delta[k][c];
+    } else {   // the neighbour's own property
+      std::vector<double> per;
+      if (!property_values(st, name, per)) return nullptr;
+      for (size_t k = 0; k < np; ++k) v[k] = per[neighbour[k]];
+    }
+    return &(cache[name] = std::move(v));
+  };
+  std::string text = expr;
+  for (const auto& [from, to] : {std::pair<std::string, std::string>{"\u2212", "-"}, {"\u00D7", "*"}, {"\u00B7", "*"}}) {
+    for (size_t k = text.find(from); k != std::string::npos; k = text.find(from, k + to.size())) text.replace(k, from.size(), to);
+  }
+  if (text.find_first_not_of(" \t\r\n") == std::string::npos) return std::vector<double>(np, 1.0);
+  Parser parser(text, lookup);
+  const auto root = parser.parse();
+  std::vector<double> out(np);
+  for (size_t k = 0; k < np; ++k) out[k] = root->eval(k).scalar();
+  return out;
+}
+
 }  // namespace caps
