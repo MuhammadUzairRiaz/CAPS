@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cmath>
 #include <map>
 #include <string>
@@ -530,4 +531,24 @@ TEST(Polymer, LogNormalAndHistogramChainLengths) {
   const double f20 = double(std::count(h.begin(), h.end(), 20)) / h.size();
   EXPECT_NEAR(f20, 0.75, 0.01);
   EXPECT_THROW(draw_chain_lengths(std::vector<std::pair<int, double>>{{1, 1}}, 5, 1), std::invalid_argument);
+}
+
+TEST(Polymer, ParallelTrialsGiveTheSameCell) {
+  GrowOptions o;
+  o.chains = 6;
+  o.density = 0.5;
+  o.seed = 9;
+  const ChainSpec c = spec({"*CC(*)c1ccccc1"}, Sequence::Homopolymer, 12);
+  o.threads = 1;
+  const auto t0 = std::chrono::steady_clock::now();
+  const System a = grow_chains(c, o);
+  const auto t1 = std::chrono::steady_clock::now();
+  o.threads = 4;
+  const System b = grow_chains(c, o);
+  const auto t2 = std::chrono::steady_clock::now();
+  ASSERT_EQ(a.atoms.size(), b.atoms.size());
+  double d = 0;
+  for (size_t i = 0; i < a.atoms.size(); ++i) d = std::max(d, norm(a.atoms[i].pos - b.atoms[i].pos));
+  EXPECT_EQ(d, 0.0);
+  std::printf("serial %.2f s · 4 threads %.2f s\n", std::chrono::duration<double>(t1 - t0).count(), std::chrono::duration<double>(t2 - t1).count());
 }

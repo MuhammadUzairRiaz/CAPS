@@ -31,6 +31,7 @@ struct GrowOptions {
   int max_backtracks = 0;                // per chain start; 0 = 400, or 40 × dp when escalating
   int max_restarts = 400;                // new start points per chain before giving up
   double accept = -0.05;                 // worst allowed (distance − limit), Å
+  int threads = 0;                       // grow_chains: threads scoring the trials of a step (0: up to 8; 1: serial)
   int lookahead = 1;                     // grow_chains: bonds ahead that need room (1: the next head; 2–4 also points further along)
   // Called once per growth round with (chains finished, chains, restarts so far); return false to cancel.
   std::function<bool(int, int, int)> progress;
