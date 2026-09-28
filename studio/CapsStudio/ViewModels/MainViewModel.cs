@@ -1094,6 +1094,7 @@ public sealed partial class MainViewModel : ObservableObject
                         Publish(string.Format(inv, "stage {0} of {1} · iteration {2} · E {3:F1} kcal/mol · |F|max {4:F3} · {5:F3} g/cm³ · {6:F1} s",
                             st, n, it, e, f, d, sw.Elapsed.TotalSeconds));
                     }
+                    WaitIfPaused(token);
                     return !token.IsCancellationRequested;
                 });
                 Publish(null);
@@ -1120,7 +1121,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    public void CancelRelax() => _relaxCancel?.Cancel();
+    public void CancelRelax() { _relaxCancel?.Cancel(); ResumeRun(); }
 
     // ---------------------------------------------------------------- Dynamics
     public static readonly string[] Ensembles = ["NVE (no thermostat)", "NVT", "NPT (isotropic)", "NPH (Berendsen, no thermostat)"];
@@ -1416,7 +1417,18 @@ public sealed partial class MainViewModel : ObservableObject
         await RunMd((_mdCheckpointStep, _mdCheckpointSteps - _mdCheckpointStep));
     }
 
-    private async Task RunMd((long Offset, long Steps)? resume)
+    /// <summary>The Dynamics settings as the core takes them (also captured when a run is queued).</summary>
+    private CapsMdOpts MdOptions((long Offset, long Steps)? resume) => new()
+    {
+        Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,
+        Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,
+        Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
+        NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
+        ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
+        Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
+    };
+
+    private async Task RunMd((long Offset, long Steps)? resume, CapsMdOpts? preset = null, int? ensemble = null)
     {
         if (_doc == null || !Idle || BlockedByField("Dynamics")) return;
         if (resume == null) PrepareRunTarget("MD");
@@ -1427,19 +1439,12 @@ public sealed partial class MainViewModel : ObservableObject
         IsPlaying = false;
         _mdCancel = new CancellationTokenSource();
         var token = _mdCancel.Token;
-        var o = new CapsMdOpts
-        {
-            Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,
-            Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,
-            Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
-            NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
-            ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
-        };
+        var o = preset ?? MdOptions(resume);
+        var ens = ensemble ?? _mdEnsemble;
         _thermo.Clear();
         ThermoChanged?.Invoke();
         MdLog = "Starting…";
-        Status = $"Running {Ensembles[_mdEnsemble]} dynamics on {Title}…";
+        Status = $"Running {Ensembles[ens]} dynamics on {Title}…";
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var inv = CultureInfo.InvariantCulture;
         var rows = new List<CapsThermo>();
@@ -1460,7 +1465,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             StartLive();
-            var live = LiveReceiver(new[] { "NVE", "NVT", "NPT", "NPH" }[_mdEnsemble] + " dynamics");
+            var live = LiveReceiver(new[] { "NVE", "NVT", "NPT", "NPH" }[ens] + " dynamics");
             var report = await Task.Run(() =>
             {
                 var r = doc.Md(o, (row, n) =>
@@ -1474,6 +1479,7 @@ public sealed partial class MainViewModel : ObservableObject
                         Publish(string.Format(inv, "step {0:N0} of {1:N0} · {2:F2} ps · T {3:F1} K · P {4:F0} atm · ρ {5:F4} g/cm³ · E {6:F1} kcal/mol · {7:F0} s left",
                             row.Step, n + o.StepOffset, row.TimePs, row.Temperature, row.Pressure, row.Density, row.Total, eta));
                     }
+                    WaitIfPaused(token);
                     return !token.IsCancellationRequested;
                 }, live);
                 Publish(null);
@@ -1501,7 +1507,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    public void CancelMd() => _mdCancel?.Cancel();
+    public void CancelMd() { _mdCancel?.Cancel(); ResumeRun(); }
 
     // ---------------------------------------------------------------- Equilibrate
     public static readonly string[] Protocols = ["Larsen et al. 21-step (2011)", "Simulated annealing", "MD push-off", "Custom (edit the text)"];
@@ -1638,7 +1644,15 @@ public sealed partial class MainViewModel : ObservableObject
         Status = "Accepted as equilibrated; the decision and the unmet criteria are in the provenance";
     }
 
-    private async Task RunEquilibrate(string? protocol, bool? until)
+    /// <summary>The equilibration settings as the core takes them (also captured when a run is queued).</summary>
+    private CapsEquilOpts EqOptions(bool? until) => new()
+    {
+        Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
+        Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
+        FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
+    };
+
+    private async Task RunEquilibrate(string? protocol, bool? until, CapsEquilOpts? preset = null, double[]? presetTarget = null)
     {
         if (_doc == null || !Idle || BlockedByField("Equilibrate")) return;
         PrepareRunTarget("equilibrated");
@@ -1647,14 +1661,9 @@ public sealed partial class MainViewModel : ObservableObject
         IsPlaying = false;
         _eqCancel = new CancellationTokenSource();
         var token = _eqCancel.Token;
-        var o = new CapsEquilOpts
-        {
-            Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
-            FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
-        };
+        var o = preset ?? EqOptions(until);
         // the internal-distance target curve, pinned for the run
-        var target = EqTargetCurve();
+        var target = presetTarget ?? EqTargetCurve();
         var pin = target.Length > 0 ? System.Runtime.InteropServices.GCHandle.Alloc(target, System.Runtime.InteropServices.GCHandleType.Pinned) : default;
         if (pin.IsAllocated) { o.InternalTarget = pin.AddrOfPinnedObject(); o.InternalTargetN = target.Length; }
         _thermo.Clear();
@@ -1667,7 +1676,7 @@ public sealed partial class MainViewModel : ObservableObject
         var lastUi = 0L;
         var finished = false;
         var text = protocol ?? _eqText;
-        if (protocol == null) _eqAccepted = false;
+        if (protocol == null || preset != null) _eqAccepted = false;
         // each stage's ensemble from the protocol text (its first word: nvt, npt, …); production blocks are NPT
         var ens = text.Split('\n').Select(l => l.Split('#')[0].Trim()).Where(l => l.Length > 0)
                       .Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].ToUpperInvariant()).ToArray();
@@ -1712,6 +1721,7 @@ public sealed partial class MainViewModel : ObservableObject
                         Publish(string.Format(inv, "stage {0} of {1}: {2}\n{3:F2} ps · T {4:F1} K · P {5:F0} atm · ρ {6:F4} g/cm³ · {7:F0} s so far",
                             st, n, label, row.TimePs, row.Temperature, row.Pressure, row.Density, sw.Elapsed.TotalSeconds));
                     }
+                    WaitIfPaused(token);
                     return !token.IsCancellationRequested;
                 }, live);
                 Publish(null);
@@ -1739,7 +1749,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    public void CancelEquilibrate() => _eqCancel?.Cancel();
+    public void CancelEquilibrate() { _eqCancel?.Cancel(); ResumeRun(); }
 
     // ---- configurational-bias Monte Carlo (Equilibrate › Chain ends): Siepmann & Frenkel regrowth with the Field assignment
     private int _cbMoves = 2000, _cbTrials = 8, _cbTorsions = 4;

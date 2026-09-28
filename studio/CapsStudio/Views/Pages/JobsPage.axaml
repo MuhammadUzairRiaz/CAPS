@@ -98,7 +98,13 @@
             <Button Click="OnGoModule" ToolTip.Tip="The page this job runs from">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="sliders" Size="15" VerticalAlignment="Center" /><TextBlock Text="Settings" VerticalAlignment="Center" /></StackPanel>
             </Button>
-            <Button Click="OnCancel" IsVisible="{Binding IsRunning}">
+            <Button Click="OnPause" IsVisible="{Binding ShowPause}" ToolTip.Tip="Hold the run at its next report; Resume carries on from the same step">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="pause" Size="15" VerticalAlignment="Center" /><TextBlock Text="Pause" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Classes="primary" Click="OnPause" IsVisible="{Binding Paused}">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="Resume" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button Click="OnCancel" IsVisible="{Binding CanCancel}">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock Text="Cancel" VerticalAlignment="Center" /></StackPanel>
             </Button>
           </StackPanel>

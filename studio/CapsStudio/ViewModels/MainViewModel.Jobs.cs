@@ -34,26 +34,32 @@ public sealed class Job : INotifyPropertyChanged
     public string Title { get; init; } = "";
     public string Document { get; init; } = "";
     public long Atoms { get; init; }
-    public DateTime Started { get; init; } = DateTime.Now;
+    public DateTime Started { get; set; } = DateTime.Now;
     private DateTime? _ended;
     public DateTime? Ended { get => _ended; set { _ended = value; Raise(nameof(Ended)); Raise(nameof(Duration)); } }
 
     private string _status = "running";
-    /// <summary>running | done | failed | cancelled | stopped (finished without meeting its target)</summary>
+    /// <summary>queued | running | done | failed | cancelled | stopped (finished without meeting its target)</summary>
     public string Status
     {
         get => _status;
         set
         {
             _status = value;
-            foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText) }) Raise(n);
+            foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel) }) Raise(n);
         }
     }
     public bool IsRunning => _status == "running";
+    public bool IsQueued => _status == "queued";
+    private bool _paused;
+    /// <summary>A running job held at its next report (Pause); nothing is lost.</summary>
+    public bool Paused { get => _paused; set { _paused = value; Raise(nameof(Paused)); Raise(nameof(StatusText)); Raise(nameof(ShowPause)); } }
+    public bool ShowPause => IsRunning && !_paused && Kind is "Dynamics" or "Equilibrate" or "Relax";
+    public bool CanCancel => IsRunning || IsQueued;
     public bool IsFailed => _status == "failed";
     public bool IsDone => _status == "done";
     public bool IsQuiet => _status is "cancelled" or "stopped";
-    public string StatusText => _status == "stopped" ? "stopped" : _status;
+    public string StatusText => _paused && _status == "running" ? "paused" : _status;
 
     private double _progress;
     public double Progress { get => _progress; set { _progress = Math.Clamp(value, 0, 1); Raise(nameof(Progress)); Raise(nameof(ProgressWidth)); } }
@@ -148,7 +154,8 @@ public sealed partial class MainViewModel
         {
             var r = Jobs.Count(j => j.IsRunning);
             var f = Jobs.Count(j => j.IsFailed);
-            return Jobs.Count == 0 ? "no jobs" : $"{r} running · {Jobs.Count(j => j.IsDone)} done{(f > 0 ? $" · {f} failed" : "")}";
+            var q = Jobs.Count(j => j.IsQueued);
+            return Jobs.Count == 0 ? "no jobs" : $"{r} running{(q > 0 ? $" · {q} queued" : "")} · {Jobs.Count(j => j.IsDone)} done{(f > 0 ? $" · {f} failed" : "")}";
         }
     }
 
@@ -185,6 +192,7 @@ public sealed partial class MainViewModel
 
     private void OnRunProperty(object? s, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(MdRunning) or nameof(EqRunning) or nameof(Relaxing)) Raise(nameof(CanPause));
         switch (e.PropertyName)
         {
             case nameof(Growing): Track("Grow", Growing, 0, "Grow · amorphous cell"); break;
@@ -217,14 +225,26 @@ public sealed partial class MainViewModel
     {
         if (running && !_live.ContainsKey(kind))
         {
-            var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
-            var s = _doc?.Summary();
-            var job = new Job
+            Job job;
+            if (_starting is { } q && q.Kind == kind)   // a queued job starting: the same entry runs
             {
-                Id = $"{kind.ToLowerInvariant()}-{k}", Kind = kind, Module = module, Title = title,
-                Document = kind == "Grow" || kind == "Pack" ? "new cell" : Title, Atoms = kind == "Grow" || kind == "Pack" ? 0 : s?.Atoms ?? 0,
-                Provenance = Manifest(kind),
-            };
+                job = q;
+                _starting = null;
+                job.Status = "running";
+                job.Started = DateTime.Now;
+                Jobs.Remove(job);
+            }
+            else
+            {
+                var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
+                var s = _doc?.Summary();
+                job = new Job
+                {
+                    Id = $"{kind.ToLowerInvariant()}-{k}", Kind = kind, Module = module, Title = title,
+                    Document = kind == "Grow" || kind == "Pack" ? "new cell" : Title, Atoms = kind == "Grow" || kind == "Pack" ? 0 : s?.Atoms ?? 0,
+                    Provenance = Manifest(kind),
+                };
+            }
             if (kind is "Dynamics" or "Equilibrate") { job.CurveA = "Density"; job.AxisA = "density (g/cm³)"; job.CurveB = "Temperature"; job.AxisB = "temperature (K)"; job.AxisX = "time (ps)"; }
             else if (kind == "Relax") { job.CurveA = "Energy"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Largest force"; job.AxisB = "log₁₀ |F|max"; job.AxisX = "iteration"; }
             _live[kind] = job;
@@ -258,6 +278,7 @@ public sealed partial class MainViewModel
             AttachJob(job, _activeItem);   // Grow and Pack: the cell they made
             BuildJobOutputs(job);
             SaveJobs();
+            if (_live.Count == 0) { ResumeRun(); Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = StartNextQueued()); }
         }
         Raise(nameof(HasJobs));
         Raise(nameof(JobsSummary));
@@ -357,14 +378,127 @@ public sealed partial class MainViewModel
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(JobsFile)!);
-            var arr = new JsonArray(Jobs.Where(j => !j.IsRunning).Take(40).Select(j => (JsonNode)j.ToJson(false)).ToArray());
+            var arr = new JsonArray(Jobs.Where(j => !j.IsRunning && !j.IsQueued).Take(40).Select(j => (JsonNode)j.ToJson(false)).ToArray());
             File.WriteAllText(JobsFile, arr.ToJsonString(JsonOut));
         }
         catch { }
     }
 
+    // ---------------------------------------------------------------- pause (design/boards/Jobs "Pause")
+    // The run's progress callback waits at this gate while paused: the core holds its state, nothing is lost, and
+    // Resume carries on from the same step. Cancel opens the gate so the run can stop.
+    private readonly ManualResetEventSlim _runGate = new(true);
+    private bool _runPaused;
+    public bool RunPaused { get => _runPaused; private set { if (Set(ref _runPaused, value)) { Raise(nameof(PauseLabel)); foreach (var j in _live.Values) j.Paused = value; } } }
+    public string PauseLabel => _runPaused ? "Resume" : "Pause";
+    public bool CanPause => MdRunning || EqRunning || Relaxing;
+
+    /// <summary>On the run's thread: holds while paused (a cancel still gets through).</summary>
+    private void WaitIfPaused(CancellationToken token)
+    {
+        while (!_runGate.Wait(200)) if (token.IsCancellationRequested) return;
+    }
+
+    public void PauseRun()
+    {
+        if (!CanPause || _runPaused) return;
+        _runGate.Reset();
+        RunPaused = true;
+        Status = "Paused at the run's next report · Resume carries on from the same step";
+    }
+
+    public void ResumeRun()
+    {
+        _runGate.Set();
+        if (_runPaused) { RunPaused = false; Status = CanPause ? "Resumed" : Status; }
+    }
+
+    public void TogglePause() { if (_runPaused) ResumeRun(); else PauseRun(); }
+
+    // ---------------------------------------------------------------- queue (design/boards/Jobs "queued")
+    // Dynamics and Equilibrate runs queued while another run goes, with their settings as they were when queued; each
+    // starts when the one before it ends, on the structure it was queued on.
+    private sealed record QueuedRun(Job Job, CapsDocument Doc, Func<Task> Start);
+    private readonly List<QueuedRun> _queue = new();
+    private Job? _starting;
+    public int QueuedCount => _queue.Count;
+    public string QueueText => _queue.Count == 0 ? "" : $"{_queue.Count} queued";
+
+    private void Enqueue(string kind, int module, string title, Func<Task> start)
+    {
+        if (_doc == null) return;
+        var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
+        var job = new Job
+        {
+            Id = $"{kind.ToLowerInvariant()}-{k}", Kind = kind, Module = module, Title = title, Document = Title, Atoms = _doc.Summary().Atoms,
+            Provenance = Manifest(kind),
+        };
+        job.Status = "queued";
+        job.Add($"{title} queued on {job.Document}; it starts when the current run ends, with the settings as they are now");
+        _queue.Add(new QueuedRun(job, _doc, start));
+        Jobs.Insert(0, job);
+        Raise(nameof(HasJobs)); Raise(nameof(JobsSummary)); Raise(nameof(QueuedCount)); Raise(nameof(QueueText));
+        Status = $"{title} queued · {_queue.Count} in the queue";
+        if (Idle) _ = StartNextQueued();
+    }
+
+    public void QueueMd()
+    {
+        var opts = MdOptions(null);
+        var ens = MdEnsemble;
+        Enqueue("Dynamics", 3, "Dynamics · " + Ensembles[Math.Clamp(ens, 0, Ensembles.Length - 1)], () => RunMd(null, opts, ens));
+    }
+
+    public void QueueEquilibrate()
+    {
+        var text = EqText;
+        var opts = EqOptions(null);
+        var target = EqTargetCurve();
+        var until = opts.UntilConverged != 0;
+        Enqueue("Equilibrate", 4, "Equilibrate · " + Protocols[Math.Clamp(EqProtocol, 0, Protocols.Length - 1)], () => RunEquilibrate(text, until, opts, target));
+    }
+
+    private async Task StartNextQueued()
+    {
+        while (_queue.Count > 0 && Idle)
+        {
+            var q = _queue[0];
+            _queue.RemoveAt(0);
+            Raise(nameof(QueuedCount)); Raise(nameof(QueueText));
+            if (!ReferenceEquals(q.Doc, _doc))
+            {
+                q.Job.Status = "cancelled";
+                q.Job.Add("Not started: the structure it was queued on is no longer the open one");
+                q.Job.Ended = DateTime.Now;
+                continue;
+            }
+            _starting = q.Job;
+            await q.Start();
+            if (q.Job.IsQueued)   // the page refused (a field missing …): it never started
+            {
+                _starting = null;
+                q.Job.Status = "failed";
+                q.Job.Error = "Could not start: " + Status;
+                q.Job.Add(q.Job.Error);
+                q.Job.Ended = DateTime.Now;
+                continue;
+            }
+            return;   // the next one starts when this run ends
+        }
+        Raise(nameof(JobsSummary));
+    }
+
     public void CancelJob(Job? j)
     {
+        if (j is { IsQueued: true })
+        {
+            _queue.RemoveAll(q => q.Job == j);
+            j.Status = "cancelled";
+            j.Add("Removed from the queue");
+            j.Ended = DateTime.Now;
+            Raise(nameof(QueuedCount)); Raise(nameof(QueueText)); Raise(nameof(JobsSummary));
+            return;
+        }
         switch (j?.Kind)
         {
             case "Relax": CancelRelax(); break;
@@ -380,7 +514,7 @@ public sealed partial class MainViewModel
 
     public void ClearJobs()
     {
-        foreach (var j in Jobs.Where(j => !j.IsRunning).ToList()) Jobs.Remove(j);
+        foreach (var j in Jobs.Where(j => !j.IsRunning && !j.IsQueued).ToList()) Jobs.Remove(j);
         SelectedJob = Jobs.FirstOrDefault();
         SaveJobs();
         Raise(nameof(HasJobs));

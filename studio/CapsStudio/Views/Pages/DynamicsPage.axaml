@@ -22,6 +22,12 @@
         <Button Classes="primary" Click="OnRun" IsEnabled="{Binding CanRun}" IsVisible="{Binding !MdRunning}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnQueue" IsVisible="{Binding !Idle}" ToolTip.Tip="Queue this run with the settings as they are now; it starts on this structure when the current run ends (Jobs lists it)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="15" VerticalAlignment="Center" /><TextBlock Text="Queue" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnPause" IsVisible="{Binding MdRunning}" ToolTip.Tip="Hold the run at its next report; Resume carries on from the same step">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="pause" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding PauseLabel}" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Click="OnCancel" IsVisible="{Binding MdRunning}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="16" VerticalAlignment="Center" /><TextBlock Text="Stop" VerticalAlignment="Center" /></StackPanel>
         </Button>
