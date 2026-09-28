@@ -230,7 +230,9 @@
                   <StackPanel Spacing="4" ToolTip.Tip="Torsion and ring trials per growth step; the roomiest is kept">
                     <TextBlock Text="Trial directions k" Classes="label" /><NumericUpDown Value="{Binding GrowTrialsD}" Minimum="4" Maximum="5000" Increment="20" FormatString="0" />
                   </StackPanel>
-                  <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Look-ahead" Classes="label" /><TextBlock Text="1 atom" Classes="mono" Margin="0,7,0,0" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4" ToolTip.Tip="Bonds ahead that must have room: 1 checks where the next unit's head goes; 2–4 also points further along, so a chain does not step into a pocket (fewer dead ends in dense cells, slower per step)">
+                    <TextBlock Text="Look-ahead · bonds" Classes="label" /><NumericUpDown Value="{Binding GrowLookaheadD}" Minimum="1" Maximum="4" Increment="1" FormatString="0" />
+                  </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="4" ToolTip.Tip="Unit templates are cleaned with the default force field (Settings), UFF where it cannot type them">
                     <TextBlock Text="Unit clean-up" Classes="label" /><TextBlock Text="{Binding GrowCleanFf}" Classes="mono" Margin="0,7,0,0" TextTrimming="CharacterEllipsis" />
                   </StackPanel>

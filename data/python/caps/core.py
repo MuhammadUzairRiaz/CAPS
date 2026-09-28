@@ -716,7 +716,7 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             lengths: Optional[dict] = None, chain_dp: Optional[list] = None, architecture: str = "linear",
             arms: Optional[int] = None, arm_dp: Optional[int] = None, spacing: Optional[int] = None,
             branch_probability: Optional[float] = None, generations: Optional[int] = None, region: Optional[dict] = None,
-            method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None) -> Document:
+            method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None, lookahead: int = 1) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
@@ -747,6 +747,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
         r["grow"]["region"] = region
     if orientation:
         r["grow"]["orientation"] = orientation
+    if lookahead > 1:   # bonds ahead that need room (fewer dead ends in dense cells)
+        r["grow"]["lookahead"] = lookahead
     if method != "trials":
         r["grow"]["method"] = method
         r["grow"]["temperature"] = method_temperature
