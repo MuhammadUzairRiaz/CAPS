@@ -111,6 +111,65 @@ public static class FigureDrawing
                 ctx.DrawText(t, new Point(end.X + (a.X >= 0 ? 2 * u : -2 * u - t.Width), end.Y - t.Height / 2 - (a.Y >= 0 ? 3 * u : -3 * u)));
             }
         }
+        if (o.Custom is { Count: > 0 } cmds) DrawCommands(ctx, cmds);
+    }
+
+    /// <summary>A Python overlay's drawing (caps.overlay commands) in the image's pixels.</summary>
+    public static void DrawCommands(DrawingContext ctx, System.Text.Json.Nodes.JsonArray cmds)
+    {
+        static IBrush? Brush(string? c)
+        {
+            if (string.IsNullOrWhiteSpace(c)) return null;
+            var t = c.Trim();
+            if (t.StartsWith('#') && t.Length == 9)   // #RRGGBBAA → Avalonia's #AARRGGBB
+                t = "#" + t[7..9] + t[1..7];
+            return Color.TryParse(t, out var col) ? new SolidColorBrush(col) : null;
+        }
+        foreach (var n in cmds.OfType<System.Text.Json.Nodes.JsonObject>())
+        {
+            double D(string k, double d = 0) => (double?)n[k] ?? d;
+            string? S(string k) => n[k] is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var x) ? x : null;
+            var colour = Brush(S("colour"));
+            switch (S("op"))
+            {
+                case "text":
+                    if (colour == null) break;
+                    var t = Text(S("s") ?? "", (bool?)n["mono"] == true ? Mono : Sans, (bool?)n["bold"] == true ? FontWeight.SemiBold : FontWeight.Normal, Math.Max(1, D("size", 16)), colour);
+                    var x = D("x");
+                    if (S("align") is "centre" or "center") x -= t.Width / 2;
+                    else if (S("align") == "right") x -= t.Width;
+                    ctx.DrawText(t, new Point(x, D("y")));
+                    break;
+                case "line":
+                    if (colour != null) ctx.DrawLine(new Pen(colour, D("width", 2), lineCap: PenLineCap.Round), new Point(D("x1"), D("y1")), new Point(D("x2"), D("y2")));
+                    break;
+                case "polyline":
+                    if (colour == null || n["points"] is not System.Text.Json.Nodes.JsonArray pts || pts.Count < 2) break;
+                    var geo = new StreamGeometry();
+                    using (var g = geo.Open())
+                    {
+                        var first = true;
+                        foreach (var p in pts.OfType<System.Text.Json.Nodes.JsonArray>())
+                        {
+                            var pt = new Point((double?)p[0] ?? 0, (double?)p[1] ?? 0);
+                            if (first) { g.BeginFigure(pt, false); first = false; } else g.LineTo(pt);
+                        }
+                        g.EndFigure((bool?)n["closed"] == true);
+                    }
+                    ctx.DrawGeometry(null, new Pen(colour, D("width", 2), lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), geo);
+                    break;
+                case "rect":
+                    var fill = Brush(S("fill"));
+                    var stroke = Brush(S("stroke"));
+                    ctx.DrawRectangle(fill, stroke == null ? null : new Pen(stroke, D("width", 1)), new Rect(D("x"), D("y"), Math.Max(0, D("w")), Math.Max(0, D("h"))), D("radius"), D("radius"));
+                    break;
+                case "circle":
+                    var cf = Brush(S("fill"));
+                    var cs = Brush(S("stroke"));
+                    ctx.DrawEllipse(cf, cs == null ? null : new Pen(cs, D("width", 1)), new Point(D("x"), D("y")), D("r"), D("r"));
+                    break;
+            }
+        }
     }
 
     /// <summary>Atom labels and the measurement between picked atoms as a transparent layer of w × h (straight-alpha

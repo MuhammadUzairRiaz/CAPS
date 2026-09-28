@@ -1780,6 +1780,14 @@ internal static class SelfTest
                   && (Math.Abs(gd.W - 860) < 1 || Math.Abs(gd.H - 602) < 1) && ropt.AmbientOcclusion == 1 && vm.ViewOptions(100, 100, 1).AmbientOcclusion == 1
                   && spec.BarPx > 0 && spec.Lines.Length == 2,
                   $"render: \"{label}\" · guide {guide?.W:F0} × {guide?.H:F0} in 1000 × 700 · bar {spec.BarLabel}");
+            // the Python overlay: the template script draws its text on the rendered image
+            var ovPng = Path.Combine(outDir, "caps-selftest-overlay.png");
+            var script = vm.NewOverlayScript();
+            System.Text.Json.Nodes.JsonArray? drawn = null;
+            vm.RenderOut(_ => ovPng, false, (rgba, w, h, sp, path) => { drawn = sp.Custom; }).GetAwaiter().GetResult();
+            Check(File.Exists(script) && drawn is { Count: > 0 } && drawn.Any(c => ((string?)c?["s"] ?? "").Contains("ρ =")),
+                  $"python overlay: {drawn?.Count ?? 0} commands · {vm.OvPythonNote} {vm.OvConsole}");
+            vm.OvPython = false;
             vm.SetModule(8);
             Check(vm.ViewOptions(100, 100, 1).AmbientOcclusion == 0, "the Studio view has no ambient occlusion");
         }

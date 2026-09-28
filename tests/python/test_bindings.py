@@ -250,4 +250,21 @@ cure = nr.react("sulfur_allylic", relax=False, seed=3)
 rn = nr.field.assign("pcff-frc")
 check("sulfur_allylic" in caps.reaction_templates() and "reactions" in cure and nr.atoms < n0 + 24 and rn["complete"],
       f"react: sulfur cure {n0} -> {nr.atoms} atoms · {cure.splitlines()[0] if cure else ''} · PCFF complete {rn['complete']}")
+# a render overlay: the script's drawing comes back as commands (text, an inset plot's axes and line)
+import json as _json, os as _os, subprocess as _sp, sys as _sys, tempfile as _tf
+with _tf.TemporaryDirectory() as tmp:
+    script = _os.path.join(tmp, "o.py")
+    with open(script, "w") as f:
+        f.write("from caps.overlay import overlay\n@overlay\ndef draw(canvas, data):\n"
+                "    print('frame', data.frame)\n"
+                "    canvas.text(10, 10, 'rho = %.2f' % data.attributes['Density'])\n"
+                "    t = data.tables['rdf']\n"
+                "    canvas.plot(t.column(0), t.column('g'), box=(100, 100, 300, 200), title='g(r)')\n")
+    frame = {"width": 800, "height": 600, "frame": 4, "attributes": {"Density": 1.05},
+             "tables": {"rdf": {"columns": ["r", "g"], "rows": [[1, 0], [2, 2.5], [3, 1.0]]}}}
+    out = _sp.run([_sys.executable, "-m", "caps.overlay", script], input=_json.dumps(frame), capture_output=True, text=True, env=dict(_os.environ))
+    cmds = _json.loads(out.stdout)["commands"] if out.returncode == 0 else []
+    ops = [c["op"] for c in cmds]
+    check(out.returncode == 0 and cmds[0]["s"] == "rho = 1.05" and "polyline" in ops and ops.count("rect") == 2 and "frame 4" in out.stderr,
+          f"render overlay: {len(cmds)} commands ({', '.join(sorted(set(ops)))}) · console {out.stderr.strip()!r}")
 print("all python checks passed")

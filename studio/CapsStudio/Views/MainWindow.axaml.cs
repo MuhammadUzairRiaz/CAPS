@@ -1350,6 +1350,21 @@ public partial class MainWindow : Window
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) f.Text = p;
     }
     private void OnStepAction(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is StepField f) _vm.StepAction(f); }
+    private async void OnOverlayChoose(object? s, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Python overlay", AllowMultiple = false, FileTypeFilter = [new FilePickerFileType("Python") { Patterns = ["*.py"] }],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) { _vm.OvScript = p; _vm.OvPython = true; }
+    }
+    private void OnOverlayNew(object? s, RoutedEventArgs e) => _vm.NewOverlayScript();
+    private void OnOverlayEdit(object? s, RoutedEventArgs e)
+    {
+        if (_vm.OvScript.Length == 0) return;
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_vm.OvScript) { UseShellExecute = true }); }
+        catch (Exception ex) { _vm.Status = "Cannot open the script: " + ex.Message; }
+    }
     private void OnInspectorPrev(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(-1);
     private void OnInspectorNext(object? s, RoutedEventArgs e) => _vm.InspectorPageStep(1);
 
