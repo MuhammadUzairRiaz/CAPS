@@ -264,6 +264,7 @@ public struct CapsAnalyzeOpts
     public double Cutoff;
     public int Threads;
     public int Deuterate;       // neutron contrast (ABI 20): 0 none, 1 all H, 2 aliphatic, 3 aromatic, 4 on O/N
+    [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Group;   // ABI 36: "" all, "selection", "molecules:1-4,7", "exclude-held"
 }
 
 [StructLayout(LayoutKind.Sequential)]

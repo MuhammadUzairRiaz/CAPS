@@ -3125,7 +3125,63 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       extra_notes.push_back("force field: " + ff->name + " (none assigned in Field)");
     }
     if (ff) o.ff = ff.get();
-    std::vector<caps::Property> res = ids.empty() ? std::vector<caps::Property>{} : caps::analyze(d->traj, ids, o);
+    // a group: the properties see a trajectory of those atoms alone (bonds among them, the force field's terms among them)
+    const std::string group = p && p->group ? p->group : "";
+    std::vector<caps::Property> res;
+    if (!group.empty() && group != "all" && !ids.empty()) {
+      const caps::System& top = d->traj.topology;
+      const size_t n = top.atoms.size();
+      std::vector<char> in(n, 0);
+      if (group == "selection") {
+        if (d->selection.size() == n) in.assign(d->selection.begin(), d->selection.end());
+      } else if (group == "exclude-held") {
+        for (size_t i = 0; i < n; ++i) in[i] = d->held_mol <= 0 || top.atoms[i].mol != d->held_mol;
+      } else if (group.rfind("molecules:", 0) == 0) {
+        std::string t = group.substr(10);
+        for (auto& c : t) if (c == ',' || c == ';') c = ' ';
+        std::istringstream is(t);
+        std::set<int64_t> want;
+        for (std::string w; is >> w;) {
+          const auto dash = w.find('-', 1);
+          const int64_t a = std::stoll(w.substr(0, dash)), b = dash == std::string::npos ? a : std::stoll(w.substr(dash + 1));
+          if (b < a || b - a > 10000000) throw std::invalid_argument("group: bad molecule range " + w);
+          for (int64_t m = a; m <= b; ++m) want.insert(m);
+        }
+        const auto mol = top.molecules();
+        for (size_t i = 0; i < n; ++i) in[i] = want.count(top.has_mol ? top.atoms[i].mol : int64_t(mol[i]) + 1) > 0;
+      } else {
+        throw std::invalid_argument("group: \"selection\", \"molecules:1-4,7\" or \"exclude-held\"");
+      }
+      std::vector<uint32_t> keep;
+      for (size_t i = 0; i < n; ++i) if (in[i]) keep.push_back(uint32_t(i));
+      if (keep.empty()) throw std::invalid_argument("the group has no atoms");
+      std::vector<int64_t> newi(n, -1);
+      for (size_t k = 0; k < keep.size(); ++k) newi[keep[k]] = int64_t(k);
+      caps::Trajectory sub;
+      sub.topology = top;
+      sub.topology.atoms.clear();
+      sub.topology.bonds.clear();
+      sub.topology.velocities.clear();
+      for (uint32_t i : keep) sub.topology.atoms.push_back(top.atoms[i]);
+      for (const auto& b : top.bonds)
+        if (newi[b.i] >= 0 && newi[b.j] >= 0) sub.topology.bonds.push_back({uint32_t(newi[b.i]), uint32_t(newi[b.j]), b.order});
+      sub.cells = d->traj.cells;
+      sub.timesteps = d->traj.timesteps;
+      for (const auto& fr : d->traj.positions) {
+        std::vector<caps::Vec3> q;
+        q.reserve(keep.size());
+        for (uint32_t i : keep) q.push_back(fr[i]);
+        sub.positions.push_back(std::move(q));
+      }
+      caps::ForceField subff;
+      caps::AnalyzeOptions og = o;
+      if (ff) { subff = caps::subset_forcefield(*ff, keep); og.ff = &subff; }
+      og.exclude_mol = group == "exclude-held" ? 0 : o.exclude_mol;
+      res = caps::analyze(sub, ids, og);
+      for (auto& q : res) q.notes.insert(q.notes.begin(), "group " + group + ": " + std::to_string(keep.size()) + " of " + std::to_string(n) + " atoms");
+    } else if (!ids.empty()) {
+      res = caps::analyze(d->traj, ids, o);
+    }
     // protocols run on a copy of the current frame; the document is not changed
     auto frame_copy = [&] {
       caps::System s = d->traj.frame(d->current);
@@ -3244,6 +3300,19 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
     const auto fr = caps::analysis_frames(d->traj, o);
     d->analysis = "{\"frames\":" + std::to_string(fr.size()) + ",\"of\":" + std::to_string(d->traj.frames()) + ",\"atoms\":" +
                   std::to_string(d->traj.topology.atoms.size()) + ",\"properties\":" + caps::properties_json(res) + "}";
+    // the results go into the structure's provenance (the Project table and the methods section read them from there)
+    caps::KeyValues pr;
+    std::string names;
+    for (const auto& r : res) {
+      if (!std::isfinite(r.value)) continue;
+      pr.push_back({r.name, g6(r.value) + (std::isfinite(r.error) ? " ± " + g6(r.error) : "") + (r.unit.empty() ? "" : " " + r.unit)});
+      names += (names.empty() ? "" : ", ") + r.id;
+    }
+    if (!pr.empty()) {
+      pr.push_back({"frames", std::to_string(fr.size()) + " of " + std::to_string(d->traj.frames())});
+      if (!group.empty()) pr.push_back({"group", group});
+      prov_step(d, "analyze.properties", "properties: " + names, std::move(pr));
+    }
     return 0;
   });
 }
