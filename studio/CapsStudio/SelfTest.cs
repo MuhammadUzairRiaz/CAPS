@@ -1509,6 +1509,16 @@ internal static class SelfTest
             for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
             Check(vm.IsMacro && vm.RecordedCommands.Count == 3 && promo == null && vm.MacroParameters.Count == 1 && vm.MacroOutput.Contains($"atoms {nm0 + 3}") && vm.MacroOutput.Contains("done"),
                   $"macro: {vm.RecordedCommands.Count} recorded · params {string.Join(",", vm.MacroParameters.Select(p => p.Name + "=" + p.Default))} · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
+            // Target: the open structure — the script takes it with caps.current() and hands a result back, which opens
+            vm.NewMacro();
+            vm.MacroText = "import caps\n\ndoc = caps.current()\nprint(\"atoms\", doc.atoms)\ncaps.hand_back(doc)\n";
+            vm.MacroTarget = 1;
+            var macroAtoms = vm.Document!.Summary().Atoms;
+            vm.RunMacro().GetAwaiter().GetResult();
+            for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            Check(vm.MacroOutput.Contains($"atoms {macroAtoms}") && vm.MacroOutput.Contains("the result is open") && vm.Title.Contains("result"),
+                  $"macro on the open structure: {vm.MacroOutput.Replace('\n', ' ').Trim()} · {vm.Title}");
+            vm.MacroTarget = 0;
             vm.SetModule(8);
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
