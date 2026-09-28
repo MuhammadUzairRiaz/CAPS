@@ -1400,6 +1400,41 @@
    "engines": [
     "field.assign"
    ]
+  },
+  {
+   "id": "ff-by-group",
+   "group": "Force fields",
+   "title": "Force fields by group and crystal potentials",
+   "summary": "Each group of molecules (a filler and its matrix, each component of a blend) is typed and parameterised by its own force field with its own charges and mixing rule; the Lennard-Jones pairs between groups follow a cross rule chosen for them, or pairs given explicitly, and every cross pair is written out in the engine files. A crystal group can instead take a literature many-body potential (Tersoff, Stillinger–Weber, Vashishta, EAM) that LAMMPS reads from its file.",
+   "equation": "ε_ab = √(ε_a ε_b) or (ε_a+ε_b)/2;  σ_ab = (σ_a+σ_b)/2 or √(σ_a σ_b);  sixth power: σ_ab = [(σ_a⁶+σ_b⁶)/2]^(1/6), ε_ab = 2√(ε_a ε_b) σ_a³σ_b³/(σ_a⁶+σ_b⁶)",
+   "equation_note": "between groups; inside a group its force field's own rule",
+   "symbols": [
+    [
+     "a, b",
+     "atom types of two different groups",
+     "each group's own parameters"
+    ],
+    [
+     "crystal site",
+     "one type per element, standard atomic mass, no charge",
+     "UFF's well depth D and minimum x across; 12-6 σ = x/2^(1/6), or 9-6 σ = x beside PCFF / COMPASS"
+    ],
+    [
+     "potential file",
+     "LAMMPS's own file, converted from metal to real units by LAMMPS",
+     "the library (data/potentials) or the user's"
+    ]
+   ],
+   "when": "Composites and blends where one force field cannot describe every part: silica, SiC, graphene / CNT or a metal in a PCFF, COMPASS, OPLS or GAFF polymer; blend components parameterised by different force fields. What one simulation cannot hold is refused with the reason: different 1-4 scalings (unless the first group's is taken for all), 9-6 with 12-6 (unless 9-6 sites enter cross pairs as 12-6 with the same ε and minimum), AIREBO / REBO / MEAM (LAMMPS reads them in metal units only). A crystal under a literature potential runs in LAMMPS; CAPS's own runs hold it still.",
+   "cites": [
+    "rappe1992"
+   ],
+   "source": "core/src/ffmerge.cpp · core/src/manybody.cpp · capi caps_field_assign_groups · data/potentials",
+   "tested": "FFMerge.SameForceFieldInTwoPartsIsExact · FFMerge.DifferentFamiliesAreRefusedOrMergedAsAsked · FFMerge.ManyBodyGroup · FFMerge.PotentialLibrary",
+   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), OPLS 2005 (296.6776), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol",
+   "engines": [
+    "field.assign.groups"
+   ]
   }
  ]
 }

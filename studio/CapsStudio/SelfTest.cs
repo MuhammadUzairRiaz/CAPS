@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 36, "native ABI version 36");
+        Check(Native.AbiVersion() == 37, "native ABI version 37");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -190,19 +190,18 @@ internal static class SelfTest
             vm.Open(pdbPath);
             vm.Document!.SetHeldMolecule(1);
             vm.Field.SuggestGroups();
-            var suggested = vm.Field.Groups.Count == 2 && vm.Field.Groups[0].Molecules == "1" && vm.Field.Groups[1].Molecules == "rest";
+            // the held silicon: the library's Tersoff silicon suggested for it
+            var suggested = vm.Field.Groups.Count == 2 && vm.Field.Groups[0].Molecules == "1" && vm.Field.Groups[1].Molecules == "rest" &&
+                            vm.Field.Groups[0].IsPotential && vm.Field.Groups[0].Pick > 0 && vm.Field.PotentialLibrary[vm.Field.Groups[0].Pick].Id == "si-tersoff1988";
             if (vm.Field.Groups.Count == 2)
             {
-                vm.Field.Groups[0].Kind = 1;
-                vm.Field.Groups[0].Style = 0;
-                vm.Field.Groups[0].File = Path.Combine(mbDir, "Si.tersoff");
                 vm.Field.Groups[1].FfIndex = gaff;
                 vm.Field.Groups[1].Charges = 2;
                 vm.Field.AssignGroups().GetAwaiter().GetResult();
             }
             var notes = string.Join(" ", vm.Field.Notes);
             Check(suggested && vm.Field.Complete && vm.Field.IsGrouped && notes.Contains("tersoff", StringComparison.Ordinal) && vm.Field.Swatches.Any(x => x.Name == "Si"),
-                  $"Field by group with Tersoff silicon: suggested {suggested} · {vm.Field.ForceFieldName} · {vm.Field.Log}");
+                  $"Field by group with Tersoff silicon: suggested {suggested} (library {vm.Field.PotentialLibrary.Count}, pick {vm.Field.Groups.FirstOrDefault()?.Pick}, kind {vm.Field.Groups.FirstOrDefault()?.Kind}) · {vm.Field.ForceFieldName} · {vm.Field.Log}");
             vm.Field.Clear().GetAwaiter().GetResult();
             vm.Field.GroupMode = false;
             vm.Field.Groups.Clear();

@@ -556,6 +556,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_pipeline_catalogue")] public static extern int PipelineCatalogue(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_view_scale")] public static extern double ViewScale(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt);
     [DllImport(Lib, EntryPoint = "caps_bonded")] public static extern int Bonded(IntPtr doc, int index, [Out] int[]? idx, int cap);
+    [DllImport(Lib, EntryPoint = "caps_molecule_ids")] public static extern int MoleculeIds(IntPtr doc, [Out] long[]? out_, int cap);
     [DllImport(Lib, EntryPoint = "caps_molecule_index")] public static extern int MoleculeIndex(IntPtr doc, [Out] int[] mol, int cap);
     [DllImport(Lib, EntryPoint = "caps_neighbours")] public static extern int Neighbours(IntPtr doc, int index, int k, [Out] int[] idx, [Out] double[] dist);
 }
@@ -1799,6 +1800,21 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>The molecule (0-based, connected by bonds) of every atom, and the number of molecules.</summary>
+    /// <summary>Each atom's molecule number as CAPS counts molecules everywhere (Field groups, the held molecule):
+    /// the file's own, else the bonded fragments from 1.</summary>
+    public long[] MoleculeIds()
+    {
+        using (Hold())
+        {
+            Alive();
+            var n = Native.MoleculeIds(H, null, 0);
+            Check(n);
+            var r = new long[n];
+            Check(Native.MoleculeIds(H, r, n));
+            return r;
+        }
+    }
+
     public (int[] Mol, int Count) MoleculeIndex(int atoms)
     {
         using (Hold())

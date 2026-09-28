@@ -2831,14 +2831,16 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:FieldGroupRow">
                     <Grid ColumnDefinitions="120,130,160,*,30" ColumnSpacing="8">
-                      <TextBox Text="{Binding Name}" />
-                      <TextBox Grid.Column="1" Text="{Binding Molecules}" Watermark="1, 2-10 or rest" ToolTip.Tip="Molecule numbers (1, 2-10, 12) or rest: every molecule no other group names" />
-                      <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:FieldViewModel.GroupKinds}" SelectedIndex="{Binding Kind}" HorizontalAlignment="Stretch" />
+                      <TextBox Text="{Binding Name}" VerticalAlignment="Top" />
+                      <TextBox Grid.Column="1" VerticalAlignment="Top" Text="{Binding Molecules}" Watermark="1, 2-10 or rest" ToolTip.Tip="Molecule numbers (1, 2-10, 12) or rest: every molecule no other group names" />
+                      <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:FieldViewModel.GroupKinds}" SelectedIndex="{Binding Kind}" HorizontalAlignment="Stretch" VerticalAlignment="Top" />
                       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsForceField}">
                         <ComboBox Width="300" ItemsSource="{Binding Library}" SelectedIndex="{Binding FfIndex}" />
                         <ComboBox Width="200" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Charges}" />
                       </StackPanel>
-                      <Grid Grid.Column="3" ColumnDefinitions="120,*,Auto,150" ColumnSpacing="6" IsVisible="{Binding IsPotential}">
+                      <StackPanel Grid.Column="3" Spacing="6" IsVisible="{Binding IsPotential}">
+                      <ComboBox ItemsSource="{Binding Potentials}" SelectedIndex="{Binding Pick}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding PickTip}" />
+                      <Grid ColumnDefinitions="120,*,Auto,150" ColumnSpacing="6">
                         <ComboBox ItemsSource="{x:Static vm:FieldViewModel.PotentialStyles}" SelectedIndex="{Binding Style}" HorizontalAlignment="Stretch"
                                   ToolTip.Tip="The LAMMPS pair style the file is for (LAMMPS converts these from metal to real units)" />
                         <TextBox Grid.Column="1" Text="{Binding File}" Watermark="the potential file (Si.tersoff, CuNi.eam.alloy …)" />
@@ -2846,6 +2848,7 @@
                         <ComboBox Grid.Column="3" ItemsSource="{x:Static vm:FieldViewModel.PotentialUnits}" SelectedIndex="{Binding Units}" HorizontalAlignment="Stretch"
                                   ToolTip.Tip="What the file's energies are in: most published files say it on their first line (UNITS: metal); if yours does not, say it here" />
                       </Grid>
+                      </StackPanel>
                       <Button Grid.Column="4" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnFieldGroupRemove" Tag="{Binding}" ToolTip.Tip="Remove the group">
                         <local:Icon Kind="close" Size="12" />
                       </Button>

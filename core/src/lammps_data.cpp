@@ -874,13 +874,16 @@ void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOpt
     }
   }
   out << "\nAtoms  # full\n\n";
+  // molecule ids: the file's own, else the bonded fragments (a PDB's chain ids are not molecules)
+  std::vector<int> frag;
+  if (!s.has_mol) frag = s.molecules();
   for (size_t i = 0; i < s.atoms.size(); ++i) {
     const auto& at = s.atoms[i];
     const Vec3 fr = c.valid() ? c.to_fractional(at.pos) : Vec3{0, 0, 0};
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? int(std::floor(fr[k])) : 0;
     const Vec3 w = at.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
-    std::snprintf(buf, sizeof buf, "%zu %lld %d %.8f %.10f %.10f %.10f %d %d %d\n", i + 1, static_cast<long long>(at.mol), ff.type_index[i] + 1,
+    std::snprintf(buf, sizeof buf, "%zu %lld %d %.8f %.10f %.10f %.10f %d %d %d\n", i + 1, static_cast<long long>(s.has_mol ? at.mol : int64_t(frag[i]) + 1), ff.type_index[i] + 1,
                   ff.charge[i], w[0], w[1], w[2], im[0], im[1], im[2]);
     out << buf;
   }

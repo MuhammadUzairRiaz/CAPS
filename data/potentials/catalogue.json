@@ -1,0 +1,242 @@
+{
+ "about": "Literature many-body potentials for crystal and filler groups of composites (Field · by group). Each file is LAMMPS's own, copied unchanged from the potentials folder of the LAMMPS distribution with its header (date, units, contributor, citation); CAPS writes it beside the LAMMPS inputs of a system that uses it. Cite the paper given with each.",
+ "potentials": [
+  {
+   "id": "bnc-kinaci2012",
+   "name": "B–N–C Tersoff (Kinaci 2012)",
+   "style": "tersoff",
+   "file": "lammps/BNC.tersoff",
+   "elements": [
+    "B",
+    "N",
+    "C"
+   ],
+   "for": "graphene, carbon nanotubes, h-BN and BN–C hybrid sheets",
+   "citation": "Kinaci, Haskins, Sevik and Cagin,  Phys Rev B, 86, 115410 (2012)",
+   "units": "metal"
+  },
+  {
+   "id": "sic-tersoff1989",
+   "name": "Si–C Tersoff (Tersoff 1989)",
+   "style": "tersoff",
+   "file": "lammps/SiC.tersoff",
+   "elements": [
+    "Si",
+    "C"
+   ],
+   "for": "silicon carbide, silicon, diamond and other sp3 carbon",
+   "citation": "Tersoff, Phys Rev B, 39, 5566-5568 (1989)",
+   "units": "metal"
+  },
+  {
+   "id": "sic-erhart-albe2005",
+   "name": "Si–C Tersoff (Erhart & Albe 2005)",
+   "style": "tersoff",
+   "file": "lammps/SiC_Erhart-Albe.tersoff",
+   "elements": [
+    "Si",
+    "C"
+   ],
+   "for": "silicon carbide, silicon, carbon",
+   "citation": "Erhart and Albe, Phys Rev B, 71, 035211 (2005)",
+   "units": "metal"
+  },
+  {
+   "id": "si-tersoff1988",
+   "name": "Si Tersoff (Tersoff 1988)",
+   "style": "tersoff",
+   "file": "lammps/Si.tersoff",
+   "elements": [
+    "Si"
+   ],
+   "for": "silicon",
+   "citation": "Tersoff, Phys Rev B, 37, 6991 (1988)",
+   "units": "metal"
+  },
+  {
+   "id": "si-kumagai2007",
+   "name": "Si modified Tersoff (Kumagai 2007)",
+   "style": "tersoff/mod",
+   "file": "lammps/Si.tersoff.mod",
+   "elements": [
+    "Si"
+   ],
+   "for": "silicon (elastic constants and melting improved)",
+   "citation": "Kumagai, Izumi, Hara and Sakai, Comp Mat Sci, 39, 457 (2007)",
+   "units": "metal"
+  },
+  {
+   "id": "sio2-munetoh2007",
+   "name": "Si–O Tersoff (Munetoh 2007)",
+   "style": "tersoff",
+   "file": "lammps/SiO.tersoff",
+   "elements": [
+    "Si",
+    "O"
+   ],
+   "for": "silica fillers: quartz and amorphous SiO₂ (precipitated / fumed silica cores)",
+   "citation": "S. Mumetoh et al, Comp Mat Sci, 39, 334-339 (2007)",
+   "units": "metal"
+  },
+  {
+   "id": "sio2-vashishta1990",
+   "name": "Si–O Vashishta (Vashishta 1990)",
+   "style": "vashishta",
+   "file": "lammps/SiO.1990.vashishta",
+   "elements": [
+    "Si",
+    "O"
+   ],
+   "for": "silica: amorphous and crystalline SiO₂",
+   "citation": "P. Vashishta, R. K. Kalia, J. P. Rino, and I. Ebbsjo, Phys. Rev. B 41, 12197 (1990).",
+   "units": "metal"
+  },
+  {
+   "id": "sic-vashishta2007",
+   "name": "Si–C Vashishta (Vashishta 2007)",
+   "style": "vashishta",
+   "file": "lammps/SiC.vashishta",
+   "elements": [
+    "Si",
+    "C"
+   ],
+   "for": "silicon carbide",
+   "citation": "P. Vashishta, R. K. Kalia, A. Nakano, and J. P. Rino. J. Appl. Phys. 101, 103515 (2007).",
+   "units": "metal"
+  },
+  {
+   "id": "gan-nord2003",
+   "name": "Ga–N Tersoff (Nord 2003)",
+   "style": "tersoff",
+   "file": "lammps/GaN.tersoff",
+   "elements": [
+    "Ga",
+    "N"
+   ],
+   "for": "gallium nitride",
+   "citation": "Nord, Albe, Erhart and Nordlund, J. Phys Condens Matter, 15, 5649 (2003)",
+   "units": "metal"
+  },
+  {
+   "id": "ge-tersoff2017",
+   "name": "Ge Tersoff (Mahdizadeh 2017)",
+   "style": "tersoff",
+   "file": "lammps/Ge.tersoff",
+   "elements": [
+    "Ge"
+   ],
+   "for": "germanium",
+   "citation": "Mahdizadeh, Akhlamadi, J. Mol. Graph. Model. 72, 1-5 (2017)",
+   "units": "metal"
+  },
+  {
+   "id": "si-sw1985",
+   "name": "Si Stillinger–Weber (1985)",
+   "style": "sw",
+   "file": "lammps/Si.sw",
+   "elements": [
+    "Si"
+   ],
+   "for": "silicon",
+   "citation": "Stillinger and Weber,  Phys Rev B, 31, 5262, (1985)",
+   "units": "metal"
+  },
+  {
+   "id": "cu-mishin2001",
+   "name": "Cu EAM (Mishin 2001)",
+   "style": "eam/alloy",
+   "file": "lammps/Cu_mishin1.eam.alloy",
+   "elements": [
+    "Cu"
+   ],
+   "for": "copper particles and surfaces (the Cu of brass-plated steel cord)",
+   "citation": "Mishin, Phys Rev B, 63, 224106 (2001)",
+   "units": "metal"
+  },
+  {
+   "id": "cu-zhou2001",
+   "name": "Cu EAM (Zhou 2001)",
+   "style": "eam/alloy",
+   "file": "lammps/Cu_zhou.eam.alloy",
+   "elements": [
+    "Cu"
+   ],
+   "for": "copper",
+   "citation": "Zhou et al, Acta Mater, 49, 4005 (2001)",
+   "units": "metal"
+  },
+  {
+   "id": "al-zhou2001",
+   "name": "Al EAM (Zhou 2001)",
+   "style": "eam/alloy",
+   "file": "lammps/Al_zhou.eam.alloy",
+   "elements": [
+    "Al"
+   ],
+   "for": "aluminium particles and surfaces",
+   "citation": "Zhou et al, Acta Mater, 49, 4005 (2001)",
+   "units": "metal"
+  },
+  {
+   "id": "w-zhou2001",
+   "name": "W EAM (Zhou 2001)",
+   "style": "eam/alloy",
+   "file": "lammps/W_zhou.eam.alloy",
+   "elements": [
+    "W"
+   ],
+   "for": "tungsten",
+   "citation": "Zhou et al, Acta Mater, 49, 4005 (2001)",
+   "units": "metal"
+  },
+  {
+   "id": "cuni-onat2014",
+   "name": "Cu–Ni EAM (Onat & Durukanoglu 2014)",
+   "style": "eam/alloy",
+   "file": "lammps/CuNi.eam.alloy",
+   "elements": [
+    "Cu",
+    "Ni"
+   ],
+   "for": "copper, nickel and Cu–Ni alloys",
+   "citation": "Onat and Durukanoglu, J Phys Cond Matt, 26, 035404 (2014)",
+   "units": "metal"
+  },
+  {
+   "id": "fe-mendelev2003",
+   "name": "Fe Finnis–Sinclair EAM (Mendelev 2003)",
+   "style": "eam/fs",
+   "file": "lammps/Fe_mm.eam.fs",
+   "elements": [
+    "Fe"
+   ],
+   "for": "iron: steel fibre and cord surfaces (bcc Fe)",
+   "citation": "Mendelev, Han, Srolovitz, Ackland, Sun and Asta, Phil Mag A, 83, 3977-3994 (2003)",
+   "units": "metal"
+  },
+  {
+   "id": "mg-sun2006",
+   "name": "Mg Finnis–Sinclair EAM (Sun 2006)",
+   "style": "eam/fs",
+   "file": "lammps/Mg_mm.eam.fs",
+   "elements": [
+    "Mg"
+   ],
+   "for": "magnesium",
+   "citation": "Sun, Mendelev, Becker, Kudin, Haxhimali, Asta, Hoyt, Karma and Srolovitz, Phys Rev B 73, 024116 (2006)",
+   "units": "metal"
+  },
+  {
+   "id": "zr-mendelev2007",
+   "name": "Zr Finnis–Sinclair EAM (Mendelev & Ackland 2007)",
+   "style": "eam/fs",
+   "file": "lammps/Zr_mm.eam.fs",
+   "elements": [
+    "Zr"
+   ],
+   "for": "zirconium",
+   "citation": "Mendelev and  Ackland, Phil Mag Lett 87, 349-359 (2007)",
+   "units": "metal"
+  }
+ ]
+}
