@@ -25,6 +25,11 @@
           </Button.ContextFlyout>
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnQueue" IsVisible="{Binding !Idle}" ToolTip.Tip="Queue this build (its recipe, with the settings as they are now); it grows a new cell when the current run ends (Jobs lists it)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="15" VerticalAlignment="Center" /><TextBlock Text="Queue growth" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
+                  ToolTip.Tip="Where the run goes: this machine, or a host from Settings › Compute &amp; remote (the result comes back to Jobs)" />
         <Button Classes="primary" Click="OnGrow" IsVisible="{Binding NotGrowing}" IsEnabled="{Binding Idle}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Grow cell" VerticalAlignment="Center" /></StackPanel>
         </Button>

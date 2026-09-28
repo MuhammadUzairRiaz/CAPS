@@ -1040,7 +1040,20 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception e) { FieldInfoText = "Cannot type this structure: " + e.Message; }
     }
 
-    public async Task Relax()
+    /// <summary>The Relax settings as the core takes them (also captured when a run is queued).</summary>
+    private CapsRelaxOpts RelaxOptions() => new()
+    {
+        Method = _relaxMethod, Ftol = _relaxFtol, MaxIterations = _relaxIterations,
+        TargetDensity = _relaxCompress ? _relaxDensity : 0, CompressStep = _relaxStep,
+        Pushoff = _relaxPushoff ? 1 : 0, RelaxBox = _relaxBox ? 1 : 0, Pressure = _relaxPressure,
+        BoxAnisotropic = _relaxBoxMode > 0 ? 1 : 0, BoxAxes = _relaxBoxMode switch { 2 => 4, 3 => 3, _ => 7 },
+        PushoffRampPs = _relaxPushoff && _relaxPushoffMd ? (double)_relaxRampPs : 0, PushoffCap = (double)_relaxCap, PushoffTemperature = (double)_relaxPushoffT,
+        Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
+    };
+
+    public async Task Relax() => await Relax(null);
+
+    private async Task Relax(CapsRelaxOpts? preset)
     {
         if (_doc == null || !Idle || BlockedByField("Relax")) return;
         PrepareRunTarget("minimised");
@@ -1050,15 +1063,7 @@ public sealed partial class MainViewModel : ObservableObject
         IsPlaying = false;
         _relaxCancel = new CancellationTokenSource();
         var token = _relaxCancel.Token;
-        var o = new CapsRelaxOpts
-        {
-            Method = _relaxMethod, Ftol = _relaxFtol, MaxIterations = _relaxIterations,
-            TargetDensity = _relaxCompress ? _relaxDensity : 0, CompressStep = _relaxStep,
-            Pushoff = _relaxPushoff ? 1 : 0, RelaxBox = _relaxBox ? 1 : 0, Pressure = _relaxPressure,
-            BoxAnisotropic = _relaxBoxMode > 0 ? 1 : 0, BoxAxes = _relaxBoxMode switch { 2 => 4, 3 => 3, _ => 7 },
-            PushoffRampPs = _relaxPushoff && _relaxPushoffMd ? (double)_relaxRampPs : 0, PushoffCap = (double)_relaxCap, PushoffTemperature = (double)_relaxPushoffT,
-            Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
-        };
+        var o = preset ?? RelaxOptions();
         _relaxEnergy.Clear();
         _relaxForce.Clear();
         RelaxCurvesChanged?.Invoke();
@@ -2239,25 +2244,30 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception e) { RxLog = e.Message; }
     }
 
-    public async Task RunReact()
+    /// <summary>The React settings as the core takes them (also captured when a run is queued).</summary>
+    private CapsReactOpts ReactOptions() => new()
     {
-        if (_doc == null || !Idle || _rxText.Trim().Length == 0) return;
+        Seed = (ulong)_rxSeed, MaxCycles = _rxCycles, MaxPerCycle = _rxPerCycle, TargetConversion = _rxTarget, Capture = _rxCapture,
+        Relax = _rxRelax ? 1 : 0, RelaxIterations = _rxRelaxIt, MdPs = _rxRelax || _rxDuringMd ? _rxMdPs : 0, Temperature = _rxTemp, Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
+        DuringMd = _rxDuringMd ? 1 : 0,
+    };
+
+    public async Task RunReact() => await RunReact(null, null);
+
+    private async Task RunReact(CapsReactOpts? preset, string? presetText)
+    {
+        if (_doc == null || !Idle || (presetText ?? _rxText).Trim().Length == 0) return;
         var doc = _doc;
         Reacting = true;
         IsPlaying = false;
         _rxCancel = new CancellationTokenSource();
         var token = _rxCancel.Token;
-        var o = new CapsReactOpts
-        {
-            Seed = (ulong)_rxSeed, MaxCycles = _rxCycles, MaxPerCycle = _rxPerCycle, TargetConversion = _rxTarget, Capture = _rxCapture,
-            Relax = _rxRelax ? 1 : 0, RelaxIterations = _rxRelaxIt, MdPs = _rxRelax || _rxDuringMd ? _rxMdPs : 0, Temperature = _rxTemp, Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
-            DuringMd = _rxDuringMd ? 1 : 0,
-        };
+        var o = preset ?? ReactOptions();
         _rxRows.Clear();
         ReactChanged?.Invoke();
         RxLog = "Finding reactive pairs…";
         Status = $"Reacting {Title}…";
-        var text = _rxText;
+        var text = presetText ?? _rxText;
         var inv = CultureInfo.InvariantCulture;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var finished = false;
