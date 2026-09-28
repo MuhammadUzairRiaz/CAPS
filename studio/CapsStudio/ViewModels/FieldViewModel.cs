@@ -357,6 +357,16 @@ public sealed partial class FieldViewModel : ObservableObject
     }
 
     private string _assignedId = "";
+
+    // the force field the structure's own file carried (an AMBER prmtop): offered while it is not the one assigned
+    private bool _fileFf, _fileAssigned;
+    public bool CanUseFileForceField => _fileFf && !_fileAssigned;
+    public Task UseFileForceField()
+    {
+        Recorder?.Invoke("doc.field.assign(\"file\")");
+        _assignedId = "file";
+        return Do("Assigned", d => d.FieldAssign("file", null, 2));
+    }
     /// <summary>The OPLS force fields share OPLS 2005's atom classes: their missing bonds, angles and torsions can be
     /// borrowed from it (only where they define none, each borrowed term listed).</summary>
     private FfEntry? FillSource => HasMissing && _assignedId != "opls2005" && _assignedId.Contains("opls", StringComparison.Ordinal)
@@ -432,6 +442,8 @@ public sealed partial class FieldViewModel : ObservableObject
     /// <summary>A new structure: the assignment belongs to the old one.</summary>
     public void Reset()
     {
+        _fileFf = _fileAssigned = false;
+        Raise(nameof(CanUseFileForceField));
         Assigned = false;
         Complete = false;
         _all.Clear();
@@ -453,11 +465,19 @@ public sealed partial class FieldViewModel : ObservableObject
     /// <summary>Reads the core's report after any change (also after Relax / Dynamics, which keep the assignment).</summary>
     public void LoadReport(CapsDocument doc)
     {
+        bool fileFf;
+        try { fileFf = doc.FieldFileAvailable; } catch { fileFf = false; }
         var json = doc.FieldReport();
-        if (json.Length == 0) { Reset(); return; }
+        if (json.Length == 0) Reset();
+        _fileFf = fileFf;
+        _fileAssigned = false;
+        Raise(nameof(CanUseFileForceField));
+        if (json.Length == 0) return;
         using var js = JsonDocument.Parse(json);
         var r = js.RootElement;
         ForceFieldName = Str(r, "forcefield");
+        _fileAssigned = Str(r, "file") == "file";
+        Raise(nameof(CanUseFileForceField));
         IsGrouped = r.TryGetProperty("groups", out _);
         MixingRule = Str(r, "mixing") switch
         {

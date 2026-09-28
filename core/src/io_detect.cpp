@@ -4,6 +4,7 @@
 #include <fstream>
 #include <map>
 
+#include "caps/amber.hpp"
 #include "caps/analysis.hpp"
 #include "caps/crystal.hpp"
 #include "caps/elements.hpp"
@@ -23,6 +24,7 @@ std::string detect_format(const std::string& path) {
     if (e == ".xtc") return "xtc";
     if (e == ".trr") return "trr";
     if (e == ".dcd") return "dcd";
+    if (is_amber_topology_path(path)) return "amber-prmtop";
     if (e == ".sdf" || e == ".sd" || e == ".mol" || e == ".mdl") return "sdf";
     if (e == ".poscar" || e == ".vasp" || stem.rfind("poscar", 0) == 0 || stem.rfind("contcar", 0) == 0) return "poscar";
   }
@@ -31,6 +33,12 @@ std::string detect_format(const std::string& path) {
   std::getline(in, l2);
   std::getline(in, l3);
   if (l1.rfind("ITEM:", 0) == 0) return "lammps-dump";
+  if (l1.rfind("%VERSION", 0) == 0 || l1.rfind("%FLAG", 0) == 0) return "amber-prmtop";
+  // an AMBER restart: a title, the atom count (and time), then 6F12.7 records (a CHARMM .crd starts with '*' titles)
+  if (is_amber_coordinates_path(path) && !l1.empty() && l1[0] != '*') {
+    const auto t = split(l2);
+    if (!t.empty() && t.size() <= 2 && t[0].find_first_not_of("0123456789") == std::string::npos) return "amber-crd";
+  }
   {
     const std::string e = lower(std::filesystem::path(path).extension().string());
     if (e == ".cif") return "cif";
@@ -69,7 +77,7 @@ std::string detect_format(const std::string& path) {
     std::getline(in, l4);
     if (l4.find("V2000") != std::string::npos || l4.find("V3000") != std::string::npos) return "sdf";
   }
-  throw ReadError(path + ": format not recognised (supported: LAMMPS data, dump and DCD, GROMACS .gro/.top, .xtc and .trr, PDB, mol2, SDF/MOL, XYZ, CIF, VASP POSCAR, Materials Studio .car/.mdf)");
+  throw ReadError(path + ": format not recognised (supported: LAMMPS data, dump and DCD, GROMACS .gro/.top, .xtc and .trr, AMBER prmtop with inpcrd / rst7, PDB, mol2, SDF/MOL, XYZ, CIF, VASP POSCAR, Materials Studio .car/.mdf)");
 }
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) { return open_file(path, topology_path, OpenProgress{}); }
@@ -88,6 +96,8 @@ const char* format_name(const std::string& f) {
   if (f == "dcd") return "DCD";
   if (f == "sdf") return "MDL molfile / SD";
   if (f == "poscar") return "VASP POSCAR";
+  if (f == "amber-prmtop") return "AMBER topology";
+  if (f == "amber-crd") return "AMBER coordinates";
   return "XYZ";
 }
 }  // namespace
@@ -148,7 +158,44 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     report(2, 1, b);
   };
   Trajectory tr;
-  if (fmt == "lammps-data") {
+  // AMBER: the topology with its force field, the coordinates from a restart (opened with it, or named like it)
+  const auto amber = [&](const std::string& top_path, const std::string& crd_path) {
+    AmberTopology T = read_amber_prmtop(top_path);
+    const AmberCoordinates C = read_amber_coordinates(crd_path);
+    System& s = T.system;
+    if (C.positions.size() != s.atoms.size())
+      throw ReadError(crd_path + " has " + std::to_string(C.positions.size()) + " atoms, " + top_path + " " + std::to_string(s.atoms.size()));
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].pos = C.positions[i];
+    if (!C.velocities.empty()) s.velocities = C.velocities;
+    if (C.has_box) s.cell = C.cell;
+    s.forcefield = T.ff;
+    s.notes.push_back("topology and force field from " + std::filesystem::path(top_path).filename().string() + ", coordinates from " +
+                      std::filesystem::path(crd_path).filename().string() + (C.velocities.empty() ? "" : " (with velocities)"));
+    Trajectory t;
+    std::vector<Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    t.positions.push_back(std::move(p));
+    t.cells.push_back(s.cell);
+    t.timesteps.push_back(0);
+    t.topology = std::move(s);
+    return t;
+  };
+  const auto sibling = [&](const std::string& p, std::initializer_list<const char*> exts) {
+    for (const char* e : exts) {
+      const auto q = std::filesystem::path(p).replace_extension(e);
+      if (std::filesystem::exists(q)) return q.string();
+    }
+    return std::string();
+  };
+  if (fmt == "amber-prmtop") {
+    std::string crd = !topology_path.empty() && is_amber_coordinates_path(topology_path) ? topology_path : sibling(path, {".inpcrd", ".rst7", ".crd", ".restrt", ".rst"});
+    if (crd.empty()) throw ReadError(path + ": an AMBER topology holds no coordinates — open it with its restart (.inpcrd / .rst7), or keep one named like it beside it");
+    tr = amber(path, crd);
+  } else if (fmt == "amber-crd") {
+    std::string top = !topology_path.empty() && is_amber_topology_path(topology_path) ? topology_path : sibling(path, {".prmtop", ".parm7"});
+    if (top.empty()) throw ReadError(path + ": AMBER coordinates carry no atoms — open them with their topology (.prmtop / .parm7)");
+    tr = amber(top, path);
+  } else if (fmt == "lammps-data") {
     tr.topology = read_lammps_data(path);
     std::vector<Vec3> p;
     for (const auto& a : tr.topology.atoms) p.push_back(a.pos);
@@ -190,7 +237,11 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     const std::string tl0 = lower(std::filesystem::path(topology_path).extension().string());
     System top;
     if (tl0 == ".top" || tl0 == ".itp") top = read_gromacs_topology(topology_path);
-    else {
+    else if (is_amber_topology_path(topology_path)) {
+      AmberTopology T = read_amber_prmtop(topology_path);
+      top = std::move(T.system);
+      top.forcefield = T.ff;
+    } else {
       const Trajectory st = open_file(topology_path);
       top = st.frame(0);
       top.bonds = st.topology.bonds;
@@ -239,7 +290,7 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
                       std::to_string(T.topology->vsites.size()) + " virtual sites");
     tr.topology = std::move(T);
   }
-  if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top) && !topology_path.empty());
+  if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top || fmt == "amber-prmtop" || fmt == "amber-crd") && !topology_path.empty());
   report(3, 1, std::to_string(tr.frames()) + " frames");
   if (tr.topology.bonds.empty() && !tr.topology.bonds_from_file) {   // a file that declares its bonds (0 too) keeps them
     System f0 = tr.frame(0);

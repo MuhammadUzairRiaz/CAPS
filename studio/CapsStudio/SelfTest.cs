@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 40, "native ABI version 40");
+        Check(Native.AbiVersion() == 41, "native ABI version 41");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -952,6 +952,28 @@ internal static class SelfTest
         Check(counted == 5 && sameDensity.Contains("vol %") && vm.BlendRows[0].ChainsText.Contains("33.") && vm.BlendRows[1].ChainsText.Contains("66."),
               $"blend by chain count: {counted} chains · by volume: '{sameDensity}' then '{vm.BlendRows[0].ChainsText}' / '{vm.BlendRows[1].ChainsText}'");
         vm.BlendMode = 0;
+
+        // AMBER prmtop: opened with its restart beside it, its own force field assigned; another force field, then back
+        {
+            var amber = Path.GetFullPath(Path.Combine(dir, "..", "tests", "data", "amber", "phenol.prmtop"));
+            if (File.Exists(amber))
+            {
+                vm.Open(amber);
+                var own = vm.Field.Assigned && vm.Field.Complete && vm.Field.ForceFieldName.Contains("phenol.prmtop", StringComparison.Ordinal) && !vm.Field.CanUseFileForceField;
+                var gaffIx = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+                var amberOffered = false;
+                if (gaffIx >= 0)
+                {
+                    vm.Field.FfIndex = gaffIx;
+                    vm.Field.Assign().GetAwaiter().GetResult();
+                    amberOffered = vm.Field.CanUseFileForceField;
+                    vm.Field.UseFileForceField().GetAwaiter().GetResult();
+                }
+                Check(own && amberOffered && vm.Field.ForceFieldName.Contains("phenol.prmtop", StringComparison.Ordinal) && !vm.Field.CanUseFileForceField,
+                      $"AMBER prmtop opens with its own force field, offered back after GAFF: own {own}, offered {amberOffered} · {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            }
+            else Check(false, "AMBER test topology missing: " + amber);
+        }
 
         // Coarse-grained Kremer–Grest melt: reduced units, then mapped to real units by σ, T and the bead mass
         {

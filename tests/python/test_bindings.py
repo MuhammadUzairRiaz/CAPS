@@ -395,4 +395,13 @@ mt = caps.build.martini_melt("[SN0]", repeats=10, chains=10, density=1.1, forcef
 mt_rep = caps.core._json_call(caps.library().caps_field_report, mt._h)
 check(kg_rep["complete"] and "units lj" in kg_deck and "gromacs_error" in ko and mt_rep["complete"] and abs(json.loads(mt.report)["density"] - 1.1) < 1e-6,
       f"CG melts: {kg_rep['forcefield']} · {mt_rep['forcefield']} at {json.loads(mt.report)['density']:.3f} g/cm³")
+# an AMBER prmtop opens with the force field it carries (every term as the file gives it); another, then back to it
+amb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "amber")
+ph = caps.open(os.path.join(amb_dir, "phenol.prmtop"))
+ph_rep = ph.field.report()
+ph.field.assign("gaff2")
+ph.field.assign("file")
+ph_back = ph.field.report()
+check(ph.field.file_available and ph_rep["file"] == "file" and ph_rep["complete"] and abs(ph_rep["energy"]["bond"] - 0.178425) < 2e-6
+      and ph_back["energy"]["total"] == ph_rep["energy"]["total"], f"AMBER prmtop: {ph_rep['forcefield']} · bond {ph_rep['energy']['bond']:.6f}")
 print("all python checks passed")
