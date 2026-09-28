@@ -1,0 +1,47 @@
+// CAPS force fields by group: parts of one structure typed and parameterised by different force fields (a crystal or
+// filler with one, the polymer with another; each component of a blend with its own), merged into one ForceField that
+// the engine, LAMMPS, GROMACS and DL_POLY exports use.
+//
+// Within each part every term is that force field's own, its unlike Lennard-Jones pairs by its own mixing rule. Between
+// parts the pairs follow the cross rule chosen here — ε geometric or arithmetic, σ arithmetic or geometric, or the
+// sixth-power rule for both (as DL_FIELD's "multiple potentials" asks for the rule between different force fields,
+// with no default) — or explicit ε, σ given for a pair of types. Every cross pair is written out explicitly, so the
+// engine files carry exactly what CAPS computes.
+//
+// What one simulation cannot hold is refused with the reason, never approximated silently:
+//   · parts with different 1-4 scaling (GAFF 0.5 / 0.8333 against OPLS-AA 0.5 / 0.5): LAMMPS applies one special_bonds
+//     to the whole system (DL_POLY scales per dihedral, but one LAMMPS input could not); scaling14 "first" takes the
+//     first part's for all, said in the notes
+//   · 9-6 (class II) and 12-6 parts: the cross pairs need one form; cross96 "rmin" gives the 9-6 site a 12-6 form with
+//     the same well depth ε and minimum r_min (said in the notes; DL_FIELD instead fits the area under the curve)
+//   · coarse-grained settings (dielectric, reaction field, force switches), Stillinger–Weber in more than one part,
+//     DREIDING hydrogen bonds, CHARMM 1-4 types, virtual sites across parts
+#pragma once
+
+#include <string>
+#include <vector>
+
+#include "caps/field.hpp"
+
+namespace caps {
+
+struct FFPart {
+  const ForceField* ff = nullptr;       // parameterised for the part's atoms alone, in their order
+  std::vector<uint32_t> atoms;          // the part's atoms in the whole structure (ff's atom k is atoms[k])
+  std::string tag;                      // a short name ("filler", "PS"): added to type names that collide
+};
+
+struct CrossPair { std::string a, b; double eps = 0, sigma = 0; };   // merged type names (kcal/mol, Å)
+
+struct MergeOptions {
+  std::string eps_rule = "geometric";   // geometric | arithmetic
+  std::string sigma_rule = "arithmetic";   // arithmetic | geometric | sixthpower (ε then by the sixth-power rule too)
+  std::string scaling14 = "refuse";     // refuse | first
+  std::string cross96 = "refuse";       // refuse | rmin
+  std::vector<CrossPair> explicit_pairs;
+};
+
+// Throws FieldError with the reason when the parts cannot share one simulation (above) or an atom is in no part / two.
+ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, const MergeOptions& o, std::vector<std::string>* notes = nullptr);
+
+}  // namespace caps
