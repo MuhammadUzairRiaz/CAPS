@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <functional>
 #include <stdexcept>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -15,12 +16,15 @@
 namespace caps {
 
 struct Region {
-  enum Kind { InsideBox, OutsideBox, InsideSphere, OutsideSphere, InsideCylinder, OutsideCylinder, OverPlane, BelowPlane };
+  enum Kind { InsideBox, OutsideBox, InsideSphere, OutsideSphere, InsideCylinder, OutsideCylinder, OverPlane, BelowPlane,
+              InsideEllipsoid, OutsideEllipsoid };   // ellipsoid: a centre, b semi-axes, r = d (packmol: Σ((x−a)/b)² ≤ d)
   Kind kind = InsideBox;
   Vec3 a{0, 0, 0};   // box: low corner · sphere: centre · cylinder: base point · plane: normal (a·x = r)
   Vec3 b{0, 0, 0};   // box: high corner · cylinder: axis direction (unit)
   double r = 0;      // sphere / cylinder radius · plane offset
   double length = 0; // cylinder length along the axis
+  std::vector<int> atoms;   // the molecule's atoms it holds for (0-based, sorted; packmol "atoms … end atoms"); empty: all
+  bool applies(int atom) const { return atoms.empty() || std::binary_search(atoms.begin(), atoms.end(), atom); }
   // Violation distance (Å) of a point; 0 when it satisfies the region.
   double violation(const Vec3& x) const;
 };

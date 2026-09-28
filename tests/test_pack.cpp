@@ -180,7 +180,7 @@ TEST(Pack, ReadsPackmolInput) {
   for (size_t i = 0; i < 36; ++i) EXPECT_LE(s.atoms[i].pos[2], 15.0);
   {
     std::ofstream f(dir / "bad.inp");
-    f << "structure w.xyz\n  number 3\n  inside ellipsoid 0 0 0 1 1 1 2\nend structure\n";
+    f << "structure w.xyz\n  number 3\n  inside torus 0 0 0 1 1 1 2\nend structure\n";
   }
   EXPECT_THROW(read_packmol_input((dir / "bad.inp").string(), o, &out), PackError);
 }
@@ -206,4 +206,47 @@ TEST(Pack, CompressionToTargetDensity) {
     for (size_t j = i + 1; j < s.atoms.size(); ++j)
       if (s.atoms[i].mol != s.atoms[j].mol) dmin = std::min(dmin, norm(s.cell.minimum_image(s.atoms[i].pos - s.atoms[j].pos)));
   EXPECT_GT(dmin, 1.5);
+}
+
+TEST(Pack, PerAtomRegionsAndEllipsoids) {
+  // a rod of five carbons written to a file, packed as a monolayer: atom 1 below z = 2, atom 5 above z = 6 (packmol's
+  // "atoms 1 … end atoms" idiom for oriented layers); and waters inside an ellipsoid
+  const auto dir = std::filesystem::temp_directory_path() / "caps_pack_atoms";
+  std::filesystem::create_directories(dir);
+  {
+    std::ofstream f(dir / "rod.xyz");
+    f << "5\nrod\n";
+    for (int k = 0; k < 5; ++k) f << "C 0 0 " << 1.5 * k << "\n";
+  }
+  {
+    std::ofstream f(dir / "w.xyz");
+    f << "3\nwater\nO 0 0 0\nH 0.957 0 0\nH -0.240 0.927 0\n";
+  }
+  const std::string text =
+      "tolerance 2.0\n"
+      "structure rod.xyz\n  number 12\n  inside box 0. 0. -2. 16. 16. 10.\n"
+      "  atoms 1\n    below plane 0. 0. 1. 2.\n  end atoms\n"
+      "  atoms 5\n    over plane 0. 0. 1. 6.\n  end atoms\n"
+      "end structure\n"
+      "structure w.xyz\n  number 20\n  inside ellipsoid 30. 30. 30. 8. 5. 4. 1.0\nend structure\n";
+  PackOptions o;
+  const auto items = parse_packmol_input(text, dir.string(), o, nullptr, "test.inp");
+  ASSERT_EQ(items[0].regions.size(), 3u);
+  EXPECT_TRUE(items[0].regions[0].atoms.empty());
+  EXPECT_EQ(items[0].regions[1].atoms, std::vector<int>{0});
+  EXPECT_EQ(items[0].regions[2].atoms, std::vector<int>{4});
+  PackReport rep;
+  const System s = pack(items, o, &rep);
+  EXPECT_TRUE(rep.success) << rep.notes.size();
+  int oriented = 0;
+  for (int m = 0; m < 12; ++m) oriented += s.atoms[size_t(5 * m)].pos[2] <= 2.0 + 1e-6 && s.atoms[size_t(5 * m + 4)].pos[2] >= 6.0 - 1e-6;
+  EXPECT_EQ(oriented, 12);
+  for (int w = 0; w < 20; ++w)
+    for (int a = 0; a < 3; ++a) {
+      const Vec3 p = s.atoms[size_t(60 + 3 * w + a)].pos;
+      const double f = std::pow((p[0] - 30) / 8, 2) + std::pow((p[1] - 30) / 5, 2) + std::pow((p[2] - 30) / 4, 2);
+      EXPECT_LE(f, 1.0 + 1e-6);
+    }
+  EXPECT_THROW(parse_packmol_input("structure rod.xyz\n  constrain_rotation x 0. 20.\nend structure\n", dir.string(), o, nullptr, "t"), PackError);
+  EXPECT_THROW(parse_packmol_input("structure rod.xyz\n  atoms 9\nend structure\n", dir.string(), o, nullptr, "t"), PackError);
 }
