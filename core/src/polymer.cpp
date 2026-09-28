@@ -79,6 +79,9 @@ struct Template {
   bool tail_fixed = false;
   int r1 = -1, r2 = -1;
   double tf[3] = {0, 0, 0};
+  // the backbone runs through a ring (every bond from head to tail is a ring bond: 2,3-linked norbornenes, ENB): its
+  // links sit in narrow torsion windows, so every step searches widely and keeps the roomiest placement
+  bool ring_backbone = false;
 };
 
 // orthonormal frame at t from its neighbours a (e1 toward a) and b
@@ -250,6 +253,11 @@ Template make_template(const std::string& name, const std::string& smiles, const
       if (w == b) return o;
     return 0;
   };
+  {
+    bool all = T.tail != 0;
+    for (int k = T.tail; all && T.parent[size_t(k)] >= 0; k = T.parent[size_t(k)]) all = in_ring(order[size_t(k)], order[size_t(T.parent[size_t(k)])]);
+    T.ring_backbone = all;
+  }
   // torsion groups: atoms turning about the same bond share one sampled value
   std::map<std::pair<int, int>, int> groups;
   T.group.assign(size_t(T.n), -1);
@@ -1108,6 +1116,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
 
   // one growth step of chain ci: place its next unit (best of the trials) or back up
   auto advance = [&](int ci) {
+    const int this_trials = trials;
     auto& ch = C[size_t(ci)];
     const int k = int(ch.unit_start.size());
     const Template& t = T[size_t(ch.seq[size_t(k)])];
@@ -1315,6 +1324,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     };
     double step_lnw = 0;
     if (o.method == 0) {
+      // a ring backbone: many more trials each step (the roomiest of them kept)
+      const int trials = t.ring_backbone ? std::max(this_trials, std::min(4 * this_trials, 600)) : this_trials;
       // with an orienting field a trial within the limits ranks by margin + bonus · P₂ (every one above any trial outside)
       const double bonus = orienting ? 0.25 * o.orient_strength : 0.0;
       double best_j = -1e9;
@@ -1365,6 +1376,29 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           best_gv = gv;
           best_root = root_t;
           if (!orienting && o.comfortable > 0 && worst >= o.comfortable) break;
+        }
+      }
+      // every trial outside the limits: a narrow feasible window the mostly staggered draws miss (the cis links of a
+      // ring backbone such as 2,3-exo,exo norbornenes, crowded junctions) — a wide search of the same step before backing
+      // up: sp3 torsions drawn uniformly over the whole circle, planar groups as before; every trial scored and the
+      // roomiest kept
+      if (best_m < o.accept && t.ring_backbone) {   // other units back up as before (dense melts of vinyl polymers)
+        const int wide = std::min(2 * trials, 2400);
+        for (int tr = 0; tr < wide; ++tr) {   // all of them, the roomiest kept (a cramped choice dead-ends a few units on)
+          const double root_t = root_kind == 0 ? (U(rng) * 2 - 1) * kPi : draw(root_kind, 0);
+          for (size_t gi = 0; gi < gv.size(); ++gi) {
+            const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
+            gv[gi] = kind == 0 ? (U(rng) * 2 - 1) * kPi : draw(kind, 0);
+          }
+          for (int a = 1; a < t.n; ++a)
+            if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+          const double worst = score(root_t, gv, best_m, trial);
+          if (worst > best_m) {
+            best_m = worst;
+            best = trial;
+            best_gv = gv;
+            best_root = root_t;
+          }
         }
       }
       // just short of the limits (long flexible units, crowded junctions): nudge single torsions of the best trial
@@ -1777,7 +1811,15 @@ const std::vector<std::string>& chain_end_names() {
 System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
   if (!o.auto_scale) return grow_chains_once(spec, o, report);
   std::vector<double> scales = {o.contact_scale > 0 ? o.contact_scale : 1.0};
-  for (double x : {0.85, 0.75, 0.7, 0.6})
+  // a backbone through a ring (2,3-linked norbornenes, ENB): growth holds the link angles rigid where the real chain
+  // opens them to relieve cage-to-cage strain, so the scale may go lower; the relax afterwards restores the distances
+  bool ring_backbone = false;
+  for (const auto& u : spec.units) {
+    try { ring_backbone = ring_backbone || repeat_unit_info(u.smiles).ring_backbone; } catch (...) {}
+  }
+  std::vector<double> steps = {0.85, 0.75, 0.7, 0.6};
+  if (ring_backbone) steps.insert(steps.end(), {0.5, 0.45});
+  for (double x : steps)
     if (x < scales.front() - 1e-9) scales.push_back(x);
   for (size_t k = 0; k < scales.size(); ++k) {
     GrowOptions g = o;
