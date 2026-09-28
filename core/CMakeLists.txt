@@ -54,6 +54,7 @@ add_library(caps_core STATIC
   src/layers.cpp
   src/pipeline_outputs.cpp
   src/ffmerge.cpp
+  src/manybody.cpp
   src/dpd.cpp
   src/moltemplate_export.cpp
   src/kremer_grest.cpp

@@ -97,6 +97,20 @@ struct StillingerWeber {
   std::vector<char> atom;   // per atom: takes part
 };
 
+// A literature many-body potential that LAMMPS reads from its own file (Tersoff, Stillinger–Weber, Vashishta, EAM …),
+// for some atom types: a crystal or filler in a polymer. CAPS does not evaluate it: in CAPS the pairs among its types
+// carry nothing (runs hold those atoms still), the LAMMPS export overlays the style on the other pair terms and reads the
+// file (see manybody.hpp).
+struct ManyBodyFile {
+  std::string style;                  // the LAMMPS pair style: tersoff, tersoff/mod, tersoff/mod/c, tersoff/zbl, sw, vashishta, eam/alloy, eam/fs, gw, gw/zbl
+  std::string file;                   // the potential file, as the user gave it
+  std::string units;                  // what the file's energies are in: metal (eV) or real (kcal/mol)
+  bool tagged = false;                // the file says its units on its first line (else the copy written with the inputs does)
+  std::vector<std::string> element;   // per type index: the element the file names that type by; "" not in the potential (NULL)
+  std::string citation;               // from the file's first line, when it gives one
+  bool on() const { return !style.empty(); }
+};
+
 struct ForceField {
   std::string name;                        // "GAFF 1.81 (hydrocarbon subset)"
   std::vector<std::string> atom_type;      // per atom: c3, ca, hc, ha
@@ -144,6 +158,7 @@ struct ForceField {
   std::vector<std::array<uint32_t, 2>> pairs14;
   std::vector<std::vector<uint32_t>> excluded;   // per atom, sorted: 1-2, 1-3 and 1-4 partners, left out of the pair list
   StillingerWeber sw;                         // many-body term (mW water); counted in the vdW energy
+  ManyBodyFile manybody;                      // a literature many-body potential for some types (LAMMPS only)
   double lj14 = 0.5, coul14 = 1.0 / 1.2;
   bool keep13 = false;                        // 1-3 pairs interact in full (MARTINI: special_bonds 0 1 1)
   std::set<std::pair<int, int>> excluded_type_pairs;   // type-index pairs (a ≤ b) that never interact (a held graphene sheet)
