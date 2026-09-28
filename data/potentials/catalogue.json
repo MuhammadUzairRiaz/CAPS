@@ -276,6 +276,61 @@
    "for": "zirconium",
    "citation": "Mendelev and  Ackland, Phil Mag Lett 87, 349-359 (2007)",
    "units": "metal"
+  },
+  {
+   "id": "meam-baskes1992",
+   "name": "MEAM element library (Baskes 1992)",
+   "style": "meam",
+   "file": "lammps/library.meam",
+   "elements": [
+    "Al",
+    "Si",
+    "Mg",
+    "Cu",
+    "Fe",
+    "Sn",
+    "Ag",
+    "Au",
+    "Ni",
+    "Pd",
+    "Pt",
+    "Pb",
+    "Rh",
+    "Ir",
+    "Li",
+    "Na",
+    "K",
+    "V",
+    "Nb",
+    "Ta",
+    "Cr",
+    "Mo",
+    "W",
+    "C",
+    "H",
+    "Bi"
+   ],
+   "for": "metals and semiconductors one element at a time (Cu, Ni, Al, Au, Ag, Fe, W, Si …): each element takes the first library entry of its atomic number unless mapped; written in metal units",
+   "citation": "Baskes, Phys Rev B, 46, 2727-2742 (1992)",
+   "units": "metal"
+  },
+  {
+   "id": "sic-meam",
+   "name": "Si–C MEAM (LAMMPS example set)",
+   "style": "meam",
+   "file": "lammps/library.meam",
+   "file2": "lammps/SiC.meam",
+   "entries": {
+    "Si": "Si",
+    "C": "C"
+   },
+   "elements": [
+    "Si",
+    "C"
+   ],
+   "for": "silicon carbide (library entries 'Si' and 'C' with the SiC alloy parameters); its file gives no citation; written in metal units",
+   "citation": "Baskes, Phys Rev B, 46, 2727-2742 (1992) (element library); SiC.meam: no citation in the file",
+   "units": "metal"
   }
  ]
 }

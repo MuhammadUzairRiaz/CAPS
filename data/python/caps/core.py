@@ -229,7 +229,11 @@ class _Field:
         {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. A crystal group may instead take
         a literature many-body potential that LAMMPS reads from its file: {"name": "Si", "molecules": "1", "potential":
         {"style": "tersoff", "file": "Si.tersoff", "units": "metal"}} (units only when the file does not say them), or one
-        of the library by its id: {"potential": {"id": "sio2-munetoh2007"}} (caps.potentials() lists them); its
+        of the library by its id: {"potential": {"id": "sio2-munetoh2007"}} (caps.potentials() lists them). MEAM takes the
+        library file, an optional parameter file and which library entry each element takes: {"style": "meam", "file":
+        "library.meam", "file2": "SiC.meam", "entries": {"Si": "Si", "C": "C"}} (by default the first entry of the atomic
+        number); AIREBO / REBO / MEAM are exported in metal units unless units="real" (AIREBO / REBO then with a copy CAPS
+        converts); its
         atoms get one type per element, standard masses, no charge, UFF Lennard-Jones for the cross pairs, and CAPS runs
         need them held (LAMMPS evaluates the potential). Between groups the Lennard-Jones
         pairs follow eps_rule (geometric | arithmetic) and sigma_rule (arithmetic | geometric | sixthpower), or pairs =
@@ -289,7 +293,7 @@ def potentials() -> list:
         cat = json.loads((lib / "catalogue.json").read_text())
     except OSError:
         return []
-    return [dict(p, file=str(lib / p["file"])) for p in cat.get("potentials", [])]
+    return [dict(p, file=str(lib / p["file"]), **({"file2": str(lib / p["file2"])} if p.get("file2") else {})) for p in cat.get("potentials", [])]
 
 
 def _potential(p: dict) -> dict:
@@ -297,9 +301,18 @@ def _potential(p: dict) -> dict:
     if "id" in p and "file" not in p:
         for e in potentials():
             if e["id"] == p["id"]:
-                return {"style": e["style"], "file": e["file"]}
+                r = {"style": e["style"], "file": e["file"]}
+                if e.get("file2"):
+                    r["file2"] = e["file2"]
+                if e.get("entries"):
+                    r["entries"] = dict(e["entries"])
+                r.update({k: v for k, v in p.items() if k in ("entries", "args")})   # the user's mapping over the library's
+                return r
         raise CapsError(f"unknown potential {p['id']!r}: " + ", ".join(e["id"] for e in potentials()))
-    return dict(p, file=os.path.abspath(os.path.expanduser(p["file"])))
+    r = dict(p, file=os.path.abspath(os.path.expanduser(p["file"])))
+    if p.get("file2"):
+        r["file2"] = os.path.abspath(os.path.expanduser(p["file2"]))
+    return r
 
 
 class Document:

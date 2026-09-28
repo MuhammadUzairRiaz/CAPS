@@ -227,6 +227,17 @@ internal static class SelfTest
             vm.CompareEnergies().GetAwaiter().GetResult();
             Check(airebo && metalDeck && (vm.ParityOk || vm.ParityDetail.Contains("not found")),
                   $"carbon filler under AIREBO: suggested {airebo} · metal units {metalDeck} · {vm.ParityText}\n{vm.ParityTable}");
+            // MEAM from the library: the SiC set's entries in its order, carbon mapped
+            var meamIx = vm.Field.PotentialLibrary.FindIndex(p => p.Id == "sic-meam");
+            var meamDeck = "";
+            if (meamIx > 0 && vm.Field.Groups.Count == 2)
+            {
+                vm.Field.Groups[0].Pick = meamIx;
+                vm.Field.AssignGroups().GetAwaiter().GetResult();
+                meamDeck = vm.Field.Complete ? vm.Document!.LammpsInput("system.data") : vm.Field.Log;
+            }
+            Check(meamDeck.Contains("* * meam library.meam Si C SiC.meam C NULL NULL", StringComparison.Ordinal) && vm.Field.Groups[0].IsMeam && vm.Field.Groups[0].EntriesText == "Si=Si C=C",
+                  "MEAM from the library: " + meamDeck.Split('\n').FirstOrDefault(l => l.Contains("meam", StringComparison.Ordinal) && l.StartsWith("pair_coeff", StringComparison.Ordinal)));
             vm.Field.Clear().GetAwaiter().GetResult();
             vm.Field.GroupMode = false;
             vm.Field.Groups.Clear();

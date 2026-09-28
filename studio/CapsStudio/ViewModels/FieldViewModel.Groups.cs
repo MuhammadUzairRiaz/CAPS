@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 namespace CapsStudio.ViewModels;
 
 /// <summary>A literature potential of the library (data/potentials/catalogue.json).</summary>
-public sealed record PotentialEntry(string Id, string Name, string Style, string File, string[] Elements, string For, string Citation)
+public sealed record PotentialEntry(string Id, string Name, string Style, string File, string[] Elements, string For, string Citation, string File2 = "", string Entries = "")
 {
     public string Label => Id.Length == 0 ? Name : $"{Name} · {string.Join(" ", Elements)}";
     public string Tip => Id.Length == 0 ? "" : $"{For} · {Style} · {Citation}";
@@ -29,8 +29,16 @@ public sealed class FieldGroupRow : ObservableObject
     public bool IsPotential => _kind == 1;
     public int FfIndex { get => _ffIndex; set { if (Set(ref _ffIndex, value)) Owner.GroupForceFieldChosen(ForceField); } }
     public int Charges { get => _charges; set => Set(ref _charges, value); }
-    public int Style { get => _style; set => Set(ref _style, value); }
-    public string File { get => _file; set => Set(ref _file, value); }
+    public int Style { get => _style; set { if (Set(ref _style, value)) { Raise(nameof(IsMeam)); Raise(nameof(EntriesTip)); } } }
+    public string File { get => _file; set { if (Set(ref _file, value)) Raise(nameof(EntriesTip)); } }
+    /// <summary>MEAM: the library file is File; the alloy parameter file and each element's library entry.</summary>
+    public bool IsMeam => _style >= 0 && _style < FieldViewModel.PotentialStyles.Length && FieldViewModel.PotentialStyles[_style] == "meam";
+    private string _file2 = "", _entries = "";
+    public string File2 { get => _file2; set => Set(ref _file2, value); }
+    /// <summary>"Si=SiS C=C": the library entry each element takes (an element not named takes the first entry of its
+    /// atomic number).</summary>
+    public string EntriesText { get => _entries; set => Set(ref _entries, value); }
+    public string EntriesTip => IsMeam ? FieldViewModel.MeamEntriesTip(_file) : "";
     /// <summary>0 the file says (its first line's UNITS:), 1 metal (eV), 2 real (kcal/mol).</summary>
     public int Units { get => _units; set => Set(ref _units, value); }
     public FfEntry? ForceField => _ffIndex >= 0 && _ffIndex < Library.Count ? Library[_ffIndex] : null;
@@ -48,6 +56,8 @@ public sealed class FieldGroupRow : ObservableObject
             if (si < 0) throw new InvalidOperationException($"potential style {e.Style} is not in the Studio's list");
             Style = si;
             File = e.File;
+            File2 = e.File2;
+            EntriesText = e.Entries;
             Units = 0;
             Raise(nameof(PickTip));
         }
@@ -61,7 +71,28 @@ public sealed partial class FieldViewModel
     /// <summary>The many-body styles CAPS writes (manybody.hpp): LAMMPS converts the first ten's files between metal and real units;
     /// AIREBO, AIREBO-M and REBO (carbon, hydrogen) are read in metal units only: the LAMMPS files are then in metal units.</summary>
     public static readonly string[] PotentialStyles = ["tersoff", "tersoff/mod", "tersoff/mod/c", "tersoff/zbl", "sw", "vashishta", "gw", "gw/zbl", "eam/alloy", "eam/fs",
-                                                       "airebo", "airebo/morse", "rebo"];
+                                                       "airebo", "airebo/morse", "rebo", "meam"];
+
+    /// <summary>A MEAM library's entries by atomic number, as LAMMPS reads them (19 values per entry, the first of a
+    /// repeated name counts), for the entries field's tip.</summary>
+    public static string MeamEntriesTip(string path)
+    {
+        try
+        {
+            var words = new List<string>();
+            foreach (var raw in System.IO.File.ReadLines(path))
+            {
+                var l = raw.Contains('#') ? raw[..raw.IndexOf('#')] : raw;
+                words.AddRange(l.Replace('\'', ' ').Split((char[])[' ', '\t'], StringSplitOptions.RemoveEmptyEntries));
+            }
+            var seen = new HashSet<string>();
+            var byZ = new SortedDictionary<int, List<string>>();
+            for (var k = 0; k + 18 < words.Count; k += 19)
+                if (seen.Add(words[k]) && int.TryParse(words[k + 3], out var z)) (byZ.TryGetValue(z, out var l) ? l : byZ[z] = new()).Add($"{words[k]} ({words[k + 1]})");
+            return "Library entries by atomic number (the first is the default):\n" + string.Join("\n", byZ.Select(kv => $"Z {kv.Key}: {string.Join(", ", kv.Value)}"));
+        }
+        catch { return "Give each element's library entry: Si=SiS C=C"; }
+    }
     public static readonly string[] PotentialUnits = ["as the file says", "metal (eV)", "real (kcal/mol)"];
     public static readonly string[] EpsRules = ["geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
     public static readonly string[] SigmaRules = ["arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
@@ -83,8 +114,11 @@ public sealed partial class FieldViewModel
             foreach (var p in js.RootElement.GetProperty("potentials").EnumerateArray())
             {
                 string S(string k) => p.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()! : "";
+                var entries = p.TryGetProperty("entries", out var en) && en.ValueKind == System.Text.Json.JsonValueKind.Object
+                    ? string.Join(" ", en.EnumerateObject().Select(x => $"{x.Name}={x.Value.GetString()}")) : "";
                 r.Add(new PotentialEntry(S("id"), S("name"), S("style"), Path.Combine(dir, S("file")),
-                                         p.GetProperty("elements").EnumerateArray().Select(x => x.GetString()!).ToArray(), S("for"), S("citation")));
+                                         p.GetProperty("elements").EnumerateArray().Select(x => x.GetString()!).ToArray(), S("for"), S("citation"),
+                                         S("file2").Length > 0 ? Path.Combine(dir, S("file2")) : "", entries));
             }
         }
         catch { }
@@ -171,6 +205,18 @@ public sealed partial class FieldViewModel
                 if (g.File.Trim().Length == 0) return (null, $"{g.Name}: choose the potential file (LAMMPS's potentials folder, the NIST repository, the paper)");
                 var p = new JsonObject { ["style"] = PotentialStyles[Math.Clamp(g.Style, 0, PotentialStyles.Length - 1)], ["file"] = g.File.Trim() };
                 if (g.Units > 0) p["units"] = g.Units == 1 ? "metal" : "real";
+                if (g.IsMeam)
+                {
+                    if (g.File2.Trim().Length > 0) p["file2"] = g.File2.Trim();
+                    var map = new JsonObject();
+                    foreach (var w in g.EntriesText.Split((char[])[' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var kv = w.Split('=');
+                        if (kv.Length != 2 || kv[0].Length == 0 || kv[1].Length == 0) return (null, $"{g.Name}: entries as element=entry (Si=SiS C=C)");
+                        map[kv[0]] = kv[1];
+                    }
+                    if (map.Count > 0) p["entries"] = map;
+                }
                 o["potential"] = p;
             }
             else
@@ -229,7 +275,9 @@ public sealed partial class FieldViewModel
             var g = n!.AsObject();
             var head = $"\"name\": {Q((string?)g["name"])}, \"molecules\": {Q((string?)g["molecules"])}";
             if (g["potential"] is JsonObject p)
-                parts.Add($"{{{head}, \"potential\": {{\"style\": {Q((string?)p["style"])}, \"file\": {Q((string?)p["file"])}" + (p["units"] is { } u ? $", \"units\": {Q((string?)u)}" : "") + "}}");
+                parts.Add($"{{{head}, \"potential\": {{\"style\": {Q((string?)p["style"])}, \"file\": {Q((string?)p["file"])}" + (p["units"] is { } u ? $", \"units\": {Q((string?)u)}" : "") +
+                          (p["file2"] is { } f2 ? $", \"file2\": {Q((string?)f2)}" : "") +
+                          (p["entries"] is JsonObject em ? ", \"entries\": {" + string.Join(", ", em.Select(kv => $"{Q(kv.Key)}: {Q((string?)kv.Value)}")) + "}" : "") + "}}");
             else
             {
                 var c = (int?)g["charges"] ?? 4;

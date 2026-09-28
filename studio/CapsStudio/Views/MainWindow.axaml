@@ -2848,6 +2848,11 @@
                         <ComboBox Grid.Column="3" ItemsSource="{x:Static vm:FieldViewModel.PotentialUnits}" SelectedIndex="{Binding Units}" HorizontalAlignment="Stretch"
                                   ToolTip.Tip="What the file's energies are in: most published files say it on their first line (UNITS: metal); if yours does not, say it here" />
                       </Grid>
+                      <Grid ColumnDefinitions="*,Auto,220" ColumnSpacing="6" IsVisible="{Binding IsMeam}">
+                        <TextBox Text="{Binding File2}" Watermark="MEAM alloy parameter file (SiC.meam) · empty: none" />
+                        <Button Grid.Column="1" Content="…" Click="OnFieldGroupBrowse2" Tag="{Binding}" ToolTip.Tip="The MEAM parameter file (optional)" />
+                        <TextBox Grid.Column="2" Text="{Binding EntriesText}" Watermark="entries: Si=SiS C=C" ToolTip.Tip="{Binding EntriesTip}" />
+                      </Grid>
                       </StackPanel>
                       <Button Grid.Column="4" Classes="tool" Width="26" MinWidth="26" Height="26" MinHeight="26" Padding="0" Click="OnFieldGroupRemove" Tag="{Binding}" ToolTip.Tip="Remove the group">
                         <local:Icon Kind="close" Size="12" />
