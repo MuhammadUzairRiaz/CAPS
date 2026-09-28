@@ -25,6 +25,9 @@ public sealed record StackLayer(string Number, string Title, string Height, stri
     public bool Removable => Extra >= 0;
 }
 
+/// <summary>A row of the lattice-matching table: a layer, its repeats, and the strain it takes to fit the slab's cell.</summary>
+public sealed record MatchRow(string Layer, string Supercell, string StrainA, string StrainB, bool TooStrained);
+
 /// <summary>Surface &amp; interface builder (design/boards/SurfaceBuilder): cleave a crystal along (hkl), choose the
 /// termination, passivate, and grow a polymer film on the surface (fibre–rubber interfaces).</summary>
 public sealed partial class MainViewModel
@@ -181,7 +184,7 @@ public sealed partial class MainViewModel
     private string SurfOptions(bool forInterface) => new JsonObject
     {
         ["h"] = (int)_surfH, ["k"] = (int)_surfK, ["l"] = (int)_surfL, ["layers"] = (int)_surfLayers, ["termination"] = Math.Max(0, _surfTermination),
-        ["vacuum"] = forInterface ? 10 : (double)_surfVacuum, ["orthogonal"] = forInterface || _surfOrthogonal ? 1 : 0, ["max_strain"] = 0.02,
+        ["vacuum"] = forInterface ? 10 : (double)_surfVacuum, ["orthogonal"] = forInterface || _surfOrthogonal ? 1 : 0, ["max_strain"] = (double)_surfMaxStrain / 100,
         ["na"] = (int)_surfNa, ["nb"] = (int)_surfNb, ["passivate"] = _surfPassivate ? 1 : 0,
     }.ToJsonString();
 
@@ -274,8 +277,44 @@ public sealed partial class MainViewModel
     public string SurfStackKind => _surfFilm ? (_filmVacuum > 0 ? "slab + film + vacuum" : "slab + film · periodic") : "slab + vacuum";
     public string FilmName => _surfFilmItem?.Name ?? "polymer";
 
+    // lattice matching: the slab sets the lateral cell; a grown film is made in it; an added layer is repeated to come
+    // closest and stretched to fit (the same choice stack_layers makes, first layer as it is)
+    private decimal _surfMaxStrain = 2;
+    public decimal SurfMaxStrain { get => _surfMaxStrain; set { if (Set(ref _surfMaxStrain, Math.Clamp(value, 0, 20))) { RaiseStack(); SurfPreview(); } } }
+    public ObservableCollection<MatchRow> SurfMatchRows { get; } = new();
+    private string _surfMatchNote = "";
+    public string SurfMatchNote { get => _surfMatchNote; private set => Set(ref _surfMatchNote, value); }
+
+    private void RefreshMatchRows()
+    {
+        SurfMatchRows.Clear();
+        var inv = CultureInfo.InvariantCulture;
+        var max = (double)_surfMaxStrain / 100;
+        var shearText = _surfShear;
+        var shear = double.TryParse(shearText.Replace("%", "").Trim(), NumberStyles.Float, inv, out var sh) ? Math.Abs(sh) / 100 : 0;
+        SurfMatchRows.Add(new MatchRow(SurfTitle + " · reference", SurfMatchCell.Length > 0 ? SurfMatchCell : "—", shearText, "0.00 %", shear > max + 1e-12));
+        if (_surfFilm) SurfMatchRows.Add(new MatchRow($"{ShortName(FilmName)} film", "grown in it", "0.00 %", "0.00 %", false));
+        double A = 0, B = 0;
+        if (_surfDoc != null) { var s = _surfDoc.Summary(); A = s.CellA; B = s.CellB; }
+        var worst = 0.0;
+        foreach (var e in _surfExtra)
+        {
+            if (A <= 0 || B <= 0) { SurfMatchRows.Add(new MatchRow(e.Name, "—", "—", "—", false)); continue; }
+            var c = e.Doc.Summary();
+            static int Best(double L, double T) { var best = 1; for (var k = 1; k <= 6; ++k) if (Math.Abs(T / (k * L) - 1) < Math.Abs(T / (best * L) - 1)) best = k; return best; }
+            var na = Best(c.CellA, A); var nb = Best(c.CellB, B);
+            double sa = A / (na * c.CellA) - 1, sb = B / (nb * c.CellB) - 1;
+            worst = Math.Max(worst, Math.Max(Math.Abs(sa), Math.Abs(sb)));
+            SurfMatchRows.Add(new MatchRow(e.Name, $"{na} × {nb}", (100 * sa).ToString("+0.00;-0.00", inv) + " %", (100 * sb).ToString("+0.00;-0.00", inv) + " %",
+                                           Math.Abs(sa) > max || Math.Abs(sb) > max));
+        }
+        SurfMatchNote = worst > max ? $"A layer is strained by more than {_surfMaxStrain:0.#} %: an amorphous polymer relaxes it away; for a crystal pick another slab size (the supercell above) or another plane"
+                      : _surfExtra.Count > 0 ? "Strains before stacking; the slab may be repeated too when that fits the layers better (the report after Build lists the repeats)" : "";
+    }
+
     private void RaiseStack()
     {
+        RefreshMatchRows();
         SurfStack.Clear();
         var term = _surfTermination >= 0 && _surfTermination < SurfTerminations.Count ? SurfTerminations[_surfTermination].Split(" · ")[0] : "";
         var slabH = _surfD * (double)_surfLayers;

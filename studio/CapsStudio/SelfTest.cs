@@ -578,6 +578,8 @@ internal static class SelfTest
             vm.AddLayerFromOpen();
             vm.AddSlabLayer();
             var chip = vm.SurfStackChip;
+            var matchRows = string.Join(" | ", vm.SurfMatchRows.Select(r => $"{r.Layer} {r.Supercell} {r.StrainA} {r.StrainB}"));
+            Check(vm.SurfMatchRows.Count == 3 && vm.SurfMatchRows[0].StrainB == "0.00 %", "lattice matching rows: " + matchRows);
             vm.BuildSurface().GetAwaiter().GetResult();
             var st = vm.Document?.Summary();
             Check(st is { } ss && ss.Atoms > cellAtoms && ss.Molecules >= 2 + 2 && vm.Document!.Provenance().Contains("build.stack") && chip.Contains("3 layers") && !vm.SurfFilm,

@@ -382,6 +382,7 @@ public sealed partial class MainViewModel
     public void UsePolystyreneInGrow()
     {
         _growSpec = null;
+        _growSpecName = "PS";   // the cell's name follows the polymer grown
         Raise(nameof(GrowHasSpec)); Raise(nameof(GrowComponentName)); Raise(nameof(GrowAtomsText)); Raise(nameof(GrowEstimate)); Raise(nameof(GrowCommand));
     }
 
