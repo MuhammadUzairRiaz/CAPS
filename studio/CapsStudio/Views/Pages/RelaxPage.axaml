@@ -19,6 +19,11 @@
         <Button Click="OnCopyPython" ToolTip.Tip="This run on the open structure as a Python script (the caps package), with these settings">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnQueue" IsVisible="{Binding !Idle}" ToolTip.Tip="Queue this run with the settings as they are now; it starts when the current run ends (Jobs lists it)">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="15" VerticalAlignment="Center" /><TextBlock Text="Queue" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
+                  ToolTip.Tip="Where the run goes: this machine, or a host from Settings › Compute &amp; remote (the result comes back to Jobs)" />
         <Button Classes="primary" Click="OnRelax" IsEnabled="{Binding CanRelax}" IsVisible="{Binding !Relaxing}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="relax" Size="16" VerticalAlignment="Center" /><TextBlock Text="Minimise" VerticalAlignment="Center" /></StackPanel>
         </Button>

@@ -26,7 +26,7 @@ public partial class ReactPage : PageBase
         };
     }
 
-    private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunReact();
+    private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitRemote("React"); else await Vm.RunReact(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelReact();
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
     private async void OnInsertCurative(object? s, RoutedEventArgs e) => await Vm.InsertCurative();
@@ -38,4 +38,5 @@ public partial class ReactPage : PageBase
         if (clip != null) await clip.SetTextAsync(Vm.ReactPython());
         Vm.Status = "Copied the crosslinking as Python (import caps; doc = caps.open(…))";
     }
+    private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueReact();
 }
