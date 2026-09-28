@@ -512,3 +512,22 @@ TEST(Polymer, DeeperLookAheadGrows) {
   EXPECT_LT(r3.backtracks, r1.backtracks);   // seeing further, fewer dead ends
   std::printf("look-ahead 1: %d backtracks, %d restarts · look-ahead 3: %d backtracks, %d restarts\n", r1.backtracks, r1.restarts, r3.backtracks, r3.restarts);
 }
+
+TEST(Polymer, LogNormalAndHistogramChainLengths) {
+  // log-normal: the sample's Nn and Đ come back (continuous draws, rounded to integers)
+  const auto n = draw_chain_lengths("log-normal", 60, 1.4, 40000, 7);
+  double s1 = 0, s2 = 0;
+  for (int x : n) s1 += x, s2 += double(x) * x;
+  const double nn = s1 / n.size(), nw = s2 / s1;
+  EXPECT_NEAR(nn, 60, 0.6);
+  EXPECT_NEAR(nw / nn, 1.4, 0.02);
+  // its density integrates to one
+  double area = 0;
+  for (double x = 0.5; x < 2000; x += 0.5) area += chain_length_pdf("log-normal", 60, 1.4, x) * 0.5;
+  EXPECT_NEAR(area, 1.0, 1e-3);
+  // a histogram: lengths drawn in proportion to their weights
+  const auto h = draw_chain_lengths(std::vector<std::pair<int, double>>{{10, 1}, {20, 3}}, 20000, 3);
+  const double f20 = double(std::count(h.begin(), h.end(), 20)) / h.size();
+  EXPECT_NEAR(f20, 0.75, 0.01);
+  EXPECT_THROW(draw_chain_lengths(std::vector<std::pair<int, double>>{{1, 1}}, 5, 1), std::invalid_argument);
+}

@@ -119,9 +119,13 @@
               <StackPanel Margin="16,12" Spacing="10">
                 <StackPanel Spacing="4"><TextBlock Text="Distribution" Classes="label" /><ComboBox ItemsSource="{Binding PdDistNames}" SelectedIndex="{Binding PdDist}" HorizontalAlignment="Stretch" /></StackPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                  <StackPanel Spacing="4"><TextBlock Text="Nₙ" Classes="label" /><NumericUpDown Value="{Binding PdNn}" Minimum="2" Maximum="100000" Increment="1" FormatString="0.#" /></StackPanel>
+                  <StackPanel Spacing="4" IsVisible="{Binding PdShowNn}"><TextBlock Text="Nₙ" Classes="label" /><NumericUpDown Value="{Binding PdNn}" Minimum="2" Maximum="100000" Increment="1" FormatString="0.#" /></StackPanel>
                   <StackPanel Grid.Column="1" Spacing="4" IsVisible="{Binding PdShowPdi}"><TextBlock Text="Đ" Classes="label" /><NumericUpDown Value="{Binding PdPdi}" Minimum="1.001" Maximum="10" Increment="0.01" FormatString="0.00#" /></StackPanel>
                 </Grid>
+                <StackPanel Spacing="4" IsVisible="{Binding PdIsHistogram}">
+                  <TextBlock Text="Histogram · length:weight (number weights)" Classes="label" />
+                  <TextBox Text="{Binding PdHistogram}" Classes="mono" FontSize="11.5" Watermark="20:1, 40:3, 60:2" ToolTip.Tip="A measured distribution binned by chain length (repeat units): each chain's length drawn in proportion to the weights" />
+                </StackPanel>
                 <StackPanel Spacing="4"><TextBlock Text="Match" Classes="label" /><ComboBox ItemsSource="{Binding PdMatchNames}" SelectedIndex="{Binding PdMatch}" HorizontalAlignment="Stretch" /></StackPanel>
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="One length per chain in Grow; the chain count is Grow's." />
               </StackPanel>
