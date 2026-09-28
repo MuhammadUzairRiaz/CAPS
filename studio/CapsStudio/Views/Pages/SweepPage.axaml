@@ -169,7 +169,7 @@
             <StackPanel Spacing="10">
               <TextBlock Text="Where" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <StackPanel Spacing="6"><TextBlock Text="Host" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" ToolTip.Tip="Sweeps run on this machine; remote hosts take single jobs for now"><ComboBoxItem Content="This machine" /></ComboBox></StackPanel>
+                <StackPanel Spacing="6"><TextBlock Text="Host" Classes="label" /><TextBlock Text="This machine" FontSize="13" VerticalAlignment="Center" Margin="0,6,0,0" ToolTip.Tip="A sweep's runs share this machine's threads; single runs go to hosts from their own pages (Where)" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Runs at a time" Classes="label" /><NumericUpDown Value="{Binding SweepConcurrency}" Minimum="1" Maximum="8" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
               </Grid>
               <StackPanel Spacing="6"><TextBlock Text="Output folder" Classes="label" /><TextBox Text="{Binding SweepFolder}" Classes="mono" FontSize="11.5" /></StackPanel>

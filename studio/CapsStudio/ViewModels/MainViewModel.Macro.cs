@@ -169,24 +169,62 @@ public sealed partial class MainViewModel
     internal static string NativeLibraryPath =>
         Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsMacOS() ? "libcaps.dylib" : OperatingSystem.IsWindows() ? "caps.dll" : "libcaps.so");
 
-    /// <summary>Runs the script with python3 (CAPS_PYTHON overrides), the caps package and this Studio's library.</summary>
+    // Target: 0 new documents (the script makes its own), 1 the open structure (caps.current(); caps.hand_back(doc) returns
+    // the result, which opens when the macro ends). Where: this machine or a host (the script and the structure go up with
+    // scp, python3 runs there with the host's caps package, the output streams back).
+    public static readonly string[] MacroTargets = ["New documents", "The open structure (caps.current())"];
+    private int _macroTarget, _macroWhere;
+    public int MacroTarget { get => _macroTarget; set => Set(ref _macroTarget, Math.Clamp(value, 0, 1)); }
+    public int MacroWhere { get => Math.Min(_macroWhere, _settings.Hosts.Count); set => Set(ref _macroWhere, Math.Clamp(value, 0, _settings.Hosts.Count)); }
+
+    /// <summary>Runs the script with python3 (CAPS_PYTHON overrides), the caps package and this Studio's library — here or
+    /// on a host.</summary>
     public async Task RunMacro()
     {
         if (_macroRunning) return;
+        if (_macroTarget == 1 && _doc == null) { Status = "Target is the open structure: open or build one first"; return; }
         SaveMacro();
         var script = Path.Combine(MacroFolder, _macroName);
+        var host = MacroWhere > 0 ? _settings.Hosts[MacroWhere - 1] : null;
         MacroRunning = true;
-        MacroOutput = $">>> run {_macroName}\n";
+        MacroOutput = $">>> run {_macroName}{(host != null ? " on " + host.Name : "")}\n";
+        var runDir = Path.Combine(MacroFolder, ".run", Path.GetFileNameWithoutExtension(_macroName));
+        var result = Path.Combine(runDir, "result.data");
+        string remoteDir = "";
         try
         {
+            Directory.CreateDirectory(runDir);
+            if (File.Exists(result)) File.Delete(result);
+            if (_macroTarget == 1) _doc!.Save(Path.Combine(runDir, "current.data"));
             var python = Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } p ? p : "python3";
-            var psi = new ProcessStartInfo(python) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = MacroFolder };
-            psi.ArgumentList.Add("-u");
-            if (_stopOnError) { psi.ArgumentList.Add("-X"); psi.ArgumentList.Add("faulthandler"); }
-            psi.ArgumentList.Add(script);
-            if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg + (Environment.GetEnvironmentVariable("PYTHONPATH") is { Length: > 0 } pp ? Path.PathSeparator + pp : "");
-            psi.Environment["CAPS_LIB"] = NativeLibraryPath;
-            using var proc = Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + python);
+            ProcessStartInfo psi;
+            if (host == null)
+            {
+                psi = new ProcessStartInfo(python) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = MacroFolder };
+                psi.ArgumentList.Add("-u");
+                if (_stopOnError) { psi.ArgumentList.Add("-X"); psi.ArgumentList.Add("faulthandler"); }
+                psi.ArgumentList.Add(script);
+                if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg + (Environment.GetEnvironmentVariable("PYTHONPATH") is { Length: > 0 } pp ? Path.PathSeparator + pp : "");
+                psi.Environment["CAPS_LIB"] = NativeLibraryPath;
+                if (_macroTarget == 1) psi.Environment["CAPS_DOC"] = Path.Combine(runDir, "current.data");
+                psi.Environment["CAPS_OUT"] = result;
+            }
+            else
+            {
+                var id = $"macro-{DateTime.Now:yyyyMMdd-HHmmss}";
+                var mk = await Tool("ssh", SshArgs(host, $"mkdir -p \"{host.WorkDir}/{id}\" && cd \"{host.WorkDir}/{id}\" && pwd"), 30000);
+                if (mk.Code != 0) throw new InvalidOperationException("ssh: " + (mk.Err.Length > 0 ? mk.Err.Split('\n')[0] : $"exit {mk.Code}"));
+                remoteDir = mk.Out.Split('\n').Last().Trim();
+                var up = new List<string> { script };
+                if (_macroTarget == 1) up.Add(Path.Combine(runDir, "current.data"));
+                var sent = await Tool("scp", ScpArgs(host, up, $"{Target(host)}:{remoteDir}/"), 120000);
+                if (sent.Code != 0) throw new InvalidOperationException("scp: " + (sent.Err.Length > 0 ? sent.Err.Split('\n')[0] : $"exit {sent.Code}"));
+                MacroOutput += $"sent to {host.Name}:{remoteDir}\n";
+                var env = (_macroTarget == 1 ? "CAPS_DOC=current.data " : "") + "CAPS_OUT=result.data";
+                psi = new ProcessStartInfo("ssh") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+                foreach (var a2 in SshArgs(host, $"cd {Q(remoteDir)} && {env} python3 -u {Q(Path.GetFileName(script))}")) psi.ArgumentList.Add(a2);
+            }
+            using var proc = Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + psi.FileName);
             _macroProc = proc;
             var sb = new StringBuilder(MacroOutput);
             void Pump(StreamReader r) => Task.Run(async () =>
@@ -203,10 +241,21 @@ public sealed partial class MainViewModel
             await proc.WaitForExitAsync();
             await Task.Delay(100);
             var code = proc.ExitCode;
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => { sb.AppendLine(code == 0 ? "done" : $"exit code {code}"); MacroOutput = sb.ToString(); });
-            Status = code == 0 ? $"{_macroName} finished" : $"{_macroName} stopped with exit code {code}";
+            if (host != null && code == 0)   // the result, when the script handed one back
+            {
+                var back = await Tool("scp", ScpArgs(host, [$"{Target(host)}:{remoteDir}/result.data"], result), 120000);
+                if (back.Code != 0 && File.Exists(result)) File.Delete(result);
+            }
+            var opened = code == 0 && File.Exists(result);
+            if (opened) Open(result);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                sb.AppendLine(code == 0 ? (opened ? "done · the result is open" : "done") : $"exit code {code}");
+                MacroOutput = sb.ToString();
+            });
+            Status = code == 0 ? $"{_macroName} finished{(opened ? " · its result is open" : "")}" : $"{_macroName} stopped with exit code {code}";
         }
-        catch (Exception e) { MacroOutput += e.Message + "\n(set CAPS_PYTHON to a Python 3 interpreter)\n"; }
+        catch (Exception e) { MacroOutput += e.Message + "\n(set CAPS_PYTHON to a Python 3 interpreter; hosts: Settings › Compute & remote)\n"; }
         finally { MacroRunning = false; _macroProc = null; }
     }
 

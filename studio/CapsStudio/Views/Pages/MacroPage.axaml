@@ -103,8 +103,10 @@
                 <StackPanel Spacing="10">
                   <TextBlock Text="RUN" Classes="h3" />
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                    <StackPanel Spacing="6"><TextBlock Text="Target" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="New documents" /></ComboBox></StackPanel>
-                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Where" Classes="label" /><ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" ToolTip.Tip="Remote hosts run macros through their own caps (Settings › Compute &amp; remote)"><ComboBoxItem Content="This machine" /></ComboBox></StackPanel>
+                    <StackPanel Spacing="6"><TextBlock Text="Target" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.MacroTargets}" SelectedIndex="{Binding MacroTarget}" HorizontalAlignment="Stretch"
+                      ToolTip.Tip="The open structure: the script reads it with caps.current() and gives its result back with caps.hand_back(doc); the result opens when the macro ends" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Where" Classes="label" /><ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding MacroWhere}" HorizontalAlignment="Stretch"
+                      ToolTip.Tip="A host runs the macro with its own python3 and caps package (Settings › Compute &amp; remote); the output streams back" /></StackPanel>
                   </Grid>
                   <CheckBox Classes="toggle" Content="Stop on first error" IsChecked="{Binding MacroStopOnError}" />
                 </StackPanel>

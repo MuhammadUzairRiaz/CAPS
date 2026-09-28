@@ -536,6 +536,23 @@ def open(path: str, topology: Optional[str] = None) -> Document:  # noqa: A001 (
     return Document(library().caps_open(_enc(str(path)), _enc(topology)), str(path))
 
 
+def current() -> Document:
+    """The structure a CAPS Studio macro runs on (Macro › Target: the open structure): the Studio saves it and names the
+    file in CAPS_DOC. Outside the Studio, set CAPS_DOC to a structure file."""
+    path = os.environ.get("CAPS_DOC", "")
+    if not path:
+        raise CapsError("no current structure: run from CAPS Studio with Target: the open structure, or set CAPS_DOC")
+    return open(path, os.environ.get("CAPS_DOC_TOPOLOGY") or None)
+
+
+def hand_back(doc: "Document") -> str:
+    """Gives the macro's result back to CAPS Studio (it opens it when the macro ends): saved to CAPS_OUT, else to
+    result.data beside the script. Returns the path."""
+    path = os.environ.get("CAPS_OUT") or "result.data"
+    doc.save(path)
+    return path
+
+
 def import_file(path: str, bonds: str = "perceive", tolerance: float = 0.45, bond_orders: bool = True, split: bool = True,
                 unwrap: bool = True, use_cell: bool = True, topology: Optional[str] = None) -> Document:
     """Opens a file that has no topology (XYZ, PDB, CIF …) with the Import choices: bonds "perceive" (covalent radii +
