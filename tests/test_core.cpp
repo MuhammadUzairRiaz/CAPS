@@ -615,6 +615,33 @@ TEST(Pipeline, TopologyShapeAndFrames) {
   EXPECT_NEAR(st.system.atoms[0].pos[0], t.positions[1][0][0], 1e-9);   // positions left alone
   EXPECT_EQ(st.attribute("Smoothed", 0), 0.0);
   EXPECT_NE(st.steps[0].summary.find("1 per-atom property averaged"), std::string::npos) << st.steps[0].summary;
+  // neighbour terms: Σ 1 over bonded neighbours is the degree; Σ Distance over them the summed bond lengths; the
+  // neighbour's own properties are read (Σ Element over bonded neighbours of a CH₂ carbon: 6 + 6 + 1 + 1)
+  st = run(R"([{"type":"compute_property","name":"Deg","expression":"0","neighbours":true,"neighbour_mode":"bonds","neighbour_expression":"1"},
+               {"type":"compute_property","name":"Z","expression":"0","neighbours":true,"neighbour_mode":"bonds","neighbour_expression":"Element"},
+               {"type":"compute_property","name":"L","expression":"0","neighbours":true,"neighbour_mode":"bonds","neighbour_expression":"Distance"}])", 0);
+  {
+    const auto nb = st.system.neighbours();
+    for (size_t i : {size_t(0), size_t(5), size_t(40)}) {
+      EXPECT_EQ(st.props.at("L").size(), st.system.atoms.size());
+      double zsum = 0, lsum = 0;
+      for (uint32_t j : nb[i]) {
+        zsum += st.system.atoms[j].element;
+        Vec3 d = st.system.atoms[j].pos - st.system.atoms[i].pos;
+        lsum += norm(st.system.cell.minimum_image(d));
+      }
+      EXPECT_NEAR(st.props.at("Z")[i], zsum, 1e-9);
+      EXPECT_NEAR(st.props.at("L")[i], lsum, 1e-9);
+    }
+  }
+  // within a cutoff: every atom closer than 1.2 Å to a hydrogen-bearing carbon is one of its hydrogens
+  st = run(R"([{"type":"compute_property","name":"H","expression":"0","neighbours":true,"cutoff":1.2,"neighbour_expression":"Element == 1"}])", 0);
+  {
+    const auto nb = st.system.neighbours();
+    int hc = 0;
+    for (uint32_t j : nb[0]) hc += st.system.atoms[j].element == 1;
+    EXPECT_EQ(st.props.at("H")[0], double(hc));
+  }
   // Gaussian weights favour the frame itself: between it and the plain mean
   st = run(R"([{"type":"smooth","window":5,"kind":"gaussian"}])", 1);
   EXPECT_LT(norm(st.system.atoms[0].pos - t.positions[1][0]), norm(mean - t.positions[1][0]) + 1e-12);

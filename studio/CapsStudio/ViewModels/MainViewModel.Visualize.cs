@@ -441,7 +441,7 @@ public sealed partial class MainViewModel
         "cluster" => new JsonObject { ["mode"] = "cutoff", ["cutoff"] = 3.3, ["heavy_only"] = true, ["unit"] = "molecules", ["sort_by_size"] = true, ["only_selected"] = false, ["colour"] = true, ["sweep"] = true },
         "coordination" => new JsonObject { ["cutoff"] = 5.0, ["rmax"] = 10.0, ["bins"] = 200, ["element_a"] = 6, ["element_b"] = 6, ["inter_only"] = true, ["only_selected"] = false, ["average_frames"] = false, ["every"] = 1 },
         "create_bonds" => new JsonObject { ["mode"] = "pairs", ["pairs"] = "C-C 1.70, C-H 1.25", ["tolerance"] = 0.45, ["cutoff"] = 1.6, ["keep_file"] = true, ["inter_only"] = false, ["only_selected"] = false },
-        "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false },
+        "compute_property" => new JsonObject { ["name"] = "Custom", ["expression"] = "Position.Z", ["only_selected"] = false, ["neighbours"] = false, ["neighbour_mode"] = "cutoff", ["cutoff"] = 3.0, ["neighbour_expression"] = "" },
         "wrap" => new JsonObject { ["mode"] = "atoms" },
         "transparency" => new JsonObject { ["mode"] = "selected", ["value"] = 0.7 },
         "particle_radius" => new JsonObject { ["mode"] = "selected", ["value"] = 1.2 },
@@ -576,7 +576,13 @@ public sealed partial class MainViewModel
                 Choice("mode", "Mode", ["pairs", "perceive", "cutoff"]); Text("pairs", "Cutoff by pair (Å)", "text", "C-C 1.70, C-H 1.25 (a pair not listed: never bonded)");
                 Text("tolerance", "Tolerance over covalent radii (Å)", "number"); Text("cutoff", "One cutoff (Å)", "number");
                 Bool("keep_file", "Keep file bonds (compare with them)"); Bool("inter_only", "Only between different molecules"); Bool("replace", "Replace the bonds"); Bool("only_selected", "Only selected"); break;
-            case "compute_property": Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected"); break;
+            case "compute_property":
+                Text("name", "Output property"); Text("expression", "Expression", "expression", "e.g. sqrt(Position.X^2 + Position.Y^2)"); Bool("only_selected", "Only selected");
+                Bool("neighbours", "Neighbour terms (added: Σ over the neighbours)");
+                Choice("neighbour_mode", "Neighbours", ["cutoff", "bonds"]); Text("cutoff", "Cutoff r_c (Å)", "number");
+                Text("neighbour_expression", "Neighbour term", "expression", "e.g. Charge / Distance · exp(-Distance^2) · Element == 8");
+                Note("In the neighbour term, names are the neighbour's properties; Distance and Delta.X/.Y/.Z are the pair's (from the atom to the neighbour, minimum image).");
+                break;
             case "transparency" or "particle_radius":
                 var what = _pipeSel.Type == "transparency" ? "Transparency (0 opaque … 1 invisible)" : "Radius (Å)";
                 Choice("mode", "Set", ["selected", "property"]);
