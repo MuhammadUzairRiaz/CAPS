@@ -679,7 +679,7 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             lengths: Optional[dict] = None, chain_dp: Optional[list] = None, architecture: str = "linear",
             arms: Optional[int] = None, arm_dp: Optional[int] = None, spacing: Optional[int] = None,
             branch_probability: Optional[float] = None, generations: Optional[int] = None, region: Optional[dict] = None,
-            method: str = "trials", method_temperature: float = 450.0) -> Document:
+            method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
@@ -691,7 +691,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     GAFF for C and H, else UFF); relax=True minimises. region={"shape": "slab", "thickness": 30, "vacuum": 30} grows a
     film, {"shape": "cylinder" | "around_cylinder", "radius": 10} chains in or around a cylinder along z. method: "trials"
     (the roomiest of k trials), "rosenbluth" (a trial drawn by its Boltzmann weight: soft spheres and butane torsions) or
-    "rosenbluth_lj" (the same with UFF Lennard-Jones), at method_temperature (K)."""
+    "rosenbluth_lj" (the same with UFF Lennard-Jones), at method_temperature (K). orientation={"axis": "z", "strength": 4}
+    grows oriented chains (an aligning field −s P₂ in kT on each unit's backbone chord; the report gives ⟨P₂⟩)."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
@@ -707,6 +708,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
         r["build"]["polymer"]["architecture"] = architecture
     if region:
         r["grow"]["region"] = region
+    if orientation:
+        r["grow"]["orientation"] = orientation
     if method != "trials":
         r["grow"]["method"] = method
         r["grow"]["temperature"] = method_temperature

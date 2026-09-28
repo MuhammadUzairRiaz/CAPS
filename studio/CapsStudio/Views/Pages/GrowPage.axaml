@@ -166,6 +166,15 @@
                 <CheckBox Grid.Row="5" Grid.ColumnSpan="3" Content="Lower the contact scale when a chain cannot be placed (repeat-unit chains)" IsChecked="{Binding GrowAutoScale}" Margin="0,6,0,0"
                           ToolTip.Tip="Steps 0.85, 0.75, 0.7, 0.6 for crowded backbones (polyisobutylene, methacrylates); relax with push-off afterwards" />
               </Grid>
+              <Grid Margin="16,0,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Orientation" Classes="label" />
+                <TextBlock Grid.Column="1" Text="Field strength s (kT)" Classes="label" IsVisible="{Binding GrowOriented}" />
+                <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.GrowOrientations}" SelectedIndex="{Binding GrowOrient}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="Isotropic chains, or chains drawn along an axis: an aligning field −s P₂ on each unit's backbone chord (a drawn or oriented start)" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding GrowOrientStrengthD}" Minimum="0" Maximum="50" Increment="1" FormatString="0.#" IsVisible="{Binding GrowOriented}" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="s = 4 gives ⟨P₂⟩ ≈ 0.6–0.7 for polyethylene; the report gives the chains' ⟨P₂⟩" Classes="dim" TextWrapping="Wrap"
+                           VerticalAlignment="Center" FontSize="11" IsVisible="{Binding GrowOriented}" />
+              </Grid>
               <Grid Margin="16,0,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding GrowHasRegion}">
                 <TextBlock Text="{Binding GrowRegionALabel}" Classes="label" />
                 <TextBlock Grid.Column="1" Text="{Binding GrowRegionBLabel}" Classes="label" />
