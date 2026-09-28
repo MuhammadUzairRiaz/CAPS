@@ -18,8 +18,12 @@ public sealed record FilmPolymer(string Name, string Spec)
     public override string ToString() => Name;
 }
 
-/// <summary>One layer of the interface stack (top → bottom), as the Surface board shows it.</summary>
-public sealed record StackLayer(string Number, string Title, string Height, string Colour);
+/// <summary>One layer of the interface stack (top → bottom), as the Surface board shows it; Extra ≥ 0: an added layer
+/// (removable).</summary>
+public sealed record StackLayer(string Number, string Title, string Height, string Colour, int Extra = -1)
+{
+    public bool Removable => Extra >= 0;
+}
 
 /// <summary>Surface &amp; interface builder (design/boards/SurfaceBuilder): cleave a crystal along (hkl), choose the
 /// termination, passivate, and grow a polymer film on the surface (fibre–rubber interfaces).</summary>
@@ -265,8 +269,8 @@ public sealed partial class MainViewModel
     public decimal FilmVacuum { get => _filmVacuum; set { if (Set(ref _filmVacuum, Math.Clamp(value, 0, 200))) RaiseStack(); } }
     public decimal FilmGap { get => _filmGap; set { if (Set(ref _filmGap, Math.Clamp(value, 0, 10))) RaiseStack(); } }
     public decimal FilmDp { get => _filmDp; set { if (Set(ref _filmDp, Math.Clamp(Math.Round(value), 2, 500))) RaiseStack(); } }
-    public string SurfBuildText => _surfFilm ? "Build interface" : "Build slab";
-    public string SurfStackChip => _surfFilm ? $"Interface stack · 2 layers" : "Slab · 1 layer";
+    public string SurfBuildText => _surfFilm || _surfExtra.Count > 0 ? "Build interface" : "Build slab";
+    public string SurfStackChip => (_surfFilm ? 2 : 1) + _surfExtra.Count is var n && n > 1 ? $"Interface stack · {n} layers" : "Slab · 1 layer";
     public string SurfStackKind => _surfFilm ? (_filmVacuum > 0 ? "slab + film + vacuum" : "slab + film · periodic") : "slab + vacuum";
     public string FilmName => _surfFilmItem?.Name ?? "polymer";
 
@@ -275,15 +279,88 @@ public sealed partial class MainViewModel
         SurfStack.Clear();
         var term = _surfTermination >= 0 && _surfTermination < SurfTerminations.Count ? SurfTerminations[_surfTermination].Split(" · ")[0] : "";
         var slabH = _surfD * (double)_surfLayers;
-        if (_surfFilm)
+        var n = 1 + (_surfFilm ? 1 : 0) + _surfExtra.Count;   // layers under the top one
+        var vacuum = _surfFilm ? _filmVacuum : _surfVacuum;
+        if (vacuum > 0) SurfStack.Add(new StackLayer($"{n + 1}", "Vacuum", $"{vacuum:0.0} Å", "#5B8DEF"));
+        else SurfStack.Add(new StackLayer($"{n + 1}", "Periodic image of the surface", "—", "#5B8DEF"));
+        for (var k = _surfExtra.Count - 1; k >= 0; --k)
         {
-            if (_filmVacuum > 0) SurfStack.Add(new StackLayer("3", "Vacuum", $"{_filmVacuum:0.0} Å", "#5B8DEF"));
-            else SurfStack.Add(new StackLayer("3", "Periodic image of the surface", "—", "#5B8DEF"));
-            SurfStack.Add(new StackLayer("2", $"{ShortName(FilmName)} film · amorphous (CAPS Grow)", $"{_filmThickness:0.0} Å", "#B9BEC4"));
+            var e = _surfExtra[k];
+            SurfStack.Add(new StackLayer($"{(_surfFilm ? 3 : 2) + k}", e.Name, e.Height, e.Colour, k));
         }
-        else SurfStack.Add(new StackLayer("2", "Vacuum", $"{_surfVacuum:0.0} Å", "#5B8DEF"));
+        if (_surfFilm) SurfStack.Add(new StackLayer("2", $"{ShortName(FilmName)} film · amorphous (CAPS Grow)", $"{_filmThickness:0.0} Å", "#B9BEC4"));
         SurfStack.Add(new StackLayer("1", $"{SurfTitle} · {term}", string.Format(CultureInfo.InvariantCulture, "{0:F1} Å", slabH), "#D6A45E"));
         Raise(nameof(SurfStackChip)); Raise(nameof(SurfStackKind)); Raise(nameof(FilmName)); Raise(nameof(FilmMatchText)); Raise(nameof(SurfTitle));
+        Raise(nameof(SurfHasExtra));
+    }
+
+    // ---------------------------------------------------------------- added layers (design/boards/SurfaceBuilder "Add layer")
+    private sealed record ExtraLayer(string Name, CapsDocument Doc, string Height, string Colour);
+    private readonly List<ExtraLayer> _surfExtra = new();
+    public bool SurfHasExtra => _surfExtra.Count > 0;
+    private decimal _surfStackGap = 2.5m;
+    /// <summary>Å between one layer's top atoms and the next one's lowest (added layers).</summary>
+    public decimal SurfStackGap { get => _surfStackGap; set => Set(ref _surfStackGap, Math.Clamp(value, 0, 20)); }
+
+    private void AddExtra(string name, CapsDocument doc, string colour)
+    {
+        var s = doc.Summary();
+        if (!(s.CellA > 0 && s.CellB > 0 && s.CellC > 0)) { doc.Dispose(); SurfError = $"{name}: a layer needs a periodic cell"; return; }
+        SurfError = "";
+        _surfExtra.Add(new ExtraLayer(name, doc, string.Format(CultureInfo.InvariantCulture, "{0:F1} Å cell", s.CellC), colour));
+        RaiseStack();
+        Raise(nameof(SurfBuildText));
+    }
+
+    /// <summary>From CAPS Grow cell: the open structure (a grown polymer cell) as the layer above the surface, in place
+    /// of growing a film there.</summary>
+    public void AddLayerFromOpen()
+    {
+        if (Document == null) { SurfError = "Open or grow a polymer cell first (Grow), then add it here"; return; }
+        var name = string.IsNullOrWhiteSpace(Title) ? "grown cell" : Title;
+        AddExtra($"{ShortName(name)} · from the open structure", Document.FrameCopy(name), "#B9BEC4");
+        if (_surfFilm) { SurfFilm = false; Status = "The open cell goes on the surface in place of a grown film"; }
+    }
+
+    /// <summary>Add layer › this slab again (a film between two surfaces).</summary>
+    public void AddSlabLayer()
+    {
+        if (SurfCif.Length == 0 || SurfTerminations.Count == 0) return;
+        try
+        {
+            var (doc, _) = CapsDocument.SurfaceBuild(SurfCif, SurfOptions(false), SurfTitle + " slab");
+            AddExtra($"{SurfTitle} slab", doc, "#D6A45E");
+        }
+        catch (Exception e) { SurfError = e.Message; }
+    }
+
+    /// <summary>Add layer › a structure file with a rectangular periodic cell.</summary>
+    public void AddLayerFile(string path)
+    {
+        try { AddExtra(Path.GetFileName(path), CapsDocument.Open(path), "#9C8FD6"); }
+        catch (Exception e) { SurfError = $"{Path.GetFileName(path)}: {e.Message}"; }
+    }
+
+    public void RemoveSurfLayer(int extra)
+    {
+        if (extra < 0 || extra >= _surfExtra.Count) return;
+        _surfExtra[extra].Doc.Dispose();
+        _surfExtra.RemoveAt(extra);
+        RaiseStack();
+        Raise(nameof(SurfBuildText));
+    }
+
+    /// <summary>The built base (slab or slab + film) with the added layers stacked on it; null when there are none.</summary>
+    private (CapsDocument Doc, string Log) StackOnto(CapsDocument baseDoc, string title)
+    {
+        var docs = new List<CapsDocument> { baseDoc };
+        docs.AddRange(_surfExtra.Select(e => e.Doc));
+        var names = new JsonArray(new[] { (JsonNode)title }.Concat(_surfExtra.Select(e => (JsonNode)e.Name)).ToArray());
+        var opts = new JsonObject { ["names"] = names, ["gap"] = (double)_surfStackGap, ["vacuum"] = (double)(_surfFilm ? _filmVacuum : _surfVacuum), ["match"] = "both" }.ToJsonString();
+        var (doc, rep) = CapsDocument.Stack(docs, opts, title + " stack");
+        var r = JsonNode.Parse(rep);
+        if (doc == null) throw new InvalidOperationException((string?)r?["error"] ?? "cannot stack the layers");
+        return (doc, string.Join("\n", (r?["notes"] as JsonArray ?? []).Select(x => (string?)x ?? "")));
     }
     private static string ShortName(string n) => n.Split(" (")[0];
     public string FilmMatchText => _surfFilm ? "fits cell" : "—";
@@ -318,9 +395,21 @@ public sealed partial class MainViewModel
             {
                 var opts = SurfOptions(false);
                 var (doc, rep) = await Task.Run(() => CapsDocument.SurfaceBuild(cif, opts, title + " slab"));
-                Show(doc, $"{title} slab · {(int)_surfLayers} layers");
                 SurfLog = rep;
-                Status = "Slab built · " + (rep.Split('\n').FirstOrDefault() ?? "");
+                if (_surfExtra.Count > 0)
+                {
+                    var (stacked, log) = await Task.Run(() => { try { return StackOnto(doc, title); } finally { doc.Dispose(); } });
+                    SurfLog = log;
+                    Show(stacked, $"{title} + {string.Join(" + ", _surfExtra.Select(e => ShortName(e.Name.Split(" · ")[0])))}");
+                    GrownUnsaved = true;
+                    RelaxCompress = false;
+                    Status = "Layers stacked · " + (SurfLog.Split('\n').FirstOrDefault() ?? "");
+                }
+                else
+                {
+                    Show(doc, $"{title} slab · {(int)_surfLayers} layers");
+                    Status = "Slab built · " + (rep.Split('\n').FirstOrDefault() ?? "");
+                }
             }
             else
             {
@@ -340,10 +429,16 @@ public sealed partial class MainViewModel
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Growing the film · {d} of {t} chains · {r} restarts");
                     return true;
                 }, title + " interface"));
-                Show(doc, $"{title} + {ShortName(name)} film");
+                SurfLog = rep;
+                if (_surfExtra.Count > 0)
+                {
+                    var built = doc;
+                    (doc, var log) = await Task.Run(() => { try { return StackOnto(built, $"{title} + {ShortName(name)} film"); } finally { built.Dispose(); } });
+                    SurfLog = rep + "\n" + log;
+                }
+                Show(doc, $"{title} + {ShortName(name)} film" + (_surfExtra.Count > 0 ? $" + {_surfExtra.Count} layer{(_surfExtra.Count == 1 ? "" : "s")}" : ""));
                 GrownUnsaved = true;
                 RelaxCompress = false;   // compression would scale the crystal with the film
-                SurfLog = rep;
                 Status = "Interface built · the surface (molecule 1) is held in place in Relax";
             }
             SetModule(8);

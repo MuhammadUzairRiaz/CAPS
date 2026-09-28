@@ -47,4 +47,14 @@ public partial class SurfacePage : PageBase
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) Vm.UseCif(path);
     }
     private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();
+    private void OnRemoveLayer(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is int k) Vm.RemoveSurfLayer(k); }
+    private void OnAddSlabLayer(object? s, RoutedEventArgs e) => Vm.AddSlabLayer();
+    private void OnLayerFromGrow(object? s, RoutedEventArgs e) => Vm.AddLayerFromOpen();
+    private async void OnAddLayerFile(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "A layer: a structure with a rectangular periodic cell", AllowMultiple = false });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) Vm.AddLayerFile(path);
+    }
 }

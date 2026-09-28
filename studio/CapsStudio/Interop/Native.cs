@@ -427,6 +427,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_frame_copy")] public static extern IntPtr FrameCopy(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_stack_documents")] public static extern IntPtr StackDocuments(IntPtr[] docs, int n, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_embed_document")] public static extern IntPtr EmbedDocument(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_embed")] public static extern IntPtr NanoEmbed([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_blend")] public static extern IntPtr GrowBlend([MarshalAs(UnmanagedType.LPUTF8Str)] string options, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
@@ -930,6 +932,34 @@ public sealed class CapsDocument : IDisposable
             GC.KeepAlive(cb);
             if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
             return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+        }
+    }
+
+    /// <summary>The documents' shown frames stacked along z, the first at the bottom (caps_stack_documents): the new
+    /// document (null on error) and the JSON report.</summary>
+    public static (CapsDocument? Doc, string Report) Stack(IReadOnlyList<CapsDocument> docs, string options, string label)
+    {
+        var holds = new List<IDisposable>();
+        try
+        {
+            foreach (var d in docs.Distinct()) { holds.Add(d.Hold()); d.Alive(); }
+            var report = new byte[1 << 16];
+            var h = Native.StackDocuments(docs.Select(d => d.H).ToArray(), docs.Count, options, report, report.Length);
+            var text = System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
+            return (h == IntPtr.Zero ? null : new CapsDocument(h, label), text);
+        }
+        finally { for (var k = holds.Count - 1; k >= 0; --k) holds[k].Dispose(); }
+    }
+
+    /// <summary>A new document holding the shown frame and its history (caps_frame_copy).</summary>
+    public CapsDocument FrameCopy(string label)
+    {
+        using (Hold())
+        {
+            Alive();
+            var h = Native.FrameCopy(H);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return new CapsDocument(h, label);
         }
     }
 
