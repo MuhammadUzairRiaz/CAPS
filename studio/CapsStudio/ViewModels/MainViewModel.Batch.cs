@@ -88,7 +88,7 @@ public sealed partial class MainViewModel
 
     /// <summary>The file that gives a trajectory its atoms, found beside it: a LAMMPS dump or DCD its .data; a GROMACS
     /// .xtc or .trr its .top (types, charges, bonds) or .gro (the same stem first, then the folder's only one, then
-    /// topol.top / conf.gro); a .gro its own .top; an AMBER restart its .prmtop. "" when there is none or the choice is not clear.</summary>
+    /// topol.top / conf.gro); a .gro its own .top; an AMBER restart or trajectory its .prmtop. "" when there is none or the choice is not clear.</summary>
     internal static string TopologyFor(string f)
     {
         var ext = Path.GetExtension(f).ToLowerInvariant();
@@ -100,7 +100,7 @@ public sealed partial class MainViewModel
         return ext switch
         {
             ".lammpstrj" or ".dump" or ".dcd" => First(Same(".data"), Only("*.data"), ext == ".dcd" ? First(Same(".pdb"), Same(".prmtop"), Same(".parm7")) : ""),
-            ".inpcrd" or ".rst7" or ".restrt" or ".rst" => First(Same(".prmtop"), Same(".parm7"), Only("*.prmtop"), Only("*.parm7")),
+            ".inpcrd" or ".rst7" or ".restrt" or ".rst" or ".ncrst" or ".nc" or ".mdcrd" => First(Same(".prmtop"), Same(".parm7"), Only("*.prmtop"), Only("*.parm7")),
             ".xtc" or ".trr" => First(Same(".top"), Same(".gro"), Named("topol.top"), Only("*.top"), Only("*.gro"), Named("conf.gro", "confout.gro")),
             ".gro" => Same(".top"),
             _ => "",

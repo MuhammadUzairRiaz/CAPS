@@ -404,4 +404,11 @@ ph.field.assign("file")
 ph_back = ph.field.report()
 check(ph.field.file_available and ph_rep["file"] == "file" and ph_rep["complete"] and abs(ph_rep["energy"]["bond"] - 0.178425) < 2e-6
       and ph_back["energy"]["total"] == ph_rep["energy"]["total"], f"AMBER prmtop: {ph_rep['forcefield']} · bond {ph_rep['energy']['bond']:.6f}")
+# the same force field out for AMBER / OpenMM, and read back: the same energy
+with tempfile.TemporaryDirectory() as td:
+    ax = ph.export_engines(td, stem="ph", lammps=True, gromacs=False, amber=True)
+    names = {x["name"] for x in ax["files"]}
+    back = caps.open(os.path.join(td, "ph.prmtop")).field.report()
+check({"ph.prmtop", "ph.inpcrd"} <= names and abs(back["energy"]["total"] - ph_back["energy"]["total"]) < 1e-4,
+      f"AMBER export: {sorted(names)} · round trip {back['energy']['total']:.6f} vs {ph_back['energy']['total']:.6f}")
 print("all python checks passed")

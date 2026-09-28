@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 
+#include "caps/amber.hpp"
 #include "caps/analysis.hpp"
 #include "caps/adsorption.hpp"
 #include "caps/cbmc.hpp"
@@ -1642,6 +1643,15 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     } catch (const std::exception& ex) {
       dlpoly_error = ex.what();
     }
+    std::string amber_error;
+    if (flag("amber", false)) try {   // STEM.prmtop and STEM.inpcrd (AMBER, OpenMM, ParmEd)
+      if (kg_model) throw std::runtime_error("Kremer–Grest's FENE bond has no AMBER form: export to LAMMPS");
+      for (const auto& n : caps::write_amber(s, ff, base)) notes.push_back("AMBER: " + n);
+      written.push_back({stem + ".prmtop", "AMBER topology: every term, a Lennard-Jones pair table (OpenMM, ParmEd, AMBER)"});
+      written.push_back({stem + ".inpcrd", "AMBER coordinates and box"});
+    } catch (const std::exception& ex) {
+      amber_error = ex.what();
+    }
     if (d->field->rep.estimated_terms) {
       std::string ex;
       for (size_t k = 0; k < d->field->rep.estimated.size() && k < 3; ++k) ex += (k ? "; " : "") + d->field->rep.estimated[k];
@@ -1685,6 +1695,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     r["ok"] = true;
     if (!gromacs_error.empty()) r["gromacs_error"] = gromacs_error;
     if (!dlpoly_error.empty()) r["dlpoly_error"] = dlpoly_error;
+    if (!amber_error.empty()) r["amber_error"] = amber_error;
     if (!lammps_error.empty()) r["lammps_error"] = lammps_error;
     r["files"] = std::move(files);
     r["notes"] = std::move(notes);

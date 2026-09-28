@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/amber.hpp"
 #include "caps/analysis.hpp"
 #include "caps/cbmc.hpp"
 #include "caps/dlpoly.hpp"
@@ -195,7 +196,7 @@ const std::set<std::string>& known_options() {
     "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--dlpoly", "--es",
     "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
     "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
-    "--digits", "--dsf-alpha", "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
+    "--amber", "--digits", "--dsf-alpha", "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
     "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl",
     "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
     "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
@@ -1708,6 +1709,10 @@ int main(int argc, char** argv) {
           for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = f.charge[i];
           for (const auto& n : write_gromacs(s, f, eo, o["--gromacs"])) std::printf("gromacs: %s\n", n.c_str());
           std::printf("wrote %s.top, %s.gro and %s.mdp\n", o["--gromacs"].c_str(), o["--gromacs"].c_str(), o["--gromacs"].c_str());
+        }
+        if (o.count("--amber")) {   // STEM.prmtop and STEM.inpcrd with the same force field (AMBER, OpenMM, ParmEd)
+          for (const auto& n : write_amber(s, f, o["--amber"])) std::printf("amber: %s\n", n.c_str());
+          std::printf("wrote %s.prmtop and %s.inpcrd\n", o["--amber"].c_str(), o["--amber"].c_str());
         }
         if (o.count("--dlpoly")) {   // DIR/FIELD, CONFIG and CONTROL
           DlpolyOptions dop;
