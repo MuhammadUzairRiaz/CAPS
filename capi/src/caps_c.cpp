@@ -7637,12 +7637,26 @@ extern "C" int32_t caps_chain_lengths(const char* json, char* out, int32_t cap) 
     std::vector<int> L;
     double best = 1e300;
     int kept = 0;
+    // a histogram: [[length, number weight], …] (a measured distribution binned by chain length)
+    std::vector<std::pair<int, double>> hist;
+    if (dist == "histogram") {
+      if (!j.has("histogram") || !j["histogram"].is_array()) throw std::invalid_argument("histogram: [[length, weight], …]");
+      for (const auto& b : j["histogram"].items())
+        if (b.is_array() && b.size() == 2) hist.push_back({int(b[0].number()), b[1].number()});
+    }
+    double hist_nn = 0, hist_pdi = 1;
+    if (!hist.empty()) {
+      double w0 = 0, w1 = 0, w2 = 0;
+      for (const auto& [n, w] : hist) w0 += w, w1 += w * n, w2 += w * double(n) * n;
+      if (w0 > 0 && w1 > 0) hist_nn = w1 / w0, hist_pdi = (w2 / w1) / hist_nn;
+    }
     for (int t = 0; t < best_of; ++t) {
-      auto c = caps::draw_chain_lengths(dist, nn, pdi, count, seed + uint64_t(t) * 7919);
+      auto c = !hist.empty() ? caps::draw_chain_lengths(hist, count, seed + uint64_t(t) * 7919) : caps::draw_chain_lengths(dist, nn, pdi, count, seed + uint64_t(t) * 7919);
       double a, b;
       stats(c, a, b);
-      const double target = dist == "flory" ? 2 - 1 / nn : dist == "poisson" ? 1 + (nn - 1) / (nn * nn) : dist == "monodisperse" ? 1.0 : pdi;
-      const double miss = std::fabs(b / a - target) + 0.1 * std::fabs(a - nn) / nn;
+      const double target = !hist.empty() ? hist_pdi : dist == "flory" ? 2 - 1 / nn : dist == "poisson" ? 1 + (nn - 1) / (nn * nn) : dist == "monodisperse" ? 1.0 : pdi;
+      const double nref = !hist.empty() ? hist_nn : nn;
+      const double miss = std::fabs(b / a - target) + 0.1 * std::fabs(a - nref) / nref;
       if (miss < best) best = miss, L = std::move(c), kept = t;
     }
     double snn, swn;
@@ -7662,20 +7676,28 @@ extern "C" int32_t caps_chain_lengths(const char* json, char* out, int32_t cap) 
     s["sum"] = sum;
     r["sample"] = std::move(s);
     // the distribution's own averages (discrete ones computed, the Gamma's are the inputs)
-    const double tpdi = dist == "schulz-zimm" ? pdi : dist == "flory" ? 2 - 1 / nn : dist == "poisson" ? 1 + (nn - 1) / (nn * nn) : 1.0;
+    const double tpdi = !hist.empty() ? hist_pdi : dist == "schulz-zimm" || dist == "log-normal" ? pdi : dist == "flory" ? 2 - 1 / nn : dist == "poisson" ? 1 + (nn - 1) / (nn * nn) : 1.0;
+    const double tnn = !hist.empty() ? hist_nn : nn;
     caps::Json t = caps::Json::object();
-    t["nn"] = nn, t["mn"] = nn * m0, t["mw"] = nn * m0 * tpdi, t["pdi"] = tpdi;
+    t["nn"] = tnn, t["mn"] = tnn * m0, t["mw"] = tnn * m0 * tpdi, t["pdi"] = tpdi;
     r["target"] = std::move(t);
     r["k"] = dist == "schulz-zimm" ? (pdi > 1.0001 ? 1 / (pdi - 1) : 1e4) : 0.0;
     r["kept_draw"] = double(kept);
     r["draws"] = double(best_of);
     std::vector<double> xs, nf, wf;
     const double hi = std::max(double(sorted.back()) * 1.15, nn * (1 + 4 * std::sqrt(std::max(0.0, tpdi - 1)) + 0.3));
-    for (int i = 0; i <= 160; ++i) {
-      const double x = std::max(1.0, hi * i / 160);
-      const double p = caps::chain_length_pdf(dist, nn, pdi, x);
-      xs.push_back(x), nf.push_back(p), wf.push_back(x * p / nn);
-    }
+    if (!hist.empty()) {   // the histogram itself, as number and weight fractions at its lengths
+      double w0 = 0;
+      for (const auto& [n, w] : hist) w0 += w;
+      auto hs = hist;
+      std::sort(hs.begin(), hs.end());
+      for (const auto& [n, w] : hs) xs.push_back(n), nf.push_back(w / w0), wf.push_back(n * (w / w0) / tnn);
+    } else
+      for (int i = 0; i <= 160; ++i) {
+        const double x = std::max(1.0, hi * i / 160);
+        const double p = caps::chain_length_pdf(dist, nn, pdi, x);
+        xs.push_back(x), nf.push_back(p), wf.push_back(x * p / nn);
+      }
     caps::Json curve = caps::Json::object();
     curve["n"] = num_array(xs), curve["number"] = num_array(nf), curve["weight"] = num_array(wf);
     r["curve"] = std::move(curve);

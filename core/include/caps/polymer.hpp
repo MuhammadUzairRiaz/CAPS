@@ -94,6 +94,9 @@ const std::vector<std::string>& chain_end_names();
 // k = 1/(Đ − 1)), "flory" (most probable, geometric), "poisson" (Đ ≈ 1 + 1/Nn). Deterministic for a seed on every
 // platform (own samplers on mt19937_64). Lengths are at least 2.
 std::vector<int> draw_chain_lengths(const std::string& distribution, double nn, double pdi, int count, uint64_t seed);
+// "log-normal": ln N normal with Đ = e^σ² and Nn = e^(μ + σ²/2). A user histogram: (length, number weight) pairs, each
+// chain's length drawn from them (a measured GPC trace binned by chain length).
+std::vector<int> draw_chain_lengths(const std::vector<std::pair<int, double>>& histogram, int count, uint64_t seed);
 // The distribution's number fraction at N (for plots); the weight fraction is N·n(N)/Nn.
 double chain_length_pdf(const std::string& distribution, double nn, double pdi, double n);
 

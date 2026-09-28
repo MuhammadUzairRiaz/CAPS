@@ -1804,10 +1804,34 @@ std::vector<int> draw_chain_lengths(const std::string& dist, double nn, double p
       x = 1 + std::floor(std::log(d.u01()) / std::log(1 - p));
     } else if (dist == "poisson") {
       x = 1 + d.poisson(nn - 1);
+    } else if (dist == "log-normal" || dist == "lognormal") {   // number distribution ln N ~ normal(μ, σ²): Đ = e^σ², Nn = e^(μ + σ²/2)
+      const double s2 = std::log(std::max(1.0001, pdi)), mu = std::log(nn) - s2 / 2;
+      // Box–Muller from the portable uniform draws
+      const double u1 = std::max(1e-300, d.u01()), u2 = d.u01();
+      x = std::exp(mu + std::sqrt(s2) * std::sqrt(-2 * std::log(u1)) * std::cos(2 * 3.14159265358979323846 * u2));
     } else if (dist != "monodisperse") {
-      throw std::invalid_argument("chain lengths: monodisperse, schulz-zimm, flory or poisson");
+      throw std::invalid_argument("chain lengths: monodisperse, schulz-zimm, flory, poisson or log-normal");
     }
     out.push_back(std::max(2, int(std::lround(x))));
+  }
+  return out;
+}
+
+std::vector<int> draw_chain_lengths(const std::vector<std::pair<int, double>>& histogram, int count, uint64_t seed) {
+  if (count < 1) return {};
+  double total = 0;
+  for (const auto& [n, w] : histogram) {
+    if (n < 2 || w < 0) throw std::invalid_argument("chain-length histogram: lengths ≥ 2 and weights ≥ 0");
+    total += w;
+  }
+  if (histogram.empty() || total <= 0) throw std::invalid_argument("chain-length histogram: no weight");
+  Draw d{std::mt19937_64(seed * 0x9E3779B97F4A7C15ull + 31)};
+  std::vector<int> out;
+  for (int i = 0; i < count; ++i) {
+    double r = d.u01() * total;
+    size_t k = 0;
+    while (k + 1 < histogram.size() && (r -= histogram[k].second) > 0) ++k;
+    out.push_back(histogram[k].first);
   }
   return out;
 }
@@ -1819,6 +1843,10 @@ double chain_length_pdf(const std::string& dist, double nn, double pdi, double n
     return std::exp((k - 1) * std::log(n) - n / th - std::lgamma(k) - k * std::log(th));
   }
   if (dist == "flory") return (1 / nn) * std::pow(1 - 1 / nn, n - 1);
+  if (dist == "log-normal" || dist == "lognormal") {
+    const double s2 = std::log(std::max(1.0001, pdi)), mu = std::log(nn) - s2 / 2, z = std::log(n) - mu;
+    return std::exp(-z * z / (2 * s2)) / (n * std::sqrt(2 * 3.14159265358979323846 * s2));
+  }
   if (dist == "poisson") { const double lam = nn - 1, m = std::round(n) - 1; return m < 0 ? 0 : std::exp(m * std::log(lam) - lam - std::lgamma(m + 1)); }
   return std::fabs(n - nn) < 0.5 ? 1.0 : 0.0;
 }
