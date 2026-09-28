@@ -1002,6 +1002,14 @@ internal static class SelfTest
             Check(vm.HasTimeline && spark.Length == 3 && mean.Length == 3 && inRange && Math.Abs(mean[1].Y - spark.Average(p => p.Y)) < 1e-9,
                   $"timeline running mean: {spark.Length} frames of {vm.SparkAttribute}, mean {mean.Length}");
             vm.SeriesWindow = 1;
+            // manual selection: the lassoed atoms go into the step as ranges, and select the same atoms in the result
+            vm.LassoSelect([3, 4, 5, 9], false);
+            vm.AddStep("manual_selection");
+            var manual = vm.PipelineRows.FirstOrDefault(r => r.Type == "manual_selection");
+            Check(manual != null && (string?)manual.Params["atoms"] == "3-5 9" && manual.Summary.Contains("4 selected"),
+                  $"manual selection: '{manual?.Params["atoms"]}' · {manual?.Summary}");
+            if (manual != null) vm.PipelineRows.Remove(manual);
+            vm.ClearDocSelection();
             // the inspector as CSV: every particle matching the filter (not only the page), and a data table
             vm.InspectorTab = 0;
             vm.InspectorFilter = "Molecule == 1";

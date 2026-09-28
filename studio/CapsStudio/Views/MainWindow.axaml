@@ -2040,6 +2040,7 @@
                           </Grid>
                           <ComboBox ItemsSource="{Binding Choices}" SelectedIndex="{Binding ChoiceIndex}" IsVisible="{Binding IsChoice}" HorizontalAlignment="Stretch" />
                           <CheckBox Classes="toggle" Content="{Binding Label}" IsChecked="{Binding On}" IsVisible="{Binding IsBool}" />
+                          <Button Classes="small" Content="{Binding Label}" IsVisible="{Binding IsAction}" Click="OnStepAction" Tag="{Binding}" />
                           <StackPanel Spacing="6" IsVisible="{Binding IsCode}">
                             <TextBox Text="{Binding Draft}" Classes="mono" FontSize="11.5" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                                      MinHeight="170" MaxHeight="340" ScrollViewer.HorizontalScrollBarVisibility="Auto" KeyDown="OnStepCodeKey" Tag="{Binding}" />

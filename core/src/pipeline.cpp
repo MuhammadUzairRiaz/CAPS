@@ -483,6 +483,45 @@ void step_coordination(PipelineState& st, const Json& p, StepStatus& out) {
   if (vol <= 0) { out.level = "warning"; out.summary += " · no cell: g(r) not normalised"; }
 }
 
+// Manual selection (design/boards/PipelineSteps "Manual pick & lasso"): atoms picked or lassoed in the view, kept as their
+// indices in the source frame (the same atoms on every frame), as an array or text with ranges ("0 5 12-40").
+void step_manual_selection(PipelineState& st, const Json& p, StepStatus& out) {
+  std::set<long> want;
+  auto range = [&](long a, long b) {
+    if (a < 0 || b < a || b - a > 10000000) throw std::invalid_argument("atoms: bad range " + std::to_string(a) + "-" + std::to_string(b));
+    for (long k = a; k <= b; ++k) want.insert(k);
+  };
+  if (p.has("atoms") && p["atoms"].is_array()) {
+    for (const auto& x : p["atoms"].items()) range(long(x.number()), long(x.number()));
+  } else {
+    std::string t = p.text("atoms", "");
+    for (auto& c : t) if (c == ',' || c == ';') c = ' ';
+    std::istringstream in(t);
+    for (std::string w; in >> w;) {
+      const size_t dash = w.find('-', 1);
+      try {
+        if (dash == std::string::npos) range(std::stol(w), std::stol(w));
+        else range(std::stol(w.substr(0, dash)), std::stol(w.substr(dash + 1)));
+      } catch (const std::invalid_argument&) {
+        throw std::invalid_argument("atoms: '" + w + "' is not an index or a range (0 5 12-40)");
+      }
+    }
+  }
+  const std::string mode = p.text("mode", "replace");
+  if (mode != "replace" && mode != "add" && mode != "subtract") throw std::invalid_argument("mode: replace, add or subtract");
+  size_t hit = 0;
+  for (size_t i = 0; i < st.system.atoms.size(); ++i) {
+    const bool in = want.count(long(st.origin[i])) > 0;
+    hit += in;
+    if (mode == "replace") st.selected[i] = in;
+    else if (mode == "add" && in) st.selected[i] = 1;
+    else if (mode == "subtract" && in) st.selected[i] = 0;
+  }
+  out.summary = std::to_string(want.size()) + " picked" + (hit < want.size() ? " (" + std::to_string(want.size() - hit) + " not here)" : "") + " · " +
+                std::to_string(st.selected_count()) + " selected";
+  if (want.empty()) out.level = "warning", out.summary = "nothing picked yet: select atoms in the view (click, ⇧-click or lasso), then Use the view's selection";
+}
+
 void step_compute_property(PipelineState& st, const Json& p, StepStatus& out) {
   std::string name = p.text("name", "Custom");
   if (name.empty()) throw std::invalid_argument("the property needs a name");
@@ -3067,6 +3106,7 @@ const StepDef kSteps[] = {
        std::fill(st.selected.begin(), st.selected.end(), 0);
        o.summary = "selection cleared";
      }},
+    {"manual_selection", "Manual selection", "atoms picked or lassoed in the view", step_manual_selection},
     {"expand_selection", "Expand selection", "by bonds or distance", step_expand_selection},
     {"delete_selected", "Delete selected", "remove the selected particles", step_delete_selected},
     {"slice", "Slice", "slab by normal and width", step_slice},
