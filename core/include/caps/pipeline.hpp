@@ -119,6 +119,14 @@ struct GridField {
 // Å), .npy (NumPy float64, shape n0 × n1 × n2, C order).
 void write_grid(const GridField& g, const System& atoms, const std::string& path);
 
+struct Mesh;   // caps/appearance.hpp
+// A surface a step made (a density isosurface), drawn with the particles
+struct PipelineMesh {
+  std::shared_ptr<Mesh> mesh;
+  unsigned rgb = 0x6FA8DC;
+  float opacity = 0.45f;
+};
+
 struct PipelineState {
   System system;                                       // the particles after the steps
   std::vector<int> origin;                             // index in the source frame of each particle
@@ -131,6 +139,7 @@ struct PipelineState {
   PipelineLegend legend;
   bool has_legend = false;
   std::vector<Segment> segments;                       // arrows and paths the view draws with the particles
+  std::vector<PipelineMesh> meshes;                    // surfaces the view draws with them
   int frame = 0;
   int64_t timestep = 0;
   const Trajectory* traj = nullptr;                    // the whole trajectory, for steps that read other frames
