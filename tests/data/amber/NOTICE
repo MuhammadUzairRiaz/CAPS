@@ -1,6 +1,12 @@
 Files from InterMol (https://github.com/shirtsgroup/InterMol), MIT License (LICENSE here),
 intermol/tests/amber/unit_tests:
   phenol.prmtop, phenol.crd   phenol/
-  znf.prmtop, znf.rst         znf/   (a zinc-finger peptide, AMBER ff99SB-family protein topology)
+  znf.prmtop, znf.rst         znf/   (a zinc-finger peptide with 12-6-4 zinc terms: its force field is not taken)
+  trx.prmtop, trx.inpcrd      trx/   (thioredoxin, an older topology without SCEE / SCNB)
 Used by tests/test_amber.cpp: CAPS's AMBER reader against OpenMM 8.5.2 energies on the same files
 (Reference platform, NoCutoff, no constraints; HarmonicBond, HarmonicAngle, PeriodicTorsion, NonbondedForce).
+Written for the trajectory tests from znf.prmtop / znf.rst (not InterMol files):
+  znf.mdcrd    4 frames, displaced atoms, by mdtraj 1.10 (MDCRDTrajectoryFile)
+  znf_box.nc   2 frames with a triclinic box (60/61 62 64 Å, 80 85 75°) and velocities, by MDAnalysis 2.x NCDFWriter
+  znf.ncrst    a NetCDF restart (coordinates + 0.125 Å, velocities, a 40 41 42 Å box), by ParmEd NetCDFRestart
+The expected values in tests/test_amber.cpp are what MDAnalysis and ParmEd read back from these files.

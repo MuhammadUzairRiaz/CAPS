@@ -2521,6 +2521,7 @@ internal static class SelfTest
             {
                 var psi = new System.Diagnostics.ProcessStartInfo(gmx, "-quiet grompp -f system.mdp -c system.gro -p system.top -o system.tpr -maxwarn 10")
                     { WorkingDirectory = gdir, RedirectStandardOutput = true, RedirectStandardError = true };
+                psi.Environment["GMX_MAXBACKUP"] = "-1";   // repeated self-tests: no #system.tpr.N# backups (GROMACS stops at 99)
                 using var pr = System.Diagnostics.Process.Start(psi)!;
                 var err = pr.StandardError.ReadToEnd();
                 pr.WaitForExit();
