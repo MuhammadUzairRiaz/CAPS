@@ -19,6 +19,108 @@ public sealed partial class MainViewModel
         ? "Energies and forces of the topology match CAPS in GROMACS 2026 (bench/ff/check_gromacs.py): bonded terms, Lennard-Jones and PME Coulomb; the tail correction differs by definition"
         : "Energies and forces of the data file match CAPS in LAMMPS (bench/ff/check_data_lammps.py)";
 
+    // ---------------------------------------------------------------- Compare energies (design/boards/Dynamics)
+    // The data file and input CAPS writes, run for zero steps in the LAMMPS on this machine, every energy term set beside
+    // CAPS's own for the same frame: the parity the chip claims, checked for this structure and force field.
+    private string _parity = "", _parityTable = "";
+    private int _parityLevel;   // 0 not checked, 1 matches, 2 differs, 3 could not run
+    private bool _parityRunning;
+    public string ParityText => _parityLevel switch { 1 => "energies match LAMMPS", 2 => "energies differ", 3 => "not checked", _ => "compare energies" };
+    public string ParityDetail { get => _parity; private set => Set(ref _parity, value); }
+    public string ParityTable { get => _parityTable; private set { if (Set(ref _parityTable, value)) Raise(nameof(HasParityTable)); } }
+    public bool HasParityTable => _parityTable.Length > 0;
+    public bool ParityOk => _parityLevel == 1;
+    public bool ParityBad => _parityLevel is 2 or 3;
+    public bool ParityIdle => !_parityRunning;
+
+    /// <summary>The LAMMPS executable: LAMMPS_EXE, else lmp / lmp_serial / lmp_mpi on the PATH or in ~/.local/bin.</summary>
+    private static string? FindLammps()
+    {
+        if (Environment.GetEnvironmentVariable("LAMMPS_EXE") is { Length: > 0 } e && File.Exists(e)) return e;
+        var dirs = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
+                   .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin"));
+        foreach (var d in dirs)
+            foreach (var n in new[] { "lmp", "lmp_serial", "lmp_mpi" })
+                foreach (var ext in OperatingSystem.IsWindows() ? new[] { ".exe", "" } : [""])
+                    if (File.Exists(Path.Combine(d, n + ext))) return Path.Combine(d, n + ext);
+        return null;
+    }
+
+    public async Task CompareEnergies()
+    {
+        if (_doc == null || _parityRunning) return;
+        var lmp = FindLammps();
+        void Done(int level, string detail, string table)
+        {
+            _parityLevel = level;
+            ParityDetail = detail;
+            ParityTable = table;
+            foreach (var n in new[] { nameof(ParityText), nameof(ParityOk), nameof(ParityBad) }) Raise(n);
+        }
+        if (lmp == null) { Done(3, "LAMMPS was not found (lmp on the PATH, or set LAMMPS_EXE): nothing to compare with", ""); return; }
+        _parityRunning = true;
+        Raise(nameof(ParityIdle));
+        var doc = _doc;
+        var dir = Path.Combine(Path.GetTempPath(), $"caps-parity-{Environment.ProcessId}-{DateTime.Now:HHmmssfff}");
+        try
+        {
+            var (ok, caps, lmpTerms, log) = await Task.Run(() =>
+            {
+                Directory.CreateDirectory(dir);
+                doc.Save(Path.Combine(dir, "system.data"));
+                File.WriteAllText(Path.Combine(dir, "system.in"), doc.LammpsInput("system.data") +
+                    "\nthermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press\nthermo_modify format float %.10f\nrun 0\n");
+                var caps = System.Text.Json.Nodes.JsonNode.Parse(doc.EnergyTerms())!;
+                var psi = new System.Diagnostics.ProcessStartInfo(lmp) { WorkingDirectory = dir, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+                foreach (var a in new[] { "-in", "system.in", "-log", "log.lammps", "-screen", "none" }) psi.ArgumentList.Add(a);
+                using var p = System.Diagnostics.Process.Start(psi)!;
+                var err = p.StandardError.ReadToEndAsync();
+                p.StandardOutput.ReadToEnd();
+                if (!p.WaitForExit(600000)) { try { p.Kill(true); } catch { } return (false, caps, (double[]?)null, "LAMMPS took longer than 10 minutes"); }
+                var logText = File.Exists(Path.Combine(dir, "log.lammps")) ? File.ReadAllText(Path.Combine(dir, "log.lammps")) : "";
+                // the thermo line after "Step PotEng E_bond E_angle E_dihed E_impro E_vdwl E_coul E_long Press"
+                var lines = logText.Split('\n');
+                var h = Array.FindIndex(lines, l => l.TrimStart().StartsWith("Step") && l.Contains("PotEng") && l.Contains("E_vdwl"));
+                if (p.ExitCode != 0 || h < 0 || h + 1 >= lines.Length)
+                {
+                    var why = lines.LastOrDefault(l => l.StartsWith("ERROR")) ?? err.Result.Split('\n').FirstOrDefault(l => l.Length > 0) ?? $"exit {p.ExitCode}";
+                    return (false, caps, (double[]?)null, why.Trim());
+                }
+                var v = lines[h + 1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => double.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : double.NaN).ToArray();
+                return (true, caps, v, "");
+            });
+            if (!ok || lmpTerms == null || lmpTerms.Length < 9) { Done(3, "LAMMPS did not run the deck: " + log, ""); return; }
+            double C(string k) => (double?)caps[k] ?? double.NaN;
+            var pme = (string?)caps["electrostatics"] == "pme";
+            var rows = new (string Name, double Caps, double Lmp, bool Compare)[]
+            {
+                ("bonds", C("bond"), lmpTerms[2], true), ("angles", C("angle"), lmpTerms[3], true), ("dihedrals", C("dihedral"), lmpTerms[4], true),
+                ("impropers", C("improper"), lmpTerms[5], true), ("van der Waals", C("vdw"), lmpTerms[6], true),
+                ("Coulomb", C("coulomb"), lmpTerms[7] + lmpTerms[8], !pme), ("total", C("total"), lmpTerms[1], !pme),
+            };
+            var inv = CultureInfo.InvariantCulture;
+            var worst = 0.0;
+            var sb = new System.Text.StringBuilder("term              CAPS            LAMMPS          Δ\n");
+            foreach (var r in rows)
+            {
+                var d = r.Caps - r.Lmp;
+                var rel = Math.Abs(d) / Math.Max(1.0, Math.Abs(r.Lmp));
+                if (r.Compare) worst = Math.Max(worst, rel);
+                sb.Append(string.Format(inv, "{0,-16}{1,16:F6}{2,16:F6}{3,14:E2}{4}\n", r.Name, r.Caps, r.Lmp, d, r.Compare ? "" : "  (PME here, PPPM there)"));
+            }
+            var match = worst < 1e-4;
+            Done(match ? 1 : 2, match ? $"Every term within {worst:0.0e0} (relative) of LAMMPS {Path.GetFileName(lmp)}, kcal/mol, for this frame and force field"
+                                      : $"The largest difference is {worst:0.0e0} relative: see the table (a style LAMMPS computes differently, or a tail or cutoff setting)", sb.ToString());
+        }
+        catch (Exception e) { Done(3, "Could not compare: " + e.Message, ""); }
+        finally
+        {
+            _parityRunning = false;
+            Raise(nameof(ParityIdle));
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
     /// <summary>The GROMACS .mdp for this run: the core's non-bonded settings, then the integrator and coupling.</summary>
     private string GromacsDeck(Interop.CapsDocument doc)
     {

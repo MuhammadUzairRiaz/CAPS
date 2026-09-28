@@ -1199,7 +1199,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (!Set(ref _mdEnsemble, value)) return;
             if (value == 3) MdBarostat = 1;   // NPH shows the barostat it runs
-            Raise(nameof(MdHasThermostat)); Raise(nameof(MdHasBarostat)); Raise(nameof(MdCanChooseBarostat)); Raise(nameof(MdCitation)); Raise(nameof(MdRespaAllowed));
+            Raise(nameof(MdHasThermostat)); Raise(nameof(MdHasBarostat)); Raise(nameof(MdCanChooseBarostat)); Raise(nameof(MdCitation)); Raise(nameof(MdIntegratorText)); Raise(nameof(MdRespaAllowed));
             if (!MdRespaAllowed) MdRespa = 0;
             RefreshPreflight();
         }
@@ -1226,19 +1226,19 @@ public sealed partial class MainViewModel : ObservableObject
             if (!Set(ref _mdThermostat, value)) return;
             if (value is 1 or 2) MdRespa = 0;
             if (value != 2 && _mdBarostat == 2) MdBarostat = 0;   // MTK is the pressure half of Nosé–Hoover
-            Raise(nameof(MdCitation)); Raise(nameof(MdRespaAllowed)); RefreshPreflight();
+            Raise(nameof(MdCitation)); Raise(nameof(MdIntegratorText)); Raise(nameof(MdRespaAllowed)); RefreshPreflight();
         }
     }
     // r-RESPA: 0 off, 1 two inner steps, 2 four (bonded forces every Δt/2 or Δt/4); with Bussi or no thermostat
     public static readonly string[] RespaChoices = ["r-RESPA · off", "r-RESPA · bonded ×2", "r-RESPA · bonded ×4"];
     private int _mdRespa;
-    public int MdRespa { get => _mdRespa; set { if (Set(ref _mdRespa, Math.Clamp(value, 0, 2))) { Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed)); RefreshPreflight(); } } }
+    public int MdRespa { get => _mdRespa; set { if (Set(ref _mdRespa, Math.Clamp(value, 0, 2))) { Raise(nameof(MdCitation)); Raise(nameof(MdIntegratorText)); Raise(nameof(MdConstraintsAllowed)); RefreshPreflight(); } } }
     public bool MdRespaAllowed => !(MdHasThermostat && _mdThermostat is 1 or 2) && _mdConstraints == 0;
     // bond constraints (SHAKE or LINCS, RATTLE velocities): 0 none, 1 bonds to hydrogen with rigid water, 2 every bond; r-RESPA is the alternative
     public static readonly string[] ConstraintChoices = ["None: every bond flexible", "Bonds to hydrogen, rigid water", "All bonds"];
     public static readonly string[] ConstraintSolvers = ["SHAKE / RATTLE (as LAMMPS)", "LINCS (as GROMACS)"];
     private int _mdConstraintSolver;
-    public int MdConstraintSolver { get => _mdConstraintSolver; set { if (Set(ref _mdConstraintSolver, Math.Clamp(value, 0, 1))) { Raise(nameof(MdCitation)); RefreshPreflight(); } } }
+    public int MdConstraintSolver { get => _mdConstraintSolver; set { if (Set(ref _mdConstraintSolver, Math.Clamp(value, 0, 1))) { Raise(nameof(MdCitation)); Raise(nameof(MdIntegratorText)); RefreshPreflight(); } } }
     public bool MdHasConstraints => _mdConstraints > 0;
     private int _mdConstraints;
     public int MdConstraints
@@ -1248,7 +1248,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (!Set(ref _mdConstraints, Math.Clamp(value, 0, 2))) return;
             if (value > 0) { MdRespa = 0; if (_mdDt < 2) MdDtD = 2; if (_mdBarostat == 2) MdBarostat = 0; }   // what constraints are for: 2 fs steps; MTK runs without them
-            Raise(nameof(MdRespaAllowed)); Raise(nameof(MdCitation)); Raise(nameof(MdConstraintsAllowed)); Raise(nameof(MdHasConstraints));
+            Raise(nameof(MdRespaAllowed)); Raise(nameof(MdCitation)); Raise(nameof(MdIntegratorText)); Raise(nameof(MdConstraintsAllowed)); Raise(nameof(MdHasConstraints));
             RefreshPreflight();
         }
     }
@@ -1261,7 +1261,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (!Set(ref _mdBarostat, value)) return;
             if (value == 2) { if (_mdThermostat != 2) MdThermostat = 2; if (_mdConstraints > 0) MdConstraints = 0; }   // MTK: Nosé–Hoover, no constraints
-            Raise(nameof(MdCitation)); RefreshPreflight();
+            Raise(nameof(MdCitation)); Raise(nameof(MdIntegratorText)); RefreshPreflight();
         }
     }
     public bool MdNewVelocities { get => _mdNewVelocities; set => Set(ref _mdNewVelocities, value); }
@@ -1473,6 +1473,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     // pressure coupling per axis (Berendsen: each axis from its own diagonal pressure) and the checkpoint interval
+    public string MdIntegratorText => (MdHasThermostat && _mdThermostat == 1 ? "BAOAB (Langevin)" : "Velocity Verlet") + (RespaSteps > 1 ? " · r-RESPA" : "");
     public static readonly string[] MdCouplings = ["Isotropic", "Each axis on its own (Berendsen)", "Only z (Berendsen)", "Only x and y (Berendsen)"];
     private int _mdCoupling;
     private double _mdCheckpointPs;

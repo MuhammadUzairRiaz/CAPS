@@ -145,6 +145,9 @@ public sealed partial class FieldViewModel : ObservableObject
                    _footerDb = "", _energyText = "", _log = "Choose a force field and assign it. CAPS types every atom from its rules, sets the charges and looks up every parameter; nothing is guessed.";
     private bool _chargeOdd;
     public string ForceFieldName { get => _ffName; private set => Set(ref _ffName, value); }
+    private string _mixing = "force-field default";
+    /// <summary>The assigned force field's Lennard-Jones mixing rule (the one every engine file writes).</summary>
+    public string MixingRule { get => _mixing; private set => Set(ref _mixing, value); }
     public string TypedText { get => _typedText; private set => Set(ref _typedText, value); }
     public string UntypedText { get => _untypedText; private set => Set(ref _untypedText, value); }
     public string MissingText { get => _missingText; private set => Set(ref _missingText, value); }
@@ -454,6 +457,11 @@ public sealed partial class FieldViewModel : ObservableObject
         using var js = JsonDocument.Parse(json);
         var r = js.RootElement;
         ForceFieldName = Str(r, "forcefield");
+        MixingRule = Str(r, "mixing") switch
+        {
+            "arithmetic" => "Lorentz–Berthelot (arithmetic σ)", "geometric" => "geometric σ and ε (OPLS)", "sixthpower" => "sixth power (class II)",
+            "" => "force-field default", var m => m,
+        };
         var typed = r.GetProperty("typed").GetDouble();
         var untyped = r.GetProperty("untyped").GetDouble();
         var missing = r.GetProperty("missing").EnumerateArray().Select(x => x.GetString()!).ToList();

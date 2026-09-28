@@ -55,7 +55,7 @@
                 </Border>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
                   <TextBlock Text="Integrator" Classes="label" /><TextBlock Grid.Column="1" Text="Multiple time step" Classes="label" /><TextBlock Grid.Column="2" Text="Δt (fs)" Classes="label" />
-                  <ComboBox Grid.Row="1" SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="Velocity Verlet" /></ComboBox>
+                  <TextBox Grid.Row="1" Text="{Binding MdIntegratorText, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="Set by the thermostat and the time-step choices: velocity Verlet, BAOAB splitting with Langevin, r-RESPA with multiple time steps" />
                   <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.RespaChoices}" SelectedIndex="{Binding MdRespa}" HorizontalAlignment="Stretch"
                             IsEnabled="{Binding MdRespaAllowed}" ToolTip.ShowOnDisabled="True"
                             ToolTip.Tip="Bonded forces every Δt/2 or Δt/4, non-bonded every Δt: Δt 2 fs with ×4 keeps the C–H stretches at 0.5 fs. With the Bussi thermostat or none" />
@@ -112,7 +112,7 @@
                 <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding ElecParamText, Mode=OneWay}" IsReadOnly="True" Classes="mono" />
                 <TextBlock Grid.Row="2" Text="van der Waals" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Mixing" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Precision" Classes="label" Margin="0,8,0,0" />
                 <TextBox Grid.Row="3" Text="{Binding LjTailText, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="Change it in Dynamics › Electrostatics (LJ)" />
-                <TextBox Grid.Row="3" Grid.Column="1" Text="Force-field default" IsReadOnly="True" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Field.MixingRule, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="The assigned force field's own rule for unlike Lennard-Jones pairs; explicit pair parameters win over it" />
                 <TextBox Grid.Row="3" Grid.Column="2" Text="Double" IsReadOnly="True" />
               </Grid>
             </StackPanel>
@@ -189,9 +189,14 @@
             <StackPanel>
               <Border Classes="phead">
                 <DockPanel>
-                  <Border DockPanel.Dock="Right" Classes="chip" ToolTip.Tip="{Binding MdParityTip}">
-                    <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" VerticalAlignment="Center" /><TextBlock Text="step-0 parity validated" Foreground="{DynamicResource MutedB}" /></StackPanel>
-                  </Border>
+                  <Button DockPanel.Dock="Right" Classes="small" Click="OnCompareEnergies" IsEnabled="{Binding ParityIdle}"
+                          ToolTip.Tip="Run the LAMMPS files for zero steps with the LAMMPS on this machine and set every energy term beside CAPS's for this frame">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <Ellipse Width="7" Height="7" Fill="{DynamicResource OkB}" VerticalAlignment="Center" IsVisible="{Binding ParityOk}" />
+                      <Ellipse Width="7" Height="7" Fill="{DynamicResource WarnB}" VerticalAlignment="Center" IsVisible="{Binding ParityBad}" />
+                      <TextBlock Text="{Binding ParityText}" />
+                    </StackPanel>
+                  </Button>
                   <TextBlock Text="Export to other engines" Classes="h2" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>
@@ -201,6 +206,10 @@
                     <RadioButton Classes="seg" GroupName="eng" Content="LAMMPS" IsChecked="{Binding MdLammps}" ToolTip.Tip="system.data and system.in" />
                     <RadioButton Classes="seg" GroupName="eng" Content="GROMACS" IsChecked="{Binding MdGromacs}" ToolTip.Tip="system.top, system.gro and system.mdp; not for class II, DREIDING or UFF (no GROMACS functions for their terms)" />
                   </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding ParityDetail}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding ParityDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Border Classes="inset" Padding="12,8" IsVisible="{Binding HasParityTable}">
+                  <SelectableTextBlock Text="{Binding ParityTable}" FontFamily="{DynamicResource Mono}" FontSize="11" />
                 </Border>
                 <Border Classes="inset" Padding="12,10">
                   <ScrollViewer MaxHeight="220" HorizontalScrollBarVisibility="Auto">

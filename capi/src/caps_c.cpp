@@ -891,6 +891,7 @@ void field_run(caps_doc* d) {
   // report
   caps::Json r = caps::Json::object();
   r["forcefield"] = def.name;
+  r["mixing"] = def.pair_table.empty() ? def.mixing : std::string("none: every pair from its table");
   r["version"] = def.version;
   r["source"] = def.source;
   r["file"] = F.ff_path;
@@ -4752,6 +4753,28 @@ extern "C" void caps_set_held_molecule(caps_doc* d, int64_t mol) {
 }
 
 extern "C" int64_t caps_held_molecule(const caps_doc* d) { return d ? d->held_mol : 0; }
+
+extern "C" int32_t caps_energy_terms(caps_doc* d, char* json, int32_t cap) {
+  try {
+    caps::ForceField ff;
+    if (d->field && d->field->complete) ff = *d->field->ff;
+    else ff = default_ff(d->frame);
+    const caps::EnergyOptions eo = elec();
+    caps::Evaluator ev(ff, eo);
+    std::vector<double> x, f;
+    for (const auto& a : d->frame.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, d->frame.cell, f);
+    caps::Json en = caps::Json::object();
+    en["bond"] = e.bond, en["angle"] = e.angle, en["dihedral"] = e.dihedral, en["improper"] = e.improper;
+    en["vdw"] = e.vdw, en["coulomb"] = e.coulomb, en["total"] = e.total();
+    en["electrostatics"] = std::string(eo.electrostatics == caps::EnergyOptions::Electrostatics::PME ? "pme" : "dsf");
+    en["forcefield"] = ff.name;
+    return report_out(en.dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
 
 extern "C" int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32_t n) {
   return guard([&] {
