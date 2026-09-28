@@ -1040,6 +1040,43 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception e) { FieldInfoText = "Cannot type this structure: " + e.Message; }
     }
 
+    // stop criteria (design/boards/Relax): the relative energy change and, with box relaxation, the stress left
+    public static readonly string[] RelaxEtols = ["1e-6", "1e-8", "1e-10", "1e-12"];
+    private int _relaxEtol = 1;
+    private double _relaxPressureTol = 100;
+    public int RelaxEtolIndex { get => _relaxEtol; set => Set(ref _relaxEtol, Math.Clamp(value, 0, 3)); }
+    public decimal RelaxPressureTolD { get => (decimal)_relaxPressureTol; set { _relaxPressureTol = Math.Clamp((double)value, 1, 100000); Raise(); } }
+
+    // atoms held in place besides the held molecule (Relax board: Fixed atoms · Add from selection)
+    private int _fixedCount;
+    public bool HasFixedAtoms => _fixedCount > 0;
+    public string FixedAtomsText => _fixedCount == 0 ? "Fixed atoms: none (besides a held molecule)" : $"Fixed atoms: {_fixedCount:N0} held in place";
+    public void HoldSelection()
+    {
+        if (_doc == null) return;
+        var sel = new HashSet<int>(_selection);
+        try
+        {
+            if (System.Text.Json.Nodes.JsonNode.Parse(_doc.SelectionJson())?["indices"] is System.Text.Json.Nodes.JsonArray a)
+                foreach (var x in a) sel.Add((int)((double?)x ?? -1));
+        }
+        catch { }
+        sel.Remove(-1);
+        if (sel.Count == 0) { Status = "Select atoms first (click, ⇧-click, lasso or Select by query), then Hold selection"; return; }
+        sel.UnionWith(_doc.FixedAtoms());
+        _fixedCount = _doc.SetFixedAtoms(sel);
+        Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText));
+        Status = $"{_fixedCount:N0} atoms held in place in Relax, Dynamics and Equilibrate (a freeze group in GROMACS files)";
+    }
+    public void FreeFixedAtoms()
+    {
+        if (_doc == null) return;
+        _fixedCount = _doc.SetFixedAtoms(Array.Empty<int>());
+        Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText));
+        Status = "No atoms fixed (a held molecule stays held)";
+    }
+    private void SyncFixed() { _fixedCount = _doc?.FixedAtoms().Length ?? 0; Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText)); }
+
     /// <summary>The Relax settings as the core takes them (also captured when a run is queued).</summary>
     private CapsRelaxOpts RelaxOptions() => new()
     {
@@ -1049,6 +1086,7 @@ public sealed partial class MainViewModel : ObservableObject
         BoxAnisotropic = _relaxBoxMode > 0 ? 1 : 0, BoxAxes = _relaxBoxMode switch { 2 => 4, 3 => 3, _ => 7 },
         PushoffRampPs = _relaxPushoff && _relaxPushoffMd ? (double)_relaxRampPs : 0, PushoffCap = (double)_relaxCap, PushoffTemperature = (double)_relaxPushoffT,
         Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
+        Etol = double.Parse(RelaxEtols[_relaxEtol], CultureInfo.InvariantCulture), PressureTol = _relaxPressureTol,
     };
 
     public async Task Relax() => await Relax(null);
@@ -1434,9 +1472,18 @@ public sealed partial class MainViewModel : ObservableObject
         await RunMd((_mdCheckpointStep, _mdCheckpointSteps - _mdCheckpointStep));
     }
 
+    // pressure coupling per axis (Berendsen: each axis from its own diagonal pressure) and the checkpoint interval
+    public static readonly string[] MdCouplings = ["Isotropic", "Each axis on its own (Berendsen)", "Only z (Berendsen)", "Only x and y (Berendsen)"];
+    private int _mdCoupling;
+    private double _mdCheckpointPs;
+    public int MdCoupling { get => _mdCoupling; set => Set(ref _mdCoupling, Math.Clamp(value, 0, 3)); }
+    public decimal MdCheckpointPsD { get => (decimal)_mdCheckpointPs; set { _mdCheckpointPs = Math.Max(0, (double)value); Raise(); } }
+
     /// <summary>The Dynamics settings as the core takes them (also captured when a run is queued).</summary>
     private CapsMdOpts MdOptions((long Offset, long Steps)? resume) => new()
     {
+        BoxAnisotropic = _mdCoupling > 0 ? 1 : 0, BoxAxes = _mdCoupling switch { 2 => 4, 3 => 3, _ => 7 },
+        CheckpointEvery = _mdCheckpointPs > 0 ? Math.Max(1, (long)Math.Round(_mdCheckpointPs * 1000 / Math.Max(0.01, _mdDt))) : 0,
         Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,
         Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,
         Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
@@ -2365,7 +2412,7 @@ public sealed partial class MainViewModel : ObservableObject
         Field.Reset();
         _pipeAutoFf = false;
         Analyze.Load("");
-        SyncHeld();
+        SyncHeld(); SyncFixed();
         Title = title;
         PipelineNewDocument(title);
         FieldInfoText = "";

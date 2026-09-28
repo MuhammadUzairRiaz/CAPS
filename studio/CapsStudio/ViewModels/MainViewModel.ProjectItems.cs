@@ -149,7 +149,7 @@ public sealed partial class MainViewModel
         Field.Reset();
         try { Field.LoadReport(doc); } catch { Field.Reset(); }
         Analyze.Load("");
-        SyncHeld();
+        SyncHeld(); SyncFixed();
         _pipeDone.Clear();
         foreach (var d in it.Done) _pipeDone.Add(d);
         _pipeBuild = it.Build;

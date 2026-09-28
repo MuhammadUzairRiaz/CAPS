@@ -91,7 +91,8 @@ class _RelaxOpts(C.Structure):
     _fields_ = [("method", C.c_int32), ("ftol", C.c_double), ("max_iterations", C.c_int32), ("target_density", C.c_double),
                 ("compress_step", C.c_double), ("pushoff", C.c_int32), ("relax_box", C.c_int32), ("pressure", C.c_double),
                 ("cutoff", C.c_double), ("coulomb", C.c_int32), ("threads", C.c_int32), ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32),
-                ("pushoff_ramp_ps", C.c_double), ("pushoff_cap", C.c_double), ("pushoff_temperature", C.c_double)]
+                ("pushoff_ramp_ps", C.c_double), ("pushoff_cap", C.c_double), ("pushoff_temperature", C.c_double),
+                ("etol", C.c_double), ("pressure_tol", C.c_double)]
 
 
 class _MdOpts(C.Structure):
@@ -99,7 +100,8 @@ class _MdOpts(C.Structure):
                 ("barostat", C.c_int32), ("pressure", C.c_double), ("tau_p", C.c_double), ("new_velocities", C.c_int32),
                 ("seed", C.c_uint64), ("thermo_every", C.c_int32), ("frame_every", C.c_int32), ("cutoff", C.c_double),
                 ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
-                ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32)]
+                ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32),
+                ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32)]
 
 
 class _ReactOpts(C.Structure):
@@ -134,6 +136,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S), "caps_set_restraints": ([P, C.c_char_p], I),
+        "caps_set_held_molecule": ([P, C.c_int64], None), "caps_set_fixed_atoms": ([P, C.POINTER(C.c_int32), I], I),
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
@@ -310,7 +313,7 @@ class Document:
     def relax(self, ftol: float = 0.5, method: str = "lbfgs", max_iterations: int = 5000, density: float = 0.0, pushoff: bool = True,
               box: bool = False, pressure: float = 1.0, cutoff: float = 10.0, coulomb: bool = True, threads: int = 0,
               restraints: Optional[list] = None, box_axes: str = "", pushoff_md_ps: float = 0.0, pushoff_cap: float = 0.0,
-              pushoff_temperature: float = 0.0) -> int:
+              pushoff_temperature: float = 0.0, etol: float = 0.0, pressure_tol: float = 0.0) -> int:
         """Minimises the current frame with the Field assignment (else the built-in GAFF): 0 converged, 1 not quite.
         restraints: [(i, j, r0), …] or [(i, j, r0, k), …] — k (r − r0)² between atoms i and j (indices from 0, Å,
         k kcal/mol/Å², default 10); dihedral ones as {"i", "j", "k", "l", "phi0", "kphi"} dicts; they stay set for later
@@ -327,6 +330,7 @@ class Document:
                        sum({"x": 1, "y": 2, "z": 4}[a] for a in set(box_axes)), pushoff_md_ps, pushoff_cap, pushoff_temperature)
         if box_axes:
             o.relax_box = 1
+        o.etol, o.pressure_tol = etol, pressure_tol   # 0: 1e-8 and 100 atm
         rep = _report()
         rc = library().caps_relax(self._h, C.byref(o), None, None, rep, len(rep))
         if rc < 0:
@@ -334,9 +338,18 @@ class Document:
         self.report = rep.value.decode()
         return rc
 
+    def hold(self, molecule: int = 0, atoms: Optional[list] = None) -> None:
+        """Holds atoms in place in relax, md and equilibration (no force, no motion; a freeze group in GROMACS files):
+        molecule > 0 holds that molecule (an interface's surface is 1), atoms (indices from 0) any others; hold() frees them."""
+        library().caps_set_held_molecule(self._h, int(molecule))
+        idx = [int(a) for a in (atoms or [])]
+        arr = (C.c_int32 * max(1, len(idx)))(*idx)
+        if library().caps_set_fixed_atoms(self._h, arr, len(idx)) < 0:
+            raise _error()
+
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
-           respa: int = 1, constraints: str = "none", constraint_solver: str = "shake") -> str:
+           respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "") -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
@@ -346,6 +359,8 @@ class Document:
                     {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
                     cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0, 0,
                     {"shake": 0, "lincs": 1}[constraint_solver])
+        if couple_axes:   # "z", "xy" …: those axes coupled on their own to the pressure (Berendsen), the others fixed
+            o.box_anisotropic, o.box_axes = 1, sum({"x": 1, "y": 2, "z": 4}[a] for a in set(couple_axes))
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()

@@ -165,6 +165,8 @@ public struct CapsRelaxOpts
     public double PushoffRampPs;  // > 0: push-off by NVT MD first, the force cap ramped over this time
     public double PushoffCap;     // final force cap, kcal/mol/Å (0 = 500)
     public double PushoffTemperature;   // K (0 = 300)
+    public double Etol;           // ABI 36: relative energy change per step to stop at (0 = 1e-8)
+    public double PressureTol;    // ABI 36: box relaxation stops when |P − target| is below this, atm (0 = 100)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -187,6 +189,8 @@ public struct CapsMdOpts
     public long StepOffset;       // added to reported steps (a run continued from a checkpoint)
     public long CheckpointEvery;  // steps between checkpoints (0: about 50 per run; < 0: none)
     public int ConstraintAlgorithm;   // 0 SHAKE, 1 LINCS (positions; RATTLE for the velocities)
+    public int BoxAnisotropic;    // ABI 36: each axis in BoxAxes scaled on its own (Berendsen)
+    public int BoxAxes;           // ABI 36: bits 1 x, 2 y, 4 z (0 = all)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -438,6 +442,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_ph")] public static extern void SetPh(IntPtr doc, double ph);
     [DllImport(Lib, EntryPoint = "caps_set_restraints")] public static extern int SetRestraints(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_set_fixed_atoms")] public static extern int SetFixedAtoms(IntPtr doc, int[]? atoms, int n);
+    [DllImport(Lib, EntryPoint = "caps_fixed_atoms")] public static extern int FixedAtoms(IntPtr doc, int[]? atoms, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
@@ -993,6 +999,9 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Distance restraints for Relax (JSON [{i, j, r0, k}], indices from 0); "[]" clears them.</summary>
     public int SetRestraints(string json) { using (Hold()) { var n = Native.SetRestraints(H, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
+    /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
+    public int SetFixedAtoms(IReadOnlyCollection<int> atoms) { using (Hold()) { var a = atoms.ToArray(); return Native.SetFixedAtoms(H, a, a.Length); } }
+    public int[] FixedAtoms() { using (Hold()) { var n = Native.FixedAtoms(H, null, 0); var a = new int[Math.Max(0, n)]; if (n > 0) Native.FixedAtoms(H, a, n); return a; } }
 
     /// <summary>The file checks of this document as JSON (caps_file_checks).</summary>
     private static string Sized(Func<byte[]?, int, int> call)

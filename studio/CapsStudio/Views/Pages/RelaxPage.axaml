@@ -183,9 +183,22 @@
               <TextBlock Text="Iterations (per stage)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
               <NumericUpDown Grid.Column="1" Value="{Binding RelaxIterationsD}" Minimum="10" Maximum="1000000" Increment="1000" FormatString="0" TextAlignment="Right" />
             </Grid>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-              <TextBlock Text="ΔE per step (relative)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
-              <TextBlock Grid.Column="1" Text="&lt; 1e-8" Classes="mono" VerticalAlignment="Center" />
+            <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+              <TextBlock Text="ΔE per step below (relative)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+              <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.RelaxEtols}" SelectedIndex="{Binding RelaxEtolIndex}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="A stage also stops when the energy changes by less than this fraction per step (1e-8: the force criterion decides)" />
+            </Grid>
+            <Grid ColumnDefinitions="*,120" ColumnSpacing="10" IsVisible="{Binding RelaxBox}">
+              <TextBlock Text="Box stress below (atm)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+              <NumericUpDown Grid.Column="1" Value="{Binding RelaxPressureTolD}" Minimum="1" Maximum="100000" Increment="10" FormatString="0" TextAlignment="Right"
+                             ToolTip.Tip="The box relaxation stops when the pressure is this close to its target" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBlock Text="{Binding FixedAtomsText}" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <Button Classes="small" Content="Hold selection" Click="OnHoldSelection" ToolTip.Tip="The selected atoms stay where they are in Relax, Dynamics and Equilibrate (chain ends, an anchor, a substrate)" />
+                <Button Classes="small ghost" Content="Free" Click="OnFreeAtoms" IsVisible="{Binding HasFixedAtoms}" />
+              </StackPanel>
             </Grid>
             <TextBlock Text="The criterion that stopped each stage goes into the report." Classes="dim" TextWrapping="Wrap" />
           </StackPanel>
