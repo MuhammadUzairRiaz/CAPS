@@ -154,6 +154,14 @@ TEST(FFMerge, ManyBodyGroup) {
   EXPECT_NEAR(sc.eps, std::sqrt(d * m.lj[size_t(m.type_index[2])].eps), 1e-12);
   EXPECT_NEAR(sc.sigma, 0.5 * (x / std::pow(2.0, 1.0 / 6) + m.lj[size_t(m.type_index[2])].sigma), 1e-12);
   EXPECT_EQ(m.lj14, fm.lj14);   // the force field's settings, not the potential group's
+  {   // beside a class II group the cross Lennard-Jones is 9-6: σ is UFF's minimum x itself
+    ManyBodySpec sp{"tersoff", (dir / "tagged.tersoff").string(), ""};
+    sp.pair_form = "lj9-6";
+    const ForceField f96 = manybody_part(part_of(s, si), sp);
+    EXPECT_EQ(f96.pair_form, "lj9-6");
+    EXPECT_NEAR(f96.lj[0].sigma, x, 1e-12);
+    EXPECT_NEAR(f96.lj[0].eps, d, 1e-12);
+  }
   // LAMMPS: overlay, the element map, no Si-Si bond (special_bonds would hide the pair from Tersoff), the copy says its units
   EnergyOptions e;
   write_lammps_data_ff(s, m, e, (dir / "sys.data").string(), false);
