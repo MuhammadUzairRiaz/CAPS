@@ -13,8 +13,11 @@ The library is found through CAPS_LIB (a path to libcaps), next to the Studio, o
 from __future__ import annotations
 
 import ctypes as C
+import builtins as _builtins
 import json
 import os
+import os as _os
+from os.path import abspath as _os_path_abspath, exists as _os_path_exists, join as _os_path_join
 import re
 import sys
 from pathlib import Path
@@ -136,6 +139,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S), "caps_set_restraints": ([P, C.c_char_p], I),
+        "caps_pack": ([S, S, I, P, P, B, I], P),
         "caps_set_held_molecule": ([P, C.c_int64], None), "caps_set_fixed_atoms": ([P, C.POINTER(C.c_int32), I], I),
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
@@ -753,6 +757,50 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     d = run(r)
     d.label = units[0] if len(units) == 1 else "copolymer"
     return d
+
+
+def pack(molecules=None, box=30.0, tolerance: float = 2.0, seed: int = 1, density: Optional[float] = None, inp: Optional[str] = None,
+         forcefield: Optional[str] = None, relax: bool = False, base_dir: Optional[str] = None) -> Document:
+    """Molecules packed into a periodic box with no two atoms of different molecules closer than tolerance (Å), as
+    packmol does: molecules = [("CCO", 50), ("mol.pdb", 3), (doc, 10) …] — SMILES, structure files or documents with
+    their counts — in box = edge or (x, y, z) Å; density compresses the packed cell to that g/cm³. Or inp = a packmol
+    input file. forcefield types the cell, relax minimises it."""
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="caps-pack-")
+    if inp is not None and not forcefield and not relax:
+        # packmol input: its structure files are found in base_dir (else beside the input)
+        with _builtins.open(str(inp)) as f:
+            text = f.read()
+        rep = _report()
+        h = library().caps_pack(_enc(text), _enc(base_dir or _os_path_abspath(_os.path.dirname(str(inp)) or ".")), 0, None, None, rep, len(rep))
+        if not h:
+            raise _error()
+        d = Document(h, str(inp))
+        d.report = rep.value.decode()
+        return d
+    if inp is not None:
+        build = {"pack": _os_path_abspath(str(inp))}
+    else:
+        mols = []
+        for k, (m, count) in enumerate(molecules or []):
+            if isinstance(m, Document):
+                path = _os_path_join(tmp, f"molecule_{k}.pdb")
+                m.save(path)
+                mols.append({"file": path, "count": int(count)})
+            elif isinstance(m, str) and _os_path_exists(m):
+                mols.append({"file": _os_path_abspath(m), "count": int(count)})
+            else:
+                mols.append({"smiles": str(m), "count": int(count)})
+        p = {"molecules": mols, "tolerance": tolerance, "seed": seed, "box": list(box) if isinstance(box, (list, tuple)) else float(box)}
+        if density:
+            p["density"] = density
+        build = {"pack": p}
+    r = {"recipe": 1, "name": "packed", "build": build}
+    if forcefield or relax:
+        r["type"] = {"forcefield": forcefield or "default"}
+    if relax:
+        r["relax"] = {"method": "lbfgs", "fmax": 1.0}
+    return run(r, out_dir=tmp, base_dir=base_dir)
 
 
 def chi_by_md(polymer, solvent: Optional[str] = None, polymer_b=None, dp: int = 10, chains: int = 6, temperature: float = 300.0,

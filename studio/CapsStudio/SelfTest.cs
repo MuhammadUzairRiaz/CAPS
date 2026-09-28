@@ -678,7 +678,7 @@ internal static class SelfTest
                 var pySaved = Path.Combine(outDir, "caps-selftest-py.data");
                 vm.Document!.Save(pySaved);
                 vm.MdStepsD = 50;
-                var scripts = new[] { ("relax", vm.RelaxPython()), ("md", vm.MdPython()), ("react", vm.ReactPython()) };
+                var scripts = new[] { ("relax", vm.RelaxPython()), ("md", vm.MdPython()), ("react", vm.ReactPython()), ("pack", vm.PackPython()) };
                 var results = new List<string>();
                 foreach (var (name, text) in scripts)
                 {
@@ -686,7 +686,7 @@ internal static class SelfTest
                     var body = System.Text.RegularExpressions.Regex.Replace(text, @"caps\.open\([^\n]*\)", $"caps.open(\"{pySaved}\")");
                     File.WriteAllText(file, body);
                     var psi = new System.Diagnostics.ProcessStartInfo("python3") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
-                    if (name == "react") { psi.ArgumentList.Add("-m"); psi.ArgumentList.Add("py_compile"); }
+                    if (name is "react" or "pack") { psi.ArgumentList.Add("-m"); psi.ArgumentList.Add("py_compile"); }
                     psi.ArgumentList.Add(file);
                     if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg;
                     psi.Environment["CAPS_LIB"] = MainViewModel.NativeLibraryPath;
