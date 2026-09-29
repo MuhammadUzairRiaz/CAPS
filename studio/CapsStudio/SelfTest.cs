@@ -2103,6 +2103,18 @@ internal static class SelfTest
             var mdLine = vm.RecordedCommands.FirstOrDefault(c => c.Text.StartsWith("doc.md("))?.Text ?? "";
             Check(mdLine.Contains("steps=40") && !vm.RecordedCommands.Any(c => c.Text.StartsWith("import") || c.Text.StartsWith("doc = caps.open")),
                   $"macro records MD: {mdLine}");
+            // an equilibration records doc.equilibrate with the stages as run (40 steps)
+            var eqText0 = vm.EqText;
+            var eqUntil0 = vm.EqUntilConverged;
+            vm.EqUntilConverged = false;
+            vm.EqText = "nvt 0.04 ps T 300 # hold";
+            vm.Recording = true;
+            vm.RunEquilibrate().GetAwaiter().GetResult();
+            vm.Recording = false;
+            vm.EqText = eqText0;
+            vm.EqUntilConverged = eqUntil0;
+            var eqLine = vm.RecordedCommands.FirstOrDefault(c => c.Text.StartsWith("doc.equilibrate("))?.Text ?? "";
+            Check(eqLine.Contains("\"nvt 0.04 ps T 300 # hold\"") && eqLine.Contains("dt="), $"macro records equilibration: {eqLine}");
             // Target: the open structure — the script takes it with caps.current() and hands a result back, which opens
             vm.NewMacro();
             vm.MacroText = "import caps\n\ndoc = caps.current()\nprint(\"atoms\", doc.atoms)\ncaps.hand_back(doc)\n";

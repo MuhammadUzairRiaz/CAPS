@@ -107,6 +107,21 @@ class _MdOpts(C.Structure):
                 ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32)]
 
 
+class _EquilOpts(C.Structure):
+    _fields_ = [("dt", C.c_double), ("thermostat", C.c_int32), ("barostat", C.c_int32), ("tau_t", C.c_double), ("tau_p", C.c_double),
+                ("seed", C.c_uint64), ("cutoff", C.c_double), ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32),
+                ("frame_ps", C.c_double), ("thermo_ps", C.c_double), ("until_converged", C.c_int32), ("block_ps", C.c_double),
+                ("max_blocks", C.c_int32), ("tol_density", C.c_double), ("tol_energy", C.c_double), ("tol_rg", C.c_double),
+                ("constraints", C.c_int32), ("tol_internal", C.c_double), ("constraint_algorithm", C.c_int32),
+                ("internal_target", C.POINTER(C.c_double)), ("internal_target_n", C.c_int32)]
+
+
+class _ProtocolParams(C.Structure):
+    _fields_ = [("t_final", C.c_double), ("t_max", C.c_double), ("p_final", C.c_double), ("p_max", C.c_double),
+                ("time_scale", C.c_double), ("cycles", C.c_int32), ("t_low", C.c_double), ("t_high", C.c_double),
+                ("ramp_ps", C.c_double), ("hold_ps", C.c_double)]
+
+
 class _ReactOpts(C.Structure):
     _fields_ = [("seed", C.c_uint64), ("max_cycles", C.c_int32), ("max_per_cycle", C.c_int32), ("target_conversion", C.c_double),
                 ("capture", C.c_double), ("relax", C.c_int32), ("relax_iterations", C.c_int32), ("md_ps", C.c_double),
@@ -153,6 +168,8 @@ def _declare(L: C.CDLL) -> None:
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
+        "caps_equilibrate": ([P, S, C.POINTER(_EquilOpts), P, P, B, I], I), "caps_equilibrate_checks": ([P, B, I], I),
+        "caps_protocol_text": ([S, C.POINTER(_ProtocolParams), B, I], I),
         "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
@@ -480,6 +497,31 @@ class Document:
         self.report = rep.value.decode()
         return self.report
 
+    def equilibrate(self, protocol: str = "larsen21", temperature: float = 300.0, t_max: float = 600.0, pressure: float = 1.0,
+                    p_max: float = 49346.2, time_scale: float = 1.0, cycles: int = 3, t_low: float = 300.0, t_high: float = 600.0,
+                    ramp_ps: float = 50.0, hold_ps: float = 50.0, dt: float = 1.0, thermostat: str = "bussi", barostat: str = "crescale",
+                    tau_t: float = 100.0, tau_p: float = 1000.0, seed: int = 1, cutoff: float = 10.0, coulomb: bool = True,
+                    frame_ps: float = 10.0, thermo_ps: float = 0.5, until_converged: bool = False, block_ps: float = 20.0,
+                    max_blocks: int = 20, constraints: str = "none", constraint_solver: str = "shake", tail: bool = True) -> bool:
+        """Runs an equilibration protocol from the current frame: "larsen21" (Larsen et al. 2011, 21 steps: t_max, p_max
+        ramps down to temperature and pressure), "annealing" (cycles between t_low and t_high, ramp_ps and hold_ps), "pushoff",
+        or protocol text written by hand (one stage per line, as protocol_text gives). until_converged adds NPT blocks of
+        block_ps until density, energy and Rg stop drifting (at most max_blocks); .checks then holds the checks. Returns True
+        when converged (or when no checks were asked for); the recorded frames become the document's frames."""
+        text = protocol if "\n" in protocol or " " in protocol.strip() else protocol_text(
+            protocol, temperature=temperature, t_max=t_max, pressure=pressure, p_max=p_max, time_scale=time_scale,
+            cycles=cycles, t_low=t_low, t_high=t_high, ramp_ps=ramp_ps, hold_ps=hold_ps)
+        o = _EquilOpts(dt, {"bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], {"crescale": 1, "berendsen": 2, "mtk": 3}[barostat],
+                       tau_t, tau_p, seed, cutoff, int(coulomb), int(tail), 0, frame_ps, thermo_ps, int(until_converged), block_ps, max_blocks,
+                       0.0, 0.0, 0.0, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0.0, {"shake": 0, "lincs": 1}[constraint_solver])
+        rep = _report()
+        rc = library().caps_equilibrate(self._h, _enc(text), C.byref(o), None, None, rep, len(rep))
+        if rc < 0:
+            raise _error()
+        self.report = rep.value.decode()
+        self.checks = _json_call(library().caps_equilibrate_checks, self._h) if until_converged else {}
+        return rc == 0
+
     def insert(self, smiles: str, count: int, tolerance: float = 2.0, seed: int = 1) -> str:
         """Inserts count copies of a molecule (SMILES; hydrogens added, UFF-cleaned) into the free space of the current
         frame — curatives before a cure, e.g. insert("SS", 40) for the sulfur_allylic template. The document becomes that
@@ -733,6 +775,17 @@ class Document:
                           {"ball_and_stick": 0, "space_filling": 1, "sticks": 2, "no_hydrogens": 3, "backbone": 4}[style], 1, 1, 1, hl, 0, 1)
         if library().caps_export_png(self._h, C.byref(cam), C.byref(opt), _enc(str(path))) != 0:
             raise _error()
+
+
+def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, pressure: float = 1.0, p_max: float = 49346.2,
+                  time_scale: float = 1.0, cycles: int = 3, t_low: float = 300.0, t_high: float = 600.0, ramp_ps: float = 50.0,
+                  hold_ps: float = 50.0) -> str:
+    """The stages of a named equilibration protocol ("larsen21", "annealing", "pushoff"), one per line (K, atm, ps)."""
+    p = _ProtocolParams(temperature, t_max, pressure, p_max, time_scale, cycles, t_low, t_high, ramp_ps, hold_ps)
+    buf = C.create_string_buffer(1 << 14)
+    if library().caps_protocol_text(_enc(name), C.byref(p), buf, len(buf)) < 0:
+        raise _error()
+    return buf.value.decode()
 
 
 def label_kinds() -> dict:

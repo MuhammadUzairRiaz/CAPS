@@ -474,4 +474,10 @@ with tempfile.TemporaryDirectory() as td:
     trr = open(os.path.join(td, "t.trr"), "rb").read()
     check(xyz_frames == pdb_models == gro_frames == 3 and trr[:4] == (1993).to_bytes(4, "big") and trr.count(b"GMX_trn_file") == 3,
           f"trajectory formats: 3 frames each in xyz/pdb/gro/trr · sizes {sizes}")
+# equilibrate: a hand-written two-stage protocol (600 steps) and a named one's text
+eq = caps.open(os.path.join(samples, "ps_melt.data"))
+ok = eq.equilibrate("nvt 0.3 ps T 300\nnpt 0.3 ps T 300 P 1 atm", frame_ps=0.1, thermo_ps=0.05, seed=3)
+lar = caps.protocol_text("larsen21", temperature=300, t_max=600)
+check(ok and eq.summary()["frames"] >= 6 and lar.count("\n") >= 20 and "600" in lar,
+      f"equilibrate: {eq.summary()['frames']} frames · larsen21 {lar.count(chr(10)) + 1} stages")
 print("all python checks passed")
