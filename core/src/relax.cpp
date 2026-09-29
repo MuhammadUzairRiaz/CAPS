@@ -15,6 +15,8 @@
 #include <deque>
 #include <fstream>
 #include <map>
+#include <random>
+#include <set>
 #include <array>
 #include <tuple>
 
@@ -266,7 +268,72 @@ void scale_affine(std::vector<double>& x, Cell& c, double s) {
 
 }  // namespace
 
+int kick_linear_angles(System& s, const ForceField& ff, uint64_t seed, double min_deg, const std::vector<char>* fixed) {
+  constexpr double kDeg = 3.14159265358979323846 / 180.0;
+  std::set<uint32_t> centres;
+  std::map<uint32_t, std::pair<uint32_t, uint32_t>> ends;
+  auto vec = [&](uint32_t a, uint32_t b) {
+    const Vec3 d = s.atoms[a].pos - s.atoms[b].pos;
+    return s.cell.valid() ? s.cell.minimum_image(d) : d;
+  };
+  auto look = [&](uint32_t i, uint32_t j, uint32_t k, double th0) {
+    if (th0 >= 150.0 * kDeg) return;   // a linear or near-linear term (sp centres, trans pairs) is where it should be
+    const Vec3 u = vec(i, j), v = vec(k, j);
+    const double c = dot(u, v) / (norm(u) * norm(v));
+    if (c > std::cos(min_deg * kDeg)) return;
+    if (fixed && fixed->size() == s.atoms.size() && (*fixed)[j]) return;   // a held atom stays where it is
+    if (centres.insert(j).second) ends[j] = {i, k};
+  };
+  for (const auto& a : ff.angles) look(a.i, a.j, a.k, a.theta0);
+  for (const auto& a : ff.angles2) look(a.i, a.j, a.k, a.theta0);
+  for (const auto& a : ff.angles_x)
+    if (a.form != 2) look(a.i, a.j, a.k, a.b);   // every form but the linear one carries θ0 in b
+  std::mt19937_64 rng(seed);
+  std::normal_distribution<double> g(0, 1);
+  for (uint32_t j : centres) {
+    const auto [i, k] = ends[j];
+    Vec3 axis = vec(k, i);
+    axis = axis * (1.0 / std::max(1e-9, norm(axis)));
+    Vec3 r{g(rng), g(rng), g(rng)};
+    r = r - axis * dot(r, axis);   // off the line
+    const double n = norm(r);
+    if (n < 1e-9) continue;
+    s.atoms[j].pos = s.atoms[j].pos + r * (0.15 / n);
+  }
+  return int(centres.size());
+}
+
+namespace {
+void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out);
+}
+
 void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
+  RelaxReport rep;
+  relax_once(s, o, &rep);
+  const ForceField ff = o.field ? *o.field : default_forcefield(s);
+  for (int round = 1; round <= 3; ++round) {
+    const int k = kick_linear_angles(s, ff, 7919u * uint64_t(round) + s.atoms.size(), 172.0, &o.fixed);
+    if (k == 0) break;
+    RelaxOptions again = o;
+    again.pushoff = false;
+    again.target_density = 0;
+    again.relax_box = false;
+    RelaxReport r2;
+    relax_once(s, again, &r2);
+    rep.final = r2.final;
+    rep.fmax_final = r2.fmax_final;
+    rep.converged = r2.converged;
+    rep.iterations += r2.iterations;
+    rep.evaluations += r2.evaluations;
+    rep.notes.push_back(std::to_string(k) + (k == 1 ? " angle" : " angles") + " stuck at 180° on a bent centre (a saddle: no force there, " +
+                        "unstable in dynamics) — the centre moved 0.15 Å off the line and minimised again");
+  }
+  if (rep_out) *rep_out = std::move(rep);
+}
+
+namespace {
+
+void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   RelaxReport rep;
   if (s.atoms.empty()) throw FieldError("nothing to relax: no atoms");
   if (o.field && o.field->atom_type.size() != s.atoms.size())
@@ -606,6 +673,8 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   }
   if (rep_out) *rep_out = std::move(rep);
 }
+
+}  // namespace
 
 // LAMMPS data with the force field: lammps_data.cpp
 

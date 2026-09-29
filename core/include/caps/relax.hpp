@@ -100,7 +100,14 @@ struct RelaxCancelled : std::runtime_error {
 
 // Relax `s` in place (positions, cell, and charges when they were computed). Throws FieldError when the structure
 // cannot be typed, RelaxCancelled when the progress callback returns false.
+// A minimisation that ends with an angle stuck at 180° where its force field wants a bent one (an sp3 centre pushed flat
+// through, as an opened ring or a moved hydrogen can leave it) sits on a saddle: the angle's force is zero by symmetry there
+// and the minimiser stops, but any motion throws the atoms apart. relax() finds such angles afterwards, moves each centre
+// 0.15 Å off the line and minimises again (up to three times), and says so in the notes.
 void relax(System& s, const RelaxOptions& o, RelaxReport* report = nullptr);
+// The vertices of angle terms with θ0 below 150° held above min_deg; each displaced 0.15 Å perpendicular to its two
+// partners, in a direction drawn from seed; atoms held in place (fixed) never move. Returns how many were moved.
+int kick_linear_angles(System& s, const ForceField& ff, uint64_t seed, double min_deg = 172.0, const std::vector<char>* fixed = nullptr);
 
 // One minimisation with a given evaluator; positions x (3N) are updated. Exposed for tests and benches.
 RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, const RelaxOptions& o, const std::string& name,
