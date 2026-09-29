@@ -8508,6 +8508,33 @@ extern "C" int32_t caps_sasa(caps_doc* d, const char* json, char* out, int32_t c
     const double probe = j.num("probe", 1.4);
     const int points = int(j.num("points", 200));
     const caps::System& s = d->frame;
+    // over the trajectory: {"frames": {first, last (−1: the last), every}} → the total per frame, its mean ± sd
+    if (j.has("frames") && d->traj.frames() > 1) {
+      const auto& fr = j["frames"];
+      const long nf = long(d->traj.frames());
+      long first = long(fr.num("first", 0)), last = long(fr.num("last", -1)), every = std::max(1L, long(fr.num("every", 1)));
+      if (last < 0 || last >= nf) last = nf - 1;
+      first = std::clamp(first, 0L, last);
+      caps::Json series = caps::Json::array();
+      std::vector<double> tot;
+      for (long f = first; f <= last; f += every) {
+        const caps::System sf = d->traj.frame(size_t(f));
+        const double t = caps::sasa(sf, probe, points).total;
+        tot.push_back(t);
+        caps::Json row = caps::Json::object();
+        row["frame"] = double(f), row["total"] = t;
+        if (d->traj.timesteps.size() > size_t(f)) row["timestep"] = double(d->traj.timesteps[size_t(f)]);
+        series.push_back(std::move(row));
+      }
+      double m = 0, v = 0;
+      for (double t : tot) m += t;
+      m /= double(tot.size());
+      for (double t : tot) v += (t - m) * (t - m);
+      r["series"] = std::move(series);
+      r["mean"] = m;
+      r["sd"] = tot.size() > 1 ? std::sqrt(v / double(tot.size() - 1)) : 0.0;
+      r["frames_used"] = double(tot.size());
+    }
     const auto res = caps::sasa(s, probe, points);
     r["ok"] = true;
     r["total"] = res.total;

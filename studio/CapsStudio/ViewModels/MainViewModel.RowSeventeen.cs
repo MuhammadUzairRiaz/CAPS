@@ -206,6 +206,15 @@ public partial class MainViewModel
     private decimal _saProbe = 1.4m, _saPoints = 200;
     public decimal SaProbe { get => _saProbe; set => Set(ref _saProbe, Math.Clamp(value, 0m, 5m)); }
     public decimal SaPoints { get => _saPoints; set => Set(ref _saPoints, Math.Clamp(value, 8, 2000)); }
+    // over the trajectory: every n-th frame's total, its mean ± sd (a structure's frames)
+    private bool _saFrames;
+    private decimal _saEvery = 1;
+    public bool SaOverFrames { get => _saFrames; set => Set(ref _saFrames, value); }
+    public decimal? SaEvery { get => _saEvery; set { if (value != null) Set(ref _saEvery, Math.Clamp(value.Value, 1, 10000)); } }
+    public (double X, double Y)[] SaSeries { get; private set; } = [];
+    private string _saSeriesText = "";
+    public string SaSeriesText { get => _saSeriesText; private set { if (Set(ref _saSeriesText, value)) Raise(nameof(SaHasSeries)); } }
+    public bool SaHasSeries => _saSeriesText.Length > 0;
     public ObservableCollection<SasaGroupRow> SaGroups { get; } = new();
     public ObservableCollection<SasaConvRow> SaConvergence { get; } = new();
     public (double X, double Y)[] SaCurve { get; private set; } = [];
@@ -223,7 +232,9 @@ public partial class MainViewModel
         var doc = _doc;
         var inv = CultureInfo.InvariantCulture;
         SaStatus = "Shrake–Rupley…";
-        var json = new JsonObject { ["probe"] = (double)_saProbe, ["points"] = (int)_saPoints, ["convergence"] = true, ["colour"] = true }.ToJsonString();
+        var jo = new JsonObject { ["probe"] = (double)_saProbe, ["points"] = (int)_saPoints, ["convergence"] = true, ["colour"] = true };
+        if (_saFrames && HasFrames) jo["frames"] = new JsonObject { ["first"] = 0, ["last"] = -1, ["every"] = (int)_saEvery };
+        var json = jo.ToJsonString();
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var r = JsonNode.Parse(await Task.Run(() => doc.Sasa(json)))!;
         if (r["ok"]?.GetValue<bool>() != true) { SaStatus = (string?)r["error"] ?? "failed"; return; }
@@ -240,6 +251,12 @@ public partial class MainViewModel
             SaConvergence.Add(new SasaConvRow(((int)c!["points"]!.GetValue<double>()).ToString(inv), c["total"]!.GetValue<double>().ToString("0.0", inv),
                                               (c["delta"]!.GetValue<double>() * 100).ToString("+0.00;−0.00;0.00", inv) + " %"));
         SaCurve = conv.Select(c => (c!["points"]!.GetValue<double>(), c["total"]!.GetValue<double>())).ToArray();
+        if (r["series"] is JsonArray ser && ser.Count > 0)
+        {
+            SaSeries = ser.Select(x => (x!["frame"]!.GetValue<double>(), x["total"]!.GetValue<double>())).ToArray();
+            SaSeriesText = string.Format(inv, "{0} frames: {1:0.0} ± {2:0.0} Å² (mean ± sd over the frames)", r["frames_used"]!.GetValue<double>(), r["mean"]!.GetValue<double>(), r["sd"]!.GetValue<double>());
+        }
+        else { SaSeries = []; SaSeriesText = ""; }
         SaStatus = $"probe {_saProbe.ToString("0.00", inv)} Å · {(int)_saPoints} points per atom · {sw.Elapsed.TotalSeconds.ToString("0.0", inv)} s · view coloured by exposure";
         RenderRequested?.Invoke();
         SaChanged?.Invoke();
