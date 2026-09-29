@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 
 #include "caps/appearance.hpp"
@@ -328,4 +329,31 @@ TEST(Edit, CoordinationGeometryAndDativeBonds) {
   EXPECT_EQ(add_hydrogens(w), 0);
   w.bonds[0].order = 1;
   EXPECT_EQ(perceive(w).charge[1], 1);
+}
+
+TEST(Edit, WrittenEditsInOrder) {
+  System s = molecule("CCCC");   // butane: carbons 1–4, then hydrogens
+  auto dihedral = [&](uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+    const Vec3 b0 = s.atoms[a].pos - s.atoms[b].pos, b1 = s.atoms[c].pos - s.atoms[b].pos, b2 = s.atoms[d].pos - s.atoms[c].pos;
+    const Vec3 n = b1 * (1 / norm(b1)), v = b0 - n * dot(b0, n), w = b2 - n * dot(b2, n);
+    return std::atan2(dot(cross(n, v), w), dot(v, w)) * 180 / M_PI;
+  };
+  const auto r = edit_script(s, "# butane\ntorsion 1 2 3 4 60\nlength 1 2 1.6; element 4 N # the last carbon\n");
+  ASSERT_EQ(r.size(), 3u);
+  EXPECT_NEAR(dihedral(0, 1, 2, 3), 60, 1e-6);
+  EXPECT_NEAR(norm(s.atoms[0].pos - s.atoms[1].pos), 1.6, 1e-9);
+  EXPECT_EQ(s.atoms[3].element, 7);
+  // selections: element, ranges; a delete renumbers what follows
+  const size_t n = s.atoms.size();
+  edit_script(s, "delete smarts:[#1]; move 1-2 0,0,1.5");
+  EXPECT_EQ(s.atoms.size(), 4u);
+  const auto sel = parse_selection(s, "2-4");
+  EXPECT_EQ(sel.size(), 4u);
+  EXPECT_EQ(std::count(sel.begin(), sel.end(), 1), 3);
+  EXPECT_GT(n, 4u);
+  // errors name the edit and leave nothing half-understood
+  EXPECT_THROW(edit_script(s, "bond 1 9"), std::invalid_argument);
+  EXPECT_THROW(edit_script(s, "fly 1"), std::invalid_argument);
+  EXPECT_THROW(edit_script(s, "delete element:Xe"), std::invalid_argument);
+  try { edit_script(s, "addh; config 1 Q"); FAIL(); } catch (const std::invalid_argument& e) { EXPECT_NE(std::string(e.what()).find("edit 2 (config 1 Q)"), std::string::npos); }
 }
