@@ -34,6 +34,14 @@
           <Button x:Name="SaveBtn" ToolTip.Tip="Save this view as a PNG at twice the screen resolution">
             <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="PNG" VerticalAlignment="Center" /></StackPanel>
           </Button>
+          <Button x:Name="LabelsBtn" ToolTip.Tip="Label atoms and bonds by any property (the same settings as Appearance › Labels)">
+            <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="tag" Size="14" VerticalAlignment="Center" /><TextBlock Text="Labels" VerticalAlignment="Center" /></StackPanel>
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <ScrollViewer MaxHeight="560" Width="380"><local:LabelSettings x:Name="LabelPanel" Margin="4" /></ScrollViewer>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
           <Button x:Name="HideBtn" Content="Hide controls (H)" />
           <Button x:Name="CloseBtn" Content="Close (Esc)" />
         </StackPanel>

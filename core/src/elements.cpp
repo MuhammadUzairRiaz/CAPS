@@ -182,4 +182,11 @@ int element_from_name(std::string_view name) {
   return element_from_symbol(n.substr(0, 1));
 }
 
+#include "element_extra.inc"
+
+const char* element_name(int z) { return z > 0 && z <= 118 ? kElementExtra[z].name : ""; }
+double pauling_electronegativity(int z) { return z > 0 && z <= 118 ? kElementExtra[z].pauling : 0.0; }
+int most_common_mass_number(int z) { return z > 0 && z <= 118 ? kElementExtra[z].mass_number : 0; }
+const char* electron_configuration(int z) { return z > 0 && z <= 118 ? kElementExtra[z].configuration : ""; }
+
 }  // namespace caps

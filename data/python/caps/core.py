@@ -650,6 +650,17 @@ class Document:
         """The current frame for a viewer: z, xyz (flat), bonds (flat pairs), colours, radii, cell."""
         return _json_call(library().caps_scene_json, self._h, _enc(json.dumps({"hydrogens": hydrogens, "max_atoms": max_atoms})))
 
+    def atom_labels(self, kind: str = "element") -> list:
+        """One text per atom of the frame: any kind of label_kinds()["atom"] (element, element_name, charge, formal_charge,
+        oxidation_state, hybridisation, mass_number, xyz, …; also "rs", "ez")."""
+        return _json_call(library().caps_atom_labels, self._h, _enc(kind))
+
+    def bond_labels(self, kind: str = "length") -> list:
+        """(i, j, text) per bond: any kind of label_kinds()["bond"] (order, chemical, length, ff_r0, energy, …)."""
+        j = _json_call(library().caps_bond_labels, self._h, _enc(kind))
+        p = j["pairs"]
+        return [(int(p[2 * k]), int(p[2 * k + 1]), t) for k, t in enumerate(j["labels"])]
+
     def save(self, path: str) -> None:
         """Writes the current frame: .data (LAMMPS, with force-field sections when assigned), .pdb, .xyz, .mol2, .gro,
         .cif (P 1), .vasp or a file named POSCAR/CONTCAR (VASP 5, Direct; held atoms as Selective dynamics) …"""
@@ -722,6 +733,11 @@ class Document:
                           {"ball_and_stick": 0, "space_filling": 1, "sticks": 2, "no_hydrogens": 3, "backbone": 4}[style], 1, 1, 1, hl, 0, 1)
         if library().caps_export_png(self._h, C.byref(cam), C.byref(opt), _enc(str(path))) != 0:
             raise _error()
+
+
+def label_kinds() -> dict:
+    """The atom and bond properties that can label a structure: {"atom": [{id, title, group}], "bond": [...]}."""
+    return _json_call(library().caps_label_kinds)
 
 
 def open(path: str, topology: Optional[str] = None) -> Document:  # noqa: A001 (the natural name)

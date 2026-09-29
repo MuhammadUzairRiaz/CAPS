@@ -219,11 +219,26 @@ internal static class Screenshot
             if (kv[0] == "appsurface") w.ViewModel.AppSurface = int.Parse(kv[1]);
             if (kv[0] == "appmap") w.ViewModel.AppSurfaceMap = int.Parse(kv[1]);
             if (kv[0] == "appsurfatoms") w.ViewModel.AppSurfaceAtoms = kv[1];
+            if (kv[0] == "bondlabels")   // bondlabels=length,chemical
+            {
+                var ks = kv[1].Split(',');
+                foreach (var k in w.ViewModel.BondLabelKinds) k.On = ks.Contains(k.Id);
+            }
+            if (kv[0] == "labelstyle")   // labelstyle=FONT:SIZE:ATOMCOLOUR:BONDCOLOUR[:bold] (indices into the lists)
+            {
+                var q = kv[1].Split(':');
+                w.ViewModel.LabelFont = Array.IndexOf(CapsStudio.ViewModels.MainViewModel.LabelFonts, q[0]) is var fi && fi >= 0 ? fi : 0;
+                if (q.Length > 1) w.ViewModel.LabelSize = decimal.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (q.Length > 2) w.ViewModel.AtomLabelColour = int.Parse(q[2]);
+                if (q.Length > 3) w.ViewModel.BondLabelColour = int.Parse(q[3]);
+                if (q.Length > 4) w.ViewModel.LabelBold = q[4] == "bold";
+            }
+            if (kv[0] == "labelscope") w.ViewModel.LabelScope = int.Parse(kv[1]);
             if (kv[0] == "labels")   // labels=element,rs,type,charge
             {
                 var ks = kv[1].Split(',');
-                w.ViewModel.LabelElement = ks.Contains("element"); w.ViewModel.LabelRs = ks.Contains("rs");
-                w.ViewModel.LabelType = ks.Contains("type"); w.ViewModel.LabelCharge = ks.Contains("charge");
+                // any atom kind by its id (rs: R/S and E/Z)
+                foreach (var k in w.ViewModel.AtomLabelKinds) k.On = ks.Contains(k.Id) || (k.Id == "stereo" && ks.Contains("rs"));
             }
             if (kv[0] == "appwait") for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(30); }
             if (kv[0] == "player")   // player=1: the trajectory player (a log beside the file is picked up)

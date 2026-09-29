@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
+#include <set>
+#include "caps/labels.hpp"
 
 #include <cmath>
 
 #include "caps/appearance.hpp"
 #include "caps/crystal.hpp"
+#include "caps/elements.hpp"
 #include "caps/molecule.hpp"
 #include "caps/peptide.hpp"
 #include "caps/render.hpp"
@@ -170,4 +173,29 @@ TEST(Appearance, IsosurfaceOfASphereAndAPeriodicSlab) {
       for (int k = 0; k < n[2]; ++k) v[(size_t(i) * n[1] + j) * n[2] + k] = std::fabs(30.0 * (k + 0.5) / n[2] - 15) < 5 ? 1.0 : 0.0;
   const Mesh slab = isosurface(c, n, v, 0.5);
   EXPECT_NEAR(slab.area(), 2 * 30 * 30, 1.0);
+}
+
+TEST(Appearance, LabelsOfAtomsAndBonds) {
+  const System s = molecule("CC(=O)O");   // acetic acid: C1 methyl, C2 carboxyl, O3 carbonyl, O4 hydroxyl
+  const auto ox = atom_labels(s, "oxidation_state"), hy = atom_labels(s, "hybridisation"), el = atom_labels(s, "element_name");
+  EXPECT_EQ(ox[0], "-3");
+  EXPECT_EQ(ox[1], "+3");
+  EXPECT_EQ(ox[2], "-2");
+  EXPECT_EQ(hy[0], "sp³");
+  EXPECT_EQ(hy[1], "sp²");
+  EXPECT_EQ(hy[2], "sp²");
+  EXPECT_EQ(el[2], "Oxygen");
+  EXPECT_EQ(atom_labels(s, "molecule_formula")[0], "C₂H₄O₂");
+  const auto sulfate = atom_labels(molecule("OS(=O)(=O)O"), "hybridisation");
+  EXPECT_EQ(sulfate[1], "sp³");   // four neighbours: not sp for its two double bonds
+  EXPECT_EQ(atom_labels(molecule("OS(=O)(=O)O"), "oxidation_state")[1], "+6");
+  std::set<std::string> chem;
+  for (const auto& b : bond_labels(s, "chemical")) chem.insert(b.text);
+  EXPECT_EQ(chem, (std::set<std::string>{"C=O", "C–C", "C–H", "C–O", "O–H"}));
+  // tabulated element data (RDKit, Blue Obelisk)
+  EXPECT_STREQ(element_name(29), "Copper");
+  EXPECT_EQ(most_common_mass_number(29), 63);   // not the rounded weight 63.55 → 64
+  EXPECT_DOUBLE_EQ(pauling_electronegativity(8), 3.44);
+  EXPECT_STREQ(electron_configuration(26), "[Ar] 3d6 4s2");
+  EXPECT_THROW(atom_labels(s, "spin"), std::invalid_argument);
 }

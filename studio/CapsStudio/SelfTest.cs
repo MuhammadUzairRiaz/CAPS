@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 47, "native ABI version 47");
+        Check(Native.AbiVersion() == 48, "native ABI version 48");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1309,6 +1309,19 @@ internal static class SelfTest
             Check(area > 500 && (look["styles"]?["space_filling"]?.GetValue<double>() ?? 0) > 100, $"appearance: excluded surface {area:0} Å² · {look["styles"]?.ToJsonString()}");
             var rs = System.Text.Json.Nodes.JsonNode.Parse(adoc.AtomLabels("rs"))!.AsArray().Count(x => x?.GetValue<string>() == "S");
             Check(rs >= 20, $"appearance: {rs} S centres labelled (L residues)");
+            // labels: every atom and bond kind answers; the first four still switch their kinds; the style follows the settings
+            var bad = vm.AtomLabelKinds.Where(k => { try { return System.Text.Json.Nodes.JsonNode.Parse(adoc.AtomLabels(k.Id))!.AsArray().Count != adoc.Summary().Atoms; } catch { return true; } })
+                .Concat(vm.BondLabelKinds.Where(k => { try { return System.Text.Json.Nodes.JsonNode.Parse(adoc.BondLabels(k.Id))!["labels"]!.AsArray().Count != adoc.Summary().Bonds; } catch { return true; } }))
+                .Select(k => k.Id).ToList();
+            vm.LabelCharge = true;
+            var chargeOn = vm.AtomLabelKinds.First(k => k.Id == "charge").On && vm.AnyLabels;
+            vm.LabelFont = 1; vm.LabelSize = 14; vm.AtomLabelColour = Array.IndexOf(MainViewModel.LabelColours, "Custom"); vm.AtomLabelHex = "#123456";
+            var lk = vm.LabelLook;
+            var bondOrders = System.Text.Json.Nodes.JsonNode.Parse(adoc.BondLabels("chemical"))!["labels"]!.AsArray().Select(x => x!.GetValue<string>()).Distinct().ToList();
+            Check(vm.AtomLabelKinds.Count >= 30 && vm.BondLabelKinds.Count >= 12 && bad.Count == 0 && chargeOn && lk.Font == "IBM Plex Sans" && lk.Size == 14
+                  && lk.AtomArgb == 0xFF123456 && bondOrders.Contains("C=O") && bondOrders.Contains("N–H"),
+                  $"labels: {vm.AtomLabelKinds.Count} atom and {vm.BondLabelKinds.Count} bond kinds, failing [{string.Join(",", bad)}] · style {lk} · bonds {string.Join(" ", bondOrders.Take(8))}");
+            vm.LabelCharge = false; vm.LabelFont = 0; vm.LabelSize = 10.5m; vm.AtomLabelColour = 0;
             adoc.SetAppearance("{\"active\":false}");
         }
         vm.ResetAppearance();
