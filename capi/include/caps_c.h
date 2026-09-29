@@ -297,7 +297,7 @@ int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap);
    reaction counts in thermo), and per template and chemical environment STEM_<name>_<k>_pre.mol, _post.mol, _map.txt —
    cut from real reaction sites of the current frame and typed with the assigned force field before and after the
    reaction (a complete assignment is needed). options JSON: {stem, radius (3 bonds), variants (6), keep_byproducts,
-   between_chains (molecule inter), weights [..], nevery (100), temperature (300), steps (100000), seed}. Report JSON
+   between_chains (molecule inter), weights [..], nevery (100), rmax (3.5 Å; 0: the template's capture), temperature (300), steps (100000), seed}. Report JSON
    {files[], notes[], variants[{reaction, name, sites, pre_atoms, edge, deleted}], candidates, covered}. Returns the
    length needed or -1. */
 int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* dir, const char* options, char* report, int32_t cap);
