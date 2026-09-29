@@ -681,7 +681,7 @@
             <local:GlMolView x:Name="ViewGl" IsVisible="False" IsHitTestVisible="False" />
             <local:LabelOverlay x:Name="Labels" />
             <!-- pinned measurements (the toolbar's Pin monitor): they follow the frames and edits -->
-            <Border Classes="hud" Padding="10,8" Margin="14,14,14,58" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding HasMonitors}">
+            <Border Classes="hud" Padding="10,8" Margin="14,14,14,58" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding MonitorsVisible}">
               <StackPanel Spacing="4">
                 <TextBlock Text="PINNED" Classes="label" FontSize="10.5" />
                 <ItemsControl ItemsSource="{Binding Monitors}">
@@ -1223,9 +1223,17 @@
             <LayoutTransformControl><LayoutTransformControl.LayoutTransform><RotateTransform Angle="90" /></LayoutTransformControl.LayoutTransform>
               <TextBlock Text="Inspector" FontSize="11.5" /></LayoutTransformControl>
           </Button>
-          <Button Classes="sidetab" Classes.on="{Binding ProjectDrawer}" Click="OnProjectDrawer" ToolTip.Tip="Project and fragments">
+          <Button Classes="sidetab" Classes.on="{Binding FragmentsDrawer}" Click="OnFragmentsDrawer" ToolTip.Tip="Fragments: attach to the picked atom, or place">
+            <LayoutTransformControl><LayoutTransformControl.LayoutTransform><RotateTransform Angle="90" /></LayoutTransformControl.LayoutTransform>
+              <TextBlock Text="Fragments" FontSize="11.5" /></LayoutTransformControl>
+          </Button>
+          <Button Classes="sidetab" Classes.on="{Binding ProjectOnlyDrawer}" Click="OnProjectDrawer" ToolTip.Tip="Project: the structures open, their properties">
             <LayoutTransformControl><LayoutTransformControl.LayoutTransform><RotateTransform Angle="90" /></LayoutTransformControl.LayoutTransform>
               <TextBlock Text="Project" FontSize="11.5" /></LayoutTransformControl>
+          </Button>
+          <Button Classes="sidetab" Classes.on="{Binding MonitorsVisible}" Click="OnMonitorsDrawer" IsEnabled="{Binding HasMonitors}" ToolTip.Tip="Monitors: the pinned measurements over the view (pin one from the toolbar's measure tools)">
+            <LayoutTransformControl><LayoutTransformControl.LayoutTransform><RotateTransform Angle="90" /></LayoutTransformControl.LayoutTransform>
+              <TextBlock Text="Monitors" FontSize="11.5" /></LayoutTransformControl>
           </Button>
         </StackPanel>
       </Border>

@@ -2332,6 +2332,7 @@ public sealed partial class MainViewModel : ObservableObject
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
                     _rxRows.Add(row);
+                    OnReactCurves();
                     if (!finished)
                         RxLog = string.Format(inv, "cycle {0}: {1} reactions ({2} in all) · conversion {3:F3} · {4} clusters, largest {5:F1} % · {6:F0} s",
                             row.Cycle, row.Reactions, row.Total, row.Conversion, row.Clusters, 100 * row.LargestFraction, sw.Elapsed.TotalSeconds);
@@ -2340,9 +2341,12 @@ public sealed partial class MainViewModel : ObservableObject
                 return !token.IsCancellationRequested;
             }));
             finished = true;
+            var failedAt = System.Text.RegularExpressions.Regex.Match(report, @"failed at cycle (\d+)");
             RxLog = report + "\n" + FloryText;
             AfterRun(doc, " · reacted");
-            Status = "Reaction run finished · save the network (LAMMPS data carries the force field when every atom is typed)";
+            Status = failedAt.Success
+                ? $"React failed at cycle {failedAt.Groups[1].Value}; the structure after cycle {int.Parse(failedAt.Groups[1].Value, inv) - 1} is kept — React again to continue from it"
+                : "Reaction run finished · save the network (LAMMPS data carries the force field when every atom is typed)";
         }
         catch (Exception e)
         {

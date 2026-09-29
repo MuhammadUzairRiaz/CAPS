@@ -357,8 +357,14 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   }
 
   Evaluator ev(ff, o.energy);
+  // the largest force on the atoms that may move (held atoms feel their neighbours but stay where they are)
+  auto free_fmax = [&](std::vector<double> g) {
+    for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < g.size(); ++i)
+      if (o.fixed[i]) g[3 * i] = g[3 * i + 1] = g[3 * i + 2] = 0;
+    return max_force(g);
+  };
   rep.initial = ev.compute(x, cell, f);
-  rep.fmax_initial = max_force(f);
+  rep.fmax_initial = free_fmax(f);
   rep.density_initial = density_of(cell);
 
   // Plan the stages so progress can show "k of n".
@@ -563,7 +569,7 @@ void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   }
 
   rep.final = ev.compute(x, cell, f);
-  rep.fmax_final = max_force(f);
+  rep.fmax_final = free_fmax(f);
   rep.density_final = density_of(cell);
   rep.pressure_final = cell.valid() ? pressure_atm(rep.final.virial, cell.volume()) : 0.0;
   rep.list_builds = ev.list_builds();

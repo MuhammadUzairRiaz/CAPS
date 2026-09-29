@@ -1492,7 +1492,14 @@ public partial class MainWindow : Window
     }
 
     private void OnInspectorDrawer(object? s, RoutedEventArgs e) => _vm.InspectorDrawer = !_vm.InspectorDrawer;
-    private void OnProjectDrawer(object? s, RoutedEventArgs e) => _vm.ProjectDrawer = !_vm.ProjectDrawer;
+    private void OnProjectDrawer(object? s, RoutedEventArgs e)
+    {
+        if (_vm.ProjectDrawer && _vm.LeftTab == 1) { _vm.LeftTab = 0; return; }   // from Fragments to the project's own tab
+        if (!_vm.ProjectDrawer) _vm.LeftTab = 0;
+        _vm.ProjectDrawer = !_vm.ProjectDrawer;
+    }
+    private void OnFragmentsDrawer(object? s, RoutedEventArgs e) => _vm.FragmentsDrawer = !_vm.FragmentsDrawer;
+    private void OnMonitorsDrawer(object? s, RoutedEventArgs e) => _vm.MonitorsShown = !_vm.MonitorsShown;
     private void OnDockToggle(object? s, RoutedEventArgs e) => _vm.DockOpen = !_vm.DockOpen;
 
     /// <summary>Lights the tour step's region (the 3D view when that region is hidden).</summary>

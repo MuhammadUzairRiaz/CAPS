@@ -3,6 +3,7 @@
 #include "caps/mechanics.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -10,6 +11,7 @@
 #include <numeric>
 #include <random>
 #include <stdexcept>
+#include <tuple>
 
 #include "caps/relax.hpp"
 
@@ -696,10 +698,74 @@ void analyse_tensile(TensileResult& r, double fit_strain, bool lateral) {
       }
 }
 
+namespace {
+// mean and sample standard deviation of the finite values (NaN when none)
+std::pair<double, double> mean_sd(const std::vector<double>& v) {
+  double sum = 0, n = 0;
+  for (double x : v) if (std::isfinite(x)) sum += x, ++n;
+  if (n == 0) return {std::nan(""), std::nan("")};
+  const double m = sum / n;
+  double ss = 0;
+  for (double x : v) if (std::isfinite(x)) ss += (x - m) * (x - m);
+  return {m, n > 1 ? std::sqrt(ss / (n - 1)) : std::nan("")};
+}
+}  // namespace
+
+// The same test along x, y and z from the same start (an amorphous cell is isotropic only on average): the curves
+// averaged point by point (the same rate gives the same strains), E, ν, yield and peak as mean ± s.d. over the axes
+TensileResult run_tensile_averaged(System& s, const TensileOptions& o) {
+  std::array<TensileResult, 3> r;
+  System last;
+  for (int k = 0; k < 3; ++k) {
+    System c = s;
+    TensileOptions ok = o;
+    ok.axis = k;
+    ok.seed = o.seed + uint64_t(k);
+    r[size_t(k)] = run_tensile(c, ok);
+    if (k == 2) last = std::move(c);
+  }
+  TensileResult res;
+  size_t n = std::min({r[0].curve.size(), r[1].curve.size(), r[2].curve.size()});
+  double worst = 0;
+  for (size_t i = 0; i < n; ++i) {
+    TensilePoint p;
+    for (const auto& x : r) {
+      p.strain += x.curve[i].strain / 3, p.stress += x.curve[i].stress / 3;
+      p.lateral1 += x.curve[i].lateral1 / 3, p.lateral2 += x.curve[i].lateral2 / 3;
+      p.temperature += x.curve[i].temperature / 3, p.time_ps += x.curve[i].time_ps / 3;
+      worst = std::max(worst, std::fabs(x.curve[i].strain - r[0].curve[i].strain));
+    }
+    res.curve.push_back(p);
+    double sm = 0;
+    for (const auto& x : r) sm += (i < x.smooth.size() ? x.smooth[i] : x.curve[i].stress) / 3;
+    res.smooth.push_back(sm);
+  }
+  if (worst > 1e-9) res.notes.push_back("the three curves' strains differ by up to " + std::to_string(worst) + ": averaged sample by sample");
+  auto field = [&](auto get) { std::vector<double> v; for (const auto& x : r) v.push_back(get(x)); return mean_sd(v); };
+  std::tie(res.modulus, res.modulus_err) = field([](const TensileResult& x) { return x.modulus; });
+  std::tie(res.poisson, res.poisson_err) = field([](const TensileResult& x) { return x.poisson; });
+  res.yield_stress = field([](const TensileResult& x) { return x.yield_strain > 0 ? x.yield_stress : std::nan(""); }).first;
+  res.yield_strain = field([](const TensileResult& x) { return x.yield_strain > 0 ? x.yield_strain : std::nan(""); }).first;
+  if (!std::isfinite(res.yield_strain)) res.yield_stress = 0, res.yield_strain = 0;
+  res.peak_stress = field([](const TensileResult& x) { return x.peak_stress; }).first;
+  res.peak_strain = field([](const TensileResult& x) { return x.peak_strain; }).first;
+  res.method = r[0].method + "; along x, y and z from the same start, averaged (± s.d. over the three directions)";
+  char b[256];
+  std::snprintf(b, sizeof b, "E by axis: x %.3f, y %.3f, z %.3f GPa; ν: x %.3f, y %.3f, z %.3f", r[0].modulus, r[1].modulus, r[2].modulus,
+                r[0].poisson, r[1].poisson, r[2].poisson);
+  res.notes.push_back(b);
+  for (int k = 0; k < 3; ++k)
+    for (const auto& note : r[size_t(k)].notes) res.notes.push_back(std::string(1, "xyz"[k]) + ": " + note);
+  res.notes.push_back("the structure kept is the one pulled along z");
+  s = std::move(last);
+  return res;
+}
+
 TensileResult run_tensile(System& s, const TensileOptions& o) {
+  if (o.axis == 3) return run_tensile_averaged(s, o);
   TensileResult res;
   if (!s.cell.valid()) throw std::invalid_argument("a tensile test needs a periodic cell");
-  if (o.axis < 0 || o.axis > 2) throw std::invalid_argument("axis must be 0 (x), 1 (y) or 2 (z)");
+  if (o.axis < 0 || o.axis > 2) throw std::invalid_argument("axis must be 0 (x), 1 (y), 2 (z) or 3 (averaged over the three)");
   if (o.rate <= 0 || o.max_strain <= 0) throw std::invalid_argument("strain rate and final strain must be positive");
   DynamicsOptions d;
   d.field = o.field;

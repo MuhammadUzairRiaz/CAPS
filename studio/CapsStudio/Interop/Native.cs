@@ -251,6 +251,7 @@ public struct CapsReactCycle
 {
     public int Cycle, Reactions, Total, Clusters, Atoms;
     public double Conversion, LargestFraction, ReducedMw, Energy;
+    public double MaxForce;   // ABI 42: largest force after the cycle's relaxation, kcal/mol/Å
 }
 
 [StructLayout(LayoutKind.Sequential)]
