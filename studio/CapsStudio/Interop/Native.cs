@@ -516,6 +516,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_atom_labels")] public static extern int AtomLabels(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bond_labels")] public static extern int BondLabels(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_label_kinds")] public static extern int LabelKinds(byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_repeat_unit_smiles")] public static extern int RepeatUnitSmiles(IntPtr doc, int head, int tail, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_type_table")] public static extern int TypeTable(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_project_atoms")] public static extern int ProjectAtoms(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, float[] xyv, int count);
     [DllImport(Lib, EntryPoint = "caps_solvent_library")] public static extern int SolventLibrary(byte[]? json, int cap);
@@ -1882,6 +1883,8 @@ public sealed class CapsDocument : IDisposable
     public string AtomLabels(string kind) { using (Hold()) return JsonCallOnce((b, c) => Native.AtomLabels(H, kind, b, c)); }
     /// <summary>One label per bond: {pairs, labels, crossing} (caps_bond_labels).</summary>
     public string BondLabels(string kind) { using (Hold()) return JsonCallOnce((b, c) => Native.BondLabels(H, kind, b, c)); }
+    /// <summary>The repeat unit with its head and tail at two atoms: {ok, smiles, error} (caps_repeat_unit_smiles).</summary>
+    public string RepeatUnitSmiles(int head, int tail) { using (Hold()) return JsonCallOnce((b, c) => Native.RepeatUnitSmiles(H, head, tail, b, c)); }
     /// <summary>The frame's atom types: [{type, label, mass, count, element, elements, from_mass}] (caps_type_table).</summary>
     public string TypeTable() { using (Hold()) return JsonCallOnce((b, c) => Native.TypeTable(H, b, c)); }
     /// <summary>x, y (pixels) and visibility of every atom after the last render with the same camera and options.</summary>

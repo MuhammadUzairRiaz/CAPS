@@ -14,6 +14,8 @@
 #include "caps/analysis.hpp"
 #include "caps/edit.hpp"
 #include "caps/polymer.hpp"
+#include "caps/molecule.hpp"
+#include "caps/molinfo.hpp"
 #include "caps/query.hpp"
 
 using namespace caps;
@@ -624,4 +626,29 @@ TEST(Polymer, StructureBasedCoarseGraining) {
       if (v != a) EXPECT_TRUE(std::binary_search(r.ff->excluded[a].begin(), r.ff->excluded[a].end(), v));
   }
   EXPECT_THROW(cg_map(aa, CgMapOptions{"unknown", 3, 300}), std::invalid_argument);
+}
+
+TEST(Polymer, RepeatUnitFromPickedAtoms) {
+  auto molecule = [](const std::string& smiles) { BuildOptions o; o.forcefield = "uff"; return build_molecule(smiles, o).system; };
+  // ethylbenzene: C1 the CH3, C2 the CH2 (then the ring); head on the methyl, tail on the benzylic carbon → styrene's unit
+  const System eb = molecule("CCc1ccccc1");
+  const std::string smi = repeat_unit_smiles(eb, 0, 1);
+  ASSERT_EQ(smi.front(), '*');
+  EXPECT_EQ(std::count(smi.begin(), smi.end(), '*'), 2);
+  const UnitInfo u = repeat_unit_info(smi);
+  EXPECT_EQ(u.formula, "C8H8");
+  EXPECT_EQ(u.head_element, "C");
+  // hydrogens picked directly: the same unit
+  uint32_t h0 = 0, h1 = 0;
+  for (const auto& b : eb.bonds) {
+    if (b.i == 0 && eb.atoms[b.j].element == 1 && !h0) h0 = b.j;
+    if (b.j == 0 && eb.atoms[b.i].element == 1 && !h0) h0 = b.i;
+    if (b.i == 1 && eb.atoms[b.j].element == 1 && !h1) h1 = b.j;
+    if (b.j == 1 && eb.atoms[b.i].element == 1 && !h1) h1 = b.i;
+  }
+  EXPECT_EQ(repeat_unit_info(repeat_unit_smiles(eb, h0, h1)).formula, "C8H8");
+  // a quaternary carbon has no hydrogen to give
+  const System neo = molecule("CC(C)(C)C");
+  EXPECT_THROW(repeat_unit_smiles(neo, 0, 1), std::invalid_argument);
+  EXPECT_THROW(repeat_unit_smiles(eb, 0, 0), std::invalid_argument);
 }

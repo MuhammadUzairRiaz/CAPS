@@ -634,6 +634,10 @@
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnPickedRepeatUnit"
+                    ToolTip.Tip="Repeat unit from the two picked atoms: the first is the head, the second the tail (a hydrogen, or an atom that gives one); it goes to the Polymer builder">
+              <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="*…*" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Text="Repeat unit" FontSize="12" VerticalAlignment="Center" /></StackPanel>
+            </Button>
             <Rectangle Classes="vsep" />
             <TextBlock Text="View" Classes="dim" VerticalAlignment="Center" Margin="4,0,2,0" />
             <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnViewTop" ToolTip.Tip="Look down z (top)"><TextBlock Text="z" FontSize="12" FontWeight="SemiBold" /></Button>

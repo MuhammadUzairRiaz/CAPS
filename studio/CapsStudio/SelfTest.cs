@@ -3397,6 +3397,15 @@ internal static class SelfTest
             vm.UseSketchAsRepeatUnit();
             Check(unitOk && vm.PolyUnits.Count > 0 && vm.PolyUnits[0].Smiles == "*CC(*)C(=O)OC", $"sketch → repeat unit: {vm.PolyUnits.FirstOrDefault()?.Smiles} · {vm.Status}");
             vm.MolSmiles = "";
+            // a repeat unit picked in 3D: ethylbenzene's CH3 (head) and CH2 (tail) → styrene's unit, C8H8
+            vm.MolSmiles = "CCc1ccccc1";
+            vm.BuildMolecule().GetAwaiter().GetResult();
+            vm.OpenMoleculeInStudio();
+            vm.Pick(0, false); vm.Pick(1, true);
+            vm.UsePickedAsRepeatUnit();
+            var picked = vm.PolyUnits.FirstOrDefault()?.Smiles ?? "";
+            Check(picked.StartsWith("*") && picked.Count(ch => ch == '*') == 2 && vm.PolyUnits[0].Info.StartsWith("C₈H₈"), $"picked → repeat unit: {picked} · {vm.PolyUnits.FirstOrDefault()?.Info}");
+            vm.MolSmiles = "";
         }
         {
             // Open in notebook: the notebook's code (all but the view) runs as written with the shipped caps package

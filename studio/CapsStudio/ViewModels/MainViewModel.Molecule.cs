@@ -165,6 +165,20 @@ public sealed partial class MainViewModel
         else AddPolyUnit("From the sketch", _molSmiles);
         Status = "The sketch is unit A of the polymer builder";
     }
+    /// <summary>The two picked atoms (head first, then tail; ⇧ click the second) as a repeat unit: unit A of the Polymer
+    /// builder. A picked hydrogen becomes the attachment point; a heavy atom gives one of its hydrogens.</summary>
+    public void UsePickedAsRepeatUnit()
+    {
+        if (_doc == null || _selection.Count != 2) { Status = "Pick the head atom, then ⇧ click the tail atom (a hydrogen, or an atom with one), then Repeat unit"; return; }
+        var r = System.Text.Json.Nodes.JsonNode.Parse(_doc.RepeatUnitSmiles(_selection[0], _selection[1]))!;
+        if (r["ok"]?.GetValue<bool>() != true) { Status = "Repeat unit: " + ((string?)r["error"] ?? "not possible"); return; }
+        var smi = (string)r["smiles"]!;
+        GoModule(13);
+        if (PolyUnits.Count > 0) { PolyUnits[0].Name = "From the picked atoms"; PolyUnits[0].Smiles = smi; PolyChanged(); }
+        else AddPolyUnit("From the picked atoms", smi);
+        Status = $"Repeat unit {smi}: unit A of the polymer builder";
+    }
+
     private int _molConf;
     public int MolConf
     {
