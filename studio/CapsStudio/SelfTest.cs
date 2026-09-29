@@ -2301,6 +2301,26 @@ internal static class SelfTest
             vm.ClearSelection();
         }
 
+        // a LAMMPS dump with a compute column and forces: the columns are offered for colouring and colour the atoms
+        {
+            var dumpPath = Path.Combine(outDir, "caps-selftest-columns.lammpstrj");
+            var sb = new System.Text.StringBuilder();
+            foreach (var step in new[] { 0, 100 })
+            {
+                sb.Append($"ITEM: TIMESTEP\n{step}\nITEM: NUMBER OF ATOMS\n3\nITEM: BOX BOUNDS pp pp pp\n0 10\n0 10\n0 10\nITEM: ATOMS id element x y z fx fy fz c_pe\n");
+                sb.Append("1 C 1 1 1 3 4 0 -1\n2 C 2.5 1 1 0 0 0 -2\n3 C 4 1 1 0 0 4 -3\n");
+            }
+            File.WriteAllText(dumpPath, sb.ToString());
+            var openBefore = vm.ActiveItem;
+            vm.Open(dumpPath);
+            var cols = vm.AppColumns.ToList();
+            vm.AppColumn = cols.IndexOf("c_pe");
+            var ok = vm.AppHasColumns && cols.Contains("c_pe") && cols.Contains("|f|") && vm.AppRampEnabled && vm.Status.IndexOf("fail", StringComparison.OrdinalIgnoreCase) < 0;
+            vm.AppColumn = 0;
+            Check(ok, $"dump columns: {string.Join(", ", cols)} · {vm.Status}");
+            if (openBefore != null) vm.Activate(openBefore);   // the steps below work on the structure that was open
+        }
+
         // Export › Figure (FigureBackground): journal size, true scale bar, overlay in the SVG, dpi in the PNG
         {
             vm.OpenFigure();
