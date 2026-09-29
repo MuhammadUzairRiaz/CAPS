@@ -1,5 +1,7 @@
 #pragma once
+#include <cstdio>
 #include <functional>
+#include <iosfwd>
 #include <stdexcept>
 #include <string>
 
@@ -102,6 +104,15 @@ void write_sdf(const System& s, const std::string& path);
 void write_cif(const System& s, const std::string& path);
 // DCD as LAMMPS writes it (every frame with its cell); dt_fs is the time step recorded in the header
 void write_dcd(const Trajectory& t, const std::string& path, double dt_fs = 1.0);
+// Every frame by the file's extension: .lammpstrj / .dump (LAMMPS text dump), .dcd, .xyz (extended XYZ, the cell and time
+// on each frame), .pdb (MODEL per frame, CRYST1 in each, CONECT once), .gro (frames one after another, "t= … ps" in each
+// title, nm), .trr (GROMACS full-precision trajectory: positions and box in nm, the step and time; XTC's lossy
+// compression is not written). dt_fs: the time step of the frames' timesteps. Throws for another extension.
+void write_trajectory(const Trajectory& t, const std::string& path, double dt_fs = 1.0);
+// One frame of the text formats onto an open stream (the trajectory writers).
+void write_xyz_frame(std::ostream& out, const System& s, const std::string& extra);
+void write_gro_frame(std::ostream& out, const System& s, const std::string& title);
+void write_pdb_frame(std::FILE* f, const System& s, int model, bool conect);
 // A moltemplate system (.lt text) from the LAMMPS data and input files CAPS writes for a structure with its force field:
 // In Init (units, styles, special bonds), Data Masses, In Settings (pair and every coefficient, class II cross terms as
 // bb / ba / mbt / ebt / at / aat / bb13 / aa), Data Boundary, and the atoms (unwrapped), bonds, angles, dihedrals and
