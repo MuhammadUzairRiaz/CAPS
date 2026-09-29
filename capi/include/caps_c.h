@@ -261,7 +261,8 @@ typedef struct {
   int32_t auto_capture;            /* no pair found: every capture grows by capture_step up to capture_max */
   double capture_max, capture_step; /* Å (0: 8 and 0.5) */
   int32_t target_kind;             /* 0 conversion (target_conversion), 1 links between chains, 2 links per chain, 3 crosslink
-                                      density (mol/m³), 4 molecular weight between crosslinks Mc (g/mol) */
+                                      density (mol/m³), 4 molecular weight between crosslinks Mc (g/mol), 5 degree of
+                                      crosslinking DC = 2 links / monomers × 100 (%) */
   double target_value;
 } caps_react_opts;
 

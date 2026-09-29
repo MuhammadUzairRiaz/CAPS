@@ -465,7 +465,7 @@ class Document:
         self.report = rep.value.decode()
         return self.report
 
-    _TARGETS = {"conversion": 0, "crosslinks": 1, "per_chain": 2, "density": 3, "mc": 4}
+    _TARGETS = {"conversion": 0, "crosslinks": 1, "per_chain": 2, "density": 3, "mc": 4, "degree": 5}
 
     def react(self, templates, cycles: int = 50, per_cycle: int = 5, target: float = 1.0, capture: float = 0.0, relax: bool = True,
               relax_iterations: int = 500, md_ps: float = 0.0, temperature: float = 500.0, cutoff: float = 10.0, seed: int = 1,
