@@ -368,6 +368,7 @@ public partial class MainWindow : Window
     private void OnColourItem(object? s, RoutedEventArgs e) { if (s is MenuItem { Tag: string t }) _vm.ColourIndex = int.Parse(t); }
     private void OnPerspectiveOn(object? s, RoutedEventArgs e) => _vm.Perspective = true;
     private void OnPerspectiveOff(object? s, RoutedEventArgs e) => _vm.Perspective = false;
+    private void OnFov(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string t) { _vm.ViewFov = double.Parse(t, System.Globalization.CultureInfo.InvariantCulture); _vm.Perspective = true; } }
     public void ShowSettings() => _vm.SetModule(10);
     private void OnSettingsRail(object? s, RoutedEventArgs e) => _vm.SetModule(10);
     private void OnModifyElement(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string el) _vm.ModifyElementPicked(el); }
