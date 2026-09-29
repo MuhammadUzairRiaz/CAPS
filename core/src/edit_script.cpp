@@ -8,6 +8,8 @@
 
 #include "caps/edit.hpp"
 #include "caps/elements.hpp"
+#include "caps/lattice.hpp"
+#include "caps/spacegroup.hpp"
 
 namespace caps {
 
@@ -193,8 +195,54 @@ std::vector<std::string> edit_script(System& s, const std::string& script) {
         if (w[1] != "iso" && w[1] != "syndio") throw std::invalid_argument("tacticity iso or syndio");
         const int n = set_tacticity(s, w[1] == "iso");
         done = std::to_string(n) + " centres inverted: " + (w[1] == "iso" ? "isotactic" : "syndiotactic");
+      } else if (v == "supercell") {
+        need(4, 4, "supercell na nb nc");
+        const int na = int(number(w[1], "na")), nb = int(number(w[2], "nb")), nc = int(number(w[3], "nc"));
+        if (na < 1 || nb < 1 || nc < 1) throw std::invalid_argument("repeats must be 1 or more");
+        s = supercell(s, na, nb, nc);
+        done = std::to_string(s.atoms.size()) + " atoms";
+      } else if (v == "primitive") {
+        need(1, 2, "primitive [tolerance Å]");
+        int kk = 1;
+        s = find_primitive_cell(s, w.size() > 1 ? number(w[1], "the tolerance") : 0.1, &kk);
+        done = kk == 1 ? "already primitive" : std::to_string(s.atoms.size()) + " atoms (" + std::to_string(kk) + " lattice points folded)";
+      } else if (v == "niggli") {
+        need(1, 1, "niggli");
+        NiggliResult r;
+        s = niggli_cell(s, &r);
+        char b[140];
+        std::snprintf(b, sizeof b, "a %.4f b %.4f c %.4f Å, α %.2f β %.2f γ %.2f°", r.a, r.b, r.c, r.alpha, r.beta, r.gamma);
+        done = b;
+      } else if (v == "conventional") {
+        need(1, 2, "conventional [tolerance Å]");
+        ConventionalResult r;
+        s = conventional_cell(s, w.size() > 1 ? number(w[1], "the tolerance") : 0.1, &r);
+        done = r.hm + " (No. " + std::to_string(r.number) + "), " + std::to_string(s.atoms.size()) + " atoms";
+      } else if (v == "redefine") {
+        need(10, 10, "redefine m11 m12 m13 m21 m22 m23 m31 m32 m33 (column j: the new vector j in the old ones)");
+        Mat3 m{};
+        for (int q = 0; q < 9; ++q) m[size_t(q / 3)][size_t(q % 3)] = number(w[size_t(q + 1)], "a matrix entry");
+        s = transform_cell(s, m);
+        done = std::to_string(s.atoms.size()) + " atoms";
+      } else if (v == "vacuum") {
+        need(2, 2, "vacuum Å");
+        SlabResult r;
+        s = vacuum_slab(s, number(w[1], "the vacuum"), true, &r);
+        char b[96];
+        std::snprintf(b, sizeof b, "%.2f Å slab, %.2f Å vacuum along c", r.thickness, r.vacuum);
+        done = b;
+      } else if (v == "nanowire") {
+        need(5, 8, "nanowire u v w radius [repeats] [cylinder|hexagonal|square] [vacuum]");
+        WireOptions o;
+        o.uvw = {int(number(w[1], "u")), int(number(w[2], "v")), int(number(w[3], "w"))};
+        o.radius = number(w[4], "the radius");
+        if (w.size() > 5) o.repeats = int(number(w[5], "the repeats"));
+        if (w.size() > 6) o.shape = w[6];
+        if (w.size() > 7) o.vacuum = number(w[7], "the vacuum");
+        s = nanowire(s, o);
+        done = std::to_string(s.atoms.size()) + " atoms";
       } else {
-        throw std::invalid_argument("unknown edit '" + v + "' (element, delete, bond, unbond, addh, attach, length, angle, torsion, invert, config, rotate, mirror, move, clean, tacticity)");
+        throw std::invalid_argument("unknown edit '" + v + "' (element, delete, bond, unbond, addh, attach, length, angle, torsion, invert, config, rotate, mirror, move, clean, tacticity, supercell, primitive, niggli, conventional, redefine, vacuum, nanowire)");
       }
       report.push_back(std::to_string(k) + ". " + op + " → " + done);
     } catch (const std::exception& e) {
