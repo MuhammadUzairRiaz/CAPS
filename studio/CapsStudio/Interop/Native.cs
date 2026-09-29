@@ -244,6 +244,16 @@ public struct CapsReactOpts
     public double MdPs, Temperature, Cutoff;
     public int Coulomb;
     public int DuringMd;          // REACTER-style: continuous NVT, reactions checked every MdPs
+    // ABI 45
+    public int FieldMode;         // 0 the assigned force field every cycle and re-assigned after; 1 the built-in default
+    public int BetweenChains;     // bonds only between different chains
+    public int KeepByproducts;    // H2 / H2O kept as molecules
+    public int Selection;         // 0 closest first; 1 by weights
+    [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Weights;   // "2,1": one per template
+    public int AutoCapture;
+    public double CaptureMax, CaptureStep;
+    public int TargetKind;        // 0 conversion, 1 links, 2 links per chain, 3 mol/m³, 4 Mc g/mol
+    public double TargetValue;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -252,6 +262,8 @@ public struct CapsReactCycle
     public int Cycle, Reactions, Total, Clusters, Atoms;
     public double Conversion, LargestFraction, ReducedMw, Energy;
     public double MaxForce;   // ABI 42: largest force after the cycle's relaxation, kcal/mol/Å
+    public int Crosslinks;    // ABI 45: links between chains so far
+    public double Capture;    // ABI 45: the capture distance the cycle used
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -523,6 +535,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_gromacs")] public static extern int Gromacs(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? stem, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_react_summary")] public static extern int ReactSummary(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
     [DllImport(Lib, EntryPoint = "caps_field_type_by_example")] public static extern int FieldTypeByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types, byte[] report, int cap);
@@ -1426,6 +1439,21 @@ public sealed class CapsDocument : IDisposable
             if (n <= 1) return "";
             var buf = new byte[n];
             Native.AnalyzeReport(H, buf, n);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
+        }
+    }
+
+    /// <summary>The network of the last React run (JSON: chains, crosslinks, target, density, per_chain, mc, byproducts,
+    /// field, field_after, notes), or "".</summary>
+    public string ReactSummary()
+    {
+        using (Hold())
+        {
+            Alive();
+            var n = Native.ReactSummary(H, null, 0);
+            if (n <= 1) return "";
+            var buf = new byte[n];
+            Native.ReactSummary(H, buf, n);
             return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
         }
     }

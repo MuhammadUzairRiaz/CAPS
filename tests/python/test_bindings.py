@@ -425,4 +425,14 @@ check(cgp.atoms == 6 * 12 * 2 and types == {"STY_B–STY_B", "STY_B–STY_S"} an
 zx = {p["id"]: p for p in gd.analyze(["zprofile", "orientation"], surface="1-2", axis="x", zbin=1.0)}
 check(zx["zprofile"]["name"] == "Density profile along x" and "molecules 1,2" in zx["zprofile"]["method"]
       and "Herman f along x" in zx["orientation"]["extra"], f"interface options: {zx['zprofile']['name']} · {zx['zprofile']['method'][:80]}")
+# React with the user's force field: PCFF types every cycle and is re-assigned to the network; links only between chains,
+# stopped at one link per chain, the H2 kept as molecules
+rx = caps.polymer("*CC*", dp=15, chains=8, density=0.5, seed=3)
+rx.field.assign("pcff-frc")
+rx.react("cc_crosslink", cycles=30, per_cycle=2, between_chains=True, crosslinks=("per_chain", 1.0), auto_capture=True, keep_byproducts=True,
+         relax_iterations=200)
+rs = rx.react_summary()
+check(rs["chains"] == 8 and rs["crosslinks"] == rs["target"] == 4 and rs["byproducts"] == 4 and rs["field"].startswith("PCFF")
+      and rs["field_after"].endswith("complete") and rx.field.report()["complete"],
+      f"react with PCFF: {rs['crosslinks']}/{rs['target']} links · ν {rs['density']:.0f} mol/m³ · Mc {rs['mc']:.0f} g/mol · after: {rs['field_after']}")
 print("all python checks passed")
