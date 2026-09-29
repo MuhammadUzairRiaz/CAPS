@@ -112,7 +112,8 @@
                 <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding ElecParamText, Mode=OneWay}" IsReadOnly="True" Classes="mono" />
                 <TextBlock Grid.Row="2" Text="van der Waals" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Mixing" Classes="label" Margin="0,8,0,0" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Precision" Classes="label" Margin="0,8,0,0" />
                 <TextBox Grid.Row="3" Text="{Binding LjTailText, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="Change it in Dynamics › Electrostatics (LJ)" />
-                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Field.MixingRule, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="The assigned force field's own rule for unlike Lennard-Jones pairs; explicit pair parameters win over it" />
+                <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{x:Static vm:FieldViewModel.MixingChoices}" SelectedIndex="{Binding Field.MixingIndex}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="{Binding Field.MixingRule, StringFormat='Unlike Lennard-Jones pairs: {0}. Another rule applies to every run and export (the force field assignment changes); explicit pair parameters still win'}" />
                 <TextBox Grid.Row="3" Grid.Column="2" Text="Double" IsReadOnly="True" />
               </Grid>
             </StackPanel>
