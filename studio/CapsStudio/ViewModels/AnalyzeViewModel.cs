@@ -220,6 +220,24 @@ public sealed class AnalyzeViewModel : ObservableObject
     public decimal TgToD { get => (decimal)_tgTo; set => Set(ref _tgTo, (double)value, nameof(TgToD)); }
     public decimal TgStepD { get => (decimal)_tgStep; set => Set(ref _tgStep, (double)Math.Max(1, value), nameof(TgStepD)); }
     public decimal TgPsD { get => (decimal)_tgPs; set => Set(ref _tgPs, (double)Math.Max(1, value), nameof(TgPsD)); }
+    // the cooling scan's ensemble and how Tg is read
+    private double _tgPressure = 1, _tgTauT = 100, _tgTauP = 1000, _tgAverage = 50, _tgGlassy, _tgRubbery;
+    private int _tgBarostat, _tgProperty, _tgFit;
+    public static readonly string[] TgBarostats = ["Stochastic cell rescaling (Bernetti & Bussi 2020)", "Berendsen", "MTK (Nosé–Hoover chains)"];
+    public static readonly string[] TgProperties = ["Specific volume", "Potential energy per atom"];
+    public static readonly string[] TgFits = ["Two lines, break found by the fit", "Two lines through a glassy and a rubbery range"];
+    public decimal TgPressureD { get => (decimal)_tgPressure; set => Set(ref _tgPressure, (double)Math.Clamp(value, 0.001m, 1e6m), nameof(TgPressureD)); }
+    public int TgBarostat { get => _tgBarostat; set => Set(ref _tgBarostat, Math.Clamp(value, 0, 2)); }
+    public decimal TgTauTD { get => (decimal)_tgTauT; set => Set(ref _tgTauT, (double)Math.Clamp(value, 1m, 1e6m), nameof(TgTauTD)); }
+    public decimal TgTauPD { get => (decimal)_tgTauP; set => Set(ref _tgTauP, (double)Math.Clamp(value, 10m, 1e7m), nameof(TgTauPD)); }
+    /// <summary>Per cent of each hold averaged (the rest, at its start, discarded).</summary>
+    public decimal TgAverageD { get => (decimal)_tgAverage; set => Set(ref _tgAverage, (double)Math.Clamp(value, 5m, 100m), nameof(TgAverageD)); }
+    public int TgProperty { get => _tgProperty; set => Set(ref _tgProperty, Math.Clamp(value, 0, 1)); }
+    public int TgFit { get => _tgFit; set { if (Set(ref _tgFit, Math.Clamp(value, 0, 1))) Raise(nameof(TgFitRanges)); } }
+    public bool TgFitRanges => _tgFit == 1;
+    /// <summary>The glassy range ends / the rubbery range starts (K; 0: the lowest / highest third of the scan).</summary>
+    public decimal TgGlassyMaxD { get => (decimal)_tgGlassy; set => Set(ref _tgGlassy, (double)Math.Max(0, value), nameof(TgGlassyMaxD)); }
+    public decimal TgRubberyMinD { get => (decimal)_tgRubbery; set => Set(ref _tgRubbery, (double)Math.Max(0, value), nameof(TgRubberyMinD)); }
     public decimal CijStrainD { get => (decimal)_cijStrain; set => Set(ref _cijStrain, (double)Math.Clamp(value, 1e-6m, 0.01m), nameof(CijStrainD)); }
     public decimal CijConfigsD { get => _cijConfigs; set => Set(ref _cijConfigs, (int)Math.Max(1, value), nameof(CijConfigsD)); }
     public decimal FluctTD { get => (decimal)_fluctT; set => Set(ref _fluctT, (double)Math.Max(1, value), nameof(FluctTD)); }
@@ -258,6 +276,8 @@ public sealed class AnalyzeViewModel : ObservableObject
             TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs,
             EquilibratePs = pull ? (_pullEq > 0 ? _pullEq : -1) : _eqPs > 0 ? _eqPs : -1,
             Seed = MechSeed,
+            Pressure = _tgPressure, Barostat = _tgBarostat, TauT = _tgTauT, TauP = _tgTauP, AverageFrom = Math.Max(1e-6, 1 - _tgAverage / 100.0),
+            TgProperty = _tgProperty, TgFit = _tgFit, GlassyMax = _tgGlassy, RubberyMin = _tgRubbery,
         };
     }
 

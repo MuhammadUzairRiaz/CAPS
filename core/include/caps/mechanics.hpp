@@ -204,6 +204,10 @@ struct BilinearFit {
 };
 // y(T) = y0 + b_low min(T − Tg, 0) + b_high max(T − Tg, 0), least squares with the hinge free.
 BilinearFit fit_bilinear(const std::vector<double>& T, const std::vector<double>& y);
+// Two separate straight lines — through the glassy points (T ≤ glassy_max) and the rubbery ones (T ≥ rubbery_min) — and Tg
+// where they cross, the error by a bootstrap of residuals; the points between the ranges take no part. glassy_max /
+// rubbery_min 0: the lowest and the highest third of the temperatures.
+BilinearFit fit_two_ranges(const std::vector<double>& T, const std::vector<double>& y, double glassy_max = 0, double rubbery_min = 0);
 
 struct CoolingPoint {
   double temperature = 0, density = 0, density_err = 0, specific_volume = 0, potential = 0;
@@ -219,6 +223,10 @@ struct CoolingOptions {
   Barostat barostat = Barostat::CRescale;
   uint64_t seed = 1;
   bool new_velocities = false;
+  // what Tg is read from: 0 the specific volume, 1 the potential energy per atom; and how: 0 a continuous two-line fit with
+  // the hinge free, 1 two separate lines through a glassy and a rubbery range (glassy_max, rubbery_min in K; 0: thirds)
+  int property = 0, fit = 0;
+  double glassy_max = 0, rubbery_min = 0;
   std::function<bool(const ThermoRow&, int step_index, int steps)> progress;   // return false to cancel
 };
 struct CoolingResult {
@@ -227,6 +235,8 @@ struct CoolingResult {
   std::vector<ThermoRow> thermo;
   std::string method;
   std::vector<std::string> notes;
+  int property = 0;             // as CoolingOptions: what the fit was made on
+  std::vector<double> fitted;   // the values fitted, one per point (cm³/g, or kcal/mol per atom)
 };
 CoolingResult run_cooling(System& s, const CoolingOptions& o);
 

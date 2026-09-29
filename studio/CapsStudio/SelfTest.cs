@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 45, "native ABI version 45");
+        Check(Native.AbiVersion() == 46, "native ABI version 46");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2630,6 +2630,19 @@ internal static class SelfTest
                 Check(vm.IsGlass && schedule == 2 + 2 * 5 && vm.GtTemperaturesText == "5" && vm.GtPoints.Length == 5 && vm.GtErrors.Length == 5 &&
                       vm.GtRateText == "2.5 × 10¹³ K/s" && vm.GlassRecipe("/tmp/x.data").Contains("properties: [tg]"),
                       $"glass transition: {vm.GtPoints.Length} temperatures · Tg {vm.GtTg.Value} ({vm.GtTg.Caption}) · {vm.GtRateText} · {vm.GtStatus}");
+                // Tg from the potential energy per atom, two lines through the glassy and rubbery ranges, Berendsen at 2 atm
+                vm.Analyze.TgProperty = 1;
+                vm.Analyze.TgFit = 1;
+                vm.Analyze.TgBarostat = 1;
+                vm.Analyze.TgPressureD = 2;
+                vm.RunGlass().GetAwaiter().GetResult();
+                var tgCard = vm.Analyze.Results.FirstOrDefault(c => c.Id == "tg");
+                // 2 ps holds are far too short for a break: the pooled result is a Tg or, when the lines cross outside the ranges, none
+                var energyRun = vm.GtPoints.Length == 5 && vm.GtYLabel.StartsWith("potential energy") &&
+                                (vm.GtTg.Value == "—" || vm.GtAlphaGlass.Label == "dE/dT glass") && tgCard != null && tgCard.Method.Contains("potential energy per atom") && tgCard.Method.Contains("glassy and the rubbery range") &&
+                                tgCard.Method.Contains("2 atm") && tgCard.Method.Contains("Berendsen", StringComparison.OrdinalIgnoreCase);
+                Check(energyRun, $"glass transition from the energy, two ranges: {vm.GtPoints.Length} points · {vm.GtTg.Value} · {tgCard?.Method}");
+                vm.Analyze.TgProperty = 0; vm.Analyze.TgFit = 0; vm.Analyze.TgBarostat = 0; vm.Analyze.TgPressureD = 1;
                 (vm.Analyze.TgFromD, vm.Analyze.TgToD, vm.Analyze.TgStepD, vm.Analyze.TgPsD, vm.Analyze.EqPsD) = (gf0, gt0, gs0, gp0, ge0);
                 vm.GtReplicas = 1;
                 vm.SetModule(8);

@@ -39,11 +39,25 @@
                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6"><TextBlock Text="Anneal first · ps" Classes="label" /><NumericUpDown Value="{Binding Analyze.EqPsD}" Minimum="0" Maximum="100000" Increment="50" FormatString="0" ValueChanged="OnPlan" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6"><TextBlock Text="Replicas" Classes="label" /><NumericUpDown Value="{Binding GtReplicas}" Minimum="1" Maximum="10" Increment="1" FormatString="0" /></StackPanel>
               </Grid>
-              <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" Margin="0,4,0,0">
-                <TextBlock Text="Ensemble" Classes="muted" FontSize="12" /><TextBlock Grid.Column="1" Text="NPT · 1 atm" FontSize="12" />
-                <TextBlock Grid.Row="1" Text="Barostat" Classes="muted" FontSize="12" /><TextBlock Grid.Row="1" Grid.Column="1" Text="stochastic cell rescaling · Bussi thermostat" FontSize="12" TextWrapping="Wrap" />
-                <TextBlock Grid.Row="2" Text="Property" Classes="muted" FontSize="12" /><TextBlock Grid.Row="2" Grid.Column="1" Text="specific volume, last 50 % of each hold" FontSize="12" TextWrapping="Wrap" />
-                <TextBlock Grid.Row="3" Text="Fit" Classes="muted" FontSize="12" /><TextBlock Grid.Row="3" Grid.Column="1" Text="two lines, free break" FontSize="12" />
+              <TextBlock Text="ENSEMBLE" Classes="h3" Margin="0,6,0,0" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Pressure · atm" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgPressureD}" Minimum="0.001" Increment="1" FormatString="0.###" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="τ_T · fs" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgTauTD}" Minimum="1" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="τ_P · fs" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgTauPD}" Minimum="10" Increment="100" FormatString="0" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="6"><TextBlock Text="Barostat (Bussi thermostat)" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.TgBarostats}" SelectedIndex="{Binding Analyze.TgBarostat}" HorizontalAlignment="Stretch" /></StackPanel>
+              <TextBlock Text="TG FROM" Classes="h3" Margin="0,6,0,0" />
+              <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Property" Classes="label" />
+                  <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.TgProperties}" SelectedIndex="{Binding Analyze.TgProperty}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Averaged · % of hold" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgAverageD}" Minimum="5" Maximum="100" Increment="10" FormatString="0" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="6"><TextBlock Text="Fit" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.TgFits}" SelectedIndex="{Binding Analyze.TgFit}" HorizontalAlignment="Stretch" /></StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding Analyze.TgFitRanges}">
+                <StackPanel Spacing="6"><TextBlock Text="Glassy range up to · K (0: lowest third)" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgGlassyMaxD}" Minimum="0" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Rubbery range from · K (0: highest third)" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgRubberyMinD}" Minimum="0" Increment="10" FormatString="0" /></StackPanel>
               </Grid>
             </StackPanel>
           </Border>
@@ -64,7 +78,7 @@
         <StackPanel Spacing="14">
           <Border Classes="pcard">
             <StackPanel Spacing="8">
-              <TextBlock Text="Volume against temperature" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="The property against temperature" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="280">
                 <v:LinePlot x:Name="Vt" XLabel="temperature (K)" YLabel="specific volume (cm³/g)" AutoRange="True" EmptyText="" />
                 <TextBlock IsVisible="{Binding !GtHasPoints}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"

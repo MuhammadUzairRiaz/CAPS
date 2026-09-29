@@ -926,6 +926,77 @@ BilinearFit fit_bilinear(const std::vector<double>& T0, const std::vector<double
   return fit;
 }
 
+BilinearFit fit_two_ranges(const std::vector<double>& T, const std::vector<double>& y, double glassy_max, double rubbery_min) {
+  BilinearFit fit;
+  const size_t n = T.size();
+  if (n != y.size() || n < 4) { fit.note = "a two-range fit needs at least four temperatures"; return fit; }
+  const auto [tmin, tmax] = std::minmax_element(T.begin(), T.end());
+  if (glassy_max <= 0) glassy_max = *tmin + (*tmax - *tmin) / 3.0;
+  if (rubbery_min <= 0) rubbery_min = *tmax - (*tmax - *tmin) / 3.0;
+  if (glassy_max >= rubbery_min) { fit.note = "the glassy range must end below where the rubbery range starts"; return fit; }
+  std::vector<size_t> lo, hi;
+  for (size_t i = 0; i < n; ++i) {
+    if (T[i] <= glassy_max + 1e-9) lo.push_back(i);
+    if (T[i] >= rubbery_min - 1e-9) hi.push_back(i);
+  }
+  if (lo.size() < 2 || hi.size() < 2) { fit.note = "each range needs at least two temperatures"; return fit; }
+  auto line = [&](const std::vector<size_t>& idx, const std::vector<double>& Y, double& a, double& b) {
+    double st = 0, sy = 0, stt = 0, sty = 0;
+    for (size_t i : idx) st += T[i], sy += Y[i], stt += T[i] * T[i], sty += T[i] * Y[i];
+    const double m = double(idx.size()), den = m * stt - st * st;
+    b = den != 0 ? (m * sty - st * sy) / den : 0;
+    a = (sy - b * st) / m;
+  };
+  auto cross_at = [&](const std::vector<double>& Y, double& tg, double& bl, double& bh, double& al, double& ah) {
+    line(lo, Y, al, bl);
+    line(hi, Y, ah, bh);
+    tg = bl != bh ? (ah - al) / (bl - bh) : 0;
+  };
+  double al, bl, ah, bh, tg;
+  cross_at(y, tg, bl, bh, al, ah);
+  if (bl == bh) { fit.note = "the two lines are parallel: no crossing"; return fit; }
+  fit.ok = true;
+  fit.tg = tg;
+  fit.slope_low = bl;
+  fit.slope_high = bh;
+  fit.value_at_tg = al + bl * tg;
+  if (fit.value_at_tg != 0) fit.alpha_low = bl / fit.value_at_tg, fit.alpha_high = bh / fit.value_at_tg;
+  // residuals of the points in the ranges, resampled onto the fitted lines
+  std::vector<double> res(n, 0), fitted(n, 0);
+  for (size_t i : lo) fitted[i] = al + bl * T[i], res[i] = y[i] - fitted[i];
+  for (size_t i : hi) fitted[i] = ah + bh * T[i], res[i] = y[i] - fitted[i];
+  for (size_t i : lo) fit.rss += res[i] * res[i];
+  for (size_t i : hi) fit.rss += res[i] * res[i];
+  std::vector<size_t> used(lo);
+  used.insert(used.end(), hi.begin(), hi.end());
+  std::mt19937_64 rng(12345);
+  std::uniform_int_distribution<size_t> pick(0, used.size() - 1);
+  std::vector<double> tgs;
+  for (int b = 0; b < 400; ++b) {
+    std::vector<double> yb = y;
+    for (size_t i : used) yb[i] = fitted[i] + res[used[pick(rng)]];
+    double t2, b1, b2, a1, a2;
+    cross_at(yb, t2, b1, b2, a1, a2);
+    if (b1 != b2 && std::isfinite(t2)) tgs.push_back(t2);
+  }
+  if (tgs.size() > 10) {
+    double m = std::accumulate(tgs.begin(), tgs.end(), 0.0) / double(tgs.size()), v = 0;
+    for (double x : tgs) v += (x - m) * (x - m);
+    fit.tg_err = std::sqrt(v / double(tgs.size() - 1));
+  }
+  if (lo.size() < 3 || hi.size() < 3) {   // two points fix a line exactly: nothing for the bootstrap to resample
+    fit.tg_err = std::numeric_limits<double>::quiet_NaN();
+    fit.note = "a range with two temperatures fixes its line exactly: no error estimate — use at least three per range";
+  }
+  if (tg < glassy_max || tg > rubbery_min) {
+    // lines that cross outside the gap between the ranges (nearly parallel, or noise) give no transition
+    fit.ok = false;
+    fit.note = "the lines cross at " + fmt(tg, 4) + " K, outside the gap between the ranges (" + fmt(glassy_max, 4) + "–" + fmt(rubbery_min, 4) +
+               " K): no Tg — longer holds, a wider scan or other ranges";
+  }
+  return fit;
+}
+
 CoolingResult run_cooling(System& s, const CoolingOptions& o) {
   CoolingResult res;
   if (!s.cell.valid()) throw std::invalid_argument("a cooling run needs a periodic cell");
@@ -1010,12 +1081,17 @@ CoolingResult run_cooling(System& s, const CoolingOptions& o) {
     res.points.push_back(p);
   }
   std::vector<double> T, v;
-  for (const auto& p : res.points) { T.push_back(p.temperature); v.push_back(p.specific_volume); }
-  res.fit = fit_bilinear(T, v);
+  const double atoms = double(std::max<size_t>(1, s.atoms.size()));
+  for (const auto& p : res.points) { T.push_back(p.temperature); v.push_back(o.property == 1 ? p.potential / atoms : p.specific_volume); }
+  res.property = o.property;
+  res.fitted = v;
+  res.fit = o.fit == 1 ? fit_two_ranges(T, v, o.glassy_max, o.rubbery_min) : fit_bilinear(T, v);
+  const std::string what = o.property == 1 ? "potential energy per atom" : "specific volume";
+  const std::string how = o.fit == 1 ? "the crossing of straight lines through the glassy and the rubbery range" : "the hinge of a continuous two-line fit";
   const double rate = o.t_step / o.ps_per_step;   // K/ps
   res.method = "stepwise cooling " + fmt(o.t_start, 4) + " → " + fmt(o.t_end, 4) + " K in " + fmt(o.t_step, 3) + " K steps of " +
                fmt(o.ps_per_step, 4) + " ps after " + fmt(eq_ps, 4) + " ps at " + fmt(o.t_start, 4) + " K (NPT, " + fmt(o.pressure, 3) + " atm, " + to_string(o.barostat) + "); density averaged over the last " +
-               fmt(100 * (1 - o.average_from), 3) + " % of each hold; Tg = hinge of a continuous two-line fit of specific volume, error by bootstrap";
+               fmt(100 * (1 - o.average_from), 3) + " % of each hold; Tg = " + how + " of " + what + ", error by bootstrap";
   res.notes.push_back("effective cooling rate " + fmt(rate * 1e12, 3) + " K/s: simulated Tg sits above the experimental value, roughly 3 K per decade of rate (Williams–Landel–Ferry)");
   if (!res.fit.note.empty()) res.notes.push_back(res.fit.note);
   return res;
