@@ -44,13 +44,70 @@
               </Border>
               <StackPanel Margin="16,12,16,16" Spacing="10">
                 <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReactionSets}" SelectedIndex="{Binding RxSet}" HorizontalAlignment="Stretch" />
-                <Grid ColumnDefinitions="*,80,Auto" ColumnSpacing="8" IsVisible="{Binding RxShowInsert}">
-                  <TextBox Text="{Binding RxInsertSmiles}" Classes="mono" Watermark="SS" ToolTip.Tip="The sulfur donor as SMILES (SS = H–S–S–H)" />
-                  <NumericUpDown Grid.Column="1" Value="{Binding RxInsertCount}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="How many" />
-                  <Button Grid.Column="2" Classes="small" Content="Insert into the cell" Click="OnInsertCurative" IsEnabled="{Binding CanReact}" />
+                <!-- sulfur donors: H–Sx–H, x fixed or spread, dosed in phr (the cure then makes C–Sx–C bridges) -->
+                <Border Classes="inset" IsVisible="{Binding RxShowInsert}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="SULFUR DONORS" Classes="h3" />
+                    <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                      <TextBlock Text="Sx from" Classes="label" /><TextBlock Grid.Column="1" Text="to" Classes="label" /><TextBlock Grid.Column="2" Text="Sulfur · phr" Classes="label" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding RxSxMinD}" Minimum="1" Maximum="8" Increment="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="Sulfur atoms per donor H–Sx–H (1: H2S, a monosulfide bridge)" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxSxMaxD}" Minimum="1" Maximum="8" Increment="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="The same for one length; a range draws x evenly (random sulfur chains)" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxPhrD}" Minimum="0.01" Increment="0.5" FormatString="0.##" ShowButtonSpinner="False" ToolTip.Tip="Parts of sulfur per hundred of rubber (the cell's mass)" />
+                      <Button Grid.Row="1" Grid.Column="3" Classes="small" Content="Insert" Click="OnInsertSulfur" IsEnabled="{Binding CanReact}" />
+                    </Grid>
+                    <TextBlock Text="{Binding RxSulfurText}" Classes="dim" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,80,Auto" ColumnSpacing="8">
+                      <TextBox Text="{Binding RxInsertSmiles}" Classes="mono" Watermark="SS" ToolTip.Tip="Or any curative as SMILES" />
+                      <NumericUpDown Grid.Column="1" Value="{Binding RxInsertCount}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="How many" />
+                      <Button Grid.Column="2" Classes="small" Content="Insert" Click="OnInsertCurative" IsEnabled="{Binding CanReact}" />
+                    </Grid>
+                  </StackPanel>
+                </Border>
+                <TextBox Text="{Binding RxText}" AcceptsReturn="True" Classes="mono" FontSize="11.5" MinHeight="160" MaxHeight="300" TextWrapping="NoWrap" />
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.RxBuiltinLabels}" SelectedIndex="{Binding RxAddIndex}" HorizontalAlignment="Stretch" />
+                  <Button Grid.Column="1" Classes="small" Content="Add reaction" Click="OnAddReaction" ToolTip.Tip="Run this reaction together with the others in the text" />
+                  <Button Grid.Column="2" Classes="small" Content="Import LAMMPS…" Click="OnImportBondReact" ToolTip.Tip="A fix bond/react set (pre, post, map; the data file for the elements) as a CAPS reaction" />
                 </Grid>
-                <TextBox Text="{Binding RxText}" AcceptsReturn="True" Classes="mono" FontSize="11.5" MinHeight="180" MaxHeight="320" TextWrapping="NoWrap" />
-                <TextBlock Text="pre → post with mapped atoms; bonds form, break or move; types are reassigned after each bond" Classes="dim" TextWrapping="Wrap" />
+                <!-- several reactions: automatic by distance, or by relative weights -->
+                <StackPanel Spacing="6" IsVisible="{Binding RxSeveral}">
+                  <TextBlock Text="SEVERAL REACTIONS" Classes="h3" />
+                  <RadioButton GroupName="rxsel" IsChecked="{Binding RxByDistance}" Content="Automatic: the closest reactive pairs first, whatever the reaction" />
+                  <RadioButton GroupName="rxsel" IsChecked="{Binding RxByWeights}" Content="By relative rates (weights below)" />
+                  <ItemsControl ItemsSource="{Binding RxReactions}" IsVisible="{Binding RxByWeights}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:RxReaction">
+                        <Grid ColumnDefinitions="*,90" Margin="0,2">
+                          <TextBlock Text="{Binding Name}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                          <NumericUpDown Grid.Column="1" Value="{Binding WeightD}" Minimum="0.01" Increment="0.5" FormatString="0.##" ShowButtonSpinner="False" ToolTip.Tip="Relative rate" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <TextBlock Text="pre → post with mapped atoms; bonds form, break or move; the force field retypes after each cycle" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Network" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <CheckBox Classes="toggle" Content="Links only between different chains" IsChecked="{Binding RxBetweenChains}"
+                          ToolTip.Tip="Each atom keeps the chain it started in; a curative belongs to the chains it has joined, so a crosslinker cannot close back onto the same chain" />
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Stop at" Classes="label" />
+                  <Grid ColumnDefinitions="*,110" ColumnSpacing="8">
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.RxTargetKinds}" SelectedIndex="{Binding RxTargetKind}" HorizontalAlignment="Stretch" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding RxTargetValueD}" Minimum="0.0001" Increment="1" FormatString="0.###" IsVisible="{Binding !RxTargetIsConversion}" ShowButtonSpinner="False" />
+                  </Grid>
+                  <TextBlock Text="{Binding RxTargetHelp}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+                <CheckBox Classes="toggle" Content="Keep byproducts (H₂, H₂O) as molecules in the cell" IsChecked="{Binding RxKeepByproducts}"
+                          ToolTip.Tip="Off: the leaving atoms are removed; on: they stay as their own molecules (the force field must describe them)" />
+                <CheckBox Classes="toggle" Content="Crosslink with the assigned force field" IsChecked="{Binding RxUseField}" />
+                <TextBlock Text="{Binding RxFieldText}" Classes="dim" TextWrapping="Wrap" />
               </StackPanel>
             </StackPanel>
           </Border>
@@ -82,6 +139,10 @@
                   <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding RxTempD}" Minimum="1" Increment="10" FormatString="0" IsEnabled="{Binding RxMdEnabled}" />
                 </Grid>
                 <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
+                  <CheckBox Classes="toggle" Content="Auto capture: widen when no pair is found, up to" IsChecked="{Binding RxAutoCapture}" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding RxCaptureMaxD}" Minimum="1" Maximum="20" Increment="0.5" FormatString="0.# Å" IsEnabled="{Binding RxAutoCapture}" ShowButtonSpinner="False" />
+                </Grid>
+                <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
                   <CheckBox Classes="toggle" Content="Relax after each cycle" IsChecked="{Binding RxRelax}" />
                   <NumericUpDown Grid.Column="1" Value="{Binding RxSeedD}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="Seed" />
                 </Grid>
@@ -91,19 +152,20 @@
         </StackPanel>
       </ScrollViewer>
 
-      <Grid Grid.Column="1" RowDefinitions="*,*" RowSpacing="16">
-        <Border Classes="card">
+      <Grid Grid.Column="1" RowDefinitions="3*,2*,2*" RowSpacing="16">
+        <v:LiveRunView />
+        <Border Grid.Row="1" Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead">
               <DockPanel>
                 <Border DockPanel.Dock="Right" Classes="chip" IsVisible="{Binding Reacting}"><TextBlock Text="reacting" Foreground="{DynamicResource AccB}" /></Border>
-                <TextBlock Text="Conversion" Classes="h2" VerticalAlignment="Center" />
+                <TextBlock Text="Links between chains" Classes="h2" VerticalAlignment="Center" />
               </DockPanel>
             </Border>
-            <v:LinePlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" AutoRange="True" XLabel="cycle" YLabel="conversion α" />
+            <v:LinePlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" AutoRange="True" XLabel="cycle" YLabel="links (dashed: the target)" />
           </Grid>
         </Border>
-        <Border Grid.Row="1" Classes="card">
+        <Border Grid.Row="2" Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead"><TextBlock Text="Gel point" Classes="h2" VerticalAlignment="Center" /></Border>
             <v:LinePlot Grid.Row="1" x:Name="GelPlot" Margin="10,6,12,8" AutoRange="True" XLabel="conversion α" YLabel="largest cluster (mass fraction)" />
@@ -142,6 +204,32 @@
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Structure" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Title}" Classes="mono" FontSize="12" MaxWidth="200" TextTrimming="CharacterEllipsis" /></Grid>
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Contents" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding HudInfo}" Classes="mono" FontSize="12" /></Grid>
                 <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Network" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="6">
+                <TextBlock Text="{Binding RxLiveText}" Classes="mono acc" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding Reacting}" />
+                <TextBlock Text="{Binding RxNetworkText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                <TextBlock Text="In the live view each chain keeps its colour as they join; the atoms of the links are highlighted." Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="LAMMPS fix bond/react" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="8">
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="File stem" Classes="label" /><TextBlock Grid.Column="1" Text="Templates each" Classes="label" /><TextBlock Grid.Column="2" Text="MD steps" Classes="label" />
+                  <TextBox Grid.Row="1" Text="{Binding RxBrStem}" Classes="mono" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxVariantsD}" Minimum="1" Maximum="50" Increment="1" FormatString="0" ShowButtonSpinner="False"
+                                 ToolTip.Tip="LAMMPS matches by atom type: one template per chemical environment of the reactive sites, the most frequent first" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxBrStepsD}" Minimum="1" Increment="10000" FormatString="0" ShowButtonSpinner="False" />
+                </Grid>
+                <Button Content="Write fix bond/react files…" Click="OnExportBondReact" IsEnabled="{Binding CanReact}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{Binding RxBrText}" Classes="dim" TextWrapping="Wrap" />
               </StackPanel>
             </StackPanel>
           </Border>
