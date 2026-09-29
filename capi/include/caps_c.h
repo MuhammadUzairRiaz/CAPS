@@ -995,6 +995,9 @@ caps_doc* caps_solvate(caps_doc* solute, const char* options_json, caps_stage_pr
    (and "rs", "ez"); caps_bond_labels {pairs: [i, j, …], labels: [..], crossing: [bool: across the cell]} of a bond kind,
    the Field assignment's types and terms when the structure is typed. */
 int32_t caps_label_kinds(char* json, int32_t cap);
+/* v49 a repeat unit from a molecule in 3D (molinfo.hpp repeat_unit_smiles): head and tail atoms (0-based; a hydrogen, or
+   a heavy atom that gives one of its hydrogens) → {ok, smiles (head's * first), error}. */
+int32_t caps_repeat_unit_smiles(caps_doc* d, int32_t head, int32_t tail, char* json, int32_t cap);
 /* v48 caps_type_table: [{type, label, mass, count, element (the most common), elements, from_mass (the element the mass
    points to)}] of the frame; caps_edit {"op": "type_element", type, element, mass?} sets every atom of a type (the type
    and its label kept). */

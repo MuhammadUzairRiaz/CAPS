@@ -28,6 +28,12 @@ struct MoleculeInfo {
 // The molecule containing atom `atom` (positions made whole across the cell).
 MoleculeInfo molecule_info(const System& s, uint32_t atom);
 
+// A repeat unit from a molecule in 3D: its head and tail atoms picked (a hydrogen: it becomes the attachment point; a
+// heavy atom: one of its hydrogens does). Returns the unit's SMILES with the head's * first ("*CC(*)c1ccccc1" for a
+// styrene monomer's CH3 and CH2 carbons picked on ethylbenzene), for the polymer builder. Throws when the two are in
+// different molecules, are the same, or a heavy atom has no hydrogen to give.
+std::string repeat_unit_smiles(const System& s, uint32_t head, uint32_t tail);
+
 struct SasaResult {
   std::vector<double> area;            // Å² per atom
   double total = 0;

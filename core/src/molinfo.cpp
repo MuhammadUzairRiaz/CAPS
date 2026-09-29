@@ -226,4 +226,64 @@ SasaResult sasa(const System& s, double probe, int points) {
   return r;
 }
 
+std::string repeat_unit_smiles(const System& s0, uint32_t head, uint32_t tail) {
+  if (head >= s0.atoms.size() || tail >= s0.atoms.size()) throw std::out_of_range("pick two atoms of the structure");
+  if (head == tail) throw std::invalid_argument("the head and the tail must be two different atoms");
+  System s = s0;
+  if (s.cell.valid() && !s.unwrapped) make_molecules_whole(s);
+  const auto mol = s.molecules();
+  if (mol[head] != mol[tail]) throw std::invalid_argument("the head and the tail are in different molecules");
+  std::vector<uint32_t> idx;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) if (mol[i] == mol[head]) idx.push_back(i);
+  std::vector<int> local(s.atoms.size(), -1);
+  for (size_t k = 0; k < idx.size(); ++k) local[idx[k]] = int(k);
+  System m;
+  for (uint32_t i : idx) m.atoms.push_back(s.atoms[i]);
+  for (const auto& b : s.bonds)
+    if (local[b.i] >= 0 && local[b.j] >= 0) m.bonds.push_back({uint32_t(local[b.i]), uint32_t(local[b.j]), b.order});
+  const Perception p = perceive(m);
+  // the attachment points: a picked hydrogen itself, else a hydrogen of the picked atom (not the other's)
+  auto point = [&](uint32_t at, int avoid) -> uint32_t {
+    const uint32_t a = uint32_t(local[at]);
+    if (m.atoms[a].element == 1) return a;
+    for (uint32_t w : p.nb[a]) if (m.atoms[w].element == 1 && int(w) != avoid) return w;
+    throw std::invalid_argument("atom " + std::to_string(at + 1) + " (" + element(m.atoms[a].element).symbol + ") has no hydrogen to become the attachment point");
+  };
+  const uint32_t hp = point(head, -1), tp = point(tail, int(hp));
+  if (hp == tp) throw std::invalid_argument("the head and the tail give the same attachment point");
+  // the graph: the head's * first, then the other atoms; the two points become *, other hydrogens implicit
+  MolGraph g;
+  std::vector<int> gi(m.atoms.size(), -1);
+  std::vector<uint32_t> order{hp};
+  for (uint32_t i = 0; i < m.atoms.size(); ++i) if (i != hp) order.push_back(i);
+  for (uint32_t i : order) {
+    const bool dummy = i == hp || i == tp;
+    if (!dummy && m.atoms[i].element == 1 && p.nb[i].size() == 1 && m.atoms[p.nb[i][0]].element != 1) continue;   // implicit H
+    MolAtom a;
+    a.element = dummy ? 0 : m.atoms[i].element;
+    a.aromatic = !dummy && p.aromatic[i];
+    a.charge = dummy ? 0 : p.charge[i];
+    const int z = a.element;
+    const bool organic = z == 0 || z == 5 || z == 6 || z == 7 || z == 8 || z == 9 || z == 15 || z == 16 || z == 17 || z == 35 || z == 53;
+    a.bracket = !organic || a.charge != 0;
+    // a bracket atom states its hydrogens: the perceived count less the one that became *
+    int h = dummy ? 0 : p.hcount[i];
+    if (!dummy) for (uint32_t w : p.nb[i]) if (w == hp || w == tp) --h;
+    a.hcount = a.bracket ? std::max(0, h) : -1;
+    gi[i] = int(g.atoms.size());
+    g.atoms.push_back(a);
+  }
+  for (uint32_t i = 0; i < m.atoms.size(); ++i)
+    for (size_t k = 0; k < p.nb[i].size(); ++k) {
+      const uint32_t j = p.nb[i][k];
+      if (j <= i || gi[i] < 0 || gi[j] < 0) continue;
+      MolBond b;
+      b.a = gi[i], b.b = gi[j];
+      b.order = p.arom_bond[i][k] ? 4 : p.order[i][k];
+      g.bonds.push_back(b);
+    }
+  g.heavy = int(g.atoms.size());
+  return write_smiles(g);
+}
+
 }  // namespace caps

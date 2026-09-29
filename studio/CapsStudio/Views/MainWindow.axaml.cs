@@ -393,6 +393,7 @@ public partial class MainWindow : Window
     private void OnModifyElement(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string el) _vm.ModifyElementPicked(el); }
     private void OnBondOrder(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string o) _vm.BondOrderPicked(int.Parse(o)); }
     private void OnBreakBond(object? s, RoutedEventArgs e) => _vm.BreakBondPicked();
+    private void OnPickedRepeatUnit(object? s, RoutedEventArgs e) => _vm.UsePickedAsRepeatUnit();
     private void OnGeometry(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string g) _vm.GeometryPicked(g); }
     /// <summary>The Project Explorer's right edge: drag to widen or narrow it.</summary>
     private void OnExplorerGrip(object? s, Avalonia.Input.VectorEventArgs e) => _vm.ProjectWidth += e.Vector.X;
