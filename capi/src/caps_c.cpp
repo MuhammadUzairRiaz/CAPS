@@ -2561,6 +2561,35 @@ int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* d
   });
 }
 
+int32_t caps_reaction_library(const char* path, char* json, int32_t cap) {
+  return guard([&] {
+    std::ifstream in(path ? path : "");
+    if (!in) throw std::runtime_error(std::string("cannot read the reaction library ") + (path ? path : ""));
+    std::stringstream ss;
+    ss << in.rdbuf();
+    caps::Json lib = caps::Json::parse(ss.str());
+    caps::Json out = caps::Json::array();
+    for (auto e : lib["reactions"].items()) {
+      std::vector<std::string> rs, ps;
+      for (const auto& r : e["reactants"].items()) rs.push_back(r.text("smiles", ""));
+      for (const auto& p : e["products"].items()) ps.push_back(p.text("smiles", ""));
+      std::vector<std::string> notes;
+      try {
+        e["template"] = caps::template_text(caps::template_from_scheme(rs, ps, e.text("id", "reaction"), &notes));
+      } catch (const std::exception& x) {
+        e["error"] = std::string(x.what());
+      }
+      caps::Json n = caps::Json::array();
+      for (const auto& x : notes) n.push_back(x);
+      e["notes"] = n;
+      out.push_back(e);
+    }
+    caps::Json j = caps::Json::object();
+    j["reactions"] = out;
+    return report_out(j.dump(), json, cap);
+  });
+}
+
 int32_t caps_bond_react_import(const char* pre, const char* post, const char* map, const char* masses_from, const char* name, double capture,
                                char* json, int32_t cap) {
   return guard([&] {
