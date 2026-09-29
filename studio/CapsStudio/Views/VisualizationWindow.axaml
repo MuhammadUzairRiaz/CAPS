@@ -25,6 +25,8 @@
           <TextBox x:Name="Expr" Width="230" Classes="mono" Watermark="Molecule &lt;= 3 · Element == &quot;C&quot;"
                    ToolTip.Tip="Only the atoms where the expression holds are drawn (the Visualize expression language); empty: all atoms. Enter applies." /></StackPanel>
         <CheckBox x:Name="CellBox" Content="Cell" IsChecked="True" VerticalAlignment="Bottom" />
+        <CheckBox x:Name="WrapBox" Content="Wrap" VerticalAlignment="Bottom"
+                  ToolTip.Tip="Fold every atom into the cell (bonds that cross a face are hidden); off: molecules whole. This window's own — the main view is untouched" />
         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
           <Button x:Name="ZoomOut" Content="−" Width="32" Padding="0" HorizontalContentAlignment="Center" FontSize="16" ToolTip.Tip="Zoom out (or the wheel, a pinch)" />
           <Button x:Name="ZoomIn" Content="+" Width="32" Padding="0" HorizontalContentAlignment="Center" FontSize="16" ToolTip.Tip="Zoom in" />
