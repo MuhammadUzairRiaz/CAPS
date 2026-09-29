@@ -15,6 +15,7 @@ public partial class GrowPage : PageBase
         {
             if (DataContext is not CapsStudio.ViewModels.MainViewModel vm || vm == _hooked) return;
             _hooked = vm;
+            vm.GrowLiveRedraw += () => this.FindControl<MolView>("LiveView")!.Refresh();
             vm.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(CapsStudio.ViewModels.MainViewModel.Growing)) { Centre(vm.Growing); return; }

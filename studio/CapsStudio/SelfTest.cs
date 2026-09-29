@@ -699,6 +699,15 @@ internal static class SelfTest
             vm.SendPolymerToGrow();
             vm.Grow().GetAwaiter().GetResult();
             Check(vm.Document != null && vm.Document.Summary().Molecules == 4 && vm.GrowComponentName.StartsWith("ENR"), $"grown ENR-50 cell: {vm.Status}");
+            // the grown cell shows as the live view did (wrapped by default), and the switch changes it both ways
+            {
+                var wrappedAfterGrow = vm.Wrap == vm.GrowWrap;
+                vm.GrowUnwrapped = true;
+                var unwrapped = !vm.Wrap && !vm.GrowWrap;
+                vm.GrowWrap = true;
+                Check(wrappedAfterGrow && unwrapped && vm.Wrap, $"grow view wrap: after growing {wrappedAfterGrow}, unwrapped {unwrapped}, back {vm.Wrap}");
+                vm.Wrap = false;
+            }
             // sulfur cure of the rubber: H–S–S–H donors inserted, allylic C–S bonds formed
             vm.RxSet = 2;
             vm.RxInsertCount = 6;
