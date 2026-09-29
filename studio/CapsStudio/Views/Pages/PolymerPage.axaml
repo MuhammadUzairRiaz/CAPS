@@ -247,6 +247,11 @@
                     <RadioButton Classes="seg" Content="Syndiotactic" GroupName="tac" IsChecked="{Binding GrowTacticity, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
                   </StackPanel>
                 </Border>
+                <Grid ColumnDefinitions="Auto,160,*" ColumnSpacing="8" IsVisible="{Binding GrowTacticity, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}">
+                  <TextBlock Text="Dyads (m/r pattern)" Classes="label" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1" Text="{Binding PolyDyads}" Classes="mono" Watermark="e.g. mmr" ToolTip.Tip="The dyads along the chain, repeated: m keeps the previous unit's configuration, r mirrors it" />
+                  <TextBlock Grid.Column="2" Text="{Binding PolyDyadsNote}" Classes="dim" TextWrapping="Wrap" VerticalAlignment="Center" />
+                </Grid>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                   <StackPanel Spacing="6">
                     <TextBlock Text="Linkage" Classes="label" />
