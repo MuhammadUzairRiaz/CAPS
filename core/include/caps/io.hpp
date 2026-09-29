@@ -100,8 +100,13 @@ void write_pdb(const System& s, const std::string& path);
 void write_mol2(const System& s, const std::string& path);
 // MDL SD file (V2000; V3000 above 999 atoms or bonds), the formal charges perceived from the structure
 void write_sdf(const System& s, const std::string& path);
-// CIF in P 1: the cell and every atom's fractional coordinates (throws without a periodic cell)
+// CIF in P 1: the cell, formula and volume, and every atom's fractional coordinates (throws without a periodic cell)
 void write_cif(const System& s, const std::string& path);
+// VASP POSCAR (VASP 5: species and counts lines, Direct coordinates wrapped into the cell). Atoms are written grouped by
+// element in the order each element first appears, as VASP needs; `order` (when given) receives, for each written line,
+// the atom's index in s. A non-empty `fixed` mask adds Selective dynamics: F F F for the held atoms, T T T for the rest.
+// Throws without a periodic cell.
+void write_poscar(const System& s, const std::string& path, const std::vector<char>& fixed = {}, std::vector<uint32_t>* order = nullptr);
 // DCD as LAMMPS writes it (every frame with its cell); dt_fs is the time step recorded in the header
 void write_dcd(const Trajectory& t, const std::string& path, double dt_fs = 1.0);
 // Every frame by the file's extension: .lammpstrj / .dump (LAMMPS text dump), .dcd, .xyz (extended XYZ, the cell and time

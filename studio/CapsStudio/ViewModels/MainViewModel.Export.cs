@@ -24,6 +24,7 @@ public sealed partial class MainViewModel
         new("dcd", "DCD trajectory", "every frame with its cell · single precision", "dcd"),
         new("sdf", "MDL SD file", "V2000 / V3000 · bond orders, formal charges", "sdf"),
         new("cif", "CIF (P 1)", "cell and fractional coordinates", "cif"),
+        new("poscar", "VASP POSCAR", "VASP 5 · Direct coordinates · atoms grouped by element", "vasp"),
     ];
 
     private int _exportFormat;

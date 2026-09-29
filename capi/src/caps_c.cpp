@@ -1386,6 +1386,14 @@ int32_t caps_save(caps_doc* d, const char* path) {
   });
 }
 
+// POSCAR, CONTCAR (and POSCAR_…, CONTCAR-…) by the file's name, as VASP names them
+bool is_poscar_name(const std::string& p) {
+  const auto slash = p.find_last_of("/\\");
+  std::string n = slash == std::string::npos ? p : p.substr(slash + 1);
+  for (char& c : n) c = char(std::toupper(static_cast<unsigned char>(c)));
+  return n.rfind("POSCAR", 0) == 0 || n.rfind("CONTCAR", 0) == 0;
+}
+
 int32_t save_frame(caps_doc* d, const std::string& p) {
   return guard([&] {
     auto ends = [&](const char* e) { const std::string x = e; return p.size() >= x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
@@ -1396,6 +1404,7 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
     else if (ends(".gro")) caps::write_gro(d->frame, p);
     else if (ends(".sdf") || ends(".mol")) caps::write_sdf(d->frame, p);
     else if (ends(".cif")) caps::write_cif(d->frame, p);
+    else if (ends(".vasp") || ends(".poscar") || is_poscar_name(p)) caps::write_poscar(d->frame, p, fixed_mask(d, d->frame));
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
       if (d->field->complete) caps::write_lammps_data_or_structure(d->frame, *d->field->ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
@@ -5502,6 +5511,13 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
   } else if (fmt == "cif") {
     caps::write_cif(s, path);
     notes.push_back("space group P 1: every atom at its fractional coordinates; no bonds");
+  } else if (fmt == "poscar") {
+    const auto held = use_pipeline ? std::vector<char>{} : fixed_mask(d, s);
+    caps::write_poscar(s, path, held);
+    notes.push_back("VASP 5 POSCAR: species and counts lines, Direct (fractional) coordinates in the cell");
+    notes.push_back("atoms grouped by element in the order each first appears (VASP needs them grouped); no bonds, charges or types");
+    if (std::any_of(held.begin(), held.end(), [](char f) { return f != 0; })) notes.push_back("Selective dynamics: the held atoms F F F, the rest T T T");
+    notes.push_back("name it POSCAR for VASP; the POTCAR must list the same species in the same order");
   } else if (fmt == "dcd") {
     caps::write_dcd(d->traj, path);
     notes.push_back("every frame with its cell, single precision (as LAMMPS writes DCD); open it with a topology (the .data)");

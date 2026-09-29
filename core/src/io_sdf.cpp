@@ -202,10 +202,21 @@ void write_cif(const System& s, const std::string& path) {
   std::string name = s.title.empty() ? std::string("caps") : s.title;
   for (char& ch : name) if (std::isspace(static_cast<unsigned char>(ch))) ch = '_';
   char b[200];
-  out << "# written by CAPS\ndata_" << name << "\n_symmetry_space_group_name_H-M 'P 1'\n_symmetry_Int_Tables_number 1\n";
-  std::snprintf(b, sizeof b, "_cell_length_a %.6f\n_cell_length_b %.6f\n_cell_length_c %.6f\n_cell_angle_alpha %.6f\n_cell_angle_beta %.6f\n_cell_angle_gamma %.6f\n",
-                la, lb, lc, ang(c.b, c.c), ang(c.a, c.c), ang(c.a, c.b));
-  out << b << "loop_\n_symmetry_equiv_pos_as_xyz\n'x, y, z'\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n";
+  // the formula in Hill order (C, H, then alphabetical; alphabetical without carbon)
+  std::map<std::string, int> nel;
+  for (const auto& a : s.atoms) ++nel[element(a.element).symbol];
+  std::vector<std::string> order;
+  const bool carbon = nel.count("C") > 0;
+  if (carbon) { order.push_back("C"); if (nel.count("H")) order.push_back("H"); }
+  for (const auto& [e, n] : nel) if (!(carbon && (e == "C" || e == "H"))) order.push_back(e);
+  std::string formula;
+  for (const auto& e : order) formula += (formula.empty() ? "" : " ") + e + (nel[e] > 1 ? std::to_string(nel[e]) : "");
+  // both the current (_space_group_*) and the older (_symmetry_*) names, so every reader finds the space group
+  out << "# written by CAPS\ndata_" << name << "\n_chemical_formula_sum '" << formula << "'\n"
+      << "_space_group_name_H-M_alt 'P 1'\n_space_group_IT_number 1\n_symmetry_space_group_name_H-M 'P 1'\n_symmetry_Int_Tables_number 1\n";
+  std::snprintf(b, sizeof b, "_cell_length_a %.6f\n_cell_length_b %.6f\n_cell_length_c %.6f\n_cell_angle_alpha %.6f\n_cell_angle_beta %.6f\n_cell_angle_gamma %.6f\n_cell_volume %.4f\n",
+                la, lb, lc, ang(c.b, c.c), ang(c.a, c.c), ang(c.a, c.b), c.volume());
+  out << b << "loop_\n_space_group_symop_operation_xyz\n'x, y, z'\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n";
   if (s.has_charges) out << "_atom_site_charge\n";
   std::map<int, int> count;
   for (const auto& a : s.atoms) {
@@ -217,6 +228,48 @@ void write_cif(const System& s, const std::string& path) {
     if (s.has_charges) { std::snprintf(b, sizeof b, " %.5f", a.charge); out << b; }
     out << "\n";
   }
+}
+
+void write_poscar(const System& s, const std::string& path, const std::vector<char>& fixed, std::vector<uint32_t>* order) {
+  if (!s.cell.valid()) throw std::runtime_error("a POSCAR needs a periodic cell: this structure has none");
+  if (s.atoms.empty()) throw std::runtime_error("a POSCAR needs atoms");
+  std::ofstream out(path);
+  if (!out) throw std::runtime_error("cannot write " + path);
+  // the species in the order each first appears, and the atoms grouped by them
+  std::vector<int> species;
+  for (const auto& a : s.atoms) if (std::find(species.begin(), species.end(), a.element) == species.end()) species.push_back(a.element);
+  std::vector<uint32_t> ord;
+  for (int e : species)
+    for (uint32_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].element == e) ord.push_back(i);
+  std::string title = s.title.empty() ? std::string("written by CAPS") : s.title;
+  for (char& ch : title) if (ch == '\n' || ch == '\r') ch = ' ';
+  char b[200];
+  out << title << "\n1.0\n";
+  // rounded at 1e-12 (Å and fractions): the round-off of building the cell (3e-16, 0.4999999999999999) is not written
+  auto clean = [](double x) { const double r = std::round(x * 1e12) / 1e12; return r == 0 ? 0.0 : r; };
+  for (const Vec3& v : {s.cell.a, s.cell.b, s.cell.c}) {
+    std::snprintf(b, sizeof b, "  %21.16f %21.16f %21.16f\n", clean(v[0]), clean(v[1]), clean(v[2]));
+    out << b;
+  }
+  for (int e : species) out << "  " << element(e).symbol;
+  out << "\n";
+  for (int e : species) out << "  " << std::count_if(s.atoms.begin(), s.atoms.end(), [&](const Atom& a) { return a.element == e; });
+  out << "\n";
+  const bool sel = !fixed.empty() && std::any_of(fixed.begin(), fixed.end(), [](char f) { return f != 0; });
+  if (sel) out << "Selective dynamics\n";
+  out << "Direct\n";
+  for (uint32_t i : ord) {
+    Vec3 f = s.cell.to_fractional(s.atoms[i].pos);
+    for (int k = 0; k < 3; ++k) {
+      f[size_t(k)] = clean(f[size_t(k)] - std::floor(f[size_t(k)]));
+      if (f[size_t(k)] >= 1.0) f[size_t(k)] = 0.0;   // −1e-17 wraps to 1.0
+    }
+    std::snprintf(b, sizeof b, "  %19.16f %19.16f %19.16f", f[0], f[1], f[2]);
+    out << b;
+    if (sel) out << (i < fixed.size() && fixed[i] ? "   F   F   F" : "   T   T   T");
+    out << "\n";
+  }
+  if (order) *order = ord;
 }
 
 System read_poscar(const std::string& path) {

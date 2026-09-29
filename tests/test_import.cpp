@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <tuple>
 #include <vector>
 
@@ -320,6 +322,37 @@ TEST(Import, WritersRoundTrip) {
   double worst = 0;
   for (size_t i = 0; i < s.atoms.size(); ++i) worst = std::max(worst, caps::norm(s.cell.minimum_image(c.atoms[i].pos - s.atoms[i].pos)));
   EXPECT_LT(worst, 1e-4);
+  // VASP POSCAR: atoms grouped by element (water's O H H … becomes O… H…), Direct coordinates, the held atoms as
+  // Selective dynamics F F F; read back, each written line is the atom `order` names
+  {
+    std::vector<char> held(s.atoms.size(), 0);
+    held[0] = held[1] = 1;
+    std::vector<uint32_t> order;
+    const std::string pp = (dir / "caps_rt.vasp").string();
+    caps::write_poscar(s, pp, held, &order);
+    ASSERT_EQ(order.size(), s.atoms.size());
+    for (size_t k = 1; k < order.size(); ++k)   // grouped: each element in one run
+      if (s.atoms[order[k]].element != s.atoms[order[k - 1]].element)
+        for (size_t m = k + 1; m < order.size(); ++m) EXPECT_NE(s.atoms[order[m]].element, s.atoms[order[k - 1]].element);
+    std::ifstream in(pp);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    EXPECT_NE(text.find("Selective dynamics\nDirect\n"), std::string::npos);
+    size_t held_lines = 0;
+    for (size_t at = text.find("   F   F   F\n"); at != std::string::npos; at = text.find("   F   F   F\n", at + 1)) ++held_lines;
+    EXPECT_EQ(held_lines, 2u);   // the two held atoms
+    const caps::System v = caps::open_file(pp).topology;
+    ASSERT_EQ(v.atoms.size(), s.atoms.size());
+    EXPECT_NEAR(v.cell.volume(), s.cell.volume(), 1e-9);
+    worst = 0;
+    for (size_t k = 0; k < order.size(); ++k) {
+      EXPECT_EQ(v.atoms[k].element, s.atoms[order[k]].element);
+      worst = std::max(worst, caps::norm(s.cell.minimum_image(v.atoms[k].pos - s.atoms[order[k]].pos)));
+    }
+    EXPECT_LT(worst, 1e-9);
+    caps::System gas = s;
+    gas.cell = caps::Cell{};
+    EXPECT_THROW(caps::write_poscar(gas, pp), std::runtime_error);
+  }
   // DCD
   caps::write_dcd(melt, (dir / "caps_rt.dcd").string());
   const caps::Trajectory d = caps::open_file((dir / "caps_rt.dcd").string(), kTraj + "water.data");

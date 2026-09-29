@@ -92,6 +92,7 @@ int usage() {
                "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]\n"
                "                                   a saved pipeline over many inputs: one row of attributes per input\n"
                "  caps crystal --group 'P 42/m n m' --cell a,b,c[,α,β,γ] --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' -o OUT\n"
+               "               (OUT.cif in P 1, OUT.vasp or POSCAR for VASP, .data, .pdb, .xyz …)\n"
                "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
                "  caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit\n"
                "  caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)\n"
@@ -444,7 +445,15 @@ void save_structure(const System& s, const ForceField& ff, const EnergyOptions& 
 
 }  // namespace
 
-// A structure written by its file extension: .pdb .xyz .mol2 .car .gro .sdf/.mol .cif, else a LAMMPS data file.
+// POSCAR, CONTCAR (and POSCAR_…) by the file's name, as VASP names them
+static bool poscar_name(const std::string& p) {
+  std::string n = std::filesystem::path(p).filename().string();
+  for (char& c : n) c = char(std::toupper(static_cast<unsigned char>(c)));
+  return n.rfind("POSCAR", 0) == 0 || n.rfind("CONTCAR", 0) == 0;
+}
+
+// A structure written by its file extension: .pdb .xyz .mol2 .car .gro .sdf/.mol .cif, .vasp or a POSCAR/CONTCAR name,
+// else a LAMMPS data file.
 static void write_structure_file(const System& s, const std::string& out) {
   auto ends = [&](const char* e) { const std::string x(e); return out.size() > x.size() && out.compare(out.size() - x.size(), x.size(), x) == 0; };
   if (ends(".pdb")) write_pdb(s, out);
@@ -454,6 +463,7 @@ static void write_structure_file(const System& s, const std::string& out) {
   else if (ends(".gro")) write_gro(s, out);
   else if (ends(".sdf") || ends(".mol")) write_sdf(s, out);
   else if (ends(".cif")) write_cif(s, out);
+  else if (ends(".vasp") || ends(".poscar") || poscar_name(out)) write_poscar(s, out);
   else write_lammps_data(s, out);
 }
 

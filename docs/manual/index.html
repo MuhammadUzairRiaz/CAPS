@@ -362,6 +362,12 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
     <figure><button type="button" aria-label="Enlarge"><img src="img/14_crystal.jpg" alt="Crystal builder" loading="lazy"></button><figcaption><b>Crystal.</b> Space group, lattice, CIF import and supercells.</figcaption></figure>
     <figure><button type="button" aria-label="Enlarge"><img src="img/15_surface.jpg" alt="Surface builder with quartz" loading="lazy"></button><figcaption><b>Surface.</b> Cleave a crystal, choose the termination, add vacuum or grow a film.</figcaption></figure>
   </div>
+  <p><b>Saving a crystal or slab.</b> In the Studio's File buttons, or <span class="ui">File › Save as</span>:</p>
+  <ul>
+    <li><span class="ui">CIF…</span> writes space group P 1, with the cell, the formula and every atom's fractional coordinates. It opens in VESTA, Mercury, pymatgen and ASE.</li>
+    <li><span class="ui">VASP POSCAR…</span> writes VASP 5 format: species and counts lines, and Direct coordinates wrapped into the cell. The atoms are grouped by element in the order each first appears, as VASP needs. Held atoms are written as <i>Selective dynamics</i> (F F F). Rename the file <code>POSCAR</code> for VASP; the POTCAR must list the same species in the same order. CAPS also opens POSCAR and CONTCAR files.</li>
+    <li>CLI: <code>caps crystal … -o rutile.cif</code> or <code>-o POSCAR</code>. Python: <code>doc.save("rutile.vasp")</code>.</li>
+  </ul>
 </section>
 
 <section id="f-nano">
