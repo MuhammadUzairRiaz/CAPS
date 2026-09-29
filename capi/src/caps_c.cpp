@@ -6490,6 +6490,38 @@ extern "C" int32_t caps_bond_labels(caps_doc* d, const char* kind, char* json, i
   return report_out(j.dump(0), json, cap);
 }
 
+extern "C" int32_t caps_type_table(caps_doc* d, char* json, int32_t cap) {
+  caps::Json arr = caps::Json::array();
+  const caps::System& f = d->frame;
+  std::map<int, std::map<int, size_t>> el;   // type → element → atoms
+  for (const auto& a : f.atoms) ++el[a.type][a.element];
+  for (const auto& [t, m] : el) {
+    caps::Json r = caps::Json::object();
+    r["type"] = double(t);
+    std::string label;
+    double mass = 0;
+    for (const auto& ti : f.types) if (ti.type == t) label = ti.label, mass = ti.mass;
+    r["label"] = label;
+    r["mass"] = mass;
+    size_t n = 0;
+    int best = 0;
+    size_t bestn = 0;
+    caps::Json els = caps::Json::array();
+    for (const auto& [z, c] : m) {
+      n += c;
+      if (c > bestn) best = z, bestn = c;
+      els.push_back(std::string(caps::element(z).symbol));
+    }
+    r["count"] = double(n);
+    r["element"] = std::string(caps::element(best).symbol);
+    r["elements"] = els;
+    // the element the mass points to, to show a mismatch
+    r["from_mass"] = mass > 0 ? std::string(caps::element(caps::element_from_mass(mass, 0.5)).symbol) : std::string();
+    arr.push_back(r);
+  }
+  return report_out(arr.dump(0), json, cap);
+}
+
 extern "C" int32_t caps_label_kinds(char* json, int32_t cap) {
   caps::Json j = caps::Json::object();
   for (const auto& [name, list] : {std::make_pair("atom", &caps::atom_label_kinds()), std::make_pair("bond", &caps::bond_label_kinds())}) {
@@ -6858,6 +6890,19 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       const int k = caps::hydroxylate_phosphorus(s);
       if (k == 0) throw std::invalid_argument("no hydrogen on phosphorus");
       what = "Phosphate ends: " + std::to_string(k) + " P–H to P–OH";
+    } else if (op == "type_element") {   // {type, element, mass?}: every atom of a type made this element; the type is kept
+      const int t = int(j.num("type", 0));
+      const int z = element_of(j.text("element"));
+      if (z <= 0) throw std::invalid_argument("unknown element");
+      size_t n = 0;
+      for (auto& a : s.atoms) if (a.type == t) a.element = z, ++n;
+      if (n == 0) throw std::invalid_argument("no atom has type " + std::to_string(t));
+      if (j.has("mass")) {
+        const double m = j.num("mass", 0);
+        if (m <= 0) throw std::invalid_argument("a mass must be positive");
+        for (auto& ti : s.types) if (ti.type == t) ti.mass = m;
+      }
+      what = "Type " + std::to_string(t) + ": " + std::to_string(n) + " atom(s) made " + caps::element(z).symbol + (j.has("mass") ? " (mass set)" : "");
     } else if (op == "redefine_lattice") {   // {matrix: [9 numbers, row-major; column j = the new vector j in the old ones]}
       if (!j.has("matrix") || !j["matrix"].is_array() || j["matrix"].size() != 9) throw std::invalid_argument("redefine_lattice needs matrix: [9 numbers]");
       caps::Mat3 m{};
