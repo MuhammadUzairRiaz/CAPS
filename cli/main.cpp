@@ -119,7 +119,7 @@ int usage() {
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
-               "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|gradient|pattern\n"
+               "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
                "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json] [--auto-scale]   any repeat units (else polystyrene)\n"
                "  caps field   FILE [--topology DATA] [--forces OUT.txt]   GAFF types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"

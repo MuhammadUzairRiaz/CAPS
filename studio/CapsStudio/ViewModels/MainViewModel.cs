@@ -745,7 +745,7 @@ public sealed partial class MainViewModel : ObservableObject
         var seq = (string?)j?["sequence"] ?? "homopolymer";
         sb.Append("    sequence: ").Append(seq).Append('\n');
         if (seq == "block" && j?["blocks"] is System.Text.Json.Nodes.JsonArray ba) sb.Append("    blocks: [").Append(string.Join(", ", ba.Select(b => (int?)b ?? 1))).Append("]\n");
-        if (seq == "random" && j?["weights"] is System.Text.Json.Nodes.JsonArray wa) sb.Append("    weights: [").Append(string.Join(", ", wa.Select(w => ((double?)w ?? 1).ToString(inv)))).Append("]\n");
+        if (seq is "random" or "shuffled" && j?["weights"] is System.Text.Json.Nodes.JsonArray wa) sb.Append("    weights: [").Append(string.Join(", ", wa.Select(w => ((double?)w ?? 1).ToString(inv)))).Append("]\n");
         if (seq == "pattern") sb.Append("    pattern: ").Append((string?)j?["pattern"] ?? "A").Append('\n');
         if (seq == "terminal" && j?["weights"] is System.Text.Json.Nodes.JsonArray tw)
             sb.Append(inv, $"    weights: [{string.Join(", ", tw.Select(w => ((double?)w ?? 0.5).ToString(inv)))}]\n    r1: {((double?)j["r1"] ?? 1).ToString(inv)}\n    r2: {((double?)j["r2"] ?? 1).ToString(inv)}\n");
@@ -804,7 +804,7 @@ public sealed partial class MainViewModel : ObservableObject
         var seq = (string?)j["sequence"] ?? "homopolymer";
         var extra = seq switch
         {
-            "random" => " --weights " + string.Join(",", (j["weights"] as System.Text.Json.Nodes.JsonArray ?? []).Select(w => ((double?)w ?? 1).ToString(CultureInfo.InvariantCulture))),
+            "random" or "shuffled" => " --weights " + string.Join(",", (j["weights"] as System.Text.Json.Nodes.JsonArray ?? []).Select(w => ((double?)w ?? 1).ToString(CultureInfo.InvariantCulture))),
             "block" => " --blocks " + string.Join(",", (j["blocks"] as System.Text.Json.Nodes.JsonArray ?? []).Select(w => (int?)w ?? 1)),
             "pattern" => " --pattern " + (string?)j["pattern"],
             _ => "",
@@ -815,7 +815,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     // decimal views for NumericUpDown
     public decimal? GrowChainsD { get => _growChains; set { GrowChains = (int)(value ?? 1); Raise(); } }
-    public decimal? GrowDpD { get => _growDp; set { GrowDp = (int)(value ?? 2); Raise(); } }
+    public decimal? GrowDpD { get => _growDp; set { GrowDp = (int)(value ?? 2); Raise(); CompRefresh(); } }
     public decimal? GrowSeedD { get => _growSeed; set { GrowSeed = (int)(value ?? 0); Raise(); } }
     public decimal? GrowDensityD { get => (decimal)_growDensity; set { GrowDensity = (double)(value ?? 0.4m); Raise(); } }
     public decimal? GrowBoxD { get => (decimal)_growBox; set { GrowBox = (double)(value ?? 0m); Raise(); } }

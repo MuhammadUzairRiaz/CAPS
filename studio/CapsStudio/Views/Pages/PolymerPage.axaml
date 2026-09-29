@@ -28,6 +28,8 @@
             <DataTemplate x:DataType="vm:LibraryEntry">
               <StackPanel Margin="10,7" Spacing="2" ToolTip.Tip="Double-click: use it (a repeat unit goes into the chosen slot)">
                 <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Margin="4,0,0,0" IsVisible="{Binding User}"
+                          Click="OnRemoveUserPolymer" Tag="{Binding}" ToolTip.Tip="Remove it from your polymers"><v:Icon Kind="trash" Size="12" /></Button>
                   <Border DockPanel.Dock="Right" Classes="chip" Height="18" IsVisible="{Binding HasKind}"><TextBlock Text="{Binding Kind}" FontSize="10.5" Foreground="{DynamicResource MutedB}" /></Border>
                   <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
@@ -116,6 +118,10 @@
                             <TextBlock Text="Share" Classes="label" VerticalAlignment="Center" />
                             <NumericUpDown Grid.Column="1" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="0.05" FormatString="0.###" />
                           </Grid>
+                          <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).CompShown}">
+                            <TextBlock Text="Target %" Classes="label" VerticalAlignment="Center" ToolTip.Tip="The ratio you want, by moles or by weight as the composition below is set" />
+                            <NumericUpDown Grid.Column="1" Value="{Binding Target}" Minimum="0" Maximum="100" Increment="5" FormatString="0.##" />
+                          </Grid>
                           <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).PolyShowBlocks}">
                             <TextBlock Text="Block length" Classes="label" VerticalAlignment="Center" />
                             <NumericUpDown Grid.Column="1" Value="{Binding Block}" Minimum="1" Maximum="2000" Increment="1" FormatString="0" />
@@ -193,6 +199,38 @@
                     <TextBox Text="{Binding PolyName}" />
                   </StackPanel>
                 </Grid>
+                <Button Content="Save to your library" Click="OnSaveToLibrary" HorizontalAlignment="Left"
+                        ToolTip.Tip="This polymer (a repeat unit, or the copolymer with its sequence and shares) in your library, beside the built-in ones" />
+                <!-- composition: the ratio wanted, by moles or weight, as unit shares and what a chain of this DP holds -->
+                <StackPanel Spacing="8" IsVisible="{Binding CompShown}">
+                  <TextBlock Text="COMPOSITION" Classes="h3" Margin="0,6,0,0" />
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="Target % of each unit" Classes="label" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.CompBases}" SelectedIndex="{Binding CompBasis}" HorizontalAlignment="Stretch" />
+                  </Grid>
+                  <Grid ColumnDefinitions="22,*,56,62,112" ColumnSpacing="6">
+                    <TextBlock Text="" /><TextBlock Grid.Column="1" Text="UNIT" Classes="h3" /><TextBlock Grid.Column="2" Text="MOL" Classes="h3" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="WEIGHT" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="EXACT · RANDOM" Classes="h3" HorizontalAlignment="Right" ToolTip.Tip="Units per chain: exact composition, and the mean ± one standard deviation when drawn at random" />
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding CompRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CompRow">
+                        <Grid ColumnDefinitions="22,*,56,62,112" ColumnSpacing="6" Height="24">
+                          <TextBlock Text="{Binding Letter}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="2" Text="{Binding Mol}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="3" Text="{Binding Wt}" Classes="mono" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="4" Text="{Binding PerChain}" Classes="mono" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{Binding CompText}" Classes="dim" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Use: random" Click="OnCompRandom" ToolTip.Tip="These mole fractions as the unit shares; each unit drawn on its own" />
+                    <Button Content="Use: exact composition" Click="OnCompExact" ToolTip.Tip="Every chain holds exactly the counts shown, in random order" />
+                  </StackPanel>
+                </StackPanel>
               </StackPanel>
             </Border>
             <Border Classes="section" Padding="16,14">

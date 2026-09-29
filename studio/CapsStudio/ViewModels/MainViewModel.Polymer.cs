@@ -7,9 +7,9 @@ using CapsStudio.Interop;
 namespace CapsStudio.ViewModels;
 
 /// <summary>A repeat unit or copolymer preset from data/polymers/library.json.</summary>
-public sealed record LibraryEntry(string Id, string Name, string Smiles, bool Rubber, bool Copolymer, JsonObject? Preset)
+public sealed record LibraryEntry(string Id, string Name, string Smiles, bool Rubber, bool Copolymer, JsonObject? Preset, bool User = false)
 {
-    public string Kind => Copolymer ? "copolymer" : Rubber ? "rubber" : "";
+    public string Kind => User ? (Copolymer ? "yours · copolymer" : "yours") : Copolymer ? "copolymer" : Rubber ? "rubber" : "";
     public bool HasKind => Kind.Length > 0;
 }
 
@@ -35,6 +35,12 @@ public sealed class PolyUnit : INotifyPropertyChanged
     public bool HasError => _error.Length > 0;
     public bool Ok => _error.Length == 0 && _smiles.Length > 0;
     public int Stereocentres { get; private set; }
+    /// <summary>The unit's molar mass in the chain (g/mol), for the composition calculator.</summary>
+    public double Mass { get; private set; }
+    private decimal _target = 50;
+    /// <summary>The share this unit should have (mole or weight %, as the composition calculator is set).</summary>
+    public decimal Target { get => _target; set { _target = Math.Max(0, value); Raise(nameof(Target)); TargetChanged?.Invoke(); } }
+    public Action? TargetChanged;
     public decimal Weight { get => _weight; set { _weight = Math.Max(0, value); Raise(nameof(Weight)); Changed?.Invoke(); } }
     public decimal Block { get => _block; set { _block = Math.Max(1, value); Raise(nameof(Block)); Changed?.Invoke(); } }
 
@@ -46,6 +52,7 @@ public sealed class PolyUnit : INotifyPropertyChanged
             if ((bool?)r["ok"] == true)
             {
                 Stereocentres = (int?)r["stereocentres"] ?? 0;
+                Mass = (double?)r["mass"] ?? 0;
                 Info = string.Format(CultureInfo.InvariantCulture, "{0} · {1:F2} g/mol · head {2} → tail {3}{4}", Sub((string?)r["formula"] ?? ""),
                     (double?)r["mass"] ?? 0, r["head_element"], r["tail_element"], Stereocentres > 0 ? " · stereocentre" : "");
                 if ((string?)r["note"] is { } note) Info += "\n" + char.ToUpper(note[0]) + note[1..];
@@ -65,8 +72,8 @@ public sealed class PolyUnit : INotifyPropertyChanged
 public sealed partial class MainViewModel
 {
     public bool IsPolymer => _module == 13;
-    public static readonly string[] SequenceKinds = ["Homopolymer", "Alternating", "Block", "Random", "Gradient", "Pattern"];
-    private static readonly string[] SequenceIds = ["homopolymer", "alternating", "block", "random", "gradient", "pattern"];
+    public static readonly string[] SequenceKinds = ["Homopolymer", "Alternating", "Block", "Random", "Gradient", "Pattern", "Random, exact composition"];
+    private static readonly string[] SequenceIds = ["homopolymer", "alternating", "block", "random", "gradient", "pattern", "shuffled"];
 
     public List<LibraryEntry> PolymerLibrary { get; } = new();
     public ObservableCollection<LibraryEntry> LibraryShown { get; } = new();
@@ -79,7 +86,7 @@ public sealed partial class MainViewModel
     public ObservableCollection<PolyUnit> PolyUnits { get; } = new();
     private int _polySeq;
     public int PolySequence { get => _polySeq; set { if (Set(ref _polySeq, value)) { RaisePolyKinds(); PolyChanged(); } } }
-    public bool PolyShowWeights => _polySeq == 3;
+    public bool PolyShowWeights => _polySeq is 3 or 6;
     public bool PolyShowBlocks => _polySeq == 2;
     public bool PolyShowPattern => _polySeq == 5;
     // ---- architecture: linear, branched (random side chains), star, comb, dendrimer
@@ -164,6 +171,7 @@ public sealed partial class MainViewModel
             _libById = byId;
         }
         catch (Exception e) { Status = "Polymer library: " + e.Message; }
+        LoadUserPolymers();
         FilterLibrary();
         Raise(nameof(LibraryCount));
         if (PolyUnits.Count == 0) AddPolyUnit("Styrene", "*CC(*)c1ccccc1");
@@ -185,7 +193,7 @@ public sealed partial class MainViewModel
     public void AddPolyUnit(string name = "", string smiles = "*CC*")
     {
         if (PolyUnits.Count >= 8) return;
-        var u = new PolyUnit { Letter = ((char)('A' + PolyUnits.Count)).ToString(), Changed = PolyChanged };
+        var u = new PolyUnit { Letter = ((char)('A' + PolyUnits.Count)).ToString(), Changed = PolyChanged, TargetChanged = CompRefresh };
         u.Name = name;
         u.Smiles = smiles;
         PolyUnits.Add(u);
@@ -230,9 +238,20 @@ public sealed partial class MainViewModel
         RaisePolyKinds();
         Raise(nameof(PolySequence));
         if (p["weights"] is JsonArray w)
-            for (var k = 0; k < Math.Min(w.Count, PolyUnits.Count); ++k) PolyUnits[k].Weight = (decimal)((double?)w[k] ?? 1);
+        {
+            // the library's shares are unit (mole) fractions: the calculator starts from them
+            for (var k = 0; k < Math.Min(w.Count, PolyUnits.Count); ++k)
+            {
+                PolyUnits[k].Weight = (decimal)((double?)w[k] ?? 1);
+                PolyUnits[k].Target = Math.Round(100 * PolyUnits[k].Weight / Math.Max(1e-9m, w.Sum(x => (decimal)((double?)x ?? 1))), 2);
+            }
+            _compBasis = 0;
+            Raise(nameof(CompBasis));
+        }
         if (p["blocks"] is JsonArray b)
             for (var k = 0; k < Math.Min(b.Count, PolyUnits.Count); ++k) PolyUnits[k].Block = (decimal)((double?)b[k] ?? 10);
+        if ((string?)p["pattern"] is { Length: > 0 } pat) _polyPattern = pat;
+        Raise(nameof(PolyPattern));
         _polyName = e.Name;
         Raise(nameof(PolyName));
         PolyChanged();
@@ -259,7 +278,7 @@ public sealed partial class MainViewModel
         var o = new JsonObject
         {
             ["units"] = new JsonArray(PolyUnits.Select(u => (JsonNode)new JsonObject { ["name"] = u.Name, ["smiles"] = u.Smiles }).ToArray()),
-            ["sequence"] = SequenceIds[Math.Clamp(_polySeq, 0, 5)],
+            ["sequence"] = SequenceIds[Math.Clamp(_polySeq, 0, SequenceIds.Length - 1)],
             ["dp"] = dp ?? _growDp,
             ["weights"] = new JsonArray(PolyUnits.Select(u => (JsonNode)(double)u.Weight).ToArray()),
             ["blocks"] = new JsonArray(PolyUnits.Select(u => (JsonNode)(int)u.Block).ToArray()),
@@ -289,6 +308,7 @@ public sealed partial class MainViewModel
 
     private void PolyChanged()
     {
+        CompRefresh();
         if (PolyUnits.Count == 0) return;
         if (PolyUnits.FirstOrDefault(u => !u.Ok) is { } bad) { PolyError = $"{bad.Letter}: {(bad.HasError ? bad.Error : "no SMILES")}"; return; }
         try
