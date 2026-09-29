@@ -61,6 +61,7 @@ add_library(caps_core STATIC
   src/react_view.cpp
   src/bond_react.cpp
   src/reaction_scheme.cpp
+  src/io_traj.cpp
   src/yaml.cpp
   src/recipe.cpp
   src/colourvision.cpp

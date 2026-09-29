@@ -112,6 +112,13 @@ Trajectory read_pdb(const std::string& path) {
 void write_pdb(const System& s, const std::string& path) {
   std::FILE* f = std::fopen(path.c_str(), "w");
   if (!f) throw ReadError("cannot write " + path);
+  write_pdb_frame(f, s, 0, true);
+  std::fprintf(f, "END\n");
+  std::fclose(f);
+}
+
+void write_pdb_frame(std::FILE* f, const System& s, int model, bool conect) {
+  if (model > 0) std::fprintf(f, "MODEL     %4d\n", model);
   if (s.cell.valid()) {
     const double a = norm(s.cell.a), b = norm(s.cell.b), c = norm(s.cell.c);
     const double al = std::acos(dot(s.cell.b, s.cell.c) / (b * c)) * 180 / M_PI, be = std::acos(dot(s.cell.a, s.cell.c) / (a * c)) * 180 / M_PI,
@@ -128,7 +135,8 @@ void write_pdb(const System& s, const std::string& path) {
                  nm.c_str(), res.c_str(), static_cast<long long>((at.resid > 0 ? at.resid : at.mol) % 10000), at.pos[0], at.pos[1], at.pos[2],
                  element(at.element).symbol);
   }
-  if (!big && !s.bonds.empty()) {
+  if (model > 0) std::fprintf(f, "ENDMDL\n");
+  if (conect && !big && !s.bonds.empty()) {
     const auto nb = s.neighbours();
     for (size_t i = 0; i < nb.size(); ++i)
       for (size_t k = 0; k < nb[i].size(); k += 4) {
@@ -137,8 +145,6 @@ void write_pdb(const System& s, const std::string& path) {
         std::fprintf(f, "\n");
       }
   }
-  std::fprintf(f, "END\n");
-  std::fclose(f);
 }
 
 }  // namespace caps

@@ -176,7 +176,8 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
    last frame with its velocities, so a caps_md with new_velocities 0 continues the run exactly. */
 int32_t caps_checkpoint(caps_doc* d, const char* json, char* out, int32_t cap);
 
-/* Write every frame of the document as a LAMMPS text dump (id mol type xu yu zu). */
+/* Write every frame of the document, the format by the extension: .lammpstrj / .dump (LAMMPS text dump, id mol type
+   xu yu zu), .dcd, .xyz (extended XYZ), .pdb (MODEL per frame), .gro (frames one after another), .trr (GROMACS). */
 int32_t caps_save_trajectory(caps_doc* d, const char* path);
 
 typedef struct {

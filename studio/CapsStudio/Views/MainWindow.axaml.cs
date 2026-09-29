@@ -693,14 +693,23 @@ public partial class MainWindow : Window
     public async Task SaveTrajectoryAsync()
     {
         if (_vm.Document == null) return;
-        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        var f = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Save trajectory (LAMMPS dump)",
-            SuggestedFileName = $"{Path.GetFileNameWithoutExtension(_vm.Document.Path)}.lammpstrj",
+            Title = "Save trajectory",
+            SuggestedFileName = "trajectory.lammpstrj",
             DefaultExtension = "lammpstrj",
+            // every frame, the format by the extension
+            FileTypeChoices =
+            [
+                new FilePickerFileType("LAMMPS dump") { Patterns = ["*.lammpstrj", "*.dump"] },
+                new FilePickerFileType("DCD") { Patterns = ["*.dcd"] },
+                new FilePickerFileType("GROMACS TRR") { Patterns = ["*.trr"] },
+                new FilePickerFileType("GROMACS GRO (all frames)") { Patterns = ["*.gro"] },
+                new FilePickerFileType("PDB (a MODEL per frame)") { Patterns = ["*.pdb"] },
+                new FilePickerFileType("Extended XYZ") { Patterns = ["*.xyz"] },
+            ],
         });
-        var path = file?.TryGetLocalPath();
-        if (path == null) return;
+        if (f?.TryGetLocalPath() is not { } path) return;
         try { _vm.SaveTrajectory(path); }
         catch (Exception ex) { _vm.Status = "Save failed: " + ex.Message; }
     }

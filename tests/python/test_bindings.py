@@ -461,4 +461,17 @@ v_geo = mx.energy()["vdw"]
 mx.field.set_mixing("")
 check(abs(v_geo - v_own) > 1 and any("in place of" in n for n in rep_geo["notes"]) and abs(mx.energy()["vdw"] - v_own) < 1e-9,
       f"mixing override: vdW {v_own:.3f} (own) → {v_geo:.3f} (geometric) → back")
+# trajectories in every format: each written with all its frames (read back by a GRO / TRR / multi-model reader elsewhere)
+with tempfile.TemporaryDirectory() as td:
+    tj = caps.open(os.path.join(samples, "ps_melt.lammpstrj"), topology=os.path.join(samples, "ps_melt.data"))
+    sizes = {}
+    for ext in ("xyz", "pdb", "gro", "trr", "dcd"):
+        tj.save_trajectory(os.path.join(td, "t." + ext))
+        sizes[ext] = os.path.getsize(os.path.join(td, "t." + ext))
+    xyz_frames = open(os.path.join(td, "t.xyz")).read().count("Lattice=")
+    pdb_models = sum(1 for line in open(os.path.join(td, "t.pdb")) if line.startswith("MODEL "))
+    gro_frames = open(os.path.join(td, "t.gro")).read().count("CAPS trajectory t=")
+    trr = open(os.path.join(td, "t.trr"), "rb").read()
+    check(xyz_frames == pdb_models == gro_frames == 3 and trr[:4] == (1993).to_bytes(4, "big") and trr.count(b"GMX_trn_file") == 3,
+          f"trajectory formats: 3 frames each in xyz/pdb/gro/trr · sizes {sizes}")
 print("all python checks passed")
