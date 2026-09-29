@@ -9,6 +9,7 @@ public struct CapsCamera
 {
     public double Yaw, Pitch, Zoom, PanX, PanY;
     public int Perspective;
+    public double FovDeg;   // ABI 49: perspective field of view (0: 35°)
 }
 
 /// <summary>caps_scene: the scene arrays (owned by the document until the next call).</summary>
@@ -81,7 +82,8 @@ public sealed class CapsSceneData
         Extend(FitPoints, true);
         ex = Math.Max(ex + FitPad, 2.5); ey = Math.Max(ey + FitPad, 2.5);
         f.Scale = Math.Min(w * 0.45 / ex, h * 0.45 / ey) * (cam.Zoom > 0 ? cam.Zoom : 1);
-        f.Dist = ez / Math.Tan(FovDeg * Math.PI / 360.0) + ez;
+        var fov = cam.FovDeg > 0 ? Math.Clamp(cam.FovDeg, 10, 120) : FovDeg;   // the camera's own, else the scene's
+        f.Dist = ez / Math.Tan(fov * Math.PI / 360.0) + ez;
         if (zmin > zmax) zmin = zmax = 0;
         f.ZMin = zmin; f.ZMax = zmax;
         return f;

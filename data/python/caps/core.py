@@ -80,7 +80,7 @@ class _Atom(C.Structure):
 
 class _Camera(C.Structure):
     _fields_ = [("yaw", C.c_double), ("pitch", C.c_double), ("zoom", C.c_double), ("pan_x", C.c_double), ("pan_y", C.c_double),
-                ("perspective", C.c_int32)]
+                ("perspective", C.c_int32), ("fov_deg", C.c_double)]
 
 
 class _RenderOpts(C.Structure):

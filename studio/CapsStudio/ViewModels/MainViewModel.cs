@@ -183,7 +183,7 @@ public sealed partial class MainViewModel : ObservableObject
     // toolbar texts (Main board: "Ball & stick", "Colour: element", "Perspective")
     public string StyleText => Styles[Math.Clamp(_style, 0, Styles.Length - 1)];
     public string ColourText => "Colour: " + (_appColour == 4 ? "partial charge" : ColourModes[Math.Clamp(ColourIndex, 0, ColourModes.Length - 1)].ToLowerInvariant());
-    public string ProjectionText => _perspective ? "Perspective" : "Orthographic";
+    public string ProjectionText => _perspective ? (Math.Abs(ViewFov - 35) < 0.5 ? "Perspective" : $"Perspective {ViewFov:0}°") : "Orthographic";
     private bool _measureTool;
     /// <summary>Measure tool: clicks add atoms to the measurement (as ⇧ click does).</summary>
     public bool MeasureTool { get => _measureTool; set => Set(ref _measureTool, value); }
@@ -241,6 +241,22 @@ public sealed partial class MainViewModel : ObservableObject
             RenderRequested?.Invoke();
         }
     }
+    /// <summary>The perspective view's field of view, degrees (35 by default; narrower flattens, wider exaggerates depth).</summary>
+    public double ViewFov
+    {
+        get => Camera.FovDeg > 0 ? Camera.FovDeg : 35;
+        set
+        {
+            var v = Math.Clamp(value, 10, 120);
+            if (Math.Abs(v - ViewFov) < 1e-9) return;
+            Camera.FovDeg = v;
+            Raise();
+            Raise(nameof(ProjectionText));
+            RenderRequested?.Invoke();
+            if (IsViewports) RenderViewports();
+        }
+    }
+
     public bool Perspective
     {
         get => _perspective;
