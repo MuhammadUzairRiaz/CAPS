@@ -42,4 +42,11 @@ public partial class PolymerPage : PageBase
     private void OnNetwork(object? s, RoutedEventArgs e) { Vm.SetModule(6); Vm.Status = "Networks: grow the cell, then crosslink it here (C–C, sulfur or peroxide cures, epoxy–amine)"; }
     private void OnBlend(object? s, RoutedEventArgs e) => Vm.OpenBlend();
     private async void OnBuildOne(object? s, RoutedEventArgs e) => await Vm.BuildPolymerInStudio();
+    private void OnSaveToLibrary(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.Status = Vm.SavePolymerToLibrary();
+    private void OnRemoveUserPolymer(object? s, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is ViewModels.LibraryEntry le) Vm.Status = Vm.RemoveUserPolymer(le);
+    }
+    private void OnCompRandom(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ApplyComposition(false);
+    private void OnCompExact(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ApplyComposition(true);
 }

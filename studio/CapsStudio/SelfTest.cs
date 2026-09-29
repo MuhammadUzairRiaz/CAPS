@@ -613,6 +613,41 @@ internal static class SelfTest
         vm.LoadPolymerLibrary();
         var enr = vm.PolymerLibrary.FirstOrDefault(e => e.Id == "C103");
         Check(vm.PolymerLibrary.Count(e => !e.Copolymer) > 100 && enr != null, $"polymer library: {vm.LibraryCount}");
+        // PBSA from the library; the composition calculator: BS:BA 80:20 mol at DP 25 → 20 and 5 per chain; 80:20 by weight → mole
+        if (vm.PolymerLibrary.FirstOrDefault(e => e.Id == "C112") is { } pbsa && vm.PolymerLibrary.Any(e => e.Id == "C113" && e.Copolymer))
+        {
+            if (File.Exists(MainViewModel.UserPolymerFile)) File.Delete(MainViewModel.UserPolymerFile);
+            vm.UseLibrary(pbsa, null);
+            var dpBefore = vm.GrowDpD;
+            vm.GrowDpD = 25;
+            vm.CompBasis = 0;
+            vm.PolyUnits[0].Target = 80; vm.PolyUnits[1].Target = 20;
+            Check(vm.CompShown && vm.CompRows.Count == 2 && vm.CompRows[0].PerChain.StartsWith("20 · ") && vm.CompRows[1].PerChain.StartsWith("5 · "),
+                $"composition 80:20 mol, DP 25: {string.Join(" | ", vm.CompRows.Select(r => r.PerChain))}");
+            // by weight: x_BS = (80/172.18) / (80/172.18 + 20/200.23) = 0.8231 (BS C8H12O4, BA C10H16O4 repeat units)
+            vm.CompBasis = 1;
+            vm.ApplyComposition(true);
+            var mBS = vm.PolyUnits[0].Mass; var mBA = vm.PolyUnits[1].Mass;
+            var xBS = 80 / mBS / (80 / mBS + 20 / mBA);
+            Check(Math.Abs(mBS - 172.18) < 0.05 && Math.Abs(mBA - 200.23) < 0.05 && Math.Abs((double)vm.PolyUnits[0].Weight - xBS) < 1e-4 && vm.PolySequence == 6
+                  && vm.PolySpecJson().Contains("\"shuffled\"") && vm.CompRows[0].Wt == "80.0 %",
+                $"composition 80:20 by weight → mole {vm.PolyUnits[0].Weight} (expect {xBS:0.0000}), masses {mBS:0.00}/{mBA:0.00}, {vm.CompRows[0].Wt}");
+            // saved to your polymers, found in the library, then removed
+            vm.PolyName = "My PBSA 80-20 wt";
+            var savedPoly = vm.SavePolymerToLibrary();
+            var mine = vm.PolymerLibrary.FirstOrDefault(e => e.User && e.Name == "My PBSA 80-20 wt");
+            Check(mine != null && mine.Copolymer && File.Exists(MainViewModel.UserPolymerFile) && !MainViewModel.UserPolymerFile.StartsWith(AppSettings.Folder), $"saved to your polymers: {savedPoly}");
+            if (mine != null)
+            {
+                vm.UseLibrary(mine, null);
+                Check(vm.PolyUnits.Count == 2 && vm.PolySequence == 6 && Math.Abs((double)vm.PolyUnits[0].Weight - xBS) < 1e-4, $"your PBSA reopened: {vm.PolyPreview}");
+                var removed = vm.RemoveUserPolymer(mine);
+                Check(!vm.PolymerLibrary.Any(e => e.User), $"your polymer removed: {removed}");
+            }
+            vm.GrowDpD = dpBefore;
+            vm.PolyName = "";
+        }
+        else Check(false, "PBSA / PBAT in the library");
         if (enr != null)
         {
             vm.UseLibrary(enr, null);

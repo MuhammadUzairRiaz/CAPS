@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -54,6 +55,21 @@ TEST(Polymer, Sequences) {
   for (int k : chain_sequence(r, 5)) ++n[k];
   EXPECT_NEAR(n[0] / 3000.0, 0.6, 0.04);
   EXPECT_NEAR(n[2] / 3000.0, 0.1, 0.03);
+  // exact composition: PBSA BS:BA 80:20 at DP 25 holds 20 and 5 in every chain, in a random order
+  ChainSpec x = spec({"[*]OCCCCOC(=O)CCC(=O)[*]", "[*]OCCCCOC(=O)CCCCC(=O)[*]"}, Sequence::Shuffled, 25);
+  x.weights = {0.8, 0.2};
+  std::set<std::vector<int>> orders;
+  for (unsigned seed = 1; seed <= 5; ++seed) {
+    const auto q = chain_sequence(x, seed);
+    EXPECT_EQ(std::count(q.begin(), q.end(), 0), 20);
+    EXPECT_EQ(std::count(q.begin(), q.end(), 1), 5);
+    orders.insert(q);
+  }
+  EXPECT_GT(orders.size(), 1u);
+  ChainSpec y = spec({"*CC*", "*CC(*)C", "*CCO*"}, Sequence::Shuffled, 10);   // 1/3 each of 10: largest remainders 4, 3, 3
+  const auto qy = chain_sequence(y, 2);
+  EXPECT_EQ(std::count(qy.begin(), qy.end(), 0) + std::count(qy.begin(), qy.end(), 1) + std::count(qy.begin(), qy.end(), 2), 10);
+  EXPECT_EQ(std::count(qy.begin(), qy.end(), 0), 4);
   auto g = chain_sequence(spec({"*CC*", "*CC(*)C"}, Sequence::Gradient, 200), 3);
   int a0 = 0, a1 = 0;
   for (int i = 0; i < 50; ++i) a0 += g[size_t(i)] == 0, a1 += g[size_t(150 + i)] == 0;
