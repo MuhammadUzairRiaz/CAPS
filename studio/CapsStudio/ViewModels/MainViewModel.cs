@@ -1773,6 +1773,8 @@ public sealed partial class MainViewModel : ObservableObject
         FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
     };
 
+    private (string Text, CapsEquilOpts Opts, bool Target) _eqRun;   // the last run, for the macro recorder
+
     private async Task RunEquilibrate(string? protocol, bool? until, CapsEquilOpts? preset = null, double[]? presetTarget = null)
     {
         if (_doc == null || !Idle || BlockedByField("Equilibrate")) return;
@@ -1797,6 +1799,7 @@ public sealed partial class MainViewModel : ObservableObject
         var lastUi = 0L;
         var finished = false;
         var text = protocol ?? _eqText;
+        _eqRun = (text, o, target.Length > 0);
         if (protocol == null || preset != null) _eqAccepted = false;
         // each stage's ensemble from the protocol text (its first word: nvt, npt, …); production blocks are NPT
         var ens = text.Split('\n').Select(l => l.Split('#')[0].Trim()).Where(l => l.Length > 0)
@@ -2454,7 +2457,7 @@ public sealed partial class MainViewModel : ObservableObject
         // the macro recorder: the run as the caps package would do it (relax records itself)
         if (suffix == " · MD") RecordScript(MdPython());
         else if (suffix == " · reacted") RecordScript(ReactPython());
-        else if (suffix == " · equilibrated") Record("# equilibrated in the Studio (" + Protocols[Math.Clamp(EqProtocol, 0, Protocols.Length - 1)] + "): the caps package has no equilibrate() yet");
+        else if (suffix == " · equilibrated") RecordScript(EqPython());
         RefreshAppColumns();   // a run's record has its own columns (or none)
         Field.LoadReport(doc);   // runs keep the assignment (React replaces the topology and ends it)
         var s = doc.Summary();

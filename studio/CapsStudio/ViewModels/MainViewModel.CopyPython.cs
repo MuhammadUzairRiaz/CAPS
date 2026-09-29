@@ -50,6 +50,24 @@ public sealed partial class MainViewModel
         return sb.ToString();
     }
 
+    /// <summary>The last equilibration as the caps package runs it: its protocol text (the stages as run) and options.</summary>
+    public string EqPython()
+    {
+        var (text, o, target) = _eqRun;
+        var sb = PythonStart("Equilibrate");
+        string[] th = ["bussi", "langevin", "nose-hoover"], ba = ["crescale", "berendsen", "mtk"], cons = ["none", "h-bonds", "all-bonds"], solver = ["shake", "lincs"];
+        var stages = string.Join("\\n", text.Split('\n').Select(l => l.TrimEnd()).Where(l => l.Length > 0));
+        sb.Append($"doc.equilibrate({PyStr(stages).Replace("\\\\n", "\\n")}, dt={Num(o.Dt)}, thermostat=\"{th[Math.Clamp(o.Thermostat - 1, 0, 2)]}\", " +
+                  $"barostat=\"{ba[Math.Clamp(o.Barostat - 1, 0, 2)]}\", tau_t={Num(o.TauT)}, tau_p={Num(o.TauP)}, seed={o.Seed}, cutoff={Num(o.Cutoff)}, " +
+                  $"coulomb={(o.Coulomb != 0 ? "True" : "False")}, tail={(o.Tail != 0 ? "True" : "False")}, frame_ps={Num(o.FramePs)}, thermo_ps={Num(o.ThermoPs)}");
+        if (o.UntilConverged != 0) sb.Append($", until_converged=True, block_ps={Num(o.BlockPs)}, max_blocks={o.MaxBlocks}");
+        if (o.Constraints > 0) sb.Append($", constraints=\"{cons[Math.Clamp(o.Constraints, 0, 2)]}\", constraint_solver=\"{solver[Math.Clamp(o.ConstraintAlgorithm, 0, 1)]}\"");
+        sb.Append(")\n");
+        if (target) sb.Append("# the Studio also checked the internal distances against a target curve (not passed here)\n");
+        sb.Append("print(doc.report)\ndoc.save(\"final.data\")\n");
+        return sb.ToString();
+    }
+
     /// <summary>The Pack page's input as a script: the packmol text written beside the script, packed by caps.pack.</summary>
     public string PackPython()
     {
