@@ -27,6 +27,7 @@ public partial class BatchPage : PageBase
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunBatch();
     private void OnStop(object? s, RoutedEventArgs e) => Vm.StopBatch();
+    private void OnPause(object? s, RoutedEventArgs e) => Vm.PauseBatch();
 
     private async void OnAddFiles(object? s, RoutedEventArgs e)
     {

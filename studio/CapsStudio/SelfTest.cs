@@ -2482,6 +2482,19 @@ internal static class SelfTest
             var csv = File.Exists(Path.Combine(outBatch, "results.csv")) ? File.ReadAllLines(Path.Combine(outBatch, "results.csv")) : [];
             Check(states == "done,done,failed" && csv.Length == 4 && csv[0].Contains("MoleculeShape.mean_rg") && vm.BatchInputs[0].Attributes["Particles"] == 1300,
                   $"batch: {states} · {csv.Length - 1} rows · {vm.BatchErrors}");
+            // on error: retried once then skipped; with "stop" the batch ends at the failure (the broken input first)
+            {
+                vm.BatchOnError = 1;
+                vm.RunBatch(outBatch).GetAwaiter().GetResult();
+                var badRow = vm.BatchInputs.First(b => b.Path == bad);
+                var retried = badRow.State == "failed" && badRow.Error.EndsWith("(failed twice)") && vm.BatchInputs.Count(b => b.State == "done") == 2;
+                vm.BatchOnError = 2;
+                vm.BatchInputs.Move(vm.BatchInputs.IndexOf(badRow), 0);
+                vm.RunBatch(outBatch).GetAwaiter().GetResult();
+                var stopped = badRow.State == "failed" && vm.BatchInputs.Count(b => b.State == "done") == 0 && vm.BatchState.Contains("stopped");
+                vm.BatchOnError = 0;
+                Check(retried && stopped, $"batch on error: retried {retried} ({badRow.Error}) · stop {stopped} ({vm.BatchState})");
+            }
             File.Delete(bad);
             vm.ClearPipeline();
             vm.SetModule(8);

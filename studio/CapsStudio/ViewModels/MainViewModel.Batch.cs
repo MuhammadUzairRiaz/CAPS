@@ -132,7 +132,23 @@ public sealed partial class MainViewModel
         foreach (var f in current) yield return f;
     }
 
-    public void StopBatch() { _batchStop = true; BatchState = "Stopping after the inputs that are running"; }
+    public void StopBatch() { _batchStop = true; _batchPaused = false; Raise(nameof(BatchPaused)); Raise(nameof(BatchPauseLabel)); BatchState = "Stopping after the inputs that are running"; }
+    // when an input fails: 0 skip it and go on, 1 try it once more then skip, 2 stop the batch (the running ones finish)
+    public static readonly string[] BatchOnErrorChoices = ["Skip and continue", "Retry once, then skip", "Stop the batch"];
+    private int _batchOnError;
+    public int BatchOnError { get => _batchOnError; set => Set(ref _batchOnError, Math.Clamp(value, 0, 2)); }
+    // pause: the inputs running finish, no new one starts until resumed
+    private volatile bool _batchPaused;
+    public bool BatchPaused => _batchPaused;
+    public string BatchPauseLabel => _batchPaused ? "Resume" : "Pause";
+    public void PauseBatch()
+    {
+        if (!BatchRunning) return;
+        _batchPaused = !_batchPaused;
+        BatchState = _batchPaused ? "Paused: the inputs running finish, none starts until Resume" : "Resumed";
+        Raise(nameof(BatchPaused));
+        Raise(nameof(BatchPauseLabel));
+    }
 
     /// <summary>Runs the pipeline on every input (on its first or last frame), a few at a time, and writes results.csv.</summary>
     public async Task RunBatch(string? outDir = null)
@@ -145,6 +161,10 @@ public sealed partial class MainViewModel
         foreach (var b in BatchInputs) { b.State = "queued"; b.Time = "—"; b.Error = ""; b.Values = []; b.Attributes.Clear(); }
         BatchRunning = true;
         _batchStop = false;
+        _batchPaused = false;
+        Raise(nameof(BatchPaused));
+        Raise(nameof(BatchPauseLabel));
+        var retried = new HashSet<BatchInput>();
         BatchErrors = "";
         var sw = Stopwatch.StartNew();
         var queue = new Queue<BatchInput>(BatchInputs);
@@ -158,6 +178,7 @@ public sealed partial class MainViewModel
             while (true)
             {
                 BatchInput? b;
+                while (_batchPaused && !_batchStop) await Task.Delay(200);
                 lock (gate) { if (_batchStop || queue.Count == 0) return; b = queue.Dequeue(); }
                 b.State = "running";   // awaits resume on the UI thread in the app, so rows update in place
                 var t0 = Stopwatch.StartNew();
@@ -192,10 +213,22 @@ public sealed partial class MainViewModel
                 }
                 catch (Exception e)
                 {
-                    b.State = "failed";
-                    b.Error = e.Message.Replace(b.Path + ": ", "");
                     b.Time = FormatSeconds(t0.Elapsed.TotalSeconds);
-                    BatchErrors = string.Join("\n", BatchInputs.Where(x => x.State == "failed").Select(x => $"{x.Shown} · {x.Error}. Skipped; the row stays as failed."));
+                    bool again;
+                    lock (gate) again = _batchOnError == 1 && retried.Add(b);
+                    if (again)
+                    {
+                        b.State = "retry";   // once more, at the end of the queue
+                        lock (gate) queue.Enqueue(b);
+                        continue;
+                    }
+                    b.State = "failed";
+                    bool twice;
+                    lock (gate) twice = retried.Contains(b);
+                    b.Error = e.Message.Replace(b.Path + ": ", "") + (twice ? " (failed twice)" : "");
+                    if (_batchOnError == 2) { _batchStop = true; BatchState = $"Stopped: {b.Shown} failed"; }
+                    var then = _batchOnError == 2 ? "The batch stopped here." : "Skipped; the row stays as failed.";
+                    BatchErrors = string.Join("\n", BatchInputs.Where(x => x.State == "failed").Select(x => $"{x.Shown} · {x.Error}. {then}"));
                 }
             }
         }
