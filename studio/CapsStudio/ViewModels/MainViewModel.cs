@@ -894,6 +894,7 @@ public sealed partial class MainViewModel : ObservableObject
         _growCancel = new CancellationTokenSource();
         var token = _growCancel.Token;
         _growSeed = GrowSeedChoice.Take();
+        var growScript = Recording ? GrowPython() : null;   // the macro line, with this run's seed
         var o = new CapsGrowOpts
         {
             Chains = _growChains, Dp = _growDp, Tacticity = _growTact, Seed = (ulong)_growSeed,
@@ -988,6 +989,7 @@ public sealed partial class MainViewModel : ObservableObject
             Show(doc, name + " (unsaved)");
             ShowGrownWrap();   // the grown cell as the live view showed it
             MarkPipeline("Grow", spec == null ? "polystyrene" : _growSpecName);
+            if (growScript != null) RecordScript(growScript);
             grown = true;
             AfterGrowStatistics(doc);
             var densityNote = SuggestRelaxDensity(spec == null ? "Polystyrene" : _growSpecName);
@@ -2168,6 +2170,8 @@ public sealed partial class MainViewModel : ObservableObject
             if (presetText == null && PackSeedChoice.Fresh) text = WithSeedLine(text, _packSeed = PackSeedChoice.Take());
         }
         catch (Exception e) { PackLog = "Could not pack.\n" + e.Message; Status = "Could not pack — see the Pack panel"; return; }
+        // the macro line, from the input as it is before packing (the packed cell becomes the open structure)
+        var packScript = Recording && presetText == null ? PackPython() : null;
         PackDone = false;
         Packing = true;
         var packed = false;
@@ -2218,6 +2222,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (m.Success) PackDmin = m.Groups[1].Value + " Å";
             Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms) · export it to LAMMPS or GROMACS, or minimise / run dynamics first";
             MarkPipeline("Pack");
+            if (packScript != null) RecordScript(packScript);
             packed = true;
             PackDone = true;
         }
@@ -2446,6 +2451,10 @@ public sealed partial class MainViewModel : ObservableObject
     // The document now holds the run's record (relaxation stages or MD frames); show its last frame, keep the camera.
     private void AfterRun(CapsDocument doc, string suffix)
     {
+        // the macro recorder: the run as the caps package would do it (relax records itself)
+        if (suffix == " · MD") RecordScript(MdPython());
+        else if (suffix == " · reacted") RecordScript(ReactPython());
+        else if (suffix == " · equilibrated") Record("# equilibrated in the Studio (" + Protocols[Math.Clamp(EqProtocol, 0, Protocols.Length - 1)] + "): the caps package has no equilibrate() yet");
         RefreshAppColumns();   // a run's record has its own columns (or none)
         Field.LoadReport(doc);   // runs keep the assignment (React replaces the topology and ends it)
         var s = doc.Summary();

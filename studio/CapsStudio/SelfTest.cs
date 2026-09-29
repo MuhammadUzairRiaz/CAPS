@@ -2092,6 +2092,17 @@ internal static class SelfTest
             for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
             Check(vm.IsMacro && vm.RecordedCommands.Count == 3 && promo == null && vm.MacroParameters.Count == 1 && vm.MacroOutput.Contains($"atoms {nm0 + 3}") && vm.MacroOutput.Contains("done"),
                   $"macro: {vm.RecordedCommands.Count} recorded · params {string.Join(",", vm.MacroParameters.Select(p => p.Name + "=" + p.Default))} · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
+            // runs are recorded too: a short MD becomes doc.md(steps=40, …) (the call alone; the macro opens and saves)
+            vm.NewMacro();
+            vm.Recording = true;
+            var mdSteps0 = vm.MdStepsD;
+            vm.MdStepsD = 40;
+            vm.RunMd().GetAwaiter().GetResult();
+            vm.MdStepsD = mdSteps0;
+            vm.Recording = false;
+            var mdLine = vm.RecordedCommands.FirstOrDefault(c => c.Text.StartsWith("doc.md("))?.Text ?? "";
+            Check(mdLine.Contains("steps=40") && !vm.RecordedCommands.Any(c => c.Text.StartsWith("import") || c.Text.StartsWith("doc = caps.open")),
+                  $"macro records MD: {mdLine}");
             // Target: the open structure — the script takes it with caps.current() and hands a result back, which opens
             vm.NewMacro();
             vm.MacroText = "import caps\n\ndoc = caps.current()\nprint(\"atoms\", doc.atoms)\ncaps.hand_back(doc)\n";
