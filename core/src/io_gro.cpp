@@ -134,23 +134,31 @@ Trajectory read_xyz(const std::string& path) {
   return tr;
 }
 
-void write_xyz(const System& s, const std::string& path) {
-  std::ofstream out(path);
-  if (!out) throw ReadError("cannot write " + path);
+void write_xyz_frame(std::ostream& out, const System& s, const std::string& extra) {
   out << s.atoms.size() << "\n";
   const Cell& c = s.cell;
   if (c.valid())
     out << "Lattice=\"" << c.a[0] << " " << c.a[1] << " " << c.a[2] << " " << c.b[0] << " " << c.b[1] << " " << c.b[2] << " " << c.c[0] << " "
-        << c.c[1] << " " << c.c[2] << "\" Properties=species:S:1:pos:R:3\n";
+        << c.c[1] << " " << c.c[2] << "\" Properties=species:S:1:pos:R:3" << (extra.empty() ? "" : " " + extra) << "\n";
   else
-    out << s.title << "\n";
+    out << (extra.empty() ? s.title : extra) << "\n";
   for (const auto& a : s.atoms) out << element(a.element).symbol << " " << a.pos[0] << " " << a.pos[1] << " " << a.pos[2] << "\n";
+}
+
+void write_xyz(const System& s, const std::string& path) {
+  std::ofstream out(path);
+  if (!out) throw ReadError("cannot write " + path);
+  write_xyz_frame(out, s, "");
 }
 
 void write_gro(const System& s, const std::string& path) {
   std::ofstream out(path);
   if (!out) throw ReadError("cannot write " + path);
-  out << (s.title.empty() ? "CAPS structure" : s.title) << "\n" << s.atoms.size() << "\n";
+  write_gro_frame(out, s, s.title.empty() ? "CAPS structure" : s.title);
+}
+
+void write_gro_frame(std::ostream& out, const System& s, const std::string& title) {
+  out << title << "\n" << s.atoms.size() << "\n";
   const auto mol = s.molecules();
   char b[96];
   for (size_t i = 0; i < s.atoms.size(); ++i) {

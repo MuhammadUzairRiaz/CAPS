@@ -2229,7 +2229,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
 
 int32_t caps_save_trajectory(caps_doc* d, const char* path) {
   return guard([&] {
-    caps::write_lammps_dump(d->traj, path);
+    caps::write_trajectory(d->traj, path ? path : "", 1.0);
     return 0;
   });
 }
