@@ -15,7 +15,8 @@ public sealed partial class MainViewModel
     public bool IsOrientation => _module == 52;
     public ResultCell OrS { get; } = new("S · this structure", "largest eigenvalue of Q");
     public ResultCell OrCheck { get; } = new("S · PE crystal (Bunn), 3 × 4 × 8 cells", "estimator check");
-    public ResultCell OrHerman { get; } = new("Herman's f along z", "⟨P₂(cos θ)⟩ against z");
+    public ResultCell OrHerman { get; } = new("Herman's f", "⟨P₂(cos θ)⟩ against the axis chosen in Setup");
+    public string OrAlongTitle => $"P₂ along {Analyze.AxisName}";
     public ResultCell OrCryst { get; } = new("Local crystallinity", "chords with ≥ 8 neighbours within 5 Å aligned within 10°");
     public ResultCell OrDirector { get; } = new("Director", "eigenvector of λ max");
     private string _orStatus = "";
@@ -71,6 +72,8 @@ public sealed partial class MainViewModel
         OrS.Value = card.Value.ToString("0.000", inv) + (double.IsFinite(card.Error) && card.Error > 0 ? " ± " + card.Error.ToString("0.000", inv) : "");
         OrS.Caption = $"S from {X("chord vectors").ToString("0", inv)} chord vectors per frame" + (card.Notes.Length > 0 ? " · " + card.Notes[0] : "");
         OrHerman.Value = X("Herman f").ToString("0.000", inv);
+        OrHerman.Caption = $"⟨P₂(cos θ)⟩ against {Analyze.AxisName}: 1 along it, −½ across it, 0 at random";
+        Raise(nameof(OrAlongTitle));
         OrCryst.Value = (X("local crystallinity") * 100).ToString("0.0", inv) + " %";
         OrDirector.Value = $"({X("director x").ToString("0.00", inv)}, {X("director y").ToString("0.00", inv)}, {X("director z").ToString("0.00", inv)})";
         var curves = Analyze.Curves.Where(c => c.Property == card.Name).ToList();
