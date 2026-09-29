@@ -60,6 +60,7 @@ add_library(caps_core STATIC
   src/kremer_grest.cpp
   src/react_view.cpp
   src/bond_react.cpp
+  src/reaction_scheme.cpp
   src/yaml.cpp
   src/recipe.cpp
   src/colourvision.cpp

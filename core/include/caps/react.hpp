@@ -25,6 +25,7 @@ struct TemplateAtom {
   int degree = -1;              // exact number of neighbours (−1: any)
   bool ring3 = false;           // in a three-membered ring (epoxide)
   bool not_aromatic = false;    // not in an aromatic six-ring
+  bool aromatic = false;        // in an aromatic six-ring (a phenol's ring carbon, not a carboxyl carbon)
   std::vector<int> bonded;      // map numbers of pattern atoms it is bonded to (defined earlier)
 };
 
@@ -59,6 +60,14 @@ struct ReactionTemplate {
 };
 
 std::vector<ReactionTemplate> parse_templates(const std::string& text);   // one or more "reaction" blocks
+// A reaction scheme as atom-mapped SMILES — reactants and products, one entry per molecule — turned into a template. Map
+// numbers tag the atoms whose bonds change; a mapped atom absent from the products leaves (with the hydrogens it takes:
+// HCl, HBr); small separate products (water, an alcohol) are byproducts; hydrogens that change partner are moves. The
+// pattern is the changing atoms by element, bonds and hydrogens and their neighbours by element and bonds — the model
+// compound's other atoms stand for the chain. Two molecules meet per step: a scheme of three at once is refused (write it as
+// steps). Throws ReactError with the reason.
+ReactionTemplate template_from_scheme(const std::vector<std::string>& reactants, const std::vector<std::string>& products,
+                                      const std::string& name, std::vector<std::string>* notes = nullptr);
 std::vector<std::string> builtin_template_names();                        // "cc_crosslink", "epoxy_amine_primary", …
 std::string builtin_template(const std::string& name);                    // text of a built-in template
 

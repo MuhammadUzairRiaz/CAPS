@@ -156,6 +156,7 @@ std::string reaction_smarts(const ReactionTemplate& t) {
     }
     if (a.ring3) q += ";r3";
     if (a.not_aromatic) q += ";A";
+    if (a.aromatic) q += ";a";
     return q + ":" + std::to_string(m) + "]";
   };
   std::set<Edge> post = pre;

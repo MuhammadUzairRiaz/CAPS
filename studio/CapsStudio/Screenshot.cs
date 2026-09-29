@@ -714,6 +714,7 @@ internal static class Screenshot
                 if (p.Length > 1) w.ViewModel.RxTargetValueD = decimal.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture);
             }
             if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
+            if (kv[0] == "rxlib") { w.ViewModel.RxLibOpen = true; w.ViewModel.RxLibCategory = int.Parse(kv[1]); }
             if (kv[0] == "rxmd") w.ViewModel.RxMdPsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "react")
             {

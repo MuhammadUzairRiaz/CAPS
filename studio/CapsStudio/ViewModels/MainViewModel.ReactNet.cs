@@ -262,3 +262,82 @@ public sealed partial class MainViewModel
         catch (Exception e) { RxLog = "Could not read the templates: " + e.Message; }
     }
 }
+
+/// <summary>One reaction of the library: its scheme and roles, and the CAPS template it becomes (or why not).</summary>
+public sealed record RxLibEntry(string Id, string Name, string Category, string Description, string Scheme, string Roles, string Template, string Error,
+                                string[] Steps)
+{
+    public bool Runs => Template.Length > 0;
+    public string Status => Runs ? "template ready" : Steps.Length > 0 ? "in steps: " + string.Join(" → ", Steps) : Error;
+}
+
+public sealed partial class MainViewModel
+{
+    // ---- the reaction library: CAPS's cure templates and the worked schemes (data/reactions)
+    private List<RxLibEntry>? _rxLib;
+    private int _rxLibCat;
+    private RxLibEntry? _rxLibSel;
+    private bool _rxLibOpen;
+    public bool RxLibOpen { get => _rxLibOpen; set { if (Set(ref _rxLibOpen, value) && value) LoadRxLib(); } }
+    public ObservableCollection<string> RxLibCategories { get; } = new();
+    public ObservableCollection<RxLibEntry> RxLibItems { get; } = new();
+    public int RxLibCategory { get => _rxLibCat; set { if (Set(ref _rxLibCat, value)) FilterRxLib(); } }
+    public RxLibEntry? RxLibSelected { get => _rxLibSel; set { if (Set(ref _rxLibSel, value)) Raise(nameof(RxLibHasSelection)); } }
+    public bool RxLibHasSelection => _rxLibSel != null;
+    private const string CuresCategory = "Rubber cures & CAPS templates";
+
+    private void LoadRxLib()
+    {
+        if (_rxLib != null) return;
+        _rxLib = new List<RxLibEntry>();
+        foreach (var (name, label) in RxBuiltins)
+        {
+            try { _rxLib.Add(new RxLibEntry(name, label, CuresCategory, label, "", "", CapsDocument.ReactionTemplate(name), "", [])); } catch { }
+        }
+        try
+        {
+            if (Paths.Reactions is { } path)
+            {
+                var j = JsonNode.Parse(CapsDocument.ReactionLibrary(path));
+                foreach (var e in j?["reactions"]?.AsArray() ?? [])
+                {
+                    if (e == null) continue;
+                    string Side(string k) => string.Join(" + ", e[k]?.AsArray().Select(x => $"{(string?)x?["smiles"]} ({(string?)x?["label"]})") ?? []);
+                    var roles = string.Join("\n", e["tags"]?.AsArray().Select(t => $"{(string?)t?["map"]}  {(string?)t?["role"]}") ?? []);
+                    var note = (string?)e["note"] ?? "";
+                    _rxLib.Add(new RxLibEntry((string?)e["id"] ?? "", (string?)e["name"] ?? "", (string?)e["category"] ?? "", (string?)e["description"] ?? "",
+                        Side("reactants") + "\n  →  " + Side("products"), roles + (note.Length > 0 ? "\n" + note : ""), (string?)e["template"] ?? "",
+                        (string?)e["error"] ?? "", e["steps"]?.AsArray().Select(x => (string?)x ?? "").ToArray() ?? []));
+                }
+            }
+        }
+        catch (Exception e) { RxLog = "Could not read the reaction library: " + e.Message; }
+        RxLibCategories.Clear();
+        foreach (var c in _rxLib.Select(x => x.Category).Distinct()) RxLibCategories.Add(c);
+        _rxLibCat = 0;
+        Raise(nameof(RxLibCategory));
+        FilterRxLib();
+    }
+    private void FilterRxLib()
+    {
+        RxLibItems.Clear();
+        if (_rxLib == null || _rxLibCat < 0 || _rxLibCat >= RxLibCategories.Count) return;
+        foreach (var e in _rxLib.Where(x => x.Category == RxLibCategories[_rxLibCat])) RxLibItems.Add(e);
+        RxLibSelected = RxLibItems.FirstOrDefault();
+    }
+    /// <summary>The selected reaction's template(s): in place of the text, or added to it; a scheme of three molecules adds its steps.</summary>
+    public void UseRxLib(bool add)
+    {
+        if (_rxLibSel is not { } e || _rxLib == null) return;
+        var texts = new List<string>();
+        if (e.Runs) texts.Add(e.Template);
+        else foreach (var id in e.Steps.Distinct()) if (_rxLib.FirstOrDefault(x => x.Id == id && x.Runs) is { } st) texts.Add(st.Template);
+        if (texts.Count == 0) { RxLog = e.Name + ": " + e.Error; return; }
+        _rxSet = ReactionSets.Length - 1;
+        Raise(nameof(RxSet));
+        var have = new HashSet<string>(RxReactions.Select(r => r.Name));
+        var fresh = add ? texts.Where(t => !have.Contains(System.Text.RegularExpressions.Regex.Match(t, @"reaction\s+(\S+)").Groups[1].Value)).ToList() : texts;
+        RxText = add ? (RxText.TrimEnd() + "\n\n" + string.Join("\n", fresh)).Trim() + "\n" : string.Join("\n", fresh);
+        RxLog = $"{e.Name}: {(e.Runs ? "template" : "steps " + string.Join(" → ", e.Steps))} {(add ? "added" : "loaded")} · " + e.Description;
+    }
+}

@@ -651,6 +651,19 @@ internal static class SelfTest
             var weighted = vm.RxReactions.Select(r => r.Name).SequenceEqual(["anhydride_alcohol", "enr_acid_ester"]);
             Check(several && weighted, $"ENR + MAH: reactions {string.Join(", ", vm.RxReactions.Select(r => r.Name + " ×" + r.WeightD))}");
             vm.RxByWeights = false;
+            // the reaction library: the cure templates and the worked schemes by category; a three-molecule scheme (ENR–MA–ENR)
+            // loads as its steps
+            vm.RxLibOpen = true;
+            var cats = vm.RxLibCategories.ToList();
+            var enrCat = cats.FindIndex(c => c.StartsWith("ENR"));
+            if (enrCat >= 0) vm.RxLibCategory = enrCat;
+            vm.RxLibSelected = vm.RxLibItems.FirstOrDefault(x => x.Id == "enr_mah_enr");
+            vm.UseRxLib(false);
+            var steps = vm.RxText.Contains("reaction epoxy_acid");
+            vm.RxLibSelected = vm.RxLibItems.FirstOrDefault(x => x.Id == "enr_hydrolysis");
+            vm.UseRxLib(true);
+            Check(cats.Count >= 10 && steps && vm.RxReactions.Count == 2, $"reaction library: {cats.Count} categories · ENR–MA–ENR as steps {steps} · reactions {string.Join(", ", vm.RxReactions.Select(r => r.Name))}");
+            vm.RxLibOpen = false;
             vm.RxTargetKind = 0;
             vm.RxInsertSmiles = "SS";
             vm.RxRelax = true;

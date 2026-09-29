@@ -7,6 +7,7 @@
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
+#include "caps/json.hpp"
 #include "caps/bond_react.hpp"
 #include "caps/uff.hpp"
 #include <filesystem>
@@ -692,4 +693,59 @@ TEST(React, SulfurBridgesToADegreeOfCrosslinking) {
     if (s.atoms[i].element == 16)
       for (uint32_t j : nb[i]) ends_on_carbon += s.atoms[j].element == 6;
   EXPECT_GE(ends_on_carbon, 2 * rep.crosslinks);   // each link: both ends of its S3 on carbon
+}
+
+// The reaction library (data/reactions): every scheme of two molecules becomes a template, and run on its own model
+// compounds it makes the scheme's products — the main product's formula, and the byproducts' when they are kept
+TEST(React, ReactionLibraryRunsOnItsModelCompounds) {
+  std::ifstream in(std::string(CAPS_SOURCE_DIR) + "/data/reactions/library.json");
+  std::stringstream ss;
+  ss << in.rdbuf();
+  const Json lib = Json::parse(ss.str());
+  int converted = 0, refused = 0, ran = 0;
+  std::vector<std::string> failures;
+  for (const auto& e : lib["reactions"].items()) {
+    std::vector<std::string> rs, ps;
+    for (const auto& r : e["reactants"].items()) rs.push_back(r.text("smiles", ""));
+    for (const auto& p : e["products"].items()) ps.push_back(p.text("smiles", ""));
+    const std::string id = e.text("id", "");
+    ReactionTemplate t;
+    try {
+      t = template_from_scheme(rs, ps, id);
+      ++converted;
+    } catch (const ReactError& x) {
+      ++refused;
+      if (rs.size() < 3) failures.push_back(id + ": " + x.what());   // only three-molecule schemes may be refused
+      continue;
+    }
+    if (rs.size() > 2) continue;
+    // the model compounds packed together, reacted (topology only), the products looked for by formula
+    std::vector<std::pair<std::string, int>> mols;
+    for (const auto& r : rs) mols.push_back({r, rs.size() == 1 ? 8 : 5});
+    System s;
+    try { s = packed(mols, 16, 7); } catch (const std::exception& x) { failures.push_back(id + ": packing: " + x.what()); continue; }
+    ReactOptions o;
+    o.templates = {t};
+    o.relax = false;
+    o.keep_byproducts = true;
+    o.auto_capture = true;
+    o.capture_max = 10;
+    o.max_cycles = 6;
+    o.max_per_cycle = 1;
+    ReactReport rep;
+    try { react(s, o, &rep); } catch (const std::exception& x) { failures.push_back(id + ": react: " + x.what()); continue; }
+    if (rep.reactions == 0) { failures.push_back(id + ": no reaction"); continue; }
+    const auto f = formulas(s);
+    for (const auto& p : ps) {
+      const auto want = formulas(build_molecule(p).system);
+      for (const auto& [formula, k] : want)
+        if (!f.count(formula)) failures.push_back(id + ": no " + formula + " among the products");
+    }
+    ++ran;
+  }
+  for (const auto& x : failures) ADD_FAILURE() << x;
+  std::printf("reaction library: %d converted, %d refused (three molecules at once), %d run on their model compounds\n", converted, refused, ran);
+  EXPECT_GE(converted, 45);
+  EXPECT_LE(refused, 4);
+  EXPECT_GE(ran, 40);
 }

@@ -35,6 +35,8 @@ public partial class ReactPage : PageBase
     private async void OnInsertCurative(object? s, RoutedEventArgs e) => await Vm.InsertCurative();
     private async void OnInsertSulfur(object? s, RoutedEventArgs e) => await Vm.InsertSulfurDonors();
     private void OnAddReaction(object? s, RoutedEventArgs e) => Vm.AddReaction();
+    private void OnLibUse(object? s, RoutedEventArgs e) => Vm.UseRxLib(false);
+    private void OnLibAdd(object? s, RoutedEventArgs e) => Vm.UseRxLib(true);
     private async void OnExportBondReact(object? s, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
