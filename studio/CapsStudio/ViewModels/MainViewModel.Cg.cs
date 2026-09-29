@@ -62,11 +62,106 @@ public sealed partial class MainViewModel
     /// <summary>0 Kremer–Grest (generic bead-spring, reduced or mapped units), 1 MARTINI (chemistry-specific beads, 4 heavy
     /// atoms per bead, its own force field file).</summary>
     private int _cgModel;
-    public int CgModel { get => _cgModel; set { if (Set(ref _cgModel, Math.Clamp(value, 0, 1))) { Raise(nameof(CgIsKg)); Raise(nameof(CgIsMartini)); Raise(nameof(CgBuildText)); Raise(nameof(CgModelChip)); } } }
+    public int CgModel { get => _cgModel; set { if (Set(ref _cgModel, Math.Clamp(value, 0, 2))) { Raise(nameof(CgIsKg)); Raise(nameof(CgIsMartini)); Raise(nameof(CgIsMapped)); Raise(nameof(CgBuildText)); Raise(nameof(CgModelChip)); } } }
     public bool CgIsKg => _cgModel == 0;
     public bool CgIsMartini => _cgModel == 1;
-    public string CgBuildText => _cgModel == 1 ? "Build MARTINI melt" : "Build CG melt";
-    public string CgModelChip => _cgModel == 1 ? "MARTINI" : "Kremer–Grest";
+    public bool CgIsMapped => _cgModel == 2;
+    public string CgBuildText => _cgModel switch { 1 => "Build MARTINI melt", 2 => "Build mapped CG melt", _ => "Build CG melt" };
+    public string CgModelChip => _cgModel switch { 1 => "MARTINI", 2 => "From a polymer", _ => "Kremer–Grest" };
+
+    // ---- From a polymer (structure-based, cg_map.hpp): an all-atom reference melt of the chosen polymer mapped to beads
+    public static readonly string[] MpSchemes =
+    [
+        "1 bead per repeat unit (centre of mass)",
+        "2 beads per unit: backbone + side group",
+        "n backbone atoms per bead",
+    ];
+    private static readonly string[] MpSchemeIds = ["unit", "backbone_side", "backbone_n"];
+    public static readonly string[] MpSchemeHelp =
+    [
+        "Each repeat unit becomes one bead at its centre of mass — the simplest chemistry-specific model (e.g. polystyrene 1:1, Milano & Müller-Plathe 2005). Fast; the side group's shape is lost.",
+        "Each unit becomes a backbone bead (its backbone atoms) and a side-group bead (the rest) — the '2-bead polymer' of moltemplate's examples, and the polystyrene model of Harmandaris et al. 2006. Keeps where the side group sits; a unit without a side group stays one bead.",
+        "Every n backbone atoms make a bead, side groups with them — for chains without big side groups (polyethylene 3:1: three CH₂ per bead).",
+    ];
+    private int _mpPolymer, _mpScheme;
+    private decimal _mpPerBead = 3, _mpChains = 10, _mpDp = 20, _mpDensity = 1.0m, _mpTemp = 450;
+    private string _mpLog = "";
+    public int MpPolymer { get => _mpPolymer; set => Set(ref _mpPolymer, Math.Max(0, value)); }
+    public int MpScheme { get => _mpScheme; set { if (Set(ref _mpScheme, Math.Clamp(value, 0, 2))) { Raise(nameof(MpHelp)); Raise(nameof(MpIsN)); } } }
+    public string MpHelp => MpSchemeHelp[_mpScheme];
+    public bool MpIsN => _mpScheme == 2;
+    public decimal MpPerBead { get => _mpPerBead; set => Set(ref _mpPerBead, Math.Clamp(Math.Round(value), 1, 20)); }
+    public decimal MpChains { get => _mpChains; set => Set(ref _mpChains, Math.Clamp(Math.Round(value), 2, 500)); }
+    public decimal MpDp { get => _mpDp; set => Set(ref _mpDp, Math.Clamp(Math.Round(value), 3, 500)); }
+    public decimal MpDensity { get => _mpDensity; set => Set(ref _mpDensity, Math.Clamp(value, 0.3m, 3m)); }
+    public decimal MpTemp { get => _mpTemp; set => Set(ref _mpTemp, Math.Clamp(value, 50m, 2000m)); }
+    public string MpLog { get => _mpLog; private set => Set(ref _mpLog, value); }
+    private string MpOptions() => new JsonObject
+    {
+        ["scheme"] = MpSchemeIds[_mpScheme], ["per_bead"] = (int)_mpPerBead, ["temperature"] = (double)_mpTemp,
+        ["chains"] = (int)_mpChains, ["dp"] = (int)_mpDp, ["density"] = (double)_mpDensity, ["seed"] = 1,
+    }.ToJsonString();
+
+    /// <summary>The report as text: the notes, then each bond and angle type with its inverted parameters.</summary>
+    private static string MpReportText(string json)
+    {
+        try
+        {
+            var r = JsonNode.Parse(json)!;
+            var inv = CultureInfo.InvariantCulture;
+            var sb = new System.Text.StringBuilder();
+            foreach (var n in (JsonArray)r["notes"]!) sb.Append(n!.GetValue<string>()).Append('\n');
+            foreach (var b in (JsonArray)r["bonds"]!)
+                sb.Append(string.Format(inv, "bond {0}: r₀ {1:0.###} Å, σ(r) {2:0.###} Å → k {3:0.###} kcal/mol/Å² ({4} samples)\n", b!["types"], b["r0"]!.GetValue<double>(),
+                                        b["sd"]!.GetValue<double>(), b["k"]!.GetValue<double>(), b["count"]!.GetValue<double>()));
+            foreach (var a in (JsonArray)r["angles"]!)
+                sb.Append(string.Format(inv, "angle {0}: θ₀ {1:0.#}°, σ(θ) {2:0.#}° → k {3:0.###} kcal/mol/rad² ({4} samples)\n", a!["types"], a["theta0"]!.GetValue<double>(),
+                                        a["sd"]!.GetValue<double>(), a["k"]!.GetValue<double>(), a["count"]!.GetValue<double>()));
+            return sb.ToString().TrimEnd();
+        }
+        catch { return json; }
+    }
+
+    /// <summary>Builds the chosen polymer's all-atom reference melt, maps it, and opens the beads with their model.</summary>
+    public async Task BuildMappedCg()
+    {
+        if (!Idle) return;
+        var list = CgBackmapPolymers;
+        if (_mpPolymer >= list.Count) { CgError = "Choose the polymer"; return; }
+        var poly = list[_mpPolymer];
+        var name = $"{poly.Name.Split(" (")[0]}_CG_{MpSchemeIds[_mpScheme]}";
+        CgError = "";
+        Status = $"Growing and compressing an all-atom {poly.Name} melt, then mapping it to beads…";
+        try
+        {
+            var (spec, opts) = (poly.Spec, MpOptions());
+            var (d, rep) = await Task.Run(() => CapsDocument.CgFromPolymer(spec, opts, name));
+            Show(d, name);
+            GrownUnsaved = true;
+            MpLog = MpReportText(rep);
+            Status = "Mapped CG melt built · its bead model is assigned (Field shows it); relax, then run or export it";
+        }
+        catch (Exception e) { CgError = e.Message; Status = "Could not build the mapped model: " + e.Message; }
+    }
+
+    /// <summary>The open all-atom structure (every frame of its trajectory) mapped to beads.</summary>
+    public async Task MapOpenStructure()
+    {
+        if (_doc == null || !Idle) { CgError = "Open an all-atom cell (a grown melt, or its trajectory) first"; return; }
+        var doc = _doc;
+        var name = Title.Replace(" (unsaved)", "") + $" (CG, {MpSchemeIds[_mpScheme]})";
+        CgError = "";
+        try
+        {
+            var opts = MpOptions();
+            var (d, rep) = await Task.Run(() => doc.CgMap(opts, name));
+            Show(d, name);
+            GrownUnsaved = true;
+            MpLog = MpReportText(rep);
+            Status = "Mapped to beads with their model · the all-atom structure stays open in the project";
+        }
+        catch (Exception e) { CgError = e.Message; Status = "Could not map: " + e.Message; }
+    }
     /// <summary>The MARTINI force fields of the catalogue with bead typing (MARTINI 2.0 and its polymer, lipid … extensions,
     /// Martini 3), read from data/forcefields/catalogue.json: the Field page lists one entry per force field, the melt
     /// builder needs the MARTINI 2 files too.</summary>

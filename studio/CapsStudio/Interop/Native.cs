@@ -437,6 +437,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_camera_focus")] public static extern int CameraFocus(IntPtr doc, in CapsCamera cam, int[] idx, int n, double fill, out CapsCamera focused);
     [DllImport(Lib, EntryPoint = "caps_recipe_run")] public static extern IntPtr RecipeRun([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, [MarshalAs(UnmanagedType.LPUTF8Str)] string options,
                                                                           CapsRecipeProgress? progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_cg_from_polymer")] public static extern IntPtr CgFromPolymer([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, IntPtr progress, IntPtr user, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_cg_map")] public static extern IntPtr CgMap(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_martini_melt")] public static extern IntPtr MartiniMelt([MarshalAs(UnmanagedType.LPUTF8Str)] string options, IntPtr progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_build")] public static extern IntPtr KgBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
@@ -911,6 +913,26 @@ public sealed class CapsDocument : IDisposable
     }
     /// <summary>A MARTINI polymer melt (caps_martini_melt): chains from a repeat unit's bead SMILES, packed, assigned and
     /// compressed to the density with the MARTINI force field. Report JSON {beads, beads_per_chain, chain_mass, density, …}.</summary>
+    /// <summary>A polymer coarse-grained from an all-atom reference melt it grows and compresses (caps_cg_from_polymer).</summary>
+    public static (CapsDocument Doc, string Report) CgFromPolymer(string spec, string options, string label)
+    {
+        var report = new byte[1 << 20];
+        var h = Native.CgFromPolymer(spec, options, IntPtr.Zero, IntPtr.Zero, report, report.Length);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0'));
+    }
+    /// <summary>This all-atom structure (every frame) mapped to beads with its bead model (caps_cg_map): a new document.</summary>
+    public (CapsDocument Doc, string Report) CgMap(string options, string label)
+    {
+        using (Hold())
+        {
+            Alive();
+            var report = new byte[1 << 20];
+            var h = Native.CgMap(H, options, report, report.Length);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0'));
+        }
+    }
     public static (CapsDocument Doc, string Report) MartiniMelt(string options, string label)
     {
         var report = new byte[2048];

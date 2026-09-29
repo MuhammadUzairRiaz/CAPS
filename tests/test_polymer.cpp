@@ -1,11 +1,15 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "caps/cg_map.hpp"
+#include "caps/relax.hpp"
+#include "caps/elements.hpp"
 #include "caps/analysis.hpp"
 #include "caps/edit.hpp"
 #include "caps/polymer.hpp"
@@ -551,4 +555,57 @@ TEST(Polymer, ParallelTrialsGiveTheSameCell) {
   for (size_t i = 0; i < a.atoms.size(); ++i) d = std::max(d, norm(a.atoms[i].pos - b.atoms[i].pos));
   EXPECT_EQ(d, 0.0);
   std::printf("serial %.2f s · 4 threads %.2f s\n", std::chrono::duration<double>(t1 - t0).count(), std::chrono::duration<double>(t2 - t1).count());
+}
+
+// Structure-based coarse-graining (cg_map.hpp): polyethylene, three backbone carbons per bead — masses conserved, each
+// bond type's r0 the mean of its mapped lengths and k = k_B T / (2 var), 1-2 and 1-3 bead pairs excluded, a repulsive
+// size where the non-bonded g(r) reaches 1/e
+TEST(Polymer, StructureBasedCoarseGraining) {
+  ChainSpec c;
+  c.units = {{"ethylene", "*CC*"}};
+  c.dp = 30;
+  GrowOptions o;
+  o.chains = 8;
+  o.density = 0.3;
+  o.auto_scale = true;
+  o.seed = 5;
+  System aa = grow_chains(c, o);
+  RelaxOptions ro;
+  ro.target_density = 0.85;
+  ro.ftol = 2.0;
+  relax(aa, ro);
+  make_molecules_whole(aa);
+  CgMapOptions m;
+  m.scheme = "backbone_n";
+  m.per_bead = 3;
+  m.temperature = 450;
+  const CgMapResult r = cg_map(aa, m);
+  double maa = 0, mcg = 0;
+  for (const auto& a : aa.atoms) maa += element(a.element).mass;
+  for (double x : r.ff->mass) mcg += x;
+  EXPECT_NEAR(mcg, maa, 1e-6 * maa);
+  EXPECT_EQ(r.beads.atoms.size(), 8u * 20u);   // 60 backbone carbons per chain, 3 per bead
+  ASSERT_EQ(r.bonds.size(), 1u);
+  // r0 and k from the mapped lengths, independently
+  std::vector<double> len;
+  for (const auto& b : r.beads.bonds) len.push_back(norm(r.cells.back().minimum_image(r.frames.back()[b.j] - r.frames.back()[b.i])));
+  double mean = 0, var = 0;
+  for (double x : len) mean += x / double(len.size());
+  for (double x : len) var += (x - mean) * (x - mean) / double(len.size() - 1);
+  EXPECT_NEAR(r.bonds[0].r0, mean, 1e-9);
+  EXPECT_NEAR(r.bonds[0].k, 0.0019872067 * 450 / (2 * var), 1e-6 * r.bonds[0].k);
+  EXPECT_GT(r.bonds[0].r0, 3.0);
+  EXPECT_LT(r.bonds[0].r0, 4.5);
+  EXPECT_GT(r.sigma, 3.0);
+  EXPECT_LT(r.sigma, 5.5);
+  EXPECT_NEAR(r.cut, r.sigma * std::pow(2.0, 1.0 / 6), 1e-9);
+  // 1-2 and 1-3 bead pairs excluded, 1-4 not
+  const auto nb = r.beads.neighbours();
+  const uint32_t a = r.beads.bonds.front().i;
+  for (uint32_t w : nb[a]) {
+    EXPECT_TRUE(std::binary_search(r.ff->excluded[a].begin(), r.ff->excluded[a].end(), w));
+    for (uint32_t v : nb[w])
+      if (v != a) EXPECT_TRUE(std::binary_search(r.ff->excluded[a].begin(), r.ff->excluded[a].end(), v));
+  }
+  EXPECT_THROW(cg_map(aa, CgMapOptions{"unknown", 3, 300}), std::invalid_argument);
 }

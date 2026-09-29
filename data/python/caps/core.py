@@ -147,7 +147,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -602,6 +602,18 @@ class Document:
             raise _error()
         return buf.value.decode()
 
+    def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0) -> "Document":
+        """This all-atom structure (every frame) mapped to beads — scheme unit | backbone_side | backbone_n — with a bead
+        model: Boltzmann-inverted harmonic bonds and angles, a repulsive WCA from the non-bonded bead g(r). A new Document
+        (its model assigned); .report holds the inverted parameters (JSON)."""
+        rep = C.create_string_buffer(1 << 20)
+        h = library().caps_cg_map(self._h, _enc(json.dumps({"scheme": scheme, "per_bead": per_bead, "temperature": temperature})), rep, len(rep))
+        if not h:
+            raise _error()
+        d = Document(h, "coarse-grained")
+        d.report = json.loads(rep.value.decode())
+        return d
+
     def backmap_kg(self, unit: str, name: str = "unit", relax: bool = True, seed: int = 1) -> "Document":
         """A Kremer–Grest melt (mapped to real units) back to all atoms, one repeat unit (SMILES with two *) per bead: all-atom
         chains of the melt's lengths grown, each unit carried onto its bead, relaxed with the default force field. A new
@@ -1002,6 +1014,21 @@ class build:
         rep = _report()
         d = Document(library().caps_kg_build(_enc(json.dumps(o)), rep, len(rep)), "Kremer–Grest melt")
         d.report = rep.value.decode()
+        return d
+
+    @staticmethod
+    def cg_from_polymer(unit: str, name: str = "unit", scheme: str = "unit", chains: int = 10, dp: int = 20, density: float = 1.0,
+                        temperature: float = 300.0, per_bead: int = 3, seed: int = 1) -> Document:
+        """A polymer (repeat-unit SMILES with two *) coarse-grained from an all-atom reference melt: chains × dp grown,
+        compressed to density (g/cm³) and mapped (see Document.cg_map). .report holds the inverted parameters."""
+        rep = C.create_string_buffer(1 << 20)
+        spec = {"units": [{"name": name, "smiles": unit}]}
+        o = {"scheme": scheme, "chains": chains, "dp": dp, "density": density, "temperature": temperature, "per_bead": per_bead, "seed": seed}
+        h = library().caps_cg_from_polymer(_enc(json.dumps(spec)), _enc(json.dumps(o)), None, None, rep, len(rep))
+        if not h:
+            raise _error()
+        d = Document(h, name + " (coarse-grained)")
+        d.report = json.loads(rep.value.decode())
         return d
 
     @staticmethod

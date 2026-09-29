@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 42, "native ABI version 42");
+        Check(Native.AbiVersion() == 43, "native ABI version 43");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1077,6 +1077,15 @@ internal static class SelfTest
             var mtDensity = vm.Document?.Summary().Density ?? 0;
             Check(vm.Field.Complete && vm.Field.ForceFieldName.Contains("MARTINI", StringComparison.Ordinal) && Math.Abs(mtDensity - 1.1) < 0.01,
                   $"MARTINI melt: {vm.Field.ForceFieldName} · {mtDensity:0.000} g/cm³ · {vm.Status} {vm.CgError}");
+            // From a polymer: polystyrene, backbone + side group, from an all-atom reference melt
+            vm.CgModel = 2;
+            vm.MpPolymer = vm.CgBackmapPolymers.FindIndex(p => p.Name == "Polystyrene");
+            vm.MpScheme = 1;
+            vm.MpChains = 6; vm.MpDp = 12; vm.MpDensity = 1.04m; vm.MpTemp = 450;
+            vm.BuildMappedCg().GetAwaiter().GetResult();
+            var mp = vm.Document?.Summary();
+            Check(mp is { } mps && mps.Atoms == 6 * 12 * 2 && vm.Field.Complete && vm.MpLog.Contains("bond STY_B–STY_S") && vm.Field.ForceFieldName.StartsWith("Structure-based CG"),
+                  $"CG from a polymer: {mp?.Atoms} beads · complete {vm.Field.Complete} · log {vm.MpLog.Split((char)10).LastOrDefault()} · {vm.Field.ForceFieldName} · {vm.CgError}");
             vm.CgModel = 0;
             vm.SetModule(8);
         }
