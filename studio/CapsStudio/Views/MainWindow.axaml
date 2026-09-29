@@ -461,7 +461,13 @@
                           </ToggleButton>
                           <Button Grid.Column="1" Classes="projrow" Classes.on="{Binding Active}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,4,8,4"
                                   Background="Transparent" BorderThickness="0" CornerRadius="5" Click="OnProjectTab" Tag="{Binding}" ToolTip.Tip="Work on this structure">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <Button.ContextMenu>
+                              <ContextMenu>
+                                <MenuItem Header="Edit in its builder" Click="OnEditProjectItem" Tag="{Binding}" />
+                                <MenuItem Header="Delete from the project" Click="OnDeleteProjectItem" Tag="{Binding}" />
+                              </ContextMenu>
+                            </Button.ContextMenu>
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                               <Border Width="3" CornerRadius="2" Background="{DynamicResource AccB}" IsVisible="{Binding Active}" Margin="-8,0,0,0" />
                               <StackPanel Grid.Column="1" Spacing="1">
                                 <StackPanel Orientation="Horizontal" Spacing="7">
@@ -470,6 +476,16 @@
                                 </StackPanel>
                                 <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" Margin="21,0,0,0" TextTrimming="CharacterEllipsis" />
                                 <TextBlock Text="{Binding ForceField}" FontSize="11" Foreground="{DynamicResource SelB}" Margin="21,0,0,0" IsVisible="{Binding HasForceField}" TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top">
+                                <Button Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Click="OnEditProjectItem" Tag="{Binding}" ToolTip.Tip="{Binding EditTip}"
+                                        IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}">
+                                  <local:Icon Kind="pencil" Size="13" />
+                                </Button>
+                                <Button Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Click="OnDeleteProjectItem" Tag="{Binding}" ToolTip.Tip="{Binding DeleteTip}"
+                                        Classes.danger="{Binding DeleteArmed}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}">
+                                  <local:Icon Kind="trash" Size="13" />
+                                </Button>
                               </StackPanel>
                             </Grid>
                           </Button>

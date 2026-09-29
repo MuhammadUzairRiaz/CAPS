@@ -371,6 +371,16 @@ public partial class MainWindow : Window
         if (_vm.ActiveItem == it) _vm.CloseDocument();
     }
     private void OnDuplicateStructure(object? s, RoutedEventArgs e) => _vm.DuplicateStructure();
+    private void OnEditProjectItem(object? s, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if ((s as Control)?.Tag is ViewModels.ProjectItem it) _vm.EditProjectItem(it);
+    }
+    private void OnDeleteProjectItem(object? s, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if ((s as Control)?.Tag is ViewModels.ProjectItem it) _vm.DeleteProjectItem(it);
+    }
     private void OnThemeDark(object? s, RoutedEventArgs e) { Tokens.Use(false); RequestRender(); }
     private void OnThemeLight(object? s, RoutedEventArgs e) { Tokens.Use(true); RequestRender(); }
     private void OnCommandPalette(object? s, RoutedEventArgs e) => TogglePalette();

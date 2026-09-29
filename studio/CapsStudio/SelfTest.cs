@@ -877,7 +877,7 @@ internal static class SelfTest
             vm.FnPattern = 0;
             vm.FnFraction = 0.04m;
             vm.FnElements = "B";
-            vm.Functionalize();
+            vm.Functionalize().GetAwaiter().GetResult();
             var grafted = vm.Document!.Summary().Atoms - bare;
             Check(grafted > 0 && grafted % 4 == 0 && vm.Status.Contains("carboxyl groups"), $"functional groups on a BN tube: +{grafted} atoms · {vm.Status}");
             vm.UndoEdit(false);
@@ -897,6 +897,51 @@ internal static class SelfTest
             vm.NanoAroundShown = false;
             vm.NanoMatrix = false;
             vm.NanoMaterial = 0;
+        }
+        // the builder as a flow (the user's report): graphene sheet settings never built → Graft builds the sheet, then grafts;
+        // an element filter the sheet lacks says which elements it has; then Polymer matrix › Build composite wraps it
+        {
+            vm.OpenNano();
+            vm.NanoKind = 0;
+            vm.NanoMaterial = 0;
+            vm.SheetLayers = 2;
+            vm.SheetLx = 18;
+            vm.NanoMatrix = false;
+            vm.NanoAroundShown = false;
+            vm.FnGroup = "*O";
+            vm.FnPattern = 0;
+            vm.FnFraction = 0.05m;
+            vm.FnElements = "B";
+            vm.Functionalize().GetAwaiter().GetResult();
+            var built = vm.Document?.Summary().Atoms ?? 0;
+            var saidText = vm.NanoError;
+            var said = saidText.Contains("this structure has C");
+            vm.FnElements = "";
+            vm.Functionalize().GetAwaiter().GetResult();
+            var sheetGrafted = (vm.Document?.Summary().Atoms ?? 0) - built;
+            var around = vm.NanoAroundShown;
+            vm.NanoMatrix = true;
+            vm.MatrixChains = 3; vm.MatrixDp = 6; vm.MatrixDensity = 0.5m;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var comp2 = vm.Document?.Summary();
+            Check(built > 0 && said && sheetGrafted > 0 && around && comp2 is { } c2 && c2.Atoms > built + sheetGrafted && vm.Document!.Provenance().Contains("nano.embed"),
+                  $"nano flow: sheet built {built} · B filter said '{saidText}' · +{sheetGrafted} grafted · composite {comp2?.Atoms} · {vm.Status}");
+            vm.NanoAroundShown = false;
+            vm.NanoMatrix = false;
+            vm.FnGroup = "carboxyl";
+        }
+        // the project tree: Edit opens the builder that made the structure; Delete asks once more, then removes it
+        {
+            var item = vm.ActiveItem!;
+            vm.EditProjectItem(item);
+            var toBuilder = vm.IsNano && item.Origin == "Nanostructure builder";
+            var itemsBefore = vm.ProjectItems.Count;
+            vm.DeleteProjectItem(item);
+            var armed = item.DeleteArmed && vm.ProjectItems.Count == itemsBefore;
+            vm.DeleteProjectItem(item);
+            Check(toBuilder && armed && vm.ProjectItems.Count == itemsBefore - 1 && !vm.ProjectItems.Contains(item),
+                  $"project tree: edit → {(vm.IsNano ? "Nanostructure builder" : "module " + vm.Module)} ({item.Origin}) · delete asked {armed} · {itemsBefore} → {vm.ProjectItems.Count}");
+            vm.SetModule(8);
         }
 
         // Mesoscale (DPD): a small A5B5 diblock melt at χN = 43; the frames open as a new structure
@@ -1938,7 +1983,7 @@ internal static class SelfTest
             }
             vm.SilanePick = 0;
             vm.SilaneFractionD = 0.2m;
-            vm.GraftSilane();
+            vm.GraftSilane().GetAwaiter().GetResult();
             var grafted = vm.Document!.Summary().Atoms;
             var sulfur = Enumerable.Range(0, (int)grafted).Count(i => vm.Document.Atom(i).Element == 16);
             vm.UndoEdit(false);

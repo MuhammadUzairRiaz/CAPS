@@ -66,7 +66,14 @@ FunctionalizeReport functionalize(System& s, const FunctionalizeOptions& o) {
   std::vector<uint32_t> frame;
   for (uint32_t i = 0; i < n; ++i)
     if (s.atoms[i].element != 1 && (zs.empty() || zs.count(s.atoms[i].element))) frame.push_back(i);
-  if (frame.empty()) throw std::invalid_argument("no atom of the chosen elements");
+  if (frame.empty()) {   // say which elements the structure has, so the filter can be fixed
+    std::set<int> have;
+    for (const auto& a : s.atoms) if (a.element > 1) have.insert(a.element);
+    std::string list;
+    for (int z : have) list += (list.empty() ? "" : ", ") + std::string(element(z).symbol);
+    throw std::invalid_argument("no atom of the chosen elements: this structure has " + (list.empty() ? std::string("none but hydrogen") : list) +
+                                " — clear 'On elements' (any) or name one of these");
+  }
   auto hydrogen_of = [&](uint32_t i) { for (uint32_t q : nb[i]) if (s.atoms[q].element == 1) return int(q); return -1; };
   // the filler's centre, extents and the directions it spans across the cell (periodic: no "outward" there)
   Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30}, c{0, 0, 0};

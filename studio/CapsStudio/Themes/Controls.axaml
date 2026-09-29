@@ -154,6 +154,11 @@
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource TextB}" />
   </Style>
+  <!-- an armed destructive tool (Delete asked once): red until clicked again or it times out -->
+  <Style Selector="Button.tool.danger">
+    <Setter Property="Foreground" Value="{DynamicResource ErrB}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ErrB}" />
+  </Style>
   <Style Selector="Button.tool.on, ToggleButton.tool:checked">
     <Setter Property="Background" Value="{DynamicResource Bg3B}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
