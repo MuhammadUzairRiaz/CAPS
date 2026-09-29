@@ -69,6 +69,31 @@
                   <Button Grid.Column="1" Classes="small" Content="Add reaction" Click="OnAddReaction" ToolTip.Tip="Run this reaction together with the others in the text" />
                   <Button Grid.Column="2" Classes="small" Content="Import LAMMPS…" Click="OnImportBondReact" ToolTip.Tip="A fix bond/react set (pre, post, map; the data file for the elements) as a CAPS reaction" />
                 </Grid>
+                <CheckBox Classes="toggle" Content="Browse the reaction library" IsChecked="{Binding RxLibOpen}" />
+                <Border Classes="inset" IsVisible="{Binding RxLibOpen}">
+                  <StackPanel Spacing="8">
+                    <ComboBox ItemsSource="{Binding RxLibCategories}" SelectedIndex="{Binding RxLibCategory}" HorizontalAlignment="Stretch" />
+                    <ListBox ItemsSource="{Binding RxLibItems}" SelectedItem="{Binding RxLibSelected}" MaxHeight="190">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RxLibEntry">
+                          <StackPanel Spacing="1">
+                            <TextBlock Text="{Binding Name}" FontSize="12.5" />
+                            <TextBlock Text="{Binding Status}" Classes="dim" FontSize="11" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Spacing="4" IsVisible="{Binding RxLibHasSelection}">
+                      <TextBlock Text="{Binding RxLibSelected.Description}" TextWrapping="Wrap" FontSize="12" />
+                      <TextBlock Text="{Binding RxLibSelected.Scheme}" Classes="mono" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+                      <TextBlock Text="{Binding RxLibSelected.Roles}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Classes="small" Content="Use" Click="OnLibUse" ToolTip.Tip="This reaction in place of the text" />
+                        <Button Classes="small" Content="Add to the reactions" Click="OnLibAdd" ToolTip.Tip="Run it together with the reactions already in the text" />
+                      </StackPanel>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
                 <!-- several reactions: automatic by distance, or by relative weights -->
                 <StackPanel Spacing="6" IsVisible="{Binding RxSeveral}">
                   <TextBlock Text="SEVERAL REACTIONS" Classes="h3" />

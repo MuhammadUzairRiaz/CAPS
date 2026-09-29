@@ -246,6 +246,7 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
         const std::string& k = w[i];
         if (k == "ring3") a.ring3 = true;
         else if (k == "not_aromatic") a.not_aromatic = true;
+        else if (k == "aromatic") a.aromatic = true;
         else if (k.rfind("H>=", 0) == 0) a.h_min = std::stoi(k.substr(3));
         else if (k.rfind("H<=", 0) == 0) a.h_max = std::stoi(k.substr(3));
         else if (k.rfind("H=", 0) == 0) a.h_min = a.h_max = std::stoi(k.substr(2));
@@ -385,6 +386,7 @@ bool fits(const TemplateAtom& t, const System& s, const Chem& c, uint32_t i) {
   if (t.degree >= 0 && int(c.nb[i].size()) != t.degree) return false;
   if (t.ring3 && !c.ring3[i]) return false;
   if (t.not_aromatic && c.aromatic[i]) return false;
+  if (t.aromatic && !c.aromatic[i]) return false;
   return true;
 }
 

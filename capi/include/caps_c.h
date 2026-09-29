@@ -305,6 +305,10 @@ int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* d
    map file (CAPS's or anyone's); masses_from: a data file whose Masses give the elements of numbered types (NULL when
    the molecule files carry Masses or element-like type labels). JSON {text, notes[]}: text is the template for
    caps_react (form, break, move, delete and byproducts from comparing the two templates). Returns the length or -1. */
+/* v45: the reaction library (data/reactions/library.json at path): every scheme with its CAPS template. JSON {reactions:
+   [{id, name, category, description, reactants[{label, smiles}], products[...], tags[{map, role}], note, steps[ids],
+   template (text, when it converts), error (why not), notes[]}]}. Returns the length needed or -1. */
+int32_t caps_reaction_library(const char* path, char* json, int32_t cap);
 int32_t caps_bond_react_import(const char* pre, const char* post, const char* map, const char* masses_from, const char* name, double capture,
                                char* json, int32_t cap);
 

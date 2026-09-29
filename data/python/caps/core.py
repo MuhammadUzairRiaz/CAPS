@@ -168,7 +168,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
         "caps_react_summary": ([P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
-        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I),
+        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
@@ -1158,6 +1158,14 @@ def reaction_templates() -> list:
     buf = C.create_string_buffer(max(1, n + 1))
     library().caps_reaction_template(b"", buf, len(buf))
     return [x for x in buf.value.decode().split("\n") if x.strip()]
+
+
+def reaction_library(path: str = "") -> list:
+    """The reaction library (data/reactions/library.json): every scheme — name, category, description, mapped reactant and
+    product SMILES, what each map number marks — with its CAPS template (template, for Document.react) or why it does not
+    convert (error; steps names the schemes that make it step by step)."""
+    p = path or str(_data_dir() / "reactions" / "library.json")
+    return _json_call(lambda buf, n: library().caps_reaction_library(_enc(p), buf, n))["reactions"]
 
 
 def bond_react_template(pre: str, post: str, map: str, masses_from: str = "", name: str = "", capture: float = 0.0) -> dict:

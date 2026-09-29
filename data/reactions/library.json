@@ -1,0 +1,2156 @@
+{
+ "format": "caps-reactions",
+ "format_version": 1,
+ "about": "Worked reaction schemes as atom-mapped reactant and product SMILES: map numbers tag the atoms whose bonds change; a mapped atom absent from the products leaves; hydrogens are completed from the SMILES. CAPS turns each scheme into a React template (form, break, hydrogen moves, deleted and byproduct atoms) and checks it.",
+ "reactions": [
+  {
+   "id": "esterification",
+   "name": "Esterification (acid + alcohol)",
+   "category": "Esters & condensation",
+   "description": "A carboxylic acid and an alcohol condense to an ester plus water. The backbone reaction of polyesters (PET, PBS, PLA).",
+   "reactants": [
+    {
+     "label": "acid",
+     "smiles": "CC(=O)[OH:1]"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "ester",
+     "smiles": "CC(=O)[O:2]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the acid's OH oxygen — leaves as part of the water"
+    },
+    {
+     "map": ":2",
+     "role": "the alcohol oxygen — survives as the ester bridge O"
+    }
+   ],
+   "note": "Read CC(=O)[OH:1] as CH3-C(=O)-OH: C, then a C with a double-bonded O in the (branch), then the OH."
+  },
+  {
+   "id": "transesterification",
+   "name": "Transesterification",
+   "category": "Esters & condensation",
+   "description": "An ester swaps its alkoxy group for a new alcohol. How PET is made industrially from dimethyl terephthalate.",
+   "reactants": [
+    {
+     "label": "methyl ester",
+     "smiles": "CC(=O)[O:1]C"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "new ester",
+     "smiles": "CC(=O)[O:2]CC"
+    },
+    {
+     "label": "methanol",
+     "smiles": "C[OH:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the old ester oxygen — leaves with the methyl as methanol"
+    },
+    {
+     "map": ":2",
+     "role": "the incoming alcohol oxygen — becomes the new bridge"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "anhydride",
+   "name": "Anhydride formation (2 acids)",
+   "category": "Esters & condensation",
+   "description": "Two carboxylic acids condense to an anhydride plus water. The two acids are identical, so tags are what tell them apart.",
+   "reactants": [
+    {
+     "label": "acid A",
+     "smiles": "CC(=O)[OH:5]"
+    },
+    {
+     "label": "acid B",
+     "smiles": "CC(=O)[OH:6]"
+    }
+   ],
+   "products": [
+    {
+     "label": "anhydride",
+     "smiles": "CC(=O)[O:6]C(C)=O"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":5",
+     "role": "acid A's OH oxygen — the leaving group"
+    },
+    {
+     "map": ":6",
+     "role": "acid B's OH oxygen — survives as the anhydride bridge"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "ether_condensation",
+   "name": "Ether condensation (2 alcohols)",
+   "category": "Esters & condensation",
+   "description": "Two alcohols condense to an ether plus water (acid-catalysed).",
+   "reactants": [
+    {
+     "label": "alcohol A",
+     "smiles": "CC[OH:1]"
+    },
+    {
+     "label": "alcohol B",
+     "smiles": "CC[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "ether",
+     "smiles": "CC[O:2]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "leaves in the water"
+    },
+    {
+     "map": ":2",
+     "role": "becomes the ether oxygen"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "pet_model",
+   "name": "PET link (terephthalate + glycol)",
+   "category": "Esters & condensation",
+   "description": "A polyester chain-growth step on a real monomer pair: methyl terephthalate + ethylene glycol.",
+   "reactants": [
+    {
+     "label": "terephthalate",
+     "smiles": "COC(=O)c1ccc(cc1)C(=O)[O:1]C"
+    },
+    {
+     "label": "ethylene glycol",
+     "smiles": "[OH:2]CCO"
+    }
+   ],
+   "products": [
+    {
+     "label": "chain ester",
+     "smiles": "COC(=O)c1ccc(cc1)C(=O)[O:2]CCO"
+    },
+    {
+     "label": "methanol",
+     "smiles": "C[OH:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the methyl-ester oxygen displaced as methanol"
+    },
+    {
+     "map": ":2",
+     "role": "the glycol oxygen that forms the new ester"
+    }
+   ],
+   "note": "c1ccc(cc1) is a benzene ring written in aromatic (lower-case) SMILES."
+  },
+  {
+   "id": "caprolactone_rop",
+   "name": "Ring-opening of caprolactone",
+   "category": "Esters & condensation",
+   "description": "An alcohol opens the 7-membered lactone ring — the initiation step of polycaprolactone (PCL) growth.",
+   "reactants": [
+    {
+     "label": "caprolactone",
+     "smiles": "O=[C:1]1CCCCC[O:2]1"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "opened ester",
+     "smiles": "CC[O:3][C:1](=O)CCCCC[OH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the lactone carbonyl carbon (acyl attack site)"
+    },
+    {
+     "map": ":2",
+     "role": "the ring oxygen — the C1-O2 ring bond breaks; O2 becomes the chain-end OH"
+    },
+    {
+     "map": ":3",
+     "role": "the initiating alcohol oxygen — new ester bridge"
+    }
+   ],
+   "note": "No leaving group: a ring-opening just relocates bonds."
+  },
+  {
+   "id": "acetal",
+   "name": "Acetal formation (aldehyde + 2 alcohols)",
+   "category": "Esters & condensation",
+   "description": "An aldehyde condenses with two alcohols to an acetal plus water — the chemistry that turns PVA into polyvinyl butyral (PVB) safety-glass interlayer.",
+   "reactants": [
+    {
+     "label": "aldehyde",
+     "smiles": "C[CH:1]=[O:2]"
+    },
+    {
+     "label": "alcohol A",
+     "smiles": "C[OH:3]"
+    },
+    {
+     "label": "alcohol B",
+     "smiles": "C[OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "acetal",
+     "smiles": "C[CH:1]([O:3]C)[O:4]C"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the aldehyde carbon — ends up bonded to BOTH alcohol oxygens"
+    },
+    {
+     "map": ":2",
+     "role": "the carbonyl oxygen — leaves as water"
+    },
+    {
+     "map": ":3/:4",
+     "role": "the two alcohol oxygens — the acetal's two O bridges"
+    }
+   ],
+   "note": "",
+   "steps": [
+    "hemiacetal",
+    "acetal_from_hemiacetal"
+   ]
+  },
+  {
+   "id": "hemiacetal",
+   "name": "Hemiacetal (aldehyde + alcohol)",
+   "category": "Esters & condensation",
+   "description": "The first step of acetal formation: an alcohol adds to the aldehyde C=O; the alcohol's H goes to the carbonyl oxygen.",
+   "reactants": [
+    {
+     "label": "aldehyde",
+     "smiles": "C[CH:1]=[O:2]"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "C[OH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "hemiacetal",
+     "smiles": "C[CH:1]([OH:2])[O:3]C"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the aldehyde carbon"
+    },
+    {
+     "map": ":2",
+     "role": "the carbonyl O — becomes OH"
+    },
+    {
+     "map": ":3",
+     "role": "the alcohol oxygen — new C–O bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "acetal_from_hemiacetal",
+   "name": "Acetal from a hemiacetal + alcohol",
+   "category": "Esters & condensation",
+   "description": "The second step of acetal formation: the hemiacetal's OH leaves as water and a second alcohol takes its place.",
+   "reactants": [
+    {
+     "label": "hemiacetal",
+     "smiles": "C[CH:1]([OH:2])[O:3]C"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "C[OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "acetal",
+     "smiles": "C[CH:1]([O:3]C)[O:4]C"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the acetal carbon"
+    },
+    {
+     "map": ":2",
+     "role": "the hemiacetal OH — leaves as water"
+    },
+    {
+     "map": ":4",
+     "role": "the second alcohol oxygen"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "amidation",
+   "name": "Amidation (acid + amine)",
+   "category": "Amides & polyamides",
+   "description": "A carboxylic acid and an amine condense to an amide plus water — the nylon reaction.",
+   "reactants": [
+    {
+     "label": "acid",
+     "smiles": "CC(=O)[OH:1]"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "amide",
+     "smiles": "CC(=O)[NH:2]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "acid OH oxygen — leaves in the water"
+    },
+    {
+     "map": ":2",
+     "role": "amine nitrogen — forms the new C-N amide bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "nylon66_model",
+   "name": "Polyamide 6,6 link",
+   "category": "Amides & polyamides",
+   "description": "Adipic acid + hexamethylenediamine forming one amide link, with both far chain ends left free to keep reacting.",
+   "reactants": [
+    {
+     "label": "adipic acid",
+     "smiles": "O=C(O)CCCCC(=O)[OH:1]"
+    },
+    {
+     "label": "diamine",
+     "smiles": "[NH2:2]CCCCCCN"
+    }
+   ],
+   "products": [
+    {
+     "label": "amide link",
+     "smiles": "O=C(O)CCCCC(=O)[NH:2]CCCCCCN"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the reacting acid OH — leaves as water"
+    },
+    {
+     "map": ":2",
+     "role": "the reacting amine N — only ONE end of each monomer is tagged; the other ends stay free"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "acid_chloride_amine",
+   "name": "Acid chloride + amine",
+   "category": "Amides & polyamides",
+   "description": "The fast interfacial-polymerisation route to polyamides (the nylon rope trick). HCl instead of water leaves.",
+   "reactants": [
+    {
+     "label": "acid chloride",
+     "smiles": "CC(=O)[Cl:1]"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "amide",
+     "smiles": "CC(=O)[NH:2]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the chlorine — a leaving atom: present in the reactants, absent from the products (it departs as HCl, which is not drawn because hydrogen halides cannot be force-field typed)"
+    },
+    {
+     "map": ":2",
+     "role": "the amine nitrogen — new amide bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "acid_chloride_alcohol",
+   "name": "Acid chloride + alcohol",
+   "category": "Amides & polyamides",
+   "description": "Ester formation via the activated acid — fast and irreversible.",
+   "reactants": [
+    {
+     "label": "acid chloride",
+     "smiles": "CC(=O)[Cl:1]"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "ester",
+     "smiles": "CC(=O)[O:2]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the chlorine — a leaving atom, expelled as HCl (not drawn)"
+    },
+    {
+     "map": ":2",
+     "role": "the new ester oxygen"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "amic_acid",
+   "name": "Anhydride + amine (amic acid)",
+   "category": "Amides & polyamides",
+   "description": "An amine opens a cyclic anhydride to an amic acid — step 1 of every polyimide synthesis.",
+   "reactants": [
+    {
+     "label": "maleic anhydride",
+     "smiles": "O=[C:1]1C=CC(=O)[O:2]1"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "amic acid",
+     "smiles": "CC[NH:3][C:1](=O)C=CC(=O)[OH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the attacked carbonyl carbon"
+    },
+    {
+     "map": ":2",
+     "role": "the ring oxygen — the C1-O2 bond breaks; O2 becomes a free COOH oxygen"
+    },
+    {
+     "map": ":3",
+     "role": "the amine nitrogen — new amide bond to C1"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "imidization",
+   "name": "Amic acid → imide (cyclisation)",
+   "category": "Amides & polyamides",
+   "description": "The amic acid closes to a five-membered imide ring, expelling water — step 2 of polyimide synthesis.",
+   "reactants": [
+    {
+     "label": "amic acid",
+     "smiles": "CC[NH:1]C(=O)C=C[C:2](=O)[OH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "imide",
+     "smiles": "CC[N:1]1C(=O)C=C[C:2]1=O"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the amide nitrogen — forms the second N-C bond, closing the ring"
+    },
+    {
+     "map": ":2",
+     "role": "the free-acid carbonyl carbon it attacks"
+    },
+    {
+     "map": ":3",
+     "role": "the acid OH — leaves as water"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_amine",
+   "name": "Epoxide + amine",
+   "category": "Epoxide ring-opening",
+   "description": "The workhorse epoxy-cure reaction: an amine opens the ring at the less hindered carbon; the epoxide oxygen becomes a secondary OH.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "amino alcohol",
+     "smiles": "C[CH:1]([OH:2])[CH2:3][NH:4]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the substituted ring carbon (keeps the O as OH)"
+    },
+    {
+     "map": ":2",
+     "role": "the epoxide oxygen — the O2-C3 bond breaks; O2 stays on C1"
+    },
+    {
+     "map": ":3",
+     "role": "the terminal CH2 — the attacked carbon"
+    },
+    {
+     "map": ":4",
+     "role": "the amine nitrogen — new C-N bond to C3"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_acid",
+   "name": "Epoxide + carboxylic acid",
+   "category": "Epoxide ring-opening",
+   "description": "A carboxylic acid opens an epoxide to a hydroxy-ester. On a trisubstituted (ENR-type) epoxide the acid attacks the TERTIARY carbon.",
+   "reactants": [
+    {
+     "label": "epoxide (ENR-type)",
+     "smiles": "C[C:1]1(C)[O:2][CH:3]1C"
+    },
+    {
+     "label": "acid",
+     "smiles": "CCC(=O)[OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "hydroxy-ester",
+     "smiles": "C[C:1](C)([O:4]C(=O)CC)[CH:3](C)[OH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the tertiary epoxide carbon (no H, three C neighbours) — receives the acid oxygen"
+    },
+    {
+     "map": ":2",
+     "role": "the epoxide oxygen — C1-O2 breaks; O2 stays on C3 as OH"
+    },
+    {
+     "map": ":3",
+     "role": "the secondary epoxide carbon"
+    },
+    {
+     "map": ":4",
+     "role": "the attacking acid oxygen — new C1-O4 ester bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_thiol",
+   "name": "Epoxide + thiol",
+   "category": "Epoxide ring-opening",
+   "description": "Thiol-epoxy 'click' cure: fast, efficient, base-catalysed.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "thiol",
+     "smiles": "CC[SH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "hydroxy-sulfide",
+     "smiles": "C[CH:1]([OH:2])[CH2:3][S:4]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O → secondary OH"
+    },
+    {
+     "map": ":3",
+     "role": "attacked CH2"
+    },
+    {
+     "map": ":4",
+     "role": "the sulfur — new C-S bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_phenol",
+   "name": "Epoxide + phenol",
+   "category": "Epoxide ring-opening",
+   "description": "Phenol opens the epoxide to an aryl ether — the advancement reaction of epoxy resins.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "phenol",
+     "smiles": "[OH:4]c1ccccc1"
+    }
+   ],
+   "products": [
+    {
+     "label": "aryl ether",
+     "smiles": "C[CH:1]([OH:2])[CH2:3][O:4]c1ccccc1"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O → OH"
+    },
+    {
+     "map": ":3",
+     "role": "attacked CH2"
+    },
+    {
+     "map": ":4",
+     "role": "the phenol oxygen — new ether bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_alcohol",
+   "name": "Epoxide + alcohol",
+   "category": "Epoxide ring-opening",
+   "description": "Etherification — the side reaction in amine-cured epoxies that creates extra crosslinks at high temperature.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "hydroxy-ether",
+     "smiles": "C[CH:1]([OH:2])[CH2:3][O:4]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O → OH"
+    },
+    {
+     "map": ":4",
+     "role": "alcohol O → ether bridge"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_water",
+   "name": "Epoxide + water (hydrolysis)",
+   "category": "Epoxide ring-opening",
+   "description": "Water opens the epoxide to a 1,2-diol.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "diol",
+     "smiles": "C[CH:1]([OH:2])[CH2:3][OH:4]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O → one OH"
+    },
+    {
+     "map": ":4",
+     "role": "water O → the other OH"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_anhydride",
+   "name": "Epoxide + anhydride",
+   "category": "Epoxide ring-opening",
+   "description": "Anhydride cure of epoxies: the ring opens and BOTH oxygens end up as esters — a diester crosslink.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "anhydride",
+     "smiles": "CC(=O)[O:4][C:5](C)=O"
+    }
+   ],
+   "products": [
+    {
+     "label": "diester",
+     "smiles": "C[CH:1]([O:2][C:5](C)=O)[CH2:3][O:4]C(C)=O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O — acylated by carbonyl C5 (new O2-C5 bond)"
+    },
+    {
+     "map": ":3",
+     "role": "ring carbon attacked by the anhydride oxygen O4"
+    },
+    {
+     "map": ":4",
+     "role": "anhydride bridge O — its bond to C5 breaks; new bond to C3"
+    },
+    {
+     "map": ":5",
+     "role": "one anhydride carbonyl carbon"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "enr_mah_enr",
+   "name": "ENR + maleic acid + ENR (bridge)",
+   "category": "ENR / rubber chemistry",
+   "description": "Both COOH groups of maleic acid open one epoxide each, bridging two ENR chains — a crosslink. Model compounds stand in for the chains.",
+   "reactants": [
+    {
+     "label": "ENR epoxide A",
+     "smiles": "C[C:1]1(C)[O:2][CH:3]1C"
+    },
+    {
+     "label": "maleic acid",
+     "smiles": "[OH:4]C(=O)/C=C\\C(=O)[OH:5]"
+    },
+    {
+     "label": "ENR epoxide B",
+     "smiles": "C[C:6]1(C)[O:7][CH:8]1C"
+    }
+   ],
+   "products": [
+    {
+     "label": "bridged product",
+     "smiles": "C[C:1](C)([O:4]C(=O)/C=C\\C(=O)[O:5][C:6](C)(C)[CH:8](C)[O:7])[CH:3](C)[O:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1/:6",
+     "role": "the two tertiary epoxide carbons — each receives an acid oxygen"
+    },
+    {
+     "map": ":2/:7",
+     "role": "the two epoxide oxygens — freed from the tertiary carbons, they stay on :3/:8 as OH groups"
+    },
+    {
+     "map": ":4/:5",
+     "role": "the two acid oxygens — the new ester bridges"
+    }
+   ],
+   "note": "/C=C\\ marks the cis double bond of maleic acid. No atom leaves.",
+   "steps": [
+    "epoxy_acid",
+    "epoxy_acid"
+   ]
+  },
+  {
+   "id": "enr_mah_pbs",
+   "name": "ENR + maleic acid + PBS-COOH (graft)",
+   "category": "ENR / rubber chemistry",
+   "description": "One maleic-acid COOH opens the ENR epoxide; the other condenses with the PBS terminal COOH to an anhydride, expelling water. The PBS oxygen is retained as the bridge.",
+   "reactants": [
+    {
+     "label": "ENR epoxide",
+     "smiles": "C[C:1]1(C)[O:2][CH:3]1C"
+    },
+    {
+     "label": "maleic acid",
+     "smiles": "[OH:4]C(=O)/C=C\\C(=O)[OH:5]"
+    },
+    {
+     "label": "PBS acid end",
+     "smiles": "COC(=O)CCC(=O)[OH:6]"
+    }
+   ],
+   "products": [
+    {
+     "label": "grafted product",
+     "smiles": "C[C:1](C)([O:4]C(=O)/C=C\\C(=O)[O:6]C(=O)CCC(=O)OC)[CH:3](C)[O:2]"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "tertiary ENR carbon — bonded to acid oxygen :4"
+    },
+    {
+     "map": ":2",
+     "role": "epoxide O → OH on the secondary carbon"
+    },
+    {
+     "map": ":4",
+     "role": "maleic oxygen forming the ester to ENR"
+    },
+    {
+     "map": ":5",
+     "role": "maleic acid's second OH — the leaving group (absent from the products)"
+    },
+    {
+     "map": ":6",
+     "role": "the PBS carboxyl oxygen — RETAINED as the anhydride bridge"
+    }
+   ],
+   "note": "Monomethyl succinate COC(=O)CCC(=O)OH models the true PBS chain end: COOH, two CH2 groups, then the in-chain ester.",
+   "steps": [
+    "epoxy_acid",
+    "anhydride"
+   ]
+  },
+  {
+   "id": "enr_pbs_direct",
+   "name": "ENR + PBS-COOH (direct ester)",
+   "category": "ENR / rubber chemistry",
+   "description": "The PBS terminal carboxylic acid opens the ENR epoxide directly — no maleic acid involved. Same regiochemistry: attack at the tertiary carbon.",
+   "reactants": [
+    {
+     "label": "ENR epoxide",
+     "smiles": "C[C:1]1(C)[O:2][CH:3]1C"
+    },
+    {
+     "label": "PBS acid end",
+     "smiles": "COC(=O)CCC(=O)[OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "graft ester",
+     "smiles": "C[C:1](C)([O:4]C(=O)CCC(=O)OC)[CH:3](C)[OH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "tertiary epoxide carbon"
+    },
+    {
+     "map": ":2",
+     "role": "epoxide O → OH on the secondary carbon"
+    },
+    {
+     "map": ":4",
+     "role": "PBS acid oxygen → the ester link"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "enr_hydrolysis",
+   "name": "ENR epoxide + water (diol)",
+   "category": "ENR / rubber chemistry",
+   "description": "Ring hydrolysis during processing: the epoxide becomes a diol.",
+   "reactants": [
+    {
+     "label": "ENR epoxide",
+     "smiles": "C[C:1]1(C)[O:2][CH:3]1C"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "diol",
+     "smiles": "C[C:1](C)([OH:4])[CH:3](C)[OH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O → OH on the secondary carbon"
+    },
+    {
+     "map": ":4",
+     "role": "water O → OH on the tertiary carbon"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "enr_acid_secondary",
+   "name": "ENR + acid at the SECONDARY carbon",
+   "category": "ENR / rubber chemistry",
+   "description": "The alternative regiochemistry, for comparison with the tertiary attack: here the acid bonds to the secondary carbon and the OH lands on the tertiary one. Note how ONLY the product drawing changed.",
+   "reactants": [
+    {
+     "label": "ENR epoxide",
+     "smiles": "C[C:1]1(C)[O:2][CH:3]1C"
+    },
+    {
+     "label": "acid",
+     "smiles": "CCC(=O)[OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "iso-ester",
+     "smiles": "C[C:1](C)([OH:2])[CH:3](C)[O:4]C(=O)CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O — stays on the TERTIARY carbon this time"
+    },
+    {
+     "map": ":3",
+     "role": "secondary carbon — receives the acid oxygen"
+    },
+    {
+     "map": ":4",
+     "role": "acid oxygen → ester on C3"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "urethane",
+   "name": "Isocyanate + alcohol (urethane)",
+   "category": "Isocyanates & polyurethanes",
+   "description": "The polyurethane bond: an alcohol adds across the N=C of the isocyanate. Pure addition — nothing leaves.",
+   "reactants": [
+    {
+     "label": "isocyanate",
+     "smiles": "CC[N:1]=[C:3]=O"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "urethane",
+     "smiles": "CC[NH:1][C:3](=O)[O:2]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the isocyanate nitrogen — its double bond to C3 becomes single and it picks up the alcohol's H"
+    },
+    {
+     "map": ":2",
+     "role": "the alcohol oxygen — new bond to C3"
+    },
+    {
+     "map": ":3",
+     "role": "the isocyanate carbon — the electrophilic centre"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "urea_bond",
+   "name": "Isocyanate + amine (urea)",
+   "category": "Isocyanates & polyurethanes",
+   "description": "The polyurea bond — the fast reaction in PU foams and elastomers.",
+   "reactants": [
+    {
+     "label": "isocyanate",
+     "smiles": "CC[N:1]=[C:3]=O"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "urea",
+     "smiles": "CC[NH:1][C:3](=O)[NH:2]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "isocyanate N"
+    },
+    {
+     "map": ":2",
+     "role": "amine N — new bond to C3"
+    },
+    {
+     "map": ":3",
+     "role": "isocyanate C"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "isocyanate_water",
+   "name": "Isocyanate + water (blowing reaction)",
+   "category": "Isocyanates & polyurethanes",
+   "description": "Water converts an isocyanate to an amine and CO2 — the gas that blows PU foams. The isocyanate carbon LEAVES as the CO2 carbon.",
+   "reactants": [
+    {
+     "label": "isocyanate",
+     "smiles": "CC[N:1]=[C:3]=O"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:1]"
+    },
+    {
+     "label": "CO2",
+     "smiles": "O=[C:3]=[O:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the nitrogen — ends as a free amine"
+    },
+    {
+     "map": ":2",
+     "role": "the water oxygen — ends in the CO2"
+    },
+    {
+     "map": ":3",
+     "role": "the isocyanate carbon — follow it into the CO2"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "thiol_ene",
+   "name": "Thiol-ene addition",
+   "category": "Additions & click",
+   "description": "A thiol adds across a C=C double bond (anti-Markovnikov) — the classic UV-cure click reaction.",
+   "reactants": [
+    {
+     "label": "thiol",
+     "smiles": "CC[SH:1]"
+    },
+    {
+     "label": "alkene",
+     "smiles": "[CH2:2]=[CH:3]C"
+    }
+   ],
+   "products": [
+    {
+     "label": "sulfide",
+     "smiles": "CC[S:1][CH2:2][CH2:3]C"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the sulfur — new S-C bond to the terminal carbon"
+    },
+    {
+     "map": ":2",
+     "role": "the terminal CH2 of the double bond"
+    },
+    {
+     "map": ":3",
+     "role": "the inner alkene carbon — the C2=C3 double bond becomes single; C3 gains an H"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "thiol_michael",
+   "name": "Thiol-Michael (thiol + acrylate)",
+   "category": "Additions & click",
+   "description": "A thiol adds to the activated double bond of an acrylate.",
+   "reactants": [
+    {
+     "label": "thiol",
+     "smiles": "CC[SH:1]"
+    },
+    {
+     "label": "acrylate",
+     "smiles": "[CH2:2]=[CH:3]C(=O)OC"
+    }
+   ],
+   "products": [
+    {
+     "label": "adduct",
+     "smiles": "CC[S:1][CH2:2][CH2:3]C(=O)OC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "sulfur"
+    },
+    {
+     "map": ":2/:3",
+     "role": "the acrylate double bond, saturated in the product"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "aza_michael",
+   "name": "Aza-Michael (amine + acrylate)",
+   "category": "Additions & click",
+   "description": "An amine adds to an acrylate double bond — used in ABC curing and polyaspartics.",
+   "reactants": [
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:1]"
+    },
+    {
+     "label": "acrylate",
+     "smiles": "[CH2:2]=[CH:3]C(=O)OC"
+    }
+   ],
+   "products": [
+    {
+     "label": "adduct",
+     "smiles": "CC[NH:1][CH2:2][CH2:3]C(=O)OC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the nitrogen — new N-C bond"
+    },
+    {
+     "map": ":2/:3",
+     "role": "the double bond that saturates"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "oxa_michael",
+   "name": "Oxa-Michael (alcohol + acrylate)",
+   "category": "Additions & click",
+   "description": "An alcohol adds to an acrylate double bond.",
+   "reactants": [
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:1]"
+    },
+    {
+     "label": "acrylate",
+     "smiles": "[CH2:2]=[CH:3]C(=O)OC"
+    }
+   ],
+   "products": [
+    {
+     "label": "adduct",
+     "smiles": "CC[O:1][CH2:2][CH2:3]C(=O)OC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the oxygen — new O-C bond"
+    },
+    {
+     "map": ":2/:3",
+     "role": "the saturating double bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "diels_alder",
+   "name": "Diels-Alder (diene + maleic anhydride)",
+   "category": "Additions & click",
+   "description": "Butadiene and maleic anhydride form a cyclohexene ring in one step — two C-C bonds at once. Used for reversible/self-healing networks.",
+   "reactants": [
+    {
+     "label": "butadiene",
+     "smiles": "[CH2:1]=[CH:2][CH:3]=[CH2:4]"
+    },
+    {
+     "label": "maleic anhydride",
+     "smiles": "O=C1[CH:5]=[CH:6]C(=O)O1"
+    }
+   ],
+   "products": [
+    {
+     "label": "adduct",
+     "smiles": "O=C1[CH:5]2[CH:6](C(=O)O1)[CH2:4][CH:3]=[CH:2][CH2:1]2"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1/:4",
+     "role": "the diene's terminal carbons — each forms one new C-C bond"
+    },
+    {
+     "map": ":2/:3",
+     "role": "the diene's inner carbons — the surviving double bond"
+    },
+    {
+     "map": ":5/:6",
+     "role": "the anhydride's alkene carbons — the other ends of the two new bonds"
+    }
+   ],
+   "note": "The digit pairs 1...1 and 2...2 in the product close its two rings."
+  },
+  {
+   "id": "hydrosilylation",
+   "name": "Hydrosilylation (Si-H + vinyl)",
+   "category": "Additions & click",
+   "description": "A silicon hydride adds across a vinyl group — the platinum-catalysed cure of addition silicones (LSR, RTV-2).",
+   "reactants": [
+    {
+     "label": "silane",
+     "smiles": "C[SiH:1](C)C"
+    },
+    {
+     "label": "vinyl",
+     "smiles": "[CH2:2]=[CH:3]C"
+    }
+   ],
+   "products": [
+    {
+     "label": "alkyl silane",
+     "smiles": "C[Si:1](C)(C)[CH2:2][CH2:3]C"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the silicon — its H migrates to C3; new Si-C2 bond"
+    },
+    {
+     "map": ":2/:3",
+     "role": "the vinyl double bond that saturates"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "disulfide",
+   "name": "Disulfide coupling (peroxide-mediated)",
+   "category": "Additions & click",
+   "description": "Two thiols couple to a disulfide — the vulcanisation-type S-S bridge — with hydrogen peroxide taking up the two hydrogens as water.",
+   "reactants": [
+    {
+     "label": "thiol A",
+     "smiles": "CC[SH:1]"
+    },
+    {
+     "label": "thiol B",
+     "smiles": "CC[SH:2]"
+    },
+    {
+     "label": "peroxide",
+     "smiles": "[OH:3][OH:4]"
+    }
+   ],
+   "products": [
+    {
+     "label": "disulfide",
+     "smiles": "CC[S:1][S:2]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:3]"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:4]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1/:2",
+     "role": "the two sulfurs — the new S-S bond"
+    },
+    {
+     "map": ":3/:4",
+     "role": "the peroxide oxygens — the O-O bond breaks and each O leaves as a water"
+    }
+   ],
+   "note": "",
+   "steps": [
+    "thiol_peroxide",
+    "sulfenic_thiol"
+   ]
+  },
+  {
+   "id": "thiol_peroxide",
+   "name": "Thiol + H2O2 → sulfenic acid + water",
+   "category": "Additions & click",
+   "description": "The first step of thiol oxidation by hydrogen peroxide: the O–O bond breaks, one OH goes to sulfur, the other leaves as water.",
+   "reactants": [
+    {
+     "label": "thiol",
+     "smiles": "CC[SH:1]"
+    },
+    {
+     "label": "hydrogen peroxide",
+     "smiles": "[OH:2][OH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "sulfenic acid",
+     "smiles": "CC[S:1][OH:2]"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:3]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the sulfur — gains the OH"
+    },
+    {
+     "map": ":2",
+     "role": "the OH that moves to sulfur"
+    },
+    {
+     "map": ":3",
+     "role": "the other oxygen — leaves as water"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "sulfenic_thiol",
+   "name": "Sulfenic acid + thiol → disulfide + water",
+   "category": "Additions & click",
+   "description": "The second step of thiol oxidation: a sulfenic acid condenses with a thiol to the disulfide bridge, releasing water.",
+   "reactants": [
+    {
+     "label": "sulfenic acid",
+     "smiles": "CC[S:1][OH:2]"
+    },
+    {
+     "label": "thiol",
+     "smiles": "CC[SH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "disulfide",
+     "smiles": "CC[S:1][S:3]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1/:3",
+     "role": "the two sulfurs — the new S–S bond"
+    },
+    {
+     "map": ":2",
+     "role": "the OH — leaves as water"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "siloxane_condensation",
+   "name": "Silanol + silanol (siloxane bond)",
+   "category": "Silicones",
+   "description": "Two Si-OH groups condense to the Si-O-Si backbone bond plus water — how condensation-cure silicones set.",
+   "reactants": [
+    {
+     "label": "silanol A",
+     "smiles": "C[Si](C)(C)[OH:1]"
+    },
+    {
+     "label": "silanol B",
+     "smiles": "C[Si](C)(C)[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "siloxane",
+     "smiles": "C[Si](C)(C)[O:2][Si](C)(C)C"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "leaves in the water"
+    },
+    {
+     "map": ":2",
+     "role": "becomes the Si-O-Si bridge"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "silanol_alkoxy",
+   "name": "Silanol + alkoxysilane",
+   "category": "Silicones",
+   "description": "A silanol condenses with a methoxysilane, releasing methanol — the moisture-cure (RTV-1) crosslinking step.",
+   "reactants": [
+    {
+     "label": "silanol",
+     "smiles": "C[Si](C)(C)[OH:1]"
+    },
+    {
+     "label": "methoxysilane",
+     "smiles": "C[Si](C)(C)[O:2]C"
+    }
+   ],
+   "products": [
+    {
+     "label": "siloxane",
+     "smiles": "C[Si](C)(C)[O:1][Si](C)(C)C"
+    },
+    {
+     "label": "methanol",
+     "smiles": "C[OH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the silanol oxygen — becomes the bridge"
+    },
+    {
+     "map": ":2",
+     "role": "the methoxy oxygen — leaves with its methyl as methanol"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "alkoxysilane_hydrolysis",
+   "name": "Alkoxysilane + water",
+   "category": "Silicones",
+   "description": "Moisture hydrolyses Si-OMe to Si-OH — the step that precedes condensation in silane coupling agents and RTV-1.",
+   "reactants": [
+    {
+     "label": "methoxysilane",
+     "smiles": "C[Si](C)(C)[O:1]C"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "silanol",
+     "smiles": "C[Si](C)(C)[OH:2]"
+    },
+    {
+     "label": "methanol",
+     "smiles": "C[OH:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "methoxy O — leaves as methanol"
+    },
+    {
+     "map": ":2",
+     "role": "water O — becomes the new Si-OH"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "phenol_methylol",
+   "name": "Phenol + formaldehyde (methylolation)",
+   "category": "Phenolic & amino resins",
+   "description": "Formaldehyde substitutes an ortho/para ring hydrogen of phenol, giving a methylol phenol — the first step of every phenolic resin.",
+   "reactants": [
+    {
+     "label": "phenol",
+     "smiles": "Oc1cc[cH:1]cc1"
+    },
+    {
+     "label": "formaldehyde",
+     "smiles": "[CH2:2]=O"
+    }
+   ],
+   "products": [
+    {
+     "label": "methylol phenol",
+     "smiles": "Oc1cc[c:1](cc1)[CH2:2]O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the reacting ring carbon (para here) — its H moves to the formaldehyde oxygen"
+    },
+    {
+     "map": ":2",
+     "role": "the formaldehyde carbon — new bond to the ring"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "methylol_bridge",
+   "name": "Methylol + phenol (methylene bridge)",
+   "category": "Phenolic & amino resins",
+   "description": "A methylol phenol condenses with another phenol ring, expelling water and leaving the CH2 bridge that cures novolacs and resoles.",
+   "reactants": [
+    {
+     "label": "methylol phenol",
+     "smiles": "Oc1ccc(cc1)[CH2:2][OH:3]"
+    },
+    {
+     "label": "phenol",
+     "smiles": "[cH:4]1ccc(O)cc1"
+    }
+   ],
+   "products": [
+    {
+     "label": "bridged pair",
+     "smiles": "Oc1ccc(cc1)[CH2:2][c:4]1ccc(O)cc1"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "the bridging CH2 carbon"
+    },
+    {
+     "map": ":3",
+     "role": "the methylol OH — leaves as water"
+    },
+    {
+     "map": ":4",
+     "role": "the ring carbon of the second phenol that is attacked"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "urea_formaldehyde",
+   "name": "Urea + formaldehyde",
+   "category": "Phenolic & amino resins",
+   "description": "Formaldehyde adds to a urea N-H giving a methylol urea — the start of UF (and, with melamine, MF) resins.",
+   "reactants": [
+    {
+     "label": "urea",
+     "smiles": "NC(=O)[NH2:1]"
+    },
+    {
+     "label": "formaldehyde",
+     "smiles": "[CH2:2]=O"
+    }
+   ],
+   "products": [
+    {
+     "label": "methylol urea",
+     "smiles": "NC(=O)[NH:1][CH2:2]O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the reacting nitrogen"
+    },
+    {
+     "map": ":2",
+     "role": "the formaldehyde carbon — new N-C bond; its O becomes OH"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "williamson",
+   "name": "Williamson ether (halide + alcohol)",
+   "category": "Substitutions & hydrolysis",
+   "description": "An alkoxide/alcohol displaces a halide to form an ether.",
+   "reactants": [
+    {
+     "label": "alkyl bromide",
+     "smiles": "C[CH2:3][Br:1]"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "ether",
+     "smiles": "C[CH2:3][O:2]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the bromine — a leaving atom, expelled as HBr (not drawn)"
+    },
+    {
+     "map": ":2",
+     "role": "the attacking oxygen"
+    },
+    {
+     "map": ":3",
+     "role": "the carbon where substitution happens"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "amine_alkylation",
+   "name": "Amine alkylation (halide + amine)",
+   "category": "Substitutions & hydrolysis",
+   "description": "An amine displaces a halide — chain extension and quaternisation chemistry (e.g. ionenes).",
+   "reactants": [
+    {
+     "label": "alkyl bromide",
+     "smiles": "C[CH2:3][Br:1]"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "secondary amine",
+     "smiles": "C[CH2:3][NH:2]CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the bromine — leaves (as HBr, not drawn)"
+    },
+    {
+     "map": ":2",
+     "role": "the attacking nitrogen"
+    },
+    {
+     "map": ":3",
+     "role": "the substitution carbon"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epichlorohydrin",
+   "name": "Phenol + epichlorohydrin (glycidylation)",
+   "category": "Substitutions & hydrolysis",
+   "description": "Phenol displaces the chloride of epichlorohydrin, attaching a glycidyl ether — how DGEBA epoxy resin is made from bisphenol-A.",
+   "reactants": [
+    {
+     "label": "phenol",
+     "smiles": "[OH:7]c1ccccc1"
+    },
+    {
+     "label": "epichlorohydrin",
+     "smiles": "[Cl:8][CH2:4]C1CO1"
+    }
+   ],
+   "products": [
+    {
+     "label": "glycidyl ether",
+     "smiles": "c1ccccc1[O:7][CH2:4]C1CO1"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":4",
+     "role": "the CH2 attacked by the phenol oxygen"
+    },
+    {
+     "map": ":7",
+     "role": "the phenol oxygen"
+    },
+    {
+     "map": ":8",
+     "role": "the chloride — a leaving atom, expelled as HCl (not drawn)"
+    }
+   ],
+   "note": "C1CO1 at the end is the intact epoxide ring, ready for later cure."
+  },
+  {
+   "id": "ester_hydrolysis",
+   "name": "Ester hydrolysis",
+   "category": "Substitutions & hydrolysis",
+   "description": "Water splits an ester back into acid + alcohol — polyester degradation.",
+   "reactants": [
+    {
+     "label": "ester",
+     "smiles": "CC(=O)[O:1]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "acid",
+     "smiles": "CC(=O)[OH:2]"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the ester bridge O — leaves with the alkyl as the alcohol"
+    },
+    {
+     "map": ":2",
+     "role": "the water O — becomes the acid's new OH"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "amide_hydrolysis",
+   "name": "Amide hydrolysis",
+   "category": "Substitutions & hydrolysis",
+   "description": "Water splits an amide into acid + amine — nylon degradation.",
+   "reactants": [
+    {
+     "label": "amide",
+     "smiles": "CC(=O)[NH:1]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "acid",
+     "smiles": "CC(=O)[OH:2]"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the amide N — leaves as the free amine"
+    },
+    {
+     "map": ":2",
+     "role": "the water O — the acid's new OH"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "ester_aminolysis",
+   "name": "Ester aminolysis",
+   "category": "Substitutions & hydrolysis",
+   "description": "An amine displaces the alkoxy group of an ester, forming an amide — how PET can be chemically recycled to useful amides.",
+   "reactants": [
+    {
+     "label": "ester",
+     "smiles": "CC(=O)[O:1]CC"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "amide",
+     "smiles": "CC(=O)[NH:2]CC"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "CC[OH:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the ester O — leaves as the alcohol"
+    },
+    {
+     "map": ":2",
+     "role": "the amine N — the new amide bond"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "schiff_base",
+   "name": "Imine / Schiff base (aldehyde + amine)",
+   "category": "Substitutions & hydrolysis",
+   "description": "An aldehyde condenses with a primary amine to an imine (C=N) plus water — dynamic covalent chemistry, vitrimers, self-healing gels.",
+   "reactants": [
+    {
+     "label": "aldehyde",
+     "smiles": "CC=[O:1]"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "imine",
+     "smiles": "CC=[N:2]CC"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the carbonyl O — leaves in the water"
+    },
+    {
+     "map": ":2",
+     "role": "the amine N — replaces it as C=N"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "polycarbonate",
+   "name": "Carbonate link (diaryl carbonate + phenol)",
+   "category": "Esters & condensation",
+   "description": "A phenol displaces one aryloxide of a diaryl carbonate — the melt transesterification route to polycarbonate.",
+   "reactants": [
+    {
+     "label": "phenyl carbonate",
+     "smiles": "c1ccccc1[O:1]C(=O)Oc1ccccc1"
+    },
+    {
+     "label": "cresol (BPA model)",
+     "smiles": "[OH:2]c1ccc(C)cc1"
+    }
+   ],
+   "products": [
+    {
+     "label": "aryl carbonate",
+     "smiles": "c1ccccc1OC(=O)[O:2]c1ccc(C)cc1"
+    },
+    {
+     "label": "phenol",
+     "smiles": "[OH:1]c1ccccc1"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the displaced aryl-ester oxygen — leaves as free phenol"
+    },
+    {
+     "map": ":2",
+     "role": "the incoming phenol oxygen — the new carbonate bridge"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "epoxy_secondary_amine",
+   "name": "Epoxide + secondary amine (crosslink step)",
+   "category": "Epoxide ring-opening",
+   "description": "The second addition in amine cure: the secondary amine formed by the first addition opens another epoxide, creating the branch point.",
+   "reactants": [
+    {
+     "label": "epoxide",
+     "smiles": "C[CH:1]1[O:2][CH2:3]1"
+    },
+    {
+     "label": "secondary amine",
+     "smiles": "CC[NH:4]CC"
+    }
+   ],
+   "products": [
+    {
+     "label": "tertiary amine",
+     "smiles": "C[CH:1]([OH:2])[CH2:3][N:4](CC)CC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "epoxide O → OH"
+    },
+    {
+     "map": ":3",
+     "role": "attacked CH2"
+    },
+    {
+     "map": ":4",
+     "role": "the nitrogen — now bonded to three carbons: a crosslink junction"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "methylol_ether",
+   "name": "Methylol urea + alcohol (ether cure)",
+   "category": "Phenolic & amino resins",
+   "description": "A methylol group condenses with a hydroxyl (e.g. cellulose in wood panels), expelling water — how UF/MF resins bond to the substrate.",
+   "reactants": [
+    {
+     "label": "methylol urea",
+     "smiles": "NC(=O)N[CH2:1][OH:2]"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "C[OH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "ether bridge",
+     "smiles": "NC(=O)N[CH2:1][O:3]C"
+    },
+    {
+     "label": "water",
+     "smiles": "O"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the bridging CH2"
+    },
+    {
+     "map": ":2",
+     "role": "the methylol OH — leaves as water"
+    },
+    {
+     "map": ":3",
+     "role": "the substrate oxygen"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "carbamate_exchange",
+   "name": "Carbamate exchange (vitrimer)",
+   "category": "Isocyanates & polyurethanes",
+   "description": "A urethane swaps its alkoxy group with a free alcohol — the dynamic bond exchange behind PU vitrimers and reprocessable networks.",
+   "reactants": [
+    {
+     "label": "urethane",
+     "smiles": "CCNC(=O)[O:1]CC"
+    },
+    {
+     "label": "alcohol",
+     "smiles": "C[OH:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "new urethane",
+     "smiles": "CCNC(=O)[O:2]C"
+    },
+    {
+     "label": "freed alcohol",
+     "smiles": "CC[OH:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the old carbamate oxygen — leaves with its ethyl"
+    },
+    {
+     "map": ":2",
+     "role": "the incoming alcohol oxygen"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "oxime",
+   "name": "Oxime (ketone + hydroxylamine)",
+   "category": "Substitutions & hydrolysis",
+   "description": "A ketone condenses with hydroxylamine to an oxime — the crosslinker chemistry of oxime-cure silicones and PVA gels.",
+   "reactants": [
+    {
+     "label": "ketone",
+     "smiles": "CC(C)=[O:1]"
+    },
+    {
+     "label": "hydroxylamine",
+     "smiles": "[NH2:2]O"
+    }
+   ],
+   "products": [
+    {
+     "label": "oxime",
+     "smiles": "CC(C)=[N:2]O"
+    },
+    {
+     "label": "water",
+     "smiles": "[OH2:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the carbonyl O — follow it into the water"
+    },
+    {
+     "map": ":2",
+     "role": "the nitrogen — becomes the C=N"
+    }
+   ],
+   "note": ""
+  }
+ ]
+}
