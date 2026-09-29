@@ -731,7 +731,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       if (k == 0) ch.mirror[k] = U(rng) < 0.5;
       else if (spec.tacticity == Tacticity::Isotactic) ch.mirror[k] = ch.mirror[k - 1];
       else if (spec.tacticity == Tacticity::Syndiotactic) ch.mirror[k] = !ch.mirror[k - 1];
-      else if (spec.p_mr >= 0 && spec.p_rm >= 0) {   // Markov: the next dyad depends on the previous one
+      else if (!spec.dyads.empty()) {   // a pattern of m and r, repeated along the chain
+        const char d = spec.dyads[(k - 1) % spec.dyads.size()];
+        ch.mirror[k] = (d == 'm' || d == 'M') ? ch.mirror[k - 1] : !ch.mirror[k - 1];
+      } else if (spec.p_mr >= 0 && spec.p_rm >= 0) {   // Markov: the next dyad depends on the previous one
         const double a = std::min(1.0, spec.p_mr), b = std::min(1.0, spec.p_rm);
         const bool prev_m = k >= 2 ? ch.mirror[k - 1] == ch.mirror[k - 2] : U(rng) < (a + b > 0 ? b / (a + b) : 0.5);
         const bool m = prev_m ? U(rng) >= a : U(rng) < b;

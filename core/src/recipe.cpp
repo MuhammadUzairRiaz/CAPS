@@ -443,6 +443,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           spec.pattern = text(P, "pattern", "");
           if (P.has("pm")) spec.pm = P["pm"].number();
           if (P.has("p_mr") && P.has("p_rm")) spec.p_mr = P["p_mr"].number(), spec.p_rm = P["p_rm"].number();   // Markov tacticity
+          spec.dyads = text(P, "dyads", "");   // a dyad pattern, "mr" …
           if (P.has("r1")) spec.r1 = P["r1"].number();                                                        // terminal model
           if (P.has("r2")) spec.r2 = P["r2"].number();
           // end groups (a preset or a SMILES with *) and the linkage of the units

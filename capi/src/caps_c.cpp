@@ -4283,6 +4283,9 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.pm = j.num("pm", 0.5);
   c.r1 = j.num("r1", 1), c.r2 = j.num("r2", 1);
   c.p_mr = j.num("p_mr", -1), c.p_rm = j.num("p_rm", -1);
+  c.dyads = j.text("dyads", "");
+  for (char ch : c.dyads)
+    if (ch != 'm' && ch != 'r' && ch != 'M' && ch != 'R') throw std::invalid_argument("dyads: a pattern of m (meso) and r (racemo), e.g. \"mr\"");
   if (j.has("chain_dp")) for (const auto& x : j["chain_dp"].items()) c.chain_dp.push_back(int(x.number()));
   c.forcefield = j.text("forcefield");
   const std::string tac = j.text("tacticity", "atactic");

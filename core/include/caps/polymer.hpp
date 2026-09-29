@@ -68,6 +68,8 @@ struct ChainSpec {
   Tacticity tacticity = Tacticity::Atactic;
   double pm = 0.5;                 // Atactic: probability of a meso dyad (Bernoulli)
   double p_mr = -1, p_rm = -1;     // Atactic, both ≥ 0: first-order Markov instead, P(r after m) and P(m after r)
+  std::string dyads;               // Atactic, given: the dyads along the chain as m (meso) and r (racemo), repeated ("mr",
+                                   // "mmr" …) in place of a random draw
   std::string forcefield;          // caps-forcefield JSON with typing rules for the unit templates (optional)
   double r1 = 1, r2 = 1;           // Terminal: reactivity ratios of A and B
   std::vector<int> chain_dp;       // per chain (polydispersity): overrides dp for chain k when given
