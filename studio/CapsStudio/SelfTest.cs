@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CapsStudio.Interop;
 using CapsStudio.ViewModels;
 
@@ -622,6 +623,27 @@ internal static class SelfTest
             vm.GrowDpD = 12;
             var strip12 = vm.PolyStripUnits.Length;
             vm.GrowDpD = 25;
+            // seeds: a fixed seed draws the same sequence every time; new each run draws others, shows the seed, Keep repeats it
+            {
+                vm.PolySeed.Fresh = false; vm.PolySeed.Value = 7;
+                var a1 = string.Concat(vm.PolyStripUnits); vm.PolyRedraw(); var a2 = string.Concat(vm.PolyStripUnits);
+                vm.PolySeed.Value = 8; var b1 = string.Concat(vm.PolyStripUnits);
+                vm.PolySeed.Fresh = true;
+                var draws = new HashSet<string>();
+                for (var k = 0; k < 6; ++k) { vm.PolyRedraw(); draws.Add(string.Concat(vm.PolyStripUnits)); }
+                var shown = string.Concat(vm.PolyStripUnits);
+                var used = vm.PolySeed.Used;
+                vm.PolySeed.Keep();
+                var kept = string.Concat(vm.PolyStripUnits);
+                Check(a1 == a2 && a1 != b1 && draws.Count >= 4 && used > 0 && !vm.PolySeed.Fresh && vm.PolySeed.Value == used && kept == shown,
+                      $"polymer seed: fixed repeats ({a1 == a2}), another seed differs ({a1 != b1}), new each run gave {draws.Count}/6 sequences, kept {used} reproduces ({kept == shown})");
+                vm.PolySeed.Value = 1;
+                // Pack: the seed line follows the picker; new each run writes a fresh seed per pack
+                vm.NewPackInput();
+                vm.PackSeedChoice.Value = 42;
+                Check(vm.PackText.Contains("seed 42\n"), $"pack seed line: {vm.PackText.Split('\n').FirstOrDefault(l => l.StartsWith("seed"))}");
+                vm.PackSeedChoice.Value = 1;
+            }
             vm.GrowDpD = null;   // the box emptied while typing: the DP stays
             // PBSA ends: the head * is on O, the tail * on the acid carbonyl C — hydrogen / hydroxyl gives HO–…–COOH
             vm.HeadCap = 0; vm.TailCap = Array.IndexOf(MainViewModel.EndGroups, "hydroxyl");

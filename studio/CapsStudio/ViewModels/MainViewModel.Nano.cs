@@ -20,7 +20,7 @@ public sealed partial class MainViewModel
     public async Task GraftSilane()
     {
         if (!await NanoTarget()) return;
-        if (RunEdit(new { op = "graft", silane = SilaneIds[_silanePick], fraction = _silaneFraction, min_spacing = _silaneSpacing, seed = 1 }) is { } r)
+        if (RunEdit(new { op = "graft", silane = SilaneIds[_silanePick], fraction = _silaneFraction, min_spacing = _silaneSpacing, seed = NanoSeed.Take() }) is { } r)
             Grafted(r["what"]?.GetValue<string>() ?? "Grafted");
     }
 
@@ -90,7 +90,7 @@ public sealed partial class MainViewModel
         {
             ["op"] = "functionalize", ["group"] = _fnGroup.Trim(), ["pattern"] = FnPatternIds[_fnPattern], ["elements"] = _fnElements.Trim(),
             ["fraction"] = (double)_fnFraction, ["count"] = _fnCount, ["min_spacing"] = (double)_fnSpacing, ["from"] = (double)_fnFrom, ["to"] = (double)_fnTo,
-            ["pitch"] = (double)_fnPitch, ["side"] = FnSideIds[_fnSide], ["seed"] = 1,
+            ["pitch"] = (double)_fnPitch, ["side"] = FnSideIds[_fnSide], ["seed"] = NanoSeed.Take(),
         };
         if (_fnPattern == 6) spec["atoms"] = "selection";
         if (RunEdit(spec) is { } r) Grafted(r["what"]?.GetValue<string>() ?? "Functionalised");
@@ -371,7 +371,7 @@ public sealed partial class MainViewModel
                 o["matrix"] = new JsonObject { ["chains"] = (int)_matrixChains, ["density"] = (double)_matrixDensity };
                 var spec = JsonNode.Parse(poly.Spec)!.AsObject();
                 spec["dp"] = (int)_matrixDp;
-                var g = new CapsGrowOpts { Chains = (int)_matrixChains, Dp = (int)_matrixDp, Tacticity = 0, Seed = 1, Density = 0, ContactScale = 1.0, Curve = 1 };
+                var g = new CapsGrowOpts { Chains = (int)_matrixChains, Dp = (int)_matrixDp, Tacticity = 0, Seed = (ulong)NanoSeed.Take(), Density = 0, ContactScale = 1.0, Curve = 1 };
                 var (optsText, specText) = (o.ToJsonString(), spec.ToJsonString());
                 bool Progress(int d, int t, int r)
                 {

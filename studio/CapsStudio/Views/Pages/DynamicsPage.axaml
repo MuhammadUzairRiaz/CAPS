@@ -176,7 +176,7 @@
                 </Grid>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsEnabled="{Binding !MdRunning}">
                   <CheckBox Classes="toggle" Content="Draw new velocities" IsChecked="{Binding MdNewVelocities}" />
-                  <NumericUpDown Grid.Column="1" Width="110" Value="{Binding MdSeedD}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="Seed" />
+                  <v:SeedPicker Grid.Column="1" DataContext="{Binding MdSeedChoice}" ShowLabel="False" ToolTip.Tip="Velocities and thermostat noise (also Equilibrate and CBMC)" />
                 </Grid>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Height="150">
                   <v:LinePlot x:Name="TPlot" AutoRange="True" XLabel="time (ps)" YLabel="T (K)" />

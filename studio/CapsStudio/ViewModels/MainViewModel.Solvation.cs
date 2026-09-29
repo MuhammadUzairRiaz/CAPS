@@ -124,7 +124,7 @@ public sealed partial class MainViewModel
         ["tolerance"] = (double)_solvTol, ["solvent"] = _solvent?.Id ?? "water", ["water_model"] = _waterModel,
         ["density"] = _solvDensity > 0 ? (double)_solvDensity : 0,
         ["molecules"] = sample ?? (int.TryParse(_solvMolecules, out var m) && m > 0 ? m : 0),
-        ["ion_mode"] = _ionMode, ["salt"] = _salt, ["concentration"] = (double)_conc, ["cations"] = (int)_cations, ["anions"] = (int)_anions, ["seed"] = 1,
+        ["ion_mode"] = _ionMode, ["salt"] = _salt, ["concentration"] = (double)_conc, ["cations"] = (int)_cations, ["anions"] = (int)_anions, ["seed"] = SolvSeed.Take(),
     }.ToJsonString();
 
     // ---------------------------------------------------------------- plan, preview, run

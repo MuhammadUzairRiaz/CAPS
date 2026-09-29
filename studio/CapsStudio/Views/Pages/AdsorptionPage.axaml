@@ -12,6 +12,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <v:SeedPicker DataContext="{Binding AdsSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding AdsRunning}" />
           <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Locate" VerticalAlignment="Center" /></StackPanel>

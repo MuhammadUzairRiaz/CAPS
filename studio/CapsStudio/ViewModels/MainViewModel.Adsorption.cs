@@ -66,7 +66,7 @@ public sealed partial class MainViewModel
         {
             ["adsorbates"] = new JsonArray(rows.Select(r => (JsonNode)new JsonObject { ["smiles"] = r.Smiles.Trim(), ["count"] = (int)r.Count }).ToArray()),
             ["cycles"] = _adsCycles, ["steps"] = _adsSteps, ["t_high"] = _adsTHigh, ["t_low"] = _adsTLow,
-            ["region"] = _adsRegion == 1 ? "above" : "cell", ["cutoff"] = Math.Min(12.0, _relaxCutoff), ["coulomb"] = _relaxCoulomb, ["seed"] = _mdSeed,
+            ["region"] = _adsRegion == 1 ? "above" : "cell", ["cutoff"] = Math.Min(12.0, _relaxCutoff), ["coulomb"] = _relaxCoulomb, ["seed"] = AdsSeed.Take(),
         }.ToJsonString();
         AdsRunning = true;
         AdsError = "";

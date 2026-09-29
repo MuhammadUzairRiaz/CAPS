@@ -64,6 +64,7 @@
           </Border>
           <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <v:SeedPicker DataContext="{Binding SolvSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
               <Button Content="Cancel" Click="OnCancel" />
               <Button Classes="primary" Click="OnSolvate" IsEnabled="{Binding SolvIdle}">
                 <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="15" VerticalAlignment="Center" /><TextBlock Text="Solvate" VerticalAlignment="Center" /></StackPanel>

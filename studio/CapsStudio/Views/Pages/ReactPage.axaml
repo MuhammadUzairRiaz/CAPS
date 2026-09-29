@@ -167,9 +167,9 @@
                   <CheckBox Classes="toggle" Content="Auto capture: widen when no pair is found, up to" IsChecked="{Binding RxAutoCapture}" />
                   <NumericUpDown Grid.Column="1" Value="{Binding RxCaptureMaxD}" Minimum="1" Maximum="20" Increment="0.5" FormatString="0.# Å" IsEnabled="{Binding RxAutoCapture}" ShowButtonSpinner="False" />
                 </Grid>
-                <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                   <CheckBox Classes="toggle" Content="Relax after each cycle" IsChecked="{Binding RxRelax}" />
-                  <NumericUpDown Grid.Column="1" Value="{Binding RxSeedD}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="Seed" />
+                  <v:SeedPicker Grid.Column="1" DataContext="{Binding RxSeedChoice}" ShowLabel="False" ToolTip.Tip="Which pairs react when several are in range, and the MD noise" />
                 </Grid>
               </StackPanel>
             </StackPanel>
