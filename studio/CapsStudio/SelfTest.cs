@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 43, "native ABI version 43");
+        Check(Native.AbiVersion() == 44, "native ABI version 44");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -684,6 +684,17 @@ internal static class SelfTest
             Check(vm.IsInterfacePage && vm.IfRows.Count == 7 && Row("Surface top") != "—" && Row("Gap to the surface") != "—" && Row("Film plateau ρ") != "—" &&
                   vm.IfSeries.Any(x => x.Label == "film") && vm.IfSeries.Any(x => x.Label == "surface Si") && vm.IfGapBand != null,
                   $"interface page: {string.Join(" · ", vm.IfRows.Select(r => $"{r.Quantity} {r.ThisFrame}/{r.Trajectory}"))} · {vm.IfStatus}");
+            // the surface chosen by hand: the held molecule, then ids with no atoms (the page says why nothing splits)
+            vm.IfUseHeld();
+            var heldId = vm.Document!.HeldMolecule();
+            var heldOk = vm.Analyze.SurfaceMolecules == heldId.ToString() && vm.IfSetupText.StartsWith($"surface: molecule {heldId}");
+            vm.Analyze.SurfaceMolecules = "999";
+            vm.Analyze.AxisIndex = 0;
+            vm.RunInterface().GetAwaiter().GetResult();
+            var noSurface = vm.IfNote.Contains("no atom in the surface") && Row("Surface top") == "—" && vm.IfSetupText == "surface: molecule 999 · along x";
+            vm.Analyze.SurfaceMolecules = "1";
+            vm.Analyze.AxisIndex = 2;
+            Check(heldOk && noSurface, $"interface setup: held molecule {heldId} → '{vm.Analyze.SurfaceMolecules}'; ids with no atoms: {vm.IfNote}");
         }
         vm.SetModule(8);
 

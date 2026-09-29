@@ -3230,6 +3230,24 @@ int32_t caps_measure(caps_doc* d, const int32_t* idx, int32_t n, double* value) 
   });
 }
 
+// Molecule ids "1-4,7" (commas, semicolons or spaces between; a-b ranges inclusive).
+static std::vector<int64_t> parse_mol_ranges(std::string t) {
+  for (auto& c : t) if (c == ',' || c == ';') c = ' ';
+  std::istringstream is(t);
+  std::set<int64_t> want;
+  for (std::string w; is >> w;) {
+    const auto dash = w.find('-', 1);
+    int64_t a = 0, b = 0;
+    try {
+      a = std::stoll(w.substr(0, dash));
+      b = dash == std::string::npos ? a : std::stoll(w.substr(dash + 1));
+    } catch (const std::exception&) { throw std::invalid_argument("molecule ids: cannot read " + w + " (write 1-4,7)"); }
+    if (b < a || b - a > 10000000) throw std::invalid_argument("molecule ids: bad range " + w);
+    for (int64_t m = a; m <= b; ++m) want.insert(m);
+  }
+  return {want.begin(), want.end()};
+}
+
 int32_t caps_analyze(caps_doc* d, const char* props, const caps_analyze_opts* p, caps_analyze_progress_fn progress, void* user) {
   return caps_analyze_ex(d, props, p, nullptr, progress, user);
 }
@@ -3275,6 +3293,9 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       o.energy = elec(o.energy);
       if (p->threads > 0) o.threads = p->threads;
       if (p->radii && *p->radii) o.radii = p->radii;
+      if (p->zbin > 0) o.zbin = p->zbin;
+      if (p->axis >= 1 && p->axis <= 3) o.axis = p->axis - 1;
+      if (p->surface && *p->surface) o.surface_mols = parse_mol_ranges(p->surface);
     }
     caps_mech_opts mo{};
     if (m) mo = *m;
@@ -3303,16 +3324,8 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       } else if (group == "exclude-held") {
         for (size_t i = 0; i < n; ++i) in[i] = d->held_mol <= 0 || top.atoms[i].mol != d->held_mol;
       } else if (group.rfind("molecules:", 0) == 0) {
-        std::string t = group.substr(10);
-        for (auto& c : t) if (c == ',' || c == ';') c = ' ';
-        std::istringstream is(t);
-        std::set<int64_t> want;
-        for (std::string w; is >> w;) {
-          const auto dash = w.find('-', 1);
-          const int64_t a = std::stoll(w.substr(0, dash)), b = dash == std::string::npos ? a : std::stoll(w.substr(dash + 1));
-          if (b < a || b - a > 10000000) throw std::invalid_argument("group: bad molecule range " + w);
-          for (int64_t m = a; m <= b; ++m) want.insert(m);
-        }
+        const auto ids = parse_mol_ranges(group.substr(10));
+        const std::set<int64_t> want(ids.begin(), ids.end());
         const auto mol = top.molecules();
         for (size_t i = 0; i < n; ++i) in[i] = want.count(top.has_mol ? top.atoms[i].mol : int64_t(mol[i]) + 1) > 0;
       } else {

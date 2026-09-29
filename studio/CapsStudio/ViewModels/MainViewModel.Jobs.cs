@@ -211,6 +211,7 @@ public sealed partial class MainViewModel
         {
             if (e.PropertyName == nameof(AnalyzeViewModel.Working)) Track("Analyze", Analyze.Working, 1, "Analyze · properties");
             if (e.PropertyName == nameof(AnalyzeViewModel.Log) && _live.TryGetValue("Analyze", out var j)) j.Add(Analyze.Log);
+            if (e.PropertyName is nameof(AnalyzeViewModel.SurfaceMolecules) or nameof(AnalyzeViewModel.AxisIndex)) Raise(nameof(IfSetupText));
         };
         ThermoChanged += OnThermo;
         RelaxCurvesChanged += OnRelaxCurves;

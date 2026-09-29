@@ -72,6 +72,7 @@ int usage() {
                "  caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,\n"
                "               relaxation,ced,delta,ffv,psd,crosslinks,entanglements] [--first N --last N --stride N] [--frame-ps X | --timestep-fs 1]\n"
                "               [--pair C-C --inter] [--qmax 25 --dq 0.02 --qdirect 4] [--probe 0] [--grid 0.4] [--ff FF.json] [--json OUT] [--csv DIR]\n"
+               "               interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
@@ -2002,6 +2003,24 @@ int main(int argc, char** argv) {
       auto has = [&](const char* k) { return std::find(ids.begin(), ids.end(), k) != ids.end(); };
       if (o.count("--zbin")) ao.zbin = std::stod(o["--zbin"]);
       if (o.count("--exclude-mol")) ao.exclude_mol = std::stoll(o["--exclude-mol"]);
+      if (o.count("--axis")) {
+        const std::string a = o["--axis"];
+        if (a == "a" || a == "x") ao.axis = 0;
+        else if (a == "b" || a == "y") ao.axis = 1;
+        else if (a == "c" || a == "z") ao.axis = 2;
+        else throw std::invalid_argument("--axis: x, y or z (a, b or c)");
+      }
+      if (o.count("--surface")) {
+        std::string t = o["--surface"];
+        for (auto& c : t) if (c == ',') c = ' ';
+        std::istringstream is(t);
+        for (std::string w; is >> w;) {
+          const auto dash = w.find('-', 1);
+          const long long a = std::stoll(w.substr(0, dash)), b = dash == std::string::npos ? a : std::stoll(w.substr(dash + 1));
+          if (b < a) throw std::invalid_argument("--surface: bad range " + w);
+          for (long long m = a; m <= b; ++m) ao.surface_mols.push_back(m);
+        }
+      }
       if (has("ced") || has("delta") || has("cij_fluct") || has("adhesion")) {
         System s0 = t.frame(0);
         if (!s0.unwrapped) make_molecules_whole(s0);

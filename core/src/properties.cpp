@@ -797,34 +797,58 @@ Property ced_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
 
 Vec3 unitv3(const Vec3& v) { const double n = norm(v); return n > 0 ? v * (1 / n) : v; }
 
-// Heights in the cell (the fractional c coordinate × the cell height), wrapped into [0, Lz).
-double cell_height(const Cell& c, const Vec3& r) {
-  double f = c.to_fractional(r)[2];
+// The cell's axis k (0 a, 1 b, 2 c): its vector, the face the other two span (area and unit normal) and the height.
+struct CellAxis { Vec3 normal; double area = 0, height = 0; };
+CellAxis cell_axis(const Cell& c, int k) {
+  const Vec3& v = k == 0 ? c.a : k == 1 ? c.b : c.c;
+  const Vec3 f = k == 0 ? cross(c.b, c.c) : k == 1 ? cross(c.c, c.a) : cross(c.a, c.b);
+  CellAxis r;
+  r.area = norm(f);
+  r.normal = unitv3(f);
+  r.height = std::fabs(dot(v, r.normal));
+  return r;
+}
+const char* axis_name(int k) { return k == 0 ? "x" : k == 1 ? "y" : "z"; }
+
+// Heights in the cell along axis k (the fractional coordinate × the cell height), wrapped into [0, height).
+double cell_height(const Cell& c, const Vec3& r, int k = 2) {
+  double f = c.to_fractional(r)[size_t(k)];
   f -= std::floor(f);
-  return f * std::fabs(dot(c.c, unitv3(cross(c.a, c.b))));
+  return f * cell_axis(c, k).height;
+}
+
+std::string surface_name(const AnalyzeOptions& o) {
+  if (o.surface_mols.empty()) return "molecule 1";
+  std::string s = o.surface_mols.size() == 1 ? "molecule " : "molecules ";
+  for (size_t i = 0; i < o.surface_mols.size(); ++i) s += (i ? "," : "") + std::to_string(o.surface_mols[i]);
+  return s;
 }
 
 Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
-  Property p{"zprofile", "Density profile along z", "g/cm³", "", NaN, NaN, {}, {}, {}};
+  const int ax = std::clamp(o.axis, 0, 2);
+  const std::string zl = std::string(axis_name(ax)) + " (Å)";
+  Property p{"zprofile", std::string("Density profile along ") + axis_name(ax), "g/cm³", "", NaN, NaN, {}, {}, {}};
   const Cell& c0 = t.topology.cell;
   if (!c0.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
-  const double area = norm(cross(c0.a, c0.b)), Lz = std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b))));
+  const CellAxis A0 = cell_axis(c0, ax);
+  const double area = A0.area, Lz = A0.height;
   const double dz = o.zbin > 0 ? o.zbin : 0.5;
   const int nb = std::max(1, int(std::ceil(Lz / dz)));
   const auto& atoms = t.topology.atoms;
-  bool two = false;
-  for (const auto& a : atoms) two = two || a.mol != atoms.front().mol;
+  bool has_sub = false, has_film = false;
+  for (const auto& a : atoms) (o.is_surface(a.mol) ? has_sub : has_film) = true;
+  const bool two = has_sub && has_film;
   std::vector<double> all(size_t(nb), 0), sub(size_t(nb), 0), film(size_t(nb), 0);
   std::map<int, std::vector<double>> by_element;   // the surface (molecule 1) element by element: Si, O, …
   for (size_t q = 0; q < fr.size(); ++q) {
     if (cancelled(o, "density profile", double(q) / fr.size())) throw Cancel();
     const System f = t.frame(fr[q]);
     for (const auto& a : f.atoms) {
-      const int b = std::clamp(int(cell_height(f.cell, a.pos) / (Lz / nb)), 0, nb - 1);
+      const int b = std::clamp(int(cell_height(f.cell, a.pos, ax) / (Lz / nb)), 0, nb - 1);
       const double m = f.mass_of(a);
       all[size_t(b)] += m;
-      (two && a.mol == 1 ? sub : film)[size_t(b)] += m;
-      if (two && a.mol == 1) {
+      (two && o.is_surface(a.mol) ? sub : film)[size_t(b)] += m;
+      if (two && o.is_surface(a.mol)) {
         auto& v = by_element[a.element];
         if (v.empty()) v.assign(size_t(nb), 0);
         v[size_t(b)] += m;
@@ -832,8 +856,8 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
     }
   }
   const double conv = 1.0 / (kNA * 1e-24) / (area * (Lz / nb) * double(fr.size()));   // g/mol per bin → g/cm³
-  Series sa{"all atoms", "z (Å)", "density (g/cm³)", {}, {}}, ss{"molecule 1 (surface)", "z (Å)", "density (g/cm³)", {}, {}},
-      sf{"other molecules (film)", "z (Å)", "density (g/cm³)", {}, {}};
+  Series sa{"all atoms", zl, "density (g/cm³)", {}, {}}, ss{"surface", zl, "density (g/cm³)", {}, {}},
+      sf{"film", zl, "density (g/cm³)", {}, {}};
   for (int b = 0; b < nb; ++b) {
     const double z = (b + 0.5) * Lz / nb;
     sa.x.push_back(z), sa.y.push_back(all[size_t(b)] * conv);
@@ -878,17 +902,19 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
       }
     }
     for (const auto& [z, v] : by_element) {
-      Series se{"surface " + std::string(element(z).symbol), "z (Å)", "density (g/cm³)", {}, {}};
+      Series se{"surface " + std::string(element(z).symbol), zl, "density (g/cm³)", {}, {}};
       for (int b = 0; b < nb; ++b) { se.x.push_back(sf.x[size_t(b)]); se.y.push_back(v[size_t(b)] * conv); }
       p.series.push_back(std::move(se));
     }
-    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell, averaged over " + std::to_string(fr.size()) +
-               " frames; value: the film's density over the middle half of its thickness";
+    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell along " + axis_name(ax) + ", averaged over " +
+               std::to_string(fr.size()) + " frames; surface: " + surface_name(o) + ", film: the other molecules; value: the film's density over the middle half of its thickness";
     p.series.push_back(std::move(sf));
     p.series.push_back(std::move(ss));
   } else {
-    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell, averaged over " + std::to_string(fr.size()) + " frames";
-    p.notes.push_back("one molecule id only: no surface / film split (an interface from the Surface builder has the surface as molecule 1)");
+    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell along " + axis_name(ax) + ", averaged over " +
+               std::to_string(fr.size()) + " frames";
+    p.notes.push_back(has_sub ? "every atom is in the surface (" + surface_name(o) + "): no film to split off"
+                              : "no atom in the surface (" + surface_name(o) + "): no surface / film split (an interface from the Surface builder has the surface as molecule 1)");
   }
   p.series.push_back(std::move(sa));
   return p;
@@ -926,8 +952,8 @@ Property filler_interaction_prop(const Trajectory& t, const std::vector<size_t>&
   Property p{"interaction", "Filler–matrix interaction energy", "kcal/mol", "", NaN, NaN, {}, {}, {}};
   if (!o.ff) { p.notes.push_back("needs a force field (assign one in Field, or --ff)"); return p; }
   std::vector<uint32_t> filler, rest;
-  for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (t.topology.atoms[i].mol == 1 ? filler : rest).push_back(i);
-  if (filler.empty() || rest.empty()) { p.notes.push_back("needs the filler as molecule 1 and a matrix of other molecules"); return p; }
+  for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (o.is_surface(t.topology.atoms[i].mol) ? filler : rest).push_back(i);
+  if (filler.empty() || rest.empty()) { p.notes.push_back("needs the filler (" + surface_name(o) + ") and a matrix of other molecules"); return p; }
   const auto r = interaction_series(t, fr, o, filler, rest, "interaction");
   std::tie(p.value, p.error) = block_mean(r.total, o.blocks);
   auto mean = [](const std::vector<double>& v) { return std::accumulate(v.begin(), v.end(), 0.0) / double(v.size()); };
@@ -937,8 +963,8 @@ Property filler_interaction_prop(const Trajectory& t, const std::vector<size_t>&
   p.extra["Coulomb part (kcal/mol)"] = mean(r.coul);
   p.extra["per filler heavy atom (kcal/mol)"] = heavy ? p.value / heavy : 0.0;
   p.extra["filler atoms"] = double(filler.size());
-  p.method = "E_int = E_all − E_filler − E_matrix, each part in the same periodic cell with " + o.ff->name + " (no tail correction), over " +
-             std::to_string(fr.size()) + " frames";
+  p.method = "E_int = E_all − E_filler − E_matrix (filler: " + surface_name(o) + "), each part in the same periodic cell with " + o.ff->name +
+             " (no tail correction), over " + std::to_string(fr.size()) + " frames";
   Series s{"E_int", "time (ps)", "interaction (kcal/mol)", {}, {}};
   const auto times = frame_times(t, o);
   for (size_t q = 0; q < fr.size(); ++q) s.x.push_back(times[fr[q]] - times[fr[0]]), s.y.push_back(r.total[q]);
@@ -953,18 +979,20 @@ Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   const Cell& c0 = t.topology.cell;
   if (!c0.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
   std::vector<uint32_t> sub, film;
-  for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (t.topology.atoms[i].mol == 1 ? sub : film).push_back(i);
-  if (sub.empty() || film.empty()) { p.notes.push_back("needs the surface as molecule 1 and a film of other molecules"); return p; }
+  for (uint32_t i = 0; i < t.topology.atoms.size(); ++i) (o.is_surface(t.topology.atoms[i].mol) ? sub : film).push_back(i);
+  if (sub.empty() || film.empty()) { p.notes.push_back("needs the surface (" + surface_name(o) + ") and a film of other molecules"); return p; }
   const ForceField& ff = *o.ff;
-  const double area = norm(cross(c0.a, c0.b)), Lz = std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b))));
+  const int ax = std::clamp(o.axis, 0, 2);
+  const CellAxis A0 = cell_axis(c0, ax);
+  const double area = A0.area, Lz = A0.height;
   const auto r = interaction_series(t, fr, o, sub, film, "adhesion");
   // a film between the surface and the surface's periodic image touches it on both sides
   int faces = 1;
   {
     const System f = t.frame(fr[0]);
     double stop = -1e300, sbot = 1e300, ftop = -1e300;
-    for (uint32_t i : sub) { const double z = cell_height(f.cell, f.atoms[i].pos); stop = std::max(stop, z); sbot = std::min(sbot, z); }
-    for (uint32_t i : film) ftop = std::max(ftop, cell_height(f.cell, f.atoms[i].pos));
+    for (uint32_t i : sub) { const double z = cell_height(f.cell, f.atoms[i].pos, ax); stop = std::max(stop, z); sbot = std::min(sbot, z); }
+    for (uint32_t i : film) ftop = std::max(ftop, cell_height(f.cell, f.atoms[i].pos, ax));
     if (ftop > stop && Lz + sbot - ftop < 8.0) faces = 2;
   }
   std::vector<double> w;
@@ -984,7 +1012,8 @@ Property adhesion_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   p.extra["Coulomb part (kcal/mol)"] = std::accumulate(ec.begin(), ec.end(), 0.0) / ec.size();
   p.extra["interfaces"] = faces;
   p.extra["surface area per interface (Å²)"] = area;
-  p.method = "W = −(E_all − E_surface − E_film) / (interfaces × A), each part in the same periodic cell with " + ff.name +
+  p.method = "W = −(E_all − E_surface − E_film) / (interfaces × A), surface: " + surface_name(o) + ", A: the cell face normal to " +
+             axis_name(ax) + "; each part in the same periodic cell with " + ff.name +
              " (no tail correction), over " + std::to_string(fr.size()) + " frames";
   if (faces == 2) p.notes.push_back("the film touches the surface and its periodic image: two interfaces share the energy");
   if (p.value < 0) p.notes.push_back("negative: the film is pressed into the surface (close contacts); relax it, the surface held, before measuring adhesion");
@@ -1032,7 +1061,9 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
   if (bb.empty()) { p.notes.push_back("no chain backbones of three or more heavy atoms"); return p; }
   const Cell& c0 = t.topology.cell;
   const bool cell = c0.valid();
-  const double Lz = cell ? std::fabs(dot(c0.c, unitv3(cross(c0.a, c0.b)))) : 0;
+  const int ax = std::clamp(o.axis, 0, 2);
+  const Vec3 nrm = cell ? cell_axis(c0, ax).normal : Vec3{ax == 0 ? 1.0 : 0.0, ax == 1 ? 1.0 : 0.0, ax == 2 ? 1.0 : 0.0};
+  const double Lz = cell ? cell_axis(c0, ax).height : 0;
   const int nzb = cell ? std::max(1, int(std::ceil(Lz / 1.0))) : 0;
   std::vector<double> p2z(size_t(nzb), 0), cnt(size_t(nzb), 0);
   std::vector<double> Sf, fz, cryst;
@@ -1057,11 +1088,12 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
     for (size_t i = 0; i < u.size(); ++i) {
       for (int a = 0; a < 3; ++a)
         for (int b2 = 0; b2 < 3; ++b2) Q[a][b2] += 1.5 * u[i][a] * u[i][b2] - (a == b2 ? 0.5 : 0);
-      f += 1.5 * u[i][2] * u[i][2] - 0.5;
+      const double un = dot(u[i], nrm);
+      f += 1.5 * un * un - 0.5;
       if (cell) {
         const Cell& fc = t.cells.size() > fr[q] ? t.cells[fr[q]] : c0;
-        const int b2 = std::clamp(int(cell_height(fc, mid[i]) / (Lz / nzb)), 0, nzb - 1);
-        p2z[size_t(b2)] += 1.5 * u[i][2] * u[i][2] - 0.5;
+        const int b2 = std::clamp(int(cell_height(fc, mid[i], ax) / (Lz / nzb)), 0, nzb - 1);
+        p2z[size_t(b2)] += 1.5 * un * un - 0.5;
         cnt[size_t(b2)] += 1;
       }
     }
@@ -1096,16 +1128,17 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
   p.extra["director x"] = e.second[0];
   p.extra["director y"] = e.second[1];
   p.extra["director z"] = e.second[2];
-  p.extra["Herman f along z"] = std::accumulate(fz.begin(), fz.end(), 0.0) / fz.size();
+  p.extra[std::string("Herman f along ") + axis_name(ax)] = std::accumulate(fz.begin(), fz.end(), 0.0) / fz.size();
   p.extra["local crystallinity (fraction)"] = std::accumulate(cryst.begin(), cryst.end(), 0.0) / cryst.size();
   p.extra["chord vectors per frame"] = double(nall) / double(c.pos.size());
   p.method = "S = largest eigenvalue of Q = ⟨3/2 u u − 1/2 I⟩ over backbone chords u (i → i+2), " + std::to_string(bb.size()) +
-             " chains, " + std::to_string(c.pos.size()) + " frames; Herman f = ⟨P₂(u·z)⟩; crystallinity: chords with ≥ 8 neighbours within 5 Å aligned within 10°";
+             " chains, " + std::to_string(c.pos.size()) + " frames; Herman f = ⟨P₂(u·" + axis_name(ax) + ")⟩; crystallinity: chords with ≥ 8 neighbours within 5 Å aligned within 10°";
   if (o.exclude_mol) p.notes.push_back("molecule " + std::to_string(o.exclude_mol) + " (the held surface) left out");
   if (Sf.size() == 1 && nall < 500 && p.value < 0.5) p.notes.push_back("few chords: S of an isotropic sample is not zero but about 1/√N");
   p.series.push_back(std::move(ss));
   if (cell) {
-    Series sz{"P₂(cos θ_z) along z", "z (Å)", "⟨P₂⟩ against z", {}, {}};
+    const std::string an = axis_name(ax);
+    Series sz{"P₂(cos θ_" + an + ") along " + an, an + " (Å)", "⟨P₂⟩ against " + an, {}, {}};
     for (int b2 = 0; b2 < nzb; ++b2)
       if (cnt[size_t(b2)] > 0) sz.x.push_back((b2 + 0.5) * Lz / nzb), sz.y.push_back(p2z[size_t(b2)] / cnt[size_t(b2)]);
     p.series.insert(p.series.begin(), std::move(sz));
