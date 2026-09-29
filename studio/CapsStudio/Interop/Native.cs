@@ -264,6 +264,8 @@ public struct CapsReactCycle
     public double MaxForce;   // ABI 42: largest force after the cycle's relaxation, kcal/mol/Å
     public int Crosslinks;    // ABI 45: links between chains so far
     public double Capture;    // ABI 45: the capture distance the cycle used
+    public int Target;        // ABI 45: the crosslink target as links (0: a conversion target)
+    public double Density, Degree;   // ABI 45: ν so far (mol/m³), DC so far (%)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -536,6 +538,11 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_react_summary")] public static extern int ReactSummary(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bond_react_export")] public static extern int BondReactExport(IntPtr doc, byte[] templates, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bond_react_import")] public static extern int BondReactImport([MarshalAs(UnmanagedType.LPUTF8Str)] string pre,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string post, [MarshalAs(UnmanagedType.LPUTF8Str)] string map, [MarshalAs(UnmanagedType.LPUTF8Str)] string masses,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string name, double capture, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
     [DllImport(Lib, EntryPoint = "caps_field_type_by_example")] public static extern int FieldTypeByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types, byte[] report, int cap);
@@ -1329,18 +1336,49 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>React the current frame; progress runs on the worker thread with each cycle; return false to cancel.</summary>
-    public string React(string templates, CapsReactOpts o, Func<CapsReactCycle, bool>? progress)
+    public string React(string templates, CapsReactOpts o, Func<CapsReactCycle, bool>? progress, Action<CapsDocument, string>? live = null)
     {
         using (Hold(longRun: true))
         {
             Alive();
             var report = new byte[8192];
             CapsReactProgress? cb = progress == null ? null : (in CapsReactCycle r, IntPtr _) => progress(r) ? 0 : 1;
-            var rc = Native.React(H, System.Text.Encoding.UTF8.GetBytes(templates + "\0"), o, cb, IntPtr.Zero, report, report.Length);
+            // live: the network after every cycle (chains keep their start molecule ids, the links selected)
+            CapsGrowLive? lv = live == null ? null : (h0, stats, _) => live(new CapsDocument(h0, "live"), stats);
+            Native.SetLive(H, lv, IntPtr.Zero);
+            int rc;
+            try { rc = Native.React(H, System.Text.Encoding.UTF8.GetBytes(templates + "\0"), o, cb, IntPtr.Zero, report, report.Length); }
+            finally { Native.SetLive(H, null, IntPtr.Zero); }
             GC.KeepAlive(cb);
+            GC.KeepAlive(lv);
             Check(rc);
             return System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim();
         }
+    }
+
+    /// <summary>The reactions as a LAMMPS fix bond/react set in dir (JSON report: files, notes, variants, candidates, covered).</summary>
+    public string BondReactExport(string templates, string dir, string optionsJson)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            var t = System.Text.Encoding.UTF8.GetBytes(templates + "\0");
+            var n = Native.BondReactExport(H, t, dir, optionsJson, null, 0);
+            Check(n < 0 ? -1 : 0);
+            var buf = new byte[n];
+            Check(Native.BondReactExport(H, t, dir, optionsJson, buf, n) < 0 ? -1 : 0);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
+        }
+    }
+
+    /// <summary>A LAMMPS fix bond/react set read back as a CAPS template (JSON {text, notes}).</summary>
+    public static string BondReactImport(string pre, string post, string map, string masses, string name, double capture)
+    {
+        var n = Native.BondReactImport(pre, post, map, masses, name, capture, null, 0);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        var buf = new byte[n];
+        Native.BondReactImport(pre, post, map, masses, name, capture, buf, n);
+        return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
     }
 
     public void SaveTrajectory(string path) { using (Hold()) Check(Native.SaveTrajectory(H, path)); }

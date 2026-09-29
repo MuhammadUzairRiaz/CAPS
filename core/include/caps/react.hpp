@@ -105,6 +105,8 @@ struct CycleRow {
   int atoms = 0;
   int crosslinks = 0;           // links between different chains so far
   double capture = 0;           // the capture distance this cycle used (Å; auto capture raises it)
+  int target = 0;               // the crosslink target as links (0: a conversion target)
+  double density = 0, degree = 0;   // ν so far (mol/m³), DC so far (%)
 };
 
 // What the run aims for: the conversion of the counted sites, or a number of links between chains given as a count, per
@@ -140,6 +142,9 @@ struct ReactOptions {
   // bonds only between different chains: each atom keeps the chain it started in; a small molecule (a curative, a
   // crosslinker) belongs to the chains it has bonded to, so ENR(A)–MAH cannot close back onto chain A
   bool between_chains = false;
+  // each atom's chain from an earlier run (the report's chains_after), so a cure in several runs keeps the chains it started
+  // from; empty (or another atom count): the molecules of the structure as it is now
+  std::vector<int64_t> chains;
   bool keep_byproducts = false; // byproduct atoms kept as molecules (else removed)
   // several templates: 0 closest pairs first whatever the template (by distance); 1 by relative weights (weights[k], else
   // the template's weight) — each pick chooses a template in proportion to its weight, then its closest free pair
@@ -153,6 +158,9 @@ struct ReactOptions {
   EnergyOptions energy;
   std::function<bool(const CycleRow&)> progress;   // return false to cancel
   std::function<void(const System&, int cycle)> frame;
+  // after every cycle, for a live view: the structure, its row, each atom's chain of the start (negative: a byproduct) and
+  // the atoms of the links formed between chains so far
+  std::function<void(const System&, const CycleRow&, const std::vector<int64_t>& chain, const std::vector<char>& linked)> live;
 };
 
 struct ReactReport {
@@ -172,6 +180,7 @@ struct ReactReport {
   int monomers = 0;             // repeat units of the chains (residues), 0 when the chains carry no residue numbers
   double degree = 0;            // DC = 2 × links / monomers × 100 %
   std::string field;            // the force field that relaxed the network
+  std::vector<int64_t> chains_after;   // each atom's chain at the end (for the next run's ReactOptions::chains)
 };
 
 // Runs cycles of find → react → retype → relax (→ dynamics) until the target conversion, the cycle limit, or no

@@ -707,6 +707,13 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
             if (kv[0] == "rxcycles") w.ViewModel.RxCyclesD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "rxtarget")   // rxtarget=KIND:VALUE — React's crosslink target (1 links … 5 DC %)
+            {
+                var p = kv[1].Split(':');
+                w.ViewModel.RxTargetKind = int.Parse(p[0]);
+                if (p.Length > 1) w.ViewModel.RxTargetValueD = decimal.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture);
+            }
+            if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
             if (kv[0] == "rxmd") w.ViewModel.RxMdPsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "react")
             {
