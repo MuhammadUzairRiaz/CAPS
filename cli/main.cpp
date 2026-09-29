@@ -140,6 +140,8 @@ int usage() {
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
                "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]\n"
+               "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
+               "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
                "  caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]\n"
                "               [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)\n"
                "               [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)\n"
@@ -215,7 +217,7 @@ const std::set<std::string>& known_options() {
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--ops", "--ops-file", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
@@ -262,7 +264,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
                         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
                         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
                         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
-                        a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" || a == "--hybrid" ||
+                        a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" || a == "--hybrid" || a == "--resume" ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -2413,6 +2415,40 @@ int main(int argc, char** argv) {
         for (size_t i = 0; i < s.atoms.size(); ++i) d.fixed[i] = s.atoms[i].mol == mm;
       }
       const bool quiet = o.count("--quiet");
+      // resume: the input is a checkpoint written by --checkpoint-every; --steps is the run's total length
+      if (o.count("--resume")) {
+        const auto at = s.title.find("checkpoint step ");
+        if (at == std::string::npos) throw std::invalid_argument("--resume needs a checkpoint written by caps md --checkpoint-every (its title says the step)");
+        const int64_t done = std::stoll(s.title.substr(at + 16));
+        if (s.velocities.size() != s.atoms.size()) throw std::invalid_argument("the checkpoint carries no velocities");
+        if (done >= d.steps) throw std::invalid_argument("the checkpoint is at step " + std::to_string(done) + ": --steps (the total) must be larger");
+        d.step_offset = done;
+        d.steps -= done;
+        d.new_velocities = false;
+        std::printf("resuming at step %lld: %lld steps to go\n", static_cast<long long>(done), static_cast<long long>(d.steps));
+      }
+      // checkpoints: the full state every N steps, written whole (to a temporary file, then renamed)
+      if (o.count("--checkpoint-every")) {
+        d.checkpoint_every = std::stoll(o["--checkpoint-every"]);
+        const std::string cp = o.count("--checkpoint") ? o["--checkpoint"] : std::filesystem::path(o["-o"]).replace_extension(".restart.data").string();
+        const int64_t total = d.step_offset + d.steps;
+        d.checkpoint = [&, cp, total](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int64_t step) {
+          System k = s;
+          k.cell = c;
+          k.velocities.resize(k.atoms.size());
+          for (size_t i = 0; i < k.atoms.size(); ++i) {
+            k.atoms[i].pos = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+            k.velocities[i] = {v[3 * i], v[3 * i + 1], v[3 * i + 2]};
+          }
+          k.unwrapped = true;
+          k.title = "checkpoint step " + std::to_string(step) + " of " + std::to_string(total);
+          const std::string tmp = cp + ".tmp";
+          const std::string why = write_lammps_data_or_structure(k, d.field ? *d.field : default_forcefield(k), d.energy, tmp);
+          if (!why.empty()) write_lammps_data(k, tmp);
+          std::filesystem::rename(tmp, cp);
+          if (!quiet) std::printf("checkpoint: step %lld → %s\n", static_cast<long long>(step), cp.c_str());
+        };
+      }
       Trajectory traj;
       traj.topology = s;
       if (o.count("--dump"))
