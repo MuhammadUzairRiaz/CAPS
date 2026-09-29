@@ -205,6 +205,10 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
     } else if (w[0] == "capture") t->capture = real(1);
     else if (w[0] == "probability") t->probability = real(1);
     else if (w[0] == "min_path") t->min_path = integer(1);
+    else if (w[0] == "charges") {   // after the reaction: keep (the atoms' charges, a deleted atom's to its partner) or forcefield
+      if (w.size() < 2 || (w[1] != "keep" && w[1] != "forcefield")) throw bad("charges keep | forcefield");
+      t->keep_charges = w[1] == "keep";
+    }
     else if (w[0] == "sites") { for (size_t i = 1; i < w.size(); ++i) t->sites.push_back(integer(i)); }
     else if (w[0] == "form") t->form.push_back({integer(1), integer(2)});
     else if (w[0] == "break") t->brk.push_back({integer(1), integer(2)});
@@ -499,6 +503,12 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
   auto key = [](uint32_t a, uint32_t b) { return std::make_pair(std::min(a, b), std::max(a, b)); };
   std::vector<char> used(n, 0), dead(n, 0);
   int applied = 0;
+  // charges kept through the reaction (templates with "charges keep", on a structure that has charges): a deleted atom's
+  // charge goes to its bonded partner that stays, so every molecule's net charge is conserved
+  bool keep = s.has_charges;
+  std::vector<double> q(n);
+  for (size_t i = 0; i < n; ++i) q[i] = s.atoms[i].charge;
+  std::vector<std::pair<uint32_t, std::vector<uint32_t>>> gone;   // deleted atom, its partners before the reaction
   for (const auto& m : matches) {
     bool free = true;
     for (uint32_t a : m.atoms) free = free && !used[a];
@@ -510,6 +520,13 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
       throw ReactError("internal: map " + std::to_string(map) + " not in the match");
     };
     for (uint32_t a : m.atoms) used[a] = 1;
+    keep = keep && t.keep_charges;
+    for (int a : t.remove) {
+      std::vector<uint32_t> partners;
+      for (const auto& e : bonds)
+        if (e.first == at(a) || e.second == at(a)) partners.push_back(e.first == at(a) ? e.second : e.first);
+      gone.push_back({at(a), partners});
+    }
     for (auto [a, b] : t.brk) bonds.erase(key(at(a), at(b)));
     for (auto [a, b] : t.form) bonds.insert(key(at(a), at(b)));
     for (auto [h, x] : t.move) {
@@ -526,6 +543,14 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
     for (int a : t.remove) dead[at(a)] = 1;
     ++applied;
   }
+  if (keep)
+    for (const auto& [d, partners] : gone) {
+      uint32_t to = d;
+      for (uint32_t p : partners) if (!dead[p]) { to = p; break; }
+      if (to == d) { keep = false; break; }   // nothing stays bonded to it: the charge has nowhere to go
+      q[to] += q[d];
+    }
+  if (keep) for (size_t i = 0; i < n; ++i) s.atoms[i].charge = q[i];
   // compact: drop deleted atoms and their bonds
   std::vector<int64_t> remap(n, -1);
   std::vector<Atom> atoms;
@@ -537,7 +562,7 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
   s.atoms = std::move(atoms);
   for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i + 1);
   s.velocities.clear();
-  s.has_charges = false;   // charges are recomputed for the new chemistry
+  s.has_charges = keep && applied > 0;   // else charges are recomputed for the new chemistry
   s.bonds_from_file = true;
   // molecules follow the new bonds
   s.has_mol = false;
@@ -599,6 +624,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
                        ". Run with relaxation off (topology only) or add parameters for these atoms.");
     }
     row.energy = rr.final.total();
+    row.max_force = rr.fmax_final;
     // names follow the new types
     const ForceField ff = default_forcefield(s);
     for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].name = ff.atom_type[i];
@@ -652,10 +678,16 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       for (size_t i = 0; i < s.atoms.size(); ++i) if (site[i]) s.velocities[i] = {0, 0, 0};
     }
     row.energy = rr.final.total();
+    row.max_force = rr.fmax_final;
   };
 
   int stall = 0;
   for (int cycle = 1; cycle <= o.max_cycles; ++cycle) {
+    // the checkpoint: this cycle failing gives back the structure as the last one left it
+    const System keep = o.keep_on_failure && !rep.cycles.empty() ? s : System{};
+    const int reactions_before = rep.reactions, stall_before = stall;
+    int applied = 0;
+    try {
     std::vector<Match> all;
     for (size_t k = 0; k < o.templates.size(); ++k) {
       auto m = find_matches(s, o.templates[k], int(k));
@@ -677,7 +709,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     std::set<int64_t> site_ids;
     for (const auto& m : chosen)
       for (uint32_t a : m.atoms) site_ids.insert(s.atoms[a].id);
-    const int applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen);
+    applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen);
     CycleRow row;
     row.cycle = cycle;
     row.reactions = applied;
@@ -711,8 +743,21 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     row.clusters = cluster_stats(s);
     row.atoms = int(s.atoms.size());
     rep.cycles.push_back(row);
+    if (o.frame) o.frame(s, cycle);   // a frame that cannot be kept fails the cycle too
+    } catch (const std::exception& e) {
+      if (!rep.cycles.empty() && rep.cycles.back().cycle == cycle) rep.cycles.pop_back();
+      if (!o.keep_on_failure || rep.cycles.empty()) throw;
+      s = keep;
+      rep.reactions = reactions_before;
+      stall = stall_before;
+      rep.failed_cycle = cycle;
+      rep.failure = e.what();
+      rep.notes.push_back("failed at cycle " + std::to_string(cycle) + ": " + rep.failure + " — the structure after cycle " + std::to_string(cycle - 1) +
+                          " is kept (restart from it)");
+      break;
+    }
+    const CycleRow& row = rep.cycles.back();
     if (o.progress && !o.progress(row)) throw ReactError("reaction run cancelled");
-    if (o.frame) o.frame(s, cycle);
     if (row.conversion >= o.target_conversion) {
       rep.notes.push_back("target conversion reached");
       break;

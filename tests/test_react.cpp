@@ -141,6 +141,45 @@ TEST(React, CrosslinkRelaxesAndRemovesHydrogen) {
   // still typed: every carbon has four neighbours or is aromatic
   const ForceField ff = assign_gaff(s);
   EXPECT_EQ(ff.atom_type.size(), s.atoms.size());
+  EXPECT_GT(r.cycles.front().max_force, 0);   // the force after each cycle's relaxation
+}
+
+// FailedJob: a cycle that fails leaves the structure as the last completed cycle did, and the report says which one
+TEST(React, FailedCycleKeepsTheCompletedOnes) {
+  GrowOptions g;
+  g.chains = 4;
+  g.dp = 5;
+  g.density = 0.4;
+  g.seed = 3;
+  System s = grow(g);
+  RelaxOptions rl;
+  rl.target_density = 0.95;
+  rl.ftol = 1.0;
+  relax(s, rl);
+  ReactOptions o;
+  o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.max_per_cycle = 1;
+  o.max_cycles = 4;
+  System after1;
+  o.frame = [&](const System& x, int cycle) {
+    if (cycle == 1) after1 = x;
+    if (cycle == 2) throw std::runtime_error("disk full");
+  };
+  ReactReport r;
+  react(s, o, &r);
+  EXPECT_EQ(r.failed_cycle, 2);
+  EXPECT_NE(r.failure.find("disk full"), std::string::npos);
+  ASSERT_EQ(r.cycles.size(), 1u);
+  EXPECT_EQ(r.reactions, r.cycles[0].total);
+  EXPECT_EQ(s.atoms.size(), after1.atoms.size());
+  EXPECT_EQ(s.bonds.size(), after1.bonds.size());
+  // off: the failure is thrown, as before; and a failure in the first cycle always is
+  o.keep_on_failure = false;
+  System t = s;
+  EXPECT_THROW(react(t, o), std::runtime_error);
+  o.keep_on_failure = true;
+  o.frame = [](const System&, int) { throw std::runtime_error("at once"); };
+  EXPECT_THROW(react(t, o), std::runtime_error);
 }
 
 TEST(React, ClustersAndFloryStockmayer) {
@@ -299,4 +338,53 @@ TEST(React, PolysulfideCouplesToNaturalRubber) {
   }
   EXPECT_EQ(sh, rep.reactions);
   EXPECT_EQ(sc_rubber, rep.reactions);
+}
+
+// Reaction SMARTS (design/boards/ReactionTemplate "Saved as atom-mapped reaction SMARTS"): the query atoms with their
+// constraints, products by map number, deleted atoms absent, substitution bonds single. RDKit (2026.03) parses these and,
+// run on ethane + ethane / propylene oxide + methylamine, gives butane and 1-(methylamino)propan-2-ol.
+TEST(React, TemplatesAsReactionSmarts) {
+  const auto cc = parse_templates(builtin_template("cc_crosslink"));
+  EXPECT_EQ(reaction_smarts(cc[0]), "[#6;X4;!H0;A:1]~[#1:3].[#6;X4;!H0;A:2]~[#1:4]>>[#6:1]-[#6:2]");
+  const auto ep = parse_templates(builtin_template("epoxy_amine_primary"));
+  EXPECT_EQ(reaction_smarts(ep[0]), "[#6;H2;r3:1]~1~[#8;r3:2]~[#6;r3:3]~1.[#7;H2:4]~[#1:5]>>[#6:1](~[#6:3]~[#8:2]-[#1:5])-[#7:4]");
+  // the editor's view carries it
+  EXPECT_NE(template_view(cc[0]).find("\"smarts\""), std::string::npos);
+}
+
+// "charges keep": the atoms keep their charges and a deleted hydrogen's joins its carbon, so the net charge is conserved
+// exactly; without it the charges are dropped for the force field to recompute
+TEST(React, ChargesKeptThroughTheReaction) {
+  GrowOptions g;
+  g.chains = 4;
+  g.dp = 5;
+  g.density = 0.4;
+  g.seed = 3;
+  System s = grow(g);
+  RelaxOptions rl;
+  rl.target_density = 0.95;
+  rl.ftol = 1.0;
+  relax(s, rl);
+  const ForceField ff = assign_gaff(s);
+  for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = ff.charge[i] + (i % 7 == 0 ? 0.01 : 0.0);   // a net charge to follow
+  s.has_charges = true;
+  double q0 = 0;
+  for (const auto& a : s.atoms) q0 += a.charge;
+  auto t = parse_templates(builtin_template("cc_crosslink") + "charges keep\n");
+  ASSERT_TRUE(t[0].keep_charges);
+  System k = s;
+  const auto m = find_matches(k, t[0]);
+  ASSERT_FALSE(m.empty());
+  ASSERT_EQ(apply_matches(k, t, {m.front()}), 1);
+  double q1 = 0;
+  for (const auto& a : k.atoms) q1 += a.charge;
+  EXPECT_TRUE(k.has_charges);
+  EXPECT_EQ(k.atoms.size(), s.atoms.size() - 2);
+  EXPECT_NEAR(q1, q0, 1e-12);
+  // the default: recomputed for the new chemistry
+  auto d = parse_templates(builtin_template("cc_crosslink"));
+  System r = s;
+  apply_matches(r, d, {find_matches(r, d[0]).front()});
+  EXPECT_FALSE(r.has_charges);
+  EXPECT_THROW(parse_templates(builtin_template("cc_crosslink") + "charges maybe\n"), ReactError);
 }

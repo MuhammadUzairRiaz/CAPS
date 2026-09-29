@@ -93,6 +93,13 @@ public sealed partial class MainViewModel
     public decimal BlendChains { get => _blendChains; set { if (Set(ref _blendChains, Math.Clamp(Math.Round(value), 1, 1000))) BlendRecount(); } }
     public decimal BlendDensity { get => _blendDensity; set => Set(ref _blendDensity, Math.Clamp(value, 0.1m, 1.5m)); }
     public int BlendMorph { get => _blendMorph; set { if (Set(ref _blendMorph, value)) { Raise(nameof(BlendMorphText)); } } }
+    // growth as Grow's methods: best of k, Rosenbluth (soft spheres), Rosenbluth with UFF Lennard-Jones
+    public static readonly string[] BlendGrowMethods = ["Best of k trials", "Rosenbluth · soft spheres", "Rosenbluth · UFF LJ (CBMC)"];
+    private int _blendGrowMethod;
+    private decimal _blendGrowTemp = 450;
+    public int BlendGrowMethod { get => _blendGrowMethod; set { if (Set(ref _blendGrowMethod, Math.Clamp(value, 0, 2))) Raise(nameof(BlendGrowBiased)); } }
+    public bool BlendGrowBiased => _blendGrowMethod > 0;
+    public decimal BlendGrowTemp { get => _blendGrowTemp; set => Set(ref _blendGrowTemp, Math.Clamp(value, 100, 2000)); }
     public bool BlendMixed { get => _blendMorph == 0; set { if (value) BlendMorph = 0; } }
     public bool BlendSlabs { get => _blendMorph == 1; set { if (value) BlendMorph = 1; } }
     public bool BlendDroplet { get => _blendMorph == 2; set { if (value) BlendMorph = 2; } }
@@ -191,7 +198,8 @@ public sealed partial class MainViewModel
             ["weight"] = WeightShare(r, _blendMode),
             ["chains"] = _blendMode == 2 ? (int)r.Count : 0,
         }).ToArray());
-        var opts = new JsonObject { ["components"] = comps, ["chains"] = (int)_blendChains, ["density"] = (double)_blendDensity, ["morphology"] = _blendMorph == 1 ? "slabs" : _blendMorph == 2 ? "droplet" : "mixed" }.ToJsonString();
+        var opts = new JsonObject { ["components"] = comps, ["chains"] = (int)_blendChains, ["density"] = (double)_blendDensity, ["morphology"] = _blendMorph == 1 ? "slabs" : _blendMorph == 2 ? "droplet" : "mixed",
+                                    ["method"] = GrowMethodIds[_blendGrowMethod], ["temperature"] = (double)_blendGrowTemp }.ToJsonString();
         var name = string.Join(" / ", BlendRows.Select(r => r.Polymer!.Name.Split(" (")[0]));
         try
         {

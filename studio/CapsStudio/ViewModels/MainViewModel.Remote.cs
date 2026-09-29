@@ -286,31 +286,7 @@ public sealed partial class MainViewModel
                 File.WriteAllText(Path.Combine(local, recipeFile), RemoteRecipe(kind, stem).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             }
             if (!_relaxCoulomb && !grow) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
-            var script = _settings.JobTemplate.Replace("{job}", id).Replace("{partition}", h.Partition).Replace("{recipe}", recipeFile + " --out out");
-            job.Add($"Prepared {local}: {(grow ? "" : "structure.data, ")}{recipeFile}, job.sh");
-            // the host's folder (the template's {workdir} is expanded there: $USER, ~)
-            var mk = await Tool("ssh", SshArgs(h, $"mkdir -p \"{h.WorkDir}/{id}\" && cd \"{h.WorkDir}/{id}\" && pwd"), 30000);
-            if (mk.Code != 0) throw new InvalidOperationException("ssh: " + (mk.Err.Length > 0 ? mk.Err.Split('\n')[0] : $"exit {mk.Code}"));
-            var dir = mk.Out.Split('\n').Last().Trim();
-            job.Remote.Dir = dir;
-            script = script.Replace("{workdir}/" + id, dir).Replace("{workdir}", Path.GetDirectoryName(dir.Replace('\\', '/'))?.Replace('\\', '/') ?? dir);
-            if (h.Scheduler == "none" && !script.Contains("caps run")) script += $"\ncaps run {recipeFile} --out out\n";
-            File.WriteAllText(Path.Combine(local, "job.sh"), script.Replace("\r\n", "\n"));
-            var files = grow ? new[] { recipeFile, "job.sh" } : new[] { "structure.data", recipeFile, "job.sh" };
-            var up = await Tool("scp", ScpArgs(h, files.Select(f => Path.Combine(local, f)), $"{Target(h)}:{dir}/"), 120000);
-            if (up.Code != 0) throw new InvalidOperationException("scp: " + (up.Err.Length > 0 ? up.Err.Split('\n')[0] : $"exit {up.Code}"));
-            job.Add($"Uploaded to {h.Name}:{dir}");
-            var submit = h.Scheduler switch
-            {
-                "SLURM" => $"cd {Q(dir)} && sbatch --parsable job.sh",
-                "PBS" => $"cd {Q(dir)} && qsub job.sh",
-                _ => $"cd {Q(dir)} && (nohup bash job.sh > caps.log 2>&1 & echo $!)",
-            };
-            var sub = await Tool("ssh", SshArgs(h, submit), 60000);
-            if (sub.Code != 0 || sub.Out.Length == 0) throw new InvalidOperationException("submit: " + (sub.Err.Length > 0 ? sub.Err.Split('\n')[0] : $"exit {sub.Code}"));
-            job.Remote.JobId = sub.Out.Split('\n').Last().Split(';')[0].Trim();
-            job.Status = "running";
-            job.Add($"Submitted · {(h.Scheduler == "none" ? "process" : h.Scheduler + " job")} {job.Remote.JobId}");
+            await SendPrepared(job, h, id, grow ? new[] { recipeFile, "job.sh" } : new[] { "structure.data", recipeFile, "job.sh" }, recipeFile);
             Status = $"{kind} sent to {h.Name} · {h.Scheduler} {job.Remote.JobId} · Jobs follows it";
             StartRemotePoll();
         }
@@ -326,6 +302,67 @@ public sealed partial class MainViewModel
         }
         SaveJobs();
         Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
+    }
+
+    /// <summary>The job folder prepared locally (the recipe, a structure) goes up to the host with job.sh and is submitted.</summary>
+    private async Task SendPrepared(Job job, RemoteHost h, string id, string[] files, string recipeFile)
+    {
+        var local = job.Remote!.Local;
+        var script = _settings.JobTemplate.Replace("{job}", id).Replace("{partition}", h.Partition).Replace("{recipe}", recipeFile + " --out out");
+        job.Add($"Prepared {local}: {string.Join(", ", files.Where(f => f != "job.sh"))}, job.sh");
+        // the host's folder (the template's {workdir} is expanded there: $USER, ~)
+        var mk = await Tool("ssh", SshArgs(h, $"mkdir -p \"{h.WorkDir}/{id}\" && cd \"{h.WorkDir}/{id}\" && pwd"), 30000);
+        if (mk.Code != 0) throw new InvalidOperationException("ssh: " + (mk.Err.Length > 0 ? mk.Err.Split('\n')[0] : $"exit {mk.Code}"));
+        var dir = mk.Out.Split('\n').Last().Trim();
+        job.Remote.Dir = dir;
+        script = script.Replace("{workdir}/" + id, dir).Replace("{workdir}", Path.GetDirectoryName(dir.Replace('\\', '/'))?.Replace('\\', '/') ?? dir);
+        if (h.Scheduler == "none" && !script.Contains("caps run")) script += $"\ncaps run {recipeFile} --out out\n";
+        File.WriteAllText(Path.Combine(local, "job.sh"), script.Replace("\r\n", "\n"));
+        var up = await Tool("scp", ScpArgs(h, files.Select(f => Path.Combine(local, f)), $"{Target(h)}:{dir}/"), 120000);
+        if (up.Code != 0) throw new InvalidOperationException("scp: " + (up.Err.Length > 0 ? up.Err.Split('\n')[0] : $"exit {up.Code}"));
+        job.Add($"Uploaded to {h.Name}:{dir}");
+        var submit = h.Scheduler switch
+        {
+            "SLURM" => $"cd {Q(dir)} && sbatch --parsable job.sh",
+            "PBS" => $"cd {Q(dir)} && qsub job.sh",
+            _ => $"cd {Q(dir)} && (nohup bash job.sh > caps.log 2>&1 & echo $!)",
+        };
+        var sub = await Tool("ssh", SshArgs(h, submit), 60000);
+        if (sub.Code != 0 || sub.Out.Length == 0) throw new InvalidOperationException("submit: " + (sub.Err.Length > 0 ? sub.Err.Split('\n')[0] : $"exit {sub.Code}"));
+        job.Remote.JobId = sub.Out.Split('\n').Last().Split(';')[0].Trim();
+        job.Status = "running";
+        job.Add($"Submitted · {(h.Scheduler == "none" ? "process" : h.Scheduler + " job")} {job.Remote.JobId}");
+    }
+
+    /// <summary>A recipe (caps run) sent to a host as its own job: the sweep's cells on a cluster.</summary>
+    internal async Task<Job> SendRecipe(RemoteHost h, string kind, string title, string stem, string recipeJson)
+    {
+        var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
+        var id = $"{kind.ToLowerInvariant()}-{k}";
+        var job = new Job { Id = id, Kind = kind, Module = 0, Title = $"{title} · on {h.Name}", Document = "new cell", Atoms = 0, Provenance = Manifest(kind) };
+        job.Status = "queued";
+        job.Remote = new RemoteRun { Host = h.Name, Scheduler = h.Scheduler, Local = Path.Combine(RemoteFolder, $"{id}-{DateTime.Now:yyyyMMdd-HHmmss}"), Stem = stem };
+        Jobs.Insert(0, job);
+        Raise(nameof(HasJobs)); Raise(nameof(JobsSummary));
+        try
+        {
+            Directory.CreateDirectory(job.Remote.Local);
+            File.WriteAllText(Path.Combine(job.Remote.Local, "recipe.json"), recipeJson);
+            await SendPrepared(job, h, id, ["recipe.json", "job.sh"], "recipe.json");
+            StartRemotePoll();
+        }
+        catch (Exception e)
+        {
+            job.Status = "failed";
+            job.Error = e.Message;
+            job.Add("Could not send the job: " + e.Message);
+            job.Suggestion = "Test the host in Settings › Compute & remote (keys come from your SSH agent; caps must be on the host's PATH).";
+            job.SuggestModule = 10;
+            job.Ended = DateTime.Now;
+        }
+        SaveJobs();
+        Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
+        return job;
     }
 
     private void StartRemotePoll()

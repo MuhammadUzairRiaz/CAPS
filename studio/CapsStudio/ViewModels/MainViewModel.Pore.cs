@@ -5,7 +5,7 @@ using CapsStudio.Interop;
 namespace CapsStudio.ViewModels;
 
 /// <summary>A fluid for a pore: its name and SMILES.</summary>
-public sealed record PoreFluid(string Name, string Smiles)
+public sealed record PoreFluid(string Name, string Smiles, bool UnitedAtom = false)
 {
     public override string ToString() => Name;
 }
@@ -19,7 +19,8 @@ public sealed partial class MainViewModel
     public static readonly string[] PoreWallChoices = ["1 graphene layer each", "2 layers each (AB)", "3 layers each (ABA)"];
     public static readonly PoreFluid[] PoreFluids =
     [
-        new("Methane · all-atom", "C"), new("Carbon dioxide", "O=C=O"), new("Water", "O"), new("Nitrogen", "N#N"),
+        new("Methane · all-atom", "C"), new("Methane · TraPPE-UA (one site)", "C", true), new("Ethane · TraPPE-UA", "CC", true),
+        new("n-Butane · TraPPE-UA", "CCCC", true), new("n-Hexane · TraPPE-UA", "CCCCCC", true), new("Carbon dioxide", "O=C=O"), new("Water", "O"), new("Nitrogen", "N#N"),
         new("Ethanol", "CCO"), new("n-Hexane", "CCCCCC"), new("Toluene", "Cc1ccccc1"), new("Empty (no fluid)", ""),
     ];
     private int _poreType, _poreWalls, _poreFluid, _poreCrystal;
@@ -70,7 +71,7 @@ public sealed partial class MainViewModel
             ["width"] = (double)_poreWidth, ["layers"] = _poreWalls + 1, ["lx"] = (double)_poreLx, ["ly"] = (double)_poreLy,
             ["vacuum"] = _poreVacuum, ["wall"] = (double)_poreWall, ["length"] = (double)_poreLength, ["passivate"] = _porePassivate,
             ["repeat"] = new JsonArray((int)_poreRepeat, (int)_poreRepeat, (int)_poreRepeat),
-            ["fluid"] = f.Smiles, ["fluid_name"] = f.Name.Split(" · ")[0], ["count"] = f.Smiles.Length > 0 ? (int)_poreCount : 0,
+            ["fluid"] = f.Smiles, ["fluid_name"] = f.Name.Split(" · ")[0], ["count"] = f.Smiles.Length > 0 ? (int)_poreCount : 0, ["united_atom"] = f.UnitedAtom,
         };
         if (_poreType != 0) o["cif"] = _poreCrystal < Crystals.Count ? Crystals[_poreCrystal].File : "";
         return o.ToJsonString();

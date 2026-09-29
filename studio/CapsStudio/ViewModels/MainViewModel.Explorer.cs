@@ -35,7 +35,7 @@ public partial class MainViewModel
         set
         {
             if (!Set(ref _leftTab, Math.Clamp(value, 0, 1))) return;
-            Raise(nameof(ShowPropertiesTab)); Raise(nameof(ShowFragmentsTab));
+            Raise(nameof(ShowPropertiesTab)); Raise(nameof(ShowFragmentsTab)); Raise(nameof(FragmentsDrawer)); Raise(nameof(ProjectOnlyDrawer));
             if (_leftTab == 0 && _propsDirty) RefreshProperties();   // caught up when shown again
         }
     }

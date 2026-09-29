@@ -117,12 +117,57 @@ public sealed partial class MainViewModel
                 }
             }
             catch { }
+        // the project: the folder's structures whose provenance used the method (with their steps), and this session's jobs
+        ManualUsedProject.Clear();
+        if (p.Engines.Length > 0)
+        {
+            foreach (var d in ProjectDocs)
+            {
+                if (d.Manifest?["steps"] is not JsonArray st) continue;
+                var at = new List<int>();
+                for (int k = 0; k < st.Count; k++)
+                    if (st[k]?["engine"]?.GetValue<string>() is string e && p.Engines.Contains(e)) at.Add(k + 1);
+                if (at.Count > 0) ManualUsedProject.Add($"{d.Name} · step{(at.Count > 1 ? "s" : "")} {string.Join(", ", at)}");
+            }
+            foreach (var j in Jobs)
+                if (JobUsed(j, p.Engines)) ManualUsedProject.Add($"{j.Id} · {j.Title} · {j.Status}");
+        }
         RaiseManual();
     }
 
+    /// <summary>A job of this session ran one of the engines: its kind is the engine's module, and its title names the
+    /// method where the engine does (dynamics.npt → an NPT run, relax.lbfgs → L-BFGS).</summary>
+    private static bool JobUsed(Job j, string[] engines)
+    {
+        static string Norm(string x) => x.ToLowerInvariant().Replace("-", "").Replace(" ", "");
+        foreach (var e in engines)
+        {
+            var dot = e.IndexOf('.');
+            var (module, method) = dot < 0 ? (e, "") : (e[..dot], e[(dot + 1)..]);
+            if (!string.Equals(module, j.Kind, StringComparison.OrdinalIgnoreCase)) continue;
+            var t = Norm(j.Title);
+            var hit = method switch
+            {
+                "" => true,
+                "cg" => t.Contains("conjugategradient"),
+                "sd" => t.Contains("steepestdescent"),
+                "larsen21" => t.Contains("larsen"),
+                "protocol" => true,
+                "templates" => true,
+                _ => t.Contains(Norm(method)),
+            };
+            if (hit) return true;
+        }
+        return false;
+    }
+    public ObservableCollection<string> ManualUsedProject { get; } = new();
+    public bool ManualHasUsedProject => ManualUsedProject.Count > 0;
+    public string ManualUsedProjectTitle => ProjectFolder.Length > 0 ? "Used in this project · " + System.IO.Path.GetFileName(ProjectFolder.TrimEnd('/', '\\')) : "Used in this project";
+
     private void RaiseManual()
     {
-        foreach (var n in new[] { nameof(ManualHasDeviation), nameof(ManualDeviation), nameof(ManualHasUsed), nameof(ManualUsedTitle), nameof(ManualCount) }) Raise(n);
+        foreach (var n in new[] { nameof(ManualHasDeviation), nameof(ManualDeviation), nameof(ManualHasUsed), nameof(ManualUsedTitle), nameof(ManualCount),
+                                  nameof(ManualHasUsedProject), nameof(ManualUsedProjectTitle) }) Raise(n);
     }
 
     /// <summary>BibTeX of the page's references (from CAPS's built-in table).</summary>

@@ -238,6 +238,16 @@ TEST(Mechanics, TensileModulusOfColdCrystal) {
   EXPECT_NEAR(r.modulus, E, 0.12 * E);
   EXPECT_NEAR(r.poisson, nu, 0.1);
   EXPECT_GT(r.curve.size(), 50u);
+  // the three directions averaged: a cubic crystal gives the same E along each, so the mean is E and the spread small
+  System s3 = s0;
+  o.axis = 3;
+  const TensileResult r3 = run_tensile(s3, o);
+  EXPECT_NEAR(r3.modulus, E, 0.12 * E);
+  EXPECT_LT(r3.modulus_err, 0.1 * E);
+  EXPECT_NEAR(r3.poisson, nu, 0.1);
+  EXPECT_EQ(r3.curve.size(), r.curve.size());
+  EXPECT_NEAR(r3.curve.back().strain, r.curve.back().strain, 1e-12);
+  EXPECT_NE(r3.method.find("x, y and z"), std::string::npos);
 }
 
 // Green–Kubo viscosity: an Ornstein–Uhlenbeck stress (variance σ², relaxation τ) in the three off-diagonal components

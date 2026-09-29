@@ -161,6 +161,8 @@
                     <NumericUpDown Value="{Binding FibreLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" />
                   </StackPanel>
                   <CheckBox Classes="toggle" Content="Passivate the surface (Si–OH, O–H)" IsChecked="{Binding ParticlePassivate}" IsVisible="{Binding !ParticleIsMetal}" />
+                  <CheckBox Classes="toggle" Content="Relax the surface with a force field (UFF)" IsChecked="{Binding ParticleRelax}" IsVisible="{Binding !ParticleIsMetal}"
+                            ToolTip.Tip="After cutting: atoms within 4 Å of the surface (under-coordinated atoms, H, OH) minimised with UFF, the core held as the crystal made it. Metals are not offered: UFF is no model of a metal surface — relax those with EAM in LAMMPS" />
                   <CheckBox Classes="toggle" Content="Cap with thiolate ligands" IsChecked="{Binding ParticleThiolate}" IsVisible="{Binding ParticleIsMetal}"
                             ToolTip.Tip="Alkanethiolates bound through S in three-fold hollows of the surface atoms (2.45 Å), √3 × d(M–M) apart, tails all-trans and pointing out; no metal–S bonds are written" />
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding ParticleIsMetal}" IsEnabled="{Binding ParticleThiolate}">

@@ -23,6 +23,7 @@ public sealed class SweepRun : ObservableObject
     public string? FinalStatus { get; set; }
     public string FinalDetail { get; set; } = "";
     public double Rg { get; set; } = double.NaN;
+    public double Tg { get; set; } = double.NaN;
     public string SeedText => Seed.ToString(CultureInfo.InvariantCulture);
     public IBrush Fill => Tokens.Brush(_status switch { "done" => "OkB", "running" => "AccB", "failed" => "ErrB", _ => "DimB" });
     public double Dim => _status is "queued" or "stopped" ? 0.45 : 1.0;
@@ -34,7 +35,7 @@ public sealed record SweepCell(int Dp, ObservableCollection<SweepRun> Runs);
 /// <summary>A grid row: one tacticity across the chain lengths.</summary>
 public sealed record SweepRow(string Tacticity, ObservableCollection<SweepCell> Cells);
 /// <summary>Results of one condition over its seeds.</summary>
-public sealed record SweepResult(string Condition, string Density, string Rg, string Seeds);
+public sealed record SweepResult(string Condition, string Density, string Rg, string Tg, string Seeds);
 
 /// <summary>Parameter sweep (design/boards/ParameterSweep): a grid of runs — tacticity × chain length × seed — each grown,
 /// relaxed, optionally run in NPT, analysed (density, Rg) and saved with its provenance, a few at a time on this machine;
@@ -60,7 +61,11 @@ public sealed partial class MainViewModel
     public string SweepSeeds { get => _swSeeds; set { if (Set(ref _swSeeds, value ?? "")) PlanSweep(); } }
     public decimal SweepChains { get => _swChains; set { if (Set(ref _swChains, Math.Clamp(Math.Round(value), 1, 500))) PlanSweep(); } }
     public decimal SweepDensity { get => _swDensity; set => Set(ref _swDensity, Math.Clamp(value, 0.05m, 1.5m)); }
-    public bool SweepNpt { get => _swNpt; set => Set(ref _swNpt, value); }
+    public bool SweepNpt { get => _swNpt; set { if (Set(ref _swNpt, value)) RaiseSweep(); } }
+    // each run equilibrated by the Equilibrate page's protocol, and its Tg by stepwise NPT cooling (Analyze's Tg)
+    private bool _swEquil, _swTg;
+    public bool SweepEquilibrate { get => _swEquil; set { if (Set(ref _swEquil, value)) RaiseSweep(); } }
+    public bool SweepTg { get => _swTg; set { if (Set(ref _swTg, value)) RaiseSweep(); } }
     public decimal SweepNptPs { get => _swNptPs; set => Set(ref _swNptPs, Math.Clamp(value, 1, 100000)); }
     public decimal SweepTemperature { get => _swTemp; set => Set(ref _swTemp, Math.Clamp(value, 1, 2000)); }
     public decimal SweepConcurrency { get => _swConcurrency; set => Set(ref _swConcurrency, Math.Clamp(Math.Round(value), 1, 8)); }
@@ -76,7 +81,7 @@ public sealed partial class MainViewModel
     public string SweepTitle => $"Sweep · tacticity × chain length · {SweepPolymer?.Name.Split(" (")[0] ?? "polymer"}";
     public string SweepSubtitle => (_swCombine == 0
         ? $"{_sweepRuns.Count} runs = {SweepTacticities().Count} tacticit{(SweepTacticities().Count == 1 ? "y" : "ies")} × {ParseInts(_swDps).Count} DP × {ParseInts(_swSeeds).Count} seeds"
-        : $"{_sweepRuns.Count} runs · {SweepCombines[_swCombine].ToLowerInvariant()} × {ParseInts(_swSeeds).Count} seeds") + $" · Grow → Relax{(_swNpt ? " → NPT" : "")} → Analyze";
+        : $"{_sweepRuns.Count} runs · {SweepCombines[_swCombine].ToLowerInvariant()} × {ParseInts(_swSeeds).Count} seeds") + $" · Grow → Relax{(_swEquil ? " → Equilibrate" : "")}{(_swNpt ? " → NPT" : "")} → Analyze{(_swTg ? " → Tg" : "")}";
     public string SweepDpHeader(int k) => k < ParseInts(_swDps).Count ? "DP " + ParseInts(_swDps)[k] : "";
     public ObservableCollection<string> SweepDpHeaders { get; } = new();
 
@@ -182,8 +187,38 @@ public sealed partial class MainViewModel
             var failed = g.Count(r => r.Status == "failed");
             SweepResults.Add(new SweepResult(g.Key, Ms(done.Where(r => double.IsFinite(r.Density)).Select(r => r.Density).ToList(), "0.000"),
                                              Ms(done.Where(r => double.IsFinite(r.Rg)).Select(r => r.Rg).ToList(), "0.00"),
+                                             Ms(done.Where(r => double.IsFinite(r.Tg)).Select(r => r.Tg).ToList(), "0"),
                                              $"{done.Count} / {g.Count()}" + (failed > 0 ? $" · {failed} failed" : "")));
         }
+    }
+
+    // where the runs go: this machine (a few at a time) or a host from Settings › Compute & remote, one recipe job per cell
+    private int _swHost;
+    public List<string> SweepHosts => RunWhereChoices;
+    public int SweepHostIndex { get => Math.Min(_swHost, _settings.Hosts.Count); set { if (Set(ref _swHost, Math.Clamp(value, 0, _settings.Hosts.Count))) RaiseSweep(); } }
+
+    /// <summary>One cell as a caps run recipe (JSON): grow, relax, the optional equilibration and NPT, analysis, export.</summary>
+    private string SweepRecipe(FilmPolymer poly, SweepRun run)
+    {
+        var spec = JsonNode.Parse(poly.Spec)!.AsObject();
+        var units = new JsonArray();
+        foreach (var u in (spec["units"] as JsonArray) ?? new JsonArray()) if (u?["smiles"]?.GetValue<string>() is string smi) units.Add(smi);
+        var build = new JsonObject { ["units"] = units, ["sequence"] = (string?)spec["sequence"] ?? "homopolymer", ["dp"] = run.Dp, ["chains"] = (int)_swChains,
+                                     ["tacticity"] = run.Tacticity.ToLowerInvariant() };
+        var r = new JsonObject
+        {
+            ["recipe"] = 1, ["name"] = System.IO.Path.GetFileNameWithoutExtension(run.Path), ["seed"] = run.Seed,
+            ["build"] = new JsonObject { ["polymer"] = build }, ["type"] = new JsonObject { ["forcefield"] = "default" },
+            ["grow"] = new JsonObject { ["density"] = (double)_swDensity, ["seed"] = run.Seed, ["contact_scale"] = "auto", ["curve"] = true },
+            ["relax"] = new JsonObject { ["method"] = "lbfgs", ["fmax"] = 1.0 },
+        };
+        if (_swEquil) r["equilibrate"] = new JsonObject { ["protocol_text"] = _eqText, ["seed"] = run.Seed };
+        if (_swNpt) r["md"] = new JsonObject { ["ensemble"] = "npt", ["ps"] = (double)_swNptPs, ["temperature"] = (double)_swTemp, ["seed"] = run.Seed };
+        var props = new JsonArray("density", "rg");
+        if (_swTg) props.Add("tg");
+        r["analyze"] = new JsonObject { ["properties"] = props };
+        r["export"] = new JsonArray("lammps");
+        return r.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
 
     /// <summary>Runs every queued run, a few at a time; each saves its cell with provenance.</summary>
@@ -191,6 +226,25 @@ public sealed partial class MainViewModel
     {
         if (_swRunning || SweepPolymer is not { } poly) return;
         if (_sweepRuns.Count == 0) { SweepError = "No runs: choose at least one tacticity, chain length and seed"; return; }
+        if (SweepHostIndex > 0)
+        {   // a host: each queued cell goes as its own recipe job; Jobs follows them and brings the results back
+            if (_swEquil && _eqText.Trim().Length == 0) { SweepError = "Equilibrate needs a protocol: choose one on the Equilibrate page"; return; }
+            var h = _settings.Hosts[SweepHostIndex - 1];
+            SweepError = "";
+            SweepRunning = true;
+            foreach (var run in _sweepRuns.Where(r => r.Status is "queued" or "stopped" or "failed").ToList())
+            {
+                var job = await SendRecipe(h, "Sweep", $"Sweep · {run.Condition} · seed {run.Seed}", System.IO.Path.GetFileNameWithoutExtension(run.Path), SweepRecipe(poly, run));
+                run.Status = job.Status == "failed" ? "failed" : "running";
+                run.Detail = job.Status == "failed" ? job.Error : $"on {h.Name} · {job.Remote?.JobId}";
+                RaiseSweep();
+                if (job.Status == "failed") break;   // the host is unreachable: the rest stay queued
+            }
+            SweepRunning = false;
+            RaiseSweep();
+            Status = $"Sweep sent to {h.Name} · Jobs follows the runs and fetches each cell when it finishes";
+            return;
+        }
         Directory.CreateDirectory(_swFolder);
         SweepError = "";
         SweepRunning = true;
@@ -203,6 +257,9 @@ public sealed partial class MainViewModel
         var gate = new SemaphoreSlim(conc);
         var tasks = new List<Task>();
         var (npt, ps, temp, chains, density) = (_swNpt, (double)_swNptPs, (double)_swTemp, (int)_swChains, (double)_swDensity);
+        var (equil, tg, eqText) = (_swEquil, _swTg, _eqText);
+        if (equil && eqText.Trim().Length == 0) { SweepError = "Equilibrate needs a protocol: choose one on the Equilibrate page"; SweepRunning = false; return; }
+        var eqOpts = EqOptions(false);
         foreach (var run in _sweepRuns.Where(r => r.Status is "queued" or "stopped" or "failed").ToList())
         {
             await gate.WaitAsync();
@@ -224,6 +281,11 @@ public sealed partial class MainViewModel
                         Post(() => run.Detail = "relaxing");
                         doc.Relax(new CapsRelaxOpts { Method = 2, Ftol = 1.0, MaxIterations = 3000, Pushoff = 1, Cutoff = 10, Coulomb = 1, Threads = threads },
                                   (_, _, _, _, _, _) => !token.IsCancellationRequested);
+                        if (equil)
+                        {
+                            Post(() => run.Detail = "equilibrating");
+                            doc.Equilibrate(eqText, eqOpts with { Threads = threads, Seed = run.Seed }, (_, _, _, _) => !token.IsCancellationRequested);
+                        }
                         if (npt)
                         {
                             Post(() => run.Detail = $"NPT {ps:0} ps");
@@ -242,9 +304,15 @@ public sealed partial class MainViewModel
                         }
                         run.Density = Value("density");
                         run.Rg = Value("rg");
+                        if (tg)
+                        {   // a copy is cooled step by step (the document keeps its state); Tg from the two-line fit of v(T)
+                            Post(() => run.Detail = "Tg scan");
+                            json = doc.Analyze("tg", ao, (_, _) => !token.IsCancellationRequested);
+                            run.Tg = Value("tg");
+                        }
                         doc.Save(run.Path);
                     }
-                    run.FinalDetail = $"ρ {run.Density:0.000} g/cm³ · Rg {run.Rg:0.00} Å";
+                    run.FinalDetail = $"ρ {run.Density:0.000} g/cm³ · Rg {run.Rg:0.00} Å" + (double.IsFinite(run.Tg) ? $" · Tg {run.Tg:0} K" : "");
                     run.FinalStatus = "done";
                     Post(() => { run.Status = "done"; run.Detail = run.FinalDetail; RaiseSweep(); });
                 }
@@ -280,6 +348,7 @@ public sealed partial class MainViewModel
                 var props = new JsonObject();
                 if (double.IsFinite(r.Density)) props["density"] = new JsonObject { ["value"] = r.Density, ["unit"] = "g/cm³", ["name"] = "Density" };
                 if (double.IsFinite(r.Rg)) props["rg"] = new JsonObject { ["value"] = r.Rg, ["unit"] = "Å", ["name"] = "Radius of gyration" };
+                if (double.IsFinite(r.Tg)) props["tg"] = new JsonObject { ["value"] = r.Tg, ["unit"] = "K", ["name"] = "Glass transition temperature" };
                 runs.Add(new JsonObject
                 {
                     ["tacticity"] = r.Tacticity, ["dp"] = r.Dp, ["seed"] = r.Seed, ["file"] = System.IO.Path.GetFileName(r.Path),

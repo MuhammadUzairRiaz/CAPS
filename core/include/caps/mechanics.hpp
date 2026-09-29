@@ -124,7 +124,7 @@ struct TensilePoint {
 struct TensileOptions {
   std::shared_ptr<const ForceField> field;
   EnergyOptions energy;
-  int axis = 0;                  // 0 x, 1 y, 2 z
+  int axis = 0;                  // 0 x, 1 y, 2 z; 3: all three from the same start, averaged (mean ± s.d. over the axes)
   double rate = 1e-3;            // engineering strain rate, 1/ps (1e-3/ps = 10⁹ s⁻¹)
   double max_strain = 0.2;
   double temperature = 300.0, dt = 1.0, tau_t = 100.0;

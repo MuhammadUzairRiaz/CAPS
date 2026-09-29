@@ -38,6 +38,7 @@ struct TemplateAtom {
 //   min_path 4                       # initiators ≥ 4 bonds apart, or in different molecules (0: different molecules only)
 //   form 4 1 · break 1 2 · delete 3 · move 5 2   (move: the atom leaves its partners and bonds to the second atom)
 //   sites 1 2 3                      # the group counted for conversion: distinct matches of these map atoms (default: first initiator)
+//   charges keep                     # after the reaction: charges kept, a deleted atom's to its partner (default: forcefield)
 struct ReactionTemplate {
   std::string name;
   std::vector<TemplateAtom> atoms;
@@ -47,6 +48,8 @@ struct ReactionTemplate {
   std::vector<std::pair<int, int>> form, brk, move;
   std::vector<int> remove;
   std::vector<int> sites;       // map atoms that make up one counted reactive group
+  bool keep_charges = false;    // "charges keep": the atoms keep their charges, a deleted atom's joins its partner (net charge
+                                // conserved); default "charges forcefield": recomputed for the new chemistry
   std::string text;             // the source, for reports
 };
 
@@ -88,6 +91,7 @@ struct CycleRow {
   double conversion = 0;        // reactions so far / initial counted sites
   ClusterStats clusters;
   double energy = 0;            // after relaxation, kcal/mol
+  double max_force = 0;         // largest force after the cycle's relaxation, kcal/mol/Å (0: not relaxed)
   int atoms = 0;
 };
 
@@ -108,6 +112,9 @@ struct ReactOptions {
   // with capped forces while the rest of the cell is held and keeps its velocities — in place of LAMMPS's nve/limit
   // stabilisation. No global minimisation between checks. Stops at the cycle limit or the target conversion.
   bool during_md = false;
+  // a cycle that fails (a relaxation that cannot converge, dynamics that blow up) leaves the structure as the last
+  // completed cycle did and stops there: the report says which cycle and why (failed_cycle, failure). False: throw.
+  bool keep_on_failure = true;
   EnergyOptions energy;
   std::function<bool(const CycleRow&)> progress;   // return false to cancel
   std::function<void(const System&, int cycle)> frame;
@@ -119,6 +126,8 @@ struct ReactReport {
   double gel_conversion = -1;   // conversion where the reduced weight-average mass peaked (−1: not seen)
   std::vector<std::string> notes;
   double seconds = 0;
+  int failed_cycle = 0;         // > 0: this cycle failed; the structure is the one after cycle failed_cycle − 1
+  std::string failure;
 };
 
 // Runs cycles of find → react → retype → relax (→ dynamics) until the target conversion, the cycle limit, or no
@@ -130,5 +139,11 @@ void react(System& s, const ReactOptions& o, ReactReport* report = nullptr);
 // post: {…}, changes: [{kind: formed|broken|deleted|moved, text}], checks: [{ok, text}], initiators: [a, b], capture,
 // probability, min_path}.
 std::string template_view(const ReactionTemplate& t);
+
+// The template as an atom-mapped reaction SMARTS (reactants>>products): the query atoms with their constraints
+// ([#6;X4;!H0;A:1] — element, connections, hydrogens, three-ring, aliphatic), the products by element and map number;
+// deleted atoms are absent from the products (removed, as RDKit reads it). The pattern's bonds are connectivity only, written
+// '~' (any bond), except a formed bond between atoms that keep their bond count (a substitution): single, '-'.
+std::string reaction_smarts(const ReactionTemplate& t);
 
 }  // namespace caps

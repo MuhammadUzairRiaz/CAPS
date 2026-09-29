@@ -191,6 +191,9 @@ public sealed partial class MainViewModel
     public int ThiolatePick { get => _thiolatePick; set { if (Set(ref _thiolatePick, Math.Clamp(value, 0, ThiolateIds.Length - 1))) NanoPreview(); } }
     public decimal ThiolateFraction { get => _thiolateFraction; set { if (Set(ref _thiolateFraction, Math.Clamp(value, 0.05m, 1m))) NanoPreview(); } }
     public static readonly string[] ParticleCentres = ["On an atom", "On the cell centre"];
+    // the cut surface relaxed with UFF after building (the core held); not for metals (UFF is no metal model)
+    private bool _particleRelax;
+    public bool ParticleRelax { get => _particleRelax; set => Set(ref _particleRelax, value); }
 
     // matrix
     private bool _nanoMatrix;
@@ -243,6 +246,7 @@ public sealed partial class MainViewModel
                 o["on_atom"] = _particleOnAtom ? 1 : 0;
                 o["passivate"] = _particlePassivate && !ParticleIsMetal ? 1 : 0;
                 if (ParticleIsMetal && _particleThiolate) { o["thiolate"] = ThiolateIds[_thiolatePick]; o["thiolate_fraction"] = (double)_thiolateFraction; }
+                if (_particleRelax && !ParticleIsMetal) o["relax_surface"] = 1;
                 o["length"] = (double)_fibreLength;
                 break;
         }

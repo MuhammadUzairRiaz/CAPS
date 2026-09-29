@@ -420,7 +420,8 @@ int axis_of(const std::string& a) {
   if (a == "x" || a == "0") return 0;
   if (a == "y" || a == "1") return 1;
   if (a == "z" || a == "2") return 2;
-  throw std::invalid_argument("axis must be x, y or z");
+  if (a == "xyz" || a == "all" || a == "3") return 3;   // tensile: the three directions averaged
+  throw std::invalid_argument("axis must be x, y, z (or xyz for a tensile test averaged over the three)");
 }
 
 // --pme [--ewald-rtol 1e-5] [--pme-spacing 1.2] [--pme-order 4]: particle-mesh Ewald instead of damped shifted force
@@ -1801,7 +1802,7 @@ int main(int argc, char** argv) {
     }
   }
   if (cmd == "tensile") {
-    // caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3 (1/ps)] [--strain 0.2] [--temp 300] [--dt 1] [--fixed-lateral]
+    // caps tensile DATA -o OUT.data [--axis x|y|z|xyz] [--rate 1e-3 (1/ps)] [--strain 0.2] [--temp 300] [--dt 1] [--fixed-lateral]
     //              [--pressure 1] [--tau-p 1000] [--fit 0.02] [--seed 1] [--new-velocities] [--ff ...] [--dump T.lammpstrj --every N]
     try {
       if (pos.empty() || !o.count("-o")) return usage();

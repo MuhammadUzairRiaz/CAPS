@@ -147,6 +147,15 @@
                     <TextBlock Text="Growth density · g/cm³" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
                     <NumericUpDown Grid.Column="1" Value="{Binding BlendDensity}" Minimum="0.1" Maximum="1.5" Increment="0.05" FormatString="0.00" />
                   </Grid>
+                  <Grid ColumnDefinitions="*,180" ColumnSpacing="10">
+                    <TextBlock Text="Growth" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                    <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:MainViewModel.BlendGrowMethods}" SelectedIndex="{Binding BlendGrowMethod}"
+                              ToolTip.Tip="Best of k: the roomiest trial each step. Rosenbluth: a trial drawn ∝ exp(−E/kT) (soft spheres + butane torsions, Theodorou–Suter), or with UFF Lennard-Jones between atoms (configurational bias, no MC acceptance)" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,120" ColumnSpacing="10" IsVisible="{Binding BlendGrowBiased}">
+                    <TextBlock Text="Bias temperature · K" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding BlendGrowTemp}" Minimum="100" Maximum="2000" Increment="50" FormatString="0" />
+                  </Grid>
                   <TextBlock Classes="dim" TextWrapping="Wrap" Text="Grown sparse (0.5 g/cm³ by default) with the contact scale lowered when crowded; Relax compresses to the working density." />
                 </StackPanel>
               </Border>

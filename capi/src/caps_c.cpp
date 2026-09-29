@@ -2466,7 +2466,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     if (progress)
       r.progress = [&](const caps::CycleRow& c) {
         caps_react_cycle row{c.cycle, c.reactions, c.total, c.clusters.clusters, c.atoms, c.conversion, c.clusters.largest_fraction,
-                             c.clusters.reduced_mw, c.energy};
+                             c.clusters.reduced_mw, c.energy, c.max_force};
         return progress(&row, user) == 0;
       };
     caps::System s = d->traj.frame(d->current);
@@ -2483,7 +2483,10 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       prov_step(d, "react.templates", std::to_string(rep.reactions) + " reactions · conversion " + g6(conv),
                 {{"templates", names}, {"target conversion", g6(r.target_conversion)}, {"cycles", std::to_string(rep.cycles.size())},
                  {"relax between cycles", r.relax ? "yes" : "no"}, {"MD between cycles", g6(r.md_ps) + " ps"}},
-                seeded(r.seed), {"matsumoto1998"});
+                seeded(r.seed), {"matsumoto1998"},
+                rep.failed_cycle > 0 ? caps::KeyValues{{"Stopped", "cycle " + std::to_string(rep.failed_cycle) + " failed (" + rep.failure + "); the structure after cycle " +
+                                                                   std::to_string(rep.failed_cycle - 1) + " is kept"}}
+                                     : caps::KeyValues{});
     }
     caps::Trajectory out;
     const bool same = frames.front().atoms.size() == s.atoms.size();
@@ -2515,6 +2518,10 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       for (const auto& n : rep.notes) t += n + "\n";
       std::strncpy(report, t.c_str(), size_t(cap) - 1);
       report[cap - 1] = 0;
+    }
+    if (rep.failed_cycle > 0) {   // the completed cycles are kept; the caller hears which one failed
+      g_error = "cycle " + std::to_string(rep.failed_cycle) + " failed: " + rep.failure;
+      return 2;
     }
     return 0;
   });
@@ -3392,7 +3399,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         caps::TensileOptions to;
         to.field = ff;
         to.energy = o.energy;
-        to.axis = std::clamp(mo.axis, 0, 2);
+        to.axis = std::clamp(mo.axis, 0, 3);   // 3: x, y and z averaged
         if (mo.rate > 0) to.rate = mo.rate;
         if (mo.max_strain > 0) to.max_strain = mo.max_strain;
         if (mo.temperature > 0) to.temperature = mo.temperature;
@@ -4657,6 +4664,45 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     po.length = j.num("length", 20);
     f = caps::nanoparticle(caps::read_cif(j.text("crystal")), po, &r);
     keep = {false, false, po.shape == caps::ParticleShape::Fibre};
+    // the cut surface relaxed with UFF (design/boards/Nanoparticle): the surface layer (atoms within 4 Å of a hydrogen,
+    // a ligand or an under-coordinated atom) free, the core held as the crystal made it. Not for metals: UFF is no model
+    // of a metallic surface (EAM, in LAMMPS, is)
+    if (j.num("relax_surface", 0) != 0) {
+      const int metals[] = {26, 27, 28, 29, 44, 45, 46, 47, 76, 77, 78, 79};
+      int heavy = 0, metal = 0;
+      for (const auto& a : f.atoms)
+        if (a.element > 1) ++heavy, metal += std::find(std::begin(metals), std::end(metals), a.element) != std::end(metals);
+      if (metal * 2 > heavy)
+        throw std::invalid_argument("a metal particle: UFF is no model of a metal surface — relax it with EAM in LAMMPS (Export) instead");
+      const auto nb = f.neighbours();
+      std::map<int, size_t> full;   // the most bonds each element has in the particle: its bulk coordination
+      for (size_t i = 0; i < f.atoms.size(); ++i) full[f.atoms[i].element] = std::max(full[f.atoms[i].element], nb[i].size());
+      std::vector<caps::Vec3> surf;
+      for (size_t i = 0; i < f.atoms.size(); ++i) {
+        const int el = f.atoms[i].element;
+        bool s_atom = el == 1 || nb[i].size() < full[el] || f.atoms[i].mol != f.atoms[0].mol;
+        for (uint32_t w : nb[i]) s_atom = s_atom || f.atoms[w].element == 1;
+        if (s_atom) surf.push_back(f.atoms[i].pos);
+      }
+      caps::RelaxOptions ro;
+      ro.fixed.assign(f.atoms.size(), 1);
+      int free = 0;
+      for (size_t i = 0; i < f.atoms.size(); ++i) {
+        for (const auto& p : surf)
+          if (caps::norm(f.atoms[i].pos - p) < 4.0) { ro.fixed[i] = 0; ++free; break; }
+      }
+      caps::UffOptions uo;
+      ro.field = std::make_shared<caps::ForceField>(caps::assign_uff(f, uo));
+      ro.pushoff = true;   // the cut leaves strained, close contacts at the surface: capped forces first
+      ro.ftol = 1.0;
+      ro.max_iterations = 20000;
+      caps::RelaxReport rr;
+      caps::relax(f, ro, &rr);
+      char b[240];
+      std::snprintf(b, sizeof b, "surface relaxed with UFF (no charges): %d surface atoms free, %zu core atoms held · E %.1f → %.1f kcal/mol · |F|max on the free atoms %.2f kcal/mol/Å",
+                    free, f.atoms.size() - size_t(free), rr.initial.total(), rr.final.total(), rr.fmax_final);
+      r.notes.push_back(b);
+    }
   } else {
     throw std::invalid_argument("kind must be tube, sheet or particle");
   }
@@ -4922,6 +4968,15 @@ extern "C" caps_doc* caps_grow_blend(const char* options_json, const caps_grow_o
       bo.grow.seed = o->seed;
       bo.grow.contact_scale = o->contact_scale > 0 ? o->contact_scale : 1.0;
       bo.grow.curve = o->curve != 0;
+    }
+    // growth as Grow's: method trials | rosenbluth | rosenbluth_lj at a temperature (K), trial directions, look-ahead
+    {
+      const std::string meth = j.text("method", "trials");
+      if (meth != "trials" && meth != "rosenbluth" && meth != "rosenbluth_lj") throw std::invalid_argument("blend method: trials, rosenbluth or rosenbluth_lj");
+      bo.grow.method = meth == "rosenbluth" ? 1 : meth == "rosenbluth_lj" ? 2 : 0;
+      bo.grow.method_temperature = j.num("temperature", 450);
+      if (j.has("trials")) bo.grow.trials = std::clamp(int(j["trials"].number()), 4, 5000);
+      if (j.has("lookahead")) bo.grow.lookahead = std::clamp(int(j["lookahead"].number()), 1, 4);
     }
     if (progress) bo.grow.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
     caps::BlendReport br;
@@ -7123,11 +7178,15 @@ extern "C" caps_doc* caps_pore_build(const char* options_json, char* report, int
       caps::BuildOptions bo;
       bo.forcefield = "uff";
       fluid = caps::build_molecule(smiles, bo).system;
+      // united-atom fluid (TraPPE-UA, GROMOS): hydrogens on carbon folded into their carbons before packing — CH4 one site
+      if (flag("united_atom", false)) fluid = caps::united_atom(fluid);
       fluid.title = j.text("fluid_name", smiles);
       o.fluid = &fluid;
     }
     caps::PoreReport r;
     const caps::System s = caps::build_pore(o, &r);
+    if (o.fluid && flag("united_atom", false))
+      r.notes.push_back("the fluid in united atoms (hydrogens folded into their carbons): assign TraPPE-UA to it in Field · by group, the walls their own");
     caps::Json rj = caps::Json::object();
     rj["wall_atoms"] = r.wall_atoms;
     rj["fluid_molecules"] = r.fluid_molecules;

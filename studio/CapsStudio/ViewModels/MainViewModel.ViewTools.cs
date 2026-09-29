@@ -130,7 +130,7 @@ public sealed partial class MainViewModel
         if (Monitors.Any(m => m.Atoms.SequenceEqual(atoms))) { Status = "That measurement is pinned already"; return; }
         var row = new MonitorRow { Atoms = atoms, Ids = string.Join("–", atoms.Select(i => _doc.Atom(i).Id)) };
         Monitors.Add(row);
-        Raise(nameof(HasMonitors));
+        Raise(nameof(HasMonitors)); Raise(nameof(MonitorsVisible));
         RefreshMonitors();
         Status = $"Pinned {row.Text.Trim()} · it updates with the frames";
         RenderRequested?.Invoke();
@@ -139,7 +139,7 @@ public sealed partial class MainViewModel
     public void UnpinMonitor(MonitorRow m)
     {
         Monitors.Remove(m);
-        Raise(nameof(HasMonitors));
+        Raise(nameof(HasMonitors)); Raise(nameof(MonitorsVisible));
         RenderRequested?.Invoke();
     }
 
@@ -149,7 +149,7 @@ public sealed partial class MainViewModel
         if (_doc == null || Monitors.Count == 0) return;
         var n = (int)_doc.Summary().Atoms;
         foreach (var m in Monitors.Where(m => m.Atoms.Any(a => a >= n)).ToList()) Monitors.Remove(m);
-        Raise(nameof(HasMonitors));
+        Raise(nameof(HasMonitors)); Raise(nameof(MonitorsVisible));
         foreach (var m in Monitors)
         {
             var v = _doc.Measure(m.Atoms);
