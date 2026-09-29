@@ -525,8 +525,11 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       const double vol = cell.volume();
       const double p = (2 * k + et.virial) / (3 * vol) * kAtm;
       double deps = -o.compressibility / o.tau_p * (o.pressure - p) * hp;
-      if (o.barostat == Barostat::CRescale)
-        deps += std::sqrt(2 * kB * t_now / vol * kAtm * o.compressibility * hp / o.tau_p) * gauss(rng);
+      if (o.barostat == Barostat::CRescale) {
+        // Bernetti & Bussi 2020 eq. 5: dε = −(β/τ)(P₀ − P − k_B T/V) dt + √(2 k_B T β dt/(V τ)) dW
+        const double ktv = kB * t_now / vol * kAtm;
+        deps += o.compressibility / o.tau_p * ktv * hp + std::sqrt(2 * ktv * o.compressibility * hp / o.tau_p) * gauss(rng);
+      }
       deps = std::clamp(deps, -0.01, 0.01);   // at most 1% in volume per update
       const double mu = std::exp(deps / 3);
       scale_cell(mu);

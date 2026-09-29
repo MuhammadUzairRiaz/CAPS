@@ -25,7 +25,7 @@
      "from the element or the data file"
     ]
    ],
-   "when": "Every molecular-dynamics run in CAPS. All-atom models with hydrogens need Δt ≤ 1 fs: CAPS has no bond constraints (SHAKE, LINCS) yet.",
+   "when": "Every molecular-dynamics run in CAPS. All-atom models with hydrogens need Δt ≤ 1 fs, or 2 fs with the bonds to hydrogen constrained (SHAKE/RATTLE or LINCS).",
    "cites": [
     "swope1982"
    ],
@@ -36,7 +36,8 @@
     "dynamics.nve",
     "dynamics.nvt",
     "dynamics.npt"
-   ]
+   ],
+   "tex": "v(t+\\tfrac{1}{2}\\Delta t) = v(t) + \\frac{\\Delta t}{2}\\,\\frac{F(t)}{m} \\\\ x(t+\\Delta t) = x(t) + \\Delta t\\,v(t+\\tfrac{1}{2}\\Delta t) \\\\ v(t+\\Delta t) = v(t+\\tfrac{1}{2}\\Delta t) + \\frac{\\Delta t}{2}\\,\\frac{F(t+\\Delta t)}{m}"
   },
   {
    "id": "csvr",
@@ -84,7 +85,8 @@
     "dynamics.npt",
     "equilibrate.larsen21",
     "equilibrate.protocol"
-   ]
+   ],
+   "tex": "\\mathrm{d}K = (\\bar{K} - K)\\,\\frac{\\mathrm{d}t}{\\tau} + 2\\sqrt{\\frac{K\\bar{K}}{N_f}}\\,\\frac{\\mathrm{d}W}{\\sqrt{\\tau}}"
   },
   {
    "id": "langevin",
@@ -120,7 +122,8 @@
    "engines": [
     "dynamics.nvt",
     "dynamics.npt"
-   ]
+   ],
+   "tex": "\\text{O:}\\quad v \\leftarrow c_1 v + c_2\\sqrt{\\frac{k_\\mathrm{B}T}{m}}\\,\\xi, \\qquad c_1 = e^{-\\gamma\\Delta t}, \\qquad c_2 = \\sqrt{1 - c_1^2}"
   },
   {
    "id": "nose-hoover",
@@ -157,7 +160,8 @@
    "engines": [
     "dynamics.nvt",
     "dynamics.npt"
-   ]
+   ],
+   "tex": "\\dot{p}_i = F_i - \\left(\\dot{\\eta}_1 + \\left(1 + \\frac{3}{N_f}\\right)\\dot{\\epsilon}\\right)p_i \\\\ Q_1\\ddot{\\eta}_1 = \\sum_i \\frac{p_i^2}{m_i} - N_f k_\\mathrm{B}T - Q_1\\dot{\\eta}_1\\dot{\\eta}_2 \\\\ W\\ddot{\\epsilon} = 3V(P - P_0) + \\frac{3}{N_f}\\sum_i \\frac{p_i^2}{m_i} - W\\dot{\\epsilon}\\,\\dot{\\eta}_{\\mathrm{p}1}"
   },
   {
    "id": "berendsen-barostat",
@@ -197,14 +201,15 @@
    "deviation": "exponential rather than linear scaling; the volume change is limited to 1 % per update; a per-axis variant scales each axis from P_kk",
    "engines": [
     "dynamics.npt"
-   ]
+   ],
+   "tex": "\\mu = \\exp\\left(-\\frac{\\beta\\,\\Delta t_p\\,(P_0 - P)}{3\\tau_P}\\right), \\qquad x \\leftarrow \\mu x, \\qquad h \\leftarrow \\mu h"
   },
   {
    "id": "cell-rescaling",
    "group": "Barostats",
    "title": "Stochastic cell rescaling",
    "summary": "A first-order barostat like Berendsen's, with a noise term that restores the correct volume fluctuations of the isothermal–isobaric ensemble. Velocities are scaled by the inverse factor so the kinetic energy stays consistent.",
-   "equation": "dε = −(β/τ_P)(P₀ − P) dt + √(2 k_B T β dt / (V τ_P)) dW,   μ = exp(dε/3),   v ← v/μ",
+   "equation": "dε = −(β/τ_P)(P₀ − P − k_B T/V) dt + √(2 k_B T β / (V τ_P)) dW,   μ = exp(dε/3),   x ← μ x,   v ← v/μ",
    "equation_note": "Bernetti & Bussi 2020, isotropic",
    "symbols": [
     [
@@ -224,7 +229,7 @@
     ],
     [
      "dW",
-     "Gaussian noise",
+     "Wiener increment: √dt times a standard Gaussian",
      "mt19937-64 stream from the run's seed"
     ]
    ],
@@ -234,12 +239,13 @@
    ],
    "source": "core/src/dynamics.cpp",
    "tested": "Dynamics.BarostatRespondsToTargetPressure",
-   "deviation": "the −k_B T/V term of the drift is left out (a fraction of an atmosphere for cells of thousands of atoms); isotropic only; dε limited to ±1 % per update",
+   "deviation": "isotropic only; dε limited to ±1 % per update",
    "engines": [
     "dynamics.npt",
     "equilibrate.larsen21",
     "equilibrate.protocol"
-   ]
+   ],
+   "tex": "\\mathrm{d}\\epsilon = -\\frac{\\beta}{\\tau_P}\\left(P_0 - P - \\frac{k_\\mathrm{B}T}{V}\\right)\\mathrm{d}t + \\sqrt{\\frac{2k_\\mathrm{B}T\\beta}{V\\tau_P}}\\,\\mathrm{d}W \\\\ \\mu = e^{\\mathrm{d}\\epsilon/3}, \\qquad x \\leftarrow \\mu x, \\qquad v \\leftarrow v/\\mu"
   },
   {
    "id": "dsf",
@@ -280,7 +286,8 @@
     "dynamics.nve",
     "dynamics.nvt",
     "dynamics.npt"
-   ]
+   ],
+   "tex": "E = q_i q_j\\left[\\frac{\\operatorname{erfc}(\\alpha r)}{r} - \\frac{\\operatorname{erfc}(\\alpha r_c)}{r_c} + \\left(\\frac{\\operatorname{erfc}(\\alpha r_c)}{r_c^2} + \\frac{2\\alpha}{\\sqrt{\\pi}}\\,\\frac{e^{-\\alpha^2 r_c^2}}{r_c}\\right)(r - r_c)\\right], \\qquad r < r_c"
   },
   {
    "id": "spme",
@@ -322,7 +329,8 @@
     "relax.lbfgs",
     "dynamics.nvt",
     "dynamics.npt"
-   ]
+   ],
+   "tex": "E_\\mathrm{rec} = \\frac{1}{2\\pi V}\\sum_{m \\ne 0}\\frac{\\exp(-\\pi^2 m^2/\\beta^2)}{m^2}\\,B(m)\\,\\left|F(Q)(m)\\right|^2, \\qquad \\operatorname{erfc}(\\beta r_c) = \\epsilon_\\mathrm{rel}"
   },
   {
    "id": "ewald",
@@ -350,7 +358,8 @@
    "source": "core/fortran/caps_kspace.f90",
    "tested": "Kspace.PmeMatchesEwaldForForcesEnergyAndVirial",
    "deviation": "reference only",
-   "engines": []
+   "engines": [],
+   "tex": "E = E_\\mathrm{real} + E_\\mathrm{rec} + E_\\mathrm{self}, \\qquad E_\\mathrm{self} = -\\frac{\\beta}{\\sqrt{\\pi}}\\sum_i q_i^2"
   },
   {
    "id": "lbfgs",
@@ -385,7 +394,8 @@
    "deviation": "none",
    "engines": [
     "relax.lbfgs"
-   ]
+   ],
+   "tex": "d = -H_k\\nabla E, \\qquad H_k \\text{ from the last } m \\text{ pairs } \\left(s_i = x_{i+1} - x_i,\\; y_i = \\nabla E_{i+1} - \\nabla E_i\\right)"
   },
   {
    "id": "fire",
@@ -420,7 +430,8 @@
    "deviation": "standard parameters of the paper",
    "engines": [
     "relax.fire"
-   ]
+   ],
+   "tex": "v \\leftarrow (1 - \\alpha)\\,v + \\alpha\\,|v|\\,\\frac{F}{|F|} \\\\ \\text{if } F\\cdot v < 0:\\quad v = 0,\\;\\; \\Delta t \\leftarrow f_\\mathrm{dec}\\,\\Delta t,\\;\\; \\alpha = \\alpha_\\mathrm{start}"
   },
   {
    "id": "cg-sd",
@@ -451,7 +462,8 @@
    "engines": [
     "relax.cg",
     "relax.sd"
-   ]
+   ],
+   "tex": "d_{k+1} = F_{k+1} + \\beta d_k, \\qquad \\beta = \\max\\left(0,\\; \\frac{F_{k+1}\\cdot(F_{k+1} - F_k)}{F_k\\cdot F_k}\\right)"
   },
   {
    "id": "pushoff",
@@ -487,7 +499,8 @@
    "engines": [
     "relax.lbfgs",
     "relax.fire"
-   ]
+   ],
+   "tex": "F_\\mathrm{LJ}(r) \\to \\operatorname{sign}(F)\\,\\min\\left(|F_\\mathrm{LJ}(r)|,\\, F_\\mathrm{cap}\\right), \\qquad F_\\mathrm{cap} = 5, 20, 100, \\dots, F_\\mathrm{final}\\ \\text{kcal/mol/Å} \\\\ \\text{MD:}\\ \\ F_{\\mathrm{cap},k} = 5\\left(\\frac{F_\\mathrm{final}}{5}\\right)^{k/9}, \\quad k = 0, \\dots, 9, \\ \\text{each for } t_\\mathrm{ramp}/10"
   },
   {
    "id": "cbmc-regrowth",
@@ -523,7 +536,8 @@
    "deviation": "uniform torsion trials at fixed bond lengths and angles (the rigid-geometry ensemble, no Fixman term); electrostatics by damped shifted force, not Ewald",
    "engines": [
     "cbmc.regrow"
-   ]
+   ],
+   "tex": "W = \\prod_i \\sum_j e^{-\\beta u_{ij}}, \\qquad P_\\mathrm{acc} = \\min\\left(1,\\, \\frac{W_\\mathrm{new}}{W_\\mathrm{old}}\\right)"
   },
   {
    "id": "dlpoly-export",
@@ -549,7 +563,8 @@
    "source": "core/src/dlpoly.cpp (write_dlpoly); impropers_dlpoly in core/src/ffdef.cpp",
    "tested": "Dlpoly.FieldConfigControl; bench/ff/check_dlpoly.py against the reference FIELD files",
    "deviation": "DL_POLY has no class II cross terms, separate 1-4 Lennard-Jones parameters or combined bending–torsion: those are left out and named in the notes",
-   "engines": []
+   "engines": [],
+   "tex": "\\text{harm:}\\ \\ \\tfrac{1}{2}k(r - r_0)^2 \\qquad \\text{quar:}\\ \\ \\tfrac{1}{2}k(r - r_0)^2 + \\tfrac{1}{3}k'(r - r_0)^3 + \\tfrac{1}{4}k''(r - r_0)^4 \\\\ \\text{cos:}\\ \\ A\\left[1 + \\cos(m\\phi - \\delta)\\right] \\qquad \\text{cos3:}\\ \\ \\tfrac{1}{2}\\left[A_1(1 + \\cos\\phi) + A_2(1 - \\cos 2\\phi) + A_3(1 + \\cos 3\\phi)\\right]"
   },
   {
    "id": "functionalization",
@@ -580,7 +595,8 @@
    "source": "core/src/functionalize.cpp (functionalize)",
    "tested": "Functionalize.TubeSidewallOutsideAndInside, SheetSidesSpacingAndElements, EndsAndHelix",
    "deviation": "the grafted atoms keep their sp² places until relaxed; no two neighbouring sites are grafted (by the spacing)",
-   "engines": []
+   "engines": [],
+   "tex": "\\text{degree} = \\frac{\\text{grafted sites}}{\\text{framework atoms}} \\times 100"
   },
   {
    "id": "dpd",
@@ -616,7 +632,8 @@
    "deviation": "reduced units; χ mapping for ρ = 3 only (give a_ij at other densities)",
    "engines": [
     "dpd.run"
-   ]
+   ],
+   "tex": "F_{ij} = a_{ij}(1 - r)\\,\\hat{r} - \\gamma(1 - r)^2(\\hat{r}\\cdot v_{ij})\\,\\hat{r} + \\sigma(1 - r)\\,\\theta_{ij}\\,\\frac{\\hat{r}}{\\sqrt{\\mathrm{d}t}} \\\\ \\sigma^2 = 2\\gamma k_\\mathrm{B}T, \\qquad a_{ij} = a_{ii} + \\frac{\\chi_{ij}}{0.286}\\quad(\\rho = 3)"
   },
   {
    "id": "trial-growth",
@@ -660,7 +677,8 @@
     "grow.blend",
     "interface.build",
     "nano.embed"
-   ]
+   ],
+   "tex": "\\text{keep}\\ \\ \\argmax_\\text{trials}\\ \\min_j\\left(|r - r_j| - \\ell(z, z_j)\\,s\\right)"
   },
   {
    "id": "overlap-penalty",
@@ -699,7 +717,8 @@
     "pack.insert",
     "solvate.pack",
     "nano.pore"
-   ]
+   ],
+   "tex": "f = \\sum_{i<j,\\ \\text{different molecules}} \\max\\left(0,\\; d^2 - |x_i - x_j|^2\\right)^2 + w\\sum_i g_\\text{region}(x_i)^2"
   },
   {
    "id": "uff",
@@ -736,7 +755,8 @@
     "field.assign",
     "chem.build",
     "edit.builder"
-   ]
+   ],
+   "tex": "E = \\sum k(r - r_0)^2 + \\sum K\\left[C_0 + C_1\\cos\\theta + C_2\\cos 2\\theta\\right] + \\sum \\tfrac{1}{2}V\\left[1 - \\cos(n\\phi_0)\\cos(n\\phi)\\right] \\\\ \\quad + \\sum D\\left[\\left(\\frac{x}{r}\\right)^{12} - 2\\left(\\frac{x}{r}\\right)^{6}\\right] + E_\\text{inversion}"
   },
   {
    "id": "qeq",
@@ -771,14 +791,15 @@
    "deviation": "the Ohno–Klopman kernel with a 7th-order taper replaces the paper's Slater-orbital Coulomb integrals; J of hydrogen does not depend on its charge",
    "engines": [
     "field.assign"
-   ]
+   ],
+   "tex": "E(q) = \\sum_i \\chi_i q_i + \\frac{1}{2}\\sum_i J_i q_i^2 + \\sum_{i<j} q_i q_j K(r_{ij}) \\\\ K = \\frac{14.40}{\\sqrt{r^2 + a_{ij}^2}}\\ \\text{eV}, \\qquad a_{ij} = 7.20\\left(\\frac{1}{J_i} + \\frac{1}{J_j}\\right)\\ \\text{Å}"
   },
   {
    "id": "gaff",
    "group": "Force fields",
    "title": "General AMBER force field (GAFF)",
    "summary": "Atom types for organic molecules assigned by rules in antechamber's order (rings, aromaticity, conjugation), with AMBER functional forms: harmonic bonds and angles, cosine torsions, 12–6 Lennard-Jones, 1–4 interactions scaled by ½ (LJ) and 1/1.2 (Coulomb).",
-   "equation": "E = Σ k_b(r − r₀)² + Σ k_θ(θ − θ₀)² + Σ (V_n/2)[1 + cos(nφ − γ)] + Σ 4ε[(σ/r)¹² − (σ/r)⁶] + Σ q_i q_j / r",
+   "equation": "E = Σ k_b(r − r₀)² + Σ k_θ(θ − θ₀)² + Σ (V_n/2)[1 + cos(nφ − γ)] + Σ 4ε[(σ/r)¹² − (σ/r)⁶] + Σ q_i q_j / (4πε₀ r)",
    "equation_note": "Wang et al. 2004",
    "symbols": [
     [
@@ -801,7 +822,8 @@
    "deviation": "none",
    "engines": [
     "field.assign"
-   ]
+   ],
+   "tex": "E = \\sum k_b(r - r_0)^2 + \\sum k_\\theta(\\theta - \\theta_0)^2 + \\sum \\frac{V_n}{2}\\left[1 + \\cos(n\\phi - \\gamma)\\right] \\\\ \\quad + \\sum 4\\epsilon\\left[\\left(\\frac{\\sigma}{r}\\right)^{12} - \\left(\\frac{\\sigma}{r}\\right)^{6}\\right] + \\sum \\frac{q_i q_j}{4\\pi\\epsilon_0 r}"
   },
   {
    "id": "gasteiger",
@@ -836,7 +858,8 @@
    "deviation": "parameters of Table 1 plus the sp³ sulfur extension",
    "engines": [
     "field.assign"
-   ]
+   ],
+   "tex": "\\chi_i = a_i + b_i q_i + c_i q_i^2, \\qquad \\Delta q_i^{(k)} = \\left(\\frac{1}{2}\\right)^{k}\\sum_j \\frac{\\chi_j - \\chi_i}{\\chi^+}"
   },
   {
    "id": "larsen21",
@@ -871,7 +894,8 @@
    "deviation": "none",
    "engines": [
     "equilibrate.larsen21"
-   ]
+   ],
+   "tex": "\\text{21 stages: heat to } T_\\mathrm{max}, \\text{ cool to } T_\\mathrm{final}, \\text{ compress at } 0.02, 0.6, 1.0\\,P_\\mathrm{max} \\dots \\\\ \\text{decompress at } 0.5, 0.1, 0.01\\,P_\\mathrm{max}, \\text{ final NPT at } P_\\mathrm{final}"
   },
   {
    "id": "structure-factor",
@@ -912,7 +936,8 @@
    "source": "core/src/properties.cpp",
    "tested": "Scattering.DeuterationPatternsSplitTheHydrogens · bench/analyze/check_analyze.py (MDAnalysis)",
    "deviation": "no q below the cell's first shell 2π/L; no instrument resolution or polarisation factors",
-   "engines": []
+   "engines": [],
+   "tex": "S(q) = 1 + \\frac{\\tfrac{1}{N}\\left|\\sum_j w_j e^{i q\\cdot r_j}\\right|^2 - \\langle w^2\\rangle}{\\langle w\\rangle^2} \\\\ S_{ab}(q) - 1 = 4\\pi\\rho\\int r^2\\left(g_{ab}(r) - 1\\right)\\frac{\\sin qr}{qr}\\,L(r)\\,\\mathrm{d}r"
   },
   {
    "id": "free-volume",
@@ -946,7 +971,8 @@
    "source": "core/src/properties.cpp · core/src/voids.cpp",
    "tested": "Voids.OneAtomLeavesTheFarCornerEmpty · bench/analyze/check_analyze.py",
    "deviation": "the 1.3 packing factor of Bondi is used as published",
-   "engines": []
+   "engines": [],
+   "tex": "\\mathrm{FFV} = 1 - \\frac{1.3\\,V_w}{V}, \\qquad \\text{PSD:}\\ \\ d(x) = \\max\\left\\{2R : x \\in \\text{sphere}(c, R) \\text{ free of atoms}\\right\\}"
   },
   {
    "id": "msd-diffusion",
@@ -974,7 +1000,8 @@
    "source": "core/src/properties.cpp",
    "tested": "bench/analyze/check_analyze.py (MDAnalysis)",
    "deviation": "no finite-size (Yeh–Hummer) correction",
-   "engines": []
+   "engines": [],
+   "tex": "D = \\lim_{t\\to\\infty}\\frac{\\left\\langle|r(t) - r(0)|^2\\right\\rangle}{6t}, \\qquad \\text{fitted over 20–50 % of the run}"
   },
   {
    "id": "adsorption-locator",
@@ -1009,14 +1036,15 @@
    "deviation": "damped shifted force electrostatics, not Ewald; rigid adsorbates (one conformer each)",
    "engines": [
     "adsorption.locator"
-   ]
+   ],
+   "tex": "E_\\mathrm{ads} = \\sum_\\text{adsorbates} E(\\text{adsorbate, substrate}) + \\sum_\\text{pairs} E(\\text{adsorbate, adsorbate}) \\\\ \\frac{\\mathrm{d}E}{\\mathrm{d}N_i} = \\left\\langle E(\\text{one molecule of } i, \\text{ everything else})\\right\\rangle, \\qquad P_\\mathrm{acc} = \\min\\left(1,\\, e^{-\\Delta E/kT}\\right)"
   },
   {
    "id": "sorption",
    "group": "Analysis",
    "title": "Sorption: Widom insertion and grand-canonical Monte Carlo",
    "summary": "How much of a gas or small molecule a fixed host takes up — a polymer or rubber cell, a filler, a porous crystal — as Materials Studio's Sorption computes it. The sorbate is a rigid molecule typed with the host's force field. Widom test-particle insertion averages the Boltzmann factor of one molecule placed at random places and orientations: the excess chemical potential, the Henry constant and the solubility coefficient follow. Grand-canonical Monte Carlo at each pressure (insertions, deletions, translations and rotations; an ideal-gas reservoir, fugacity = pressure) gives the loading, its error from ten blocks, and the isosteric heat from the fluctuations of energy and number.",
-   "equation": "μ_ex = −kT ln⟨e^(−βΔU)⟩,   K_H = ⟨W⟩ V / (R T m_host),   S = ⟨W⟩ T₀/T,   P_ins = min(1, βfV/(N+1) e^(−βΔU)),   Q_st = kT − (⟨UN⟩ − ⟨U⟩⟨N⟩)/(⟨N²⟩ − ⟨N⟩²)",
+   "equation": "μ_ex = −kT ln⟨e^(−βΔU)⟩,   K_H = ⟨W⟩ V / (R T m_host),   S = ⟨W⟩ T₀/(p₀ T),   P_ins = min(1, βfV/(N+1) e^(−βΔU)),   Q_st = kT − (⟨UN⟩ − ⟨U⟩⟨N⟩)/(⟨N²⟩ − ⟨N⟩²)",
    "equation_note": "Widom 1963; Frenkel & Smit 2002",
    "symbols": [
     [
@@ -1033,6 +1061,11 @@
      "Q_st",
      "isosteric heat",
      "kcal/mol"
+    ],
+    [
+     "T₀, p₀",
+     "standard temperature and pressure",
+     "273.15 K, 1 atm"
     ]
    ],
    "when": "Gas solubility in rubbers and polymers (CO₂, CH₄, N₂, O₂, water) for barrier and permeability estimates (P = D·S with D from Diffusion), uptake of fillers and porous crystals. The host is rigid: swelling and the host's relaxation around the gas are not included; equilibrated, full-density cells are needed for polymer solubilities.",
@@ -1045,7 +1078,8 @@
    "deviation": "ideal-gas fugacity (no equation of state); rigid host and sorbate; damped shifted force electrostatics",
    "engines": [
     "sorption.widom_gcmc"
-   ]
+   ],
+   "tex": "\\mu_\\mathrm{ex} = -kT\\ln\\langle e^{-\\beta\\Delta U}\\rangle, \\qquad K_H = \\frac{\\langle W\\rangle\\,V}{RT\\,m_\\mathrm{host}}, \\qquad S = \\frac{\\langle W\\rangle\\,T_0}{p_0\\,T} \\\\ P_\\mathrm{ins} = \\min\\left(1,\\, \\frac{\\beta f V}{N + 1}\\,e^{-\\beta\\Delta U}\\right), \\qquad Q_\\mathrm{st} = kT - \\frac{\\langle UN\\rangle - \\langle U\\rangle\\langle N\\rangle}{\\langle N^2\\rangle - \\langle N\\rangle^2}"
   },
   {
    "id": "green-kubo",
@@ -1081,7 +1115,8 @@
    "deviation": "one long run split in blocks rather than independent replicas; no time decomposition of the integral",
    "engines": [
     "analyze.viscosity"
-   ]
+   ],
+   "tex": "\\eta = \\frac{V}{10\\,k_\\mathrm{B}T}\\int_0^\\infty \\sum_{\\alpha\\beta}\\left\\langle P^\\circ_{\\alpha\\beta}(0)\\,P^\\circ_{\\alpha\\beta}(t)\\right\\rangle\\mathrm{d}t, \\qquad P^\\circ_{\\alpha\\beta} = \\frac{P_{\\alpha\\beta} + P_{\\beta\\alpha}}{2} - \\delta_{\\alpha\\beta}\\,\\frac{\\operatorname{tr}P}{3}"
   },
   {
    "id": "elastic-static",
@@ -1114,7 +1149,8 @@
    "source": "core/src/mechanics.cpp",
    "tested": "Mechanics.StaticConstantsOfBravaisLattice · bench/mechanics/check_born_lammps.py",
    "deviation": "none",
-   "engines": []
+   "engines": [],
+   "tex": "C_{ij} = -\\frac{\\sigma_i(+\\epsilon_j) - \\sigma_i(-\\epsilon_j)}{2\\epsilon}, \\qquad K_H,\\ G_H = \\tfrac{1}{2}(\\text{Voigt} + \\text{Reuss})"
   },
   {
    "id": "elastic-fluct",
@@ -1148,7 +1184,8 @@
    "source": "core/src/mechanics.cpp",
    "tested": "Mechanics.FluctuationConstantsOfColdCrystal · Mechanics.BornMatrixMatchesLatticeSum",
    "deviation": "none",
-   "engines": []
+   "engines": [],
+   "tex": "C_{ijkl} = \\langle C^\\mathrm{B}_{ijkl}\\rangle - \\frac{V}{k_\\mathrm{B}T}\\left(\\langle\\sigma_{ij}\\sigma_{kl}\\rangle - \\langle\\sigma_{ij}\\rangle\\langle\\sigma_{kl}\\rangle\\right) + \\frac{N k_\\mathrm{B}T}{V}\\left(\\delta_{ik}\\delta_{jl} + \\delta_{il}\\delta_{jk}\\right)"
   },
   {
    "id": "kremer-grest",
@@ -1194,7 +1231,8 @@
    "deviation": "the push-off uses LAMMPS pair soft ramped to 60 ε with displacements limited, rather than the force-capped potentials of the paper",
    "engines": [
     "cg.kremer_grest"
-   ]
+   ],
+   "tex": "U_\\mathrm{FENE} = -\\frac{1}{2}KR_0^2\\ln\\left[1 - \\left(\\frac{r}{R_0}\\right)^2\\right], \\qquad U_\\mathrm{WCA} = 4\\epsilon\\left[\\left(\\frac{\\sigma}{r}\\right)^{12} - \\left(\\frac{\\sigma}{r}\\right)^{6}\\right] + \\epsilon\\quad (r < 2^{1/6}\\sigma)"
   },
   {
    "id": "chi-contacts",
@@ -1240,7 +1278,8 @@
    "deviation": "rigid molecules with one conformer each; one molecule per lattice site of either kind, with no correction for their different sizes; coordination numbers by random sequential packing",
    "engines": [
     "chi.contacts"
-   ]
+   ],
+   "tex": "\\Delta E_\\mathrm{mix}(T) = \\frac{1}{2}\\left[Z_{AB}\\langle E_{AB}\\rangle_T + Z_{BA}\\langle E_{BA}\\rangle_T - Z_{AA}\\langle E_{AA}\\rangle_T - Z_{BB}\\langle E_{BB}\\rangle_T\\right] \\\\ \\langle E\\rangle_T = \\frac{\\sum E\\,e^{-E/RT}}{\\sum e^{-E/RT}}, \\qquad \\chi(T) = \\frac{\\Delta E_\\mathrm{mix}}{RT}"
   },
   {
    "id": "ptm",
@@ -1275,7 +1314,8 @@
    "deviation": "correspondences from anchor pairs and nearest-point assignment, not the paper's graph-canonical search; the shear strain is relative to the particle's own lattice scale",
    "engines": [
     "pipeline.ptm"
-   ]
+   ],
+   "tex": "\\mathrm{RMSD} = \\min_R\\sqrt{\\frac{\\sum_k\\left|R\\hat{v}_k - \\hat{t}_{\\pi(k)}\\right|^2}{N + 1}}, \\qquad F = \\left(\\sum x\\,t^\\mathrm{T}\\right)\\left(\\sum t\\,t^\\mathrm{T}\\right)^{-1} \\\\ E = \\tfrac{1}{2}\\left(F^\\mathrm{T}F - I\\right), \\qquad \\epsilon_\\mathrm{shear} = \\sqrt{\\tfrac{1}{2}\\sum\\operatorname{dev}(E)^2}"
   },
   {
    "id": "voronoi-exact",
@@ -1311,7 +1351,8 @@
    "deviation": "none known; cells of atoms without a periodic cell around them may be open (reported)",
    "engines": [
     "pipeline.voronoi"
-   ]
+   ],
+   "tex": "d = \\frac{r^2 + R_i^2 - R_j^2}{2r} \\ \\text{ from } i \\text{ to the plane between } i \\text{ and } j \\quad (R = 0\\text{: Voronoi}), \\qquad V_i = \\sum_\\text{faces}\\tfrac{1}{3}A_f\\,d_f"
   },
   {
    "id": "wigner-seitz",
@@ -1339,7 +1380,8 @@
    "deviation": "none known",
    "engines": [
     "pipeline.wigner_seitz"
-   ]
+   ],
+   "tex": "\\text{site}(i) = \\argmin_k |r_i - R_k| \\ \\ \\text{(minimum image)}, \\qquad \\text{vacancies} = \\#\\{k : n_k = 0\\}, \\qquad \\text{interstitials} = \\sum_k \\max(0,\\, n_k - 1)"
   },
   {
    "id": "thiolates",
@@ -1369,7 +1411,8 @@
    "deviation": "a geometric placement, not an equilibrated monolayer; adatom (staple) motifs of small clusters are not built",
    "engines": [
     "nano.particle"
-   ]
+   ],
+   "tex": "h = \\sqrt{d_\\mathrm{MS}^2 - R^2}\\ \\text{ above the hollow's centre } (R\\text{: its distance to the three atoms}), \\qquad d_\\mathrm{SS} \\ge \\sqrt{3}\\,d_\\mathrm{MM}"
   },
   {
    "id": "opls-bci",
@@ -1399,7 +1442,8 @@
    "deviation": "charges verified against the reference program's OPLS 2005 on 110 polymers; the combination with OPLS-AA 2024 parameters is CAPS's choice",
    "engines": [
     "field.assign"
-   ]
+   ],
+   "tex": "q_i = \\sum_{j \\text{ bonded to } i}\\delta_{ij}, \\qquad \\delta_{ji} = -\\delta_{ij}, \\qquad \\delta \\text{ from the OPLS 2005 table by the pair's keys (its first entry for a pair)}"
   },
   {
    "id": "ff-by-group",
@@ -1434,7 +1478,8 @@
    "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), OPLS 2005 (296.6776), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol; (6,6) nanotube under AIREBO in hexane, metal units: van der Waals beside AIREBO GAFF2 3.49464, PCFF 16.67939, COMPASS 1.26178, OPLS 2005 −2.13761 kcal/mol in LAMMPS and CAPS; PS melt real vs metal export identical to 1e-9 in bonded and van der Waals terms; AIREBO, AIREBO-M, REBO in real units with CAPS's converted file: energy equal to the metal run ×23.060549 to 1e-13, forces to 2e-12 kcal/mol/Å, pressure to every digit; MEAM (SiC set) in the composite equals the slab alone (atom_style atomic) to 1e-10 eV, van der Waals beside it equals CAPS's (GAFF2 366.67611, PCFF 133.14904 kcal/mol)",
    "engines": [
     "field.assign.groups"
-   ]
+   ],
+   "tex": "\\epsilon_{ab} = \\sqrt{\\epsilon_a\\epsilon_b}\\ \\text{ or }\\ \\frac{\\epsilon_a + \\epsilon_b}{2}, \\qquad \\sigma_{ab} = \\frac{\\sigma_a + \\sigma_b}{2}\\ \\text{ or }\\ \\sqrt{\\sigma_a\\sigma_b} \\\\ \\text{sixth power:}\\ \\ \\sigma_{ab} = \\left(\\frac{\\sigma_a^6 + \\sigma_b^6}{2}\\right)^{1/6}, \\qquad \\epsilon_{ab} = \\frac{2\\sqrt{\\epsilon_a\\epsilon_b}\\,\\sigma_a^3\\sigma_b^3}{\\sigma_a^6 + \\sigma_b^6}"
   }
  ]
 }

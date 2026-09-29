@@ -2185,6 +2185,19 @@ internal static class SelfTest
             {
                 vm.ShowManualPage(item.Page);
                 unresolved.AddRange(vm.ManualRefs.Where(r => !r.Contains(" (")));
+                // every equation typesets (LaTeX parses), and every symbol row
+                void Math(string what, string t, Views.MathView.MathMode m)
+                {
+                    try { Views.MathView.MathParser.Parse(t, m); } catch (Exception e) { unresolved.Add($"{item.Page!.Id} {what}: {e.Message}"); }
+                }
+                if (item.Page!.Tex.Length == 0) unresolved.Add(item.Page.Id + ": no LaTeX");
+                Math("equation", item.Page.Tex, Views.MathView.MathMode.Tex);
+                foreach (var r in vm.ManualSymbols)
+                {
+                    Math("symbol " + r.Key, r.Key, Views.MathView.MathMode.Symbol);
+                    Math("meaning " + r.Key, r.Value, Views.MathView.MathMode.Prose);
+                    Math("setting " + r.Key, r.Other, Views.MathView.MathMode.Prose);
+                }
             }
             vm.OpenManual("csvr");
             var bib = vm.ManualBibtex();
