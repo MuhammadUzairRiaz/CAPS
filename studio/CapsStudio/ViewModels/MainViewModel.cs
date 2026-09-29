@@ -625,7 +625,7 @@ public sealed partial class MainViewModel : ObservableObject
     public int GrowChains { get => _growChains; set => Set(ref _growChains, Math.Clamp(value, 1, 2000)); }
     public int GrowDp { get => _growDp; set => Set(ref _growDp, Math.Clamp(value, 2, 2000)); }
     public int GrowTacticity { get => _growTact; set => Set(ref _growTact, value); }
-    public int GrowSeed { get => _growSeed; set => Set(ref _growSeed, Math.Max(0, value)); }
+    public int GrowSeed { get => _growSeed; set { if (Set(ref _growSeed, Math.Max(1, value)) && _growSeedC != null && _growSeedC.Value != _growSeed) _growSeedC.Value = _growSeed; } }
     public double GrowDensity { get => _growDensity; set => Set(ref _growDensity, Math.Clamp(value, 0.01, 2.0)); }
     public double GrowBox { get => _growBox; set => Set(ref _growBox, Math.Max(0, value)); }
     public double GrowScale { get => _growScale; set => Set(ref _growScale, Math.Clamp(value, 0.5, 1.2)); }
@@ -816,7 +816,7 @@ public sealed partial class MainViewModel : ObservableObject
     // decimal views for NumericUpDown
     public decimal? GrowChainsD { get => _growChains; set { GrowChains = (int)(value ?? 1); Raise(); } }
     public decimal? GrowDpD { get => _growDp; set { if (value == null) return; var before = _growDp; GrowDp = (int)value; Raise(); if (_growDp != before) PolyChanged(); } }   // an emptied box keeps the DP; the sequence strip and composition follow at once   // the sequence strip and composition follow at once
-    public decimal? GrowSeedD { get => _growSeed; set { GrowSeed = (int)(value ?? 0); Raise(); } }
+    public decimal? GrowSeedD { get => _growSeed; set { if (value == null) return; GrowSeed = (int)value; Raise(); } }
     public decimal? GrowDensityD { get => (decimal)_growDensity; set { GrowDensity = (double)(value ?? 0.4m); Raise(); } }
     public decimal? GrowBoxD { get => (decimal)_growBox; set { GrowBox = (double)(value ?? 0m); Raise(); } }
     public decimal? GrowScaleD { get => (decimal)_growScale; set { GrowScale = (double)(value ?? 1m); Raise(); } }
@@ -868,6 +868,7 @@ public sealed partial class MainViewModel : ObservableObject
         Growing = true;
         _growCancel = new CancellationTokenSource();
         var token = _growCancel.Token;
+        _growSeed = GrowSeedChoice.Take();
         var o = new CapsGrowOpts
         {
             Chains = _growChains, Dp = _growDp, Tacticity = _growTact, Seed = (ulong)_growSeed,
@@ -1336,7 +1337,7 @@ public sealed partial class MainViewModel : ObservableObject
     public decimal? MdPressureD { get => (decimal)_mdPressure; set { _mdPressure = (double)(value ?? 1m); Raise(); } }
     public decimal? MdTauPD { get => (decimal)_mdTauP; set { _mdTauP = Math.Clamp((double)(value ?? 1000m), 10, 1e7); Raise(); } }
     public decimal? MdFrameEveryD { get => _mdFrameEvery; set { _mdFrameEvery = Math.Clamp((int)(value ?? 1000), 1, 1_000_000); Raise(); Raise(nameof(MdEstimate)); } }
-    public decimal? MdSeedD { get => _mdSeed; set { _mdSeed = Math.Max(0, (int)(value ?? 1)); Raise(); } }
+    public decimal? MdSeedD { get => _mdSeed; set { if (value == null) return; _mdSeed = Math.Max(1, (int)value); if (_mdSeedC != null && _mdSeedC.Value != _mdSeed) _mdSeedC.Value = _mdSeed; Raise(); } }
     // ---- pre-flight and export (Dynamics board)
     public ObservableCollection<CheckRow> MdPreflight { get; } = new();
     private string _mdPreflightSummary = "", _mdDeck = "";
@@ -1515,7 +1516,7 @@ public sealed partial class MainViewModel : ObservableObject
         Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,
         Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,
         Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
-        NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)_mdSeed,
+        NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
         Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
     };
@@ -1739,7 +1740,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The equilibration settings as the core takes them (also captured when a run is queued).</summary>
     private CapsEquilOpts EqOptions(bool? until) => new()
     {
-        Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)_mdSeed,
+        Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
         FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
     };
@@ -1866,7 +1867,7 @@ public sealed partial class MainViewModel : ObservableObject
         var o = new CapsCbmcOpts
         {
             Moves = _cbMoves, Trials = _cbTrials, MaxTorsions = _cbTorsions, Temperature = _cbTemp,
-            Cutoff = Math.Min(9.0, _relaxCutoff), Coulomb = _relaxCoulomb ? 1 : 0, Seed = (ulong)_mdSeed,
+            Cutoff = Math.Min(9.0, _relaxCutoff), Coulomb = _relaxCoulomb ? 1 : 0, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         };
         CbNote = "Starting…";
         Status = $"Regrowing chain ends of {Title} (CBMC)…";
@@ -2038,7 +2039,7 @@ public sealed partial class MainViewModel : ObservableObject
     public decimal? PackZD { get => (decimal)_packZ; set { _packZ = Math.Clamp((double)(value ?? 40m), 5, 10000); Raise(); } }
     public decimal? PackTolD { get => (decimal)_packTol; set { _packTol = Math.Clamp((double)(value ?? 2m), 0.5, 10); Raise(); } }
     public decimal? PackCountD { get => _packCount; set { _packCount = Math.Clamp((int)(value ?? 100), 1, 10_000_000); Raise(); } }
-    public decimal? PackSeedD { get => _packSeed; set { _packSeed = Math.Max(0, (int)(value ?? 1)); Raise(); } }
+    public decimal? PackSeedD { get => _packSeed; set { if (value == null) return; _packSeed = Math.Max(1, (int)value); if (_packSeedC != null && _packSeedC.Value != _packSeed) _packSeedC.Value = _packSeed; Raise(); } }
     public bool PackPeriodic { get => _packPeriodic; set => Set(ref _packPeriodic, value); }
     public bool Packing { get => _packing; private set { if (Set(ref _packing, value)) RaiseBusy(); } }
     public string PackText { get => _packText; set { if (Set(ref _packText, value)) ParsePackText(); } }
@@ -2134,7 +2135,12 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (!Idle || (presetText ?? _packText).Trim().Length == 0) return;
         string text;
-        try { text = presetText ?? PackTextToRun(); }
+        try
+        {
+            text = presetText ?? PackTextToRun();
+            // new each time: this run's seed in the input's seed line (a fixed seed is the one the input says)
+            if (presetText == null && PackSeedChoice.Fresh) text = WithSeedLine(text, _packSeed = PackSeedChoice.Take());
+        }
         catch (Exception e) { PackLog = "Could not pack.\n" + e.Message; Status = "Could not pack — see the Pack panel"; return; }
         PackDone = false;
         Packing = true;
@@ -2254,7 +2260,7 @@ public sealed partial class MainViewModel : ObservableObject
     public bool CanReact => _doc != null && Idle;
     public decimal? RxCyclesD { get => _rxCycles; set { _rxCycles = Math.Clamp((int)(value ?? 50), 1, 100000); Raise(); } }
     public decimal? RxPerCycleD { get => _rxPerCycle; set { _rxPerCycle = Math.Clamp((int)(value ?? 5), 1, 100000); Raise(); } }
-    public decimal? RxSeedD { get => _rxSeed; set { _rxSeed = Math.Max(0, (int)(value ?? 1)); Raise(); } }
+    public decimal? RxSeedD { get => _rxSeed; set { if (value == null) return; _rxSeed = Math.Max(1, (int)value); if (_rxSeedC != null && _rxSeedC.Value != _rxSeed) _rxSeedC.Value = _rxSeed; Raise(); } }
     public decimal? RxTargetD { get => (decimal)_rxTarget; set { _rxTarget = Math.Clamp((double)(value ?? 1m), 0.001, 1); Raise(); } }
     public decimal? RxCaptureD { get => (decimal)_rxCapture; set { _rxCapture = Math.Clamp((double)(value ?? 0m), 0, 20); Raise(); } }
     public decimal? RxMdPsD { get => (decimal)_rxMdPs; set { _rxMdPs = Math.Clamp((double)(value ?? 0m), 0, 10000); Raise(); } }
@@ -2331,7 +2337,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The React settings as the core takes them (also captured when a run is queued).</summary>
     private CapsReactOpts ReactOptions() => new()
     {
-        Seed = (ulong)_rxSeed, MaxCycles = _rxCycles, MaxPerCycle = _rxPerCycle, TargetConversion = _rxTarget, Capture = _rxCapture,
+        Seed = (ulong)(_rxSeed = RxSeedChoice.Take()), MaxCycles = _rxCycles, MaxPerCycle = _rxPerCycle, TargetConversion = _rxTarget, Capture = _rxCapture,
         Relax = _rxRelax ? 1 : 0, RelaxIterations = _rxRelaxIt, MdPs = _rxRelax || _rxDuringMd ? _rxMdPs : 0, Temperature = _rxTemp, Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
         DuringMd = _rxDuringMd ? 1 : 0,
         FieldMode = _rxUseField ? 0 : 1, BetweenChains = _rxBetween ? 1 : 0, KeepByproducts = _rxKeepBy ? 1 : 0,

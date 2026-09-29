@@ -147,6 +147,7 @@
                   <TextBox Grid.Row="1" Grid.Column="1" Text="L-BFGS (m = 10)" IsReadOnly="True" />
                   <TextBox Grid.Row="1" Grid.Column="2" Text="Cell list, threaded" IsReadOnly="True" />
                 </Grid>
+                <v:SeedPicker DataContext="{Binding PackSeedChoice}" ToolTip.Tip="Written as the input's seed line; new each run replaces it with a fresh seed for every pack" />
                 <Grid ColumnDefinitions="Auto,120,Auto" ColumnSpacing="8" IsEnabled="{Binding !PackIntoCurrent}">
                   <CheckBox Content="Then compress the cell to" IsChecked="{Binding PackCompress}" VerticalAlignment="Center"
                             ToolTip.Tip="Stage 3: pack at a low density (an easy, fast packing), then compress the cell by affine steps of 6 % with capped-force push-off and minimisation (the built-in force field) to this density" />

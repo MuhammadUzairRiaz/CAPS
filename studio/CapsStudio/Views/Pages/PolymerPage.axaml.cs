@@ -59,4 +59,5 @@ public partial class PolymerPage : PageBase
         if (DataContext is ViewModels.MainViewModel vm) vm.PolyAutoPreview = false;
         base.OnDetachedFromVisualTree(e);
     }
+    private void OnPolyRedraw(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.PolyRedraw();
 }

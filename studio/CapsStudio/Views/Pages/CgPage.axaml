@@ -126,7 +126,7 @@
                     </Grid>
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                       <StackPanel Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding MtDensity}" Minimum="0.1" Maximum="3" Increment="0.05" FormatString="0.00" /></StackPanel>
-                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Seed" Classes="label" /><NumericUpDown Value="{Binding MtSeed}" Minimum="1" Increment="1" FormatString="0" /></StackPanel>
+                      <v:SeedPicker Grid.Column="1" DataContext="{Binding MtSeedChoice}" />
                     </Grid>
                     <TextBlock Classes="dim" TextWrapping="Wrap" Text="One chain is built from the repeat unit, the chains packed at a quarter of the density, the MARTINI force field assigned from the bead names and the cell compressed to the density with it. The melt opens in the Studio assigned: relax and equilibrate it, then export it to GROMACS (MARTINI's home: Lennard-Jones with GROMACS's force switch) or LAMMPS." />
                   </StackPanel>
@@ -144,7 +144,7 @@
                     <StackPanel Spacing="6"><TextBlock Text="Density ρσ³" Classes="label" /><NumericUpDown Value="{Binding CgDensity}" Minimum="0.06" Maximum="1.2" Increment="0.05" FormatString="0.00" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Box L · σ" Classes="label" /><TextBox Text="{Binding CgBoxText, Mode=OneWay}" IsReadOnly="True" Classes="mono" /></StackPanel>
                   </Grid>
-                  <StackPanel Spacing="6"><TextBlock Text="Seed" Classes="label" /><NumericUpDown Value="{Binding CgSeed}" Minimum="1" Increment="1" FormatString="0" /></StackPanel>
+                  <v:SeedPicker DataContext="{Binding CgSeedChoice}" />
                 </StackPanel>
               </Border>
               <Border Classes="section" Padding="16,14">

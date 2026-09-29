@@ -95,7 +95,7 @@ public sealed partial class MainViewModel
         var json = new JsonObject
         {
             ["species"] = species, ["chi"] = chi, ["density"] = (double)_dpdDensity, ["steps"] = (long)_dpdSteps,
-            ["rc_angstrom"] = (double)_dpdRc, ["seed"] = _mdSeed,
+            ["rc_angstrom"] = (double)_dpdRc, ["seed"] = DpdSeed.Take(),
         }.ToJsonString();
         DpdRunning = true;
         DpdError = "";

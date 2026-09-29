@@ -1,0 +1,20 @@
+<!-- A run's random seed: a fixed seed repeats the run exactly; "New each time" draws one per run and shows it, and Keep
+     fixes the shown one. DataContext: a SeedChoice. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels"
+             x:Class="CapsStudio.Views.SeedPicker" x:DataType="vm:SeedChoice">
+  <StackPanel Spacing="6">
+    <TextBlock x:Name="Label" Text="Seed" Classes="label" />
+    <WrapPanel ItemSpacing="8" LineSpacing="4">
+      <NumericUpDown Value="{Binding Value}" IsEnabled="{Binding Fixed}" Minimum="1" Maximum="2147483647" Increment="1" FormatString="0"
+                     ShowButtonSpinner="False" Width="110" ToolTip.Tip="The same seed gives the same result: same sequence, same chains, same velocities" />
+      <CheckBox Content="New each run" IsChecked="{Binding Fresh}" VerticalAlignment="Center"
+                ToolTip.Tip="A different random draw every run; the seed used is shown so the run can be repeated" />
+    </WrapPanel>
+    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasUsed}">
+      <SelectableTextBlock Text="{Binding UsedText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+      <Button Content="Keep" Classes="small" Padding="8,0" Height="22" MinHeight="22" Click="OnKeep" IsVisible="{Binding Fresh}"
+              ToolTip.Tip="Fix this seed, to reproduce this run" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

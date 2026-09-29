@@ -14,7 +14,7 @@ public sealed partial class MainViewModel
     public decimal CgBeads { get => _cgBeads; set { if (Set(ref _cgBeads, Math.Clamp(Math.Round(value), 2, 100000))) CgPreview(); } }
     public decimal CgDensity { get => _cgDensity; set { if (Set(ref _cgDensity, Math.Clamp(value, 0.06m, 1.2m))) { CgPreview(); Raise(nameof(CgMapText)); } } }
     public decimal CgKTheta { get => _cgKTheta; set { if (Set(ref _cgKTheta, Math.Clamp(value, 0, 50))) CgPreview(); } }
-    public decimal CgSeed { get => _cgSeed; set { if (Set(ref _cgSeed, Math.Max(1, Math.Round(value)))) CgPreview(); } }
+    public decimal CgSeed { get => _cgSeed; set => CgSeedChoice.Value = value; }
     public decimal CgPushSteps { get => _cgPush; set => Set(ref _cgPush, Math.Clamp(Math.Round(value), 100, 1e8m)); }
     public decimal CgRunSteps { get => _cgRun; set => Set(ref _cgRun, Math.Clamp(Math.Round(value), 100, 1e10m)); }
     public string CgBoxText => ((double)(_cgChains * _cgBeads / _cgDensity) is var v && v > 0 ? Math.Cbrt(v) : 0).ToString("0.00", CultureInfo.InvariantCulture);
@@ -30,7 +30,7 @@ public sealed partial class MainViewModel
 
     public string CgOptions()
     {
-        var o = new JsonObject { ["chains"] = (int)_cgChains, ["beads"] = (int)_cgBeads, ["density"] = (double)_cgDensity, ["k_theta"] = (double)_cgKTheta, ["seed"] = (int)_cgSeed };
+        var o = new JsonObject { ["chains"] = (int)_cgChains, ["beads"] = (int)_cgBeads, ["density"] = (double)_cgDensity, ["k_theta"] = (double)_cgKTheta, ["seed"] = CgSeedChoice.Take() };
         if (_cgUnits == 1) { o["sigma"] = (double)_cgSigma; o["temperature"] = (double)_cgTemp; o["bead_mass"] = (double)_cgMass; }
         return o.ToJsonString();
     }
@@ -99,7 +99,7 @@ public sealed partial class MainViewModel
     private string MpOptions() => new JsonObject
     {
         ["scheme"] = MpSchemeIds[_mpScheme], ["per_bead"] = (int)_mpPerBead, ["temperature"] = (double)_mpTemp,
-        ["chains"] = (int)_mpChains, ["dp"] = (int)_mpDp, ["density"] = (double)_mpDensity, ["seed"] = 1,
+        ["chains"] = (int)_mpChains, ["dp"] = (int)_mpDp, ["density"] = (double)_mpDensity, ["seed"] = MtSeedChoice.Take(),
     }.ToJsonString();
 
     /// <summary>The report as text: the notes, then each bond and angle type with its inverted parameters.</summary>
@@ -199,7 +199,7 @@ public sealed partial class MainViewModel
     public decimal MtRepeats { get => _mtRepeats; set => Set(ref _mtRepeats, Math.Clamp(Math.Round(value), 1, 5000)); }
     public decimal MtChains { get => _mtChains; set => Set(ref _mtChains, Math.Clamp(Math.Round(value), 1, 20000)); }
     public decimal MtDensity { get => _mtDensity; set => Set(ref _mtDensity, Math.Clamp(value, 0.1m, 3m)); }
-    public decimal MtSeed { get => _mtSeed; set => Set(ref _mtSeed, Math.Max(1, Math.Round(value))); }
+    public decimal MtSeed { get => _mtSeed; set => MtSeedChoice.Value = value; }
     private bool _mtBuilding;
     public bool MtBuilding { get => _mtBuilding; private set { if (Set(ref _mtBuilding, value)) Raise(nameof(CgIdle)); } }
     public bool CgIdle => !_mtBuilding;
@@ -211,7 +211,7 @@ public sealed partial class MainViewModel
         if (_mtFf < 0 || _mtFf >= ffs.Count) { CgError = "Choose a MARTINI force field"; return; }
         var ff = ffs[_mtFf];
         var opts = new JsonObject { ["forcefield"] = ff.File, ["repeat"] = _mtRepeat.Trim(), ["repeats"] = (int)_mtRepeats, ["chains"] = (int)_mtChains,
-                                    ["density"] = (double)_mtDensity, ["seed"] = (int)_mtSeed }.ToJsonString();
+                                    ["density"] = (double)_mtDensity, ["seed"] = MtSeedChoice.Take() }.ToJsonString();
         CgError = "";
         MtBuilding = true;
         Status = $"Building the MARTINI melt · {_mtChains:0} chains of {_mtRepeats:0} × {_mtRepeat.Trim()}";
