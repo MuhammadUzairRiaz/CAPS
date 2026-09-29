@@ -262,6 +262,12 @@
                   <Border Classes="chip" IsVisible="{Binding Growing}">
                     <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="growing" Foreground="{DynamicResource AccB}" /></StackPanel>
                   </Border>
+                  <Border Classes="seg" ToolTip.Tip="Wrapped: every atom folded into the cell (bonds across a face hidden), as Amorphous Cell shows it. Unwrapped: each chain whole, running out of the cell. The same while growing and for the grown cell">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="seg" GroupName="gwrap" Content="Wrapped" IsChecked="{Binding GrowWrap}" />
+                      <RadioButton Classes="seg" GroupName="gwrap" Content="Unwrapped" IsChecked="{Binding GrowUnwrapped}" />
+                    </StackPanel>
+                  </Border>
                   <Border Classes="seg">
                     <StackPanel Orientation="Horizontal">
                       <RadioButton Classes="seg" GroupName="gdisp" Content="All atoms" Tag="0" Click="OnDisplay" IsChecked="True" />

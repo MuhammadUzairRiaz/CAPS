@@ -936,7 +936,7 @@ public sealed partial class MainViewModel : ObservableObject
                     Action<CapsDocument, string> onLive = (live, stats) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                     {
                         if (ticket != _growLiveTicket || !_growing) { live.Dispose(); return; }
-                        try { live.SetWrap(true); } catch { }   // chains folded into the cell, as Amorphous Cell shows them
+                        try { live.SetWrap(_growWrap); } catch { }   // folded into the cell (as Amorphous Cell shows them) or whole, as chosen
                         var old = GrowLiveDoc;
                         GrowLiveDoc = live;
                         old?.Dispose();
@@ -961,6 +961,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
+            ShowGrownWrap();   // the grown cell as the live view showed it
             MarkPipeline("Grow", spec == null ? "polystyrene" : _growSpecName);
             grown = true;
             AfterGrowStatistics(doc);
