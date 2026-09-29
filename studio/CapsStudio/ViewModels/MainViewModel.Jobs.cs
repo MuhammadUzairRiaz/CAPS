@@ -19,12 +19,26 @@ public sealed class RemoteRun
     public string Stem { get; set; } = "structure";
     public string LastState { get; set; } = "";
     public bool Checking { get; set; }
-    public JsonObject Json() => new() { ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem };
+    /// <summary>Outputs left on the host when the job came back (large trajectories): copied on request.</summary>
+    public List<RemoteFile> OnHost { get; set; } = new();
+    public JsonObject Json() => new()
+    {
+        ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem,
+        ["on_host"] = new JsonArray(OnHost.Select(f => (JsonNode)new JsonObject { ["name"] = f.Name, ["bytes"] = f.Bytes }).ToArray()),
+    };
     public static RemoteRun From(JsonObject o) => new()
     {
         Host = (string?)o["host"] ?? "", Scheduler = (string?)o["scheduler"] ?? "SLURM", JobId = (string?)o["job_id"] ?? "", Dir = (string?)o["dir"] ?? "",
         Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure",
+        OnHost = o["on_host"] is JsonArray a ? a.OfType<JsonObject>().Select(f => new RemoteFile((string?)f["name"] ?? "", (long?)f["bytes"] ?? 0)).Where(f => f.Name.Length > 0).ToList() : new(),
     };
+}
+
+/// <summary>A file in a remote job's out folder and its size.</summary>
+public sealed record RemoteFile(string Name, long Bytes)
+{
+    public string Size => Bytes >= 1L << 30 ? (Bytes / 1073741824.0).ToString("F1", CultureInfo.InvariantCulture) + " GB"
+                        : (Bytes / 1048576.0).ToString("F1", CultureInfo.InvariantCulture) + " MB";
 }
 
 /// <summary>One line of a job's log.</summary>
@@ -205,6 +219,7 @@ public sealed partial class MainViewModel
                 if (int.TryParse(j.Id.Split('-').LastOrDefault(), out var k)) _jobCounters[j.Kind] = Math.Max(_jobCounters.GetValueOrDefault(j.Kind), k);
         }
         catch { /* a broken history is left behind */ }
+        foreach (var j in Jobs.Where(j => j.IsRemote && j.Status == "done")) RemoteOutputs(j);   // results brought back, files left on the host
         if (Jobs.Any(j => j.IsRemote && j.IsRunning)) Avalonia.Threading.Dispatcher.UIThread.Post(StartRemotePoll);   // remote jobs sent before
         PropertyChanged += OnRunProperty;
         Analyze.PropertyChanged += (_, e) =>
