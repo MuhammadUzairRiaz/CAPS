@@ -13,6 +13,9 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Click="OnRecipe" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The cooling scan as a YAML recipe (caps run)"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save as recipe" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Click="OnQueue" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Run after the current run ends (Jobs shows the queue); it uses this page's settings at its turn">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="jobs" Size="14" VerticalAlignment="Center" /><TextBlock Text="Queue" VerticalAlignment="Center" /></StackPanel>
+          </Button>
           <Button Classes="primary" Click="OnRun" IsVisible="{Binding Analyze.NotWorking}" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run cooling" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding Analyze.Working}" />
         </StackPanel>

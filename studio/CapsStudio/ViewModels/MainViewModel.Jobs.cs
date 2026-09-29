@@ -476,7 +476,7 @@ public sealed partial class MainViewModel
 
     private void EnqueueNew(string kind, int module, string title, Func<Task> start) => Enqueue(kind, module, title, start, newStructure: true);
 
-    private void Enqueue(string kind, int module, string title, Func<Task> start, bool newStructure = false)
+    private void Enqueue(string kind, int module, string title, Func<Task> start, bool newStructure = false, string? note = null)
     {
         if (_doc == null && !newStructure) return;
         var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
@@ -486,8 +486,8 @@ public sealed partial class MainViewModel
             Atoms = newStructure ? 0 : _doc!.Summary().Atoms, Provenance = Manifest(kind),
         };
         job.Status = "queued";
-        job.Add(newStructure ? $"{title} queued; it builds a new structure when the current run ends, with the settings as they are now"
-                             : $"{title} queued on {job.Document}; it starts when the current run ends, with the settings as they are now");
+        job.Add(note ?? (newStructure ? $"{title} queued; it builds a new structure when the current run ends, with the settings as they are now"
+                                      : $"{title} queued on {job.Document}; it starts when the current run ends, with the settings as they are now"));
         _queue.Add(new QueuedRun(job, newStructure ? null : _doc, start));
         Jobs.Insert(0, job);
         Raise(nameof(HasJobs)); Raise(nameof(JobsSummary)); Raise(nameof(QueuedCount)); Raise(nameof(QueueText));
@@ -524,6 +524,15 @@ public sealed partial class MainViewModel
         try { text = PackTextToRun(); } catch (Exception e) { Status = "Could not queue the packing: " + e.Message; return; }
         var baseDir = PackBaseDir;
         EnqueueNew("Pack", 5, "Pack · molecules into a box", () => RunPack(text, baseDir));
+    }
+
+    /// <summary>The glass transition queued on this structure: its replicas run when the current run ends, with the Glass
+    /// page's settings as they are then (its cooling scan reads them when it starts).</summary>
+    public void QueueGlass()
+    {
+        var reps = GtReplicas;
+        Enqueue("Glass", 47, $"Glass transition · {reps} replica{(reps == 1 ? "" : "s")}", RunGlass,
+                note: $"Glass transition queued on {Title}; it starts when the current run ends and uses the Glass page's settings at that moment");
     }
 
     public void QueueReact()

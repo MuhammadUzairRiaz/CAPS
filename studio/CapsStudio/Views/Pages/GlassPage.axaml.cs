@@ -50,4 +50,5 @@ public partial class GlassPage : PageBase
         System.IO.File.WriteAllText(p, Vm.GlassRecipe(src));
         Vm.Status = $"Saved {System.IO.Path.GetFileName(p)} · caps run {System.IO.Path.GetFileName(p)}";
     }
+    private void OnQueue(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.QueueGlass();
 }
