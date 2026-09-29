@@ -26,6 +26,12 @@
     </Border>
     <ScrollViewer Margin="22,18">
       <StackPanel Spacing="14">
+        <Border Classes="pcard">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Setup" FontSize="13.5" FontWeight="SemiBold" />
+            <v:AnalysisScope ShowAxis="True" />
+          </StackPanel>
+        </Border>
         <UniformGrid Columns="2">
           <Border Classes="pcard" Margin="0,0,7,0">
             <StackPanel Spacing="5">
@@ -55,7 +61,7 @@
           </Border>
           <Border Grid.Column="1" Classes="pcard">
             <StackPanel Spacing="8">
-              <TextBlock Text="P₂ along z" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding OrAlongTitle}" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="200">
                 <v:LinePlot x:Name="AlongZ" XLabel="z (Å)" YLabel="⟨P₂(cos θ_z)⟩" AutoRange="True" EmptyText="" />
                 <TextBlock IsVisible="{Binding !OrHasZ}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Text="Needs a periodic cell" />

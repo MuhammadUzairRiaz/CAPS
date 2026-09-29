@@ -22,6 +22,7 @@ public partial class OrientationPage : PageBase
                 f.RefY = null;
                 f.SetData(vm.OrPerFrame);
                 var z = this.FindControl<LinePlot>("AlongZ")!;
+                z.XLabel = $"{vm.Analyze.AxisName} (Å)";
                 z.RefY = 0;
                 z.SetData(vm.OrAlongZ);
             };

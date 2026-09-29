@@ -1,0 +1,32 @@
+<!-- What an analysis page runs on: the frames of the trajectory and the atoms (all, the selection, all but the held
+     molecule, or molecule ids), and, where it matters, the axis — the same choices as Analyze's side panel. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels"
+             x:Class="CapsStudio.Views.AnalysisScope" x:DataType="vm:MainViewModel">
+  <UserControl.Styles>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="8">
+    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+      <StackPanel Spacing="6"><TextBlock Text="First frame" Classes="label" />
+        <NumericUpDown Value="{Binding Analyze.FirstD}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="Frames are numbered from 0" /></StackPanel>
+      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Last (−1: the last)" Classes="label" />
+        <NumericUpDown Value="{Binding Analyze.LastD}" Minimum="-1" Increment="1" FormatString="0" /></StackPanel>
+      <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Every" Classes="label" />
+        <NumericUpDown Value="{Binding Analyze.StrideD}" Minimum="1" Increment="1" FormatString="0" /></StackPanel>
+    </Grid>
+    <Grid x:Name="GroupRow" ColumnDefinitions="*,*" ColumnSpacing="10">
+      <StackPanel Spacing="6"><TextBlock Text="Atoms" Classes="label" />
+        <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.GroupChoices}" SelectedIndex="{Binding Analyze.GroupIndex}" HorizontalAlignment="Stretch"
+                  ToolTip.Tip="The analysis sees these atoms alone (bonds and molecules among them)" /></StackPanel>
+      <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding Analyze.GroupIsMolecules}"><TextBlock Text="Molecule ids" Classes="label" />
+        <TextBox Text="{Binding Analyze.GroupMolecules}" Watermark="1-4,7" /></StackPanel>
+    </Grid>
+    <StackPanel x:Name="AxisRow" Spacing="6">
+      <TextBlock Text="Along" Classes="label" />
+      <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.AxisChoices}" SelectedIndex="{Binding Analyze.AxisIndex}" HorizontalAlignment="Stretch"
+                ToolTip.Tip="Herman's f and the profile along the cell: this axis (the normal of the other two cell edges)" />
+    </StackPanel>
+    <TextBlock Text="{Binding Analyze.FramesText}" Classes="dim" FontSize="11" />
+  </StackPanel>
+</UserControl>
