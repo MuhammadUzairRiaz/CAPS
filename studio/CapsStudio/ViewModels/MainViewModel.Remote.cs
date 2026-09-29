@@ -396,30 +396,152 @@ public sealed partial class MainViewModel
                 r.LastState = state;
                 return;
             }
-            // ended: the results, the log and the recipe's provenance come back
-            Directory.CreateDirectory(r.Local);
-            var back = await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/out"], r.Local, true), 600000);
+            // ended: the result, the log and the small outputs come back; a large trajectory stays on the host until asked for
+            var outDir = Path.Combine(r.Local, "out");
+            Directory.CreateDirectory(outDir);
+            var ls = await Tool("ssh", SshArgs(h, ListOutCommand(r.Dir)), 60000);
+            var (now, later) = CopyPlan(ParseListing(ls.Out), r.Stem, LargeRemoteBytes);
+            var back = (Code: 0, Out: "", Err: "");
+            if (now.Count > 0)
+                back = await Tool("scp", ScpArgs(h, now.Select(f => $"{Target(h)}:{r.Dir}/out/{f.Name}"), outDir + "/"), CopyTimeoutMs(now.Sum(f => f.Bytes)));
             await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/*.log"], r.Local), 60000);
-            var result = Path.Combine(r.Local, "out", r.Stem + ".data");
+            var result = Path.Combine(outDir, r.Stem + ".data");
             j.Ended = DateTime.Now;
             if (back.Code == 0 && File.Exists(result))
             {
                 j.Status = "done";
                 j.Progress = 1;
-                j.Add($"Finished on {r.Host}; the result is in {Path.Combine(r.Local, "out")}");
-                j.Outputs.Add(new JobOutput($"Result · {r.Stem}.data", "cube", () => Open(result)));
+                r.OnHost = later;
+                j.Add($"Finished on {r.Host}; {now.Count} file{(now.Count == 1 ? "" : "s")} brought back to {outDir}");
+                foreach (var f in later) j.Add($"{f.Name} ({f.Size}) left on {r.Host}: copy it back from the outputs, whole or every 10th / 100th frame");
+                RemoteOutputs(j);
             }
             else
             {
                 var log = Directory.Exists(r.Local) ? Directory.GetFiles(r.Local, "*.log").Select(File.ReadAllText).FirstOrDefault() ?? "" : "";
                 j.Status = "failed";
-                j.Error = "No result came back" + (log.Length > 0 ? ":\n" + string.Join("\n", log.Split('\n').TakeLast(8)) : $" ({(back.Err.Length > 0 ? back.Err.Split('\n')[0] : "no out folder on the host")})");
+                j.Error = "No result came back" + (log.Length > 0 ? ":\n" + string.Join("\n", log.Split('\n').TakeLast(8)) : $" ({(back.Err.Length > 0 ? back.Err.Split('\n')[0] : ls.Code != 0 ? "no out folder on the host" : "no " + r.Stem + ".data in out")})");
                 j.Add(j.Error);
             }
             SaveJobs();
             Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
         }
         catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message} (the job keeps running there; checked again in a minute)"); }
+        finally { r.Checking = false; }
+    }
+
+    // ---------------------------------------------------------------- copying results back
+    /// <summary>Outputs above this size stay on the host when a job ends (copied on request, whole or thinned).</summary>
+    public const long LargeRemoteBytes = 200L << 20;
+    private static readonly string[] TrajectoryExts = [".lammpstrj", ".dump", ".dcd", ".xtc", ".trr", ".nc", ".mdcrd"];
+
+    /// <summary>The out folder's files with their sizes, one "bytes TAB name" per line (POSIX sh on the host).</summary>
+    internal static string ListOutCommand(string dir) =>
+        $"cd {Q(dir + "/out")} && for f in *; do [ -f \"$f\" ] && printf '%s\\t%s\\n' \"$(wc -c < \"$f\" | tr -d ' ')\" \"$f\"; done";
+
+    internal static List<RemoteFile> ParseListing(string text) =>
+        text.Split('\n').Select(l => l.TrimEnd('\r').Split('\t', 2)).Where(p => p.Length == 2 && long.TryParse(p[0].Trim(), out _))
+            .Select(p => new RemoteFile(p[1], long.Parse(p[0].Trim(), CultureInfo.InvariantCulture))).ToList();
+
+    /// <summary>Which files come back when the job ends (the result always; others up to large) and which wait.</summary>
+    internal static (List<RemoteFile> Now, List<RemoteFile> Later) CopyPlan(IEnumerable<RemoteFile> files, string stem, long large)
+    {
+        var now = new List<RemoteFile>();
+        var later = new List<RemoteFile>();
+        foreach (var f in files) (f.Name == stem + ".data" || f.Bytes <= large ? now : later).Add(f);
+        return (now, later);
+    }
+
+    /// <summary>scp / rsync time allowed: two minutes, or the size at 1 MB/s when longer.</summary>
+    internal static int CopyTimeoutMs(long bytes) => (int)Math.Min(int.MaxValue, Math.Max(120000L, bytes / 1048576L * 1000L));
+
+    internal static bool IsTrajectoryFile(string name) => TrajectoryExts.Contains(Path.GetExtension(name).ToLowerInvariant());
+
+    /// <summary>The thinned copy's name: every Nth frame, in a format caps frames writes (.xtc as .trr, AMBER as .dcd).</summary>
+    internal static string ThinnedName(string name, int every)
+    {
+        var ext = Path.GetExtension(name).ToLowerInvariant();
+        var outExt = ext switch { ".xtc" => ".trr", ".nc" or ".mdcrd" => ".dcd", _ => ext };
+        return Path.GetFileNameWithoutExtension(name) + $".every{every}" + outExt;
+    }
+
+    /// <summary>Thins a trajectory on the host with caps frames (the frames not kept are passed over as it is read).</summary>
+    internal static string ThinCommand(string dir, string name, int every, string? topology) =>
+        $"cd {Q(dir + "/out")} && caps frames {Q(name)} {Q(ThinnedName(name, every))} --stride {every}" + (topology != null ? $" --topology {Q(topology)}" : "");
+
+    /// <summary>The job's outputs: the result brought back, trajectories copied back, and actions for files left on the host.</summary>
+    private void RemoteOutputs(Job j)
+    {
+        if (j.Remote is not { } r) return;
+        j.Outputs.Clear();
+        var outDir = Path.Combine(r.Local, "out");
+        var result = Path.Combine(outDir, r.Stem + ".data");
+        if (File.Exists(result)) j.Outputs.Add(new JobOutput($"Result · {r.Stem}.data", "cube", () => Open(result)));
+        if (Directory.Exists(outDir))
+            foreach (var t in Directory.GetFiles(outDir).Where(f => IsTrajectoryFile(f)).OrderBy(f => f))
+            {
+                var path = t;
+                j.Outputs.Add(new JobOutput($"Trajectory · {Path.GetFileName(t)}", "play", () => Open(path, File.Exists(result) ? result : null)));
+            }
+        foreach (var f in r.OnHost)
+        {
+            var file = f;
+            j.Outputs.Add(new JobOutput($"Copy {f.Name} back · {f.Size}", "download", () => _ = CopyBack(j, file, 0)));
+            if (IsTrajectoryFile(f.Name))
+            {
+                j.Outputs.Add(new JobOutput($"Copy every 10th frame of {f.Name}", "download", () => _ = CopyBack(j, file, 10)));
+                j.Outputs.Add(new JobOutput($"Copy every 100th frame of {f.Name}", "download", () => _ = CopyBack(j, file, 100)));
+            }
+        }
+    }
+
+    /// <summary>Brings a file left on the host back: whole (rsync --partial, so a broken copy resumes when asked again;
+    /// scp when rsync is missing) or, for a trajectory, every Nth frame (thinned on the host by caps frames, then copied).</summary>
+    public async Task CopyBack(Job j, RemoteFile f, int every)
+    {
+        if (j.Remote is not { } r || r.Checking) return;
+        var h = _settings.Hosts.FirstOrDefault(x => x.Name == r.Host);
+        if (h == null) { j.Add($"The host {r.Host} is no longer in Settings"); return; }
+        var outDir = Path.Combine(r.Local, "out");
+        Directory.CreateDirectory(outDir);
+        r.Checking = true;
+        try
+        {
+            var name = f.Name;
+            long bytes = f.Bytes;
+            if (every > 1)
+            {
+                j.Add($"Thinning {f.Name} on {r.Host}: every {every}th frame…");
+                var top = File.Exists(Path.Combine(outDir, r.Stem + ".data")) ? r.Stem + ".data" : null;
+                var thin = await Tool("ssh", SshArgs(h, ThinCommand(r.Dir, f.Name, every, top)), Math.Max(600000, CopyTimeoutMs(f.Bytes) / 4));
+                if (thin.Code != 0)
+                {
+                    var why = (thin.Err + "\n" + thin.Out).Contains("usage", StringComparison.OrdinalIgnoreCase) ? "the host's caps has no frames command: update caps there" : thin.Err.Split('\n')[0];
+                    j.Add($"Could not thin {f.Name}: {why}");
+                    return;
+                }
+                name = ThinnedName(f.Name, every);
+                bytes = f.Bytes / every;
+                j.Add($"{r.Host}: {thin.Out.Split('\n').LastOrDefault()}");
+            }
+            j.Add($"Copying {name} back (~{new RemoteFile(name, bytes).Size})…");
+            var src = $"{Target(h)}:{r.Dir}/out/{name}";
+            var port = h.Port.ToString(CultureInfo.InvariantCulture);
+            (int Code, string Out, string Err) copy;
+            try { copy = await Tool("rsync", ["-t", "--partial", "-e", $"ssh -p {port} -o BatchMode=yes", src, outDir + "/"], CopyTimeoutMs(bytes)); }
+            catch (Exception e) when (e is not TimeoutException) { copy = (127, "", e.Message); }
+            if (copy.Code != 0) copy = await Tool("scp", ScpArgs(h, [src], outDir + "/"), CopyTimeoutMs(bytes));
+            if (copy.Code != 0 || !File.Exists(Path.Combine(outDir, name)))
+            {
+                j.Add($"Could not copy {name}: {(copy.Err.Length > 0 ? copy.Err.Split('\n')[0] : $"exit {copy.Code}")} (ask again to resume)");
+                return;
+            }
+            if (every <= 1) r.OnHost.RemoveAll(x => x.Name == f.Name);
+            j.Add($"{name} is in {outDir}");
+            RemoteOutputs(j);
+            SaveJobs();
+        }
+        catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message}"); }
         finally { r.Checking = false; }
     }
 
