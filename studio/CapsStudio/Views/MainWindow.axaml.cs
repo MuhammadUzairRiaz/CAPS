@@ -123,8 +123,7 @@ public partial class MainWindow : Window
             }
             if (e.PropertyName == nameof(MainViewModel.ViewIsLight))
             {
-                ViewHost.Background = _vm.ViewIsLight ? Avalonia.Media.Brushes.White : (Avalonia.Media.IBrush)this.FindResource("Bg0B")!;
-                HintText.Foreground = _vm.ViewIsLight ? new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#5A6168")) : (Avalonia.Media.IBrush)this.FindResource("DimB")!;
+                ApplyViewHostBackground();
             }
             if (e.PropertyName == nameof(MainViewModel.RdfCurve)) RdfPlot.SetData(_vm.RdfCurve.Select(p => (p.R, p.G)).ToArray());
             if (e.PropertyName == nameof(MainViewModel.Relaxing) && _vm.Relaxing)
@@ -353,8 +352,6 @@ public partial class MainWindow : Window
     }
     // Studio toolbar
     private void OnToolSelect(object? s, RoutedEventArgs e) => _vm.MeasureTool = false;
-    private void OnViewBgDark(object? s, RoutedEventArgs e) => _vm.ViewBackground = 0;
-    private void OnViewBgLight(object? s, RoutedEventArgs e) => _vm.ViewBackground = 1;
     private void OnToolMeasure(object? s, RoutedEventArgs e) => _vm.MeasureTool = true;
     private void OnStyleItem(object? s, RoutedEventArgs e) { if (s is MenuItem { Tag: string t }) _vm.StyleIndex = int.Parse(t); }
     private void OnColourItem(object? s, RoutedEventArgs e) { if (s is MenuItem { Tag: string t }) _vm.ColourIndex = int.Parse(t); }
@@ -425,6 +422,9 @@ public partial class MainWindow : Window
         _vm.AddCommand(new PaletteCommand { Title = "Export figure (SVG)…", Id = "export.svg", Icon = "download", Section = "File", Keywords = "vector image",
             Enabled = () => _vm.HasDocument, Run = () => _ = Export("svg") });
         _vm.CompactChanged += ApplyCompact;
+        // a view that follows the theme turns with the system's too (Settings › Theme: system)
+        if (Application.Current is { } app) app.ActualThemeVariantChanged += (_, _) => _vm.UpdateViewBackground();
+        ApplyViewHostBackground();
         SizeChanged += (_, e) => { _vm.Compact = e.NewSize.Width < 1440; ToolbarRight.Classes.Set("narrow", e.NewSize.Width < 1700); };
         // a folded dock opens when one of its tabs is chosen
         AnalysisTabs.AddHandler(PointerReleasedEvent, (_, _) => { if (_vm.Compact && !_vm.DockOpen) _vm.DockOpen = true; }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
@@ -1467,6 +1467,14 @@ public partial class MainWindow : Window
     private void OnProjectPage(object? s, RoutedEventArgs e) => _vm.OpenProject();
 
     /// <summary>Compact layout: rail and toolbar icons only, the inspector and project as drawers, the dock folded.</summary>
+    /// <summary>The view's frame as the rendered image: white, or the renderer's dark (#0F1113, Graphite's background) —
+    /// fixed, so a dark view under the Paper theme has no light edges.</summary>
+    private void ApplyViewHostBackground()
+    {
+        ViewHost.Background = _vm.ViewIsLight ? Avalonia.Media.Brushes.White : new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#0F1113"));
+        HintText.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(_vm.ViewIsLight ? "#5A6168" : "#7C838A"));
+    }
+
     private void ApplyCompact()
     {
         var c = _vm.Compact;

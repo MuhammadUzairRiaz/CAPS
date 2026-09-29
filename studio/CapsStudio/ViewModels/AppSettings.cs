@@ -11,7 +11,8 @@ public sealed class AppSettings
     public double Scale { get; set; } = 1.0;              // interface scale, 0.8 … 1.5
     public int Palette { get; set; }                      // 0 CAPS, 1 Okabe–Ito, 2 monochrome
     public int Threads { get; set; }                      // 0 = automatic
-    public int Background { get; set; }                   // view background: 0 dark, 1 white
+    public int Background { get; set; }                   // older Studios' view background (0 dark, 1 white): kept for them, not read
+    public string ViewBackdrop { get; set; } = "theme";   // view background: theme (follows the Studio's theme) | dark | white
     public bool Outlines { get; set; } = true;
     public bool DepthCue { get; set; } = true;
     public bool AutoClean { get; set; }                     // a UFF clean-up of the edited atoms after every builder edit (A)
@@ -92,6 +93,7 @@ public sealed class AppSettings
         Palette = Math.Clamp(Palette, 0, 2);
         Threads = Math.Clamp(Threads, 0, 64);
         Background = Math.Clamp(Background, 0, 1);
+        if (ViewBackdrop is not ("theme" or "dark" or "white")) ViewBackdrop = "theme";
         Style = Math.Clamp(Style, 0, 4);
         Electrostatics = Math.Clamp(Electrostatics, 0, 1);
         EwaldRtol = Math.Clamp(EwaldRtol, 1e-10, 1e-2);

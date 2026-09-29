@@ -50,7 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
     public static readonly string[] Styles = ["Ball & stick", "Space filling", "Sticks", "No hydrogens", "Backbone"];
     public static readonly string[] ColourModes = ["Element", "Molecule", "Type", "Distance to molecule centre"];
     public static readonly string[] Backgrounds = ["Dark", "White", "Transparent"];
-    public static readonly string[] ViewBackgrounds = ["Dark", "White (paper)"];
+    public static readonly string[] ViewBackgrounds = ["Theme", "Dark", "White (paper)"];
     // g(r) pairs from the elements present: the commonest heavy elements with themselves and each other, with hydrogen,
     // H – H, all – all (a water box offers O – O, O – H …, a polystyrene melt C – C, C – H …)
     public System.Collections.ObjectModel.ObservableCollection<string> RdfPairs { get; } = new(["C – C", "C – H", "H – H", "all – all"]);
@@ -246,11 +246,32 @@ public sealed partial class MainViewModel : ObservableObject
 
     public int ExportBackground { get => _exportBackground; set => Set(ref _exportBackground, value); }
 
-    private int _viewBackground;
+    // the view's background: the mode chosen (0 follow the theme, 1 dark, 2 white) and what it gives now (0 dark, 1 white),
+    // which every renderer of the view reads
+    private int _viewBackground, _viewBgMode;
     public int ViewBackground
     {
         get => _viewBackground;
-        set { if (Set(ref _viewBackground, value)) { Raise(nameof(ViewIsLight)); RenderRequested?.Invoke(); } }
+        private set { if (Set(ref _viewBackground, value)) { Raise(nameof(ViewIsLight)); RenderRequested?.Invoke(); } }
+    }
+    public int ViewBackgroundMode
+    {
+        get => _viewBgMode;
+        set
+        {
+            if (!Set(ref _viewBgMode, Math.Clamp(value, 0, 2))) { UpdateViewBackground(); return; }
+            Raise(nameof(ViewBgTheme)); Raise(nameof(ViewBgDark)); Raise(nameof(ViewBgWhite));
+            UpdateViewBackground();
+        }
+    }
+    public bool ViewBgTheme { get => _viewBgMode == 0; set { if (value) ViewBackgroundMode = 0; } }
+    public bool ViewBgDark { get => _viewBgMode == 1; set { if (value) ViewBackgroundMode = 1; } }
+    public bool ViewBgWhite { get => _viewBgMode == 2; set { if (value) ViewBackgroundMode = 2; } }
+    /// <summary>Recomputed when the mode or the theme (the system's too) changes.</summary>
+    public void UpdateViewBackground()
+    {
+        var themeLight = Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
+        ViewBackground = _viewBgMode switch { 1 => 0, 2 => 1, _ => themeLight ? 1 : 0 };
     }
     public bool ViewIsLight => _viewBackground == 1;
     public int SizePreset { get => _sizePreset; set => Set(ref _sizePreset, value); }

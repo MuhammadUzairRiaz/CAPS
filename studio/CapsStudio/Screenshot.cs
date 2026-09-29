@@ -807,7 +807,7 @@ internal static class Screenshot
             }
             if (kv[0] == "wrap") w.ViewModel.Wrap = kv[1] == "1";
             if (kv[0] == "tab") w.SelectAnalysisTab(int.Parse(kv[1]));
-            if (kv[0] == "view") w.ViewModel.ViewBackground = int.Parse(kv[1]);
+            if (kv[0] == "view") w.ViewModel.ViewBackgroundMode = int.Parse(kv[1]) == 1 ? 2 : 1;   // view=0 dark, 1 white (the theme when not given)
         }
         Pump();
         var frame = w.CaptureRenderedFrame();
