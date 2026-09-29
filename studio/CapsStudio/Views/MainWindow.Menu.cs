@@ -44,6 +44,8 @@ public partial class MainWindow
                 Cmd("PDB…", "document.save pdb"),
                 Cmd("Tripos mol2…", "document.save mol2"),
                 Cmd("Materials Studio .car / .mdf…", "document.save car"),
+                Cmd("CIF…", "document.save cif"),
+                Cmd("VASP POSCAR…", "document.save poscar"),
                 Cmd("Trajectory (LAMMPS dump)…", "trajectory.save")),
             Sub("Export",
                 Page("Simulation files for LAMMPS / GROMACS…", 68),
