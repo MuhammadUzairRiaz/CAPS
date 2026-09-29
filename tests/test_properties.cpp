@@ -243,3 +243,91 @@ TEST(Properties, FreeVolumeRadii) {
   const double fu = analyze(t, {"ffv"}, o)[0].extra.at("van der Waals occupied fraction");
   EXPECT_NEAR(fb / fu, std::pow(1.70 / (0.5 * x), 3), 0.08 * fb / fu);   // sphere volumes on a 0.4 Å grid
 }
+
+// The density profile of an interface is the same whichever cell axis it runs along and whichever molecule ids the
+// surface has: a carbon slab (molecule 1) under a film along z, and the same cell turned so it runs along x with the slab
+// as molecules 10 and 11. Herman's f of chains along z is 1 along z and −1/2 along x.
+TEST(Properties, InterfaceAlongAnyAxisAndSurface) {
+  std::mt19937 rng(5);
+  std::uniform_real_distribution<double> u(0, 1);
+  auto make = [&](bool turned) {
+    rng.seed(5);
+    Trajectory t;
+    t.topology.has_mol = true;
+    const double L = 20, H = 40;
+    std::vector<Vec3> pos;
+    auto put = [&](double x, double y, double z, int64_t mol) {
+      Atom a;
+      a.element = 6;
+      a.mol = mol;
+      a.pos = turned ? Vec3{z, y, x} : Vec3{x, y, z};
+      t.topology.atoms.push_back(a);
+      pos.push_back(a.pos);
+    };
+    for (int i = 0; i < 10; ++i)   // the slab: two layers at z 1 and 2.5
+      for (int j = 0; j < 10; ++j)
+        for (int k = 0; k < 2; ++k) put(i * 2.0, j * 2.0, 1 + 1.5 * k, turned ? 10 + k : 1);
+    for (int n = 0; n < 600; ++n) put(u(rng) * L, u(rng) * L, 6 + u(rng) * 20, 2 + n / 100);   // a film from z 6 to 26
+    Cell c;
+    c.a = turned ? Vec3{H, 0, 0} : Vec3{L, 0, 0};
+    c.b = {0, L, 0};
+    c.c = turned ? Vec3{0, 0, L} : Vec3{0, 0, H};
+    t.topology.cell = c;
+    t.positions.push_back(pos);
+    t.cells.push_back(c);
+    t.timesteps.push_back(0);
+    return t;
+  };
+  AnalyzeOptions oz;
+  oz.zbin = 1.0;
+  const auto pz = get(analyze(make(false), {"zprofile"}, oz), "zprofile");
+  AnalyzeOptions ox = oz;
+  ox.axis = 0;
+  ox.surface_mols = {10, 11};
+  const auto px = get(analyze(make(true), {"zprofile"}, ox), "zprofile");
+  ASSERT_TRUE(std::isfinite(pz.value));
+  EXPECT_NEAR(px.value, pz.value, 1e-12);
+  EXPECT_NEAR(px.extra.at("surface top (Å)"), pz.extra.at("surface top (Å)"), 1e-12);
+  EXPECT_NEAR(pz.extra.at("surface top (Å)"), 2.5, 1.0);
+  // 600 carbons over 20 × 20 × 20 Å: 12.011 × 600 / (6.022e23 × 8000e-24) = 1.496 g/cm³ (middle half, sampling noise)
+  EXPECT_NEAR(pz.value, 1.496, 0.25);
+  EXPECT_EQ(px.name, "Density profile along x");
+  // the default surface (molecule 1) on the turned cell has no slab: the whole cell is one film
+  AnalyzeOptions ox1 = ox;
+  ox1.surface_mols.clear();
+  const auto p1 = get(analyze(make(true), {"zprofile"}, ox1), "zprofile");
+  EXPECT_FALSE(p1.notes.empty());
+}
+
+TEST(Properties, HermanFAlongChosenAxis) {
+  System s;
+  s.cell.a = {15, 0, 0};
+  s.cell.b = {0, 15, 0};
+  s.cell.c = {0, 0, 25.4};
+  s.unwrapped = true;
+  s.has_mol = true;
+  for (int cx = 0; cx < 3; ++cx) {
+    const uint32_t first = uint32_t(s.atoms.size());
+    for (int k = 0; k < 20; ++k) {
+      Atom a;
+      a.element = 6;
+      a.mol = cx + 1;
+      a.pos = {2.5 + cx * 5 + (k % 2 ? 0.42 : -0.42), 7.5, 0.5 + k * 1.27};
+      s.atoms.push_back(a);
+      if (k > 0) s.bonds.push_back({first + uint32_t(k - 1), first + uint32_t(k), 1});
+    }
+  }
+  Trajectory t;
+  t.topology = s;
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  t.positions.push_back(p);
+  t.cells.push_back(s.cell);
+  t.timesteps.push_back(0);
+  AnalyzeOptions o;
+  o.axis = 0;
+  const auto props = analyze(t, {"orientation"}, o);
+  ASSERT_EQ(props.size(), 1u);
+  EXPECT_NEAR(props[0].extra.at("Herman f along x"), -0.5, 1e-9);
+  EXPECT_EQ(props[0].extra.count("Herman f along z"), 0u);
+}

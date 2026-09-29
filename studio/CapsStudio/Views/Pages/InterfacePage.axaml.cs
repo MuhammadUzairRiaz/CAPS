@@ -24,6 +24,7 @@ public partial class InterfacePage : PageBase
                 ShowView(vm);
                 var plot = this.FindControl<LinePlot>("Profile")!;
                 plot.RefY = null;
+                plot.XLabel = $"{vm.Analyze.AxisName} (Å) · normal to the surface";
                 plot.Band = vm.IfGapBand;
                 var film = vm.IfSeries.FirstOrDefault(s => s.Label == "film").Data ?? [];
                 var surf = vm.IfSeries.Where(s => s.Label != "film").ToArray();
@@ -56,5 +57,6 @@ public partial class InterfacePage : PageBase
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunInterface();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
+    private void OnUseHeld(object? s, RoutedEventArgs e) => Vm.IfUseHeld();
     private void OnExport(object? s, RoutedEventArgs e) => Window?.ExportAnalysis();
 }

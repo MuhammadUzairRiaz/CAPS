@@ -2686,6 +2686,15 @@
                     <NumericUpDown Grid.Row="3" Value="{Binding Analyze.FitFromD}" Minimum="0" Maximum="0.95" Increment="0.05" FormatString="0.00" />
                     <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.FitToD}" Minimum="0.05" Maximum="1" Increment="0.05" FormatString="0.00" />
                   </Grid>
+                  <TextBlock Text="INTERFACE AND ORIENTATION" Classes="h3" Margin="0,6,0,0" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                    <Grid.Styles><Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style></Grid.Styles>
+                    <TextBlock Text="Surface / filler molecules" Classes="dim" /><TextBlock Grid.Column="1" Text="Along" Classes="dim" />
+                    <TextBox Grid.Row="1" Text="{Binding Analyze.SurfaceMolecules}" Watermark="1   or   1-3,7" ToolTip.Tip="z profile, adhesion and filler–matrix interaction: these molecules against the rest" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:AnalyzeViewModel.AxisChoices}" SelectedIndex="{Binding Analyze.AxisIndex}" HorizontalAlignment="Stretch" ToolTip.Tip="The profile, adhesion area and Herman's f run along this axis (the normal of the other two cell edges)" />
+                    <TextBlock Grid.Row="2" Text="Profile bin (Å)" Classes="dim" Margin="0,4,0,0" />
+                    <NumericUpDown Grid.Row="3" Value="{Binding Analyze.ZBinD}" Minimum="0.05" Maximum="5" Increment="0.1" FormatString="0.00" />
+                  </Grid>
                   <!-- protocols: shown when switched on -->
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.TgChip.IsOn}">
                     <TextBlock Text="COOLING PROTOCOL (Tg)" Classes="h3" Margin="0,6,0,0" />

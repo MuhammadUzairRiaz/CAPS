@@ -23,6 +23,28 @@ public sealed partial class MainViewModel
 
     public void OpenInterface() { SetModule(48); IfChanged?.Invoke(); }
 
+    /// <summary>What the page measures: the surface's molecules and the axis, as the chip over the cell says it.</summary>
+    public string IfSetupText
+    {
+        get
+        {
+            var m = Analyze.SurfaceMolecules.Trim();
+            var mols = m.Length == 0 ? "molecule 1" : (m.Contains(',') || m.Contains('-') ? "molecules " : "molecule ") + m;
+            return $"surface: {mols} · along {Analyze.AxisName}";
+        }
+    }
+
+    /// <summary>The surface is the molecule held in place (the slab of a Surface-builder interface, a held filler).</summary>
+    public void IfUseHeld()
+    {
+        if (_doc == null) return;
+        long held = 0;
+        try { held = _doc.HeldMolecule(); } catch { }
+        if (held <= 0) { IfStatus = "No molecule is held: hold the surface in the Studio (Molecule › Hold), or type its molecule ids"; return; }
+        Analyze.SurfaceMolecules = held.ToString(CultureInfo.InvariantCulture);
+        IfStatus = $"Surface: molecule {held} (the held one)";
+    }
+
     public async Task RunInterface()
     {
         if (_doc == null || Analyze.Working) return;
@@ -34,6 +56,8 @@ public sealed partial class MainViewModel
         IfStatus = "Density profile of this frame…";
         await RunChips("zprofile", "adhesion");
         var one = Snapshot();
+        var why = Analyze.Results.FirstOrDefault(r => r.Id == "zprofile") is { } zp && zp.Notes.Length > 0 && !double.IsFinite(zp.Value)
+            ? string.Join(" · ", zp.Notes) + " — set the surface's molecule ids above. " : "";
         Analyze.FirstD = f0; Analyze.LastD = l0;
         // the trajectory
         (double[] Z, string[] Keys, System.Collections.Generic.Dictionary<string, double> V)? traj = null;
@@ -60,6 +84,7 @@ public sealed partial class MainViewModel
         IfNote = frames > 1
             ? $"This frame: frame {_frame + 1}. Trajectory: frames {Analyze.FirstD + 1}–{(Analyze.LastD < 0 ? frames : Analyze.LastD + 1)}."
             : "One frame: a single snapshot, not an equilibrated average. Equilibrate, then run on the trajectory to fill the right-hand column.";
+        IfNote = why + IfNote;
         IfStatus = Analyze.Log;
         IfChanged?.Invoke();
     }
@@ -75,9 +100,9 @@ public sealed partial class MainViewModel
             foreach (var (k, x) in z.Extra) v[k] = x;
             var curves = Analyze.Curves.Where(c => c.Property == z.Name).ToList();
             // the film, then the surface's elements by the mass they carry (Si and O before H on silica)
-            IfSeries = curves.Where(c => c.Label != "all atoms" && c.Label != "molecule 1 (surface)")
-                             .OrderByDescending(c => c.Label == "other molecules (film)").ThenByDescending(c => c.Y.Where(double.IsFinite).Sum())
-                             .Select(c => (c.Label == "other molecules (film)" ? "film" : c.Label, c.X.Zip(c.Y).ToArray())).ToArray();
+            IfSeries = curves.Where(c => c.Label != "all atoms" && c.Label != "surface")
+                             .OrderByDescending(c => c.Label == "film").ThenByDescending(c => c.Y.Where(double.IsFinite).Sum())
+                             .Select(c => (c.Label, c.X.Zip(c.Y).ToArray())).ToArray();
             IfGapBand = v.TryGetValue("surface top (Å)", out var top) && v.TryGetValue("film reaches half its plateau at z (Å)", out var half) ? (top, half) : null;
         }
         var a = Analyze.Results.FirstOrDefault(r => r.Id == "adhesion");

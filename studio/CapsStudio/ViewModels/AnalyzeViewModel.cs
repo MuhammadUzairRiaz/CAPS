@@ -350,6 +350,17 @@ public sealed class AnalyzeViewModel : ObservableObject
     public string GroupMolecules { get => _groupMolecules; set => Set(ref _groupMolecules, value ?? ""); }
     private string GroupSpec => _group switch { 1 => "selection", 2 => "exclude-held", 3 => "molecules:" + _groupMolecules.Trim(), _ => "" };
 
+    // interfaces (z profile, adhesion, filler interaction) and Herman's f: the axis they run along and the surface's molecules
+    public static readonly string[] AxisChoices = ["x (a)", "y (b)", "z (c)"];
+    private int _axis = 2;
+    private double _zbin = 0.5;
+    private string _surfaceMolecules = "1";
+    public int AxisIndex { get => _axis; set => Set(ref _axis, Math.Clamp(value, 0, 2)); }
+    public string AxisName => "xyz"[_axis].ToString();
+    public decimal ZBinD { get => (decimal)_zbin; set => Set(ref _zbin, (double)Math.Clamp(value, 0.05m, 5m), nameof(ZBinD)); }
+    /// <summary>The surface or filler: molecule ids such as "1" or "1-3,7" (empty: molecule 1).</summary>
+    public string SurfaceMolecules { get => _surfaceMolecules; set => Set(ref _surfaceMolecules, value ?? ""); }
+
     public CapsAnalyzeOpts Options()
     {
         var (a, b) = PairElements[Math.Clamp(_pair, 0, PairElements.Length - 1)];
@@ -358,6 +369,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             First = _first, Last = _last < 0 ? -1 : _last, Stride = _stride, FramePs = _framePs, TimestepFs = _timestepFs, Blocks = 5,
             ElemA = a, ElemB = b, InterOnly = _inter ? 1 : 0, FitFrom = _fitFrom, FitTo = _fitTo, Probe = _probe, Grid = _grid,
             Qmax = _qmax, Dq = _dq, QDirect = _qDirect, Deuterate = _deuterate, Group = GroupSpec, Radii = _radii,
+            ZBin = _zbin, Axis = _axis + 1, Surface = _surfaceMolecules.Trim(),
         };
     }
 

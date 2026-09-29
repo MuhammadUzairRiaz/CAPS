@@ -421,4 +421,8 @@ cgp = caps.build.cg_from_polymer("*CC(*)c1ccccc1", name="styrene", scheme="backb
 types = {b["types"] for b in cgp.report["bonds"]}
 check(cgp.atoms == 6 * 12 * 2 and types == {"STY_B–STY_B", "STY_B–STY_S"} and cgp.field.report()["complete"] and 2.0 < cgp.report["sigma"] < 8,
       f"structure-based CG: {cgp.atoms} beads · bonds {sorted(types)} · σ {cgp.report['sigma']:.2f} Å")
+# interfaces: the surface as chosen molecule ids and the profile along a chosen axis
+zx = {p["id"]: p for p in gd.analyze(["zprofile", "orientation"], surface="1-2", axis="x", zbin=1.0)}
+check(zx["zprofile"]["name"] == "Density profile along x" and "molecules 1,2" in zx["zprofile"]["method"]
+      and "Herman f along x" in zx["orientation"]["extra"], f"interface options: {zx['zprofile']['name']} · {zx['zprofile']['method'][:80]}")
 print("all python checks passed")
