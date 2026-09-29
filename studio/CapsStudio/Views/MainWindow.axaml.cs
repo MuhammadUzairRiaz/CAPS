@@ -203,6 +203,7 @@ public partial class MainWindow : Window
         _vm.TimelineChanged += () => Timeline.InvalidateVisual();
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Frame)) Timeline.InvalidateVisual(); };
         AddHandler(KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
+        _vm.ConsoleChanged += () => ConsoleScroll.ScrollToEnd();
         AddHandler(KeyUpEvent, (_, e) => { if (e.Key == Key.L) _vm.LensHold = false; if (e.Key is Key.X or Key.Y or Key.Z) _rotLock = '\0'; }, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(ViewHost, true);
         ViewHost.AddHandler(DragDrop.DropEvent, OnDrop);
@@ -371,6 +372,24 @@ public partial class MainWindow : Window
     private void OnFov(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string t) { _vm.ViewFov = double.Parse(t, System.Globalization.CultureInfo.InvariantCulture); _vm.Perspective = true; } }
     public void ShowSettings() => _vm.SetModule(10);
     private void OnSettingsRail(object? s, RoutedEventArgs e) => _vm.SetModule(10);
+    private void OnConsoleStart(object? s, RoutedEventArgs e) => _vm.StartConsole();
+    private void OnConsoleRun(object? s, RoutedEventArgs e) => _vm.ConsoleRun();
+    private void OnConsoleClear(object? s, RoutedEventArgs e) => _vm.ClearConsole();
+    private async void OnConsoleOpenDoc(object? s, RoutedEventArgs e) => await _vm.ConsoleOpenDoc();
+    private void OnConsoleKey(object? s, KeyEventArgs e)
+    {
+        if (s is not TextBox box) return;
+        if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            var at = box.CaretIndex;
+            _vm.ConsoleInput = _vm.ConsoleInput.Insert(Math.Clamp(at, 0, _vm.ConsoleInput.Length), "\n");
+            box.CaretIndex = at + 1;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter) { _vm.ConsoleRun(); e.Handled = true; }
+        else if (e.Key == Key.Up && !_vm.ConsoleInput.Contains('\n')) { _vm.ConsoleHistory(-1); box.CaretIndex = _vm.ConsoleInput.Length; e.Handled = true; }
+        else if (e.Key == Key.Down && !_vm.ConsoleInput.Contains('\n')) { _vm.ConsoleHistory(1); box.CaretIndex = _vm.ConsoleInput.Length; e.Handled = true; }
+    }
     private void OnModifyElement(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string el) _vm.ModifyElementPicked(el); }
     private void OnBondOrder(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string o) _vm.BondOrderPicked(int.Parse(o)); }
     private void OnBreakBond(object? s, RoutedEventArgs e) => _vm.BreakBondPicked();
