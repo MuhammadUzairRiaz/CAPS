@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 44  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field; v40 caps_build_opts.rotor_search, heavy_only; v41 AMBER prmtop topologies carry their force field (caps_field_assign "file", caps_field_file_available); v42 caps_react_cycle.max_force, caps_react returns 2 when a failed cycle kept the completed ones, caps_kg_backmap; v43 caps_cg_map, caps_cg_from_polymer (structure-based CG); v44 caps_analyze_opts.zbin, axis, surface */
+#define CAPS_ABI_VERSION 45  /* v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field; v40 caps_build_opts.rotor_search, heavy_only; v41 AMBER prmtop topologies carry their force field (caps_field_assign "file", caps_field_file_available); v42 caps_react_cycle.max_force, caps_react returns 2 when a failed cycle kept the completed ones, caps_kg_backmap; v43 caps_cg_map, caps_cg_from_polymer (structure-based CG); v44 caps_analyze_opts.zbin, axis, surface; v45 React with the assigned force field, between chains, crosslink targets, byproducts, weights, auto capture (caps_react_opts), caps_react_summary */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -250,12 +250,27 @@ typedef struct {
   double cutoff;
   int32_t coulomb;
   int32_t during_md;               /* REACTER-style: continuous NVT, reactions checked every md_ps, sites stabilised locally */
+  /* v45 */
+  int32_t field_mode;              /* 0: the Field assignment (when there is one) types and parameterises the structure after
+                                      every cycle and is re-assigned to the product; 1: the built-in default during the run, the
+                                      assignment dropped (the old behaviour) */
+  int32_t between_chains;          /* bonds only between different chains (a crosslinker belongs to the chains it has joined) */
+  int32_t keep_byproducts;         /* a template's byproduct atoms (H2, H2O) stay as molecules; 0: removed */
+  int32_t selection;               /* several templates: 0 closest pairs first; 1 by relative weights */
+  const char* weights;             /* "2,1,0.5": a weight per template in order ("" / NULL: the templates' own) */
+  int32_t auto_capture;            /* no pair found: every capture grows by capture_step up to capture_max */
+  double capture_max, capture_step; /* Å (0: 8 and 0.5) */
+  int32_t target_kind;             /* 0 conversion (target_conversion), 1 links between chains, 2 links per chain, 3 crosslink
+                                      density (mol/m³), 4 molecular weight between crosslinks Mc (g/mol) */
+  double target_value;
 } caps_react_opts;
 
 typedef struct {
   int32_t cycle, reactions, total, clusters, atoms;
   double conversion, largest_fraction, reduced_mw, energy;
   double max_force;                /* ABI 42: largest force after the cycle's relaxation, kcal/mol/Å (0: not relaxed) */
+  int32_t crosslinks;              /* v45: links between chains so far */
+  double capture;                  /* v45: the capture distance the cycle used, Å */
 } caps_react_cycle;
 
 typedef int32_t (*caps_react_progress_fn)(const caps_react_cycle* row, void* user);
@@ -266,6 +281,10 @@ typedef int32_t (*caps_react_progress_fn)(const caps_react_cycle* row, void* use
    which cycle failed and why ("failed at cycle N: …"), and caps_last_error gives the reason. */
 int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o, caps_react_progress_fn progress, void* user, char* report,
                    int32_t report_cap);
+/* v45: the last caps_react run on this document as JSON {chains, crosslinks, intrachain, byproducts, target, volume,
+   chain_mass, density (mol/m³), per_chain, mc (g/mol), reactions, initial_sites, conversion, field, field_after,
+   notes[]}. Returns the length needed or -1. */
+int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap);
 
 /* Force-field summary of the current frame (the Field assignment, else the built-in GAFF typing of C and H): types,
    term counts and energy terms, as text. Returns 0 or -1. */

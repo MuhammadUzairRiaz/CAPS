@@ -39,6 +39,9 @@ struct TemplateAtom {
 //   form 4 1 · break 1 2 · delete 3 · move 5 2   (move: the atom leaves its partners and bonds to the second atom)
 //   sites 1 2 3                      # the group counted for conversion: distinct matches of these map atoms (default: first initiator)
 //   charges keep                     # after the reaction: charges kept, a deleted atom's to its partner (default: forcefield)
+//   byproduct 3 4                    # atoms that leave as a small molecule (H2, H2O, HCl): their bonds to the rest break,
+//                                    # bonds among them (form 3 4) stay; the run removes them or keeps them as molecules
+//   weight 2                         # relative rate against the other templates of a run (selection by weights)
 struct ReactionTemplate {
   std::string name;
   std::vector<TemplateAtom> atoms;
@@ -48,6 +51,8 @@ struct ReactionTemplate {
   std::vector<std::pair<int, int>> form, brk, move;
   std::vector<int> remove;
   std::vector<int> sites;       // map atoms that make up one counted reactive group
+  std::vector<int> byproduct;   // map atoms that leave as a small molecule (removed or kept, as the run chooses)
+  double weight = 1.0;          // relative rate when a run selects among templates by weight
   bool keep_charges = false;    // "charges keep": the atoms keep their charges, a deleted atom's joins its partner (net charge
                                 // conserved); default "charges forcefield": recomputed for the new chemistry
   std::string text;             // the source, for reports
@@ -66,13 +71,18 @@ struct Match {
 
 // All sites where a template's pattern matches with its initiators closer than the capture distance
 // (minimum image). Sorted by distance.
-std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int reaction_index = 0);
+// allow (optional): whether initiators a and b may react (a run's chain rule); capture > 0 replaces the template's.
+std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int reaction_index = 0,
+                                const std::function<bool(uint32_t, uint32_t)>& allow = {}, double capture = 0);
 // Number of distinct reactive groups (matches of the template's site atoms) in the structure, for conversion.
 int count_sites(const System& s, const ReactionTemplate& t);
 
 // Apply non-overlapping matches (each atom reacts at most once per call). Deleted atoms are removed and the
 // indices compacted; molecules are recomputed from bonds. Returns the number applied.
-int apply_matches(System& s, const std::vector<ReactionTemplate>& t, const std::vector<Match>& m);
+// keep_byproducts: a template's byproduct atoms stay as their own molecule (else removed); byproducts counts those kept or
+// removed; tag (optional): a per-atom label carried through the compaction (the run's original chain of each atom).
+int apply_matches(System& s, const std::vector<ReactionTemplate>& t, const std::vector<Match>& m, bool keep_byproducts = false,
+                  int* byproducts = nullptr, std::vector<int64_t>* tag = nullptr);
 
 struct ClusterStats {
   int clusters = 0;
@@ -93,7 +103,13 @@ struct CycleRow {
   double energy = 0;            // after relaxation, kcal/mol
   double max_force = 0;         // largest force after the cycle's relaxation, kcal/mol/Å (0: not relaxed)
   int atoms = 0;
+  int crosslinks = 0;           // links between different chains so far
+  double capture = 0;           // the capture distance this cycle used (Å; auto capture raises it)
 };
+
+// What the run aims for: the conversion of the counted sites, or a number of links between chains given as a count, per
+// chain, a crosslink density or a molecular weight between crosslinks.
+enum class ReactTarget { Conversion = 0, Crosslinks = 1, PerChain = 2, Density = 3, Mc = 4 };
 
 struct ReactOptions {
   std::vector<ReactionTemplate> templates;
@@ -115,6 +131,23 @@ struct ReactOptions {
   // a cycle that fails (a relaxation that cannot converge, dynamics that blow up) leaves the structure as the last
   // completed cycle did and stops there: the report says which cycle and why (failed_cycle, failure). False: throw.
   bool keep_on_failure = true;
+  // the force field for the structure as the reactions leave it (the user's assignment re-run on the product: types,
+  // charges and parameters for the new bonds); null: the built-in default (GAFF for C and H, UFF otherwise)
+  std::function<std::shared_ptr<const ForceField>(const System&)> retype;
+  std::string field_name;       // for the report
+  // bonds only between different chains: each atom keeps the chain it started in; a small molecule (a curative, a
+  // crosslinker) belongs to the chains it has bonded to, so ENR(A)–MAH cannot close back onto chain A
+  bool between_chains = false;
+  bool keep_byproducts = false; // byproduct atoms kept as molecules (else removed)
+  // several templates: 0 closest pairs first whatever the template (by distance); 1 by relative weights (weights[k], else
+  // the template's weight) — each pick chooses a template in proportion to its weight, then its closest free pair
+  int selection = 0;
+  std::vector<double> weights;
+  // auto capture: when a cycle finds no pair, every template's capture grows by capture_step, up to capture_max
+  bool auto_capture = false;
+  double capture_step = 0.5, capture_max = 8.0;
+  ReactTarget target = ReactTarget::Conversion;
+  double target_value = 0;      // links, links per chain, mol/m³, g/mol (target_conversion for Conversion)
   EnergyOptions energy;
   std::function<bool(const CycleRow&)> progress;   // return false to cancel
   std::function<void(const System&, int cycle)> frame;
@@ -128,6 +161,13 @@ struct ReactReport {
   double seconds = 0;
   int failed_cycle = 0;         // > 0: this cycle failed; the structure is the one after cycle failed_cycle − 1
   std::string failure;
+  // the network: chains (molecules of the start with ≥ 30 atoms and ≥ 20 % of the largest), links between different chains
+  // and within one; crosslink density ν = links / (V N_A); strands 2 × links (tetrafunctional junctions); Mc = chain mass / strands
+  int chains = 0, crosslinks = 0, intrachain = 0, byproducts = 0;
+  int target_crosslinks = 0;    // the target as a number of links (0: a conversion target)
+  double volume = 0, chain_mass = 0;   // Å³, g/mol
+  double density = 0, per_chain = 0, mc = 0;   // mol/m³, 2 × links / chains, g/mol
+  std::string field;            // the force field that relaxed the network
 };
 
 // Runs cycles of find → react → retype → relax (→ dynamics) until the target conversion, the cycle limit, or no

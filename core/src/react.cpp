@@ -40,7 +40,8 @@ const std::map<std::string, std::string>& builtins() {
        "probability 1.0\n"
        "min_path 6\n"
        "form 1 2\n"
-       "delete 3 4\n"
+       "form 3 4   # the two hydrogens leave together as H2\n"
+       "byproduct 3 4\n"
        "sites 1\n"},
       {"sulfur_allylic",
        "reaction sulfur_allylic   # accelerated sulfur cure (disulfide-donor model): an allylic C–H of a diene rubber and an\n"
@@ -55,7 +56,8 @@ const std::map<std::string, std::string>& builtins() {
        "probability 1.0\n"
        "min_path 0\n"
        "form 1 4\n"
-       "delete 3 5\n"
+       "form 3 5   # the two hydrogens leave as H2 (H2S in a real accelerated cure; the mass balance is the same for the network)\n"
+       "byproduct 3 5\n"
        "sites 4   # the donor's S–H ends\n"},
       {"polysulfide_allylic",
        "reaction polysulfide_allylic   # a silane's polysulfide (TESPT, TESPD) couples to a diene rubber: an S–S bond opens, one\n"
@@ -86,8 +88,68 @@ const std::map<std::string, std::string>& builtins() {
        "probability 1.0\n"
        "min_path 6\n"
        "form 1 4\n"
-       "delete 3 6\n"
+       "form 3 6   # written as H2: in a real cure the peroxide's radicals take the hydrogens (cumyl alcohol from DCP)\n"
+       "byproduct 3 6\n"
        "sites 1\n"},
+      {"enr_acid_ester",
+       "reaction enr_acid_ester   # epoxidised natural rubber (trisubstituted epoxide) + carboxylic acid → β-hydroxy ester: the acid\n"
+       "                          # oxygen bonds to the tertiary ring carbon, the ring opens, the acid H goes to the epoxide O (an OH on\n"
+       "                          # the secondary carbon). A ring opening: no water. PBS or maleic-acid COOH ends, a half-ester's COOH\n"
+       "atom 1 C ring3 H=0 degree=4 not_aromatic   # the tertiary epoxide carbon\n"
+       "atom 2 O ring3 bonded 1\n"
+       "atom 3 C ring3 H=1 bonded 1 2              # the secondary epoxide carbon\n"
+       "atom 4 C degree=3 not_aromatic             # the acid carbon\n"
+       "atom 5 O degree=1 bonded 4                 # its C=O\n"
+       "atom 6 O H=1 degree=2 bonded 4             # the acid OH\n"
+       "atom 7 H bonded 6\n"
+       "initiators 6 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 0\n"
+       "form 6 1\n"
+       "break 1 2\n"
+       "move 7 2\n"
+       "sites 1 2 3   # one epoxide ring\n"},
+      {"ester_condensation",
+       "reaction ester_condensation   # carboxylic acid + alcohol → ester + water (Fischer esterification, a condensation): the acid's\n"
+       "                              # OH and the alcohol's H leave as H2O. PBS ends (COOH + HO–CH2), the OH an epoxide opening left\n"
+       "atom 1 C degree=3 not_aromatic   # the acid carbon\n"
+       "atom 2 O degree=1 bonded 1       # its C=O\n"
+       "atom 3 O H=1 degree=2 bonded 1   # the acid OH: leaves in the water\n"
+       "atom 4 H bonded 3\n"
+       "atom 5 O H=1 degree=2            # the alcohol oxygen: becomes the ester oxygen\n"
+       "atom 6 C degree=4 bonded 5       # its sp3 carbon (not another acid)\n"
+       "atom 7 H bonded 5\n"
+       "initiators 5 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 0\n"
+       "form 5 1\n"
+       "break 1 3\n"
+       "break 5 7\n"
+       "form 3 7   # H2O: the acid's O with its H and the alcohol's H\n"
+       "byproduct 3 4 7\n"
+       "sites 1 2 3   # one COOH\n"},
+      {"anhydride_alcohol",
+       "reaction anhydride_alcohol   # cyclic anhydride (maleic anhydride, MAH) + alcohol → half-ester with a free COOH: the alcohol O\n"
+       "                             # bonds to one carbonyl carbon, the ring C–O–C opens, the alcohol H goes to the bridging O. No water.\n"
+       "                             # The new COOH can open an epoxide in turn (enr_acid_ester): ENR–MAH–ENR, ENR–MAH–PBS\n"
+       "atom 1 C degree=3 not_aromatic   # a carbonyl carbon of the anhydride\n"
+       "atom 2 O degree=1 bonded 1       # its C=O\n"
+       "atom 3 O H=0 degree=2 bonded 1   # the bridging oxygen\n"
+       "atom 4 C degree=3 bonded 3       # the other carbonyl carbon\n"
+       "atom 5 O degree=1 bonded 4       # its C=O\n"
+       "atom 6 O H=1 degree=2            # the alcohol oxygen\n"
+       "atom 7 H bonded 6\n"
+       "atom 8 C degree=4 bonded 6       # its sp3 carbon: an alcohol, not a carboxylic acid's OH\n"
+       "initiators 6 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 0\n"
+       "form 6 1\n"
+       "break 1 3\n"
+       "move 7 3\n"
+       "sites 1 2 3 4 5   # one anhydride group\n"},
       {"epoxy_amine_primary",
        "reaction epoxy_amine_primary   # epoxide CH2 + primary amine → β-hydroxy secondary amine\n"
        "atom 1 C ring3 H=2\n"
@@ -214,6 +276,8 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
     else if (w[0] == "break") t->brk.push_back({integer(1), integer(2)});
     else if (w[0] == "move") t->move.push_back({integer(1), integer(2)});
     else if (w[0] == "delete") { for (size_t i = 1; i < w.size(); ++i) t->remove.push_back(integer(i)); }
+    else if (w[0] == "byproduct") { for (size_t i = 1; i < w.size(); ++i) t->byproduct.push_back(integer(i)); }
+    else if (w[0] == "weight") t->weight = real(1);
     else throw bad("does not understand '" + w[0] + "'");
   }
   for (auto& r : out) {
@@ -235,6 +299,17 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
     }
     for (auto [a, b] : r.move) { need(a, "move"); need(b, "move"); }
     for (int a : r.remove) need(a, "delete");
+    for (int a : r.byproduct) {
+      need(a, "byproduct");
+      if (std::find(r.remove.begin(), r.remove.end(), a) != r.remove.end()) throw ReactError("reaction " + r.name + ": atom " + std::to_string(a) + " is both deleted and a byproduct");
+      if (a == r.init_a || a == r.init_b) {
+        // an initiator may leave (the H of an H-abstraction); it then must not also stay in the network through a formed bond
+        for (auto [x, y] : r.form)
+          if ((x == a || y == a) && std::find(r.byproduct.begin(), r.byproduct.end(), x == a ? y : x) == r.byproduct.end())
+            throw ReactError("reaction " + r.name + ": byproduct atom " + std::to_string(a) + " forms a bond to the network");
+      }
+    }
+    if (r.weight <= 0) throw ReactError("reaction " + r.name + ": weight must be > 0");
     if (r.capture <= 0 || r.probability < 0 || r.probability > 1) throw ReactError("reaction " + r.name + ": capture must be > 0, probability in [0, 1]");
     // every atom must connect to an initiator through pattern bonds
     std::set<int> reach{r.init_a, r.init_b};
@@ -390,7 +465,9 @@ bool within_path(const Chem& c, uint32_t a, uint32_t b, int limit) {
 
 }  // namespace
 
-std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int reaction_index) {
+std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int reaction_index, const std::function<bool(uint32_t, uint32_t)>& allow,
+                                double capture) {
+  const double cap = capture > 0 ? capture : t.capture;
   const Chem c = chem_of(s);
   const size_t n = s.atoms.size();
   auto idx = [&](int map) {
@@ -405,8 +482,8 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
     cb[i] = fits(t.atoms[ib], s, c, uint32_t(i));
   }
   const std::vector<int> order = growth_order(t);
-  Grid g(s, t.capture);
-  const double cap2 = t.capture * t.capture;
+  Grid g(s, cap);
+  const double cap2 = cap * cap;
   std::vector<Match> out;
   for (uint32_t a = 0; a < n; ++a) {
     if (!ca[a]) continue;
@@ -418,6 +495,7 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
         const double r2 = dot(d, d);
         if (r2 > cap2) continue;
         if (c.mol[a] == c.mol[b] && (t.min_path <= 0 || within_path(c, a, b, t.min_path))) continue;
+        if (allow && !allow(a, b)) continue;
         std::vector<int64_t> asg(t.atoms.size(), -1);
         std::vector<char> used(n, 0);
         asg[ia] = a;
@@ -496,7 +574,8 @@ int count_sites(const System& s, const ReactionTemplate& t) {
   return int(groups.size());
 }
 
-int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, const std::vector<Match>& matches) {
+int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, const std::vector<Match>& matches, bool keep_byproducts,
+                  int* byproducts, std::vector<int64_t>* tag) {
   const size_t n = s.atoms.size();
   std::set<std::pair<uint32_t, uint32_t>> bonds;
   for (const auto& b : s.bonds) bonds.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
@@ -520,8 +599,10 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
       throw ReactError("internal: map " + std::to_string(map) + " not in the match");
     };
     for (uint32_t a : m.atoms) used[a] = 1;
-    keep = keep && t.keep_charges;
-    for (int a : t.remove) {
+    keep = keep && t.keep_charges && !(keep_byproducts && !t.byproduct.empty());   // a kept H2 / H2O takes no share: recomputed
+    std::vector<int> leaving = t.remove;
+    if (!keep_byproducts) leaving.insert(leaving.end(), t.byproduct.begin(), t.byproduct.end());
+    for (int a : leaving) {
       std::vector<uint32_t> partners;
       for (const auto& e : bonds)
         if (e.first == at(a) || e.second == at(a)) partners.push_back(e.first == at(a) ? e.second : e.first);
@@ -540,7 +621,21 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
       const double r0 = element(s.atoms[hi].element).covalent + element(s.atoms[xi].element).covalent;
       s.atoms[hi].pos = s.atoms[xi].pos + d * (r0 / len);
     }
-    for (int a : t.remove) dead[at(a)] = 1;
+    if (keep_byproducts && !t.byproduct.empty()) {
+      // the byproduct leaves the network as its own molecule: bonds from it to any other atom break, bonds among its atoms stay
+      std::set<uint32_t> bp;
+      for (int a : t.byproduct) bp.insert(at(a));
+      for (auto it = bonds.begin(); it != bonds.end();)
+        it = (bp.count(it->first) != bp.count(it->second)) ? bonds.erase(it) : std::next(it);
+      if (tag && tag->size() == n) {   // a molecule of its own, belonging to no chain
+        int64_t low = 0;
+        for (int64_t v : *tag) low = std::min(low, v);
+        const int64_t id = low - 1;   // negative: not a chain of the start
+        for (uint32_t a : bp) (*tag)[a] = id;
+      }
+    }
+    if (byproducts && !t.byproduct.empty()) ++*byproducts;
+    for (int a : leaving) dead[at(a)] = 1;
     ++applied;
   }
   if (keep)
@@ -560,6 +655,11 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
   for (auto [a, b] : bonds)
     if (remap[a] >= 0 && remap[b] >= 0) s.bonds.push_back({uint32_t(remap[a]), uint32_t(remap[b])});
   s.atoms = std::move(atoms);
+  if (tag && tag->size() == n) {
+    std::vector<int64_t> kept;
+    for (size_t i = 0; i < n; ++i) if (!dead[i]) kept.push_back((*tag)[i]);
+    *tag = std::move(kept);
+  }
   for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i + 1);
   s.velocities.clear();
   s.has_charges = keep && applied > 0;   // else charges are recomputed for the new chemistry
@@ -599,6 +699,39 @@ double flory_stockmayer(double r, double fa, double fb) {
   return d > 0 ? 1.0 / std::sqrt(d) : std::numeric_limits<double>::infinity();
 }
 
+namespace {
+
+constexpr double kAvogadro = 6.02214076e23;
+
+// Which chain each atom belongs to for the between-chains rule and the crosslink count. tag: the molecule each atom started
+// in (negative: a byproduct molecule); polymer: those molecules that are chains. A chain atom belongs to its chain; an atom
+// of a small molecule (a curative, a crosslinker) belongs to every chain it has bonded to so far, reached through small-
+// molecule atoms only (extra: bonds chosen earlier in the same cycle). Empty: a small molecule bonded to no chain.
+std::set<int64_t> owners(uint32_t a, const std::vector<std::vector<uint32_t>>& nb, const std::vector<int64_t>& tag, const std::set<int64_t>& polymer,
+                         const std::multimap<uint32_t, uint32_t>& extra) {
+  if (polymer.count(tag[a])) return {tag[a]};
+  std::set<int64_t> own;
+  std::vector<uint32_t> q{a};
+  std::set<uint32_t> seen{a};
+  auto visit = [&](uint32_t v) {
+    if (polymer.count(tag[v])) { own.insert(tag[v]); return; }
+    if (seen.insert(v).second) q.push_back(v);
+  };
+  for (size_t h = 0; h < q.size() && q.size() < 5000; ++h) {
+    const uint32_t u = q[h];
+    for (uint32_t v : nb[u]) visit(v);
+    for (auto [it, e] = extra.equal_range(u); it != e; ++it) visit(it->second);
+  }
+  return own;
+}
+
+bool meet(const std::set<int64_t>& a, const std::set<int64_t>& b) {
+  for (int64_t x : a) if (b.count(x)) return true;
+  return false;
+}
+
+}  // namespace
+
 void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   const auto t0 = std::chrono::steady_clock::now();
   ReactReport rep;
@@ -608,14 +741,73 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   for (const auto& t : o.templates) rep.initial_sites = std::max(rep.initial_sites, count_sites(s, t));
   if (rep.initial_sites == 0) throw ReactError("no atom matches the counted site of any template; check the templates against the structure");
   if (s.cell.valid() && !s.unwrapped) make_molecules_whole(s);
+  rep.field = o.field_name.empty() ? (o.retype ? "the assigned force field" : "built-in default (GAFF for C and H, UFF otherwise)") : o.field_name;
 
-  auto relax_now = [&](CycleRow& row) {
+  // the chains of the start: molecules of at least 30 atoms and a fifth of the largest (curatives, crosslinkers, solvent
+  // and fillers' small molecules are not chains)
+  std::vector<int64_t> tag(s.atoms.size());
+  std::set<int64_t> polymer;
+  {
+    System t = s;
+    t.has_mol = false;
+    int nm = 0;
+    const auto mol = t.molecules(&nm);
+    std::vector<int> count(size_t(nm), 0);
+    std::vector<double> mass(size_t(nm), 0);
+    for (size_t i = 0; i < s.atoms.size(); ++i) { tag[i] = mol[i] + 1; ++count[size_t(mol[i])]; mass[size_t(mol[i])] += s.mass_of(s.atoms[i]); }
+    const int largest = count.empty() ? 0 : *std::max_element(count.begin(), count.end());
+    for (int m = 0; m < nm; ++m)
+      if (count[size_t(m)] >= 30 && count[size_t(m)] * 5 >= largest) { polymer.insert(m + 1); rep.chain_mass += mass[size_t(m)]; }
+    rep.chains = int(polymer.size());
+    rep.volume = s.cell.valid() ? s.cell.volume() : 0;
+  }
+  const double avogadro_volume = rep.volume * 1e-30 * kAvogadro;   // links → mol/m³: divide by this
+  if (o.target != ReactTarget::Conversion) {
+    if (o.target_value <= 0) throw ReactError("the crosslink target must be > 0");
+    if (rep.chains == 0) throw ReactError("a crosslink target needs chains (molecules of 30 atoms or more); this structure has none");
+    double n = 0;
+    switch (o.target) {
+      case ReactTarget::Crosslinks: n = o.target_value; break;
+      case ReactTarget::PerChain: n = o.target_value * rep.chains / 2.0; break;   // each link joins two chains
+      case ReactTarget::Density:
+        if (rep.volume <= 0) throw ReactError("a crosslink density target needs a periodic cell");
+        n = o.target_value * avogadro_volume;
+        break;
+      case ReactTarget::Mc: n = rep.chain_mass / (2.0 * o.target_value); break;   // strands = 2 × links
+      default: break;
+    }
+    rep.target_crosslinks = int(std::llround(n));
+    if (rep.target_crosslinks < 1) {
+      char b[200];
+      std::snprintf(b, sizeof b, "the target is %.2f links in this cell (fewer than one): build a larger cell or ask for more", n);
+      throw ReactError(b);
+    }
+  }
+
+  // the force field for the structure as it is now
+  auto field_now = [&](int cycle) -> std::shared_ptr<const ForceField> {
+    if (!o.retype) return nullptr;
+    try {
+      return o.retype(s);
+    } catch (const std::exception& e) {
+      throw ReactError(rep.field + " cannot describe the structure after cycle " + std::to_string(cycle) + ": " + e.what() +
+                       " — add the missing parameters (Force field › Fill gaps from a file) or run with relaxation off (topology only)");
+    }
+  };
+  auto name_types = [&](const std::shared_ptr<const ForceField>& ff) {
+    const ForceField def = ff ? ForceField{} : default_forcefield(s);
+    const ForceField& f = ff ? *ff : def;
+    for (size_t i = 0; i < s.atoms.size() && i < f.atom_type.size(); ++i) s.atoms[i].name = f.atom_type[i];
+  };
+
+  auto relax_now = [&](CycleRow& row, const std::shared_ptr<const ForceField>& ff) {
     if (!o.relax) return;
     RelaxOptions r;
     r.pushoff = false;
     r.ftol = o.relax_ftol;
     r.max_iterations = o.relax_iterations;
     r.energy = o.energy;
+    r.field = ff;
     RelaxReport rr;
     try {
       relax(s, r, &rr);
@@ -625,9 +817,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     }
     row.energy = rr.final.total();
     row.max_force = rr.fmax_final;
-    // names follow the new types
-    const ForceField ff = default_forcefield(s);
-    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].name = ff.atom_type[i];
+    name_types(ff);
   };
 
   if (o.during_md && o.md_ps <= 0) throw ReactError("reactions during MD need the check interval (md_ps > 0)");
@@ -639,7 +829,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   }
   // REACTER-style: the reacted sites (atom ids, the atoms within two bonds and within 5 Å of those) settle by a local
   // minimisation, everything else held
-  auto stabilise = [&](const std::set<int64_t>& ids, CycleRow& row) {
+  auto stabilise = [&](const std::set<int64_t>& ids, CycleRow& row, const std::shared_ptr<const ForceField>& ff) {
     std::vector<char> site(s.atoms.size(), 0);
     for (size_t i = 0; i < s.atoms.size(); ++i) site[i] = ids.count(s.atoms[i].id) ? 1 : 0;
     const auto nb = s.neighbours();
@@ -664,6 +854,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     r.ftol = std::min(o.relax_ftol, 1.0);   // tight: dynamics goes on from here
     r.max_iterations = std::max(o.relax_iterations, 3000);
     r.energy = o.energy;
+    r.field = ff;
     r.fixed.assign(s.atoms.size(), 1);
     for (size_t i = 0; i < s.atoms.size(); ++i) r.fixed[i] = site[i] ? 0 : 1;
     const auto v = s.velocities;
@@ -679,51 +870,121 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     }
     row.energy = rr.final.total();
     row.max_force = rr.fmax_final;
+    name_types(ff);
   };
+
+  // capture distances: the templates' own, raised together when auto capture finds no pair
+  double extra = 0;
+  auto capture_of = [&](size_t k) { return o.templates[k].capture + extra; };
+  double top_capture = 0;
+  for (const auto& t : o.templates) top_capture = std::max(top_capture, t.capture);
+  if (o.auto_capture && o.capture_max < top_capture) throw ReactError("auto capture: the largest capture must be at least the templates' own");
+  auto weight_of = [&](size_t k) { return k < o.weights.size() && o.weights[k] > 0 ? o.weights[k] : o.templates[k].weight; };
 
   int stall = 0;
   for (int cycle = 1; cycle <= o.max_cycles; ++cycle) {
     // the checkpoint: this cycle failing gives back the structure as the last one left it
     const System keep = o.keep_on_failure && !rep.cycles.empty() ? s : System{};
-    const int reactions_before = rep.reactions, stall_before = stall;
+    const std::vector<int64_t> keep_tag = tag;
+    const int reactions_before = rep.reactions, stall_before = stall, links_before = rep.crosslinks, intra_before = rep.intrachain,
+              byproducts_before = rep.byproducts;
+    const double extra_before = extra;
     int applied = 0;
     try {
-    std::vector<Match> all;
-    for (size_t k = 0; k < o.templates.size(); ++k) {
-      auto m = find_matches(s, o.templates[k], int(k));
-      all.insert(all.end(), m.begin(), m.end());
+    const auto nb = s.neighbours();
+    const std::multimap<uint32_t, uint32_t> none;
+    auto allow = [&](uint32_t a, uint32_t b) {
+      return !o.between_chains || !meet(owners(a, nb, tag, polymer, none), owners(b, nb, tag, polymer, none));
+    };
+    std::vector<std::vector<Match>> per(o.templates.size());
+    size_t found = 0;
+    for (;;) {
+      found = 0;
+      for (size_t k = 0; k < o.templates.size(); ++k) {
+        per[k] = find_matches(s, o.templates[k], int(k), allow, capture_of(k));
+        found += per[k].size();
+      }
+      if (found || !o.auto_capture || top_capture + extra + o.capture_step > o.capture_max + 1e-9) break;
+      extra += o.capture_step;   // no pair: look further
     }
-    std::stable_sort(all.begin(), all.end(), [](const Match& a, const Match& b) { return a.distance < b.distance; });
-    // probability, then at most max_per_cycle non-overlapping, closest first
+    if (extra > extra_before) {
+      char b[160];
+      std::snprintf(b, sizeof b, "cycle %d: no pair within %.2f Å — auto capture raised to %.2f Å", cycle, top_capture + extra_before, top_capture + extra);
+      rep.notes.push_back(b);
+    }
+    // choose: each pick re-checks the chain rule with the bonds already chosen this cycle and counts the links it makes
     std::vector<Match> chosen;
     std::set<uint32_t> busy;
-    for (const auto& m : all) {
-      if (int(chosen.size()) >= o.max_per_cycle) break;
-      if (uni(rng) > o.templates[m.reaction].probability) continue;
-      bool free = true;
-      for (uint32_t a : m.atoms) free = free && !busy.count(a);
-      if (!free) continue;
+    std::multimap<uint32_t, uint32_t> formed;
+    int links = 0, intra = 0;
+    auto take = [&](const Match& m) {
+      if (uni(rng) > o.templates[m.reaction].probability) return false;
+      for (uint32_t a : m.atoms) if (busy.count(a)) return false;
+      const ReactionTemplate& t = o.templates[m.reaction];
+      auto at = [&](int map) { for (size_t q = 0; q < t.atoms.size(); ++q) if (t.atoms[q].map == map) return m.atoms[q]; return m.atoms[0]; };
+      const auto oa = owners(at(t.init_a), nb, tag, polymer, formed), ob = owners(at(t.init_b), nb, tag, polymer, formed);
+      const bool same = meet(oa, ob);
+      if (o.between_chains && same) return false;
+      const bool link = !oa.empty() && !ob.empty() && !same;
+      if (link && rep.target_crosslinks > 0 && rep.crosslinks + links >= rep.target_crosslinks) return false;   // the target is met
       for (uint32_t a : m.atoms) busy.insert(a);
+      for (auto [x, y] : t.form) { formed.insert({at(x), at(y)}); formed.insert({at(y), at(x)}); }
+      links += link;
+      intra += same && !oa.empty();
       chosen.push_back(m);
+      return true;
+    };
+    if (o.selection == 1 && o.templates.size() > 1) {
+      std::vector<size_t> next(o.templates.size(), 0);
+      while (int(chosen.size()) < o.max_per_cycle) {
+        double total = 0;
+        for (size_t k = 0; k < per.size(); ++k) if (next[k] < per[k].size()) total += weight_of(k);
+        if (total <= 0) break;
+        double r = uni(rng) * total;
+        size_t k = 0;
+        for (; k < per.size(); ++k) {
+          if (next[k] >= per[k].size()) continue;
+          r -= weight_of(k);
+          if (r <= 0) break;
+        }
+        if (k == per.size()) for (k = per.size(); k-- > 0;) if (next[k] < per[k].size()) break;
+        while (next[k] < per[k].size() && !take(per[k][next[k]])) ++next[k];
+        if (next[k] < per[k].size()) ++next[k];
+      }
+    } else {
+      std::vector<Match> all;
+      for (auto& v : per) all.insert(all.end(), v.begin(), v.end());
+      std::stable_sort(all.begin(), all.end(), [](const Match& a, const Match& b) { return a.distance < b.distance; });
+      for (const auto& m : all) {
+        if (int(chosen.size()) >= o.max_per_cycle) break;
+        take(m);
+      }
     }
     std::set<int64_t> site_ids;
     for (const auto& m : chosen)
       for (uint32_t a : m.atoms) site_ids.insert(s.atoms[a].id);
-    applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen);
+    applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag);
     CycleRow row;
     row.cycle = cycle;
     row.reactions = applied;
+    row.capture = top_capture + extra;
     rep.reactions += applied;
+    rep.crosslinks += applied ? links : 0;
+    rep.intrachain += applied ? intra : 0;
     row.total = rep.reactions;
+    row.crosslinks = rep.crosslinks;
     row.conversion = double(rep.reactions) / rep.initial_sites;
+    std::shared_ptr<const ForceField> ff;
     if (applied > 0) {
       stall = 0;
-      if (o.during_md) stabilise(site_ids, row);
-      else relax_now(row);
+      ff = field_now(cycle);
+      if (o.during_md) stabilise(site_ids, row, ff);
+      else relax_now(row, ff);
     } else {
       ++stall;
     }
     if (o.md_ps > 0 && (o.during_md || applied > 0 || stall <= o.stall_cycles)) {
+      if (!ff) ff = field_now(cycle);
       DynamicsOptions d;
       d.steps = std::max<int64_t>(1, std::llround(o.md_ps * 1000));
       d.temperature = o.temperature;
@@ -732,6 +993,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       d.thermo_every = int(d.steps);
       d.frame_every = 0;
       d.energy = o.energy;
+      d.field = ff;
       DynamicsReport dr;
       try {
         run_dynamics(s, d, &dr);
@@ -748,7 +1010,12 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       if (!rep.cycles.empty() && rep.cycles.back().cycle == cycle) rep.cycles.pop_back();
       if (!o.keep_on_failure || rep.cycles.empty()) throw;
       s = keep;
+      tag = keep_tag;
       rep.reactions = reactions_before;
+      rep.crosslinks = links_before;
+      rep.intrachain = intra_before;
+      rep.byproducts = byproducts_before;
+      extra = extra_before;
       stall = stall_before;
       rep.failed_cycle = cycle;
       rep.failure = e.what();
@@ -758,14 +1025,19 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     }
     const CycleRow& row = rep.cycles.back();
     if (o.progress && !o.progress(row)) throw ReactError("reaction run cancelled");
-    if (row.conversion >= o.target_conversion) {
+    if (rep.target_crosslinks > 0 && rep.crosslinks >= rep.target_crosslinks) {
+      rep.notes.push_back("crosslink target reached");
+      break;
+    }
+    if (o.target == ReactTarget::Conversion && row.conversion >= o.target_conversion) {
       rep.notes.push_back("target conversion reached");
       break;
     }
     if (applied == 0 && !o.during_md && (o.md_ps <= 0 || stall > o.stall_cycles)) {
       rep.notes.push_back(o.md_ps > 0 ? "no reactive pairs within the capture distance after dynamics; stopped"
-                                      : "no more reactive pairs within the capture distance; stopped (enable dynamics between cycles to let "
-                                        "groups diffuse)");
+                                      : std::string("no more reactive pairs within the capture distance; stopped (") +
+                                            (o.auto_capture ? "auto capture reached its largest distance; " : "") +
+                                            "enable dynamics between cycles to let groups diffuse)");
       break;
     }
     if (cycle == o.max_cycles) rep.notes.push_back("cycle limit reached");
@@ -779,16 +1051,29 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   if (at >= 0 && at + 1 < int(rep.cycles.size()) && rep.cycles.back().clusters.reduced_mw < 0.8 * peak &&
       rep.cycles.back().clusters.largest_fraction > 0.5)
     rep.gel_conversion = rep.cycles[at].conversion;
+  // the network
+  if (avogadro_volume > 0) rep.density = rep.crosslinks / avogadro_volume;
+  if (rep.chains > 0) rep.per_chain = 2.0 * rep.crosslinks / rep.chains;
+  if (rep.crosslinks > 0) rep.mc = rep.chain_mass / (2.0 * rep.crosslinks);
   rep.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-  char b[256];
+  char b[320];
   const auto& last = rep.cycles.empty() ? CycleRow{} : rep.cycles.back();
   std::snprintf(b, sizeof b, "%d reactions in %zu cycles (%d counted sites) · conversion %.3f · largest cluster %.1f%% of the mass · %.1f s",
                 rep.reactions, rep.cycles.size(), rep.initial_sites, last.conversion, 100 * last.clusters.largest_fraction, rep.seconds);
   rep.notes.insert(rep.notes.begin(), b);
-  if (rep.gel_conversion >= 0) {
-    std::snprintf(b, sizeof b, "gel point from cluster analysis at conversion %.3f (peak of the reduced weight-average mass)", rep.gel_conversion);
-    rep.notes.push_back(b);
+  if (rep.chains > 0) {
+    std::snprintf(b, sizeof b, "%d links between chains (%d chains; %.2f per chain) · ν = %.4g mol/m³ · Mc ≈ %.4g g/mol", rep.crosslinks, rep.chains,
+                  rep.per_chain, rep.density, rep.mc);
+    rep.notes.insert(rep.notes.begin() + 1, b);
+    if (rep.intrachain) rep.notes.push_back(std::to_string(rep.intrachain) + " links closed within one chain (loops; not counted as crosslinks)");
   }
+  if (rep.target_crosslinks > 0) {
+    std::snprintf(b, sizeof b, "target %d links, achieved %d (%.0f%%)", rep.target_crosslinks, rep.crosslinks, 100.0 * rep.crosslinks / rep.target_crosslinks);
+    rep.notes.insert(rep.notes.begin() + 1, b);
+  }
+  if (rep.byproducts)
+    rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));
+  rep.notes.push_back("force field during the run: " + rep.field);
   s.unwrapped = true;
   if (rep_out) *rep_out = std::move(rep);
 }

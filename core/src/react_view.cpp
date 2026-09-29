@@ -13,6 +13,16 @@
 namespace caps {
 
 namespace {
+// A byproduct leaves the network: its bonds to the other atoms are gone in the product, its bonds among themselves stay.
+template <class Edges>
+void cut_byproduct(const ReactionTemplate& t, Edges& post) {
+  auto in = [&](int m) { return std::find(t.byproduct.begin(), t.byproduct.end(), m) != t.byproduct.end(); };
+  for (auto it = post.begin(); it != post.end();) it = in(it->first) != in(it->second) ? post.erase(it) : std::next(it);
+}
+}  // namespace
+
+
+namespace {
 
 using Edge = std::pair<int, int>;   // map numbers, low first
 Edge edge(int a, int b) { return {std::min(a, b), std::max(a, b)}; }
@@ -160,6 +170,7 @@ std::string reaction_smarts(const ReactionTemplate& t) {
     if (std::find(t.remove.begin(), t.remove.end(), m) == t.remove.end()) post_maps.push_back(m);
   for (int m : t.remove)
     for (auto it = post.begin(); it != post.end();) it = (it->first == m || it->second == m) ? post.erase(it) : std::next(it);
+  cut_byproduct(t, post);
   // the product side: element and map; a deleted atom is absent there (a mapped reactant atom missing from the products
   // is removed, as RDKit and Daylight read reaction SMARTS)
   auto product = [&](int m) { return "[#" + std::to_string(by.at(m)->element) + ":" + std::to_string(m) + "]"; };
@@ -224,6 +235,12 @@ std::string template_view(const ReactionTemplate& t) {
     for (auto it = post.begin(); it != post.end();) it = (it->first == m || it->second == m) ? post.erase(it) : std::next(it);
     reacting.insert(m);
     change("deleted", sym(m));
+  }
+  if (!t.byproduct.empty()) {
+    cut_byproduct(t, post);
+    std::string bp;
+    for (int m : t.byproduct) { bp += (bp.empty() ? "" : " ") + sym(m); reacting.insert(m); }
+    change("byproduct", bp + " leave as a molecule (kept or removed by the run)");
   }
 
   Json checks = Json::array();

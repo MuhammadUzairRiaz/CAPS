@@ -345,7 +345,7 @@ TEST(React, PolysulfideCouplesToNaturalRubber) {
 // run on ethane + ethane / propylene oxide + methylamine, gives butane and 1-(methylamino)propan-2-ol.
 TEST(React, TemplatesAsReactionSmarts) {
   const auto cc = parse_templates(builtin_template("cc_crosslink"));
-  EXPECT_EQ(reaction_smarts(cc[0]), "[#6;X4;!H0;A:1]~[#1:3].[#6;X4;!H0;A:2]~[#1:4]>>[#6:1]-[#6:2]");
+  EXPECT_EQ(reaction_smarts(cc[0]), "[#6;X4;!H0;A:1]~[#1:3].[#6;X4;!H0;A:2]~[#1:4]>>[#6:1]-[#6:2].[#1:3]-[#1:4]");
   const auto ep = parse_templates(builtin_template("epoxy_amine_primary"));
   EXPECT_EQ(reaction_smarts(ep[0]), "[#6;H2;r3:1]~1~[#8;r3:2]~[#6;r3:3]~1.[#7;H2:4]~[#1:5]>>[#6:1](~[#6:3]~[#8:2]-[#1:5])-[#7:4]");
   // the editor's view carries it
@@ -387,4 +387,219 @@ TEST(React, ChargesKeptThroughTheReaction) {
   apply_matches(r, d, {find_matches(r, d[0]).front()});
   EXPECT_FALSE(r.has_charges);
   EXPECT_THROW(parse_templates(builtin_template("cc_crosslink") + "charges maybe\n"), ReactError);
+}
+
+namespace {
+
+System pe_cell(int chains, int dp, uint64_t seed) {
+  GrowOptions g;
+  g.chains = chains;
+  g.dp = dp;
+  g.density = 0.4;
+  g.seed = seed;
+  System s = grow(g);
+  RelaxOptions rl;
+  rl.target_density = 0.9;
+  rl.ftol = 2.0;
+  relax(s, rl);
+  return s;
+}
+
+System packed(const std::vector<std::pair<std::string, int>>& mols, double box, uint64_t seed = 4) {
+  Region b;
+  b.kind = Region::InsideBox;
+  b.a = {0, 0, 0};
+  b.b = {box, box, box};
+  PackOptions o;
+  o.cell.a = {box, 0, 0};
+  o.cell.b = {0, box, 0};
+  o.cell.c = {0, 0, box};
+  o.seed = seed;
+  std::vector<PackItem> c;
+  for (const auto& [smiles, n] : mols) c.push_back({smiles, build_molecule(smiles).system, n, {b}});
+  return pack(c, o);
+}
+
+// the molecules of s as element formulas ("C4H8O2" …), counted
+std::map<std::string, int> formulas(const System& s) {
+  System t = s;
+  t.has_mol = false;
+  int nm = 0;
+  const auto mol = t.molecules(&nm);
+  std::vector<std::map<int, int>> el(static_cast<size_t>(nm));
+  for (size_t i = 0; i < s.atoms.size(); ++i) el[size_t(mol[i])][s.atoms[i].element]++;
+  std::map<std::string, int> out;
+  for (const auto& e : el) {
+    std::string f;
+    for (int z : {6, 1, 8, 7, 16})
+      if (e.count(z)) f += std::string(z == 6 ? "C" : z == 1 ? "H" : z == 8 ? "O" : z == 7 ? "N" : "S") + (e.at(z) > 1 ? std::to_string(e.at(z)) : "");
+    out[f]++;
+  }
+  return out;
+}
+
+}  // namespace
+
+// Ten chains (the default polymer of Grow) crosslinked only between chains, to a target of 1.2 links per chain: the run stops at the target
+// (6 links), counts no loop within a chain, and every C–C link joins two chains of the start
+TEST(React, BetweenChainsToACrosslinkTarget) {
+  System s = pe_cell(10, 12, 5);
+  std::vector<int64_t> start(s.atoms.size());
+  {
+    System t = s;
+    t.has_mol = false;
+    const auto m = t.molecules();
+    for (size_t i = 0; i < s.atoms.size(); ++i) start[i] = m[i];
+  }
+  // carbons keep their order (only hydrogens leave): the k-th carbon of the product is the k-th carbon of the start
+  std::vector<int64_t> carbon_chain;
+  for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].element == 6) carbon_chain.push_back(start[i]);
+  int within_before = 0;
+  for (const auto& b : s.bonds)
+    if (s.atoms[b.i].element == 6 && s.atoms[b.j].element == 6) within_before += start[b.i] == start[b.j];
+  ReactOptions o;
+  o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.between_chains = true;
+  o.target = ReactTarget::PerChain;
+  o.target_value = 1.2;
+  o.max_per_cycle = 2;
+  o.max_cycles = 40;
+  o.auto_capture = true;
+  o.relax = false;
+  ReactReport r;
+  react(s, o, &r);
+  EXPECT_EQ(r.chains, 10);
+  EXPECT_EQ(r.target_crosslinks, 6);
+  EXPECT_EQ(r.crosslinks, 6);
+  EXPECT_EQ(r.intrachain, 0);
+  EXPECT_NEAR(r.per_chain, 1.2, 1e-12);
+  EXPECT_GT(r.density, 0);
+  EXPECT_NEAR(r.mc, r.chain_mass / 12.0, 1e-9);
+  std::vector<int> carbon_index(s.atoms.size(), -1);
+  int k = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].element == 6) carbon_index[i] = k++;
+  int cc_between = 0, cc_within = 0;
+  for (const auto& b : s.bonds)
+    if (carbon_index[b.i] >= 0 && carbon_index[b.j] >= 0)
+      (carbon_chain[size_t(carbon_index[b.i])] == carbon_chain[size_t(carbon_index[b.j])] ? cc_within : cc_between)++;
+  EXPECT_EQ(cc_between, 6);
+  EXPECT_EQ(cc_within, within_before);   // each chain's own C-C bonds, untouched
+}
+
+// Byproducts kept: each C–C crosslink leaves an H2 molecule in the cell; removed, the atoms go
+TEST(React, ByproductsKeptOrRemoved) {
+  for (bool keep : {true, false}) {
+    System s = pe_cell(4, 8, 7);
+    const size_t atoms = s.atoms.size();
+    ReactOptions o;
+    o.templates = parse_templates(builtin_template("cc_crosslink"));
+    o.keep_byproducts = keep;
+    o.max_cycles = 3;
+    o.relax = false;
+    ReactReport r;
+    react(s, o, &r);
+    ASSERT_GT(r.reactions, 0);
+    EXPECT_EQ(r.byproducts, r.reactions);
+    const auto f = formulas(s);
+    if (keep) {
+      EXPECT_EQ(s.atoms.size(), atoms);
+      EXPECT_EQ(f.count("H2") ? f.at("H2") : 0, r.reactions);
+    } else {
+      EXPECT_EQ(s.atoms.size(), atoms - 2 * r.reactions);
+      EXPECT_EQ(f.count("H2"), 0u);
+    }
+  }
+}
+
+// The force field given for the run types the structure after every cycle that reacted (the user's assignment in the
+// Studio), and relaxes it
+TEST(React, RunsWithTheGivenForceField) {
+  System s = pe_cell(4, 8, 9);
+  ReactOptions o;
+  o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.max_cycles = 3;
+  int calls = 0;
+  o.retype = [&](const System& x) {
+    ++calls;
+    return std::make_shared<const ForceField>(assign_gaff(x));
+  };
+  o.field_name = "GAFF (test)";
+  ReactReport r;
+  react(s, o, &r);
+  ASSERT_GT(r.reactions, 0);
+  int reacted = 0;
+  for (const auto& c : r.cycles) reacted += c.reactions > 0;
+  EXPECT_EQ(calls, reacted);
+  EXPECT_EQ(r.field, "GAFF (test)");
+  EXPECT_TRUE(std::isfinite(r.cycles.back().energy));
+}
+
+// Auto capture: a template whose capture is too short for any pair widens until pairs are found
+TEST(React, AutoCaptureWidens) {
+  System s = pe_cell(4, 8, 11);
+  ReactOptions o;
+  o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.templates[0].capture = 0.5;
+  o.max_cycles = 2;
+  o.relax = false;
+  ReactReport r;
+  react(s, o, &r);
+  EXPECT_EQ(r.reactions, 0);
+  o.auto_capture = true;
+  o.capture_max = 4.0;
+  s = pe_cell(4, 8, 11);
+  react(s, o, &r);
+  EXPECT_GT(r.reactions, 0);
+  EXPECT_GT(r.cycles.front().capture, 0.5);
+  EXPECT_LE(r.cycles.back().capture, 4.0 + 1e-9);
+}
+
+// The ENR / PBS / MAH chemistry on model compounds: an ENR-type trisubstituted epoxide opened by acetic acid gives the
+// β-hydroxy ester (no water); acetic acid + ethanol condense to ethyl acetate and water (kept); maleic anhydride opened by
+// methanol gives the half-ester acid (no water)
+TEST(React, EpoxideAcidEsterAndAnhydrideChemistry) {
+  {
+    System s = packed({{"CC1(C)OC1C", 6}, {"CC(=O)O", 6}}, 16);
+    ReactOptions o;
+    o.templates = parse_templates(builtin_template("enr_acid_ester"));
+    o.relax = false;
+    o.auto_capture = true;
+    o.max_cycles = 10;
+    ReactReport r;
+    react(s, o, &r);
+    ASSERT_GT(r.reactions, 0);
+    const auto f = formulas(s);
+    EXPECT_EQ(f.at("C7H14O3"), r.reactions);   // 2-methyl-2,3-epoxybutane + acetic acid, one molecule, nothing lost
+    EXPECT_EQ(f.count("H2O"), 0u);
+    EXPECT_EQ(r.byproducts, 0);
+  }
+  {
+    System s = packed({{"CC(=O)O", 6}, {"CCO", 6}}, 14);
+    ReactOptions o;
+    o.templates = parse_templates(builtin_template("ester_condensation"));
+    o.relax = false;
+    o.keep_byproducts = true;
+    o.auto_capture = true;
+    o.max_cycles = 10;
+    ReactReport r;
+    react(s, o, &r);
+    ASSERT_GT(r.reactions, 0);
+    const auto f = formulas(s);
+    EXPECT_EQ(f.at("C4H8O2"), r.reactions);   // ethyl acetate
+    EXPECT_EQ(f.at("H2O"), r.reactions);
+  }
+  {
+    System s = packed({{"O=C1OC(=O)C=C1", 6}, {"CO", 6}}, 14);
+    ReactOptions o;
+    o.templates = parse_templates(builtin_template("anhydride_alcohol"));
+    o.relax = false;
+    o.auto_capture = true;
+    o.max_cycles = 10;
+    ReactReport r;
+    react(s, o, &r);
+    ASSERT_GT(r.reactions, 0);
+    const auto f = formulas(s);
+    EXPECT_EQ(f.at("C5H6O4"), r.reactions);   // monomethyl maleate: one ester, one COOH
+    EXPECT_EQ(f.count("H2O"), 0u);
+  }
 }
