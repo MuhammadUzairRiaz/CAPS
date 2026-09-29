@@ -62,6 +62,17 @@
                 <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Points per atom" Classes="label" /><NumericUpDown Value="{Binding SaPoints}" Minimum="8" Maximum="2000" Increment="50" FormatString="0" /></StackPanel>
               </Grid>
               <TextBlock Text="Radii: Bondi 1964 (van der Waals)" Classes="dim" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding HasFrames}">
+                <CheckBox Classes="toggle" Content="Over the trajectory's frames" IsChecked="{Binding SaOverFrames}" ToolTip.Tip="The total at every n-th frame, and its mean ± standard deviation; the per-atom areas and colours stay the frame shown" />
+                <NumericUpDown Grid.Column="1" Value="{Binding SaEvery}" Minimum="1" Increment="1" FormatString="every 0" Width="110" IsEnabled="{Binding SaOverFrames}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding SaHasSeries}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Over the frames" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Series" Height="140" XLabel="frame" YLabel="SASA (Å²)" AutoRange="True" />
+              <TextBlock Text="{Binding SaSeriesText}" Classes="mono" FontSize="12" />
             </StackPanel>
           </Border>
           <Border Classes="pcard">

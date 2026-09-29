@@ -1824,6 +1824,14 @@ internal static class SelfTest
             vm.SaPoints = 60;
             vm.RunSurfaceArea().GetAwaiter().GetResult();
             var sasa = vm.SaGroups.Count >= 2 && vm.SaGroups[0].Part == "Whole structure" && vm.SaConvergence.Count == 5 && vm.SaTotal.EndsWith("Å²");
+            // over the frames (when this structure has them): one total per frame, mean ± sd
+            if (vm.HasFrames)
+            {
+                vm.SaOverFrames = true;
+                vm.RunSurfaceArea().GetAwaiter().GetResult();
+                sasa = sasa && vm.SaSeries.Length == vm.Frames && vm.SaSeriesText.Contains("±");
+                vm.SaOverFrames = false;
+            }
             vm.SetModule(8);
             vm.OpenCellEditor();
             var n0 = vm.Document!.Summary().Atoms;

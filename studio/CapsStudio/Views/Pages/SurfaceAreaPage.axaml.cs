@@ -22,6 +22,7 @@ public partial class SurfaceAreaPage : PageBase
             {
                 Show(vm);
                 var c = this.FindControl<LinePlot>("Conv")!; c.RefY = null; c.SetData(vm.SaCurve);
+                var sp = this.FindControl<LinePlot>("Series")!; sp.RefY = null; sp.SetData(vm.SaSeries);
             };
         };
     }

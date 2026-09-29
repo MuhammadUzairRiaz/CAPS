@@ -651,8 +651,9 @@ int32_t caps_centre_on(caps_doc* d, const int32_t* idx, int32_t n);
    ascending), inertia_defect, rg, has_charges, net_charge, dipole (D; null without charges), rotatable}. */
 int32_t caps_molecule_info(caps_doc* d, int32_t atom, char* out, int32_t cap);
 /* v20 solvent-accessible surface area (design/boards/SurfaceArea), Shrake–Rupley with Bondi radii: {"probe": 1.4,
-   "points": 200, "convergence": false, "colour": false} → {ok, total, area[] (Å² per atom), groups [{name, area, share}],
-   convergence [{points, total, delta}]}; colour: true colours the view by exposure (area / full sphere).
+   "points": 200, "convergence": false, "colour": false, "frames": {first, last, every}} → {ok, total, area[] (Å² per atom),
+   groups [{name, area, share}], convergence [{points, total, delta}]; with frames (a trajectory): series [{frame, timestep,
+   total}], mean, sd, frames_used}; colour: true colours the view by exposure (area / full sphere).
    caps_set_atom_values colours the view by any per-atom quantity on a ramp (0 viridis, 1 blue–orange, 2 red–white–blue;
    n = 0 clears). */
 int32_t caps_sasa(caps_doc* d, const char* json, char* out, int32_t cap);
