@@ -109,7 +109,9 @@ struct CycleRow {
 
 // What the run aims for: the conversion of the counted sites, or a number of links between chains given as a count, per
 // chain, a crosslink density or a molecular weight between crosslinks.
-enum class ReactTarget { Conversion = 0, Crosslinks = 1, PerChain = 2, Density = 3, Mc = 4 };
+// DegreePercent: the degree of crosslinking DC = 2 N_links / N_monomers × 100 % (Vasilev, Lorenz & Breitkopf, Polymers 13,
+// 315 (2021); Alamfard et al., Polymers 15, 2058 (2023)), monomers counted as the chains' residues (the repeat units Grow numbers).
+enum class ReactTarget { Conversion = 0, Crosslinks = 1, PerChain = 2, Density = 3, Mc = 4, DegreePercent = 5 };
 
 struct ReactOptions {
   std::vector<ReactionTemplate> templates;
@@ -167,6 +169,8 @@ struct ReactReport {
   int target_crosslinks = 0;    // the target as a number of links (0: a conversion target)
   double volume = 0, chain_mass = 0;   // Å³, g/mol
   double density = 0, per_chain = 0, mc = 0;   // mol/m³, 2 × links / chains, g/mol
+  int monomers = 0;             // repeat units of the chains (residues), 0 when the chains carry no residue numbers
+  double degree = 0;            // DC = 2 × links / monomers × 100 %
   std::string field;            // the force field that relaxed the network
 };
 

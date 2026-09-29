@@ -651,3 +651,45 @@ TEST(React, BondReactExportAndImport) {
   EXPECT_GT(r.reactions, 0);
   std::filesystem::remove_all(dir);
 }
+
+// Polybutadiene vulcanised with trisulfide donors (H–S3–H) between chains to a degree of crosslinking DC = 2 links / monomers
+// of 10 % (the definition of Vasilev et al. 2021 and Alamfard et al. 2023): C–S3–C bridges form, one link per donor that
+// reached two chains, and the run stops at the target
+TEST(React, SulfurBridgesToADegreeOfCrosslinking) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-butadiene", "[*]C/C=C\\C[*]"}};
+  spec.dp = 20;
+  GrowOptions g;
+  g.chains = 6;
+  g.density = 0.6;
+  g.seed = 21;
+  System s = grow_chains(spec, g);
+  BuildResult donor = build_molecule("SSS");
+  PackReport pr;
+  s = insert_molecules(s, donor.system, 12, PackOptions{}, &pr);
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("sulfur_allylic"));
+  r.relax = false;
+  r.between_chains = true;
+  r.auto_capture = true;
+  r.capture_max = 9;
+  r.target = ReactTarget::DegreePercent;
+  r.target_value = 10;
+  r.max_cycles = 60;
+  r.max_per_cycle = 2;
+  ReactReport rep;
+  react(s, r, &rep);
+  EXPECT_EQ(rep.monomers, 120);
+  EXPECT_EQ(rep.target_crosslinks, 6);   // 10 % × 120 / 2
+  EXPECT_LE(rep.crosslinks, 6);
+  EXPECT_GT(rep.crosslinks, 0);
+  EXPECT_NEAR(rep.degree, 200.0 * rep.crosslinks / 120, 1e-9);
+  // bridges: a sulfur chain with a carbon at both ends
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  int ends_on_carbon = 0;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 16)
+      for (uint32_t j : nb[i]) ends_on_carbon += s.atoms[j].element == 6;
+  EXPECT_GE(ends_on_carbon, 2 * rep.crosslinks);   // each link: both ends of its S3 on carbon
+}
