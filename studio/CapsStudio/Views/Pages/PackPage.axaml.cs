@@ -35,4 +35,5 @@ public partial class PackPage : PageBase
         if (clip != null) await clip.SetTextAsync(Vm.PackPython());
         Vm.Status = "Copied the packing as Python (caps.pack with this input)";
     }
+    private void OnFillToDensity(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.FillToDensity();
 }
