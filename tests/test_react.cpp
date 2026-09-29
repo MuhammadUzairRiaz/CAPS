@@ -772,3 +772,27 @@ TEST(React, RepeatUnitsSurviveADataFile) {
   }
   std::filesystem::remove(path);
 }
+
+// A centre pushed exactly flat (an sp3 centre with an angle at 180°, as an opened ring or a moved hydrogen can leave one)
+// sits on a saddle where the angle's force is zero; relax() moves it off the line and minimises again, so the angle
+// comes back bent and dynamics does not blow up from it
+TEST(React, RelaxLeavesAFlatSaddle) {
+  // water laid out straight, H–O–H at 180°: every force lies along the line, so nothing but a kick bends it
+  System s = build_molecule("O").system;
+  ASSERT_EQ(s.atoms.size(), 3u);
+  s.atoms[0].pos = {0, 0, 0};
+  s.atoms[1].pos = {0.96, 0, 0};
+  s.atoms[2].pos = {-0.96, 0, 0};
+  RelaxOptions o;
+  o.pushoff = false;
+  o.ftol = 0.05;
+  RelaxReport rep;
+  relax(s, o, &rep);
+  const Vec3 u = s.atoms[1].pos - s.atoms[0].pos, v = s.atoms[2].pos - s.atoms[0].pos;   // the oxygen is the vertex
+  const double theta = std::acos(dot(u, v) / (norm(u) * norm(v))) * 180 / 3.14159265358979;
+  EXPECT_LT(theta, 130.0);
+  EXPECT_GT(theta, 100.0);
+  bool noted = false;
+  for (const auto& n : rep.notes) noted = noted || n.find("stuck at 180") != std::string::npos;
+  EXPECT_TRUE(noted);
+}
