@@ -412,6 +412,15 @@ public sealed partial class MainViewModel : ObservableObject
         if (_doc?.Path == path) { Remember(path, topology); RecordOpen(path, topology); }
     }
 
+    /// <summary>Several trajectory files of one run (dumps written in parts, restarts) opened as one trajectory.</summary>
+    public void OpenJoined(IReadOnlyList<string> paths, string? topology = null)
+    {
+        var doc = CapsDocument.OpenJoined(paths, topology);
+        var stem = System.IO.Path.GetFileNameWithoutExtension(paths[0]);
+        Show(doc, $"{stem} + {paths.Count - 1} more (joined)");
+        Status = $"{paths.Count} files joined in time order · {doc.Summary().Frames} frames";
+    }
+
     // ---------------------------------------------------------------- modules
     private int _module = 8;   // 0 Grow, 1 Analyze, 2 Relax, 3 Dynamics, 4 Equilibrate, 5 Pack, 6 React, 7 Field, 8 Studio, 9 Molecule, 10 Settings, 11 Jobs, 12 Bench, 13 Polymer
     public bool IsGrow => _module == 0;

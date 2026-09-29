@@ -91,6 +91,53 @@ std::string detect_format(const std::string& path) {
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) { return open_file(path, topology_path, OpenProgress{}); }
 
+Trajectory open_files(const std::vector<std::string>& paths, const std::string& topology_path, std::vector<std::string>* notes) {
+  if (paths.empty()) throw ReadError("no files to open");
+  if (paths.size() == 1) return open_file(paths[0], topology_path);
+  std::vector<std::pair<Trajectory, std::string>> parts;
+  for (const auto& p : paths) parts.emplace_back(open_file(p, topology_path), p);
+  // in time order (the first timestep of each part; files without timesteps keep the order given)
+  std::stable_sort(parts.begin(), parts.end(), [](const auto& x, const auto& y) {
+    if (x.first.timesteps.empty() || y.first.timesteps.empty()) return false;
+    return x.first.timesteps.front() < y.first.timesteps.front();
+  });
+  Trajectory out = std::move(parts[0].first);
+  const auto& topo = out.topology;
+  size_t dropped = 0;
+  for (size_t k = 1; k < parts.size(); ++k) {
+    Trajectory& t = parts[k].first;
+    if (t.topology.atoms.size() != topo.atoms.size())
+      throw ReadError(parts[k].second + ": " + std::to_string(t.topology.atoms.size()) + " atoms, the first part has " + std::to_string(topo.atoms.size()) +
+                      " — not the same run");
+    for (size_t i = 0; i < topo.atoms.size(); ++i)
+      if (t.topology.atoms[i].element != topo.atoms[i].element && t.topology.atoms[i].element != 0 && topo.atoms[i].element != 0)
+        throw ReadError(parts[k].second + ": atom " + std::to_string(i + 1) + " is another element than in the first part — not the same run");
+    const size_t n0 = out.frames();
+    for (size_t f = 0; f < t.frames(); ++f) {
+      // a restart repeats the step it started from: keep the earlier copy
+      if (f < t.timesteps.size() && !out.timesteps.empty() && t.timesteps[f] <= out.timesteps.back()) { ++dropped; continue; }
+      out.positions.push_back(t.positions[f]);
+      out.cells.push_back(f < t.cells.size() ? t.cells[f] : (t.cells.empty() ? topo.cell : t.cells.back()));
+      if (f < t.timesteps.size()) out.timesteps.push_back(t.timesteps[f]);
+      if (!out.velocities.empty() || (!t.velocities.empty() && n0 == 0)) {
+        if (f < t.velocities.size() && out.velocities.size() == out.positions.size() - 1) out.velocities.push_back(t.velocities[f]);
+      }
+      for (auto& [name, col] : out.columns)
+        if (auto it = t.columns.find(name); it != t.columns.end() && f < it->second.size() && col.size() == out.positions.size() - 1) col.push_back(it->second[f]);
+    }
+  }
+  // a column or the velocities missing from some part cannot follow the frames: dropped rather than misaligned
+  if (!out.velocities.empty() && out.velocities.size() != out.positions.size()) out.velocities.clear();
+  for (auto it = out.columns.begin(); it != out.columns.end();)
+    it = it->second.size() != out.positions.size() ? out.columns.erase(it) : std::next(it);
+  if (notes) {
+    notes->push_back(std::to_string(parts.size()) + " files joined in time order: " + std::to_string(out.frames()) + " frames" +
+                     (dropped ? " (" + std::to_string(dropped) + " repeated at the boundaries kept once)" : ""));
+  }
+  out.topology.notes.push_back("joined from " + std::to_string(parts.size()) + " files");
+  return out;
+}
+
 namespace {
 const char* format_name(const std::string& f) {
   if (f == "lammps-dump") return "LAMMPS dump";

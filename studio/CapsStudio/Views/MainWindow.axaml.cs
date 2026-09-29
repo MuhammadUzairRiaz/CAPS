@@ -270,11 +270,20 @@ public partial class MainWindow : Window
     public void OpenMany(List<string> paths)
     {
         if (paths.Count == 0) return;
-        // Dropped together: a dump plus a data file pair up (dump is the trajectory, data is the topology).
-        var dump = paths.FirstOrDefault(p => p.EndsWith(".lammpstrj") || p.EndsWith(".dump"));
-        var data = paths.FirstOrDefault(p => p.EndsWith(".data") || p.EndsWith(".lmp"));
-        if (dump != null) TryOpen(dump, data);
-        else TryOpen(paths[0]);
+        // Chosen or dropped together: trajectories with a topology (a LAMMPS data file or an AMBER prmtop) pair up;
+        // several trajectories of one run are joined in time order; structures alone open one by one
+        static string Ext(string p) => Path.GetExtension(p.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) ? p[..^3] : p).ToLowerInvariant();
+        string[] trajExt = [".lammpstrj", ".dump", ".dcd", ".xtc", ".trr", ".nc", ".mdcrd"];
+        var trajs = paths.Where(p => trajExt.Contains(Ext(p))).ToList();
+        var topo = paths.FirstOrDefault(p => Ext(p) is ".data" or ".lmp" or ".prmtop" or ".parm7");
+        if (trajs.Count >= 2)
+        {
+            try { _vm.OpenJoined(trajs, topo); }
+            catch (Exception e) { _vm.Status = "Could not join the files: " + e.Message; }
+            return;
+        }
+        if (trajs.Count == 1) { TryOpen(trajs[0], topo); return; }
+        foreach (var p in paths) TryOpen(p);
     }
 
     private void OnDrop(object? sender, DragEventArgs e)

@@ -382,6 +382,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_render_stats")] public static extern int RenderStats(IntPtr doc, out long near, out long mid, out long far, out long bonds);
     [DllImport(Lib, EntryPoint = "caps_memory")] public static extern int Memory(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open")] public static extern IntPtr Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
+    [DllImport(Lib, EntryPoint = "caps_open_many")] public static extern IntPtr OpenMany([MarshalAs(UnmanagedType.LPUTF8Str)] string pathsJson, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology);
     [DllImport(Lib, EntryPoint = "caps_grow")] public static extern IntPtr Grow(in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_cbmc")] public static extern int Cbmc(IntPtr doc, in CapsCbmcOpts o, CapsCbmcProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_relax")] public static extern int Relax(IntPtr doc, in CapsRelaxOpts o, CapsRelaxProgress? progress, IntPtr user, byte[] report, int cap);
@@ -696,6 +697,14 @@ public sealed class CapsDocument : IDisposable
     public string Path { get; }
 
     private CapsDocument(IntPtr h, string path) { _h = h; Path = path; }
+
+    /// <summary>Several trajectory files of one run as one trajectory (caps_open_many): parts in time order.</summary>
+    public static CapsDocument OpenJoined(IReadOnlyList<string> paths, string? topology = null)
+    {
+        var h = Native.OpenMany(System.Text.Json.JsonSerializer.Serialize(paths), topology);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return new CapsDocument(h, paths[0]);
+    }
 
     public static CapsDocument Open(string path, string? topology = null)
     {
