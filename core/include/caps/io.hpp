@@ -69,6 +69,12 @@ struct OpenProgress {
 };
 Trajectory open_file(const std::string& path, const std::string& topology_path, const OpenProgress& progress);
 
+// Several trajectory files of one run (dumps written in parts, a run and its restarts) as one trajectory: each file read
+// with the topology, the parts ordered by their first timestep, frames appended with their cells, velocities and extra
+// columns; a frame repeated at a boundary (a restart writes its first step again) is kept once. The files must hold the
+// same atoms (count and elements); the first part's topology is kept. `notes` (may be null) says what was joined.
+Trajectory open_files(const std::vector<std::string>& paths, const std::string& topology_path = "", std::vector<std::string>* notes = nullptr);
+
 // What a file holds before it is opened (design/boards/OpenLammps, OpenGromacs): format from content, first lines,
 // dump columns and what they map to, types with masses and elements (from the file or the topology), frames (counted
 // by scanning, without reading coordinates) and where bonds will come from.

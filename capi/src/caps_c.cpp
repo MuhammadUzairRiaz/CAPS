@@ -1240,6 +1240,28 @@ caps_doc* caps_open(const char* path, const char* topology_path) {
   return nullptr;
 }
 
+caps_doc* caps_open_many(const char* paths_json, const char* topology_path) {
+  try {
+    const caps::Json j = caps::Json::parse(paths_json ? paths_json : "[]");
+    std::vector<std::string> paths;
+    for (const auto& x : j.items()) paths.push_back(x.str());
+    if (paths.empty()) throw std::invalid_argument("no files");
+    auto* d = new caps_doc;
+    std::vector<std::string> notes;
+    d->traj = caps::open_files(paths, topology_path ? topology_path : "", &notes);
+    for (const auto& n : notes) d->traj.topology.notes.push_back(n);
+    refresh(d);
+    prov_opened(d, paths[0], topology_path ? topology_path : "", "io.read");
+    install_file_field(d);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
+
 caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t max_frames, caps_open_progress_fn progress, void* user) {
   try {
     caps::OpenProgress p;
