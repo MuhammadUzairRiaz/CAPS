@@ -2530,6 +2530,7 @@ int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* d
     if (o.has("weights") && o["weights"].is_array())
       for (const auto& w : o["weights"].items()) b.weights.push_back(w.number());
     b.nevery = std::max(1, int(o.num("nevery", 100)));
+    b.rmax = std::max(0.0, o.num("rmax", 3.5));
     b.temperature = o.num("temperature", 300);
     b.steps = std::max<int64_t>(1, int64_t(o.num("steps", 100000)));
     b.seed = uint64_t(std::max(1.0, o.num("seed", 12345)));
