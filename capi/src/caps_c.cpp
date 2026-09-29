@@ -896,6 +896,8 @@ void field_run(caps_doc* d) {
       F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.charges, &F.rep, true));
     }
   }
+  if (F.ff)
+    for (const auto& note : caps::ring_angle_notes(s, *F.ff)) F.rep.notes.push_back(note);
   // the physics check: charges taken from the force field's own types must leave the structure at its formal charge
   // (OPLS-AA's group charges balance group by group; bond increments always do). A mismatch means a group was typed
   // only partly, so the assignment is incomplete, as a missing parameter would make it.

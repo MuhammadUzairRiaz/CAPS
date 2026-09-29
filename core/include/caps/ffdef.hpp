@@ -328,6 +328,11 @@ int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::st
 // gives a charge), "keep" (the structure's) or
 // "gasteiger" (C/H/N/O only). Bonded interactions are generated from the bonds as moltemplate does. Throws FFError
 // listing every missing parameter unless `allow_missing` (then the report lists them and those terms are left out).
+// A physics check of an assignment: angle terms inside three-membered rings (epoxides, aziridines, cyclopropanes) whose θ0
+// is far from the ring's own angles (a force field that reaches them only through general equivalences, as PCFF's main
+// table does for c3m / o3e), with the strain they put on each ring at the structure's geometry. Empty when none.
+std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff);
+
 ForceField parameterize(const System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges,
                         ParamReport* report = nullptr, bool allow_missing = false);
 
