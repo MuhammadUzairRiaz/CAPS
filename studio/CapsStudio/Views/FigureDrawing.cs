@@ -233,6 +233,29 @@ public static class FigureDrawing
         rtb.Save(path);
     }
 
+    /// <summary>The structure with the overlay as pixels (RGBA, top row first, straight alpha), for TIFF and PDF.</summary>
+    public static byte[] Compose(byte[] rgba, int w, int h, FigureOverlay o)
+    {
+        using var img = MainViewModel.ToBitmap(rgba, w, h);
+        using var rtb = new RenderTargetBitmap(new PixelSize(w, h), new Vector(96, 96));
+        using (var ctx = rtb.CreateDrawingContext())
+        {
+            ctx.DrawImage(img, new Rect(0, 0, w, h));
+            Draw(ctx, o);
+        }
+        var outp = new byte[w * h * 4];
+        unsafe { fixed (byte* p = outp) rtb.CopyPixels(new PixelRect(0, 0, w, h), (IntPtr)p, outp.Length, w * 4); }
+        // BGRA (premultiplied) → RGBA straight
+        for (var i = 0; i < outp.Length; i += 4)
+        {
+            var a = outp[i + 3];
+            byte Un(byte c) => a == 0 ? (byte)0 : (byte)Math.Min(255, c * 255 / a);
+            (outp[i], outp[i + 2]) = (Un(outp[i + 2]), Un(outp[i]));
+            outp[i + 1] = Un(outp[i + 1]);
+        }
+        return outp;
+    }
+
     /// <summary>The structure (straight-alpha RGBA) with the overlay, written as PNG with the dpi in a pHYs chunk.</summary>
     public static void SavePng(byte[] rgba, int w, int h, FigureOverlay o, double dpi, string path)
     {

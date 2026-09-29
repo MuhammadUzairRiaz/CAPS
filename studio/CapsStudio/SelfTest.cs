@@ -2321,6 +2321,22 @@ internal static class SelfTest
             Check(px == (2008, 1130) && ov.BarPx > 0 && Math.Abs(ov.BarPx / ov.BarAngstrom - vm.Document.ViewScale(vm.Camera, vm.FigureOptions(2, 2008, 1130, 1))) < 1e-9
                   && svgText.Contains("caps-figure-overlay") && svgText.Contains(" Å</text>") && !svgText.Contains("<rect width=\"100%\"") && phys,
                   $"figure: {what} · pHYs {phys}");
+            // TIFF and PDF of the same figure: a baseline TIFF of the figure's pixels, a PDF page the figure's size in points
+            {
+                var tifPath = Path.Combine(outDir, "caps-selftest-figure.tiff");
+                var pdfPath = Path.Combine(outDir, "caps-selftest-figure.pdf");
+                vm.FigFormat = 2;
+                vm.ExportFigure(tifPath, (_, _, _, _, _, _) => { }, (_, _) => { }, (px, _, _, _) => px).GetAwaiter().GetResult();   // no drawing platform here: the pixels as rendered
+                vm.FigFormat = 3;
+                vm.ExportFigure(pdfPath, (_, _, _, _, _, _) => { }, (_, _) => { }, (px, _, _, _) => px).GetAwaiter().GetResult();   // no drawing platform here: the pixels as rendered
+                var tif = File.ReadAllBytes(tifPath);
+                var tifOk = tif.Length > 3 * 2008 * 1130 && tif[0] == (byte)'I' && tif[1] == (byte)'I' && tif[2] == 42 && BitConverter.ToInt32(tif, 8 + 2 + 8) == 2008;
+                var pdfText = System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(pdfPath));
+                var inches = 2008.0 / (double)vm.FigDpi;
+                var widthPt = (inches * 72).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                var pdfOk = pdfText.StartsWith("%PDF") && pdfText.Contains("/MediaBox [0 0 " + widthPt + " ");
+                Check(tifOk && pdfOk, $"figure TIFF {tif.Length} bytes ok {tifOk} · PDF ok {pdfOk} ({inches * 72:0} pt wide)");
+            }
             vm.FigFormat = 0;
             vm.SetModule(8);
         }
