@@ -204,6 +204,32 @@
   <Style Selector="Button.rail Border.bar"><Setter Property="IsVisible" Value="False" /></Style>
   <Style Selector="Button.rail.on Border.bar"><Setter Property="IsVisible" Value="True" /></Style>
 
+  <!-- module bar across the top: icon + label, the active one raised with an amber underline; a pip for a step done -->
+  <Style Selector="Button.modtab">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="CornerRadius" Value="7" />
+  </Style>
+  <Style Selector="Button.modtab v|Icon"><Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+  <Style Selector="Button.modtab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg2B}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
+  <Style Selector="Button.modtab.on"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="Button.modtab.on v|Icon"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
+  <Style Selector="Button.modtab Border.bar"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.modtab.on Border.bar"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Button.modtab:disabled /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /><Setter Property="Opacity" Value="0.45" /></Style>
+  <Style Selector="Ellipse.pip"><Setter Property="Width" Value="6" /><Setter Property="Height" Value="6" /><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
+  <Style Selector="Ellipse.pip.warn"><Setter Property="Fill" Value="{DynamicResource WarnB}" /></Style>
+
   <!-- document tabs in the top bar -->
   <!-- project explorer rows: one per structure, the active one filled -->
   <Style Selector="Button.projrow /template/ ContentPresenter#PART_ContentPresenter">

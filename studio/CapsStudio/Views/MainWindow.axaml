@@ -11,8 +11,7 @@
   <Window.Styles>
     <!-- Compact layout (design/boards/CompactLayout): below 1440 px the rail and the toolbar's view options show icons
          only, the inspector and the project become drawers over the view, and the curves dock folds to its tabs. -->
-    <Style Selector="Border#Rail.compact Button.rail TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="Border#Rail.compact Button.rail Panel"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
+    <Style Selector="Border#Rail.compact Button.modtab TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact Button TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="StackPanel#ToolbarRight.compact ToggleButton TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
     <!-- the project tree: chevrons, rows, job status dots -->
@@ -140,190 +139,363 @@
       </Grid>
     </Border>
 
-    <!-- Pipeline strip (design/boards/PipelineGrow): where the project is, each step one click away; Export at every step -->
-    <Border Grid.Row="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Height="56" IsVisible="{Binding ShowPipelineStrip}">
-      <Grid ColumnDefinitions="72,*,Auto">
-        <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" />
-        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
-          <ItemsControl ItemsSource="{Binding PipelineSteps}" Margin="8,0" VerticalAlignment="Center">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="0" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:PipelineStep">
-                <StackPanel Orientation="Horizontal" Spacing="0">
-                  <Button Classes="pipestep" Classes.current="{Binding Current}" Click="OnPipelineStep" ToolTip.Tip="{Binding Name}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Panel Width="22" Height="22" VerticalAlignment="Center">
-                        <Border Classes="mark" Classes.done="{Binding IsDone}" Classes.warn="{Binding IsWarn}" Classes.optional="{Binding IsOptional}"
-                                Classes.next="{Binding IsNext}" Classes.cur="{Binding Current}" CornerRadius="11" />
-                        <local:Icon Kind="check" Size="13" Classes="onmark" IsVisible="{Binding IsDone}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <local:Icon Kind="alert" Size="13" Classes="onmark" IsVisible="{Binding IsWarn}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <TextBlock Classes="marknum" Classes.cur="{Binding Current}" Text="{Binding Mark}" IsVisible="{Binding ShowNumber}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      </Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="1">
-                        <TextBlock Classes="stepname" Text="{Binding Name}" />
-                        <TextBlock Classes="stepdetail" Classes.ok="{Binding IsDone}" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
-                      </StackPanel>
-                    </StackPanel>
-                  </Button>
-                  <Border Width="10" Height="1" Background="{DynamicResource LineB}" VerticalAlignment="Center" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="12,0" VerticalAlignment="Center">
-          <Button Classes="primary small" Click="OnPipelineNext" IsVisible="{Binding HasPipelineNext}" ToolTip.Tip="The next step of the pipeline">
-            <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="{Binding PipelineNextLabel}" VerticalAlignment="Center" /><local:Icon Kind="chevr" Size="14" VerticalAlignment="Center" /></StackPanel>
-          </Button>
-          <Button Classes="small" Click="OnClearAll" Classes.danger="{Binding ClearArmed}" IsEnabled="{Binding Idle}"
-                  ToolTip.Tip="Start clean: close every structure of the project (asks once more; saved files stay on disk, Recent keeps them)">
-            <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="trash" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding ClearText}" VerticalAlignment="Center" /></StackPanel>
-          </Button>
-          <Button Classes="small" Click="OnExportCenter" ToolTip.Tip="LAMMPS and GROMACS files of the structure as it is now">
-            <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export now" VerticalAlignment="Center" /></StackPanel>
+    <!-- Module bar: the workflow left to right (build, simulate, results), then jobs and bench; a pip marks a step done
+         on the active structure. The Project Explorer on the left stays with every module. -->
+    <Border x:Name="Rail" Grid.Row="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Height="48">
+      <DockPanel Margin="10,0">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <Button x:Name="SettingsButton" Classes="modtab" Classes.on="{Binding IsSettings}" ToolTip.Tip="Settings" Click="OnSettingsRail">
+            <local:Icon Kind="gear" Size="17" />
           </Button>
         </StackPanel>
-      </Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <Button Classes="modtab" Classes.on="{Binding IsStudioRail}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="hex" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Studio" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Rectangle Classes="vsep" Margin="6,0" />
+          <Button Classes="modtab" Classes.on="{Binding IsBuildRail}" Click="OnModuleBuild" ToolTip.Tip="Build molecules, polymers, crystals, surfaces, nanostructures and biomolecules">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="flask" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Build" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Polymer cell (Grow): builds polymer chains monomer by monomer inside a periodic cell, at the density you set">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="grow" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Polymer cell" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsPack}" Click="OnModulePack" ToolTip.Tip="Packing: places copies of molecules (solvents, additives, fillers, chains) into a box or region without overlaps">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="pack" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Packing" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Rectangle Classes="vsep" Margin="6,0" />
+          <Button Classes="modtab" Classes.on="{Binding IsField}" Click="OnModuleField" ToolTip.Tip="Force fields: which fit this structure, typing, charges and parameters, explained">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="tag" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Force field" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+                <Ellipse Classes="pip" IsVisible="{Binding StepFieldDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Done on the active structure" />
+                <Ellipse Classes="pip warn" IsVisible="{Binding StepFieldWarn}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Assigned, but incomplete" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Energy minimisation (push-off, compression, cell relaxation)">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="relax" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Minimise" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+                <Ellipse Classes="pip" IsVisible="{Binding StepMinDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Done on the active structure" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsEquilibrate}" Click="OnModuleEquilibrate" ToolTip.Tip="Published equilibration protocols with convergence checks">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="equil" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Equilibrate" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+                <Ellipse Classes="pip" IsVisible="{Binding StepEqDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Done on the active structure" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Molecular dynamics (NVE, NVT, NPT)">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="dyn" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Dynamics" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+                <Ellipse Classes="pip" IsVisible="{Binding StepMdDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Done on the active structure" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsReact}" Click="OnModuleReact" ToolTip.Tip="Crosslinking and reactions from atom-mapped templates">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="react" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="React" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Rectangle Classes="vsep" Margin="6,0" />
+          <Button Classes="modtab" Classes.on="{Binding IsAnalyzeRail}" Click="OnModuleAnalyze" ToolTip.Tip="Properties with errors, compared with experiment">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="chart" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Analyze" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsExportRail}" Click="OnExportCenter" ToolTip.Tip="Export center: LAMMPS and GROMACS files, structures and figures">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="download" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Export" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+                <Ellipse Classes="pip" IsVisible="{Binding StepExportDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Done on the active structure" />
+            </Panel>
+          </Button>
+          <Rectangle Classes="vsep" Margin="6,0" />
+          <Button Classes="modtab" Classes.on="{Binding IsJobs}" Click="OnModuleJobs" ToolTip.Tip="Every run with its progress, curves, log and provenance">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="jobs" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Jobs" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+          <Button Classes="modtab" Classes.on="{Binding IsBench}" Click="OnModuleBench" ToolTip.Tip="The validation suite that regenerates the paper tables">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <local:Icon Kind="bench" Size="16" VerticalAlignment="Center" />
+                <TextBlock Text="Bench" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
+            </Panel>
+          </Button>
+        </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
     </Border>
 
-    <Grid x:Name="Body" Grid.Row="2" ColumnDefinitions="72,*,330" RowDefinitions="48,*">
+    <Grid x:Name="Body" Grid.Row="2" ColumnDefinitions="Auto,*,330" RowDefinitions="Auto,*">
 
-      <!-- Module rail (lib.py rail): the workflow left to right, then the cross-cutting areas; settings at the bottom -->
-      <Border x:Name="Rail" Grid.Column="0" Grid.RowSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
-        <DockPanel>
-          <Button x:Name="SettingsButton" DockPanel.Dock="Bottom" Classes="rail" Classes.on="{Binding IsSettings}" Height="44" MinHeight="44" Margin="0,0,0,8" HorizontalAlignment="Center"
-                  ToolTip.Tip="Settings" Click="OnSettingsRail">
-            <local:Icon Kind="gear" Size="19" />
-          </Button>
-          <StackPanel Spacing="1" Margin="0,6,0,0" HorizontalAlignment="Center">
-          <!-- the pipeline in order (design/boards/PipelineGrow), then the cross-cutting areas -->
-          <Button Classes="rail" Classes.on="{Binding IsStudioRail}" Click="OnModuleStudio" ToolTip.Tip="Build, view and inspect structures">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="hex" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Studio" HorizontalAlignment="Center" FontSize="10" />
+      <!-- Project Explorer: full height on the left with every module (the project, its structures, under each a folder per
+           job with what it produced), over the Properties explorer and the fragments; its right edge resizes it -->
+      <Border x:Name="ProjectPanel" Grid.Column="0" Grid.RowSpan="2" Width="{Binding ProjectWidth}" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding ProjectPanelShown}">
+        <Panel>
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5*" MinHeight="110" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="6*" MinHeight="140" />
+          </Grid.RowDefinitions>
+          <Border Classes="phead">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Click="OnClearAll" Classes.danger="{Binding ClearArmed}" IsEnabled="{Binding Idle}" IsVisible="{Binding HasDocument}"
+                      ToolTip.Tip="{Binding ClearText, StringFormat='{}{0}: close every structure of the project (asks once more; saved files stay on disk)'}">
+                <local:Icon Kind="trash" Size="15" />
+              </Button>
+              <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Command="{Binding $parent[local:MainWindow].OpenCommand}" ToolTip.Tip="Add a file">
+                <local:Icon Kind="plus" Size="16" />
+              </Button>
+              <TextBlock Text="Project" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="6,6" Spacing="1">
+              <Border Height="26" Padding="6,0" CornerRadius="5">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <local:Icon Kind="folder" Size="15" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ExplorerProjectName}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ProjectFolderText}" />
+                </StackPanel>
+              </Border>
+              <Border Height="24" Padding="18,0,8,0" CornerRadius="5">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <local:Icon Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                  <TextBlock Text="Structures" Foreground="{DynamicResource MutedB}" FontSize="12" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ProjectCountText}" Foreground="{DynamicResource DimB}" FontSize="11" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
+                </StackPanel>
+              </Border>
+              <ItemsControl ItemsSource="{Binding ProjectItems}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProjectItem">
+                    <StackPanel>
+                      <Grid ColumnDefinitions="18,*">
+                        <ToggleButton Classes="treechev" IsChecked="{Binding Expanded}" IsVisible="{Binding HasJobs}" ToolTip.Tip="Show or hide its job folders">
+                          <local:Icon Kind="chev" Size="10" />
+                        </ToggleButton>
+                        <Button Grid.Column="1" Classes="projrow" Classes.on="{Binding Active}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,4,8,4"
+                                Background="Transparent" BorderThickness="0" CornerRadius="5" Click="OnProjectTab" Tag="{Binding}" ToolTip.Tip="Work on this structure">
+                          <Button.ContextMenu>
+                            <ContextMenu>
+                              <MenuItem Header="Edit in its builder" Click="OnEditProjectItem" Tag="{Binding}" />
+                              <MenuItem Header="Delete from the project" Click="OnDeleteProjectItem" Tag="{Binding}" />
+                            </ContextMenu>
+                          </Button.ContextMenu>
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <Border Width="3" CornerRadius="2" Background="{DynamicResource AccB}" IsVisible="{Binding Active}" Margin="-8,0,0,0" />
+                            <StackPanel Grid.Column="1" Spacing="1">
+                              <StackPanel Orientation="Horizontal" Spacing="7">
+                                <local:Icon Kind="{Binding IconKind}" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                              </StackPanel>
+                              <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" Margin="21,0,0,0" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding ForceField}" FontSize="11" Foreground="{DynamicResource SelB}" Margin="21,0,0,0" IsVisible="{Binding HasForceField}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top">
+                              <Button Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Click="OnEditProjectItem" Tag="{Binding}" ToolTip.Tip="{Binding EditTip}"
+                                      IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}">
+                                <local:Icon Kind="pencil" Size="13" />
+                              </Button>
+                              <Button Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Click="OnDeleteProjectItem" Tag="{Binding}" ToolTip.Tip="{Binding DeleteTip}"
+                                      Classes.danger="{Binding DeleteArmed}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}">
+                                <local:Icon Kind="trash" Size="13" />
+                              </Button>
+                            </StackPanel>
+                          </Grid>
+                        </Button>
+                      </Grid>
+                      <!-- its job folders, newest first; each holds what the job produced -->
+                      <ItemsControl ItemsSource="{Binding Jobs}" IsVisible="{Binding Expanded}" Margin="18,0,0,2">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:Job">
+                            <StackPanel>
+                              <Grid ColumnDefinitions="18,*">
+                                <ToggleButton Classes="treechev" IsChecked="{Binding Expanded}" ToolTip.Tip="Show or hide what it produced">
+                                  <local:Icon Kind="chev" Size="10" />
+                                </ToggleButton>
+                                <Button Grid.Column="1" Classes="treerow" Click="OnJobFolder" Tag="{Binding}" ToolTip.Tip="{Binding Subtitle}">
+                                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+                                    <local:Icon Kind="folder" Size="13" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding FolderLabel}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Ellipse Grid.Column="2" Width="7" Height="7" Classes="jobdot" Classes.running="{Binding IsRunning}" Classes.failed="{Binding IsFailed}"
+                                             Classes.done="{Binding IsDone}" Classes.quiet="{Binding IsQuiet}" VerticalAlignment="Center" ToolTip.Tip="{Binding StatusText}" />
+                                  </Grid>
+                                </Button>
+                              </Grid>
+                              <ItemsControl ItemsSource="{Binding Outputs}" IsVisible="{Binding Expanded}" Margin="24,0,0,2">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="vm:JobOutput">
+                                    <Button Classes="treerow" Click="OnJobOutput" Tag="{Binding}" ToolTip.Tip="Open">
+                                      <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <local:Icon Kind="{Binding Icon}" Size="12" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                      </StackPanel>
+                                    </Button>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Classes="small ghost" HorizontalAlignment="Left" Margin="18,4,0,6" Click="OnDuplicateStructure" IsVisible="{Binding HasDocument}"
+                      ToolTip.Tip="A copy of the active structure, force field kept: try another protocol on it and keep the original">
+                <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy structure" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+              <TextBlock Text="MOLECULES OF THE ACTIVE STRUCTURE" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="18,6,0,2" IsVisible="{Binding HasDocument}" />
+              <ItemsControl ItemsSource="{Binding MoleculeRows}" IsVisible="{Binding HasDocument}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:MoleculeRow">
+                    <Border Height="24" Padding="18,0,8,0">
+                      <StackPanel Orientation="Horizontal" Spacing="7">
+                        <local:Icon Kind="hex" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                        <TextBlock FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center">
+                          <Run Text="Molecule " /><Run Text="{Binding Molecule}" /><Run Text=" · " /><Run Text="{Binding Atoms}" /><Run Text=" atoms" />
+                        </TextBlock>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+          <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="{DynamicResource LineB}" Height="1" Margin="0,2" />
+          <!-- Properties | Fragments -->
+          <Border Grid.Row="3" Padding="8,6" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <Border Classes="seg">
+              <UniformGrid Columns="2">
+                <RadioButton Classes="seg" GroupName="lefttab" Content="Properties" IsChecked="{Binding LeftTab, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                <RadioButton Classes="seg" GroupName="lefttab" Content="Fragments" IsChecked="{Binding LeftTab, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+              </UniformGrid>
+            </Border>
+          </Border>
+          <Grid Grid.Row="4">
+            <DockPanel IsVisible="{Binding ShowPropertiesTab}">
+              <Border DockPanel.Dock="Top" Padding="10,8,10,4">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding PropertyTitle}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBox Text="{Binding PropertyFilter}" Watermark="Filter properties" FontSize="12" Height="28" MinHeight="28" Padding="8,4" />
+                </StackPanel>
+              </Border>
+              <TextBlock DockPanel.Dock="Top" Text="Open or build a structure to see its properties; pick an atom for the atom's." Classes="dim" TextWrapping="Wrap" Margin="12,6"
+                         IsVisible="{Binding !HasProperties}" />
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding PropertyRows}" Margin="4,0,4,8">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PropRow">
+                      <Panel>
+                        <TextBlock Text="{Binding Name}" IsVisible="{Binding IsHeader}" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="6,8,6,3" />
+                        <Grid IsVisible="{Binding IsValue}" ColumnDefinitions="104,*" Margin="6,1" MinHeight="20">
+                          <TextBlock Text="{Binding Name}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}" />
+                          <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11.5" Classes="mono" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        </Grid>
+                      </Panel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </DockPanel>
+            <DockPanel IsVisible="{Binding ShowFragmentsTab}">
+              <Border DockPanel.Dock="Top" Padding="10,6,10,0">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small ghost" Content="Library…" Click="OnFragmentLibrary" ToolTip.Tip="The fragment library: rings, groups, monomers, rubber additives …" />
+                  <TextBlock Text="Attach to the picked atom, or place" Classes="dim" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <ScrollViewer>
+              <StackPanel Margin="10" Spacing="10">
+                <TextBox Text="{Binding FragmentQuery}" Watermark="Search fragments" FontSize="12" KeyUp="OnFragmentSearchKey" />
+                <ItemsControl ItemsSource="{Binding QuickFragments}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FragmentItem">
+                      <Button Margin="3" Height="62" MinHeight="62" Padding="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnQuickFragment" Tag="{Binding}"
+                              ToolTip.Tip="{Binding Tip}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).HasDocument}">
+                        <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <local:Icon Kind="{Binding Icon}" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Short}" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
-            </Panel>
-          </Button>
-          <Border Width="36" Height="1" Background="{DynamicResource LineB}" Margin="0,3" HorizontalAlignment="Center" />
-          <Button Classes="rail" Classes.on="{Binding IsBuildRail}" Click="OnModuleBuild" ToolTip.Tip="Build molecules, polymers, crystals, surfaces and biomolecules">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="flask" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Build" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsGrow}" Click="OnModuleGrow" ToolTip.Tip="Polymer cell (Grow): builds polymer chains monomer by monomer inside a periodic cell, at the density you set — an amorphous polymer, from repeat units">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="grow" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Polymer cell" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsField}" Click="OnModuleField" ToolTip.Tip="Force fields: which fit this structure, typing, charges and parameters, explained">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="tag" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Force field" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsPack}" Click="OnModulePack" ToolTip.Tip="Packing (Pack): places copies of molecules you already have (solvents, additives, fillers, crosslinkers, pre-built chains) into a box or region without overlaps — packmol input accepted">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="pack" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Packing" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Minimise: energy minimisation of the active structure (push-off, compression, cell relaxation)">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="relax" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Minimise" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsEquilibrate}" Click="OnModuleEquilibrate" ToolTip.Tip="Published equilibration protocols with convergence checks">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="equil" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Equilibrate" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Dynamics: molecular dynamics (NVE, NVT, NPT) of the active structure">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="dyn" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Dynamics" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsReact}" Click="OnModuleReact" ToolTip.Tip="Crosslinking and reactions from atom-mapped templates">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="react" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="React" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsAnalyzeRail}" Click="OnModuleAnalyze" ToolTip.Tip="Properties with errors, compared with experiment">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="chart" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Analyze" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsExportRail}" Click="OnExportCenter" ToolTip.Tip="Export center: LAMMPS and GROMACS files, structures and figures">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="download" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Export" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Border Width="36" Height="1" Background="{DynamicResource LineB}" Margin="0,3" HorizontalAlignment="Center" />
-          <Button Classes="rail" Classes.on="{Binding IsJobs}" Click="OnModuleJobs" ToolTip.Tip="Every run with its progress, curves, log and provenance">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="jobs" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Jobs" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          <Button Classes="rail" Classes.on="{Binding IsBench}" Click="OnModuleBench" ToolTip.Tip="The validation suite that regenerates the paper tables">
-            <Panel Width="60" Height="48">
-              <Border Classes="bar" Width="3" Height="28" CornerRadius="0,2,2,0" Background="{DynamicResource AccB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <local:Icon Kind="bench" Size="18" HorizontalAlignment="Center" />
-                <TextBlock Text="Bench" HorizontalAlignment="Center" FontSize="10" />
-              </StackPanel>
-            </Panel>
-          </Button>
-          </StackPanel>
-        </DockPanel>
+              </ScrollViewer>
+            </DockPanel>
+          </Grid>
+        </Grid>
+        <!-- drag the right edge to widen the explorer -->
+        <Thumb x:Name="ExplorerGrip" Width="6" HorizontalAlignment="Right" Cursor="SizeWestEast" Background="Transparent" Margin="0,0,-3,0" DragDelta="OnExplorerGrip" />
+        </Panel>
       </Border>
 
       <!-- Centre: toolbar, viewport, frame bar -->
       <!-- Toolbar (Main board): tools, builder tools, view options on the right -->
       <Border x:Name="Toolbar" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
-        <DockPanel VerticalAlignment="Center">
+        <StackPanel>
+        <DockPanel Height="48" VerticalAlignment="Center">
           <StackPanel x:Name="ToolbarRight" DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
             <Button Classes="tool" Click="OnExportDialog" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Export image or movie (⌘E)"><local:Icon Kind="download" Size="18" /></Button>
             <Button Classes="tool" Click="OnSplit" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Split view: this document beside another, cameras synced (design/boards/LightSplit)"><local:Icon Kind="layers" Size="18" /></Button>
@@ -423,202 +595,56 @@
           <Button Classes="tool" Click="OnRedo" IsEnabled="{Binding CanRedo}" ToolTip.Tip="Redo (⇧⌘Z)"><local:Icon Kind="redo" Size="18" /></Button>
           </StackPanel>
         </DockPanel>
+        <!-- Modify (the picked atoms): element, bond order, geometry -->
+        <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Height="38" IsVisible="{Binding IsStudio}" IsEnabled="{Binding HasDocument}">
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="MODIFY" Classes="h3" VerticalAlignment="Center" Margin="2,0,6,0" ToolTip.Tip="Acts on the picked atoms: click an atom, ⇧ click adds more" />
+            <ItemsControl ItemsSource="{x:Static vm:MainViewModel.QuickElements}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button Classes="tool" Width="30" MinWidth="30" Height="28" MinHeight="28" Padding="0" Click="OnModifyElement" Tag="{Binding}" ToolTip.Tip="{Binding StringFormat='The picked atoms become {0}'}">
+                    <TextBlock Text="{Binding}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnElementPicker" ToolTip.Tip="Any element: the periodic table (for new atoms; then pick atoms and choose it here)"><TextBlock Text="…" FontSize="12" /></Button>
+            <Rectangle Classes="vsep" />
+            <TextBlock Text="Bond" Classes="dim" VerticalAlignment="Center" Margin="4,0,2,0" />
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnBondOrder" Tag="1" ToolTip.Tip="The bond between the two picked atoms: single"><TextBlock Text="—" FontSize="13" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnBondOrder" Tag="2" ToolTip.Tip="… double"><TextBlock Text="=" FontSize="14" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnBondOrder" Tag="3" ToolTip.Tip="… triple"><TextBlock Text="≡" FontSize="14" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnBreakBond" ToolTip.Tip="Break the bond between the two picked atoms"><local:Icon Kind="scissors" Size="15" /></Button>
+            <Rectangle Classes="vsep" />
+            <TextBlock Text="Geometry" Classes="dim" VerticalAlignment="Center" Margin="4,0,2,0" />
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" ToolTip.Tip="The picked atom's neighbours at the ideal directions of a geometry (hybridisation); each keeps its bond length">
+              <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="sp³ …" FontSize="12" VerticalAlignment="Center" /><local:Icon Kind="chev" Size="11" VerticalAlignment="Center" /></StackPanel>
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem Header="Linear (sp)" Tag="linear" Click="OnGeometry" /><MenuItem Header="Trigonal planar (sp²)" Tag="trigonal" Click="OnGeometry" />
+                  <MenuItem Header="Tetrahedral (sp³)" Tag="tetrahedral" Click="OnGeometry" /><Separator />
+                  <MenuItem Header="Square planar" Tag="square_planar" Click="OnGeometry" /><MenuItem Header="Trigonal bipyramidal" Tag="trigonal_bipyramidal" Click="OnGeometry" />
+                  <MenuItem Header="Square pyramidal" Tag="square_pyramidal" Click="OnGeometry" /><MenuItem Header="Octahedral" Tag="octahedral" Click="OnGeometry" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <Rectangle Classes="vsep" />
+            <TextBlock Text="View" Classes="dim" VerticalAlignment="Center" Margin="4,0,2,0" />
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnViewTop" ToolTip.Tip="Look down z (top)"><TextBlock Text="z" FontSize="12" FontWeight="SemiBold" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnViewFront" ToolTip.Tip="Look along y (front)"><TextBlock Text="y" FontSize="12" FontWeight="SemiBold" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnViewSide" ToolTip.Tip="Look along x (side)"><TextBlock Text="x" FontSize="12" FontWeight="SemiBold" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="8,0" Click="OnFrameSelection" ToolTip.Tip="Fit the picked atoms (or everything) in the view (F)"><local:Icon Kind="expand" Size="15" /></Button>
+            <ToggleButton Classes="tool" Height="28" MinHeight="28" Padding="8,0" IsChecked="{Binding LabelElement}" ToolTip.Tip="Element labels (more label kinds, fonts and colours: Appearance › Labels)"><TextBlock Text="Aa" FontSize="12" /></ToggleButton>
+            <ToggleButton Classes="tool" Height="28" MinHeight="28" Padding="8,0" IsChecked="{Binding ShowCell}" ToolTip.Tip="The periodic cell"><local:Icon Kind="cube" Size="15" /></ToggleButton>
+            <ToggleButton Classes="tool" Height="28" MinHeight="28" Padding="8,0" IsChecked="{Binding Wrap}" ToolTip.Tip="Wrapped: atoms folded into the cell · off: molecules whole"><TextBlock Text="wrap" FontSize="11.5" /></ToggleButton>
+          </StackPanel>
+        </Border>
+        </StackPanel>
       </Border>
 
       <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="0,*,Auto,Auto">
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
-        <!-- Project explorer (structures, and under each a folder per job with what it produced) over the Properties
-             explorer (the picked atom, else the structure, in numbers) and the fragments: Materials Studio's arrangement -->
-        <Border x:Name="ProjectPanel" Grid.Column="0" Width="272" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding ProjectPanelShown}">
-          <Grid>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="5*" MinHeight="110" />
-              <RowDefinition Height="5" />
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="6*" MinHeight="140" />
-            </Grid.RowDefinitions>
-            <Border Classes="phead">
-              <DockPanel>
-                <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Command="{Binding $parent[local:MainWindow].OpenCommand}" ToolTip.Tip="Add a file">
-                  <local:Icon Kind="plus" Size="16" />
-                </Button>
-                <TextBlock Text="Project" Classes="h2" VerticalAlignment="Center" />
-              </DockPanel>
-            </Border>
-            <ScrollViewer Grid.Row="1">
-              <StackPanel Margin="6,6" Spacing="1">
-                <Border Height="24" Padding="8,0" CornerRadius="5">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <local:Icon Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                    <TextBlock Text="Structures" Foreground="{DynamicResource MutedB}" FontSize="12" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding ProjectCountText}" Foreground="{DynamicResource DimB}" FontSize="11" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
-                  </StackPanel>
-                </Border>
-                <ItemsControl ItemsSource="{Binding ProjectItems}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ProjectItem">
-                      <StackPanel>
-                        <Grid ColumnDefinitions="18,*">
-                          <ToggleButton Classes="treechev" IsChecked="{Binding Expanded}" IsVisible="{Binding HasJobs}" ToolTip.Tip="Show or hide its job folders">
-                            <local:Icon Kind="chev" Size="10" />
-                          </ToggleButton>
-                          <Button Grid.Column="1" Classes="projrow" Classes.on="{Binding Active}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,4,8,4"
-                                  Background="Transparent" BorderThickness="0" CornerRadius="5" Click="OnProjectTab" Tag="{Binding}" ToolTip.Tip="Work on this structure">
-                            <Button.ContextMenu>
-                              <ContextMenu>
-                                <MenuItem Header="Edit in its builder" Click="OnEditProjectItem" Tag="{Binding}" />
-                                <MenuItem Header="Delete from the project" Click="OnDeleteProjectItem" Tag="{Binding}" />
-                              </ContextMenu>
-                            </Button.ContextMenu>
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                              <Border Width="3" CornerRadius="2" Background="{DynamicResource AccB}" IsVisible="{Binding Active}" Margin="-8,0,0,0" />
-                              <StackPanel Grid.Column="1" Spacing="1">
-                                <StackPanel Orientation="Horizontal" Spacing="7">
-                                  <local:Icon Kind="{Binding IconKind}" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-                                  <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="180" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource MutedB}" Margin="21,0,0,0" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding ForceField}" FontSize="11" Foreground="{DynamicResource SelB}" Margin="21,0,0,0" IsVisible="{Binding HasForceField}" TextTrimming="CharacterEllipsis" />
-                              </StackPanel>
-                              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top">
-                                <Button Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Click="OnEditProjectItem" Tag="{Binding}" ToolTip.Tip="{Binding EditTip}"
-                                        IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}">
-                                  <local:Icon Kind="pencil" Size="13" />
-                                </Button>
-                                <Button Classes="tool" Width="22" MinWidth="22" Height="22" MinHeight="22" Padding="0" Click="OnDeleteProjectItem" Tag="{Binding}" ToolTip.Tip="{Binding DeleteTip}"
-                                        Classes.danger="{Binding DeleteArmed}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).Idle}">
-                                  <local:Icon Kind="trash" Size="13" />
-                                </Button>
-                              </StackPanel>
-                            </Grid>
-                          </Button>
-                        </Grid>
-                        <!-- its job folders, newest first; each holds what the job produced -->
-                        <ItemsControl ItemsSource="{Binding Jobs}" IsVisible="{Binding Expanded}" Margin="18,0,0,2">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:Job">
-                              <StackPanel>
-                                <Grid ColumnDefinitions="18,*">
-                                  <ToggleButton Classes="treechev" IsChecked="{Binding Expanded}" ToolTip.Tip="Show or hide what it produced">
-                                    <local:Icon Kind="chev" Size="10" />
-                                  </ToggleButton>
-                                  <Button Grid.Column="1" Classes="treerow" Click="OnJobFolder" Tag="{Binding}" ToolTip.Tip="{Binding Subtitle}">
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
-                                      <local:Icon Kind="folder" Size="13" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
-                                      <TextBlock Grid.Column="1" Text="{Binding FolderLabel}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                      <Ellipse Grid.Column="2" Width="7" Height="7" Classes="jobdot" Classes.running="{Binding IsRunning}" Classes.failed="{Binding IsFailed}"
-                                               Classes.done="{Binding IsDone}" Classes.quiet="{Binding IsQuiet}" VerticalAlignment="Center" ToolTip.Tip="{Binding StatusText}" />
-                                    </Grid>
-                                  </Button>
-                                </Grid>
-                                <ItemsControl ItemsSource="{Binding Outputs}" IsVisible="{Binding Expanded}" Margin="24,0,0,2">
-                                  <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:JobOutput">
-                                      <Button Classes="treerow" Click="OnJobOutput" Tag="{Binding}" ToolTip.Tip="Open">
-                                        <StackPanel Orientation="Horizontal" Spacing="7">
-                                          <local:Icon Kind="{Binding Icon}" Size="12" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                                          <TextBlock Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="170" />
-                                        </StackPanel>
-                                      </Button>
-                                    </DataTemplate>
-                                  </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                              </StackPanel>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </StackPanel>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Button Classes="small ghost" HorizontalAlignment="Left" Margin="18,4,0,6" Click="OnDuplicateStructure" IsVisible="{Binding HasDocument}"
-                        ToolTip.Tip="A copy of the active structure, force field kept: try another protocol on it and keep the original">
-                  <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy structure" VerticalAlignment="Center" /></StackPanel>
-                </Button>
-                <TextBlock Text="MOLECULES OF THE ACTIVE STRUCTURE" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="18,6,0,2" IsVisible="{Binding HasDocument}" />
-                <ItemsControl ItemsSource="{Binding MoleculeRows}" IsVisible="{Binding HasDocument}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:MoleculeRow">
-                      <Border Height="24" Padding="18,0,8,0">
-                        <StackPanel Orientation="Horizontal" Spacing="7">
-                          <local:Icon Kind="hex" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                          <TextBlock FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center">
-                            <Run Text="Molecule " /><Run Text="{Binding Molecule}" /><Run Text=" · " /><Run Text="{Binding Atoms}" /><Run Text=" atoms" />
-                          </TextBlock>
-                        </StackPanel>
-                      </Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </ScrollViewer>
-            <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="{DynamicResource LineB}" Height="1" Margin="0,2" />
-            <!-- Properties | Fragments -->
-            <Border Grid.Row="3" Padding="8,6" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-              <Border Classes="seg">
-                <UniformGrid Columns="2">
-                  <RadioButton Classes="seg" GroupName="lefttab" Content="Properties" IsChecked="{Binding LeftTab, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=0}" />
-                  <RadioButton Classes="seg" GroupName="lefttab" Content="Fragments" IsChecked="{Binding LeftTab, Converter={x:Static local:IntEqualsConverter.Instance}, ConverterParameter=1}" />
-                </UniformGrid>
-              </Border>
-            </Border>
-            <Grid Grid.Row="4">
-              <DockPanel IsVisible="{Binding ShowPropertiesTab}">
-                <Border DockPanel.Dock="Top" Padding="10,8,10,4">
-                  <StackPanel Spacing="6">
-                    <TextBlock Text="{Binding PropertyTitle}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBox Text="{Binding PropertyFilter}" Watermark="Filter properties" FontSize="12" Height="28" MinHeight="28" Padding="8,4" />
-                  </StackPanel>
-                </Border>
-                <TextBlock DockPanel.Dock="Top" Text="Open or build a structure to see its properties; pick an atom for the atom's." Classes="dim" TextWrapping="Wrap" Margin="12,6"
-                           IsVisible="{Binding !HasProperties}" />
-                <ScrollViewer>
-                  <ItemsControl ItemsSource="{Binding PropertyRows}" Margin="4,0,4,8">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:PropRow">
-                        <Panel>
-                          <TextBlock Text="{Binding Name}" IsVisible="{Binding IsHeader}" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="6,8,6,3" />
-                          <Grid IsVisible="{Binding IsValue}" ColumnDefinitions="104,*" Margin="6,1" MinHeight="20">
-                            <TextBlock Text="{Binding Name}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}" />
-                            <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11.5" Classes="mono" TextWrapping="Wrap" VerticalAlignment="Center" />
-                          </Grid>
-                        </Panel>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </ScrollViewer>
-              </DockPanel>
-              <DockPanel IsVisible="{Binding ShowFragmentsTab}">
-                <Border DockPanel.Dock="Top" Padding="10,6,10,0">
-                  <DockPanel>
-                    <Button DockPanel.Dock="Right" Classes="small ghost" Content="Library…" Click="OnFragmentLibrary" ToolTip.Tip="The fragment library: rings, groups, monomers, rubber additives …" />
-                    <TextBlock Text="Attach to the picked atom, or place" Classes="dim" VerticalAlignment="Center" />
-                  </DockPanel>
-                </Border>
-                <ScrollViewer>
-                <StackPanel Margin="10" Spacing="10">
-                  <TextBox Text="{Binding FragmentQuery}" Watermark="Search fragments" FontSize="12" KeyUp="OnFragmentSearchKey" />
-                  <ItemsControl ItemsSource="{Binding QuickFragments}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:FragmentItem">
-                        <Button Margin="3" Height="62" MinHeight="62" Padding="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnQuickFragment" Tag="{Binding}"
-                                ToolTip.Tip="{Binding Tip}" IsEnabled="{Binding $parent[local:MainWindow].((vm:MainViewModel)DataContext).HasDocument}">
-                          <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <local:Icon Kind="{Binding Icon}" Size="20" StrokeWidth="1.4" Foreground="{DynamicResource TextB}" HorizontalAlignment="Center" />
-                            <TextBlock Text="{Binding Short}" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                          </StackPanel>
-                        </Button>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-                </ScrollViewer>
-              </DockPanel>
-            </Grid>
-          </Grid>
-        </Border>
         <!-- Visualize pipeline (design/boards/VisPipeline): steps run bottom to top, data source, visual elements -->
         <Border Grid.Column="0" Width="300" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsVisualize}">
           <DockPanel>
@@ -2820,13 +2846,13 @@
       <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsField}">
         <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="22,16,22,0">
           <!-- header -->
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
             <StackPanel Spacing="3">
               <TextBlock Text="Force field · typing report" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
               <TextBlock Classes="muted" Text="Explain every type, override with provenance, and block runs with missing parameters" TextTrimming="CharacterEllipsis" />
               <local:StructurePicker Margin="0,8,0,0" HorizontalAlignment="Left" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" IsEnabled="{Binding Field.NotWorking}">
+            <WrapPanel Grid.Row="1" ItemSpacing="8" LineSpacing="8" IsEnabled="{Binding Field.NotWorking}">
               <StackPanel Spacing="3">
                 <TextBlock Text="Force field" Classes="dim" />
                 <ComboBox Width="264" ItemsSource="{Binding Field.Library}" SelectedIndex="{Binding Field.FfIndex}" ToolTip.Tip="{Binding Field.FfNote}" />
@@ -2852,7 +2878,7 @@
               </Button>
               <Button Content="Clear" Click="OnFieldClear" IsEnabled="{Binding Field.Assigned}" VerticalAlignment="Bottom"
                       ToolTip.Tip="End the assignment and restore the file's own types and charges" />
-            </StackPanel>
+            </WrapPanel>
           </Grid>
 
           <!-- chips -->
