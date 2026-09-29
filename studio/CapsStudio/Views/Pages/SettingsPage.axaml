@@ -293,8 +293,9 @@
               <TextBlock Grid.Row="1" Text="Background" VerticalAlignment="Center" />
               <Border Grid.Row="1" Grid.Column="1" Classes="seg" HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal">
-                  <RadioButton Classes="seg" Content="Dark" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
-                  <RadioButton Classes="seg" Content="White" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                  <RadioButton Classes="seg" Content="Follow the theme" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                  <RadioButton Classes="seg" Content="Dark" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                  <RadioButton Classes="seg" Content="White" GroupName="bg" IsChecked="{Binding SetBackground, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
                 </StackPanel>
               </Border>
               <TextBlock Grid.Row="2" Text="Outlines" VerticalAlignment="Center" />

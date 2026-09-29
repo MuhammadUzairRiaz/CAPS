@@ -46,7 +46,9 @@ public sealed partial class MainViewModel
         (DisplayUnits.Energy, DisplayUnits.Length, DisplayUnits.Pressure, DisplayUnits.Time) = (_settings.UnitEnergy, _settings.UnitLength, _settings.UnitPressure, _settings.UnitTime);
         DisplayUnits.Density = _settings.UnitSystem == 1 ? "kg/m³" : "g/cm³";
         try { Native.SetPalette(_settings.Palette); Native.SetThreads(_settings.Threads); ApplyElectrostatics(); } catch { /* an older core: defaults */ }
-        _viewBackground = _settings.Background; Raise(nameof(ViewBackground)); Raise(nameof(ViewIsLight));
+        _viewBgMode = _settings.ViewBackdrop switch { "dark" => 1, "white" => 2, _ => 0 };
+        Raise(nameof(ViewBackgroundMode)); Raise(nameof(ViewBgTheme)); Raise(nameof(ViewBgDark)); Raise(nameof(ViewBgWhite));
+        UpdateViewBackground();
         _outlines = _settings.Outlines; Raise(nameof(Outlines));
         _depthCue = _settings.DepthCue; Raise(nameof(DepthCue));
         _style = _settings.Style; Raise(nameof(StyleIndex)); Raise(nameof(StyleText));
@@ -106,11 +108,9 @@ public sealed partial class MainViewModel
         set
         {
             if (_settings.Theme == value) return;
-            // the view follows Paper (white) and Graphite (dark) when it still has the old theme's background
-            var wasLight = _settings.Theme == "light";
             _settings.Theme = value;
             Tokens.UseTheme(value);
-            if (value is "light" or "dark" && _settings.Background == (wasLight ? 1 : 0)) SetBackground = value == "light" ? 1 : 0;
+            UpdateViewBackground();   // a view that follows the theme turns with it
             Raise(); RenderRequested?.Invoke(); MolViewChanged?.Invoke(); Changed("Theme");
             if (IsColourVision) Avalonia.Threading.Dispatcher.UIThread.Post(CheckVision);   // status colours follow the theme
         }
@@ -169,7 +169,20 @@ public sealed partial class MainViewModel
     public decimal SetThreadsD { get => SetThreads; set => SetThreads = (int)value; }
     public string ThreadsText => _settings.Threads == 0 ? $"automatic: {Math.Min(16, Environment.ProcessorCount)} of {Environment.ProcessorCount}" : $"{_settings.Threads} of {Environment.ProcessorCount}";
 
-    public int SetBackground { get => _settings.Background; set { if (_settings.Background == value) return; _settings.Background = value; ViewBackground = value; Raise(); Changed("View background"); } }
+    /// <summary>The view's background as saved: 0 follows the theme, 1 dark, 2 white.</summary>
+    public int SetBackground
+    {
+        get => _settings.ViewBackdrop switch { "dark" => 1, "white" => 2, _ => 0 };
+        set
+        {
+            var v = Math.Clamp(value, 0, 2);
+            var s = v switch { 1 => "dark", 2 => "white", _ => "theme" };
+            if (_settings.ViewBackdrop == s) return;
+            _settings.ViewBackdrop = s;
+            ViewBackgroundMode = v;
+            Raise(); Changed("View background");
+        }
+    }
     public bool SetOutlines { get => _settings.Outlines; set { if (_settings.Outlines == value) return; _settings.Outlines = value; Outlines = value; Raise(); Changed("Outlines"); } }
     public bool SetDepthCue { get => _settings.DepthCue; set { if (_settings.DepthCue == value) return; _settings.DepthCue = value; DepthCue = value; Raise(); Changed("Depth cue"); } }
     /// <summary>Draw the Studio's 3D view on the GPU (OpenGL 3.3 / ES 3.0) where the machine has it; images and exports are

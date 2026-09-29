@@ -1925,9 +1925,10 @@
                     <StackPanel Spacing="4">
                       <TextBlock Text="Background" Classes="label" />
                       <Border Classes="seg">
-                        <UniformGrid Columns="2">
-                          <RadioButton Classes="seg" GroupName="vbg" Content="Dark" IsChecked="{Binding !ViewIsLight}" Click="OnViewBgDark" />
-                          <RadioButton Classes="seg" GroupName="vbg" Content="White (paper)" IsChecked="{Binding ViewIsLight}" Click="OnViewBgLight" />
+                        <UniformGrid Columns="3">
+                          <RadioButton Classes="seg" GroupName="vbg" Content="Theme" IsChecked="{Binding ViewBgTheme}" ToolTip.Tip="The view follows the Studio's theme (Graphite dark, Paper white; the system's when the theme follows it)" />
+                          <RadioButton Classes="seg" GroupName="vbg" Content="Dark" IsChecked="{Binding ViewBgDark}" />
+                          <RadioButton Classes="seg" GroupName="vbg" Content="White" IsChecked="{Binding ViewBgWhite}" ToolTip.Tip="Paper white, for figures" />
                         </UniformGrid>
                       </Border>
                     </StackPanel>
