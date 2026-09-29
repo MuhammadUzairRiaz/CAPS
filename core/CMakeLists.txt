@@ -59,6 +59,7 @@ add_library(caps_core STATIC
   src/moltemplate_export.cpp
   src/kremer_grest.cpp
   src/react_view.cpp
+  src/bond_react.cpp
   src/yaml.cpp
   src/recipe.cpp
   src/colourvision.cpp

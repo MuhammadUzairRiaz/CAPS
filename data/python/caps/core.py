@@ -167,7 +167,8 @@ def _declare(L: C.CDLL) -> None:
         "caps_hydrogen_plan": ([P, B, I], I), "caps_resolution_summary": ([P, S, B, I], I), "caps_resolution_convert": ([P, S, B, I], P),
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
-        "caps_react_summary": ([P, B, I], I),
+        "caps_react_summary": ([P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
+        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
@@ -492,6 +493,15 @@ class Document:
             raise _error()
         self.report = rep.value.decode()
         return self.report
+
+    def bond_react(self, templates, directory: str, **options) -> dict:
+        """The reactions as a LAMMPS fix bond/react set in directory (templates as for react()): STEM.data, STEM.in and
+        per template and environment _pre.mol, _post.mol, _map.txt, typed with the assigned force field before and after
+        the reaction. options: stem, radius, variants, keep_byproducts, between_chains, weights, nevery, temperature,
+        steps, seed. Returns {files, notes, variants, candidates, covered}."""
+        names = [templates] if isinstance(templates, str) else list(templates)
+        text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
+        return _json_call(lambda h, buf, n: library().caps_bond_react_export(h, _enc(text), _enc(directory), _enc(json.dumps(options)), buf, n), self._h)
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
@@ -1148,6 +1158,12 @@ def reaction_templates() -> list:
     buf = C.create_string_buffer(max(1, n + 1))
     library().caps_reaction_template(b"", buf, len(buf))
     return [x for x in buf.value.decode().split("\n") if x.strip()]
+
+
+def bond_react_template(pre: str, post: str, map: str, masses_from: str = "", name: str = "", capture: float = 0.0) -> dict:
+    """A LAMMPS fix bond/react set (pre- and post-reaction molecule files and the map file) as a CAPS reaction template:
+    {text, notes}; text goes to Document.react(). masses_from: a data file whose Masses give the elements."""
+    return _json_call(lambda buf, n: library().caps_bond_react_import(_enc(pre), _enc(post), _enc(map), _enc(masses_from), _enc(name), float(capture), buf, n))
 
 
 def reaction_template(name: str) -> str:

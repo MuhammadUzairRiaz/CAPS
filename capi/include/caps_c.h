@@ -285,6 +285,21 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
    chain_mass, density (mol/m³), per_chain, mc (g/mol), reactions, initial_sites, conversion, field, field_after,
    notes[]}. Returns the length needed or -1. */
 int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap);
+/* v45: the reactions as a LAMMPS fix bond/react set in dir: STEM.data (every type the reactions create, with its
+   coefficients), STEM.in (the force field's styles, the molecule templates, fix bond/react with stabilisation, NVT, the
+   reaction counts in thermo), and per template and chemical environment STEM_<name>_<k>_pre.mol, _post.mol, _map.txt —
+   cut from real reaction sites of the current frame and typed with the assigned force field before and after the
+   reaction (a complete assignment is needed). options JSON: {stem, radius (3 bonds), variants (6), keep_byproducts,
+   between_chains (molecule inter), weights [..], nevery (100), temperature (300), steps (100000), seed}. Report JSON
+   {files[], notes[], variants[{reaction, name, sites, pre_atoms, edge, deleted}], candidates, covered}. Returns the
+   length needed or -1. */
+int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* dir, const char* options, char* report, int32_t cap);
+/* v45: a LAMMPS fix bond/react set read back as a CAPS reaction template: pre- and post-reaction molecule files and the
+   map file (CAPS's or anyone's); masses_from: a data file whose Masses give the elements of numbered types (NULL when
+   the molecule files carry Masses or element-like type labels). JSON {text, notes[]}: text is the template for
+   caps_react (form, break, move, delete and byproducts from comparing the two templates). Returns the length or -1. */
+int32_t caps_bond_react_import(const char* pre, const char* post, const char* map, const char* masses_from, const char* name, double capture,
+                               char* json, int32_t cap);
 
 /* Force-field summary of the current frame (the Field assignment, else the built-in GAFF typing of C and H): types,
    term counts and energy terms, as text. Returns 0 or -1. */

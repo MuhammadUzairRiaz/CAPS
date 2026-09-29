@@ -868,6 +868,9 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   const ForceField& ff = metal ? mff : ff0;
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
+  const size_t na = st.write_atoms > 0 && st.write_atoms < s.atoms.size() ? st.write_atoms : s.atoms.size();
+  auto inside = [&](const std::vector<uint32_t>& t) { return std::all_of(t.begin(), t.end(), [&](uint32_t x) { return x < na; }); };
+  auto count_in = [&](const Kind* k) { size_t c = 0; for (const auto& t : k->term_atoms) c += inside(t); return c; };
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   if (!L.sw_types.empty()) write_sw_file(L, ff, sw_path(path));
@@ -877,10 +880,10 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
 
   // the LAMMPS data format: one title line, the counts, the box, then the sections (atom_style full, units real)
   out << "CAPS · " << clean_title(s.title, ff.name) << " · " << ff.name << (metal ? " · units metal (eV)" : "") << "\n\n";
-  out << s.atoms.size() << " atoms\n";
+  out << na << " atoms\n";
   const char* plural[] = {"bonds", "angles", "dihedrals", "impropers"};
   for (int k = 0; k < 4; ++k)
-    if (!kinds[size_t(k)]->term_type.empty()) out << kinds[size_t(k)]->term_type.size() << " " << plural[k] << "\n";
+    if (!kinds[size_t(k)]->term_type.empty()) out << count_in(kinds[size_t(k)]) << " " << plural[k] << "\n";
   out << "\n" << ff.type_names.size() << " atom types\n";
   const char* tnames[] = {"bond", "angle", "dihedral", "improper"};
   for (int k = 0; k < 4; ++k)
@@ -940,7 +943,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   // molecule ids: the file's own, else the bonded fragments (a PDB's chain ids are not molecules)
   std::vector<int> frag;
   if (!s.has_mol) frag = s.molecules();
-  for (size_t i = 0; i < s.atoms.size(); ++i) {
+  for (size_t i = 0; i < na; ++i) {
     const auto& at = s.atoms[i];
     const Vec3 fr = c.valid() ? c.to_fractional(at.pos) : Vec3{0, 0, 0};
     int im[3] = {0, 0, 0};
@@ -952,7 +955,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   }
   if (s.velocities.size() == s.atoms.size()) {
     out << "\nVelocities\n\n";
-    for (size_t i = 0; i < s.atoms.size(); ++i) {
+    for (size_t i = 0; i < na; ++i) {
       std::snprintf(buf, sizeof buf, "%zu %.8f %.8f %.8f\n", i + 1, s.velocities[i][0], s.velocities[i][1], s.velocities[i][2]);
       out << buf;
     }
@@ -960,14 +963,32 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   const char* sections[] = {"Bonds", "Angles", "Dihedrals", "Impropers"};
   for (int k = 0; k < 4; ++k) {
     const Kind* kd = kinds[size_t(k)];
-    if (kd->term_type.empty()) continue;
+    if (kd->term_type.empty() || count_in(kd) == 0) continue;
     out << "\n" << sections[k] << "\n\n";
+    size_t id = 0;
     for (size_t q = 0; q < kd->term_type.size(); ++q) {
-      out << q + 1 << " " << kd->term_type[q];
+      if (!inside(kd->term_atoms[q])) continue;
+      out << ++id << " " << kd->term_type[q];
       for (uint32_t x : kd->term_atoms[q]) out << " " << x + 1;
       out << "\n";
     }
   }
+}
+
+LammpsTerms lammps_terms(const System& s, const ForceField& ff0, const EnergyOptions& e0, const LammpsStyle& st) {
+  const bool metal = lammps_metal_units(ff0, st);
+  const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
+  const ForceField& ff = metal ? mff : ff0;
+  EnergyOptions e = e0;
+  const Layout L = prepare(s, ff, e, st);
+  LammpsTerms t;
+  for (size_t i = 0; i < s.atoms.size(); ++i) t.atom_type.push_back(ff.type_index[i] + 1);
+  t.type_names = ff.type_names;
+  const std::pair<const Kind*, std::vector<std::pair<int, std::vector<uint32_t>>>*> kinds[] = {
+      {&L.bonds, &t.bonds}, {&L.angles, &t.angles}, {&L.dihedrals, &t.dihedrals}, {&L.impropers, &t.impropers}};
+  for (auto [k, out] : kinds)
+    for (size_t q = 0; q < k->term_type.size(); ++q) out->push_back({k->term_type[q], k->term_atoms[q]});
+  return t;
 }
 
 // fix shake on the bonds CAPS constrains: to hydrogen by mass (and water's H–O–H angle by its type), or every bond type
