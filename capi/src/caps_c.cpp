@@ -145,6 +145,7 @@ struct caps_doc {
   std::unique_ptr<FieldState> field;
   std::string analysis;   // last caps_analyze result (JSON)
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
+  std::string react_json; // last caps_react network summary (JSON)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
   std::vector<uint32_t> fixed_atoms;   // v36: atoms held in place besides the held molecule (frame indices)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
@@ -2445,6 +2446,61 @@ int32_t caps_reaction_template(const char* name, char* out, int32_t cap) {
   });
 }
 
+// The Field assignment of d re-run on another structure (a reaction's product): the same force field, typing rules,
+// imported parameters and charge choice; types set by hand are dropped (the atoms are renumbered). Throws with what is
+// untyped or missing when the force field cannot describe the product.
+std::unique_ptr<FieldState> field_on(const caps_doc* d, const caps::System& s) {
+  caps_doc t;
+  t.traj.topology = s;
+  t.traj.topology.source_format.clear();
+  std::vector<caps::Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  t.traj.positions.push_back(std::move(p));
+  t.traj.cells.push_back(s.cell);
+  t.traj.timesteps.push_back(0);
+  t.frame = s;
+  t.field = std::make_unique<FieldState>(*d->field);
+  t.field->overrides.clear();
+  t.field->file_types.clear();
+  t.field->file_charges.clear();
+  field_run(&t);
+  return std::move(t.field);
+}
+
+std::shared_ptr<const caps::ForceField> field_for_product(const caps_doc* d, const caps::System& s) {
+  const auto F = field_on(d, s);
+  if (!F->complete) {
+    std::map<std::string, int> untyped;
+    for (size_t i = 0; i < F->types.size() && i < s.atoms.size(); ++i)
+      if (F->types[i].empty()) ++untyped[std::string(caps::element(s.atoms[i].element).symbol)];
+    std::string why;
+    for (const auto& [el, k] : untyped) why += (why.empty() ? "" : ", ") + std::to_string(k) + " " + el;
+    if (!why.empty()) why = "untyped atoms: " + why;
+    for (size_t k = 0; k < F->rep.missing.size() && k < 4; ++k) why += (why.empty() ? "missing " : "; missing ") + F->rep.missing[k];
+    if (F->rep.missing.size() > 4) why += " (" + std::to_string(F->rep.missing.size()) + " terms missing in all)";
+    throw caps::FieldError(why.empty() ? "the assignment is incomplete" : why);
+  }
+  return F->ff;
+}
+
+std::vector<double> number_list(const char* text) {
+  std::vector<double> v;
+  std::string t = text ? text : "";
+  for (auto& c : t) if (c == ',' || c == ';') c = ' ';
+  std::istringstream is(t);
+  for (std::string w; is >> w;) {
+    try { v.push_back(std::stod(w)); } catch (const std::exception&) { throw std::invalid_argument("weights: '" + w + "' is not a number"); }
+  }
+  return v;
+}
+
+int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap) {
+  return guard([&] {
+    if (d->react_json.empty()) throw std::runtime_error("no reaction run on this structure yet");
+    return report_out(d->react_json, json, cap);
+  });
+}
+
 int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o, caps_react_progress_fn progress, void* user, char* report,
                    int32_t cap) {
   return guard([&] {
@@ -2464,10 +2520,30 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
     r.energy.coulomb = o->coulomb != 0;
     r.energy = elec(r.energy);
+    r.between_chains = o->between_chains != 0;
+    r.keep_byproducts = o->keep_byproducts != 0;
+    r.selection = std::clamp(o->selection, 0, 1);
+    r.weights = number_list(o->weights);
+    if (!r.weights.empty() && r.weights.size() != r.templates.size())
+      throw std::invalid_argument("weights: " + std::to_string(r.weights.size()) + " given for " + std::to_string(r.templates.size()) + " templates");
+    for (double w : r.weights) if (w <= 0) throw std::invalid_argument("weights must be > 0");
+    r.auto_capture = o->auto_capture != 0;
+    if (o->capture_max > 0) r.capture_max = o->capture_max;
+    if (o->capture_step > 0) r.capture_step = o->capture_step;
+    if (o->target_kind < 0 || o->target_kind > 4) throw std::invalid_argument("target_kind: 0 conversion … 4 Mc");
+    r.target = caps::ReactTarget(o->target_kind);
+    r.target_value = o->target_value;
+    // the user's force field for every state of the network (a complete assignment is needed from the start)
+    const bool use_field = o->field_mode == 0 && d->field;
+    if (use_field) {
+      if (!d->field->complete) throw caps::FieldError("the assigned force field is incomplete for this structure: complete it in the Force field step, or run with the built-in default");
+      r.retype = [d](const caps::System& x) { return field_for_product(d, x); };
+      r.field_name = ff_label(d);
+    }
     if (progress)
       r.progress = [&](const caps::CycleRow& c) {
         caps_react_cycle row{c.cycle, c.reactions, c.total, c.clusters.clusters, c.atoms, c.conversion, c.clusters.largest_fraction,
-                             c.clusters.reduced_mw, c.energy, c.max_force};
+                             c.clusters.reduced_mw, c.energy, c.max_force, c.crosslinks, c.capture};
         return progress(&row, user) == 0;
       };
     caps::System s = d->traj.frame(d->current);
@@ -2510,10 +2586,51 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       out.cells.push_back(s.cell);
       out.timesteps.push_back(0);
     }
-    d->field.reset();   // new topology: the Field assignment no longer applies
+    // the Field assignment follows the new topology: re-run on the product (types, charges and parameters of the new
+    // bonds); without one, or with the built-in default chosen, there is none
+    std::unique_ptr<FieldState> kept = use_field ? std::make_unique<FieldState>(*d->field) : nullptr;
+    d->field.reset();
     d->traj = std::move(out);
     d->current = d->traj.frames() - 1;
     refresh(d);
+    std::string after = "none (assign one in the Force field step)";
+    if (kept) {
+      kept->overrides.clear();
+      kept->file_types.clear();
+      kept->file_charges.clear();
+      d->field = std::move(kept);
+      try {
+        field_run(d);
+        after = ff_label(d) + (d->field->complete ? " · complete" : " · incomplete: see the Force field step");
+      } catch (const std::exception& e) {
+        after = std::string("could not re-assign: ") + e.what();
+        d->field.reset();
+      }
+      rep.notes.push_back("force field after the run: " + after);
+      refresh(d);
+    }
+    {
+      caps::Json j;
+      j["chains"] = double(rep.chains);
+      j["crosslinks"] = double(rep.crosslinks);
+      j["intrachain"] = double(rep.intrachain);
+      j["byproducts"] = double(rep.byproducts);
+      j["target"] = double(rep.target_crosslinks);
+      j["volume"] = rep.volume;
+      j["chain_mass"] = rep.chain_mass;
+      j["density"] = rep.density;
+      j["per_chain"] = rep.per_chain;
+      j["mc"] = rep.mc;
+      j["reactions"] = double(rep.reactions);
+      j["initial_sites"] = double(rep.initial_sites);
+      j["conversion"] = rep.cycles.empty() ? 0.0 : rep.cycles.back().conversion;
+      j["field"] = rep.field;
+      j["field_after"] = after;
+      caps::Json notes = caps::Json::array();
+      for (const auto& n : rep.notes) notes.push_back(n);
+      j["notes"] = notes;
+      d->react_json = j.dump();
+    }
     if (report && cap > 0) {
       std::string t;
       for (const auto& n : rep.notes) t += n + "\n";

@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 44, "native ABI version 44");
+        Check(Native.AbiVersion() == 45, "native ABI version 45");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2197,9 +2197,9 @@ internal static class SelfTest
             var breakAdded = vm.TemplateText.Contains("break 1 3");   // (H3 is deleted: the drawing shows 1–3 gone either way)
             vm.ToggleTemplateBond(3, 1);
             vm.ToggleTemplateBond(2, 1);
-            var formGone = !vm.TemplateText.Contains("break 1 3") && !vm.TemplateText.Contains("form 1 2") && vm.TemplateFormed.Count == 0;
+            var formGone = !vm.TemplateText.Contains("break 1 3") && !vm.TemplateText.Contains("form 1 2") && vm.TemplateFormed.Count == 1;   // H3–H4 (the H2 byproduct) stays
             vm.ToggleTemplateBond(1, 2);
-            Check(breakAdded && formGone && vm.TemplateText.Contains("form 1 2") && vm.TemplateFormed.Count == 1, $"template drags: break added {breakAdded} · form taken out {formGone}");
+            Check(breakAdded && formGone && vm.TemplateText.Contains("form 1 2") && vm.TemplateFormed.Count == 2, $"template drags: break added {breakAdded} · form taken out {formGone}");
             vm.TemplateCharges = 1;
             var keptLine = vm.TemplateText.Contains("charges keep") && vm.TemplateCharges == 1;
             var tplSaved = vm.SaveTemplate();

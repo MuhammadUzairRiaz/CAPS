@@ -110,7 +110,10 @@ class _MdOpts(C.Structure):
 class _ReactOpts(C.Structure):
     _fields_ = [("seed", C.c_uint64), ("max_cycles", C.c_int32), ("max_per_cycle", C.c_int32), ("target_conversion", C.c_double),
                 ("capture", C.c_double), ("relax", C.c_int32), ("relax_iterations", C.c_int32), ("md_ps", C.c_double),
-                ("temperature", C.c_double), ("cutoff", C.c_double), ("coulomb", C.c_int32), ("during_md", C.c_int32)]
+                ("temperature", C.c_double), ("cutoff", C.c_double), ("coulomb", C.c_int32), ("during_md", C.c_int32),
+                ("field_mode", C.c_int32), ("between_chains", C.c_int32), ("keep_byproducts", C.c_int32), ("selection", C.c_int32),
+                ("weights", C.c_char_p), ("auto_capture", C.c_int32), ("capture_max", C.c_double), ("capture_step", C.c_double),
+                ("target_kind", C.c_int32), ("target_value", C.c_double)]
 
 
 class _BuildOpts(C.Structure):
@@ -164,6 +167,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_hydrogen_plan": ([P, B, I], I), "caps_resolution_summary": ([P, S, B, I], I), "caps_resolution_convert": ([P, S, B, I], P),
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
+        "caps_react_summary": ([P, B, I], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
@@ -460,23 +464,39 @@ class Document:
         self.report = rep.value.decode()
         return self.report
 
+    _TARGETS = {"conversion": 0, "crosslinks": 1, "per_chain": 2, "density": 3, "mc": 4}
+
     def react(self, templates, cycles: int = 50, per_cycle: int = 5, target: float = 1.0, capture: float = 0.0, relax: bool = True,
               relax_iterations: int = 500, md_ps: float = 0.0, temperature: float = 500.0, cutoff: float = 10.0, seed: int = 1,
-              during_md: bool = False) -> str:
+              during_md: bool = False, between_chains: bool = False, keep_byproducts: bool = False, weights=None,
+              auto_capture: bool = False, capture_max: float = 0.0, capture_step: float = 0.0, crosslinks=None,
+              default_field: bool = False) -> str:
         """Crosslinks the current frame cycle by cycle (Polymatic-style; REACTER-style capture and probability) with
         reaction templates: built-in names ("cc_crosslink", "sulfur_allylic", "peroxide_allylic", "polysulfide_allylic",
-        "epoxy_amine_primary", …; see reaction_templates()) or template text, one or a list. target is the conversion to
-        stop at (0 … 1); relax minimises after each cycle, md_ps runs NVT at temperature between cycles. The force-field
-        assignment is cleared (the topology changed): assign again to type the network. Returns the report."""
+        "epoxy_amine_primary", "enr_acid_ester", "ester_condensation", "anhydride_alcohol", …; see reaction_templates()) or
+        template text, one or a list. target is the conversion to stop at (0 … 1); crosslinks=("per_chain", 1.5) (or
+        "crosslinks", "density" in mol/m³, "mc" in g/mol) stops at a number of links between chains instead.
+        between_chains: bonds only between different chains; keep_byproducts: H2 / H2O stay as molecules; weights: one
+        relative rate per template (else the closest pairs first); auto_capture widens the capture when no pair is found.
+        The assigned force field types and relaxes every cycle and is re-assigned to the product (default_field=True:
+        the built-in default, the assignment dropped). Returns the report; network numbers in react_summary()."""
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
+        kind, value = (0, 0.0) if crosslinks is None else (self._TARGETS[crosslinks[0]], float(crosslinks[1]))
         o = _ReactOpts(int(seed), int(cycles), int(per_cycle), float(target), float(capture), int(relax), int(relax_iterations),
-                       float(md_ps), float(temperature), float(cutoff), 1, int(during_md))
+                       float(md_ps), float(temperature), float(cutoff), 1, int(during_md), int(default_field), int(between_chains),
+                       int(keep_byproducts), 1 if weights else 0, _enc(",".join(str(w) for w in weights) if weights else ""),
+                       int(auto_capture), float(capture_max), float(capture_step), kind, value)
         rep = _report()
         if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
         self.report = rep.value.decode()
         return self.report
+
+    def react_summary(self) -> dict:
+        """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
+        per_chain, mc (g/mol), byproducts, the force field during and after the run."""
+        return _json_call(library().caps_react_summary, self._h)
 
     # editing, selection, analysis
     def edit(self, **op) -> dict:
