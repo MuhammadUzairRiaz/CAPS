@@ -1366,6 +1366,20 @@ internal static class SelfTest
             vm.FillToDensity();
             Check(vm.PackText.Contains("number 257") && vm.FillText.StartsWith("257 ×"), $"fill to density: {vm.FillText}");
             vm.PackStart = 0;
+            // the Python console: doc = the open structure; a line runs; doc comes back as a new structure
+            {
+                vm.StartConsole();
+                bool Wait(string what) { for (var t = 0; t < 150; ++t) { if (vm.ConsoleText.Contains(what)) return true; Thread.Sleep(100); } return false; }
+                var started = Wait("1300 atoms)");
+                vm.ConsoleInput = "print('elements', sorted(set(doc.atom_labels('element'))))";
+                vm.ConsoleRun();
+                var ran = Wait("elements ['C', 'H']");
+                var itemsBefore = vm.ProjectItems.Count;
+                vm.ConsoleOpenDoc().GetAwaiter().GetResult();
+                var docBack = vm.ProjectItems.Count == itemsBefore + 1;
+                vm.StopConsole();
+                Check(started && ran && docBack, $"python console: started {started} · ran {ran} · doc back {docBack} · {vm.ConsoleText.Trim().Split('\n').LastOrDefault()}");
+            }
             vm.SetModule(8);
         }
 
