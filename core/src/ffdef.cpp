@@ -2568,6 +2568,47 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
          std::to_string(s.atoms.size()) + " sites)" + (how.empty() ? "" : "; " + how + " charges computed on the all-atom structure and summed into each site");
 }
 
+std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff) {
+  const size_t n = s.atoms.size();
+  std::vector<std::set<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) nb[b.i].insert(b.j), nb[b.j].insert(b.i);
+  auto in_ring3 = [&](uint32_t i, uint32_t j, uint32_t k) { return nb[i].count(k) > 0; };   // i-j-k with i–k bonded: a triangle
+  auto theta = [&](uint32_t i, uint32_t j, uint32_t k) {
+    Vec3 u = s.atoms[i].pos - s.atoms[j].pos, v = s.atoms[k].pos - s.atoms[j].pos;
+    if (s.cell.valid()) u = s.cell.minimum_image(u), v = s.cell.minimum_image(v);
+    return std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0));
+  };
+  constexpr double kDegree = 3.14159265358979323846 / 180.0;
+  int bad = 0;
+  double worst = 0, energy = 0;
+  std::set<std::vector<uint32_t>> rings;
+  auto look = [&](uint32_t i, uint32_t j, uint32_t k, double th0, double e) {
+    if (!in_ring3(i, j, k) || std::fabs(th0 - 60.0 * kDegree) < 15.0 * kDegree) return;
+    ++bad;
+    worst = std::max(worst, th0);
+    energy += e;
+    std::vector<uint32_t> r{i, j, k};
+    std::sort(r.begin(), r.end());
+    rings.insert(r);
+  };
+  for (const auto& a : ff.angles) {
+    const double d = theta(a.i, a.j, a.k) - a.theta0;
+    look(a.i, a.j, a.k, a.theta0, a.kt * d * d);
+  }
+  for (const auto& a : ff.angles2) {
+    const double d = theta(a.i, a.j, a.k) - a.theta0;
+    look(a.i, a.j, a.k, a.theta0, a.k2 * d * d + a.k3 * d * d * d + a.k4 * d * d * d * d);
+  }
+  if (!bad) return {};
+  char b[520];
+  std::snprintf(b, sizeof b,
+                "%d angle terms in %zu three-membered rings (epoxides, …) have θ0 up to %.1f° where the ring's angles are about 60°: %s gives "
+                "them general parameters, about %.0f kcal/mol of strain per ring at this geometry — unphysical for the unreacted rings. For "
+                "epoxidised rubber use a force field with three-ring parameters (GAFF cx/op, OPLS 2005 C3T/O3T), or import ring parameters",
+                bad, rings.size(), worst / kDegree, ff.name.c_str(), energy / double(rings.size()));
+  return {b};
+}
+
 }  // namespace caps
 
 namespace caps {
