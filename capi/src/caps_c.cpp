@@ -45,6 +45,7 @@
 #include "caps/kspace.hpp"
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
+#include "caps/bond_react.hpp"
 #include "caps/react.hpp"
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
@@ -2446,6 +2447,10 @@ int32_t caps_reaction_template(const char* name, char* out, int32_t cap) {
   });
 }
 
+}  // extern "C": C++ helpers
+
+namespace {
+
 // The Field assignment of d re-run on another structure (a reaction's product): the same force field, typing rules,
 // imported parameters and charge choice; types set by hand are dropped (the atoms are renumbered). Throws with what is
 // untyped or missing when the force field cannot describe the product.
@@ -2494,10 +2499,74 @@ std::vector<double> number_list(const char* text) {
   return v;
 }
 
+}  // namespace
+
+extern "C" {
+
 int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap) {
   return guard([&] {
     if (d->react_json.empty()) throw std::runtime_error("no reaction run on this structure yet");
     return report_out(d->react_json, json, cap);
+  });
+}
+
+int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* dir, const char* options, char* report, int32_t cap) {
+  return guard([&] {
+    if (!d->field || !d->field->ff) throw std::runtime_error("assign a force field first (Force field step): the templates are typed with it");
+    if (!d->field->complete) throw std::runtime_error("the force field is incomplete for this structure: complete it in the Force field step");
+    const caps::Json o = caps::Json::parse(options && *options ? options : "{}");
+    auto flag = [&](const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
+    const std::string stem = o.text("stem", "react");
+    if (stem.empty() || stem.find('/') != std::string::npos || stem.find('\\') != std::string::npos) throw std::runtime_error("the file stem must be a plain name");
+    caps::BondReactOptions b;
+    b.radius = std::clamp(int(o.num("radius", 3)), 1, 8);
+    b.max_variants = std::clamp(int(o.num("variants", 6)), 1, 50);
+    b.keep_byproducts = flag("keep_byproducts", false);
+    b.between_chains = flag("between_chains", false);
+    if (o.has("weights") && o["weights"].is_array())
+      for (const auto& w : o["weights"].items()) b.weights.push_back(w.number());
+    b.nevery = std::max(1, int(o.num("nevery", 100)));
+    b.temperature = o.num("temperature", 300);
+    b.steps = std::max<int64_t>(1, int64_t(o.num("steps", 100000)));
+    b.seed = uint64_t(std::max(1.0, o.num("seed", 12345)));
+    b.energy = elec(caps::EnergyOptions{});
+    caps::System s = d->frame;
+    const auto t = caps::parse_templates(templates ? templates : "");
+    const auto r = caps::write_bond_react(s, t, [d](const caps::System& x) { return field_for_product(d, x); }, dir ? dir : ".", stem, b);
+    caps::Json j = caps::Json::object();
+    caps::Json files = caps::Json::array(), notes = caps::Json::array(), vars = caps::Json::array();
+    for (const auto& f : r.files) files.push_back(f);
+    for (const auto& n : r.notes) notes.push_back(n);
+    for (const auto& v : r.variants) {
+      caps::Json x = caps::Json::object();
+      x["reaction"] = v.reaction;
+      x["name"] = v.name;
+      x["sites"] = double(v.sites);
+      x["pre_atoms"] = double(v.pre_atoms);
+      x["edge"] = double(v.edge);
+      x["deleted"] = double(v.deleted);
+      vars.push_back(x);
+    }
+    j["files"] = files;
+    j["notes"] = notes;
+    j["variants"] = vars;
+    j["candidates"] = double(r.candidates);
+    j["covered"] = double(r.covered);
+    return report_out(j.dump(), report, cap);
+  });
+}
+
+int32_t caps_bond_react_import(const char* pre, const char* post, const char* map, const char* masses_from, const char* name, double capture,
+                               char* json, int32_t cap) {
+  return guard([&] {
+    std::vector<std::string> notes;
+    const auto t = caps::read_bond_react(pre ? pre : "", post ? post : "", map ? map : "", masses_from ? masses_from : "", name ? name : "", capture, &notes);
+    caps::Json j = caps::Json::object();
+    j["text"] = caps::template_text(t);
+    caps::Json n = caps::Json::array();
+    for (const auto& x : notes) n.push_back(x);
+    j["notes"] = n;
+    return report_out(j.dump(), json, cap);
   });
 }
 

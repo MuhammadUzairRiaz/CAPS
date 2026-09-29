@@ -131,6 +131,9 @@ struct LammpsStyle {
   double cutoff = 0;              // native: Å; 0 the force field's
   double kspace_accuracy = 1e-4;  // native: relative accuracy of PPPM / Ewald
   int tail = -1;                  // native: 1 pair_modify tail yes, 0 no, −1 as the energy options say
+  // > 0: the data file holds only the first write_atoms atoms (and the terms among them) while its type and coefficient
+  // tables cover the whole system — a fix bond/react cell whose post-reaction types come from a reacted copy appended
+  size_t write_atoms = 0;
   // LAMMPS units: real (kcal/mol, fs, atm), metal (eV, ps, bar: every energy parameter divided by 23.060549, LAMMPS's own
   // factor), or auto: metal when the force field has a many-body potential LAMMPS reads in metal units only (AIREBO,
   // REBO), else real
@@ -146,6 +149,14 @@ ForceField forcefield_in_metal_units(const ForceField& ff);
 
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true,
                           const LammpsStyle& style = {});
+// The numbering a LAMMPS data file of s would use (1-based): each atom's type, and every bond, angle, dihedral and
+// improper with its type — for molecule templates that must agree with the data file.
+struct LammpsTerms {
+  std::vector<int> atom_type;
+  std::vector<std::pair<int, std::vector<uint32_t>>> bonds, angles, dihedrals, impropers;
+  std::vector<std::string> type_names;
+};
+LammpsTerms lammps_terms(const System& s, const ForceField& ff, const EnergyOptions& e, const LammpsStyle& style = {});
 // The same, or the structure alone (atoms, types, charges, bonds; no coefficients) when LAMMPS has no form for the force
 // field (Martini 3's reaction field and virtual sites): returns why, or "" when the coefficients were written.
 std::string write_lammps_data_or_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path);

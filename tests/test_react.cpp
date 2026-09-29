@@ -7,6 +7,11 @@
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
+#include "caps/bond_react.hpp"
+#include "caps/uff.hpp"
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include "caps/polymer.hpp"
 #include "caps/molecule.hpp"
 #include "caps/grow.hpp"
@@ -602,4 +607,47 @@ TEST(React, EpoxideAcidEsterAndAnhydrideChemistry) {
     EXPECT_EQ(f.at("C5H6O4"), r.reactions);   // monomethyl maleate: one ester, one COOH
     EXPECT_EQ(f.count("H2O"), 0u);
   }
+}
+
+// fix bond/react: templates cut from a cell and typed with its force field, then read back as a CAPS template that
+// crosslinks another cell; the data file keeps only the cell's atoms while holding every type the reaction creates
+TEST(React, BondReactExportAndImport) {
+  System s = pe_cell(6, 10, 13);
+  const auto dir = (std::filesystem::temp_directory_path() / "caps_bond_react_test").string();
+  std::filesystem::remove_all(dir);
+  BondReactOptions bo;
+  bo.max_variants = 2;
+  auto gaff = [](const System& x) { return std::make_shared<const ForceField>(assign_gaff(x)); };
+  const auto rep = write_bond_react(s, parse_templates(builtin_template("cc_crosslink")), gaff, dir, "rx", bo);
+  ASSERT_GE(rep.variants.size(), 1u);
+  EXPECT_GT(rep.candidates, 0);
+  EXPECT_LE(rep.covered, rep.candidates);
+  // the data file: the cell's atoms only
+  {
+    std::ifstream in(dir + "/rx.data");
+    std::string line;
+    std::getline(in, line);
+    std::getline(in, line);
+    std::getline(in, line);
+    EXPECT_EQ(line, std::to_string(s.atoms.size()) + " atoms");
+  }
+  const std::string v = dir + "/rx_" + rep.variants[0].name;
+  std::ifstream map(v + "_map.txt");
+  std::stringstream ms;
+  ms << map.rdbuf();
+  EXPECT_NE(ms.str().find("InitiatorIDs"), std::string::npos);
+  EXPECT_NE(ms.str().find("2 deleteIDs"), std::string::npos);   // the two hydrogens (H2 removed)
+  std::vector<std::string> notes;
+  const ReactionTemplate t = read_bond_react(v + "_pre.mol", v + "_post.mol", v + "_map.txt", dir + "/rx.data", "back", 3.0, &notes);
+  EXPECT_EQ(t.form.size(), 1u);
+  EXPECT_EQ(t.remove.size(), 2u);
+  System s2 = pe_cell(6, 10, 17);
+  ReactOptions o;
+  o.templates = {t};
+  o.relax = false;
+  o.max_cycles = 3;
+  ReactReport r;
+  react(s2, o, &r);
+  EXPECT_GT(r.reactions, 0);
+  std::filesystem::remove_all(dir);
 }
