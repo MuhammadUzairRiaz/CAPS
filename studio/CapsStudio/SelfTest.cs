@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 46, "native ABI version 46");
+        Check(Native.AbiVersion() == 47, "native ABI version 47");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -132,6 +132,18 @@ internal static class SelfTest
             vm.Field.Assign().GetAwaiter().GetResult();
             Check(vm.Field.Assigned && vm.Field.Complete, $"Field: {vm.Field.ForceFieldName} · {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
             Check(vm.Field.Swatches.Select(x => x.Name).OrderBy(x => x).SequenceEqual(["c3", "ca", "ha", "hc"]), "polystyrene types c3 ca ha hc: " + string.Join(" ", vm.Field.Swatches.Select(x => x.Label)));
+            // the mixing rule in place of the force field's own (Dynamics › Mixing), and back
+            {
+                var own = vm.Field.MixingRule;
+                vm.Field.MixingIndex = 2;
+                for (var k = 0; k < 400 && vm.Field.Working; ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                var geo = vm.Field.MixingRule;
+                var noted = vm.Field.Log.Contains("geometric") || vm.Document!.FieldReport().Contains("mixing rule geometric in place of");
+                vm.Field.MixingIndex = 0;
+                for (var k = 0; k < 400 && vm.Field.Working; ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                Check(own.StartsWith("Lorentz") && geo.StartsWith("geometric") && noted && vm.Field.MixingRule == own && vm.Field.MixingIndex == 0,
+                      $"mixing override: {own} → {geo} → {vm.Field.MixingRule}");
+            }
             vm.Field.SelectAtom(0);
             Check(vm.Field.WhyText.StartsWith("Rule "), "why: " + vm.Field.WhyText);
             var typedAs = vm.Document!.Atom(0).Type;
