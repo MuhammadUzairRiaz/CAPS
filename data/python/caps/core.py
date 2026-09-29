@@ -889,7 +889,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             lengths: Optional[dict] = None, chain_dp: Optional[list] = None, architecture: str = "linear",
             arms: Optional[int] = None, arm_dp: Optional[int] = None, spacing: Optional[int] = None,
             branch_probability: Optional[float] = None, generations: Optional[int] = None, region: Optional[dict] = None,
-            method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None, lookahead: int = 1) -> Document:
+            method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None, lookahead: int = 1,
+            head_cap: str = "", tail_cap: str = "") -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
@@ -902,7 +903,9 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     film, {"shape": "cylinder" | "around_cylinder", "radius": 10} chains in or around a cylinder along z. method: "trials"
     (the roomiest of k trials), "rosenbluth" (a trial drawn by its Boltzmann weight: soft spheres and butane torsions) or
     "rosenbluth_lj" (the same with UFF Lennard-Jones), at method_temperature (K). orientation={"axis": "z", "strength": 4}
-    grows oriented chains (an aligning field −s P₂ in kT on each unit's backbone chord; the report gives ⟨P₂⟩)."""
+    grows oriented chains (an aligning field −s P₂ in kT on each unit's backbone chord; the report gives ⟨P₂⟩).
+    head_cap / tail_cap: end groups in place of the end hydrogens (hydrogen, methyl, ethyl, tert-butyl, sec-butyl, phenyl,
+    hydroxyl, carboxyl, vinyl, amine, or a SMILES with one *), bonded to the atom at the unit's first / second *."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     # the sequence follows from what is given (a pattern, blocks, weights); several units with none of them is a mistake,
     # not a homopolymer of the first
@@ -921,7 +924,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
          "grow": {"density": density if density is not None else (0.1 if chains == 1 else 0.5), "seed": seed, "trials": trials}}
-    for k, v in (("blocks", blocks), ("weights", weights), ("pattern", pattern), ("lengths", lengths), ("chain_dp", chain_dp)):
+    for k, v in (("blocks", blocks), ("weights", weights), ("pattern", pattern), ("lengths", lengths), ("chain_dp", chain_dp),
+                 ("head_cap", head_cap), ("tail_cap", tail_cap)):
         if v:
             r["build"]["polymer"][k] = v
     for k, v in (("r1", r1), ("r2", r2), ("pm", pm), ("p_mr", p_mr), ("p_rm", p_rm), ("arms", arms), ("arm_dp", arm_dp),

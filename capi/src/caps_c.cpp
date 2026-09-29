@@ -4299,6 +4299,30 @@ extern "C" int32_t caps_unit_info(const char* smiles, char* json, int32_t cap) {
   return report_out(j.dump(), json, cap);
 }
 
+namespace {
+// Hill formulas as element counts and back (C, H first; alphabetical without carbon)
+std::map<std::string, int> formula_counts(const std::string& f) {
+  std::map<std::string, int> n;
+  for (size_t i = 0; i < f.size();) {
+    if (!std::isupper(static_cast<unsigned char>(f[i]))) { ++i; continue; }
+    std::string e(1, f[i++]);
+    while (i < f.size() && std::islower(static_cast<unsigned char>(f[i]))) e += f[i++];
+    int k = 0;
+    while (i < f.size() && std::isdigit(static_cast<unsigned char>(f[i]))) k = 10 * k + (f[i++] - '0');
+    n[e] += k ? k : 1;
+  }
+  return n;
+}
+std::string hill(const std::map<std::string, int>& n) {
+  std::string out;
+  auto put = [&](const std::string& e) { const auto it = n.find(e); if (it != n.end() && it->second > 0) out += e + (it->second > 1 ? std::to_string(it->second) : ""); };
+  const bool carbon = n.count("C") && n.at("C") > 0;
+  if (carbon) { put("C"); put("H"); }
+  for (const auto& [e, k] : n) if (!(carbon && (e == "C" || e == "H"))) put(e);
+  return out;
+}
+}  // namespace
+
 extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char* json, int32_t cap) {
   caps::Json j = caps::Json::object();
   try {
@@ -4307,7 +4331,24 @@ extern "C" int32_t caps_chain_preview(const char* spec_json, uint64_t seed, char
     const auto seq = caps::chain_sequence(c, seed);
     const auto inv = caps::chain_inversions(c, seq.size(), seed);
     const caps::MolGraph g = caps::chain_graph(c, seq, inv);
-    const caps::MolInfo m = caps::molecule_info(g);
+    caps::MolInfo m = caps::molecule_info(g);
+    // end groups: each replaces an end hydrogen, so the chain gains (the group with * as H) − H₂
+    for (const std::string& end : {c.head_cap, c.tail_cap}) {
+      std::string sm = caps::chain_end_smiles(end);
+      if (sm.empty()) continue;
+      // the group with its * made a hydrogen: the * removed, its atom takes the implicit H ("*C(=O)O" → formic acid)
+      for (size_t at; (at = sm.find("(*)")) != std::string::npos;) sm.erase(at, 3);
+      sm.erase(std::remove(sm.begin(), sm.end(), '*'), sm.end());
+      caps::MolGraph eg = caps::parse_smiles(sm);
+      caps::add_hydrogens(eg);
+      const caps::MolInfo e = caps::molecule_info(eg);
+      auto n = formula_counts(m.formula);
+      for (const auto& [el, k] : formula_counts(e.formula)) n[el] += k;
+      n["H"] -= 2;
+      m.formula = hill(n);
+      m.mass += e.mass - 2 * caps::element(1).mass;
+      m.atoms += e.atoms - 2;
+    }
     caps::Json s = caps::Json::array(), r = caps::Json::array();
     for (int k : seq) s.push_back(double(k));
     for (char x : inv) r.push_back(double(x));

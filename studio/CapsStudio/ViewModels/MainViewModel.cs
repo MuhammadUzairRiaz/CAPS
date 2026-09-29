@@ -815,7 +815,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     // decimal views for NumericUpDown
     public decimal? GrowChainsD { get => _growChains; set { GrowChains = (int)(value ?? 1); Raise(); } }
-    public decimal? GrowDpD { get => _growDp; set { GrowDp = (int)(value ?? 2); Raise(); CompRefresh(); } }
+    public decimal? GrowDpD { get => _growDp; set { if (value == null) return; var before = _growDp; GrowDp = (int)value; Raise(); if (_growDp != before) PolyChanged(); } }   // an emptied box keeps the DP; the sequence strip and composition follow at once   // the sequence strip and composition follow at once
     public decimal? GrowSeedD { get => _growSeed; set { GrowSeed = (int)(value ?? 0); Raise(); } }
     public decimal? GrowDensityD { get => (decimal)_growDensity; set { GrowDensity = (double)(value ?? 0.4m); Raise(); } }
     public decimal? GrowBoxD { get => (decimal)_growBox; set { GrowBox = (double)(value ?? 0m); Raise(); } }

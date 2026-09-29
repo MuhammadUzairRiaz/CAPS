@@ -262,6 +262,7 @@
                       <ComboBox ItemsSource="{x:Static vm:MainViewModel.EndGroups}" SelectedIndex="{Binding HeadCap}" HorizontalAlignment="Stretch" ToolTip.Tip="The group on the chain's first unit (e.g. an initiator fragment); hydrogen by default" />
                       <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.EndGroups}" SelectedIndex="{Binding TailCap}" HorizontalAlignment="Stretch" ToolTip.Tip="The group on the chain's last unit" />
                     </Grid>
+                    <TextBlock Text="{Binding PolyEndsText}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <TextBlock Classes="dim" TextWrapping="Wrap"
