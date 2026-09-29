@@ -160,3 +160,19 @@ TEST(Cbmc, RecipeStage) {
   EXPECT_TRUE(step);
   EXPECT_NE(methods_text(res.manifest).find("configurational-bias Monte Carlo"), std::string::npos);
 }
+
+// Recipes build crystals, surfaces, nanostructures and solvent boxes
+TEST(Recipe, BuildCrystalSurfaceNanoSolvate) {
+  RecipeOptions o;
+  const std::string cif = std::string(CAPS_SOURCE_DIR) + "/data/crystals/";
+  const auto rut = run_recipe(yaml_parse("build: {crystal: {group: \"P 42/m n m\", cell: [4.594, 4.594, 2.959], sites: \"Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0\", "
+                                         "supercell: [2, 2, 3]}}\n"), o);
+  EXPECT_EQ(rut.system.atoms.size(), 72u);
+  const auto slab = run_recipe(yaml_parse("build: {surface: {cif: \"" + cif + "alpha-quartz.cif\", hkl: [0, 0, 1], layers: 3, vacuum: 15}}\n"), o);
+  EXPECT_GT(slab.system.atoms.size(), 20u);
+  const auto tube = run_recipe(yaml_parse("build: {nano: {kind: tube, n: 5, m: 5, length: 10}}\n"), o);
+  EXPECT_GT(tube.system.atoms.size(), 50u);
+  const auto water = run_recipe(yaml_parse("build: {solvate: {solvent: water, water_model: \"SPC/E\", edge: 16, ions: none, seed: 2}}\n"), o);
+  EXPECT_NEAR(water.system.density(), 1.0, 0.03);   // SPC/E water at its density
+  EXPECT_THROW(run_recipe(yaml_parse("build: {crystal: {group: \"P 1\"}}\n"), o), RecipeError);
+}

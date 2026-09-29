@@ -7,8 +7,15 @@
 #include <fstream>
 #include <cctype>
 #include <set>
+#include <sstream>
 
 #include "caps/analysis.hpp"
+#include "caps/elements.hpp"
+#include "caps/solvate.hpp"
+#include "caps/nano.hpp"
+#include "caps/lattice.hpp"
+#include "caps/spacegroup.hpp"
+#include "caps/crystal.hpp"
 #include "caps/config.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/cbmc.hpp"
@@ -139,8 +146,16 @@ RecipeCheck check_recipe(const Json& r) {
           info.summary = "molecule " + (J["molecule"].is_string() ? J["molecule"].str() : text(J["molecule"], "smiles", ""));
         } else if (J.has("file")) {
           info.summary = "file " + J["file"].str();
+        } else if (J.has("crystal")) {
+          info.summary = "crystal " + (J["crystal"].has("cif") ? J["crystal"]["cif"].str() : text(J["crystal"], "group", "P 1"));
+        } else if (J.has("surface")) {
+          info.summary = "surface of " + text(J["surface"], "cif", "?");
+        } else if (J.has("nano")) {
+          info.summary = "nano " + text(J["nano"], "kind", "tube");
+        } else if (J.has("solvate")) {
+          info.summary = "solvate in " + text(J["solvate"], "solvent", "water");
         } else {
-          throw RecipeError(2, "build needs polymer, molecule, pack or file");
+          throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano or solvate");
         }
       } else if (st == "type") {
         info.summary = text(J, "forcefield", "default") + " · charges " + text(J, "charges", "auto");
@@ -532,8 +547,127 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           res.manifest.inputs.push_back({std::filesystem::path(p).filename().string(), ""});
           res.manifest.steps.push_back(step("io.read", "read " + std::filesystem::path(p).filename().string(), {{"file", std::filesystem::path(p).filename().string()}, {"atoms", std::to_string(s.atoms.size())}}, "", {}));
           report(k, st, std::filesystem::path(p).filename().string() + " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);
+        } else if (J.has("crystal")) {
+          // crystal: {cif} or {group, cell: [a, b, c, α, β, γ], sites: "Ti1 Ti 0 0 0; O1 O 0.3 0.3 0"}; supercell [na, nb, nc];
+          // cell: primitive | niggli | conventional
+          const Json& C = J["crystal"];
+          std::string what;
+          try {
+            if (C.has("cif")) {
+              const std::string p = path_of(C["cif"].str());
+              s = read_cif(p);
+              res.manifest.inputs.push_back({std::filesystem::path(p).filename().string(), ""});
+              what = std::filesystem::path(p).filename().string();
+            } else {
+              CrystalSpec cs;
+              cs.space_group = text(C, "group", "P 1");
+              if (!C.has("cell") || !C["cell"].is_array() || C["cell"].size() < 3) throw std::invalid_argument("crystal needs cif, or group, cell [a, b, c(, α, β, γ)] and sites");
+              const auto& cl = C["cell"];
+              cs.a = cl[0].number(), cs.b = cl[1].number(), cs.c = cl[2].number();
+              if (cl.size() >= 6) cs.alpha = cl[3].number(), cs.beta = cl[4].number(), cs.gamma = cl[5].number();
+              std::string sites = text(C, "sites", "");
+              std::replace(sites.begin(), sites.end(), ';', '\n');
+              std::istringstream in(sites);
+              for (std::string line; std::getline(in, line);) {
+                std::istringstream ls(line);
+                std::string lab, el;
+                double x, y, z;
+                if (ls >> lab >> el >> x >> y >> z) cs.sites.push_back({lab, element_from_symbol(el), {x, y, z}});
+              }
+              if (cs.sites.empty()) throw std::invalid_argument("crystal sites: 'LABEL EL x y z; …'");
+              s = build_crystal(cs);
+              what = cs.space_group;
+            }
+            const std::string cell = text(C, "cell_reduce", text(C, "reduce", ""));
+            if (cell == "primitive") s = find_primitive_cell(s);
+            else if (cell == "niggli") s = niggli_cell(s);
+            else if (cell == "conventional") s = conventional_cell(s);
+            else if (!cell.empty()) throw std::invalid_argument("reduce: primitive, niggli or conventional");
+            if (C.has("supercell") && C["supercell"].is_array() && C["supercell"].size() == 3)
+              s = supercell(s, int(C["supercell"][0].number()), int(C["supercell"][1].number()), int(C["supercell"][2].number()));
+          } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(2, std::string("build.crystal: ") + e.what()); }
+          res.manifest.steps.push_back(step("build.crystal", what, {{"atoms", std::to_string(s.atoms.size())}}, "", {}));
+          report(k, st, what + " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);
+        } else if (J.has("surface")) {
+          // surface: {cif, hkl: [h, k, l], layers, termination, vacuum, supercell: [na, nb], passivate}
+          const Json& C = J["surface"];
+          SlabOptions so;
+          if (C.has("hkl") && C["hkl"].is_array() && C["hkl"].size() == 3) so.h = int(C["hkl"][0].number()), so.k = int(C["hkl"][1].number()), so.l = int(C["hkl"][2].number());
+          so.layers = int(num(C, "layers", so.layers));
+          so.termination = int(num(C, "termination", so.termination));
+          so.vacuum = num(C, "vacuum", so.vacuum);
+          so.passivate = flag(C, "passivate", false);
+          if (C.has("supercell") && C["supercell"].is_array() && C["supercell"].size() == 2) so.na = int(C["supercell"][0].number()), so.nb = int(C["supercell"][1].number());
+          SlabReport sr;
+          try {
+            if (!C.has("cif")) throw std::invalid_argument("surface needs cif");
+            s = cleave(read_cif(path_of(C["cif"].str())), so, &sr);
+          } catch (const std::exception& e) { throw RecipeError(2, std::string("build.surface: ") + e.what()); }
+          char b[160];
+          std::snprintf(b, sizeof b, "(%d %d %d) · %d layers · %.1f Å slab · %zu atoms", so.h, so.k, so.l, so.layers, sr.thickness, s.atoms.size());
+          res.manifest.steps.push_back(step("build.surface", b, {{"vacuum", g6(so.vacuum) + " Å"}}, "", {}));
+          report(k, st, b, "done", 1);
+        } else if (J.has("nano")) {
+          // nano: {kind: tube | sheet | particle, …}: tube {n, m, length, material, walls, periodic}; sheet {lx, ly,
+          // layers, material, periodic}; particle {cif, shape, radius, height, top_ratio, passivate}
+          const Json& C = J["nano"];
+          const std::string kind = text(C, "kind", "tube");
+          try {
+            if (kind == "tube") {
+              NanotubeOptions o;
+              o.material = text(C, "material", o.material);
+              o.n = int(num(C, "n", o.n)), o.m = int(num(C, "m", o.m));
+              o.length = num(C, "length", o.length);
+              o.walls = int(num(C, "walls", o.walls));
+              o.periodic = flag(C, "periodic", o.periodic);
+              s = nanotube(o);
+            } else if (kind == "sheet") {
+              SheetOptions o;
+              o.material = text(C, "material", o.material);
+              o.lx = num(C, "lx", o.lx), o.ly = num(C, "ly", o.ly);
+              o.layers = int(num(C, "layers", o.layers));
+              o.periodic = flag(C, "periodic", o.periodic);
+              s = graphene_sheet(o);
+            } else if (kind == "particle") {
+              ParticleOptions o;
+              if (!C.has("cif")) throw std::invalid_argument("a particle needs cif");
+              o.shape = particle_shape_from_string(text(C, "shape", "sphere"));
+              o.radius = num(C, "radius", o.radius);
+              o.height = num(C, "height", o.height);
+              o.top_ratio = num(C, "top_ratio", o.top_ratio);
+              o.passivate = flag(C, "passivate", false);
+              s = nanoparticle(read_cif(path_of(C["cif"].str())), o);
+            } else throw std::invalid_argument("kind: tube, sheet or particle");
+          } catch (const std::exception& e) { throw RecipeError(2, "build.nano: " + std::string(e.what())); }
+          res.manifest.steps.push_back(step("build.nano", kind, {{"atoms", std::to_string(s.atoms.size())}}, "", {}));
+          report(k, st, kind + " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);
+        } else if (J.has("solvate")) {
+          // solvate: {solute: FILE (optional), solvent, water_model, padding | edge, salt, concentration, ions:
+          // none | neutralise | concentration}
+          const Json& C = J["solvate"];
+          SolvateOptions o;
+          o.solvent = text(C, "solvent", o.solvent);
+          o.water_model = text(C, "water_model", o.water_model);
+          o.tolerance = num(C, "tolerance", o.tolerance);
+          o.salt = text(C, "salt", o.salt);
+          o.concentration = num(C, "concentration", o.concentration);
+          const std::string ions = text(C, "ions", "concentration");
+          o.ion_mode = ions == "none" ? 0 : ions == "neutralise" || ions == "neutralize" ? 1 : 2;
+          o.seed = uint64_t(seed_of(C));
+          System solute;
+          const bool has = C.has("solute");
+          if (C.has("edge")) o.shape = 0, o.edge = num(C, "edge", o.edge);
+          else o.shape = has ? 2 : 0, o.padding = num(C, "padding", o.padding);
+          try {
+            if (has) solute = open_file(path_of(C["solute"].str())).frame(0);
+            SolvateReport sr;
+            s = solvate(has ? &solute : nullptr, o, &sr);
+            report(k, st, std::to_string(sr.plan.solvent) + " × " + sr.plan.solvent_name + (sr.plan.cations + sr.plan.anions ? " · " + std::to_string(sr.plan.cations) + " + " + std::to_string(sr.plan.anions) + " ions" : "") +
+                              " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);
+            res.manifest.steps.push_back(step("build.solvate", sr.plan.solvent_name, {{"molecules", std::to_string(sr.plan.solvent)}}, seeded(o.seed), {"martinez2009"}));
+          } catch (const std::exception& e) { throw RecipeError(2, "build.solvate: " + std::string(e.what())); }
         } else {
-          throw RecipeError(2, "build needs polymer, molecule, pack or file");
+          throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano or solvate");
         }
       } else if (st == "type") {
         report(k, st, "", "running", 0);
