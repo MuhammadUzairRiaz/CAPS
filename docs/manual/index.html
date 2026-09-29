@@ -1,0 +1,450 @@
+<title>CAPS Studio Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F3F4F6; --panel:#FFFFFF; --ink:#16181B; --muted:#5A6068; --line:#DADDE2;
+  --accent:#C7800A; --accent-soft:#FBEFD9; --chip:#EEF0F3; --ok:#2E8B57;
+  --shadow:0 1px 2px rgba(20,22,26,.06),0 6px 24px rgba(20,22,26,.06);
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;--bg:#111315;--panel:#181B1E;--ink:#E7E9EC;--muted:#9AA1AA;--line:#2A2E33;
+  --accent:#F2A93B;--accent-soft:#2B2217;--chip:#20242A;--ok:#5CC48A;--shadow:none;}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111315;--panel:#181B1E;--ink:#E7E9EC;--muted:#9AA1AA;--line:#2A2E33;
+  --accent:#F2A93B;--accent-soft:#2B2217;--chip:#20242A;--ok:#5CC48A;--shadow:none;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15.5px/1.6 var(--body);padding-inline:16px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;padding-block:40px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;max-height:calc(100vh - 48px);overflow:auto;font-size:13.5px}
+nav.toc h2{font:600 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
+nav.toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 8px;border-radius:5px;opacity:.85}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--chip);opacity:1;outline:none}
+main{min-width:0}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;letter-spacing:-.01em}
+header.hero{padding-bottom:28px;border-bottom:1px solid var(--line);margin-bottom:36px}
+.eyebrow{font:500 12px/1 var(--mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+h1{font-size:clamp(34px,5vw,50px);line-height:1.05;margin:12px 0 14px;font-weight:700}
+header p{max-width:66ch;color:var(--muted);margin:0 0 10px}
+section{padding-block:14px 30px;scroll-margin-top:20px}
+section>h2{font-size:28px;margin:28px 0 6px;font-weight:700}
+h3{font-size:19px;margin:30px 0 6px;font-weight:600}
+p,li{max-width:70ch}
+.lede{color:var(--muted);margin-top:0}
+code,kbd,.ui{font-family:var(--mono);font-size:.86em}
+.ui{background:var(--chip);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--panel)}
+figure{margin:18px 0 22px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+figure button{display:block;width:100%;padding:0;border:0;background:#0F1113;cursor:zoom-in}
+figure button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+figure img{display:block;width:100%;height:auto;aspect-ratio:1440/900}
+figcaption{padding:10px 14px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line)}
+figcaption b{color:var(--ink);font-weight:600}
+ol.flow{list-style:none;padding:0;margin:14px 0 20px;counter-reset:s;display:grid;gap:8px}
+ol.flow>li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;max-width:none}
+ol.flow>li::before{content:counter(s);font:600 13px/26px var(--mono);width:26px;height:26px;text-align:center;border-radius:50%;background:var(--accent-soft);color:var(--accent)}
+ol.flow>li b{font-weight:600}
+.strip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0;font:500 12.5px/1 var(--mono)}
+.strip span{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.strip i{color:var(--muted);font-style:normal}
+.strip span.done{border-color:var(--ok);color:var(--ok)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0;max-width:70ch}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid2 figure{margin:6px 0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+.tbl{overflow-x:auto;margin:12px 0 20px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11.5px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+dialog{border:0;padding:0;background:transparent;max-width:96vw;max-height:94vh}
+dialog::backdrop{background:rgba(8,9,10,.82)}
+dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor:zoom-out}
+@media (max-width:960px){.wrap{grid-template-columns:1fr;gap:0}nav.toc{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:16px;columns:2}nav.toc h2{break-after:avoid}}
+@media (max-width:620px){.grid2{grid-template-columns:1fr}nav.toc{columns:1}}
+@media (prefers-reduced-motion:no-preference){nav.toc a{transition:background .15s}}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <h2>Getting around</h2>
+  <a href="#layout">The window</a>
+  <a href="#strip">Pipeline strip</a>
+  <a href="#project">Project tree</a>
+  <h2>Pipelines</h2>
+  <a href="#p-melt">Amorphous polymer cell</a>
+  <a href="#p-nano">Filler composite</a>
+  <a href="#p-cure">Crosslinking and cure</a>
+  <a href="#p-surface">Rubber on a fibre surface</a>
+  <a href="#p-blend">Polymer blend</a>
+  <a href="#p-cg">Coarse-grained model</a>
+  <a href="#p-files">Existing files in, decks out</a>
+  <h2>Pages</h2>
+  <a href="#f-start">Start</a>
+  <a href="#f-studio">Studio</a>
+  <a href="#f-molecule">Molecule</a>
+  <a href="#f-polymer">Polymer builder</a>
+  <a href="#f-grow">Polymer cell</a>
+  <a href="#f-field">Force field</a>
+  <a href="#f-pack">Packing</a>
+  <a href="#f-crystal">Crystal and surface</a>
+  <a href="#f-nano">Nanostructure</a>
+  <a href="#f-solv">Solvation</a>
+  <a href="#f-cg">Coarse-grained</a>
+  <a href="#f-relax">Minimise</a>
+  <a href="#f-eq">Equilibrate</a>
+  <a href="#f-md">Dynamics</a>
+  <a href="#f-react">React</a>
+  <a href="#f-analyze">Analyze</a>
+  <a href="#f-export">Export</a>
+  <a href="#f-jobs">Jobs</a>
+  <a href="#f-more">DPD and adsorption</a>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">CAPS Studio · user manual</div>
+  <h1>Build, type, run and export polymer systems</h1>
+  <p>This manual walks through every page in CAPS Studio and the pipelines that join them. Each screenshot comes from the current build. Click any screenshot to see it full size.</p>
+  <p>You can read it in two ways. <b>Pipelines</b> gives the order of pages for a complete job, such as a PCFF polystyrene melt or a graphene–rubber composite. <b>Pages</b> explains each screen one by one.</p>
+</header>
+
+<!-- ============ GETTING AROUND ============ -->
+<section id="layout">
+  <h2>The window</h2>
+  <p class="lede">Every page shares the same frame.</p>
+  <ul>
+    <li><b>Left rail.</b> The main stages in working order: Studio, Build, Polymer cell, Force field, Packing, Minimise, Equilibrate, Dynamics, React, Analyze, Export, Jobs and Bench. The gear at the bottom opens Settings.</li>
+    <li><b>Tabs.</b> Each open structure has a tab next to <span class="ui">Start</span>. Use <span class="ui">+</span> to open another one.</li>
+    <li><b>Command bar.</b> <kbd>⌘K</kbd> finds any page, builder or command by name.</li>
+    <li><b>Machine badge.</b> Top right. It shows where runs happen, for example <span class="ui">Local · 10 threads · GPU view</span>.</li>
+    <li><b>Status bar.</b> Along the bottom: atom and bond count, selection, cell lengths, the last action and the mouse controls. Click an atom to pick it, drag to rotate, and <kbd>⇧</kbd>-drag to pan.</li>
+  </ul>
+</section>
+
+<section id="strip">
+  <h2>Pipeline strip</h2>
+  <p class="lede">The strip shows how far the open structure has got. A step turns green when it is done. Click any step to go to its page.</p>
+  <div class="strip" aria-label="Pipeline steps">
+    <span class="done">✓ Structure</span><i>→</i><span class="done">✓ Made by</span><i>→</i><span>Force field</span><i>→</i><span>Minimise <i>optional</i></span><i>→</i><span>Equilibrate <i>optional</i></span><i>→</i><span>Dynamics <i>optional</i></span><i>→</i><span>Export</span>
+  </div>
+  <ul>
+    <li><b>Structure</b> and <b>Made by</b> name the open structure and the builder that made it, for example Polymer cell, Nanostructure builder or File.</li>
+    <li><b>Force field</b> stays open until a force field is assigned. You can export once it is assigned. Minimise, Equilibrate and Dynamics are optional.</li>
+    <li><span class="ui">Export now</span> jumps straight to Export.</li>
+    <li><span class="ui">Clear</span> closes every open structure so you can start clean. It asks once more before it does anything. Saved files stay on disk and stay in Recent. Once nothing is open, the strip hides.</li>
+  </ul>
+</section>
+
+<section id="project">
+  <h2>Project tree</h2>
+  <p class="lede">The Studio's left panel lists every structure in the project.</p>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/13_nano_matrix.jpg" alt="Studio with a graphene sheet, project tree showing edit and delete icons" loading="lazy"></button>
+    <figcaption><b>Project tree.</b> Each row has <b>Edit</b> (pencil) and <b>Delete</b> (bin). Right-click a row for the same options.</figcaption></figure>
+  <ul>
+    <li><b>Edit</b> reopens the builder that made the structure, with its settings. A molecule reopens with its SMILES. A grown cell reopens in Polymer cell, a filler in Nanostructure, a slab in Surface, and so on. Structures read from a file open in the Studio's editing tools.</li>
+    <li><b>Delete</b> removes the structure from the project. Click it twice to confirm. A saved file on disk is not deleted.</li>
+    <li><span class="ui">Copy structure</span> makes a duplicate, so you can try a change and keep the original.</li>
+  </ul>
+</section>
+
+<!-- ============ PIPELINES ============ -->
+<section id="p-melt">
+  <h2>Pipeline 1 · Amorphous polymer cell</h2>
+  <p class="lede">This is the standard route: a periodic melt or rubber, ready for a LAMMPS or GROMACS production run. The example is atactic polystyrene with PCFF.</p>
+  <ol class="flow">
+    <li><div><b>Build › Polymer.</b> Pick a polymer from the library on the left; the <span class="ui">Rubbers</span> filter shows elastomers. Alternatively, type a repeat unit as SMILES with two <code>*</code> attachment points. Set tacticity, linkage and end groups, then press <span class="ui">Send to CAPS Grow</span>.</div></li>
+    <li><div><b>Polymer cell.</b> Set the number of chains, the degree of polymerisation (DP), the dispersity and the target density; 0.6 g/cm³ grows easily and is compressed later. Under <b>Force field</b>, choose PCFF and leave <span class="ui">Assign when growing finishes</span> on. Press <span class="ui">Grow cell</span>.</div></li>
+    <li><div><b>Force field.</b> Check the typing report. Every atom should be typed, with <span class="ui">0 untyped</span> and <span class="ui">0 missing terms</span>. If anything is missing, the <b>Missing before run</b> panel says which terms and lets you fill them from a published file.</div></li>
+    <li><div><b>Minimise.</b> Removes close contacts left by growing. Turn on compression here to bring a low-density cell up to its target density.</div></li>
+    <li><div><b>Equilibrate.</b> Pick a published protocol, such as the Larsen et al. 21-step (2011), and set the final T and P. You can add production blocks that run until density, energy and Rg stop drifting.</div></li>
+    <li><div><b>Dynamics</b> (optional) for NVT or NPT runs inside CAPS, then <b>Analyze</b> for density, g(r), Tg, moduli and diffusion.</div></li>
+    <li><div><b>Export.</b> Write a LAMMPS deck (<code>lmp -in STEM.in</code>) or GROMACS files (top, itp, gro, mdp). DL_POLY 4 and AMBER/OpenMM (prmtop, inpcrd) are also available.</div></li>
+  </ol>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/04_polymer.jpg" alt="Polymer builder with styrene" loading="lazy"></button><figcaption><b>Step 1.</b> Polymer builder with styrene, atactic, DP 8 preview.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/05_grow.jpg" alt="Polymer cell grown" loading="lazy"></button><figcaption><b>Step 2.</b> 10 chains × 30 units, 4,820 atoms at 0.60 g/cm³.</figcaption></figure>
+  </div>
+</section>
+
+<section id="p-nano">
+  <h2>Pipeline 2 · Filler composite</h2>
+  <p class="lede">This route makes graphene, h-BN, a nanotube, a particle or a pore, optionally with functional groups, inside a polymer or rubber matrix. It also answers "how do I graft groups and add the polymer?"</p>
+  <ol class="flow">
+    <li><div><b>Build › Nanostructure.</b> Choose the <b>Type</b> (Sheet, Nanotube, Particle or Pore) and the material, for example <span class="ui">Carbon (graphene)</span>. Then set the size and the number of layers. <span class="ui">Periodic in the plane</span> makes an infinite sheet. With it off, you get a flake with H on the edges.</div></li>
+    <li><div><b>Functional groups</b> (optional). Type a preset such as <code>carboxyl</code>, or a SMILES with <code>*</code> at the attachment atom. Choose <b>Where</b> the groups go: on the sidewall, on the ends or on the edges. Give either a share of sites or an exact count, plus a minimum spacing.</div></li>
+    <li><div><b>Graft on.</b> Choose <i>the filler these settings build</i> or <i>the structure open in the Studio</i>. With the first choice, CAPS builds the filler if needed and then grafts onto it. It reuses the same filler while the settings are unchanged, so you can graft several group types in turn. Undo a graft with <kbd>⌘Z</kbd>.</div></li>
+    <li><div><b>Polymer matrix.</b> Switch it on, choose the polymer and its density, and press <span class="ui">Build composite</span>. If you haven't built anything yet, CAPS builds the filler (with its grafts) first. The matrix then grows around it. The directions the filler already fills stay periodic, and the rest open up for the chains.</div></li>
+    <li><div><b>Force field › By group.</b> A composite usually needs one force field per part, for example a carbon or IFF model for the filler and PCFF, COMPASS or OPLS-AA for the polymer. <span class="ui">By group</span> suggests the groups. Assign each one, and CAPS writes the cross terms.</div></li>
+    <li><div>Carry on as in pipeline 1: <b>Minimise → Equilibrate → Export</b>.</div></li>
+  </ol>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/12_nano_sheet.jpg" alt="Nanostructure builder, graphene sheet" loading="lazy"></button><figcaption><b>Steps 1–3.</b> Graphene sheet with the Functional groups panel and <b>Graft on</b>.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/13_nano_matrix.jpg" alt="Built sheet in the Studio" loading="lazy"></button><figcaption>The built sheet open in the Studio: 160 atoms, made by the Nanostructure builder.</figcaption></figure>
+  </div>
+  <div class="note">Grafted groups need a relax before dynamics. Run <b>Minimise</b> first, because a freshly grafted group can sit close to its neighbours.</div>
+</section>
+
+<section id="p-cure">
+  <h2>Pipeline 3 · Crosslinking and cure</h2>
+  <p class="lede">This route vulcanises a rubber, cures an epoxy or crosslinks a melt. Bonds form by distance and atom types are reassigned after each cycle.</p>
+  <ol class="flow">
+    <li><div>Build the cell as in pipeline 1, or open it from a file. Assign a force field.</div></li>
+    <li><div><b>React.</b> Pick a reaction template, such as the built-in <span class="ui">C–C crosslink (saturated carbons, H₂ leaves)</span>, or open <span class="ui">Editor…</span> to write your own. In the editor you draw pre and post states with mapped atoms, and it shows the equivalent reaction SMARTS.</div></li>
+    <li><div>Choose the <b>Protocol</b>. <i>Polymatic cycle</i> (Abbott, Hart &amp; Colina 2013) runs react → retype → minimise → optional MD. <i>REACTER-style during MD</i> checks reactions at intervals during one continuous run.</div></li>
+    <li><div>Press <span class="ui">Crosslink</span>. The Conversion and Gel point charts fill as cycles run. The Flory–Stockmayer card compares the simulated gel point with α<sub>c</sub> from theory. If a cycle fails, the completed cycles are kept.</div></li>
+    <li><div>Save the network, then Minimise → Equilibrate → Export.</div></li>
+  </ol>
+</section>
+
+<section id="p-surface">
+  <h2>Pipeline 4 · Rubber on a fibre surface</h2>
+  <ol class="flow">
+    <li><div><b>Build › Crystal.</b> Pick a crystal (quartz, silica and others), or import a CIF.</div></li>
+    <li><div><b>Build › Surface.</b> Choose Miller indices and a termination, then add vacuum. Build the slab, or grow a polymer film on it.</div></li>
+    <li><div><b>Force field › By group.</b> Use an inorganic model for the slab (for example IFF or the clay and glass sets) and the polymer's own force field for the film.</div></li>
+    <li><div>Minimise → Equilibrate. Then use <b>Analyze</b> for the interface density profile, adhesion and pull-out.</div></li>
+  </ol>
+</section>
+
+<section id="p-blend">
+  <h2>Pipeline 5 · Polymer blend</h2>
+  <ol class="flow">
+    <li><div>In <b>Build › Polymer</b>, press <span class="ui">Blend…</span> at the top right.</div></li>
+    <li><div>Add each component with its chain count and DP. The chains grow together in one cell.</div></li>
+    <li><div>Assign a force field per component if they differ, using By group. Then run Minimise → Equilibrate → Export.</div></li>
+  </ol>
+</section>
+
+<section id="p-cg">
+  <h2>Pipeline 6 · Coarse-grained model of a real polymer</h2>
+  <p class="lede">Use this route for long times and large cells for one polymer, then map back to atoms.</p>
+  <ol class="flow">
+    <li><div><b>Build › Coarse-grained › From a polymer.</b> Choose the polymer, for example Polystyrene.</div></li>
+    <li><div>Choose the <b>mapping</b>:
+      <ul>
+        <li><i>1 bead per repeat unit</i>: the unit's centre of mass. This is the common 1:1 model.</li>
+        <li><i>2 beads per unit</i>: a backbone bead and a side-group bead. This is the Harmandaris et al. PS model, and what moltemplate calls a "2-bead polymer". With two bead types, it is a two-bead heteropolymer.</li>
+        <li><i>n backbone atoms per bead</i>: for example 3:1 for polyethylene.</li>
+      </ul></div></li>
+    <li><div>CAPS grows an all-atom reference melt, compresses it to the density and maps every frame to beads. From that it derives the bead model:
+      <ul>
+        <li>harmonic bonds and angles by Boltzmann inversion;</li>
+        <li>a repulsive WCA with σ taken from the bead g(r);</li>
+        <li>1-2 and 1-3 pairs excluded.</li>
+      </ul></div></li>
+    <li><div>Run the CG melt in CAPS or export the LAMMPS deck. The model is repulsive only. It is a starting point for IBI (iterative Boltzmann inversion), which adds the attractions.</div></li>
+    <li><div>Press <span class="ui">Backmap the open melt</span> to go back to atoms when you need atomistic detail.</div></li>
+  </ol>
+  <div class="note">Instead of growing a reference melt, <span class="ui">Map the open all-atom structure (every frame)</span> maps the all-atom cell already open in the Studio, and every frame of its trajectory.</div>
+</section>
+
+<section id="p-files">
+  <h2>Pipeline 7 · Existing files in, decks out</h2>
+  <ul>
+    <li><b>Open:</b> LAMMPS data and dump, GROMACS .gro, PDB, XYZ, mol2 and CIF. AMBER prmtop with inpcrd or rst7 opens with the topology's own force field, term by term. AMBER trajectories (NetCDF, mdcrd) load onto it.</li>
+    <li><b>Type it:</b> Force field page. Typing works from the bonds alone, so PDB with CONECT, mol2, xyz and LAMMPS data all type.</li>
+    <li><b>Write it:</b> Export page. It writes LAMMPS, GROMACS, DL_POLY 4, AMBER/OpenMM and moltemplate (.lt). Each deck is written in the force field's own style.</li>
+    <li><b>Recipes:</b> Start › <span class="ui">Import recipe</span> reads a YAML/JSON recipe or a Packmol input. <span class="ui">Copy as Python</span> on most pages gives the same step as a script.</li>
+  </ul>
+</section>
+
+<!-- ============ PAGES ============ -->
+<section id="f-start">
+  <h2>Start</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/01_start.jpg" alt="Start page" loading="lazy"></button>
+    <figcaption><b>Start.</b> Type a SMILES, file path or module name; pick a builder; reopen recent work; follow a guided example.</figcaption></figure>
+  <ul>
+    <li>The search box accepts a SMILES, a file path or a page name.</li>
+    <li>The six tiles open the main builders: Molecule, Polymer, Crystal, Amorphous cell, Surface or interface, and Solvated system.</li>
+    <li><b>Learn</b> runs guided examples on the sample cell. <b>Fibre–rubber composites</b> covers composite recipes: a rubber film on glass fibre, fillers in rubber, sulfur cure, and adhesion and pull-out.</li>
+    <li>Drag and drop a structure file anywhere in the dashed area to open it.</li>
+  </ul>
+</section>
+
+<section id="f-studio">
+  <h2>Studio</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/02_studio.jpg" alt="Studio view with the polystyrene melt" loading="lazy"></button>
+    <figcaption><b>Studio.</b> 3D view, project tree, properties, inspector and analysis tabs.</figcaption></figure>
+  <ul>
+    <li><b>Toolbar:</b> select, lasso, move, rotate, draw bonds, cut, add H, rings, element picker, measure, charts, pin, save, layers, links, search, history, visibility, colour and projection. The last button is full-screen view, which has its own Cell and Wrap toggles.</li>
+    <li><b>Right panel:</b> the Atom, Molecule, View and File tabs, plus Validation. <span class="ui">All checks…</span> lists every file check.</li>
+    <li><b>Bottom tabs:</b> quick analysis of the shown frame (g(r), Minimisation, Thermo, Molecules, Network, Around atom, Chains).</li>
+    <li><b>View background:</b> follows the Studio theme by default. You can set it to Dark or White in Appearance › Display or Settings › 3D view.</li>
+  </ul>
+</section>
+
+<section id="f-molecule">
+  <h2>Molecule builder</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/03_molecule.jpg" alt="Molecule builder" loading="lazy"></button>
+    <figcaption><b>Build › Molecule.</b> Draw or type SMILES; CAPS builds 3D coordinates.</figcaption></figure>
+  <p>Use it for monomers, curatives, solvents, plasticisers and small additives. Then send the molecule to Packing to fill a box, or to Polymer as a repeat unit.</p>
+</section>
+
+<section id="f-polymer">
+  <h2>Polymer builder</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/04_polymer.jpg" alt="Polymer builder" loading="lazy"></button>
+    <figcaption><b>Build › Polymer.</b> Library of 113 repeat units and 19 copolymers; one-chain preview in the middle.</figcaption></figure>
+  <ul>
+    <li><b>Repeat units:</b> in SMILES, the first <code>*</code> is the head and the second is the tail. <span class="ui">+ Unit</span> adds a second unit for copolymers.</li>
+    <li><b>Architecture:</b> Linear, Branched, Star, Comb or Dendrimer. <span class="ui">Network →</span> opens network building.</li>
+    <li><b>Sequence:</b> homopolymer, alternating, random or block, with the DP and a name.</li>
+    <li><b>Stereo and linkage:</b> atactic, isotactic or syndiotactic; head-to-tail or other linkages; end groups.</li>
+    <li><span class="ui">Build in document</span> builds one chain. <span class="ui">Send to CAPS Grow</span> takes the polymer to Polymer cell.</li>
+  </ul>
+</section>
+
+<section id="f-grow">
+  <h2>Polymer cell (CAPS Grow)</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/05_grow.jpg" alt="Polymer cell page after growing" loading="lazy"></button>
+    <figcaption><b>Polymer cell.</b> Components, force field, cell settings and the live growth view.</figcaption></figure>
+  <ul>
+    <li><b>Components:</b> each polymer with its chains, DP and dispersity Đ. <span class="ui">Choose polymer…</span> adds another one.</li>
+    <li><b>Force field:</b> choose it here, and it is assigned when growing finishes. <span class="ui">Compare all force fields</span> shows which force fields cover the polymer.</li>
+    <li><b>Cell:</b> size from density or box, shape, tacticity, seed and contact scale.</li>
+    <li>The live counters show chains grown, units placed, restarts, closest contact margin, current density and elapsed time.</li>
+    <li><span class="ui">Save recipe</span> and <span class="ui">Copy as Python</span> repeat the same build later.</li>
+  </ul>
+</section>
+
+<section id="f-field">
+  <h2>Force field</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/06_field.jpg" alt="Force field typing report" loading="lazy"></button>
+    <figcaption><b>Force field · typing report.</b> Every atom with its type, charge, the SMARTS rule that typed it and the rule file.</figcaption></figure>
+  <ul>
+    <li>Choose the force field and the charges, then press <span class="ui">Assign · retype all</span>. The chips above the table show typed, untyped, missing terms, estimated terms and net charge.</li>
+    <li>Click a row, or an atom in 3D, to see the rule that matched and the other rules it also matched. You can override the type by hand.</li>
+    <li><span class="ui">By group</span> assigns a separate force field to each part (filler, polymer, blend component). <span class="ui">Type by hand…</span> sets types directly.</li>
+    <li><b>Missing before run:</b> CAPS never guesses a parameter. Fill a gap from a published file, or enter it by hand. Values entered by hand are flagged as estimated in the report and in the output.</li>
+  </ul>
+</section>
+
+<section id="f-pack">
+  <h2>Packing and Blend</h2>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/10_pack.jpg" alt="Packing page" loading="lazy"></button><figcaption><b>Packing.</b> Fill a box, or the space around the current structure, with molecules.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/11_blend.jpg" alt="Blend builder" loading="lazy"></button><figcaption><b>Blend.</b> Several polymers grown together in one cell.</figcaption></figure>
+  </div>
+  <p>Use Packing for solvents, gases, curatives and fillers, and when adding small molecules to a grown cell (<i>Pack into › Around the current structure</i>).</p>
+</section>
+
+<section id="f-crystal">
+  <h2>Crystal and Surface</h2>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/14_crystal.jpg" alt="Crystal builder" loading="lazy"></button><figcaption><b>Crystal.</b> Space group, lattice, CIF import and supercells.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/15_surface.jpg" alt="Surface builder with quartz" loading="lazy"></button><figcaption><b>Surface.</b> Cleave a crystal, choose the termination, add vacuum or grow a film.</figcaption></figure>
+  </div>
+</section>
+
+<section id="f-nano">
+  <h2>Nanostructure</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/12_nano_sheet.jpg" alt="Nanostructure builder" loading="lazy"></button>
+    <figcaption><b>Build › Nanostructure.</b> Sheet, Nanotube, Particle or Pore; functional groups; polymer matrix.</figcaption></figure>
+  <ul>
+    <li><b>Sheet:</b> graphene or h-BN, with width in x and y and a number of layers (AB-stacked, 3.35 Å apart). Periodic in the plane, or a flake with H edges.</li>
+    <li><b>Nanotube:</b> chirality and length. <b>Particle:</b> shape and size; the surface relax is optional and not offered for metals. <b>Pore:</b> a pore with an optional united-atom fluid.</li>
+    <li><b>Functional groups:</b> a preset or SMILES with <code>*</code>, the placement, share or exact count, spacing, side, and <span class="ui">On elements</span> (for example B only on h-BN). Use <b>Graft on</b> to choose the target.</li>
+    <li><b>Polymer matrix:</b> grows the chosen polymer around the filler. The button changes to <span class="ui">Build composite</span>. The step-by-step order is in <a href="#p-nano">Pipeline 2</a>.</li>
+  </ul>
+</section>
+
+<section id="f-solv">
+  <h2>Solvation</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/21_solvation.jpg" alt="Solvation builder" loading="lazy"></button>
+    <figcaption><b>Build › Solvation.</b> Box, solvent model and ions around a solute.</figcaption></figure>
+</section>
+
+<section id="f-cg">
+  <h2>Coarse-grained</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/17_cg.jpg" alt="Coarse-grained builder" loading="lazy"></button>
+    <figcaption><b>Build › Coarse-grained.</b> Three models, each explained on the page under <i>Which model</i>.</figcaption></figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Model</th><th>What a bead is</th><th>Use it for</th></tr></thead>
+    <tbody>
+      <tr><td>Kremer–Grest</td><td>A generic bead on a FENE spring, with a WCA repulsion. No chemistry.</td><td>Polymer physics in general: entanglement and reptation. Map it to a real polymer by σ, T and bead mass.</td></tr>
+      <tr><td>MARTINI</td><td>About four heavy atoms per bead, with types from a published table.</td><td>Mixtures, membranes and interfaces, where transferable chemistry matters.</td></tr>
+      <tr><td>From a polymer</td><td>Your polymer's own beads: one per repeat unit, backbone plus side group, or n backbone atoms.</td><td>Long times and large cells for one specific polymer, then backmap to atoms.</td></tr>
+    </tbody></table></div>
+  <p>Kremer–Grest settings are chains M, beads per chain N and density ρσ³ (0.85 is the standard melt). The box length follows from them. <span class="ui">LAMMPS deck…</span> writes the model directly.</p>
+</section>
+
+<section id="f-relax">
+  <h2>Minimise</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/07_relax.jpg" alt="Minimise page after a run" loading="lazy"></button>
+    <figcaption><b>Minimise.</b> Energy minimisation with an optional compression to a target density.</figcaption></figure>
+  <p>The reported |F|max counts free atoms only. Atoms you pinned or held fixed are not included.</p>
+</section>
+
+<section id="f-eq">
+  <h2>Equilibrate</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/09_equilibrate.jpg" alt="Equilibrate page" loading="lazy"></button>
+    <figcaption><b>Equilibrate.</b> Published protocols, then production blocks until converged. Density, energy and Rg are plotted live.</figcaption></figure>
+  <ul>
+    <li>The Protocol dropdown lists published schemes, such as Larsen et al. 21-step (2011): 21 stages, 1,560 ps. Set T final, T max, P final and a time multiplier.</li>
+    <li><span class="ui">Production blocks until converged</span> adds blocks until density, energy and Rg stop drifting, up to the maximum number of blocks.</li>
+    <li><span class="ui">Keep the original</span> writes the result to a new structure.</li>
+  </ul>
+</section>
+
+<section id="f-md">
+  <h2>Dynamics</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/08_dynamics.jpg" alt="Dynamics page" loading="lazy"></button>
+    <figcaption><b>Dynamics.</b> NVE, NVT or NPT, with steps, time step, thermostat, barostat and constraints. Snapshots are shown live.</figcaption></figure>
+</section>
+
+<section id="f-react">
+  <h2>React</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/16_react.jpg" alt="React crosslinking page" loading="lazy"></button>
+    <figcaption><b>React · crosslinking.</b> Templates, protocol, conversion, gel point and the Flory–Stockmayer check.</figcaption></figure>
+  <p>The template text shows its rules in full: which atoms react, the capture distance, probability, minimum path, and which bonds form and which atoms leave. The full order is in <a href="#p-cure">Pipeline 3</a>.</p>
+</section>
+
+<section id="f-analyze">
+  <h2>Analyze</h2>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/18_analyze.jpg" alt="Diffusion analysis" loading="lazy"></button><figcaption><b>Diffusion.</b> Einstein MSD with a fit-window check and the Yeh–Hummer box-size correction.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/22_glass.jpg" alt="Glass transition" loading="lazy"></button><figcaption><b>Glass transition.</b> Cooling scan and Tg fit.</figcaption></figure>
+  </div>
+  <p>Other analyses include density, g(r), chain statistics, free volume, interface profiles, moduli from tensile runs (x, y, z or averaged), orientation and scattering. Each one exports CSV.</p>
+</section>
+
+<section id="f-export">
+  <h2>Export</h2>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/19_export.jpg" alt="Export page" loading="lazy"></button>
+    <figcaption><b>Export.</b> The structure with its force field for LAMMPS and GROMACS, and optionally DL_POLY 4, AMBER/OpenMM or moltemplate.</figcaption></figure>
+  <ul>
+    <li><b>LAMMPS:</b> the force field's own styles (or hybrid), electrostatics, cut-off, k-space accuracy and units. The run protocol covers T, P, time step, steps, minimise first and bond constraints.</li>
+    <li><b>Checked before writing:</b> CAPS lists anything that would stop the deck running. For example, if no force field is assigned, it offers <span class="ui">Open the Force field step</span>.</li>
+    <li><b>Other exports:</b> Structure file, and Figure / movie.</li>
+    <li>Choose the folder and file name, then press <span class="ui">Write N files</span>.</li>
+  </ul>
+</section>
+
+<section id="f-jobs">
+  <h2>Jobs and project</h2>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/23_jobs.jpg" alt="Jobs page" loading="lazy"></button><figcaption><b>Jobs.</b> Running and finished runs, local or on a remote host.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/20_project.jpg" alt="Project page" loading="lazy"></button><figcaption><b>Project.</b> Every structure in the folder, with a Methods section written from provenance.</figcaption></figure>
+  </div>
+  <p>The Project page drafts a Methods paragraph and BibTeX from each structure's provenance: every builder, force field and protocol you used, with its citation.</p>
+</section>
+
+<section id="f-more">
+  <h2>DPD and adsorption</h2>
+  <div class="grid2">
+    <figure><button type="button" aria-label="Enlarge"><img src="img/24_dpd.jpg" alt="DPD page" loading="lazy"></button><figcaption><b>DPD.</b> Mesoscale dissipative particle dynamics.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/25_adsorption.jpg" alt="Adsorption locator" loading="lazy"></button><figcaption><b>Adsorption.</b> Finds low-energy positions of a molecule on a surface or in a pore.</figcaption></figure>
+  </div>
+</section>
+</main>
+</div>
+
+<dialog id="zoom" aria-label="Screenshot"><img alt=""></dialog>
+<script>
+const dlg=document.getElementById('zoom'),big=dlg.querySelector('img');
+document.querySelectorAll('figure button').forEach(b=>b.addEventListener('click',()=>{
+  const i=b.querySelector('img');big.src=i.src;big.alt=i.alt;
+  if(dlg.showModal)dlg.showModal();}));
+dlg.addEventListener('click',()=>dlg.close());
+</script>
