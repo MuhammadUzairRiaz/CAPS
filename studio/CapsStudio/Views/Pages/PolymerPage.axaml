@@ -199,6 +199,10 @@
                     <TextBox Text="{Binding PolyName}" />
                   </StackPanel>
                 </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <v:SeedPicker DataContext="{Binding PolySeed}" ToolTip.Tip="The sequence and chain drawn: a fixed seed shows the same chain every time (the strip, the 3D preview and Build in document agree); new each run draws another on every change" />
+                  <Button Content="New draw" Click="OnPolyRedraw" VerticalAlignment="Bottom" IsVisible="{Binding PolySeed.Fresh}" ToolTip.Tip="Draw another sequence and chain" />
+                </StackPanel>
                 <Button Content="Save to your library" Click="OnSaveToLibrary" HorizontalAlignment="Left"
                         ToolTip.Tip="This polymer (a repeat unit, or the copolymer with its sequence and shares) in your library, beside the built-in ones" />
                 <!-- composition: the ratio wanted, by moles or weight, as unit shares and what a chain of this DP holds -->

@@ -164,7 +164,7 @@
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="Seed" Classes="label" Margin="0,8,0,0" />
                 <TextBlock Grid.Row="2" Grid.Column="2" Text="Contact scale" Classes="label" Margin="0,8,0,0" />
                 <ComboBox Grid.Row="3" ItemsSource="{x:Static vm:MainViewModel.Tacticities}" SelectedIndex="{Binding GrowTacticity}" HorizontalAlignment="Stretch" />
-                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding GrowSeedD}" Minimum="0" Increment="1" FormatString="0" />
+                <v:SeedPicker Grid.Row="3" Grid.Column="1" DataContext="{Binding GrowSeedChoice}" ShowLabel="False" ToolTip.Tip="Chain k is drawn with seed + 101 k: the same seed grows the same cell" />
                 <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding GrowScaleD}" Minimum="0.5" Maximum="1.2" Increment="0.05" FormatString="0.00"
                                ToolTip.Tip="Contacts closer than this fraction of the van der Waals sum are rejected; below 1 needs a push-off in Relax" />
                 <TextBlock Grid.Row="4" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />

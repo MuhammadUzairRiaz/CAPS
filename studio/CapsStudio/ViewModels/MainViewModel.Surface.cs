@@ -462,7 +462,7 @@ public sealed partial class MainViewModel
                 }.ToJsonString();
                 var name = FilmName;
                 var specText = spec.ToJsonString();
-                var o = new CapsGrowOpts { Chains = 0, Dp = (int)_filmDp, Tacticity = 0, Seed = 1, Density = 0, ContactScale = 1.0, Curve = 1 };
+                var o = new CapsGrowOpts { Chains = 0, Dp = (int)_filmDp, Tacticity = 0, Seed = (ulong)FilmSeed.Take(), Density = 0, ContactScale = 1.0, Curve = 1 };
                 var (doc, rep) = await Task.Run(() => CapsDocument.InterfaceBuild(options, specText, o, (d, t, r) =>
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Growing the film · {d} of {t} chains · {r} restarts");

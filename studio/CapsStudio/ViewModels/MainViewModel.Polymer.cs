@@ -364,7 +364,7 @@ public sealed partial class MainViewModel
         if (PolyUnits.FirstOrDefault(u => !u.Ok) is { } bad) { PolyError = $"{bad.Letter}: {(bad.HasError ? bad.Error : "no SMILES")}"; return; }
         try
         {
-            var r = JsonNode.Parse(CapsDocument.ChainPreview(PolySpecJson(), 1))!;
+            var r = JsonNode.Parse(CapsDocument.ChainPreview(PolySpecJson(), (ulong)(_polyDraw = PolySeed.Take())))!;
             if ((bool?)r["ok"] != true) { PolyError = (string?)r["error"] ?? "cannot build this chain"; return; }
             PolyError = "";
             PolyStripUnits = (r["sequence"] as JsonArray ?? []).Select(x => (int?)x ?? 0).ToArray();
@@ -422,7 +422,8 @@ public sealed partial class MainViewModel
         try
         {
             var scale = _polyArch == 0 ? 0.8 : -0.8;   // branched: step down where a branch point is crowded
-            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = 1, Density = 0.02, ContactScale = scale, Curve = 1 }, null, "chain"));
+            var seed = (ulong)_polyDraw;   // the chain the strip shows
+            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = seed, Density = 0.02, ContactScale = scale, Curve = 1 }, null, "chain"));
             var old = _polyDoc;
             PolyDoc = doc;
             old?.Dispose();
@@ -442,7 +443,8 @@ public sealed partial class MainViewModel
         try
         {
             var scale = _polyArch == 0 ? 0.8 : -0.8;
-            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = 1, Density = 0.02, ContactScale = scale, Curve = 1 }, null, "chain"));
+            var seed = (ulong)_polyDraw;
+            var (doc, _) = await Task.Run(() => CapsDocument.GrowChains(spec, new CapsGrowOpts { Chains = 1, Dp = 0, Tacticity = tact, Seed = seed, Density = 0.02, ContactScale = scale, Curve = 1 }, null, "chain"));
             Show(doc, (_polyName.Length > 0 ? _polyName : "polymer") + (_polyArch == 0 ? $" · 1 chain × {_growDp}" : $" · 1 {ArchIds[_polyArch]} molecule"));
             GrownUnsaved = true;
             SetModule(8);

@@ -203,7 +203,7 @@ public sealed partial class MainViewModel
         var name = string.Join(" / ", BlendRows.Select(r => r.Polymer!.Name.Split(" (")[0]));
         try
         {
-            var g = new CapsGrowOpts { Seed = 1, ContactScale = 1.0, Curve = 1 };
+            var g = new CapsGrowOpts { Seed = (ulong)BlendSeed.Take(), ContactScale = 1.0, Curve = 1 };
             var (doc, rep) = await Task.Run(() => CapsDocument.GrowBlend(opts, g, (d, t, r) =>
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Growing the blend · {d} of {t} chains · {r} restarts");
