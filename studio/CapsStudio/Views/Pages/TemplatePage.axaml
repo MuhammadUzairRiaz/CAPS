@@ -27,7 +27,7 @@
     </Border>
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Right" Text="Saved as CAPS template text in ~/.caps/templates" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <TextBlock DockPanel.Dock="Right" Text="Saved as CAPS template text + atom-mapped reaction SMARTS + JSON in ~/.caps/templates" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
         <TextBlock Text="{Binding TemplateFooter}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
       </DockPanel>
     </Border>
@@ -110,7 +110,12 @@
           <Border Classes="pcard">
             <StackPanel Spacing="7">
               <TextBlock Text="After reaction" FontSize="13.5" FontWeight="SemiBold" />
-              <TextBlock Text="React retypes the structure and relaxes it after every cycle (settings on the React page); partial charges follow the force field." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <TextBlock Text="Charges" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:MainViewModel.TemplateChargeModes}" SelectedIndex="{Binding TemplateCharges}"
+                          ToolTip.Tip="From the force field: recomputed for the new chemistry (types' charges or Gasteiger). Kept, neutral: every atom keeps its charge and a deleted atom's joins the atom it was bonded to, so each molecule's net charge is conserved (the template's 'charges keep' line)" />
+              </Grid>
+              <TextBlock Text="React retypes the whole structure (types depend on their neighbours, so atoms far from the site keep theirs) and relaxes it after every cycle — or, during MD, the reacted site and 5 Å around it with the rest held (settings on the React page)." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
         </StackPanel>

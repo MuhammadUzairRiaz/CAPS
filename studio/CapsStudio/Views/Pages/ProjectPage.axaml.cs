@@ -47,6 +47,17 @@ public partial class ProjectPage : PageBase
         Vm.Status = "Copied the methods section and its references";
     }
 
+    private async void OnExportTable(object? s, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || TopLevel.GetTopLevel(this) is not { } top) return;
+        var f = await top.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Export the results table", SuggestedFileName = "results.csv", DefaultExtension = "csv",
+            FileTypeChoices = [new Avalonia.Platform.Storage.FilePickerFileType("CSV") { Patterns = ["*.csv"] }],
+        });
+        if (f?.TryGetLocalPath() is { } path) { try { vm.ExportProjectTable(path); } catch (Exception ex) { vm.Status = "Could not write the table: " + ex.Message; } }
+    }
+
     private async void OnBibtex(object? s, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);

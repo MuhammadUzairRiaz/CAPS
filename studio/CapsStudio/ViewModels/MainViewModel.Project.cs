@@ -38,6 +38,41 @@ public sealed partial class MainViewModel
 {
     public bool IsProject => _module == 42;
     public ObservableCollection<ProjectDoc> ProjectDocs { get; } = new();
+
+    // the literature row under the results (data/reference/polymers.json, as Analyze compares with)
+    private int _projRef;
+    public IEnumerable<RefMaterial> ProjectReferences => Analyze.References;
+    public int ProjectRefIndex { get => _projRef; set { if (Set(ref _projRef, Math.Max(0, value))) RaiseProjectRef(); } }
+    private RefMaterial? ProjectRef => _projRef > 0 && _projRef < Analyze.References.Count ? Analyze.References[_projRef] : null;
+    public bool HasProjectRef => ProjectRef != null;
+    private static string Range(RefMaterial? m, string key, string fmt)
+    {
+        if (m == null || !m.Values.TryGetValue(key, out var v)) return "—";
+        var inv = CultureInfo.InvariantCulture;
+        return Math.Abs(v.Hi - v.Lo) < 1e-12 * Math.Max(1, Math.Abs(v.Lo)) ? v.Lo.ToString(fmt, inv) : $"{v.Lo.ToString(fmt, inv)}–{v.Hi.ToString(fmt, inv)}";
+    }
+    public string ProjectRefName => ProjectRef is { } m ? $"literature · {m.Name}" : "";
+    public string ProjectRefDensity => Range(ProjectRef, "density", "0.000");
+    public string ProjectRefTg => Range(ProjectRef, "tg", "0");
+    public string ProjectRefCinf => Range(ProjectRef, "cn", "0.0");
+    public string ProjectRefSources => ProjectRef is { } m ? string.Join(" · ", m.Values.Where(kv => kv.Key is "density" or "tg" or "cn").Select(kv => kv.Value.Source).Distinct()) : "";
+    private void RaiseProjectRef()
+    {
+        foreach (var n in new[] { nameof(HasProjectRef), nameof(ProjectRefName), nameof(ProjectRefDensity), nameof(ProjectRefTg), nameof(ProjectRefCinf), nameof(ProjectRefSources) }) Raise(n);
+    }
+
+    /// <summary>The results table as CSV: every structure's row, and the literature row when one is chosen.</summary>
+    public void ExportProjectTable(string path)
+    {
+        static string Q(string x) => x.Contains(',') || x.Contains('"') ? "\"" + x.Replace("\"", "\"\"") + "\"" : x;
+        var sb = new System.Text.StringBuilder("structure,atoms,density_g_cm3,tg_K,c_inf,last_step,status,file\n");
+        foreach (var d in ProjectDocs)
+            sb.Append(string.Join(",", new[] { d.Name, d.Atoms, d.Density, d.Tg, d.Cinf, d.LastStep, d.Status, d.Path }.Select(x => Q(x == "—" ? "" : x)))).Append('\n');
+        if (ProjectRef is { } m)
+            sb.Append(string.Join(",", new[] { ProjectRefName, "", ProjectRefDensity, ProjectRefTg, ProjectRefCinf, "", "literature", ProjectRefSources }.Select(x => Q(x == "—" ? "" : x)))).Append('\n');
+        File.WriteAllText(path, sb.ToString());
+        Status = $"Wrote the results table ({ProjectDocs.Count} structures{(ProjectRef != null ? " and the literature row" : "")}) to {path}";
+    }
     public ObservableCollection<string> ProjectRefs { get; } = new();
     private string _projectFolder = "", _projectMethods = "", _projectMethodsFor = "";
     public string ProjectFolder { get => _projectFolder; private set { if (Set(ref _projectFolder, value)) { Raise(nameof(ProjectName)); Raise(nameof(ProjectFolderText)); } } }

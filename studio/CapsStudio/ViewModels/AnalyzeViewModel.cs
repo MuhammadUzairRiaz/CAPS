@@ -228,7 +228,7 @@ public sealed class AnalyzeViewModel : ObservableObject
     public decimal TensTD { get => (decimal)_tensT; set => Set(ref _tensT, (double)Math.Max(1, value), nameof(TensTD)); }
     public int TensAxis { get => _tensAxis; set => Set(ref _tensAxis, value); }
     public bool TensFixed { get => _tensFixed; set => Set(ref _tensFixed, value); }
-    public static readonly string[] Axes = ["x", "y", "z"];
+    public static readonly string[] Axes = ["x", "y", "z", "x, y, z averaged"];
     public string TensRateText => string.Format(Inv, "{0:0.##e0} s⁻¹", _tensRate * 1e12);
     protected override void OnChanged(string? name) { if (name == nameof(TensRateD)) Raise(nameof(TensRateText)); }
 

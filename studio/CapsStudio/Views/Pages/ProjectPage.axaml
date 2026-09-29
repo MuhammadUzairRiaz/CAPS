@@ -59,7 +59,14 @@
                      Text="Open a structure first: its folder becomes the project. Or choose another folder." />
           <Border Classes="pcard">
             <StackPanel Spacing="8">
-              <TextBlock Text="Results" FontSize="13.5" FontWeight="SemiBold" />
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Click="OnExportTable" IsEnabled="{Binding ProjectDocs.Count}" ToolTip.Tip="The table as CSV, with the literature row when one is chosen">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export table" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <ComboBox DockPanel.Dock="Right" Width="210" Margin="0,0,8,0" ItemsSource="{Binding ProjectReferences}" SelectedIndex="{Binding ProjectRefIndex}"
+                          ToolTip.Tip="A literature row under the results: the ranges of data/reference/polymers.json (as Analyze compares with)" />
+                <TextBlock Text="Results" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
               <Grid ColumnDefinitions="28*,11*,13*,15*,11*,16*,12*" Margin="0,0,0,2">
                 <TextBlock Text="STRUCTURE" Classes="h3" /><TextBlock Grid.Column="1" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
                 <TextBlock Grid.Column="2" Text="ρ (G/CM³)" Classes="h3" HorizontalAlignment="Right" />
@@ -86,6 +93,15 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7" IsVisible="{Binding HasProjectRef}" ToolTip.Tip="{Binding ProjectRefSources}">
+                <Grid ColumnDefinitions="28*,11*,13*,15*,11*,16*,12*">
+                  <TextBlock Text="{Binding ProjectRefName}" FontSize="12" FontStyle="Italic" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Grid.Column="2" Text="{Binding ProjectRefDensity}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Grid.Column="3" Text="{Binding ProjectRefTg}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Grid.Column="4" Text="{Binding ProjectRefCinf}" Classes="mono" FontSize="11.5" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Grid.Column="6" Text="literature" FontSize="12" Foreground="{DynamicResource MutedB}" />
+                </Grid>
+              </Border>
               <TextBlock Text="Density from each file's cell; Tg and C∞ from the last Analyze run its provenance records (save after analysing); status from its last step." FontSize="11.5" Foreground="{DynamicResource DimB}" />
             </StackPanel>
           </Border>

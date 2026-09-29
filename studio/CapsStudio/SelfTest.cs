@@ -11,7 +11,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 41, "native ABI version 41");
+        Check(Native.AbiVersion() == 42, "native ABI version 42");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -919,6 +919,16 @@ internal static class SelfTest
         vm.BuildBlend().GetAwaiter().GetResult();
         var bsum = vm.Document?.Summary();
         Check(vm.BlendRows.Count == 2 && bsum is { } blendSum && blendSum.Molecules >= 5 && vm.Title.Contains("blend"), $"blend: {vm.Title} · {bsum?.Molecules} chains · {vm.BlendError}");
+        // the same blend grown by configurational bias (Rosenbluth with UFF Lennard-Jones), as Grow offers
+        vm.OpenBlend();
+        vm.BlendChains = 4;
+        foreach (var r in vm.BlendRows) r.Dp = 8;
+        vm.BlendGrowMethod = 2;
+        vm.BuildBlend().GetAwaiter().GetResult();
+        var cbSum = vm.Document?.Summary();
+        Check(cbSum is { } cbs && cbs.Molecules >= 4 && vm.BlendError.Length == 0 && vm.BlendGrowBiased,
+              $"blend grown by Rosenbluth + UFF LJ: {cbSum?.Molecules} chains · {vm.BlendError}");
+        vm.BlendGrowMethod = 0;
         // by chain count: exactly the counts given; by volume: the densities turn volume shares into weight shares
         vm.OpenBlend();
         vm.BlendMode = 2;
@@ -1874,6 +1884,24 @@ internal static class SelfTest
             Check(vm.IsStudio && sp.Atoms == 440 + 10 * 5 && vm.HoldOn && vm.NanoLog.Contains("packed inside the pore") && last == "nano.pore",
                   $"pore: {sp.Atoms} atoms · held {vm.HoldOn} · {last} · {vm.PoreChip}");
             vm.HoldOn = false;
+            // the same slit with TraPPE-UA methane: one site per molecule; the walls UFF, the fluid TraPPE-UA, by group
+            vm.PoreFluidIndex = MainViewModel.PoreFluids.ToList().FindIndex(f => f.UnitedAtom && f.Smiles == "C");
+            vm.BuildNano().GetAwaiter().GetResult();
+            var ua = vm.Document!.Summary().Atoms;
+            var uffPore = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");
+            var trPore = vm.Field.Library.ToList().FindIndex(x => x.Id == "trappe-ua");
+            vm.Field.GroupMode = true;   // suggests groups of its own: replaced by these two
+            vm.Field.Groups.Clear();
+            vm.Field.Groups.Add(new FieldGroupRow(vm.Field) { Name = "walls", Molecules = "1", FfIndex = uffPore });
+            vm.Field.Groups.Add(new FieldGroupRow(vm.Field) { Name = "methane", Molecules = "rest", FfIndex = trPore, Charges = 0 });
+            vm.Field.AssignGroups().GetAwaiter().GetResult();
+            Check(ua == 440 + 10 && uffPore >= 0 && trPore >= 0 && vm.Field.Complete && vm.NanoLog.Contains("united atoms"),
+                  $"pore with TraPPE-UA methane: {ua} atoms · {vm.Field.ForceFieldName} · complete {vm.Field.Complete} · {vm.Field.Log}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.Field.Groups.Clear();
+            vm.Field.GroupMode = false;
+            vm.HoldOn = false;
+            vm.PoreFluidIndex = 0;
             vm.NanoKind = 1;
         }
         {
@@ -1885,6 +1913,14 @@ internal static class SelfTest
             vm.ParticlePassivate = true;
             vm.BuildNano().GetAwaiter().GetResult();
             var bare = vm.Document!.Summary().Atoms;
+            {   // the same particle with its cut surface relaxed (UFF, core held)
+                vm.ParticleRelax = true;
+                vm.BuildNano().GetAwaiter().GetResult();
+                var relaxed = vm.Document!.Summary().Atoms;
+                Check(relaxed == bare && vm.NanoLog.Contains("surface relaxed with UFF"), $"particle surface relaxed: {vm.NanoLog.Split('\n').FirstOrDefault(l => l.Contains("relaxed"))}");
+                vm.ParticleRelax = false;
+                vm.BuildNano().GetAwaiter().GetResult();
+            }
             vm.SilanePick = 0;
             vm.SilaneFractionD = 0.2m;
             vm.GraftSilane();
@@ -1958,6 +1994,16 @@ internal static class SelfTest
             var swapped = vm.ProjectPanelShown && !vm.InspectorShown;
             vm.Compact = false;
             Check(inspector && swapped && vm.ProjectPanelShown && vm.InspectorShown, $"compact: inspector drawer {inspector} · project drawer {swapped}");
+            // the Fragments tab: the project drawer on its fragments tab; Monitors: the pinned measurements shown or hidden
+            vm.Compact = true;
+            vm.FragmentsDrawer = true;
+            var frag = vm.ProjectPanelShown && vm.ShowFragmentsTab && vm.FragmentsDrawer && !vm.ProjectOnlyDrawer && !vm.InspectorShown;
+            vm.MonitorsShown = false;
+            var hidden = !vm.MonitorsVisible;
+            vm.MonitorsShown = true;
+            vm.Compact = false;
+            Check(frag && hidden, $"compact side tabs: fragments drawer {frag} · monitors hidden {hidden}");
+            vm.LeftTab = 0;
             vm.ProjectDrawer = false;
             vm.InspectorDrawer = true;
         }
@@ -1965,6 +2011,9 @@ internal static class SelfTest
         // Theory manual: every page's references resolve in CAPS's BibTeX table
         {
             vm.OpenManual("csvr");
+            // this session's thermostatted runs are listed under "Used in this project"
+            Check(vm.ManualUsedProject.Any(x => x.StartsWith("dynamics-") || x.StartsWith("equilibrate-")) && vm.ManualHasUsedProject,
+                  $"manual used in the project: {string.Join(" | ", vm.ManualUsedProject.Take(3))}");
             var unresolved = new List<string>();
             foreach (var item in vm.ManualNav.Where(n => n.Page != null))
             {
@@ -2002,6 +2051,14 @@ internal static class SelfTest
             var shared = vm.ShareProject(zip);
             Check(vm.IsProject && vm.ProjectDocs.Count == 2 && vm.ProjectDocs.All(d => d.HasProvenance) && vm.ProjectMethods.Contains("2 independent replicas") && File.Exists(zip),
                   $"project: {vm.ProjectDocs.Count} structures · {vm.ProjectMethodsFor} · {shared}");
+            // the results table with the literature row (atactic PS) as CSV
+            vm.ProjectRefIndex = vm.Analyze.References.ToList().FindIndex(m => m.Id == "ps-atactic");
+            var csvPath = Path.Combine(outDir, "caps-selftest-results.csv");
+            vm.ExportProjectTable(csvPath);
+            var csv = File.Exists(csvPath) ? File.ReadAllLines(csvPath) : [];
+            Check(vm.HasProjectRef && csv.Length == 4 && csv[0].StartsWith("structure,atoms,density") && csv[3].Contains("literature") && csv[3].Contains("1.040–1.065"),
+                  $"project table: {csv.Length} lines · {(csv.Length > 3 ? csv[3] : "")} · Tg {vm.ProjectRefTg}");
+            vm.ProjectRefIndex = 0;
             vm.SetModule(8);
         }
 
@@ -2052,6 +2109,16 @@ internal static class SelfTest
             vm.TemplateText = vm.TemplateText + "\nbreak 4 1\n";
             var flagged = !vm.TemplateChecksPass && vm.TemplateHasError;
             Check(vm.IsTemplate && pass && flagged && vm.TemplateTestText.Contains("reactive sites"), $"template: pass {pass} · edit flagged {flagged} · {vm.TemplateTestText}");
+            // charges kept through the reaction (a 'charges keep' line), and the save writes the reaction SMARTS and JSON beside it
+            vm.OpenTemplateEditor("cc_crosslink");
+            vm.TemplateCharges = 1;
+            var keptLine = vm.TemplateText.Contains("charges keep") && vm.TemplateCharges == 1;
+            var tplSaved = vm.SaveTemplate();
+            var smartsPath = Path.Combine(MainViewModel.TemplateFolder, "cc_crosslink.smarts");
+            var smarts = File.Exists(smartsPath) ? File.ReadAllText(smartsPath) : "";
+            vm.TemplateCharges = 0;
+            Check(keptLine && !vm.TemplateText.Contains("charges keep") && smarts.StartsWith("[#6;X4;!H0;A:1]~[#1:3].[#6;X4;!H0;A:2]~[#1:4]>>[#6:1]-[#6:2]"),
+                  $"template charges kept + SMARTS: kept {keptLine} · removed {!vm.TemplateText.Contains("charges keep")} · {smarts.Trim()} · {tplSaved} · {vm.TemplateError}");
             vm.SetModule(8);
         }
 

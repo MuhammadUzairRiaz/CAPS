@@ -86,20 +86,22 @@
               <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="mean ± sd over seeds" /></Border>
               <TextBlock Text="Results by condition" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DockPanel>
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="34*,24*,22*,20*" Margin="0,0,0,4">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="30*,20*,17*,15*,18*" Margin="0,0,0,4">
               <TextBlock Text="CONDITION" Classes="h3" /><TextBlock Grid.Column="1" Text="DENSITY (G/CM³)" Classes="h3" HorizontalAlignment="Right" />
-              <TextBlock Grid.Column="2" Text="RG (Å)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="SEEDS DONE" Classes="h3" HorizontalAlignment="Right" />
+              <TextBlock Grid.Column="2" Text="RG (Å)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="TG (K)" Classes="h3" HorizontalAlignment="Right" />
+              <TextBlock Grid.Column="4" Text="SEEDS DONE" Classes="h3" HorizontalAlignment="Right" />
             </Grid>
             <ScrollViewer>
               <ItemsControl ItemsSource="{Binding SweepResults}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:SweepResult">
                     <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7">
-                      <Grid ColumnDefinitions="34*,24*,22*,20*">
+                      <Grid ColumnDefinitions="30*,20*,17*,15*,18*">
                         <TextBlock Text="{Binding Condition}" FontSize="12" />
                         <TextBlock Grid.Column="1" Text="{Binding Density}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
                         <TextBlock Grid.Column="2" Text="{Binding Rg}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="3" Text="{Binding Seeds}" FontSize="12" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                        <TextBlock Grid.Column="3" Text="{Binding Tg}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="{Binding Seeds}" FontSize="12" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
                       </Grid>
                     </Border>
                   </DataTemplate>
@@ -136,8 +138,12 @@
           <Border Classes="pcard">
             <StackPanel Spacing="10">
               <TextBlock Text="Recipe" FontSize="13.5" FontWeight="SemiBold" />
-              <TextBlock Text="Grow (auto contact scale) → Relax (push-off, L-BFGS to 1 kcal/mol/Å) → Analyze (density, Rg) → save with provenance. Without NPT the density is the one grown at." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <TextBlock Text="Grow (auto contact scale) → Relax (push-off, L-BFGS to 1 kcal/mol/Å) → optional Equilibrate and NPT → Analyze (density, Rg; Tg on request) → save with provenance. Without NPT or Equilibrate the density is the one grown at." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <CheckBox Classes="toggle" Content="Equilibrate first (the Equilibrate page's protocol)" IsChecked="{Binding SweepEquilibrate}"
+                        ToolTip.Tip="Each cell runs the protocol chosen on the Equilibrate page (e.g. Larsen's 21 steps) after Relax, with its own seed" />
               <CheckBox Classes="toggle" Content="NPT dynamics before analysing" IsChecked="{Binding SweepNpt}" />
+              <CheckBox Classes="toggle" Content="Tg by stepwise NPT cooling" IsChecked="{Binding SweepTg}"
+                        ToolTip.Tip="Analyze's Tg on a copy of each cell: cooled step by step at constant pressure, Tg where the two lines fitted to v(T) cross. Long: minutes per cell" />
               <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsEnabled="{Binding SweepNpt}">
                 <StackPanel Spacing="6"><TextBlock Text="Length · ps" Classes="label" /><NumericUpDown Value="{Binding SweepNptPs}" Minimum="1" Increment="10" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Temperature · K" Classes="label" /><NumericUpDown Value="{Binding SweepTemperature}" Minimum="1" Increment="10" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
@@ -170,7 +176,7 @@
             <StackPanel Spacing="10">
               <TextBlock Text="Where" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <StackPanel Spacing="6"><TextBlock Text="Host" Classes="label" /><TextBlock Text="This machine" FontSize="13" VerticalAlignment="Center" Margin="0,6,0,0" ToolTip.Tip="A sweep's runs share this machine's threads; single runs go to hosts from their own pages (Where)" /></StackPanel>
+                <StackPanel Spacing="6"><TextBlock Text="Host" Classes="label" /><ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding SweepHosts}" SelectedIndex="{Binding SweepHostIndex}" ToolTip.Tip="This machine: the runs share its threads, a few at a time. A host (Settings › Compute &amp; remote): each cell goes as its own caps run recipe job (SLURM, PBS or a process); Jobs follows them" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Runs at a time" Classes="label" /><NumericUpDown Value="{Binding SweepConcurrency}" Minimum="1" Maximum="8" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>
               </Grid>
               <StackPanel Spacing="6"><TextBlock Text="Output folder" Classes="label" /><TextBox Text="{Binding SweepFolder}" Classes="mono" FontSize="11.5" /></StackPanel>

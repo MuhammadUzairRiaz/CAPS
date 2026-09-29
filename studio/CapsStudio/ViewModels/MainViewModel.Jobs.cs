@@ -277,6 +277,7 @@ public sealed partial class MainViewModel
             }
             if (kind is "Dynamics" or "Equilibrate") { job.CurveA = "Density"; job.AxisA = "density (g/cm³)"; job.CurveB = "Temperature"; job.AxisB = "temperature (K)"; job.AxisX = "time (ps)"; }
             else if (kind == "Relax") { job.CurveA = "Energy"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Largest force"; job.AxisB = "log₁₀ |F|max"; job.AxisX = "iteration"; }
+            else if (kind == "React") { job.CurveA = "Energy after each cycle"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Force before the next cycle"; job.AxisB = "log₁₀ |F|max"; job.AxisX = "reaction cycle"; }
             _live[kind] = job;
             Jobs.Insert(0, job);
             if (kind is not ("Grow" or "Pack")) AttachJob(job, _activeItem);   // the structure it runs on
@@ -293,7 +294,7 @@ public sealed partial class MainViewModel
             {
                 job.Status = "failed";
                 job.Error = string.Join("\n", job.Log.SkipWhile(l => !l.Text.StartsWith("Could not")).Select(l => l.Text));
-                if (job.Error.Length == 0) job.Error = last;
+                if (job.Error.Length == 0) job.Error = job.Log.LastOrDefault(l => l.Text.Contains("failed"))?.Text ?? last;
                 (job.Suggestion, job.SuggestModule) = Suggest(kind, job.Error);
                 if (kind == "Dynamics" && MdCanContinue)   // FailedJob: nothing is lost — the checkpoint is intact
                     (job.Suggestion, job.SuggestModule) = ($"{MdCheckpointText}. {MdContinueLabel} on the Dynamics page" +
@@ -323,6 +324,8 @@ public sealed partial class MainViewModel
         if (e.Contains("nan") || e.Contains("blew up") || e.Contains("moved") || e.Contains("unstable"))
             return (kind == "Dynamics" || kind == "Equilibrate"
                 ? "Relax the structure first (forces from overlaps make the first steps unstable), or halve the timestep." : "", 2);
+        if (kind == "React" && e.Contains("failed at cycle"))
+            return ("Nothing is lost: the structure after the last completed cycle is kept — React again to continue from it (fewer reactions per cycle, or more relaxation, if the same cycle fails).", 6);
         if (e.Contains("could not pack") || e.Contains("tolerance"))
             return ("Use a larger box or fewer molecules; Pack never returns a cell with contacts closer than the tolerance.", 5);
         if (e.Contains("periodic cell"))
@@ -342,6 +345,22 @@ public sealed partial class MainViewModel
             j.CurvesChanged();
             if (j == _job) JobCurvesChanged?.Invoke();
         }
+    }
+
+    /// <summary>React jobs: the energy and the largest force after each cycle's relaxation (FailedJob: the force before the failure).</summary>
+    private void OnReactCurves()
+    {
+        if (!_live.TryGetValue("React", out var j)) return;
+        j.A.Clear();
+        j.B.Clear();
+        foreach (var r in _rxRows)
+        {
+            if (r.Energy != 0) j.A.Add((r.Cycle, r.Energy));
+            if (r.MaxForce > 0) j.B.Add((r.Cycle, Math.Log10(r.MaxForce)));
+        }
+        if (_rxCycles > 0) { j.Progress = Math.Min(1, (double)(_rxRows.Count > 0 ? _rxRows[^1].Cycle : 0) / _rxCycles); AnnounceProgress(j); }
+        j.CurvesChanged();
+        if (j == _job) JobCurvesChanged?.Invoke();
     }
 
     private void OnRelaxCurves()

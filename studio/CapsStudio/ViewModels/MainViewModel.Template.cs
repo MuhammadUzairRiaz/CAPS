@@ -13,7 +13,10 @@ public sealed record TemplateCheck(bool Ok, string Text);
 public sealed partial class MainViewModel
 {
     public bool IsTemplate => _module == 45;
-    public static string TemplateFolder => System.IO.Path.Combine(AppSettings.Folder, "templates");
+    // tests and screenshots (a settings override) keep their templates beside it, never in the user's folder
+    public static string TemplateFolder => AppSettings.Override != null
+        ? System.IO.Path.Combine(System.IO.Path.GetDirectoryName(AppSettings.Override)!, "caps-templates")
+        : System.IO.Path.Combine(AppSettings.Folder, "templates");
     public ObservableCollection<string> TemplateNames { get; } = new();
     public ObservableCollection<ProvRow> TemplateChanges { get; } = new();
     public ObservableCollection<TemplateCheck> TemplateChecks { get; } = new();
@@ -28,7 +31,28 @@ public sealed partial class MainViewModel
     public List<(int, int)> TemplateBroken { get; } = new();
 
     public string TemplateName { get => _tplName; set { if (value != null && Set(ref _tplName, value)) LoadTemplate(value); } }
-    public string TemplateText { get => _tplText; set { if (Set(ref _tplText, value ?? "")) ParseTemplate(); } }
+    public string TemplateText { get => _tplText; set { if (Set(ref _tplText, value ?? "")) { ParseTemplate(); Raise(nameof(TemplateCharges)); } } }
+    // after the reaction: charges from the force field (default) or kept and conserved ("charges keep" in every reaction block)
+    public static readonly string[] TemplateChargeModes = ["From the force field", "Kept, net charge conserved"];
+    public int TemplateCharges
+    {
+        get => System.Text.RegularExpressions.Regex.IsMatch(_tplText, @"(?m)^\s*charges\s+keep\b") ? 1 : 0;
+        set
+        {
+            if (value == TemplateCharges) return;
+            var lines = _tplText.Replace("\r\n", "\n").Split('\n').Where(l => !System.Text.RegularExpressions.Regex.IsMatch(l, @"^\s*charges\s")).ToList();
+            if (value == 1)   // after each reaction line's block: one line per reaction
+                for (int k = lines.Count - 1; k >= 0; k--)
+                    if (System.Text.RegularExpressions.Regex.IsMatch(lines[k], @"^\s*reaction\s"))
+                    {
+                        var end = k + 1;
+                        while (end < lines.Count && !System.Text.RegularExpressions.Regex.IsMatch(lines[end], @"^\s*reaction\s")) end++;
+                        while (end > k + 1 && lines[end - 1].Trim().Length == 0) end--;
+                        lines.Insert(end, "charges keep");
+                    }
+            TemplateText = string.Join("\n", lines);
+        }
+    }
     public int TemplateIndex { get => _tplIndex; set { if (Set(ref _tplIndex, value)) ShowTemplate(); } }
     public string TemplateTitle { get => _tplTitle; private set => Set(ref _tplTitle, value); }
     public string TemplateError { get => _tplError; private set { if (Set(ref _tplError, value)) Raise(nameof(TemplateHasError)); } }
@@ -133,10 +157,18 @@ public sealed partial class MainViewModel
         var name = TemplateTabs.FirstOrDefault() ?? "template";
         var path = System.IO.Path.Combine(TemplateFolder, name + ".txt");
         File.WriteAllText(path, _tplText);
+        // beside it: each reaction as an atom-mapped reaction SMARTS (RDKit and Daylight read it) and the editor's JSON
+        if (_tplViews is { Count: > 0 } views)
+        {
+            var smarts = string.Join("\n", views.Select(v => $"{v!["smarts"]?.GetValue<string>()} {v["name"]?.GetValue<string>()}"));
+            File.WriteAllText(System.IO.Path.Combine(TemplateFolder, name + ".smarts"), smarts + "\n");
+            File.WriteAllText(System.IO.Path.Combine(TemplateFolder, name + ".json"), new JsonObject { ["format"] = "caps-template-view/1", ["templates"] = views.DeepClone() }
+                .ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
         if (!TemplateNames.Contains("my: " + name)) TemplateNames.Add("my: " + name);
         _tplName = "my: " + name;
         Raise(nameof(TemplateName));
-        return $"Saved {RecentFiles.Tilde(path)}";
+        return $"Saved {RecentFiles.Tilde(path)} (and .smarts, .json)";
     }
 
     /// <summary>The template text as React's reactions (custom set) and the React page.</summary>

@@ -1,6 +1,7 @@
 // The reaction-template editor's view of a template: drawings of the pattern before and after, changes and checks.
 #include <algorithm>
 #include <cstdio>
+#include <functional>
 #include <map>
 #include <set>
 
@@ -62,7 +63,119 @@ Json drawing(const std::vector<int>& maps, const std::map<int, int>& element, co
   return out;
 }
 
+// One side of a reaction SMARTS: each connected part by depth-first walk with ring closures, parts joined by '.'.
+// Pattern bonds carry no order (the template is connectivity), so each is '~' (any bond).
+std::string smarts_side(const std::vector<int>& maps, const std::set<Edge>& bonds, const std::function<std::string(int)>& atom,
+                        const std::set<Edge>& single = {}) {
+  auto sym = [&](int a, int b) { return single.count(edge(a, b)) ? std::string("-") : std::string("~"); };
+  std::map<int, std::vector<int>> adj;
+  for (int m : maps) adj[m];
+  for (const auto& [a, b] : bonds)
+    if (adj.count(a) && adj.count(b)) adj[a].push_back(b), adj[b].push_back(a);
+  for (auto& [m, v] : adj) std::sort(v.begin(), v.end());
+  std::set<int> seen;
+  std::string out;
+  for (int start : maps) {
+    if (seen.count(start)) continue;
+    // ring closures: the bonds a spanning tree from start does not use
+    std::map<int, int> parent{{start, 0}};
+    std::vector<int> order, stack{start};
+    std::set<int> tree;
+    while (!stack.empty()) {
+      const int u = stack.back();
+      stack.pop_back();
+      if (tree.count(u)) continue;
+      tree.insert(u);
+      order.push_back(u);
+      for (auto it = adj[u].rbegin(); it != adj[u].rend(); ++it)
+        if (!tree.count(*it)) parent[*it] = u, stack.push_back(*it);
+    }
+    std::set<Edge> tree_edges;
+    for (const auto& [c, p] : parent) if (p) tree_edges.insert(edge(c, p));
+    std::map<int, std::vector<std::pair<int, std::string>>> closures;   // atom → ring numbers (and bond symbol) opened or closed there
+    int ring = 0;
+    for (const auto& e : bonds)
+      if (tree.count(e.first) && tree.count(e.second) && !tree_edges.count(e)) {
+        ++ring;
+        closures[e.first].push_back({ring, sym(e.first, e.second)}), closures[e.second].push_back({ring, sym(e.first, e.second)});
+      }
+    std::function<void(int, int)> walk = [&](int u, int from) {
+      seen.insert(u);
+      out += atom(u);
+      for (const auto& [r, bs] : closures[u]) out += bs + (r < 10 ? std::to_string(r) : "%" + std::to_string(r));
+      std::vector<int> kids;
+      for (int w : adj[u]) if (w != from && parent.count(w) && parent[w] == u && !seen.count(w)) kids.push_back(w);
+      for (size_t k = 0; k < kids.size(); ++k) {
+        const bool branch = k + 1 < kids.size();
+        if (branch) out += "(";
+        out += sym(u, kids[k]);
+        walk(kids[k], u);
+        if (branch) out += ")";
+      }
+    };
+    if (!out.empty()) out += ".";
+    walk(start, 0);
+  }
+  return out;
+}
+
 }  // namespace
+
+std::string reaction_smarts(const ReactionTemplate& t) {
+  std::map<int, const TemplateAtom*> by;
+  std::vector<int> maps;
+  std::set<Edge> pre;
+  for (const auto& a : t.atoms) {
+    by[a.map] = &a;
+    maps.push_back(a.map);
+    for (int b : a.bonded) pre.insert(edge(a.map, b));
+  }
+  // the query side: element, connections, hydrogens, ring and aromaticity constraints, the map number
+  auto query = [&](int m) {
+    const TemplateAtom& a = *by.at(m);
+    std::string q = "[#" + std::to_string(a.element);
+    if (a.degree >= 0) q += ";X" + std::to_string(a.degree);
+    if (a.h_min >= 0 || a.h_max >= 0) {
+      const int lo = std::max(0, a.h_min), hi = a.h_max >= 0 ? a.h_max : 4;
+      if (lo == hi) q += ";H" + std::to_string(lo);
+      else if (lo >= 1 && hi == 4 && a.h_max < 0) q += lo == 1 ? ";!H0" : ";!H0;!H1" + std::string(lo >= 3 ? ";!H2" : "");
+      else {
+        q += ";";
+        for (int h = lo; h <= hi; ++h) q += (h > lo ? "," : "") + std::string("H") + std::to_string(h);
+      }
+    }
+    if (a.ring3) q += ";r3";
+    if (a.not_aromatic) q += ";A";
+    return q + ":" + std::to_string(m) + "]";
+  };
+  std::set<Edge> post = pre;
+  for (const auto& [a, b] : t.form) post.insert(edge(a, b));
+  for (const auto& [a, b] : t.brk) post.erase(edge(a, b));
+  for (const auto& [a, b] : t.move) {
+    for (auto it = post.begin(); it != post.end();) it = (it->first == a || it->second == a) ? post.erase(it) : std::next(it);
+    post.insert(edge(a, b));
+  }
+  std::vector<int> post_maps;
+  for (int m : maps)
+    if (std::find(t.remove.begin(), t.remove.end(), m) == t.remove.end()) post_maps.push_back(m);
+  for (int m : t.remove)
+    for (auto it = post.begin(); it != post.end();) it = (it->first == m || it->second == m) ? post.erase(it) : std::next(it);
+  // the product side: element and map; a deleted atom is absent there (a mapped reactant atom missing from the products
+  // is removed, as RDKit and Daylight read reaction SMARTS)
+  auto product = [&](int m) { return "[#" + std::to_string(by.at(m)->element) + ":" + std::to_string(m) + "]"; };
+  // a formed bond whose two atoms keep their number of bonds in the pattern (a substitution: an H or a partner lost, this
+  // bond gained) is single; other bonds stay '~' (CAPS perceives the orders after the reaction)
+  std::map<int, int> deg_pre, deg_post;
+  for (const auto& [a, b] : pre) ++deg_pre[a], ++deg_pre[b];
+  for (const auto& [a, b] : post) ++deg_post[a], ++deg_post[b];
+  std::set<Edge> single;
+  for (const auto& [a, b] : t.form)
+    if (deg_post[a] == deg_pre[a] && deg_post[b] == deg_pre[b]) single.insert(edge(a, b));
+  for (const auto& [a, b] : t.move)
+    if (deg_post[a] == deg_pre[a] && deg_post[b] == deg_pre[b]) single.insert(edge(a, b));
+  const std::string right = smarts_side(post_maps, post, product, single);
+  return smarts_side(maps, pre, query) + ">>" + right;
+}
 
 std::string template_view(const ReactionTemplate& t) {
   std::map<int, int> element;
@@ -154,6 +267,7 @@ std::string template_view(const ReactionTemplate& t) {
   j["capture"] = t.capture;
   j["probability"] = t.probability;
   j["min_path"] = t.min_path;
+  j["smarts"] = reaction_smarts(t);
   return j.dump(0);
 }
 

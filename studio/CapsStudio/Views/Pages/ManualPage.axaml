@@ -68,6 +68,19 @@
         </Border>
         <Border Classes="pcard">
           <StackPanel Spacing="8">
+            <TextBlock Text="{Binding ManualUsedProjectTitle}" FontSize="13.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <ItemsControl ItemsSource="{Binding ManualUsedProject}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2"><v:Icon Kind="jobs" Size="14" Foreground="{DynamicResource DimB}" /><TextBlock Text="{Binding}" FontSize="12.5" TextWrapping="Wrap" MaxWidth="250" /></StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="No structure of the project folder (Project home) and no job of this session used this method." IsVisible="{Binding !ManualHasUsedProject}" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <Border Classes="pcard">
+          <StackPanel Spacing="8">
             <TextBlock Text="Cite" FontSize="13.5" FontWeight="SemiBold" />
             <TextBlock Text="CAPS adds this reference to the provenance of every output that used the method." FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
             <Button Classes="small" HorizontalAlignment="Left" Click="OnCopyBibtex"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="copy" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy BibTeX" VerticalAlignment="Center" /></StackPanel></Button>
