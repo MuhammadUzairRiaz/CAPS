@@ -90,6 +90,41 @@ public partial class MainViewModel
         return string.Join('\n', lines);
     }
 
+    // ---- fill to a density: the number of the last molecule block from the target density of the whole cell
+    private decimal _fillDensity = 0.9m;
+    private string _fillText = "";
+    public decimal? FillDensity { get => _fillDensity; set { if (value != null) Set(ref _fillDensity, Math.Clamp(value.Value, 0.01m, 5m)); } }
+    public string FillText { get => _fillText; private set => Set(ref _fillText, value); }
+    /// <summary>Sets the last structure block's number so the cell (the current structure plus the molecules) reaches the
+    /// density: N = (ρ V N_A − m_host) / m_molecule, rounded down (ρ in g/cm³, V the cell's volume).</summary>
+    public void FillToDensity()
+    {
+        var inv = CultureInfo.InvariantCulture;
+        if (_doc == null || _packStart != 1) { FillText = "Pack around the current structure first (Pack into › Around the current structure)"; return; }
+        var lines = _packText.Split('\n').ToList();
+        var k = lines.FindLastIndex(l => l.TrimStart().StartsWith("structure ", StringComparison.OrdinalIgnoreCase));
+        if (k < 0) { FillText = "Add the molecule to fill with first"; return; }
+        var path = lines[k].Trim()["structure ".Length..].Split('#')[0].Trim();
+        if (!Path.IsPathRooted(path)) path = Path.Combine(_packBaseDir, path);
+        double mMol;
+        try { using var mol = Interop.CapsDocument.Open(path); mMol = mol.Summary().TotalMass; }
+        catch (Exception e) { FillText = "Cannot read the molecule: " + e.Message; return; }
+        var s = _doc.Summary();
+        const double avogadroPerA3 = 0.602214076;   // g/cm³ × Å³ → g/mol
+        var target = (double)_fillDensity * s.Volume * avogadroPerA3;
+        var room = target - s.TotalMass;
+        if (mMol <= 0) { FillText = "The molecule has no mass"; return; }
+        if (room < mMol) { FillText = string.Format(inv, "The cell is already at {0:0.000} g/cm³: nothing to add for {1:0.000}", s.Density, _fillDensity); return; }
+        var n = (int)Math.Floor(room / mMol);
+        var j = k + 1;
+        while (j < lines.Count && !lines[j].TrimStart().StartsWith("end structure", StringComparison.OrdinalIgnoreCase) && !lines[j].TrimStart().StartsWith("number ", StringComparison.OrdinalIgnoreCase)) ++j;
+        if (j < lines.Count && lines[j].TrimStart().StartsWith("number ", StringComparison.OrdinalIgnoreCase)) lines[j] = $"  number {n}";
+        else lines.Insert(k + 1, $"  number {n}");
+        PackText = string.Join('\n', lines);
+        var reached = (s.TotalMass + n * mMol) / (s.Volume * avogadroPerA3);
+        FillText = string.Format(inv, "{0} × {1} ({2:0.0} g/mol): {3:0.000} → {4:0.000} g/cm³ (target {5:0.000}; whole molecules)", n, Path.GetFileNameWithoutExtension(path), mMol, s.Density, reached, _fillDensity);
+    }
+
     /// <summary>After Grow or Pack made a cell: that builder's own force field, typed and checked.</summary>
     private async Task AssignForBuilder(bool pack)
     {
