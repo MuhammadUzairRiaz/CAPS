@@ -48,6 +48,7 @@
           <Border Classes="pcard">
             <StackPanel Spacing="10">
               <TextBlock Text="Setup" FontSize="13.5" FontWeight="SemiBold" />
+              <v:AnalysisScope />
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <StackPanel Spacing="6"><TextBlock Text="Fit from · % of the run" Classes="label" /><NumericUpDown Value="{Binding DfFitFrom}" Minimum="0" Maximum="95" Increment="5" FormatString="0" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Fit to · % of the run" Classes="label" /><NumericUpDown Value="{Binding DfFitTo}" Minimum="5" Maximum="100" Increment="5" FormatString="0" /></StackPanel>

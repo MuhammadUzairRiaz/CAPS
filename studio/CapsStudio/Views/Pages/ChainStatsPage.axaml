@@ -36,6 +36,12 @@
       <ScrollViewer Grid.Column="1">
         <StackPanel Spacing="14">
           <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Setup" FontSize="13.5" FontWeight="SemiBold" />
+              <v:AnalysisScope />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
             <UniformGrid Columns="3">
               <StackPanel Spacing="3" Margin="0,0,12,12"><TextBlock Text="{Binding CsBonds.Label}" Classes="label" /><TextBlock Text="{Binding CsBonds.Value}" Classes="mono" FontSize="17" /><TextBlock Text="{Binding CsBonds.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel><StackPanel Spacing="3" Margin="0,0,12,12"><TextBlock Text="{Binding CsRee.Label}" Classes="label" /><TextBlock Text="{Binding CsRee.Value}" Classes="mono" FontSize="17" /><TextBlock Text="{Binding CsRee.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel><StackPanel Spacing="3" Margin="0,0,12,12"><TextBlock Text="{Binding CsRg.Label}" Classes="label" /><TextBlock Text="{Binding CsRg.Value}" Classes="mono" FontSize="17" /><TextBlock Text="{Binding CsRg.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel><StackPanel Spacing="3" Margin="0,0,12,12"><TextBlock Text="{Binding CsRatio.Label}" Classes="label" /><TextBlock Text="{Binding CsRatio.Value}" Classes="mono" FontSize="17" /><TextBlock Text="{Binding CsRatio.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel><StackPanel Spacing="3" Margin="0,0,12,12"><TextBlock Text="{Binding CsCn.Label}" Classes="label" /><TextBlock Text="{Binding CsCn.Value}" Classes="mono" FontSize="17" /><TextBlock Text="{Binding CsCn.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel><StackPanel Spacing="3" Margin="0,0,12,12"><TextBlock Text="{Binding CsCinf.Label}" Classes="label" /><TextBlock Text="{Binding CsCinf.Value}" Classes="mono" FontSize="17" /><TextBlock Text="{Binding CsCinf.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
             </UniformGrid>
