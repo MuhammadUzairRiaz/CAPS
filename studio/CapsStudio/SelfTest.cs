@@ -3512,6 +3512,29 @@ internal static class SelfTest
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
         }
+        // Remote copy-back: the out folder listed on the host (run here with sh), the result and small files now, a large
+        // trajectory left with copy actions (whole, every 10th / 100th frame thinned on the host by caps frames)
+        {
+            var od = Path.Combine(Path.GetTempPath(), "caps-remote-out-test");
+            Directory.CreateDirectory(Path.Combine(od, "out"));
+            File.WriteAllText(Path.Combine(od, "out", "cell.data"), "x");
+            File.WriteAllText(Path.Combine(od, "out", "run log.txt"), "hello");
+            var psi = new System.Diagnostics.ProcessStartInfo("sh") { RedirectStandardOutput = true, UseShellExecute = false };
+            psi.ArgumentList.Add("-c");
+            psi.ArgumentList.Add(MainViewModel.ListOutCommand(od));
+            using var lsProc = System.Diagnostics.Process.Start(psi)!;
+            var listing = MainViewModel.ParseListing(lsProc.StandardOutput.ReadToEnd());
+            lsProc.WaitForExit();
+            Directory.Delete(od, true);
+            var files = listing.Concat([new RemoteFile("traj.lammpstrj", 5L << 30), new RemoteFile("big.xtc", 300L << 20)]).ToList();
+            var (now, later) = MainViewModel.CopyPlan(files, "cell", MainViewModel.LargeRemoteBytes);
+            var thin = MainViewModel.ThinCommand("/scratch/u/dyn-1", "big.xtc", 10, "cell.data");
+            Check(listing.Count == 2 && listing.Any(f => f.Name == "run log.txt" && f.Bytes == 5) && now.Count == 2 && later.Count == 2
+                  && thin == "cd '/scratch/u/dyn-1/out' && caps frames 'big.xtc' 'big.every10.trr' --stride 10 --topology 'cell.data'"
+                  && MainViewModel.CopyTimeoutMs(5L << 30) == 5120 * 1000 && new RemoteFile("t", 5L << 30).Size == "5.0 GB",
+                  $"remote copy-back: listed {string.Join(", ", listing.Select(f => $"{f.Name} {f.Bytes} B"))} · now {now.Count}, left {string.Join(", ", later.Select(f => f.Name + " " + f.Size))} · {thin}");
+        }
+
         // Open page › read from / to / every: frames 1 to the end of the sample dump (2 of 3), recorded with first=1
         {
             var dump = Path.Combine(dir, "ps_melt.lammpstrj");
