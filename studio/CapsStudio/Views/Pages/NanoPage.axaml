@@ -157,6 +157,10 @@
                     <StackPanel Spacing="6"><TextBlock Text="Radius · Å (circumscribed)" Classes="label" /><NumericUpDown Value="{Binding ParticleRadius}" Minimum="3" Maximum="60" Increment="0.5" FormatString="0.0" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Centre" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ParticleCentres}" SelectedIndex="{Binding ParticleCentre}" HorizontalAlignment="Stretch" /></StackPanel>
                   </Grid>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding ParticleHasHeight}">
+                    <StackPanel Spacing="6"><TextBlock Text="Height along z · Å" Classes="label" /><NumericUpDown Value="{Binding ParticleHeight}" Minimum="3" Maximum="200" Increment="1" FormatString="0.0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding ParticleIsFrustum}"><TextBlock Text="Top radius / base radius" Classes="label" /><NumericUpDown Value="{Binding ParticleTopRatio}" Minimum="0.05" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                  </Grid>
                   <StackPanel Spacing="6" IsVisible="{Binding ParticleIsFibre}">
                     <TextBlock Text="Fibre length along z · Å (periodic; the crystal's c axis)" Classes="label" />
                     <NumericUpDown Value="{Binding FibreLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" />
