@@ -168,7 +168,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
         "caps_react_summary": ([P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
-        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I),
+        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
@@ -225,6 +225,19 @@ class _Field:
         path = "file" if forcefield == "file" else _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
+        if rc < 0:
+            raise _error()
+        rep = _json_call(library().caps_field_report, self._doc._h)
+        rep["complete"] = rc == 0
+        return rep
+
+    def add_rule(self, kind: str, types: str, params, style: str = "") -> dict:
+        """A parameter entered by hand where the force field has none: kind pair | bond | angle | dihedral | improper, the atom
+        types as the missing-term list names them ("c_1 o_2 c_1"), the parameters in the style's order (a class II angle:
+        θ0 K2 K3 K4). Reported as estimated in the report and the output, never as the published force field's. Returns the
+        report."""
+        values = " ".join(str(float(v)) for v in (params if isinstance(params, (list, tuple)) else [params]))
+        rc = library().caps_field_add_rule(self._doc._h, _enc(kind), _enc(types), _enc(style), _enc(values))
         if rc < 0:
             raise _error()
         rep = _json_call(library().caps_field_report, self._doc._h)
@@ -502,6 +515,11 @@ class Document:
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
         return _json_call(lambda h, buf, n: library().caps_bond_react_export(h, _enc(text), _enc(directory), _enc(json.dumps(options)), buf, n), self._h)
+
+    def energy(self) -> dict:
+        """The current frame's energy by term (kcal/mol) with the force field runs use: bond, angle, dihedral, improper, vdw,
+        coulomb, total — computed now (a Field report's energy is the one at assignment)."""
+        return _json_call(library().caps_energy_terms, self._h)
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),

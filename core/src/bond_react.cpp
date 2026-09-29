@@ -118,50 +118,91 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
   const size_t n = s.atoms.size();
   const auto ff0 = field(s);
   if (!ff0) throw ReactError("the force field cannot describe the structure");
-  const auto nb = s.neighbours();
-
-  // the survey: every candidate pair, grouped by environment
+  // stages: the structure, then — for a reaction whose groups only a first reaction makes (the acid a maleic anhydride
+  // leaves when an OH opens it) — copies of it with another reaction applied at one site; each reaction's templates are
+  // cut from the first stage where it has pairs, typed there
+  struct Stage { System sys; std::shared_ptr<const ForceField> ff; std::vector<std::vector<uint32_t>> nb; size_t offset = 0; std::string after; };
+  std::vector<Stage> stages;
+  stages.push_back({s, ff0, s.neighbours(), 0, ""});
   struct Group { std::vector<Site> sites; };
   std::vector<std::map<std::string, Group>> groups(templates.size());
-  for (size_t k = 0; k < templates.size(); ++k) {
+  std::vector<int> stage_of(templates.size(), -1);
+  auto survey = [&](size_t k, int st) {
+    const Stage& S = stages[size_t(st)];
     const double cap = o.survey_capture > 0 ? o.survey_capture : std::max(templates[k].capture, 8.0);
-    for (const auto& m : find_matches(s, templates[k], int(k), {}, cap)) {
-      Site site = cut(s, nb, ff0->atom_type, templates[k], m, int(k), o.radius);
+    int found = 0;
+    for (const auto& m : find_matches(S.sys, templates[k], int(k), {}, cap)) {
+      Site site = cut(S.sys, S.nb, S.ff->atom_type, templates[k], m, int(k), o.radius);
       groups[k][site.signature].sites.push_back(std::move(site));
-      ++rep.candidates;
+      ++found;
+    }
+    if (found) stage_of[k] = st;
+    rep.candidates += found;
+    return found;
+  };
+  for (size_t k = 0; k < templates.size(); ++k) survey(k, 0);
+  for (size_t k = 0; k < templates.size(); ++k) {
+    if (stage_of[k] >= 0) continue;
+    for (size_t k2 = 0; k2 < templates.size() && stage_of[k] < 0; ++k2) {
+      if (k2 == k || stage_of[k2] != 0 || groups[k2].empty()) continue;
+      // the most frequent environment of the first reaction, applied once
+      const Group* best = nullptr;
+      for (const auto& [sig, g] : groups[k2]) if (!best || g.sites.size() > best->sites.size()) best = &g;
+      Stage S;
+      S.sys = s;
+      std::vector<ReactionTemplate> one{templates[k2]};
+      Match m = best->sites.front().match;
+      m.reaction = 0;
+      apply_matches(S.sys, one, {m}, o.keep_byproducts);
+      if (S.sys.cell.valid()) make_molecules_whole(S.sys);
+      try {
+        S.ff = field(S.sys);
+      } catch (const std::exception& e) {
+        throw ReactError(std::string("the force field cannot describe the product of ") + templates[k2].name + ": " + e.what());
+      }
+      S.nb = S.sys.neighbours();
+      S.after = templates[k2].name;
+      stages.push_back(std::move(S));
+      if (survey(k, int(stages.size()) - 1))
+        rep.notes.push_back("reaction " + templates[k].name + ": its groups appear only after " + templates[k2].name + " — templates cut from a copy where that reaction has happened");
+      else
+        stages.pop_back();
     }
   }
 
   // the variants: the most frequent environments of each reaction, each with its reacted copy
-  struct Variant { Site site; System post; std::vector<int64_t> post_of; std::string name; };   // post_of: pre atom → post index (−1 deleted)
+  struct Variant { Site site; int stage = 0; System post; std::vector<int64_t> post_of; std::string name; };   // post_of: pre atom → post index (−1 deleted)
   std::vector<Variant> variants;
   for (size_t k = 0; k < templates.size(); ++k) {
     std::vector<std::pair<size_t, const Group*>> by;
     for (const auto& [sig, g] : groups[k]) by.push_back({g.sites.size(), &g});
     std::stable_sort(by.begin(), by.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
     if (by.empty()) {
-      rep.notes.push_back("reaction " + templates[k].name + ": no reactive pair in the structure within the survey distance — no template written");
+      rep.notes.push_back("reaction " + templates[k].name + ": no reactive pair in the structure (nor after another reaction) within the survey distance — no template written");
       continue;
     }
+    const Stage& S = stages[size_t(stage_of[k])];
+    const size_t sn = S.sys.atoms.size();
     for (size_t v = 0; v < by.size() && int(v) < o.max_variants; ++v) {
       Variant var;
       var.site = by[v].second->sites.front();
+      var.stage = stage_of[k];
       var.name = clean(templates[k].name) + "_" + std::to_string(v + 1);
       // the reaction applied at that site; deleted atoms (and byproducts, unless kept) leave the copy — they stay in the
       // post template with their pre-reaction types as DeleteIDs — the rest keep their order
-      var.post = s;
+      var.post = S.sys;
       std::vector<ReactionTemplate> one{templates[k]};
       one[0].keep_charges = false;
       Match m = var.site.match;
       m.reaction = 0;
       apply_matches(var.post, one, {m}, o.keep_byproducts);
-      std::vector<char> dead(n, 0);
+      std::vector<char> dead(sn, 0);
       for (int map : templates[k].remove) dead[atom_of(templates[k], var.site.match, map)] = 1;
       if (!o.keep_byproducts)
         for (int map : templates[k].byproduct) dead[atom_of(templates[k], var.site.match, map)] = 1;
-      var.post_of.assign(n, -1);
+      var.post_of.assign(sn, -1);
       int64_t next = 0;
-      for (size_t i = 0; i < n; ++i)
+      for (size_t i = 0; i < sn; ++i)
         if (!dead[i]) var.post_of[i] = next++;
       if (size_t(next) != var.post.atoms.size()) throw ReactError("internal: the reacted copy has " + std::to_string(var.post.atoms.size()) + " atoms, expected " + std::to_string(next));
       // LAMMPS updates types and charges only inside the template, and only on atoms whose 1-2 and 1-3 neighbours are all
@@ -182,19 +223,19 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
         }
         for (size_t h = 0; h < q.size(); ++h)
           if (dist[q[h]] < 12)
-            for (uint32_t w : nb[q[h]])
+            for (uint32_t w : S.nb[q[h]])
               if (dist.emplace(w, dist[q[h]] + 1).second) q.push_back(w);
         int far = 0;
-        for (size_t i = 0; i < n; ++i) {
+        for (size_t i = 0; i < sn; ++i) {
           if (var.post_of[i] < 0) continue;
           const size_t j = size_t(var.post_of[i]);
-          if (ffp->atom_type[j] == ff0->atom_type[i] && std::fabs(ffp->charge[j] - ff0->charge[i]) < 1e-6) continue;
+          if (ffp->atom_type[j] == S.ff->atom_type[i] && std::fabs(ffp->charge[j] - S.ff->charge[i]) < 1e-6) continue;
           auto it = dist.find(uint32_t(i));
           if (it == dist.end()) throw ReactError("the reaction " + templates[k].name + " changes atom " + std::to_string(i + 1) + " more than 12 bonds away (type or charge)");
           far = std::max(far, it->second);
         }
         const int need = std::max(o.radius, far + 3);
-        if (need > o.radius) var.site = cut(s, nb, ff0->atom_type, templates[k], var.site.match, int(k), need);
+        if (need > o.radius) var.site = cut(S.sys, S.nb, S.ff->atom_type, templates[k], var.site.match, int(k), need);
       }
       rep.covered += int(by[v].first);
       rep.variants.push_back({templates[k].name, var.name, int(by[v].first), int(var.site.atoms.size()), 0, 0});
@@ -212,15 +253,17 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
   // the union: the structure, then each reacted copy — one force field over all of it numbers every type the reactions
   // create, and the data file keeps only the structure's atoms
   System u = s;
-  std::vector<size_t> offset;
-  for (const auto& v : variants) {
-    offset.push_back(u.atoms.size());
+  auto append = [&](const System& x) {
     const uint32_t off = uint32_t(u.atoms.size());
     int64_t mol_off = 0;
     for (const auto& a : u.atoms) mol_off = std::max(mol_off, a.mol);
-    for (auto a : v.post.atoms) { a.mol += mol_off; u.atoms.push_back(a); }
-    for (auto b : v.post.bonds) { b.i += off; b.j += off; u.bonds.push_back(b); }
-  }
+    for (auto a : x.atoms) { a.mol += mol_off; u.atoms.push_back(a); }
+    for (auto b : x.bonds) { b.i += off; b.j += off; u.bonds.push_back(b); }
+    return size_t(off);
+  };
+  for (size_t k = 1; k < stages.size(); ++k) stages[k].offset = append(stages[k].sys);
+  std::vector<size_t> offset;
+  for (const auto& v : variants) offset.push_back(append(v.post));
   u.has_charges = false;
   u.velocities.clear();
   std::shared_ptr<const ForceField> ffu;
@@ -251,6 +294,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
   for (double w : o.weights) wmax = std::max(wmax, w);
   for (size_t v = 0; v < variants.size(); ++v) {
     const Variant& var = variants[v];
+    const Stage& S = stages[size_t(var.stage)];
     const ReactionTemplate& t = templates[size_t(var.site.reaction)];
     const auto& pre = var.site.atoms;
     std::map<uint32_t, int> id;   // structure index → template id (1-based)
@@ -266,16 +310,16 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
     // edge atoms: a bond to an atom outside the template
     std::vector<int> edge;
     for (size_t k = 0; k < pre.size(); ++k)
-      for (uint32_t w : nb[pre[k]])
+      for (uint32_t w : S.nb[pre[k]])
         if (!id.count(w)) { edge.push_back(int(k + 1)); break; }
     rep.variants[v].edge = int(edge.size());
     rep.variants[v].deleted = int(deleted.size());
-    const Vec3 ref = s.atoms[atom_of(t, var.site.match, t.init_a)].pos;
+    const Vec3 ref = S.sys.atoms[atom_of(t, var.site.match, t.init_a)].pos;
 
     auto write_mol = [&](const std::string& path, bool after) {
       // the template atoms as indices of u, and their terms among themselves
       std::vector<int64_t> at(pre.size());
-      for (size_t k = 0; k < pre.size(); ++k) at[k] = after && post_u[k] >= 0 ? post_u[k] : int64_t(pre[k]);
+      for (size_t k = 0; k < pre.size(); ++k) at[k] = after && post_u[k] >= 0 ? post_u[k] : int64_t(S.offset + pre[k]);
       std::map<int64_t, int> tid;
       for (size_t k = 0; k < at.size(); ++k) tid[at[k]] = int(k + 1);
       auto collect = [&](const std::vector<std::pair<int, std::vector<uint32_t>>>& all) {
@@ -303,7 +347,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       if (!I.empty()) f << I.size() << " impropers\n";
       f << "\nCoords\n\n";
       for (size_t k = 0; k < pre.size(); ++k) {
-        const Vec3 p = after && post_u[k] >= 0 ? unwrap(var.post, uint32_t(var.post_of[pre[k]]), ref) : unwrap(s, pre[k], ref);
+        const Vec3 p = after && post_u[k] >= 0 ? unwrap(var.post, uint32_t(var.post_of[pre[k]]), ref) : unwrap(S.sys, pre[k], ref);
         std::snprintf(b, sizeof b, "%zu %.6f %.6f %.6f\n", k + 1, p[0], p[1], p[2]);
         f << b;
       }
@@ -414,7 +458,10 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
   std::snprintf(b, sizeof b, "%zu templates for %zu reactions cover %d of %d candidate pairs (within the survey distance) in this structure", variants.size(),
                 templates.size(), rep.covered, rep.candidates);
   rep.notes.insert(rep.notes.begin(), b);
-  if (o.between_chains) rep.notes.push_back("molecule inter: LAMMPS allows only initiators in different molecules (the data file's molecule ids, which do not change as bonds form)");
+  if (o.between_chains)
+    rep.notes.push_back("molecule inter: fix bond/react resets molecule ids to the bonded pieces after each reaction (reset_mol_ids, its default), so "
+                        "initiators must sit in pieces not yet joined — a crosslinker cannot close back on its own chain, but two chains already "
+                        "joined take no second link (a tree-like network; CAPS's own runs count chains and allow it)");
   return rep;
 }
 
