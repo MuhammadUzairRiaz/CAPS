@@ -23,7 +23,7 @@ public sealed class ProjectItem : ObservableObject
     public string Name { get => _name; set => Set(ref _name, value); }
     private string _origin = "";
     /// <summary>How it was made: "Polymer cell" (Grow), "Packing" (Pack), a builder, a file.</summary>
-    public string Origin { get => _origin; set { if (Set(ref _origin, value)) Raise(nameof(IconKind)); } }
+    public string Origin { get => _origin; set { if (Set(ref _origin, value)) { Raise(nameof(IconKind)); Raise(nameof(EditTip)); } } }
     private bool _active;
     public bool Active { get => _active; set => Set(ref _active, value); }
     private string _detail = "";
@@ -39,7 +39,12 @@ public sealed class ProjectItem : ObservableObject
     public ObservableCollection<Job> Jobs { get; } = new();
     private bool _expanded = true;
     public bool Expanded { get => _expanded; set => Set(ref _expanded, value); }
-    public string IconKind => _origin switch { "Polymer cell" => "grow", "Packing" => "pack", "File" => "file", _ => "cube" };
+    public string IconKind => _origin switch { "Polymer cell" or "Blend" => "grow", "Packing" or "Solvation" => "pack", "Molecule builder" => "atom", "File" => "file", _ => "cube" };
+    // Delete asks twice: the first click arms it (the row says so), a second within a few seconds removes the structure
+    private bool _deleteArmed;
+    public bool DeleteArmed { get => _deleteArmed; set { if (Set(ref _deleteArmed, value)) Raise(nameof(DeleteTip)); } }
+    public string DeleteTip => _deleteArmed ? "Click again to remove it from the project (a saved file on disk stays)" : "Delete: remove from the project (asks once more)";
+    public string EditTip => _origin.Length > 0 && _origin != "File" ? $"Edit in the {_origin}" : "Edit with the Studio's builder tools";
 
     // the state kept while another structure is active
     internal CapsCamera Camera = new() { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0 };
@@ -71,13 +76,93 @@ public sealed partial class MainViewModel
         StashActive();
         var it = new ProjectItem(doc, title)
         {
-            Origin = title.StartsWith("packed_", StringComparison.Ordinal) ? "Packing" : "",
+            Origin = title.StartsWith("packed_", StringComparison.Ordinal) ? "Packing" : MakerOf(doc).Label,
         };
         ProjectItems.Add(it);
         foreach (var p in ProjectItems) p.Active = p == it;
         _activeItem = it;
         RaiseProject();
         return it;
+    }
+
+    /// <summary>What made a structure, from the first step of its provenance: the builder's name, its page, and that step.</summary>
+    private static (string Label, int Module, System.Text.Json.Nodes.JsonNode? Step) MakerOf(CapsDocument doc)
+    {
+        System.Text.Json.Nodes.JsonNode? step = null;
+        try
+        {
+            if (System.Text.Json.Nodes.JsonNode.Parse(doc.Provenance())?["steps"] is System.Text.Json.Nodes.JsonArray st)
+                step = st.FirstOrDefault(x => x?["engine"]?.GetValue<string>() is string e && e != "scratch");
+        }
+        catch { }
+        var engine = step?["engine"]?.GetValue<string>() ?? "";
+        (string, int) m = engine switch
+        {
+            "grow.trials" => ("Polymer cell", 0),
+            "grow.blend" => ("Blend", 16),
+            "pack.lbfgs" or "pack.insert" => ("Packing", 5),
+            "chem.build" => ("Molecule builder", 9),
+            "crystal.build" => ("Crystal builder", 29),
+            "nano.build" or "nano.embed" or "nano.pore" => ("Nanostructure builder", 15),
+            "surface.build" or "interface.build" or "build.stack" => ("Surface builder", 14),
+            "bio.peptide" => ("Biomolecule builder", 30),
+            "solvate.pack" => ("Solvation", 31),
+            "cg.build" or "cg.kremer_grest" or "cg.martini_melt" => ("Coarse-grained builder", 44),
+            "io.read" or "io.import" => ("File", 8),
+            _ => ("", 8),
+        };
+        return (m.Item1, m.Item2, step);
+    }
+
+    /// <summary>Edit (the project tree): the structure made active and the builder that made it opened — the molecule
+    /// builder with its SMILES; a file, a copy or an edited structure: the Studio with its builder tools.</summary>
+    public void EditProjectItem(ProjectItem it)
+    {
+        if (!Idle) { Status = "Wait for the run to finish before editing"; return; }
+        Activate(it);
+        var (label, module, step) = MakerOf(it.Doc);
+        if (label.Length > 0 && it.Origin.Length == 0) it.Origin = label;
+        switch (module)
+        {
+            case 9:
+                var smi = (step?["params"] as System.Text.Json.Nodes.JsonObject)?["smiles"]?.GetValue<string>()
+                          ?? (step?["params"] as System.Text.Json.Nodes.JsonArray)?.FirstOrDefault(p => p?[0]?.GetValue<string>() == "smiles")?[1]?.GetValue<string>();
+                OpenBuilder(smi);
+                break;
+            case 0: SetModule(0); break;
+            case 5: SetModule(5); break;
+            case 16: OpenBlend(); break;
+            case 29: OpenCrystal(); break;
+            case 15: OpenNano(); break;
+            case 14: OpenSurface(); break;
+            case 30: OpenBio(); break;
+            case 31: OpenSolvation(); break;
+            case 44: OpenCg(); break;
+            default:
+                SetModule(8);
+                Status = $"Editing {it.Name} with the builder tools (place, bond, delete, +H, fragments; ⌘Z undoes)";
+                return;
+        }
+        Status = $"{label}: change the settings and build again — the new structure joins the project beside {it.Name}";
+    }
+
+    /// <summary>Delete (the project tree), asked twice: the structure leaves the project (a saved file stays on disk).</summary>
+    public void DeleteProjectItem(ProjectItem it)
+    {
+        if (!it.DeleteArmed)
+        {
+            foreach (var p in ProjectItems) p.DeleteArmed = p == it;
+            Status = $"Delete {it.Name}? Click Delete again to remove it from the project";
+            Avalonia.Threading.DispatcherTimer.RunOnce(() => it.DeleteArmed = false, TimeSpan.FromSeconds(4));
+            return;
+        }
+        it.DeleteArmed = false;
+        if (!Idle || it.Doc.LongRunning) { Status = "A run is using this structure: delete it when the run finishes"; return; }
+        if (it == _activeItem) { CloseDocument(); return; }
+        ProjectItems.Remove(it);
+        it.Doc.Dispose();
+        RaiseProject();
+        Status = $"Removed {it.Name} from the project";
     }
 
     private void RaiseProject()

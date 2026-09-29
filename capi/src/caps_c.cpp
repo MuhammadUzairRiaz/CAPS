@@ -4773,12 +4773,29 @@ extern "C" caps_doc* caps_embed_document(caps_doc* filler, const char* options_j
     if (!filler) throw std::invalid_argument("no document");
     const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
     caps::System f = filler->traj.frame(filler->current);
+    // the directions the filler fills across its cell stay periodic (a tube's axis, a sheet's plane): along each, the
+    // largest empty gap between atoms (across the boundary too) under 2.5 Å; the others open for the matrix. Groups grafted
+    // on a stacked sheet can close every gap: then the direction with the largest gap (the sheet's normal) opens
     std::array<bool, 3> keep{false, false, false};
     if (f.cell.valid()) {
-      caps::Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
-      for (const auto& a : f.atoms) for (int k = 0; k < 3; ++k) lo[size_t(k)] = std::min(lo[size_t(k)], a.pos[size_t(k)]), hi[size_t(k)] = std::max(hi[size_t(k)], a.pos[size_t(k)]);
-      const double L[3] = {caps::norm(f.cell.a), caps::norm(f.cell.b), caps::norm(f.cell.c)};
-      for (int k = 0; k < 3; ++k) keep[size_t(k)] = f.cell.periodic[size_t(k)] && hi[size_t(k)] - lo[size_t(k)] > 0.8 * L[k];
+      std::array<double, 3> gap{0, 0, 0};
+      const caps::Vec3 edge[3] = {f.cell.a, f.cell.b, f.cell.c};
+      for (int k = 0; k < 3; ++k) {
+        if (!f.cell.periodic[size_t(k)]) { gap[size_t(k)] = 1e30; continue; }
+        const double L = caps::norm(edge[k]);
+        std::vector<double> u;
+        for (const auto& a : f.atoms) {
+          double x = f.cell.to_fractional(a.pos)[size_t(k)];
+          x -= std::floor(x);
+          u.push_back(x * L);
+        }
+        std::sort(u.begin(), u.end());
+        double g = u.empty() ? L : L - u.back() + u.front();
+        for (size_t i = 1; i < u.size(); ++i) g = std::max(g, u[i] - u[i - 1]);
+        gap[size_t(k)] = g;
+        keep[size_t(k)] = g < 2.5;
+      }
+      if (keep[0] && keep[1] && keep[2]) keep[size_t(std::max_element(gap.begin(), gap.end()) - gap.begin())] = false;
     }
     caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
     caps::FillerMatrixOptions fo;

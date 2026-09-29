@@ -198,7 +198,10 @@
                     <StackPanel Spacing="6"><TextBlock Text="Side" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.FnSides}" SelectedIndex="{Binding FnSide}" HorizontalAlignment="Stretch" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="On elements (blank: any)" Classes="label" /><TextBox Text="{Binding FnElements}" Watermark="C, or B for h-BN" Classes="mono" /></StackPanel>
                   </Grid>
-                  <Button Classes="small" Click="OnFunctionalize" IsEnabled="{Binding HasDocument}" HorizontalAlignment="Left" Content="Graft on the structure shown" />
+                  <StackPanel Spacing="6"><TextBlock Text="Graft on" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.FnTargets}" SelectedIndex="{Binding FnTarget}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="The filler these settings build: the one built last (with its grafts) while the settings are unchanged, else built now. The structure open in the Studio: whatever is active there (a tube from a file …)" /></StackPanel>
+                  <Button Classes="small" Click="OnFunctionalize" IsEnabled="{Binding Idle}" HorizontalAlignment="Left" Content="Graft"
+                          ToolTip.Tip="Grafts the groups; the grafted structure becomes the Studio's active one, and a polymer matrix built next grows around it" />
                 </StackPanel>
               </Border>
 
@@ -213,7 +216,7 @@
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Share of silanols" Classes="label" /><NumericUpDown Value="{Binding SilaneFractionD}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
                     <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Spacing · Å" Classes="label" /><NumericUpDown Value="{Binding SilaneSpacingD}" Minimum="2" Maximum="30" Increment="0.5" FormatString="0.0" ToolTip.Tip="Grafted oxygens at least this far apart" /></StackPanel>
                   </Grid>
-                  <Button Classes="small" Click="OnGraftSilane" IsEnabled="{Binding HasDocument}" HorizontalAlignment="Left" Content="Graft on the structure shown" />
+                  <Button Classes="small" Click="OnGraftSilane" IsEnabled="{Binding Idle}" HorizontalAlignment="Left" Content="Graft silane" ToolTip.Tip="On the filler chosen under Graft on (built first when needed)" />
                 </StackPanel>
               </Border>
 
