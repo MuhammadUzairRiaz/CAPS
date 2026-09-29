@@ -76,6 +76,7 @@
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
 #include "caps/labels.hpp"
+#include "caps/lattice.hpp"
 
 #include <map>
 #include <mutex>
@@ -6833,6 +6834,53 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       const int k = caps::hydroxylate_phosphorus(s);
       if (k == 0) throw std::invalid_argument("no hydrogen on phosphorus");
       what = "Phosphate ends: " + std::to_string(k) + " P–H to P–OH";
+    } else if (op == "redefine_lattice") {   // {matrix: [9 numbers, row-major; column j = the new vector j in the old ones]}
+      if (!j.has("matrix") || !j["matrix"].is_array() || j["matrix"].size() != 9) throw std::invalid_argument("redefine_lattice needs matrix: [9 numbers]");
+      caps::Mat3 m{};
+      for (int q = 0; q < 9; ++q) m[size_t(q / 3)][size_t(q % 3)] = j["matrix"][size_t(q)].number();
+      const size_t n0 = s.atoms.size();
+      s = caps::transform_cell(s, m, j.num("tolerance", 0.05));
+      what = "Redefine lattice: " + std::to_string(n0) + " → " + std::to_string(s.atoms.size()) + " atoms";
+    } else if (op == "niggli") {
+      caps::NiggliResult r;
+      s = caps::niggli_cell(s, &r);
+      char b[160];
+      std::snprintf(b, sizeof b, "Niggli cell: a %.4f b %.4f c %.4f Å, α %.2f β %.2f γ %.2f°", r.a, r.b, r.c, r.alpha, r.beta, r.gamma);
+      what = b;
+    } else if (op == "find_primitive") {   // {tolerance}
+      int k = 1;
+      const size_t n0 = s.atoms.size();
+      s = caps::find_primitive_cell(s, j.num("tolerance", 0.1), &k);
+      what = k == 1 ? "Already primitive" : "Primitive cell: " + std::to_string(n0) + " → " + std::to_string(s.atoms.size()) + " atoms";
+      if (k == 1) throw std::invalid_argument("the cell is already primitive (no translation maps the structure onto itself)");
+    } else if (op == "conventional") {   // {tolerance}
+      caps::ConventionalResult r;
+      s = caps::conventional_cell(s, j.num("tolerance", 0.1), &r);
+      what = "Conventional cell: " + r.hm + " (No. " + std::to_string(r.number) + "), " + std::to_string(s.atoms.size()) + " atoms";
+    } else if (op == "supercell") {   // {n: [na, nb, nc]}
+      if (!j.has("n") || !j["n"].is_array() || j["n"].size() != 3) throw std::invalid_argument("supercell needs n: [na, nb, nc]");
+      const int na = int(j["n"][0].number()), nb = int(j["n"][1].number()), nc = int(j["n"][2].number());
+      if (na < 1 || nb < 1 || nc < 1) throw std::invalid_argument("supercell repeats must be 1 or more");
+      if (double(na) * nb * nc * double(s.atoms.size()) > 2e6) throw std::invalid_argument("the supercell would hold more than two million atoms");
+      s = caps::supercell(s, na, nb, nc);
+      what = "Supercell " + std::to_string(na) + " × " + std::to_string(nb) + " × " + std::to_string(nc);
+    } else if (op == "vacuum_slab") {   // {vacuum Å, centre: bool}
+      caps::SlabResult r;
+      s = caps::vacuum_slab(s, j.num("vacuum", 15), !(j.has("centre") && j["centre"].kind() == caps::Json::Bool && !j["centre"].boolean()), &r);
+      char b[128];
+      std::snprintf(b, sizeof b, "Vacuum slab: %.2f Å slab, %.2f Å vacuum", r.thickness, r.vacuum);
+      what = b;
+    } else if (op == "nanowire") {   // {uvw: [u, v, w], radius, repeats, shape, vacuum}
+      caps::WireOptions o;
+      if (j.has("uvw") && j["uvw"].is_array() && j["uvw"].size() == 3)
+        o.uvw = {int(j["uvw"][0].number()), int(j["uvw"][1].number()), int(j["uvw"][2].number())};
+      o.radius = j.num("radius", o.radius);
+      o.repeats = int(j.num("repeats", o.repeats));
+      o.shape = j.text("shape", o.shape);
+      o.vacuum = j.num("vacuum", o.vacuum);
+      caps::WireResult r;
+      s = caps::nanowire(s, o, &r);
+      what = "Nanowire: " + std::to_string(r.atoms) + " atoms";
     } else if (op == "translate") {   // {atoms | "selection", by: [dx, dy, dz]} Å: the atoms moved rigidly
       const auto at = atoms_of(d, j);
       if (at.empty()) throw std::invalid_argument("pick or select the atoms to move");

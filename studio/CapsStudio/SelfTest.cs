@@ -1278,6 +1278,23 @@ internal static class SelfTest
                   && MainViewModel.ExportFormats.Any(f => f.Id == "poscar"),
                   $"crystal saved as POSCAR ({(pl.Length > 6 ? pl[5] + " / " + pl[6] : "none")}) and CIF · {vm.Status}");
         }
+        // cell tools on the open structure: the 2 × 2 × 3 rutile folds back to its 6-atom cell, the conventional cell is
+        // P 42/m n m (136), then a vacuum slab and a [001] wire; a matrix that is not a lattice map is refused
+        {
+            vm.FindPrimitiveCell();
+            var prim = vm.Document!.Summary().Atoms;
+            vm.ConventionalCell();
+            var convText = vm.CellToolText;
+            vm.MakeVacuumSlab();
+            var slab = vm.CellToolText;
+            vm.RedefineMatrix = "1/2 0 0\n0 1 0\n0 0 1";
+            vm.RedefineLattice();
+            var refused = vm.CellToolText;
+            vm.WireUvw = "0 0 1"; vm.WireRadius = 6; vm.WireRepeats = 3;
+            vm.MakeNanowire();
+            Check(prim == 6 && convText.Contains("No. 136") && slab.StartsWith("Vacuum slab") && refused.Contains("does not map") && vm.CellToolText.StartsWith("Nanowire"),
+                  $"cell tools: primitive {prim} atoms · {convText} · {slab} · {refused} · {vm.CellToolText}");
+        }
 
         // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
         vm.OpenBio();

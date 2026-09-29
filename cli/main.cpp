@@ -82,6 +82,8 @@ int usage() {
                "               element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES ·\n"
                "               length I J Å · angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° ·\n"
                "               mirror SEL nx,ny,nz · move SEL dx,dy,dz · clean [SEL] · tacticity iso|syndio ·\n"
+               "               crystals: supercell na nb nc · primitive · niggli · conventional · redefine m11 … m33 · vacuum Å ·\n"
+               "               nanowire u v w radius [repeats] [cylinder|hexagonal|square] [vacuum] ·\n"
                "               SEL: 3,5-9 · all · element:C,N · smarts:PATTERN · type:LABEL (numbers after a delete shift)\n"
                "  caps provenance FILE [--json | --bibtex | --methods] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)\n"
                "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"

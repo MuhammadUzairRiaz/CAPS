@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include "caps/lattice.hpp"
+#include "caps/spacegroup.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -241,4 +243,100 @@ TEST(Crystal, PullOutFromTheSurface) {
   EXPECT_EQ(r.interfaces, 2);
   for (size_t i = 0; i < s.atoms.size(); ++i)
     if (s.atoms[i].mol == 1) EXPECT_EQ(norm(s.atoms[i].pos - s0.atoms[i].pos), 0.0);
+}
+
+namespace {
+caps::System scrambled(const caps::System& s) {
+  // a unimodular change of basis (det +1): the same lattice in an ugly cell
+  const caps::Mat3 u{{{1, 1, 0}, {0, 1, 1}, {1, 1, 1}}};   // det = 1
+  return caps::transform_cell(s, u);
+}
+caps::System fcc_copper() {
+  caps::CrystalSpec c;
+  c.space_group = "F m -3 m";
+  c.a = c.b = c.c = 3.615;
+  c.sites = {{"Cu1", 29, {0, 0, 0}}};
+  return caps::build_crystal(c);
+}
+}  // namespace
+
+TEST(Lattice, NiggliAndConventionalCellOfCopper) {
+  const caps::System conv = fcc_copper();
+  ASSERT_EQ(conv.atoms.size(), 4u);
+  const caps::System prim = caps::primitive_cell(conv, 'F');
+  ASSERT_EQ(prim.atoms.size(), 1u);
+  const caps::System ugly = scrambled(prim);
+  ASSERT_EQ(ugly.atoms.size(), 1u);
+  caps::NiggliResult nr;
+  const caps::System red = caps::niggli_cell(ugly, &nr);
+  const double ap = 3.615 / std::sqrt(2.0);
+  EXPECT_NEAR(nr.a, ap, 1e-6);
+  EXPECT_NEAR(nr.b, ap, 1e-6);
+  EXPECT_NEAR(nr.c, ap, 1e-6);
+  // the Niggli cell of FCC: all angles 60° (type I, +++)
+  EXPECT_NEAR(nr.alpha, 60, 1e-6);
+  EXPECT_NEAR(nr.beta, 60, 1e-6);
+  EXPECT_NEAR(nr.gamma, 60, 1e-6);
+  caps::ConventionalResult cr;
+  const caps::System back = caps::conventional_cell(ugly, 0.1, &cr);
+  EXPECT_EQ(cr.number, 225) << cr.hm;
+  EXPECT_EQ(back.atoms.size(), 4u);
+  EXPECT_NEAR(caps::norm(back.cell.a), 3.615, 1e-6);
+  EXPECT_NEAR(back.cell.volume(), 3.615 * 3.615 * 3.615, 1e-4);
+}
+
+TEST(Lattice, ConventionalCellsOfRutileAndWurtzite) {
+  caps::CrystalSpec r;
+  r.space_group = "P 42/m n m";
+  r.a = r.b = 4.594, r.c = 2.959;
+  r.sites = {{"Ti1", 22, {0, 0, 0}}, {"O1", 8, {0.3048, 0.3048, 0}}};
+  caps::ConventionalResult cr;
+  const caps::System rut = caps::conventional_cell(scrambled(caps::build_crystal(r)), 0.1, &cr);
+  EXPECT_EQ(cr.number, 136) << cr.hm;
+  EXPECT_EQ(rut.atoms.size(), 6u);
+  caps::CrystalSpec w;
+  w.space_group = "P 63 m c";
+  w.a = w.b = 3.25, w.c = 5.207, w.gamma = 120;
+  w.sites = {{"Zn1", 30, {1.0 / 3, 2.0 / 3, 0}}, {"O1", 8, {1.0 / 3, 2.0 / 3, 0.382}}};
+  const caps::System wz = caps::conventional_cell(scrambled(caps::build_crystal(w)), 0.1, &cr);
+  EXPECT_EQ(cr.number, 186) << cr.hm;
+  EXPECT_EQ(wz.atoms.size(), 4u);
+  // a supercell comes back primitive (rutile's cell is primitive: 6 atoms), then to the conventional cell
+  int k = 0;
+  const caps::System prim = caps::find_primitive_cell(caps::supercell(caps::build_crystal(r), 2, 1, 3), 0.1, &k);
+  EXPECT_EQ(k, 6);
+  EXPECT_EQ(prim.atoms.size(), 6u);
+  EXPECT_EQ(caps::find_primitive_cell(fcc_copper()).atoms.size(), 1u);   // F-centred: 4 lattice points
+  caps::conventional_cell(caps::supercell(caps::build_crystal(r), 2, 2, 1), 0.1, &cr);
+  EXPECT_EQ(cr.number, 136) << cr.hm;
+  // a matrix that does not map the lattice onto itself is refused
+  EXPECT_THROW(caps::transform_cell(caps::build_crystal(r), caps::Mat3{{{0.5, 0, 0}, {0, 1, 0}, {0, 0, 1}}}), std::invalid_argument);
+}
+
+TEST(Lattice, VacuumSlabAndNanowire) {
+  const caps::System cu = caps::supercell(fcc_copper(), 2, 2, 3);
+  caps::SlabResult sr;
+  const caps::System slab = caps::vacuum_slab(cu, 15, true, &sr);
+  EXPECT_EQ(slab.atoms.size(), cu.atoms.size());
+  EXPECT_NEAR(sr.thickness, 3 * 3.615 - 3.615 / 2, 1e-6);   // six (002) layers, 1.8075 Å apart
+  EXPECT_NEAR(caps::norm(slab.cell.c), sr.thickness + 15, 1e-6);
+  double lo = 1e9, hi = -1e9;
+  for (const auto& a : slab.atoms) lo = std::min(lo, a.pos[2]), hi = std::max(hi, a.pos[2]);
+  EXPECT_NEAR(lo, 7.5, 1e-6);   // centred: 7.5 Å of vacuum each side
+  EXPECT_NEAR(caps::norm(slab.cell.c) - hi, 7.5, 1e-6);
+  caps::WireOptions o;
+  o.uvw = {0, 0, 1};
+  o.radius = 6;
+  o.repeats = 2;
+  caps::WireResult wr;
+  const caps::System wire = caps::nanowire(fcc_copper(), o, &wr);
+  EXPECT_NEAR(wr.period, 3.615, 1e-9);
+  EXPECT_NEAR(caps::norm(wire.cell.c), 2 * 3.615, 1e-9);
+  // the atom count follows the density: 4 atoms per a³ in the cylinder, within the edge's granularity
+  const double expect = 4 / std::pow(3.615, 3) * M_PI * 36 * 2 * 3.615;
+  EXPECT_NEAR(double(wire.atoms.size()), expect, 0.15 * expect);
+  for (const auto& a : wire.atoms) {
+    const double dx = a.pos[0] - caps::norm(wire.cell.a) / 2, dy = a.pos[1] - caps::norm(wire.cell.b) / 2;
+    EXPECT_LE(std::sqrt(dx * dx + dy * dy), 6 + 1e-9);
+  }
 }
