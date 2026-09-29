@@ -78,7 +78,7 @@ public sealed partial class MainViewModel
         if (state == "running") LoadStep = $"step {k + 1} of {LoadStages.Count}";
     }
 
-    public async Task OpenProgressive(string path, string? topology)
+    public async Task OpenProgressive(string path, string? topology, FrameSelection? frames = null)
     {
         if (Busy) { Status = "Wait for the run to finish (or cancel it) before opening another structure"; return; }
         if (_loading) { _loadStop = true; while (_loading) await Task.Delay(20); }
@@ -113,7 +113,7 @@ public sealed partial class MainViewModel
                 if (st < 3) details[st] = d;
                 if (st < 3) Dispatcher.UIThread.Post(() => { if (gen == _loadGen && !_loadIndexing && _loading) { SetStage(st, "done", d, 1); SetStage(st + 1, "running"); } });
                 return !_loadStop;
-            }));
+            }, frames));
         }
         catch (Exception e)
         {
@@ -151,7 +151,7 @@ public sealed partial class MainViewModel
                 if (++per % 4 == 0 || f >= 1)
                     Dispatcher.UIThread.Post(() => { if (gen == _loadGen && _loadIndexing) LoadProgress(f, frames, sw.Elapsed.TotalSeconds); });
                 return !_loadStop;
-            }));
+            }, frames));
         }
         catch (Exception e) { error = e.Message; }
         var stopped = _loadStop;

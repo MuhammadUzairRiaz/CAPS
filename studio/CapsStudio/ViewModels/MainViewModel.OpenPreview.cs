@@ -46,7 +46,37 @@ public sealed partial class MainViewModel
     public bool OpenIsDump { get => _openIsDump; private set => Set(ref _openIsDump, value); }
     public bool OpenBusy { get => _openBusy; private set { if (Set(ref _openBusy, value)) Raise(nameof(OpenIdle)); } }
     public bool OpenIdle => !_openBusy;
-    public string OpenButton => _openFrames.Length > 0 && _openFrames != "1" ? $"Open {_openFrames} frames" : "Open";
+    public string OpenButton => OpenManyFrames ? $"Open {OpenSelection().Kept(OpenFrameCount):N0} frames" : "Open";
+
+    // Which frames to read (a long trajectory held at the size of what is kept; the others are passed over as it is read)
+    private double _openFrameFrom, _openFrameTo, _openFrameEvery = 1;
+    private FrameSelection? _pendingFrames;   // taken by the next Open
+    private long OpenFrameCount => long.TryParse(_openFrames, out var n) ? n : 0;
+    public bool OpenManyFrames => OpenFrameCount > 1;
+    public double OpenFrameMax => Math.Max(0, OpenFrameCount - 1);
+    public double OpenFrameFrom { get => _openFrameFrom; set { if (Set(ref _openFrameFrom, Math.Clamp(Math.Round(value), 0, OpenFrameMax))) FramesChanged(); } }
+    public double OpenFrameTo { get => _openFrameTo; set { if (Set(ref _openFrameTo, Math.Clamp(Math.Round(value), 0, OpenFrameMax))) FramesChanged(); } }
+    public double OpenFrameEvery { get => _openFrameEvery; set { if (Set(ref _openFrameEvery, Math.Max(1, Math.Round(value)))) FramesChanged(); } }
+    public string OpenFramesKept
+    {
+        get
+        {
+            var sel = OpenSelection();
+            var kept = sel.Kept(OpenFrameCount);
+            return sel.All ? "all frames are read" : kept == 0 ? "no frames in this range"
+                 : string.Format(CultureInfo.InvariantCulture, "{0:N0} of {1:N0} frames kept · the others are passed over as the file is read", kept, OpenFrameCount);
+        }
+    }
+    private FrameSelection OpenSelection() =>
+        new((long)_openFrameFrom, _openFrameTo >= OpenFrameMax ? -1 : (long)_openFrameTo, (long)Math.Max(1, _openFrameEvery));
+    private void FramesChanged() { Raise(nameof(OpenFramesKept)); Raise(nameof(OpenButton)); }
+    /// <summary>Sets the frames to read (the Open page's from / to / every; to past the end reads to the end).</summary>
+    public void SetOpenFrames(long from, long to, long every)
+    {
+        OpenFrameFrom = from;
+        OpenFrameTo = to < 0 ? OpenFrameMax : to;
+        OpenFrameEvery = every;
+    }
 
     /// <summary>Shows what the file holds (read off the UI thread); a dump picks up a data file beside it as its topology.</summary>
     public void PreviewOpen(string path, string? topology = null)
@@ -74,6 +104,16 @@ public sealed partial class MainViewModel
         });
     }
 
+    /// <summary>The preview read at once on this thread (the self-test; the page reads it in the background).</summary>
+    internal void PreviewOpenNow(string path, string? topology)
+    {
+        _openPath = path;
+        _openTopo = topology ?? "";
+        string? json = null, error = null;
+        try { json = CapsDocument.InspectFile(path, _openTopo.Length > 0 ? _openTopo : null); } catch (Exception e) { error = e.Message; }
+        FillOpenPreview(json, error);
+    }
+
     private void FillOpenPreview(string? json, string? error)
     {
         OpenHead.Clear(); OpenColumns.Clear(); OpenTypes.Clear(); OpenNotes.Clear();
@@ -98,6 +138,9 @@ public sealed partial class MainViewModel
                                       ((double?)t["mass"] ?? 0).ToString("F3", inv), (string?)t["element"] ?? ""));
         OpenAtoms = ((double?)j["atoms"] ?? 0).ToString("N0", inv);
         OpenFrames = ((double?)j["frames"] ?? 0).ToString("0", inv);
+        _openFrameFrom = 0; _openFrameTo = OpenFrameMax; _openFrameEvery = 1;
+        foreach (var n in new[] { nameof(OpenManyFrames), nameof(OpenFrameMax), nameof(OpenFrameFrom), nameof(OpenFrameTo), nameof(OpenFrameEvery) }) Raise(n);
+        FramesChanged();
         OpenBonds = (string?)j["bonds_from"] ?? "";
         OpenUnits = (string?)j["units"] ?? "";
         foreach (var n in (JsonArray)j["notes"]!) OpenNotes.Add((string?)n ?? "");
@@ -115,6 +158,12 @@ public sealed partial class MainViewModel
     public void ConfirmOpen()
     {
         var back = _returnModule is 27 ? 8 : _returnModule;
+        var sel = OpenSelection();
+        if (OpenManyFrames && !sel.All)
+        {
+            if (sel.Kept(OpenFrameCount) == 0) { Status = "No frames in the range asked for"; return; }
+            _pendingFrames = sel;
+        }
         SetModule(back);
         OpenRequested?.Invoke(_openPath + (_openTopo.Length > 0 ? "\n" + _openTopo : ""));
     }

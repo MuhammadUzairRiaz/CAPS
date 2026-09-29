@@ -77,6 +77,7 @@ int usage() {
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
+               "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
                "               element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES ·\n"
@@ -276,13 +277,22 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
 
 System load(const std::string& path, const std::map<std::string, std::string>& o) {
   auto it = o.find("--topology");
-  Trajectory t = open_file(path, it == o.end() ? "" : it->second);
-  size_t f = 0;
-  if (auto fr = o.find("--frame"); fr != o.end()) f = std::stoul(fr->second);
-  if (f >= t.frames()) throw std::runtime_error("frame " + std::to_string(f) + " out of range (file has " + std::to_string(t.frames()) + ")");
-  System s = t.frame(f);
+  // --frame N: only that frame is kept (a dump's earlier frames are passed over unread, reading stops after it)
+  OpenProgress sel;
+  if (auto fr = o.find("--frame"); fr != o.end()) sel.frames.first = sel.frames.last = std::stoul(fr->second);
+  Trajectory t;
+  try {
+    t = open_file(path, it == o.end() ? "" : it->second, sel);
+  } catch (const std::exception& e) {
+    if (!sel.frames.all() && std::string(e.what()).find("no frames in the selection") != std::string::npos)
+      throw std::runtime_error("frame " + std::to_string(sel.frames.first) + " out of range: " + e.what());
+    throw;
+  }
+  if (!sel.frames.all() && t.frames_read == 0 && sel.frames.first >= t.frames())   // a one-frame file: nothing to select
+    throw std::runtime_error("frame " + std::to_string(sel.frames.first) + " out of range (file has " + std::to_string(t.frames()) + ")");
+  System s = t.frame(0);
   if (!s.unwrapped) make_molecules_whole(s);
-  s.notes.insert(s.notes.begin(), std::to_string(t.frames()) + " frame(s)");
+  s.notes.insert(s.notes.begin(), sel.frames.all() ? std::to_string(t.frames()) + " frame(s)" : "frame " + std::to_string(sel.frames.first) + " of the file");
   return s;
 }
 
@@ -1980,18 +1990,34 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
+  if (cmd == "frames") {
+    // caps frames FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N] [--timestep-fs 1]
+    // A long trajectory thinned as it is read: only the frames kept are held and written.
+    if (pos.size() < 2) return usage();
+    OpenProgress rd;
+    if (o.count("--first")) rd.frames.first = std::stoul(o["--first"]);
+    if (o.count("--last")) rd.frames.last = std::stoul(o["--last"]);
+    if (o.count("--stride")) rd.frames.stride = std::max<size_t>(1, std::stoul(o["--stride"]));
+    const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
+    write_trajectory(t, pos[1], o.count("--timestep-fs") ? std::stod(o["--timestep-fs"]) : 1.0);
+    std::printf("wrote %s: %zu frames (%zu read)\n", pos[1].c_str(), t.frames(), t.frames_read ? t.frames_read : t.frames());
+    return 0;
+  }
   if (cmd == "analyze") {
     // caps analyze FILE [--topology DATA] --props density,rdf,... [--first --last --stride] [--frame-ps | --timestep-fs]
     //              [--pair C-C] [--inter] [--rmax] [--dr] [--qmax] [--dq] [--qdirect] [--probe] [--grid] [--ff FF.json [--typing R] [--charges]]
     //              [--json OUT.json] [--csv DIR]
     try {
       if (pos.empty()) return usage();
-      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      // only the frames analysed are read (a dump's others passed over unread): the analysis then takes them all
+      OpenProgress rd;
+      if (o.count("--first")) rd.frames.first = size_t(std::max(0L, std::stol(o["--first"])));
+      if (o.count("--last") && std::stol(o["--last"]) >= 0) rd.frames.last = size_t(std::stol(o["--last"]));
+      if (o.count("--stride")) rd.frames.stride = size_t(std::max(1L, std::stol(o["--stride"])));
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
+      if (t.frames_read == 0 && !rd.frames.all()) t.select(rd.frames);   // a file read whole (one frame): the same frames
       AnalyzeOptions ao;
-      if (o.count("--first")) ao.first = std::stol(o["--first"]);
-      if (o.count("--last")) ao.last = std::stol(o["--last"]);
-      if (o.count("--stride")) ao.stride = std::stol(o["--stride"]);
-      if (o.count("--frame-ps")) ao.frame_ps = std::stod(o["--frame-ps"]);
+      if (o.count("--frame-ps")) ao.frame_ps = std::stod(o["--frame-ps"]) * double(rd.frames.stride);   // between the frames kept
       if (o.count("--timestep-fs")) ao.timestep_fs = std::stod(o["--timestep-fs"]);
       if (o.count("--blocks")) ao.blocks = std::stoi(o["--blocks"]);
       if (o.count("--rmax")) ao.rdf_rmax = std::stod(o["--rmax"]);

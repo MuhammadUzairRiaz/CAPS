@@ -199,7 +199,8 @@ System read_lammps_data(const std::string& path) {
 
 Trajectory read_lammps_dump(const std::string& path, const System* topology) { return read_lammps_dump(path, topology, 0, {}); }
 
-Trajectory read_lammps_dump(const std::string& path, const System* topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress) {
+Trajectory read_lammps_dump(const std::string& path, const System* topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress,
+                            const FrameSelection& frames) {
   std::ifstream in(path, std::ios::binary);
   if (!in) throw ReadError("cannot open " + path);
   double file_size = 0;
@@ -209,6 +210,7 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
     in.seekg(0, std::ios::beg);
   }
   Trajectory tr;
+  tr.selection = frames;
   std::string line;
   int64_t step = -1;
   size_t natoms = 0;
@@ -244,6 +246,14 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
       const size_t pb = tric ? 3 : 0;
       for (int k = 0; k < 3; ++k) cell.periodic[k] = flags.size() > pb + k ? flags[pb + k][0] == 'p' : true;
     } else if (line.rfind("ITEM: ATOMS", 0) == 0) {
+      if (!tr.selection.wants(tr.frames_read)) {   // a frame not kept: its atom lines passed over unread
+        for (size_t i = 0; i < natoms; ++i) {
+          if (!std::getline(in, line)) throw ReadError(path + ": file ends inside frame at timestep " + std::to_string(step));
+          ++lineno;
+        }
+        if (tr.selection.past(tr.frames_read++)) break;
+        continue;
+      }
       cols = split(line.substr(11));
       std::map<std::string, int> ci;
       for (size_t k = 0; k < cols.size(); ++k) ci[cols[k]] = static_cast<int>(k);
@@ -353,14 +363,17 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
       tr.positions.push_back(std::move(pos));
       tr.cells.push_back(cell);
       tr.timesteps.push_back(step);
+      const bool more = !tr.selection.past(tr.frames_read++);
       if (max_frames && tr.positions.size() >= max_frames) break;
       if (progress && !progress(file_size > 0 ? std::min(1.0, static_cast<double>(in.tellg()) / file_size) : 1.0, tr)) {
         tr.topology.notes.push_back("reading stopped after " + std::to_string(tr.positions.size()) + " frames");
         break;
       }
+      if (!more) break;
     }
   }
-  if (tr.positions.empty()) throw ReadError(path + ": no frames found");
+  if (tr.positions.empty())
+    throw ReadError(path + (tr.selection.all() ? ": no frames found" : ": no frames in the selection (the file has " + std::to_string(tr.frames_read) + ")"));
   return tr;
 }
 

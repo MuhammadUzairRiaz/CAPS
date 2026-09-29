@@ -2,6 +2,9 @@
 
 #include <cmath>
 
+#include <filesystem>
+
+#include "caps/io.hpp"
 #include "caps/peptide.hpp"
 #include "caps/trajectory.hpp"
 
@@ -75,4 +78,48 @@ TEST(Trajectory, SeriesFollowTheChainAndTheLog) {
   // smoothing over three frames gives the middle frame
   const auto s = smoothed_positions(t, 1, 3);
   EXPECT_NEAR(norm(s[5] - t.positions[1][5]), 0.0, 1e-9);
+}
+
+// Reading a frame selection: 20 frames written as a dump, a DCD and an XYZ; frames 2 … 15 every 4 read back as
+// 2, 6, 10, 14 with their own positions and timesteps (the dump passes over the others unread and stops after 15)
+TEST(Trajectory, ReadsAFrameSelection) {
+  const std::string data = std::string(CAPS_SAMPLES) + "/ps_melt.data";
+  const Trajectory src = open_file(data);
+  Trajectory t;
+  t.topology = src.topology;
+  for (int k = 0; k < 20; ++k) {
+    auto p = src.positions.front();
+    p[0][0] += 0.05 * k;
+    t.positions.push_back(p);
+    t.cells.push_back(src.topology.cell);
+    t.timesteps.push_back(100 * k);
+  }
+  const auto dir = std::filesystem::temp_directory_path() / "caps_frame_selection";
+  std::filesystem::create_directories(dir);
+  OpenProgress sel;
+  sel.frames = {2, 15, 4};
+  for (const char* ext : {".lammpstrj", ".dcd", ".xyz"}) {
+    const std::string path = (dir / (std::string("t") + ext)).string();
+    write_trajectory(t, path, 1.0);
+    const Trajectory r = open_file(path, std::string(ext) == ".xyz" ? "" : data, sel);
+    ASSERT_EQ(r.frames(), 4u) << ext;
+    for (size_t j = 0; j < 4; ++j) {
+      const size_t k = 2 + 4 * j;
+      EXPECT_NEAR(r.positions[j][0][0], t.positions[k][0][0], 2e-3) << ext << " frame " << k;
+      EXPECT_NEAR(r.positions[j][5][1], t.positions[k][5][1], 2e-3) << ext;
+    }
+    EXPECT_NEAR(r.topology.atoms[0].pos[0], t.positions[2][0][0], 2e-3) << ext << ": the topology follows the first kept frame";
+    if (std::string(ext) == ".lammpstrj") EXPECT_EQ(r.timesteps, (std::vector<int64_t>{200, 600, 1000, 1400}));
+    if (std::string(ext) == ".xyz") EXPECT_EQ(r.timesteps, (std::vector<int64_t>{2, 6, 10, 14})) << "XYZ frames are numbered as in the file";
+    if (std::string(ext) == ".lammpstrj") EXPECT_EQ(r.frames_read, 16u) << "reading stops after the last frame asked for";
+    OpenProgress past;
+    past.frames = {30, SIZE_MAX, 1};
+    EXPECT_THROW(open_file(path, std::string(ext) == ".xyz" ? "" : data, past), std::exception) << ext;
+  }
+  // the same frames from those held in memory
+  Trajectory m = t;
+  m.select({2, 15, 4});
+  ASSERT_EQ(m.frames(), 4u);
+  EXPECT_EQ(m.timesteps, (std::vector<int64_t>{200, 600, 1000, 1400}));
+  std::filesystem::remove_all(dir);
 }

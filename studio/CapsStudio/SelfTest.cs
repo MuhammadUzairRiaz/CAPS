@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 49, "native ABI version 49");
+        Check(Native.AbiVersion() == 50, "native ABI version 50");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -3511,6 +3511,20 @@ internal static class SelfTest
             vm.ClearAll();
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
+        }
+        // Open page › read from / to / every: frames 1 to the end of the sample dump (2 of 3), recorded with first=1
+        {
+            var dump = Path.Combine(dir, "ps_melt.lammpstrj");
+            vm.PreviewOpenNow(dump, Path.Combine(dir, "ps_melt.data"));
+            vm.SetOpenFrames(1, -1, 1);
+            var button = vm.OpenButton;
+            vm.ConfirmOpen();
+            vm.Recording = true;
+            vm.Open(dump, Path.Combine(dir, "ps_melt.data"));
+            vm.Recording = false;
+            var line = vm.RecordedCommands.LastOrDefault(c => c.Text.StartsWith("doc = caps.open("))?.Text ?? "";
+            Check(button == "Open 2 frames" && vm.Frames == 2 && line.Contains("first=1") && vm.Notes.Any(n => n.Contains("2 kept of 3 read")),
+                  $"open a frame selection: {button} · {vm.Frames} frames · {line}");
         }
         vm.CloseAllStructures();
 

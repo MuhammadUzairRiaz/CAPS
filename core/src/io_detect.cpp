@@ -264,9 +264,9 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     System top;
     if (!topology_path.empty()) top = read_lammps_data(topology_path);
     tr = read_lammps_dump(path, topology_path.empty() ? nullptr : &top, progress.max_frames, [&](double f, const Trajectory& t) {
-      if (!told) tell(t, !topology_path.empty());
+      if (!told && t.frames() > 0) tell(t, !topology_path.empty());
       return report(3, f, std::to_string(t.frames()) + " frames");
-    });
+    }, progress.frames);
   } else if (fmt == "mol2") {
     tr.topology = read_mol2(path);
     std::vector<Vec3> p;
@@ -308,13 +308,15 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
       top.bonds = st.topology.bonds;
     }
     const auto prog = [&](double f, const Trajectory& t) {
-      if (!told) tell(t, true);
+      if (!told && t.frames() > 0) tell(t, true);
       return report(3, f, std::to_string(t.frames()) + " frames");
     };
-    tr = fmt == "xtc" ? read_xtc(path, top, progress.max_frames, prog) : fmt == "trr" ? read_trr(path, top, progress.max_frames, prog)
-       : fmt == "amber-netcdf" ? read_amber_netcdf(path, top, progress.max_frames, prog)
-       : fmt == "amber-mdcrd" ? read_amber_mdcrd(path, top, progress.max_frames, prog)
-                              : read_dcd(path, top, progress.max_frames, prog);
+    const FrameSelection& sel = progress.frames;
+    tr = fmt == "xtc" ? read_xtc(path, top, progress.max_frames, prog, sel) : fmt == "trr" ? read_trr(path, top, progress.max_frames, prog, sel)
+       : fmt == "amber-netcdf" ? read_amber_netcdf(path, top, progress.max_frames, prog, sel)
+       : fmt == "amber-mdcrd" ? read_amber_mdcrd(path, top, progress.max_frames, prog, sel)
+                              : read_dcd(path, top, progress.max_frames, prog, sel);
+    if (tr.frames() == 0) throw ReadError(path + ": no frames in the selection (the file has " + std::to_string(tr.frames_read) + ")");
     for (size_t i = 0; i < tr.topology.atoms.size(); ++i) tr.topology.atoms[i].pos = tr.positions.front()[i];
     if (!top.bonds.empty()) tr.topology.bonds_from_file = true;
   } else if (fmt == "sdf" || fmt == "poscar") {
@@ -324,12 +326,28 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr.positions.push_back(std::move(p));
     tr.cells.push_back(tr.topology.cell);
     tr.timesteps.push_back(0);
-  } else if (fmt == "gro") {
-    tr = read_gro(path);
-  } else if (fmt == "pdb") {
-    tr = read_pdb(path);
   } else {
-    tr = read_xyz(path);
+    tr = fmt == "gro" ? read_gro(path) : fmt == "pdb" ? read_pdb(path) : read_xyz(path);
+    if (!progress.frames.all() && tr.frames() > 1) {   // text trajectories: thinned once read
+      tr.frames_read = tr.frames();
+      tr.select(progress.frames);
+      if (tr.frames() == 0) throw ReadError(path + ": no frames in the selection (the file has " + std::to_string(tr.frames_read) + ")");
+      if (progress.max_frames && tr.frames() > progress.max_frames) {
+        tr.positions.resize(progress.max_frames);
+        tr.cells.resize(std::min(tr.cells.size(), progress.max_frames));
+        tr.timesteps.resize(std::min(tr.timesteps.size(), progress.max_frames));
+      }
+    }
+  }
+  if (!progress.frames.all() && tr.frames() > 0 && tr.frames_read > 0) {
+    // the first kept frame is frame 0: the topology's positions, cell and timestep follow it
+    const FrameSelection& f = progress.frames;
+    for (size_t i = 0; i < tr.topology.atoms.size() && i < tr.positions.front().size(); ++i) tr.topology.atoms[i].pos = tr.positions.front()[i];
+    if (!tr.cells.empty()) tr.topology.cell = tr.cells.front();
+    if (!tr.timesteps.empty()) tr.topology.timestep = tr.timesteps.front();
+    tr.topology.notes.push_back("frames " + std::to_string(f.first) + (f.last == SIZE_MAX ? " to the end" : " to " + std::to_string(f.last)) +
+                                (f.stride > 1 ? " every " + std::to_string(f.stride) : std::string()) + ": " + std::to_string(tr.frames()) +
+                                " kept of " + std::to_string(tr.frames_read) + " read (file frames counted from 0)");
   }
   if (tr.topology.atoms.empty()) throw ReadError(path + ": no atoms found (read as " + format_name(fmt) + ")");
   // a GROMACS topology: its atoms (types, charges, residues), bonds and explicit terms, the coordinates from the file
