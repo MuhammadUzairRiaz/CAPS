@@ -1311,6 +1311,17 @@ internal static class SelfTest
             var geomOk = vm.EditError.Length == 0 || vm.EditError.Contains("ring");   // a crystal's atoms are all in rings: refused, and said why
             Check(el == "Si" && order == "2" && geomOk, $"modify toolbar: element {el} · bond order {order} · geometry {(geomOk ? "ok" : vm.EditError)}");
         }
+        // two dump files of one run, chosen together: joined in time order, the boundary frame kept once
+        {
+            var lines = File.ReadAllLines(Path.Combine(dir, "ps_melt.lammpstrj"));
+            var starts = lines.Select((l, k) => (l, k)).Where(x => x.l.StartsWith("ITEM: TIMESTEP")).Select(x => x.k).ToList();
+            var pa = Path.Combine(outDir, "caps-selftest-part1.lammpstrj");
+            var pb = Path.Combine(outDir, "caps-selftest-part2.lammpstrj");
+            File.WriteAllLines(pa, lines.Take(starts[2]));
+            File.WriteAllLines(pb, lines.Skip(starts[1]));
+            vm.OpenJoined([pb, pa], Path.Combine(dir, "ps_melt.data"));
+            Check(vm.Frames == 3 && vm.Status.Contains("2 files joined"), $"joined dumps: {vm.Frames} frames · {vm.Status}");
+        }
 
         // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
         vm.OpenBio();

@@ -405,3 +405,30 @@ TEST(Import, AngleAndRingChecks) {
   caps::delete_atoms(benzene, del);
   EXPECT_NE(titles(benzene).find("2 aromatic atoms with a single aromatic bond"), std::string::npos);
 }
+
+TEST(Import, DumpPartsJoinInTimeOrder) {
+  // the test dump split into two parts that overlap by one frame, given in the wrong order
+  const auto dir = std::filesystem::temp_directory_path();
+  std::ifstream in(kTraj + "water.lammpstrj");
+  std::vector<std::string> blocks;   // one text per frame
+  for (std::string l; std::getline(in, l);) {
+    if (l.rfind("ITEM: TIMESTEP", 0) == 0) blocks.emplace_back();
+    blocks.back() += l + "\n";
+  }
+  ASSERT_GE(blocks.size(), 3u);
+  const size_t n = blocks.size(), mid = n / 2;
+  const std::string a = (dir / "caps_part_a.lammpstrj").string(), b = (dir / "caps_part_b.lammpstrj").string();
+  { std::ofstream o(a); for (size_t f = 0; f <= mid; ++f) o << blocks[f]; }
+  { std::ofstream o(b); for (size_t f = mid; f < n; ++f) o << blocks[f]; }
+  std::vector<std::string> notes;
+  const caps::Trajectory t = caps::open_files({b, a}, kTraj + "water.data", &notes);
+  const caps::Trajectory whole = caps::open_file(kTraj + "water.lammpstrj", kTraj + "water.data");
+  ASSERT_EQ(t.frames(), whole.frames());
+  EXPECT_EQ(t.timesteps, whole.timesteps);
+  for (size_t f = 0; f < n; ++f) EXPECT_NEAR(caps::norm(t.positions[f][1] - whole.positions[f][1]), 0, 1e-9);
+  ASSERT_FALSE(notes.empty());
+  EXPECT_NE(notes[0].find("kept once"), std::string::npos);
+  const std::string other = (dir / "caps_part_other.xyz").string();   // another system: 3 atoms
+  { std::ofstream o(other); o << "3\nwater\nO 0 0 0\nH 0.96 0 0\nH -0.24 0.93 0\n"; }
+  EXPECT_THROW(caps::open_files({a, other}), std::exception);
+}

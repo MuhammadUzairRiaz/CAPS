@@ -60,6 +60,9 @@ int32_t caps_abi_version(void);
 const char* caps_last_error(void);
 
 caps_doc* caps_open(const char* path, const char* topology_path);   /* NULL on error */
+/* v48 several trajectory files of one run as one trajectory (JSON array of paths; open_files in io.hpp): parts in time
+   order, a frame repeated at a boundary kept once, the atoms checked to agree. NULL on error. */
+caps_doc* caps_open_many(const char* paths_json, const char* topology_path);
 /* v19: what a file holds before opening it (format, first lines, dump columns, types, frames, bonds) as JSON. */
 int32_t caps_inspect_file(const char* path, const char* topology_path, char* json, int32_t cap);
 /* Staged open (Studio progressive open): stage 0 format detected, 1 frame 0 read, 2 topology joined, 3 frames read
