@@ -7,6 +7,7 @@
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
+#include "caps/io.hpp"
 #include "caps/json.hpp"
 #include "caps/bond_react.hpp"
 #include "caps/uff.hpp"
@@ -748,4 +749,26 @@ TEST(React, ReactionLibraryRunsOnItsModelCompounds) {
   EXPECT_GE(converted, 45);
   EXPECT_LE(refused, 4);
   EXPECT_GE(ran, 40);
+}
+
+// A grown cell keeps its repeat units through a LAMMPS data file (a "# res N NAME" comment LAMMPS ignores), so a cure run
+// on the file still counts DC and places each link on its unit
+TEST(React, RepeatUnitsSurviveADataFile) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-butadiene", "[*]C/C=C\\C[*]"}};
+  spec.dp = 6;
+  GrowOptions g;
+  g.chains = 2;
+  g.density = 0.5;
+  System s = grow_chains(spec, g);
+  ASSERT_GT(s.atoms[0].resid, 0);
+  const auto path = (std::filesystem::temp_directory_path() / "caps_res_test.data").string();
+  write_lammps_data(s, path);
+  const System back = read_lammps_data(path);
+  ASSERT_EQ(back.atoms.size(), s.atoms.size());
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    EXPECT_EQ(back.atoms[i].resid, s.atoms[i].resid);
+    EXPECT_EQ(back.atoms[i].resname, s.atoms[i].resname);
+  }
+  std::filesystem::remove(path);
 }

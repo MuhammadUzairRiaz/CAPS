@@ -202,6 +202,18 @@
         <StackPanel Spacing="16">
           <Border Classes="card">
             <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Network" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="6">
+                <TextBlock Text="{Binding RxLiveText}" Classes="mono acc" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding Reacting}" />
+                <TextBlock Text="{Binding RxNetworkText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                <TextBlock Text="LINK MAP" Classes="h3" Margin="0,6,0,0" />
+                <Border Classes="inset" Height="170" Padding="4"><v:LinkMap x:Name="LinkMap" /></Border>
+                <TextBlock Text="In the live view each chain keeps its colour as they join; the atoms of the links are highlighted." Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel>
               <Border Classes="phead"><TextBlock Text="Flory–Stockmayer check" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,12,16,16" Spacing="10">
                 <Border Classes="inset"><TextBlock Text="α_c = 1 / √( r (f_A − 1)(f_B − 1) )" Classes="mono" FontSize="13" HorizontalAlignment="Center" /></Border>
@@ -229,16 +241,6 @@
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Structure" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Title}" Classes="mono" FontSize="12" MaxWidth="200" TextTrimming="CharacterEllipsis" /></Grid>
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Contents" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding HudInfo}" Classes="mono" FontSize="12" /></Grid>
                 <TextBlock Text="{Binding ForceFieldLine}" Classes="dim" TextWrapping="Wrap" />
-              </StackPanel>
-            </StackPanel>
-          </Border>
-          <Border Classes="card">
-            <StackPanel>
-              <Border Classes="phead"><TextBlock Text="Network" Classes="h2" VerticalAlignment="Center" /></Border>
-              <StackPanel Margin="16,12,16,16" Spacing="6">
-                <TextBlock Text="{Binding RxLiveText}" Classes="mono acc" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding Reacting}" />
-                <TextBlock Text="{Binding RxNetworkText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-                <TextBlock Text="In the live view each chain keeps its colour as they join; the atoms of the links are highlighted." Classes="dim" TextWrapping="Wrap" />
               </StackPanel>
             </StackPanel>
           </Border>
