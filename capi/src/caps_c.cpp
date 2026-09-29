@@ -5061,6 +5061,8 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     po.thiolate = j.text("thiolate", "");
     po.thiolate_fraction = j.num("thiolate_fraction", 1.0);
     po.length = j.num("length", 20);
+    po.height = j.num("height", 0);
+    po.top_ratio = j.num("top_ratio", 0.5);
     f = caps::nanoparticle(caps::read_cif(j.text("crystal")), po, &r);
     keep = {false, false, po.shape == caps::ParticleShape::Fibre};
     // the cut surface relaxed with UFF (design/boards/Nanoparticle): the surface layer (atoms within 4 Å of a hydrogen,

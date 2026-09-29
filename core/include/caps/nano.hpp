@@ -63,7 +63,11 @@ std::array<double, 3> nanotube_geometry(int n, int m, double cc = 1.42);
 
 // Fibre: a cylinder along the crystal's c axis (which must be normal to a and b), periodic along it — a glass, carbon or
 // steel fibre to embed in a rubber matrix.
-enum class ParticleShape { Sphere, Cube, Octahedron, Cuboctahedron, Fibre, TruncatedOctahedron, Icosahedron };
+// Finite shapes cut from the crystal (Materials Studio's nanocluster shapes and more): a rod (finite cylinder), a cone
+// and a frustum along z (base at the bottom), a regular tetrahedron, a square pyramid (apex up) and a hemisphere
+// (flat face down, on z = 0 of its centre). Their height is `height` (0: 2 × radius); the frustum's top radius is
+// top_ratio × radius.
+enum class ParticleShape { Sphere, Cube, Octahedron, Cuboctahedron, Fibre, TruncatedOctahedron, Icosahedron, Rod, Cone, Frustum, Tetrahedron, Pyramid, Hemisphere };
 const char* to_string(ParticleShape s);
 ParticleShape particle_shape_from_string(const std::string& s);
 
@@ -71,6 +75,8 @@ struct ParticleOptions {
   ParticleShape shape = ParticleShape::Sphere;
   double radius = 12.0;           // circumscribed radius (fibre: its radius), Å
   double length = 20.0;           // fibre: length along the axis, Å (whole cells; the fibre is periodic along it)
+  double height = 0;              // rod, cone, frustum, pyramid: height along z, Å (0: twice the radius)
+  double top_ratio = 0.5;         // frustum: top radius / base radius
   bool on_atom = true;            // centre on the atom nearest the cell centre; false: on the cell centre
   bool passivate = false;
   // a metal particle capped with thiolates (cap_thiolates in edit.hpp): a preset name (C6, C12, C18, MPA, MUA, MHA) or

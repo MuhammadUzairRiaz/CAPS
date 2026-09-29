@@ -99,7 +99,8 @@ void finish(System& s, const std::string& title) {
   if (s.bonds.empty()) s.bonds = crystal_bonds(s);
 }
 
-bool inside(ParticleShape sh, const Vec3& r, double R) {
+bool inside(ParticleShape sh, const Vec3& r, double R, double H = 0, double top = 0.5) {
+  if (H <= 0) H = 2 * R;
   const double ax = std::fabs(r[0]), ay = std::fabs(r[1]), az = std::fabs(r[2]);
   switch (sh) {
     case ParticleShape::Sphere: return norm(r) <= R;
@@ -114,6 +115,26 @@ bool inside(ParticleShape sh, const Vec3& r, double R) {
       const double s = R / std::sqrt(5.0);   // vertices at the permutations of (0, ±s, ±2s): squares at 2s, hexagons at 3s
       return std::max({ax, ay, az}) <= 2 * s && ax + ay + az <= 3 * s;
     }
+    case ParticleShape::Rod: return std::hypot(r[0], r[1]) <= R && az <= H / 2;
+    case ParticleShape::Cone:
+    case ParticleShape::Frustum: {
+      if (az > H / 2) return false;
+      const double f = (r[2] + H / 2) / H;   // 0 at the base, 1 at the top
+      const double t = sh == ParticleShape::Cone ? 0.0 : std::clamp(top, 0.0, 1.0);
+      return std::hypot(r[0], r[1]) <= R * (1 - (1 - t) * f);
+    }
+    case ParticleShape::Pyramid: {   // a square base of circumradius R (half side R/√2) at the bottom, apex at the top
+      if (az > H / 2) return false;
+      const double f = (r[2] + H / 2) / H;
+      return std::max(ax, ay) <= R / std::sqrt(2.0) * (1 - f);
+    }
+    case ParticleShape::Tetrahedron: {   // regular, circumradius R: vertices along (1,1,1), (1,−1,−1), (−1,1,−1), (−1,−1,1); inradius R/3
+      static const Vec3 v[4] = {{1, 1, 1}, {1, -1, -1}, {-1, 1, -1}, {-1, -1, 1}};
+      for (const auto& q : v)
+        if (dot(r, q * (-1 / std::sqrt(3.0))) > R / 3) return false;
+      return true;
+    }
+    case ParticleShape::Hemisphere: return norm(r) <= R && r[2] >= 0;
     case ParticleShape::Icosahedron: {
       // inside every face: the face normals are the dodecahedron's vertex directions; inradius / circumradius 0.794654
       static const std::vector<Vec3> normals = [] {
@@ -148,6 +169,12 @@ const char* to_string(ParticleShape s) {
     case ParticleShape::Fibre: return "fibre";
     case ParticleShape::TruncatedOctahedron: return "truncated octahedron";
     case ParticleShape::Icosahedron: return "icosahedron";
+    case ParticleShape::Rod: return "rod";
+    case ParticleShape::Cone: return "cone";
+    case ParticleShape::Frustum: return "frustum";
+    case ParticleShape::Tetrahedron: return "tetrahedron";
+    case ParticleShape::Pyramid: return "pyramid";
+    case ParticleShape::Hemisphere: return "hemisphere";
   }
   return "sphere";
 }
@@ -160,7 +187,13 @@ ParticleShape particle_shape_from_string(const std::string& s) {
   if (s == "fibre" || s == "fiber" || s == "cylinder") return ParticleShape::Fibre;
   if (s == "truncated octahedron" || s == "truncated-octahedron" || s == "truncated_octahedron") return ParticleShape::TruncatedOctahedron;
   if (s == "icosahedron") return ParticleShape::Icosahedron;
-  throw std::invalid_argument("shape must be sphere, cube, octahedron, cuboctahedron, truncated octahedron, icosahedron or fibre");
+  if (s == "rod") return ParticleShape::Rod;
+  if (s == "cone") return ParticleShape::Cone;
+  if (s == "frustum") return ParticleShape::Frustum;
+  if (s == "tetrahedron") return ParticleShape::Tetrahedron;
+  if (s == "pyramid") return ParticleShape::Pyramid;
+  if (s == "hemisphere") return ParticleShape::Hemisphere;
+  throw std::invalid_argument("shape must be sphere, cube, octahedron, cuboctahedron, truncated octahedron, icosahedron, rod, cone, frustum, tetrahedron, pyramid, hemisphere or fibre");
 }
 
 // ---------------------------------------------------------------- graphene
@@ -374,7 +407,8 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
     return s;
   }
   int nrep[3];
-  for (int k = 0; k < 3; ++k) nrep[k] = int(std::ceil((o.radius + 3) / w[k])) + 1;
+  const double reach = std::max(o.radius, (o.height > 0 ? o.height : 2 * o.radius) / 2);   // the shape's half extent
+  for (int k = 0; k < 3; ++k) nrep[k] = int(std::ceil((reach + 3) / w[k])) + 1;
   // the centre: the cell centre, or the atom nearest it
   Vec3 centre = c.origin + (c.a + c.b + c.c) * 0.5;
   if (o.on_atom) {
@@ -386,7 +420,7 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
     }
     centre = pick;
   }
-  const double vac = std::max(0.0, o.vacuum), box = 2 * o.radius + 2 * vac + 4;
+  const double vac = std::max(0.0, o.vacuum), box = 2 * reach + 2 * vac + 4;
   System s;
   s.cell.a = {box, 0, 0};
   s.cell.b = {0, box, 0};
@@ -397,7 +431,7 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
       for (int k = -nrep[2]; k <= nrep[2]; ++k)
         for (const auto& at : bulk.atoms) {
           const Vec3 r = at.pos + c.a * i + c.b * j + c.c * k - centre;
-          if (inside(o.shape, r, o.radius)) add(s, at.element, mid + r);
+          if (inside(o.shape, r, o.radius, o.height, o.top_ratio)) add(s, at.element, mid + r);
         }
   if (s.atoms.empty()) throw std::invalid_argument("no atom inside the particle: make it larger");
   s.bonds = crystal_bonds(s);

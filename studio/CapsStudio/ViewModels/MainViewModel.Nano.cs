@@ -97,7 +97,7 @@ public sealed partial class MainViewModel
         else NanoError = EditError;
     }
 
-    public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre", "Truncated octahedron", "Icosahedron"];
+    public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre", "Truncated octahedron", "Icosahedron", "Rod", "Cone", "Frustum", "Tetrahedron", "Pyramid", "Hemisphere"];
 
     public void OpenNano()
     {
@@ -205,8 +205,14 @@ public sealed partial class MainViewModel
     private decimal _particleRadius = 12;
     private bool _particleOnAtom = true, _particlePassivate = true;
     public int ParticleCrystal { get => _particleCrystal; set { if (Set(ref _particleCrystal, value)) { Raise(nameof(ParticleIsMetal)); NanoPreview(); } } }
-    public int ParticleShape { get => _particleShape; set { if (Set(ref _particleShape, value)) { Raise(nameof(ParticleIsFibre)); RaiseNano(); NanoPreview(); } } }
+    public int ParticleShape { get => _particleShape; set { if (Set(ref _particleShape, value)) { Raise(nameof(ParticleIsFibre)); Raise(nameof(ParticleHasHeight)); Raise(nameof(ParticleIsFrustum)); RaiseNano(); NanoPreview(); } } }
     public bool ParticleIsFibre => _particleShape == 4;
+    /// <summary>Rod, cone, frustum and pyramid have a height along z; the frustum also its top radius.</summary>
+    public bool ParticleHasHeight => _particleShape is 7 or 8 or 9 or 11;
+    public bool ParticleIsFrustum => _particleShape == 9;
+    private decimal _particleHeight = 24, _particleTop = 0.5m;
+    public decimal? ParticleHeight { get => _particleHeight; set { if (value != null && Set(ref _particleHeight, Math.Clamp(value.Value, 3, 200))) NanoPreview(); } }
+    public decimal? ParticleTopRatio { get => _particleTop; set { if (value != null && Set(ref _particleTop, Math.Clamp(value.Value, 0.05m, 1))) NanoPreview(); } }
     private decimal _fibreLength = 22;
     public decimal FibreLength { get => _fibreLength; set { if (Set(ref _fibreLength, Math.Clamp(value, 3, 500))) NanoPreview(); } }
     public decimal ParticleRadius { get => _particleRadius; set { if (Set(ref _particleRadius, Math.Clamp(value, 3, 60))) NanoPreview(); } }
@@ -282,6 +288,8 @@ public sealed partial class MainViewModel
                 if (ParticleIsMetal && _particleThiolate) { o["thiolate"] = ThiolateIds[_thiolatePick]; o["thiolate_fraction"] = (double)_thiolateFraction; }
                 if (_particleRelax && !ParticleIsMetal) o["relax_surface"] = 1;
                 o["length"] = (double)_fibreLength;
+                if (ParticleHasHeight) o["height"] = (double)_particleHeight;
+                if (ParticleIsFrustum) o["top_ratio"] = (double)_particleTop;
                 break;
         }
         return o.ToJsonString();

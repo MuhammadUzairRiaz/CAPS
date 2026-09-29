@@ -293,3 +293,34 @@ TEST(Nano, BoronNitrideSheetAndTube) {
   EXPECT_GT(caps, 0);
   EXPECT_THROW(graphene_sheet(SheetOptions{"MoS2"}), std::invalid_argument);
 }
+
+TEST(Nano, MoreParticleShapesFollowTheirVolumes) {
+  // gold (fcc, a 4.0782 Å): 4 atoms per a³; each shape's atom count ≈ density × its volume (the surface's granularity
+  // allows ~15 % at these sizes)
+  const System au = read_cif(kCrystals + "gold.cif");
+  const double a = 4.0782, rho = 4 / (a * a * a), R = 14, H = 24, t = 0.5;
+  struct Case { const char* name; double volume; };
+  // the tetrahedron's faces are fcc {111} planes (spacing a/√3): with its inradius R/3 midway between two planes the
+  // atoms fill exactly the geometric volume (on a plane, whole layers tip the count by up to half a spacing per face)
+  const double Rt = 3 * 4.5 * a / std::sqrt(3.0);
+  const double tet_edge = Rt * std::sqrt(8.0 / 3.0);
+  const Case cases[] = {
+      {"rod", M_PI * R * R * H},
+      {"cone", M_PI * R * R * H / 3},
+      {"frustum", M_PI * H / 3 * (R * R + R * R * t + R * R * t * t)},
+      {"tetrahedron", tet_edge * tet_edge * tet_edge / (6 * std::sqrt(2.0))},
+      {"pyramid", 2 * R * R * H / 3},
+      {"hemisphere", 2.0 / 3 * M_PI * R * R * R},
+  };
+  for (const auto& c : cases) {
+    ParticleOptions o;
+    o.shape = particle_shape_from_string(c.name);
+    o.radius = std::string(c.name) == "tetrahedron" ? Rt : R;
+    o.height = std::string(c.name) == "tetrahedron" || std::string(c.name) == "hemisphere" ? 0 : H;
+    o.top_ratio = t;
+    const System p = nanoparticle(au, o);
+    const double expect = rho * c.volume;
+    EXPECT_NEAR(double(p.atoms.size()), expect, 0.15 * expect) << c.name;
+    EXPECT_STREQ(to_string(o.shape), c.name);
+  }
+}

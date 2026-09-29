@@ -115,7 +115,7 @@ int usage() {
                "  caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]\n"
                "               [--chains N] [--dp 10] [--gap 1] [--vacuum 0] [--sequence …] [--ff FF]   a polymer film on a surface\n"
                "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
-               "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|fibre --radius 12 --length 20 --passivate]\n"
+               "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|truncated-octahedron|icosahedron|rod|cone|frustum|tetrahedron|pyramid|hemisphere|fibre\n               --radius 12 --height 24 --top-ratio 0.5 --length 20 --passivate]\n"
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
                "  caps dssp    PROTEIN.pdb                      DSSP secondary structure (and Martini's codes)\n"
                "  caps martini PROTEIN.pdb -o CG.data [--itp CG.itp] [--ss LETTERS|C|none]   Martini 2.2 protein (martinize's rules);\n"
@@ -215,7 +215,7 @@ const std::set<std::string>& known_options() {
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--ops", "--ops-file", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--ops", "--ops-file", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
@@ -859,6 +859,8 @@ int main(int argc, char** argv) {
         po.on_atom = !(o.count("--centre") && o["--centre"] == "cell");
         po.passivate = o.count("--passivate");
         if (o.count("--length")) po.length = std::stod(o["--length"]);
+        if (o.count("--height")) po.height = std::stod(o["--height"]);
+        if (o.count("--top-ratio")) po.top_ratio = std::stod(o["--top-ratio"]);
         f = nanoparticle(read_cif(pos[1]), po, &nr);
         keep = {false, false, po.shape == ParticleShape::Fibre};
       } else {
