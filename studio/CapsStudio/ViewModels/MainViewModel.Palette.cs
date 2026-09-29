@@ -169,6 +169,34 @@ public sealed partial class MainViewModel
         AddCommand(new PaletteCommand { Title = "Full-screen view", Id = "view.fullscreen", Icon = "expand", Section = "View",
             Keywords = "full screen presentation screenshot clean view only visualization window big", Enabled = () => _doc != null || RunLiveDoc != null,
             Run = () => FullViewRequested?.Invoke(RunLiveDoc != null) });
+        AddCommand(new PaletteCommand { Title = "Clean up (UFF)", Id = "edit.clean", Icon = "wand", Section = "Edit",
+            Keywords = "clean uff minimise geometry picked tidy", Enabled = () => _doc != null, Run = () => _ = AutoClean() });
+        AddCommand(new PaletteCommand { Title = "Find primitive cell", Id = "crystal.primitive", Icon = "cube", Section = "Build",
+            Keywords = "primitive cell crystal reduce supercell centred translations lattice", Enabled = () => _doc != null, Run = FindPrimitiveCell });
+        AddCommand(new PaletteCommand { Title = "Niggli-reduced cell", Id = "crystal.niggli", Icon = "cube", Section = "Build",
+            Keywords = "niggli reduced cell krivy gruber lattice crystal", Enabled = () => _doc != null, Run = NiggliCell });
+        AddCommand(new PaletteCommand { Title = "Conventional cell", Id = "crystal.conventional", Icon = "cube", Section = "Build",
+            Keywords = "conventional cell standard setting symmetry space group crystal", Enabled = () => _doc != null, Run = ConventionalCell });
+        AddCommand(new PaletteCommand { Title = "Vacuum slab / redefine lattice / nanowire…", Id = "crystal.tools", Icon = "cube", Section = "Build",
+            Keywords = "vacuum slab redefine lattice matrix nanowire wire crystal cell tools", Run = () => GoModule(29) });
+        foreach (var el in QuickElements)
+        {
+            var e = el;
+            AddCommand(new PaletteCommand { Title = $"Make the picked atoms {e}", Id = "modify.element " + e, Icon = "atom", Section = "Modify",
+                Keywords = "element change modify atom " + e, Enabled = () => _doc != null && _selection.Count > 0, Run = () => ModifyElementPicked(e) });
+        }
+        foreach (var (o, n) in new[] { (1, "single"), (2, "double"), (3, "triple") })
+        {
+            var order = o;
+            AddCommand(new PaletteCommand { Title = $"Make the picked bond {n}", Id = "modify.bond " + n, Icon = "bond", Section = "Modify",
+                Keywords = "bond order type modify " + n, Enabled = () => _doc != null && _selection.Count == 2, Run = () => BondOrderPicked(order) });
+        }
+        foreach (var (gid, gname) in Geometries)
+        {
+            var g = gid;
+            AddCommand(new PaletteCommand { Title = $"Geometry of the picked atom: {gname}", Id = "modify.geometry " + g, Icon = "atom", Section = "Modify",
+                Keywords = "hybridisation hybridization geometry coordination modify " + gname, Enabled = () => _doc != null && _selection.Count == 1, Run = () => GeometryPicked(g) });
+        }
         AddCommand(new PaletteCommand { Title = "Auto-clean while editing", Id = "edit.autoclean", Icon = "wand", Shortcut = "A", Section = "Edit",
             Keywords = "auto clean uff relax geometry while building toggle", Run = ToggleAutoClean });
         AddCommand(new PaletteCommand { Title = "Reduce motion", Id = "settings.motion", Icon = "gear", Section = "Settings",
