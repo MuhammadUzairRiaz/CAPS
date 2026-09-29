@@ -170,7 +170,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
         "caps_react_summary": ([P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
-        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I),
+        "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I), "caps_field_set_mixing": ([P, S], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
@@ -227,6 +227,16 @@ class _Field:
         path = "file" if forcefield == "file" else _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
+        if rc < 0:
+            raise _error()
+        rep = _json_call(library().caps_field_report, self._doc._h)
+        rep["complete"] = rc == 0
+        return rep
+
+    def set_mixing(self, rule: str = "") -> dict:
+        """The mixing rule for unlike Lennard-Jones pairs in place of the force field's own: "arithmetic", "geometric" or
+        "sixthpower"; "" back to its own. Every run and export uses it; the report says so. Returns the report."""
+        rc = library().caps_field_set_mixing(self._doc._h, _enc(rule))
         if rc < 0:
             raise _error()
         rep = _json_call(library().caps_field_report, self._doc._h)

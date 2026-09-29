@@ -114,6 +114,7 @@ struct FieldState {
   bool file_has_charges = false;
   std::string groups;                        // v36: a force field per group (caps_field_assign_groups), as JSON; "" one for all
   std::string model;                         // a model's own force field built with the structure (Kremer–Grest), as JSON
+  std::string mixing;                        // v47: the mixing rule for unlike Lennard-Jones pairs in place of the force field's ("" its own)
 };
 
 // Styles, colours, surfaces and polyhedra of the Studio view (caps_set_appearance), prepared for the current frame.
@@ -912,6 +913,14 @@ void field_run(caps_doc* d) {
       F.rep.missing.push_back(b);
     }
   }
+  if (F.ff && !F.mixing.empty() && F.mixing != F.ff->mixing) {
+    // the rule chosen in place of the force field's own: every run and export uses it; explicit pairs still win
+    auto ff2 = std::make_shared<caps::ForceField>(*F.ff);
+    F.rep.notes.push_back("mixing rule " + F.mixing + " in place of " + F.ff->name + "'s own " + F.ff->mixing +
+                          " for unlike Lennard-Jones pairs (chosen in CAPS, not the published force field); its explicit pairs still apply");
+    ff2->mixing = F.mixing;
+    F.ff = std::move(ff2);
+  }
   F.complete = F.ff && F.rep.missing.empty();
 
   // types into the document: colour by type shows the force-field types
@@ -940,7 +949,9 @@ void field_run(caps_doc* d) {
   // report
   caps::Json r = caps::Json::object();
   r["forcefield"] = def.name;
-  r["mixing"] = def.pair_table.empty() ? def.mixing : std::string("none: every pair from its table");
+  r["mixing"] = def.pair_table.empty() ? (F.ff ? F.ff->mixing : def.mixing) : std::string("none: every pair from its table");
+  r["mixing_own"] = def.mixing;
+  r["mixing_override"] = F.mixing;
   r["version"] = def.version;
   r["source"] = def.source;
   r["file"] = F.ff_path;
@@ -3147,6 +3158,20 @@ int32_t caps_equivalent_atoms(caps_doc* d, int32_t atom, int32_t radius, char* j
     return 0;
   });
   return n;
+}
+
+int32_t caps_field_set_mixing(caps_doc* d, const char* rule) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    if (!d->field->groups.empty()) throw caps::FFError("the force field is assigned by group: its cross terms are set in the group settings");
+    const std::string r = rule ? rule : "";
+    if (!r.empty() && r != "arithmetic" && r != "geometric" && r != "sixthpower")
+      throw caps::FFError("mixing rule: arithmetic (Lorentz–Berthelot), geometric or sixthpower (Waldman–Hagler); empty for the force field's own");
+    d->field->mixing = r;
+    field_run(d);
+    refresh(d);
+    return d->field->complete ? 0 : 1;
+  });
 }
 
 int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, const char* style, const char* params) {

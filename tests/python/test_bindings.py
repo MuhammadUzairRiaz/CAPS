@@ -452,4 +452,13 @@ with tempfile.TemporaryDirectory() as td:
     A = {int(w[0]): [float(w[4 + k]) + box * int(w[7 + k]) for k in range(3)] for w in sec("Atoms")}
     long_bonds = [w for w in sec("Bonds") if math.dist(A[int(w[2])], A[int(w[3])]) > 3.0]
     check(not long_bonds, f"reacted cell whole: {len(long_bonds)} bonds longer than 3 Å unwrapped")
+# the mixing rule in place of the force field's own: every run and export uses it, the report says so, and back
+mx = caps.open(os.path.join(samples, "ps_melt.data"))
+mx.field.assign("gaff2")
+v_own = mx.energy()["vdw"]
+rep_geo = mx.field.set_mixing("geometric")
+v_geo = mx.energy()["vdw"]
+mx.field.set_mixing("")
+check(abs(v_geo - v_own) > 1 and any("in place of" in n for n in rep_geo["notes"]) and abs(mx.energy()["vdw"] - v_own) < 1e-9,
+      f"mixing override: vdW {v_own:.3f} (own) → {v_geo:.3f} (geometric) → back")
 print("all python checks passed")

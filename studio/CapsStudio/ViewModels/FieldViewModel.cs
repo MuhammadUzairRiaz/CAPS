@@ -148,6 +148,21 @@ public sealed partial class FieldViewModel : ObservableObject
     private string _mixing = "force-field default";
     /// <summary>The assigned force field's Lennard-Jones mixing rule (the one every engine file writes).</summary>
     public string MixingRule { get => _mixing; private set => Set(ref _mixing, value); }
+    // the mixing rule in place of the force field's own (every run and export uses it; the report says it is CAPS's choice)
+    public static readonly string[] MixingChoices = ["The force field's own", "Arithmetic σ (Lorentz–Berthelot)", "Geometric σ and ε", "Sixth power (Waldman–Hagler)"];
+    private static readonly string[] MixingKeys = ["", "arithmetic", "geometric", "sixthpower"];
+    private int _mixingIndex;
+    private bool _loadingMixing;
+    public int MixingIndex
+    {
+        get => _mixingIndex;
+        set
+        {
+            if (!Set(ref _mixingIndex, Math.Clamp(value, 0, MixingKeys.Length - 1)) || _loadingMixing) return;
+            var key = MixingKeys[_mixingIndex];
+            _ = Do(key.Length == 0 ? "Mixing: the force field's own" : $"Mixing: {key} in place of the force field's own", d => d.FieldSetMixing(key));
+        }
+    }
     public string TypedText { get => _typedText; private set => Set(ref _typedText, value); }
     public string UntypedText { get => _untypedText; private set => Set(ref _untypedText, value); }
     public string MissingText { get => _missingText; private set => Set(ref _missingText, value); }
@@ -479,6 +494,9 @@ public sealed partial class FieldViewModel : ObservableObject
         _fileAssigned = Str(r, "file") == "file";
         Raise(nameof(CanUseFileForceField));
         IsGrouped = r.TryGetProperty("groups", out _);
+        _loadingMixing = true;
+        MixingIndex = Math.Max(0, Array.IndexOf(MixingKeys, Str(r, "mixing_override")));
+        _loadingMixing = false;
         MixingRule = Str(r, "mixing") switch
         {
             "arithmetic" => "Lorentz–Berthelot (arithmetic σ)", "geometric" => "geometric σ and ε (OPLS)", "sixthpower" => "sixth power (class II)",
