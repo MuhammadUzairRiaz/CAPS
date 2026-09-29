@@ -783,6 +783,31 @@ public partial class MainViewModel
     private CapsDocument? _growLiveDoc;
     /// <summary>The chains so far while Grow runs (a snapshot about four times a second), null otherwise.</summary>
     public CapsDocument? GrowLiveDoc { get => _growLiveDoc; private set { if (Set(ref _growLiveDoc, value)) Raise(nameof(GrowLiveShown)); } }
+
+    // the Polymer cell's view: chains folded into the cell (wrapped, as Amorphous Cell shows them) or whole (unwrapped),
+    // while growing and for the grown cell
+    private bool _growWrap = true;
+    public bool GrowWrap
+    {
+        get => _growWrap;
+        set
+        {
+            if (!Set(ref _growWrap, value)) return;
+            Raise(nameof(GrowUnwrapped));
+            try { _growLiveDoc?.SetWrap(value); } catch { }
+            GrowLiveRedraw?.Invoke();
+            if (!_growing && _doc != null) Wrap = value;   // the grown cell in the 3D view
+        }
+    }
+    public bool GrowUnwrapped { get => !_growWrap; set => GrowWrap = !value; }
+    /// <summary>The live view redraws its snapshot (the wrap changed).</summary>
+    public event Action? GrowLiveRedraw;
+    private void ShowGrownWrap()
+    {
+        if (_doc == null) return;
+        if (_wrap == _growWrap) { try { _doc.SetWrap(_growWrap); } catch { } RenderRequested?.Invoke(); }
+        else Wrap = _growWrap;
+    }
     public bool GrowLiveShown => _growLiveDoc != null;
     public bool GrowLiveView { get => _growLiveView; set => Set(ref _growLiveView, value); }
     public decimal GrowTrialsD { get => _growTrials; set { _growTrials = (int)Math.Clamp(value, 4, 5000); Raise(); } }
