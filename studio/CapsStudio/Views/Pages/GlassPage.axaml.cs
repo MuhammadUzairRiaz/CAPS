@@ -24,6 +24,7 @@ public partial class GlassPage : PageBase
                 sch.XLabel = vm.GtScheduleAxis;
                 sch.SetData(vm.GtSchedule);
                 var vt = this.FindControl<LinePlot>("Vt")!;
+                vt.YLabel = vm.GtYLabel;
                 vt.RefY = null;
                 vt.Errors = vm.GtErrors.Length == vm.GtPoints.Length ? vm.GtErrors : null;
                 vt.SetData(vm.GtPoints, vm.GtFit);

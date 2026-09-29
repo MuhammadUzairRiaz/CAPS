@@ -3727,6 +3727,18 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         if (mo.dt > 0) co.dt = mo.dt;
         if (mo.pressure > 0) co.pressure = mo.pressure;
         if (mo.seed) co.seed = mo.seed;
+        if (mo.barostat < 0 || mo.barostat > 2) throw std::invalid_argument("barostat: 0 c-rescale, 1 Berendsen, 2 MTK");
+        co.barostat = mo.barostat == 1 ? caps::Barostat::Berendsen : mo.barostat == 2 ? caps::Barostat::MTK : caps::Barostat::CRescale;
+        if (mo.tau_t > 0) co.tau_t = mo.tau_t;
+        if (mo.tau_p > 0) co.tau_p = mo.tau_p;
+        if (mo.average_from > 0) {
+          if (mo.average_from >= 0.95) throw std::invalid_argument("average_from: the fraction of each hold discarded, below 0.95");
+          co.average_from = mo.average_from;
+        }
+        co.property = std::clamp(mo.tg_property, 0, 1);
+        co.fit = std::clamp(mo.tg_fit, 0, 1);
+        co.glassy_max = std::max(0.0, mo.glassy_max);
+        co.rubbery_min = std::max(0.0, mo.rubbery_min);
         co.new_velocities = s.velocities.size() != s.atoms.size();
         if (mo.equilibrate_ps != 0) co.equilibrate_ps = std::max(0.0, mo.equilibrate_ps);
         co.progress = [&](const caps::ThermoRow& r, int k, int n) {

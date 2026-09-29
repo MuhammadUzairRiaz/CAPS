@@ -133,7 +133,9 @@ class _MechOpts(C.Structure):
     _fields_ = [("configurations", C.c_int32), ("strain", C.c_double), ("temperature", C.c_double), ("axis", C.c_int32),
                 ("rate", C.c_double), ("max_strain", C.c_double), ("fit_strain", C.c_double), ("lateral_fixed", C.c_int32),
                 ("t_start", C.c_double), ("t_end", C.c_double), ("t_step", C.c_double), ("ps_per_step", C.c_double),
-                ("dt", C.c_double), ("pressure", C.c_double), ("seed", C.c_uint64), ("run_ps", C.c_double), ("equilibrate_ps", C.c_double)]
+                ("dt", C.c_double), ("pressure", C.c_double), ("seed", C.c_uint64), ("run_ps", C.c_double), ("equilibrate_ps", C.c_double),
+                ("barostat", C.c_int32), ("tau_t", C.c_double), ("tau_p", C.c_double), ("average_from", C.c_double),
+                ("tg_property", C.c_int32), ("tg_fit", C.c_int32), ("glassy_max", C.c_double), ("rubbery_min", C.c_double)]
 
 
 _RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_char_p, C.c_char_p, C.c_double, C.c_void_p)

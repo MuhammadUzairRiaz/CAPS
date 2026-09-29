@@ -302,6 +302,13 @@ public struct CapsMechOpts
     public ulong Seed;
     public double RunPs;
     public double EquilibratePs;
+    // ABI 46: Tg
+    public int Barostat;            // 0 c-rescale, 1 Berendsen, 2 MTK
+    public double TauT, TauP;       // fs
+    public double AverageFrom;      // fraction of each hold discarded
+    public int TgProperty;          // 0 specific volume, 1 potential energy per atom
+    public int TgFit;               // 0 continuous two-line, hinge free; 1 two ranges
+    public double GlassyMax, RubberyMin;   // K
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

@@ -24,6 +24,7 @@ public sealed partial class MainViewModel
     public (double X, double Y)[] GtPoints { get; private set; } = [];
     public double[] GtErrors { get; private set; } = [];
     public (double X, double Y)[] GtFit { get; private set; } = [];
+    public string GtYLabel { get; private set; } = "specific volume (cm³/g)";
     public bool GtHasPoints => GtPoints.Length > 1;
     public event Action? GtChanged;
 
@@ -90,8 +91,10 @@ public sealed partial class MainViewModel
     {
         if (_doc == null || Analyze.Working) return;
         var inv = CultureInfo.InvariantCulture;
-        var runs = new List<(double Tg, double Err, double AlphaLow, double AlphaHigh, double Vtg, double Rms, (double T, double V)[] Points)>();
+        var runs = new List<(double Tg, double Err, double AlphaLow, double AlphaHigh, double Vtg, double SLow, double SHigh, double Rms, (double T, double V)[] Points)>();
         var seed0 = Analyze.MechSeed;
+        var energy = Analyze.TgProperty == 1;
+        var unit = energy ? "kcal/mol" : "cm³/g";
         try
         {
             for (var r = 1; r <= _gtReplicas; ++r)
@@ -103,34 +106,50 @@ public sealed partial class MainViewModel
                 var curve = card == null ? null : Analyze.Curves.FirstOrDefault(c => c.Property == card.Name && c.Markers);
                 if (card == null || curve == null) { GtStatus = Analyze.Log; if (runs.Count == 0) return; break; }
                 double X(string k) => card.Extra.Where(e => e.Key.StartsWith(k, StringComparison.Ordinal)).Select(e => e.Value).DefaultIfEmpty(double.NaN).First();
-                runs.Add((card.Value, card.Error, X("expansion below"), X("expansion above"), X("specific volume at Tg"), X("fit residual"),
-                          curve.X.Zip(curve.Y).ToArray()));
+                runs.Add((card.Value, card.Error, X("expansion below"), X("expansion above"), X(energy ? "potential energy per atom at Tg" : "specific volume at Tg"),
+                          X("slope below"), X("slope above"), X("fit residual"), curve.X.Zip(curve.Y).ToArray()));
             }
         }
         finally { Analyze.MechSeed = seed0; }
-        // the replicas pooled: specific volume per temperature (mean ± SD), Tg and α (mean ± SD, or the fit's bootstrap for one)
+        // the replicas pooled: the fitted property per temperature (mean ± SD), Tg and the slopes (mean ± SD, or the fit's
+        // bootstrap for one)
         var temps = runs[0].Points.Select(p => p.T).ToArray();
         GtPoints = temps.Select((T, i) => (T, runs.Average(r => r.Points.Length > i ? r.Points[i].V : double.NaN))).ToArray();
         GtErrors = runs.Count > 1 ? temps.Select((_, i) => Sd(runs.Select(r => r.Points.Length > i ? r.Points[i].V : double.NaN).ToArray())).ToArray() : [];
+        GtYLabel = energy ? "potential energy per atom (kcal/mol)" : "specific volume (cm³/g)";
         var ok = runs.Where(r => double.IsFinite(r.Tg)).ToList();
-        if (ok.Count == 0) { GtTg.Value = "—"; GtStatus = "No break in the specific volume: widen the temperature range"; Raise(nameof(GtHasPoints)); GtChanged?.Invoke(); return; }
+        if (ok.Count == 0) { GtTg.Value = "—"; GtStatus = "No break found: widen the temperature range" + (Analyze.TgFitRanges ? " or move the ranges" : ""); Raise(nameof(GtHasPoints)); GtChanged?.Invoke(); return; }
         var tg = ok.Average(r => r.Tg);
         var tgErr = ok.Count > 1 ? Sd(ok.Select(r => r.Tg).ToArray()) : ok[0].Err;
-        var aLow = ok.Average(r => r.AlphaLow);
-        var aHigh = ok.Average(r => r.AlphaHigh);
         var vtg = ok.Average(r => r.Vtg);
-        GtTg.Value = $"{tg.ToString("0", inv)} ± {tgErr.ToString("0", inv)} K";
-        GtTg.Caption = ok.Count > 1 ? $"mean ± SD of {ok.Count} replicas · at {GtRateText}" : $"bootstrap of the fit · at {GtRateText}";
-        GtAlphaGlass.Value = $"{aLow.ToString("0.0e0", inv)} K⁻¹";
-        GtAlphaMelt.Value = $"{aHigh.ToString("0.0e0", inv)} K⁻¹";
-        GtResidual.Value = $"{ok.Average(r => r.Rms).ToString("0.0e0", inv)} cm³/g";
-        // the pooled two-line fit: v(T) = v(Tg) + s_low·min(T − Tg, 0) + s_high·max(T − Tg, 0), s = α·v(Tg)
+        var sLow = ok.Average(r => r.SLow);
+        var sHigh = ok.Average(r => r.SHigh);
+        GtTg.Value = double.IsFinite(tgErr) ? $"{tg.ToString("0", inv)} ± {tgErr.ToString("0", inv)} K" : $"{tg.ToString("0", inv)} K (no error estimate)";
+        GtTg.Caption = (ok.Count > 1 ? $"mean ± SD of {ok.Count} replicas" : "bootstrap of the fit") + $" · {(energy ? "potential energy" : "specific volume")}, " +
+                       (Analyze.TgFitRanges ? "two ranges" : "free break") + $" · at {GtRateText}";
+        GtAlphaGlass.Label = energy ? "dE/dT glass" : "α glass";
+        GtAlphaMelt.Label = energy ? "dE/dT melt" : "α melt";
+        GtAlphaGlass.Caption = energy ? "potential energy per atom, slope below Tg" : "volumetric expansion below Tg";
+        GtAlphaMelt.Caption = energy ? "potential energy per atom, slope above Tg" : "volumetric expansion above Tg";
+        if (energy)
+        {
+            GtAlphaGlass.Value = $"{sLow.ToString("0.000e0", inv)} kcal/mol/K";
+            GtAlphaMelt.Value = $"{sHigh.ToString("0.000e0", inv)} kcal/mol/K";
+        }
+        else
+        {
+            GtAlphaGlass.Value = $"{ok.Average(r => r.AlphaLow).ToString("0.0e0", inv)} K⁻¹";
+            GtAlphaMelt.Value = $"{ok.Average(r => r.AlphaHigh).ToString("0.0e0", inv)} K⁻¹";
+        }
+        GtResidual.Value = $"{ok.Average(r => r.Rms).ToString("0.0e0", inv)} {unit}";
+        // the pooled fit: y(T) = y(Tg) + s_low·min(T − Tg, 0) + s_high·max(T − Tg, 0)
         var (lo, hi) = (temps.Min(), temps.Max());
         GtFit = Enumerable.Range(0, 101).Select(k => lo + (hi - lo) * k / 100.0)
-                          .Select(T => (T, vtg + aLow * vtg * Math.Min(T - tg, 0) + aHigh * vtg * Math.Max(T - tg, 0))).ToArray();
+                          .Select(T => (T, vtg + sLow * Math.Min(T - tg, 0) + sHigh * Math.Max(T - tg, 0))).ToArray();
         GtReplicaText = ok.Count > 1 ? "Replicas: " + string.Join(" · ", ok.Select(r => r.Tg.ToString("0", inv) + " K")) : "";
         GtStatus = $"{runs.Count} replica{(runs.Count == 1 ? "" : "s")} · {temps.Length} temperatures · {Analyze.Log}";
         Raise(nameof(GtHasPoints));
+        Raise(nameof(GtYLabel));
         GtChanged?.Invoke();
     }
 
