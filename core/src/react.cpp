@@ -774,6 +774,19 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     rep.volume = s.cell.valid() ? s.cell.volume() : 0;
   }
   const double avogadro_volume = rep.volume * 1e-30 * kAvogadro;   // links → mol/m³: divide by this
+  // where each small molecule (a crosslinker) attached to a chain: its start id → (chain, repeat unit), for the link records
+  std::map<int64_t, std::vector<std::pair<int64_t, int64_t>>> attached;
+  std::map<int64_t, std::string> formula;   // each small molecule's formula at the start
+  {
+    std::map<int64_t, std::map<int, int>> el;
+    for (size_t i = 0; i < s.atoms.size(); ++i) if (!polymer.count(tag[i])) el[tag[i]][s.atoms[i].element]++;
+    for (const auto& [m, e] : el) {
+      std::string f;
+      for (int z : {6, 1}) if (e.count(z)) f += std::string(element(z).symbol) + (e.at(z) > 1 ? std::to_string(e.at(z)) : "");
+      for (const auto& [z, k] : e) if (z != 6 && z != 1) f += std::string(element(z).symbol) + (k > 1 ? std::to_string(k) : "");
+      formula[m] = f;
+    }
+  }
   if (o.target != ReactTarget::Conversion) {
     if (o.target_value <= 0) throw ReactError("the crosslink target must be > 0");
     if (rep.chains == 0) throw ReactError("a crosslink target needs chains (molecules of 30 atoms or more); this structure has none");
@@ -936,6 +949,8 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     std::multimap<uint32_t, uint32_t> formed;
     int links = 0, intra = 0;
     std::vector<std::pair<uint32_t, uint32_t>> link_bonds;   // formed bonds of the links chosen this cycle
+    std::vector<LinkRecord> pending;                          // this cycle's link records
+    std::vector<std::pair<int64_t, std::pair<int64_t, int64_t>>> pending_attach;
     auto take = [&](const Match& m) {
       if (uni(rng) > o.templates[m.reaction].probability) return false;
       for (uint32_t a : m.atoms) if (busy.count(a)) return false;
@@ -951,6 +966,32 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       links += link;
       intra += same && !oa.empty();
       if (link) for (auto [x, y] : t.form) link_bonds.push_back({at(x), at(y)});
+      {
+        // the record: each side's chain and unit — a chain atom's own, or where the crosslinker it sits on attached
+        const uint32_t ia = at(t.init_a), ib = at(t.init_b);
+        auto side = [&](uint32_t i, const std::set<int64_t>& own, int64_t other_chain) -> std::tuple<int64_t, int64_t, int64_t> {
+          if (polymer.count(tag[i])) return {tag[i], s.atoms[i].resid, 0};
+          for (const auto& [c, u] : attached[tag[i]])
+            if (own.count(c) && c != other_chain) return {c, u, tag[i]};
+          return {own.empty() ? 0 : *own.begin(), 0, tag[i]};
+        };
+        if (link) {
+          const int64_t cb = polymer.count(tag[ib]) ? tag[ib] : (ob.empty() ? 0 : *ob.begin());
+          auto [ca, ua, va] = side(ia, oa, cb);
+          auto [cb2, ub, vb] = side(ib, ob, ca);
+          LinkRecord lr;
+          lr.cycle = int(rep.cycles.size()) + 1;
+          lr.reaction = t.name;
+          lr.chain_a = ca, lr.unit_a = ua, lr.chain_b = cb2, lr.unit_b = ub;
+          lr.via = va ? va : vb;
+          if (lr.via) lr.via_name = formula[lr.via];
+          pending.push_back(lr);
+        } else if (polymer.count(tag[ia]) != polymer.count(tag[ib])) {
+          // a crosslinker meets a chain: remember where (a later link through it names this unit)
+          const uint32_t chain_atom = polymer.count(tag[ia]) ? ia : ib, small = chain_atom == ia ? ib : ia;
+          pending_attach.push_back({tag[small], {tag[chain_atom], s.atoms[chain_atom].resid}});
+        }
+      }
       chosen.push_back(m);
       return true;
     };
@@ -998,6 +1039,10 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       linked = std::move(next);
     }
     applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag);
+    if (applied) {
+      for (auto& lr : pending) rep.links.push_back(lr);
+      for (const auto& [m, cu] : pending_attach) attached[m].push_back(cu);
+    }
     CycleRow row;
     row.cycle = cycle;
     row.reactions = applied;
@@ -1054,6 +1099,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       rep.crosslinks = links_before;
       rep.intrachain = intra_before;
       rep.byproducts = byproducts_before;
+      rep.links.resize(size_t(links_before));
       extra = extra_before;
       stall = stall_before;
       rep.failed_cycle = cycle;
@@ -1114,6 +1160,13 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   if (rep.target_crosslinks > 0) {
     std::snprintf(b, sizeof b, "target %d links, achieved %d (%.0f%%)", rep.target_crosslinks, rep.crosslinks, 100.0 * rep.crosslinks / rep.target_crosslinks);
     rep.notes.insert(rep.notes.begin() + 1, b);
+  }
+  for (const auto& lr : rep.links) {
+    char b[240];
+    std::snprintf(b, sizeof b, "link %zu (cycle %d, %s): chain %lld unit %lld — %s — chain %lld unit %lld", size_t(&lr - rep.links.data()) + 1, lr.cycle,
+                  lr.reaction.c_str(), static_cast<long long>(lr.chain_a), static_cast<long long>(lr.unit_a),
+                  lr.via ? (lr.via_name + " #" + std::to_string(lr.via)).c_str() : "direct bond", static_cast<long long>(lr.chain_b), static_cast<long long>(lr.unit_b));
+    rep.notes.push_back(b);
   }
   if (rep.byproducts)
     rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));

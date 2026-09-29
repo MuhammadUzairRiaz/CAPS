@@ -131,6 +131,12 @@ public sealed partial class MainViewModel
         });
     }
 
+    /// <summary>One link of the last run: each side's chain and repeat unit, the bridging molecule.</summary>
+    public sealed record RxLink(int ChainA, int UnitA, int ChainB, int UnitB, int Via, string ViaName, int Cycle);
+    public List<RxLink> RxLinks { get; } = new();
+    public int RxChainCount { get; private set; }
+    public int RxUnitsPerChain { get; private set; }
+
     /// <summary>The network of the last run, from the core's summary.</summary>
     private void LoadReactSummary(CapsDocument doc)
     {
@@ -149,6 +155,16 @@ public sealed partial class MainViewModel
             };
             if (mono > 0) lines.Add(string.Format(inv, "Degree of crosslinking DC {0:F2} % ({1} repeat units)", (double?)j["degree"] ?? 0, mono));
             if (loops > 0) lines.Add($"{loops} links closed within one chain (loops, not counted)");
+            RxLinks.Clear();
+            foreach (var l in j["links"]?.AsArray() ?? [])
+                if (l != null)
+                    RxLinks.Add(new RxLink((int?)l["chain_a"] ?? 0, (int?)l["unit_a"] ?? 0, (int?)l["chain_b"] ?? 0, (int?)l["unit_b"] ?? 0, (int?)l["via"] ?? 0,
+                                           (string?)l["via_name"] ?? "", (int?)l["cycle"] ?? 0));
+            RxChainCount = chains;
+            RxUnitsPerChain = chains > 0 && mono > 0 ? (mono + chains - 1) / chains : 0;
+            foreach (var l in RxLinks.Take(12))
+                lines.Add($"  chain {l.ChainA} unit {l.UnitA} — {(l.Via > 0 ? $"{l.ViaName} #{l.Via}" : "direct")} — chain {l.ChainB} unit {l.UnitB}");
+            if (RxLinks.Count > 12) lines.Add($"  … {RxLinks.Count - 12} more (the link map shows all)");
             if (by > 0) lines.Add($"{by} byproduct molecules {(_rxKeepBy ? "kept in the cell" : "removed")}");
             lines.Add("Force field during the run: " + ((string?)j["field"] ?? "—"));
             lines.Add("After: " + ((string?)j["field_after"] ?? "—"));

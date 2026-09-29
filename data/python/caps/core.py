@@ -873,6 +873,20 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     "rosenbluth_lj" (the same with UFF Lennard-Jones), at method_temperature (K). orientation={"axis": "z", "strength": 4}
     grows oriented chains (an aligning field −s P₂ in kT on each unit's backbone chord; the report gives ⟨P₂⟩)."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
+    # the sequence follows from what is given (a pattern, blocks, weights); several units with none of them is a mistake,
+    # not a homopolymer of the first
+    if sequence == "homopolymer":
+        if pattern:
+            sequence = "pattern"
+        elif blocks:
+            sequence = "block"
+        elif weights and r1 is not None:
+            sequence = "terminal"
+        elif weights:
+            sequence = "random"
+        elif len(units) > 1:
+            raise ValueError(f"{len(units)} repeat units: say how they follow each other — sequence='alternating', 'random' (with weights), "
+                             "'block' (with blocks), 'gradient', or a pattern='ABAC'")
     r = {"recipe": 1, "name": "polymer",
          "build": {"polymer": {"units": units, "dp": dp, "chains": chains, "tacticity": tacticity, "sequence": sequence}},
          "grow": {"density": density if density is not None else (0.1 if chains == 1 else 0.5), "seed": seed, "trials": trials}}
