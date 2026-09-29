@@ -38,9 +38,9 @@ AmberCoordinates read_amber_coordinates(const std::string& path);
 // convert it) with coordinates, velocities and the box per frame; ASCII mdcrd (10F8.3, a box line after each frame
 // when the topology has a box). Frames are numbered 0, 1, 2 …; the times, where the file has them, go in the notes.
 Trajectory read_amber_netcdf(const std::string& path, const System& topology, size_t max_frames = 0,
-                             const std::function<bool(double, const Trajectory&)>& progress = {});
+                             const std::function<bool(double, const Trajectory&)>& progress = {}, const FrameSelection& frames = {});
 Trajectory read_amber_mdcrd(const std::string& path, const System& topology, size_t max_frames = 0,
-                            const std::function<bool(double, const Trajectory&)>& progress = {});
+                            const std::function<bool(double, const Trajectory&)>& progress = {}, const FrameSelection& frames = {});
 
 // The structure with its force field as an AMBER topology and restart (STEM.prmtop, STEM.inpcrd) for AMBER, OpenMM and
 // ParmEd: charges, masses, a Lennard-Jones A/B table for every type pair (whatever the mixing rule: each pair as the force

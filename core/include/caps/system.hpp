@@ -114,6 +114,15 @@ struct System {
   std::vector<int> molecules(int* count = nullptr) const;
 };
 
+// Which frames of a trajectory file to keep (file frame numbers from 0): first, first + stride, … up to last (inclusive).
+// Frames not kept are skipped as the file is read, so a long trajectory is held at the size of what is kept.
+struct FrameSelection {
+  size_t first = 0, last = SIZE_MAX, stride = 1;
+  bool all() const { return first == 0 && last == SIZE_MAX && stride <= 1; }
+  bool wants(size_t k) const { return k >= first && k <= last && (k - first) % (stride ? stride : 1) == 0; }
+  bool past(size_t k) const { return k >= last; }   // frame k was the last one wanted: stop reading
+};
+
 // One trajectory: shared topology, positions per frame.
 struct Trajectory {
   System topology;                    // frame 0 plus bonds/types
@@ -127,6 +136,15 @@ struct Trajectory {
   std::map<std::string, std::vector<std::vector<float>>> columns;
   size_t frames() const { return positions.size(); }
   System frame(size_t k) const;
+  // Reading with a selection: a reader sets `selection`, appends each frame it reads (positions, cell, timestep and
+  // any velocities or columns) and calls admit(), which drops that frame when it is not wanted and returns false once
+  // the selection's last frame has been read. frames_read counts the file's frames seen.
+  FrameSelection selection;
+  size_t frames_read = 0;
+  bool admit();
+  void drop_last();
+  // Keeps the selected frames of those held (frames already in memory; the readers use admit instead).
+  void select(const FrameSelection& sel);
 };
 
 }  // namespace caps

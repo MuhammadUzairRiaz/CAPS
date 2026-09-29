@@ -361,6 +361,7 @@ internal static class Native
     public static string LastError() => Marshal.PtrToStringUTF8(LastErrorPtr()) ?? "";
 
     [DllImport(Lib, EntryPoint = "caps_inspect_file")] public static extern int InspectFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_open_frames")] public static extern IntPtr OpenFrames([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, long first, long last, long stride, int maxFrames, CapsOpenProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_open_staged")] public static extern IntPtr OpenStaged([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, int maxFrames, CapsOpenProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_shadow")] public static extern IntPtr Shadow(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_adopt_frames")] public static extern int AdoptFrames(IntPtr dst, IntPtr src);
@@ -614,6 +615,19 @@ internal static class Native
 }
 
 /// <summary>An opened structure or trajectory. All calls are serialised; the core is not re-entrant per document.</summary>
+/// <summary>Which file frames to read: First, First + Stride, … up to Last (inclusive; −1 to the end).</summary>
+public readonly record struct FrameSelection(long First, long Last, long Stride)
+{
+    public bool All => First <= 0 && Last < 0 && Stride <= 1;
+    /// <summary>How many of a file's frames it keeps.</summary>
+    public long Kept(long frames)
+    {
+        var last = Last < 0 || Last >= frames ? frames - 1 : Last;
+        var first = Math.Max(0, First);
+        return last < first ? 0 : (last - first) / Math.Max(1, Stride) + 1;
+    }
+}
+
 public sealed class CapsDocument : IDisposable
 {
     private IntPtr _h;
@@ -747,10 +761,11 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>Staged open: progress(stage, fraction, detail) runs on the calling thread for each stage (0 format, 1 frame 0,
     /// 2 topology, 3 frames read); return false to stop reading, keeping the frames so far. maxFrames 1 reads frame 0 only.</summary>
-    public static CapsDocument OpenStaged(string path, string? topology, int maxFrames, Func<int, double, string, bool>? progress)
+    public static CapsDocument OpenStaged(string path, string? topology, int maxFrames, Func<int, double, string, bool>? progress, FrameSelection? frames = null)
     {
         CapsOpenProgress? cb = progress == null ? null : (st, f, d, _) => progress(st, f, Marshal.PtrToStringUTF8(d) ?? "") ? 0 : 1;
-        var h = Native.OpenStaged(path, topology, maxFrames, cb, IntPtr.Zero);
+        var h = frames is { } fs ? Native.OpenFrames(path, topology, fs.First, fs.Last, fs.Stride, maxFrames, cb, IntPtr.Zero)
+                                 : Native.OpenStaged(path, topology, maxFrames, cb, IntPtr.Zero);
         GC.KeepAlive(cb);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return new CapsDocument(h, path);

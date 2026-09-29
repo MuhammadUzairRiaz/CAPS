@@ -120,4 +120,38 @@ System Trajectory::frame(size_t k) const {
   return s;
 }
 
+void Trajectory::drop_last() {
+  const size_t n = positions.size();
+  if (n == 0) return;
+  positions.pop_back();
+  if (cells.size() == n) cells.pop_back();
+  if (timesteps.size() == n) timesteps.pop_back();
+  if (velocities.size() == n) velocities.pop_back();
+  for (auto& [name, v] : columns)
+    if (v.size() == n) v.pop_back();
+}
+
+bool Trajectory::admit() {
+  const size_t k = frames_read++;
+  if (!selection.wants(k)) drop_last();
+  return !selection.past(k);
+}
+
+void Trajectory::select(const FrameSelection& sel) {
+  if (sel.all()) return;
+  const size_t n = positions.size();
+  auto keep = [&](auto& v) {
+    if (v.size() != n) return;
+    size_t w = 0;
+    for (size_t k = 0; k < n; ++k)
+      if (sel.wants(k)) { if (w != k) v[w] = std::move(v[k]); ++w; }
+    v.resize(w);
+  };
+  keep(positions);
+  keep(cells);
+  keep(timesteps);
+  keep(velocities);
+  for (auto& [name, v] : columns) keep(v);
+}
+
 }  // namespace caps

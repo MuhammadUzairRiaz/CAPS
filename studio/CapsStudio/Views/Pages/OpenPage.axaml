@@ -114,6 +114,17 @@
               </StackPanel>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Atoms" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenAtoms}" Classes="mono" FontSize="12" TextAlignment="Right" /></Grid>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Frames" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenFrames}" Classes="mono" FontSize="12" TextAlignment="Right" /></Grid>
+              <StackPanel Spacing="6" IsVisible="{Binding OpenManyFrames}">
+                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*" ColumnSpacing="6">
+                  <TextBlock Text="Read from" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding OpenFrameFrom}" Minimum="0" Maximum="{Binding OpenFrameMax}" Increment="1" FormatString="0" ToolTip.Tip="The first frame read (frames counted from 0)" />
+                  <TextBlock Grid.Column="2" Text="to" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="3" Value="{Binding OpenFrameTo}" Minimum="0" Maximum="{Binding OpenFrameMax}" Increment="1" FormatString="0" ToolTip.Tip="The last frame read (included)" />
+                  <TextBlock Grid.Column="4" Text="every" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="5" Value="{Binding OpenFrameEvery}" Minimum="1" Maximum="100000" Increment="1" FormatString="0" ToolTip.Tip="Keep every Nth frame" />
+                </Grid>
+                <TextBlock Text="{Binding OpenFramesKept}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Bonds" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenBonds}" FontSize="12" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><TextBlock Text="Units" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding OpenUnits}" FontSize="12" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding OpenIsDump}">
