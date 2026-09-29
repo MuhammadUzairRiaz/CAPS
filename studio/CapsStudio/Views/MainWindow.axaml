@@ -551,6 +551,10 @@
               <Button.Flyout>
                 <MenuFlyout>
                   <MenuItem Header="Perspective" Click="OnPerspectiveOn" /><MenuItem Header="Orthographic" Click="OnPerspectiveOff" />
+                  <MenuItem Header="Field of view (perspective)">
+                    <MenuItem Header="20° · telephoto" Tag="20" Click="OnFov" /><MenuItem Header="35° · default" Tag="35" Click="OnFov" />
+                    <MenuItem Header="50°" Tag="50" Click="OnFov" /><MenuItem Header="70° · wide" Tag="70" Click="OnFov" /><MenuItem Header="90° · very wide" Tag="90" Click="OnFov" />
+                  </MenuItem>
                   <Separator />
                   <MenuItem Header="Reset view (R)" Click="OnResetView" /><MenuItem Header="Frame selection (F)" Click="OnFrameSelection" /><MenuItem Header="Top" Click="OnViewTop" />
                   <MenuItem Header="Front" Click="OnViewFront" /><MenuItem Header="Side" Click="OnViewSide" />

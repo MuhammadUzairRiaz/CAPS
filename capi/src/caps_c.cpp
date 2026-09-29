@@ -533,6 +533,7 @@ caps::Camera cam_of(const caps_camera* c) {
   caps::Camera k;
   if (!c) return k;
   k.yaw = c->yaw; k.pitch = c->pitch; k.zoom = c->zoom > 0 ? c->zoom : 1; k.pan_x = c->pan_x; k.pan_y = c->pan_y; k.perspective = c->perspective != 0;
+  k.fov_deg = c->fov_deg > 0 ? std::clamp(c->fov_deg, 10.0, 120.0) : 35.0;
   return k;
 }
 
