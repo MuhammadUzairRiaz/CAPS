@@ -1322,6 +1322,25 @@ internal static class SelfTest
             vm.OpenJoined([pb, pa], Path.Combine(dir, "ps_melt.data"));
             Check(vm.Frames == 3 && vm.Status.Contains("2 files joined"), $"joined dumps: {vm.Frames} frames · {vm.Status}");
         }
+        // File checks › Atom types: each type's element and mass, editable (the type kept); undo restores it
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.OpenChecks();
+            var typeCount = vm.TypeRows.Count;
+            var h = vm.TypeRows.FirstOrDefault(r => r.Element == "H");
+            var set = false;
+            if (h != null)
+            {
+                h.Element = "Si";
+                vm.ApplyTypeRow(h);
+                set = vm.TypeRows.Any(r => r.Type == h.Type && r.Element == "Si" && r.Mismatch);   // the mass still points to H
+                vm.UndoEdit(false);
+            }
+            vm.OpenChecks();
+            var back = vm.TypeRows.Any(r => r.Element == "H");
+            Check(typeCount >= 2 && set && back, $"atom types: {typeCount} types · set Si {set} · undone {back}");
+            vm.SetModule(8);
+        }
 
         // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
         vm.OpenBio();

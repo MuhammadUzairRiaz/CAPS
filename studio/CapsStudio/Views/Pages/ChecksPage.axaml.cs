@@ -24,4 +24,5 @@ public partial class ChecksPage : PageBase
         });
         if (f?.TryGetLocalPath() is { } path) Vm.ExportChecks(path);
     }
+    private void OnApplyType(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.AtomTypeRow r) Vm.ApplyTypeRow(r); }
 }

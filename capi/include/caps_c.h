@@ -994,6 +994,10 @@ caps_doc* caps_solvate(caps_doc* solute, const char* options_json, caps_stage_pr
    (and "rs", "ez"); caps_bond_labels {pairs: [i, j, …], labels: [..], crossing: [bool: across the cell]} of a bond kind,
    the Field assignment's types and terms when the structure is typed. */
 int32_t caps_label_kinds(char* json, int32_t cap);
+/* v48 caps_type_table: [{type, label, mass, count, element (the most common), elements, from_mass (the element the mass
+   points to)}] of the frame; caps_edit {"op": "type_element", type, element, mass?} sets every atom of a type (the type
+   and its label kept). */
+int32_t caps_type_table(caps_doc* d, char* json, int32_t cap);
 int32_t caps_bond_labels(caps_doc* d, const char* kind, char* json, int32_t cap);
 int32_t caps_set_appearance(caps_doc* d, const char* json);
 int32_t caps_appearance_info(caps_doc* d, char* json, int32_t cap);

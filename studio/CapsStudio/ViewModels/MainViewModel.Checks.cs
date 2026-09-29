@@ -20,6 +20,22 @@ public sealed class FileCheckRow
     public bool NeedsLook => Level is "warn" or "error";
 }
 
+/// <summary>One atom type of the open file, its element and mass editable (File checks › Atom types).</summary>
+public sealed class AtomTypeRow : ObservableObject
+{
+    public int Type { get; init; }
+    public string Label { get; init; } = "";
+    public string Count { get; init; } = "";
+    public string FromMass { get; init; } = "";
+    private string _element = "";
+    private decimal? _mass;
+    public string Element { get => _element; set { if (Set(ref _element, value ?? "")) Raise(nameof(Mismatch)); } }
+    public decimal? Mass { get => _mass; set => Set(ref _mass, value); }
+    /// <summary>The element differs from the one the mass points to (a guess worth checking).</summary>
+    public bool Mismatch => FromMass.Length > 0 && !string.Equals(FromMass, _element, StringComparison.OrdinalIgnoreCase);
+    public string MismatchTip => Mismatch ? $"The mass points to {FromMass}" : "";
+}
+
 /// <summary>File checks (design/boards/VisProblems): every opened file is checked; each finding says what was found,
 /// what was done and what can be changed. The Studio's Validation panel shows the same list.</summary>
 public sealed partial class MainViewModel
@@ -57,7 +73,42 @@ public sealed partial class MainViewModel
         foreach (var n in new[] { nameof(ChecksFine), nameof(ChecksLook), nameof(HasChecksLook), nameof(NoChecksLook), nameof(ChecksSummary) }) Raise(n);
     }
 
-    public void OpenChecks() { LoadFileChecks(); SetModule(17); }
+    public void OpenChecks() { LoadFileChecks(); LoadTypeRows(); SetModule(17); }
+
+    // ---------------------------------------------------------------- atom types: element and mass by hand
+    public ObservableCollection<AtomTypeRow> TypeRows { get; } = new();
+    public bool HasTypeRows => TypeRows.Count > 0;
+    private void LoadTypeRows()
+    {
+        TypeRows.Clear();
+        try
+        {
+            if (_doc != null)
+                foreach (var t in JsonNode.Parse(_doc.TypeTable())!.AsArray())
+                {
+                    if ((int)t!["type"]!.GetValue<double>() == 0) continue;   // untyped atoms (a file without types)
+                    TypeRows.Add(new AtomTypeRow
+                    {
+                        Type = (int)t["type"]!.GetValue<double>(), Label = (string?)t["label"] ?? "", Count = ((int)t["count"]!.GetValue<double>()).ToString("N0"),
+                        FromMass = (string?)t["from_mass"] ?? "", Element = (string?)t["element"] ?? "",
+                        Mass = t["mass"]!.GetValue<double>() > 0 ? Math.Round((decimal)t["mass"]!.GetValue<double>(), 4) : null,
+                    });
+                }
+        }
+        catch { }
+        Raise(nameof(HasTypeRows));
+    }
+    /// <summary>Every atom of the row's type made its element, with its mass (one undoable edit; the type is kept).</summary>
+    public void ApplyTypeRow(AtomTypeRow r)
+    {
+        if (_doc == null) return;
+        var ok = r.Mass is { } m && m > 0
+            ? RunEdit(new { op = "type_element", type = r.Type, element = r.Element.Trim(), mass = (double)m })
+            : RunEdit(new { op = "type_element", type = r.Type, element = r.Element.Trim() });
+        if (ok == null) return;
+        LoadFileChecks();
+        LoadTypeRows();
+    }
 
     public void RunCheckAction(FileCheckRow r)
     {
