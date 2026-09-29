@@ -192,6 +192,35 @@ public sealed partial class MainViewModel
     }
 
     public void AddHydrogensAll() => RunEdit(_selection.Count > 0 ? new { op = "add_h", atoms = (object)_selection.ToArray() } : new { op = "add_h", atoms = (object)"" });
+    // the Modify toolbar (Materials Studio's Modify Element / Bond Type / Hybridization, on the picked atoms)
+    public static readonly string[] QuickElements = ["H", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Br"];
+    /// <summary>The picked atoms made this element (their type follows).</summary>
+    public void ModifyElementPicked(string symbol)
+    {
+        if (_selection.Count == 0) { Status = "Pick atoms (click, ⇧ click adds), then an element"; return; }
+        RunEdit(new { op = "element", atoms = _selection.ToArray(), element = symbol });
+    }
+    /// <summary>The bond between the two picked atoms made single, double or triple (made if they were not bonded).</summary>
+    public void BondOrderPicked(int order)
+    {
+        if (_selection.Count != 2) { Status = "Pick the two atoms of a bond (⇧ click), then its order"; return; }
+        RunEdit(new { op = "bond", i = _selection[0], j = _selection[1], order });
+    }
+    public void BreakBondPicked()
+    {
+        if (_selection.Count != 2) { Status = "Pick the two atoms of a bond (⇧ click), then Break"; return; }
+        RunEdit(new { op = "unbond", i = _selection[0], j = _selection[1] });
+    }
+    public static readonly (string Id, string Name)[] Geometries =
+        [("linear", "Linear (sp)"), ("trigonal", "Trigonal planar (sp²)"), ("tetrahedral", "Tetrahedral (sp³)"), ("square_planar", "Square planar"),
+         ("trigonal_bipyramidal", "Trigonal bipyramidal"), ("square_pyramidal", "Square pyramidal"), ("octahedral", "Octahedral")];
+    /// <summary>The picked atom's neighbours placed at the ideal directions of a geometry (each keeps its bond length).</summary>
+    public void GeometryPicked(string geometry)
+    {
+        if (_selection.Count != 1) { Status = "Pick one atom, then its geometry"; return; }
+        RunEdit(new { op = "set_coordination", atom = _selection[0], geometry });
+    }
+
     public void DeletePicked() { if (_selection.Count > 0) RunEdit(new { op = "delete", atoms = _selection.ToArray() }); }
     /// <summary>A benzene ring fused onto the bond between the two picked atoms (each needs a hydrogen on that side).</summary>
     public void FuseRingPicked()

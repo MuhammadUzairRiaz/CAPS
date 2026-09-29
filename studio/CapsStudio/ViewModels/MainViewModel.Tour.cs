@@ -9,8 +9,8 @@ public sealed partial class MainViewModel
 {
     public static readonly TourStepInfo[] TourSteps =
     [
-        new("Rail", "Modules", "Studio, then Grow, Pack, Relax … in workflow order", "The workflow runs down the rail",
-            "Studio holds the structure; Grow, Pack, Relax, Dynamics, Equilibrate and React change it; Analyze measures it; Field types its atoms. Jobs keeps every run, Bench checks this machine.",
+        new("Rail", "Modules", "Studio, Build, Polymer cell, Packing … in workflow order", "The workflow runs across the top",
+            "Studio holds the structure; Build, Polymer cell and Packing make it; Force field types its atoms; Minimise, Equilibrate, Dynamics and React change it; Analyze measures it; Export writes it. A green pip marks a step done. The Project Explorer on the left keeps every structure and its jobs, whatever module is open.",
             ["⌘O open", "⌘W close"]),
         new("Toolbar", "Tools", "select, build, measure, clean", "Tools act on what you select",
             "Pick Select or a builder tool — place an atom, draw a bond, delete, add hydrogens — then click in the 3D view. Every edit can be undone and recorded as Python in the Macro recorder.",

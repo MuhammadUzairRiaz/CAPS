@@ -75,9 +75,18 @@ public sealed partial class MainViewModel
         };
         foreach (var r in rows) PipelineSteps.Add(new PipelineStep(0, r.Name, r.Detail, r.State, r.Module, r.Current));
         if (_activeItem != null) UpdateItemInfo(_activeItem);
+        foreach (var n in new[] { nameof(StepFieldDone), nameof(StepFieldWarn), nameof(StepMinDone), nameof(StepEqDone), nameof(StepMdDone), nameof(StepExportDone) }) Raise(n);
         Raise(nameof(PipelineNextLabel));
         Raise(nameof(HasPipelineNext));
     }
+
+    // the module bar's pips: a step done on the active structure (the force field: assigned; amber when incomplete)
+    public bool StepFieldDone => _doc != null && Field.Assigned && Field.Complete;
+    public bool StepFieldWarn => _doc != null && Field.Assigned && !Field.Complete;
+    public bool StepMinDone => _doc != null && _pipeDone.Contains("Relax");
+    public bool StepEqDone => _doc != null && _pipeDone.Contains("Equilibrate");
+    public bool StepMdDone => _doc != null && _pipeDone.Contains("Dynamics");
+    public bool StepExportDone => _doc != null && _pipeDone.Contains("Export");
 
     private static string ShortFf(string name) => Shorten(name, 22);
     private static string Shorten(string s, int n) => s.Length <= n ? s : s[..(n - 1)] + "…";

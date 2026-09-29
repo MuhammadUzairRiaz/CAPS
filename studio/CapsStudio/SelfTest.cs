@@ -1295,6 +1295,22 @@ internal static class SelfTest
             Check(prim == 6 && convText.Contains("No. 136") && slab.StartsWith("Vacuum slab") && refused.Contains("does not map") && vm.CellToolText.StartsWith("Nanowire"),
                   $"cell tools: primitive {prim} atoms · {convText} · {slab} · {refused} · {vm.CellToolText}");
         }
+        // the Modify toolbar on the picked atoms: an element, a bond order, a geometry; each one undoable edit
+        {
+            var d = vm.Document!;
+            var bonds = System.Text.Json.Nodes.JsonNode.Parse(d.BondLabels("index"))!["pairs"]!.AsArray().Select(x => (int)x!.GetValue<double>()).ToArray();
+            var (i0, j0) = (bonds[0], bonds[1]);
+            vm.Pick(i0, false);
+            vm.ModifyElementPicked("Si");
+            var el = System.Text.Json.Nodes.JsonNode.Parse(d.AtomLabels("element"))!.AsArray()[i0]!.GetValue<string>();
+            vm.Pick(i0, false); vm.Pick(j0, true);
+            vm.BondOrderPicked(2);
+            var order = System.Text.Json.Nodes.JsonNode.Parse(d.BondLabels("order"))!["labels"]!.AsArray()[0]!.GetValue<string>();
+            vm.Pick(i0, false);
+            vm.GeometryPicked("octahedral");
+            var geomOk = vm.EditError.Length == 0 || vm.EditError.Contains("ring");   // a crystal's atoms are all in rings: refused, and said why
+            Check(el == "Si" && order == "2" && geomOk, $"modify toolbar: element {el} · bond order {order} · geometry {(geomOk ? "ok" : vm.EditError)}");
+        }
 
         // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
         vm.OpenBio();

@@ -75,8 +75,10 @@ public sealed partial class MainViewModel
     }
     public ObservableCollection<string> ProjectRefs { get; } = new();
     private string _projectFolder = "", _projectMethods = "", _projectMethodsFor = "";
-    public string ProjectFolder { get => _projectFolder; private set { if (Set(ref _projectFolder, value)) { Raise(nameof(ProjectName)); Raise(nameof(ProjectFolderText)); } } }
+    public string ProjectFolder { get => _projectFolder; private set { if (Set(ref _projectFolder, value)) { Raise(nameof(ProjectName)); Raise(nameof(ProjectFolderText)); Raise(nameof(ExplorerProjectName)); } } }
     public string ProjectName => _projectFolder.Length == 0 ? "No project" : System.IO.Path.GetFileName(_projectFolder.TrimEnd('/', '\\'));
+    /// <summary>The explorer's root: the project folder's name, or this session's structures.</summary>
+    public string ExplorerProjectName => _projectFolder.Length == 0 ? "This session" : ProjectName;
     public string ProjectFolderText => _projectFolder.Length == 0 ? "" : RecentFiles.Tilde(_projectFolder);
     public string ProjectMethods { get => _projectMethods; private set { if (Set(ref _projectMethods, value)) Raise(nameof(ProjectHasMethods)); } }
     public bool ProjectHasMethods => _projectMethods.Length > 0;
