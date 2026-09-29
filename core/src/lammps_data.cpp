@@ -949,9 +949,9 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? int(std::floor(fr[k])) : 0;
     const Vec3 w = at.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
-    std::snprintf(buf, sizeof buf, "%zu %lld %d %.8f %.10f %.10f %.10f %d %d %d\n", i + 1, static_cast<long long>(s.has_mol ? at.mol : int64_t(frag[i]) + 1), ff.type_index[i] + 1,
+    std::snprintf(buf, sizeof buf, "%zu %lld %d %.8f %.10f %.10f %.10f %d %d %d", i + 1, static_cast<long long>(s.has_mol ? at.mol : int64_t(frag[i]) + 1), ff.type_index[i] + 1,
                   ff.charge[i], w[0], w[1], w[2], im[0], im[1], im[2]);
-    out << buf;
+    out << buf << residue_comment(at) << "\n";
   }
   if (s.velocities.size() == s.atoms.size()) {
     out << "\nVelocities\n\n";

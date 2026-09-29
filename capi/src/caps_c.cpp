@@ -2760,6 +2760,15 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       j["conversion"] = rep.cycles.empty() ? 0.0 : rep.cycles.back().conversion;
       j["field"] = rep.field;
       j["field_after"] = after;
+      caps::Json links = caps::Json::array();
+      for (const auto& lr : rep.links) {
+        caps::Json x = caps::Json::object();
+        x["cycle"] = double(lr.cycle), x["reaction"] = lr.reaction;
+        x["chain_a"] = double(lr.chain_a), x["unit_a"] = double(lr.unit_a), x["chain_b"] = double(lr.chain_b), x["unit_b"] = double(lr.unit_b);
+        x["via"] = double(lr.via), x["via_name"] = lr.via_name;
+        links.push_back(x);
+      }
+      j["links"] = links;
       caps::Json notes = caps::Json::array();
       for (const auto& n : rep.notes) notes.push_back(n);
       j["notes"] = notes;

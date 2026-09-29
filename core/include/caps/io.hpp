@@ -84,6 +84,10 @@ struct FileInspection {
 FileInspection inspect_file(const std::string& path, const std::string& topology_path = "", int head_lines = 40);
 
 void write_lammps_data(const System& s, const std::string& path);
+// The residue (repeat unit) of an atom as a comment after its Atoms line — "  # res 12 ENR" — which LAMMPS ignores and
+// CAPS reads back, so a grown cell keeps its repeat units through a data file ("" when the atom has none).
+std::string residue_comment(const Atom& a);
+void read_residue_comment(const std::string& comment, Atom& a);
 // All frames as a LAMMPS text dump with unwrapped coordinates (id mol type xu yu zu).
 void write_lammps_dump(const Trajectory& t, const std::string& path);
 void write_xyz(const System& s, const std::string& path);

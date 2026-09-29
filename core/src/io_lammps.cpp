@@ -13,6 +13,26 @@
 #include "io_util.hpp"
 
 namespace caps {
+
+std::string residue_comment(const Atom& a) {
+  if (a.resid <= 0) return "";
+  std::string name = a.resname;
+  for (auto& c : name) if (std::isspace(static_cast<unsigned char>(c))) c = '_';
+  return "  # res " + std::to_string(a.resid) + (name.empty() ? "" : " " + name);
+}
+
+void read_residue_comment(const std::string& comment, Atom& a) {
+  std::istringstream is(comment);
+  std::string w;
+  is >> w;
+  if (w != "res") return;
+  long long r = 0;
+  if (!(is >> r) || r <= 0) return;
+  a.resid = r;
+  std::string name;
+  if (is >> name) a.resname = name;
+}
+
 namespace {
 
 Cell lammps_cell(double xlo, double xhi, double ylo, double yhi, double zlo, double zhi, double xy, double xz, double yz) {
@@ -134,6 +154,7 @@ System read_lammps_data(const std::string& path) {
       a.pos = {std::stod(tok[p]), std::stod(tok[p + 1]), std::stod(tok[p + 2])};
       p += 3;
       if (p + 3 <= n) a.image = {std::stoi(tok[p]), std::stoi(tok[p + 1]), std::stoi(tok[p + 2])};
+      read_residue_comment(comment, a);
       index[a.id] = static_cast<uint32_t>(s.atoms.size());
       s.atoms.push_back(a);
     } else if (section == "Velocities" && tok.size() >= 4) {
@@ -360,9 +381,9 @@ void write_lammps_data(const System& s_in, const std::string& path) {
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? static_cast<int>(std::floor(f[k])) : 0;
     const Vec3 w = a.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
-    std::snprintf(buf, sizeof buf, "%lld %lld %d %.6f %.6f %.6f %.6f %d %d %d\n", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
+    std::snprintf(buf, sizeof buf, "%lld %lld %d %.6f %.6f %.6f %.6f %d %d %d", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
                   a.charge, w[0], w[1], w[2], im[0], im[1], im[2]);
-    out << buf;
+    out << buf << residue_comment(a) << "\n";
   }
   if (!s.bonds.empty()) {
     out << "\nBonds\n\n";

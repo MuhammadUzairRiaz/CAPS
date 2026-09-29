@@ -172,6 +172,15 @@ struct ReactOptions {
   std::function<void(const System&, const CycleRow&, const std::vector<int64_t>& chain, const std::vector<char>& linked)> live;
 };
 
+// One link between two chains: where it is (each chain and repeat unit — the residue numbers Grow gives — 0 when the chain
+// carries none) and the molecule that bridges them (a crosslinker's start id, 0 for a direct bond).
+struct LinkRecord {
+  int cycle = 0;
+  std::string reaction;
+  int64_t chain_a = 0, chain_b = 0, unit_a = 0, unit_b = 0, via = 0;
+  std::string via_name;         // the bridge's element formula at the start (C4H2O3 for maleic anhydride)
+};
+
 struct ReactReport {
   std::vector<CycleRow> cycles;
   int initial_sites = 0, reactions = 0;
@@ -190,6 +199,7 @@ struct ReactReport {
   double degree = 0;            // DC = 2 × links / monomers × 100 %
   std::string field;            // the force field that relaxed the network
   std::vector<int64_t> chains_after;   // each atom's chain at the end (for the next run's ReactOptions::chains)
+  std::vector<LinkRecord> links;       // every link between chains, in the order they formed
 };
 
 // Runs cycles of find → react → retype → relax (→ dynamics) until the target conversion, the cycle limit, or no

@@ -24,6 +24,7 @@ public partial class ReactPage : PageBase
                 conv.SetData(rows.Count == 0 ? [] : new[] { (0.0, 0.0) }.Concat(rows.Select(r => ((double)r.Cycle, (double)r.Crosslinks))).ToArray());
                 conv.RefY = rows.Count > 0 && rows[^1].Target > 0 ? rows[^1].Target : null;
                 gel.SetData(rows.Select(r => (r.Conversion, r.LargestFraction)).ToArray());
+                this.FindControl<LinkMap>("LinkMap")!.SetLinks(vm.RxLinks.ToList(), vm.Reacting ? 0 : vm.RxChainCount, vm.RxUnitsPerChain);
                 vm.RaiseGel();
             };
         };
