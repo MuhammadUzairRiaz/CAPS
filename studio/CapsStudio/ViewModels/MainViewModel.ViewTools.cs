@@ -22,9 +22,10 @@ public readonly record struct MonitorMark(double X0, double Y0, double X1, doubl
 /// <summary>The Studio view's lasso, translate and pin-monitor tools (the Main board's toolbar).</summary>
 public sealed partial class MainViewModel
 {
-    // EditTool 4 lasso select, 5 translate
+    // EditTool 4 lasso select, 5 translate, 6 rotate
     public bool IsLassoTool => _editTool == 4;
     public bool IsMoveTool => _editTool == 5;
+    public bool IsRotateTool => _editTool == 6;
 
     /// <summary>The atoms whose centres fall inside the lasso (visible ones) become the selection, or join it.</summary>
     public void LassoSelect(IReadOnlyCollection<int> atoms, bool add)
@@ -91,6 +92,81 @@ public sealed partial class MainViewModel
         var u = (g22 * dx - g12 * dy) / det;
         var v = (-g12 * dx + g11 * dy) / det;
         return [ax[0] * u + ay[0] * v, ax[1] * u + ay[1] * v, ax[2] * u + ay[2] * v];
+    }
+
+    /// <summary>Rotates the atoms rigidly about the axis through their centre (one undoable step).</summary>
+    public void RotateAtoms(int[] atoms, double[] axis, double degrees)
+    {
+        if (atoms.Length == 0 || axis.Length != 3 || Math.Abs(degrees) < 1e-6) return;
+        RunEdit(new { op = "rotate", atoms, axis, degrees });
+    }
+
+    /// <summary>A rotate-tool drag as an axis and an angle. Axis locked ('x', 'y', 'z'): that world axis, 0.5° per point
+    /// of horizontal drag. Otherwise the view axis through the atoms' centre, by the angle the cursor swept around the
+    /// centre's projection; its sense is checked on the fitted projection, so the atoms turn the way the drag goes.
+    /// snap: whole multiples of 15°.</summary>
+    public static (double[] Axis, double Degrees)? RotationFromDrag(IReadOnlyList<(double X, double Y, double Z, double Sx, double Sy)> pts, double[] centre,
+                                                                   double pressX, double pressY, double x, double y, char axisLock, bool snap)
+    {
+        double deg;
+        double[] axis;
+        if (axisLock is 'x' or 'y' or 'z')
+        {
+            axis = [axisLock == 'x' ? 1 : 0, axisLock == 'y' ? 1 : 0, axisLock == 'z' ? 1 : 0];
+            deg = (x - pressX) * 0.5;
+        }
+        else
+        {
+            if (Fit(pts) is not { } f) return null;
+            var (ax, ay) = f;
+            // the view axis: normal to the screen's two world gradients
+            double[] n = [ax[1] * ay[2] - ax[2] * ay[1], ax[2] * ay[0] - ax[0] * ay[2], ax[0] * ay[1] - ax[1] * ay[0]];
+            var nn = Math.Sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+            if (nn < 1e-12) return null;
+            for (var k = 0; k < 3; ++k) n[k] /= nn;
+            double Sx(double[] w) => ax[0] * w[0] + ax[1] * w[1] + ax[2] * w[2] + ax[3];
+            double Sy(double[] w) => ay[0] * w[0] + ay[1] * w[1] + ay[2] * w[2] + ay[3];
+            var cx = Sx(centre); var cy = Sy(centre);
+            deg = (Math.Atan2(y - cy, x - cx) - Math.Atan2(pressY - cy, pressX - cx)) * 180 / Math.PI;
+            if (deg > 180) deg -= 360;
+            if (deg < -180) deg += 360;
+            // the sense: a +10° turn of a vector across the view about n, seen on the screen
+            var gx = Math.Sqrt(ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2]);
+            double[] t = [ax[0] / gx, ax[1] / gx, ax[2] / gx];
+            var th = 10 * Math.PI / 180;
+            double[] cxn = [n[1] * t[2] - n[2] * t[1], n[2] * t[0] - n[0] * t[2], n[0] * t[1] - n[1] * t[0]];
+            double[] rt = [t[0] * Math.Cos(th) + cxn[0] * Math.Sin(th), t[1] * Math.Cos(th) + cxn[1] * Math.Sin(th), t[2] * Math.Cos(th) + cxn[2] * Math.Sin(th)];
+            double[] o = [0, 0, 0];
+            double a0 = Math.Atan2(Sy(t) - Sy(o), Sx(t) - Sx(o)), a1 = Math.Atan2(Sy(rt) - Sy(o), Sx(rt) - Sx(o));
+            var seen = a1 - a0;
+            if (seen > Math.PI) seen -= 2 * Math.PI;
+            if (seen < -Math.PI) seen += 2 * Math.PI;
+            if (seen < 0) for (var k = 0; k < 3; ++k) n[k] = -n[k];
+            axis = n;
+        }
+        if (snap) deg = Math.Round(deg / 15) * 15;
+        return (axis, deg);
+    }
+
+    // the screen map s = A·w + b fitted by least squares to the atoms' projections: (a_x, b_x), (a_y, b_y) as 4 numbers each
+    private static (double[] Ax, double[] Ay)? Fit(IReadOnlyList<(double X, double Y, double Z, double Sx, double Sy)> pts)
+    {
+        if (pts.Count < 4) return null;
+        var m = new double[4, 4];
+        double[] vx = new double[4], vy = new double[4];
+        foreach (var p in pts)
+        {
+            double[] w = [p.X, p.Y, p.Z, 1];
+            for (var r = 0; r < 4; ++r)
+            {
+                for (var c = 0; c < 4; ++c) m[r, c] += w[r] * w[c];
+                vx[r] += w[r] * p.Sx;
+                vy[r] += w[r] * p.Sy;
+            }
+        }
+        var ax = Solve4(m, vx);
+        var ay = Solve4(m, vy);
+        return ax == null || ay == null ? null : (ax, ay);
     }
 
     private static double[]? Solve4(double[,] a0, double[] b0)

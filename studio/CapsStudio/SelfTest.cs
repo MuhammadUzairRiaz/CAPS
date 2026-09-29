@@ -1278,6 +1278,23 @@ internal static class SelfTest
                   && MainViewModel.ExportFormats.Any(f => f.Id == "poscar"),
                   $"crystal saved as POSCAR ({(pl.Length > 6 ? pl[5] + " / " + pl[6] : "none")}) and CIF · {vm.Status}");
         }
+        // the rotate tool's drag: on an orthographic view (screen = 10 x + 100, −10 y + 200), a drag from right of the
+        // centre to above it turns world +x into +y (+90° about z, whatever sign the axis comes with); X locks the world x axis
+        {
+            var rng = new Random(4);
+            var pts = Enumerable.Range(0, 20).Select(_ => { double x = rng.NextDouble() * 10, y = rng.NextDouble() * 10, z = rng.NextDouble() * 10; return (x, y, z, 10 * x + 100, -10 * y + 200); }).ToList();
+            double[] c = [5, 5, 5];   // on screen (150, 150)
+            var rot = MainViewModel.RotationFromDrag(pts, c, 200, 150, 150, 100, '\0', false)!.Value;
+            // Rodrigues: +x turned by the angle about the axis
+            double th = rot.Degrees * Math.PI / 180, ux = rot.Axis[0], uy = rot.Axis[1], uz = rot.Axis[2];
+            double[] v = [1, 0, 0];
+            var dot = ux * v[0] + uy * v[1] + uz * v[2];
+            double[] cr = [uy * v[2] - uz * v[1], uz * v[0] - ux * v[2], ux * v[1] - uy * v[0]];
+            double[] r = Enumerable.Range(0, 3).Select(k => v[k] * Math.Cos(th) + cr[k] * Math.Sin(th) + new[] { ux, uy, uz }[k] * dot * (1 - Math.Cos(th))).ToArray();
+            var locked = MainViewModel.RotationFromDrag(pts, c, 200, 150, 260, 150, 'x', true)!.Value;
+            Check(Math.Abs(r[0]) < 1e-6 && Math.Abs(r[1] - 1) < 1e-6 && Math.Abs(Math.Abs(uz) - 1) < 1e-9 && locked.Axis[0] == 1 && locked.Degrees == 30,
+                  $"rotate tool: +x → ({r[0]:0.###}, {r[1]:0.###}, {r[2]:0.###}) by {rot.Degrees:0.#}° about ({ux:0.#}, {uy:0.#}, {uz:0.#}) · locked x {locked.Degrees}°");
+        }
         // cell tools on the open structure: the 2 × 2 × 3 rutile folds back to its 6-atom cell, the conventional cell is
         // P 42/m n m (136), then a vacuum slab and a [001] wire; a matrix that is not a lattice map is refused
         {

@@ -27,7 +27,7 @@ public sealed partial class MainViewModel
         {
             if (!Set(ref _editTool, value)) return;
             _bondFirst = -1;
-            foreach (var n in new[] { nameof(IsPlaceTool), nameof(IsBondTool), nameof(IsDeleteTool), nameof(IsLassoTool), nameof(IsMoveTool), nameof(EditHint) }) Raise(n);
+            foreach (var n in new[] { nameof(IsPlaceTool), nameof(IsBondTool), nameof(IsDeleteTool), nameof(IsLassoTool), nameof(IsMoveTool), nameof(IsRotateTool), nameof(EditHint) }) Raise(n);
         }
     }
     public bool IsPlaceTool => _editTool == 1;
@@ -41,6 +41,7 @@ public sealed partial class MainViewModel
         3 => "Delete: click an atom",
         4 => "Lasso: drag around atoms to select them (⇧ adds to the selection)",
         5 => "Move: drag the selection (or the molecule under the cursor) in the view plane; release to place it",
+        6 => "Rotate: drag the selection (or the molecule under the cursor) about the view axis through its centre; hold X, Y or Z for that axis, ⇧ for 15° steps",
         _ => "",
     };
 
