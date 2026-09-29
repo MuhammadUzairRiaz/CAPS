@@ -4,6 +4,7 @@
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.InterfacePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
   <p:PageBase.Styles>
+    <Style Selector="NumericUpDown"><Setter Property="ShowButtonSpinner" Value="False" /></Style>
     <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
       <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
   </p:PageBase.Styles>
@@ -29,7 +30,7 @@
         <DockPanel>
           <Border DockPanel.Dock="Top" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
             <DockPanel>
-              <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="the surface is molecule 1" /></Border>
+              <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding IfSetupText}" /></Border>
               <TextBlock Text="Cell" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DockPanel>
           </Border>
@@ -39,13 +40,39 @@
       <ScrollViewer Grid.Column="1">
         <StackPanel Spacing="14">
           <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Setup" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="Surface or filler · molecule ids" Classes="label" />
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Held one" Margin="6,0,0,0" Click="OnUseHeld" ToolTip.Tip="The molecule held in place: the slab of a Surface-builder interface, a held filler" />
+                    <TextBox Text="{Binding Analyze.SurfaceMolecules}" Watermark="1   or   1-3,7" />
+                  </DockPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Along" Classes="label" />
+                  <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.AxisChoices}" SelectedIndex="{Binding Analyze.AxisIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Bin · Å" Classes="label" />
+                  <NumericUpDown Value="{Binding Analyze.ZBinD}" Minimum="0.05" Maximum="5" Increment="0.1" FormatString="0.00" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Trajectory · first frame" Classes="label" />
+                  <NumericUpDown Value="{Binding Analyze.FirstD}" Minimum="0" Increment="1" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Last (−1: the last)" Classes="label" />
+                  <NumericUpDown Value="{Binding Analyze.LastD}" Minimum="-1" Increment="1" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Every" Classes="label" />
+                  <NumericUpDown Value="{Binding Analyze.StrideD}" Minimum="1" Increment="1" FormatString="0" /></StackPanel>
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="The surface's atoms against the rest (the film or matrix). Frames are numbered from 0; the first column always uses the frame on screen." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
             <StackPanel Spacing="8">
               <DockPanel>
-                <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="z · surface normal · 0.5 Å bins" /></Border>
                 <TextBlock Text="Density profile" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
               <Panel Height="260">
-                <v:LinePlot x:Name="Profile" XLabel="z (Å) · normal to the surface" YLabel="ρ (g/cm³)" AutoRange="True" />
+                <v:LinePlot x:Name="Profile" XLabel="height (Å) · normal to the surface" YLabel="ρ (g/cm³)" AutoRange="True" />
               </Panel>
               <TextBlock x:Name="Legend" Classes="dim" TextWrapping="Wrap" />
             </StackPanel>

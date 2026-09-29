@@ -122,7 +122,8 @@ class _AnalyzeOpts(C.Structure):
                 ("blocks", C.c_int32), ("elem_a", C.c_int32), ("elem_b", C.c_int32), ("inter_only", C.c_int32),
                 ("rdf_rmax", C.c_double), ("rdf_dr", C.c_double), ("qmax", C.c_double), ("dq", C.c_double), ("q_direct", C.c_double),
                 ("fit_from", C.c_double), ("fit_to", C.c_double), ("probe", C.c_double), ("grid", C.c_double), ("cutoff", C.c_double),
-                ("threads", C.c_int32), ("deuterate", C.c_int32), ("group", C.c_char_p), ("radii", C.c_char_p)]
+                ("threads", C.c_int32), ("deuterate", C.c_int32), ("group", C.c_char_p), ("radii", C.c_char_p),
+                ("zbin", C.c_double), ("axis", C.c_int32), ("surface", C.c_char_p)]
 
 
 class _MechOpts(C.Structure):
@@ -556,12 +557,16 @@ class Document:
     def analyze(self, properties="density", first: int = 0, last: int = -1, stride: int = 1, blocks: int = 5, threads: int = 0,
                 **options) -> list:
         """Properties of the frames (the ids of caps analyze: density, rdf, sq, xray, electron, neutron, rg, ree, cn,
-        persistence, msd, diffusion, ced, ffv (radii="bondi" | "uff" | "forcefield") …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
+        persistence, msd, diffusion, ced, ffv (radii="bondi" | "uff" | "forcefield"), zprofile / adhesion / interaction /
+        orientation (surface="1-3,7" molecule ids, axis="x" | "y" | "z", zbin=0.5) …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
         {id, name, value, error, unit, ...}."""
         ids = ",".join(_PROPERTY_ALIASES.get(p, p) for p in ([properties] if isinstance(properties, str) else properties))
         o = _AnalyzeOpts(first, last, stride, 0, 0, blocks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, threads, int(options.pop("deuterate", 0)),
                          _enc(options.pop("group", "")),   # group: "selection", "molecules:1-4,7", "exclude-held"
-                         _enc(options.pop("radii", "")))   # free volume: bondi | uff | forcefield
+                         _enc(options.pop("radii", "")),   # free volume: bondi | uff | forcefield
+                         float(options.pop("zbin", 0)),    # interfaces: profile bin (Å)
+                         {"": 0, "x": 1, "a": 1, "y": 2, "b": 2, "z": 3, "c": 3}[str(options.pop("axis", "")).lower()],
+                         _enc(str(options.pop("surface", ""))))   # the surface / filler molecule ids, "1-3,7"
         if "tg" in ids.split(","):
             m = _MechOpts()
             for k, v in options.items():

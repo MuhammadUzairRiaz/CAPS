@@ -269,6 +269,9 @@ public struct CapsAnalyzeOpts
     public int Deuterate;       // neutron contrast (ABI 20): 0 none, 1 all H, 2 aliphatic, 3 aromatic, 4 on O/N
     [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Group;   // ABI 36: "" all, "selection", "molecules:1-4,7", "exclude-held"
     [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Radii;   // ABI 38: free volume radii — "bondi", "uff", "forcefield"
+    public double ZBin;         // ABI 44: density profile bin (Å; 0: 0.5)
+    public int Axis;            // ABI 44: interfaces and Herman's f — 1 a (x), 2 b (y), 3 c (z); 0: c
+    [MarshalAs(UnmanagedType.LPUTF8Str)] public string? Surface;   // ABI 44: the surface / filler molecule ids, "1-3,7" ("" = 1)
 }
 
 [StructLayout(LayoutKind.Sequential)]
