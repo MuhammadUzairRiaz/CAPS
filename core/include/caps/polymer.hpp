@@ -29,9 +29,11 @@ struct RepeatUnit {
 // Random: each position drawn with `weights` (Bernoulli / multinomial). Gradient: the share of A falls linearly
 // from 1 at the head to 0 at the tail (two units; with more, the last unit rises). Pattern: `pattern` repeated
 // ("AAB", letters A, B, C … for the units).
-enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern, Terminal };
+enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern, Terminal, Shuffled };
 // homopolymer | alternating | block | random | gradient | pattern | terminal (the Mayo–Lewis terminal model: two units,
-// reactivity ratios r1, r2 and the feed fraction weights[0] of unit A; a first-order Markov chain along each chain)
+// reactivity ratios r1, r2 and the feed fraction weights[0] of unit A; a first-order Markov chain along each chain) |
+// shuffled (random order, exact composition: every chain holds round(DP × weight) of each unit — largest remainders so
+// they add up to DP — where random draws each unit independently and chains scatter around the ratio)
 Sequence sequence_from_string(const std::string& s);
 const char* to_string(Sequence s);
 

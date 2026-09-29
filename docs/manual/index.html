@@ -306,11 +306,17 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-polymer">
   <h2>Polymer builder</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/04_polymer.jpg" alt="Polymer builder" loading="lazy"></button>
-    <figcaption><b>Build › Polymer.</b> Library of 113 repeat units and 19 copolymers; one-chain preview in the middle.</figcaption></figure>
+    <figcaption><b>Build › Polymer.</b> Library of 114 repeat units and 21 copolymers, plus your own; one-chain preview in the middle.</figcaption></figure>
   <ul>
     <li><b>Repeat units:</b> in SMILES, the first <code>*</code> is the head and the second is the tail. <span class="ui">+ Unit</span> adds a second unit for copolymers.</li>
     <li><b>Architecture:</b> Linear, Branched, Star, Comb or Dendrimer. <span class="ui">Network →</span> opens network building.</li>
-    <li><b>Sequence:</b> homopolymer, alternating, random or block, with the DP and a name.</li>
+    <li><b>Sequence:</b> homopolymer, alternating, random, <i>random with exact composition</i> (every chain holds exactly the counts asked, in random order) or block, with the DP and a name.</li>
+    <li><b>Your polymers:</b> <span class="ui">Save to your library</span> keeps the polymer on the builder (one repeat unit, or a copolymer with its sequence and shares) in your library, tagged <i>yours</i>, in <code>~/.caps/polymers.json</code>. The bin beside one removes it; the built-in ones stay.</li>
+  </ul>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/04b_composition.jpg" alt="Composition calculator for PBSA" loading="lazy"></button>
+    <figcaption><b>Composition.</b> PBSA, BS:BA 80:20 by moles at DP 25: 20 BS and 5 BA per chain.</figcaption></figure>
+  <p>The <b>Composition</b> panel appears when there are two or more units. Give each unit a <span class="ui">Target %</span> by moles or by weight. CAPS converts a weight ratio to mole fractions with the repeat-unit masses, x<sub>i</sub> = (w<sub>i</sub>/M<sub>i</sub>) / &Sigma;<sub>j</sub>(w<sub>j</sub>/M<sub>j</sub>). The table shows each unit's mole and weight share and its count per chain: the exact count, then the mean &plusmn; one standard deviation (&radic;(DP&middot;x(1&minus;x))) when units are drawn at random. <span class="ui">Use: random</span> sets the shares to these mole fractions; <span class="ui">Use: exact composition</span> also gives every chain the exact counts. For example, PBSA at 80:20 by weight gives BS:BA 0.823:0.177 by moles (BS 172.18, BA 200.23 g/mol).</p>
+  <ul>
     <li><b>Stereo and linkage:</b> atactic, isotactic or syndiotactic; head-to-tail or other linkages; end groups.</li>
     <li><span class="ui">Build in document</span> builds one chain. <span class="ui">Send to CAPS Grow</span> takes the polymer to Polymer cell.</li>
   </ul>

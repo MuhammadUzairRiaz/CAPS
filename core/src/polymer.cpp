@@ -375,6 +375,7 @@ Sequence sequence_from_string(const std::string& s) {
   if (s == "gradient") return Sequence::Gradient;
   if (s == "terminal") return Sequence::Terminal;
   if (s == "pattern") return Sequence::Pattern;
+  if (s == "shuffled") return Sequence::Shuffled;
   return Sequence::Homopolymer;
 }
 
@@ -405,6 +406,7 @@ const char* to_string(Sequence s) {
     case Sequence::Gradient: return "gradient";
     case Sequence::Terminal: return "terminal";
     case Sequence::Pattern: return "pattern";
+    case Sequence::Shuffled: return "shuffled";
     default: return "homopolymer";
   }
 }
@@ -526,6 +528,30 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       if (std::accumulate(w.begin(), w.end(), 0.0) <= 0) w.assign(size_t(nu), 1.0);
       std::discrete_distribution<int> D(w.begin(), w.end());
       for (int i = 0; i < n; ++i) s[size_t(i)] = D(rng);
+      break;
+    }
+    case Sequence::Shuffled: {
+      // exact counts by largest remainders, then a random order
+      std::vector<double> w = spec.weights;
+      w.resize(size_t(nu), w.empty() ? 1.0 : 0.0);
+      const double tot = std::accumulate(w.begin(), w.end(), 0.0);
+      if (tot <= 0) w.assign(size_t(nu), 1.0);
+      const double sum = std::accumulate(w.begin(), w.end(), 0.0);
+      std::vector<int> cnt(static_cast<size_t>(nu));
+      std::vector<std::pair<double, int>> rem;
+      int used = 0;
+      for (int k = 0; k < nu; ++k) {
+        const double x = n * w[size_t(k)] / sum;
+        cnt[size_t(k)] = int(std::floor(x));
+        used += cnt[size_t(k)];
+        rem.push_back({x - std::floor(x), k});
+      }
+      std::stable_sort(rem.begin(), rem.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
+      for (size_t q = 0; used < n && q < rem.size(); ++q, ++used) ++cnt[size_t(rem[q].second)];
+      int i = 0;
+      for (int k = 0; k < nu; ++k)
+        for (int c = 0; c < cnt[size_t(k)]; ++c) s[size_t(i++)] = k;
+      std::shuffle(s.begin(), s.end(), rng);
       break;
     }
     case Sequence::Gradient: {

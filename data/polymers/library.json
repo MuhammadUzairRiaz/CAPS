@@ -608,6 +608,14 @@
    "tags": [
     "rubber"
    ]
+  },
+  {
+   "id": "P211",
+   "name": "Poly(butylene adipate)",
+   "smiles": "[*]OCCCCOC(=O)CCCCC(=O)[*]",
+   "tags": [
+    "polyester"
+   ]
   }
  ],
  "copolymers": [
@@ -896,6 +904,46 @@
    ],
    "tags": [
     "rubber"
+   ]
+  },
+  {
+   "id": "C112",
+   "name": "PBSA, poly(butylene succinate-co-adipate) (BS:BA 80:20 mol)",
+   "units": [
+    "P098",
+    "P211"
+   ],
+   "unit_names": [
+    "butylene succinate",
+    "butylene adipate"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.8,
+    0.2
+   ],
+   "tags": [
+    "polyester"
+   ]
+  },
+  {
+   "id": "C113",
+   "name": "PBAT, poly(butylene adipate-co-terephthalate) (BA:BT 50:50 mol)",
+   "units": [
+    "P211",
+    "P028"
+   ],
+   "unit_names": [
+    "butylene adipate",
+    "butylene terephthalate"
+   ],
+   "sequence": "random",
+   "weights": [
+    0.5,
+    0.5
+   ],
+   "tags": [
+    "polyester"
    ]
   }
  ],
