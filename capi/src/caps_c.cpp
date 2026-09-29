@@ -2680,7 +2680,10 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     if (!s.unwrapped) caps::make_molecules_whole(s);
     // the atom count changes when atoms leave, so the record is one document per state: keep the start and the end
     std::vector<caps::System> frames{s};
-    r.frame = [&](const caps::System& x, int) { frames.push_back(x); };
+    r.frame = [&](const caps::System& x, int) {
+      frames.push_back(x);
+      if (x.cell.valid()) caps::make_molecules_whole(frames.back());   // bonds new this cycle may cross the cell: whole again
+    };
     caps::ReactReport rep;
     caps::react(s, r, &rep);
     {
@@ -2696,6 +2699,8 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
                                      : caps::KeyValues{});
     }
     caps::Trajectory out;
+    // the last frame as the run left it (made whole after the last cycle)
+    if (!frames.empty() && frames.back().atoms.size() == s.atoms.size()) frames.back() = s;
     const bool same = frames.front().atoms.size() == s.atoms.size();
     out.topology = s;
     out.topology.notes = rep.notes;

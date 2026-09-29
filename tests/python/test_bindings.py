@@ -435,4 +435,21 @@ rs = rx.react_summary()
 check(rs["chains"] == 8 and rs["crosslinks"] == rs["target"] == 4 and rs["byproducts"] == 4 and rs["field"].startswith("PCFF")
       and rs["field_after"].endswith("complete") and rx.field.report()["complete"],
       f"react with PCFF: {rs['crosslinks']}/{rs['target']} links · ν {rs['density']:.0f} mol/m³ · Mc {rs['mc']:.0f} g/mol · after: {rs['field_after']}")
+# a crosslinked cell's bonds stay short when unwrapped: every molecule whole in the document React leaves (a saved data
+# file then has consistent image flags)
+import math, tempfile
+with tempfile.TemporaryDirectory() as td:
+    path = os.path.join(td, "net.data")
+    rx.save(path)
+    L = open(path).read().split("\n")
+    def sec(name):
+        i = [k for k, l in enumerate(L) if l.strip().startswith(name)][0] + 2
+        out = []
+        while i < len(L) and L[i].strip():
+            out.append(L[i].split("#")[0].split()); i += 1
+        return out
+    box = [float(L[k].split()[1]) - float(L[k].split()[0]) for k, l in enumerate(L) if "xlo" in l][0]
+    A = {int(w[0]): [float(w[4 + k]) + box * int(w[7 + k]) for k in range(3)] for w in sec("Atoms")}
+    long_bonds = [w for w in sec("Bonds") if math.dist(A[int(w[2])], A[int(w[3])]) > 3.0]
+    check(not long_bonds, f"reacted cell whole: {len(long_bonds)} bonds longer than 3 Å unwrapped")
 print("all python checks passed")
