@@ -16,7 +16,7 @@ per-particle properties, which CAPS shows in the data inspector and passes to th
         data.attributes["MeanZ"] = float(np.mean(pos[:, 2]))
 """
 from . import geometry, pipeline  # noqa: F401
-from .core import (CapsError, Document, Provenance, abi_version, bibtex, build, compare_provenance, current, hand_back, import_file, import_preview, library, methods,  # noqa: F401
+from .core import (CapsError, Document, Provenance, abi_version, bibtex, build, label_kinds, compare_provenance, current, hand_back, import_file, import_preview, library, methods,  # noqa: F401
                    open, pack, polymer, potentials, provenance_file, run, space_groups, chain_lengths, bead_templates, copolymer_model, stereo, blend_phase, solvent_chi,
                    ewald_params, chi_by_md, chi_by_contacts, reaction_templates, reaction_template, bond_react_template, reaction_library)
 from . import sweep  # noqa: F401,E402
@@ -24,6 +24,6 @@ from .table import Table, table  # noqa: F401,E402
 from .view import View  # noqa: F401,E402
 
 __version__ = "0.1.0"
-__all__ = ["geometry", "pipeline", "sweep", "Document", "Provenance", "View", "Table", "open", "pack", "potentials", "current", "hand_back", "import_file", "import_preview", "build", "run", "polymer",
+__all__ = ["geometry", "pipeline", "sweep", "label_kinds", "Document", "Provenance", "View", "Table", "open", "pack", "potentials", "current", "hand_back", "import_file", "import_preview", "build", "run", "polymer",
            "table", "library", "abi_version", "space_groups", "provenance_file", "compare_provenance", "bibtex", "methods", "CapsError",
            "chain_lengths", "bead_templates", "copolymer_model", "stereo", "blend_phase", "solvent_chi", "ewald_params", "chi_by_md", "chi_by_contacts", "reaction_templates", "reaction_template", "bond_react_template", "reaction_library"]

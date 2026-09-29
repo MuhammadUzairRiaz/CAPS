@@ -1759,12 +1759,7 @@
               <Border Classes="section">
                 <StackPanel Spacing="8">
                   <TextBlock Text="LABELS" Classes="h3" />
-                  <WrapPanel>
-                    <CheckBox Content="Element" IsChecked="{Binding LabelElement}" Margin="0,0,14,0" />
-                    <CheckBox Content="R/S · E/Z" IsChecked="{Binding LabelRs}" Margin="0,0,14,0" ToolTip.Tip="Cahn–Ingold–Prelog configuration of tetrahedral centres (R/S) and of acyclic double bonds (E/Z: cis-1,4 polyisoprene is Z)" />
-                    <CheckBox Content="Atom type" IsChecked="{Binding LabelType}" Margin="0,0,14,0" />
-                    <CheckBox Content="Charge" IsChecked="{Binding LabelCharge}" />
-                  </WrapPanel>
+                  <local:LabelSettings />
                 </StackPanel>
               </Border>
               <Border Classes="section">

@@ -23,6 +23,7 @@ public static class FigureDrawing
     /// <summary>Draws o in the image's own pixels (the caller scales the context to fit a smaller control).</summary>
     public static void Draw(DrawingContext ctx, FigureOverlay o)
     {
+        if (o.Labels is { Count: > 0 } lb && o.LabelLook is { } look) LabelDrawing.Draw(ctx, lb, look with { Size = o.LabelTextPx });
         var ink = new SolidColorBrush(C(o.Ink));
         var m = o.Margin;
         if (o.Title is { } title)
@@ -304,6 +305,16 @@ public static class FigureDrawing
             sb.Append(string.Format(inv, "<text x=\"{0:F1}\" y=\"{1:F1}\" font-family=\"IBM Plex Sans, Helvetica, Arial, sans-serif\" font-size=\"{2:F1}\" fill=\"{3}\">{4}</text>", x, y - o.LabelPx * 0.4, o.LabelPx, ink, o.LegendTitle));
             sb.Append(string.Format(inv, "<text x=\"{0:F1}\" y=\"{1:F1}\" font-family=\"IBM Plex Mono, Menlo, monospace\" font-size=\"{2:F1}\" fill=\"{3}\">{4}</text>", x, y + h + o.LabelPx * 1.2, o.LabelPx, ink, o.LegendLo));
             sb.Append(string.Format(inv, "<text x=\"{0:F1}\" y=\"{1:F1}\" text-anchor=\"end\" font-family=\"IBM Plex Mono, Menlo, monospace\" font-size=\"{2:F1}\" fill=\"{3}\">{4}</text>", x + w, y + h + o.LabelPx * 1.2, o.LabelPx, ink, o.LegendHi));
+        }
+        // the labels as text (the colour as chosen; the theme's text colour as the figure's ink)
+        if (o.Labels is { Count: > 0 } lb && o.LabelLook is { } look)
+        {
+            var px = o.LabelTextPx;
+            string Fill(ViewLabel l) { var c = l.Bond ? look.BondArgb : (l.Argb != 0 ? l.Argb : look.AtomArgb); return c is { } v && v != 0 ? Hex(v & 0xFFFFFF) : ink; }
+            foreach (var l in lb)
+                sb.Append(string.Format(inv, "<text x=\"{0:F1}\" y=\"{1:F1}\"{2} font-family=\"{3}\" font-size=\"{4:F1}\"{5} fill=\"{6}\">{7}</text>",
+                    l.Bond ? l.X : l.X + 5, l.Bond ? l.Y + px * 0.35 : l.Y - 2 - px * 0.25, l.Bond ? " text-anchor=\"middle\"" : "",
+                    System.Security.SecurityElement.Escape(look.Font), px, look.Bold ? " font-weight=\"bold\"" : "", Fill(l), System.Security.SecurityElement.Escape(l.Text)));
         }
         sb.Append("</g>");
         var end = svg.LastIndexOf("</svg>", StringComparison.Ordinal);

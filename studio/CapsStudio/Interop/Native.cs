@@ -511,6 +511,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_appearance")] public static extern int SetAppearance(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_appearance_info")] public static extern int AppearanceInfo(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_labels")] public static extern int AtomLabels(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bond_labels")] public static extern int BondLabels(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_label_kinds")] public static extern int LabelKinds(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_project_atoms")] public static extern int ProjectAtoms(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, float[] xyv, int count);
     [DllImport(Lib, EntryPoint = "caps_solvent_library")] public static extern int SolventLibrary(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvate_plan")] public static extern int SolvatePlan(IntPtr solute, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
@@ -774,6 +776,8 @@ public sealed class CapsDocument : IDisposable
     }
     public static string UnitInfo(string smiles) => JsonCall((b, c) => Native.UnitInfo(smiles, b, c));
     public static string ChainPreview(string spec, ulong seed) => JsonCall((b, c) => Native.ChainPreview(spec, seed, b, c));
+    /// <summary>The atom and bond label kinds: {atom: [{id, title, group}], bond: [..]} (caps_label_kinds).</summary>
+    public static string LabelKinds() => JsonCall((b, c) => Native.LabelKinds(b, c));
 
     /// <summary>Grows chains of a polymer spec (caps_grow_chains).</summary>
     public static (CapsDocument Doc, string Report) GrowChains(string spec, CapsGrowOpts o, Func<int, int, int, bool>? progress, string label,
@@ -1864,6 +1868,8 @@ public sealed class CapsDocument : IDisposable
     public string AppearanceInfo() { using (Hold()) return JsonCall((b, c) => Native.AppearanceInfo(H, b, c)); }
     /// <summary>One label per atom of the current frame: element, rs, type, charge or name (caps_atom_labels).</summary>
     public string AtomLabels(string kind) { using (Hold()) return JsonCallOnce((b, c) => Native.AtomLabels(H, kind, b, c)); }
+    /// <summary>One label per bond: {pairs, labels, crossing} (caps_bond_labels).</summary>
+    public string BondLabels(string kind) { using (Hold()) return JsonCallOnce((b, c) => Native.BondLabels(H, kind, b, c)); }
     /// <summary>x, y (pixels) and visibility of every atom after the last render with the same camera and options.</summary>
     public float[] ProjectAtoms(in CapsCamera cam, in CapsRenderOpts opt, int atoms)
     {

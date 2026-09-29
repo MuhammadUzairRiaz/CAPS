@@ -14,9 +14,11 @@ public sealed class LabelOverlay : Control
 
     public LabelOverlay() { IsHitTestVisible = false; }
 
-    public void SetLabels(List<ViewLabel> labels)
+    private LabelStyle _style = new("IBM Plex Mono", 10.5, false, true, null, 0xFFF0A83C);
+    public void SetLabels(List<ViewLabel> labels, LabelStyle? style = null)
     {
         _labels = labels;
+        if (style != null) _style = style;
         InvalidateVisual();
     }
 
@@ -86,17 +88,39 @@ public sealed class LabelOverlay : Control
             ctx.DrawRectangle(null, new Pen(sel, 1), new Rect(x - 6, y - 2, ft.Width + 12, ft.Height + 4), 4, 4);
             ctx.DrawText(ft, new Point(x, y));
         }
-        if (_labels.Count == 0) return;
+        LabelDrawing.Draw(ctx, _labels, _style);
+    }
+}
+
+/// <summary>Draws atom and bond labels in a style (the Studio view's overlay and the view window).</summary>
+public static class LabelDrawing
+{
+    // the Studio's own fonts by their embedded resources, others by name (system fonts)
+    private static FontFamily Family(string name) => name switch
+    {
+        "IBM Plex Mono" => new FontFamily("avares://CapsStudio/Assets/Fonts#IBM Plex Mono"),
+        "IBM Plex Sans" => new FontFamily("avares://CapsStudio/Assets/Fonts#IBM Plex Sans"),
+        "Inter" => new FontFamily("fonts:Inter#Inter"),
+        _ => new FontFamily(name),
+    };
+
+    public static void Draw(DrawingContext ctx, IReadOnlyList<ViewLabel> labels, LabelStyle style)
+    {
+        if (labels.Count == 0) return;
         var ink = Tokens.Brush("TextB");
-        var plate = new SolidColorBrush(Color.FromArgb(0xB0, 0x16, 0x19, 0x1C));
         var light = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
-        if (light) plate = new SolidColorBrush(Color.FromArgb(0xC8, 0xFF, 0xFF, 0xFF));
-        foreach (var l in _labels)
+        IBrush plate = light ? new SolidColorBrush(Color.FromArgb(0xC8, 0xFF, 0xFF, 0xFF)) : new SolidColorBrush(Color.FromArgb(0xB0, 0x16, 0x19, 0x1C));
+        var face = new Typeface(Family(style.Font), FontStyle.Normal, style.Bold ? FontWeight.Bold : FontWeight.Normal);
+        var brushes = new Dictionary<uint, IBrush>();
+        IBrush Brush(uint? argb) => argb is { } c && c != 0 ? (brushes.TryGetValue(c, out var b) ? b : brushes[c] = new SolidColorBrush(Color.FromUInt32(c))) : ink;
+        foreach (var l in labels)
         {
-            var ft = new FormattedText(l.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, 10.5, ink);
-            var x = l.X + 5;
-            var y = l.Y - ft.Height - 2;
-            ctx.FillRectangle(plate, new Rect(x - 2, y, ft.Width + 4, ft.Height), 2);
+            var brush = l.Bond ? Brush(style.BondArgb) : Brush(l.Argb != 0 ? l.Argb : style.AtomArgb);
+            var ft = new FormattedText(l.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, face, style.Size, brush);
+            // atoms: beside the atom; bonds: centred on the bond's midpoint
+            var x = l.Bond ? l.X - ft.Width / 2 : l.X + 5;
+            var y = l.Bond ? l.Y - ft.Height / 2 : l.Y - ft.Height - 2;
+            if (style.Plate) ctx.FillRectangle(plate, new Rect(x - 2, y, ft.Width + 4, ft.Height), 2);
             ctx.DrawText(ft, new Point(x, y));
         }
     }

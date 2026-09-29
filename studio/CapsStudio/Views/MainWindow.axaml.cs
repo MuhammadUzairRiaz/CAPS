@@ -990,7 +990,7 @@ public partial class MainWindow : Window
     /// <summary>Atom labels, the lens and pinned monitors over the view for this camera.</summary>
     private void UpdateOverlays(CapsStudio.Interop.CapsCamera cam, CapsStudio.Interop.CapsRenderOpts opt)
     {
-        try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>()); }
+        try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>(), _vm.LabelLook); }
         catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
         Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
         try { Labels.SetMonitors(_vm.MonitorMarks(cam, opt, _scaling)); } catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
@@ -1103,7 +1103,7 @@ public partial class MainWindow : Window
                 // atom labels (Appearance): the visible atoms' screen positions from this render
                 if (!field)
                 {
-                    try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>()); }
+                    try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>(), _vm.LabelLook); }
                     catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
                     Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
                     try { Labels.SetMonitors(_vm.MonitorMarks(cam, opt, _scaling)); } catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }

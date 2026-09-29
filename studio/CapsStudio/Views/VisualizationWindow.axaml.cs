@@ -60,9 +60,15 @@ public partial class VisualizationWindow : Window
             else if (e.Key == Key.R) { view.Reset(); e.Handled = true; }
             else if (e.Key == Key.F) { WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen; e.Handled = true; }
         };
+        // labels: the Studio's label settings, drawn on this window's structure and camera
+        this.FindControl<LabelSettings>("LabelPanel")!.DataContext = vm;
+        view.LabelSource = (d, c, o, sc) => (vm.ViewLabelsFor(d, c, o, sc), vm.LabelLook);
+        Action relabel = () => view.Refresh();
+        vm.RenderRequested += relabel;
         if (live) vm.PropertyChanged += OnVm;
         Closed += (_, _) =>
         {
+            vm.RenderRequested -= relabel;
             if (_live) _vm.PropertyChanged -= OnVm;
             view.Document = null;
             _copy?.Dispose();

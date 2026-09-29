@@ -80,6 +80,20 @@ public sealed class MolView : Control
         using (var fb = bmp.Lock())
             for (var y = 0; y < h; y++)
                 System.Runtime.InteropServices.Marshal.Copy(buf, y * w * 4, fb.Address + y * fb.RowBytes, w * 4);
+        // the labels too, as shown (their points laid on the image's pixels at this scale)
+        (List<ViewModels.ViewLabel> Labels, ViewModels.LabelStyle Style)? lb = null;
+        if (LabelSource != null) try { lb = LabelSource(doc, cam, opt, 1.0); } catch { }
+        if (lb is { } l && l.Labels.Count > 0)
+        {
+            using var rt = new RenderTargetBitmap(new PixelSize(w, h), new Vector(96, 96));
+            using (var ctx = rt.CreateDrawingContext())
+            {
+                ctx.DrawImage(bmp, new Rect(0, 0, w, h), new Rect(0, 0, w, h));
+                LabelDrawing.Draw(ctx, l.Labels, l.Style with { Size = l.Style.Size * scale });
+            }
+            rt.Save(path);
+            return true;
+        }
         bmp.Save(path);
         return true;
     }
@@ -113,6 +127,9 @@ public sealed class MolView : Control
     public string LineLabel { get; set; } = "";
     /// <summary>Atoms drawn with a selection ring (up to four).</summary>
     public int[] Highlights { get; set; } = [];
+    /// <summary>Labels for the rendered view (the view window: the Studio's label settings on this document), or none.</summary>
+    public Func<CapsDocument, CapsCamera, CapsRenderOpts, double, (List<ViewModels.ViewLabel> Labels, ViewModels.LabelStyle Style)>? LabelSource { get; set; }
+    private (List<ViewModels.ViewLabel> Labels, ViewModels.LabelStyle Style)? _labels;
     private Point? _pa, _pb;
 
     /// <summary>The view's camera (the split view keeps two views on one camera).</summary>
@@ -169,6 +186,9 @@ public sealed class MolView : Control
                 _bmp = bmp;
                 old?.Dispose();
                 _pa = _pb = null;
+                _labels = null;
+                if (LabelSource != null)
+                    try { _labels = LabelSource(doc, cam, opt, scale); } catch { }
                 if (LineA >= 0 && LineB >= 0)
                     try
                     {
@@ -188,6 +208,7 @@ public sealed class MolView : Control
     {
         ctx.FillRectangle(Tokens.Brush("Bg0B"), new Rect(Bounds.Size));
         if (_bmp != null) ctx.DrawImage(_bmp, new Rect(0, 0, _bmp.PixelSize.Width, _bmp.PixelSize.Height), new Rect(0, 0, Bounds.Width, Bounds.Height));
+        if (_labels is { } lb) LabelDrawing.Draw(ctx, lb.Labels, lb.Style);
         if (_pa is Point a && _pb is Point b)
         {
             var acc = Tokens.Brush("AccB");

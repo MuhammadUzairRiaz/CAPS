@@ -75,6 +75,7 @@
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
+#include "caps/labels.hpp"
 
 #include <map>
 #include <mutex>
@@ -6425,30 +6426,59 @@ extern "C" int32_t caps_atom_labels(caps_doc* d, const char* kind, char* json, i
   caps::Json arr = caps::Json::array();
   const std::string k = kind ? kind : "element";
   const caps::System& f = d->frame;
-  if (k == "rs") {
-    for (const auto& x : caps::stereo_labels(f)) arr.push_back(x);
-  } else if (k == "ez" || k == "stereo") {   // E/Z on double-bond atoms; "stereo": R/S and E/Z together
-    const auto ez = caps::ez_labels(f);
-    const auto rs = k == "stereo" ? caps::stereo_labels(f) : std::vector<std::string>(f.atoms.size());
-    for (size_t i = 0; i < f.atoms.size(); ++i) arr.push_back(rs[i].empty() ? ez[i] : rs[i]);
-  } else {
-    for (const auto& a : f.atoms) {
-      if (k == "charge") {
-        char b[24];
-        std::snprintf(b, sizeof b, "%+.2f", a.charge);
-        arr.push_back(std::string(b));
-      } else if (k == "type") {
-        std::string t;
-        for (const auto& ti : f.types) if (ti.type == a.type) t = ti.label;
-        arr.push_back(t.empty() ? std::to_string(a.type) : t);
-      } else if (k == "name") {
-        arr.push_back(a.name);
-      } else {
-        arr.push_back(std::string(caps::element(a.element).symbol));
-      }
+  try {
+    if (k == "rs") {
+      for (const auto& x : caps::stereo_labels(f)) arr.push_back(x);
+    } else if (k == "ez") {
+      for (const auto& x : caps::ez_labels(f)) arr.push_back(x);
+    } else {
+      // the assignment's types when the Field has typed this structure
+      const std::vector<std::string>* types = d->field && d->field->types.size() == f.atoms.size() ? &d->field->types : nullptr;
+      for (auto& x : caps::atom_labels(f, k, types)) arr.push_back(std::move(x));
     }
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
   }
   return report_out(arr.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_bond_labels(caps_doc* d, const char* kind, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object(), pairs = caps::Json::array(), labels = caps::Json::array(), crossing = caps::Json::array();
+  try {
+    const caps::System& f = d->frame;
+    const bool typed = d->field && d->field->types.size() == f.atoms.size();
+    const auto ls = caps::bond_labels(f, kind ? kind : "length", typed ? &d->field->types : nullptr, typed && d->field->ff ? d->field->ff.get() : nullptr);
+    for (const auto& l : ls) {
+      pairs.push_back(double(l.i));
+      pairs.push_back(double(l.j));
+      labels.push_back(l.text);
+      crossing.push_back(l.crossing);
+    }
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+  j["pairs"] = pairs;
+  j["labels"] = labels;
+  j["crossing"] = crossing;
+  return report_out(j.dump(0), json, cap);
+}
+
+extern "C" int32_t caps_label_kinds(char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  for (const auto& [name, list] : {std::make_pair("atom", &caps::atom_label_kinds()), std::make_pair("bond", &caps::bond_label_kinds())}) {
+    caps::Json a = caps::Json::array();
+    for (const auto& k : *list) {
+      caps::Json o = caps::Json::object();
+      o["id"] = k.id;
+      o["title"] = k.title;
+      o["group"] = k.group;
+      a.push_back(o);
+    }
+    j[name] = a;
+  }
+  return report_out(j.dump(0), json, cap);
 }
 
 extern "C" int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, float* xyv, int32_t count) {
