@@ -32,6 +32,34 @@ public sealed partial class MainViewModel
 
     public string TemplateName { get => _tplName; set { if (value != null && Set(ref _tplName, value)) LoadTemplate(value); } }
     public string TemplateText { get => _tplText; set { if (Set(ref _tplText, value ?? "")) { ParseTemplate(); Raise(nameof(TemplateCharges)); } } }
+    /// <summary>A drag between two atoms of the pre-reaction pattern: forms that bond in the current reaction — or breaks it
+    /// when the pattern has it; the same drag again takes the line back out.</summary>
+    public void ToggleTemplateBond(int a, int b)
+    {
+        var lines = _tplText.Replace("\r\n", "\n").Split('\n').ToList();
+        // the current reaction's block: from its "reaction" line to the next
+        var starts = lines.Select((l, i) => (l, i)).Where(x => System.Text.RegularExpressions.Regex.IsMatch(x.l, @"^\s*reaction\s")).Select(x => x.i).ToList();
+        if (starts.Count == 0) return;
+        var k = Math.Clamp(_tplIndex, 0, starts.Count - 1);
+        var (from, to) = (starts[k], k + 1 < starts.Count ? starts[k + 1] : lines.Count);
+        bool Is(string l, string verb) => System.Text.RegularExpressions.Regex.IsMatch(l, $@"^\s*{verb}\s+({a}\s+{b}|{b}\s+{a})\b");
+        for (int i = from; i < to; i++)
+            if (Is(lines[i], "form") || Is(lines[i], "break"))
+            {
+                lines.RemoveAt(i);
+                TemplateText = string.Join("\n", lines);
+                Status = $"Removed the change between atoms {a} and {b}";
+                return;
+            }
+        var bonded = TemplatePre?["bonds"] is JsonArray bl && bl.Any(e => e is JsonArray p && p.Count == 2 &&
+            ((p[0]!.GetValue<int>() == a && p[1]!.GetValue<int>() == b) || (p[0]!.GetValue<int>() == b && p[1]!.GetValue<int>() == a)));
+        var end = to;
+        while (end > from + 1 && lines[end - 1].Trim().Length == 0) end--;
+        lines.Insert(end, $"{(bonded ? "break" : "form")} {a} {b}");
+        TemplateText = string.Join("\n", lines);
+        Status = bonded ? $"Breaks the bond {a}–{b}" : $"Forms a bond {a}–{b}";
+    }
+
     // after the reaction: charges from the force field (default) or kept and conserved ("charges keep" in every reaction block)
     public static readonly string[] TemplateChargeModes = ["From the force field", "Kept, net charge conserved"];
     public int TemplateCharges

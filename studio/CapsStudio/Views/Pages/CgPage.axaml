@@ -146,8 +146,17 @@
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="8">
                   <TextBlock Text="BACKMAP TO ALL ATOMS" Classes="h3" />
-                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Kremer–Grest beads are generic (lengths in σ): there are no atoms behind them to go back to. For a multiscale route, coarse-grain an all-atom cell in Model resolution, run its beads in LAMMPS, then backmap them there onto the atoms." />
-                  <Button Classes="small ghost" Content="Model resolution › Backmap →" Click="OnModelResolution" HorizontalAlignment="Left" Foreground="{DynamicResource AccB}" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="One repeat unit per bead: all-atom chains of the melt's lengths are grown, each unit carried rigidly onto its bead (turned to fit its neighbours), then relaxed (push-off, minimisation) and typed with GAFF (GAFF2 where the library has it). Map the melt to real units first (σ, T, bead mass above) and build it as the Studio structure." />
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="Bead →" VerticalAlignment="Center" Classes="label" />
+                    <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{Binding CgBackmapPolymers}" SelectedIndex="{Binding CgBackmapUnit}" ToolTip.Tip="The repeat unit each bead stands for (its first unit)" />
+                  </Grid>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Classes="small primary" Content="Backmap the open melt" Click="OnCgBackmap" IsEnabled="{Binding HasDocument}" />
+                    <Button Classes="small ghost" Content="Model resolution › Backmap →" Click="OnModelResolution" Foreground="{DynamicResource AccB}"
+                            ToolTip.Tip="MARTINI and other beads coarse-grained from an all-atom cell go back onto those atoms there" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding CgBackmapLog}" Classes="dim mono" FontSize="11.5" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
               </StackPanel>

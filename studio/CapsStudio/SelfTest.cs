@@ -1007,6 +1007,21 @@ internal static class SelfTest
             vm.BuildCg();
             var kgAssigned = vm.Field.Assigned && vm.Field.Complete && vm.Field.ForceFieldName.StartsWith("Kremer–Grest", StringComparison.Ordinal);
             Check(kgAssigned, $"Kremer–Grest melt assigned on its own: {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            // reduced units: backmapping is refused (no lengths in Å); mapped to styrene units: 16 atoms a bead, GAFF2 typed
+            vm.CgBackmapUnit = vm.CgBackmapPolymers.FindIndex(p => p.Name == "Polystyrene");
+            vm.BackmapCg().GetAwaiter().GetResult();
+            var reducedRefused = vm.CgError.Contains("reduced units");
+            vm.CgUnits = 1;
+            vm.CgChains = 4; vm.CgBeads = 12;
+            vm.CgSigma = 5.5m; vm.CgTemp = 450m; vm.CgMass = 104.15m;
+            vm.BuildCg();
+            vm.BackmapCg().GetAwaiter().GetResult();
+            for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
+            var bm = vm.Document?.Summary();
+            Check(reducedRefused && bm is { } bms && bms.Atoms == 4 * 12 * 16 + 8 && vm.Field.Complete && vm.CgBackmapLog.Contains("relaxed"),
+                  $"KG backmap to polystyrene: refused in reduced units {reducedRefused} · {bm?.Atoms} atoms · {vm.Field.ForceFieldName} · {vm.CgBackmapLog.Replace("\n", " / ")} {vm.CgError}");
+            vm.CgUnits = 0;
+            vm.CgChains = 10; vm.CgBeads = 20;
             // MARTINI: PEO chains of SN0 beads with the library's MARTINI 2 polymers, packed and compressed to 1.1 g/cm³
             vm.OpenCg();
             vm.CgModel = 1;
@@ -2111,6 +2126,14 @@ internal static class SelfTest
             Check(vm.IsTemplate && pass && flagged && vm.TemplateTestText.Contains("reactive sites"), $"template: pass {pass} · edit flagged {flagged} · {vm.TemplateTestText}");
             // charges kept through the reaction (a 'charges keep' line), and the save writes the reaction SMARTS and JSON beside it
             vm.OpenTemplateEditor("cc_crosslink");
+            // drags in the pre-reaction pane: C1–H3 is bonded (break), C1–C2 already formed (the drag takes it back out)
+            vm.ToggleTemplateBond(1, 3);
+            var breakAdded = vm.TemplateText.Contains("break 1 3");   // (H3 is deleted: the drawing shows 1–3 gone either way)
+            vm.ToggleTemplateBond(3, 1);
+            vm.ToggleTemplateBond(2, 1);
+            var formGone = !vm.TemplateText.Contains("break 1 3") && !vm.TemplateText.Contains("form 1 2") && vm.TemplateFormed.Count == 0;
+            vm.ToggleTemplateBond(1, 2);
+            Check(breakAdded && formGone && vm.TemplateText.Contains("form 1 2") && vm.TemplateFormed.Count == 1, $"template drags: break added {breakAdded} · form taken out {formGone}");
             vm.TemplateCharges = 1;
             var keptLine = vm.TemplateText.Contains("charges keep") && vm.TemplateCharges == 1;
             var tplSaved = vm.SaveTemplate();

@@ -395,6 +395,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_doc_copy")] public static extern IntPtr DocCopy(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_resolution_summary")] public static extern int ResolutionSummary(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ris_cn")] public static extern int RisCn(double temperature, int nmax, double[] outCn);
+    [DllImport(Lib, EntryPoint = "caps_kg_backmap")] public static extern IntPtr KgBackmap(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_backmap")] public static extern IntPtr Backmap(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string beads, int perBead, int relax, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_resolution_convert")] public static extern IntPtr ResolutionConvert(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_expression_count")] public static extern int ExpressionCount(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string expr, byte[]? outJson, int cap);
@@ -1614,6 +1615,18 @@ public sealed class CapsDocument : IDisposable
             Alive();
             var report = new byte[4096];
             var h = Native.Backmap(H, beadsPath, perBead, relax ? 1 : 0, report, report.Length);
+            if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+            return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+        }
+    }
+    /// <summary>Kremer–Grest beads → all atoms, one repeat unit of the spec per bead, relaxed (caps_kg_backmap): a new document.</summary>
+    public (CapsDocument Doc, string Report) KgBackmap(string spec, string options, string label)
+    {
+        using (Hold())
+        {
+            Alive();
+            var report = new byte[4096];
+            var h = Native.KgBackmap(H, spec, options, report, report.Length);
             if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
             return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
         }

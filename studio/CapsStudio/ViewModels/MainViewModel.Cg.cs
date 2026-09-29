@@ -180,6 +180,52 @@ public sealed partial class MainViewModel
         catch (Exception e) { CgError = e.Message; }
     }
 
+    // Backmap to all atoms (design/boards/CoarseGrained): one repeat unit per bead, then GAFF2 (else GAFF) on the result
+    private int _cgBackUnit;
+    private List<FilmPolymer>? _cgBackPolymers;
+    /// <summary>Every homopolymer of the library (the unit each bead stands for), polystyrene first.</summary>
+    public List<FilmPolymer> CgBackmapPolymers
+    {
+        get
+        {
+            if (_cgBackPolymers != null) return _cgBackPolymers;
+            LoadPolymerLibrary();
+            _cgBackPolymers = PolymerLibrary.Where(p => !p.Copolymer && p.Smiles.Count(c => c == '*') == 2)
+                .OrderBy(p => p.Name == "Polystyrene" ? 0 : 1).ThenBy(p => p.Name)
+                .Select(p => new FilmPolymer(p.Name, new JsonObject
+                {
+                    ["units"] = new JsonArray(new JsonObject { ["name"] = p.Name, ["smiles"] = p.Smiles }),
+                    ["sequence"] = "homopolymer",
+                }.ToJsonString())).ToList();
+            return _cgBackPolymers;
+        }
+    }
+    public int CgBackmapUnit { get => _cgBackUnit; set => Set(ref _cgBackUnit, Math.Max(0, value)); }
+    private string _cgBackLog = "";
+    public string CgBackmapLog { get => _cgBackLog; private set => Set(ref _cgBackLog, value); }
+    public async Task BackmapCg()
+    {
+        if (_doc == null || !Idle) return;
+        if (_cgBackUnit >= CgBackmapPolymers.Count) { CgError = "Choose the repeat unit each bead stands for"; return; }
+        var poly = CgBackmapPolymers[_cgBackUnit];
+        var doc = _doc;
+        var name = Title.Replace(" (unsaved)", "") + $" → {poly.Name.Split(" (")[0]}, all atoms";
+        CgError = "";
+        Status = "Backmapping the beads to " + poly.Name + " and relaxing…";
+        try
+        {
+            var (d, report) = await Task.Run(() => doc.KgBackmap(poly.Spec, "{}", name));
+            Show(d, name);
+            GrownUnsaved = true;
+            CgBackmapLog = report;
+            var ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-moltemplate");
+            if (ff < 0) ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+            if (ff >= 0) { Field.FfIndex = ff; await Field.Assign(); }
+            Status = "Backmapped: " + report.Split('\n').FirstOrDefault() + (ff >= 0 ? " · " + Field.ForceFieldName + " assigned" : "");
+        }
+        catch (Exception e) { CgError = "Backmap: " + e.Message; Status = CgError; }
+    }
+
     public string ExportCg(string stem)
     {
         if (_cgDoc == null) return "Nothing built";
