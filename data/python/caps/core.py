@@ -163,7 +163,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_pack": ([S, S, I, P, P, B, I], P),
         "caps_set_held_molecule": ([P, C.c_int64], None), "caps_set_fixed_atoms": ([P, C.POINTER(C.c_int32), I], I),
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
-        "caps_open": ([S, S], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
+        "caps_open": ([S, S], P), "caps_open_frames": ([S, S, C.c_int64, C.c_int64, C.c_int64, I, P, P], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
@@ -793,9 +793,15 @@ def label_kinds() -> dict:
     return _json_call(library().caps_label_kinds)
 
 
-def open(path: str, topology: Optional[str] = None) -> Document:  # noqa: A001 (the natural name)
-    """Opens a structure or trajectory (LAMMPS data/dump, GROMACS .gro, PDB, XYZ, mol2, CIF …)."""
-    return Document(library().caps_open(_enc(str(path)), _enc(topology)), str(path))
+def open(path: str, topology: Optional[str] = None, first: int = 0, last: Optional[int] = None,  # noqa: A001 (the natural name)
+         stride: int = 1) -> Document:
+    """Opens a structure or trajectory (LAMMPS data/dump, GROMACS .gro, PDB, XYZ, mol2, CIF …). first, last (inclusive)
+    and stride keep only those file frames (counted from 0) of a trajectory: a LAMMPS dump's other frames are passed
+    over unread and reading stops after last, so a long run is held at the size of what is kept."""
+    if first == 0 and last is None and stride <= 1:
+        return Document(library().caps_open(_enc(str(path)), _enc(topology)), str(path))
+    return Document(library().caps_open_frames(_enc(str(path)), _enc(topology), int(first), -1 if last is None else int(last),
+                                               int(stride), 0, None, None), str(path))
 
 
 def current() -> Document:

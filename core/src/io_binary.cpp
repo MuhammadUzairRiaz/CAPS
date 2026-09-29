@@ -263,9 +263,10 @@ void check_atoms(const System& top, size_t n, const std::string& path) {
 
 }  // namespace
 
-Trajectory read_xtc(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress) {
+Trajectory read_xtc(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress, const FrameSelection& frames) {
   Xdr x(path);
   Trajectory t;
+  t.selection = frames;
   t.topology = topology;
   std::vector<float> c;
   while (!x.eof()) {
@@ -282,11 +283,13 @@ Trajectory read_xtc(const std::string& path, const System& topology, size_t max_
     t.positions.push_back(std::move(p));
     t.cells.push_back(gmx_cell(box));
     t.timesteps.push_back(step);
+    const bool more = t.admit();
     if (progress && !progress(x.where(), t)) {
       t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
       break;
     }
     if (max_frames && t.frames() >= max_frames) break;
+    if (!more) break;
   }
   if (t.frames() == 0) throw ReadError(path + ": no frames");
   t.topology.cell = t.cells.front();
@@ -296,9 +299,10 @@ Trajectory read_xtc(const std::string& path, const System& topology, size_t max_
   return t;
 }
 
-Trajectory read_trr(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress) {
+Trajectory read_trr(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress, const FrameSelection& frames) {
   Xdr x(path);
   Trajectory t;
+  t.selection = frames;
   t.topology = topology;
   bool velocities = false;
   while (!x.eof()) {
@@ -342,11 +346,13 @@ Trajectory read_trr(const std::string& path, const System& topology, size_t max_
     t.positions.push_back(std::move(p));
     t.cells.push_back(box_size ? gmx_cell(box) : topology.cell);
     t.timesteps.push_back(step);
+    const bool more = t.admit();
     if (progress && !progress(x.where(), t)) {
       t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
       break;
     }
     if (max_frames && t.frames() >= max_frames) break;
+    if (!more) break;
   }
   if (t.frames() == 0) throw ReadError(path + ": no frames with coordinates");
   t.topology.cell = t.cells.front();
@@ -457,7 +463,7 @@ void write_dcd(const Trajectory& t, const std::string& path, double dt_fs) {
   }
 }
 
-Trajectory read_dcd(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress) {
+Trajectory read_dcd(const std::string& path, const System& topology, size_t max_frames, const std::function<bool(double, const Trajectory&)>& progress, const FrameSelection& frames) {
   Fortran f(path);
   {
     unsigned char b[4];
@@ -486,6 +492,7 @@ Trajectory read_dcd(const std::string& path, const System& topology, size_t max_
   const size_t n = size_t(f.i32(na.data()));
   check_atoms(topology, n, path);
   Trajectory t;
+  t.selection = frames;
   t.topology = topology;
   int64_t frame = 0;
   while (f.in.peek() != std::char_traits<char>::eof()) {
@@ -517,11 +524,13 @@ Trajectory read_dcd(const std::string& path, const System& topology, size_t max_
     t.cells.push_back(cell);
     t.timesteps.push_back(int64_t(istart) + frame * nsavc);
     ++frame;
+    const bool more = t.admit();
     if (progress && !progress(f.size ? double(f.in.tellg()) / double(f.size) : 1.0, t)) {
       t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
       break;
     }
     if (max_frames && t.frames() >= max_frames) break;
+    if (!more) break;
   }
   if (t.frames() == 0) throw ReadError(path + ": no frames");
   t.topology.cell = t.cells.front();

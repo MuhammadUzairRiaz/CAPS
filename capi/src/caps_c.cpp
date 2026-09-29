@@ -1282,6 +1282,36 @@ caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t 
   return nullptr;
 }
 
+caps_doc* caps_open_frames(const char* path, const char* topology_path, int64_t first, int64_t last, int64_t stride, int32_t max_frames,
+                           caps_open_progress_fn progress, void* user) {
+  try {
+    caps::OpenProgress p;
+    p.max_frames = max_frames > 0 ? static_cast<size_t>(max_frames) : 0;
+    p.frames.first = first > 0 ? static_cast<size_t>(first) : 0;
+    p.frames.last = last >= 0 ? static_cast<size_t>(last) : SIZE_MAX;
+    p.frames.stride = stride > 1 ? static_cast<size_t>(stride) : 1;
+    if (progress) p.report = [&](int stage, double f, const std::string& detail) { return progress(stage, f, detail.c_str(), user) == 0; };
+    auto* d = new caps_doc;
+    try {
+      d->traj = caps::open_file(path, topology_path ? topology_path : "", p);
+      if (!p.frames.all() && d->traj.frames_read == 0 && p.frames.first >= d->traj.frames())
+        throw std::runtime_error(std::string(path) + ": frame " + std::to_string(p.frames.first) + " is past the file's " + std::to_string(d->traj.frames()));
+    } catch (...) {
+      delete d;
+      throw;
+    }
+    refresh(d);
+    prov_opened(d, path, topology_path ? topology_path : "", "io.read");
+    install_file_field(d);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+  } catch (...) {
+    g_error = "unknown error";
+  }
+  return nullptr;
+}
+
 int32_t caps_adopt_frames(caps_doc* dst, caps_doc* src) {
   if (!dst || !src || src->traj.topology.atoms.size() != dst->traj.topology.atoms.size()) return -1;
   dst->traj.positions = std::move(src->traj.positions);

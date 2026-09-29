@@ -22,7 +22,7 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology = nu
 // The same, stopping after max_frames frames (0: all); progress gets the share of the file read and the frames so far
 // after each frame, and stops reading when it returns false (the frames read so far are kept, with a note).
 Trajectory read_lammps_dump(const std::string& path, const System* topology, size_t max_frames,
-                            const std::function<bool(double, const Trajectory&)>& progress);
+                            const std::function<bool(double, const Trajectory&)>& progress, const FrameSelection& frames = {});
 Trajectory read_gro(const std::string& path);
 // A GROMACS topology (.top or .itp; #include and #ifdef resolved, force-field includes that are not found skipped):
 // the atoms of every molecule [ molecules ] lists, named by their types, with charges, residues, masses, and the
@@ -32,13 +32,14 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
 Trajectory read_xyz(const std::string& path);
 // Binary trajectories (coordinates only; the atoms come from topology, which must have as many): GROMACS .xtc
 // (compressed; nm → Å) and .trr (single or double precision; velocities of the first frame kept), CHARMM / NAMD / LAMMPS
-// .dcd (either byte order; the cell of each frame when the file has it). max_frames and progress as read_lammps_dump.
+// .dcd (either byte order; the cell of each frame when the file has it). max_frames, progress and frames (the frames
+// kept; max_frames counts those) as read_lammps_dump.
 Trajectory read_xtc(const std::string& path, const System& topology, size_t max_frames = 0,
-                    const std::function<bool(double, const Trajectory&)>& progress = {});
+                    const std::function<bool(double, const Trajectory&)>& progress = {}, const FrameSelection& frames = {});
 Trajectory read_trr(const std::string& path, const System& topology, size_t max_frames = 0,
-                    const std::function<bool(double, const Trajectory&)>& progress = {});
+                    const std::function<bool(double, const Trajectory&)>& progress = {}, const FrameSelection& frames = {});
 Trajectory read_dcd(const std::string& path, const System& topology, size_t max_frames = 0,
-                    const std::function<bool(double, const Trajectory&)>& progress = {});
+                    const std::function<bool(double, const Trajectory&)>& progress = {}, const FrameSelection& frames = {});
 // MDL molfile / SD file (V2000 and V3000): atoms, bonds with orders, formal charges (M  CHG); each record a molecule.
 System read_sdf(const std::string& path);
 // VASP POSCAR / CONTCAR (VASP 5 species line, or VASP 4 with the species in the title): cell (scale or volume),
@@ -66,6 +67,10 @@ Trajectory open_file(const std::string& path, const std::string& topology_path =
 struct OpenProgress {
   std::function<bool(int stage, double fraction, const std::string& detail)> report;
   size_t max_frames = 0;
+  // Which frames to keep (first, last, stride): LAMMPS dumps pass over the others unread, the binary trajectories
+  // (xtc, trr, dcd, AMBER) read and drop them, multi-frame .gro / .pdb / .xyz are thinned after reading. The first
+  // kept frame becomes frame 0 (the topology's positions and cell); max_frames counts kept frames.
+  FrameSelection frames;
 };
 Trajectory open_file(const std::string& path, const std::string& topology_path, const OpenProgress& progress);
 

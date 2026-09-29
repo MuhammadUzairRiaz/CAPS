@@ -1,3 +1,4 @@
+using CapsStudio.Interop;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -81,11 +82,14 @@ public sealed partial class MainViewModel
         _ => v.ToJsonString(),
     };
 
-    public void RecordOpen(string path, string? topology)
+    public void RecordOpen(string path, string? topology, FrameSelection? frames = null)
     {
         // absolute paths: the script runs from the macros folder
         path = Path.GetFullPath(path);
-        Record(!string.IsNullOrEmpty(topology) ? $"doc = caps.open({PyStr(path)}, {PyStr(Path.GetFullPath(topology))})" : $"doc = caps.open({PyStr(path)})");
+        var args = PyStr(path) + (!string.IsNullOrEmpty(topology) ? ", " + PyStr(Path.GetFullPath(topology)) : "");
+        if (frames is { All: false } f)
+            args += (f.First > 0 ? $", first={f.First}" : "") + (f.Last >= 0 ? $", last={f.Last}" : "") + (f.Stride > 1 ? $", stride={f.Stride}" : "");
+        Record($"doc = caps.open({args})");
     }
     public void RecordEdit(string json) => Record($"doc.edit({PyJsonArgs(json)})");
 

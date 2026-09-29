@@ -1133,7 +1133,7 @@ std::vector<std::string> write_amber(const System& s, const ForceField& ff, cons
 }
 
 Trajectory read_amber_netcdf(const std::string& path, const System& topology, size_t max_frames,
-                             const std::function<bool(double, const Trajectory&)>& progress) {
+                             const std::function<bool(double, const Trajectory&)>& progress, const FrameSelection& frames) {
   NcFile f;
   open_netcdf(f, path);
   const std::string conv = nc_convention(f);
@@ -1142,6 +1142,7 @@ Trajectory read_amber_netcdf(const std::string& path, const System& topology, si
     if (c.positions.size() != topology.atoms.size())
       throw ReadError(path + " has " + std::to_string(c.positions.size()) + " atoms, the topology " + std::to_string(topology.atoms.size()));
     Trajectory t;
+  t.selection = frames;
     t.topology = topology;
     t.positions.push_back(c.positions);
     t.cells.push_back(c.has_box ? c.cell : topology.cell);
@@ -1158,6 +1159,7 @@ Trajectory read_amber_netcdf(const std::string& path, const System& topology, si
     throw ReadError(path + " has " + std::to_string(n) + " atoms, the topology " + std::to_string(topology.atoms.size()));
   const NcVar *lv = f.var("cell_lengths"), *av = f.var("cell_angles"), *tv = f.var("time"), *vv = f.var("velocities");
   Trajectory t;
+  t.selection = frames;
   t.topology = topology;
   std::vector<double> times;
   for (uint64_t r = 0; r < f.numrecs; ++r) {
@@ -1178,11 +1180,13 @@ Trajectory read_amber_netcdf(const std::string& path, const System& topology, si
       t.topology.velocities.clear();
       for (size_t i = 0; i < n && v.size() == 3 * n; ++i) t.topology.velocities.push_back(Vec3{v[3 * i], v[3 * i + 1], v[3 * i + 2]} * 1e-3);
     }
+    const bool more = t.admit();
     if (progress && !progress(double(r + 1) / double(std::max<uint64_t>(1, f.numrecs)), t)) {
       t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
       break;
     }
     if (max_frames && t.frames() >= max_frames) break;
+    if (!more) break;
   }
   if (t.frames() == 0) throw ReadError(path + ": no frames");
   t.topology.cell = t.cells.front();
@@ -1198,7 +1202,7 @@ Trajectory read_amber_netcdf(const std::string& path, const System& topology, si
 }
 
 Trajectory read_amber_mdcrd(const std::string& path, const System& topology, size_t max_frames,
-                            const std::function<bool(double, const Trajectory&)>& progress) {
+                            const std::function<bool(double, const Trajectory&)>& progress, const FrameSelection& frames) {
   std::ifstream in(path);
   if (!in) throw ReadError("cannot open " + path);
   const size_t n = topology.atoms.size(), n3 = 3 * n;
@@ -1213,6 +1217,7 @@ Trajectory read_amber_mdcrd(const std::string& path, const System& topology, siz
   std::string line;
   std::getline(in, line);   // title
   Trajectory t;
+  t.selection = frames;
   t.topology = topology;
   std::vector<double> v;
   v.reserve(n3);
@@ -1250,12 +1255,14 @@ Trajectory read_amber_mdcrd(const std::string& path, const System& topology, siz
     }
     t.positions.push_back(std::move(p));
     t.cells.push_back(cell);
-    t.timesteps.push_back(int64_t(t.frames() - 1));
+    t.timesteps.push_back(int64_t(t.frames_read));
+    const bool more = t.admit();
     if (progress && !progress(size > 0 ? double(in.tellg()) / size : 1.0, t)) {
       t.topology.notes.push_back("reading stopped after " + std::to_string(t.frames()) + " frames");
       break;
     }
     if (max_frames && t.frames() >= max_frames) break;
+    if (!more) break;
   }
   if (!v.empty()) throw ReadError(path + ": the file ends inside a frame (" + std::to_string(v.size() / 3) + " of " + std::to_string(n) + " atoms)");
   if (t.frames() == 0) throw ReadError(path + ": no frames");

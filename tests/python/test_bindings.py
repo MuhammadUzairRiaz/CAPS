@@ -480,4 +480,12 @@ ok = eq.equilibrate("nvt 0.3 ps T 300\nnpt 0.3 ps T 300 P 1 atm", frame_ps=0.1, 
 lar = caps.protocol_text("larsen21", temperature=300, t_max=600)
 check(ok and eq.summary()["frames"] >= 6 and lar.count("\n") >= 20 and "600" in lar,
       f"equilibrate: {eq.summary()['frames']} frames · larsen21 {lar.count(chr(10)) + 1} stages")
+# a frame selection on open: the sample dump's frames 1 and 2 (timesteps 1000, 2000)
+sel = caps.open(os.path.join(samples, "ps_melt.lammpstrj"), os.path.join(samples, "ps_melt.data"), first=1)
+check(sel.summary()["frames"] == 2, f"open first=1: {sel.summary()['frames']} frames")
+try:
+    caps.open(os.path.join(samples, "ps_melt.lammpstrj"), os.path.join(samples, "ps_melt.data"), first=9)
+    check(False, "open past the end should fail")
+except caps.CapsError as e:
+    check("no frames in the selection" in str(e), f"open past the end: {e}")
 print("all python checks passed")
