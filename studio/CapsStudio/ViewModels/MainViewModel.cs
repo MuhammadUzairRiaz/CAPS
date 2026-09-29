@@ -2206,8 +2206,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- React
     public static readonly string[] ReactionSets = ["C–C crosslink (saturated carbons, H₂ leaves)", "Epoxy–amine (primary + secondary)",
-        "Sulfur cure of diene rubber (H–S–S–H donors → C–S–S–C)", "Peroxide cure of diene rubber (allylic C–C)",
-        "Silane coupling to diene rubber (TESPT / TESPD polysulfide → C–S)", "Custom (edit the text)"];
+        "Sulfur cure of diene rubber (H–Sx–H donors → C–Sx–C)", "Peroxide cure of diene rubber (allylic C–C)",
+        "Silane coupling to diene rubber (TESPT / TESPD polysulfide → C–S)",
+        "ENR + carboxylic acid (PBS or maleic-acid COOH → β-hydroxy ester, no water)",
+        "ENR + MAH (anhydride opened by OH → half-ester acid, which opens an ENR epoxide: ENR–MAH–ENR, ENR–MAH–PBS)",
+        "Esterification (COOH + OH → ester + H₂O)", "Custom (edit the text)"];
     private int _rxSet, _rxCycles = 50, _rxPerCycle = 5, _rxSeed = 1, _rxRelaxIt = 500;
     private double _rxTarget = 1.0, _rxCapture, _rxMdPs = 2, _rxTemp = 500, _rxFa = 2, _rxFb = 4, _rxRatio = 1;
     private bool _rxRelax = true, _reacting;
@@ -2243,7 +2246,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception e) { RxLog = "Could not insert: " + e.Message; Status = "Could not insert the curative"; }
     }
-    public string RxText { get => _rxText; set => Set(ref _rxText, value); }
+    public string RxText { get => _rxText; set { if (Set(ref _rxText, value)) RefreshRxReactions(); } }
     public string RxLog { get => _rxLog; private set => Set(ref _rxLog, value); }
     public bool RxRelax { get => _rxRelax; set { if (Set(ref _rxRelax, value)) Raise(nameof(RxMdEnabled)); } }
     public bool Reacting { get => _reacting; private set { if (Set(ref _reacting, value)) RaiseBusy(); } }
@@ -2315,6 +2318,9 @@ public sealed partial class MainViewModel : ObservableObject
                 2 => CapsDocument.ReactionTemplate("sulfur_allylic"),
                 3 => CapsDocument.ReactionTemplate("peroxide_allylic"),
                 4 => CapsDocument.ReactionTemplate("polysulfide_allylic"),
+                5 => CapsDocument.ReactionTemplate("enr_acid_ester"),
+                6 => CapsDocument.ReactionTemplate("anhydride_alcohol") + "\n" + CapsDocument.ReactionTemplate("enr_acid_ester"),
+                7 => CapsDocument.ReactionTemplate("ester_condensation"),
                 _ => _rxText,
             };
         }
@@ -2327,6 +2333,11 @@ public sealed partial class MainViewModel : ObservableObject
         Seed = (ulong)_rxSeed, MaxCycles = _rxCycles, MaxPerCycle = _rxPerCycle, TargetConversion = _rxTarget, Capture = _rxCapture,
         Relax = _rxRelax ? 1 : 0, RelaxIterations = _rxRelaxIt, MdPs = _rxRelax || _rxDuringMd ? _rxMdPs : 0, Temperature = _rxTemp, Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0,
         DuringMd = _rxDuringMd ? 1 : 0,
+        FieldMode = _rxUseField ? 0 : 1, BetweenChains = _rxBetween ? 1 : 0, KeepByproducts = _rxKeepBy ? 1 : 0,
+        Selection = RxSeveral && _rxByWeights ? 1 : 0,
+        Weights = RxSeveral && _rxByWeights ? string.Join(",", RxReactions.Select(r => r.WeightD.ToString(CultureInfo.InvariantCulture))) : "",
+        AutoCapture = _rxAutoCapture ? 1 : 0, CaptureMax = _rxCaptureMax, CaptureStep = 0.5,
+        TargetKind = _rxTargetKind, TargetValue = _rxTargetKind == 0 ? 0 : _rxTargetValue,
     };
 
     public async Task RunReact() => await RunReact(null, null);
@@ -2341,6 +2352,9 @@ public sealed partial class MainViewModel : ObservableObject
         var token = _rxCancel.Token;
         var o = preset ?? ReactOptions();
         _rxRows.Clear();
+        StartLive();
+        RxLiveText = "";
+        RxNetworkText = "";
         ReactChanged?.Invoke();
         RxLog = "Finding reactive pairs…";
         Status = $"Reacting {Title}…";
@@ -2362,11 +2376,13 @@ public sealed partial class MainViewModel : ObservableObject
                     ReactChanged?.Invoke();
                 });
                 return !token.IsCancellationRequested;
-            }));
+            }, ReactLiveReceiver()));
             finished = true;
             var failedAt = System.Text.RegularExpressions.Regex.Match(report, @"failed at cycle (\d+)");
             RxLog = report + "\n" + FloryText;
             AfterRun(doc, " · reacted");
+            LoadReactSummary(doc);
+            Raise(nameof(RxFieldText));
             Status = failedAt.Success
                 ? $"React failed at cycle {failedAt.Groups[1].Value}; the structure after cycle {int.Parse(failedAt.Groups[1].Value, inv) - 1} is kept — React again to continue from it"
                 : "Reaction run finished · save the network (LAMMPS data carries the force field when every atom is typed)";

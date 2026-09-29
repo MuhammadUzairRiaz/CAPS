@@ -748,16 +748,22 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   std::vector<int64_t> tag(s.atoms.size());
   std::set<int64_t> polymer;
   {
-    System t = s;
-    t.has_mol = false;
-    int nm = 0;
-    const auto mol = t.molecules(&nm);
-    std::vector<int> count(size_t(nm), 0);
-    std::vector<double> mass(size_t(nm), 0);
-    for (size_t i = 0; i < s.atoms.size(); ++i) { tag[i] = mol[i] + 1; ++count[size_t(mol[i])]; mass[size_t(mol[i])] += s.mass_of(s.atoms[i]); }
-    const int largest = count.empty() ? 0 : *std::max_element(count.begin(), count.end());
-    for (int m = 0; m < nm; ++m)
-      if (count[size_t(m)] >= 30 && count[size_t(m)] * 5 >= largest) { polymer.insert(m + 1); rep.chain_mass += mass[size_t(m)]; }
+    if (o.chains.size() == s.atoms.size()) {
+      tag = o.chains;   // the chains an earlier run started from
+      rep.notes.push_back("chains as the earlier reaction run left them (the molecules it started from)");
+    } else {
+      System t = s;
+      t.has_mol = false;
+      const auto mol = t.molecules();
+      for (size_t i = 0; i < s.atoms.size(); ++i) tag[i] = mol[i] + 1;
+    }
+    std::map<int64_t, int> count;
+    std::map<int64_t, double> mass;
+    for (size_t i = 0; i < s.atoms.size(); ++i) { ++count[tag[i]]; mass[tag[i]] += s.mass_of(s.atoms[i]); }
+    int largest = 0;
+    for (const auto& [m, k] : count) if (m > 0) largest = std::max(largest, k);
+    for (const auto& [m, k] : count)
+      if (m > 0 && k >= 30 && k * 5 >= largest) { polymer.insert(m); rep.chain_mass += mass[m]; }
     rep.chains = int(polymer.size());
     std::set<std::pair<int64_t, int64_t>> units;
     for (size_t i = 0; i < s.atoms.size(); ++i)
@@ -881,6 +887,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     name_types(ff);
   };
 
+  std::vector<char> linked(s.atoms.size(), 0);   // atoms of the bonds that joined two chains
   // capture distances: the templates' own, raised together when auto capture finds no pair
   double extra = 0;
   auto capture_of = [&](size_t k) { return o.templates[k].capture + extra; };
@@ -894,6 +901,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     // the checkpoint: this cycle failing gives back the structure as the last one left it
     const System keep = o.keep_on_failure && !rep.cycles.empty() ? s : System{};
     const std::vector<int64_t> keep_tag = tag;
+    const std::vector<char> keep_linked = linked;
     const int reactions_before = rep.reactions, stall_before = stall, links_before = rep.crosslinks, intra_before = rep.intrachain,
               byproducts_before = rep.byproducts;
     const double extra_before = extra;
@@ -925,6 +933,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     std::set<uint32_t> busy;
     std::multimap<uint32_t, uint32_t> formed;
     int links = 0, intra = 0;
+    std::vector<std::pair<uint32_t, uint32_t>> link_bonds;   // formed bonds of the links chosen this cycle
     auto take = [&](const Match& m) {
       if (uni(rng) > o.templates[m.reaction].probability) return false;
       for (uint32_t a : m.atoms) if (busy.count(a)) return false;
@@ -939,6 +948,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       for (auto [x, y] : t.form) { formed.insert({at(x), at(y)}); formed.insert({at(y), at(x)}); }
       links += link;
       intra += same && !oa.empty();
+      if (link) for (auto [x, y] : t.form) link_bonds.push_back({at(x), at(y)});
       chosen.push_back(m);
       return true;
     };
@@ -971,6 +981,20 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     std::set<int64_t> site_ids;
     for (const auto& m : chosen)
       for (uint32_t a : m.atoms) site_ids.insert(s.atoms[a].id);
+    if (!chosen.empty()) {
+      // the linked atoms follow the compaction: deleted atoms (and byproducts, unless kept) leave, the rest keep their order
+      std::vector<char> gone(linked.size(), 0);
+      for (const auto& m : chosen) {
+        const ReactionTemplate& t = o.templates[m.reaction];
+        auto at = [&](int map) { for (size_t q = 0; q < t.atoms.size(); ++q) if (t.atoms[q].map == map) return m.atoms[q]; return m.atoms[0]; };
+        for (int a : t.remove) gone[at(a)] = 1;
+        if (!o.keep_byproducts) for (int a : t.byproduct) gone[at(a)] = 1;
+      }
+      for (auto [x, y] : link_bonds) linked[x] = linked[y] = 1;
+      std::vector<char> next;
+      for (size_t i = 0; i < linked.size(); ++i) if (!gone[i]) next.push_back(linked[i]);
+      linked = std::move(next);
+    }
     applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag);
     CycleRow row;
     row.cycle = cycle;
@@ -981,6 +1005,9 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     rep.intrachain += applied ? intra : 0;
     row.total = rep.reactions;
     row.crosslinks = rep.crosslinks;
+    row.target = rep.target_crosslinks;
+    if (avogadro_volume > 0) row.density = rep.crosslinks / avogadro_volume;
+    if (rep.monomers > 0) row.degree = 200.0 * rep.crosslinks / rep.monomers;
     row.conversion = double(rep.reactions) / rep.initial_sites;
     std::shared_ptr<const ForceField> ff;
     if (applied > 0) {
@@ -1014,11 +1041,13 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     row.atoms = int(s.atoms.size());
     rep.cycles.push_back(row);
     if (o.frame) o.frame(s, cycle);   // a frame that cannot be kept fails the cycle too
+    if (o.live) o.live(s, row, tag, linked);
     } catch (const std::exception& e) {
       if (!rep.cycles.empty() && rep.cycles.back().cycle == cycle) rep.cycles.pop_back();
       if (!o.keep_on_failure || rep.cycles.empty()) throw;
       s = keep;
       tag = keep_tag;
+      linked = keep_linked;
       rep.reactions = reactions_before;
       rep.crosslinks = links_before;
       rep.intrachain = intra_before;
@@ -1087,6 +1116,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   if (rep.byproducts)
     rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));
   rep.notes.push_back("force field during the run: " + rep.field);
+  rep.chains_after = tag;
   s.unwrapped = true;
   if (rep_out) *rep_out = std::move(rep);
 }

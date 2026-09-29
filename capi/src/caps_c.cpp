@@ -147,6 +147,8 @@ struct caps_doc {
   std::string analysis;   // last caps_analyze result (JSON)
   std::string eq_checks;  // last caps_equilibrate convergence checks (JSON)
   std::string react_json; // last caps_react network summary (JSON)
+  std::vector<int64_t> react_chains;   // each atom's chain as the last caps_react left it (the next run starts from them)
+  size_t react_bonds = 0;              // the bond count they belong to (an edit in between drops them)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
   std::vector<uint32_t> fixed_atoms;   // v36: atoms held in place besides the held molecule (frame indices)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
@@ -2590,6 +2592,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     r.energy.coulomb = o->coulomb != 0;
     r.energy = elec(r.energy);
     r.between_chains = o->between_chains != 0;
+    if (d->react_chains.size() == d->traj.topology.atoms.size() && d->react_bonds == d->traj.topology.bonds.size()) r.chains = d->react_chains;
     r.keep_byproducts = o->keep_byproducts != 0;
     r.selection = std::clamp(o->selection, 0, 1);
     r.weights = number_list(o->weights);
@@ -2612,9 +2615,35 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     if (progress)
       r.progress = [&](const caps::CycleRow& c) {
         caps_react_cycle row{c.cycle, c.reactions, c.total, c.clusters.clusters, c.atoms, c.conversion, c.clusters.largest_fraction,
-                             c.clusters.reduced_mw, c.energy, c.max_force, c.crosslinks, c.capture};
+                             c.clusters.reduced_mw, c.energy, c.max_force, c.crosslinks, c.capture, c.target, c.density, c.degree};
         return progress(&row, user) == 0;
       };
+    if (d->live_fn) {
+      auto fn = d->live_fn;
+      auto lu = d->live_user;
+      r.live = [fn, lu](const caps::System& x, const caps::CycleRow& c, const std::vector<int64_t>& chain, const std::vector<char>& linked) {
+        auto* sd = new caps_doc;
+        sd->traj.topology = x;
+        int64_t top = 0;
+        for (int64_t v : chain) top = std::max(top, v);
+        for (size_t i = 0; i < x.atoms.size() && i < chain.size(); ++i)
+          sd->traj.topology.atoms[i].mol = chain[i] > 0 ? chain[i] : top - chain[i];   // byproducts after the chains
+        sd->traj.topology.has_mol = true;
+        std::vector<caps::Vec3> p;
+        for (const auto& a : x.atoms) p.push_back(a.pos);
+        sd->traj.positions.push_back(std::move(p));
+        sd->traj.cells.push_back(x.cell);
+        sd->traj.timesteps.push_back(c.cycle);
+        sd->wrap = x.cell.valid();
+        refresh(sd);
+        sd->selection.assign(x.atoms.size(), 0);
+        for (size_t i = 0; i < x.atoms.size() && i < linked.size(); ++i) sd->selection[i] = linked[i];
+        caps::Json j = caps::Json::object();
+        j["cycle"] = double(c.cycle), j["reactions"] = double(c.total), j["crosslinks"] = double(c.crosslinks), j["target"] = double(c.target);
+        j["density"] = c.density, j["degree"] = c.degree, j["conversion"] = c.conversion, j["atoms"] = double(x.atoms.size());
+        fn(sd, j.dump(0).c_str(), lu);
+      };
+    }
     caps::System s = d->traj.frame(d->current);
     if (!s.unwrapped) caps::make_molecules_whole(s);
     // the atom count changes when atoms leave, so the record is one document per state: keep the start and the end
@@ -2662,6 +2691,8 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     d->traj = std::move(out);
     d->current = d->traj.frames() - 1;
     refresh(d);
+    d->react_chains = rep.chains_after;
+    d->react_bonds = d->traj.topology.bonds.size();
     std::string after = "none (assign one in the Force field step)";
     if (kept) {
       kept->overrides.clear();
@@ -5228,6 +5259,17 @@ extern "C" int32_t caps_insert_molecules(caps_doc* d, const char* smiles, int32_
     caps::PackReport pr;
     caps::System host = d->traj.frame(d->current);
     caps::System s = caps::insert_molecules(host, guest, std::max(1, count), po, &pr);
+    // the chains an earlier reaction run left carry on: the inserted molecules get ids of their own after them
+    const bool chains = d->react_chains.size() == host.atoms.size() && d->react_bonds == host.bonds.size();
+    if (chains && s.atoms.size() >= host.atoms.size()) {
+      int64_t top = 0;
+      for (int64_t v : d->react_chains) top = std::max(top, v);
+      const size_t per = std::max<size_t>(1, guest.atoms.size());
+      for (size_t i = host.atoms.size(); i < s.atoms.size(); ++i) d->react_chains.push_back(top + 1 + int64_t((i - host.atoms.size()) / per));
+      d->react_bonds = s.bonds.size();
+    } else {
+      d->react_chains.clear();
+    }
     d->field.reset();
     d->traj = caps::Trajectory{};
     d->traj.topology = s;

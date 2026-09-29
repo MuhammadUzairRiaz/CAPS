@@ -628,6 +628,31 @@ internal static class SelfTest
             vm.RunReact().GetAwaiter().GetResult();
             var cured = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(cured.Success && int.Parse(cured.Groups[1].Value) > 0, $"sulfur cure: {vm.RxLog.Split('\n')[0]}");
+            // ENR crosslinked through a diacid (succinic acid, the PBS acid end's model): each COOH opens an epoxide at its
+            // tertiary carbon, so a diacid reaching two chains is a link between them; links only between chains, to two links
+            vm.RxSet = 5;
+            vm.RxInsertSmiles = "OC(=O)CCC(=O)O";
+            vm.RxInsertCount = 8;
+            vm.InsertCurative().GetAwaiter().GetResult();
+            vm.RxBetweenChains = true;
+            vm.RxAutoCapture = true;
+            vm.RxTargetKind = 1;
+            vm.RxTargetValueD = 2;
+            vm.RxCyclesD = 30;
+            vm.RunReact().GetAwaiter().GetResult();
+            var linksLine = vm.RxNetworkText.Split('\n')[0];
+            Check(linksLine.StartsWith("Links between chains: ") && !linksLine.StartsWith("Links between chains: 0") && vm.RxNetworkText.Contains("Force field during the run"),
+                  $"ENR + diacid: {linksLine} · {vm.RxLog.Split('\n')[0]}");
+            // several reactions with weights: the reaction list follows the text
+            vm.RxSet = 6;
+            var several = vm.RxReactions.Count == 2 && vm.RxSeveral;
+            vm.RxByWeights = true;
+            vm.RxReactions[0].WeightD = 3;
+            var weighted = vm.RxReactions.Select(r => r.Name).SequenceEqual(["anhydride_alcohol", "enr_acid_ester"]);
+            Check(several && weighted, $"ENR + MAH: reactions {string.Join(", ", vm.RxReactions.Select(r => r.Name + " ×" + r.WeightD))}");
+            vm.RxByWeights = false;
+            vm.RxTargetKind = 0;
+            vm.RxInsertSmiles = "SS";
             vm.RxRelax = true;
             vm.RxSet = 0;
             vm.UsePolystyreneInGrow();

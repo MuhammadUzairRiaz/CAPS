@@ -272,6 +272,8 @@ typedef struct {
   double max_force;                /* ABI 42: largest force after the cycle's relaxation, kcal/mol/Å (0: not relaxed) */
   int32_t crosslinks;              /* v45: links between chains so far */
   double capture;                  /* v45: the capture distance the cycle used, Å */
+  int32_t target;                  /* v45: the crosslink target as links (0: a conversion target) */
+  double density, degree;          /* v45: crosslink density so far (mol/m³), degree of crosslinking so far (%) */
 } caps_react_cycle;
 
 typedef int32_t (*caps_react_progress_fn)(const caps_react_cycle* row, void* user);
@@ -282,6 +284,10 @@ typedef int32_t (*caps_react_progress_fn)(const caps_react_cycle* row, void* use
    which cycle failed and why ("failed at cycle N: …"), and caps_last_error gives the reason. */
 int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o, caps_react_progress_fn progress, void* user, char* report,
                    int32_t report_cap);
+/* With caps_set_live on d, every cycle sends the structure as a snapshot: each atom's molecule id is the chain it started
+   in (colour by molecule keeps every chain its colour as they join; byproducts get their own ids), the atoms of the links
+   formed between chains are selected, and the stats JSON is {cycle, reactions, crosslinks, target, density, degree,
+   conversion, atoms}. */
 /* v45: the last caps_react run on this document as JSON {chains, crosslinks, intrachain, byproducts, target, volume,
    chain_mass, density (mol/m³), per_chain, mc (g/mol), reactions, initial_sites, conversion, field, field_after,
    notes[]}. Returns the length needed or -1. */
