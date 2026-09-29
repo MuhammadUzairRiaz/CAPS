@@ -2038,6 +2038,8 @@
                       <Button Classes="small" Margin="0,0,6,6" Content="PDB…" Click="OnSavePdb" />
                       <Button Classes="small" Margin="0,0,6,6" Content="XYZ…" Click="OnSaveXyz" />
                       <Button Classes="small" Margin="0,0,6,6" Content="Materials Studio…" Click="OnSaveCar" ToolTip.Tip=".car with its .mdf: the force-field types and charges, bonds across the cell" />
+                      <Button Classes="small" Margin="0,0,6,6" Content="CIF…" Click="OnSaveCif" ToolTip.Tip="CIF in P 1: the cell and every atom's fractional coordinates (crystals, surfaces; VESTA, Mercury, pymatgen)" />
+                      <Button Classes="small" Margin="0,0,6,6" Content="VASP POSCAR…" Click="OnSavePoscar" ToolTip.Tip="VASP 5 POSCAR: atoms grouped by element, Direct coordinates; held atoms as Selective dynamics. Rename it POSCAR for VASP" />
                       <Button Classes="small" Margin="0,0,6,6" Content="Trajectory…" Click="OnSaveTrajectory" IsVisible="{Binding HasFrames}" />
                     </WrapPanel>
                     <ItemsControl ItemsSource="{Binding SummaryRows}">

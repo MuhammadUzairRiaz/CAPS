@@ -651,7 +651,8 @@ class Document:
         return _json_call(library().caps_scene_json, self._h, _enc(json.dumps({"hydrogens": hydrogens, "max_atoms": max_atoms})))
 
     def save(self, path: str) -> None:
-        """Writes the current frame: .data (LAMMPS, with force-field sections when assigned), .pdb, .xyz, .mol2, .gro …"""
+        """Writes the current frame: .data (LAMMPS, with force-field sections when assigned), .pdb, .xyz, .mol2, .gro,
+        .cif (P 1), .vasp or a file named POSCAR/CONTCAR (VASP 5, Direct; held atoms as Selective dynamics) …"""
         if library().caps_save(self._h, _enc(str(path))) != 0:
             raise _error()
 

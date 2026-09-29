@@ -1221,6 +1221,20 @@ internal static class SelfTest
         vm.BuildCrystal().GetAwaiter().GetResult();
         var xsum = vm.Document?.Summary();
         Check(xsum is { } xs && xs.Atoms == 72 && xs.Bonds == 144, $"crystal: rutile 2 × 2 × 3 → {xsum?.Atoms} atoms · {xsum?.Bonds} bonds · {vm.CrystalError} {vm.Status}");
+        // the crystal saved for VASP (POSCAR, species grouped: 24 Ti then 48 O) and as a CIF, both read back
+        {
+            var vp = Path.Combine(outDir, "caps-selftest-rutile.vasp");
+            var cp = Path.Combine(outDir, "caps-selftest-rutile.cif");
+            vm.SaveDocument(vp);
+            vm.SaveDocument(cp);
+            var pl = File.Exists(vp) ? File.ReadAllLines(vp) : [];
+            var cif = File.Exists(cp) ? File.ReadAllText(cp) : "";
+            Check(pl.Length == 8 + 72 && pl[5].Split(' ', StringSplitOptions.RemoveEmptyEntries).SequenceEqual(new[] { "Ti", "O" })
+                  && pl[6].Split(' ', StringSplitOptions.RemoveEmptyEntries).SequenceEqual(new[] { "24", "48" }) && pl[7] == "Direct"
+                  && cif.Contains("_chemical_formula_sum 'O48 Ti24'") && cif.Contains("_space_group_IT_number 1")
+                  && MainViewModel.ExportFormats.Any(f => f.Id == "poscar"),
+                  $"crystal saved as POSCAR ({(pl.Length > 6 ? pl[5] + " / " + pl[6] : "none")}) and CIF · {vm.Status}");
+        }
 
         // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
         vm.OpenBio();

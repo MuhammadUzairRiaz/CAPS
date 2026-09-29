@@ -426,6 +426,12 @@ public partial class MainWindow : Window
         _vm.AddCommand(new PaletteCommand { Title = "Save as Materials Studio (.car / .mdf)…", Id = "document.save car", Icon = "save", Section = "File",
             Keywords = "materials studio biovia discover car mdf msi2lmp interface",
             Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("car", "Materials Studio .car (with its .mdf)") });
+        _vm.AddCommand(new PaletteCommand { Title = "Save as CIF…", Id = "document.save cif", Icon = "save", Section = "File",
+            Keywords = "crystal crystallographic information file vesta mercury p1",
+            Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("cif", "CIF") });
+        _vm.AddCommand(new PaletteCommand { Title = "Save as VASP POSCAR…", Id = "document.save poscar", Icon = "save", Section = "File",
+            Keywords = "vasp poscar contcar dft crystal ase pymatgen",
+            Enabled = () => _vm.HasDocument && _vm.Idle, Run = () => _ = SaveAs("vasp", "VASP POSCAR") });
         _vm.AddCommand(new PaletteCommand { Title = "Save the trajectory (LAMMPS dump)…", Id = "trajectory.save", Icon = "save", Section = "File",
             Enabled = () => _vm.HasDocument && _vm.HasFrames && _vm.Idle, Run = () => _ = SaveTrajectoryAsync() });
         _vm.AddCommand(new PaletteCommand { Title = "Export figure (PNG)…", Id = "export.png", Icon = "download", Section = "File", Keywords = "image picture render",
@@ -720,6 +726,8 @@ public partial class MainWindow : Window
     private async void OnSavePdb(object? s, RoutedEventArgs e) => await SaveAs("pdb", "PDB");
     private async void OnSaveXyz(object? s, RoutedEventArgs e) => await SaveAs("xyz", "Extended XYZ");
     private async void OnSaveCar(object? s, RoutedEventArgs e) => await SaveAs("car", "Materials Studio .car (with its .mdf)");
+    private async void OnSaveCif(object? s, RoutedEventArgs e) => await SaveAs("cif", "CIF");
+    private async void OnSavePoscar(object? s, RoutedEventArgs e) => await SaveAs("vasp", "VASP POSCAR");
 
     /// <summary>Save dialog for the open document (pages call this).</summary>
     public Task SaveAsAsync(string ext, string label) => SaveAs(ext, label);
