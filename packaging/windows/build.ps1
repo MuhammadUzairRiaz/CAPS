@@ -23,7 +23,9 @@ dotnet publish "$Root\studio\CapsStudio\CapsStudio.csproj" -c Release -r win-x64
   -p:CapsNativeDir="$Native\capi" -p:Version=$Version -o $App | Out-Null
 Copy-Item "$Native\cli\caps.exe" $App
 New-Item -ItemType Directory -Force "$App\data" | Out-Null
-Copy-Item -Recurse "$Root\data\forcefields", "$Root\data\potentials", "$Root\data\typing", "$Root\data\reference", "$Root\data\polymers", "$Root\data\crystals", "$Root\data\fragments", "$Root\data\martini", "$Root\data\manual", "$Root\data\python" "$App\data"
+# every data folder (a new one is never left out), without Python caches
+Get-ChildItem "$Root\data" -Directory | ForEach-Object { Copy-Item -Recurse $_.FullName "$App\data" }
+Get-ChildItem "$App\data" -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 Copy-Item -Recurse "$Root\licenses" "$App\licenses"
 Copy-Item "$Root\LICENSE" "$App\LICENSE"
 Copy-Item -Recurse "$Root\samples" $App

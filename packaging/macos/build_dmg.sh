@@ -31,7 +31,9 @@ cp -R "$WORK/publish/." "$APP/Contents/MacOS/"
 cp "$WORK/native/cli/caps" "$APP/Contents/MacOS/caps"
 cp "$ROOT/packaging/icon/caps.icns" "$APP/Contents/Resources/"
 mkdir -p "$APP/Contents/Resources/data"
-cp -R "$ROOT/data/forcefields" "$ROOT/data/potentials" "$ROOT/data/typing" "$ROOT/data/reference" "$ROOT/data/polymers" "$ROOT/data/crystals" "$ROOT/data/fragments" "$ROOT/data/martini" "$ROOT/data/manual" "$ROOT/data/python" "$APP/Contents/Resources/data/"
+# every data folder (force fields, typing, polymers, crystals, reactions, manual, python …): a new one is never left out
+cp -R "$ROOT/data/." "$APP/Contents/Resources/data/"
+find "$APP/Contents/Resources/data" -name "__pycache__" -type d -prune -exec rm -rf {} +
 cp -R "$ROOT/licenses" "$APP/Contents/Resources/licenses"
 cp "$ROOT/LICENSE" "$APP/Contents/Resources/LICENSE"
 cp -R "$ROOT/samples" "$APP/Contents/Resources/"
