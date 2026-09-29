@@ -1749,6 +1749,11 @@
                     <StackPanel Spacing="6"><TextBlock Text="Colour by" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppColourNames}" SelectedIndex="{Binding AppColour}" HorizontalAlignment="Stretch" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6" IsEnabled="{Binding AppRampEnabled}"><TextBlock Text="Palette" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.AppRampNames}" SelectedIndex="{Binding AppRamp}" HorizontalAlignment="Stretch" /></StackPanel>
                   </Grid>
+                  <StackPanel Spacing="6" IsVisible="{Binding AppHasColumns}">
+                    <TextBlock Text="Colour by a column of the trajectory" Classes="label" />
+                    <ComboBox ItemsSource="{Binding AppColumns}" SelectedIndex="{Binding AppColumn}" HorizontalAlignment="Stretch"
+                              ToolTip.Tip="A per-atom column the file carries (a LAMMPS dump's c_pe, fx …; |f| and |v| from the components), low to high in the frame shown" />
+                  </StackPanel>
                 </StackPanel>
               </Border>
               <Border Classes="section">

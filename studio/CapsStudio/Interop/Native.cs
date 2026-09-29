@@ -544,6 +544,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_gromacs")] public static extern int Gromacs(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string? stem, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_trajectory_columns")] public static extern int TrajectoryColumns(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_library")] public static extern int ReactionLibrary([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_react_summary")] public static extern int ReactSummary(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bond_react_export")] public static extern int BondReactExport(IntPtr doc, byte[] templates, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir,
@@ -1497,6 +1498,20 @@ public sealed class CapsDocument : IDisposable
             if (n <= 1) return "";
             var buf = new byte[n];
             Native.AnalyzeReport(H, buf, n);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
+        }
+    }
+
+    /// <summary>The per-atom columns of the trajectory (JSON {columns: [{name, min, max}], velocities}).</summary>
+    public string TrajectoryColumns()
+    {
+        using (Hold())
+        {
+            Alive();
+            var n = Native.TrajectoryColumns(H, null, 0);
+            if (n <= 1) return "";
+            var buf = new byte[n];
+            Native.TrajectoryColumns(H, buf, n);
             return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
         }
     }

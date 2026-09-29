@@ -6,6 +6,8 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <limits>
+#include <numeric>
 #include <unordered_map>
 
 #include "caps/elements.hpp"
@@ -255,6 +257,17 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
       const bool unwrapped = cx >= 0 && (cols[cx] == "xu" || cols[cx] == "xsu");
       const int cix = col({"ix"}), ciy = col({"iy"}), ciz = col({"iz"});
       if (cx < 0 || cy < 0 || cz < 0) throw ReadError(path + ":" + std::to_string(lineno) + ": no position columns (x/xu/xs)");
+      const int cvx = col({"vx"}), cvy = col({"vy"}), cvz = col({"vz"});
+      const bool vel = cvx >= 0 && cvy >= 0 && cvz >= 0;
+      // every other column is kept by its name (numbers only)
+      std::vector<int> extra;
+      {
+        static const std::set<std::string> known = {"id", "mol", "type", "element", "q", "x", "y", "z", "xu", "yu", "zu", "xs", "ys", "zs",
+                                                     "xsu", "ysu", "zsu", "ix", "iy", "iz", "vx", "vy", "vz"};
+        for (size_t k = 0; k < cols.size(); ++k) if (!known.count(cols[k])) extra.push_back(int(k));
+      }
+      std::vector<std::vector<float>> xvals(extra.size(), std::vector<float>(natoms, 0.0f));
+      std::vector<Vec3> vvals(vel ? natoms : 0);
 
       std::vector<Atom> atoms(natoms);
       for (size_t i = 0; i < natoms; ++i) {
@@ -275,9 +288,43 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
           if (!unwrapped) r = r + cell.a * a.image[0] + cell.b * a.image[1] + cell.c * a.image[2];
         }
         a.pos = r;
+        if (vel) vvals[i] = {std::stod(t[cvx]), std::stod(t[cvy]), std::stod(t[cvz])};
+        for (size_t e = 0; e < extra.size(); ++e) {
+          char* end = nullptr;
+          const double v = std::strtod(t[size_t(extra[e])].c_str(), &end);
+          xvals[e][i] = end && *end == 0 ? float(v) : std::numeric_limits<float>::quiet_NaN();
+        }
       }
-      // Frames are stored in id order so topology indices line up.
-      std::sort(atoms.begin(), atoms.end(), [](const Atom& x, const Atom& y) { return x.id < y.id; });
+      // Frames are stored in id order so topology indices line up (the extra columns follow the same order).
+      std::vector<size_t> ord(atoms.size());
+      std::iota(ord.begin(), ord.end(), size_t(0));
+      std::sort(ord.begin(), ord.end(), [&](size_t x, size_t y) { return atoms[x].id < atoms[y].id; });
+      {
+        std::vector<Atom> sorted(atoms.size());
+        for (size_t i = 0; i < ord.size(); ++i) sorted[i] = atoms[ord[i]];
+        atoms = std::move(sorted);
+      }
+      auto reorder = [&](const auto& v) {
+        std::decay_t<decltype(v)> o(v.size());
+        for (size_t i = 0; i < ord.size(); ++i) o[i] = v[ord[i]];
+        return o;
+      };
+      if (vel) tr.velocities.push_back(reorder(vvals));
+      for (size_t e = 0; e < extra.size(); ++e) tr.columns[cols[size_t(extra[e])]].push_back(reorder(xvals[e]));
+      {   // magnitudes of vector columns: |f| from fx fy fz, |v| from the velocities
+        auto mag = [&](const std::string& n, const std::vector<float>& a, const std::vector<float>& b, const std::vector<float>& c) {
+          std::vector<float> m(a.size());
+          for (size_t i = 0; i < a.size(); ++i) m[i] = std::sqrt(a[i] * a[i] + b[i] * b[i] + c[i] * c[i]);
+          tr.columns[n].push_back(std::move(m));
+        };
+        if (tr.columns.count("fx") && tr.columns.count("fy") && tr.columns.count("fz"))
+          mag("|f|", tr.columns["fx"].back(), tr.columns["fy"].back(), tr.columns["fz"].back());
+        if (vel) {
+          std::vector<float> m(tr.velocities.back().size());
+          for (size_t i = 0; i < m.size(); ++i) m[i] = float(norm(tr.velocities.back()[i]));
+          tr.columns["|v|"].push_back(std::move(m));
+        }
+      }
       if (first) {
         System s;
         if (topology) {

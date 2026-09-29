@@ -129,6 +129,7 @@ struct AppearanceState {
   std::string surface_expr;        // atoms the surface wraps ("" all)
   int surface_colour = 1;          // 0 one colour, 1 electrostatic potential, 2 nearest atom
   std::vector<double> preview_q;   // colour by these charges instead of the structure's (Charges page, before Apply)
+  std::string column;              // colour 5: a per-atom column of the trajectory (a LAMMPS dump's c_pe, |f| …)
   // for the current frame
   std::vector<uint8_t> style;      // 255: the view's style
   std::unique_ptr<caps::Mesh> mesh, poly;
@@ -657,7 +658,17 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
       r.atom_style = L.style;
       for (auto& x : r.atom_style) if (x == 255) x = uint8_t(r.style);
     }
-    if (L.colour == 4) {
+    if (L.colour == 5) {
+      // a dump column in the frame shown, blue (low) to orange (high)
+      r.colour_by = caps::ColourBy::Property;
+      r.property.clear();
+      auto it = d->traj.columns.find(L.column);
+      if (it != d->traj.columns.end() && d->current < it->second.size() && it->second[d->current].size() == d->frame.atoms.size())
+        for (float v : it->second[d->current]) r.property.push_back(double(v));
+      else r.property.assign(d->frame.atoms.size(), 0.0);
+      r.ramp = L.ramp;
+      r.symmetric = false;
+    } else if (L.colour == 4) {
       r.colour_by = caps::ColourBy::Property;
       r.property.clear();
       if (L.preview_q.size() == d->frame.atoms.size()) r.property = L.preview_q;
@@ -2224,6 +2235,26 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       report[cap - 1] = 0;
     }
     return 0;
+  });
+}
+
+int32_t caps_trajectory_columns(caps_doc* d, char* json, int32_t cap) {
+  return guard([&] {
+    caps::Json j = caps::Json::object();
+    caps::Json cols = caps::Json::array();
+    for (const auto& [name, frames] : d->traj.columns) {
+      caps::Json c = caps::Json::object();
+      c["name"] = name;
+      double lo = 1e300, hi = -1e300;
+      if (d->current < frames.size())
+        for (float v : frames[d->current]) if (std::isfinite(v)) lo = std::min(lo, double(v)), hi = std::max(hi, double(v));
+      c["min"] = lo <= hi ? lo : 0.0;
+      c["max"] = lo <= hi ? hi : 0.0;
+      cols.push_back(c);
+    }
+    j["columns"] = cols;
+    j["velocities"] = !d->traj.velocities.empty();
+    return report_out(j.dump(), json, cap);
   });
 }
 
@@ -6275,6 +6306,12 @@ extern "C" int32_t caps_set_appearance(caps_doc* d, const char* json) {
       }
     const std::string colour = j.text("colour", "");
     L.colour = colour == "element" ? 0 : colour == "molecule" ? 1 : colour == "type" ? 2 : colour == "distance" ? 3 : colour == "charge" ? 4 : -1;
+    L.column.clear();
+    if (colour.rfind("column:", 0) == 0) {
+      L.column = colour.substr(7);
+      if (!d->traj.columns.count(L.column)) throw std::invalid_argument("no per-atom column '" + L.column + "' in this trajectory");
+      L.colour = 5;
+    }
     L.preview_q.clear();
     if (j.has("charges") && j["charges"].is_array())
       for (const auto& x : j["charges"].items()) L.preview_q.push_back(x.number());

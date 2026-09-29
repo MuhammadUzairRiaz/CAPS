@@ -100,8 +100,39 @@ public sealed partial class MainViewModel
             ApplyAppearance();
         }
     }
+    // a per-atom column of the trajectory (a LAMMPS dump's c_pe, fx, |f| …): colour by it in place of the choice above
+    public System.Collections.ObjectModel.ObservableCollection<string> AppColumns { get; } = new();
+    public bool AppHasColumns => AppColumns.Count > 1;
+    private int _appColumn;
+    public int AppColumn
+    {
+        get => _appColumn;
+        set
+        {
+            if (!Set(ref _appColumn, Math.Clamp(value, 0, Math.Max(0, AppColumns.Count - 1)))) return;
+            Raise(nameof(AppRampEnabled));
+            ApplyAppearance();
+        }
+    }
+    private string? ColumnName => _appColumn > 0 && _appColumn < AppColumns.Count ? AppColumns[_appColumn] : null;
+    private void RefreshAppColumns()
+    {
+        AppColumns.Clear();
+        _appColumn = 0;
+        try
+        {
+            if (_doc != null && System.Text.Json.Nodes.JsonNode.Parse(_doc.TrajectoryColumns() is { Length: > 0 } t ? t : "{}")?["columns"] is JsonArray cols && cols.Count > 0)
+            {
+                AppColumns.Add("None (the colour above)");
+                foreach (var c in cols) if ((string?)c?["name"] is { } n) AppColumns.Add(n);
+            }
+        }
+        catch { }
+        Raise(nameof(AppColumn));
+        Raise(nameof(AppHasColumns));
+    }
     public int AppRamp { get => _appRamp; set { if (Set(ref _appRamp, Math.Clamp(value, 0, AppRampNames.Length - 1))) { Raise(nameof(AppLegendBrush)); ApplyAppearance(); } } }
-    public bool AppRampEnabled => AppColour == 4 || _appSurface > 0;
+    public bool AppRampEnabled => AppColour == 4 || _appSurface > 0 || ColumnName != null;
 
     // ---------------------------------------------------------------- labels
 
@@ -219,9 +250,9 @@ public sealed partial class MainViewModel
         var doc = _doc;
         var json = new JsonObject
         {
-            ["active"] = AppLayers.Count > 0 || AppColour == 4 || _appSurface > 0,
+            ["active"] = AppLayers.Count > 0 || AppColour == 4 || _appSurface > 0 || ColumnName != null,
             ["layers"] = new JsonArray(AppLayers.Select(l => (JsonNode)new JsonObject { ["expression"] = l.Expression, ["style"] = AppStyleCodes[l.Style] }).ToArray()),
-            ["colour"] = AppColour == 4 ? "charge" : "",
+            ["colour"] = ColumnName is { } col ? "column:" + col : AppColour == 4 ? "charge" : "",
             ["charges"] = AppColour == 4 && _chgPreview is { } pq ? new JsonArray(pq.Select(x => (JsonNode)x).ToArray()) : null,
             ["ramp"] = AppRampCodes[_appRamp],
             ["surface"] = new JsonObject

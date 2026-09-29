@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <memory>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -119,6 +120,11 @@ struct Trajectory {
   std::vector<std::vector<Vec3>> positions;
   std::vector<Cell> cells;
   std::vector<int64_t> timesteps;
+  // per frame, when the file gives them: velocities (a LAMMPS dump's vx vy vz, as written: Å/fs in real units), and any
+  // other per-atom numeric column by its name (fx, c_pe, v_stress …; |f| and |v| added from the components), atoms in
+  // the topology's order
+  std::vector<std::vector<Vec3>> velocities;
+  std::map<std::string, std::vector<std::vector<float>>> columns;
   size_t frames() const { return positions.size(); }
   System frame(size_t k) const;
 };
