@@ -51,4 +51,11 @@ public partial class CrystalPage : PageBase
         box.SelectedItem = null;
     }
     private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();
+    private void OnFindPrimitive(object? s, RoutedEventArgs e) => Vm.FindPrimitiveCell();
+    private void OnNiggli(object? s, RoutedEventArgs e) => Vm.NiggliCell();
+    private void OnConventional(object? s, RoutedEventArgs e) => Vm.ConventionalCell();
+    private void OnCellEditor(object? s, RoutedEventArgs e) => Vm.OpenCellEditor();
+    private void OnRedefine(object? s, RoutedEventArgs e) => Vm.RedefineLattice();
+    private void OnVacuumSlab(object? s, RoutedEventArgs e) => Vm.MakeVacuumSlab();
+    private void OnNanowire(object? s, RoutedEventArgs e) => Vm.MakeNanowire();
 }
