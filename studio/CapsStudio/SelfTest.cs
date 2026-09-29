@@ -619,7 +619,19 @@ internal static class SelfTest
             if (File.Exists(MainViewModel.UserPolymerFile)) File.Delete(MainViewModel.UserPolymerFile);
             vm.UseLibrary(pbsa, null);
             var dpBefore = vm.GrowDpD;
+            vm.GrowDpD = 12;
+            var strip12 = vm.PolyStripUnits.Length;
             vm.GrowDpD = 25;
+            vm.GrowDpD = null;   // the box emptied while typing: the DP stays
+            // PBSA ends: the head * is on O, the tail * on the acid carbonyl C — hydrogen / hydroxyl gives HO–…–COOH
+            vm.HeadCap = 0; vm.TailCap = Array.IndexOf(MainViewModel.EndGroups, "hydroxyl");
+            var endsOk = vm.PolyEndsText.Contains("Head: hydrogen on O → –OH") && vm.PolyEndsText.Contains("Tail: hydroxyl on C=O → acid –COOH") && !vm.PolyEndsText.Contains("⚠");
+            vm.TailCap = Array.IndexOf(MainViewModel.EndGroups, "carboxyl");
+            vm.HeadCap = Array.IndexOf(MainViewModel.EndGroups, "hydroxyl");
+            var warnOk = vm.PolyEndsText.Split('\n').All(l => l.Contains("⚠"));
+            vm.HeadCap = 0; vm.TailCap = 0;
+            Check(endsOk && warnOk, $"end groups explained: {vm.PolyEndsText.Replace('\n', '|')}");
+            Check(strip12 == 12 && vm.PolyStripUnits.Length == 25 && vm.PolyPreview.Contains("A ") , $"sequence follows the DP at once: {strip12} then {vm.PolyStripUnits.Length} units · {vm.PolyPreview}");
             vm.CompBasis = 0;
             vm.PolyUnits[0].Target = 80; vm.PolyUnits[1].Target = 20;
             Check(vm.CompShown && vm.CompRows.Count == 2 && vm.CompRows[0].PerChain.StartsWith("20 · ") && vm.CompRows[1].PerChain.StartsWith("5 · "),

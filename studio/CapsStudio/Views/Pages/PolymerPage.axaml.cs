@@ -49,4 +49,14 @@ public partial class PolymerPage : PageBase
     }
     private void OnCompRandom(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ApplyComposition(false);
     private void OnCompExact(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ApplyComposition(true);
+    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (DataContext is ViewModels.MainViewModel vm) vm.PolyAutoPreview = true;
+    }
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        if (DataContext is ViewModels.MainViewModel vm) vm.PolyAutoPreview = false;
+        base.OnDetachedFromVisualTree(e);
+    }
 }

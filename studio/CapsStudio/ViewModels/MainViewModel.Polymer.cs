@@ -37,6 +37,23 @@ public sealed class PolyUnit : INotifyPropertyChanged
     public int Stereocentres { get; private set; }
     /// <summary>The unit's molar mass in the chain (g/mol), for the composition calculator.</summary>
     public double Mass { get; private set; }
+    /// <summary>The atoms at the head (first *) and tail (second *), where the chain's end groups bond.</summary>
+    public string HeadElement { get; private set; } = "";
+    public string TailElement { get; private set; } = "";
+    /// <summary>Whether the atom at the first / second * carries =O (written C(=O) next to the *).</summary>
+    public bool EndCarbonyl(bool head)
+    {
+        var t = _smiles.Replace("[*]", "*");
+        var stars = t.Select((c, i) => (c, i)).Where(p => p.c == '*').Select(p => p.i).ToList();
+        if (stars.Count < 2) return false;
+        if (head)
+        {
+            var after = t[(stars[0] + 1)..];   // *C(=O)… : the atom right after the head *
+            return after.StartsWith("C(=O)");
+        }
+        var before = t[..stars[1]];   // …C(=O)* or …C(*)=O
+        return before.EndsWith("C(=O)") || before.EndsWith("C(=O)(") || t[stars[1]..].StartsWith("*)=O") && before.EndsWith("C(");
+    }
     private decimal _target = 50;
     /// <summary>The share this unit should have (mole or weight %, as the composition calculator is set).</summary>
     public decimal Target { get => _target; set { _target = Math.Max(0, value); Raise(nameof(Target)); TargetChanged?.Invoke(); } }
@@ -53,6 +70,8 @@ public sealed class PolyUnit : INotifyPropertyChanged
             {
                 Stereocentres = (int?)r["stereocentres"] ?? 0;
                 Mass = (double?)r["mass"] ?? 0;
+                HeadElement = (string?)r["head_element"] ?? "";
+                TailElement = (string?)r["tail_element"] ?? "";
                 Info = string.Format(CultureInfo.InvariantCulture, "{0} · {1:F2} g/mol · head {2} → tail {3}{4}", Sub((string?)r["formula"] ?? ""),
                     (double?)r["mass"] ?? 0, r["head_element"], r["tail_element"], Stereocentres > 0 ? " · stereocentre" : "");
                 if ((string?)r["note"] is { } note) Info += "\n" + char.ToUpper(note[0]) + note[1..];
@@ -257,6 +276,38 @@ public sealed partial class MainViewModel
         PolyChanged();
     }
 
+    private string _polyEndsText = "";
+    /// <summary>What the chain ends become: the atom each end group bonds to, and a warning for a chemically wrong choice.</summary>
+    public string PolyEndsText { get => _polyEndsText; private set => Set(ref _polyEndsText, value); }
+    private string EndsText()
+    {
+        if (PolyStripUnits.Length == 0 || PolyUnits.Count == 0) return "";
+        var first = PolyUnits[Math.Clamp(PolyStripUnits[0], 0, PolyUnits.Count - 1)];
+        var last = PolyUnits[Math.Clamp(PolyStripUnits[^1], 0, PolyUnits.Count - 1)];
+        string End(bool head, PolyUnit u, int cap)
+        {
+            var el = head ? u.HeadElement : u.TailElement;
+            var carbonyl = u.EndCarbonyl(head);
+            var atom = carbonyl ? "C=O" : el;
+            var g = EndGroups[cap];
+            var result = (g, el, carbonyl) switch
+            {
+                ("hydrogen", "O", _) => " → –OH",
+                ("hydrogen", "N", _) => " → –NH",
+                ("hydrogen", "C", true) => " → aldehyde –CHO",
+                ("hydroxyl", "C", true) => " → acid –COOH",
+                ("hydroxyl", "C", false) => " → alcohol –C–OH",
+                ("methyl", "C", true) => " → methyl ketone",
+                ("amine", "C", true) => " → amide –C(=O)NH₂",
+                _ => "",
+            };
+            var warn = (g is "hydroxyl" or "amine" && el is "O" or "N" or "S") ? $"  ⚠ {el}–{(g == "hydroxyl" ? "O" : "N")}: this end is already {el}; hydrogen gives –{el}H"
+                : (g == "carboxyl" && carbonyl) ? "  ⚠ C(=O)–COOH: this end is already a carbonyl; hydroxyl gives –COOH" : "";
+            return $"{(head ? "Head" : "Tail")}: {g} on {atom}{result}{warn}";
+        }
+        return End(true, first, _headCap) + "\n" + End(false, last, _tailCap);
+    }
+
     // end groups in place of the chain ends' hydrogens (core chain_end_smiles)
     public static readonly string[] EndGroups = ["hydrogen", "methyl", "ethyl", "tert-butyl", "sec-butyl", "phenyl", "hydroxyl", "carboxyl", "vinyl", "amine"];
     private int _headCap, _tailCap;
@@ -317,6 +368,7 @@ public sealed partial class MainViewModel
             if ((bool?)r["ok"] != true) { PolyError = (string?)r["error"] ?? "cannot build this chain"; return; }
             PolyError = "";
             PolyStripUnits = (r["sequence"] as JsonArray ?? []).Select(x => (int?)x ?? 0).ToArray();
+            SchedulePolyPreview();
             var counts = PolyUnits.Select((u, k) => PolyStripUnits.Count(x => x == k)).ToArray();
             PolyPreview = string.Format(CultureInfo.InvariantCulture, "{0} · {1:N0} g/mol · {2:N0} atoms per chain · {3}",
                 PolyUnit.Sub((string?)r["formula"] ?? ""), (double?)r["mass"] ?? 0, (int?)r["atoms"] ?? 0,
@@ -325,6 +377,7 @@ public sealed partial class MainViewModel
             if (_polyLinkage > 0) PolyPreview += $" · {reversed} reversed";
             _polyAtoms = (int?)r["atoms"] ?? 0;
             _polyMass = (double?)r["mass"] ?? 0;
+            PolyEndsText = EndsText();
             if (r["molecule"] is JsonObject m)   // a branched molecule: its arms, atoms and mass
             {
                 var arms = (double?)m["branches"] ?? (double?)m["arms"] ?? 0;   // a dendrimer: its branches besides the core arms
@@ -342,9 +395,27 @@ public sealed partial class MainViewModel
     private double _polyMass;
 
     /// <summary>One chain (the preview) grown on its own.</summary>
+    // the 3D chain follows the builder: rebuilt 0.6 s after the last change (while the page is open), and again after a
+    // build that was running when something changed
+    public bool PolyAutoPreview { get; set; }
+    private int _polyPreviewGen;
+    private bool _polyPreviewAgain;
+    private void SchedulePolyPreview()
+    {
+        if (!PolyAutoPreview || _module != 13) return;   // the Polymer builder on screen
+        var gen = ++_polyPreviewGen;
+        Avalonia.Threading.DispatcherTimer.RunOnce(() =>
+        {
+            if (gen != _polyPreviewGen || !PolyAutoPreview || _module != 13 || PolyHasError) return;
+            if (_polyBuilding) { _polyPreviewAgain = true; return; }
+            _ = BuildPolyPreview();
+        }, TimeSpan.FromMilliseconds(600));
+    }
+
     public async Task BuildPolyPreview()
     {
         if (PolyHasError || _polyBuilding) return;
+        _polyPreviewAgain = false;
         PolyBuilding = true;
         var spec = PolySpecJson(Math.Min(_growDp, 60));
         var tact = _growTact;
@@ -358,6 +429,7 @@ public sealed partial class MainViewModel
         }
         catch (Exception e) { PolyError = "Preview: " + e.Message; }
         finally { PolyBuilding = false; }
+        if (_polyPreviewAgain && PolyAutoPreview) { _polyPreviewAgain = false; _ = BuildPolyPreview(); }
     }
 
     /// <summary>One chain of the spec opened as the Studio document.</summary>
