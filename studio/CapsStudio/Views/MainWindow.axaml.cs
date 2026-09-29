@@ -39,6 +39,8 @@ public partial class MainWindow : Window
     private List<Point>? _lassoPts;
     private int[]? _moveAtoms;
     private List<(double X, double Y, double Z, double Sx, double Sy)>? _moveFit;
+    private double[] _moveCentre = [0, 0, 0];
+    private char _rotLock;   // the rotate tool's axis, held as X, Y or Z during the drag
     private Interop.CapsCamera _lastCam;
     private Interop.CapsRenderOpts _lastOpt;
     private bool _haveLast;
@@ -201,7 +203,7 @@ public partial class MainWindow : Window
         _vm.TimelineChanged += () => Timeline.InvalidateVisual();
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Frame)) Timeline.InvalidateVisual(); };
         AddHandler(KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
-        AddHandler(KeyUpEvent, (_, e) => { if (e.Key == Key.L) _vm.LensHold = false; }, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, (_, e) => { if (e.Key == Key.L) _vm.LensHold = false; if (e.Key is Key.X or Key.Y or Key.Z) _rotLock = '\0'; }, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(ViewHost, true);
         ViewHost.AddHandler(DragDrop.DropEvent, OnDrop);
         NativeMenu.SetMenu(this, BuildMenu());   // the menu bar: the palette's commands and the pages
@@ -775,6 +777,7 @@ public partial class MainWindow : Window
     // Viewer keys; ignored while typing in a text box or choosing in a list.
     private void OnKey(object? sender, KeyEventArgs e)
     {
+        if (_dragging && _vm.EditTool == 6 && e.Key is Key.X or Key.Y or Key.Z) { _rotLock = char.ToLowerInvariant(e.Key.ToString()[0]); e.Handled = true; return; }
         if (_vm.RecordingShortcut && _vm.RecordShortcutKey(e.Key, e.KeyModifiers)) { e.Handled = true; return; }   // Settings › Your shortcuts
         if (e.Key == Key.K && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control) { TogglePalette(); e.Handled = true; return; }
         if (_vm.PaletteOpen) return;
@@ -1148,6 +1151,7 @@ public partial class MainWindow : Window
     private void OnFuseRing(object? s, RoutedEventArgs e) => _vm.FuseRingPicked();
     private void OnToolLasso(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 4 ? 0 : 4;
     private void OnToolMove(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 5 ? 0 : 5;
+    private void OnToolRotate(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 6 ? 0 : 6;
     private void OnPinMonitor(object? s, RoutedEventArgs e) { _vm.PinMeasurement(); RequestRender(); }
     private void OnUnpin(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.MonitorRow m) { _vm.UnpinMonitor(m); RequestRender(); } }
 
@@ -1242,7 +1246,7 @@ public partial class MainWindow : Window
         if (_host == ViewHost && _vm.IsStudio && _vm.Document is { } doc && !_vm.Busy && !_pan)
         {
             if (_vm.EditTool == 4) _lassoPts = new List<Point> { p.Position };
-            else if (_vm.EditTool == 5 && _haveLast)
+            else if (_vm.EditTool is 5 or 6 && _haveLast)
             {
                 try
                 {
@@ -1262,7 +1266,15 @@ public partial class MainWindow : Window
                             var a = doc.Atom(i);
                             fit.Add((a.X, a.Y, a.Z, proj[3 * i] / _scaling, proj[3 * i + 1] / _scaling));
                         }
-                        if (fit.Count >= 4) { _moveAtoms = set; _moveFit = fit; }
+                        if (fit.Count >= 4)
+                        {
+                            _moveAtoms = set;
+                            _moveFit = fit;
+                            var c = new double[3];
+                            foreach (var i in set) { var a = doc.Atom(i); c[0] += a.X; c[1] += a.Y; c[2] += a.Z; }
+                            for (var k = 0; k < 3; ++k) c[k] /= set.Length;
+                            _moveCentre = c;
+                        }
                     }
                 }
                 catch { _moveAtoms = null; }
@@ -1292,7 +1304,13 @@ public partial class MainWindow : Window
                 if (_lassoPts.Count == 0 || Math.Abs(pos.X - _lassoPts[^1].X) + Math.Abs(pos.Y - _lassoPts[^1].Y) > 2) _lassoPts.Add(pos);
                 Labels.SetLasso(_lassoPts);
             }
-            else Labels.SetArrow((_press, pos));
+            else
+            {
+                Labels.SetArrow((_press, pos));
+                if (_vm.EditTool == 6 && _moveFit != null &&
+                    ViewModels.MainViewModel.RotationFromDrag(_moveFit, _moveCentre, _press.X, _press.Y, pos.X, pos.Y, _rotLock, e.KeyModifiers.HasFlag(KeyModifiers.Shift)) is { } rot)
+                    _vm.Status = $"Rotate {rot.Degrees:0.#}° about {(_rotLock == '\0' ? "the view axis" : _rotLock + " (world)")} · release to apply";
+            }
             _last = pos;
             return;
         }
@@ -1345,8 +1363,16 @@ public partial class MainWindow : Window
         if (_dragging && _moved && _moveAtoms != null && _moveFit != null)
         {
             var pos = e.GetPosition(_host);
-            var by = ViewModels.MainViewModel.ScreenToWorld(_moveFit, pos.X - _press.X, pos.Y - _press.Y);
-            if (by != null) _vm.TranslateAtoms(_moveAtoms, by);
+            if (_vm.EditTool == 6)
+            {
+                if (ViewModels.MainViewModel.RotationFromDrag(_moveFit, _moveCentre, _press.X, _press.Y, pos.X, pos.Y, _rotLock, e.KeyModifiers.HasFlag(KeyModifiers.Shift)) is { } rot)
+                    _vm.RotateAtoms(_moveAtoms, rot.Axis, rot.Degrees);
+            }
+            else
+            {
+                var by = ViewModels.MainViewModel.ScreenToWorld(_moveFit, pos.X - _press.X, pos.Y - _press.Y);
+                if (by != null) _vm.TranslateAtoms(_moveAtoms, by);
+            }
             _moveAtoms = null;
             Labels.SetArrow(null);
             _dragging = false;

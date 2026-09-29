@@ -569,6 +569,7 @@
             <Button Classes="tool" Classes.on="{Binding !MeasureTool}" Click="OnToolSelect" ToolTip.Tip="Select: click an atom · ⇧ click adds (up to 4 measure)"><local:Icon Kind="cursor" Size="18" /></Button>
           <Button Classes="tool" Classes.on="{Binding IsLassoTool}" Click="OnToolLasso" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Lasso select: drag around atoms (⇧ adds to the selection)"><local:Icon Kind="lasso" Size="18" /></Button>
           <Button Classes="tool" Classes.on="{Binding IsMoveTool}" Click="OnToolMove" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Translate: drag the selection, or the molecule under the cursor, in the view plane (undo with ⌘Z)"><local:Icon Kind="move" Size="18" /></Button>
+          <Button Classes="tool" Classes.on="{Binding IsRotateTool}" Click="OnToolRotate" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Rotate: drag the selection, or the molecule under the cursor, about the view axis through its centre; hold X, Y or Z for that axis, ⇧ for 15° steps (undo with ⌘Z)"><local:Icon Kind="spin" Size="18" /></Button>
             <Button Classes="tool" Click="OnResetView" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Reset the view (R); drag in the view rotates"><local:Icon Kind="rotate" Size="18" /></Button>
             <Rectangle Classes="vsep" />
           <Button Classes="tool" Classes.on="{Binding IsPlaceTool}" Click="OnToolPlace" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Place atom: click an atom to bond a new one to it (the element on the right)"><local:Icon Kind="atom" Size="18" /></Button>

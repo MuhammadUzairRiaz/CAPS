@@ -3,6 +3,7 @@
   <StreamGeometry x:Key="Icon.cursor">M5 3l14 8-6 1.5L10 19z</StreamGeometry>
   <StreamGeometry x:Key="Icon.lasso">M4,9 A8,5 0 1 0 20,9 A8,5 0 1 0 4,9 Z M6 12c-1 3 0 5 2 6s3 2 2 3</StreamGeometry>
   <StreamGeometry x:Key="Icon.move">M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3</StreamGeometry>
+  <StreamGeometry x:Key="Icon.spin">M5 9a7.5 7.5 0 0 1 13 -2.5 M18 3v4h-4 M19 15a7.5 7.5 0 0 1-13 2.5 M6 21v-4h4 M12,10.6 A1.4,1.4 0 1 0 12,13.4 A1.4,1.4 0 1 0 12,10.6 Z</StreamGeometry>
   <StreamGeometry x:Key="Icon.rotate">M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5</StreamGeometry>
   <StreamGeometry x:Key="Icon.atom">M9,12 A3,3 0 1 0 15,12 A3,3 0 1 0 9,12 Z M4,12 A8,8 0 1 0 20,12 A8,8 0 1 0 4,12 Z</StreamGeometry>
   <StreamGeometry x:Key="Icon.bond">M3.5,18 A2.5,2.5 0 1 0 8.5,18 A2.5,2.5 0 1 0 3.5,18 Z M15.5,6 A2.5,2.5 0 1 0 20.5,6 A2.5,2.5 0 1 0 15.5,6 Z M8 16l8-8</StreamGeometry>
