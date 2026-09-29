@@ -156,6 +156,8 @@ public sealed partial class MainViewModel : ObservableObject
                 if (_visionPreview != 0) try { value?.SetVision(_visionPreview); } catch { /* an older core */ }
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
                 RaiseAppearanceVisibility();
+                if (value == null) { _pipeDone.Clear(); _pipeBuild = ""; PipelineSteps.Clear(); }   // no structure: the strip empties
+                Raise(nameof(ShowPipelineStrip));
                 Raise(nameof(HasDocument));
                 Raise(nameof(NoDocument));
                 Raise(nameof(ShowEmpty));

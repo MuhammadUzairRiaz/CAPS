@@ -175,6 +175,10 @@
           <Button Classes="primary small" Click="OnPipelineNext" IsVisible="{Binding HasPipelineNext}" ToolTip.Tip="The next step of the pipeline">
             <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="{Binding PipelineNextLabel}" VerticalAlignment="Center" /><local:Icon Kind="chevr" Size="14" VerticalAlignment="Center" /></StackPanel>
           </Button>
+          <Button Classes="small" Click="OnClearAll" Classes.danger="{Binding ClearArmed}" IsEnabled="{Binding Idle}"
+                  ToolTip.Tip="Start clean: close every structure of the project (asks once more; saved files stay on disk, Recent keeps them)">
+            <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="trash" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding ClearText}" VerticalAlignment="Center" /></StackPanel>
+          </Button>
           <Button Classes="small" Click="OnExportCenter" ToolTip.Tip="LAMMPS and GROMACS files of the structure as it is now">
             <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export now" VerticalAlignment="Center" /></StackPanel>
           </Button>

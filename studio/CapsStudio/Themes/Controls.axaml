@@ -155,7 +155,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextB}" />
   </Style>
   <!-- an armed destructive tool (Delete asked once): red until clicked again or it times out -->
-  <Style Selector="Button.tool.danger">
+  <Style Selector="Button.tool.danger, Button.small.danger">
     <Setter Property="Foreground" Value="{DynamicResource ErrB}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ErrB}" />
   </Style>
