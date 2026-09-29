@@ -1219,6 +1219,29 @@
                 </StackPanel>
               </Grid>
             </TabItem>
+            <TabItem Header="Python" FontSize="13">
+              <!-- Python console: one interpreter that keeps running; doc is the open structure -->
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                  <Button Classes="small" Content="Start" Click="OnConsoleStart" IsVisible="{Binding !ConsoleRunning}"
+                          ToolTip.Tip="Starts Python with this Studio's caps package; doc = the open structure" />
+                  <Button Classes="small" Content="Restart" Click="OnConsoleStart" IsVisible="{Binding ConsoleRunning}" ToolTip.Tip="A fresh interpreter, with doc = the open structure as it is now" />
+                  <Button Classes="small" Content="Open doc in Studio" Click="OnConsoleOpenDoc" IsEnabled="{Binding ConsoleRunning}"
+                          ToolTip.Tip="The console's doc (after your changes) opened as a new structure" />
+                  <Button Classes="small" Content="Clear" Click="OnConsoleClear" />
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Enter runs · ⇧Enter a new line (a block runs when you press Enter) · ↑ ↓ earlier lines" />
+                </StackPanel>
+                <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" Margin="0,6,0,0">
+                  <TextBlock Text="&gt;&gt;&gt;" Classes="mono" VerticalAlignment="Top" Margin="0,6,0,0" Foreground="{DynamicResource AccB}" />
+                  <TextBox Grid.Column="1" x:Name="ConsoleBox" Text="{Binding ConsoleInput}" Classes="mono" FontSize="12" AcceptsReturn="False" MinHeight="30" MaxHeight="120"
+                           Watermark="doc.summary()   ·   doc.atom_labels('oxidation_state')   ·   caps.polymer('*CC*', dp=10)" KeyDown="OnConsoleKey" />
+                  <Button Grid.Column="2" Classes="small" Content="Run" Click="OnConsoleRun" VerticalAlignment="Top" />
+                </Grid>
+                <ScrollViewer x:Name="ConsoleScroll">
+                  <SelectableTextBlock Text="{Binding ConsoleText}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
+                </ScrollViewer>
+              </DockPanel>
+            </TabItem>
           </TabControl>
           <Button x:Name="DockToggle" Classes="tool" IsVisible="{Binding Compact}" Click="OnDockToggle" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,0,0"
                   ToolTip.Tip="Show or fold the curves">
