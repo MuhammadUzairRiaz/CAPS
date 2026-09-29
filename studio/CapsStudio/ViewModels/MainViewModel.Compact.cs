@@ -20,7 +20,11 @@ public sealed partial class MainViewModel
     public bool MonitorsShown { get => _monitorsShown; set { if (Set(ref _monitorsShown, value)) Raise(nameof(MonitorsVisible)); } }
     public bool MonitorsVisible => HasMonitors && _monitorsShown;
     public double DockChevronAngle => _dockOpen ? 0 : 180;
-    public bool ProjectPanelShown => IsStudio && (!_compact || _projectDrawer);
+    /// <summary>The Project Explorer: on the left with every module (a drawer in the compact layout).</summary>
+    public bool ProjectPanelShown => !_compact || _projectDrawer;
+    private double _projectWidth = 300;
+    /// <summary>The explorer's width (its right edge drags it), kept in the settings.</summary>
+    public double ProjectWidth { get => _projectWidth; set => Set(ref _projectWidth, Math.Clamp(value, 220, 560)); }
     public bool InspectorShown => !_compact || _inspectorDrawer;
     public event Action? CompactChanged;
 
