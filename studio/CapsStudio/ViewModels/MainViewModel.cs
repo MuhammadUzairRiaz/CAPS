@@ -156,6 +156,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (_visionPreview != 0) try { value?.SetVision(_visionPreview); } catch { /* an older core */ }
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
                 RaiseAppearanceVisibility();
+                RefreshAppColumns();
                 if (value == null) { _pipeDone.Clear(); _pipeBuild = ""; PipelineSteps.Clear(); }   // no structure: the strip empties
                 Raise(nameof(ShowPipelineStrip));
                 Raise(nameof(HasDocument));
@@ -2413,6 +2414,7 @@ public sealed partial class MainViewModel : ObservableObject
     // The document now holds the run's record (relaxation stages or MD frames); show its last frame, keep the camera.
     private void AfterRun(CapsDocument doc, string suffix)
     {
+        RefreshAppColumns();   // a run's record has its own columns (or none)
         Field.LoadReport(doc);   // runs keep the assignment (React replaces the topology and ends it)
         var s = doc.Summary();
         Frames = (int)Math.Max(1, s.Frames);

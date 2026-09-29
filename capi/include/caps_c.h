@@ -179,6 +179,10 @@ int32_t caps_checkpoint(caps_doc* d, const char* json, char* out, int32_t cap);
 /* Write every frame of the document, the format by the extension: .lammpstrj / .dump (LAMMPS text dump, id mol type
    xu yu zu), .dcd, .xyz (extended XYZ), .pdb (MODEL per frame), .gro (frames one after another), .trr (GROMACS). */
 int32_t caps_save_trajectory(caps_doc* d, const char* path);
+/* v47: the per-atom columns the trajectory carries beyond positions (a LAMMPS dump's fx, c_pe, v_…; |f| and |v| from
+   the components) with their range in the frame shown: JSON {columns: [{name, min, max}], velocities}. Colour by one
+   with caps_set_appearance {"colour": "column:NAME"}. Returns the length needed or -1. */
+int32_t caps_trajectory_columns(caps_doc* d, char* json, int32_t cap);
 
 typedef struct {
   double t_final, t_max, p_final, p_max;   /* K, atm */

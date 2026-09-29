@@ -115,6 +115,7 @@ System Trajectory::frame(size_t k) const {
     for (size_t i = 0; i < s.atoms.size() && i < positions[k].size(); ++i) s.atoms[i].pos = positions[k][i];
     if (k < cells.size()) s.cell = cells[k];
     if (k < timesteps.size()) s.timestep = timesteps[k];
+    if (k < velocities.size() && velocities[k].size() == s.atoms.size()) s.velocities = velocities[k];
   }
   return s;
 }

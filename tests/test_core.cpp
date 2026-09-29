@@ -1236,3 +1236,31 @@ TEST(Render, TransparencyAndRadiusPerAtom) {
   EXPECT_NEAR(st.props.at("Transparency")[0], 0.6, 1e-12);
   EXPECT_EQ(st.props.at("Transparency")[1], 0.0);
 }
+
+// A dump's other columns survive: velocities into each frame, every numeric column by its name in the atoms' id order
+// (the file lists them unsorted), and the magnitudes |f| and |v| from their components
+TEST(Io, DumpKeepsVelocitiesAndColumns) {
+  const auto path = (std::filesystem::temp_directory_path() / "caps_cols.lammpstrj").string();
+  {
+    std::ofstream o(path);
+    for (int step : {0, 100}) {
+      o << "ITEM: TIMESTEP\n" << step << "\nITEM: NUMBER OF ATOMS\n3\nITEM: BOX BOUNDS pp pp pp\n0 10\n0 10\n0 10\n";
+      o << "ITEM: ATOMS id type x y z vx vy vz fx fy fz c_pe\n";
+      o << "3 1 3 3 3 0.003 0 0 0 0 4 -3." << step << "\n";   // listed first, id 3
+      o << "1 1 1 1 1 0.001 0 0 3 4 0 -1\n";
+      o << "2 1 2 2 2 0 0.002 0 0 0 0 -2\n";
+    }
+  }
+  const Trajectory t = read_lammps_dump(path);
+  std::filesystem::remove(path);
+  ASSERT_EQ(t.frames(), 2u);
+  ASSERT_EQ(t.velocities.size(), 2u);
+  EXPECT_NEAR(t.velocities[0][0][0], 0.001, 1e-12);   // atom id 1
+  EXPECT_NEAR(t.velocities[0][2][0], 0.003, 1e-12);   // atom id 3
+  EXPECT_NEAR(t.frame(1).velocities[1][1], 0.002, 1e-12);
+  ASSERT_TRUE(t.columns.count("c_pe") && t.columns.count("|f|") && t.columns.count("|v|"));
+  EXPECT_FLOAT_EQ(t.columns.at("c_pe")[0][0], -1.0f);
+  EXPECT_FLOAT_EQ(t.columns.at("c_pe")[1][2], -3.1f);   // frame 2, id 3: "-3.100"
+  EXPECT_FLOAT_EQ(t.columns.at("|f|")[0][0], 5.0f);     // (3, 4, 0)
+  EXPECT_FLOAT_EQ(t.columns.at("|f|")[0][2], 4.0f);
+}
