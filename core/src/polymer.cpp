@@ -1634,11 +1634,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   };
   // the substrate first, keeping its molecule ids (a slab or filler is molecule 1; an earlier blend component keeps its
   // chains); the new chains are numbered after them
-  // residue names: the unit's name, three letters upper case (PDB), else U + its letter
+  // residue names: the unit's name, three letters upper case (PDB) — a leading "Poly" dropped, so Polystyrene is STY and
+  // Poly(vinyl chloride) VIN rather than POL for every polymer — else U + its letter
   std::vector<std::string> unit_code;
   for (size_t u = 0; u < spec.units.size(); ++u) {
-    std::string code;
-    for (char ch : spec.units[u].name)
+    std::string code, nm = spec.units[u].name;
+    if (nm.size() > 5 && (nm.rfind("Poly", 0) == 0 || nm.rfind("poly", 0) == 0)) nm = nm.substr(4);
+    for (char ch : nm)
       if (std::isalnum(static_cast<unsigned char>(ch)) && code.size() < 3) code += char(std::toupper(static_cast<unsigned char>(ch)));
     unit_code.push_back(code.empty() ? std::string("U") + char('A' + int(u % 26)) : code);
   }

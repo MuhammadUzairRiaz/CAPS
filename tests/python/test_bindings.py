@@ -415,4 +415,10 @@ check({"ph.prmtop", "ph.inpcrd"} <= names and abs(back["energy"]["total"] - ph_b
 kgm = caps.build.kremer_grest(chains=3, beads=10, sigma=5.5, temperature=450, bead_mass=104.15)
 bm = kgm.backmap_kg("*CC(*)c1ccccc1", name="styrene")
 check(bm.atoms == 3 * 10 * 16 + 6 and "relaxed" in bm.report, f"KG backmap: {bm.atoms} atoms · {bm.report.splitlines()[-1]}")
+# a real polymer coarse-grained from an all-atom reference: polystyrene, backbone + side group beads, and the same model
+# re-derived by mapping the reference's own trajectory-less cell
+cgp = caps.build.cg_from_polymer("*CC(*)c1ccccc1", name="styrene", scheme="backbone_side", chains=6, dp=12, density=1.04, temperature=450)
+types = {b["types"] for b in cgp.report["bonds"]}
+check(cgp.atoms == 6 * 12 * 2 and types == {"STY_B–STY_B", "STY_B–STY_S"} and cgp.field.report()["complete"] and 2.0 < cgp.report["sigma"] < 8,
+      f"structure-based CG: {cgp.atoms} beads · bonds {sorted(types)} · σ {cgp.report['sigma']:.2f} Å")
 print("all python checks passed")

@@ -13,6 +13,7 @@
 #include <string>
 
 #include "caps/amber.hpp"
+#include "caps/cg_map.hpp"
 #include "caps/analysis.hpp"
 #include "caps/adsorption.hpp"
 #include "caps/cbmc.hpp"
@@ -9026,6 +9027,108 @@ extern "C" caps_doc* caps_backmap(caps_doc* d, const char* beads_path, int32_t p
     for (const auto& n : notes) t += n + "\n";
     report_out(t, report, cap);
     return nd;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+// Structure-based coarse-graining (cg_map.hpp): the document's all-atom structure — every frame of it — mapped to beads,
+// with Boltzmann-inverted bonds and angles and a repulsive WCA from the intermolecular bead g(r). A new document carrying
+// its bead model. options: {scheme: unit | backbone_side | backbone_n, per_bead, temperature}. Report JSON: notes, bond
+// and angle types, sigma, cut, epsilon, g(r).
+namespace {
+caps::CgMapOptions cg_map_options(const caps::Json& j) {
+  caps::CgMapOptions o;
+  o.scheme = j.text("scheme", "unit");
+  o.per_bead = int(j.num("per_bead", 3));
+  o.temperature = j.num("temperature", 300);
+  return o;
+}
+std::string cg_map_report(const caps::CgMapResult& r) {
+  caps::Json j = caps::Json::object();
+  caps::Json notes = caps::Json::array(), bonds = caps::Json::array(), angles = caps::Json::array(), gr = caps::Json::array();
+  for (const auto& n : r.notes) notes.push_back(n);
+  for (const auto& b : r.bonds) {
+    caps::Json o = caps::Json::object();
+    o["types"] = b.a + "–" + b.b, o["r0"] = b.r0, o["k"] = b.k, o["sd"] = b.sd, o["count"] = double(b.count);
+    bonds.push_back(o);
+  }
+  for (const auto& a : r.angles) {
+    caps::Json o = caps::Json::object();
+    o["types"] = a.a + "–" + a.b + "–" + a.c, o["theta0"] = a.theta0 * 180 / 3.14159265358979323846, o["k"] = a.k, o["sd"] = a.sd * 180 / 3.14159265358979323846,
+    o["count"] = double(a.count);
+    angles.push_back(o);
+  }
+  for (const auto& [x, y] : r.gr) { caps::Json p = caps::Json::array(); p.push_back(x); p.push_back(y); gr.push_back(p); }
+  j["ok"] = true, j["notes"] = notes, j["bonds"] = bonds, j["angles"] = angles, j["gr"] = gr;
+  j["sigma"] = r.sigma, j["cut"] = r.cut, j["epsilon"] = r.epsilon, j["beads"] = double(r.beads.atoms.size());
+  return j.dump(0);
+}
+caps_doc* cg_doc(caps::CgMapResult& r, const caps_doc* from, const std::string& summary, caps::KeyValues params) {
+  caps::System beads = r.beads;
+  caps::Trajectory t;
+  t.topology = beads;
+  t.positions = r.frames;
+  t.cells = r.cells;
+  for (size_t k = 0; k < r.frames.size(); ++k) t.timesteps.push_back(int64_t(k));
+  auto* d = new caps_doc;
+  d->traj = std::move(t);
+  d->current = d->traj.frames() - 1;
+  refresh(d);
+  if (from) d->prov = from->prov;
+  prov_step(d, "cg.map", summary, std::move(params), "", {"tschop1998", "reith2003"});
+  install_file_field(d);   // the bead model goes with the beads
+  return d;
+}
+}  // namespace
+
+extern "C" caps_doc* caps_cg_map(caps_doc* d, const char* options_json, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    const caps::CgMapOptions o = cg_map_options(j);
+    caps::System aa = d->traj.topology;
+    caps::CgMapResult r = caps::cg_map(aa, o, d->traj.positions, d->traj.cells);
+    report_out(cg_map_report(r), report, cap);
+    return cg_doc(r, d, "all-atom structure mapped to beads (" + o.scheme + ")",
+                  {{"scheme", o.scheme}, {"per_bead", std::to_string(o.per_bead)}, {"temperature", g6(o.temperature)}, {"frames", std::to_string(r.frames.size())}});
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+// A polymer (spec JSON as Grow takes it) coarse-grained from an all-atom reference melt: `chains` × `dp` grown, compressed
+// to `density` (g/cm³) by the built-in force field (push-off, then minimisation), then mapped (options as caps_cg_map).
+extern "C" caps_doc* caps_cg_from_polymer(const char* spec_json, const char* options_json, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    caps::GrowOptions g;
+    g.chains = int(j.num("chains", 8));
+    c.dp = int(j.num("dp", 20));
+    g.density = 0.3;
+    g.auto_scale = true;
+    g.curve = true;
+    g.seed = uint64_t(j.num("seed", 1));
+    if (progress) g.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
+    caps::GrowReport gr;
+    caps::System aa = caps::grow_chains(c, g, &gr);
+    caps::RelaxOptions ro;
+    ro.target_density = j.num("density", 1.0);
+    ro.ftol = 2.0;
+    ro.max_iterations = 3000;
+    ro.energy = elec(ro.energy);
+    caps::RelaxReport rr;
+    caps::relax(aa, ro, &rr);
+    caps::make_molecules_whole(aa);
+    caps::CgMapResult r = caps::cg_map(aa, cg_map_options(j));
+    r.notes.insert(r.notes.begin(), "reference: " + std::to_string(g.chains) + " chains × " + std::to_string(c.dp) + " units grown and compressed to " +
+                                        g6(aa.density()) + " g/cm³ (" + rr.field + ")");
+    report_out(cg_map_report(r), report, cap);
+    return cg_doc(r, nullptr, "polymer coarse-grained from an all-atom reference melt (" + cg_map_options(j).scheme + ")",
+                  {{"chains", std::to_string(g.chains)}, {"dp", std::to_string(c.dp)}, {"density", g6(ro.target_density)}, {"scheme", cg_map_options(j).scheme},
+                   {"temperature", g6(cg_map_options(j).temperature)}});
   } catch (const std::exception& e) {
     g_error = e.what();
     return nullptr;
