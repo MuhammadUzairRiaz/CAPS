@@ -2,6 +2,9 @@
 <p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.ChecksPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="TextBox.warn"><Setter Property="BorderBrush" Value="{DynamicResource WarnB}" /><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
+  </p:PageBase.Styles>
   <p:PageBase.Resources>
     <DataTemplate x:Key="CheckItem" x:DataType="vm:FileCheckRow">
       <Border Background="{DynamicResource Bg1B}" BorderBrush="{Binding Border}" BorderThickness="1" CornerRadius="8" Padding="12,11">
@@ -33,6 +36,36 @@
     </Border>
     <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <TextBlock Text="{Binding ChecksSummary}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+    </Border>
+    <!-- atom types: the element and mass of each, editable (a data file gives masses; the element is read from them) -->
+    <Border DockPanel.Dock="Bottom" Padding="22,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" IsVisible="{Binding HasTypeRows}" MaxHeight="300">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="3" Margin="0,0,0,8">
+          <TextBlock Text="ATOM TYPES" Classes="h3" />
+          <TextBlock Classes="dim" TextWrapping="Wrap" Text="The element of each type, and its mass. An amber element differs from the one its mass points to. Apply sets every atom of the type (the type and its label are kept; undo with ⌘Z); assign the force field again afterwards." />
+        </StackPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="60,*,90,100,110,Auto" ColumnSpacing="10" Margin="0,0,0,4">
+          <TextBlock Text="TYPE" Classes="h3" /><TextBlock Grid.Column="1" Text="LABEL" Classes="h3" /><TextBlock Grid.Column="2" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
+          <TextBlock Grid.Column="3" Text="ELEMENT" Classes="h3" /><TextBlock Grid.Column="4" Text="MASS (g/mol)" Classes="h3" />
+        </Grid>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding TypeRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AtomTypeRow">
+                <Grid ColumnDefinitions="60,*,90,100,110,Auto" ColumnSpacing="10" Margin="0,2">
+                  <TextBlock Text="{Binding Type}" Classes="mono" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding Count}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="3" Text="{Binding Element}" Classes="mono" Height="28" MinHeight="28" Padding="6,2" ToolTip.Tip="{Binding MismatchTip}"
+                           Classes.warn="{Binding Mismatch}" />
+                  <NumericUpDown Grid.Column="4" Value="{Binding Mass}" Minimum="0" Increment="0.001" FormatString="0.0###" ShowButtonSpinner="False" Height="28" MinHeight="28" />
+                  <Button Grid.Column="5" Classes="small" Content="Apply" Click="OnApplyType" Tag="{Binding}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
     </Border>
     <Grid ColumnDefinitions="*,*" ColumnSpacing="18" Margin="22,16">
       <DockPanel>
