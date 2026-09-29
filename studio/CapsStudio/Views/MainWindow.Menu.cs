@@ -91,6 +91,7 @@ public partial class MainWindow
         menu.Add(Top("Build",
             Page("Polymer cell (grow chains)…", 0),
             Page("Polymer builder…", 13),
+            Cmd("Repeat unit from the picked head and tail", "polymer.unit from picked"),
             Page("Copolymer builder…", 60),
             Page("Blend builder…", 16),
             Page("Coarse-grained melt…", 44),

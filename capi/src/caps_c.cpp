@@ -6523,6 +6523,19 @@ extern "C" int32_t caps_type_table(caps_doc* d, char* json, int32_t cap) {
   return report_out(arr.dump(0), json, cap);
 }
 
+extern "C" int32_t caps_repeat_unit_smiles(caps_doc* d, int32_t head, int32_t tail, char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    if (head < 0 || tail < 0) throw std::invalid_argument("pick the head atom, then the tail atom");
+    j["smiles"] = caps::repeat_unit_smiles(d->frame, uint32_t(head), uint32_t(tail));
+    j["ok"] = true;
+  } catch (const std::exception& e) {
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), json, cap);
+}
+
 extern "C" int32_t caps_label_kinds(char* json, int32_t cap) {
   caps::Json j = caps::Json::object();
   for (const auto& [name, list] : {std::make_pair("atom", &caps::atom_label_kinds()), std::make_pair("bond", &caps::bond_label_kinds())}) {

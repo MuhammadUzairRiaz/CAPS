@@ -169,6 +169,8 @@ public sealed partial class MainViewModel
         AddCommand(new PaletteCommand { Title = "Full-screen view", Id = "view.fullscreen", Icon = "expand", Section = "View",
             Keywords = "full screen presentation screenshot clean view only visualization window big", Enabled = () => _doc != null || RunLiveDoc != null,
             Run = () => FullViewRequested?.Invoke(RunLiveDoc != null) });
+        AddCommand(new PaletteCommand { Title = "Repeat unit from the picked head and tail", Id = "polymer.unit from picked", Icon = "grow", Section = "Build",
+            Keywords = "repeat unit monomer head tail attachment star polymer from molecule picked", Enabled = () => _doc != null && _selection.Count == 2, Run = UsePickedAsRepeatUnit });
         AddCommand(new PaletteCommand { Title = "Clean up (UFF)", Id = "edit.clean", Icon = "wand", Section = "Edit",
             Keywords = "clean uff minimise geometry picked tidy", Enabled = () => _doc != null, Run = () => _ = AutoClean() });
         AddCommand(new PaletteCommand { Title = "Find primitive cell", Id = "crystal.primitive", Icon = "cube", Section = "Build",
