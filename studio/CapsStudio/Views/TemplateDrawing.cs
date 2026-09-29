@@ -39,6 +39,7 @@ public sealed class TemplateDrawing : Control
     public override void Render(DrawingContext ctx)
     {
         var b = Bounds;
+        ctx.FillRectangle(Brushes.Transparent, new Rect(b.Size));   // the whole pane takes the pointer (drags between atoms)
         if (_atoms.Count == 0 || b.Width < 40) return;
         double minx = _atoms.Min(a => a.X), maxx = _atoms.Max(a => a.X), miny = _atoms.Min(a => a.Y), maxy = _atoms.Max(a => a.Y);
         var span = Math.Max(Math.Max(maxx - minx, maxy - miny), 1.0);
@@ -48,6 +49,7 @@ public sealed class TemplateDrawing : Control
         var cy = (miny + maxy) / 2;
         Point P(double x, double y) => new(b.Width / 2 + (x - cx) * scale, b.Height / 2 - (y - cy) * scale);
         var pos = _atoms.ToDictionary(a => a.Map, a => P(a.X, a.Y));
+        _screen = pos;
         var text = Tokens.Brush("TextB");
         foreach (var (a, c) in _bonds)
         {
@@ -74,5 +76,43 @@ public sealed class TemplateDrawing : Control
             var n = new FormattedText(a.Map.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, mono, 10, Tokens.Brush("AccB"));
             ctx.DrawText(n, new Point(badge.X - n.Width / 2, badge.Y - n.Height / 2));
         }
+        // a drag in progress: a line from the atom it started on to the pointer
+        if (_dragFrom is int f && _screen.TryGetValue(f, out var from))
+            ctx.DrawLine(new Pen(Tokens.Brush("AccB"), 2, new DashStyle([3, 3], 0)), from, _dragTo);
+    }
+
+    // drag from one atom to another (design/boards/ReactionTemplate "drag between … to map atoms"): Linked(a, b) on release
+    private Dictionary<int, Point> _screen = new();
+    private int? _dragFrom;
+    private Point _dragTo;
+    public event Action<int, int>? Linked;
+    private int? AtomAt(Point p)
+    {
+        foreach (var (m, q) in _screen)
+            if (Math.Abs(q.X - p.X) < 16 && Math.Abs(q.Y - p.Y) < 16) return m;
+        return null;
+    }
+    protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (Linked == null) return;
+        _dragFrom = AtomAt(e.GetPosition(this));
+        if (_dragFrom != null) { _dragTo = e.GetPosition(this); e.Pointer.Capture(this); e.Handled = true; }
+    }
+    protected override void OnPointerMoved(Avalonia.Input.PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_dragFrom == null) return;
+        _dragTo = e.GetPosition(this);
+        InvalidateVisual();
+    }
+    protected override void OnPointerReleased(Avalonia.Input.PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        if (_dragFrom is not int a) return;
+        _dragFrom = null;
+        e.Pointer.Capture(null);
+        InvalidateVisual();
+        if (AtomAt(e.GetPosition(this)) is int b && b != a) Linked?.Invoke(a, b);
     }
 }

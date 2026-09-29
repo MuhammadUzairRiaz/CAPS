@@ -147,7 +147,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -601,6 +601,19 @@ class Document:
         if library().caps_gromacs(self._h, _enc(str(stem)), buf, need) < 0:
             raise _error()
         return buf.value.decode()
+
+    def backmap_kg(self, unit: str, name: str = "unit", relax: bool = True, seed: int = 1) -> "Document":
+        """A Kremer–Grest melt (mapped to real units) back to all atoms, one repeat unit (SMILES with two *) per bead: all-atom
+        chains of the melt's lengths grown, each unit carried onto its bead, relaxed with the default force field. A new
+        Document; assign a force field (e.g. gaff2) on it for runs."""
+        rep = _report()
+        spec = {"units": [{"name": name, "smiles": unit}]}
+        h = library().caps_kg_backmap(self._h, _enc(json.dumps(spec)), _enc(json.dumps({"relax": 1 if relax else 0, "seed": seed})), rep, len(rep))
+        if not h:
+            raise _error()
+        d = Document(h, "backmapped")
+        d.report = rep.value.decode()
+        return d
 
     def export_engines(self, folder: str, stem: str = "system", lammps: bool = True, gromacs: bool = True, run: str = "check", **opts) -> dict:
         """The simulation files for LAMMPS (stem.data, stem.in with every pair_coeff and the run) and GROMACS (stem.top,

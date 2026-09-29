@@ -9015,6 +9015,107 @@ extern "C" caps_doc* caps_backmap(caps_doc* d, const char* beads_path, int32_t p
   }
 }
 
+// Kremer–Grest → all atoms (design/boards/CoarseGrained "Backmap to all atoms"): one bead per repeat unit. Each KG chain
+// gets an all-atom chain of as many units (grown sparse with the polymer builder), whose units — its coarse-graining by
+// the unit's backbone atoms per bead — are carried rigidly onto the KG beads (backmap: translated to the bead, turned by
+// the fit to the neighbouring beads), in the KG cell; then relaxed (push-off, minimisation) with the default force field.
+extern "C" caps_doc* caps_kg_backmap(caps_doc* d, const char* spec_json, const char* options_json, char* report, int32_t cap) {
+  try {
+    const caps::System kg = d->frame;
+    if (kg.atoms.empty()) throw std::runtime_error("no beads");
+    const bool kg_model = d->field && !d->field->model.empty() && caps::Json::parse(d->field->model).text("model", "") == "kremer-grest";
+    bool named = true;
+    for (const auto& a : kg.atoms) named = named && a.name == "KG";
+    if (!kg_model && !named) throw std::runtime_error("not a Kremer–Grest melt: build one on the Coarse-grained page (MARTINI beads backmap from Model resolution)");
+    if (kg_model && caps::Json::parse(d->field->model).num("sigma", 0) <= 0)
+      throw std::runtime_error("the melt is in reduced units: map it to the polymer first (σ in Å, T, bead mass), so the beads sit where the units will");
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::ChainSpec c = spec_from(spec_json ? spec_json : "{}");
+    if (c.units.empty()) throw std::runtime_error("choose the repeat unit each bead stands for");
+    // the unit's backbone atoms (head to tail along bonds): the atoms per bead of the coarse-graining
+    int per_bead = 0;
+    {
+      const caps::UnitInfo ui = caps::repeat_unit_info(c.units.front().smiles);
+      caps::MolGraph g = caps::parse_smiles(c.units.front().smiles);
+      if (ui.head < 0 || ui.tail < 0) throw std::runtime_error("the repeat unit needs a head and a tail (two * attachment points)");
+      std::vector<int> dist(g.atoms.size(), -1);
+      std::vector<int> q{ui.head};
+      dist[size_t(ui.head)] = 0;
+      for (size_t h = 0; h < q.size(); ++h)
+        for (const auto& b : g.bonds) {
+          const int u = q[h], w = b.a == u ? b.b : b.b == u ? b.a : -1;
+          if (w >= 0 && dist[size_t(w)] < 0) dist[size_t(w)] = dist[size_t(u)] + 1, q.push_back(w);
+        }
+      per_bead = dist[size_t(ui.tail)] + 1;
+      if (per_bead < 1) throw std::runtime_error("the unit's head and tail are not connected");
+    }
+    // the KG chains: molecules in order, beads in file order within each
+    int nm = 0;
+    caps::System kgm = kg;
+    kgm.has_mol = false;
+    const auto mol = kgm.molecules(&nm);
+    std::vector<std::vector<uint32_t>> chains(static_cast<size_t>(nm));
+    for (uint32_t i = 0; i < kg.atoms.size(); ++i) chains[size_t(mol[i])].push_back(i);
+    caps::GrowOptions g;
+    g.chains = nm;
+    g.seed = uint64_t(o.num("seed", 1));
+    g.density = o.num("density", 0.1);   // sparse: the units are placed on the beads afterwards
+    g.auto_scale = true;
+    g.curve = true;
+    c.chain_dp.clear();
+    for (const auto& ch : chains) c.chain_dp.push_back(int(ch.size()));
+    c.dp = c.chain_dp.front();
+    caps::GrowReport gr;
+    const caps::System aa = caps::grow_chains(c, g, &gr);
+    // the all-atom chains coarse-grained the same way must give the KG chains' bead counts
+    caps::ResolutionReport rr0;
+    const caps::System cg = caps::coarse_grain(aa, per_bead, &rr0);
+    if (cg.atoms.size() != kg.atoms.size())
+      throw std::runtime_error("the grown chains coarse-grain to " + std::to_string(cg.atoms.size()) + " beads, the melt has " + std::to_string(kg.atoms.size()) +
+                               " (end groups add to the backbone): choose the unit each bead stands for");
+    // the KG beads in the order of cg's beads: molecule by molecule
+    int cgm = 0;
+    caps::System cgs = cg;
+    cgs.has_mol = false;
+    const auto cmol = cgs.molecules(&cgm);
+    std::vector<std::vector<uint32_t>> cg_chains(static_cast<size_t>(cgm));
+    for (uint32_t i = 0; i < cg.atoms.size(); ++i) cg_chains[size_t(cmol[i])].push_back(i);
+    if (cgm != nm) throw std::runtime_error("the grown chains do not match the melt's chains");
+    caps::System beads = cg;
+    for (size_t k = 0; k < cg_chains.size(); ++k) {
+      if (cg_chains[k].size() != chains[k].size()) throw std::runtime_error("chain " + std::to_string(k + 1) + ": bead counts differ after coarse-graining");
+      for (size_t j = 0; j < chains[k].size(); ++j) beads.atoms[cg_chains[k][j]].pos = kg.atoms[chains[k][j]].pos;
+    }
+    beads.cell = kg.cell;
+    caps::BackmapReport rep;
+    caps::System s = caps::backmap(aa, beads, per_bead, &rep);
+    std::vector<std::string> notes = {std::to_string(nm) + " chains · " + std::to_string(kg.atoms.size()) + " beads → " + std::to_string(s.atoms.size()) +
+                                      " atoms (one " + c.units.front().name + " unit per bead, " + std::to_string(per_bead) + " backbone atoms each)"};
+    for (const auto& n : rep.notes) notes.push_back(n);
+    if (o.num("relax", 1) != 0) {
+      caps::RelaxOptions ro;
+      ro.ftol = 1.0;
+      ro.max_iterations = 5000;
+      ro.energy = elec(ro.energy);
+      caps::RelaxReport rr;
+      caps::relax(s, ro, &rr);
+      char b[200];
+      std::snprintf(b, sizeof b, "relaxed (%s): E %.1f → %.1f kcal/mol, |F|max %.2f kcal/mol/Å, %.3f g/cm³", rr.field.c_str(), rr.initial.total(), rr.final.total(),
+                    rr.fmax_final, s.density());
+      notes.push_back(b);
+    }
+    auto* nd = doc_of_system(std::move(s), d, "model.backmap_kg", "Kremer–Grest beads backmapped to all atoms, one repeat unit per bead",
+                             {{"unit", c.units.front().smiles}, {"per_bead", std::to_string(per_bead)}, {"chains", std::to_string(nm)}, {"beads", std::to_string(kg.atoms.size())}});
+    std::string t;
+    for (const auto& n : notes) t += n + "\n";
+    report_out(t, report, cap);
+    return nd;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
 extern "C" caps_doc* caps_pipeline_materialize(caps_doc* d) {
   try {
     if (!d->pstate) throw std::runtime_error("no pipeline result to make real");
