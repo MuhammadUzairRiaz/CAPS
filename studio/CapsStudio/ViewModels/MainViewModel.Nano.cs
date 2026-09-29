@@ -17,11 +17,44 @@ public sealed partial class MainViewModel
     public int SilanePick { get => _silanePick; set => Set(ref _silanePick, Math.Clamp(value, 0, SilaneIds.Length - 1)); }
     public decimal? SilaneFractionD { get => (decimal)_silaneFraction; set { _silaneFraction = Math.Clamp((double)(value ?? 0.25m), 0.01, 1); Raise(); } }
     public decimal? SilaneSpacingD { get => (decimal)_silaneSpacing; set { _silaneSpacing = Math.Clamp((double)(value ?? 5m), 2, 30); Raise(); } }
-    public void GraftSilane()
+    public async Task GraftSilane()
     {
-        if (_doc == null) return;
+        if (!await NanoTarget()) return;
         if (RunEdit(new { op = "graft", silane = SilaneIds[_silanePick], fraction = _silaneFraction, min_spacing = _silaneSpacing, seed = 1 }) is { } r)
-            Status = (r["what"]?.GetValue<string>() ?? "Grafted") + " · relax before dynamics";
+            Grafted(r["what"]?.GetValue<string>() ?? "Grafted");
+    }
+
+    // the structure the builder made last, from which settings: grafting goes on it while the settings are unchanged
+    private CapsDocument? _nanoBuiltDoc;
+    private string _nanoBuiltOpts = "";
+
+    /// <summary>What the graft buttons work on: the structure in the Studio — or, when none is open or the one open is
+    /// this builder's with other settings, the filler built first from the settings above.</summary>
+    private async Task<bool> NanoTarget()
+    {
+        if (!Idle) return false;
+        if (_fnTarget == 1)
+        {
+            if (_doc != null) return true;
+            NanoError = "No structure is open in the Studio: choose 'The filler these settings build', or open one";
+            return false;
+        }
+        // the builder's own filler: the one it made last while it is active and the settings are unchanged, else built now
+        var opts = NanoOptions();
+        if (_doc != null && _doc == _nanoBuiltDoc && _nanoBuiltOpts == opts) return true;
+        await BuildNano(fillerOnly: true);
+        return _doc != null && _doc == _nanoBuiltDoc;
+    }
+    public static readonly string[] FnTargets = ["The filler these settings build", "The structure open in the Studio"];
+    private int _fnTarget;
+    public int FnTarget { get => _fnTarget; set => Set(ref _fnTarget, Math.Clamp(value, 0, 1)); }
+
+    /// <summary>After a graft: the groups are on the structure shown; a matrix grown next goes around it.</summary>
+    private void Grafted(string what)
+    {
+        NanoAroundShown = true;
+        NanoLog = what + "\nThe grafted structure is the Studio's active one: Polymer matrix (Around the structure shown is now on) › Build composite grows the chains around it; relax before dynamics.";
+        Status = what + " · a polymer matrix built next grows around it";
     }
 
     // ---- functional groups on the structure shown (sidewalls, ends, edges of tubes and sheets; functionalize.hpp)
@@ -49,10 +82,10 @@ public sealed partial class MainViewModel
     public string FnElements { get => _fnElements; set => Set(ref _fnElements, value ?? ""); }
     public bool NanoIsHoneycomb => _nanoKind is 0 or 1;
 
-    /// <summary>Grafts the groups on the structure shown (undoable).</summary>
-    public void Functionalize()
+    /// <summary>Grafts the groups on the structure shown (undoable), building the filler first when none is shown.</summary>
+    public async Task Functionalize()
     {
-        if (_doc == null) return;
+        if (!await NanoTarget()) return;
         var spec = new System.Text.Json.Nodes.JsonObject
         {
             ["op"] = "functionalize", ["group"] = _fnGroup.Trim(), ["pattern"] = FnPatternIds[_fnPattern], ["elements"] = _fnElements.Trim(),
@@ -60,7 +93,8 @@ public sealed partial class MainViewModel
             ["pitch"] = (double)_fnPitch, ["side"] = FnSideIds[_fnSide], ["seed"] = 1,
         };
         if (_fnPattern == 6) spec["atoms"] = "selection";
-        if (RunEdit(spec) is { } r) Status = (r["what"]?.GetValue<string>() ?? "Functionalised") + " · relax before dynamics";
+        if (RunEdit(spec) is { } r) Grafted(r["what"]?.GetValue<string>() ?? "Functionalised");
+        else NanoError = EditError;
     }
 
     public static readonly string[] ParticleShapes = ["Sphere", "Cuboctahedron", "Octahedron", "Cube", "Fibre", "Truncated octahedron", "Icosahedron"];
@@ -299,7 +333,10 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Builds the filler (or the composite) and opens it as the Studio document.</summary>
-    public async Task BuildNano()
+    public async Task BuildNano() => await BuildNano(false);
+
+    /// <summary>fillerOnly: the sheet, tube or particle alone, whatever the matrix switch says (before grafting on it).</summary>
+    public async Task BuildNano(bool fillerOnly)
     {
         if (NanoBuilding) return;
         NanoBuilding = true;
@@ -317,10 +354,13 @@ public sealed partial class MainViewModel
                 RelaxCompress = false;
                 Status = "Pore built · the walls (molecule 1) are held in Relax and Dynamics";
             }
-            else if (!_nanoMatrix)
+            else if (!_nanoMatrix || fillerOnly)
             {
                 var (doc, rep) = await Task.Run(() => CapsDocument.NanoBuild(opts, title));
                 Show(doc, title);
+                _nanoBuiltDoc = doc;
+                _nanoBuiltOpts = opts;
+                NanoError = "";
                 NanoLog = rep;
                 Status = "Built · " + (rep.Split('\n').FirstOrDefault() ?? "");
             }
@@ -339,8 +379,15 @@ public sealed partial class MainViewModel
                     return true;
                 }
                 // around the structure shown (a filler built and functionalised here), or around a new filler from the options
+                // "around the structure shown" with nothing shown: the filler is built from the settings first
+                if (_nanoAroundShown && _doc == null)
+                {
+                    NanoBuilding = false;
+                    await BuildNano(fillerOnly: true);
+                    NanoBuilding = true;
+                }
                 var shown = _nanoAroundShown ? _doc : null;
-                if (_nanoAroundShown && shown == null) throw new InvalidOperationException("open or build the filler first");
+                if (_nanoAroundShown && shown == null) throw new InvalidOperationException("the filler could not be built: see the message above");
                 var fillerName = shown != null ? Title.Replace(" (unsaved)", "") : title;
                 var (doc, rep) = shown != null
                     ? await Task.Run(() => shown.EmbedInMatrix(optsText, specText, g, Progress, fillerName + " composite"))
