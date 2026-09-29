@@ -1117,6 +1117,8 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));
   rep.notes.push_back("force field during the run: " + rep.field);
   rep.chains_after = tag;
+  // new bonds join molecules across the cell: every molecule whole again, so bonded atoms carry consistent image flags
+  if (s.cell.valid()) make_molecules_whole(s);
   s.unwrapped = true;
   if (rep_out) *rep_out = std::move(rep);
 }

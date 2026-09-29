@@ -114,7 +114,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
   BondReactReport rep;
   std::filesystem::create_directories(dir);
   System s = s0;
-  if (s.cell.valid() && !s.unwrapped) make_molecules_whole(s);
+  if (s.cell.valid()) make_molecules_whole(s);   // bonded atoms on the same side: consistent image flags, whole templates
   const size_t n = s.atoms.size();
   const auto ff0 = field(s);
   if (!ff0) throw ReactError("the force field cannot describe the structure");
@@ -164,6 +164,38 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       for (size_t i = 0; i < n; ++i)
         if (!dead[i]) var.post_of[i] = next++;
       if (size_t(next) != var.post.atoms.size()) throw ReactError("internal: the reacted copy has " + std::to_string(var.post.atoms.size()) + " atoms, expected " + std::to_string(next));
+      // LAMMPS updates types and charges only inside the template, and only on atoms whose 1-2 and 1-3 neighbours are all
+      // in it ("landlocked"): the template reaches three bonds past the farthest atom whose type or charge the reaction changes
+      {
+        std::shared_ptr<const ForceField> ffp;
+        try {
+          ffp = field(var.post);
+        } catch (const std::exception& e) {
+          throw ReactError(std::string("the force field cannot describe a reacted site of ") + templates[k].name + ": " + e.what() +
+                           " — add the missing parameters (Force field › Fill gaps)");
+        }
+        std::map<uint32_t, int> dist;
+        std::vector<uint32_t> q;
+        for (int map : changed_maps(templates[k])) {
+          const uint32_t a = atom_of(templates[k], var.site.match, map);
+          if (dist.emplace(a, 0).second) q.push_back(a);
+        }
+        for (size_t h = 0; h < q.size(); ++h)
+          if (dist[q[h]] < 12)
+            for (uint32_t w : nb[q[h]])
+              if (dist.emplace(w, dist[q[h]] + 1).second) q.push_back(w);
+        int far = 0;
+        for (size_t i = 0; i < n; ++i) {
+          if (var.post_of[i] < 0) continue;
+          const size_t j = size_t(var.post_of[i]);
+          if (ffp->atom_type[j] == ff0->atom_type[i] && std::fabs(ffp->charge[j] - ff0->charge[i]) < 1e-6) continue;
+          auto it = dist.find(uint32_t(i));
+          if (it == dist.end()) throw ReactError("the reaction " + templates[k].name + " changes atom " + std::to_string(i + 1) + " more than 12 bonds away (type or charge)");
+          far = std::max(far, it->second);
+        }
+        const int need = std::max(o.radius, far + 3);
+        if (need > o.radius) var.site = cut(s, nb, ff0->atom_type, templates[k], var.site.match, int(k), need);
+      }
       rep.covered += int(by[v].first);
       rep.variants.push_back({templates[k].name, var.name, int(by[v].first), int(var.site.atoms.size()), 0, 0});
       variants.push_back(std::move(var));
