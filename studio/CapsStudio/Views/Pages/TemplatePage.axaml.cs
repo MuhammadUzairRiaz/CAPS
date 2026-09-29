@@ -14,6 +14,8 @@ public partial class TemplatePage : PageBase
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not MainViewModel vm) return;
+            // pre-reaction pane: a drag from one atom to another forms that bond (or breaks it when the pattern has it)
+            this.FindControl<TemplateDrawing>("Pre")!.Linked += (a, b) => vm.ToggleTemplateBond(a, b);
             vm.TemplateDrawn += () =>
             {
                 this.FindControl<TemplateDrawing>("Pre")!.Set(vm.TemplatePre, [], vm.TemplateBroken);

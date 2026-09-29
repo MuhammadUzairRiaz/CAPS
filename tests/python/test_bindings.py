@@ -411,4 +411,8 @@ with tempfile.TemporaryDirectory() as td:
     back = caps.open(os.path.join(td, "ph.prmtop")).field.report()
 check({"ph.prmtop", "ph.inpcrd"} <= names and abs(back["energy"]["total"] - ph_back["energy"]["total"]) < 1e-4,
       f"AMBER export: {sorted(names)} · round trip {back['energy']['total']:.6f} vs {ph_back['energy']['total']:.6f}")
+# a Kremer–Grest melt mapped to styrene units, back to all atoms: 16 atoms a bead (+ an H at each chain end)
+kgm = caps.build.kremer_grest(chains=3, beads=10, sigma=5.5, temperature=450, bead_mass=104.15)
+bm = kgm.backmap_kg("*CC(*)c1ccccc1", name="styrene")
+check(bm.atoms == 3 * 10 * 16 + 6 and "relaxed" in bm.report, f"KG backmap: {bm.atoms} atoms · {bm.report.splitlines()[-1]}")
 print("all python checks passed")
