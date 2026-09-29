@@ -1339,6 +1339,16 @@ internal static class SelfTest
             vm.OpenChecks();
             var back = vm.TypeRows.Any(r => r.Element == "H");
             Check(typeCount >= 2 && set && back, $"atom types: {typeCount} types · set Si {set} · undone {back}");
+            // Pack around it, filled to 0.6 g/cm³ with water: N = (0.6 × 35937 × 0.60221 − 8352.3) / 18.015 = 257
+            var w = Path.Combine(outDir, "caps-selftest-one-water.xyz");
+            File.WriteAllText(w, "3\nwater\nO 0 0 0\nH 0.9572 0 0\nH -0.2400 0.9266 0\n");
+            vm.PackStart = 1;
+            vm.NewPackInput();
+            vm.AddPackStructure(w);
+            vm.FillDensity = 0.6m;
+            vm.FillToDensity();
+            Check(vm.PackText.Contains("number 257") && vm.FillText.StartsWith("257 ×"), $"fill to density: {vm.FillText}");
+            vm.PackStart = 0;
             vm.SetModule(8);
         }
 
