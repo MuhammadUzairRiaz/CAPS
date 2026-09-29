@@ -67,7 +67,9 @@ public sealed partial class MainViewModel
         new("Poster panel", 250, 300, 0),
         new("Slide 16:9", 0, 0, 1920),
     ];
-    public static readonly string[] FigureFormats = ["PNG · RGBA", "SVG · vector"];
+    public static readonly string[] FigureFormats = ["PNG · RGBA", "SVG · vector", "TIFF · RGB", "PDF · page (raster)"];
+    /// <summary>The file extension of the chosen format.</summary>
+    public string FigExtension => _figFormat switch { 1 => "svg", 2 => "tiff", 3 => "pdf", _ => "png" };
     public static readonly string[] FigureAspects = ["16:9", "4:3", "1:1", "As the view"];
 
     public ObservableCollection<FigureTile> FigureTiles { get; } =
@@ -180,6 +182,8 @@ public sealed partial class MainViewModel
     public string FigPixelsText { get { var (w, h) = FigPixels; return $"{w} × {h}"; } }
     public string FigNote => _perspective ? "Perspective view: the scale bar is true only at the centre of the cell. Switch to orthographic for a figure." :
         FigFormat == 1 ? "SVG keeps atoms as vector shapes; transparent SVG has no background shape." :
+        FigFormat == 2 ? "TIFF: uncompressed 8-bit RGB with the dpi in its resolution tags (a transparent background is laid on white)." :
+        FigFormat == 3 ? "PDF: one page the figure's size at the chosen dpi holding it as an image (not vector — use SVG for vector)." :
         "PNG keeps an alpha channel on Transparent; the dpi is written into the file.";
 
     private void RaiseFigure()
@@ -254,7 +258,8 @@ public sealed partial class MainViewModel
 
     /// <summary>Renders the figure at full size and writes it (PNG with overlay and dpi, or SVG with the overlay as
     /// vector marks). compose draws the PNG overlay (Avalonia, in the view layer).</summary>
-    public async Task<string> ExportFigure(string path, Action<byte[], int, int, FigureOverlay, double, string> composePng, Action<string, FigureOverlay> addSvg)
+    public async Task<string> ExportFigure(string path, Action<byte[], int, int, FigureOverlay, double, string> composePng, Action<string, FigureOverlay> addSvg,
+                                           Func<byte[], int, int, FigureOverlay, byte[]>? compose = null)
     {
         if (_doc == null) throw new InvalidOperationException("nothing open");
         var doc = _doc;
@@ -276,7 +281,22 @@ public sealed partial class MainViewModel
         {
             var rgba = new byte[w * h * 4];
             await Task.Run(() => doc.Render(cam, opt, rgba));
-            composePng(rgba, w, h, overlay, dpi, path);
+            if (_figFormat >= 2 && compose != null)
+            {
+                var pix = compose(rgba, w, h, overlay);
+                var d = dpi > 0 ? dpi : 300;
+                if (_figFormat == 2)
+                {
+                    for (var i = 0; i < pix.Length; i += 4)   // no alpha in a baseline RGB TIFF: onto white
+                    {
+                        var a = pix[i + 3] / 255.0;
+                        for (var c = 0; c < 3; ++c) pix[i + c] = (byte)Math.Round(pix[i + c] * a + 255 * (1 - a));
+                    }
+                    await Task.Run(() => Views.FigureFiles.WriteTiff(path, pix, w, h, (int)Math.Round(d)));
+                }
+                else await Task.Run(() => Views.FigureFiles.WritePdf(path, pix, w, h, w / d * 72.0, h / d * 72.0));
+            }
+            else composePng(rgba, w, h, overlay, dpi, path);
         }
         var what = $"{w} × {h}" + (dpi > 0 ? $" · {dpi:0} dpi" : "") + $" · {FigureTiles[bg].Name.ToLowerInvariant()}" + (overlay.BarPx > 0 ? $" · scale bar {overlay.BarLabel}" : "");
         Status = $"Wrote {path} · {what}";
