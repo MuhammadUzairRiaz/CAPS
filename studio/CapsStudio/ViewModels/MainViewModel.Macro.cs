@@ -42,6 +42,25 @@ public sealed partial class MainViewModel
         Raise(nameof(MacroText));
     }
 
+    /// <summary>A run recorded from its Copy-as-Python script: the call itself (the script's opening — import, open,
+    /// force field — and its closing prints and saves are left out, as the macro has its own).</summary>
+    private void RecordScript(string script)
+    {
+        if (!_recording) return;
+        var lines = script.Replace("\r", "").Split('\n');
+        var body = new List<string>();
+        var inString = false;
+        foreach (var l in lines)
+        {
+            var t = l.TrimStart();
+            if (!inString && (t.StartsWith("#") || t.StartsWith("import caps") || t.StartsWith("doc = caps.open(") || t.StartsWith("doc.field.assign(") || t.Length == 0)) continue;
+            if (!inString && (t.StartsWith("print(") || t.StartsWith("doc.save(") || t.StartsWith("doc.save_trajectory("))) continue;
+            body.Add(l);
+            if (l.Split("\"\"\"").Length % 2 == 0) inString = !inString;   // inside a triple-quoted block
+        }
+        foreach (var l in body) Record(l);
+    }
+
     private static string PyStr(string s) => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
     private static string PyJsonArgs(string json)
     {
