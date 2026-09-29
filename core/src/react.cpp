@@ -49,7 +49,7 @@ const std::map<std::string, std::string>& builtins() {
        "atom 1 C degree=4 H>=1 not_aromatic   # the allylic carbon\n"
        "atom 2 C degree=3 not_aromatic bonded 1   # its double-bond neighbour\n"
        "atom 3 H bonded 1\n"
-       "atom 4 S degree=2 H=1   # an S–H end of the sulfur donor\n"
+       "atom 4 S degree=2 H>=1  # an S–H end of the sulfur donor (H2S: a monosulfide C–S–C in two steps)\n"
        "atom 5 H bonded 4\n"
        "initiators 1 4\n"
        "capture 5.0\n"
@@ -759,6 +759,10 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     for (int m = 0; m < nm; ++m)
       if (count[size_t(m)] >= 30 && count[size_t(m)] * 5 >= largest) { polymer.insert(m + 1); rep.chain_mass += mass[size_t(m)]; }
     rep.chains = int(polymer.size());
+    std::set<std::pair<int64_t, int64_t>> units;
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      if (polymer.count(tag[i]) && s.atoms[i].resid > 0) units.insert({tag[i], s.atoms[i].resid});
+    rep.monomers = int(units.size());
     rep.volume = s.cell.valid() ? s.cell.volume() : 0;
   }
   const double avogadro_volume = rep.volume * 1e-30 * kAvogadro;   // links → mol/m³: divide by this
@@ -774,6 +778,10 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
         n = o.target_value * avogadro_volume;
         break;
       case ReactTarget::Mc: n = rep.chain_mass / (2.0 * o.target_value); break;   // strands = 2 × links
+      case ReactTarget::DegreePercent:
+        if (rep.monomers == 0) throw ReactError("a degree-of-crosslinking target needs the chains' repeat units (residue numbers, as Grow writes them)");
+        n = o.target_value / 100.0 * rep.monomers / 2.0;
+        break;
       default: break;
     }
     rep.target_crosslinks = int(std::llround(n));
@@ -1055,6 +1063,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   if (avogadro_volume > 0) rep.density = rep.crosslinks / avogadro_volume;
   if (rep.chains > 0) rep.per_chain = 2.0 * rep.crosslinks / rep.chains;
   if (rep.crosslinks > 0) rep.mc = rep.chain_mass / (2.0 * rep.crosslinks);
+  if (rep.monomers > 0) rep.degree = 200.0 * rep.crosslinks / rep.monomers;
   rep.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
   char b[320];
   const auto& last = rep.cycles.empty() ? CycleRow{} : rep.cycles.back();
@@ -1065,6 +1074,10 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     std::snprintf(b, sizeof b, "%d links between chains (%d chains; %.2f per chain) · ν = %.4g mol/m³ · Mc ≈ %.4g g/mol", rep.crosslinks, rep.chains,
                   rep.per_chain, rep.density, rep.mc);
     rep.notes.insert(rep.notes.begin() + 1, b);
+    if (rep.monomers > 0) {
+      std::snprintf(b, sizeof b, "degree of crosslinking DC = 2 × links / monomers = %.2f %% (%d repeat units)", rep.degree, rep.monomers);
+      rep.notes.insert(rep.notes.begin() + 2, b);
+    }
     if (rep.intrachain) rep.notes.push_back(std::to_string(rep.intrachain) + " links closed within one chain (loops; not counted as crosslinks)");
   }
   if (rep.target_crosslinks > 0) {

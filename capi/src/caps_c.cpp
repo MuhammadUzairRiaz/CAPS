@@ -2599,7 +2599,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     r.auto_capture = o->auto_capture != 0;
     if (o->capture_max > 0) r.capture_max = o->capture_max;
     if (o->capture_step > 0) r.capture_step = o->capture_step;
-    if (o->target_kind < 0 || o->target_kind > 4) throw std::invalid_argument("target_kind: 0 conversion … 4 Mc");
+    if (o->target_kind < 0 || o->target_kind > 5) throw std::invalid_argument("target_kind: 0 conversion … 4 Mc, 5 degree of crosslinking %");
     r.target = caps::ReactTarget(o->target_kind);
     r.target_value = o->target_value;
     // the user's force field for every state of the network (a complete assignment is needed from the start)
@@ -2690,6 +2690,8 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       j["density"] = rep.density;
       j["per_chain"] = rep.per_chain;
       j["mc"] = rep.mc;
+      j["monomers"] = double(rep.monomers);
+      j["degree"] = rep.degree;
       j["reactions"] = double(rep.reactions);
       j["initial_sites"] = double(rep.initial_sites);
       j["conversion"] = rep.cycles.empty() ? 0.0 : rep.cycles.back().conversion;
