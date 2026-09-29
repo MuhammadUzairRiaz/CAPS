@@ -29,7 +29,8 @@ package() {
   find "$pkgdir/opt/caps" -maxdepth 1 -name "*.pdb" -delete
   install -Dm755 build/cli/caps "$pkgdir/opt/caps/caps"
   install -d "$pkgdir/opt/caps/data"
-  cp -R data/forcefields data/potentials data/typing data/reference data/polymers data/crystals data/fragments data/martini data/manual data/python "$pkgdir/opt/caps/data/"
+  cp -R data/. "$pkgdir/opt/caps/data/"   # every data folder
+  find "$pkgdir/opt/caps/data" -name "__pycache__" -type d -prune -exec rm -rf {} +
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 licenses/RDKit-UFF-parameters.txt "$pkgdir/usr/share/licenses/$pkgname/RDKit-UFF-parameters.txt"
   cp -R samples "$pkgdir/opt/caps/"
