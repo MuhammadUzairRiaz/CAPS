@@ -652,3 +652,21 @@ TEST(Polymer, RepeatUnitFromPickedAtoms) {
   EXPECT_THROW(repeat_unit_smiles(neo, 0, 1), std::invalid_argument);
   EXPECT_THROW(repeat_unit_smiles(eb, 0, 0), std::invalid_argument);
 }
+
+TEST(Polymer, DyadPatternOnAGrownChain) {
+  // an atactic chain with its dyads given: the tacticity analysis reads the same pattern back
+  ChainSpec c = spec({"*CC(*)c1ccccc1"}, Sequence::Homopolymer, 13);
+  c.dyads = "mmr";
+  GrowOptions o;
+  o.chains = 1;
+  o.density = 0.05;
+  o.seed = 3;
+  o.auto_scale = true;
+  const System s = grow_chains(c, o);
+  const TacticityReport t = tacticity(s);
+  ASSERT_EQ(t.chains.size(), 1u);
+  // every dyad between the stereocentres found (a chain end's carbon is not one) follows the pattern
+  const std::string& d = t.chains[0].dyads;
+  ASSERT_GE(d.size(), 9u);
+  for (size_t k = 0; k < d.size(); ++k) EXPECT_EQ(d[k], "mmr"[k % 3]) << d;
+}

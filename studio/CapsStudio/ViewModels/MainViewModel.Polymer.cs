@@ -308,6 +308,22 @@ public sealed partial class MainViewModel
         return End(true, first, _headCap) + "\n" + End(false, last, _tailCap);
     }
 
+    // an atactic chain's dyads as a pattern of m and r, repeated (empty: drawn at random with Pm)
+    private string _polyDyads = "";
+    public string PolyDyads { get => _polyDyads; set { if (Set(ref _polyDyads, value ?? "")) { Raise(nameof(PolyDyadsValid)); Raise(nameof(PolyDyadsNote)); PolyChanged(); } } }
+    public bool PolyDyadsValid => _polyDyads.Trim().All(c => c is 'm' or 'r' or 'M' or 'R');
+    public string PolyDyadsNote
+    {
+        get
+        {
+            var d = _polyDyads.Trim().ToLowerInvariant();
+            if (d.Length == 0) return "empty: each dyad drawn at random (meso with the probability Pm)";
+            if (!PolyDyadsValid) return "only m (meso) and r (racemo)";
+            var m = d.Count(c => c == 'm');
+            return $"repeated along the chain: {100.0 * m / d.Length:0.#} % meso dyads" + (d.All(c => c == 'm') ? " (isotactic)" : d.All(c => c == 'r') ? " (syndiotactic)" : d == "mr" || d == "rm" ? " (a regular heterotactic-like m, r alternation)" : "");
+        }
+    }
+
     // end groups in place of the chain ends' hydrogens (core chain_end_smiles)
     public static readonly string[] EndGroups = ["hydrogen", "methyl", "ethyl", "tert-butyl", "sec-butyl", "phenyl", "hydroxyl", "carboxyl", "vinyl", "amine"];
     private int _headCap, _tailCap;
@@ -335,6 +351,7 @@ public sealed partial class MainViewModel
             ["blocks"] = new JsonArray(PolyUnits.Select(u => (JsonNode)(int)u.Block).ToArray()),
             ["pattern"] = _polyPattern,
         };
+        if (_growTact == 0 && PolyDyadsValid && _polyDyads.Trim().Length > 0) o["dyads"] = _polyDyads.Trim().ToLowerInvariant();
         if (_headCap > 0) o["head_cap"] = EndGroups[_headCap];
         if (_tailCap > 0) o["tail_cap"] = EndGroups[_tailCap];
         if (_polyLinkage > 0)
