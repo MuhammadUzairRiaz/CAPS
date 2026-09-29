@@ -97,10 +97,10 @@
         </StackPanel>
         <TextBlock Text="{Binding ManualCurrent.Summary}" Classes="prose" />
         <Border Padding="22,18" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}">
-          <DockPanel>
-            <TextBlock DockPanel.Dock="Right" Text="{Binding ManualCurrent.EquationNote}" Classes="mono" FontSize="12" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="16,0,0,0" />
-            <SelectableTextBlock Text="{Binding ManualCurrent.Equation}" FontFamily="Georgia, Times New Roman, serif" FontSize="19" TextWrapping="Wrap" LineHeight="30" />
-          </DockPanel>
+          <StackPanel Spacing="10">
+            <v:MathView Tex="{Binding ManualCurrent.Tex}" FontSize="19" HorizontalAlignment="Left" Margin="0,4" ToolTip.Tip="{Binding ManualCurrent.Equation}" />
+            <TextBlock Text="{Binding ManualCurrent.EquationNote}" Classes="mono" FontSize="12" Foreground="{DynamicResource DimB}" HorizontalAlignment="Right" />
+          </StackPanel>
         </Border>
         <StackPanel>
           <Grid ColumnDefinitions="16*,50*,34*" Margin="0,0,0,6">
@@ -111,9 +111,9 @@
               <DataTemplate x:DataType="vm:ProvRow">
                 <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,8">
                   <Grid ColumnDefinitions="16*,50*,34*" ColumnSpacing="8">
-                    <TextBlock Text="{Binding Key}" Classes="mono" FontSize="12.5" TextWrapping="Wrap" />
-                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12.5" TextWrapping="Wrap" />
-                    <TextBlock Grid.Column="2" Text="{Binding Other}" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                    <v:MathView Tex="{Binding Key}" Mode="Symbol" FontSize="15" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    <v:MathView Grid.Column="1" Tex="{Binding Value}" Mode="Prose" FontSize="13" HorizontalAlignment="Left" />
+                    <v:MathView Grid.Column="2" Tex="{Binding Other}" Mode="Prose" FontSize="13" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
                   </Grid>
                 </Border>
               </DataTemplate>

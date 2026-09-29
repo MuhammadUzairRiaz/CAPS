@@ -12,6 +12,8 @@ public sealed class ManualPage : ObservableObject
     public string Title { get; init; } = "";
     public string Summary { get; init; } = "";
     public string Equation { get; init; } = "";
+    /// <summary>The equation in LaTeX, typeset on the page (Equation is its plain-text form).</summary>
+    public string Tex { get; init; } = "";
     public string EquationNote { get; init; } = "";
     public string[][] Symbols { get; init; } = [];
     public string When { get; init; } = "";
@@ -63,7 +65,7 @@ public sealed partial class MainViewModel
                     foreach (var p in (JsonArray)JsonNode.Parse(File.ReadAllText(path))!["pages"]!)
                         _manual.Add(new ManualPage
                         {
-                            Id = S(p, "id"), Group = S(p, "group"), Title = S(p, "title"), Summary = S(p, "summary"), Equation = S(p, "equation"),
+                            Id = S(p, "id"), Group = S(p, "group"), Title = S(p, "title"), Summary = S(p, "summary"), Equation = S(p, "equation"), Tex = S(p, "tex"),
                             EquationNote = S(p, "equation_note"), When = S(p, "when"), Source = S(p, "source"), Tested = S(p, "tested"), Deviation = S(p, "deviation"),
                             Symbols = p!["symbols"] is JsonArray sy ? sy.Select(r => ((JsonArray)r!).Select(x => x?.GetValue<string>() ?? "").ToArray()).ToArray() : [],
                             Cites = p["cites"] is JsonArray c ? c.Select(x => x!.GetValue<string>()).ToArray() : [],
