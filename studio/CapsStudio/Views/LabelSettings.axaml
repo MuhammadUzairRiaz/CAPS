@@ -1,0 +1,46 @@
+<!-- Labels: which atom and bond properties, on which atoms, and how they look (font, size, colours). Used in the
+     Appearance panel and the view window. -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels"
+             x:Class="CapsStudio.Views.LabelSettings" x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="8">
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+      <TextBlock Text="On" Classes="label" VerticalAlignment="Center" />
+      <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.LabelScopes}" SelectedIndex="{Binding LabelScope}" HorizontalAlignment="Stretch" />
+    </Grid>
+    <Expander Header="Atom properties" HorizontalAlignment="Stretch" IsExpanded="True">
+      <ItemsControl ItemsSource="{Binding AtomLabelKinds}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:LabelKindRow">
+            <CheckBox Content="{Binding Title}" IsChecked="{Binding On}" FontSize="12" ToolTip.Tip="{Binding Group}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Expander>
+    <Expander Header="Bond properties (at the bond's midpoint)" HorizontalAlignment="Stretch">
+      <ItemsControl ItemsSource="{Binding BondLabelKinds}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:LabelKindRow">
+            <CheckBox Content="{Binding Title}" IsChecked="{Binding On}" FontSize="12" ToolTip.Tip="{Binding Group}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Expander>
+    <Grid ColumnDefinitions="*,80" ColumnSpacing="10">
+      <StackPanel Spacing="6"><TextBlock Text="Font" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.LabelFonts}" SelectedIndex="{Binding LabelFont}" HorizontalAlignment="Stretch" MaxDropDownHeight="360" /></StackPanel>
+      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Size · pt" Classes="label" /><NumericUpDown Value="{Binding LabelSize}" Minimum="5" Maximum="48" Increment="0.5" FormatString="0.#" ShowButtonSpinner="False" /></StackPanel>
+    </Grid>
+    <WrapPanel>
+      <CheckBox Content="Bold" IsChecked="{Binding LabelBold}" Margin="0,0,14,0" />
+      <CheckBox Content="Plate behind" IsChecked="{Binding LabelPlate}" ToolTip.Tip="A translucent plate, so labels read over any colour" />
+    </WrapPanel>
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+      <StackPanel Spacing="6"><TextBlock Text="Atom label colour" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.LabelColours}" SelectedIndex="{Binding AtomLabelColour}" HorizontalAlignment="Stretch" />
+        <TextBox Text="{Binding AtomLabelHex}" IsVisible="{Binding AtomLabelCustom}" Classes="mono" Watermark="#RRGGBB" /></StackPanel>
+      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Bond label colour" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.BondLabelColours}" SelectedIndex="{Binding BondLabelColour}" HorizontalAlignment="Stretch" />
+        <TextBox Text="{Binding BondLabelHex}" IsVisible="{Binding BondLabelCustom}" Classes="mono" Watermark="#RRGGBB" /></StackPanel>
+    </Grid>
+  </StackPanel>
+</UserControl>

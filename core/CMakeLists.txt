@@ -1,5 +1,6 @@
 add_library(caps_core STATIC
   src/elements.cpp
+  src/labels.cpp
   src/system.cpp
   src/io_lammps.cpp
   src/io_gro.cpp

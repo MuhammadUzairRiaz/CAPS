@@ -27,6 +27,11 @@ public sealed record FigureOverlay(string? Title, double BarAngstrom, double Bar
     public double LabelPx => Math.Max(8, Width * 0.024);
     public double BarThickness => Math.Max(2, Width * 0.005);
     public string BarLabel => BarAngstrom.ToString("0.##", CultureInfo.InvariantCulture) + " Å";
+    /// <summary>The view's atom and bond labels on the figure (image pixels), and how they look.</summary>
+    public IReadOnlyList<ViewLabel>? Labels { get; init; }
+    public LabelStyle? LabelLook { get; init; }
+    /// <summary>The label text size in the figure's pixels: as large, for its width, as on the screen (10.5 pt ≈ 1.3 %).</summary>
+    public double LabelTextPx => (LabelLook?.Size ?? 10.5) / 10.5 * Math.Max(8, Width * 0.013);
 }
 
 /// <summary>One background in the comparison row: its preview and the overlay drawn on it.</summary>
@@ -206,7 +211,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>The overlay for an image of w × h pixels: the scale bar a round length near 12 % of the width.</summary>
-    public FigureOverlay FigureOverlayFor(int background, int w, int h, double pxPerAngstrom)
+    public FigureOverlay FigureOverlayFor(int background, int w, int h, double pxPerAngstrom, CapsCamera? cam = null, CapsRenderOpts? opt = null)
     {
         uint ink = background == 0 ? 0xE9ECEFu : 0x141413u;
         if (FigCustomRgb is { } rgb)
@@ -222,8 +227,11 @@ public sealed partial class MainViewModel
             if (barA <= 0) barA = 1;
             barPx = barA * pxPerAngstrom;
         }
+        List<ViewLabel>? labels = null;
+        if (AnyLabels && _doc != null && cam is { } c && opt is { } o)
+            try { labels = ViewLabelsFor(_doc, c, o, 1.0); } catch { }
         return new FigureOverlay(_figTitle && _figTitleText.Length > 0 ? _figTitleText : null, barA, barPx, _figLegend && _colour == 3,
-                                 LegendLo, LegendHi, "distance to molecule centre", ink, w, h);
+                                 LegendLo, LegendHi, "distance to molecule centre", ink, w, h) { Labels = labels, LabelLook = labels != null ? LabelLook : null };
     }
 
     private int _figGen;
@@ -250,7 +258,7 @@ public sealed partial class MainViewModel
                     if (gen != _figGen || !IsFigure) return;   // the page was left: drop the stale preview
                     tile.Height = th;
                     tile.Image = ToBitmap(rgba, tw, th);
-                    tile.Overlay = FigureOverlayFor(tile.Background, tw, th, scale);
+                    tile.Overlay = FigureOverlayFor(tile.Background, tw, th, scale, cam, opt);
                 });
             }
         });
@@ -270,7 +278,7 @@ public sealed partial class MainViewModel
         var dpi = FigurePresets[FigPreset].SlidePx > 0 && _figAspect == 0 ? 0 : (double)_figDpi;
         var svg = _figFormat == 1;
         var scale = doc.ViewScale(cam, opt);
-        var overlay = FigureOverlayFor(bg, w, h, scale);
+        var overlay = FigureOverlayFor(bg, w, h, scale, cam, opt);
         Status = $"Exporting the figure · {w} × {h}";
         if (svg)
         {
