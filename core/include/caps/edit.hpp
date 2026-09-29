@@ -155,4 +155,16 @@ std::vector<char> select_charge(const System& s, double lo, double hi);
 std::vector<char> select_within(const System& s, const std::vector<char>& from, double distance);
 std::vector<char> select_grow(const System& s, const std::vector<char>& from, int steps = 1);
 
+// A written list of edits applied in order (the CLI's `caps edit`), separated by ';' or new lines ('#' after a space
+// starts a comment),
+// atoms numbered from 1 as the structure stands at that edit (a delete renumbers the atoms after it):
+//   element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES · length I J Å ·
+//   angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° · mirror SEL nx,ny,nz ·
+//   move SEL dx,dy,dz · clean [SEL] · tacticity iso|syndio
+// SEL: "3,5-9", "all", "element:C,N", "smarts:PATTERN", "type:LABEL". Returns one line per edit saying what it did;
+// throws on the first edit that cannot be done, naming it.
+std::vector<std::string> edit_script(System& s, const std::string& script);
+// The atoms a SEL names (see edit_script).
+std::vector<char> parse_selection(const System& s, const std::string& sel);
+
 }  // namespace caps

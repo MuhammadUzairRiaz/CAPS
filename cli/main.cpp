@@ -19,6 +19,7 @@
 #include "caps/dlpoly.hpp"
 #include "caps/bench.hpp"
 #include "caps/dynamics.hpp"
+#include "caps/edit.hpp"
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/martini_protein.hpp"
@@ -76,7 +77,12 @@ int usage() {
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
-               "  caps convert FILE OUT.data|OUT.xyz|OUT.pdb|OUT.mol2|OUT.car [--topology DATA]   (.car: with its .mdf, Materials Studio)\n"
+               "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
+               "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
+               "               element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES ·\n"
+               "               length I J Å · angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° ·\n"
+               "               mirror SEL nx,ny,nz · move SEL dx,dy,dz · clean [SEL] · tacticity iso|syndio ·\n"
+               "               SEL: 3,5-9 · all · element:C,N · smarts:PATTERN · type:LABEL (numbers after a delete shift)\n"
                "  caps provenance FILE [--json | --bibtex | --methods] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)\n"
                "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
@@ -207,7 +213,7 @@ const std::set<std::string>& known_options() {
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--ops", "--ops-file", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
@@ -2557,14 +2563,25 @@ int main(int argc, char** argv) {
       for (auto [r, g] : rdf(s, ea, eb, rmax, dr, o.count("--inter"))) std::printf("%.3f %.5f\n", r, g);
       return 0;
     }
+    if (cmd == "edit") {
+      std::string script = o.count("--ops") ? o["--ops"] : "";
+      if (o.count("--ops-file")) {
+        std::ifstream in(o["--ops-file"]);
+        if (!in) throw std::runtime_error("cannot read " + o["--ops-file"]);
+        for (std::string l; std::getline(in, l);) script += "\n" + l;   // comments: edit_script
+      }
+      if (script.find_first_not_of("; \t\r\n") == std::string::npos || !o.count("-o"))
+        throw std::invalid_argument("caps edit FILE --ops 'OP ARGS; …' (or --ops-file) -o OUT");
+      const auto report = edit_script(s, script);
+      for (const auto& line : report) std::printf("%s\n", line.c_str());
+      write_structure_file(s, o["-o"]);
+      std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), o["-o"].c_str());
+      return 0;
+    }
     if (cmd == "convert") {
       if (pos.size() < 2) return usage();
       const std::string out = pos[1];
-      if (out.size() > 4 && out.substr(out.size() - 4) == ".xyz") write_xyz(s, out);
-      else if (out.size() > 4 && out.substr(out.size() - 4) == ".pdb") write_pdb(s, out);
-      else if (out.size() > 5 && out.substr(out.size() - 5) == ".mol2") write_mol2(s, out);
-      else if (out.size() > 4 && out.substr(out.size() - 4) == ".car") write_car(s, out);   // with its .mdf
-      else write_lammps_data(s, out);
+      write_structure_file(s, out);   // every writer by the extension (.car with its .mdf, POSCAR by name)
       std::printf("wrote %s\n", out.c_str());
       return 0;
     }
