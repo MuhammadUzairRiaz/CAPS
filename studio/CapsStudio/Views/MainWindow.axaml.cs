@@ -371,6 +371,7 @@ public partial class MainWindow : Window
         if (_vm.ActiveItem == it) _vm.CloseDocument();
     }
     private void OnDuplicateStructure(object? s, RoutedEventArgs e) => _vm.DuplicateStructure();
+    private void OnClearAll(object? s, RoutedEventArgs e) => _vm.ClearAll();
     private void OnEditProjectItem(object? s, RoutedEventArgs e)
     {
         e.Handled = true;

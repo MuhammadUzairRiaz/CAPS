@@ -944,6 +944,7 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+
         // Mesoscale (DPD): a small A5B5 diblock melt at χN = 43; the frames open as a new structure
         {
             vm.OpenDpd();
@@ -3108,6 +3109,15 @@ internal static class SelfTest
         var backJobs = vm.ProjectItems.Sum(p => p.Jobs.Count);
         Check(offered && backItems.SequenceEqual(keptItems) && backJobs == keptJobs && vm.ActiveItem?.Name == keptActive && !vm.HasLastSession,
               $"session: offered {offered} ({offerText}) · back {backItems.Count}/{keptItems.Count} structures, {backJobs}/{keptJobs} jobs, active {vm.ActiveItem?.Name} · {vm.Status}");
+        // Clear on the pipeline strip: asked once more, then every structure closed and the strip empty
+        {
+            var had = vm.ProjectItems.Count;
+            vm.ClearAll();
+            var asked = vm.ClearArmed && vm.ProjectItems.Count == had;
+            vm.ClearAll();
+            Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
+                  $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
+        }
         vm.CloseAllStructures();
 
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");

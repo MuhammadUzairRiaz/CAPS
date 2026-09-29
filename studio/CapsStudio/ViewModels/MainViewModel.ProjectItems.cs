@@ -276,6 +276,27 @@ public sealed partial class MainViewModel
         while (_doc != null) CloseDocument();
     }
 
+    // Clear (the pipeline strip): every structure closed and a clean Start — asked twice (saved files stay on disk)
+    private bool _clearArmed;
+    public bool ClearArmed { get => _clearArmed; private set { if (Set(ref _clearArmed, value)) Raise(nameof(ClearText)); } }
+    public string ClearText => _clearArmed ? "Click again to clear" : "Clear";
+    public void ClearAll()
+    {
+        if (Busy) { Status = "Wait for the run to finish (or cancel it) before clearing"; return; }
+        if (!_clearArmed)
+        {
+            ClearArmed = true;
+            Status = $"Clear closes all {ProjectItems.Count} structure{(ProjectItems.Count == 1 ? "" : "s")} and starts clean (saved files stay): click Clear again";
+            Avalonia.Threading.DispatcherTimer.RunOnce(() => ClearArmed = false, TimeSpan.FromSeconds(4));
+            return;
+        }
+        ClearArmed = false;
+        var n = ProjectItems.Count;
+        CloseAllStructures();
+        SetModule(8);
+        Status = $"Cleared {n} structure{(n == 1 ? "" : "s")} · a clean start";
+    }
+
     /// <summary>A copy of the active structure (its force field kept) as a new structure of the project.</summary>
     public void DuplicateStructure(string? suffix = null)
     {
