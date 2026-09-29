@@ -160,7 +160,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
     <li><div><b>Minimise.</b> Removes close contacts left by growing. Turn on compression here to bring a low-density cell up to its target density.</div></li>
     <li><div><b>Equilibrate.</b> Pick a published protocol, such as the Larsen et al. 21-step (2011), and set the final T and P. You can add production blocks that run until density, energy and Rg stop drifting.</div></li>
     <li><div><b>Dynamics</b> (optional) for NVT or NPT runs inside CAPS, then <b>Analyze</b> for density, g(r), Tg, moduli and diffusion.</div></li>
-    <li><div><b>Export.</b> Write a LAMMPS deck (<code>lmp -in STEM.in</code>) or GROMACS files (top, itp, gro, mdp). DL_POLY 4 and AMBER/OpenMM (prmtop, inpcrd) are also available.</div></li>
+    <li><div><b>Export.</b> Write a LAMMPS deck (<code>lmp -in STEM.in</code>) or GROMACS files (top, itp, gro, mdp). DL_POLY 4 and AMBER/OpenMM (prmtop, inpcrd) are also available. Class II force fields such as PCFF and COMPASS go to LAMMPS only. GROMACS has no class II functional form, and the page says so rather than writing an approximate file.</div></li>
   </ol>
   <div class="grid2">
     <figure><button type="button" aria-label="Enlarge"><img src="img/04_polymer.jpg" alt="Polymer builder with styrene" loading="lazy"></button><figcaption><b>Step 1.</b> Polymer builder with styrene, atactic, DP 8 preview.</figcaption></figure>
@@ -311,7 +311,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-field">
   <h2>Force field</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/06_field.jpg" alt="Force field typing report" loading="lazy"></button>
-    <figcaption><b>Force field · typing report.</b> Every atom with its type, charge, the SMARTS rule that typed it and the rule file.</figcaption></figure>
+    <figcaption><b>Force field · typing report</b> for the grown PCFF cell: 4,820 atoms typed, 0 missing terms. The panel on the right lists the other force fields that also describe the structure completely. </figcaption></figure>
   <ul>
     <li>Choose the force field and the charges, then press <span class="ui">Assign · retype all</span>. The chips above the table show typed, untyped, missing terms, estimated terms and net charge.</li>
     <li>Click a row, or an atom in 3D, to see the rule that matched and the other rules it also matched. You can override the type by hand.</li>
@@ -412,7 +412,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-export">
   <h2>Export</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/19_export.jpg" alt="Export page" loading="lazy"></button>
-    <figcaption><b>Export.</b> The structure with its force field for LAMMPS and GROMACS, and optionally DL_POLY 4, AMBER/OpenMM or moltemplate.</figcaption></figure>
+    <figcaption><b>Export.</b> The PCFF polystyrene cell: every check is green, and the LAMMPS data and input files are ready. GROMACS is refused for class II and the reason is shown.</figcaption></figure>
   <ul>
     <li><b>LAMMPS:</b> the force field's own styles (or hybrid), electrostatics, cut-off, k-space accuracy and units. The run protocol covers T, P, time step, steps, minimise first and bond constraints.</li>
     <li><b>Checked before writing:</b> CAPS lists anything that would stop the deck running. For example, if no force field is assigned, it offers <span class="ui">Open the Force field step</span>.</li>
