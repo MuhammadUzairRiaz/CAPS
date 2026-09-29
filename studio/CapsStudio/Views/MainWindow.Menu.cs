@@ -1,3 +1,5 @@
+using CapsStudio.ViewModels;
+using System.Linq;
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -99,12 +101,36 @@ public partial class MainWindow
             Page("Molecule builder…", 9),
             Page("Fragment library…", 35),
             Page("Crystal…", 29),
+            Sub("Crystal tools (the open structure)",
+                Item("Find primitive cell", () => _vm.FindPrimitiveCell()),
+                Item("Niggli-reduced cell", () => _vm.NiggliCell()),
+                Item("Conventional cell", () => _vm.ConventionalCell()),
+                Sep(),
+                Page("Redefine lattice…", 29),
+                Page("Vacuum slab…", 29),
+                Page("Nanowire…", 29),
+                Page("Lattice parameters & supercell…", 58)),
             Page("Surface / slab…", 14),
             Page("Nanostructure…", 15),
             Page("Biomolecule…", 30),
             Sep(),
             Page("Density calculator…", 56),
             Page("Model resolution (united atom, CG)…", 67)));
+        menu.Add(Top("Modify",
+            Sub("Element (picked atoms)", _vmElements(Item)),
+            Sub("Bond (two picked atoms)",
+                Item("Single", () => _vm.BondOrderPicked(1)),
+                Item("Double", () => _vm.BondOrderPicked(2)),
+                Item("Triple", () => _vm.BondOrderPicked(3)),
+                Item("Break", () => _vm.BreakBondPicked())),
+            Sub("Geometry (picked atom)", MainViewModel.Geometries.Select(g => (NativeMenuItemBase)Item(g.Name, () => _vm.GeometryPicked(g.Id))).ToArray()),
+            Sep(),
+            Page("Add hydrogens…", 66),
+            Page("Partial charges…", 50),
+            Cmd("Clean up (UFF)", "edit.clean"),
+            Sep(),
+            Page("Unit cell & supercell…", 58),
+            Page("Periodic box (wrap / unwrap)…", 51)));
         menu.Add(Top("Modules",
             Page("Force field…", 7),
             Page("Partial charges…", 50),
@@ -157,4 +183,7 @@ public partial class MainWindow
             Cmd("Check for updates…", "app.update")));
         return menu;
     }
+
+    private NativeMenuItemBase[] _vmElements(Func<string, Action, string?, NativeMenuItem> item) =>
+        MainViewModel.QuickElements.Select(e => (NativeMenuItemBase)item(e, () => _vm.ModifyElementPicked(e), null)).ToArray();
 }
