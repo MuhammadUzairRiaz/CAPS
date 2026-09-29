@@ -10,8 +10,8 @@ using CapsStudio.ViewModels;
 namespace CapsStudio.Views;
 
 /// <summary>The structure alone, full screen: a copy of the open structure (edits and runs in the main window do not
-/// change it), or, during a run, the run's live snapshots as they come. Style, colour, background, the cell and a
-/// "show only" expression are this window's own; the main view is untouched.</summary>
+/// change it), or, during a run, the run's live snapshots as they come. Style, colour, background, the cell, wrapping and
+/// a "show only" expression are this window's own; the main view is untouched.</summary>
 public partial class VisualizationWindow : Window
 {
     private readonly MainViewModel _vm;
@@ -34,6 +34,9 @@ public partial class VisualizationWindow : Window
         var back = this.FindControl<ComboBox>("BackBox")!;
         var cell = this.FindControl<CheckBox>("CellBox")!;
         var expr = this.FindControl<TextBox>("Expr")!;
+        var wrap = this.FindControl<CheckBox>("WrapBox")!;
+        wrap.IsChecked = vm.Wrap;   // starts as the main view shows it
+        wrap.IsCheckedChanged += (_, _) => Apply();
         style.SelectedIndex = Math.Clamp(vm.StyleIndex, 0, 4);
         style.SelectionChanged += (_, _) => Apply();
         colour.SelectionChanged += (_, _) => Apply();
@@ -110,6 +113,7 @@ public partial class VisualizationWindow : Window
         view.Backdrop = this.FindControl<ComboBox>("BackBox")!.SelectedIndex - 1;
         view.ShowCell = this.FindControl<CheckBox>("CellBox")!.IsChecked == true;
         if (doc == null) return;
+        try { doc.SetWrap(this.FindControl<CheckBox>("WrapBox")!.IsChecked == true); } catch { }   // no cell: nothing to fold into
         // "show only": every atom hidden, then those of the expression in the chosen style
         _error = "";
         try
