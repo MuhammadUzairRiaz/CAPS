@@ -188,14 +188,35 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 
 <section id="p-cure">
   <h2>Pipeline 3 · Crosslinking and cure</h2>
-  <p class="lede">This route vulcanises a rubber, cures an epoxy or crosslinks a melt. Bonds form by distance and atom types are reassigned after each cycle.</p>
+  <p class="lede">This route vulcanises a rubber, cures an epoxy, or crosslinks chains through a crosslinker such as ENR with PBS or MAH. It uses your own force field throughout.</p>
   <ol class="flow">
-    <li><div>Build the cell as in pipeline 1, or open it from a file. Assign a force field.</div></li>
-    <li><div><b>React.</b> Pick a reaction template, such as the built-in <span class="ui">C–C crosslink (saturated carbons, H₂ leaves)</span>, or open <span class="ui">Editor…</span> to write your own. In the editor you draw pre and post states with mapped atoms, and it shows the equivalent reaction SMARTS.</div></li>
-    <li><div>Choose the <b>Protocol</b>. <i>Polymatic cycle</i> (Abbott, Hart &amp; Colina 2013) runs react → retype → minimise → optional MD. <i>REACTER-style during MD</i> checks reactions at intervals during one continuous run.</div></li>
-    <li><div>Press <span class="ui">Crosslink</span>. The Conversion and Gel point charts fill as cycles run. The Flory–Stockmayer card compares the simulated gel point with α<sub>c</sub> from theory. If a cycle fails, the completed cycles are kept.</div></li>
-    <li><div>Save the network, then Minimise → Equilibrate → Export.</div></li>
+    <li><div>Build the cell as in pipeline 1, or open it from a file. Assign the force field in the <b>Force field</b> step. React types, charges and parameterises the network with it after every cycle and assigns it to the result.</div></li>
+    <li><div><b>React › Reaction templates.</b> Pick a preset:
+      <ul>
+        <li>C–C crosslink;</li>
+        <li>sulfur cure;</li>
+        <li>peroxide;</li>
+        <li>silane;</li>
+        <li>epoxy–amine;</li>
+        <li><i>ENR + carboxylic acid</i>: the acid O bonds to the tertiary epoxide carbon and the ring opens to a β-hydroxy ester, with no water;</li>
+        <li><i>ENR + MAH</i>: an OH opens the anhydride to a half-ester acid, which then opens an ENR epoxide (ENR–MAH–ENR, ENR–MAH–PBS);</li>
+        <li><i>esterification</i>: COOH + OH gives an ester and H₂O.</li>
+      </ul>
+      <span class="ui">Add reaction</span> runs several reactions together, either automatically (closest pairs first) or by relative weights. <span class="ui">Import LAMMPS…</span> reads any fix bond/react pre/post/map set as a reaction.</div></li>
+    <li><div>For a sulfur cure, use <b>Sulfur donors</b>: H–Sₓ–H with x fixed or spread over 1–8, dosed in phr. Each donor that reaches two chains becomes a C–Sₓ–C bridge.</div></li>
+    <li><div><b>Network.</b>
+      <ul>
+        <li><span class="ui">Links only between different chains</span>: a crosslinker cannot close back onto the chain it is already on.</li>
+        <li><b>Stop at</b>: a conversion, a number of links, links per chain, ν (mol/m³), Mc (g/mol) or DC % (2 × links / monomers).</li>
+        <li><b>Byproducts</b> (H₂, H₂O): keep them in the cell or remove them.</li>
+      </ul></div></li>
+    <li><div>Choose the protocol: <i>Polymatic cycle</i> or <i>REACTER-style during MD</i>. <span class="ui">Auto capture</span> widens the capture distance when no pair is found.</div></li>
+    <li><div>Press <span class="ui">Crosslink</span>. The live view shows each chain in its own colour with the new links highlighted. The links plot shows progress against the target, and <b>Network</b> reports target vs achieved, ν, Mc, DC, loops and the force field before and after.</div></li>
+    <li><div>To run the reaction in LAMMPS, use <span class="ui">Write fix bond/react files…</span>. It writes pre/post templates and map files cut from your cell and typed with your force field, a data file holding every type the reaction creates, and an input with the fix. Run <code>lmp -in react.in</code>.</div></li>
   </ol>
+  <div class="note">CAPS checks the force field. PCFF's main table gives epoxide ring angles general values (104.5–111°), about 108 kcal/mol of strain per ENR epoxide, and the Force field step says so. For epoxidised rubber, GAFF (cx/op) or OPLS 2005 (C3T/O3T) describe the ring properly.</div>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/16_react.jpg" alt="React page after crosslinking PCFF polyethylene" loading="lazy"></button>
+    <figcaption><b>React.</b> Ten PCFF polyethylene chains crosslinked between chains to one link per chain. The live view keeps each chain's colour and circles the links. Network: 5 of 5 links, DC 3.33 %, PCFF re-assigned.</figcaption></figure>
 </section>
 
 <section id="p-surface">
@@ -395,9 +416,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 
 <section id="f-react">
   <h2>React</h2>
-  <figure><button type="button" aria-label="Enlarge"><img src="img/16_react.jpg" alt="React crosslinking page" loading="lazy"></button>
-    <figcaption><b>React · crosslinking.</b> Templates, protocol, conversion, gel point and the Flory–Stockmayer check.</figcaption></figure>
-  <p>The template text shows its rules in full: which atoms react, the capture distance, probability, minimum path, and which bonds form and which atoms leave. The full order is in <a href="#p-cure">Pipeline 3</a>.</p>
+  <p>The template text shows its rules in full: which atoms react, the capture distance, probability, minimum path, which bonds form, which atoms leave and which leave as a byproduct. The page is shown in <a href="#p-cure">Pipeline 3</a>.</p>
 </section>
 
 <section id="f-analyze">
