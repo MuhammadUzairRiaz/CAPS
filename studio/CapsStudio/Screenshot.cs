@@ -50,10 +50,10 @@ internal static class Screenshot
                 w.ViewModel.FigBackground = int.Parse(kv[1]);
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
-            if (kv[0] == "figexport")   // figexport=PATH: export the figure (PNG or SVG by extension)
+            if (kv[0] == "figexport")   // figexport=PATH: export the figure (PNG, SVG, TIFF or PDF by extension)
             {
-                if (kv[1].EndsWith(".svg")) w.ViewModel.FigFormat = 1;
-                var t = w.ViewModel.ExportFigure(kv[1], CapsStudio.Views.FigureDrawing.SavePng, CapsStudio.Views.FigureDrawing.AddToSvg);
+                w.ViewModel.FigFormat = kv[1].EndsWith(".svg") ? 1 : kv[1].EndsWith(".tiff") || kv[1].EndsWith(".tif") ? 2 : kv[1].EndsWith(".pdf") ? 3 : 0;
+                var t = w.ViewModel.ExportFigure(kv[1], CapsStudio.Views.FigureDrawing.SavePng, CapsStudio.Views.FigureDrawing.AddToSvg, CapsStudio.Views.FigureDrawing.Compose);
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
                 Console.WriteLine(t.IsFaulted ? "figure export failed: " + t.Exception?.InnerException?.Message : "figure: " + t.Result);
             }
