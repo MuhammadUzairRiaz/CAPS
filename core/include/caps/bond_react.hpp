@@ -27,6 +27,10 @@ struct BondReactOptions {
   bool between_chains = false;  // molecule inter: initiators in different molecules (the data file's molecule ids)
   std::vector<double> weights;  // relative rates per template: prob = template probability × weight / largest weight
   int nevery = 100;             // steps between reaction checks
+  // Rmax of every reaction in LAMMPS, Å (0: the template's capture). LAMMPS stabilises only the reacting atoms, so a bond
+  // formed from far apart (with a proton jumping to its new partner) can blow the run up; REACTER's own examples use about
+  // 3 Å and let diffusion bring groups together, where CAPS's cycles relax the whole cell and can reach further
+  double rmax = 3.5;
   double temperature = 300;     // K
   int64_t steps = 100000;
   double timestep = 0;          // fs (0: the force field's own)

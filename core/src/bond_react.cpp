@@ -361,7 +361,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
     const size_t k = size_t(var.site.reaction);
     double prob = t.probability * (wmax > 0 ? o.weights[k] / wmax : 1.0);
     char b[512];
-    std::snprintf(b, sizeof b, "  react %s all %d 0.0 %.4g %s_pre %s_post %s prob %.4g %llu%s", var.name.c_str(), o.nevery, t.capture, var.name.c_str(),
+    std::snprintf(b, sizeof b, "  react %s all %d 0.0 %.4g %s_pre %s_post %s prob %.4g %llu%s", var.name.c_str(), o.nevery, o.rmax > 0 ? std::min(o.rmax, t.capture) : t.capture, var.name.c_str(),
                   var.name.c_str(), fm.c_str(), prob, static_cast<unsigned long long>(o.seed + v), o.between_chains ? " molecule inter" : "");
     react_lines.push_back(b);
   }
