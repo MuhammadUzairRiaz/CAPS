@@ -121,18 +121,28 @@ std::vector<Property> pull_properties(const PullResult& r, bool normal) {
 std::vector<Property> cooling_properties(const CoolingResult& r) {
   std::vector<Property> out;
   Property tg = prop("tg", "Glass transition Tg", "K", r.method, r.fit.ok ? r.fit.tg : NaN, r.fit.ok ? r.fit.tg_err : NaN);
+  const bool energy = r.property == 1;
+  const std::string what = energy ? "potential energy per atom" : "specific volume", unit = energy ? "kcal/mol" : "cm³/g";
   if (r.fit.ok) {
-    tg.extra["expansion below Tg (1/K)"] = r.fit.alpha_low;
-    tg.extra["expansion above Tg (1/K)"] = r.fit.alpha_high;
-    tg.extra["specific volume at Tg (cm³/g)"] = r.fit.value_at_tg;
-    if (!r.points.empty()) tg.extra["fit residual rms (cm³/g)"] = std::sqrt(r.fit.rss / double(r.points.size()));
+    if (!energy) {
+      tg.extra["expansion below Tg (1/K)"] = r.fit.alpha_low;
+      tg.extra["expansion above Tg (1/K)"] = r.fit.alpha_high;
+    } else {
+      tg.extra["heat capacity (potential part) below Tg (kcal/mol/K per atom)"] = r.fit.slope_low;
+      tg.extra["heat capacity (potential part) above Tg (kcal/mol/K per atom)"] = r.fit.slope_high;
+    }
+    tg.extra[what + " at Tg (" + unit + ")"] = r.fit.value_at_tg;
+    tg.extra["slope below Tg (" + unit + "/K)"] = r.fit.slope_low;
+    tg.extra["slope above Tg (" + unit + "/K)"] = r.fit.slope_high;
+    if (!r.points.empty()) tg.extra["fit residual rms (" + unit + ")"] = std::sqrt(r.fit.rss / double(r.points.size()));
   }
   tg.notes = r.notes;
-  Series v{"specific volume", "T (K)", "specific volume (cm³/g)", {}, {}}, fit{"two-line fit", "T (K)", "specific volume (cm³/g)", {}, {}};
+  Series v{what, "T (K)", what + " (" + unit + ")", {}, {}}, fit{"fit", "T (K)", what + " (" + unit + ")", {}, {}};
   Series d{"density", "T (K)", "density (g/cm³)", {}, {}};
-  for (const auto& p : r.points) {
+  for (size_t k = 0; k < r.points.size(); ++k) {
+    const auto& p = r.points[k];
     v.x.push_back(p.temperature);
-    v.y.push_back(p.specific_volume);
+    v.y.push_back(k < r.fitted.size() ? r.fitted[k] : p.specific_volume);
     d.x.push_back(p.temperature);
     d.y.push_back(p.density);
   }

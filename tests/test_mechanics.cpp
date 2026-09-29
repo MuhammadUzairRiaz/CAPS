@@ -289,3 +289,26 @@ TEST(Mechanics, GreenKuboViscosity) {
   EXPECT_TRUE(std::isfinite(m.eta));
   EXPECT_EQ(m.t_ps.size(), m.running.size());
 }
+
+// Tg from two separate lines: exact data with a kink at 300 K (slopes 1e-4 and 3e-4 per K) crosses at 300 K whatever
+// the ranges, and the points between the ranges take no part; ranges that meet are refused
+TEST(Mechanics, TgFromTwoRanges) {
+  std::vector<double> T, y;
+  for (double t = 200; t <= 400; t += 10) {
+    T.push_back(t);
+    y.push_back(t < 300 ? 1.0 + 1e-4 * (t - 300) : 1.0 + 3e-4 * (t - 300));
+  }
+  const auto a = fit_two_ranges(T, y);            // thirds: ≤ 266.7 K and ≥ 333.3 K
+  ASSERT_TRUE(a.ok);
+  EXPECT_NEAR(a.tg, 300.0, 1e-9);
+  EXPECT_NEAR(a.slope_low, 1e-4, 1e-12);
+  EXPECT_NEAR(a.slope_high, 3e-4, 1e-12);
+  EXPECT_NEAR(a.value_at_tg, 1.0, 1e-12);
+  y[10] += 0.5;                                    // 300 K itself, between the ranges: no effect
+  EXPECT_NEAR(fit_two_ranges(T, y, 260, 340).tg, 300.0, 1e-9);
+  EXPECT_FALSE(fit_two_ranges(T, y, 320, 300).ok);
+  // nearly parallel lines crossing far outside the gap: no Tg
+  std::vector<double> flat;
+  for (double t : T) flat.push_back(t < 300 ? 1.0 + 2e-4 * t : 1.01 + 2.001e-4 * t);   // cross at −10⁵ K
+  EXPECT_FALSE(fit_two_ranges(T, flat, 260, 340).ok);
+}

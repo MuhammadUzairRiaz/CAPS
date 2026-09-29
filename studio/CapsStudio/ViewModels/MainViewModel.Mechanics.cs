@@ -6,8 +6,9 @@ namespace CapsStudio.ViewModels;
 /// <summary>A labelled result cell of a focused Analyze page.</summary>
 public sealed class ResultCell : ObservableObject
 {
-    public ResultCell(string label, string caption) { Label = label; _caption = caption; }
-    public string Label { get; }
+    public ResultCell(string label, string caption) { _label = label; _caption = caption; }
+    private string _label;
+    public string Label { get => _label; set => Set(ref _label, value); }
     private string _value = "—", _caption;
     public string Value { get => _value; set { if (Set(ref _value, value)) Raise(nameof(HasValue)); } }
     public string Caption { get => _caption; set => Set(ref _caption, value); }
