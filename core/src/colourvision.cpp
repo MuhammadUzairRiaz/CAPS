@@ -41,6 +41,8 @@ std::array<double, 3> lab(unsigned rgb) {
 
 }  // namespace
 
+const double* vision_matrix(Vision v) { const M3* m = matrix(v); return m ? m->data() : nullptr; }
+
 const char* to_string(Vision v) {
   switch (v) {
     case Vision::Protan: return "protanopia";

@@ -30,6 +30,10 @@ public struct CapsSceneRaw
     public IntPtr FitCorners;
     public int NFitPoints;
     public IntPtr FitPoints;
+    public int NTriangles;
+    public IntPtr TriXyz, TriNormal, TriRgb;
+    public IntPtr VisionMatrix;
+    public double VisionSeverity;
 }
 
 /// <summary>caps_view_fit: the camera exactly as caps_render fits it (see caps_c.h).</summary>
@@ -55,6 +59,12 @@ public sealed class CapsSceneData
     // the camera fit's inputs (caps_scene v27): the view fits without the document, e.g. while a run holds it
     public double FitCx, FitCy, FitCz, FitPad = 1, FovDeg = 35;
     public float[] FitCorners = [], FitPoints = [];
+    // meshes (caps_scene v54): 9 floats per triangle for the corners and their normals, a colour 0xAARRGGBB per corner (AA opacity)
+    public float[] TriXyz = [], TriNormal = [];
+    public uint[] TriRgb = [];
+    /// <summary>The colour-vision preview: the linear-RGB matrix (row-major) and its severity; empty for normal vision.</summary>
+    public float[] Vision = [];
+    public double VisionSeverity;
 
     /// <summary>The camera as caps_view_fit gives it for a w × h image, from the scene alone (the core's fit_view).</summary>
     public CapsViewFit Fit(in CapsCamera cam, int w, int h)
@@ -1711,6 +1721,8 @@ public sealed class CapsDocument : IDisposable
                 DepthCue = r.DepthCue != 0, Outlines = r.Outlines != 0,
                 FitCx = r.FitCx, FitCy = r.FitCy, FitCz = r.FitCz, FitPad = r.FitPad, FovDeg = r.FovDeg > 0 ? r.FovDeg : 35,
                 FitCorners = Copy<float>(r.FitCorners, 3 * r.NFitCorners), FitPoints = Copy<float>(r.FitPoints, 3 * r.NFitPoints),
+                Vision = Copy<float>(r.VisionMatrix, r.VisionMatrix == IntPtr.Zero ? 0 : 9), VisionSeverity = r.VisionSeverity,
+                TriXyz = Copy<float>(r.TriXyz, 9 * r.NTriangles), TriNormal = Copy<float>(r.TriNormal, 9 * r.NTriangles), TriRgb = Copy<uint>(r.TriRgb, 3 * r.NTriangles),
             };
             float mr = 0;
             for (var k = 3; k < d.Spheres.Length; k += 4) mr = Math.Max(mr, d.Spheres[k]);
