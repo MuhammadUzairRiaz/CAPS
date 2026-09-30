@@ -92,6 +92,7 @@ public sealed partial class FieldViewModel : ObservableObject
     public static readonly string[] ChargeModes = ["Automatic (force field, else Gasteiger)", "From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)",
                                                    "Bond increments (OPLS numbers)"];
     private static int CoreCharges(int ui) => ui == 0 ? 4 : ui == 5 ? 5 : ui - 1;
+    public static int CoreChargesOf(int ui) => CoreCharges(ui);
     private int _chargeMode;
     public int ChargeMode { get => _chargeMode; set => Set(ref _chargeMode, value); }
 

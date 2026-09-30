@@ -532,6 +532,9 @@ int32_t caps_water_models(char* json, int32_t cap);
 /* v51 Pack input in the CAPS form (cell, distance, molecule … end; pack.hpp) or packmol's: to_caps 1 gives the CAPS form,
    0 packmol's (either given). Returns the length needed with NUL, or -1 (the error names the line). */
 int32_t caps_pack_convert(const char* text, int32_t to_caps, char* out, int32_t cap);
+/* v51 the packing that made a document: [{name, molecules: "11-110", forcefield: "" | library id | "water:MODEL"}] per input
+   molecule, in the input's order ([] for a document not packed). For a force field per group of molecules. */
+int32_t caps_pack_items(caps_doc* d, char* json, int32_t cap);
 int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);

@@ -687,8 +687,11 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
   // below is between placed structures
   std::vector<int> placed;
   int64_t next_mol = 1;
+  std::vector<std::pair<int64_t, int64_t>> item_mols(items.size(), {0, -1});
   for (size_t m = 0; m < inst.size(); ++m) {
     const auto& mol = items[inst[m].item].molecule;
+    auto& im = item_mols[size_t(inst[m].item)];
+    if (im.first == 0) im.first = next_mol;
     const uint32_t base = uint32_t(out.atoms.size());
     int nmol = 0;
     const auto inner = mol.molecules(&nmol);
@@ -705,6 +708,12 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
     }
     for (const auto& b : mol.bonds) out.bonds.push_back({base + b.i, base + b.j, b.order});
     next_mol += std::max(1, nmol);
+    im.second = next_mol - 1;
+  }
+  rep.items.clear();
+  for (size_t t = 0; t < items.size(); ++t) {
+    const auto& [a, b] = item_mols[t];
+    rep.items.push_back({items[t].name, a == 0 ? std::string() : a == b ? std::to_string(a) : std::to_string(a) + "-" + std::to_string(b), items[t].forcefield});
   }
   out.bonds_from_file = !out.bonds.empty();
   rep.molecules = int(next_mol - 1);   // molecules in the cell (a fixed host keeps its own), not placed structures
@@ -934,6 +943,7 @@ std::string caps_pack_to_packmol(const std::string& text) {
     }
     if (k == "end") { out << "end structure\n"; inside = false; }
     else if (k == "count" && t.size() == 2) out << "  number " << t[1] << "\n";
+    else if ((k == "forcefield" || k == "water") && t.size() >= 2) out << "  " << k << " " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n";
     else if (k == "centred" || k == "centered") out << "  center\n";
     else if (k == "fixed") {
       // fixed at x y z [rotated a b c degrees|radians]
@@ -1003,6 +1013,7 @@ std::string packmol_to_caps_pack(const std::string& text) {
     if (k == "end" && t.size() > 1 && pack_lower(t[1]) == "atoms") { atoms = false; continue; }
     if (k == "end") { out << "end\n"; inside = false; continue; }
     if (k == "number") out << "  count   " << t[1] << "\n";
+    else if ((k == "forcefield" || k == "water") && t.size() >= 2) out << "  " << k << (k == "water" ? "   " : " ") << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n";
     else if (k == "center" || k == "centerofmass") out << "  centred\n";
     else if (k == "fixed" && t.size() >= 7) {
       char b[200];
@@ -1148,6 +1159,9 @@ std::vector<PackItem> parse_packmol_input(const std::string& text0, const std::s
         cur->fixed = true;
         cur->position = {num(1), num(2), num(3)};
         cur->angles = {num(4), num(5), num(6)};
+      } else if (k == "forcefield" || k == "water") {   // CAPS: the molecule's own force field or water model
+        if (t.size() < 2) throw bad(k + " needs a name");
+        cur->forcefield = (k == "water" ? "water:" : "") + rest();
       } else if (k == "center" || k == "centerofmass") {
         cur->center = true;
       } else if (k == "atoms") {   // the regions until "end atoms" hold for these atoms (1-based in the file)

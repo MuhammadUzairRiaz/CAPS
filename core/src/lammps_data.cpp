@@ -383,6 +383,8 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
     for (int b2 = a2; b2 < nt; ++b2) {
       auto it = ff.pair_func.find({a2, b2});
       const int f = it == ff.pair_func.end() ? 0 : it->second.form;
+      // a 12-6 pair in a 9-6 system (another force field's group beside class II): lj/cut, with its own tail
+      if (f == kPairSdk126 && L.pair_base == "lj/class2") { L.pair_styles.insert("lj/cut"); continue; }
       L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : f == kPairCos2 || f == kPairCos2Wca ? "cosine/squared" : "?");
     }
   if (L.pair_styles.count("?")) throw FieldError("a pair form has no LAMMPS style");
@@ -656,7 +658,10 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
       auto it = ff.pair_func.find({int(a2), int(b2)});
       std::string coef, style = L.pair_combined.empty() ? L.pair_base : L.pair_combined;
       const int f = it != ff.pair_func.end() ? it->second.form : 0;
-      if (f >= kPairSdk96 && f <= kPairSdk125) {
+      if (f == kPairSdk126 && L.pair_base == "lj/class2") {   // 4ε[(σ/r)¹² − (σ/r)⁶]: lj/cut's own form
+        style = "lj/cut";
+        coef = num({it->second.a, it->second.b});
+      } else if (f >= kPairSdk96 && f <= kPairSdk125) {
         static const char* nm[] = {"lj9_6", "lj12_4", "lj12_6", "lj12_5"};
         style = L.pair_combined.empty() ? "lj/sdk" : L.pair_combined;   // lj/sdk/coul/long when that is the one style
         coef = std::string(" ") + nm[f - kPairSdk96] + num({it->second.a, it->second.b});
@@ -1305,7 +1310,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
         l = l.substr(0, p) + to + " " + tip4p_args + l.substr(p + from.size());
         return true;
       };
-      if (l.rfind("pair_style", 0) == 0) done = swap("lj/cut/coul/long", "lj/cut/tip4p/long") || swap("coul/long", "coul/tip4p/long");
+      if (l.rfind("pair_style", 0) == 0) done = swap("lj/cut/coul/long", "lj/cut/tip4p/long") || swap("coul/long", "tip4p/long");   // tip4p/long: LAMMPS's Coulomb-only TIP4P style (in hybrid/overlay)
       else if (l.rfind("kspace_style", 0) == 0) {
         const auto sp = l.find_first_of(' ', 13);
         const std::string acc = sp == std::string::npos ? "1e-5" : l.substr(l.find_last_of(' ') + 1);
@@ -1313,7 +1318,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       }
     }
     if (!done)
-      throw FieldError("four-site water in LAMMPS needs long-range electrostatics (lj/cut/tip4p/long or coul/tip4p/long with pppm/tip4p): choose PPPM / PME electrostatics");
+      throw FieldError("four-site water in LAMMPS needs long-range electrostatics (lj/cut/tip4p/long, or tip4p/long in an overlay, with pppm/tip4p): choose PPPM / PME electrostatics");
     out << "# four-site water (" << ff.name << "): LAMMPS puts each M site " << tip4p_args.substr(tip4p_args.find_last_of(' ') + 1)
         << " Å from O on the H–O–H bisector (its charge is written on O); keep the water rigid (fix shake below)\n";
   }
@@ -1345,7 +1350,13 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     }() << ")\n";
   if (!L.mb_types.empty() && !L.bonds.term_type.empty())
     out << "# (LAMMPS warns of a many-body potential beside bonds: its atoms have none, the special_bonds exclusions act on the other groups only)\n";
-  for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff, metal)) out << aligned(l) << "\n";
+  for (auto l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff, metal)) {
+    if (st.tip4p_qdist > 0) {   // the overlay's Coulomb sub-style is tip4p/long
+      const auto p = l.find(" coul/long");
+      if (l.rfind("pair_coeff", 0) == 0 && p != std::string::npos) l.replace(p, 10, " tip4p/long");
+    }
+    out << aligned(l) << "\n";
+  }
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (!st.groups.empty()) out << lammps_group_lines(s, ff, st.groups);

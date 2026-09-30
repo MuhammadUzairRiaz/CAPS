@@ -1539,6 +1539,12 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           continue;
         }
         if (form_[tp] == 2) continue;   // Morse: no tail term (LAMMPS pair morse)
+        if (form_[tp] == kPairSdk126) {   // a 12-6 pair in a 9-6 system (another force field's group): its own 12-6 tail
+          const double e6 = pa_[tp], sg6 = std::pow(pb_[tp], 6), sg12 = sg6 * sg6;
+          et += nn * 2 * kPi * 4 * e6 * (sg12 / (9 * rc9) - sg6 / (3 * rc3));
+          wt += nn * 2 * kPi * 4 * e6 * (4 * sg12 / (3 * rc9) - 2 * sg6 / rc3);
+          continue;
+        }
         if (form_[tp] >= kPairSdk96) continue;   // SDK (LAMMPS refuses a tail for lj/sdk) and lj/gromacs (zero at rc)
         if (lj96_) {
           // lj/class2: E = 2π N_a N_b ε σ⁶ (σ³ − 3rc³) / (3rc⁶ V), P = 2π N_a N_b ε σ⁶ (σ³ − 2rc³) / (rc⁶ V²) per ordered pair
