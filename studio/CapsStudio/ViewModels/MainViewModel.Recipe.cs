@@ -13,7 +13,7 @@ public partial class MainViewModel
 {
     private bool _recipeRunning;
     private CancellationTokenSource? _recipeCancel;
-    public bool RecipeRunning { get => _recipeRunning; private set { Set(ref _recipeRunning, value); Raise(nameof(Busy)); } }
+    public bool RecipeRunning { get => _recipeRunning; private set { Set(ref _recipeRunning, value); Raise(nameof(Busy)); Raise(nameof(HasSelBar)); } }
     public string RecipeLog { get; private set; } = "";
 
     public void CancelRecipe() => _recipeCancel?.Cancel();

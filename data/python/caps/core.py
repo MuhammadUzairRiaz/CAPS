@@ -823,6 +823,50 @@ def _export_scene(self, path: str, format: str = "", width: int = 1280, height: 
 Document.export_scene = _export_scene
 
 
+def _set_atom_state(self, atoms, state: int) -> int:
+    lib = library()
+    lib.caps_set_atom_state.argtypes = [C.c_void_p, C.c_void_p, C.c_int32, C.c_int32]
+    lib.caps_set_atom_state.restype = C.c_int32
+    if atoms is None:
+        return lib.caps_set_atom_state(self._h, None, 0, state)
+    idx = [int(i) for i in atoms]
+    arr = (C.c_int32 * len(idx))(*idx)
+    return lib.caps_set_atom_state(self._h, arr, len(idx), state)
+
+
+def _hide(self, atoms=None) -> int:
+    """Hide these atoms (indices; None: all) in the view and its images. The structure, its exports and calculations keep
+    them. Returns how many changed."""
+    return _set_atom_state(self, atoms, 2)
+
+
+def _ghost(self, atoms=None) -> int:
+    """Ghost these atoms: drawn faint, never picked (the view and its images only)."""
+    return _set_atom_state(self, atoms, 1)
+
+
+def _show(self, atoms=None) -> int:
+    """Show these atoms again (None: every hidden and ghosted atom)."""
+    return _set_atom_state(self, atoms, 0)
+
+
+def _atom_states(self) -> list:
+    """Each atom's view state: 0 shown, 1 ghost, 2 hidden."""
+    lib = library()
+    lib.caps_atom_states.argtypes = [C.c_void_p, C.c_void_p, C.c_int32]
+    lib.caps_atom_states.restype = C.c_int32
+    n = lib.caps_atom_states(self._h, None, 0)
+    buf = (C.c_uint8 * max(n, 1))()
+    lib.caps_atom_states(self._h, buf, n)
+    return list(buf[:n])
+
+
+Document.hide = _hide
+Document.ghost = _ghost
+Document.show = _show
+Document.atom_states = _atom_states
+
+
 def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, pressure: float = 1.0, p_max: float = 49346.2,
                   time_scale: float = 1.0, cycles: int = 3, t_low: float = 300.0, t_high: float = 600.0, ramp_ps: float = 50.0,
                   hold_ps: float = 50.0) -> str:

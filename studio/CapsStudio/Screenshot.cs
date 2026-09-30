@@ -631,6 +631,35 @@ internal static class Screenshot
                 else w.MouseUp(a, Avalonia.Input.MouseButton.Left);
                 for (var i = 0; i < 40; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
+            // the selection bar and ring (design/boards/SelectionBar): dclick=X,Y double-click · boxdrag=X1,Y1,X2,Y2 an ⌥ drag ·
+            // rhold=X,Y[,AX,AY] the right button held (the ring opens) and, with AX,AY, moved toward a wedge (not released)
+            if (kv[0] is "dclick" or "boxdrag" or "rhold")
+            {
+                var v = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var a = new Point(v[0], v[1]);
+                void Pump(int ms) { for (var i = 0; i < ms / 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); } }
+                w.MouseMove(a);
+                if (kv[0] == "dclick")
+                {
+                    w.MouseDown(a, Avalonia.Input.MouseButton.Left); w.MouseUp(a, Avalonia.Input.MouseButton.Left);
+                    w.MouseDown(a, Avalonia.Input.MouseButton.Left); w.MouseUp(a, Avalonia.Input.MouseButton.Left);
+                }
+                else if (kv[0] == "boxdrag")
+                {
+                    var b = new Point(v[2], v[3]);
+                    w.MouseDown(a, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.Alt);
+                    for (var k = 1; k <= 8; k++) w.MouseMove(new Point(a.X + (b.X - a.X) * k / 8, a.Y + (b.Y - a.Y) * k / 8), Avalonia.Input.RawInputModifiers.LeftMouseButton | Avalonia.Input.RawInputModifiers.Alt);
+                    w.MouseUp(b, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.Alt);
+                }
+                else
+                {
+                    w.MouseDown(a, Avalonia.Input.MouseButton.Right);
+                    Pump(420);
+                    w.HoldRingForTest(a);   // the headless clock may not run the hold timer: open it as the timer would
+                    if (v.Length > 3) w.MouseMove(new Point(v[2], v[3]), Avalonia.Input.RawInputModifiers.RightMouseButton);
+                }
+                Pump(800);
+            }
             if (kv[0] == "wait")
                 for (var i = 0; i < int.Parse(kv[1]) / 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             if (kv[0] == "conformers") w.ViewModel.MolConfCount = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);

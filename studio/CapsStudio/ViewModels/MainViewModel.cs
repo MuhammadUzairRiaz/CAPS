@@ -162,6 +162,7 @@ public sealed partial class MainViewModel : ObservableObject
                 // styles, surfaces and labels belong to a document: a new one starts plain
                 AppLayers.Clear(); _appColour = -1; _appSurface = 0; _labelTexts = null;
                 NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
+                QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 if (_visionPreview != 0) try { value?.SetVision(_visionPreview); } catch { /* an older core */ }
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
                 RaiseAppearanceVisibility();
@@ -568,7 +569,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsPack));
         Raise(nameof(IsReact));
         Raise(nameof(IsField));
-        Raise(nameof(IsStudio));
+        Raise(nameof(IsStudio)); Raise(nameof(HasSelBar));
         Raise(nameof(IsMolecule));
         Raise(nameof(IsStudioRail));
         Raise(nameof(IsSettings));
@@ -746,6 +747,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(CanRun));
         Raise(nameof(CanEquilibrate));
         Raise(nameof(CanReact));
+        Raise(nameof(HasSelBar));
         if (!Busy && _leavePeriodicPending) LeavePeriodic();
     }
     public string GrowLog { get => _growLog; private set => Set(ref _growLog, value); }
@@ -2632,6 +2634,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void RefreshSelection()
     {
+        QueueSelBar();
         RequestProperties();
         RefreshMolInspector();
         Raise(nameof(StatusSelection));

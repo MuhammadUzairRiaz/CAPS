@@ -188,18 +188,20 @@ public sealed partial class MainViewModel
     /// <summary>The picked atoms become the chosen element (Element picker: Replace selected atom).</summary>
     public void ReplacePickedElement()
     {
-        if (_selection.Count == 0) { Status = "Pick the atoms to change first"; return; }
-        RunEdit(new { op = "element", atoms = _selection.ToArray(), element = _buildElement });
+        var sel = SelectionAtoms();
+        if (sel.Length == 0) { Status = "Pick the atoms to change first"; return; }
+        RunEdit(new { op = "element", atoms = sel, element = _buildElement });
     }
 
-    public void AddHydrogensAll() => RunEdit(_selection.Count > 0 ? new { op = "add_h", atoms = (object)_selection.ToArray() } : new { op = "add_h", atoms = (object)"" });
+    public void AddHydrogensAll() { var sel = SelectionAtoms(); RunEdit(sel.Length > 0 ? new { op = "add_h", atoms = (object)sel } : new { op = "add_h", atoms = (object)"" }); }
     // the Modify toolbar (Materials Studio's Modify Element / Bond Type / Hybridization, on the picked atoms)
     public static readonly string[] QuickElements = ["H", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Br"];
     /// <summary>The picked atoms made this element (their type follows).</summary>
     public void ModifyElementPicked(string symbol)
     {
-        if (_selection.Count == 0) { Status = "Pick atoms (click, ⇧ click adds), then an element"; return; }
-        RunEdit(new { op = "element", atoms = _selection.ToArray(), element = symbol });
+        var sel = SelectionAtoms();
+        if (sel.Length == 0) { Status = "Select atoms (click, ⇧ click adds, double-click a molecule), then an element"; return; }
+        RunEdit(new { op = "element", atoms = sel, element = symbol });
     }
     /// <summary>The bond between the two picked atoms made single, double or triple (made if they were not bonded).</summary>
     public void BondOrderPicked(int order)
@@ -222,7 +224,8 @@ public sealed partial class MainViewModel
         RunEdit(new { op = "set_coordination", atom = _selection[0], geometry });
     }
 
-    public void DeletePicked() { if (_selection.Count > 0) RunEdit(new { op = "delete", atoms = _selection.ToArray() }); }
+    /// <summary>Delete (key, toolbar, bar, ring): the whole selection.</summary>
+    public void DeletePicked() => DeleteSelection();
     /// <summary>A benzene ring fused onto the bond between the two picked atoms (each needs a hydrogen on that side).</summary>
     public void FuseRingPicked()
     {
@@ -250,7 +253,8 @@ public sealed partial class MainViewModel
         if (_doc == null) return;
         var ax = new double[3];
         ax[axis] = 1;
-        RunEdit(_selection.Count > 0 ? new { op = "rotate", atoms = (object)_selection.ToArray(), axis = ax, degrees }
+        var sel = SelectionAtoms();
+        RunEdit(sel.Length > 0 ? new { op = "rotate", atoms = (object)sel, axis = ax, degrees }
                                      : new { op = "rotate", atoms = (object)Enumerable.Range(0, (int)_doc.Summary().Atoms).ToArray(), axis = ax, degrees });
     }
     /// <summary>The selection (or every atom) reflected through the plane normal to a Cartesian axis: its mirror image.</summary>
@@ -259,7 +263,8 @@ public sealed partial class MainViewModel
         if (_doc == null) return;
         var n = new double[3];
         n[axis] = 1;
-        RunEdit(_selection.Count > 0 ? new { op = "mirror", atoms = (object)_selection.ToArray(), normal = n }
+        var sel = SelectionAtoms();
+        RunEdit(sel.Length > 0 ? new { op = "mirror", atoms = (object)sel, normal = n }
                                      : new { op = "mirror", atoms = (object)Enumerable.Range(0, (int)_doc.Summary().Atoms).ToArray(), normal = n });
     }
     /// <summary>The picked stereocentre made R or S (inverted only when it is the other).</summary>
@@ -279,7 +284,8 @@ public sealed partial class MainViewModel
     {
         if (_doc == null || Busy) return;
         var doc = _doc;
-        var atoms = _selection.Count > 0 ? _selection.ToArray() : null;
+        var sel = SelectionAtoms();
+        var atoms = sel.Length > 0 ? sel : null;
         Status = "Cleaning up with UFF…";
         var text = await Task.Run(() => doc.Edit(atoms == null ? "{\"op\":\"clean\"}" : System.Text.Json.JsonSerializer.Serialize(new { op = "clean", atoms })));
         var r = JsonNode.Parse(text)!;

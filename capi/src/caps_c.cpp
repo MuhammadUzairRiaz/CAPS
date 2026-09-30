@@ -232,6 +232,9 @@ struct caps_doc {
     double clip_from = 0.0, clip_to = 0.5;
     bool clip_invert = false;
   } display;
+  // caps_set_atom_state (design/boards/SelectionBar, Layers): per atom 0 shown, 1 ghost (faint, not pickable), 2 hidden. View
+  // only: the structure, its exports and calculations keep every atom. Ignored once the atom count no longer matches.
+  std::vector<uint8_t> atom_state;
   int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
   double vision_severity = 1.0;
   std::array<float, 9> scene_vision{};   // the scene's copy of the vision matrix (caps_scene.vision_matrix)
@@ -737,6 +740,25 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
       const bool in = f >= D.clip_from && f <= D.clip_to;
       if (in == D.clip_invert) r.atom_style[i] = uint8_t(caps::Style::Hidden);
     }
+  }
+  // hidden and ghosted atoms (after every style: they win)
+  if (!d->pstate && d->atom_state.size() == d->frame.atoms.size() &&
+      std::any_of(d->atom_state.begin(), d->atom_state.end(), [](uint8_t v) { return v != 0; })) {
+    const size_t n = d->atom_state.size();
+    if (r.atom_style.size() != n) r.atom_style.assign(n, uint8_t(r.style));
+    r.unpickable.assign(n, 0);
+    for (size_t i = 0; i < n; ++i) {
+      const uint8_t v = d->atom_state[i];
+      if (v == 2) r.atom_style[i] = uint8_t(caps::Style::Hidden), r.unpickable[i] = 1;
+      else if (v == 1) {
+        if (r.transparency.size() != n) r.transparency.assign(n, 0.0f);
+        r.transparency[i] = std::max(r.transparency[i], 0.78f);
+        r.unpickable[i] = 1;
+      }
+    }
+    r.highlight.erase(std::remove_if(r.highlight.begin(), r.highlight.end(),
+                                     [&](int i) { return i >= 0 && size_t(i) < n && d->atom_state[size_t(i)] != 0; }),
+                      r.highlight.end());
   }
   return r;
 }
@@ -3766,6 +3788,29 @@ int32_t caps_pick_at(caps_doc* d, const caps_camera* cam, const caps_render_opts
     return 0;
   });
   return out;
+}
+
+int32_t caps_set_atom_state(caps_doc* d, const int32_t* atoms, int32_t n, int32_t state) {
+  int32_t changed = 0;
+  guard([&] {
+    const size_t na = d->frame.atoms.size();
+    const uint8_t v = uint8_t(std::clamp(state, 0, 2));
+    if (d->atom_state.size() != na) d->atom_state.assign(na, 0);
+    auto set = [&](size_t i) { if (d->atom_state[i] != v) d->atom_state[i] = v, ++changed; };
+    if (!atoms) for (size_t i = 0; i < na; ++i) set(i);
+    else for (int32_t k = 0; k < n; ++k) if (atoms[k] >= 0 && size_t(atoms[k]) < na) set(size_t(atoms[k]));
+    return 0;
+  });
+  return changed;
+}
+
+int32_t caps_atom_states(caps_doc* d, uint8_t* out, int32_t n) {
+  const size_t na = d->frame.atoms.size();
+  if (out && n >= int32_t(na)) {
+    if (d->atom_state.size() == na) std::copy(d->atom_state.begin(), d->atom_state.end(), out);
+    else std::fill(out, out + na, uint8_t(0));
+  }
+  return int32_t(na);
 }
 
 int32_t caps_pick(caps_doc* d, int32_t x, int32_t y) {
