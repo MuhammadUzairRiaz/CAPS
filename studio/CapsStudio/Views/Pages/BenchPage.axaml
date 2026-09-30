@@ -42,7 +42,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16" Margin="24,0,24,16">
+    <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16" Margin="24,0,24,16">
       <!-- the tables -->
       <Border Classes="card" CornerRadius="10">
         <DockPanel>

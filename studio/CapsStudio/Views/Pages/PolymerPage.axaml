@@ -9,7 +9,7 @@
     <Style Selector="Border.unit"><Setter Property="Background" Value="{DynamicResource Bg2B}" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="12,10" /></Style>
   </p:PageBase.Styles>
 
-  <Grid ColumnDefinitions="300,*,420">
+  <Grid v:Panes.Split="True" ColumnDefinitions="300,*,420">
     <!-- library -->
     <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
       <DockPanel>

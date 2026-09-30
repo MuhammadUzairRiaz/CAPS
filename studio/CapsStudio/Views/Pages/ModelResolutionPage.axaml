@@ -64,7 +64,7 @@
       </DockPanel>
     </Border>
     <Grid Margin="18" RowDefinitions="*,Auto" RowSpacing="14">
-      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+      <Grid v:Panes.Split="True" ColumnDefinitions="*,*,*" ColumnSpacing="12">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="All-atom" FontWeight="SemiBold" /><TextBlock Text="{Binding MrAaCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
           <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Aa" /></Panel></Border>

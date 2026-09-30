@@ -39,7 +39,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
+    <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
       <!-- left: the three monitored quantities -->
       <Grid RowDefinitions="*,*,*" RowSpacing="16">
         <Border Classes="card">

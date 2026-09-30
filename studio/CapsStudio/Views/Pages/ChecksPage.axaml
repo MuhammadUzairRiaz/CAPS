@@ -67,7 +67,7 @@
         </ScrollViewer>
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,*" ColumnSpacing="18" Margin="22,16">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,*" ColumnSpacing="18" Margin="22,16">
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
           <TextBlock Text="{Binding Title}" Classes="h3" VerticalAlignment="Center" />

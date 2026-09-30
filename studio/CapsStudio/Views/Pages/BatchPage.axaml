@@ -77,7 +77,7 @@
       </Border>
 
       <!-- across finished inputs -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,420,320" ColumnSpacing="14" Height="230">
+      <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="*,420,320" ColumnSpacing="14" Height="230">
         <Border Classes="card" CornerRadius="10">
           <StackPanel>
             <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">

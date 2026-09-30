@@ -38,7 +38,7 @@
       </StackPanel>
     </Border>
 
-    <Grid ColumnDefinitions="*,420">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,420">
       <Panel>
         <v:MolView x:Name="Preview" />
         <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -56,13 +56,13 @@
             <TextBlock Text="Nanostructure builder" Classes="h2" VerticalAlignment="Center" />
           </Border>
           <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">
               <v:SeedPicker DataContext="{Binding NanoSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" ToolTip.Tip="Where groups are grafted and how the matrix grows" />
               <Button Content="Cancel" Click="OnCancel" />
               <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding NanoIdle}">
                 <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="{Binding NanoBuildIcon}" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding NanoBuildText}" VerticalAlignment="Center" /></StackPanel>
               </Button>
-            </StackPanel>
+            </WrapPanel>
           </Border>
           <ScrollViewer>
             <StackPanel>

@@ -39,7 +39,7 @@
       </DockPanel>
     </Border>
 
-    <Grid ColumnDefinitions="*,400">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,400">
       <DockPanel>
         <!-- timeline -->
         <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">

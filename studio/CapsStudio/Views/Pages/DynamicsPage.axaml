@@ -37,7 +37,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
+    <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
       <ScrollViewer>
         <StackPanel Spacing="16" IsEnabled="{Binding !MdRunning}">
           <Border Classes="card">

@@ -42,7 +42,7 @@
     </Style>
   </p:PageBase.Styles>
 
-  <Grid ColumnDefinitions="*,360,400">
+  <Grid v:Panes.Split="True" ColumnDefinitions="*,360,400">
     <!-- sketch and preview: the tool strip over both -->
     <Grid Grid.ColumnSpan="2" RowDefinitions="48,*">
       <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">

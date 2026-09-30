@@ -29,6 +29,11 @@
   <StreamGeometry x:Key="Icon.xcircle">M3,12 A9,9 0 1 0 21,12 A9,9 0 1 0 3,12 Z M9 9l6 6M15 9l-6 6</StreamGeometry>
   <StreamGeometry x:Key="Icon.chev">M6 9l6 6 6-6</StreamGeometry>
   <StreamGeometry x:Key="Icon.chevr">M9 6l6 6-6 6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.chevl">M15 6l-6 6 6 6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.chevu">M6 15l6-6 6 6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.panel-left">M4 5h16v14H4zM9 5v14</StreamGeometry>
+  <StreamGeometry x:Key="Icon.panel-right">M4 5h16v14H4zM15 5v14</StreamGeometry>
+  <StreamGeometry x:Key="Icon.panel-bottom">M4 5h16v14H4zM4 14h16</StreamGeometry>
   <StreamGeometry x:Key="Icon.plus">M12 5v14M5 12h14</StreamGeometry>
   <StreamGeometry x:Key="Icon.folder">M3 6h7l2 2h9v11H3z</StreamGeometry>
   <StreamGeometry x:Key="Icon.file">M6 3h9l4 4v14H6z M15 3v4h4</StreamGeometry>

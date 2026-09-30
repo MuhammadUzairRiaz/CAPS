@@ -9,7 +9,7 @@
     <Style Selector="Ellipse.ck"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
     <Style Selector="Ellipse.ck.warn"><Setter Property="Fill" Value="{DynamicResource WarnB}" /></Style>
   </p:PageBase.Styles>
-  <Grid ColumnDefinitions="*,330">
+  <Grid v:Panes.Split="True" ColumnDefinitions="*,330">
     <DockPanel>
       <Border DockPanel.Dock="Top" Height="48" Padding="16,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
         <DockPanel>
@@ -35,12 +35,12 @@
           </DockPanel>
         </Border>
         <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">
             <Button Classes="small" Content="SVG" Click="OnSvg" ToolTip.Tip="Plots as vectors, the 3D panel as an image" />
             <Button Classes="small" Content="TIFF" Click="OnTiff" />
             <Button Classes="small" Content="PNG" Click="OnPng" />
             <Button Classes="small primary" Click="OnPdf" ToolTip.Tip="The page as an image at the chosen dpi"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export PDF" VerticalAlignment="Center" /></StackPanel></Button>
-          </StackPanel>
+          </WrapPanel>
         </Border>
         <ScrollViewer>
           <StackPanel>

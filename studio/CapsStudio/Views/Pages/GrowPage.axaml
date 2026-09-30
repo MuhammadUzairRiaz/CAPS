@@ -39,7 +39,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
+    <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
       <ScrollViewer x:Name="SettingsPane">
         <StackPanel Spacing="16" IsEnabled="{Binding NotGrowing}">
           <!-- Components -->

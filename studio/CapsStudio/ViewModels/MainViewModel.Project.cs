@@ -78,7 +78,23 @@ public sealed partial class MainViewModel
     public string ProjectFolder { get => _projectFolder; private set { if (Set(ref _projectFolder, value)) { Raise(nameof(ProjectName)); Raise(nameof(ProjectFolderText)); Raise(nameof(ExplorerProjectName)); } } }
     public string ProjectName => _projectFolder.Length == 0 ? "No project" : System.IO.Path.GetFileName(_projectFolder.TrimEnd('/', '\\'));
     /// <summary>The explorer's root: the project folder's name, or this session's structures.</summary>
-    public string ExplorerProjectName => _projectFolder.Length == 0 ? "This session" : ProjectName;
+    /// <summary>The project's name in the tree: the one the user gave it (kept per folder in the settings; the folder on
+    /// disk is not renamed), else the folder's name, or "This session".</summary>
+    public string ExplorerProjectName => _settings.ProjectNames.TryGetValue(_projectFolder, out var n) && n.Length > 0 ? n
+                                       : _projectFolder.Length == 0 ? "This session" : ProjectName;
+    private bool _projectRenaming;
+    public bool ProjectRenaming { get => _projectRenaming; set { if (Set(ref _projectRenaming, value)) Raise(nameof(ProjectNotRenaming)); } }
+    public bool ProjectNotRenaming => !_projectRenaming;
+    public void RenameProject(string? name)
+    {
+        ProjectRenaming = false;
+        name = name?.Trim() ?? "";
+        if (name == ExplorerProjectName) return;
+        if (name.Length == 0) _settings.ProjectNames.Remove(_projectFolder); else _settings.ProjectNames[_projectFolder] = name;
+        _settings.Save();
+        Raise(nameof(ExplorerProjectName));
+        Status = name.Length == 0 ? "The project's name is its folder's again" : $"The project is called {name}";
+    }
     public string ProjectFolderText => _projectFolder.Length == 0 ? "" : RecentFiles.Tilde(_projectFolder);
     public string ProjectMethods { get => _projectMethods; private set { if (Set(ref _projectMethods, value)) Raise(nameof(ProjectHasMethods)); } }
     public bool ProjectHasMethods => _projectMethods.Length > 0;

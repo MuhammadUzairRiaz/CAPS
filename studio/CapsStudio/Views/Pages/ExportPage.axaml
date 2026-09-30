@@ -17,7 +17,7 @@
         </StackPanel>
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="300,*,320" ColumnSpacing="16" Margin="22,16">
+    <Grid v:Panes.Split="True" ColumnDefinitions="300,*,320" ColumnSpacing="16" Margin="22,16">
       <!-- format and options -->
       <StackPanel Spacing="14">
         <Border Classes="card" CornerRadius="10">

@@ -25,7 +25,7 @@
         </StackPanel>
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,440" ColumnSpacing="14" Margin="22,18">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,440" ColumnSpacing="14" Margin="22,18">
       <Border Classes="pcard" Padding="0">
         <DockPanel>
           <Border DockPanel.Dock="Top" Padding="12,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
