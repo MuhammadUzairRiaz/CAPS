@@ -70,6 +70,7 @@
 #include "caps/recipe.hpp"
 #include "caps/colourvision.hpp"
 #include "caps/raytrace.hpp"
+#include "caps/scene_export.hpp"
 #include "caps/query.hpp"
 #include "caps/charges.hpp"
 #include "caps/molinfo.hpp"
@@ -7870,6 +7871,29 @@ extern "C" int32_t caps_export_image(caps_doc* d, const caps_camera* cam, const 
       }
     }
     caps::write_png(img, path, p);
+    return 0;
+  });
+}
+
+// The view's scene for other renderers and 3D tools (scene_export.hpp): format "pov" | "glb" | "obj", with the camera
+// of `cam` for opt's size (POV-Ray). report: {spheres, cylinders, triangles}.
+extern "C" int32_t caps_export_scene(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const char* path, const char* format,
+                                     char* report, int32_t cap) {
+  return guard([&] {
+    caps::RenderOptions ro = opts_of(d, opt);
+    ro.supersample = 1;
+    const caps::System& sys = shown(d);
+    caps::Renderer r;
+    const caps::Scene sc = r.scene(sys, ro);
+    const std::string f = format ? format : "glb";
+    caps::SceneExportReport rep;
+    if (f == "pov") rep = caps::write_povray(sc, caps::view_fit(sys, cam_of(cam), ro), ro.width, ro.height, path ? path : "");
+    else if (f == "obj") rep = caps::write_obj(sc, path ? path : "");
+    else if (f == "glb" || f == "gltf") rep = caps::write_gltf(sc, path ? path : "");
+    else throw std::invalid_argument("scene format: pov, glb or obj");
+    caps::Json j = caps::Json::object();
+    j["spheres"] = double(rep.spheres), j["cylinders"] = double(rep.cylinders), j["triangles"] = double(rep.triangles);
+    report_out(j.dump(), report, cap);
     return 0;
   });
 }

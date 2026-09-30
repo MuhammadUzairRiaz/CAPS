@@ -578,6 +578,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
     [DllImport(Lib, EntryPoint = "caps_field_type_by_example")] public static extern int FieldTypeByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_export_scene")] public static extern int ExportScene(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string format, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pick_at")] public static extern int PickAt(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int x, int y);
     [DllImport(Lib, EntryPoint = "caps_field_groups_by_example")] public static extern int FieldGroupsByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string ffPath, [MarshalAs(UnmanagedType.LPUTF8Str)] string groups, byte[] report, int cap);
@@ -1497,6 +1499,17 @@ public sealed class CapsDocument : IDisposable
             using (example.Hold()) rc = Native.FieldTypeByExample(H, example.H, typesJson, rep, rep.Length);
             if (rc < 0) throw new InvalidOperationException(Native.LastError());
             return (rc == 0, System.Text.Encoding.UTF8.GetString(rep, 0, Math.Max(0, Array.IndexOf(rep, (byte)0))));
+        }
+    }
+    /// <summary>The view's scene for POV-Ray, glTF or OBJ ("pov", "glb", "obj"); the report JSON {spheres, cylinders, triangles}.</summary>
+    public string ExportScene(in CapsCamera cam, in CapsRenderOpts opt, string path, string format)
+    {
+        using (Hold())
+        {
+            Alive();
+            var rep = new byte[512];
+            if (Native.ExportScene(H, cam, opt, path, format, rep, rep.Length) != 0) throw new InvalidOperationException(Native.LastError());
+            return System.Text.Encoding.UTF8.GetString(rep, 0, Math.Max(0, Array.IndexOf(rep, (byte)0)));
         }
     }
     /// <summary>The atom under pixel (x, y) for this camera, by the view ray (no render needed); -1 none.</summary>

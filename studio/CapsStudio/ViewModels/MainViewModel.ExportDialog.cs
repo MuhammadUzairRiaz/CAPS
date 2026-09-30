@@ -20,7 +20,11 @@ public sealed partial class MainViewModel
         new("Journal figure", "3.5 in · 600 dpi", 2100, 1575, 600),
         new("Poster", "7680 × 4320", 7680, 4320, 0),
     ];
-    public static readonly string[] ExportImageFormats = ["PNG · 8-bit", "PNG · 16-bit", "SVG · vector"];
+    public static readonly string[] ExportImageFormats = ["PNG · 8-bit", "PNG · 16-bit", "SVG · vector", "POV-Ray scene (.pov)", "glTF 3D · Blender, ParaView (.glb)", "OBJ 3D (.obj + .mtl)"];
+    /// <summary>A 3D scene for another renderer or tool (POV-Ray, glTF, OBJ), not an image.</summary>
+    public bool ExportIsScene => _expFormat >= 3;
+    /// <summary>A raster image (PNG): the renderer section applies.</summary>
+    public bool ExportIsRaster => _expTab == 0 && _expFormat <= 1;
     public static readonly string[] ExportBackgrounds = ["Dark", "White", "Transparent"];
     public static readonly string[] ExportSupersampling = ["1×", "4×", "9×", "16×"];
     public static readonly string[] ExportProfiles = ["sRGB", "Untagged"];
@@ -104,7 +108,7 @@ public sealed partial class MainViewModel
     public string ExportBgChip => "preview · " + ExportBackgrounds[_expBg].ToLowerInvariant() + " background";
     public string ExportButton => _expTab == 1
         ? _movFormat switch { 1 => "Export PNG sequence", 2 => "Export MP4", _ => "Export animated PNG" }
-        : _expFormat == 2 ? "Export SVG" : "Export PNG";
+        : _expFormat switch { 2 => "Export SVG", 3 => "Export POV-Ray scene", 4 => "Export glTF", 5 => "Export OBJ", _ => "Export PNG" };
     public string MovieFramesText
     {
         get
@@ -120,7 +124,7 @@ public sealed partial class MainViewModel
     private void RaiseExport()
     {
         foreach (var n in new[] { nameof(ExportSizeChip), nameof(ExportAspectChip), nameof(ExportBgChip), nameof(ExportButton), nameof(MovieFramesText),
-                                  nameof(MovieIsTurntable), nameof(ExportLabelsAvailable) }) Raise(n);
+                                  nameof(MovieIsTurntable), nameof(ExportLabelsAvailable), nameof(ExportIsRaster), nameof(ExportIsScene) }) Raise(n);
         ExportPreviewChanged?.Invoke();
     }
 
@@ -190,7 +194,7 @@ public sealed partial class MainViewModel
     }
 
     public string ExportDefaultName => Path.GetFileNameWithoutExtension(_doc?.Path ?? "structure") +
-        (_expTab == 1 ? _movFormat switch { 1 => "_frames", 2 => ".mp4", _ => ".png" } : _expFormat == 2 ? ".svg" : ".png");
+        (_expTab == 1 ? _movFormat switch { 1 => "_frames", 2 => ".mp4", _ => ".png" } : _expFormat switch { 2 => ".svg", 3 => ".pov", 4 => ".glb", 5 => ".obj", _ => ".png" });
 
     /// <summary>Writes the image: PNG through the core (bits, dpi, profile, manifest, overlay) or SVG.</summary>
     public async Task<string?> ExportDialogImage(string path, Func<int, int, byte[]?> overlay)
@@ -207,6 +211,17 @@ public sealed partial class MainViewModel
             if (_expFormat == 2)
             {
                 await Task.Run(() => doc.ExportSvg(cam, opt, path));
+            }
+            else if (_expFormat >= 3)
+            {
+                var fmt = _expFormat switch { 3 => "pov", 5 => "obj", _ => "glb" };
+                ExportProgress = "Writing the 3D scene…";
+                var report = await Task.Run(() => doc.ExportScene(cam, opt, path, fmt));
+                var r = System.Text.Json.Nodes.JsonNode.Parse(report);
+                ExportResult = $"Wrote {Path.GetFileName(path)} · {(int?)(double?)r?["spheres"] ?? 0:N0} atoms · {(int?)(double?)r?["cylinders"] ?? 0:N0} bonds" +
+                               (_expFormat == 3 ? $" · render with POV-Ray: povray +W{w} +H{h} +A {Path.GetFileName(path)}" : $" · {(int?)(double?)r?["triangles"] ?? 0:N0} triangles");
+                Status = ExportResult;
+                return path;
             }
             else
             {
