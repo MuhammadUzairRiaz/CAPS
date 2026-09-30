@@ -428,6 +428,7 @@ public sealed partial class MainViewModel
     /// <summary>Sends the appearance to the core (surfaces are computed in the background) and redraws.</summary>
     public void ApplyAppearance()
     {
+        Raise(nameof(DisplayStatus));
         if (_doc == null) return;
         var doc = _doc;
         var json = new JsonObject

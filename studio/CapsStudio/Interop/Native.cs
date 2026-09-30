@@ -89,7 +89,32 @@ public sealed class CapsSceneData
             }
         }
         Extend(FitCorners, false);
-        Extend(FitPoints, true);
+        if (FitPoints.Length < 3 * 50_000) Extend(FitPoints, true);
+        else
+        {
+            // a large structure: the extents over all cores (each a slice), then combined — the same numbers
+            var parts = Math.Max(1, Math.Min(Environment.ProcessorCount, 16));
+            var chunk = (FitPoints.Length / 3 + parts - 1) / parts;
+            var res = new (double Ex, double Ey, double Ez, double Lo, double Hi)[parts];
+            var fc = f;
+            System.Threading.Tasks.Parallel.For(0, parts, t =>
+            {
+                double lx = 1e-6, ly = 1e-6, lz = 1e-6, lo = double.MaxValue, hi = double.MinValue;
+                var a = FitPoints;
+                for (var i = t * chunk; i < Math.Min(a.Length / 3, (t + 1) * chunk); ++i)
+                {
+                    double dx = a[3 * i] - fc.Cx, dy = a[3 * i + 1] - fc.Cy, dz = a[3 * i + 2] - fc.Cz;
+                    var x = dx * fc.CosYaw + dz * fc.SinYaw;
+                    var z = -dx * fc.SinYaw + dz * fc.CosYaw;
+                    var y2 = dy * fc.CosPitch - z * fc.SinPitch;
+                    var z2 = dy * fc.SinPitch + z * fc.CosPitch;
+                    lx = Math.Max(lx, Math.Abs(x)); ly = Math.Max(ly, Math.Abs(y2)); lz = Math.Max(lz, Math.Abs(z2));
+                    lo = Math.Min(lo, z2); hi = Math.Max(hi, z2);
+                }
+                res[t] = (lx, ly, lz, lo, hi);
+            });
+            foreach (var r in res) { ex = Math.Max(ex, r.Ex); ey = Math.Max(ey, r.Ey); ez = Math.Max(ez, r.Ez); zmin = Math.Min(zmin, r.Lo); zmax = Math.Max(zmax, r.Hi); }
+        }
         ex = Math.Max(ex + FitPad, 2.5); ey = Math.Max(ey + FitPad, 2.5);
         f.Scale = Math.Min(w * 0.45 / ex, h * 0.45 / ey) * (cam.Zoom > 0 ? cam.Zoom : 1);
         var fov = cam.FovDeg > 0 ? Math.Clamp(cam.FovDeg, 10, 120) : FovDeg;   // the camera's own, else the scene's
@@ -578,6 +603,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_field_report")] public static extern int FieldReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
     [DllImport(Lib, EntryPoint = "caps_field_type_by_example")] public static extern int FieldTypeByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types, byte[] report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_project_indices")] public static extern int ProjectIndices(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int[] atoms, int n, float[] xy);
     [DllImport(Lib, EntryPoint = "caps_export_scene")] public static extern int ExportScene(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string format, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_pick_at")] public static extern int PickAt(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int x, int y);
@@ -1499,6 +1525,17 @@ public sealed class CapsDocument : IDisposable
             using (example.Hold()) rc = Native.FieldTypeByExample(H, example.H, typesJson, rep, rep.Length);
             if (rc < 0) throw new InvalidOperationException(Native.LastError());
             return (rc == 0, System.Text.Encoding.UTF8.GetString(rep, 0, Math.Max(0, Array.IndexOf(rep, (byte)0))));
+        }
+    }
+    /// <summary>Screen x, y (output pixels) of these atoms only: 2 floats per atom.</summary>
+    public float[] ProjectIndices(in CapsCamera cam, in CapsRenderOpts opt, int[] atoms)
+    {
+        using (Hold())
+        {
+            Alive();
+            var xy = new float[2 * atoms.Length];
+            if (atoms.Length > 0 && Native.ProjectIndices(H, cam, opt, atoms, atoms.Length, xy) < 0) throw new InvalidOperationException(Native.LastError());
+            return xy;
         }
     }
     /// <summary>The view's scene for POV-Ray, glTF or OBJ ("pov", "glb", "obj"); the report JSON {spheres, cylinders, triangles}.</summary>

@@ -349,6 +349,28 @@ std::vector<float> Renderer::project(const System& s, const Camera& cam, const R
   return out;
 }
 
+std::vector<float> Renderer::project_some(const System& s, const Camera& cam, const RenderOptions& opt, const std::vector<int>& atoms) {
+  const size_t n = s.atoms.size();
+  std::vector<char> show(n, 1);
+  const bool mixed = opt.atom_style.size() == n;
+  for (size_t i = 0; i < n; ++i) {
+    const Style st = mixed ? Style(opt.atom_style[i]) : opt.style;
+    if (st == Style::Ribbon || st == Style::Hidden) show[i] = 0;
+    else if (st == Style::NoHydrogens || st == Style::Backbone) show[i] = s.atoms[i].element != 1;
+  }
+  const int ss = std::clamp(opt.supersample, 1, 4);
+  const View v = fit_view(s, cam, opt, show, opt.width * ss, opt.height * ss);
+  std::vector<float> out(2 * atoms.size(), -1e9f);
+  for (size_t k = 0; k < atoms.size(); ++k) {
+    const int i = atoms[k];
+    if (i < 0 || size_t(i) >= n) continue;
+    double x, y, z, kk;
+    v.project(s.atoms[size_t(i)].pos, x, y, z, kk);
+    out[2 * k] = float(x / ss), out[2 * k + 1] = float(y / ss);
+  }
+  return out;
+}
+
 int Renderer::pick(int x, int y) const {
   if (x < 0 || y < 0 || x >= id_w_ || y >= id_h_) return -1;
   const int v = id_buffer_[size_t(y) * id_w_ + x];

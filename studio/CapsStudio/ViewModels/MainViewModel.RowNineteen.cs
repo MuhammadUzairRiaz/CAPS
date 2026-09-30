@@ -48,7 +48,15 @@ public partial class MainViewModel
     public bool DsSelectionFull { get => _dsSelectionFull; set { if (Set(ref _dsSelectionFull, value)) ApplyDisplay(); } }
     public bool AutoStyleOn { get => _settings.AutoStyle; set { if (_settings.AutoStyle == value) return; _settings.AutoStyle = value; Raise(); Changed("Automatic display by size"); } }
     /// <summary>The status bar's reminder: which style is on, and what the model holds.</summary>
-    public string DisplayStatus => _doc == null ? "" : "Display: " + DisplayNames[DsStyle] + (_lensOn ? " + lens" : "") + (_dsPolarOnly && DsStyle == 0 ? " · polar H" : "");
+    public string DisplayStatus => _doc == null ? "" : "Display: " + DisplayStatusStyle() + (_lensOn ? " + lens" : "") + (_dsPolarOnly && DsStyle == 0 ? " · polar H" : "");
+    // an Appearance style for all atoms is what the view draws; styles for some atoms are drawn over the display
+    private string DisplayStatusStyle()
+    {
+        var all = AppLayers.LastOrDefault(l => l.Expression.Length == 0);
+        var some = AppLayers.Count(l => l.Expression.Length > 0);
+        var main = all != null ? AppStyleNames[all.Style] : DisplayNames[DsStyle];
+        return some == 0 ? main : main + $" · {some} styled selection{(some == 1 ? "" : "s")}";
+    }
 
     private void RaiseDisplay()
     {
@@ -216,12 +224,46 @@ public partial class MainViewModel
         if (_doc == null || !_lensOn || _lensCentre < 0 || !IsStudio) return null;
         try
         {
-            var p = _doc.ProjectAtoms(cam, opt, _lensCentre + 1);
+            var p = _doc.ProjectIndices(cam, opt, [_lensCentre]);   // the lens's atom only
             var scale = _doc.ViewScale(cam, opt);
-            return (p[3 * _lensCentre] / scaling, p[3 * _lensCentre + 1] / scaling, (double)_lensRadius * scale / scaling, $"lens · {_lensRadius:0.#} Å");
+            return (p[0] / scaling, p[1] / scaling, (double)_lensRadius * scale / scaling, $"lens · {_lensRadius:0.#} Å");
         }
         catch { return null; }
     }
+    /// <summary>The lens circle from the GPU view's camera fit (one atom looked up; nothing over the whole structure).</summary>
+    public (double X, double Y, double R, string Label)? LensCircleFit(in CapsViewFit fit, double scaling)
+    {
+        if (_doc == null || !_lensOn || _lensCentre < 0 || !IsStudio) return null;
+        try
+        {
+            if (AtomXyz(_lensCentre) is not { } p) return null;
+            var (x, y, k) = ProjectFit(fit, p);
+            return (x / scaling, y / scaling, (double)_lensRadius * fit.Scale * k / scaling, $"lens · {_lensRadius:0.#} Å");
+        }
+        catch { return null; }
+    }
+
+    /// <summary>One atom's position (the current frame), or null.</summary>
+    public (double X, double Y, double Z)? AtomXyz(int atom)
+    {
+        if (_doc == null || atom < 0) return null;
+        if (System.Text.Json.Nodes.JsonNode.Parse(_doc.AtomProperties(atom))?["xyz"] is System.Text.Json.Nodes.JsonArray a && a.Count == 3)
+            return ((double)a[0]!, (double)a[1]!, (double)a[2]!);
+        return null;
+    }
+
+    /// <summary>A world point on screen for a camera fit (the core's projection): x, y in the fit's pixels, the perspective factor.</summary>
+    public static (double X, double Y, double K) ProjectFit(in CapsViewFit f, (double X, double Y, double Z) p)
+    {
+        double dx = p.X - f.Cx, dy = p.Y - f.Cy, dz = p.Z - f.Cz;
+        var x = dx * f.CosYaw + dz * f.SinYaw + f.PanX;
+        var z = -dx * f.SinYaw + dz * f.CosYaw;
+        var y = dy * f.CosPitch - z * f.SinPitch + f.PanY;
+        var z2 = dy * f.SinPitch + z * f.CosPitch;
+        var k = f.Perspective != 0 ? f.Dist / Math.Max(1e-3, f.Dist - z2) : 1.0;
+        return (f.W / 2 + x * f.Scale * k, f.H / 2 - y * f.Scale * k, k);
+    }
+
     public bool PickAllowed(int atom) => atom < 0 || !_lensOn || !_lensMeasureInside || _doc == null || _doc.LensInside(atom);
 
     // ---------------------------------------------------------------- add hydrogens (design/boards/AddHydrogens)
