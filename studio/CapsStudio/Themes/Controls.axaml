@@ -603,6 +603,13 @@
   </Style>
 
   <!-- scroll bars, tooltips, progress -->
+  <!-- a selected list row: a raised surface with an accent bar, its text as readable as the rest (not ink on accent) -->
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccB}" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextB}" />
+  </Style>
   <!-- a disabled button still says what it is (why it is off is often the question) -->
   <Style Selector="Button"><Setter Property="ToolTip.ShowOnDisabled" Value="True" /></Style>
   <Style Selector="ToggleButton"><Setter Property="ToolTip.ShowOnDisabled" Value="True" /></Style>

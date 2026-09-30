@@ -516,6 +516,9 @@ public partial class MainWindow : Window
         if (Application.Current is { } app) app.ActualThemeVariantChanged += (_, _) => _vm.UpdateViewBackground();
         ApplyViewHostBackground();
         ToolRow.SizeChanged += (_, _) => FitToolRow();
+        SizeChanged += (_, _) => FitPage();
+        _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(ViewModels.MainViewModel.IsStudio)) Dispatcher.UIThread.Post(FitPage); };
+        Panes.Toggled += (key, k, shown) => { if (key == "Body.cols" && k == 0 && !_fitting) _pageHidPanel = false; };   // the user decided: leave it
         RailScroll.SizeChanged += (_, _) => FitRail();
         SizeChanged += (_, e) => { _vm.Compact = e.NewSize.Width < 1180; ToolbarRight.Classes.Set("narrow", e.NewSize.Width < 1700); };
         // a folded dock opens when one of its tabs is chosen
@@ -1649,6 +1652,33 @@ public partial class MainWindow : Window
         Rail.Classes.Set("compact", false);
         tabs.Measure(new Size(double.PositiveInfinity, 48));
         Rail.Classes.Set("compact", tabs.DesiredSize.Width > w + 1);
+    }
+
+    /// <summary>A module page laid out for a wide centre (1100 px): below that the project panel folds away for it (not
+    /// saved; ⌘1 or its divider brings it back) and returns in the Studio or when the window is wide enough again.</summary>
+    private bool _pageHidPanel, _fitting;
+    private const double PageWidth = 1100;
+    private void FitPage()
+    {
+        var w = Bounds.Width;
+        if (w < 1) return;
+        var project = Body.ColumnDefinitions[0].ActualWidth;
+        _fitting = true;
+        try
+        {
+            if (!_vm.IsStudio && !Panes.IsHidden(Body, 0) && project > 1 && w - project < PageWidth)
+            {
+                Panes.Hide(Body, 0, false);
+                _pageHidPanel = true;
+                _vm.Status = "The project panel folded away to fit this page · ⌘1 or its divider brings it back";
+            }
+            else if (_pageHidPanel && (_vm.IsStudio || w - 300 >= PageWidth))
+            {
+                Panes.Show(Body, 0, false);
+                _pageHidPanel = false;
+            }
+        }
+        finally { _fitting = false; }
     }
 
     private bool _wasCompact;
