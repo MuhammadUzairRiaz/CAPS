@@ -3535,13 +3535,15 @@ internal static class SelfTest
             vm.NewPackInput();
             vm.AddPackMolecule("Cc1ccccc1", "toluene").GetAwaiter().GetResult();
             vm.AddPackMolecule("O", "water").GetAwaiter().GetResult();
-            vm.PackText = System.Text.RegularExpressions.Regex.Replace(vm.PackText, @"count\s+\d+", "count   6");
+            vm.SetPackRowCount(0, 6);
+            vm.SetPackRowCount(1, 6);
+            var rowsCounted = vm.PackItems.Count == 2 && vm.PackItems.All(r => r.CountValue == 6);
             var gaffRow = vm.Field.Library.ToList().FindIndex(e => e.Id.StartsWith("gaff", StringComparison.Ordinal)) + 1;
             vm.SetPackRowForceField(0, gaffRow);
             vm.SetPackRowForceField(1, 1 + vm.Field.Library.Count + FieldViewModel.Waters.FindIndex(w => w.Id == "tip3p"));
             var rowsText = vm.PackText;
             vm.RunPack().GetAwaiter().GetResult();
-            Check(rowsText.Contains("forcefield gaff") && rowsText.Contains("water      tip3p") && vm.Field.ForceFieldName.Contains("TIP3P", StringComparison.Ordinal) && vm.Field.ForceFieldName.Contains("GAFF", StringComparison.Ordinal),
+            Check(rowsCounted && rowsText.Contains("forcefield gaff") && rowsText.Contains("water      tip3p") && vm.Field.ForceFieldName.Contains("TIP3P", StringComparison.Ordinal) && vm.Field.ForceFieldName.Contains("GAFF", StringComparison.Ordinal),
                   $"pack rows' force fields: {vm.Field.ForceFieldName} · {vm.Field.Log}");
         }
 

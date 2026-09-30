@@ -12,8 +12,11 @@
         <Button Click="OnSave" IsVisible="{Binding GrownUnsaved}" ToolTip.Tip="Save the packed cell">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save cell…" VerticalAlignment="Center" /></StackPanel>
         </Button>
-        <Button Click="OnOpenInput" IsEnabled="{Binding Idle}" ToolTip.Tip="Open a packmol-format input (.inp)">
+        <Button Click="OnOpenInput" IsEnabled="{Binding Idle}" ToolTip.Tip="Open a Pack input: CAPS (.pack) or packmol (.inp)">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="16" VerticalAlignment="Center" /><TextBlock Text="Open input…" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Click="OnSaveInput" IsEnabled="{Binding HasPackItems}" ToolTip.Tip="Save this input: CAPS form (.pack), or packmol's (.inp) to run packmol itself">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save input…" VerticalAlignment="Center" /></StackPanel>
         </Button>
         <Button Click="OnCopyPython" ToolTip.Tip="This packing as a Python script (caps.pack with this input)">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
@@ -105,7 +108,12 @@
                             <TextBlock Text="{Binding Detail}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
                           </StackPanel>
                           <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Right">
-                            <TextBlock Text="{Binding Count}" Classes="mono" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                            <TextBlock Text="fixed" Classes="mono" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" IsVisible="{Binding IsFixed}" />
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" IsVisible="{Binding !IsFixed}">
+                              <TextBlock Text="copies" Classes="dim" FontSize="11.5" VerticalAlignment="Center" />
+                              <NumericUpDown Width="110" Value="{Binding CountValue, Mode=OneWay}" Minimum="1" Maximum="1000000" Increment="1" FormatString="0"
+                                             Tag="{Binding}" LostFocus="OnRowCount" KeyDown="OnRowCountKey" ToolTip.Tip="How many copies of this molecule to pack (Enter or leave the box to apply)" />
+                            </StackPanel>
                             <ComboBox Width="210" FontSize="11.5" ItemsSource="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).PackFfChoices}"
                                       SelectedIndex="{Binding FfChoice, Mode=OneWay}" Tag="{Binding}" SelectionChanged="OnRowForceField"
                                       ToolTip.Tip="This molecule's own force field (or a water model); the cell's force field above covers the rest. Different force fields meet by the cross rule of Field › By group" />
