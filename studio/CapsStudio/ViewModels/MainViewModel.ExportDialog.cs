@@ -61,6 +61,19 @@ public sealed partial class MainViewModel
     public int ExportFormat { get => _expFormat; set { if (Set(ref _expFormat, value)) RaiseExport(); } }
     public int ExportDlgBackground { get => _expBg; set { if (Set(ref _expBg, value)) RaiseExport(); } }
     public int ExportSupersample { get => _expSs; set => Set(ref _expSs, value); }
+    // the renderer of an image export: as the view (the rasteriser) or CAPS's ray tracer (occlusion, shadows, depth of field)
+    public static readonly string[] ExportEngines = ["As the view", "Ray traced"];
+    public static readonly string[] ExportTraceQualities = ["Draft · 16 samples", "Good · 64 samples", "Final · 256 samples"];
+    public static readonly string[] ExportDepthOfField = ["Off", "Soft", "Strong"];
+    private int _expEngine, _expTraceQ = 1, _expDof;
+    private bool _expShadows = true, _expOcclusion = true, _expTraceOutlines;
+    public int ExportEngine { get => _expEngine; set { if (Set(ref _expEngine, Math.Clamp(value, 0, 1))) Raise(nameof(ExportIsTraced)); } }
+    public bool ExportIsTraced => _expEngine == 1;
+    public int ExportTraceQuality { get => _expTraceQ; set => Set(ref _expTraceQ, Math.Clamp(value, 0, 2)); }
+    public int ExportDof { get => _expDof; set => Set(ref _expDof, Math.Clamp(value, 0, 2)); }
+    public bool ExportShadows { get => _expShadows; set => Set(ref _expShadows, value); }
+    public bool ExportOcclusion { get => _expOcclusion; set => Set(ref _expOcclusion, value); }
+    public bool ExportTraceOutlines { get => _expTraceOutlines; set => Set(ref _expTraceOutlines, value); }
     public int ExportProfile { get => _expProfile; set => Set(ref _expProfile, value); }
     public bool ExportLabels { get => _expLabels; set { if (Set(ref _expLabels, value)) RaiseExport(); } }
     public bool ExportProvenance { get => _expProv; set => Set(ref _expProv, value); }
@@ -201,11 +214,15 @@ public sealed partial class MainViewModel
                 var options = JsonSerializer.Serialize(new
                 {
                     bits = _expFormat == 1 ? 16 : 8, dpi, colour_profile = _expProfile == 0 ? "srgb" : "none", provenance = _expProv, source = doc.Path,
+                    engine = _expEngine == 1 ? "raytrace" : "raster", samples = _expTraceQ switch { 0 => 16, 2 => 256, _ => 64 },
+                    shadows = _expShadows, occlusion = _expOcclusion, outlines = _expTraceOutlines,
+                    aperture_fraction = _expDof switch { 1 => 0.012, 2 => 0.035, _ => 0.0 },
                 });
+                if (_expEngine == 1) ExportProgress = $"Ray tracing {w} × {h} · {(_expTraceQ switch { 0 => 16, 2 => 256, _ => 64 })} samples a pixel on every core…";
                 var layer = _expLabels ? overlay(w, h) : null;
                 await Task.Run(() => doc.ExportImage(cam, opt, path, options, layer));
             }
-            var what = $"{w} × {h}" + (_expFormat == 1 ? " · 16-bit" : _expFormat == 2 ? " · SVG" : "") + (_expProv && _expFormat != 2 ? " · provenance embedded" : "");
+            var what = $"{w} × {h}" + (_expFormat == 1 ? " · 16-bit" : _expFormat == 2 ? " · SVG" : "") + (_expEngine == 1 && _expFormat != 2 ? " · ray traced" : "") + (_expProv && _expFormat != 2 ? " · provenance embedded" : "");
             ExportResult = $"Wrote {Path.GetFileName(path)} · {what}";
             Status = ExportResult;
             Record($"doc.render({PyStr(path)}, width={w}, height={h}, background=\"{ExportBackgrounds[_expBg].ToLowerInvariant()}\")");

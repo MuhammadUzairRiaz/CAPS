@@ -97,6 +97,23 @@
                   </Grid>
                 </StackPanel>
               </Border>
+              <Border Classes="section" IsVisible="{Binding ExportIsImage}">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="RENDERER" Classes="h3" />
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportEngines}" SelectedIndex="{Binding ExportEngine}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="As the view: the same look as the 3D view, fastest. Ray traced: CAPS's ray tracer — ambient occlusion, soft shadows, depth of field, true transparency — for publication figures (PNG; SVG stays vector)" />
+                  <StackPanel Spacing="10" IsVisible="{Binding ExportIsTraced}">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                      <StackPanel Spacing="6"><TextBlock Text="Quality" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportTraceQualities}" SelectedIndex="{Binding ExportTraceQuality}" HorizontalAlignment="Stretch" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Depth of field" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportDepthOfField}" SelectedIndex="{Binding ExportDof}" HorizontalAlignment="Stretch"
+                                  ToolTip.Tip="The view's centre stays sharp; nearer and farther atoms blur" /></StackPanel>
+                    </Grid>
+                    <CheckBox Classes="toggle" Content="Soft shadows" IsChecked="{Binding ExportShadows}" />
+                    <CheckBox Classes="toggle" Content="Ambient occlusion" IsChecked="{Binding ExportOcclusion}" ToolTip.Tip="Crowded regions darken, so depth reads without perspective" />
+                    <CheckBox Classes="toggle" Content="Ink outlines (the view's look)" IsChecked="{Binding ExportTraceOutlines}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
               <Border Classes="section" BorderThickness="0">
                 <StackPanel Spacing="10">
                   <TextBlock Text="OUTPUT" Classes="h3" />
