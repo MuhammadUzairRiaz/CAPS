@@ -152,6 +152,7 @@ public static class Panes
             else { Grid.SetColumn(d, k + 1); Grid.SetRow(d, a); Grid.SetRowSpan(d, b - a); }
             st.Dividers.Add(d);
             g.Children.Add(d);
+            d.Watch();
         }
     }
 
@@ -282,9 +283,33 @@ public static class Panes
             foreach (var c in left.Concat(right)) c.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) Refresh(); };
             _left = left.ToList();
             _right = right.ToList();
+            // a page that covers both sides of this line (a full-width page over the Inspector's column) hides it while shown
             Refresh();
         }
         private readonly List<Control> _left, _right;
+        private List<Control> _crossing = new();
+
+        /// <summary>After the divider has its place in the grid: the pages that cover both sides of it.</summary>
+        public void Watch()
+        {
+            _crossing = _g.Children.Where(c => c is not PaneDivider && Crosses(c)).ToList();
+            foreach (var c in _crossing) c.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) Refresh(); };
+            Refresh();
+        }
+
+        /// <summary>The control spans this divider's boundary (both of its tracks), over the rows (columns) the divider covers.</summary>
+        private bool Crosses(Control c)
+        {
+            var rows = _st.Rows;
+            var i = rows ? Grid.GetRow(c) : Grid.GetColumn(c);
+            var n = Math.Max(1, rows ? Grid.GetRowSpan(c) : Grid.GetColumnSpan(c));
+            if (!(i <= _k && i + n - 1 >= _k + 1)) return false;
+            var o = rows ? Grid.GetColumn(c) : Grid.GetRow(c);
+            var on = Math.Max(1, rows ? Grid.GetColumnSpan(c) : Grid.GetRowSpan(c));
+            var d = rows ? Grid.GetColumn(this) : Grid.GetRow(this);
+            var dn = Math.Max(1, rows ? Grid.GetColumnSpan(this) : Grid.GetRowSpan(this));
+            return o < d + dn && d < o + on;
+        }
 
         private static Button Arrow(string icon)
         {
@@ -304,7 +329,7 @@ public static class Panes
 
         public void Refresh()
         {
-            IsVisible = _left.Any(c => c.IsVisible) && _right.Any(c => c.IsVisible);
+            IsVisible = _left.Any(c => c.IsVisible) && _right.Any(c => c.IsVisible) && !_crossing.Any(c => c.IsVisible);
             var rows = _st.Rows;
             var aHidden = IsHidden(_g, _k) || Size(_g, rows, _k) < 1;
             var bHidden = IsHidden(_g, _k + 1) || Size(_g, rows, _k + 1) < 1;
