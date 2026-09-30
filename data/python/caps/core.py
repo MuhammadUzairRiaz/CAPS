@@ -802,6 +802,27 @@ class Document:
             raise _error()
 
 
+def _export_scene(self, path: str, format: str = "", width: int = 1280, height: int = 800, background: str = "white",
+                  style: str = "ball_and_stick", colour: str = "molecule", yaw: float = 0.55, pitch: float = 0.40, zoom: float = 1.0) -> dict:
+    """The view's scene for other tools: "pov" (POV-Ray, with this camera), "glb" (glTF: Blender, ParaView) or "obj"
+    (+ .mtl); the format follows the file's extension when not given. Returns {spheres, cylinders, triangles}."""
+    fmt = format or {".pov": "pov", ".obj": "obj"}.get(os.path.splitext(str(path))[1].lower(), "glb")
+    cam = _Camera(yaw, pitch, zoom, 0, 0, 0)
+    hl = (C.c_int32 * 4)(-1, -1, -1, -1)
+    opt = _RenderOpts(width, height, 1, {"dark": 0, "white": 1, "transparent": 2}[background], 0,
+                      {"element": 0, "molecule": 1, "type": 2}[colour],
+                      {"ball_and_stick": 0, "space_filling": 1, "sticks": 2, "no_hydrogens": 3, "backbone": 4}[style.replace("-", "_")], 1, 1, 1, hl, 0, 1)
+    f = library().caps_export_scene
+    f.argtypes = [C.c_void_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_char_p, C.c_char_p, C.c_int32]
+    buf = C.create_string_buffer(512)
+    if f(self._h, C.byref(cam), C.byref(opt), _enc(str(path)), _enc(fmt), buf, len(buf)) != 0:
+        raise _error()
+    return json.loads(buf.value.decode())
+
+
+Document.export_scene = _export_scene
+
+
 def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, pressure: float = 1.0, p_max: float = 49346.2,
                   time_scale: float = 1.0, cycles: int = 3, t_low: float = 300.0, t_high: float = 600.0, ramp_ps: float = 50.0,
                   hold_ps: float = 50.0) -> str:
