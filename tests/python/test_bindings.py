@@ -488,4 +488,14 @@ try:
     check(False, "open past the end should fail")
 except caps.CapsError as e:
     check("no frames in the selection" in str(e), f"open past the end: {e}")
+# a composite's LAMMPS input: the filler (held molecule 1, UFF) and the matrix (GAFF) as groups by atom type, filler first
+import tempfile as _tf
+cm = caps.open(os.path.join(samples, "ps_melt.data"))
+cm.hold(molecule=1)
+cm.field.assign_groups([{"name": "filler", "molecules": "1", "forcefield": "uff"}, {"name": "matrix", "molecules": "rest", "forcefield": "gaff"}], scaling14="first")
+_d = _tf.mkdtemp()
+cm.export_engines(_d, stem="comp", gromacs=False)
+_in = open(os.path.join(_d, "comp.in")).read()
+check("group           filler         type 1:3" in _in and "group           matrix         type 4:7" in _in and "numbered first (1:3)" in _in,
+      "composite groups: filler type 1:3, matrix type 4:7")
 print("all python checks passed")

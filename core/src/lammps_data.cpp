@@ -1033,6 +1033,71 @@ std::string lammps_shake_fix(const System& s, const ForceField& ff0, const Energ
   return shake_fix(s, ff, L, mode, group);
 }
 
+// "1:3 5 7:9": sorted positive numbers as LAMMPS lists (A:B ranges)
+static std::string lammps_ranges(const std::vector<int64_t>& v) {
+  std::string r;
+  for (size_t i = 0; i < v.size();) {
+    size_t j = i;
+    while (j + 1 < v.size() && v[j + 1] == v[j] + 1) ++j;
+    r += (r.empty() ? "" : " ") + (j > i ? std::to_string(v[i]) + ":" + std::to_string(v[j]) : std::to_string(v[i]));
+    i = j + 1;
+  }
+  return r;
+}
+
+std::string lammps_group_lines(const System& s, const ForceField& ff, const std::vector<LammpsStyle::Group>& groups) {
+  // each group's types, and which types more than one group uses
+  std::vector<std::set<int64_t>> types(groups.size());
+  std::map<int64_t, int> users;
+  for (size_t g = 0; g < groups.size(); ++g) {
+    for (auto i : groups[g].atoms)
+      if (i < ff.type_index.size()) types[g].insert(int64_t(ff.type_index[i]) + 1);
+    for (auto t : types[g]) ++users[t];
+  }
+  auto clean = [](std::string n) {
+    for (auto& c : n) if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') c = '_';
+    return n.empty() ? std::string("group") : n;
+  };
+  std::ostringstream o;
+  o << "\n# groups (for per-group pair styles, fixes and computes)";
+  const bool shared0 = std::any_of(types[0].begin(), types[0].end(), [&](int64_t t) { return users[t] > 1; });
+  if (shared0) o << ": the " << groups[0].name << " shares atom types with another group, so the groups go by molecule or atom id";
+  else if (!types[0].empty()) {
+    const int64_t first_max = *types[0].rbegin();
+    bool first = true;
+    for (size_t g = 1; g < groups.size(); ++g) if (!types[g].empty() && *types[g].begin() < first_max) first = false;
+    o << (first ? ": the " + groups[0].name + "'s atom types are numbered first (" + lammps_ranges({types[0].begin(), types[0].end()}) + ")"
+                : ": the " + groups[0].name + "'s atom types are not all numbered before the others'");
+  }
+  o << "\n";
+  for (size_t g = 0; g < groups.size(); ++g) {
+    if (groups[g].atoms.empty()) continue;
+    const bool own = std::all_of(types[g].begin(), types[g].end(), [&](int64_t t) { return users[t] == 1; });
+    std::string names;
+    for (auto t : types[g]) names += (names.empty() ? "" : " ") + ff.type_names[size_t(t - 1)];
+    char b[64];
+    std::snprintf(b, sizeof b, "group           %-14s ", clean(groups[g].name).c_str());
+    if (own) {
+      o << b << "type " << lammps_ranges({types[g].begin(), types[g].end()}) << "   # " << names << "\n";
+      continue;
+    }
+    // types shared with another group: by molecule when the group is whole molecules, else by atom id
+    std::set<int64_t> mols;
+    for (auto i : groups[g].atoms) mols.insert(s.atoms[i].mol);
+    size_t in_mols = 0;
+    for (const auto& a : s.atoms) in_mols += mols.count(a.mol);
+    if (s.has_mol && in_mols == groups[g].atoms.size())
+      o << b << "molecule " << lammps_ranges({mols.begin(), mols.end()}) << "   # shares atom types with another group (" << names << ")\n";
+    else {
+      std::vector<int64_t> ids;
+      for (auto i : groups[g].atoms) ids.push_back(int64_t(i) + 1);
+      std::sort(ids.begin(), ids.end());
+      o << b << "id " << lammps_ranges(ids) << "   # shares atom types with another group (" << names << ")\n";
+    }
+  }
+  return o.str();
+}
+
 void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run, const LammpsStyle& st, std::vector<std::string>* notes) {
   const bool metal = lammps_metal_units(ff0, st);
@@ -1100,6 +1165,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   for (const auto& l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff, metal)) out << aligned(l) << "\n";
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
+  if (!st.groups.empty()) out << lammps_group_lines(s, ff, st.groups);
   if (held_mol > 0)
     out << "\n# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
         << "group           held molecule " << held_mol << "\n"
