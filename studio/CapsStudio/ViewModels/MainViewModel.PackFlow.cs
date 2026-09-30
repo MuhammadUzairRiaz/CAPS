@@ -163,6 +163,41 @@ public partial class MainViewModel
         RefreshSteps();
     }
 
+    // ---- molecules to pack from their SMILES: rubber curatives and additives, solvents, or any SMILES
+    /// <summary>Curatives and additives of the fragment library (whole molecules): sulfur, accelerators, antidegradants …</summary>
+    public List<FragmentItem> PackAdditives => Fragments.Where(f => f.Category == "Rubber additives" && !f.Smiles.Contains('*')
+                                                                    && !f.Name.Contains("fragment", StringComparison.OrdinalIgnoreCase) && !f.Name.Contains(" unit", StringComparison.OrdinalIgnoreCase)).ToList();
+    public List<FragmentItem> PackSolvents => Fragments.Where(f => f.Category == "Solvents" && !f.Smiles.Contains('*')).ToList();
+    private string _packSmiles = "";
+    public string PackSmiles { get => _packSmiles; set => Set(ref _packSmiles, value ?? ""); }
+    /// <summary>Where molecules built for Pack are kept (their inputs name them).</summary>
+    public static string PackMoleculeFolder => Path.Combine(AppSettings.Override != null ? Path.GetDirectoryName(AppSettings.Override)! : AppSettings.Folder, "molecules");
+
+    /// <summary>A molecule from its SMILES (hydrogens added, 3D, UFF-cleaned), kept as a .mol2 (bond orders kept) and added as a row.</summary>
+    public async Task AddPackMolecule(string smiles, string? name = null)
+    {
+        smiles = smiles.Trim();
+        if (smiles.Length == 0) { Status = "Type a SMILES (S1SSSSSSS1 for sulfur S8) or pick a molecule"; return; }
+        name = string.IsNullOrWhiteSpace(name) ? smiles : name!;
+        var safe = new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()).Trim('_');
+        if (safe.Length == 0) safe = "molecule";
+        if (safe.Length > 40) safe = safe[..40];
+        var dir = PackMoleculeFolder;
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, safe + ".mol2");
+        try
+        {
+            var atoms = await Task.Run(() =>
+            {
+                var (doc, _) = Interop.CapsDocument.BuildSmiles(smiles, "uff", 1, 1, name);
+                using (doc) { doc.Save(path); return doc.Summary().Atoms; }
+            });
+            AddPackStructure(path);
+            Status = $"{name}: built from its SMILES ({atoms} atoms) and added — set its count and region below";
+        }
+        catch (Exception e) { Status = $"Could not build {name}: {e.Message}"; }
+    }
+
     /// <summary>Pack › Export: the packed cell to LAMMPS or GROMACS (the Export center, with its checks).</summary>
     public void PackExport() => OpenExportCenter();
 }

@@ -111,8 +111,40 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <WrapPanel IsEnabled="{Binding Idle}">
-                  <Button Classes="small" Margin="0,0,8,6" Click="OnAddMolecule">
-                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add molecule" VerticalAlignment="Center" /></StackPanel>
+                  <Button Classes="small" Margin="0,0,8,6" ToolTip.Tip="Curatives, additives and solvents from the library, any SMILES, or a structure file">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add molecule" VerticalAlignment="Center" /><v:Icon Kind="chev" Size="11" VerticalAlignment="Center" /></StackPanel>
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedLeft">
+                        <StackPanel Width="420" Spacing="10" Margin="4">
+                          <TextBlock Text="FROM A SMILES" Classes="h3" />
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Text="{Binding PackSmiles}" Classes="mono" Watermark="S1SSSSSSS1 (sulfur S8), CCO …" KeyDown="OnSmilesKey" />
+                            <Button Grid.Column="1" Classes="small" Content="Build &amp; add" Click="OnAddSmiles" />
+                          </Grid>
+                          <TextBlock Text="RUBBER CURATIVES &amp; ADDITIVES" Classes="h3" />
+                          <ItemsControl ItemsSource="{Binding PackAdditives}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:FragmentItem">
+                                <Button Classes="small" Content="{Binding Name}" Tag="{Binding}" Click="OnAddFragment" ToolTip.Tip="{Binding Smiles}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <TextBlock Text="SOLVENTS" Classes="h3" />
+                          <ItemsControl ItemsSource="{Binding PackSolvents}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:FragmentItem">
+                                <Button Classes="small" Content="{Binding Name}" Tag="{Binding}" Click="OnAddFragment" ToolTip.Tip="{Binding Smiles}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <Button Classes="small ghost" Click="OnAddMolecule" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="From a file… (pdb, mol2, xyz, data, gro)" VerticalAlignment="Center" /></StackPanel>
+                          </Button>
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
                   </Button>
                   <Button Classes="small" Margin="0,0,8,6" Click="OnExample" IsVisible="{Binding $parent[v:MainWindow].HasSamples}">
                     <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="flask" Size="14" VerticalAlignment="Center" /><TextBlock Text="Water example" VerticalAlignment="Center" /></StackPanel>
