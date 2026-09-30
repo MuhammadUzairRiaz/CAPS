@@ -21,6 +21,7 @@
 #include "caps/functionalize.hpp"
 #include "caps/layers.hpp"
 #include "caps/ffmerge.hpp"
+#include "caps/water.hpp"
 #include "caps/manybody.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
@@ -1544,6 +1545,23 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
 }
 
 // Export center (ABI 23): the simulation files for LAMMPS and GROMACS in one call, from a complete force field.
+extern "C" int32_t caps_water_models(char* json, int32_t cap) {
+  try {
+    caps::Json a = caps::Json::array();
+    for (const auto& m : caps::water_models()) {
+      caps::Json o = caps::Json::object();
+      o["id"] = m.id, o["name"] = m.name, o["citation"] = m.citation, o["sites"] = double(m.sites), o["r_oh"] = m.r_oh, o["theta"] = m.theta;
+      o["q_h"] = m.q_h, o["q_neg"] = m.q_neg, o["d_om"] = m.d_om, o["eps_o"] = m.eps_o, o["sigma_o"] = m.sigma_o, o["eps_h"] = m.eps_h, o["sigma_h"] = m.sigma_h;
+      o["rigid"] = m.rigid, o["note"] = m.note;
+      a.push_back(o);
+    }
+    return report_out(a.dump(0), json, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {
@@ -4772,6 +4790,15 @@ void field_run_groups(caps_doc* d) {
     const caps::Json& J = G["groups"][g];
     std::string m = J.text("molecules", "");
     if (m == "rest" || m == "*") { rest = int(g); continue; }
+    if (m == "water") {   // every water molecule (an O with two H, and its M site)
+      for (const auto& w : caps::find_waters(s))
+        for (auto a : w)
+          if (a >= 0) {
+            if (owner[size_t(a)] >= 0) throw caps::FFError("a water is in two groups");
+            owner[size_t(a)] = int(g);
+          }
+      continue;
+    }
     for (auto& c : m) if (c == ',' || c == ';') c = ' ';
     std::istringstream is(m);
     std::set<int64_t> want;
@@ -4816,6 +4843,26 @@ void field_run_groups(caps_doc* d) {
     for (size_t i = 0; i < n; ++i) if (owner[i] == int(g)) atoms.push_back(uint32_t(i));
     if (atoms.empty()) continue;
     const std::string name = J.text("name", "group " + std::to_string(g + 1));
+    if (J.has("water")) {   // a water model: its own geometry, charges, Lennard-Jones and M sites (caps/water.hpp)
+      const caps::WaterModel& wm = caps::water_model(J.text("water", ""));
+      auto wf = std::make_shared<caps::ForceField>(caps::water_forcefield(s, wm, atoms));
+      slot_ff[g] = wf, slot_atoms[g] = atoms;
+      caps::Json R = caps::Json::object();
+      R["forcefield"] = wf->name;
+      caps::Json ra = caps::Json::array(), rn = caps::Json::array(), rr = caps::Json::array();
+      for (size_t k = 0; k < atoms.size(); ++k) {
+        caps::Json a = caps::Json::object();
+        a["i"] = double(k + 1), a["el"] = wf->atom_type[k], a["type"] = wf->atom_type[k], a["ov"] = false, a["rule"] = wf->why[k];
+        a["src"] = std::string("water model"), a["q"] = wf->charge[k], a["cands"] = caps::Json::array();
+        ra.push_back(a);
+      }
+      for (const auto& x : wf->notes) rn.push_back(x);
+      rr.push_back(wm.citation);
+      R["atoms"] = ra, R["notes"] = rn, R["references"] = rr, R["typed"] = double(atoms.size()), R["complete"] = true;
+      slot_rep[g] = R, slot_name[g] = name, slot_path[g] = "water:" + wm.id;
+      if (!based) { based = true; }
+      continue;
+    }
     const bool potential = J.has("potential") && J["potential"].is_object();
     const std::string path = potential ? J["potential"].text("file", "") : J.text("forcefield", "");
     if (path.empty()) throw caps::FFError(name + (potential ? ": no potential file" : ": no force field"));
@@ -6974,6 +7021,12 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       const size_t n0 = s.atoms.size();
       s = caps::transform_cell(s, m, j.num("tolerance", 0.05));
       what = "Redefine lattice: " + std::to_string(n0) + " → " + std::to_string(s.atoms.size()) + " atoms";
+    } else if (op == "water_model") {   // {model: "tip4p2005" | "TIP4P/2005" | …}: geometry, charges, M sites of every water
+      const caps::WaterModel& wm = caps::water_model(j.text("model", ""));
+      std::vector<std::string> wn;
+      const size_t nw = caps::apply_water_model(s, wm, &wn);
+      if (nw == 0) throw std::invalid_argument("no water molecules (an O bonded to two H) in this structure");
+      what = std::to_string(nw) + " waters as " + wm.name + (wm.sites == 4 ? " (with their M sites)" : "");
     } else if (op == "niggli") {
       caps::NiggliResult r;
       s = caps::niggli_cell(s, &r);

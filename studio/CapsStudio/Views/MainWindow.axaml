@@ -2923,6 +2923,10 @@
                 <TextBlock Text="Charges" Classes="dim" />
                 <ComboBox Width="170" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" />
               </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Water" Classes="dim" />
+                <ComboBox Width="190" ItemsSource="{Binding Field.WaterChoices}" SelectedIndex="{Binding Field.WaterModelIndex}" ToolTip.Tip="{Binding Field.WaterTip}" />
+              </StackPanel>
               <Button Classes="primary" Content="Assign · retype all" Click="OnFieldAssign" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom" />
               <Button Content="The file's own" Click="OnFieldUseFile" IsVisible="{Binding Field.CanUseFileForceField}" VerticalAlignment="Bottom"
                       ToolTip.Tip="The force field the topology file carries (an AMBER prmtop): its types, charges, Lennard-Jones table, bonds, angles, torsions and 1-4 scaling exactly as written — nothing typed or estimated" />

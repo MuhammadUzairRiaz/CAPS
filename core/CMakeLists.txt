@@ -43,6 +43,7 @@ add_library(caps_core STATIC
   src/spacegroup.cpp
   src/peptide.cpp
   src/solvate.cpp
+  src/water.cpp
   src/import.cpp
   src/provenance.cpp
   src/voids.cpp

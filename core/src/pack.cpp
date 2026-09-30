@@ -854,12 +854,21 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
       if (i >= t.size()) throw bad("missing number after '" + t[0] + "'");
       try { return std::stod(t[i]); } catch (...) { throw bad("'" + t[i] + "' is not a number"); }
     };
+    // a file name is the rest of the line (quotes around it allowed): folders with spaces ("/Applications/CAPS Studio.app/…")
+    auto rest = [&]() {
+      std::string r = line.substr(line.find(t[0]) + t[0].size());
+      const auto a = r.find_first_not_of(" \t\r"), b = r.find_last_not_of(" \t\r");
+      r = a == std::string::npos ? std::string() : r.substr(a, b - a + 1);
+      if (r.size() >= 2 && (r.front() == '"' || r.front() == '\'') && r.back() == r.front()) r = r.substr(1, r.size() - 2);
+      return r;
+    };
     if (k == "structure") {
       if (t.size() < 2) throw bad("structure needs a file");
-      std::filesystem::path f = t[1];
+      const std::string file = rest();
+      std::filesystem::path f = file;
       if (f.is_relative()) f = base / f;
       PackItem it;
-      it.name = t[1];
+      it.name = file;
       Trajectory tr = open_file(f.string());
       it.molecule = tr.frame(0);
       items.push_back(std::move(it));
@@ -872,7 +881,7 @@ std::vector<PackItem> parse_packmol_input(const std::string& text, const std::st
       if (k == "tolerance") o.tolerance = num(1);
       else if (k == "compress") o.compress_to = num(1);   // CAPS: pack loosely, then compress the cell to this density (g/cm³)
       else if (k == "seed") { const double s = num(1); o.seed = s < 0 ? uint64_t(std::random_device{}()) : uint64_t(s); }
-      else if (k == "output") { if (output && t.size() > 1) *output = (base / t[1]).string(); }
+      else if (k == "output") { if (output && t.size() > 1) *output = (base / rest()).string(); }
       else if (k == "pbc") {
         Vec3 a{0, 0, 0}, b;
         if (t.size() >= 7) { a = {num(1), num(2), num(3)}; b = {num(4), num(5), num(6)}; }
