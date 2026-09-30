@@ -240,8 +240,8 @@ public static class Panes
             ClipToBounds = false;
             Background = Brushes.Transparent;
             Cursor = new Cursor(rows ? StandardCursorType.SizeNorthSouth : StandardCursorType.SizeWestEast);
-            if (rows) { Height = 8; Margin = new Thickness(0, -4, 0, 0); VerticalAlignment = VerticalAlignment.Top; }
-            else { Width = 8; Margin = new Thickness(-4, 0, 0, 0); HorizontalAlignment = HorizontalAlignment.Left; }
+            if (rows) { Height = 10; Margin = new Thickness(0, -5, 0, 0); VerticalAlignment = VerticalAlignment.Top; }
+            else { Width = 10; Margin = new Thickness(-5, 0, 0, 0); HorizontalAlignment = HorizontalAlignment.Left; }
 
             _line.Background = Brushes.Transparent;
             if (rows) { _line.Height = 2; _line.VerticalAlignment = VerticalAlignment.Center; }
@@ -268,7 +268,7 @@ public static class Panes
                 Child = stack, Padding = new Thickness(2), CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1),
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsVisible = false,
                 // wider than the 8 px divider: it reaches over both panes' edges, centred on the line
-                Margin = rows ? new Thickness(0, -9, 0, -9) : new Thickness(-9, 0, -9, 0),
+                Margin = rows ? new Thickness(0, -8, 0, -8) : new Thickness(-8, 0, -8, 0),
                 Width = rows ? double.NaN : 26, Height = rows ? 26 : double.NaN,
                 BoxShadow = BoxShadows.Parse("0 4 14 0 #50000000"),
             };

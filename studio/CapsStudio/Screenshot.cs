@@ -84,6 +84,17 @@ internal static class Screenshot
             // pane=Body.0 / Centre.1 …: hide or show that pane (as its divider or the toggles do); hover=Body.1 shows a divider's buttons
             if (kv[0] == "pane") { var pp = kv[1].Split('.'); var g = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(w).OfType<Avalonia.Controls.Grid>().First(x => x.Name == pp[0]); Views.Panes.Toggle(g, int.Parse(pp[1])); for (int k = 0; k < 6; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 if (Environment.GetEnvironmentVariable("CAPS_PANE_DEBUG") != null) Console.WriteLine(string.Join(" | ", g.RowDefinitions.Select(r => r.Height + "=" + r.ActualHeight)) + " · " + string.Join(", ", g.Children.Select(c => $"{c.GetType().Name}[{Avalonia.Controls.Grid.GetRow(c)}] h={c.Height} vis={c.IsVisible} b={c.Bounds.Height:F0}"))); }
+            // mouse=x,y: the pointer moved there and held (tooltips open after their delay)
+            if (kv[0] == "mouse")
+            {
+                var xy = kv[1].Split(',');
+                var pt = new Avalonia.Point(double.Parse(xy[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(xy[1], System.Globalization.CultureInfo.InvariantCulture));
+                Avalonia.Headless.HeadlessWindowExtensions.MouseMove(w, pt);
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                var hit = Avalonia.Input.InputExtensions.InputHitTest(w, pt) as Avalonia.Visual;
+                var tipped = hit == null ? null : Avalonia.VisualTree.VisualExtensions.GetSelfAndVisualAncestors(hit).OfType<Avalonia.Controls.Control>().FirstOrDefault(c => Avalonia.Controls.ToolTip.GetTip(c) != null);
+                Console.WriteLine($"hover: {hit?.GetType().Name} → {tipped?.GetType().Name} tip='{(tipped == null ? "" : Avalonia.Controls.ToolTip.GetTip(tipped))}' open={(tipped != null && Avalonia.Controls.ToolTip.GetIsOpen(tipped))}");
+            }
             if (kv[0] == "hoverdiv") { for (int k = 0; k < 6; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } Views.Panes.HoverForShot(w, int.Parse(kv[1])); }
             if (kv[0] == "openpreview") { w.ViewModel.PreviewOpen(kv[1]); for (int k = 0; k < 80 && !w.ViewModel.OpenIdle || k < 10; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "bundle") { w.ViewModel.OpenBundle(); w.ViewModel.BundleInput = kv[1] == "1"; for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
