@@ -334,10 +334,16 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     ForceField f14;
     f14.mixing = ff.mixing;
     f14.lj = ff.lj14_types;
-    for (const auto& p : ff.pairs14) {
+    for (size_t k = 0; k < ff.pairs14.size(); ++k) {
+      const auto& p = ff.pairs14[k];
       const int ta = ff.type_index[p[0]], tb = ff.type_index[p[1]];
       const PairType q = ff.lj14_types.empty() ? mixed_pair(ff, ta, tb) : mixed_pair(f14, ta, tb);
-      add(PAIRS, {p[0], p[1]}, " 1 " + lj_pair(q.sigma, ff.lj14 * q.eps));
+      if (ff.per_pair14()) {   // force fields merged with different 1-4 scalings: each pair its own fudgeQQ, charges and LJ (function 2)
+        char t[160];
+        std::snprintf(t, sizeof t, " 2 %.10g %.10g %.10g ", ff.pairs14_coul[k], ff.charge[p[0]], ff.charge[p[1]]);
+        add(PAIRS, {p[0], p[1]}, t + lj_pair(q.sigma, ff.pairs14_lj[k] * q.eps));
+      } else
+        add(PAIRS, {p[0], p[1]}, " 1 " + lj_pair(q.sigma, ff.lj14 * q.eps));
     }
   }
   // explicit LJ pairs (Martini 3 polymers): their own σ, ε (GROMACS adds fudgeQQ × the pair's Coulomb, as CAPS does)

@@ -9,9 +9,9 @@
 // engine files carry exactly what CAPS computes.
 //
 // What one simulation cannot hold is refused with the reason, never approximated silently:
-//   · parts with different 1-4 scaling (GAFF 0.5 / 0.8333 against OPLS-AA 0.5 / 0.5): LAMMPS applies one special_bonds
-//     to the whole system (DL_POLY scales per dihedral, but one LAMMPS input could not); scaling14 "first" takes the
-//     first part's for all, said in the notes
+//   · parts with different 1-4 scaling (GAFF 0.5 / 0.8333 against OPLS-AA 0.5 / 0.5) keep their own (scaling14 "own",
+//     the default): each 1-4 pair scaled by its part's force field — LAMMPS a pair sub-style per part with its own
+//     special weights, GROMACS each 1-4 pair with its own fudge; "first" takes the first part's for all, "refuse" stops
 //   · 9-6 (class II) and 12-6 parts: the cross pairs need one form; cross96 "rmin" gives the 9-6 site a 12-6 form with
 //     the same well depth ε and minimum r_min (said in the notes; DL_FIELD instead fits the area under the curve)
 //   · coarse-grained settings (dielectric, reaction field, force switches), Stillinger–Weber in more than one part,
@@ -36,7 +36,7 @@ struct CrossPair { std::string a, b; double eps = 0, sigma = 0; };   // merged t
 struct MergeOptions {
   std::string eps_rule = "geometric";   // geometric | arithmetic
   std::string sigma_rule = "arithmetic";   // arithmetic | geometric | sixthpower (ε then by the sixth-power rule too)
-  std::string scaling14 = "refuse";     // refuse | first
+  std::string scaling14 = "own";        // own (each part's 1-4 pairs by its own scaling) | first | refuse
   std::string cross96 = "refuse";       // refuse | rmin
   std::vector<CrossPair> explicit_pairs;
 };

@@ -51,19 +51,21 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   }
   const ForceField& F0 = *parts[first].ff;
   // what one simulation holds for everybody
-  bool mixed_forms = false;
+  bool mixed_forms = false, own14 = false;
   for (const auto& P : parts) {
     const ForceField& F = *P.ff;
     if (F.manybody.on()) {   // a many-body group: no 1-4 pairs, and the non-bonded settings of the rest
       if (F.pair_form != F0.pair_form) mixed_forms = true;   // its cross Lennard-Jones is 12-6 (UFF)
       continue;
     }
-    if (has14(F) && (!same(F.lj14, F0.lj14) || !same(F.coul14, F0.coul14) || F.keep13 != F0.keep13)) {
+    if (has14(F) && F.keep13 != F0.keep13)
+      throw FieldError(F.name + " and " + F0.name + " treat 1-3 pairs differently (one keeps them): they cannot share one simulation");
+    if (has14(F) && (!same(F.lj14, F0.lj14) || !same(F.coul14, F0.coul14))) {
       const std::string why = F.name + " scales 1-4 pairs by LJ " + fmt(F.lj14) + ", Coulomb " + fmt(F.coul14) + ", " + F0.name + " by LJ " + fmt(F0.lj14) +
                               ", Coulomb " + fmt(F0.coul14);
-      if (o.scaling14 != "first")
-        throw FieldError(why + ": one LAMMPS special_bonds holds for the whole system. Choose force fields of one family, or take the first part's 1-4 scaling for all (scaling14: first)");
-      note("1-4 scaling: " + why + "; the first part's (" + fmt(F0.lj14) + ", " + fmt(F0.coul14) + ") is used for every part, as asked");
+      if (o.scaling14 == "first") note("1-4 scaling: " + why + "; the first part's (" + fmt(F0.lj14) + ", " + fmt(F0.coul14) + ") is used for every part, as asked");
+      else if (o.scaling14 == "refuse") throw FieldError(why + ": choose force fields of one family, keep each part's own 1-4 scaling (scaling14: own), or take the first part's for all (scaling14: first)");
+      else own14 = true;
     }
     if (F.pair_form != F0.pair_form) mixed_forms = true;
     if (F.dielectric != F0.dielectric || F.coul_rf != F0.coul_rf || F.lj_shift != F0.lj_shift || F.lj_fsw != F0.lj_fsw || F.coul_gromacs != F0.coul_gromacs)
@@ -98,6 +100,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   // types: each part's in turn; a name that another part already uses gets the part's tag
   std::vector<std::vector<int>> tmap(parts.size());
   std::vector<int> type_part;                 // merged type → part
+  std::vector<int> pair14_part;               // merged 1-4 pair → part
   std::vector<bool> type_is96;                // merged type's own form is 9-6
   std::set<std::string> taken;
   for (size_t p = 0; p < parts.size(); ++p) {
@@ -144,7 +147,11 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
     for (auto t : F.angles2) { t.i = A(t.i), t.j = A(t.j), t.k = A(t.k); M.angles2.push_back(t); }
     for (auto t : F.dihedrals2) { t.i = A(t.i), t.j = A(t.j), t.k = A(t.k), t.l = A(t.l); M.dihedrals2.push_back(t); }
     for (auto t : F.impropers2) { t.i = A(t.i), t.j = A(t.j), t.k = A(t.k), t.l = A(t.l); M.impropers2.push_back(t); }
-    for (auto t : F.pairs14) { t[0] = A(t[0]), t[1] = A(t[1]); M.pairs14.push_back(t); }
+    for (auto t : F.pairs14) {
+      t[0] = A(t[0]), t[1] = A(t[1]);
+      M.pairs14.push_back(t);
+      pair14_part.push_back(int(p));
+    }
     for (auto v : F.vsites) {
       v.site = A(v.site);
       for (auto& f : v.from) f = A(f);
@@ -240,6 +247,19 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   }
   for (auto& s : said) M.notes.push_back(s);
   if (notes) *notes = said;
+  if (own14) {   // each part's 1-4 pairs by its own scaling
+    M.pairs14_lj.resize(M.pairs14.size()), M.pairs14_coul.resize(M.pairs14.size());
+    for (size_t k = 0; k < M.pairs14.size(); ++k) {
+      const ForceField& F = *parts[size_t(pair14_part[k])].ff;
+      M.pairs14_lj[k] = F.lj14, M.pairs14_coul[k] = F.coul14;
+    }
+    M.type_part = type_part;
+    for (const auto& P : parts) M.part14.push_back({P.ff->lj14, P.ff->coul14});
+    std::string list;
+    for (const auto& P : parts)
+      if (has14(*P.ff)) list += (list.empty() ? "" : ", ") + P.ff->name + " LJ " + fmt(P.ff->lj14) + " / Coulomb " + fmt(P.ff->coul14);
+    note("1-4 pairs scaled by each part's own force field (" + list + "): LAMMPS writes a pair sub-style per part with its own special weights, GROMACS each 1-4 pair with its own scaling");
+  }
   return M;
 }
 

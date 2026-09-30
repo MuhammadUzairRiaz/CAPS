@@ -230,7 +230,8 @@ public partial class MainViewModel
         foreach (var i in own)
         {
             var ff = (string)i!["forcefield"]!;
-            var g = new System.Text.Json.Nodes.JsonObject { ["name"] = (string?)i["name"] ?? "group", ["molecules"] = (string)i["molecules"]! };
+            var nm = Path.GetFileNameWithoutExtension(((string?)i["name"] ?? "group").Split('#')[0].Trim());   // water.mol2 → water
+            var g = new System.Text.Json.Nodes.JsonObject { ["name"] = nm.Length > 0 ? nm : "group", ["molecules"] = (string)i["molecules"]! };
             if (ff.StartsWith("water:", StringComparison.Ordinal)) g["water"] = ff[6..];
             else
             {

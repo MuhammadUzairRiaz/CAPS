@@ -85,7 +85,21 @@ TEST(FFMerge, DifferentFamiliesAreRefusedOrMergedAsAsked) {
   const FFDef gaff = load_forcefield(kFF + "gaff-amber25.json"), opls = load_forcefield(kFF + "opls2005.json");
   const ForceField fa = typed(part_of(s, a), gaff), fb = typed(part_of(s, b), opls);
   // GAFF 1-4 Coulomb 1/1.2, OPLS 1/2: refused unless asked
-  EXPECT_THROW(merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, b, "OPLS"}}, MergeOptions{}), FieldError);
+  {   // refused when asked; by default each keeps its own 1-4 scaling, pair by pair
+    MergeOptions r;
+    r.scaling14 = "refuse";
+    EXPECT_THROW(merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, b, "OPLS"}}, r), FieldError);
+    const ForceField own = merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, b, "OPLS"}}, MergeOptions{});
+    ASSERT_TRUE(own.per_pair14());
+    ASSERT_EQ(own.pairs14_lj.size(), own.pairs14.size());
+    bool gaff = false, opls = false;
+    for (size_t k = 0; k < own.pairs14.size(); ++k) {
+      gaff = gaff || std::fabs(own.pairs14_coul[k] - fa.coul14) < 1e-12;
+      opls = opls || std::fabs(own.pairs14_coul[k] - fb.coul14) < 1e-12;
+    }
+    EXPECT_TRUE(gaff && opls) << "each part's pairs keep its own Coulomb 1-4 scale";
+    EXPECT_TRUE(std::isfinite(energy(own, s).total()));
+  }
   MergeOptions o;
   o.scaling14 = "first";
   o.eps_rule = "arithmetic";

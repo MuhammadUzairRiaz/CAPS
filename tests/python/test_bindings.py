@@ -1,3 +1,4 @@
+import re
 """The Python bindings (data/python/caps/core.py) against the built library: run by ctest as python_bindings."""
 import json
 import os
@@ -308,7 +309,7 @@ with _tf.TemporaryDirectory() as tmp:
 mix = caps.pack([("Cc1ccccc1", 12), ("O", 20)], box=22, tolerance=2.0, seed=3)
 check(mix.atoms == 12 * 15 + 20 * 3 and mix.summary()["molecules"] == 32, f"pack: {mix.atoms} atoms, {mix.summary()['molecules']} molecules")
 # force fields by group: two GAFF2 halves equal one GAFF2 assignment; GAFF + OPLS-AA refused for their 1-4 scalings
-# unless asked, then merged with explicit cross pairs
+# when asked to (scaling14="refuse"), else merged (each its own, or the first's) with explicit cross pairs
 g1 = caps.open(os.path.join(samples, "ps_melt.data"))
 e_one = g1.field.assign("gaff2", charges="gasteiger")["energy"]
 g2 = caps.open(os.path.join(samples, "ps_melt.data"))
@@ -316,7 +317,7 @@ e_two = g2.field.assign_groups([{"name": "A", "molecules": "1-5", "forcefield": 
                                 {"name": "B", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])["energy"]
 refused = False
 try:
-    g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}])
+    g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}], scaling14="refuse")
 except caps.CapsError:
     refused = True
 mixed = g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}],
@@ -498,4 +499,14 @@ cm.export_engines(_d, stem="comp", gromacs=False)
 _in = open(os.path.join(_d, "comp.in")).read()
 check("group           filler         type 1:3" in _in and "group           matrix         type 4:7" in _in and "numbered first (1:3)" in _in,
       "composite groups: filler type 1:3, matrix type 4:7")
+# force fields with different 1-4 scalings, each kept: LAMMPS a sub-style per part with its own special weights,
+# GROMACS each 1-4 pair with its own fudge (function 2)
+mx = caps.pack(molecules=[("Cc1ccccc1", 4), ("C1CCCCC1", 4)], box=18.0, tolerance=2.0, seed=4)
+mx.field.assign_groups([{"name": "toluene", "molecules": "1-4", "forcefield": "opls2005"}, {"name": "cyclohexane", "molecules": "5-8", "forcefield": "gaff"}])
+_d = _tf.mkdtemp()
+mx.export_engines(_d, stem="mx", run="check")
+_in = open(os.path.join(_d, "mx.in")).read()
+_top = "".join(open(os.path.join(_d, f)).read() for f in os.listdir(_d) if f.endswith((".top", ".itp")))
+check("pair lj/cut 1 special lj 0.0 0.0 0.5" in _in and "special coul 0.0 0.0 0.8333333333" in _in and re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5 ", _top, re.M) is not None,
+      "own 1-4 scalings: LAMMPS per-part special weights, GROMACS function-2 pairs")
 print("all python checks passed")
