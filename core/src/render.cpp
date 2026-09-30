@@ -479,6 +479,7 @@ int Renderer::pick_ray(const System& s, const Camera& cam, const RenderOptions& 
   std::vector<double> sx(n), sy(n), sz(n), sk(n);
   for (size_t i = 0; i < n; ++i) if (P.show[i]) v.project(s.atoms[i].pos, sx[i], sy[i], sz[i], sk[i]);
   const bool bonds = opt.style != Style::SpaceFilling || P.mixed;
+  const bool skip = opt.unpickable.size() == n;
   double half_cell = 1e300;
   if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
   // pass 0: the surfaces exactly as drawn, the nearest wins; pass 1 (nothing under the pixel): anything within 3 px
@@ -487,7 +488,7 @@ int Renderer::pick_ray(const System& s, const Camera& cam, const RenderOptions& 
     int best = -1;
     double best_z = -1e300;
     for (size_t i = 0; i < n; ++i) {
-      if (!P.show[i]) continue;
+      if (!P.show[i] || (skip && opt.unpickable[i])) continue;
       const double R = std::max(P.radius(i) * v.scale * sk[i], rmin);
       const double dx = px - sx[i], dy = py - sy[i], d2 = dx * dx + dy * dy;
       if (R <= 0 || d2 > R * R) continue;
@@ -508,6 +509,7 @@ int Renderer::pick_ray(const System& s, const Camera& cam, const RenderOptions& 
         const double t = std::clamp(len2 > 1e-12 ? ((px - sx[b.i]) * ex + (py - sy[b.i]) * ey) / len2 : 0.0, 0.0, 1.0);
         const double qx = sx[b.i] + ex * t - px, qy = sy[b.i] + ey * t - py, d2 = qx * qx + qy * qy;
         if (d2 > R * R) continue;
+        if (skip && opt.unpickable[t < 0.5 ? b.i : b.j]) continue;
         const double front = sz[b.i] + (sz[b.j] - sz[b.i]) * t + (wire ? 0.0 : std::sqrt(std::max(0.0, R * R - d2)) / (v.scale * k));
         if (front > best_z) best_z = front, best = int(t < 0.5 ? b.i : b.j);
       }

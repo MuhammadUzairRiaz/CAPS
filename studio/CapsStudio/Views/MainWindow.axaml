@@ -776,6 +776,24 @@
             <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
             <local:GlMolView x:Name="ViewGl" IsVisible="False" IsHitTestVisible="False" />
             <local:LabelOverlay x:Name="Labels" />
+            <!-- Selection bar (design/boards/SelectionBar): floats over the selection; placed from its projected atoms -->
+            <Border x:Name="SelBar" Classes="selbar" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="False" ZIndex="5">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <TextBlock Text="{Binding SelBarCountText}" Classes="mono" FontSize="12.5" FontWeight="Medium" Foreground="{DynamicResource SelB}" VerticalAlignment="Center" />
+                <TextBlock FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" Margin="6,0,8,0" MaxWidth="300" TextTrimming="CharacterEllipsis">
+                  <Run Text="{Binding SelBarWhat}" /><Run Text=" · " /><Run Text="{Binding SelBarHow}" />
+                </TextBlock>
+                <Border Width="1" Height="20" Background="{DynamicResource LineB}" Margin="0,0,4,0" />
+                <Button Classes="selact" Tag="hide" Click="OnSelBarAction" ToolTip.Tip="Hide (H): out of the view; the structure keeps them"><local:Icon Kind="eye" Size="15" /></Button>
+                <Button Classes="selact" Tag="ghost" Click="OnSelBarAction" ToolTip.Tip="Ghost: faint in the view, clicks go through them"><local:Icon Kind="layers" Size="15" /></Button>
+                <Button Classes="selact" Tag="tag" Click="OnSelBarAction" ToolTip.Tip="Keep as a named set (a group for exports and analysis)"><local:Icon Kind="tag" Size="15" /></Button>
+                <Button Classes="selact" Tag="copy" Click="OnSelBarAction" ToolTip.Tip="Copy as XYZ (⌘C)"><local:Icon Kind="copy" Size="15" /></Button>
+                <Button Classes="selact" Tag="clean" Click="OnSelBarAction" ToolTip.Tip="Clean up the geometry with UFF (the rest held)"><local:Icon Kind="wand" Size="15" /></Button>
+                <Button Classes="selact" Tag="delete" Click="OnSelBarAction" ToolTip.Tip="Delete (⌫, undoable)"><local:Icon Kind="xcircle" Size="15" /></Button>
+                <Button Classes="selact" Tag="more" Click="OnSelBarAction" ToolTip.Tip="More: frame, show only, invert, grow"><local:Icon Kind="dots" Size="15" /></Button>
+              </StackPanel>
+            </Border>
+            <local:RingMenu x:Name="Ring" ZIndex="6" />
             <!-- pinned measurements (the toolbar's Pin monitor): they follow the frames and edits -->
             <Border Classes="hud" Padding="10,8" Margin="14,14,14,58" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding MonitorsVisible}">
               <StackPanel Spacing="4">
@@ -876,12 +894,15 @@
             </Border>
             <!-- HUD (Main board): selection and system chips, live monitors -->
             <StackPanel Orientation="Horizontal" Spacing="6" Margin="14,12" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasDocument}">
-              <Border Classes="chip" Background="{DynamicResource HudB}" IsVisible="{Binding HasSelection}">
+              <Border Classes="chip" Background="{DynamicResource HudB}" IsVisible="{Binding HasSelBar}">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                   <Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding HudSelection}" Foreground="{DynamicResource TextB}" />
+                  <TextBlock Foreground="{DynamicResource TextB}"><Run Text="{Binding SelBarCountText}" /><Run Text=" selected" /></TextBlock>
                 </StackPanel>
               </Border>
+              <Button Classes="chipbtn" IsVisible="{Binding HasHiddenAtoms}" Click="OnShowAllAtoms" ToolTip.Tip="Show every hidden and ghosted atom (⌥H)">
+                <TextBlock><Run Text="{Binding HiddenChip}" Foreground="{DynamicResource MutedB}" /><Run Text=" · " Foreground="{DynamicResource MutedB}" /><Run Text="show all" Foreground="{DynamicResource AccB}" /></TextBlock>
+              </Button>
               <Border Classes="chip" Background="{DynamicResource HudB}">
                 <TextBlock Text="{Binding HudInfo}" Foreground="{DynamicResource MutedB}" />
               </Border>
@@ -3327,7 +3348,7 @@
                    Margin="18,0" TextTrimming="CharacterEllipsis" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
           <TextBlock Text="{Binding AutoCleanText}" IsVisible="{Binding AutoCleanOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" />
-          <TextBlock Text="Mouse: pick · drag rotates · ⇧ drag pans" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+          <TextBlock Text="double-click molecule · ⌥ drag box · hold right: ring · ⇧ drag pans" ToolTip.Tip="Click picks (⇧ click adds) · double-click: the molecule · ⌥ double-click: the same type · ⌥ drag: a box · drag turns · ⇧ or right drag pans · hold the right button: the ring · H hides · ⌥H shows all · Esc clears" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock Text="Double precision" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock x:Name="RenderStat" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
         </StackPanel>
