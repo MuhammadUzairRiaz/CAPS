@@ -29,11 +29,23 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     private delegate* unmanaged<int, float, float, float, float, void> _u4f;
 
     private int _progSphere, _progCapsule, _progLine, _progTri;
+    // in motion, very large scenes: the same shaders without the exact per-pixel depth (each sphere and bond at the depth
+    // of its front), so the GPU rejects hidden fragments before shading them
+    private int _progSphereFast, _progCapsuleFast;
     private int _vaoSphere, _vaoCapsule, _vaoLine, _vaoTri;
     private int _bufTri, _bufTriRgb, _nTriVerts;
     private delegate* unmanaged<byte, byte, byte, byte, void> _colorMask;
     private delegate* unmanaged<int, int, void> _blendFunc;
     private delegate* unmanaged<int, int, int, void> _drawArrays;
+    // GPU time of a frame (GL_TIME_ELAPSED queries: core in 3.3, EXT_disjoint_timer_query on ES); optional
+    private delegate* unmanaged<int, int*, void> _genQueries;
+    private delegate* unmanaged<int, int, void> _beginQuery;
+    private delegate* unmanaged<int, void> _endQuery;
+    private delegate* unmanaged<int, int, int*, void> _queryObjectiv;
+    private delegate* unmanaged<int, int, ulong*, void> _queryObjectui64v;
+    private readonly int[] _queries = new int[4];
+    private readonly bool[] _queryBusy = new bool[4];
+    private int _queryNext;
     private int _cornerSphere, _cornerCapsule;
     private int _bufSphere, _bufSphereRgb, _bufSphereRing, _bufCapsule, _bufCapsuleRgb, _bufLine, _bufLineRgb;
     private int _nSphere, _nCapsule, _nLine;
@@ -57,6 +69,9 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     public event Action? FitStale;
     /// <summary>Milliseconds the last frame took to submit (CPU side).</summary>
     public double LastFrameMs { get; private set; }
+    /// <summary>Milliseconds the GPU took to draw the latest measured frame (0 when the driver cannot time it); read a
+    /// frame or two late, so measuring never stalls the view.</summary>
+    public double GpuFrameMs { get; private set; }
 
     /// <summary>A new scene (content changed): uploaded at the next frame.</summary>
     public void SetScene(CapsSceneData scene)
@@ -99,9 +114,24 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             _drawArrays = (delegate* unmanaged<int, int, int, void>)P("glDrawArrays");
             var ap = gl.GetProcAddress("glGetFramebufferAttachmentParameteriv");
             if (ap != IntPtr.Zero) _attachParam = (delegate* unmanaged<int, int, int, int*, void>)ap;
+            IntPtr Q(string name) { foreach (var sfx in new[] { "", "EXT", "ARB" }) { var p = gl.GetProcAddress(name + sfx); if (p != IntPtr.Zero) return p; } return IntPtr.Zero; }
+            if (Q("glGenQueries") is var gq && Q("glBeginQuery") is var bq && Q("glEndQuery") is var eq && Q("glGetQueryObjectiv") is var qi
+                && Q("glGetQueryObjectui64v") is var qu && gq != IntPtr.Zero && bq != IntPtr.Zero && eq != IntPtr.Zero && qi != IntPtr.Zero && qu != IntPtr.Zero)
+            {
+                _genQueries = (delegate* unmanaged<int, int*, void>)gq;
+                _beginQuery = (delegate* unmanaged<int, int, void>)bq;
+                _endQuery = (delegate* unmanaged<int, void>)eq;
+                _queryObjectiv = (delegate* unmanaged<int, int, int*, void>)qi;
+                _queryObjectui64v = (delegate* unmanaged<int, int, ulong*, void>)qu;
+                fixed (int* q = _queries) _genQueries(_queries.Length, q);
+                while (gl.GetError() != 0) { }
+            }
             var head = es ? "#version 300 es\nprecision highp float;\nprecision highp int;\n" : "#version 330 core\n";
-            _progSphere = Program(gl, head + Common + SphereVs, head + Common + Shade + SphereFs);
-            _progCapsule = Program(gl, head + Common + CapsuleVs, head + Common + Shade + CapsuleFs);
+            const string exact = "#define DEPTH(x) gl_FragDepth = (x)\n", front = "#define DEPTH(x)\n";
+            _progSphere = Program(gl, head + Common + SphereVs, head + exact + Common + Shade + SphereFs);
+            _progSphereFast = Program(gl, head + Common + SphereVs, head + front + Common + Shade + SphereFs);
+            _progCapsule = Program(gl, head + Common + CapsuleVs, head + exact + Common + Shade + CapsuleFs);
+            _progCapsuleFast = Program(gl, head + Common + CapsuleVs, head + front + Common + Shade + CapsuleFs);
             _progLine = Program(gl, head + Common + LineVs, head + Common + LineFs);
             _progTri = Program(gl, head + Common + TriVs, head + Common + Shade + TriFs);
             _vaoTri = gl.GenVertexArray();
@@ -127,13 +157,13 @@ public sealed unsafe class GlMolView : OpenGlControlBase
 
     protected override void OnOpenGlDeinit(GlInterface gl)
     {
-        foreach (var p in new[] { _progSphere, _progCapsule, _progLine, _progTri }) if (p != 0) gl.DeleteProgram(p);
+        foreach (var p in new[] { _progSphere, _progCapsule, _progLine, _progTri, _progSphereFast, _progCapsuleFast }) if (p != 0) gl.DeleteProgram(p);
         foreach (var b in new[] { _bufTri, _bufTriRgb }) if (b != 0) gl.DeleteBuffer(b);
         if (_vaoTri != 0) gl.DeleteVertexArray(_vaoTri);
         foreach (var b in new[] { _cornerSphere, _cornerCapsule, _bufSphere, _bufSphereRgb, _bufSphereRing, _bufCapsule, _bufCapsuleRgb, _bufLine, _bufLineRgb })
             if (b != 0) gl.DeleteBuffer(b);
         foreach (var a in new[] { _vaoSphere, _vaoCapsule, _vaoLine }) if (a != 0) gl.DeleteVertexArray(a);
-        _progSphere = _progCapsule = _progLine = _progTri = 0;
+        _progSphere = _progCapsule = _progLine = _progTri = _progSphereFast = _progCapsuleFast = 0;
         Ready = false;
         base.OnOpenGlDeinit(gl);
     }
@@ -150,6 +180,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     {
         if (!Ready) return;
         var sw = System.Diagnostics.Stopwatch.StartNew();
+        var query = BeginGpuTimer(gl);
         if (_pending != null) { Upload(gl, _pending); _scene = _pending; _pending = null; }
         var scale = VisualRoot?.RenderScaling ?? 1;
         var pw = Math.Max(1, (int)(Bounds.Width * scale));
@@ -177,7 +208,8 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         // standard-DPI screens: draw at twice the size into our own framebuffer and filter it down (the CPU view's
         // 2 × 2 supersampling); Retina screens already have two samples per point
         var ss = (scale < 1.5 || Environment.GetEnvironmentVariable("CAPS_GL_SS") == "2") && gl.IsBlitFramebufferAvailable ? 2 : 1;   // CAPS_GL_SS=2: also on Retina
-        if (Interacting && _nSphere + _nCapsule + _nTriVerts / 3 > LargeScene) ss = 1;   // a very large scene in motion: one sample a pixel
+        var fast = Interacting && _nSphere + _nCapsule + _nTriVerts / 3 > LargeScene;
+        if (fast) ss = 1;   // a very large scene in motion: one sample a pixel, and depth at the front of each atom
         var target = fb;
         if (ss > 1 && EnsureSupersample(gl, pw * ss, ph * ss)) target = _ssFbo;
         else ss = 1;
@@ -194,7 +226,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.ClearDepth(1);
         gl.DepthMask(1);
         gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (sc == null || !_haveFit) { Resolve(gl, target, fb, pw, ph, outW, outH); LastFrameMs = sw.Elapsed.TotalMilliseconds; return; }
+        if (sc == null || !_haveFit) { Resolve(gl, target, fb, pw, ph, outW, outH); EndGpuTimer(query); LastFrameMs = sw.Elapsed.TotalMilliseconds; return; }
         gl.Enable(GL_DEPTH_TEST);
         gl.DepthFunc(GL_LESS);
         gl.Disable(GL_BLEND);
@@ -238,13 +270,13 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         }
         if (_nCapsule > 0)
         {
-            Common(_progCapsule);
+            Common(fast ? _progCapsuleFast : _progCapsule);
             gl.BindVertexArray(_vaoCapsule);
             _drawInstanced(GL_TRIANGLE_STRIP, 0, 4, _nCapsule);
         }
         if (_nSphere > 0)
         {
-            Common(_progSphere);
+            Common(fast ? _progSphereFast : _progSphere);
             gl.BindVertexArray(_vaoSphere);
             _drawInstanced(GL_TRIANGLE_STRIP, 0, 4, _nSphere);
         }
@@ -278,7 +310,40 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.UseProgram(0);
         gl.Disable(GL_DEPTH_TEST);
         Resolve(gl, target, fb, pw, ph, outW, outH);
+        EndGpuTimer(query);
         LastFrameMs = sw.Elapsed.TotalMilliseconds;
+    }
+
+    private const int GL_TIME_ELAPSED = 0x88BF, GL_QUERY_RESULT = 0x8866, GL_QUERY_RESULT_AVAILABLE = 0x8867;
+
+    /// <summary>Collects the finished timings (never waits) and starts one for this frame; -1 when none is free or the
+    /// driver has no timer queries.</summary>
+    private int BeginGpuTimer(GlInterface gl)
+    {
+        if (_beginQuery == null || _queries[0] == 0) return -1;
+        for (var k = 0; k < _queries.Length; k++)
+        {
+            if (!_queryBusy[k]) continue;
+            int ready = 0;
+            _queryObjectiv(_queries[k], GL_QUERY_RESULT_AVAILABLE, &ready);
+            if (ready == 0) continue;
+            ulong ns = 0;
+            _queryObjectui64v(_queries[k], GL_QUERY_RESULT, &ns);
+            _queryBusy[k] = false;
+            if (ns > 0) GpuFrameMs = ns / 1e6;
+        }
+        var i = _queryNext;
+        if (_queryBusy[i]) return -1;
+        _queryNext = (i + 1) % _queries.Length;
+        _beginQuery(GL_TIME_ELAPSED, _queries[i]);
+        if (gl.GetError() != 0) { _queries[0] = 0; return -1; }   // not supported after all: stop trying
+        _queryBusy[i] = true;
+        return i;
+    }
+
+    private void EndGpuTimer(int query)
+    {
+        if (query >= 0) _endQuery(GL_TIME_ELAPSED);
     }
 
     // ---- supersampling on standard-DPI screens
@@ -522,7 +587,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             if ((vRing & 2) != 0 && abs(d - (vR + 6.5 * uPx)) <= 1.6 * uPx && abs(vOff.y / d) > 0.26) { on = true; rc = vec3(0.9608, 0.6471, 0.1412); }
             if (!on) discard;
             frag = vec4(seen(rc), 1.0);
-            gl_FragDepth = 0.0;
+            DEPTH(0.0);
             return;
           }
           float nz = sqrt(max(0.0, 1.0 - d * d / (vR * vR)));
@@ -531,7 +596,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           vec3 c = cue(shade(vCol, n), z);
           if (uOutline > 0.5 && vR - d < uPx * uOutline) c = mix(c, uInk, uOutline > 1.5 ? 0.95 : 0.5);
           frag = vec4(seen(c), 1.0);
-          gl_FragDepth = fragDepth(z);
+          DEPTH(fragDepth(z));
         }
 
         """;
@@ -576,7 +641,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           vec3 c = cue(shade(vCol, vec3(dv.x / vR, -dv.y / vR, nz)), z);
           if (uOutline > 0.5 && vR - sqrt(d2) < uPx * uOutline) c = mix(c, uInk, uOutline > 1.5 ? 0.95 : 0.5);
           frag = vec4(seen(c), 1.0);
-          gl_FragDepth = fragDepth(z);
+          DEPTH(fragDepth(z));
         }
 
         """;

@@ -54,7 +54,7 @@ public partial class MainViewModel
     {
         var all = AppLayers.LastOrDefault(l => l.Expression.Length == 0);
         var some = AppLayers.Count(l => l.Expression.Length > 0);
-        var main = all != null ? AppStyleNames[all.Style] : DisplayNames[DsStyle];
+        var main = all != null ? AppStyleNames[all.Style] : DsStyle == 0 && _style is 1 or 2 ? Styles[_style] : DisplayNames[DsStyle];
         return some == 0 ? main : main + $" · {some} styled selection{(some == 1 ? "" : "s")}";
     }
 

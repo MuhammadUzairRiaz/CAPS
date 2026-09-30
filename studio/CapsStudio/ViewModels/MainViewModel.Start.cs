@@ -109,6 +109,7 @@ public sealed partial class MainViewModel
             Activate(ProjectItems[^1]);
             d.Dispose();
             RaiseProject();
+            RequestProperties();
             Status = $"Closed {gone?.Name} · working on {Title}";
             return;
         }
@@ -124,6 +125,7 @@ public sealed partial class MainViewModel
         IsPlaying = false;
         SetModule(8);
         Status = "Closed · Start";
+        RequestProperties();   // the panel no longer shows the closed structure
         LoadRecent();
         RenderRequested?.Invoke();
     }

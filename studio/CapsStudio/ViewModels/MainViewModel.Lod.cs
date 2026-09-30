@@ -28,7 +28,7 @@ public sealed partial class MainViewModel
     public string LodTiers { get => _lodTiers; private set => Set(ref _lodTiers, value); }
     public string LodMemory { get => _lodMemory; private set => Set(ref _lodMemory, value); }
     public string LodBench { get => _lodBench; private set => Set(ref _lodBench, value); }
-    public string FrameText => _frameMs <= 0 ? "—" : $"{_frameMs:0} ms" + (_frameMs <= 16.7 ? "" : " · above target");
+    public string FrameText => _frameMs <= 0 ? "—" : (_frameMs < 10 ? $"{_frameMs:0.0} ms" : $"{_frameMs:0} ms") + (_frameMs <= 16.7 ? "" : " · above target");
     public string PerfAtoms => _doc == null ? "—" : _doc.Summary().Atoms.ToString("N0", CultureInfo.InvariantCulture);
     public string LodHudText => !_lodOn ? "off" : $"points > {_lodFar:0} Å";
 
@@ -60,6 +60,15 @@ public sealed partial class MainViewModel
             else if (ms < 8 && _lodNearNow < target) { _lodNearNow = Math.Min(target, _lodNearNow * 1.25); RenderRequested?.Invoke(); }
         }
         if (_perfHud || _lodOpen) RefreshLodTiers();
+    }
+
+    private CapsDocument? _perfDoc;
+    /// <summary>The GPU view's frame time (the larger of its CPU submission and its GPU time): the readout only — the GPU
+    /// view needs no level of detail.</summary>
+    public void ReportGpuFrame(double ms)
+    {
+        if (Math.Abs(ms - _frameMs) >= 0.5) { _frameMs = ms; Raise(nameof(FrameText)); }
+        if (!ReferenceEquals(_perfDoc, _doc)) { _perfDoc = _doc; Raise(nameof(PerfAtoms)); Raise(nameof(LodHudText)); }
     }
 
     private void RefreshLodTiers()
