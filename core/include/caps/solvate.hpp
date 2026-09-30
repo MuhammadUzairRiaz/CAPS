@@ -38,7 +38,7 @@ struct SolvateOptions {
   double padding = 10;            // Å on each side, shape 2
   double tolerance = 2.0;         // Å between atoms of different molecules
   std::string solvent = "water";  // an id of solvent_library()
-  std::string water_model = "TIP4P/2005";   // TIP3P | SPC/E | TIP4P/2005
+  std::string water_model = "TIP4P/2005";   // any of water_models() by name or id (SPC, SPC/E, SPC/Fw, TIP3P …, TIP4P/2005, OPC)
   double density = 0;             // g/cm³; 0: the solvent's
   int molecules = 0;              // solvent molecules; 0: from the density over the free volume
   int ion_mode = 2;               // 0 none, 1 neutralise, 2 concentration (and neutralise), 3 custom counts

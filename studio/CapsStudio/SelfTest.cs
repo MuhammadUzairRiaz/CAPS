@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 50, "native ABI version 50");
+        Check(Native.AbiVersion() == 51, "native ABI version 51");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -3512,6 +3512,19 @@ internal static class SelfTest
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
         }
+        // Water model on the Field page: a water with TIP4P/2005 gets its M site (4 atoms) and the model's force field
+        {
+            vm.Open(Path.Combine(dir, "water.pdb"));
+            var gaffIx = vm.Field.Library.ToList().FindIndex(e => e.Id.StartsWith("gaff", StringComparison.Ordinal));
+            vm.Field.FfIndex = Math.Max(0, gaffIx);
+            vm.Field.WaterModelIndex = FieldViewModel.Waters.FindIndex(w => w.Id == "tip4p2005") + 1;
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var atoms = vm.Document?.Summary().Atoms ?? 0;
+            Check(atoms == 4 && vm.Field.ForceFieldName.Contains("TIP4P/2005", StringComparison.Ordinal) && FieldViewModel.Waters.Count == 11,
+                  $"water model: {atoms} atoms · {vm.Field.ForceFieldName} · {FieldViewModel.Waters.Count} models · {vm.Field.Log}");
+            vm.Field.WaterModelIndex = 0;
+        }
+
         // Remote copy-back: the out folder listed on the host (run here with sh), the result and small files now, a large
         // trajectory left with copy actions (whole, every 10th / 100th frame thinned on the host by caps frames)
         {

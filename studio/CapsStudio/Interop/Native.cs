@@ -360,6 +360,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_last_error")] private static extern IntPtr LastErrorPtr();
     public static string LastError() => Marshal.PtrToStringUTF8(LastErrorPtr()) ?? "";
 
+    [DllImport(Lib, EntryPoint = "caps_water_models")] public static extern int WaterModels(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_inspect_file")] public static extern int InspectFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open_frames")] public static extern IntPtr OpenFrames([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, long first, long last, long stride, int maxFrames, CapsOpenProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_open_staged")] public static extern IntPtr OpenStaged([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, int maxFrames, CapsOpenProgress? progress, IntPtr user);
@@ -1144,6 +1145,8 @@ public sealed class CapsDocument : IDisposable
     public static string PipelineFromYaml(string yaml) => Sized((b, c) => Native.PipelineFromYaml(yaml, b, c));
     /// <summary>What a file holds before opening it (scans a dump for its frames: call off the UI thread).</summary>
     public static string InspectFile(string path, string? topology) => Sized((b, c) => Native.InspectFile(path, topology, b, c));
+    /// <summary>The water models (SPC, SPC/E, SPC/Fw, the TIP3P and TIP4P families, OPC) as JSON.</summary>
+    public static string WaterModelsJson() => Sized((b, c) => Native.WaterModels(b, c));
     /// <summary>The bundle's files with sizes and hashes (figures are made on write). Runs the pipeline twice: off the UI thread.</summary>
     public string BundlePreview(string options) { using (Hold()) return Sized((b, c) => Native.BundlePreview(H, options, b, c)); }
     public int BundleWrite(string path, string options, in CapsCamera cam, in CapsRenderOpts opt)

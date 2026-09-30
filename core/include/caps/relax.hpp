@@ -150,6 +150,9 @@ struct LammpsStyle {
   // atom id, said in a comment. The input says where the first group's types are numbered.
   struct Group { std::string name; std::vector<uint32_t> atoms; };
   std::vector<Group> groups;
+  // Four-site water (TIP4P family): set by the writers when they leave the M sites out; LAMMPS's tip4p styles place
+  // them d_OM (qdist, Å) along the bisector from the O of type o_type, with its H type, O–H bond and H–O–H angle types
+  double tip4p_qdist = 0;
 };
 
 // Whether a LAMMPS export of this force field is written in metal units (see LammpsStyle::units); throws when real units

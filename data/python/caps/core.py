@@ -163,7 +163,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_pack": ([S, S, I, P, P, B, I], P),
         "caps_set_held_molecule": ([P, C.c_int64], None), "caps_set_fixed_atoms": ([P, C.POINTER(C.c_int32), I], I),
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
-        "caps_open": ([S, S], P), "caps_open_frames": ([S, S, C.c_int64, C.c_int64, C.c_int64, I, P, P], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
+        "caps_open": ([S, S], P), "caps_water_models": ([B, I], I), "caps_open_frames": ([S, S, C.c_int64, C.c_int64, C.c_int64, I, P, P], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
@@ -295,6 +295,8 @@ class _Field:
             g = dict(g)
             if "potential" in g:   # a literature many-body potential: {"style": "tersoff", "file": PATH, "units": "metal"}
                 g["potential"] = _potential(g["potential"])
+            elif "water" in g:     # a water model: {"molecules": "water", "water": "tip4p2005"} (caps.water_models())
+                pass
             else:
                 g["forcefield"] = _forcefield_path(g["forcefield"])
                 g["charges"] = codes[g.get("charges", "auto")]
@@ -786,6 +788,13 @@ def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, p
     if library().caps_protocol_text(_enc(name), C.byref(p), buf, len(buf)) < 0:
         raise _error()
     return buf.value.decode()
+
+
+def water_models() -> list:
+    """The water models CAPS has (SPC, SPC/E, SPC/Fw, TIP3P and its CHARMM and Ewald forms, TIP4P, TIP4P-Ew, TIP4P/2005,
+    TIP4P/Ice, OPC): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
+    doc.edit(op="water_model", model=id) and type the waters with it by a group {"molecules": "water", "water": id}."""
+    return _json_call(library().caps_water_models)
 
 
 def label_kinds() -> dict:
